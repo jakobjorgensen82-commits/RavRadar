@@ -862,6 +862,64 @@ selected_overlap_subset = (
 assert len(selected_overlap_subset) == 1
 assert selected_overlap_subset[0]["attestedPartIds"] == [target["partId"]]
 
+# The audited ecCodes patch transition may yield two signature-bound proofs
+# for the same immutable asset. They may be united only when their complete
+# outcome semantics agree; the exact current signature wins the final proof.
+overlap_zone_signature = "0123456789abcdef"
+decoder_signature_480 = (
+    f"parser:{producer.PARSER_VERSION}|params:{producer.PARAMETER_MAP_VERSION}"
+    f"|grid:{producer.GRID_LOOKUP_VERSION}|eccodes-api:2.48.0"
+    f"|eccodes-binding:2.48.0|zones:{overlap_zone_signature}"
+)
+decoder_signature_482 = decoder_signature_480.replace(
+    "eccodes-api:2.48.0", "eccodes-api:2.48.2"
+)
+decoder_outcome_480 = producer.build_current_part_outcome_proof(
+    [],
+    overlap_target_ids,
+    overlap_registry_sha256,
+    decoder_signature_480,
+    older_retained_source,
+)
+decoder_proof_480 = producer.build_retained_current_asset_proof(
+    older_retained_source,
+    decoder_signature_480,
+    decoder_outcome_480,
+    overlap_target_ids,
+    overlap_target_ids,
+    overlap_registry_sha256,
+)
+decoder_outcome_482 = producer.build_current_part_outcome_proof(
+    [],
+    overlap_target_ids,
+    overlap_registry_sha256,
+    decoder_signature_482,
+    older_retained_source,
+)
+decoder_proof_482 = producer.build_retained_current_asset_proof(
+    older_retained_source,
+    decoder_signature_482,
+    decoder_outcome_482,
+    [target["partId"]],
+    overlap_target_ids,
+    overlap_registry_sha256,
+)
+selected_compatible_overlap = (
+    producer._select_retained_current_asset_proofs_for_document(
+        overlap_document,
+        overlap_targets,
+        reference,
+        [decoder_proof_480, decoder_proof_482],
+        decoder_signature_482,
+    )
+)
+assert len(selected_compatible_overlap) == 1
+assert selected_compatible_overlap[0]["attestedPartIds"] == overlap_target_ids
+assert (
+    selected_compatible_overlap[0]["processingSignature"]
+    == decoder_signature_482
+)
+
 conflicting_overlap_signature = f"{continuity_signature}|conflict"
 conflicting_overlap_outcome = producer.build_current_part_outcome_proof(
     [],
@@ -1008,6 +1066,90 @@ assert producer.canonical_current_source_asset(
     ]["current"]
 ) == producer.canonical_current_source_asset(source)
 
+# Every independently native-proven component is reusable from a partially
+# filled row. The complete tuple and source move together; a partial tuple is
+# ignored, and an already valid primary tuple remains authoritative.
+wind_source = producer.native_component_source(
+    "harmonie_dini_sf",
+    "2026-01-01T00:00:00Z",
+    valid_time,
+    component="wind",
+    zone=zone,
+    grid_candidate=candidate,
+    capture=capture,
+    spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+    vectorSelection="nearest-shared-grid-cell-no-spatial-interpolation",
+    vectorSemanticsVersion=2,
+    vectorReference="earth-relative-east-north",
+    vectorTransform="identity-earth-relative",
+)
+assert wind_source is not None
+component_donor = continuity_document(source)
+component_donor_zone = component_donor["zones"]["PART::TEST"]
+component_donor_hour = component_donor_zone["hourly"][valid_time]
+component_donor_hour.update({
+    "wind-u-10m": 3.25,
+    "wind-v-10m": -1.75,
+})
+component_donor_hour["sources"]["wind"] = wind_source
+for field in ("wind-u-10m", "wind-v-10m"):
+    component_donor_zone["gridPoints"][field] = {
+        "longitude": 2.0,
+        "latitude": 1.0,
+    }
+    component_donor_zone["collections"][field] = "harmonie_dini_sf"
+
+component_primary = continuity_document(source)
+component_primary_hour = component_primary["zones"]["PART::TEST"]["hourly"][
+    valid_time
+]
+component_primary_hour["preserved-marker"] = "newer-primary"
+producer.backfill_compatible_cache_data(
+    component_primary,
+    component_donor,
+    [retained_proof(source)],
+    [retained_proof(source)],
+)
+component_result = component_primary["zones"]["PART::TEST"]
+component_result_hour = component_result["hourly"][valid_time]
+assert component_result_hour["preserved-marker"] == "newer-primary"
+assert component_result_hour["wind-u-10m"] == 3.25
+assert component_result_hour["wind-v-10m"] == -1.75
+assert component_result_hour["sources"]["wind"] == wind_source
+assert producer.sanitize_component_provenance(
+    "PART::TEST", component_result,
+) == []
+assert producer.sanitize_vector_integrity(component_result) == []
+
+partial_component_donor = json.loads(json.dumps(component_donor))
+partial_component_donor["zones"]["PART::TEST"]["hourly"][valid_time].pop(
+    "wind-v-10m"
+)
+partial_component_primary = continuity_document(source)
+producer.backfill_compatible_cache_data(
+    partial_component_primary,
+    partial_component_donor,
+    [retained_proof(source)],
+    [retained_proof(source)],
+)
+assert "wind-u-10m" not in partial_component_primary[
+    "zones"
+]["PART::TEST"]["hourly"][valid_time]
+
+valid_component_primary = json.loads(json.dumps(component_donor))
+valid_component_primary["zones"]["PART::TEST"]["hourly"][valid_time][
+    "wind-u-10m"
+] = 9.5
+producer.backfill_compatible_cache_data(
+    valid_component_primary,
+    component_donor,
+    [retained_proof(source)],
+    [retained_proof(source)],
+)
+assert valid_component_primary["zones"]["PART::TEST"]["hourly"][valid_time][
+    "wind-u-10m"
+] == 9.5
+
 # Same-run carry is safe only for the exact currently selected official asset.
 same_run_continuity, same_run_ledger = assert_retained_availability(source)
 revised_catalogs = json.loads(json.dumps(continuity_catalogs))
@@ -1132,7 +1274,7 @@ with tempfile.TemporaryDirectory() as continuity_directory:
         )
         controller.mark_bulk_dirty()
         assert controller.flush_if_due(force=True)
-        persisted = json.loads(continuity_output.read_text("utf-8"))
+        persisted = producer.load_bulk_document(continuity_output)
         assert persisted["diagnostics"]["currentOperationalLedger"][
             "attestation"
         ]["verifiedPairCount"] == 1
@@ -2731,7 +2873,7 @@ with tempfile.TemporaryDirectory() as temporary_directory:
     try:
         selected = producer.load_previous("test-registry")
         producer.atomic_write_bulk_cache(selected)
-        assert json.loads(producer.OUTPUT_PATH.read_text("utf-8")) == fallback_document
+        assert producer.load_bulk_document(producer.OUTPUT_PATH) == fallback_document
 
         progressive_document = {
             "schemaVersion": 2,
@@ -2773,7 +2915,7 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             reference + timedelta(hours=117),
         ) == 0
         producer.atomic_write_bulk_cache(selected)
-        materialized = json.loads(producer.OUTPUT_PATH.read_text("utf-8"))
+        materialized = producer.load_bulk_document(producer.OUTPUT_PATH)
         assert strict_verified_part_current_pair_count(
             materialized,
             targets,
@@ -3016,9 +3158,16 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             tail_reference,
             tail_reference + timedelta(hours=117),
         ) == len(granular_hours) - 1
-        assert granular_proofs == [], (
-            "a changed exact ledger attestation must not remain positive evidence"
+        assert granular_proofs, (
+            "independently proven rows must survive one malformed cache leaf"
         )
+        granular_proof_pairs = {
+            (part_id, proof["sourceAsset"]["validTime"])
+            for proof in granular_proofs
+            for part_id in proof["attestedPartIds"]
+        }
+        assert (target["partId"], preserved_current_hour) in granular_proof_pairs
+        assert (target["partId"], invalid_current_hour) not in granular_proof_pairs
 
         # Truncated/unparseable bytes are still document-level corruption:
         # quarantine and fail closed when no strict READY donor exists.

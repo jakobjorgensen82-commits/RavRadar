@@ -18,6 +18,7 @@ import {
   stagedEntries,
 } from './lib/coastal-point-staging-contract.mjs';
 import { projectVerifiedPrivateStageDmiZoneToPart } from './lib/coastal-point-stage-dmi-adapter.mjs';
+import { readDmiBulkDocument, writeDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const REVIEWS = path.join(ROOT, 'data/admin/direction-reviews.json');
@@ -199,7 +200,7 @@ export async function prepareActivation({
   const promoted = recoveryOnly
     ? directionDocument
     : promotedDirectionDocument(directionDocument, candidates, activatedAt);
-  const publicDmi = await read(publicDmiPath);
+  const publicDmi = await readDmiBulkDocument(publicDmiPath);
   const statePairs = {};
   for (const candidate of candidates) {
     publicDmi.zones ??= {};
@@ -234,7 +235,7 @@ export async function prepareActivation({
   };
   await Promise.all([
     ...(recoveryOnly ? [] : [atomicWrite(reviewsPath, promoted)]),
-    atomicWrite(publicDmiPath, publicDmi),
+    writeDmiBulkDocument(publicDmiPath, publicDmi),
     atomicWrite(injectionPath, injection),
     ...(recoveryOnly ? [fs.rm(pendingPath, { force: true })] : [atomicWrite(pendingPath, pending)]),
   ]);

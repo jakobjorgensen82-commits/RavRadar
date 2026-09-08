@@ -196,8 +196,9 @@ jobs:
               validate_current_operational_availability_ledger,
               validate_current_operational_ledger,
           )
+          from scripts.lib.dmi_bulk_storage import read_dmi_bulk_document
 
-          dmi = json.loads(Path('data/live/dmi-bulk-cache.json').read_text(encoding='utf-8'))
+          dmi = read_dmi_bulk_document(Path('data/live/dmi-bulk-cache.json'))
           ledger = ((dmi.get('diagnostics') or {}).get('currentOperationalLedger'))
           if not isinstance(ledger, dict):
               raise SystemExit('Restored DMI current operational ledger is missing or malformed')
@@ -616,7 +617,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         id: ravscore-wave-bootstrap-target
@@ -677,8 +678,7 @@ jobs:
             source_path=data/live/dmi-bulk-cache.json
           fi
           test -s "$source_path"
-          reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
-          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
+          reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"
           python scripts/build-copernicus-target-registry.py \
             --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
@@ -772,7 +772,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -808,7 +808,8 @@ jobs:
         run: |
           set -euo pipefail
           test -s data/live/dmi-bulk-cache.json
-          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
+          python scripts/check-dmi-bulk-operational-ready.py \
+            --cache data/live/dmi-bulk-cache.json
           python scripts/build-copernicus-target-registry.py \
             --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
@@ -1132,7 +1133,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
@@ -1156,22 +1157,42 @@ jobs:
           mkdir -p "$private_root"
           node scripts/private-production-runtime-workflow.mjs incremental-size-dry-run \
             --repository-root "$GITHUB_WORKSPACE" \
+            --dmi-bulk .cache/dmi-candidate-progress.json \
             --private-root "$private_root" \
             --bundle "$private_bundle" \
             --source-head "$GITHUB_SHA" \
             --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json \
             --runtime-audit "$RAVRADAR_PRIVATE_PREFLIGHT_REPORT" \
+            --first-cutover-exception-decision APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION \
             --output .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
           rmdir "$private_root"
 
-      - name: Require only conservative incremental private runtime size bounds
+      - name: Require conservative bounds or the approved single first-cutover exception
         run: >-
           jq -e '. as $report
           | $report.kind == "RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN"
           and $report.privacyClass == "AGGREGATE_PRIVATE_RUNTIME_CAPACITY"
           and $report.incrementalGate.scope == "INCREMENTAL_PRIVATE_RUNTIME_ONLY"
-          and $report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"
+          and ($report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"
+            or $report.incrementalGate.status == "EXCEEDS_INCREMENTAL_SIZE_BOUNDS")
           and $report.incrementalGate.fullCutoverCapacityEvaluated == false
+          and $report.firstCutoverException.decisionId
+            == "DEC-0122-OWNER-APPROVAL-2026-09-09"
+          and $report.firstCutoverException.releaseVersion == "4.0.337"
+          and $report.firstCutoverException.scope
+            == "ONE_EXACT_VERIFIED_FIRST_CUTOVER"
+          and $report.firstCutoverException.status
+            == "ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER"
+          and $report.firstCutoverException.eligible == true
+          and $report.firstCutoverException.maximumArchiveObjectBytes == 50000000
+          and $report.firstCutoverException.archiveWithinBound == true
+          and $report.firstCutoverException.retainedStorageWithinBudget == true
+          and $report.firstCutoverException.checkpointDatabaseWithinBound == true
+          and $report.firstCutoverException.recurringAutomaticCadenceEligible == false
+          and $report.firstCutoverException.cacheTransportMigrationRequired == true
+          and $report.firstCutoverException.existingCacheResetRequired == false
+          and $report.firstCutoverException.exactSuccessfulOneoffAndHandoffRequired == true
+          and $report.firstCutoverException.privateRuntimeIntegrityPrivacyAndReadbackGatesRemainRequired == true
           and $report.egress.reservePercent == 30
           and $report.egress.usableBudgetPercent == 70
           and $report.egress.conservativeMonthDays == 31
@@ -1269,6 +1290,7 @@ jobs:
             kind,
             privacyClass,
             incrementalGate,
+            firstCutoverException,
             measurements,
             egress: (.egress | {
               monthlyQuotaBytes,
@@ -1305,7 +1327,7 @@ jobs:
             cutoverGate,
             controls
           }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
-          echo "Incremental private-runtime and protected-checkpoint size are within their isolated bounds. Live Supabase egress/database before-and-after measurements, observed checkpoint cache-miss rate and all other unified egress remain mandatory before cutover."
+          echo "The owner-approved 4.0.337 exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

@@ -1,3 +1,25 @@
+# NYESTE CHECKPOINT – 2026-09-09 – 4.0.337 lokal releasepakke under afslutning
+
+4.0.337 samler tabsfri DMI-cachecodec, ecCodes-pinning/kompatibilitet, granulært N−1-proofgenbrug, komponentvis atomisk donorbackfill, eksakt kandidatmål i private preflight/backup og direkte legacy Candidate G → integreret first cutover. De målrettede storage-, provenance-, runtime- og workflowtests er grønne lokalt. Exact-head GitHub-sourcegate, merge, main-oneoff, fuld produktion og offentlig cutover mangler.
+
+Ejeren har godkendt DEC-0122-tillægget 2026-09-09. En oneoff må forsegle first-cutover-input, selv om den konservative 60-fulde-transporter/døgn-fremskrivning ikke består, men kun når det målte private archive er højst 50 MB. Storage/checkpoint skal fortsat være inden for budget, og alle privacy-, integritets- og readbackgates består. Consumeren kræver eksakt succesfuldt oneoff-run-id og genbruger de forseglede cacher atomisk.
+
+Efter offentlig launch er cachetransportmigration fortsat åben P0 og må ikke glemmes: parallel skyggevej, ingen nulstilling, indhold/hash-sammenligning, atomisk pointer-switch og bevaret rollback. Hyppig normal cron/watchdog må først aktiveres efter dette bevis. Næste model/indsats er Sol / Ekstra høj til versionslukning, exact-head og runtime.
+
+# NYESTE CHECKPOINT – 2026-09-08 – ekstra Astra-audit: rettelsesplan udvidet, produktion uændret
+
+[Den ekstra Astra-helhedsgennemgang](WEATHER_FULL_CHAIN_REVIEW_2026-09-08.md) supersederer den tidligere implementeringsplan nedenfor. Main er senest verificeret som 4.0.336 `bf471981`; Candidate G er senest verificerede offentlige model. Audit er afsluttet, men .337 er IKKE implementeret, sourcegated eller releaseklar. Eksisterende untracked codec-/compatibilityudkast er bevaret; codecudkastet er konkret NO-GO, ikke en færdig tabsfri implementation. Ingen nye GitHub-runs, providerkald, cachewrites, merge eller deploy under denne ekstra audit.
+
+Nye verificerede forhold: én ugyldig currentrække kan fjerne alle retained proofs; samme asset/gammel+ny decoder har en proofkonfliktvej; faktisk production recovery er ikke RAM-bevist; codecudkastet har fem reproducerede integritets-/valideringsfejl; normal handoff mangler samlet bootstrap/WAM/statevej; Fase A kan genindføre 48h-historikblokering; privat archive har forkert DMI-inputbinding, stram kodehash/72h-restore og et uløst transportbudget. Oneoff er desuden legacybundet efter launch. Se auditens skelnen mellem bevist adfærd, betingede risici og umålte liveforhold.
+
+Næste model: Sol / Ekstra høj. Før release: korrigér den samlede plan, mål rigtig privat payload og forklar/registrér den foreslåede snævre DEC-0114-ændring før implementering. Genattestér om muligt seneste caches eksisterende værdier fra originale arkivproofs før større donorunion. Kræv målrettede kontrakttests og én produktionstor isoleret I/O-/recoveryprøve, ikke flere blinde vejrhentninger. DMI→Open-Meteo-overlap er endnu IKKE bevist: de to senere diagnoseforsøg fejlede ved checkpointvalidering. Ingen nearest-policyændring eller launchløfte. Bevar alle cacher og den isolerede diagnoseworktree.
+
+# HISTORISK AUDITCHECKPOINT – 2026-09-08 – første Astra-genbrugsanalyse
+
+Astra-rodårsag og helkædeaudit er afsluttet; se [det samlede bevis og næste trin](WEATHER_CACHE_ASTRA_AUDIT_2026-09-08.md). Main er 4.0.336 `bf471981`, exact-head-grøn via PR #270; ingen .337-produktionsrettelse er implementeret. Automatisk native ecCodes-opgradering gjorde kompatible gamle proofs utilgængelige; dataene findes stadig. Read-only `34261357677` og `34262628767` er grønne: 62.865 par kan genvalideres i 16 UTC-vinduet, og cacheindholdet kan tabsfrit lagres på 94,15MB i stedet for 760,49MB. Ingen inputcache er ændret.
+
+Næste model er Sol / Ekstra høj. Først mål recovered-DMI-overlap med de 1.891 OM-rester; ingen ny nearest-policy før dette. Implementér pinning, snæver retained-kompatibilitet, partial-donor-union, fælles tabsfri I/O og normal-WAM-binding samlet. Privat transport/kapacitet er særskilt reel blokker: kodet DMI alene er 17,09MB gzip, så fuld månedlig restorepolitik passer ikke automatisk i eksisterende budget. Ingen launchgaranti, ny vejrkørsel eller gatebypass. Candidate G er offentlig. Diagnosegrenen `.tmp-weather-forensic` / `codex/weather-cache-forensic` må aldrig merges; bevar alle cacher/tempdata.
+
 # NYESTE CHECKPOINT – 2026-09-08 – 4.0.335 lokalt implementeret
 
 WAM-helkædeauditen er nu omsat til én samlet 4.0.335-pakke: valid cache bevares, kun konkret ugyldig bølgerække salvages, ny tuple erstatter atomisk, exact multi-run-rækker accepteres uden cross-run interpolation, WAM-resume kræver exact asset/cacheproof, Feggesund bruger separat direct/proxy-gate, og currentfallback gemmer progression før den hårde WAM-slutgate. Syntaks, 32 validator-tests, 24 producenttests og to Node-workflowtests er grønne. Exact-head CI, merge, main-oneoff, fulde gates og offentlig cutover er åbne. Workflows er deaktiveret; Candidate G er offentlig. Sol / Ekstra høj er passende til release/CI/runtime.

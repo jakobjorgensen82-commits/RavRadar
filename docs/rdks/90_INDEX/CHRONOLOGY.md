@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-09 – 4.0.337 tabsfri cache og launchgrænse
+
+- Astra-helkædeauditen fandt decoderdrift, globalt prooftab, source-dictionary-fejl, forkert kandidatbinding og unødigt legacy-mellemtrin. De forhold er nu samlet implementeret lokalt med målrettede grønne tests.
+- Ejeren godkendte én 4.0.337-first-cutover-undtagelse: eksakt succesfuld komplet main-oneoff, højst 50 MB privat archive, eksisterende storage/checkpointgrænser og uændrede integrity/privacy/readbackgates.
+- Legacy cutover kræver nu det konkrete oneoff-run-id og den genfundne forseglede cache; en manglende eller fejlende producent kan ikke erstattes af en ny ubundet hentning.
+- Undtagelsen dækker ikke almindelig højfrekvent drift. Cachetransportmigration uden nulstilling er registreret som P0 efter launch og før normal cron/watchdog.
+- Candidate G er fortsat offentlig. Exact production-sized codecprøve, version, exact-head, merge, main-oneoff, fulde gates og offentlig modelaktivering er åbne.
+
 # NYESTE CHECKPOINT – 2026-09-08 – 4.0.336 kompakt WAM og tværgående sourceproof
 
 - DMI/WAM-cachen skrives kompakt og atomisk på alle persisted veje; pretty-JSON-udvidelsen er fjernet uden at ændre den hårde 256 MiB-validator. Telemetri er aggregate-only.

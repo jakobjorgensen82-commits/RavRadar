@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   PRIVATE_RUNTIME_CAPACITY_POLICY,
+  PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY,
   PRIVATE_RUNTIME_CONTRACT_FILES,
   PRIVATE_RUNTIME_FILES,
   buildPrivateRuntimeCreateSpec,
@@ -49,6 +50,7 @@ try {
     if (descriptor.id === 'dmi-bulk-cache') value = `${JSON.stringify({
       schemaVersion: 2,
       refreshStatus: 'complete',
+      zones: {},
       runs: {
         dkss_idw: { referenceTime: '2026-08-29T06:00:00.000Z' },
         wam_dw: { referenceTime: '2026-08-29T06:00:00.000Z' },
@@ -126,6 +128,36 @@ try {
   assert.equal(JSON.stringify(preflightState).includes('coordinates'), false);
   assert.equal(JSON.stringify(preflightState).includes('currentUMps'), false);
 
+  const candidateDmiPath = path.join(repository, '.cache', 'candidate-dmi.json');
+  await fs.mkdir(path.dirname(candidateDmiPath), { recursive: true });
+  await fs.writeFile(candidateDmiPath, JSON.stringify({
+    schemaVersion: 2,
+    refreshStatus: 'partial',
+    zones: {},
+    runs: {
+      dkss_idw: { referenceTime: '2026-08-29T09:00:00.000Z' },
+    },
+  }) + '\n');
+  const candidateSpec = await buildPrivateRuntimeCreateSpec({
+    repositoryRoot: repository,
+    dmiBulkPath: '.cache/candidate-dmi.json',
+  });
+  assert.equal(
+    candidateSpec.files.find(file => file.id === 'dmi-bulk-cache')?.sourcePath,
+    candidateDmiPath,
+  );
+  assert.equal(
+    candidateSpec.files.find(file => file.id === 'dmi-bulk-cache')?.relativePath,
+    'data/live/dmi-bulk-cache.json',
+  );
+  const candidatePreflight = await buildPrivateRuntimePreflightState({
+    repositoryRoot: repository,
+    dmiBulkPath: '.cache/candidate-dmi.json',
+  });
+  assert.deepEqual(candidatePreflight.dmiRuns, {
+    dkss_idw: '2026-08-29T09:00:00.000Z',
+  });
+
   const capacityRoot = path.join(temp, 'private', 'capacity');
   const capacityBundle = path.join(capacityRoot, 'bundle');
   const capacityCheckpoint = path.join(
@@ -185,6 +217,11 @@ try {
   assert.equal(capacity.incrementalGate.scope, 'INCREMENTAL_PRIVATE_RUNTIME_ONLY');
   assert.equal(capacity.incrementalGate.status, 'WITHIN_INCREMENTAL_SIZE_BOUNDS');
   assert.equal(capacity.incrementalGate.fullCutoverCapacityEvaluated, false);
+  assert.equal(capacity.firstCutoverException.status, 'NOT_REQUESTED');
+  assert.equal(capacity.firstCutoverException.eligible, false);
+  assert.equal(capacity.firstCutoverException.recurringAutomaticCadenceEligible, false);
+  assert.equal(capacity.firstCutoverException.cacheTransportMigrationRequired, true);
+  assert.equal(capacity.firstCutoverException.existingCacheResetRequired, false);
   assert.equal(capacity.measurements.rawPayloadBytes > 0, true);
   assert.equal(capacity.measurements.archiveObjectBytes > 0, true);
   assert.equal(capacity.measurements.checkpointAvailable, true);
@@ -267,6 +304,36 @@ try {
   });
   assert.equal(capacity.controls.supabaseRequestAttempted, false);
   assert.equal(capacity.controls.privatePayloadArtifactUploaded, false);
+  await assert.rejects(fs.lstat(capacityBundle), error => error?.code === 'ENOENT');
+
+  const approvedCapacity = await buildPrivateRuntimeIncrementalSizeDryRun({
+    privateRoot: capacityRoot,
+    bundlePath: capacityBundle,
+    repositoryRoot: repository,
+    sourceHead: 'a'.repeat(40),
+    now: conditions.generatedAt,
+    firstCutoverExceptionDecision:
+      PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.invocationMarker,
+  });
+  assert.equal(
+    approvedCapacity.firstCutoverException.status,
+    'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
+  );
+  assert.equal(approvedCapacity.firstCutoverException.eligible, true);
+  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.337');
+  assert.equal(
+    approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
+    50_000_000,
+  );
+  assert.equal(approvedCapacity.firstCutoverException.archiveWithinBound, true);
+  assert.equal(
+    approvedCapacity.firstCutoverException.exactSuccessfulOneoffAndHandoffRequired,
+    true,
+  );
+  assert.equal(
+    approvedCapacity.firstCutoverException.privateRuntimeIntegrityPrivacyAndReadbackGatesRemainRequired,
+    true,
+  );
   await assert.rejects(fs.lstat(capacityBundle), error => error?.code === 'ENOENT');
 
   const quotaForUsableBytes = usableBytes => Number(
@@ -661,13 +728,21 @@ try {
   );
   for (const required of [
     'private-production-runtime-workflow.mjs incremental-size-dry-run',
+    '--dmi-bulk .cache/dmi-candidate-progress.json',
     '--source-head "$GITHUB_SHA"',
     '--runtime-audit "$RAVRADAR_PRIVATE_PREFLIGHT_REPORT"',
+    '--first-cutover-exception-decision APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
     'ravscore-private-runtime-incremental-size-safe.json',
-    'Require only conservative incremental private runtime size bounds',
+    'Require conservative bounds or the approved single first-cutover exception',
     '$report.kind == "RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN"',
     '$report.incrementalGate.scope == "INCREMENTAL_PRIVATE_RUNTIME_ONLY"',
     '$report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"',
+    '$report.incrementalGate.status == "EXCEEDS_INCREMENTAL_SIZE_BOUNDS"',
+    'DEC-0122-OWNER-APPROVAL-2026-09-09',
+    'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
+    '$report.firstCutoverException.recurringAutomaticCadenceEligible == false',
+    '$report.firstCutoverException.cacheTransportMigrationRequired == true',
+    '$report.firstCutoverException.existingCacheResetRequired == false',
     '$report.incrementalGate.fullCutoverCapacityEvaluated == false',
     '$report.egress.reservePercent == 30',
     '$report.egress.usableBudgetPercent == 70',
@@ -705,7 +780,7 @@ try {
     'projectedMonthlyNormalBytes',
     'projectedMonthlyRollbackBytes',
     'Live Supabase egress/database before-and-after measurements',
-    'all other unified egress remain mandatory before cutover',
+    'all other unified egress remain mandatory before recurring operation',
   ]) {
     assert.equal(capacityWorkflowSection.includes(required), true,
       `operational capacity preflight must include ${required}`);

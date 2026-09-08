@@ -1,3 +1,28 @@
+# NYESTE HELHEDSFUND – 2026-09-09 – 4.0.337
+
+- **ISSUE-DMI-CODEC-INTEGRATION – LOKALT RETTET P0 / PRODUKTIONSSKALA ÅBEN:** De fem reproducerede codecfejl er rettet med fælles to-pass Python/Node-implementation og alle kendte produktions-I/O-veje. Fuld exact-codec-kørsel på den produktionstore cache mangler.
+- **ISSUE-DMI-DECODER-PROOF-LOSS – LOKALT RETTET P0 / RUNTIME ÅBEN:** ecCodes er fastlåst; den snævre 2.48.0/2.48.2-currentkompatibilitet, N−1-salvage, same-asset-afvisning og komponentvis atomisk donorbackfill er måltestet. Main-runtime mangler.
+- **ISSUE-LEGACY-FIRST-CUTOVER-INTERMEDIATE – LOKALT RETTET P0 / CUTOVER ÅBEN:** Den fastlåste offentlige Candidate G-kilde kan føres direkte til integreret runtime med HISTORY_INCOMPLETE/BUILDING_MEASURED_ONLY; et moderne Candidate G-mellemartifact er ikke længere nødvendigt.
+- **ISSUE-FIRST-CUTOVER-PRIVATE-EGRESS – SNÆVER EJERUNDTAGELSE / IKKE LØST FOR DRIFT:** Én eksakt grøn komplet oneoff må bruges ved archive højst 50 MB og eksisterende storage/checkpoint/privacy/readbackkrav. Det generelle månedlige egressproblem er fortsat åbent.
+- **ISSUE-CACHE-TRANSPORT-MIGRATION – ÅBEN P0 FØR HØJFREKVENT DRIFT:** Byg ved siden af eksisterende cache, skyggeverificér indhold og hashes, skift atomisk og behold rollback. Ingen nulstilling. Normal højfrekvent cron/watchdog forbliver deaktiveret indtil positivt budget-/driftsbevis.
+- **ISSUE-4.0.337-END-TO-END – ÅBEN P0:** Exact-head, merge, komplet main-oneoff, fuld produktion og offentlig integreret model mangler. Candidate G er offentlig.
+
+# NYESTE CHECKPOINT – 2026-09-08 – ekstra Astra-audit: rettelsesplan udvidet, produktion uændret
+
+[Den ekstra Astra-helhedsgennemgang](../../ai/WEATHER_FULL_CHAIN_REVIEW_2026-09-08.md) supersederer den tidligere implementeringsplan nedenfor. Main er senest verificeret som 4.0.336 `bf471981`; Candidate G er senest verificerede offentlige model. Audit er afsluttet, men .337 er IKKE implementeret, sourcegated eller releaseklar. Eksisterende untracked codec-/compatibilityudkast er bevaret; codecudkastet er konkret NO-GO, ikke en færdig tabsfri implementation. Ingen nye GitHub-runs, providerkald, cachewrites, merge eller deploy under denne ekstra audit.
+
+Nye verificerede forhold: én ugyldig currentrække kan fjerne alle retained proofs; samme asset/gammel+ny decoder har en proofkonfliktvej; faktisk production recovery er ikke RAM-bevist; codecudkastet har fem reproducerede integritets-/valideringsfejl; normal handoff mangler samlet bootstrap/WAM/statevej; Fase A kan genindføre 48h-historikblokering; privat archive har forkert DMI-inputbinding, stram kodehash/72h-restore og et uløst transportbudget. Oneoff er desuden legacybundet efter launch. Se auditens skelnen mellem bevist adfærd, betingede risici og umålte liveforhold.
+
+Næste model: Sol / Ekstra høj. Før release: korrigér den samlede plan, mål rigtig privat payload og forklar/registrér den foreslåede snævre DEC-0114-ændring før implementering. Genattestér om muligt seneste caches eksisterende værdier fra originale arkivproofs før større donorunion. Kræv målrettede kontrakttests og én produktionstor isoleret I/O-/recoveryprøve, ikke flere blinde vejrhentninger. DMI→Open-Meteo-overlap er endnu IKKE bevist: de to senere diagnoseforsøg fejlede ved checkpointvalidering. Ingen nearest-policyændring eller launchløfte. Bevar alle cacher og den isolerede diagnoseworktree.
+
+# HISTORISK AUDITCHECKPOINT – 2026-09-08 – første Astra-genbrugsanalyse
+
+Se [Astra-helkædeaudit med eksakte runbeviser](../../ai/WEATHER_CACHE_ASTRA_AUDIT_2026-09-08.md). 4.0.336 er exact-head-verificeret i `34249645563` og merged som `bf471981` via PR #270; nedenstående manglende-CI-formuleringer er historiske. Normalrun `34252960481` stoppede med 1.891 Open-Meteo-rester og uden handoff/deploy/cutover.
+
+Read-only forensics `34261357677` og `34262628767` beviser, at native ecCodes 2.48.0→2.48.2 gjorde gamle proofs utilgængelige uden at slette rækkerne. Den nyere bevarede donor genvaliderer 62.865 par ved 16 UTC; seneste 4.200-par-cache ligger indenfor samme union. En tabsfri source-dictionary-prototype genskaber hele filen identisk og reducerer 760,49MB til 94,15MB. Dette er kun diagnosticeret/prototypetestet, IKKE implementeret 4.0.337 eller genoprettet produktion.
+
+Åbne P0-forhold: retained-compatibility/pinning og partial-donor-union; fælles tabsfri I/O gennem alle readers/validators; manglende normal-handoff-native-WAM-binding; faktisk privat transport-/Supabasekapacitet (17,09MB gzip for kodet DMI alene). Mål først recovered-DMI-overlap mod OM's 1.891 rester før eventuel ny grid-selection-policy. Ingen kilder, geometri, scoreformel eller gatekrav ændres ved dette checkpoint. Candidate G er offentlig; source-/release-/kapacitetsgates må ikke omgås. Næste model: Sol / Ekstra høj til afgrænset implementering. Diagnosebranchen må ikke merges.
+
 # NYESTE HELHEDSFUND – 2026-09-08 – 4.0.336 kompakt cache og to allowlistede producenter
 
 - **ISSUE-WAM-PRETTY-JSON-RAW-BYTE-EXPANSION – LOKALT RETTET P1 / RUNTIME ÅBENT:** Oneoff viste formatteringsbetinget cachevækst. Alle cachewrites er nu kompakte/atomiske; den hårde 256 MiB-validator består med kun aggregeret byte-telemetri.

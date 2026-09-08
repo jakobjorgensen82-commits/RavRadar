@@ -1276,15 +1276,11 @@ export function prepareIntegratedOperationalReturn({
   initialCutoverRequested = false,
   initialCutoverConfirmation,
 } = {}) {
-  if (currentRow === null || currentRow === undefined) {
-    throw new Error(
-      'Initial integrated cutover requires a centrally active modern Candidate G source',
-    );
-  }
   const currentResolved = resolveOperationalRavScoreModel(currentRow, {
     profileRow: currentProfileRow,
   });
   const initialCutover = currentResolved.initialCutoverRequired === true;
+  const sourceKind = currentResolved.model;
   if (typeof initialCutoverRequested !== 'boolean') {
     throw new Error('Integrated first cutover request must be an exact boolean');
   }
@@ -1304,23 +1300,35 @@ export function prepareIntegratedOperationalReturn({
       ? 'Initial integrated cutover requires exact manual-dispatch authorization'
       : 'Integrated return requires exact manual-dispatch authorization');
   }
-  if (!Number.isSafeInteger(Number(currentRow.version)) || Number(currentRow.version) < 1) {
+  const centralExpectedVersion = Number(currentRow?.version ?? 0);
+  if (!Number.isSafeInteger(centralExpectedVersion)
+    || (currentRow === null || currentRow === undefined
+      ? centralExpectedVersion !== 0
+      : centralExpectedVersion < 1)) {
     throw new Error('Integrated return requires the exact active central version');
   }
-  if (currentResolved.model !== 'candidate-g') {
-    throw new Error('Integrated return may only be prepared from active modern Candidate G');
+  if ((!initialCutover && sourceKind !== 'candidate-g')
+    || (initialCutover && !['candidate-g', 'legacy-candidate-g'].includes(sourceKind))) {
+    throw new Error('Integrated return may only be prepared from an attested Candidate G source');
   }
-  if (initialCutover
-    && (!sameBinding(currentResolved.modelBinding, candidateModelBinding())
+  const modernInitialSourceInvalid = initialCutover
+    && sourceKind === 'candidate-g'
+    && ((currentRow === null || currentRow === undefined)
+      || !sameBinding(currentResolved.modelBinding, candidateModelBinding())
       || currentResolved.legacySourceRequired !== false
       || currentResolved.sourceHead !== sourceHead
       || !SHA256_PATTERN.test(
         String(currentResolved.activeImplementationClosureSha256 ?? ''),
       )
       || currentResolved.activeImplementationClosureSha256
-        !== sourceImplementationClosureSha256)) {
+        !== sourceImplementationClosureSha256);
+  const legacyInitialSourceInvalid = initialCutover
+    && sourceKind === 'legacy-candidate-g'
+    && (currentResolved.legacySourceRequired !== true
+      || !sameBinding(currentResolved.modelBinding, legacyCandidateGControllerBinding()));
+  if (modernInitialSourceInvalid || legacyInitialSourceInvalid) {
     throw new Error(
-      'Initial integrated cutover requires current same-head Candidate G source closure parity',
+      'Initial integrated cutover requires current same-head Candidate G source closure parity or exact legacy Candidate G attestation',
     );
   }
   assertIntegratedReadiness(readiness, sourceHead);
@@ -1345,13 +1353,15 @@ export function prepareIntegratedOperationalReturn({
     sourceHead,
     datasetId: publicManifest.datasetId,
     productionReferenceAt: publicManifest.productionReferenceAt,
-    centralExpectedVersion: Number(currentRow.version),
+    centralExpectedVersion,
     sourceModelBinding: structuredClone(currentResolved.modelBinding),
     activeModelBinding: integratedModelBinding(),
-    legacySourceRequired: false,
+    legacySourceRequired: sourceKind === 'legacy-candidate-g',
     sourceImplementationClosureSha256,
     requestedImplementationClosureSha256,
-    candidateActivationDocumentSha256: sha256(currentRow.payload),
+    candidateActivationDocumentSha256: sha256(
+      currentRow?.payload ?? currentProfileRow?.payload,
+    ),
     integratedReadinessSha256: sha256(readiness),
     integratedPublicAuditSha256: sha256(publicAudit),
     integratedManifestSha256: sha256(publicManifest),
@@ -1364,7 +1374,7 @@ export function prepareIntegratedOperationalReturn({
   const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
   assertIntegratedReturnPlan(plan, {
     expectedSourceHead: sourceHead,
-    expectedCentralVersion: Number(currentRow.version),
+    expectedCentralVersion: centralExpectedVersion,
     currentRow,
     currentProfileRow,
     readiness,

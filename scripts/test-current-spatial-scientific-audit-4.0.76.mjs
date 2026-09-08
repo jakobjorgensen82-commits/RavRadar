@@ -13,6 +13,7 @@ import {
   dmiExpectedIdentityForPart,
   verifiedBulkCurrent,
 } from './lib/ravscore-production-adapters.mjs';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 
 const bulkPath=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
 const [zones,conditions,bulkBytes,publicDoc,publicDetails,coastalParts,pilotControl,pilotHistory]=await Promise.all([
@@ -25,7 +26,10 @@ const [zones,conditions,bulkBytes,publicDoc,publicDetails,coastalParts,pilotCont
   fs.readFile('data/current-live-pilot-control.json','utf8').then(JSON.parse),
   fs.readFile('data/live/current-pilot-history.json','utf8').then(JSON.parse).catch(()=>null)
 ]);
-const bulk=JSON.parse(bulkBytes.toString('utf8'));
+// Bevar filbytes til operational-closure-hashen, men læs selve dokumentet via
+// den fælles codec. Dermed auditerer vi præcis samme logiske DMI-dokument,
+// uanset om cachen endnu er legacy-JSON eller den kompakte storage-wrapper.
+const bulk=await readDmiBulkDocument(bulkPath);
 const bulkFileSha256=`sha256:${crypto.createHash('sha256').update(bulkBytes).digest('hex')}`;
 const norm=v=>((Number(v)%360)+360)%360;
 const diff=(a,b)=>Math.abs(((norm(a)-norm(b)+540)%360)-180);

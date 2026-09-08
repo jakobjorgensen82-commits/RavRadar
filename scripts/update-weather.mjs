@@ -27,6 +27,7 @@ import {
 } from './lib/dmi-forecast-store.mjs';
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
@@ -970,7 +971,7 @@ async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
 
 async function readDmiBulkCache(cachePath = DMI_BULK_CACHE_PATH) {
   try {
-    const parsed = JSON.parse(await fs.readFile(cachePath, 'utf8'));
+    const parsed = await readDmiBulkDocument(cachePath, { optional: true });
     return [1, 2].includes(parsed?.schemaVersion) && parsed?.zones ? parsed : null;
   } catch {
     return null;

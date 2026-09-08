@@ -683,7 +683,7 @@ assert.ok(!oneoffActiveLegacyBootstrap.includes('restore-keys:'), 'Engangskørsl
 const oneoffActiveMaterialize = operationalStep('Strictly bind and materialize the active DMI generation');
 for (const marker of [
   'source_path=.cache/dmi-active-complete.json',
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"',
   'python scripts/build-copernicus-target-registry.py',
   '--require-strict-dmi-ledger',
   'cp "$source_path" .cache/dmi-active-complete.json.tmp',
@@ -741,7 +741,8 @@ for (const marker of [
 const oneoffActiveSnapshot = operationalStep('Strictly snapshot only a promoted READY DMI generation');
 for (const marker of [
   "if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  '--cache data/live/dmi-bulk-cache.json',
   '--require-strict-dmi-ledger',
   '--at "${{ steps.operational-target.outputs.target_hour }}"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
@@ -1450,7 +1451,7 @@ if (/key: dmi-zone-cache-v1-Linux-\d{4}-W\d{2}-\d+-\d+/.test(text + operationalP
 }
 const normalActiveMaterialize = text.slice(positions.dmiActiveMaterialize, positions.dmiCandidateRestore);
 for (const marker of [
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"',
   'python scripts/build-copernicus-target-registry.py',
   '--require-strict-dmi-ledger',
   'cp "$source_path" .cache/dmi-active-complete.json.tmp',
@@ -1499,7 +1500,8 @@ assert.ok(!normalCandidateSave.includes('dmi-zone-active-v1-'), 'Delvis normal k
 const normalActiveSnapshot = text.slice(positions.dmiActiveSnapshot, positions.dmiActiveSave);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  '--cache data/live/dmi-bulk-cache.json',
   '--require-strict-dmi-ledger',
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
@@ -1934,9 +1936,34 @@ for (const step of [
 if (privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime')) {
   throw new Error('Det private produktionsbundle må ikke gendannes i repositoryets cachetræ.');
 }
+if (!privateRuntimeRestoreSection.includes("!(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')")) {
+  throw new Error('Legacy first cutover skal ignorere tidligere private runtime-generationer og bruge den attesterede bootstrap.');
+}
 if (text.includes('private-production-runtime-v1-')
   || /actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(text)) {
   throw new Error('Det fulde private runtimebundle må aldrig lagres i GitHub Actions cache.');
+}
+const legacyOneoffRequirementStart = text.indexOf(
+  'name: Require the exact successful oneoff for approved legacy first cutover',
+);
+const legacyOneoffRequirementEnd = text.indexOf(
+  '\n      - name:',
+  legacyOneoffRequirementStart + 1,
+);
+const legacyOneoffRequirementSection = text.slice(
+  legacyOneoffRequirementStart,
+  legacyOneoffRequirementEnd,
+);
+for (const marker of [
+  "steps.operational-action.outputs.action == 'integrated-cutover'",
+  "steps.operational-model.outputs.legacy_source_required == 'true'",
+  'steps.weather-source-handoff-resolve.outcome }}" = "success"',
+  'steps.weather-source-handoff-cache.outcome }}" = "success"',
+  'steps.weather-source-handoff.outputs.reused }}" = "true"',
+]) {
+  if (!legacyOneoffRequirementSection.includes(marker)) {
+    throw new Error('Legacy first cutover mangler exact oneoff-binding: ' + marker);
+  }
 }
 
 const continuationRestoreSection = text.slice(positions.continuationRestore, positions.privateRuntimeExpected);
@@ -1945,7 +1972,7 @@ for (const marker of [
   'path: .cache/ravscore-continuation-checkpoint',
   'ravscore-continuation-schema6-v2-',
   "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -2041,14 +2068,16 @@ for (const marker of [
   'legacy-candidate-g)',
   'test "$INITIAL_CUTOVER_REQUIRED" = "true"',
   'test "$LEGACY_SOURCE_REQUIRED" = "true"',
-  'test "$FIRST_CUTOVER_REQUESTED" != "true"',
+  'if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then',
+  'action="integrated-cutover"',
+  'else',
   'action="candidate-legacy-maintenance"',
   "steps.operational-action.outputs.action == 'candidate-legacy-maintenance'",
   'node scripts/verify-legacy-candidate-g-source.mjs attest',
   '--source-implementation-closure-sha256 "$source_closure_sha256"',
   '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
 ]) {
-  if (!buildWorkflow.includes(marker)) throw new Error(`Tofaset legacy→current Candidate G-build mangler ${marker}`);
+  if (!buildWorkflow.includes(marker)) throw new Error(`Direkte attesteret legacy→integrated first cutover mangler ${marker}`);
 }
 for (const marker of [
   'node scripts/verify-legacy-candidate-g-source.mjs verify',

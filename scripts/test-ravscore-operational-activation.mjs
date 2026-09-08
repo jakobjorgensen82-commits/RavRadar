@@ -2226,7 +2226,7 @@ for (const field of ['returnPlanSha256', 'integratedReadinessSha256',
     `ordinary pre-cutover maintenance must retain genuine ${field}`);
 }
 
-assert.throws(() => prepareIntegratedOperationalReturn({
+const initialPlan = prepareIntegratedOperationalReturn({
   currentRow: null,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2241,21 +2241,15 @@ assert.throws(() => prepareIntegratedOperationalReturn({
   initialCutoverRequested: true,
   initialCutoverConfirmation:
     RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
-}), /centrally active modern Candidate G source/);
-
-// These plans represent immutable pre-lock artifacts. Their transition and
-// reconciliation paths must remain usable even though new legacy creation is closed.
-const initialPlan = sealedHistoricalInitialPlan({
-  currentProfileRow: legacyProfileRow,
-  sourceModelBinding: legacyCandidateGControllerBinding(),
-  publicManifest: integratedH1,
-  publicAudit: integratedH1Audit,
-  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
-  legacySourceRequired: true,
 });
+
+// The exact public legacy Candidate G profile is a valid, explicitly attested
+// source for first cutover; it does not need an intermediate modern Candidate G.
 assert.equal(initialPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
 assert.deepEqual(initialPlan.sourceModelBinding, legacyCandidateGControllerBinding());
+assert.equal(initialPlan.legacySourceRequired, true);
+assert.equal(initialPlan.centralExpectedVersion, 0);
 const initialWarmupPlan = sealedHistoricalInitialPlan({
   currentProfileRow: legacyProfileRow,
   sourceModelBinding: legacyCandidateGControllerBinding(),
@@ -2469,7 +2463,7 @@ assert.equal(resolvedLegacyActive.initialCutoverRequired, true);
 assert.equal(resolvedLegacyActive.legacySourceRequired, true);
 assert.equal(Object.hasOwn(resolvedLegacyActive, 'normalizationRequired'), false,
   'the removed normalization protocol must not survive as a resolver output');
-assert.throws(() => prepareIntegratedOperationalReturn({
+const legacyRowInitialPlan = prepareIntegratedOperationalReturn({
   currentRow: legacyActiveRow,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2484,7 +2478,10 @@ assert.throws(() => prepareIntegratedOperationalReturn({
   initialCutoverRequested: true,
   initialCutoverConfirmation:
     RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
-}), /active modern Candidate G/);
+});
+assert.equal(legacyRowInitialPlan.legacySourceRequired, true);
+assert.equal(legacyRowInitialPlan.centralExpectedVersion, legacyActiveRow.version);
+assert.deepEqual(legacyRowInitialPlan.sourceModelBinding, legacyCandidateGControllerBinding());
 
 // A normal schema-4 Candidate G weather refresh may run while the first
 // integrated cutover is still pending, but it must preserve that durable

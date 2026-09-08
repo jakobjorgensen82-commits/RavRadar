@@ -13,6 +13,10 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from .dmi_current_processing_compatibility import (
+    retained_current_processing_signature_compatible,
+)
+
 from .dmi_wind_reference import WIND_VECTOR_VERSION, WIND_VECTOR_REFERENCE, WIND_VECTOR_TRANSFORMS
 
 
@@ -1126,6 +1130,161 @@ def canonical_verified_part_current_attestation(
     }
 
 
+def canonical_pre_sanitize_current_identity_attestation(
+    document: Any,
+    targets: Any,
+    range_start: Any,
+    range_end: Any,
+    allowed_source_assets: Any = None,
+    allowed_retained_pair_sources: Any = None,
+) -> dict[str, Any]:
+    """Rebuild only the persisted part/time/source identity before sanitation.
+
+    This recovery-only view never makes a weather row usable. It requires the
+    exact target set, hour, finite U/V tuple and canonical immutable source
+    asset, but ignores other source metadata that the normal row validator may
+    remove. Its consumer must match the persisted attestation digest first and
+    then apply the normal strict validator to every surviving row.
+    """
+    start, end = _exact_hour_bounds(range_start, range_end)
+    if not isinstance(targets, (list, tuple)):
+        raise ValueError("Pre-sanitize current targets must be an array")
+    target_ids: list[str] = []
+    for target in targets:
+        if not isinstance(target, dict):
+            raise ValueError("Pre-sanitize current target is malformed")
+        part_id = str(target.get("partId") or "").strip()
+        if (
+            not part_id
+            or not str(target.get("parentZoneId") or "").strip()
+            or _finite_point(target.get("waterPoint")) is None
+        ):
+            raise ValueError("Pre-sanitize current target identity is invalid")
+        target_ids.append(part_id)
+    if len(set(target_ids)) != len(target_ids):
+        raise ValueError("Pre-sanitize current target ids are not unique")
+    zones = document.get("zones") if isinstance(document, dict) else None
+    expected_zone_ids = {f"PART::{part_id}" for part_id in target_ids}
+    actual_zone_ids = {
+        str(zone_id)
+        for zone_id in (zones or {})
+        if str(zone_id).startswith("PART::")
+    } if isinstance(zones, dict) else set()
+    if actual_zone_ids != expected_zone_ids:
+        raise ValueError("Pre-sanitize current target set is incomplete")
+
+    allowed_assets = None
+    if allowed_source_assets is not None:
+        if not isinstance(allowed_source_assets, (list, tuple)):
+            raise ValueError("Pre-sanitize current assets are malformed")
+        normalized_assets = [
+            canonical_current_source_asset(raw) for raw in allowed_source_assets
+        ]
+        if any(source is None for source in normalized_assets):
+            raise ValueError("Pre-sanitize current asset identity is invalid")
+        allowed_assets = {
+            _canonical_json(source) for source in normalized_assets
+            if source is not None
+        }
+    allowed_retained = None
+    if allowed_retained_pair_sources is not None:
+        if not isinstance(allowed_retained_pair_sources, (list, tuple)):
+            raise ValueError("Pre-sanitize retained current rows are malformed")
+        allowed_retained = set()
+        for raw in allowed_retained_pair_sources:
+            if not isinstance(raw, dict):
+                raise ValueError("Pre-sanitize retained current row is malformed")
+            part_id = str(raw.get("partId") or "").strip()
+            valid_time = canonical_time(raw.get("validTime"))
+            source = canonical_current_source_asset(raw.get("source"))
+            if (
+                not part_id
+                or valid_time is None
+                or source is None
+                or source["validTime"] != valid_time
+            ):
+                raise ValueError("Pre-sanitize retained current identity is invalid")
+            allowed_retained.add((part_id, valid_time, _canonical_json(source)))
+        if len(allowed_retained) != len(allowed_retained_pair_sources):
+            raise ValueError("Pre-sanitize retained current identity is duplicated")
+
+    verified_pairs: list[dict[str, str]] = []
+    verified_pair_sources: list[dict[str, Any]] = []
+    source_times: set[tuple[str, str, str]] = set()
+    for part_id in sorted(target_ids):
+        hourly = ((zones or {}).get(f"PART::{part_id}") or {}).get("hourly")
+        if not isinstance(hourly, dict):
+            continue
+        for raw_time, row in hourly.items():
+            valid_time = canonical_time(raw_time)
+            if (
+                valid_time is None
+                or raw_time != valid_time
+                or not isinstance(row, dict)
+                or canonical_time(row.get("time")) != valid_time
+                or not start <= datetime.fromisoformat(
+                    valid_time.replace("Z", "+00:00")
+                ) <= end
+                or any(
+                    isinstance(row.get(field), bool)
+                    or not isinstance(row.get(field), (int, float))
+                    or not math.isfinite(float(row[field]))
+                    for field in ("current-u", "current-v")
+                )
+            ):
+                continue
+            source = canonical_current_source_asset(
+                ((row.get("sources") or {}).get("current"))
+            )
+            if source is None or source["validTime"] != valid_time:
+                continue
+            source_key = _canonical_json(source)
+            if (
+                allowed_assets is not None or allowed_retained is not None
+            ) and not (
+                allowed_assets is not None and source_key in allowed_assets
+                or allowed_retained is not None
+                and (part_id, valid_time, source_key) in allowed_retained
+            ):
+                continue
+            verified_pairs.append({"partId": part_id, "validTime": valid_time})
+            verified_pair_sources.append({
+                "partId": part_id, "validTime": valid_time, "source": source,
+            })
+            source_times.add((
+                source["collection"], source["modelRun"], valid_time,
+            ))
+    verified_pairs.sort(key=lambda row: (row["validTime"], row["partId"]))
+    verified_pair_sources.sort(
+        key=lambda row: (row["validTime"], row["partId"])
+    )
+    verified_sources = [
+        {"collection": collection, "modelRun": model_run, "validTime": valid_time}
+        for collection, model_run, valid_time in sorted(
+            source_times, key=lambda item: (item[2], item[0], item[1]),
+        )
+    ]
+    return {
+        "schemaVersion": 2,
+        "contractId": CURRENT_ATTESTATION_CONTRACT_ID,
+        "rangeStartAt": canonical_time(start),
+        "rangeEndAt": canonical_time(end),
+        "targetCount": len(target_ids),
+        "verifiedPairCount": len(verified_pairs),
+        "verifiedPairsSha256": part_time_pairs_sha256(verified_pairs),
+        "verifiedPairSourcesSha256": current_pair_sources_sha256(
+            verified_pair_sources
+        ),
+        "verifiedSourceTimeCount": len(verified_sources),
+        "verifiedSourceTimesSha256": verified_source_times_sha256(
+            verified_sources
+        ),
+        "verifiedPairs": verified_pairs,
+        "verifiedPairSources": verified_pair_sources,
+        "verifiedSourceTimes": verified_sources,
+    }
+
+
 def sanitized_current_attestation(attestation: Any) -> dict[str, Any]:
     """Drop internal pair lists while retaining exact digest/count evidence."""
     if not isinstance(attestation, dict):
@@ -1701,8 +1860,9 @@ def _validate_current_operational_ledger(
     for proof in retained_proofs:
         source = proof["sourceAsset"]
         collection = source["collection"]
-        if proof["processingSignature"] != processing_signature_by_collection.get(
-            collection
+        if not retained_current_processing_signature_compatible(
+            proof["processingSignature"],
+            processing_signature_by_collection.get(collection),
         ):
             raise ValueError("DMI retained current processing semantics mismatch")
         selected_model_run = model_run_by_collection.get(collection)

@@ -45,6 +45,7 @@ from lib.dmi_native_provenance import (
     complete_native_source_for_hour,
     current_attestation_authorization_from_operational_ledger,
 )
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
 from lib.open_meteo_current_fallback import (
     LIVE_RECORD_PROJECTION_CONTRACT_ID as OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID,
@@ -640,7 +641,12 @@ def main() -> int:
     targets_list = targets_from_registry(args.targets)
     targets = {row["partId"]: row for row in targets_list}
     fingerprint = target_fingerprint(targets_list)
-    dmi = read_json(args.dmi)
+    try:
+        dmi = read_dmi_bulk_document(args.dmi)
+    except (OSError, ValueError) as error:
+        raise RuntimeError(
+            f"Invalid live-pilot JSON in {args.dmi.name}: {error}"
+        ) from None
     dmi_current_input_sha256 = file_sha256(args.dmi)
     _dmi_parts, dmi_times = valid_dmi_parts(dmi, targets)
     coverage_reference = now.replace(minute=0, second=0, microsecond=0)

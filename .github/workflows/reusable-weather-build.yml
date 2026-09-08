@@ -245,6 +245,7 @@ jobs:
           ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: ${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}
           PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
           PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
+          WEATHER_HANDOFF_RUN_ID: ${{ inputs.ravscore_integrated_weather_handoff_run_id }}
           ROLLBACK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_mode || 'none' }}
           ROLLBACK_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_confirmation || '' }}
           FIRST_CUTOVER_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_first_cutover || false }}
@@ -360,8 +361,15 @@ jobs:
               test "$LEGACY_SOURCE_REQUIRED" = "true"
               test "$ROLLBACK_MODE" = "none"
               test "$RETURN_REQUESTED" != "true"
-              test "$FIRST_CUTOVER_REQUESTED" != "true"
-              action="candidate-legacy-maintenance"
+              if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
+                if ! [[ "$WEATHER_HANDOFF_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+                  echo "Legacy first cutover requires one exact successful verified oneoff run."
+                  exit 1
+                fi
+                action="integrated-cutover"
+              else
+                action="candidate-legacy-maintenance"
+              fi
               ;;
             *) echo "Unknown operational RavScore model; refusing production."; exit 1 ;;
           esac
@@ -408,7 +416,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -523,8 +531,16 @@ jobs:
             --github-output "$GITHUB_OUTPUT" \
             --github-env "$GITHUB_ENV"
 
+      - name: Require the exact successful oneoff for approved legacy first cutover
+        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'
+        shell: bash
+        run: |
+          test "${{ steps.weather-source-handoff-resolve.outcome }}" = "success"
+          test "${{ steps.weather-source-handoff-cache.outcome }}" = "success"
+          test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"
+
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -534,7 +550,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -551,7 +567,7 @@ jobs:
           --output .cache/private-production-runtime-expected.json
 
       - name: Restore newest compatible private runtime from protected storage
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         run: >-
           node scripts/protected-private-production-runtime.mjs
           --restore
@@ -638,7 +654,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -663,7 +679,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -877,8 +893,7 @@ jobs:
             source_path=data/live/dmi-bulk-cache.json
           fi
           test -s "$source_path"
-          reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
-          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
+          reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"
           python scripts/build-copernicus-target-registry.py \
             --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
@@ -945,7 +960,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1041,7 +1056,8 @@ jobs:
         run: |
           set -euo pipefail
           test -s data/live/dmi-bulk-cache.json
-          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
+          python scripts/check-dmi-bulk-operational-ready.py \
+            --cache data/live/dmi-bulk-cache.json
           python scripts/build-copernicus-target-registry.py \
             --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
@@ -1374,7 +1390,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.337 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1635,6 +1651,7 @@ jobs:
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-preflight
           --repository-root "$GITHUB_WORKSPACE"
+          --dmi-bulk .cache/dmi-candidate-progress.json
           --output .cache/weather-preflight-state/state.json
 
       - name: Save dataminimized weather preflight state
@@ -1649,6 +1666,7 @@ jobs:
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-spec
           --repository-root "$GITHUB_WORKSPACE"
+          --dmi-bulk .cache/dmi-candidate-progress.json
           --output .cache/private-production-runtime-create-spec.json
 
       - name: Create the next private production runtime bundle atomically

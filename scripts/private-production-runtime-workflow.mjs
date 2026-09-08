@@ -23,6 +23,7 @@ import {
 import {
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
 } from './ravscore-continuation-checkpoint.mjs';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 
 export const PRIVATE_RUNTIME_FILES = Object.freeze([
   Object.freeze({ id: 'full-conditions', relativePath: 'data/live/conditions.json' }),
@@ -64,8 +65,11 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/open_meteo_current_fallback.py',
     'scripts/lib/current_field_shadow.py',
     'scripts/lib/dmi_cache_migration.py',
+    'scripts/lib/dmi_bulk_storage.py',
     'scripts/lib/dmi_grid_vector.py',
     'scripts/lib/dmi_native_provenance.py',
+    'scripts/lib/dmi_current_processing_compatibility.py',
+    'scripts/lib/dmi-bulk-storage.mjs',
     'scripts/lib/coastal-point-staging-contract.mjs',
     'scripts/lib/ravscore-integrated-runtime.mjs',
     'scripts/lib/ravscore-recovery-replay.mjs',
@@ -130,6 +134,14 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
   checkpointFullRestoreEnvelopeBytesPerRead: 4 * 1024,
   checkpointBindingRestoresPerMonth: 60,
   checkpointRestoreScenariosPerMonth: Object.freeze([1, 31, 60, 1_860]),
+});
+
+export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
+  decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
+  releaseVersion: '4.0.337',
+  invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
+  scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
+  maximumArchiveObjectBytes: 50_000_000,
 });
 
 const PREFLIGHT_COLLECTIONS = Object.freeze([
@@ -291,6 +303,7 @@ function assertConditionsMetadata(document) {
 export async function buildPrivateRuntimeCreateSpec({
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   conditionsPath = 'data/live/conditions.json',
+  dmiBulkPath = 'data/live/dmi-bulk-cache.json',
 } = {}) {
   const root = path.resolve(repositoryRoot);
   const conditionsAbsolute = path.resolve(root, conditionsPath);
@@ -304,7 +317,9 @@ export async function buildPrivateRuntimeCreateSpec({
   const metadata = assertConditionsMetadata(conditions);
   const files = [];
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
-    const sourcePath = path.resolve(root, descriptor.relativePath);
+    const selectedPath = descriptor.id === 'dmi-bulk-cache'
+      ? dmiBulkPath : descriptor.relativePath;
+    const sourcePath = path.resolve(root, selectedPath);
     if (!inside(root, sourcePath)) throw new Error('Private runtime payload path escapes repository');
     const stat = await fs.lstat(sourcePath).catch(() => null);
     if (!stat?.isFile() || stat.isSymbolicLink()) {
@@ -652,6 +667,57 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
   };
 }
 
+export function buildPrivateRuntimeFirstCutoverException({
+  archiveObjectBytes,
+  projection,
+  decisionMarker,
+} = {}) {
+  const policy = PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY;
+  if (!Number.isSafeInteger(archiveObjectBytes) || archiveObjectBytes < 1) {
+    throw new Error('First-cutover exception archive size is invalid');
+  }
+  if (!isPlainObject(projection)
+    || !isPlainObject(projection.storage)
+    || !isPlainObject(projection.database)
+    || !isPlainObject(projection.egress)) {
+    throw new Error('First-cutover exception lacks the capacity projection');
+  }
+  const requested = decisionMarker !== undefined;
+  const decisionMatches = decisionMarker === policy.invocationMarker;
+  const archiveWithinBound = archiveObjectBytes <= policy.maximumArchiveObjectBytes;
+  const retainedStorageWithinBudget = projection.storage.withinBudget === true;
+  const checkpointDatabaseWithinBound =
+    projection.database.withinIncrementalBound === true;
+  const eligible = requested
+    && decisionMatches
+    && archiveWithinBound
+    && retainedStorageWithinBudget
+    && checkpointDatabaseWithinBound;
+  return {
+    decisionId: policy.decisionId,
+    releaseVersion: policy.releaseVersion,
+    scope: policy.scope,
+    status: !requested
+      ? 'NOT_REQUESTED'
+      : eligible
+        ? 'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER'
+        : 'BLOCKED_BY_EXCEPTION_BOUNDS',
+    eligible,
+    maximumArchiveObjectBytes: policy.maximumArchiveObjectBytes,
+    archiveWithinBound,
+    retainedStorageWithinBudget,
+    checkpointDatabaseWithinBound,
+    generalMonthlyEgressWithinBudget:
+      projection.egress.normalWithCheckpointWithinBudget === true
+      && projection.egress.rollbackWithCheckpointWithinBudget === true,
+    recurringAutomaticCadenceEligible: false,
+    cacheTransportMigrationRequired: true,
+    existingCacheResetRequired: false,
+    exactSuccessfulOneoffAndHandoffRequired: true,
+    privateRuntimeIntegrityPrivacyAndReadbackGatesRemainRequired: true,
+  };
+}
+
 async function optionalCheckpointSerializedBytes(
   repositoryRoot,
   checkpointPath,
@@ -697,15 +763,20 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
   privateRoot,
   bundlePath,
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  dmiBulkPath = 'data/live/dmi-bulk-cache.json',
   sourceHead,
   checkpointPath = '.cache/ravscore-continuation-checkpoint/checkpoint.json',
   runtimeAuditPath,
+  firstCutoverExceptionDecision,
   policy = PRIVATE_RUNTIME_CAPACITY_POLICY,
   now = new Date().toISOString(),
 } = {}) {
   const capacityPolicy = validateCapacityPolicy(policy);
   const root = path.resolve(repositoryRoot);
-  const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: root });
+  const spec = await buildPrivateRuntimeCreateSpec({
+    repositoryRoot: root,
+    dmiBulkPath,
+  });
   const expected = {
     datasetId: spec.metadata.datasetId,
     generationId: spec.metadata.generationId,
@@ -762,6 +833,11 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
     ...(checkpointSerializedBytes === null ? {} : { checkpointSerializedBytes }),
     policy: capacityPolicy,
   });
+  const firstCutoverException = buildPrivateRuntimeFirstCutoverException({
+    archiveObjectBytes: archiveMetrics.objectBytes,
+    projection,
+    decisionMarker: firstCutoverExceptionDecision,
+  });
   return {
     schemaVersion: capacityPolicy.schemaVersion,
     kind: capacityPolicy.kind,
@@ -779,6 +855,7 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
       checkpointAbsenceAttestedByRuntimeAudit: checkpointSerializedBytes === null,
     },
     ...projection,
+    firstCutoverException,
     controls: {
       supabaseRequestAttempted: false,
       privatePayloadUploaded: false,
@@ -791,11 +868,16 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
 
 export async function buildPrivateRuntimePreflightState({
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  dmiBulkPath = 'data/live/dmi-bulk-cache.json',
 } = {}) {
   const root = path.resolve(repositoryRoot);
+  const dmiBulkAbsolute = path.resolve(root, dmiBulkPath);
+  if (!inside(root, dmiBulkAbsolute)) {
+    throw new Error('Private runtime preflight DMI bulk path escapes repository');
+  }
   const [conditions, bulk, oceanDiagnostics, runtime, contractHashes] = await Promise.all([
     readJsonFile(root, 'data/live/conditions.json', 'Private runtime preflight conditions'),
-    readJsonFile(root, 'data/live/dmi-bulk-cache.json', 'Private runtime preflight DMI bulk cache'),
+    readDmiBulkDocument(dmiBulkAbsolute),
     readJsonFile(root, 'data/diagnostics/dmi-ocean-diagnostics.json', 'Private runtime preflight ocean diagnostics', 4 * 1024 * 1024),
     readJsonFile(root, 'data/live/ravradar-runtime-diagnostics.json', 'Private runtime preflight diagnostics'),
     privateRuntimeContractHashes({ repositoryRoot: root }),
@@ -1174,7 +1256,11 @@ async function main() {
     ?? PRIVATE_RUNTIME_REPOSITORY_ROOT;
   if (mode === 'create-spec') {
     const output = argument(argv, '--output');
-    const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot });
+    const spec = await buildPrivateRuntimeCreateSpec({
+      repositoryRoot,
+      dmiBulkPath: argument(argv, '--dmi-bulk', false)
+        ?? 'data/live/dmi-bulk-cache.json',
+    });
     await atomicWriteJson(output, spec);
     console.log(JSON.stringify({ status: 'create-spec-ready', fileCount: spec.files.length }));
   } else if (mode === 'expected') {
@@ -1187,7 +1273,11 @@ async function main() {
     console.log(JSON.stringify({ status: 'expectation-ready' }));
   } else if (mode === 'create-preflight') {
     const output = argument(argv, '--output');
-    const state = await buildPrivateRuntimePreflightState({ repositoryRoot });
+    const state = await buildPrivateRuntimePreflightState({
+      repositoryRoot,
+      dmiBulkPath: argument(argv, '--dmi-bulk', false)
+        ?? 'data/live/dmi-bulk-cache.json',
+    });
     await atomicWriteJson(output, state);
     console.log(JSON.stringify({
       status: 'preflight-state-ready',
@@ -1206,6 +1296,8 @@ async function main() {
     const output = argument(argv, '--output');
     const result = await buildPrivateRuntimeIncrementalSizeDryRun({
       repositoryRoot,
+      dmiBulkPath: argument(argv, '--dmi-bulk', false)
+        ?? 'data/live/dmi-bulk-cache.json',
       privateRoot: argument(argv, '--private-root'),
       bundlePath: argument(argv, '--bundle'),
       sourceHead: argument(argv, '--source-head'),
@@ -1215,6 +1307,11 @@ async function main() {
         false,
       ) ?? '.cache/ravscore-continuation-checkpoint/checkpoint.json',
       runtimeAuditPath: argument(argv, '--runtime-audit', false),
+      firstCutoverExceptionDecision: argument(
+        argv,
+        '--first-cutover-exception-decision',
+        false,
+      ),
     });
     await atomicWriteJson(output, result);
     console.log(JSON.stringify({

@@ -554,7 +554,7 @@ class CheckpointTests(unittest.TestCase):
 
             self.assertEqual(recovered, active)
             strict_ready.assert_called_once()
-            self.assertEqual(json.loads(output.read_text("utf-8")), active)
+            self.assertEqual(producer.load_bulk_document(output), active)
             quarantines = list(Path(directory).glob("candidate.json.invalid-*"))
             self.assertEqual(len(quarantines), 1)
             self.assertEqual(quarantines[0].read_bytes(), invalid_bytes)
@@ -701,7 +701,7 @@ class CheckpointTests(unittest.TestCase):
                 producer.write_checkpoint(result, {PUBLIC_ID}, {"bytes": 0})
 
             serialized = output.read_text("utf-8")
-            persisted = json.loads(serialized)
+            persisted = producer.load_bulk_document(output)
             self.assertEqual(serialized.count("\n"), 1)
             self.assertFalse(output.with_suffix(".json.tmp").exists())
             self.assertEqual(persisted["refreshStatus"], "partial")
@@ -712,10 +712,10 @@ class CheckpointTests(unittest.TestCase):
             )
 
             with patch.object(producer, "OUTPUT_PATH", output):
-                raw_bytes = producer.atomic_write_bulk_cache({"outer": {"inner": 1}})
-            compact_payload = '{"outer":{"inner":1}}\n'
-            self.assertEqual(output.read_text("utf-8"), compact_payload)
-            self.assertEqual(raw_bytes, len(compact_payload.encode("utf-8")))
+                logical = {"zones": {}, "outer": {"inner": 1}}
+                raw_bytes = producer.atomic_write_bulk_cache(logical)
+            self.assertEqual(producer.load_bulk_document(output), logical)
+            self.assertEqual(raw_bytes, output.stat().st_size)
 
     def test_shared_controller_flushes_committed_assets_and_sidecars_once(self) -> None:
         result = {"diagnostics": {}, "zones": {}}
@@ -778,7 +778,7 @@ class CheckpointTests(unittest.TestCase):
                 self.assertTrue(controller.note_committed_asset(seconds=1.0))
                 persisted = output.read_bytes()
                 self.assertTrue(
-                    json.loads(persisted)["diagnostics"]["sealed"]
+                    producer.load_bulk_document(output)["diagnostics"]["sealed"]
                 )
 
                 failing = producer.ProgressCheckpointController(
@@ -913,7 +913,7 @@ class CheckpointTests(unittest.TestCase):
                     resumed, {PUBLIC_ID}, {"bytes": 0},
                 )
                 self.assertTrue(second_controller.note_committed_asset(seconds=1.0))
-                persisted_resume = json.loads(output.read_text("utf-8"))
+                persisted_resume = producer.load_bulk_document(output)
 
         for key in ("zones", "runs", "collectionState"):
             with self.subTest(surface=key):
@@ -1015,9 +1015,9 @@ class CheckpointTests(unittest.TestCase):
                     strict_current_anchor_available=True,
                     producer_success_is_blocked=False,
                 ))
-            self.assertEqual(json.loads(active.read_text("utf-8")), document)
+            self.assertEqual(producer.load_bulk_document(active), document)
             self.assertEqual(
-                len(json.loads(active.read_text("utf-8"))["zones"]["PART::example"]["hourly"]),
+                len(producer.load_bulk_document(active)["zones"]["PART::example"]["hourly"]),
                 1,
             )
             self.assertFalse(active.with_name(active.name + ".tmp").exists())

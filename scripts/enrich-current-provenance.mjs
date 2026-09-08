@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
+import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
 
 const CONDITIONS='data/live/conditions.json';
@@ -134,7 +135,9 @@ function applyProvenance(row, raw){
 }
 
 async function read(path){try{return JSON.parse(await fs.readFile(path,'utf8'));}catch{return null;}}
-const conditions=await read(CONDITIONS);const bulk=await read(BULK);const forecast=await read(FORECAST);
+const conditions=await read(CONDITIONS);
+const bulk=await readDmiBulkDocument(BULK,{optional:true});
+const forecast=await read(FORECAST);
 if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');process.exit(0);}
 let zones=0,verifiedHours=0,unverifiedHours=0;
 const historyReferenceAt=historySampleReferenceAt(conditions);

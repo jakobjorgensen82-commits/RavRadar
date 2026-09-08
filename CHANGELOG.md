@@ -1,3 +1,14 @@
+## 4.0.337 – tabsfri vejrcache og kontrolleret direkte modelcutover (2026-09-09)
+
+- Fastlåser ecCodes og genbruger kompatible verificerede currentproofs granulært uden at omskrive original kildeidentitet.
+- Bevarer gode proofs ved én defekt række og udfylder kun komplette validerede vejrkomponenter atomisk fra en kompatibel donor.
+- Indfører fælles tabsfri Python/Node-codec for den store DMI-cache, retter alle fem fejl fra den afsluttende helhedsaudit og fører også oneoff-wrapperens progresskontrol gennem codec'en.
+- Tillader direkte første integrerede cutover fra den fastlåste offentlige legacy Candidate G-kilde med ærlig manglende historik.
+- Binder legacy-cutover til én eksakt succesfuld komplet oneoff. Ejerundtagelsen gælder kun archive højst 50 MB og ikke tilbagevendende automatisk drift.
+- Registrerer cachetransport uden nulstilling som åben P0 før højfrekvent normal cron/watchdog.
+- Lokal målmatrix er grøn; exact production-sized codecprøve, GitHub exact-head, merge, main-runtime og offentlig modelaktivering er åbne.
+- Se CHANGELOG-4.0.337.md og DEC-0122.
+
 ## 4.0.336 – kompakt WAM-cache og verificeret handoff fra normal kørsel (2026-09-08)
 
 - Skriver DMI/WAM-cachen atomisk som kompakt UTF-8-JSON på alle persistensveje, så formatering ikke alene kan sprænge den uændrede hårde grænse på 256 MiB.

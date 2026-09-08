@@ -17,6 +17,8 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any
 
+from lib.dmi_bulk_storage import read_dmi_bulk_document
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BULK_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 CONDITIONS_PATH = ROOT / "data/live/conditions.json"
@@ -67,6 +69,14 @@ def read_json(path: pathlib.Path) -> dict[str, Any]:
         return {}
 
 
+def read_dmi_bulk(path: pathlib.Path) -> dict[str, Any]:
+    try:
+        value = read_dmi_bulk_document(path, expand_sources=False)
+        return value if isinstance(value, dict) else {}
+    except (OSError, TypeError, ValueError):
+        return {}
+
+
 def latest_run(collection: str) -> str | None:
     now = datetime.now(timezone.utc)
     start = datetime.fromtimestamp(now.timestamp() - 24 * 3600, timezone.utc).isoformat().replace("+00:00", "Z")
@@ -94,7 +104,7 @@ def set_output(name: str, value: str) -> None:
 
 def main() -> int:
     conditions = read_json(CONDITIONS_PATH)
-    bulk = read_json(BULK_PATH)
+    bulk = read_dmi_bulk(BULK_PATH)
     ocean_diagnostics = read_json(OCEAN_DIAGNOSTICS_PATH)
     runtime = read_json(RUNTIME_PATH)
     generated = epoch(conditions.get("generatedAt"))

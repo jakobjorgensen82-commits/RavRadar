@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.336
+**Håndbogsversion:** 4.0.337
+
+## 88.39 4.0.337 – behold cachen og brug ét kontrolleret launchinput
+
+RavRadar kan nu genbruge den store DMI-cache uden at starte forfra, når decoder- eller prognosekørsel skifter. Indholdet lagres tabsfrit i et kompakt format, og en fejl i én række fjerner kun den konkrete række. Komplette strøm-, bølge-, vind-, vandstands- og temperaturtuples kan hentes fra en kompatibel bevaret generation uden at blande halve gamle og nye målinger.
+
+- Første integrerede modelskift kan bruge den fastlåste offentlige Candidate G-kilde direkte. Manglende 48-timers målt historik vises som HISTORY_INCOMPLETE og opbygges senere; den opfindes ikke.
+- Første legacy-cutover kræver én konkret succesfuld komplet oneoff og genfinder netop dens forseglede vejrkilder.
+- Ejerens engangsundtagelse gælder kun, når det private archive højst er 50 MB, storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består.
+- Undtagelsen er ikke en godkendelse af hyppige fulde cachetransporter. Efter lanceringen bygges en ny transport parallelt, sammenlignes i shadow og aktiveres atomisk med rollback. Den eksisterende cache nulstilles ikke.
+- Normal højfrekvent cron/watchdog aktiveres først efter positivt transport- og budgetbevis. Oneoff er launchaccelerator; normal drift bliver derefter den permanente vedligeholder.
+
+Status: 4.0.337 er lokalt implementeret og måltestet. Production-sized exact-codec, exact-head GitHub-kontrol, merge, komplet main-oneoff, fulde produktionsgates og offentlig modelaktivering mangler.
 
 ## 88.38 4.0.336 – normal vejrkørsel kan aflevere det verificerede handoff
 
@@ -24,13 +36,13 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 - Currentfallback får lov at gemme sin fremgang, selv om WAM endnu ikke er komplet. En hård WAM-slutkontrol ligger stadig før offentliggørelse.
 - Normale cron-startede kørsler vedligeholder cachen efter lancering. Oneoff er en hurtig opfylder, ikke den permanente drift.
 
-Status: 4.0.335 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
+Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.335 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.337 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.335-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.337-cutoverkandidat, ikke produktion
 
-4.0.335 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer vejrvedligeholdelsen og dens beviskæde.
+4.0.337 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer vejrvedligeholdelsen og dens beviskæde.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
