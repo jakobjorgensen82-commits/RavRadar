@@ -1,3 +1,12 @@
+## 4.0.335 – vedvarende WAM-cache og sen completeness-gate (2026-09-08)
+
+- Bevarer alle uafhængigt gyldige vejrdata og salvager kun den konkrete ugyldige bølgerække; ingen bred PART-bølgenulstilling.
+- Tillader eksakte verificerede WAM-rækker på tværs af modelkørsler, men holder interpolation strengt inden for samme run, gitter og celle.
+- Genbruger kun WAM-assets med eksakt kilde- og cachedækningsbevis og lader currentfallback gemme progression før den endelige fail-closed WAM-gate.
+- Feggesunds tre dele afgøres fortsat af den særskilte direct/proxy-kontrakt og kræver 354/354 i slutproofet.
+- Lokal målmatrix er grøn; exact-head CI, merge, main-oneoff, fulde gates og offentlig modelcutover er åbne.
+- Se `CHANGELOG-4.0.335.md` og DEC-0120.
+
 ## 4.0.334 – lokal WAM-readiness-kandidat (2026-09-08)
 
 - Fair runtime-reserve til begge kritiske WAM-familier og genbrug af allerede behandlede assets.

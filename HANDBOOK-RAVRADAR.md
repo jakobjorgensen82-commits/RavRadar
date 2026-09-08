@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.334
+**Håndbogsversion:** 4.0.335
+
+## 88.37 4.0.335 – behold brugbare vejrdata og reparér kun det konkrete hul
+
+RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil må ikke slette allerede brugbare data. Kun den konkrete ugyldige bølgerække fjernes, og en gammel tuple erstattes først, når den nye er komplet og valideret.
+
+- Eksakte WAM-rækker må være hentet over flere modelkørsler. Interpolation må fortsat aldrig krydse modelkørsel, gitter eller fysisk celle.
+- En færdig WAM-fil springes kun over, når den officielle filidentitet og de faktiske rækker i cachen begge beviser, at arbejdet er udført.
+- Feggesunds tre dele bruger den godkendte direkte/nabo-proxy-kontrol; de øvrige 670 dele kræver native WAM. Slutkravet er fortsat 354/354 Feggesund-timer.
+- Currentfallback får lov at gemme sin fremgang, selv om WAM endnu ikke er komplet. En hård WAM-slutkontrol ligger stadig før offentliggørelse.
+- Normale cron-startede kørsler vedligeholder cachen efter lancering. Oneoff er en hurtig opfylder, ikke den permanente drift.
+
+Status: 4.0.335 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
+
+### Aktuel status – RavScore 4.0.335 first-cutover-kandidat
+
+### Status for det aktuelle modelarbejde – lokal 4.0.335-cutoverkandidat, ikke produktion
+
+4.0.335 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer vejrvedligeholdelsen og dens beviskæde.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -346,7 +364,7 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.334 first-cutover-kandidat
+## Historisk status – RavScore 4.0.334 first-cutover-kandidat
 
 > **SUPERSEDERET i 4.0.332:** Den absolutte 72-timersgrænse i den længere state-/cold-start-beskrivelse nedenfor er historisk. Same-model-pakken skal i stedet dække den valgte time i sin egen verificerede prognosehorizon; atomisk model-/state-/hashbinding og forbuddet mod cross-model fallback/interpolation består.
 
@@ -446,7 +464,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.334-cutoverkandidat, ikke produktion
+## Historisk status for modelarbejdet – lokal 4.0.334-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De ældre versionsmærkede afsnit dokumenterer revisionssporet; det øverste 4.0.334-afsnit er den aktive driftssandhed. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig. 4.0.334 skal først bestå exact-head CI og merge, hvorefter en ny main-oneoff skal bevise både 79.414/79.414 og Feggesund 354/354 og aflevere det runbundne handoff til de resterende data-, kapacitets-, produktions- og Phase B-beviser.
 

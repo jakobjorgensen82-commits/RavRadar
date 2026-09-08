@@ -625,7 +625,7 @@ class ColdCacheFirstTests(unittest.TestCase):
         self.assertIn("significant-wave-height", preserved_hour)
         self.assertIn("wave", preserved_hour["sources"])
 
-    def test_legacy_missing_cell_resets_only_part_wave_before_measured_rebuild(self) -> None:
+    def test_legacy_missing_cell_salvages_only_invalid_part_hour(self) -> None:
         result = copy.deepcopy(self.complete_cache)
         first_zone = next(iter(result["zones"].values()))
         first_hour = next(iter(first_zone["hourly"].values()))
@@ -656,24 +656,29 @@ class ColdCacheFirstTests(unittest.TestCase):
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["cacheFirst"]["failureCode"], "MISSING_CELL")
         self.assertEqual(
-            aggregate["cacheFirst"]["resetWaveRowCount"],
-            673 * len(self.required),
+            aggregate["cacheFirst"]["salvage"]["removedRowCount"],
+            1,
+        )
+        self.assertEqual(
+            aggregate["cacheFirst"]["salvage"]["retainedValidRowCount"],
+            673 * len(self.required) - 1,
+        )
+        self.assertEqual(
+            aggregate["cacheFirst"]["salvage"]["rejectedByCode"],
+            {"MISSING_CELL": 1},
         )
         self.assertEqual(first_hour["current-u"], 0.125)
         self.assertEqual(first_hour["sources"]["current"], {"sentinel": "preserved"})
-        for point in result["zones"].values():
-            for hour in point["hourly"].values():
-                self.assertNotIn("significant-wave-height", hour)
-                self.assertNotIn("dominant-wave-period", hour)
-                self.assertNotIn("mean-wave-dir", hour)
-                self.assertNotIn("wave", hour.get("sources") or {})
-            for field in (
-                "significant-wave-height",
-                "dominant-wave-period",
-                "mean-wave-dir",
-            ):
-                self.assertNotIn(field, point.get("gridPoints") or {})
-                self.assertNotIn(field, point.get("collections") or {})
+        self.assertNotIn("significant-wave-height", first_hour)
+        self.assertNotIn("dominant-wave-period", first_hour)
+        self.assertNotIn("mean-wave-dir", first_hour)
+        self.assertNotIn("wave", first_hour.get("sources") or {})
+        remaining_wave_rows = sum(
+            "wave" in (hour.get("sources") or {})
+            for point in result["zones"].values()
+            for hour in point["hourly"].values()
+        )
+        self.assertEqual(remaining_wave_rows, 673 * len(self.required) - 1)
 
     def test_migration_still_fails_when_no_coherent_history_run_exists(self) -> None:
         result = copy.deepcopy(self.complete_cache)
@@ -706,6 +711,15 @@ class ColdCacheFirstTests(unittest.TestCase):
 
 
 class ResumeAndFailClosedTests(unittest.TestCase):
+    def test_wam_resume_receives_exact_selected_asset_proof(self) -> None:
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text(encoding="utf-8")
+        self.assertRegex(
+            source,
+            r"required_asset_provenance=\(\s*required_asset_provenance\s*"
+            r"if collection in MARINE_COLLECTIONS\s*"
+            r"or collection in WAVE_BOOTSTRAP_COLLECTIONS",
+        )
+
     def test_resume_requires_selected_asset_identity(self) -> None:
         result, zone, asset = complete_hour(asset_identity="c" * 64)
         with patch.object(producer, "complete_native_source_for_hour", return_value=True):
@@ -882,63 +896,22 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                         item_id="synthetic-item",
                     )
 
-    def test_operational_clear_removes_any_stale_wave_owner_from_start(self) -> None:
-        before = utc_offset(TARGET, -1)
-        after = utc_offset(TARGET, 3)
-
-        def wave_hour(collection: str) -> dict:
-            return {
-                "significant-wave-height": 1.0,
-                "dominant-wave-period": 6.0,
-                "mean-wave-dir": 270.0,
-                "current-u": 0.1,
-                "sources": {
-                    "wave": {"collection": collection},
-                    "current": {"collection": "dkss_idw"},
-                },
-            }
-
-        result = {"zones": {"PART::SYNTHETIC": {
-            "hourly": {
-                before: wave_hour("wam_dw"),
-                TARGET: wave_hour("wam_dw"),
-                after: wave_hour("wam_nsb"),
-            },
-            "gridPoints": {
-                "significant-wave-height": {},
-                "dominant-wave-period": {},
-                "mean-wave-dir": {},
-                "current-u": {},
-            },
-            "collections": {
-                "significant-wave-height": "wam_dw",
-                "dominant-wave-period": "wam_dw",
-                "mean-wave-dir": "wam_dw",
-                "current-u": "dkss_idw",
-            },
-        }}}
-        zones = [{
-            "id": "PART::SYNTHETIC",
-            "coastalPart": True,
-            "coastType": "west",
-        }]
-        cleared = producer.clear_operational_wave_window(
-            result,
-            zones,
-            "wam_nsb",
-            TARGET,
+    def test_operational_wave_replacement_has_no_broad_clear_path(self) -> None:
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        self.assertNotIn("def clear_operational_wave_window(", source)
+        self.assertNotIn("def clear_staged_operational_wave_hour(", source)
+        start = source.index(
+            "# Wave height and period are the shared mobilisation/rollback tuple."
         )
-
-        self.assertEqual(cleared, 2)
-        self.assertIn("significant-wave-height", result["zones"]["PART::SYNTHETIC"]["hourly"][before])
-        for valid_time in (TARGET, after):
-            hour = result["zones"]["PART::SYNTHETIC"]["hourly"][valid_time]
-            self.assertNotIn("significant-wave-height", hour)
-            self.assertNotIn("dominant-wave-period", hour)
-            self.assertNotIn("mean-wave-dir", hour)
-            self.assertNotIn("wave", hour["sources"])
-            self.assertEqual(hour["current-u"], 0.1)
-            self.assertEqual(hour["sources"]["current"]["collection"], "dkss_idw")
+        end = source.index("if (\n        current_shadow is not None", start)
+        atomic = source[start:end]
+        provenance = atomic.index("complete_native_source_for_hour(")
+        commit = atomic.index(
+            'hour = point["hourly"].setdefault(valid_time',
+        )
+        self.assertLess(provenance, commit)
+        self.assertIn("partial or malformed new asset must never destroy", atomic)
+        self.assertIn('else:\n            hour.pop("mean-wave-dir", None)', atomic)
 
     def test_bootstrap_completion_alone_is_not_process_success(self) -> None:
         source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
@@ -969,12 +942,12 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertLess(success_gate_binding, fail_closed_return)
         self.assertLess(fail_closed_return, final_return)
 
-    def test_partial_dmi_still_runs_the_strict_wam_validator(self) -> None:
+    def test_partial_dmi_inspects_wam_then_blocks_only_after_provider_progress(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
         gate_start = workflow.index(
-            "- name: Require complete operational WAM handoff before first integrated cutover"
+            "- name: Inspect operational WAM handoff before first integrated cutover"
         )
         gate_end = workflow.index("- name: Report DMI bulk result", gate_start)
         gate = workflow[gate_start:gate_end]
@@ -983,6 +956,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
         self.assertIn("id: wam-bootstrap-readiness", gate)
         self.assertIn("if: always()", gate)
+        self.assertIn("continue-on-error: true", gate)
         self.assertNotIn("steps.dmi-terminal-gate.outputs.ready == 'true'", gate)
         self.assertIn("--cache .cache/dmi-candidate-progress.json", gate)
         self.assertNotIn('producer_outcome="${{ steps.dmi-bulk.outcome }}"', gate)
@@ -997,6 +971,18 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertGreaterEqual(validator_call, 0)
         self.assertIn("--production-target-hour", gate)
         self.assertIn("--forecast-hour-count 118", gate)
+        final_gate = workflow.index(
+            "- name: Require complete operational WAM after provider progress for first cutover"
+        )
+        open_meteo = workflow.index(
+            "- name: Fill only the exact remaining current gaps from Open-Meteo"
+        )
+        closure = workflow.index(
+            "- name: Build exact DMI-first current operational closure"
+        )
+        self.assertLess(gate_start, open_meteo)
+        self.assertLess(open_meteo, final_gate)
+        self.assertLess(final_gate, closure)
 
         validator_source = (
             SCRIPTS / "validate_dmi_wave_history_bootstrap.py"
@@ -1042,13 +1028,14 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
         gate_start = workflow.index(
-            "- name: Require complete operational WAM handoff before one-off downstream providers",
+            "- name: Inspect operational WAM handoff before one-off downstream providers",
         )
         gate_end = workflow.index("\n      - name:", gate_start + 1)
         gate = workflow[gate_start:gate_end]
         for marker in (
             "id: wam-bootstrap-readiness",
             "if: always()",
+            "continue-on-error: true",
             "python -B scripts/validate_dmi_wave_history_bootstrap.py",
             '--mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}"',
             '--target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}"',
@@ -1070,6 +1057,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             workflow.index("- name: Seal exact operational DMI gaps for target through target plus 117"),
             workflow.index("- name: Fill only the exact operational DMI gap seal"),
             workflow.index("- name: Restore shared private Open-Meteo current progress"),
+            workflow.index("- name: Require complete operational WAM after provider progress"),
             workflow.index("- name: Build the integrated runtime without release or deploy"),
         )
         self.assertEqual(ordered, tuple(sorted(ordered)))

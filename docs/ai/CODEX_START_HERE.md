@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
+# NYESTE CHECKPOINT – 2026-09-08 – efter Windows-genstart og Astra-helkædeaudit
+
+- **Efter auditen:** Fundene er nu samlet implementeret og måltestet som lokal 4.0.335. Granulær WAM-salvage, atomisk tuple-admission, exact-proof genbrug, operationel exact multi-run-kontinuitet, Feggesunds separate proxy-scope og sen fail-closed WAM-gate er på plads.
+- **Lokal evidens:** Python-syntaks, 32 validator-tests, 24 producent-/resume-tests samt workflowinventar og integreret workflowadapter er grønne. Det er ikke exact-head-, provider- eller produktionsbevis.
+- **Næste:** commit/push → én GitHub sourcegate på eksakt head → merge → corrected main-oneoff på bevarede cacher → komplet vejr/Feggesund → fulde gates og modelcutover. Candidate G er offentlig; workflows er fortsat deaktiveret.
+
+- Læs [WAM-helkædeaudit og næste sikre trin](WAM_CHAIN_AUDIT_2026-09-08.md). Dens oprindelige “analyseret, ikke implementeret”-status er historisk og erstattet af 4.0.335-statussen ovenfor.
+- 4.0.334 er exact-head-verificeret i `34187779106` og merged via PR #267 som `836e23ec207e56b6ed275b66f9758dcd311bbe7b`. Nedenstående lokal/uncommitted-status er historisk.
+- Main-oneoff `34189720294` bestod sourcegaten og gemte GRIB-, kandidat- og regionalcache, men fejlede WAM før Copernicus/Open-Meteo. Gemte bytes er ikke komplet vejrbevis. Candidate G er fortsat senest verificerede offentlige model.
+- Den tidligere P2-only-vurdering af proxy/native-konflikten og ubetinget WAM-stepgenbrug er supersederet af de konkrete helkædefund. All-target-afvisning, falsk parsercooldown, tuplebevarelse, granulær legacy-salvage, genoptagelse og gateplacering skal håndteres samlet før blind genkørsel.
+- Normalworkflow og watchdog er midlertidigt deaktiveret og skal genaktiveres/observeres efter kontrolleret cutover. Næste model: Sol / Ekstra høj efter ejerens ønskede afslutning af Astra-analysen.
+
+# HISTORISK CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
 
 - Offentlig sandhed er fortsat 4.0.316 / Candidate G. 4.0.334 er lokal og måltestet, men endnu ikke committed, exact-head-CI-testet, merged, main-runtime-testet, fuldt releasevalideret, deployet eller cuttet over.
 - Oneoff `34161930631` beviste 79.414/79.414 operationelle strømpar (61.860 DMI, 16.593 Copernicus, 944 regional, 17 Open-Meteo, 0 missing), men stoppede korrekt på Feggesund 3 × 118. Closure må ikke forveksles med samlet artifact-/release-readiness.

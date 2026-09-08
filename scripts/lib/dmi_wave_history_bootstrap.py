@@ -30,6 +30,7 @@ from .dmi_native_provenance import (
 CONTRACT_SCHEMA = "dmi-wave-history-bootstrap-v1"
 MIGRATION_MODE = "candidate-g-migration"
 COLD_START_MODE = "genuine-cold-start"
+OPERATIONAL_MODE = "operational-maintenance"
 EXPECTED_COASTAL_PART_COUNT = 673
 MAX_INTERPOLATION_HOURS = 4
 MAX_STAC_ITEMS = 1_000
@@ -78,6 +79,10 @@ _SAFE_MESSAGES = {
     "REGISTRY_INVALID": "The immutable coastal-parts registry is invalid.",
     "REGISTRY_COUNT": "The immutable coastal-parts registry count is invalid.",
     "CACHE_INVALID": "The private DMI bulk cache is invalid.",
+    "CACHE_MISSING": "The private DMI bulk cache is missing.",
+    "CACHE_SIZE_INVALID": "The private DMI bulk cache size is invalid.",
+    "CACHE_IO_INVALID": "The private DMI bulk cache could not be read exactly.",
+    "CACHE_JSON_INVALID": "The private DMI bulk cache JSON is invalid.",
     "CACHE_PART_COUNT": "The private cache PART count does not match the registry.",
     "CACHE_REGISTRY_MISMATCH": "The private cache PART registry is not exact.",
     "VALIDATION_BUDGET": "The wave-history validation budget was exceeded.",
@@ -126,7 +131,7 @@ class WaveHistoryPolicy:
 
     def __post_init__(self) -> None:
         if (
-            self.mode not in {MIGRATION_MODE, COLD_START_MODE}
+            self.mode not in {MIGRATION_MODE, COLD_START_MODE, OPERATIONAL_MODE}
             or isinstance(self.history_hours, bool)
             or not isinstance(self.history_hours, int)
             or self.history_hours < 1
@@ -1060,6 +1065,34 @@ def resolved_native_wave_hours(
     return tuple(hour for hour in required if hour in accepted)
 
 
+def native_wave_row_error_code(
+    *,
+    valid_time: str,
+    hour: Any,
+    entity_id: str,
+    provenance_entity: Mapping[str, Any],
+) -> str | None:
+    """Return a privacy-safe reason code for one native wave row.
+
+    This is intentionally row-local. Callers can salvage only the invalid
+    component instead of discarding every valid PART/hour in the cache.
+    """
+    if not isinstance(entity_id, str) or not entity_id:
+        return "CACHE_INVALID"
+    try:
+        _validate_native_wave_row(
+            valid_time=valid_time,
+            hour=hour,
+            part=_WaveCacheEntity(
+                cache_key=entity_id,
+                provenance_entity=provenance_entity,
+            ),
+        )
+    except WaveBootstrapError as exc:
+        return exc.code
+    return None
+
+
 @dataclass(frozen=True)
 class WaveHistoryValidationSummary:
     policy: WaveHistoryPolicy
@@ -1112,6 +1145,7 @@ def validate_wave_history_cache(
     target_hour: str,
     policy: WaveHistoryPolicy,
     budget: ValidationBudget = ValidationBudget(),
+    excluded_parent_zone_ids: Iterable[str] = (),
 ) -> WaveHistoryValidationSummary:
     if (
         not isinstance(cache, dict)
@@ -1132,6 +1166,19 @@ def validate_wave_history_cache(
     if actual_keys != expected_keys:
         raise WaveBootstrapError("CACHE_REGISTRY_MISMATCH")
 
+    excluded_parents = frozenset(excluded_parent_zone_ids)
+    if any(
+        not isinstance(value, str) or _SAFE_ID.fullmatch(value) is None
+        for value in excluded_parents
+    ):
+        raise WaveBootstrapError("INVALID_POLICY")
+    selected_parts = tuple(
+        part for part in registry.parts
+        if part.parent_zone_id not in excluded_parents
+    )
+    if not selected_parts:
+        raise WaveBootstrapError("INVALID_POLICY")
+
     required = policy_utc_hours(target_hour, policy)
     required_datetimes = tuple(parse_utc_hour(value) for value in required)
     total_rows = 0
@@ -1147,7 +1194,7 @@ def validate_wave_history_cache(
         collection: None for collection in sorted(WAM_MAX_DISTANCE_KM)
     }
 
-    for part in registry.parts:
+    for part in selected_parts:
         zone = zones.get(part.cache_key)
         if not isinstance(zone, dict) or not isinstance(zone.get("hourly"), dict):
             raise WaveBootstrapError("CACHE_INVALID")
@@ -1190,9 +1237,13 @@ def validate_wave_history_cache(
             for row in used:
                 cell = (row.grid_definition_sha256, row.grid_point)
                 previous_cell = part_cells.get(row.collection)
-                if previous_cell is not None and (
-                    previous_cell[0] != cell[0]
-                    or not same_point(previous_cell[1], cell[1])
+                if (
+                    policy.mode != OPERATIONAL_MODE
+                    and previous_cell is not None
+                    and (
+                        previous_cell[0] != cell[0]
+                        or not same_point(previous_cell[1], cell[1])
+                    )
                 ):
                     raise WaveBootstrapError("MIXED_CELL_HISTORY")
                 part_cells[row.collection] = cell
@@ -1225,7 +1276,11 @@ def validate_wave_history_cache(
         if len(part_collections) != 1:
             raise WaveBootstrapError("MIXED_COLLECTION_HISTORY")
         for collection, runs in part_runs.items():
-            if len(runs) > 1 and part_interpolated.get(collection, 0):
+            if (
+                policy.mode != OPERATIONAL_MODE
+                and len(runs) > 1
+                and part_interpolated.get(collection, 0)
+            ):
                 raise WaveBootstrapError("MULTI_RUN_INTERPOLATION")
 
     if policy.require_single_run_per_collection:
@@ -1242,7 +1297,7 @@ def validate_wave_history_cache(
         policy=policy,
         registry_part_count=registry.part_count,
         required_hour_count=len(required),
-        verified_part_hour_count=registry.part_count * len(required),
+        verified_part_hour_count=len(selected_parts) * len(required),
         exact_tuple_count=exact_count,
         interpolated_tuple_count=interpolated_count,
         wam_collection_count=len(global_runs),
@@ -1266,6 +1321,8 @@ def validate_wave_history_cache(
 @dataclass(frozen=True)
 class WaveOperationalHandoffSummary:
     registry_part_count: int
+    native_required_part_count: int
+    deferred_proxy_part_count: int
     bridge_exact_hour_count: int
     forecast_hour_count: int
     verified_part_hour_count: int
@@ -1282,8 +1339,10 @@ class WaveOperationalHandoffSummary:
         return {
             "status": "ok",
             "schemaVersion": CONTRACT_SCHEMA,
-            "mode": "operational-same-run-handoff",
+            "mode": "operational-maintained-handoff",
             "registryPartCount": self.registry_part_count,
+            "nativeRequiredPartCount": self.native_required_part_count,
+            "deferredProxyPartCount": self.deferred_proxy_part_count,
             "bridgeExactHourCount": self.bridge_exact_hour_count,
             "forecastHourCount": self.forecast_hour_count,
             "verifiedPartHourCount": self.verified_part_hour_count,
@@ -1312,13 +1371,15 @@ def validate_wave_operational_handoff_cache(
     production_target_hour: str,
     forecast_hour_count: int = 118,
     budget: ValidationBudget = ValidationBudget(),
+    deferred_proxy_parent_zone_ids: Iterable[str] = ("DK-B05-11",),
 ) -> WaveOperationalHandoffSummary:
-    """Prove one exact bridge and one same-run public WAM horizon.
+    """Prove an exact bridge and a safely maintained public WAM horizon.
 
-    Candidate migration history may come from an older coherent run, but the
-    first replay hour through the complete public forecast must belong to one
-    separately coherent operational run per WAM collection.  The bridge is
-    exact so the old/new seam is never used for interpolation.
+    Exact native rows may cross model-run or cell boundaries as the maintained
+    cache advances.  Every interpolated hour still has to be bracketed inside
+    one model run, collection, grid definition and physical cell.  Parts whose
+    approved operational policy is a downstream proxy are deferred to that
+    independently validated final gate; they remain present in the registry.
     """
     bootstrap_target = parse_utc_hour(bootstrap_target_hour)
     production_target = parse_utc_hour(production_target_hour)
@@ -1340,12 +1401,18 @@ def validate_wave_operational_handoff_cache(
     combined_hour_count = int(
         (end_exclusive - bootstrap_target).total_seconds() / 3600
     )
+    deferred_parents = frozenset(deferred_proxy_parent_zone_ids)
+    deferred_parts = tuple(
+        part for part in registry.parts
+        if part.parent_zone_id in deferred_parents
+    )
+
     combined_policy = WaveHistoryPolicy(
-        mode=MIGRATION_MODE,
+        mode=OPERATIONAL_MODE,
         history_hours=combined_hour_count,
         include_target=False,
-        require_single_run_per_collection=True,
-        allow_exact_multi_run=False,
+        require_single_run_per_collection=False,
+        allow_exact_multi_run=True,
     )
     combined = validate_wave_history_cache(
         cache,
@@ -1353,29 +1420,39 @@ def validate_wave_operational_handoff_cache(
         target_hour=format_utc_hour(end_exclusive),
         policy=combined_policy,
         budget=budget,
+        excluded_parent_zone_ids=deferred_parents,
     )
 
     exact_policy = WaveHistoryPolicy(
-        mode=MIGRATION_MODE,
+        mode=OPERATIONAL_MODE,
         history_hours=1,
         include_target=False,
-        require_single_run_per_collection=True,
-        allow_exact_multi_run=False,
+        require_single_run_per_collection=False,
+        allow_exact_multi_run=True,
+        maximum_interpolation_hours=0,
     )
     for offset in range(bridge_hours):
         bridge_hour = bootstrap_target + timedelta(hours=offset)
-        exact = validate_wave_history_cache(
-            cache,
-            registry,
-            target_hour=format_utc_hour(bridge_hour + timedelta(hours=1)),
-            policy=exact_policy,
-            budget=budget,
-        )
-        if exact.exact_tuple_count != registry.part_count:
+        try:
+            exact = validate_wave_history_cache(
+                cache,
+                registry,
+                target_hour=format_utc_hour(bridge_hour + timedelta(hours=1)),
+                policy=exact_policy,
+                budget=budget,
+                excluded_parent_zone_ids=deferred_parents,
+            )
+        except WaveBootstrapError as exc:
+            if exc.code in {"MISSING_HOUR", "INTERPOLATION_GAP"}:
+                raise WaveBootstrapError("OPERATIONAL_HANDOFF_INVALID") from None
+            raise
+        if exact.exact_tuple_count != registry.part_count - len(deferred_parts):
             raise WaveBootstrapError("OPERATIONAL_HANDOFF_INVALID")
 
     return WaveOperationalHandoffSummary(
         registry_part_count=registry.part_count,
+        native_required_part_count=registry.part_count - len(deferred_parts),
+        deferred_proxy_part_count=len(deferred_parts),
         bridge_exact_hour_count=bridge_hours,
         forecast_hour_count=forecast_hour_count,
         verified_part_hour_count=combined.verified_part_hour_count,

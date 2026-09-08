@@ -1,4 +1,12 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.334 WAM-readiness
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.335 vedvarende WAM-cache
+
+- Ejeren kræver, at eksisterende brugbare data aldrig nulstilles ved et normalt modelskift eller én defekt fil; oneoff skal fylde op, mens normale eksternt cron-startede kørsler bagefter vedligeholder hele vinduet.
+- Helkædeaudit viste all-target rollback, bred MISSING_CELL-reset, forkert parserklassifikation, utilstrækkeligt WAM-resumebevis og en for tidlig WAM-gate som samlet fejlklasse.
+- 4.0.335 salvager kun ugyldig bølgekomponent pr. del/time, validerer ny tuple før atomisk erstatning og accepterer eksakt multi-run-kontinuitet uden at tillade interpolation på tværs af run, gitter eller celle.
+- WAM-resume kræver exact asset- og cachedækningsbevis. Feggesunds tre dele afgøres i den særskilte direct/proxy-slutgate; currentfallback får lov at gemme progression før den hårde WAM-slutgate.
+- Cachefejl og assetafvisninger får adskilte aggregate-only koder. Lokal målmatrix er grøn; CI, merge, main-oneoff, fulde gates og offentlig modelcutover er åbne.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.334 WAM-readiness
 
 - Oneoff `34161930631` beviste den første eksakte operationelle strømclosure på 79.414/79.414: DMI 61.860, Copernicus 16.593, regional DMI 944, Open-Meteo 17 og missing 0. Kildeprogressionen blev gemt.
 - Kørslen stoppede efter closure på den separate Feggesund 3 × 118-bølgekontrakt. DKSS LF brugte næsten hele DMI-arbejdsbudgettet, så de kritiske WAM-familier blev udsultet. Intet artifact, deploy, Phase B eller modelskift skete.

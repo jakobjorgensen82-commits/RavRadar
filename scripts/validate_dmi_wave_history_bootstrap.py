@@ -41,22 +41,46 @@ def _reject_non_finite_json(_value: str) -> None:
     raise ValueError
 
 
-def _read_bounded_json(path: Path, maximum_bytes: int, error_code: str) -> Any:
+def _read_bounded_json(
+    path: Path,
+    maximum_bytes: int,
+    error_code: str,
+    *,
+    detailed_cache_errors: bool = False,
+) -> Any:
     try:
         size = path.stat().st_size
-        if size < 2 or size > maximum_bytes:
-            raise WaveBootstrapError(error_code)
+    except FileNotFoundError:
+        raise WaveBootstrapError(
+            "CACHE_MISSING" if detailed_cache_errors else error_code
+        ) from None
+    except OSError:
+        raise WaveBootstrapError(
+            "CACHE_IO_INVALID" if detailed_cache_errors else error_code
+        ) from None
+    if size < 2 or size > maximum_bytes:
+        raise WaveBootstrapError(
+            "CACHE_SIZE_INVALID" if detailed_cache_errors else error_code
+        )
+    try:
         payload = path.read_bytes()
-        if len(payload) != size:
-            raise WaveBootstrapError(error_code)
+    except OSError:
+        raise WaveBootstrapError(
+            "CACHE_IO_INVALID" if detailed_cache_errors else error_code
+        ) from None
+    if len(payload) != size:
+        raise WaveBootstrapError(
+            "CACHE_IO_INVALID" if detailed_cache_errors else error_code
+        )
+    try:
         return json.loads(
             payload.decode("utf-8"),
             parse_constant=_reject_non_finite_json,
         )
-    except WaveBootstrapError:
-        raise
-    except (OSError, UnicodeDecodeError, ValueError):
-        raise WaveBootstrapError(error_code) from None
+    except (UnicodeDecodeError, ValueError):
+        raise WaveBootstrapError(
+            "CACHE_JSON_INVALID" if detailed_cache_errors else error_code
+        ) from None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -138,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             args.cache,
             MAX_CACHE_BYTES,
             "CACHE_INVALID",
+            detailed_cache_errors=True,
         )
         attestation = build_attestation(
             cache_document,

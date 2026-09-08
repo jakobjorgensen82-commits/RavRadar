@@ -1,5 +1,15 @@
 # Aktive krav – samlet register
 
+# 4.0.335 – vedvarende WAM-cache og sen slutgate (2026-09-08)
+
+- **REQ-4.0.335-WAM-GRANULAR-SALVAGE-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** En ugyldig bølgerække må kun fjerne den konkrete bølgekomponent. Uafhængigt gyldige bølge-, vind-, strøm- og historikrækker skal bevares; ingen bred PART-bølgenulstilling må findes.
+- **REQ-4.0.335-WAM-ATOMIC-REPLACEMENT-001 – BINDENDE P0:** En eksisterende bølgetuple erstattes først, når ny højde, periode, retning, native provenance og cellebevis er samlet valideret.
+- **REQ-4.0.335-WAM-OPERATIONAL-CONTINUITY-001 – BINDENDE P0:** Eksakte validerede rækker må ved vedligeholdelse krydse modelkørsler/celler. Interpolation må fortsat kun ske højst fire timer inden for samme collection, modelkørsel, gitter og celle.
+- **REQ-4.0.335-WAM-EXACT-RESUME-001 – BINDENDE P0:** WAM-stepgenbrug kræver samme processing/run, eksakt officielt assetbevis og genvalideret fuld cachedækning for alle native mål.
+- **REQ-4.0.335-WAM-PROXY-SCOPE-001 – BINDENDE P0:** Feggesunds tre dele udskydes til den godkendte direct/proxy-gate; registryen forbliver 673, de øvrige 670 dele kræver native WAM, og Feggesund kræver 354/354 ved slutproof.
+- **REQ-4.0.335-WAM-LATE-GATE-001 – BINDENDE P0:** Tidlig WAM-inspektion må ikke blokere uafhængig currentfallback/cache-save. En separat fail-closed WAM-gate skal bestå før freshness, closure, runtime, artifact og deploy.
+- **REQ-4.0.335-RUNTIME-EVIDENCE-001 – BINDENDE ÅBEN:** Lokal målmatrix er grøn, men exact-head, merge og positiv main-runtime mangler. Candidate G er offentlig, indtil komplet vejr og hele modelcutoverkæden er bevist.
+
 # 4.0.334 – WAM-readiness og runbundet cutover (2026-09-08)
 
 - **REQ-4.0.334-WAM-FAIRNESS-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** Begge kritiske WAM-familier skal have en reel mulighed for at køre inden for samme globale runtime; DKSS må højst tage ét nødvendigt lead før WAM-reserven. Reserve-yield er schedulerstyring og må ikke omklassificeres til leverandørfejl.

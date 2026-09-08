@@ -1319,9 +1319,10 @@ for(const marker of [
   ok(weatherSection.includes(marker),`Vejrgeneratoren mangler actionbundet first-cutover-attestering: ${marker}`);
 }
 for(const marker of [
-  'def reset_private_part_wave_cache(',
-  'reset_rows = reset_private_part_wave_cache(result, parts)',
-  'aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows',
+  'def salvage_invalid_private_wave_rows(',
+  'code = native_wave_row_error_code(',
+  'salvage = salvage_invalid_private_wave_rows(',
+  'aggregate["cacheFirst"]["salvage"] = salvage',
   'def process_grib_transactionally(',
   'restore_mapping(diagnostics, diagnostics_snapshot)',
   'commit_asset_stage_document(output, output_stage)',
@@ -1335,6 +1336,10 @@ for(const marker of [
 ]){
   ok(dmiBulkProducer.includes(marker),`DMI asset-/checkpointkæden mangler atomisk progression: ${marker}`);
 }
+ok(!dmiBulkProducer.includes('def reset_private_part_wave_cache(')
+  &&!dmiBulkProducer.includes('def clear_operational_wave_window(')
+  &&!dmiBulkProducer.includes('def clear_staged_operational_wave_hour('),
+'DMI-producenten må ikke kunne nulstille hele den genbrugelige WAM-cache');
 ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
   && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
   && !buildWorkflow.includes('name: Hydrate latest deployed weather state'),

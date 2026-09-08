@@ -1,4 +1,12 @@
-# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.335 lokalt implementeret
+
+WAM-helkædeauditen er nu omsat til én samlet 4.0.335-pakke: valid cache bevares, kun konkret ugyldig bølgerække salvages, ny tuple erstatter atomisk, exact multi-run-rækker accepteres uden cross-run interpolation, WAM-resume kræver exact asset/cacheproof, Feggesund bruger separat direct/proxy-gate, og currentfallback gemmer progression før den hårde WAM-slutgate. Syntaks, 32 validator-tests, 24 producenttests og to Node-workflowtests er grønne. Exact-head CI, merge, main-oneoff, fulde gates og offentlig cutover er åbne. Workflows er deaktiveret; Candidate G er offentlig. Sol / Ekstra høj er passende til release/CI/runtime.
+
+# HISTORISK CHECKPOINT – 2026-09-08 – WAM-audit bevaret efter Windows-genstart
+
+Læs [det aktuelle WAM-helkædecheckpoint](WAM_CHAIN_AUDIT_2026-09-08.md) før videre arbejde. Det indeholder verificerede kodefund, to åbne diagnoser, samlet implementerings-/testpakke, exact-main/run/cache-evidens og cutoverrækkefølge. 4.0.334 er merged, men main-oneoff `34189720294` fejlede WAM efter cachegemning. Den næste rettelse er analyseret, ikke implementeret. Normalworkflow og watchdog er deaktiveret; Candidate G er senest verificerede offentlige model. Sol / Ekstra høj anbefales til næste afgrænsede kritiske arbejdsafsnit.
+
+# HISTORISK CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
 
 - Oneoff `34161930631` på `57a4c91405f0fd90353f8655315b42430ad13208`, target `2026-09-07T21:00:00Z`, beviste operationel strømclosure **79.414/79.414**: DMI 61.860, Copernicus 16.593, regional 944, Open-Meteo 17, missing 0; hash `sha256:d6cd84a61d045a94c60e70a5b3edb3a6234712104d17003e704747d0c359daa9`.
 - Runnet stoppede efterfølgende korrekt på Feggesunds manglende 3 × 118. Det byggede eller deployede intet artifact og udførte ikke Phase B eller offentlig cutover.
