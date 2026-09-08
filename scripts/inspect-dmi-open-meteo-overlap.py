@@ -12,8 +12,10 @@ import gc
 import importlib.util
 import json
 import pathlib
+import re
 import stat
 import sys
+import traceback
 
 sys.dont_write_bytecode = True
 MAX_BYTES = 2 * 1024**3
@@ -64,6 +66,23 @@ def pair_set(document, targets, reference, signature, runtime):
 def unchanged(path: pathlib.Path, identity):
     after = path.stat()
     return (after.st_size, after.st_mtime_ns) == identity
+
+
+def safe_failure(exc: Exception) -> dict:
+    frames = traceback.extract_tb(exc.__traceback__)
+    frame = frames[-1] if frames else None
+    return {
+        "status": "INSPECTION_FAILED",
+        "exceptionType": type(exc).__name__ if type(exc).__name__ in {
+            "ValueError", "TypeError", "KeyError", "RuntimeError", "OSError",
+            "MemoryError", "JSONDecodeError", "FileNotFoundError",
+        } else "Exception",
+        "location": re.sub(
+            r"[^A-Za-z0-9_.-]", "_", pathlib.Path(frame.filename).name,
+        ) if frame else "unknown",
+        "line": frame.lineno if frame else 0,
+        "privatePayloadIncluded": False,
+    }
 
 
 def main() -> int:
@@ -133,8 +152,8 @@ def main() -> int:
         }
         print(json.dumps(report, sort_keys=True, separators=(",", ":")))
         return 0 if report["inputsUnchanged"] else 1
-    except Exception:
-        print('{"status":"INSPECTION_FAILED","privatePayloadIncluded":false}')
+    except Exception as exc:
+        print(json.dumps(safe_failure(exc), sort_keys=True, separators=(",", ":")))
         return 1
 
 
