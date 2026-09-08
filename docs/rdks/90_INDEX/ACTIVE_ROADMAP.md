@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-08 – 4.0.334 fra komplet strømclosure til model-online
+
+- [x] Klassificér main-oneoff `34161930631`: 79.414/79.414 strømpar, men efterfølgende Feggesund-stop; kildecacher gemt, intet artifact/deploy/cutover.
+- [x] Implementér fair WAM-reserve til begge kritiske familier, same-run/cachegenbrug, højst fire inklusive brotimer og strict WAM-readiness før downstream.
+- [x] Materialisér eksakt 118-timersakse med `MISSING`, atomiske tuples og hashbundet Feggesund-preflight/slutproof.
+- [x] Ret Candidate G-targetalder og run-id-kontrakt; afslut måltests og to uafhængige reviews uden P0/P1.
+- [x] Versionér 4.0.334 og synkronisér releasehukommelsen; geodata ændrer kun topversionsfelterne.
+- [ ] Commit, bestå én exact-head GitHub sourcegate og merge.
+- [ ] Kør ny main-oneoff på de bevarede cacher; kræv både 79.414/79.414 og Feggesund 354/354 samt spatial-/kapacitetsbevis.
+- [ ] Kør fuld validate/releasegate, artifact/deploy og særskilt Phase B; verificér den integrerede model offentligt.
+- [ ] Genaktivér ekstern-cron-båret normal drift og eftermål de to kendte P2-latenspunkter uden at forsinke launch.
+
 # NYESTE ROADMAP – 2026-09-07 – 4.0.333 fra 282 huller til model-online
 
 - [x] Klassificér 4.0.332-run `34127986853` uden cache-reset-overclaim: 79.132/79.414 og 282 ærlige rester.

@@ -26,6 +26,7 @@ export const CANDIDATE_G_MIGRATION_PART_COUNT = 673;
 export const CANDIDATE_G_MIGRATION_ZONE_COUNT = 210;
 export const CANDIDATE_G_WAVE_BOOTSTRAP_MODE = 'candidate-g-migration';
 export const CANDIDATE_G_COLD_START_WAVE_BOOTSTRAP_MODE = 'genuine-cold-start';
+const CANDIDATE_G_MIGRATION_MAX_TARGET_LAG_HOURS = 3;
 
 const DEFAULT_CONDITIONS = 'data/live/conditions.json';
 const DEFAULT_REGISTRY = 'data/live/coastal-parts-v2.json';
@@ -221,7 +222,11 @@ export function resolveCandidateGWaveBootstrapTarget({
     targets.add(normalizedWamTarget(target));
   }
 
-  if (coldStartRequired) {
+  if (targets.size > 1) {
+    fail('RAVSCORE_CANDIDATE_MIGRATION_TARGET_MIXED');
+  }
+
+  if (coldStartRequired || targets.size === 0) {
     return Object.freeze({
       mode: CANDIDATE_G_COLD_START_WAVE_BOOTSTRAP_MODE,
       target_hour: productionTargetHour,
@@ -230,10 +235,21 @@ export function resolveCandidateGWaveBootstrapTarget({
     });
   }
 
-  if (targets.size !== 1) {
-    fail('RAVSCORE_CANDIDATE_MIGRATION_TARGET_MIXED');
-  }
   const targetHour = [...targets][0];
+  const targetLagHours = (
+    Date.parse(productionTargetHour) - Date.parse(targetHour)
+  ) / (60 * 60 * 1000);
+  if (!Number.isInteger(targetLagHours) || targetLagHours < 0) {
+    fail('RAVSCORE_CANDIDATE_MIGRATION_TARGET_INVALID');
+  }
+  if (targetLagHours > CANDIDATE_G_MIGRATION_MAX_TARGET_LAG_HOURS) {
+    return Object.freeze({
+      mode: CANDIDATE_G_COLD_START_WAVE_BOOTSTRAP_MODE,
+      target_hour: productionTargetHour,
+      part_count: CANDIDATE_G_MIGRATION_PART_COUNT,
+      source_validated: true,
+    });
+  }
   return Object.freeze({
     mode: CANDIDATE_G_WAVE_BOOTSTRAP_MODE,
     target_hour: targetHour,

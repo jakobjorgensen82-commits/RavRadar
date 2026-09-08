@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-08 – 4.0.334 WAM-readiness og runbundet cutover
+
+- **Status:** 4.0.334 findes kun som lokal, måltestet kandidat. Den er ikke committed, CI-verificeret, merged, kørt på `main`, fuldt releasevalideret, deployet eller cuttet over. Den offentlige runtime er fortsat 4.0.316 / Candidate G, indtil produktionskæden beviser andet.
+- Oneoff `34161930631` på eksakt `main`-commit `57a4c91405f0fd90353f8655315b42430ad13208`, target `2026-09-07T21:00:00Z`, beviste operationel strømclosure: **79.414/79.414** (DMI 61.860, Copernicus 16.593, regional 944, Open-Meteo 17, missing 0), hash `sha256:d6cd84a61d045a94c60e70a5b3edb3a6234712104d17003e704747d0c359daa9`.
+- Runnet stoppede derefter korrekt på den separate Feggesund-kontrakt, fordi præcis 3 × 118 bølgetimer ikke kunne bevises. Strømclosure er ikke bevis for komplet vejr/modelartifact; intet artifact, deploy, Phase B eller offentlig cutover blev udført.
+- Den lokale scheduler giver `wam_dw` og `wam_nsb` fair runtime-reserve efter højst ét nødvendigt DKSS-lead. Resten må kun lukkes med eksakte rækker eller interpolation på højst fire timer inden for samme collection, modelrun, grid og celle. Reserve-yield er schedulerstyring, ikke leverandørfejl.
+- En ensartet Candidate G-target højst tre timer bag produktionsmålet må bridges (inklusive bro højst fire timer). En ellers gyldig ældre target rebases til `genuine-cold-start` på produktionsmålet; kun faktisk verificeret historik genafspilles, og mangler giver `HISTORY_INCOMPLETE`. Mixed target afvises fortsat.
+- Runtime materialiserer den eksakte 118-timersakse med eksplicitte `MISSING`-rækker. Vind-, bølge- og strømtuples er atomiske; manglende parent er kontrolplansfejl. Feggesund-preflightens 3 × 118-bevis bindes med hash til slutbeviset.
+- Første cutover kræver et positivt konkret handoff-run-id (`^[1-9][0-9]{0,19}$`); senere kørsler kræver tomt id. Normale kørsler er permanent vedligeholder efter reaktivering; oneoff er kun accelerator/source-producer, og begge genbruger persistent cache.
+- To åbne P2-effektiviteter er ikke correctness-/releaseblockere: WAM-restberegningen krediterer endnu ikke en gyldig Feggesund-proxy som native WAM, og oneoff har fortsat et lille live ForecastEDR-budget. Det kan give ekstra STAC/EDR-kald, latenstid eller 429, men same-run/same-processing assets springes over, og fallback blokeres ikke.
+- Candidate G-manifest, conditions og source-registry er obligatorisk source-attestation ved første cutover. DMI-donoren er valgfri; manglende obligatorisk source eller netværksbevis stopper preflight fail-closed.
+
 # NYESTE SANDHED – 2026-09-07 – 4.0.333 isolerer Open-Meteo-rest helt ned til eksakte par
 
 - 4.0.332 bestod exact-head sourcegaten i run `34125927405` på `f23f306b7181b0502f1560e3eea37bfa32542bcc` og blev merged via PR #265 som `1e1093dead7fbbf5adcd401592d11c6b1c21d746`.

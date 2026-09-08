@@ -1,3 +1,11 @@
+## 4.0.334 – lokal WAM-readiness-kandidat (2026-09-08)
+
+- Fair runtime-reserve til begge kritiske WAM-familier og genbrug af allerede behandlede assets.
+- Candidate G-bridge begrænset til højst fire inklusive timer; ældre ensartet target rebases til source-attesteret cold start.
+- Eksakt 118-timersakse med `MISSING`, atomiske tuples, hashbundet Feggesund 3 × 118 og konkret runbundet første cutover.
+- Oneoff `34161930631` beviste 79.414/79.414 strømpar, men stoppede korrekt på Feggesund; 4.0.334 er endnu kun lokal og måltestet.
+- Se `CHANGELOG-4.0.334.md`.
+
 ## 4.0.333 – exact-unresolved Open-Meteo og adaptiv isolation (2026-09-07, lokal kandidat)
 
 - 4.0.332 bestod exact-head sourcegate `34125927405` og blev merged via PR #265 som `1e1093de…`. Main-oneoff `34127986853` genbrugte cache og sluttede 79.132/79.414; Open-Meteo required 472, retained 76, fetched 114, filled 190 og missing 282. Ingen artifact/deploy/cutover.

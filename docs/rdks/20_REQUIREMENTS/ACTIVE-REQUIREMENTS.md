@@ -1,5 +1,15 @@
 # Aktive krav – samlet register
 
+# 4.0.334 – WAM-readiness og runbundet cutover (2026-09-08)
+
+- **REQ-4.0.334-WAM-FAIRNESS-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** Begge kritiske WAM-familier skal have en reel mulighed for at køre inden for samme globale runtime; DKSS må højst tage ét nødvendigt lead før WAM-reserven. Reserve-yield er schedulerstyring og må ikke omklassificeres til leverandørfejl.
+- **REQ-4.0.334-FEGGESUND-3X118-001 – BINDENDE P0:** Feggesund skal før scoring og ved slutproof dokumentere præcis tre dele × 118 timer med identisk proof-hash. Eksakt lokal tuple foretrækkes; den faste to-nabo-proxy er alene tilladt efter DEC-0114.
+- **REQ-4.0.334-CANDIDATE-G-BRIDGE-001 – BINDENDE P0:** Candidate G må kun bridges ved højst tre timers targetlag, så den inklusive bridge højst er fire timer. Ældre ensartet target skal rebase til source-attesteret `genuine-cold-start`; mixed target stopper.
+- **REQ-4.0.334-EXPLICIT-HORIZON-001 – BINDENDE P0:** Alle primære dele materialiseres på eksakt 118-timersakse. Ufuldstændige komponenter markeres eksplicit `MISSING`; komponenttuples valideres og udskiftes atomisk.
+- **REQ-4.0.334-RUN-BOUND-DISPATCH-001 – BINDENDE P0:** Første cutover kræver et konkret positivt handoff-run-id. Ingen senere kørsel må acceptere et sådant id.
+- **REQ-4.0.334-NORMAL-MAINTENANCE-001 – BINDENDE DRIFT:** Normale kørsler skal efter reaktivering vedligeholde den persistente cache. Oneoff må accelerere og producere sources, men må ikke blive den permanente driftspilot.
+- **REQ-4.0.334-RELEASE-CLOSURE-001 – BINDENDE ÅBEN:** Strømclosure alene må aldrig åbne deploy/cutover uden fuld vejr-, Feggesund-, source-, spatial-, kapacitets-, release- og runtimeevidens.
+
 # 4.0.333 – unresolved-only Open-Meteo og bounded adaptiv isolation (2026-09-07)
 
 - **REQ-4.0.333-OPEN-METEO-EXACT-UNRESOLVED-BFS-001 – BINDENDE P0 / LOKALT IMPLEMENTERET OG REVIEWET / RUNTIME ÅBENT:** Succesfulde par checkpointes straks og må ikke genbestilles. Kun den eksakte uløste rest må ligge i en FIFO/BFS-kø og splittes i højst to disjunkte børn helt ned til part/time-singleton. Transport er max tre forsøg pr. exact work; content får ét same-work retry. Total requests er max 1.024, pending-kø max 2.048 og én monotonic deadline gælder. Hvert stop bevarer `required − selected` ærligt.

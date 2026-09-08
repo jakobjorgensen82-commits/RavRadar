@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
+  FEGGESUND_WAVE_DISPOSITIONS,
   FEGGESUND_WAVE_PROXY_POLICY,
   FEGGESUND_WAVE_PROXY_POLICY_SHA256,
   bindVerifiedFeggesundWaveSource,
+  buildFeggesundWaveCoverageProof,
   buildFeggesundWaveInputProofEntry,
   buildFeggesundWaveProxy,
   verifyCompactFeggesundWaveProxy,
@@ -33,8 +35,8 @@ const updateWeatherSource = fs.readFileSync(
 );
 assert.match(
   updateWeatherSource,
-  /\+\s*\(RAVSCORE_PUBLIC_FORECAST_HOURS - 1\) \* 3_600_000;/,
-  'Feggesund proof entries must stop at the 118-hour public horizon',
+  /Array\.from\(\{ length: RAVSCORE_PUBLIC_FORECAST_HOURS \}, \(_, index\) => \{/,
+  'Feggesund proof entries must enumerate the exact 118-hour public horizon',
 );
 assert.match(
   updateWeatherSource,
@@ -290,5 +292,48 @@ assert.throws(() => buildFeggesundWaveProxy({
   time: TIME,
   sources: wrapSources,
 }), /outside the approved exception/);
+
+const coveragePartIds = ['synthetic-part-a', 'synthetic-part-b', 'synthetic-part-c'];
+const coverageOffsets = Array.from({ length: 118 }, (_, index) => index);
+const missingEntries = coveragePartIds.flatMap(partId => coverageOffsets.map(offset => {
+  const time = new Date(Date.parse(TIME) + offset * 3_600_000).toISOString();
+  return buildFeggesundWaveInputProofEntry({
+    partId,
+    time,
+    hour: {
+      waveHeightM: null,
+      wavePeriodS: null,
+      waveDirectionDeg: null,
+      waveInputSource: null,
+      waveInputNoticeId: null,
+      waveProvenance: {
+        status: 'unverified',
+        reason: 'no-exact-authorized-wave-source',
+      },
+    },
+  });
+}));
+const missingCoverage = buildFeggesundWaveCoverageProof({
+  forecastStartAt: TIME,
+  forecastHours: 118,
+  partIds: coveragePartIds,
+  entries: missingEntries,
+});
+assert.equal(missingCoverage.entries.length, 354,
+  'the private proof can honestly materialize the full 3x118 domain as MISSING');
+assert.deepEqual(missingCoverage.counts, {
+  [FEGGESUND_WAVE_DISPOSITIONS.direct]: 0,
+  [FEGGESUND_WAVE_DISPOSITIONS.proxy]: 0,
+  [FEGGESUND_WAVE_DISPOSITIONS.missing]: 354,
+});
+assert.ok(missingCoverage.entries.every(entry => entry.inputSha256 === null
+  && entry.provenanceSha256 === null));
+assert.throws(() => buildFeggesundWaveCoverageProof({
+  forecastStartAt: TIME,
+  forecastHours: 118,
+  partIds: coveragePartIds,
+  entries: missingEntries.slice(1),
+}), /exactly 3 parts by 118 hours/,
+'even an honest MISSING ledger must cover every expected part-hour');
 
 console.log('OK: Feggesund wave proxy is bounded, energy-consistent, circular and hash-bound.');

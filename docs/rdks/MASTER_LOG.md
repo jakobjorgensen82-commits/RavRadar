@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.334 WAM-readiness
+
+- Oneoff `34161930631` beviste den første eksakte operationelle strømclosure på 79.414/79.414: DMI 61.860, Copernicus 16.593, regional DMI 944, Open-Meteo 17 og missing 0. Kildeprogressionen blev gemt.
+- Kørslen stoppede efter closure på den separate Feggesund 3 × 118-bølgekontrakt. DKSS LF brugte næsten hele DMI-arbejdsbudgettet, så de kritiske WAM-familier blev udsultet. Intet artifact, deploy, Phase B eller modelskift skete.
+- Ejerens eksisterende krav om genbrug, fuldvinduesscan, huller/hale først, atomisk replacement, DMI → Copernicus → regional → Open-Meteo og rådgivende 48-timershistorik består.
+- Lokal 4.0.334 giver begge WAM-familier fair runtime-reserve, bevarer globalt loft, genbruger same-run/same-processing assets, håndhæver exact eller højst fire timers same-run/same-cell bro og stopper oneoff efter cache-save, hvis WAM-readiness ikke er grøn.
+- Runtime bygger eksakt 118-timersakse med `MISSING`, atomiske komponenttuples og hashbundet Feggesund-preflight/slutproof. Candidate G-target ældre end den tilladte bro rebases til source-attesteret cold start; mixed target stopper. Første cutover kræver konkret positivt run-id.
+- Den korte samlede testmatrix og to uafhængige helikopterreviews er grønne uden P0/P1. 4.0.334 er versioneret og dokumenteret lokalt; commit, exact-head, merge, main-oneoff, 354/354, spatial/kapacitet, fulde gates, artifact/deploy, Phase B og offentlig kontrol er åbne.
+- Efter launch genaktiveres normal ekstern-cron-drift som permanent vedligeholder. Proxy-aware WAM-residual og oneoffens live EDR-budget er P2-latensopfølgning, ikke releaseblockere.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-07 – 4.0.333 adaptiv exact-residual
 
 - 4.0.332 bestod exact-head sourcegate `34125927405` på `f23f306b7181b0502f1560e3eea37bfa32542bcc` og blev merged via PR #265 som `1e1093dead7fbbf5adcd401592d11c6b1c21d746`.

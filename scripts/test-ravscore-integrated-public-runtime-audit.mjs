@@ -732,6 +732,37 @@ assert.ok(audit(national, nationalPackage, 210, 673).errors
   .includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
 'a national 210/673 runtime must fail without its exact Feggesund proof ledger');
 national.coastalParts.waveInputProofs = { feggesund: savedFeggesundProof };
+const oneMissingFeggesundHour = structuredClone(national);
+const missingProofEntry = buildFeggesundWaveInputProofEntry({
+  partId: savedFeggesundProof.entries[0].partId,
+  time: savedFeggesundProof.entries[0].time,
+  hour: {
+    waveHeightM: null,
+    wavePeriodS: null,
+    waveDirectionDeg: null,
+    waveInputSource: null,
+    waveInputNoticeId: null,
+    waveProvenance: {
+      status: 'unverified',
+      reason: 'no-exact-authorized-wave-source',
+    },
+  },
+});
+oneMissingFeggesundHour.coastalParts.waveInputProofs.feggesund =
+  buildFeggesundWaveCoverageProof({
+    forecastStartAt: savedFeggesundProof.forecastStartAt,
+    forecastHours: savedFeggesundProof.forecastHours,
+    partIds: savedFeggesundProof.partIds,
+    entries: savedFeggesundProof.entries.map((entry, index) =>
+      index === 0 ? missingProofEntry : entry),
+  });
+assert.ok(audit(
+  oneMissingFeggesundHour,
+  nationalPackage,
+  210,
+  673,
+).errors.includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
+'the unchanged final gate must reject even one honestly materialized MISSING Feggesund hour');
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);
 assert.deepEqual(nationalReport.history, {

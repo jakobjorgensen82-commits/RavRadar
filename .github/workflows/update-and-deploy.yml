@@ -181,15 +181,14 @@ jobs:
             echo "Integrated first cutover confirmation is accepted only by an integrated first cutover." >&2
             exit 1
           fi
-          if [ -n "$WEATHER_HANDOFF_RUN_ID" ]; then
-            if [ "$FIRST_CUTOVER_REQUESTED" != "true" ]; then
-              echo "A verified weather handoff is accepted only by an integrated first cutover." >&2
-              exit 1
-            fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
             if [[ ! "$WEATHER_HANDOFF_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]; then
               echo "Verified weather handoff run id is malformed." >&2
               exit 1
             fi
+          elif [ -n "$WEATHER_HANDOFF_RUN_ID" ]; then
+            echo "A verified weather handoff is accepted only by an integrated first cutover." >&2
+            exit 1
           fi
           if [ "$RETURN_REQUESTED" = "true" ] && [ "$RETURN_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-RETURN" ]; then
             echo "Integrated return confirmation is not exact."

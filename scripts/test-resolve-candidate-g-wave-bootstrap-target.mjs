@@ -189,6 +189,19 @@ try {
   await assertAcceptedAge(0);
   await assertAcceptedAge(2);
   await assertAcceptedAge(3);
+  await assertAcceptedAge(4);
+
+  const fiveHourBridge = await runCli('five-hour-bridge', conditionsAtAge(5));
+  assertAcceptedAggregate(fiveHourBridge, {
+    mode: COLD_START_MODE,
+    targetHour: WAM_TARGET,
+  });
+
+  const oldUniformState = await runCli('old-uniform-state', conditionsAtAge(12));
+  assertAcceptedAggregate(oldUniformState, {
+    mode: COLD_START_MODE,
+    targetHour: WAM_TARGET,
+  });
 
   const warmup = conditionsAtAge(2, 12);
   const warmupResult = await runCli('all-warmup', warmup);
@@ -284,6 +297,22 @@ try {
   assert.equal(mixedResult.stdout, '');
   assert.equal(mixedResult.stderr.trim(), 'RAVSCORE_CANDIDATE_MIGRATION_TARGET_MIXED');
   assert.equal(mixedResult.githubOutput, '');
+  assertPrivacySafe(mixedResult);
+
+  const mixedOldTargets = conditionsAtAge(5);
+  mixedOldTargets.coastalParts.parts[parts.at(-1).partId].candidateG.currentState = {
+    ...candidateTemplate(6),
+    stateKey: legacyCandidateGStateKey(parts.at(-1)),
+  };
+  const mixedOldResult = await runCli('mixed-old-targets', mixedOldTargets);
+  assert.notEqual(mixedOldResult.code, 0);
+  assert.equal(mixedOldResult.stdout, '');
+  assert.equal(
+    mixedOldResult.stderr.trim(),
+    'RAVSCORE_CANDIDATE_MIGRATION_TARGET_MIXED',
+  );
+  assert.equal(mixedOldResult.githubOutput, '');
+  assertPrivacySafe(mixedOldResult);
 
   const missing = conditionsAtAge(0);
   delete missing.coastalParts.parts[parts[0].partId].candidateG.currentState;

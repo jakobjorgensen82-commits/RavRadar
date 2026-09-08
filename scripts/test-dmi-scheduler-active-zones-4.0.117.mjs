@@ -20,6 +20,12 @@ assert.doesNotMatch(bulk,/"atmosphere": int\(\(horizon_coverage\.get\("wind"\)/)
 assert.match(bulk,/marine_foundation_missing/);
 assert.match(bulk,/balanced_foundation_recovery/);
 assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
+assert.match(bulk,/operational_wave_residual_by_collection\(/);
+assert.match(bulk,/and not has_operational_wave_residual\(/);
+assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
+assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}productive_collections \+= 1/);
+assert.match(bulk,/if budget_stop_code == "CRITICAL_WAM_RUNTIME_RESERVED"[\s\S]{0,500}"reasonCode": budget_stop_code/);
+assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
 
 
 import {spawnSync} from 'node:child_process';
@@ -151,19 +157,74 @@ selected,run_diag=module.select_forecast_run(
 assert selected=='2026-01-03T01:00:00Z', run_diag
 assert run_diag['preferredProgressiveRunDiscardedAsStale'] is True, run_diag
 
-# Missing strict provenance moves all DKSS collections ahead of non-current
-# families. Step reuse is independently bound to parser/signature and, for
-# DKSS, the exact selected official asset capture.
+# The operational wave residual uses the exact 118-hour axis and the generic
+# coast-type partition, without any zone-name special case.
+real_wave_resolver=module.resolved_native_wave_hours
+resolver_calls=[]
+def fake_wave_resolver(_hourly,**kwargs):
+ resolver_calls.append(kwargs)
+ required=tuple(kwargs['required_hours'])
+ return required if kwargs['collection']=='wam_dw' else required[:100]
+module.resolved_native_wave_hours=fake_wave_resolver
+wave_reference=datetime(2026,1,1,tzinfo=timezone.utc)
+wave_zones=[
+ {'id':'EAST','lon':10.0,'lat':56.0,'coastType':'east'},
+ {'id':'WEST','lon':8.0,'lat':56.0,'coastType':'west'},
+]
+wave_doc={'zones':{'EAST':{'hourly':{}},'WEST':{'hourly':{}}}}
+wave_gap=module.operational_wave_residual_by_collection(
+ wave_doc,wave_zones,wave_reference,
+)
+assert wave_gap['wam_dw']['requiredPairCount']==118, wave_gap
+assert wave_gap['wam_dw']['missingPairCount']==0, wave_gap
+assert wave_gap['wam_nsb']['requiredPairCount']==118, wave_gap
+assert wave_gap['wam_nsb']['missingPairCount']==18, wave_gap
+assert {call['entity_id'] for call in resolver_calls}=={'EAST','WEST'}, resolver_calls
+module.resolved_native_wave_hours=real_wave_resolver
+
+# Missing strict provenance permits one DKSS lead attempt, then every real WAM
+# residual runs before remaining DKSS/slack. Cooldowns remain authoritative.
+# Step reuse is independently bound to parser/signature and, for DKSS, the
+# exact selected official asset capture.
 mixed_schedule=['wam_dw','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw','wam_nsb']
-recovery_schedule=module.prioritize_strict_current_recovery(mixed_schedule,False)
-assert recovery_schedule[:3]==['dkss_nsbs','dkss_lf','dkss_idw'], recovery_schedule
-assert module.prioritize_strict_current_recovery(mixed_schedule,True)==mixed_schedule
-assert module.prioritize_first_cutover_collections(recovery_schedule,False)==[
- 'dkss_nsbs','dkss_lf','dkss_idw','wam_dw','wam_nsb','harmonie_dini_sf',
-]
-assert module.prioritize_first_cutover_collections(mixed_schedule,True)==[
- 'wam_dw','wam_nsb','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw',
-]
+wave_residual={
+ 'wam_dw':{'requiredPairCount':118,'missingPairCount':12},
+ 'wam_nsb':{'requiredPairCount':118,'missingPairCount':4},
+}
+planned,plan_diag=module.operational_collection_plan(
+ mixed_schedule,{},False,wave_residual,600,now_epoch=1,
+)
+assert planned[:3]==['dkss_nsbs','wam_dw','wam_nsb'], planned
+assert planned.index('dkss_lf') > planned.index('wam_nsb'), planned
+assert plan_diag['strictCurrentLeadAttemptLimit']==1, plan_diag
+assert plan_diag['criticalWamOutsideBaseCollectionQuota'] is True, plan_diag
+assert plan_diag['criticalWamRuntimeReserveSeconds']==240, plan_diag
+assert set(plan_diag['criticalWamRuntimeReserveSecondsByCollection'].values())=={120}, plan_diag
+cooldown_state={'wam_nsb':{'nextEligibleAt':'2099-01-01T00:00:00Z'}}
+planned,plan_diag=module.operational_collection_plan(
+ mixed_schedule,cooldown_state,False,wave_residual,600,now_epoch=1,
+)
+assert planned[:2]==['dkss_nsbs','wam_dw'], planned
+assert 'wam_nsb' not in planned, planned
+assert plan_diag['retryDeferredCollections']==['wam_nsb'], plan_diag
+cutover_complete={
+ collection:{'requiredPairCount':118,'missingPairCount':0}
+ for collection in ('wam_dw','wam_nsb')
+}
+planned,plan_diag=module.operational_collection_plan(
+ mixed_schedule,{},True,cutover_complete,600,now_epoch=1,
+ force_wam_collections={'wam_dw','wam_nsb'},
+)
+assert planned[:2]==['wam_dw','wam_nsb'], planned
+assert plan_diag['forcedFirstCutoverWamCollections']==['wam_dw','wam_nsb'], plan_diag
+small_reserve,small_total=module.wam_runtime_reserve(['wam_dw','wam_nsb'],100)
+assert small_total==100 and set(small_reserve.values())=={50}, (small_reserve,small_total)
+real_remaining=module.runtime_remaining
+module.runtime_remaining=lambda:100
+controller=module.ProgressCheckpointController({},set(),{})
+assert controller.can_start_asset() is True
+assert controller.can_start_asset(reserve_seconds=50) is False
+module.runtime_remaining=real_remaining
 reuse_time='2026-01-01T00:00:00Z'
 reuse_signature='parser-current'
 official_asset={
@@ -200,6 +261,8 @@ assert module.reusable_processed_steps(
  required_asset_provenance={reuse_time:official_asset},
  current_target_ids=current_target_ids,
  current_target_registry_sha256=current_target_registry_sha256,
+ actual_pair_source_keys=set(),
+ covered_pair_keys={('TEST',reuse_time)},
 )==old_steps
 assert module.reusable_processed_steps(
  old_run,collection='dkss_idw',same_processing=True,same_run=True,
@@ -207,6 +270,8 @@ assert module.reusable_processed_steps(
  required_asset_provenance={reuse_time:official_asset},
  current_target_ids=current_target_ids,
  current_target_registry_sha256=current_target_registry_sha256,
+ actual_pair_source_keys=set(),
+ covered_pair_keys={('TEST',reuse_time)},
 )==old_steps
 unsigned_run={**old_run,'processedSteps':{reuse_time:{
  key:value for key,value in old_steps[reuse_time].items()
@@ -218,6 +283,8 @@ assert module.reusable_processed_steps(
  required_asset_provenance={reuse_time:official_asset},
  current_target_ids=current_target_ids,
  current_target_registry_sha256=current_target_registry_sha256,
+ actual_pair_source_keys=set(),
+ covered_pair_keys={('TEST',reuse_time)},
 )=={}
 wam_steps={reuse_time:{
  'complete':True,'recognizedParameters':['significant-wave-height'],
@@ -258,9 +325,11 @@ module.request_json=lambda *args,**kwargs:{'features':stac_items}
 real_time=module.time.time
 module.time.time=lambda:module.epoch('2026-01-01T20:00:00Z')
 stale_run,stale_assets,stale_diag=module.list_latest_assets('wam_dw')
-assert stale_run is None and stale_assets==[] and stale_diag['rejectedStaleRun'] is True, stale_diag
+assert stale_run=='2026-01-01T06:00:00Z' and len(stale_assets)==1, stale_diag
+assert stale_diag['scheduleFreshnessWarning'] is True and stale_diag['rejectedStaleRun'] is False, stale_diag
 stale_run,stale_assets,stale_diag=module.list_latest_assets('wam_dw','2026-01-01T00:00:00Z')
-assert stale_run is None and stale_assets==[] and stale_diag['rejectedStaleRun'] is True, stale_diag
+assert stale_run=='2026-01-01T06:00:00Z' and len(stale_assets)==1, stale_diag
+assert stale_diag['preferredProgressiveRunDiscardedAsStale'] is True, stale_diag
 module.time.time=lambda:module.epoch('2026-01-01T09:00:00Z')
 fresh_run,fresh_assets,fresh_diag=module.list_latest_assets('wam_dw')
 assert fresh_run=='2026-01-01T06:00:00Z' and len(fresh_assets)==1, fresh_diag

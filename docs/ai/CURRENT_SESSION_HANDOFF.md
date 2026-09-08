@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
+
+- Oneoff `34161930631` på `57a4c91405f0fd90353f8655315b42430ad13208`, target `2026-09-07T21:00:00Z`, beviste operationel strømclosure **79.414/79.414**: DMI 61.860, Copernicus 16.593, regional 944, Open-Meteo 17, missing 0; hash `sha256:d6cd84a61d045a94c60e70a5b3edb3a6234712104d17003e704747d0c359daa9`.
+- Runnet stoppede efterfølgende korrekt på Feggesunds manglende 3 × 118. Det byggede eller deployede intet artifact og udførte ikke Phase B eller offentlig cutover.
+- Rodårsagen i det observerede run var budgetstarvation: DKSS LF brugte cirka 2.687 af 2.818 sekunders arbejdsbudget, så WAM ikke fik en tur. Senere live EDR 429 var sekundær.
+- 4.0.334 implementerer fair reserve til `wam_dw`/`wam_nsb`, eksakt højst fire timers WAM-bridge, cold-start-rebase for en for gammel ensartet Candidate G-target, eksplicit `MISSING` på 118-timersaksen, atomiske tuples, hashbundet Feggesund-preflight/slutproof og konkret runbundet første cutover. Normal updater og oneoff deler cachegenbrug; oneoff gemmer progression før WAM-gaten.
+- **Næste rækkefølge:** version/commit → exact-head GitHub `validate:source` → merge/main-oneoff → Feggesund 354/354 og komplet runtimeproof → fuld validate/releasegate → artifact/deploy/Phase B/offentlig cutover → genaktivér normal ekstern-cron-drift.
+- 4.0.334 er ikke endnu CI-, main-, runtime-, deploy- eller cutover-verificeret. Offentlig runtime er fortsat 4.0.316 / Candidate G.
+- Åbne P2'er efter launch: native WAM-rest krediterer ikke en gyldig Feggesund-proxy, og oneoffens live ForecastEDR-budget kan ikke sættes helt til nul. De kan give ekstra latency, men er ikke dokumenterede correctness-/releaseblockere.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 exact-unresolved kø
 
 - **Status:** 4.0.332 exact-head-grøn og merged; oneoff `34127986853` sluttede 79.132/79.414 med 282 missing og gemt cache. Ingen deploy/cutover; Candidate G offentlig; normal workflow deaktiveret.

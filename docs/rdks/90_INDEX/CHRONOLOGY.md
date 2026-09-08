@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 WAM-readiness efter komplet strømclosure
+
+- Main-oneoff `34161930631` på `57a4c914…`, target 21Z, lukkede alle 79.414 strømpar: DMI 61.860, Copernicus 16.593, regional 944 og Open-Meteo 17. Det er positivt provider-/cachebevis.
+- Runtime stoppede derefter på Feggesunds manglende 3 × 118 bølgetimer. DKSS LF havde brugt cirka 2.687 af 2.818 arbejdssekunder, så WAM ikke fik en tur; senere EDR 429 var sekundær. Intet artifact, deploy eller cutover.
+- Lokal 4.0.334 reserverer fair runtime til begge WAM-familier, genbruger allerede behandlede assets, kræver strict WAM-readiness før downstream, materialiserer eksplicit `MISSING` på 118-timersaksen og binder Feggesund-preflight til slutproof.
+- Candidate G-targetlaget er nu bounded: højst fire inklusive brotimer; ældre ensartet state giver source-attesteret cold start, mens mixed target stopper. Første cutover kræver konkret positivt handoff-run-id.
+- Måltests og to reviews er grønne uden P0/P1. Versionssynkronisering er gennemført; exact-head, merge, ny main-runtime, fulde gates, Phase B og offentlig verifikation afventer. Candidate G er fortsat offentlig.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 adaptiv Open-Meteo-rest
 
 - 4.0.332 bestod sourcegate `34125927405` på exact head `f23f306b…` og blev merged via PR #265 som `1e1093de…`.
