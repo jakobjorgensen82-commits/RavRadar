@@ -59,7 +59,14 @@ jobs:
               with urlopen(request, timeout=45) as response:
                   raw = response.read(65537)
           except HTTPError as error:
-              print(json.dumps({'status': 'SERVER_LOGS_UNAVAILABLE', 'http_status': error.code}), flush=True)
+              failure_body = error.read(8192).decode('utf-8', errors='replace').lower()
+              print(json.dumps({'status': 'SERVER_LOGS_UNAVAILABLE', 'http_status': error.code,
+                                'mentions_permission': any(term in failure_body for term in ['permission', 'scope', 'privilege']),
+                                'mentions_clickhouse': 'clickhouse' in failure_body,
+                                'mentions_feature': any(term in failure_body for term in ['feature', 'enabled', 'access to logs']),
+                                'mentions_token': any(term in failure_body for term in ['token', 'authorization', 'jwt']),
+                                'mentions_plan': any(term in failure_body for term in ['plan', 'quota', 'upgrade']),
+                                'mentions_access_denied': any(term in failure_body for term in ['access denied', 'forbidden', 'not allowed'])}), flush=True)
               sys.exit(1)
           except URLError:
               print('SERVER_LOGS_CONNECTION_FAILED', flush=True)
