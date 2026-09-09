@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-09 – lokal 4.0.340 retter WAM-seam uden at blande modelkørsler
+
+Backend `34371639398` forsøg 2 er terminalt grøn på merged main `b0ca7f5d`. Oneoff `34371642565` gemte DMI-, Copernicus- og Open-Meteo-progress, men stoppede før handoff: Open-Meteo fyldte 2.057/2.381 aktuelle restpar (1.787 genbrugte, 270 hentede), efterlod 324 og ramte 15-minuttersbudgettet uden global leverandørfejl. WAM-inspektøren stoppede separat med `MIXED_RUN_INTERPOLATION`. Candidate G er fortsat offentlig.
+
+Rodårsagen er bevist som en kontraktforskel, ikke tabt cache: producentens `resolved_native_wave_hours` grupperer efter samme collection/modelkørsel/gitter/celle og kan finde en sikker bracket, mens både Python-slutvalidatoren og JavaScript Forecast Store hidtil kun prøvede de to tidsmæssigt nærmeste rækker. En eksakt nyere række kunne derfor skjule en bredere, men stadig højst fire timer lang, sikker bracket fra den foregående modelkørsel.
+
+Lokal 4.0.340 bruger samme afgrænsede valg i begge consumers. Eksakt række vinder fortsat; alternativ interpolation kræver identisk native serie og vælger deterministisk smalleste bracket, derefter nyeste kausale modelkørsel. Ingen cross-run/cell/collection-interpolation tillades, og bølgers firetimersloft kan ikke udvides af cadence-input. Python 34/34, producentintegration 24/24, Forecast Store, handoff-target og RavScore-produktionsadapter er grønne. Se `WAM_SAME_RUN_RESOLUTION_REVIEW_2026-09-09.md`.
+
+DEC-0122's allerede ejerautoriserede snævre first-cutover-binding er flyttet til exact-release 4.0.340. Oneoff `34387410217` fortsætter på den bevarede 4.0.339-main-cache; main må ikke flyttes før dens afsluttende cache-saves. Dens eventuelle gamle-head-handoff kan ikke bruges til 4.0.340-cutover, men alle kildecacher kan genvalideres og genbruges. Næste rækkefølge: færdiggør releasehukommelse og måltests, commit/push, én exact-head sourcegate, merge efter cache-save, ny eksakt main-oneoff, fulde post-data-gates og offentlig modelverifikation. Sol / Ekstra høj er passende.
+
 # NYESTE CHECKPOINT – 2026-09-09 – 4.0.339 retter den stoppede backendmigration
 
 4.0.338 bestod exact-head-kildegaten `34348151097` på `2bddb2db` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`. Backendrun `34350871769` bestod parser, migrationsliste, dry-run, eksakt otte-filsplan, `--skip-vault` og sidste main-CAS. Migration 1–3 blev anvendt og registreret. Migration 4 stoppede på PostgreSQL `SQLSTATE 42601`, statement 9, og dens egen transaktion rullede helt tilbage; migration 5–8 samt D1, Edge, Worker, maintenance, synchronization, public mode og protected readiness blev ikke kørt. Vault blev ikke ændret.

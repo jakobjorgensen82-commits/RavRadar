@@ -1,3 +1,17 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – lokal 4.0.340 WAM-seam
+
+- [x] Klassificér oneoff `34371642565`: alle provider-saves grønne; Open-Meteo efterlod 324 ved runtimebudget; WAM stoppede separat på `MIXED_RUN_INTERPOLATION`; intet handoff/deploy.
+- [x] Reproducer producer/consumer-forskellen med nye røde regressioner i både Python-handoff og JavaScript Forecast Store.
+- [x] Implementér deterministisk same-series bracketvalg med eksakt-række-prioritet og absolut firetimersloft uden at svække mixed-run/cell/collection-afvisning.
+- [x] Bestå Python WAM 34/34, producentintegration 24/24, Forecast Store, bootstrap-target og RavScore-produktionsadapter.
+- [x] Flyt DEC-0122's allerede godkendte first-cutover-binding til exact-release 4.0.340; ingen generel drifts- eller gateundtagelse.
+- [x] Afslut versions-, RDKS-, håndbogs-, geodatafelt- og målrettede workflowkontroller; releasepakken er klar til commit uden private cache-/diagnosefiler.
+- [ ] Commit/push den præcise releasepakke og kør én exact-head GitHub-sourcegate.
+- [ ] Vent på afsluttende cache-saves i oneoff `34387410217`; kør derefter én exact-head GitHub-sourcegate og merge kun grøn head.
+- [ ] Kør komplet oneoff på eksakt 4.0.340-main og kræv 79.414/79.414, WAM/Feggesund 354/354 og runbundet handoff.
+- [ ] Kør fulde post-data-gates, artifact/deploy og offentlig 210/673-verifikation; Candidate G er offentlig indtil da.
+- [ ] Efter launch: tabsfri cachetransport i shadow, kildeattesteret 48h-OM-historik, almindelig vedligeholdelsesruntime og bounded DB-loginretry uden driftsforstyrrelse.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.339 SQL-recovery
 
 - [x] Luk 4.0.338 source/merge: exact-head `34348151097` grøn på `2bddb2db`; PR #272 merged som `208e878453d6d8a21b8ce879eac050d664c50c40`.
@@ -48,7 +62,7 @@
 - [x] Opdatér releasegate og alle fire normal-/oneoff-DMI-READY-integrationstestmarkører til den fælles codec-aware validator; 24 DMI/WAM-scenarier er grønne.
 - [x] Fjern fuld national deep-clone fra Feggesunds negative auditfixture; samme 210/673-audit består under Nodes normale lokale heaploft. To planlagte Windows Update-genstarter afbrød kun den efterfølgende samlede gate og ændrede ingen data.
 - [ ] Bestå ny samlet lokal slutgate efter legacy-normaliseringen, afslut endelig version/RDKS-head og bestå én GitHub sourcegate på eksakt PR-head. Den historiske Open-Meteo-overlapdiagnose er fortsat separat åben.
-- [ ] Merge, kør komplet main-oneoff og kræv 79.414/79.414, WAM/Feggesund 354/354 samt archive højst 50 MB.
+- [ ] Merge, kør komplet main-oneoff og kræv 79.414/79.414, WAM/Feggesund 354/354. Oneoffens eksisterende strengere 50.000.000-byte-kontrol består; den faktiske first-cutover-publisher må efter ejerens præcisering højst acceptere Supabases officielle 52.428.800-byte-grænse.
 - [ ] Gennemfør central runtime, fulde gates, artifact/deploy, Phase B og offentlig verifikation af den integrerede model.
 - [ ] Efter launch: byg og skyggeverificér cachetransport uden nulstilling; atomisk cutover/rollback før normal højfrekvent cron/watchdog.
 

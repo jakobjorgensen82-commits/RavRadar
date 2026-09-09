@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.339. Ejeren har også udtrykkeligt godkendt nødvendig overførsel til 4.0.340 og senere launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. Backend-, komplet vejr- og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.340. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. Backend er grøn; komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -48,6 +48,18 @@ Policyversionen skal fortsat matche `package.json` fail-closed. Den oprindelige 
 Ejeren har udtrykkeligt godkendt, at undtagelsen også må flyttes til 4.0.340 og senere versioner, hvis en nødvendig launchrettelse kræver det. Codex skal ikke bede om gentagen tilladelse alene til versionsflytningen. Den aktuelle rettelse færdiggøres dog fortsat som 4.0.339 i PR #273; den fejlede test kræver ikke i sig selv en ny release.
 
 Hver nødvendig overførsel skal registreres i projektets hukommelse, bindes til den valgte eksakte release og main-head og kræve et komplet handoff fra samme head. Dette er ikke en flydende versionsmatch eller en ekstra first cutover, og ingen tekniske grænser eller driftskadence udvides. Cacheprogression må fortsat genbruges på tværs af releases efter genvalidering; eksisterende kørsler skal gemme den før main-skift.
+
+### Ejerpræcisering 2026-09-09 – Supabases faktiske 50-MiB-grænse
+
+Ejeren har udtrykkeligt godkendt, at den ene first-cutover må bruge Supabases officielle Free-grænse på højst `50 * 1024 * 1024 = 52.428.800` archive-byte. Dette supersederer alene denne beslutnings tidligere decimalgrænse på 50.000.000 byte. Supabases officielle Studio-kode kalder værdien 50 MB, men definerer den som 50 MiB: https://github.com/supabase/supabase/blob/a96a587f65f317ae56d4ff3d403e36d0d61a8473/apps/studio/components/interfaces/Storage/StorageSettings/StorageSettings.constants.ts#L1 .
+
+Den eksisterende protected publisher håndhæver allerede præcis 52.428.800 byte før upload. Oneoffens strengere 50.000.000-byte-kontrol bevares og må fortsat stoppe producenten; den behøver ikke lempes for at udføre denne launch. Præciseringen kræver derfor ingen kodeændring, ny source-head eller ny kildegate og gør ikke det aktuelle handoff ugyldigt.
+
+Dette udvider ikke antallet af launches, retained generationer, checkpointgrænsen, storage-/egressbudgettet, privacy, readback, closure, releasegates, normal kadence eller nogen cache-/vejr-/modelkontrakt. Den faktiske publiceringsarchive skal fortsat valideres mod publisherens grænse før upload. Officiel kodeevidens er ikke live-readback af projektets Storage-indstilling; eksisterende bucket-/uploadkontrol består.
+
+### Versionsoverførsel 2026-09-09 – exact-release 4.0.340
+
+Efter den dokumenterede producer/consumer-forskel ved en WAM-modelkørselsseam bruger first-cutoveren exact-release `4.0.340`. Dette er den allerede ejerautoriserede nødvendige launchrettelse, ikke en ny eller bredere undtagelse. Handoff skal komme fra samme eksakte 4.0.340-main-head; kildecacheprogression fra 4.0.339 må kun genbruges efter de eksisterende valideringer. Alle materielle grænser og gates består.
 
 ## Konsekvenser
 

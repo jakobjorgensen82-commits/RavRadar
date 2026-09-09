@@ -1,3 +1,13 @@
+## 4.0.340 – ens WAM-semantik fra producent til RavScore (2026-09-09)
+
+- Retter en dokumenteret kontraktforskel: DMI-planlæggeren kunne se en sikker WAM-interpolation inden for samme modelkørsel, mens slutvalidatoren og Forecast Store kun så de to nærmeste rækker og derfor kunne afvise ved et modelkørselsskifte.
+- Eksakte WAM-rækker vinder fortsat. Kun hvis de nærmeste naboer ikke må blandes, vælges den smalleste validerede bracket fra samme collection, modelkørsel, gitter og fysiske celle; firetimersloftet består absolut.
+- Bevarer fail-closed afvisning af interpolation på tværs af modelkørsel, collection, gitter eller celle. Ingen DMI→Copernicus→Open-Meteo-prioritet, cacheidentitet, geometri, scoreparameter eller offentlig model er ændret.
+- Oneoff `34371642565` gemte providerprogression, men stoppede med 324 Open-Meteo-strømpar og den falske WAM-klassifikation `MIXED_RUN_INTERPOLATION`; intet handoff eller deploy blev produceret. Efterfølger `34387410217` fortsætter på den bevarede cache, mens rettelsen gøres klar.
+- Backend `34371639398` forsøg 2 er grøn. Candidate G forbliver offentlig, indtil 4.0.340 har exact-head-kildegate, merge, komplet main-handoff, fulde post-data-gates, deploy og offentlig verifikation.
+- DEC-0122's allerede ejerautoriserede first-cutover-binding flyttes snævert til exact-release 4.0.340; øvrige integritets-, privacy-, størrelse-, storage-, readback-, closure- og releasekrav er uændrede.
+- Målrettede validator-, producent-, målbindings-, Forecast Store- og RavScore-adaptertests er grønne. Se `CHANGELOG-4.0.340.md` og `docs/ai/WAM_SAME_RUN_RESOLUTION_REVIEW_2026-09-09.md`.
+
 ## 4.0.339 – sikker genoptagelse af den integrerede backendpakke (2026-09-09)
 
 - Bevarer 4.0.338's tre allerede anvendte migrationer og genoptager kun det eksakte pending suffix 4–8.
@@ -5,6 +15,7 @@
 - Tilføjer en regressionstest, som afviser den oprindelige bare `IS DISTINCT FROM CASE`-form og kræver identiske rettede SQL-kopier.
 - Dokumenterer isoleret PostgreSQL 16-bevis for migration 4–8 i rækkefølge samt grønne måltests for partial recovery, installer, readiness, releasepolicy og workflows.
 - Flytter DEC-0122's uændrede one-shot-undtagelse til exact-release 4.0.339 og registrerer ejerens udtrykkelige autorisation til nødvendige successors med samme snævre grænser.
+- Præciserer efter ejerens godkendelse, at den ene first-cutover må bruge Supabases officielle Free-grænse på højst 52.428.800 archive-byte; oneoffens strengere 50.000.000-byte-kontrol og alle øvrige sikkerheds-, kapacitets- og releasekrav består.
 - Retter per-pair-testens forældede hash med bevis for kun to parentesers ændring; SQL-regressionen må ikke fejle på håndbogstekst. Supplerer installationsbeviset med faktiske positive/negative PostgreSQL 16.4-funktionskald.
 - Dokumenterer den ekstra Astra-helkædekontrol: same-reference-handoff og backendbinding hænger sammen; aktuelle strøm-/WAM-huller samt OM-historik og bæredygtig cachetransport er fortsat åbne og må ikke skjules af et grønt build.
 - Candidate G er fortsat offentlig. Exact-head, merge, produktionsbackend, komplet 4.0.339-weather-handoff, fulde gates og offentlig integreret model er åbne.

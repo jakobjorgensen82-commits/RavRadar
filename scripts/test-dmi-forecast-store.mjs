@@ -186,6 +186,66 @@ assert.equal(chainedWind.hourly[5].sources.wind.nativeSteps.length, 2, 'Begge ek
 assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windSpeedMps < 23, 'DKSS-halen skal kun interpoleres inden for DKSS-serien');
 assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 
+{
+  const oldRun = new Date(Date.parse(generatedAt) - 6 * 3600000).toISOString();
+  const plus1 = new Date(Date.parse(generatedAt) + 1 * 3600000).toISOString();
+  const plus3 = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const mixedRunWaveSeam = [
+    {
+      step: generatedAt,
+      'significant-wave-height': 1,
+      'mean-wave-dir': 270,
+      'dominant-wave-period': 6,
+      provenance: native('wave', 'wam_dw', generatedAt, oldRun),
+    },
+    {
+      step: plus1,
+      'significant-wave-height': 9,
+      'mean-wave-dir': 90,
+      'dominant-wave-period': 9,
+      provenance: native('wave', 'wam_dw', plus1, generatedAt),
+    },
+    {
+      step: plus3,
+      'significant-wave-height': 4,
+      'mean-wave-dir': 270,
+      'dominant-wave-period': 6,
+      provenance: native('wave', 'wam_dw', plus3, oldRun),
+    },
+  ];
+  const safeWaveSeam = buildDmiForecastHourly({
+    waves: mixedRunWaveSeam,
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(safeWaveSeam.hourly[1].waveHeightM, 9, 'en eksakt nyere WAM-række skal fortsat vinde');
+  assert.equal(safeWaveSeam.hourly[2].waveHeightM, 3, 'manglende time skal bruge den sikre bredere same-run bracket');
+  assert.equal(safeWaveSeam.hourly[2].sources.wave.modelRun, oldRun);
+  assert.deepEqual(
+    safeWaveSeam.hourly[2].sources.wave.nativeValidTimes,
+    [generatedAt, plus3],
+  );
+
+  const unsafeMixedRunSeam = buildDmiForecastHourly({
+    waves: [mixedRunWaveSeam[0], { ...mixedRunWaveSeam[2], provenance: native('wave', 'wam_dw', plus3, generatedAt) }],
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(unsafeMixedRunSeam.hourly[1].waveHeightM, null, 'WAM må fortsat ikke interpolere på tværs af modelkørsler');
+
+  const plus6 = new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString();
+  const overlongSameRun = buildDmiForecastHourly({
+    waves: [
+      mixedRunWaveSeam[0],
+      { ...mixedRunWaveSeam[2], step: plus6, provenance: native('wave', 'wam_dw', plus6, oldRun) },
+    ],
+    generatedAt,
+    hours: 3,
+    sourceCadenceMinutes: 360,
+  });
+  assert.equal(overlongSameRun.hourly[1].waveHeightM, null, 'WAM må aldrig udvide firetimersgrænsen');
+}
+
 const normalized = normalizeForecastHourly([
   { time: generatedAt, windSpeedMps: 4 },
   { time: generatedAt, waveHeightM: 0.5 },

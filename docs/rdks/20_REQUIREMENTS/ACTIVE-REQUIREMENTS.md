@@ -1,11 +1,18 @@
 # Aktive krav – samlet register
 
+# 4.0.340 – aktiv WAM-seam- og launchkontrakt
+
+- **REQ-4.0.340-WAM-SERIES-001 – BINDENDE P0:** En eksakt WAM-række vinder. En interpoleret bølgetime må kun dannes af to fuldt validerede native rækker med samme collection, modelkørsel, gitterdefinition og fysiske celle og højst fire timers afstand. Der må aldrig interpoleres på tværs af disse identiteter.
+- **REQ-4.0.340-PRODUCER-CONSUMER-001 – BINDENDE P0:** DMI-producentens residualberegning, den operationelle Python-handoff-validator og JavaScript Forecast Store skal kunne finde samme sikre same-series bracket ved et modelkørselsskifte. En nærmere eksakt række fra en anden modelkørsel må ikke skjule en gyldig bracket, men må fortsat selv vinde på sin eksakte time.
+- **REQ-4.0.340-CUTOVER-001 – BINDENDE P0:** DEC-0122's allerede godkendte first-cutover-undtagelse er bundet til exact-release 4.0.340 og ét komplet handoff fra samme main-head. Kildecacher må genvalideres på tværs af release, men handoff må ikke ommærkes. Alle closure-, WAM/Feggesund-, integrity-, privacy-, størrelse-, storage-, readback- og releasekrav består.
+- **REQ-4.0.340-SEQUENCE-001 – BINDENDE DRIFT:** Main må ikke flyttes, før oneoff `34387410217` har afsluttet sine relevante cache-saves. Derefter: exact-head sourcegate, sikker merge, ny exact-main-oneoff, fulde post-data-gates, deploy og offentlig verifikation. Candidate G er offentlig indtil positivt bevis.
+
 # 4.0.339 – sikker recovery efter delvist anvendt backendpakke (2026-09-09)
 
 - **REQ-4.0.339-PLPGSQL-CASE-001 – BINDENDE P0:** Det kopierede `historyTransition`-udtryk skal være PostgreSQL-gyldigt som `IS DISTINCT FROM (CASE ... END)` i validatorfunktionen i alle fem pending migrationer, `supabase/schema.sql` og den statiske installer. Kopierne skal være identiske. Regressionstesten skal afvise den oprindelige kodeform, ikke omtale af den i kommentarer/håndbog eller vilkårlig anden SQL. Pending per-pair-migration fastlåses til korrigeret SHA, og fjernelse af alene de to parenteser skal bevise den oprindelige SHA.
 - **REQ-4.0.339-PREFIX-RECOVERY-001 – BINDENDE P0:** Efter backend `34350871769` er migration 1–3 det eneste gyldige remote-præfiks. Næste run må ikke gentage eller omskrive dem; det skal kræve eksakt pending suffix 4–8. Enhver anden rækkefølge eller status stopper før write.
 - **REQ-4.0.339-TRANSACTION-SAFETY-001 – BINDENDE P0:** Migration 4's fejlede forsøg er fuldt rullet tilbage. D1, Edge, Worker, maintenance, synchronization, public mode og protected readiness forbliver urørte, indtil hele databasesuffixet og readback er grønt.
-- **REQ-4.0.339-CUTOVER-EXCEPTION-001 – BINDENDE SNÆVER EJERUNDTAGELSE:** DEC-0122 er aktuelt bundet til exact-release 4.0.339 og ét komplet handoff fra samme eksakte main-head. Ejeren har udtrykkeligt godkendt nødvendig versionsoverførsel til 4.0.340 og senere launchrettelser uden ny forespørgsel; den skal fortsat dokumenteres og bindes til én eksakt release ad gangen. 50 MB-arkivloft samt storage-, checkpoint-, integrity-, privacy-, readback-, closure- og releasekrav består uændret. Det godkender ikke højfrekvent fuld transport.
+- **REQ-4.0.339-CUTOVER-EXCEPTION-001 – SUPERSEDERET AF REQ-4.0.340-CUTOVER-001:** 4.0.339-bindingen er historisk. Ejerens godkendte first-cutover er nu bundet til 4.0.340 med samme materielle grænser.
 - **REQ-4.0.339-SAVE-BEFORE-MERGE-001 – BINDENDE DRIFTSSEKVENS:** Eksisterende weather-progress-saves skal afsluttes før main-skift, da deres exact-main-CAS ellers kan afvise den seneste progression. Bevarede sourcecacher må donere på tværs af kodeversioner efter genvalidering; cutover-handoff må kun bruges på eksakt samme head.
 - **REQ-4.0.339-EVIDENCE-001 – BINDENDE ÅBEN:** Isoleret PostgreSQL 16 og målrettede tests er grønne, men exact-head, merge, produktionsbackend, komplet 4.0.339-vejr, fulde gates, deploy og offentlig modelverifikation mangler. Candidate G forbliver offentlig indtil positivt bevis.
 

@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-09 – 4.0.340 ensretter WAM-producent og consumers
+
+- Main `b0ca7f5d`/4.0.339 har grøn backend via `34371639398` forsøg 2. Candidate G er fortsat offentlig.
+- Oneoff `34371642565` gemte DMI/Copernicus/Open-Meteo-progress, men producerede intet handoff. OM required 2.381, filled 2.057, retained 1.787, fetched 270, missing 324; 15-minuttersbudgettet blev nået uden global providerfejl. WAM stoppede separat på `MIXED_RUN_INTERPOLATION`.
+- Rodårsagen er en verificeret producer/consumer-forskel: producenten søger same-run/cell-brackets; slutvalidator og Forecast Store brugte kun nærmeste naboer. Lokal 4.0.340 ensretter dette uden at tillade cross-run/cell/collection-interpolation eller mere end fire timer.
+- Målrettet evidens er grøn: Python WAM 34/34, DMI-update-integration 24/24, Forecast Store med positive og negative seamtests, bootstrap-target samt RavScore-produktionsadapter. Det er endnu ikke exact-head-CI eller live runtimebevis.
+- DEC-0122 er flyttet til exact-release 4.0.340 under eksisterende ejerautorisation. Oneoff `34387410217` fortsætter 4.0.339-cacheopfyldningen. Main flyttes først efter dens saves; derefter kræves 4.0.340 sourcegate, merge, komplet same-head-handoff, fulde post-data-gates, deploy og offentlig modelverifikation.
+
 # NYESTE SANDHED – 2026-09-09 – 4.0.339 genoptager backend uden at gentage anvendte migrationer
 
 - 4.0.338 bestod exact-head `34348151097` på `2bddb2db` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`.
@@ -28,7 +36,7 @@
 - En efterfølgende P0-gennemgang fandt, at den bevarede 760 MB legacyfil ellers kunne blive afvist af det normale 256 MiB-loft før codec'en. Pilot, normal vedligeholdelse, oneoff og conditional point activation materialiserer nu bounded legacyinput til et separat atomisk output før første strenge DMI-reader. Outputtet genlæses under normal grænse; originalen bevares ved fejl, og overstor encoded input kan ikke bruge legacy-undtagelsen.
 - ecCodes er fastlåst. Kun den gennemgåede 2.48.0/2.48.2-currentklasse er kompatibel; original proofidentitet bevares, ét ugyldigt proof fjerner kun sig selv, og komponentdonorer må kun udfylde komplette validerede tuples.
 - Direkte legacy Candidate G → integreret cutover er tilladt uden et moderne Candidate G-mellemartifact, men kræver fastlåst legacy-source og én eksakt succesfuld komplet main-oneoff. Handoff, komplet vejr/WAM/Feggesund, central hydrering, runtime, full validate/releasegate, privacy, artifact, backend/CAS og offentlig verifikation består.
-- Ejerundtagelsen 2026-09-09 gælder kun first cutover og archive højst 50 MB med storage/checkpoint inden for budget. Den ændrer ikke den ærlige generelle 60-kørsler/døgn-egressfremskrivning og tillader ikke tilbagevendende automatisk kadence.
+- Ejerundtagelsen 2026-09-09 gælder kun first cutover og archive højst 52.428.800 byte, Supabases officielle Free-grænse. Denne efterfølgende ejerpræcisering supersederer alene den tidligere decimalgrænse på 50.000.000 byte; den eksisterende oneoff-kontrol må fortsat være strengere. Storage/checkpoint skal være inden for budget. Beslutningen ændrer ikke den ærlige generelle 60-kørsler/døgn-egressfremskrivning og tillader ikke tilbagevendende automatisk kadence.
 - Cachetransportmigration er permanent åben P0: parallel skyggevej, ingen nulstilling, logisk/hashmæssig sammenligning, atomisk pegepind og rollback. Hyppig normal cron/watchdog forbliver deaktiveret indtil dette er bevist.
 
 # NYESTE CHECKPOINT – 2026-09-08 – ekstra Astra-audit: rettelsesplan udvidet, produktion uændret

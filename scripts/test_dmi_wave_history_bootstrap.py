@@ -1358,6 +1358,29 @@ class OperationalHandoffTests(unittest.TestCase):
         self.assertEqual(summary.verified_part_hour_count, 240)
         self.assertEqual(summary.coherent_run_count, 1)
 
+    def test_exact_newer_run_row_does_not_hide_safe_same_run_bracket(self) -> None:
+        cache = cache_for_registry(self.registry, self.operational_rows)
+        seam_hour = utc_offset(TARGET, 1)
+        for part in self.registry.parts:
+            cache["zones"][part.cache_key]["hourly"][seam_hour] = native_hour(
+                part,
+                seam_hour,
+                TARGET,
+            )
+
+        summary = validate_wave_operational_handoff_cache(
+            cache,
+            self.registry,
+            bootstrap_target_hour=self.bootstrap_target,
+            production_target_hour=TARGET,
+            forecast_hour_count=118,
+        )
+
+        self.assertEqual(summary.bridge_exact_hour_count, 3)
+        self.assertEqual(summary.verified_part_hour_count, 240)
+        self.assertGreater(summary.interpolated_tuple_count, 0)
+        self.assertEqual(summary.coherent_run_count, 2)
+
     def test_interpolated_bridge_hour_is_not_exact_handoff(self) -> None:
         missing = utc_offset(self.bootstrap_target, 1)
         cache = cache_for_registry(

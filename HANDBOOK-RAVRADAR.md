@@ -1,6 +1,19 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.339
+**Håndbogsversion:** 4.0.340
+
+## 88.42 4.0.340 – samme sikre WAM-valg i hele kæden
+
+En DMI-modelkørsel kan overlappe den foregående. Ved en bestemt prognosetime kan der derfor ligge en eksakt række fra den nye kørsel mellem to rækker fra den gamle. Producenten kunne allerede se, at den manglende nabotime sikkert kunne beregnes mellem de to gamle rækker, men slutkontrollen og den faktiske vejr-runtime kiggede kun på de to nærmeste rækker. De afviste derfor fejlagtigt kombinationen som blandede modelkørsler.
+
+- En eksakt række bruges stadig direkte og bliver ikke erstattet af interpolation.
+- Hvis de nærmeste rækker kommer fra forskellige modelkørsler, leder både slutkontrollen og RavScore-runtime efter den smalleste alternative bracket, hvor collection, modelkørsel, gitter og fysiske celle er identiske.
+- Afstanden mellem endepunkterne må fortsat højst være fire timer. Findes ingen sådan bracket, markeres timen fortsat som manglende; systemet blander aldrig to modelkørsler.
+- Rettelsen ændrer ikke leverandørprioriteten, cachen, 48-timershistorikken, geometri, land-/vandpunkter eller selve scoreformlen.
+
+Oneoff `34371642565` nåede Open-Meteo, genbrugte 1.787 og hentede 270 nye af 2.381 nødvendige strømpar, men ramte 15-minuttersbudgettet med 324 tilbage. Progressionen blev gemt. Det særskilte WAM-stop var den ovenstående falske klassifikation. En ny oneoff fortsætter derfor cacheopfyldningen, mens 4.0.340 klargøres. Backend er allerede grøn; den integrerede model er endnu ikke offentlig.
+
+Status: De korte tests af validator, DMI-producent, handoff-mål, Forecast Store og RavScore-adapter er grønne. Der mangler exact-head-kildegate, merge, en komplet oneoff på den nye main-head, fulde post-data-gates, deploy og offentlig kontrol.
 
 ## 88.41 4.0.339 – backend fortsætter sikkert efter SQL-stoppet
 
@@ -9,7 +22,7 @@
 - Fejlen var det samme CASE-udtryk uden nødvendige parenteser i fem endnu ikke anvendte migrationer, schemaet og installationskopien. 4.0.339 sætter kun parenteser omkring `CASE`-udtrykket.
 - Næste backendkørsel skal genbruge de tre færdige migrationer og kun køre nummer 4–8. En anden rækkefølge eller tilstand stoppes før nye writes.
 - Hele restpakken 4–8 er afprøvet i rækkefølge på en isoleret PostgreSQL 16, og de korte recovery-, installer-, readiness-, release- og workflowtests er grønne.
-- Ejerens engangsundtagelse til første modelskift er aktuelt bundet til 4.0.339. Ejeren har også godkendt nødvendig overførsel til senere launchrettelser uden gentagen forespørgsel. Hver flytning skal registreres med én eksakt releasebinding; 50 MB-loftet samt integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller ændres ikke.
+- Ejerens engangsundtagelse til første modelskift er aktuelt bundet til 4.0.339. Ejeren har også godkendt nødvendig overførsel til senere launchrettelser uden gentagen forespørgsel. Hver flytning skal registreres med én eksakt releasebinding. For den ene first-cutover betyder Supabases officielle 50 MB-grænse præcis 52.428.800 byte; det supersederer alene den tidligere decimalgrænse på 50.000.000 byte. Integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller ændres ikke.
 - Den igangværende 4.0.338-vejrkørsel må fortsat fylde de bevarede cacher. Dens cachefremgang kan genbruges, men selve modelskiftets forseglede handoff skal komme fra den samme eksakte 4.0.339-main-kode som consumeren.
 - Den første test af 4.0.339 stoppede på en kontrolsum, som stadig beskrev den gamle fil. Kontrollen beviser nu både den rettede fil og at forskellen kun er de nødvendige parenteser. Dokumentation om den gamle fejl må ikke få SQL-testen til at fejle.
 - Den udvidede helhedskontrol viser, at modelskiftet genbruger den komplette kørsels tidsreference; et par timers ventetid åbner ikke automatisk nye huller. Vejrkørsel `34350872447` gemte sin progression, men manglede 301 strømpar og operationelle bølgetimer. Der er ikke bevis for en defekt cachelæser.
@@ -40,7 +53,7 @@ RavRadar kan nu genbruge den store DMI-cache uden at starte forfra, når decoder
 - Første integrerede modelskift kan bruge den fastlåste offentlige Candidate G-kilde direkte. Manglende 48-timers målt historik vises som HISTORY_INCOMPLETE og opbygges senere; den opfindes ikke.
 - Første legacy-cutover kræver én konkret succesfuld komplet oneoff og genfinder netop dens forseglede vejrkilder.
 - En stor bevaret cache kontrolleres først på en særskilt sikker migrationsvej og skrives til en ny kompakt fil. Først derefter læser de almindelige strenge kontroller filen. Den oprindelige cache overskrives ikke ved fejl, og samme regel gælder pilot, normal kørsel, oneoff og en eventuel punktaktivering.
-- Ejerens engangsundtagelse gælder kun, når det private archive højst er 50 MB, storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består.
+- Ejerens engangsundtagelse gælder kun, når det private archive højst er 52.428.800 byte (Supabases officielle Free-grænse på 50 MiB), storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består. Oneoffens eksisterende strengere 50.000.000-byte-kontrol bevares.
 - Undtagelsen er ikke en godkendelse af hyppige fulde cachetransporter. Efter lanceringen bygges en ny transport parallelt, sammenlignes i shadow og aktiveres atomisk med rollback. Den eksisterende cache nulstilles ikke.
 - Normal højfrekvent cron/watchdog aktiveres først efter positivt transport- og budgetbevis. Oneoff er launchaccelerator; normal drift bliver derefter den permanente vedligeholder.
 

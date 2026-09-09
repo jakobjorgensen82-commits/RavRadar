@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.340 WAM-seam
+
+- Ejerens prioritet er fortsat komplet vejr og derefter øjeblikkelig, sikker offentliggørelse af den integrerede scoremodel; arbejdet skal undgå både cachetab og reparationsspiral.
+- `34371642565` gemte providerprogression, men efterlod 324 Open-Meteo-par ved runtimebudget og stoppede separat på WAM `MIXED_RUN_INTERPOLATION`. Intet handoff eller deploy.
+- Helkædegennemgangen fandt én fælles årsag: producenten søgte inden for samme native WAM-serie, mens Python-finalen og JavaScript-runtime kun så nærmeste naboer. Begge consumers er rettet samlet; eksakte rækker vinder, fire timer er absolut loft, og cross-run/cell/collection er fortsat forbudt.
+- Målrettede validator-, producent-, target-, runtime- og RavScore-adaptertests er grønne. Ingen bred lokal gate er kørt uden konkret behov.
+- DEC-0122 er efter stående ejerautorisation flyttet snævert til 4.0.340. Oneoff `34387410217` fortsætter den eksisterende cache på 4.0.339-main; main flyttes først efter dens saves. Derefter exact-head sourcegate, merge, komplet 4.0.340-handoff og fuld launchkæde.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.339 backend-SQL-recovery
 
 - 4.0.338 bestod exact-head `34348151097` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`.

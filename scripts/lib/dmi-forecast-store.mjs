@@ -365,9 +365,61 @@ function sameNativeSeries(bracket, component) {
   return sameNativeIdentity(before, after, component);
 }
 
+function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {}) {
+  const candidates = (items ?? [])
+    .map(item => ({
+      item,
+      time: Date.parse(item?.step ?? item?.time),
+      source: provenanceAt(item, 'wave'),
+    }))
+    .filter(entry => Number.isFinite(entry.time) && entry.source);
+  let best = null;
+  for (const before of candidates) {
+    if (before.time >= targetMs) continue;
+    for (const after of candidates) {
+      if (after.time <= targetMs) continue;
+      const gap = after.time - before.time;
+      if (gap <= 0 || gap > maxGapMs
+        || !sameNativeIdentity(before.source, after.source, 'wave')) continue;
+      const runMs = Date.parse(before.source.modelRun);
+      const stableIdentity = [
+        before.source.collection,
+        before.source.gridDefinitionSha256,
+        ...before.source.gridPoint,
+      ].join('|');
+      const score = [gap, -runMs, -before.time, after.time, stableIdentity];
+      const better = !best || (() => {
+        for (let index = 0; index < score.length; index += 1) {
+          if (score[index] === best.score[index]) continue;
+          return score[index] < best.score[index];
+        }
+        return false;
+      })();
+      if (better) {
+        best = {
+          score,
+          bracket: {
+            before: before.item,
+            after: after.item,
+            ratio: (targetMs - before.time) / gap,
+            mode: 'interpolated',
+          },
+        };
+      }
+    }
+  }
+  return best?.bracket ?? null;
+}
+
 function componentBracket(items, targetMs, component, options) {
-  const bracket = timeBracket(items, targetMs, options);
-  return sameNativeSeries(bracket, component) ? bracket : null;
+  const componentOptions = component === 'wave'
+    ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
+    : options;
+  const bracket = timeBracket(items, targetMs, componentOptions);
+  if (sameNativeSeries(bracket, component)) return bracket;
+  return component === 'wave'
+    ? safeWaveSeriesBracket(items, targetMs, componentOptions)
+    : null;
 }
 
 function componentSource(bracket, component, targetMs, generatedAt) {

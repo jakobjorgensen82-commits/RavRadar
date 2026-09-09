@@ -1,3 +1,9 @@
+# AKTUELLE LAUNCHISSUES – 2026-09-09 – 4.0.340
+
+- **ISSUE-WAM-PRODUCER-CONSUMER-SEAM – LOKALT RETTET P0 / LIVE ÅBEN:** Oneoff `34371642565` viste, at producenten kunne regne en WAM-time som dækket via en same-run bracket, mens slutvalidator/runtime valgte nærmeste mixed-run-naboer. Lokal 4.0.340 ensretter valget med firetimersloft og uden cross-run-interpolation. Exact-head og main-runtime mangler.
+- **ISSUE-OPEN-METEO-324 – ÅBEN DRIFT:** Samme run gemte 2.057/2.381 og efterlod 324 ved 15-minuttersbudget uden global providerfejl. `34387410217` fortsætter på bevaret cache. Komplethed må kun erklæres ved slutattesteret 79.414/79.414.
+- **ISSUE-INTEGRATED-FIRST-CUTOVER – ÅBEN P0:** Backend er grøn, men nyt 4.0.340 same-head weather-handoff, fulde post-data-gates, deploy og offentlig kontrol mangler. Candidate G er stadig offentlig.
+
 # NYESTE HELHEDSFUND – 2026-09-09 – 4.0.339 backend-SQL-recovery
 
 - **ISSUE-SUPABASE-PLPGSQL-DISTINCT-CASE – LOKALT RETTET P0 / RUNTIME ÅBEN:** Backend `34350871769` anvendte migration 1–3 og stoppede i migration 4 med `SQLSTATE 42601`. Det bare `IS DISTINCT FROM CASE`-udtryk er rettet med parenteser i alle fem pending migrationer, schema og installer. Migration 4 blev fuldt rullet tilbage; ingen halv funktion er aktiv.
