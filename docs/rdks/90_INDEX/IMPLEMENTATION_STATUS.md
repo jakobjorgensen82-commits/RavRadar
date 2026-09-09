@@ -4,12 +4,15 @@
 - [x] Klassificér backend `34350871769`: pre-write grøn; migration 1–3 applied; migration 4 SQLSTATE 42601 og fuld transaktionsrollback; 5–8/D1/Edge/Worker/readiness skipped; Vault uændret.
 - [x] Ret det samme PL/pgSQL CASE-udtryk i fem pending migrationer, schema og installer uden anden SQL-semantik.
 - [x] Tilføj regressionstest og bevis migration 4–8 i rækkefølge på isoleret PostgreSQL 16; måltests for partial recovery, installer, readiness, releasepolicy og workflow er grønne.
-- [x] Flyt DEC-0122-undtagelsen efter udtrykkelig ejergodkendelse til exact-release 4.0.339; 4.0.340 arver den ikke.
-- [ ] Afslut 4.0.339-version/RDKS/håndbog, commit/push og kør én GitHub sourcegate på eksakt head.
-- [ ] Merge kun den grønne head. Genkør backend og kræv præcis 3 applied/5 pending samt fuld DB-, D1-, Edge- og protected-readiness-readback.
-- [ ] Kør en komplet oneoff på eksakt merged 4.0.339 og de bevarede cacher. Kræv 79.414/79.414, WAM/Feggesund 354/354 og runbundet handoff.
+- [x] Flyt DEC-0122-undtagelsen til exact-release 4.0.339. Ejeren har senere udtrykkeligt godkendt nødvendig overførsel til 4.0.340 og successors; én dokumenteret exact-releasebinding ad gangen og ingen udvidelse af grænserne.
+- [x] Push PR #273/head `a3786e6d`; diagnosticér sourcegate `34362702197`: forældet immutable per-pair-hash, ikke ny observeret SQL-fejl.
+- [x] Ret referencekontrollen med bevis for præcis to parentesers forskel; kør hele migrations-testgruppen og målrettet CASE-test grønt. Håndbogstekst må ikke udløse SQL-regressionstesten.
+- [x] Afslut [udvidet Astra-helkædekontrol](../../ai/LAUNCH_CHAIN_ASTRA_REVIEW_2026-09-09.md), inklusive faktiske positive/negative SQL-funktionskald og direkte terminale vejrlogs. Dokumentér OM-historik- og transportbegrænsningerne uden ny spekulativ readerrettelse.
+- [ ] Afslut releasehukommelse/måltests, push samlet opfølgning på samme PR og kør én GitHub sourcegate på nyt eksakt head.
+- [ ] Merge kun grøn head og først efter aktive vejrkørsels afsluttende cache-save. Genkør backend og kræv præcis 3 applied/5 pending samt fuld DB-, D1-, Edge- og protected-readiness-readback.
+- [ ] Klassificér de unikke strøm-/WAM-rester og fuldfør oneoff på eksakt merged 4.0.339 med bevarede cacher. Kræv 79.414/79.414, WAM/Feggesund 354/354 og runbundet handoff; mere OM-tid må ikke antages at løse vedvarende afstands-/værdiafvisninger.
 - [ ] Udfør den allerede autoriserede first cutover med fulde post-data-gates, artifact/deploy og offentlig 210/673-verifikation. Candidate G forbliver offentlig indtil da.
-- [ ] Efter launch: cachetransport i shadow uden nulstilling, normal cron/watchdog samt Astra-helhedsaudit og målrettet testopdeling.
+- [ ] Straks efter launch: cachetransport i shadow uden nulstilling, kildeattesteret 48h-OM-historik, første normale senere-target-vedligeholdelse og derefter bæredygtig cron/watchdog. Bredere forbedringer og testopdeling følger uden driftsforstyrrelse.
 
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.338 lokal backend-parserkandidat
 

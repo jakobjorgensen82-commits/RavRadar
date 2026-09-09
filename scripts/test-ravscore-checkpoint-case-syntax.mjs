@@ -2,7 +2,6 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 const CHECKPOINT_SQL_COPIES = [
   'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql',
@@ -14,16 +13,13 @@ const CHECKPOINT_SQL_COPIES = [
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ];
 
-const BARE_DISTINCT_FROM_CASE = /\bis\s+distinct\s+from\s+case\b/giu;
+// Inspect the changed PL/pgSQL function, not handbook strings or unrelated SQL.
+// This is a targeted regression guard, not a general PostgreSQL parser.
+const CHECKPOINT_FUNCTION = /^create or replace function public\.ravradar_ravscore_checkpoint_integrated_state_valid\([\s\S]*?^as \$\$\r?\n([\s\S]*?)^\$\$;/gmu;
 const HISTORY_TRANSITION_EXPRESSION =
   /v_lineage\s*->>\s*'historyTransition'\s+is\s+distinct\s+from\s*\(\s*case\s+when\s+\(v_lineage\s*->>\s*'boundedUnknownPositionCount'\)::numeric\s*>\s*0\s+then\s+'UNKNOWN_HISTORY_INTERVAL'\s+else\s+'VERIFIED_CAUSAL_HISTORY_WINDOW'\s+end\s*\)/giu;
 
 function assertSafeHistoryTransitionExpression(source, label) {
-  assert.doesNotMatch(
-    source,
-    BARE_DISTINCT_FROM_CASE,
-    `${label} contains the PostgreSQL-invalid unparenthesized IS DISTINCT FROM CASE form`,
-  );
   const matches = [...source.matchAll(HISTORY_TRANSITION_EXPRESSION)];
   assert.equal(
     matches.length,
@@ -33,14 +29,10 @@ function assertSafeHistoryTransitionExpression(source, label) {
   return matches[0][0].replace(/\s+/gu, ' ').trim();
 }
 
-async function listSqlFiles(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const nested = await Promise.all(entries.map(async entry => {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) return listSqlFiles(entryPath);
-    return entry.isFile() && entry.name.endsWith('.sql') ? [entryPath] : [];
-  }));
-  return nested.flat();
+function checkpointFunctionBody(source, label) {
+  const functions = [...source.matchAll(CHECKPOINT_FUNCTION)];
+  assert.equal(functions.length, 1, `${label} must define exactly one checkpoint validator`);
+  return functions[0][1];
 }
 
 const invalidRegressionFixture = `
@@ -52,23 +44,28 @@ const invalidRegressionFixture = `
 `;
 assert.throws(
   () => assertSafeHistoryTransitionExpression(invalidRegressionFixture, 'regression fixture'),
-  /PostgreSQL-invalid unparenthesized/,
+  /exactly one parenthesized history-transition CASE expression/,
   'the regression guard must reject the original SQLSTATE 42601 form',
 );
 
-for (const sqlPath of await listSqlFiles('supabase')) {
-  const source = await fs.readFile(sqlPath, 'utf8');
-  assert.doesNotMatch(
-    source,
-    BARE_DISTINCT_FROM_CASE,
-    `${sqlPath} contains an unparenthesized IS DISTINCT FROM CASE expression`,
-  );
-}
+const validRegressionFixture = invalidRegressionFixture.replace('from case', 'from (case').replace(/end\s*$/u, 'end)\n');
+const documentationFixture = `-- Historical failure: IS DISTINCT FROM CASE
+create or replace function public.ravradar_ravscore_checkpoint_integrated_state_valid(p_state jsonb, p_reference_text text)
+returns boolean language plpgsql
+as $$
+-- The old IS DISTINCT FROM CASE form is documented here, not executed.
+${validRegressionFixture}
+$$;
+insert into public.admin_documents values ('handbook', 'IS DISTINCT FROM CASE');
+`;
+assertSafeHistoryTransitionExpression(
+  checkpointFunctionBody(documentationFixture, 'documentation fixture'), 'documentation fixture',
+);
 
 const canonicalExpressions = [];
 for (const sqlPath of CHECKPOINT_SQL_COPIES) {
   const source = await fs.readFile(sqlPath, 'utf8');
-  canonicalExpressions.push(assertSafeHistoryTransitionExpression(source, sqlPath));
+  canonicalExpressions.push(assertSafeHistoryTransitionExpression(checkpointFunctionBody(source, sqlPath), sqlPath));
 }
 assert.equal(
   new Set(canonicalExpressions).size,

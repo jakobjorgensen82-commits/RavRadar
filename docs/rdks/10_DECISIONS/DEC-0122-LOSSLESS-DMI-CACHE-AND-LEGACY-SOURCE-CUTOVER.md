@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.339 efter udtrykkelig ejergodkendelse. 4.0.340 og senere arver ikke undtagelsen. Backend-, komplet vejr- og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.339. Ejeren har også udtrykkeligt godkendt nødvendig overførsel til 4.0.340 og senere launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. Backend-, komplet vejr- og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -41,7 +41,13 @@ Efter at 4.0.338 blev exact-head-valideret og merged, bestod backend `3435087176
 
 Ejeren har derefter udtrykkeligt godkendt, at den materielt uændrede first-cutover-undtagelse overføres alene til exact-release 4.0.339. Et handoff fra 4.0.338 kan ikke bruges, fordi producent og consumer fortsat skal være bundet til samme eksakte `main`-head. Launch kræver derfor en komplet 4.0.339-main-oneoff, selv om fremgang fra de bevarede cacher må genbruges.
 
-Policyversionen skal fortsat matche `package.json` fail-closed. 4.0.340 og senere arver ikke undtagelsen. Arkivloftet på 50.000.000 byte og alle storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release- og deploymentkrav består uændret; tilbagevendende fuld kadence er fortsat ikke godkendt.
+Policyversionen skal fortsat matche `package.json` fail-closed. Den oprindelige overførsel omfattede kun 4.0.339. Ejerens efterfølgende udtrykkelige autorisation nedenfor supersederer alene behovet for ny versionsgodkendelse. Arkivloftet på 50.000.000 byte og alle storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release- og deploymentkrav består uændret; tilbagevendende fuld kadence er fortsat ikke godkendt.
+
+### Stående autorisation til nødvendige launchsuccessors
+
+Ejeren har udtrykkeligt godkendt, at undtagelsen også må flyttes til 4.0.340 og senere versioner, hvis en nødvendig launchrettelse kræver det. Codex skal ikke bede om gentagen tilladelse alene til versionsflytningen. Den aktuelle rettelse færdiggøres dog fortsat som 4.0.339 i PR #273; den fejlede test kræver ikke i sig selv en ny release.
+
+Hver nødvendig overførsel skal registreres i projektets hukommelse, bindes til den valgte eksakte release og main-head og kræve et komplet handoff fra samme head. Dette er ikke en flydende versionsmatch eller en ekstra first cutover, og ingen tekniske grænser eller driftskadence udvides. Cacheprogression må fortsat genbruges på tværs af releases efter genvalidering; eksisterende kørsler skal gemme den før main-skift.
 
 ## Konsekvenser
 

@@ -9,8 +9,11 @@
 - Fejlen var det samme CASE-udtryk uden nødvendige parenteser i fem endnu ikke anvendte migrationer, schemaet og installationskopien. 4.0.339 sætter kun parenteser omkring `CASE`-udtrykket.
 - Næste backendkørsel skal genbruge de tre færdige migrationer og kun køre nummer 4–8. En anden rækkefølge eller tilstand stoppes før nye writes.
 - Hele restpakken 4–8 er afprøvet i rækkefølge på en isoleret PostgreSQL 16, og de korte recovery-, installer-, readiness-, release- og workflowtests er grønne.
-- Ejerens engangsundtagelse til første modelskift gælder nu præcis 4.0.339. Den ændrer ikke 50 MB-loftet eller kravene til integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller. 4.0.340 arver den ikke.
+- Ejerens engangsundtagelse til første modelskift er aktuelt bundet til 4.0.339. Ejeren har også godkendt nødvendig overførsel til senere launchrettelser uden gentagen forespørgsel. Hver flytning skal registreres med én eksakt releasebinding; 50 MB-loftet samt integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller ændres ikke.
 - Den igangværende 4.0.338-vejrkørsel må fortsat fylde de bevarede cacher. Dens cachefremgang kan genbruges, men selve modelskiftets forseglede handoff skal komme fra den samme eksakte 4.0.339-main-kode som consumeren.
+- Den første test af 4.0.339 stoppede på en kontrolsum, som stadig beskrev den gamle fil. Kontrollen beviser nu både den rettede fil og at forskellen kun er de nødvendige parenteser. Dokumentation om den gamle fejl må ikke få SQL-testen til at fejle.
+- Den udvidede helhedskontrol viser, at modelskiftet genbruger den komplette kørsels tidsreference; et par timers ventetid åbner ikke automatisk nye huller. Vejrkørsel `34350872447` gemte sin progression, men manglede 301 strømpar og operationelle bølgetimer. Der er ikke bevis for en defekt cachelæser.
+- Efter launch skal cachetransport og 48 timers Open-Meteo-historik håndteres straks. Ved flere timers spring kan manglende genbrug af OM-historik påvirke den konservative score. Et offentligt modelskift er derfor ikke i sig selv bevis for stabil automatisk vedligeholdelse.
 
 Status: Candidate G er fortsat den offentlige model. Før den integrerede model kan gå online, mangler exact-head-kontrol og merge af 4.0.339, en grøn produktionsbackend, en komplet 4.0.339-oneoff med 79.414/79.414 og WAM/Feggesund 354/354 samt de fulde efterfølgende produktionskontroller og offentlig verifikation.
 

@@ -8,11 +8,14 @@
 
 - Det fælles PL/pgSQL-udtryk bruger nu `IS DISTINCT FROM (CASE ... END)` i alle fem pending migrationer, schemaet og installationskopien.
 - Ingen database-, score-, vejr-, geometri- eller punktsemantik ændres.
-- En ny regressionstest afviser den oprindelige form, scanner al Supabase-SQL og kræver, at de syv kanoniske kopier er identiske.
+- En ny regressionstest afviser den oprindelige form i den konkrete validator og kræver identiske rettede udtryk i de syv kopier. Håndbogstekst og kommentarer må ikke udløse en falsk SQL-fejl.
+- Efter PR #273's første gatefejl opdateres den forældede per-pair-referencehash; inversion af kun de to parenteser skal fortsat reproducere originalens SHA.
 - Hele migrationssuffixet 4–8 er kørt i rækkefølge på isoleret PostgreSQL 16 uden syntaksfejl. Partial-recovery-, installer-, readiness-, releasepolicy- og workflowtests er grønne.
 
 ## Afgrænsning og næste bevis
 
-Ejeren har udtrykkeligt godkendt, at DEC-0122's materielt uændrede one-shot first-cutover-undtagelse flyttes til exact-release 4.0.339. Den gælder fortsat kun ved archive højst 50 MB og alle eksisterende storage-, checkpoint-, integrity-, privacy-, readback-, closure- og releasekrav. 4.0.340 arver den ikke.
+Ejeren har udtrykkeligt godkendt, at DEC-0122's materielt uændrede one-shot first-cutover-undtagelse gælder exact-release 4.0.339 og om nødvendigt må overføres til 4.0.340 eller senere launchrettelser uden ny forespørgsel. Hver overførsel dokumenteres og bindes til én eksakt release/main-head. Archive højst 50 MB og alle eksisterende storage-, checkpoint-, integrity-, privacy-, readback-, closure- og releasekrav består; normal højfrekvent transport er ikke godkendt.
+
+Den udvidede [Astra-helkædekontrol](docs/ai/LAUNCH_CHAIN_ASTRA_REVIEW_2026-09-09.md) dokumenterer positiv/negativ faktisk SQL-funktionsprøve, gemt weatherprogress med 301 rester og WAM MISSING_HOUR, korrekt samme-reference-handoff, ubetinget backendreadiness og de åbne OM-historik-/transportbegrænsninger. Den anbefaler ingen yderligere cachelæserrettelse eller lempelse af leverandørernes fysiske datakrav.
 
 4.0.339 er endnu ikke exact-head-valideret, merged eller produktionsverificeret. Næste backendrun skal se præcis migration 1–3 applied og 4–8 pending og bevise hele DB-/D1-/Edge-/readiness-kæden. Derefter kræves en komplet oneoff på samme eksakte 4.0.339-main-head før modelcutover. Candidate G forbliver offentlig indtil fuld verifikation.
