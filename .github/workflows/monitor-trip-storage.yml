@@ -1,5 +1,5 @@
-name: Read-only Supabase connection check
-run-name: Read-only Supabase password verification
+name: Read-only Supabase incident diagnosis
+run-name: Read-only Supabase login failure server evidence
 
 on:
   workflow_dispatch:
@@ -8,67 +8,91 @@ permissions:
   contents: read
 
 concurrency:
-  group: ravradar-supabase-auth-probe
+  group: ravradar-supabase-auth-log-probe
   cancel-in-progress: false
 
 jobs:
-  verify-database-login:
+  inspect-login-failure:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
-      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
-        with:
-          version: 2.117.0
-      - name: Verify actual read-only database connections with the existing secret
+      - name: Read only aggregated server errors around the failed login
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
         shell: bash
         run: |
           python3 - <<'PY'
-          import json, os, re, shutil, subprocess, sys, tempfile
-          from pathlib import Path
+          import json, os, re, sys
+          from urllib.request import Request, urlopen
+          from urllib.parse import urlencode
+          from urllib.error import HTTPError, URLError
 
-          password = os.environ.get('SUPABASE_DB_PASSWORD', '')
-          project = os.environ.get('SUPABASE_PROJECT_ID', '')
-          if not password or project != 'afqhhdrkjfjtpadntdzo':
-              print('DATABASE_PROBE_CONFIGURATION_MISSING', flush=True)
+          query = """
+          SELECT source,
+                 formatDateTime(toStartOfMinute(timestamp), '%Y-%m-%dT%H:%i:00Z', 'UTC') AS minute_utc,
+                 count() AS events,
+                 countIf(log_attributes['parsed.sql_state_code'] = '28P01'
+                         OR event_message ILIKE '%password authentication failed%') AS password_rejections,
+                 countIf(event_message ILIKE '%Exchange error%') AS upstream_exchange_errors,
+                 countIf(event_message ILIKE '%Validation secrets changed%') AS validation_secret_changes,
+                 countIf(event_message ILIKE '%cache updated%') AS cache_updates,
+                 countIf(event_message ILIKE '%Circuit breaker%') AS circuit_breaker_events,
+                 countIf(event_message ILIKE '%too many connections%'
+                         OR event_message ILIKE '%remaining connection slots%') AS connection_limit_events,
+                 countIf(event_message ILIKE '%timeout%' OR event_message ILIKE '%timed out%') AS timeout_events,
+                 countIf(log_attributes['parsed.user_name'] = 'postgres') AS postgres_role_events,
+                 countIf(log_attributes['parsed.user_name'] = 'cli_login_postgres') AS cli_role_events
+          FROM logs
+          WHERE timestamp >= parseDateTimeBestEffort('2026-09-09T15:58:00Z')
+            AND timestamp < parseDateTimeBestEffort('2026-09-09T16:00:00Z')
+            AND source IN ('postgres_logs', 'supavisor_logs')
+          GROUP BY source, minute_utc
+          ORDER BY minute_utc, source
+          LIMIT 10
+          """
+          params = urlencode({'sql': query,
+                              'iso_timestamp_start': '2026-09-09T15:58:00Z',
+                              'iso_timestamp_end': '2026-09-09T16:00:00Z'})
+          request = Request('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/analytics/endpoints/logs?' + params,
+                            headers={'Authorization': 'Bearer ' + os.environ['SUPABASE_ACCESS_TOKEN']})
+          try:
+              with urlopen(request, timeout=45) as response:
+                  raw = response.read(65537)
+          except HTTPError as error:
+              print(json.dumps({'status': 'SERVER_LOGS_UNAVAILABLE', 'http_status': error.code}), flush=True)
               sys.exit(1)
-
-          def check(label, args, cwd, env=None):
-              try:
-                  result = subprocess.run(args, cwd=cwd, env=env, capture_output=True,
-                                          text=True, timeout=45, stdin=subprocess.DEVNULL)
-              except subprocess.TimeoutExpired:
-                  print(json.dumps({'check': label, 'ok': False, 'reason': 'TIMEOUT'}), flush=True)
-                  return False
-              output = result.stdout + result.stderr
-              sqlstates = sorted(set(re.findall(r'SQLSTATE ([0-9A-Z]{5})', output)))
-              reason = ('PASSWORD_REJECTED' if '28P01' in sqlstates or 'password authentication failed' in output.lower()
-                        else 'CONNECTION_FAILED' if result.returncode else 'OK')
-              print(json.dumps({'check': label, 'ok': result.returncode == 0,
-                                'reason': reason, 'sqlstates': sqlstates}), flush=True)
-              return result.returncode == 0
-
-          with tempfile.TemporaryDirectory(prefix='ravradar-auth-') as directory:
-              if not check('local_init', ['supabase', 'init'], directory):
+          except URLError:
+              print('SERVER_LOGS_CONNECTION_FAILED', flush=True)
+              sys.exit(1)
+          if len(raw) > 65536:
+              print('SERVER_LOGS_RESPONSE_LIMIT', flush=True)
+              sys.exit(1)
+          data = json.loads(raw)
+          if not isinstance(data, dict) or data.get('error'):
+              diagnostic = str(data.get('error') or '') if isinstance(data, dict) else ''
+              category = ('UNKNOWN_IDENTIFIER' if 'UNKNOWN_IDENTIFIER' in diagnostic
+                          else 'SYNTAX_ERROR' if 'SYNTAX_ERROR' in diagnostic else 'QUERY_REJECTED')
+              print(json.dumps({'status': 'SERVER_LOG_QUERY_FAILED', 'category': category}), flush=True)
+              sys.exit(1)
+          rows = data.get('result')
+          if not isinstance(rows, list) or len(rows) > 10:
+              print('SERVER_LOGS_SCHEMA_UNEXPECTED', flush=True)
+              sys.exit(1)
+          fields = ['events', 'password_rejections', 'upstream_exchange_errors', 'validation_secret_changes',
+                    'cache_updates', 'circuit_breaker_events', 'connection_limit_events', 'timeout_events',
+                    'postgres_role_events', 'cli_role_events']
+          for row in rows:
+              if (row.get('source') not in ['postgres_logs', 'supavisor_logs']
+                  or not re.fullmatch(r'2026-09-09T(?:15:5[89]|16:00):00Z', str(row.get('minute_utc', '')))):
+                  print('SERVER_LOGS_ROW_UNEXPECTED', flush=True)
                   sys.exit(1)
-              if not check('management_link', ['supabase', 'link', '--project-ref', project,
-                                               '--password', password], directory):
-                  sys.exit(1)
-              first = check('database_same_as_production', ['supabase', 'migration', 'list', '--linked'], directory)
-              second = check('database_explicit_same_password', ['supabase', 'migration', 'list', '--linked',
-                                                                  '--password', password], directory)
-              if not (first and second) and shutil.which('psql'):
-                  pg_env = dict(os.environ, PGPASSWORD=password, PGCONNECT_TIMEOUT='15',
-                                PGSSLMODE='require', PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=10000')
-                  check('database_pooler_select_one', ['psql', '-X', '-w', '-qAt', '-v', 'ON_ERROR_STOP=1',
-                        '-h', 'aws-0-eu-west-1.pooler.supabase.com', '-p', '5432',
-                        '-U', 'postgres.' + project, '-d', 'postgres', '-c', 'SELECT 1'], directory, pg_env)
-              if first and second:
-                  print('DATABASE_PASSWORD_VERIFIED_TWO_READ_ONLY_CONNECTIONS', flush=True)
-              else:
-                  print('DATABASE_PASSWORD_NOT_YET_VERIFIED', flush=True)
-              sys.exit(0 if first and second else 1)
+              safe = {'source': row['source'], 'minute_utc': row['minute_utc']}
+              for field in fields:
+                  value = row.get(field)
+                  if isinstance(value, bool) or not re.fullmatch(r'[0-9]{1,12}', str(value)):
+                      print('SERVER_LOGS_COUNTER_UNEXPECTED', flush=True)
+                      sys.exit(1)
+                  safe[field] = int(value)
+              print(json.dumps(safe), flush=True)
+          print(json.dumps({'status': 'AGGREGATED_SERVER_LOGS_READ', 'rows': len(rows)}), flush=True)
           PY
