@@ -1,3 +1,12 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.338 Supabase-outputkontrakt
+
+- Begge `db push`-kald bruger nu `--skip-vault`. DEC-0122-engangsundtagelsen er flyttet til exact-release 4.0.338 og bundet til `package.json`; 4.0.337-handoff kan ikke genbruges, og 4.0.339 arver ikke undtagelsen.
+- 4.0.337 bestod exact-head `34325630686` og blev merged via PR #271 som `af03659a`. Oneoff `34333689292` fortsætter på denne main-head; cachematerialisering, DMI-save og Copernicus-fill/save er grønne, og Open-Meteo er startet, men komplethed/handoff/cutover er endnu ikke terminalt bevist.
+- Backend `34333553305` forsøg 1 stoppede fail-closed på `SQLSTATE 28P01` under read-only migrationsliste. Ejeren rettede `SUPABASE_DB_PASSWORD` kl. 09:54Z uden at dele værdien. Forsøg 2 beviste auth, men stoppede i lokal history-hydration på CLI 2.117.0's backtickindrammede tabelceller.
+- Begge forsøg stoppede før dry-run og første eksterne write. Ingen migration, DB-/D1-/Edge-mutation, readinessdokument eller offentlig publicering blev udført.
+- Lokal 4.0.338 fastlåser CLI 2.117.0 og accepterer kun balanced whole-cell backticks efterfulgt af eksakt versionsregex. Header/kolonner, local/remote-entydighed, dubletter, rækkefølge og dry-runnens no-write-/filnavnekontrakt består fail-closed.
+- Parser- og workflowrettelsen er lokalt måltestet. Exact-head, merge og runtimebevis mangler. Efter launch forbliver readiness-versioninterval, stale run `34228112413`, cachetransport/cron-hold og test-lane-refaktorering en udtrykkelig P0-liste.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.337
 
 - Ejeren kræver fortsat, at den eksisterende vejrbase genbruges og aldrig nulstilles ved target-, modelrun- eller transportskift. 4.0.337 implementerer tabsfri codec, fastlåst decoder, granulært proofgenbrug og atomisk komponentdonor.

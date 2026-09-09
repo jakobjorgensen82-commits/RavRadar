@@ -78,7 +78,7 @@ jobs:
 
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
-          version: latest
+          version: 2.117.0
 
       - name: Seal the exact integrated public implementation identity
         id: integrated_cutover
@@ -125,7 +125,7 @@ jobs:
           set -euo pipefail
           cd "${{ steps.integrated_cutover.outputs.workdir }}"
           supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
-          supabase db push --linked --dry-run | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
+          supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
 
       - name: Require only the eight exact integrated cutover migrations
         shell: bash
@@ -160,7 +160,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "${{ steps.integrated_cutover.outputs.workdir }}"
-          (supabase db push --linked)
+          (supabase db push --linked --skip-vault)
 
       - name: Read back exact applied migration metadata
         shell: bash

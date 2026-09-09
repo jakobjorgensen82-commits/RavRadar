@@ -1,3 +1,15 @@
+## 4.0.338 – robust Supabase CLI-output før første backendwrite (2026-09-09)
+
+- Fastlåser Supabase CLI til 2.117.0 og accepterer kun balancerede whole-cell-backticks før den eksakte migrationsversionskontrol.
+- Bevarer fail-closed kontrol af header, kolonner, local/remote-entydighed, dubletter, rækkefølge samt dry-runnens no-write-markør og præcise filnavne.
+- Bruger `--skip-vault` i både dry-run og apply, så backendplanen kun kan omfatte de otte migrationer og ikke Supabase CLI's separate Vault-secret-opdatering.
+- Flytter DEC-0122's uændrede engangsundtagelse til exact-release 4.0.338 og binder policyversionen til `package.json`, så et 4.0.337-handoff afvises og 4.0.339 ikke arver undtagelsen lydløst.
+- Backend `34333553305` forsøg 1 stoppede read-only på `SQLSTATE 28P01`; passwordsecretet blev rettet kl. 09:54Z. Forsøg 2 bestod auth, men stoppede lokalt på CLI-formatet. Begge stoppede før DB-, D1-, Edge-, readiness- og publicwrites.
+- 4.0.337 er exact-head-grøn og merged som `af03659a`. Oneoff `34333689292` fortsætter; cachematerialiseringen er bestået, men komplet vejr, handoff og modelcutover er endnu ikke bevist.
+- Parser-, workflow- og versionsbindingen er lokalt måltestet, og 4.0.338 er versionssat. Commit, exact-head-CI, merge, ny backendkørsel og live-readback mangler.
+- Efter launch forbliver readiness-versioninterval, stale queued run `34228112413`, cachetransport/cron-hold og test-lane-refaktorering åbne P0-opgaver.
+- Se `CHANGELOG-4.0.338.md`.
+
 ## 4.0.337 – tabsfri vejrcache og kontrolleret direkte modelcutover (2026-09-09)
 
 - Fastlåser ecCodes og genbruger kompatible verificerede currentproofs granulært uden at omskrive original kildeidentitet.

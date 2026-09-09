@@ -343,7 +343,7 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
 }
 
 function stripAnsi(value) {
-  return String(value || '').replace(/\u001b\[[0-9;]*m/g, '');
+  return String(value || '').replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
 function migrationChronologicalKey(version) {
@@ -353,16 +353,118 @@ function migrationChronologicalKey(version) {
 
 export function parseSupabaseMigrationList(value) {
   const rows = [];
+  let headerCount = 0;
+  const seenVersions = new Set();
   for (const line of stripAnsi(value).split(/\r?\n/)) {
     if (!/[|│]/.test(line)) continue;
     const columns = line.split(/[|│]/).map(column => column.trim());
-    if (columns.length < 2) continue;
-    const local = MIGRATION_VERSION_PATTERN.test(columns[0]) ? columns[0] : null;
-    const remote = MIGRATION_VERSION_PATTERN.test(columns[1]) ? columns[1] : null;
-    if (local || remote) rows.push(Object.freeze({ local, remote }));
+    if (columns.length > 3 && columns[0] === '') columns.shift();
+    if (columns.length > 3 && columns.at(-1) === '') columns.pop();
+    if (columns.length === 3
+      && columns[0].toLowerCase() === 'local'
+      && columns[1].toLowerCase() === 'remote'
+      && ['time', 'time (utc)'].includes(columns[2].toLowerCase())) {
+      headerCount += 1;
+      continue;
+    }
+    if (columns.every(column => /^[-─━┄┅┈┉ ]+$/.test(column))) continue;
+    assert.equal(headerCount, 1,
+      'Supabase migration-list row appeared without one recognized Local/Remote/Time header');
+    assert.equal(columns.length, 3,
+      'Supabase migration-list row did not contain exactly three columns');
+
+    const parseVersionCell = (column, field) => {
+      let cell = column;
+      if (cell.startsWith('`') || cell.endsWith('`')) {
+        const quoted = cell.match(/^`([^`]*)`$/);
+        assert.ok(quoted, `Supabase migration-list ${field} cell had malformed backtick quoting`);
+        cell = quoted[1].trim();
+      }
+      if (!cell) return null;
+      assert.match(cell, MIGRATION_VERSION_PATTERN,
+        `Supabase migration-list ${field} cell was neither blank nor an exact migration version`);
+      return cell;
+    };
+
+    const local = parseVersionCell(columns[0], 'Local');
+    const remote = parseVersionCell(columns[1], 'Remote');
+    assert.ok(local || remote,
+      'Supabase migration-list row contained neither a local nor a remote version');
+    assert.ok(!(local && remote) || local === remote,
+      'Supabase migration-list row ambiguously paired different local and remote versions');
+    for (const version of new Set([local, remote].filter(Boolean))) {
+      assert.ok(!seenVersions.has(version),
+        `Supabase migration-list output repeated migration version ${version} across rows`);
+      seenVersions.add(version);
+    }
+    rows.push(Object.freeze({ local, remote }));
   }
+  assert.equal(headerCount, 1,
+    'Supabase migration-list output did not contain one recognized Local/Remote/Time header');
   assert.ok(rows.length > 0, 'Supabase migration-list output contained no parseable migration rows');
   return Object.freeze(rows);
+}
+
+export function parseSupabaseDryRunMigrationFilenames(value) {
+  const lines = stripAnsi(value).split(/\r?\n/);
+  const dryRunMarkerIndexes = lines
+    .map((line, index) =>
+      line.trim() === 'DRY RUN: migrations will *not* be pushed to the database.' ? index : -1)
+    .filter(index => index >= 0);
+  assert.equal(dryRunMarkerIndexes.length, 1,
+    'Supabase db push --dry-run output did not contain one exact no-write marker');
+  assert.equal(lines.some(line => /^Would (?:seed|create)\b/.test(line.trim())), false,
+    'Supabase db push --dry-run proposed an operation outside the migration plan');
+  const sectionIndexes = lines
+    .map((line, index) => line.trim() === 'Would push these migrations:' ? index : -1)
+    .filter(index => index >= 0);
+  assert.ok(sectionIndexes.length <= 1,
+    'Supabase db push --dry-run output contained multiple migration sections');
+  if (sectionIndexes.length === 0) {
+    const upToDateIndexes = lines
+      .map((line, index) => line.trim() === 'Remote database is up to date.' ? index : -1)
+      .filter(index => index >= 0);
+    assert.equal(upToDateIndexes.length, 1,
+      'Supabase db push --dry-run output contained neither a migration plan nor an exact up-to-date result');
+    assert.ok(dryRunMarkerIndexes[0] < upToDateIndexes[0],
+      'Supabase db push --dry-run up-to-date result appeared before its no-write marker');
+    return Object.freeze([]);
+  }
+  assert.ok(dryRunMarkerIndexes[0] < sectionIndexes[0],
+    'Supabase db push --dry-run migration plan appeared before its no-write marker');
+  assert.equal(lines.some(line => line.trim() === 'Remote database is up to date.'), false,
+    'Supabase db push --dry-run ambiguously reported both pending migrations and up-to-date');
+
+  const filenames = [];
+  let finished = false;
+  for (const line of lines.slice(sectionIndexes[0] + 1)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed === 'Finished supabase db push.') {
+      finished = true;
+      break;
+    }
+    const bullet = trimmed.match(/^[•*-]\s+(.+)$/);
+    assert.ok(bullet,
+      'Supabase db push --dry-run migration section contained an unrecognized row');
+    let filename = bullet[1].trim();
+    if (filename.startsWith('`') || filename.endsWith('`')) {
+      const quoted = filename.match(/^`([^`]*)`$/);
+      assert.ok(quoted,
+        'Supabase db push --dry-run migration filename had malformed backtick quoting');
+      filename = quoted[1].trim();
+    }
+    assert.match(filename, /^\d{8,14}_[^/\\\r\n]+\.sql$/,
+      'Supabase db push --dry-run contained an invalid migration filename');
+    filenames.push(filename);
+  }
+  assert.ok(filenames.length > 0,
+    'Supabase db push --dry-run migration section contained no migration filenames');
+  assert.equal(new Set(filenames).size, filenames.length,
+    'Supabase db push --dry-run repeated a migration filename');
+  assert.equal(finished, true,
+    'Supabase db push --dry-run migration plan had no exact completion marker');
+  return Object.freeze(filenames);
 }
 
 export async function hydrateTemporaryRemoteMigrationHistory({
@@ -408,7 +510,7 @@ export async function assertSupabaseMigrationPlan({
   dryRunText,
   migrationsDirectory = MIGRATIONS_DIRECTORY,
 } = {}) {
-  const source = await inspectMigrationSources({ migrationsDirectory });
+  await inspectMigrationSources({ migrationsDirectory });
   const rows = parseSupabaseMigrationList(migrationListText);
   const local = uniqueVersions(rows, 'local');
   const remote = uniqueVersions(rows, 'remote');
@@ -429,19 +531,12 @@ export async function assertSupabaseMigrationPlan({
       `remote cutover migration order is inconsistent: ${later} is applied before ${earlier}`);
   }
 
-  const dryRun = stripAnsi(dryRunText);
-  assert.ok(dryRun.trim(), 'Supabase db push --dry-run produced no auditable output');
-  for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {
-    if (pending.includes(migration.version)) {
-      assert.ok(dryRun.includes(migration.version),
-        `dry-run did not name pending required migration ${migration.filename}`);
-    }
-  }
-  for (const [version, filename] of source.versionToFilename.entries()) {
-    if (!requiredVersions.has(version) && dryRun.includes(filename)) {
-      throw new Error(`dry-run proposed unexpected migration ${filename}`);
-    }
-  }
+  const dryRunFilenames = parseSupabaseDryRunMigrationFilenames(dryRunText);
+  const expectedPendingFilenames = REQUIRED_CUTOVER_MIGRATIONS
+    .filter(migration => pending.includes(migration.version))
+    .map(migration => migration.filename);
+  assert.deepEqual(dryRunFilenames, expectedPendingFilenames,
+    'Supabase db push --dry-run did not propose exactly the pending required migrations in order');
   return Object.freeze({
     pendingVersions: Object.freeze(pending.sort()),
     alreadyAppliedVersions: Object.freeze([...requiredVersions].filter(version => remote.has(version)).sort()),
