@@ -1686,6 +1686,7 @@ def main_fetch(_required, _targets, _acquired_at, _timeout, _runtime, *,
 with patch.dict(cli["main"].__globals__, {
     "arguments": lambda: main_args,
     "load_targets": lambda _path: copy.deepcopy(deadline_targets),
+    "read_dmi_bulk_document": lambda _path: {},
     "read_object": lambda _path: {},
     "residual_plan": lambda **_kwargs: {
         "requiredPairs": copy.deepcopy(deadline_required),
@@ -1787,6 +1788,7 @@ def reuse_fetch(fetch_required, _targets, _acquired_at, _timeout, _runtime, *,
 with patch.dict(cli["main"].__globals__, {
     "arguments": lambda: reuse_args,
     "load_targets": lambda _path: copy.deepcopy(targets),
+    "read_dmi_bulk_document": lambda _path: {},
     "read_object": lambda _path: {},
     "residual_plan": lambda **_kwargs: {
         "requiredPairs": copy.deepcopy(next_required),
@@ -1906,6 +1908,7 @@ def aged_fetch(fetch_required, _targets, _acquired_at, _timeout, _runtime, *,
 with patch.dict(cli["main"].__globals__, {
     "arguments": lambda: aged_args,
     "load_targets": lambda _path: copy.deepcopy(targets),
+    "read_dmi_bulk_document": lambda _path: {},
     "read_object": lambda _path: {},
     "residual_plan": lambda **_kwargs: {
         "requiredPairs": [copy.deepcopy(aged_pair)],

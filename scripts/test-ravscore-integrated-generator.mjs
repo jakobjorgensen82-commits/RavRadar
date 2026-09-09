@@ -603,21 +603,34 @@ const legacyCandidateCase = operationalActionStep.block.slice(
 );
 assert.match(
   legacyCandidateCase,
-  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*test "\$FIRST_CUTOVER_REQUESTED" != "true"[\s\S]*action="candidate-legacy-maintenance"/,
-  'rowless legacy Candidate G must always use the distinct Candidate maintenance bridge',
+  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$FIRST_CUTOVER_REQUESTED" = "true" \]; then[\s\S]*"\$WEATHER_HANDOFF_RUN_ID" =~ \^\[1-9\]\[0-9\]\*\$[\s\S]*action="integrated-cutover"[\s\S]*action="candidate-legacy-maintenance"/,
+  'an explicitly requested first cutover may use the exact attested legacy Candidate G source only with a verified oneoff run id',
 );
-assert.doesNotMatch(legacyCandidateCase, /action="integrated-cutover"/,
-  'legacy Candidate G may never bypass the modern same-head Candidate phase');
+assert.match(legacyCandidateCase, /else[\s\S]*action="candidate-legacy-maintenance"/,
+  'ordinary legacy maintenance must remain Candidate G and may never auto-cut over');
 assert.match(
   operationalActionStep.block,
   /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_SOURCE_HEAD: \$\{\{ steps\.operational-model\.outputs\.active_source_head \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
-  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
+  'modern Candidate G still requires a sealed operational row, deployment and implementation closure',
 );
 assert.match(
   operationalActionStep.block,
-  /FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation[\s\S]*EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE/,
+  /WEATHER_HANDOFF_RUN_ID:[\s\S]*ravscore_integrated_weather_handoff_run_id[\s\S]*FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation[\s\S]*EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE/,
   'first cutover must require its separate manual boolean and exact confirmation token',
 );
+const legacyOneoffRequirementStep = workflowStep(
+  'Require the exact successful oneoff for approved legacy first cutover',
+);
+for (const marker of [
+  "steps.operational-action.outputs.action == 'integrated-cutover'",
+  "steps.operational-model.outputs.legacy_source_required == 'true'",
+  'steps.weather-source-handoff-resolve.outcome }}" = "success"',
+  'steps.weather-source-handoff-cache.outcome }}" = "success"',
+  'steps.weather-source-handoff.outputs.reused }}" = "true"',
+]) {
+  assert.equal(legacyOneoffRequirementStep.block.includes(marker), true,
+    'legacy first-cutover oneoff requirement marker: ' + marker);
+}
 const supabasePersistenceStep = workflowStep('Test Supabase persistence roundtrip');
 assert.match(
   supabasePersistenceStep.block,
@@ -995,12 +1008,22 @@ assert.match(
 );
 assert.ok(
   activeDmiMaterializeStep.block.includes(
-    "test \"$(jq -r '.diagnostics.currentOperationalLedger.ready' \"$source_path\")\" = true",
+    'python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"',
+  )
+    && activeDmiMaterializeStep.block.includes(
+      'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"',
   )
     && activeDmiMaterializeStep.block.includes(
       'python scripts/build-copernicus-target-registry.py',
     )
+    && activeDmiMaterializeStep.block.includes('--dmi "$materialized_path"')
     && activeDmiMaterializeStep.block.includes('--require-strict-dmi-ledger')
+    && activeDmiMaterializeStep.block.includes(
+      'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
+    )
     && activeDmiMaterializeStep.block.includes(
       'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
     ),
@@ -1048,7 +1071,7 @@ assert.ok(
     "steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
   )
     && activeDmiSnapshotStep.block.includes(
-      "test \"$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)\" = true",
+      'python scripts/check-dmi-bulk-operational-ready.py \\',
     )
     && activeDmiSnapshotStep.block.includes(
       'python scripts/build-copernicus-target-registry.py',

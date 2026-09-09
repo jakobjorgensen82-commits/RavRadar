@@ -2,7 +2,6 @@
 import importlib.util
 import contextlib
 import io
-import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
@@ -116,9 +115,9 @@ class FillTests(unittest.TestCase):
             cache.stat.side_effect = [SimpleNamespace(st_mtime_ns=1), SimpleNamespace(st_mtime_ns=2 if changed else 1)]
             document = self.fixture()
             document["diagnostics"]["errors"] = []
-            cache.read_text.return_value = json.dumps(document)
             output = io.StringIO()
             with patch.object(oneoff, "CACHE", cache), patch.dict(oneoff.os.environ, ENV, clear=True), \
+                 patch.object(oneoff, "read_dmi_bulk_document", return_value=document) as read_cache, \
                  patch.object(oneoff.time, "monotonic", return_value=0), \
                  patch.object(oneoff.shutil, "disk_usage", return_value=SimpleNamespace(free=8 * oneoff.GIB)), \
                  patch.object(oneoff.subprocess, "run", return_value=SimpleNamespace(returncode=0)) as child, \
@@ -129,6 +128,10 @@ class FillTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "ONEOFF_FINALIZED_REPORT_MISSING"):
                         oneoff.main()
             self.assertEqual(child.call_args.args[0], [oneoff.sys.executable, "-u", str(oneoff.ROOT / "scripts/run-dmi-bulk-supervised.py")])
+            if changed:
+                read_cache.assert_called_once_with(cache)
+            else:
+                read_cache.assert_not_called()
             self.assertEqual(child.call_args.kwargs["env"]["RAVRADAR_PRODUCTION_TARGET_HOUR"], REFERENCE)
             self.assertNotIn("never-print", output.getvalue())
 

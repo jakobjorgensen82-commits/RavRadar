@@ -6,7 +6,6 @@ the 4-GiB raw cache ceiling nor the shared 50-minute deadline is increased.
 """
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 import shutil
@@ -14,6 +13,8 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = Path(os.getenv(
@@ -105,7 +106,7 @@ def main():
     def read_progress(reference):
         if not CACHE.exists() or CACHE.stat().st_mtime_ns == latest_cache_stamp:
             raise ValueError("ONEOFF_FINALIZED_REPORT_MISSING")
-        return summarize_progress(json.loads(CACHE.read_text(encoding="utf-8")), reference)
+        return summarize_progress(read_dmi_bulk_document(CACHE), reference)
 
     return fill(dict(os.environ), run_pass=run_pass, read_progress=read_progress,
                 clock=time.monotonic, free_bytes=lambda: shutil.disk_usage(ROOT).free)

@@ -20,6 +20,7 @@ from lib.dmi_wave_history_bootstrap import (
     validate_wave_history_cache,
     validate_wave_operational_handoff_cache,
 )
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -167,12 +168,18 @@ def main(argv: list[str] | None = None) -> int:
             MAX_REGISTRY_BYTES,
             "REGISTRY_INVALID",
         )
-        cache_document = _read_bounded_json(
-            args.cache,
-            MAX_CACHE_BYTES,
-            "CACHE_INVALID",
-            detailed_cache_errors=True,
-        )
+        try:
+            cache_document = read_dmi_bulk_document(args.cache)
+        except FileNotFoundError:
+            raise WaveBootstrapError("CACHE_MISSING") from None
+        except OSError:
+            raise WaveBootstrapError("CACHE_IO_INVALID") from None
+        except ValueError as error:
+            if args.cache.exists() and args.cache.stat().st_size > MAX_CACHE_BYTES:
+                raise _BoundedJsonSizeError(
+                    args.cache.stat().st_size, MAX_CACHE_BYTES,
+                ) from None
+            raise WaveBootstrapError("CACHE_JSON_INVALID") from error
         attestation = build_attestation(
             cache_document,
             registry_document,

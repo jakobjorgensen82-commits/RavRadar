@@ -365,6 +365,7 @@ assertMarkersOrdered(scheduledPilot, [
   'name: Require exact main before private DMI cache selection',
   'name: Verify previous exact-main source validation with GitHub',
   'name: Run exact-main source gate before private acquisition',
+  'name: Materialize bounded DMI storage before pilot readers',
   'name: Complete only the exact sealed DMI-gap range',
   'name: Reconfirm exact main before pilot Copernicus progress cache',
   'name: Save non-cancelled Copernicus source-stage progress',
@@ -375,10 +376,33 @@ for (const marker of [
   "steps.pilot-copernicus-progress-write-authority.outcome == 'success'",
   "steps.pilot-copernicus-ready-write-authority.outcome == 'success'",
 ]) assert.ok(scheduledPilot.includes(marker), `Pilotens cachewrite mangler ${marker}`);
+const scheduledStep = (name) => {
+  const start = scheduledPilot.indexOf('name: ' + name);
+  assert.ok(start >= 0, 'Missing scheduled pilot step: ' + name);
+  const end = scheduledPilot.indexOf('\n      - name:', start + 1);
+  return scheduledPilot.slice(start, end < 0 ? undefined : end);
+};
+const pilotStorageMaterialize = scheduledStep('Materialize bounded DMI storage before pilot readers');
+for (const marker of [
+  "if: steps.dmi-coverage.outputs.available == 'true'",
+  'python scripts/materialize-dmi-bulk-storage.py --input data/live/dmi-bulk-cache.json --output "$materialized"',
+  'cp "$materialized" data/live/dmi-bulk-cache.json.tmp',
+  'mv data/live/dmi-bulk-cache.json.tmp data/live/dmi-bulk-cache.json',
+]) {
+  assert.ok(pilotStorageMaterialize.includes(marker), 'Pilot storage materialization is missing ' + marker);
+}
+assertMarkersOrdered(scheduledPilot, [
+  'name: Materialize bounded DMI storage before pilot readers',
+  'name: Bind the pilot to a ready restored DMI ledger',
+  'name: Seal the exact target-48 through target+117 DMI gap matrix',
+], 'Pilot legacy storage must be materialized before DMI readers');
 assertMarkersOrdered(operationalPreflight, [
   'name: Require requested one-off HEAD to equal current origin/main',
   'name: Verify previous exact-main source validation with GitHub',
   'name: Run exact-main source gate before one-off acquisition',
+  'name: Strictly bind and materialize the active DMI generation',
+  'name: Reconfirm exact main before materialized legacy DMI cache',
+  'name: Save materialized legacy active DMI generation',
   'name: Refresh all bounded official DMI collections for the proof',
   'name: Reconfirm exact main before one-off shared DMI progress caches',
   'name: Save progressed DMI GRIB cache before any terminal decision',
@@ -394,6 +418,7 @@ assertMarkersOrdered(operationalPreflight, [
   'name: Save validated private Copernicus progress before downstream closure',
 ], 'Oneoff skal source-validere og reautorisere hvert delt DMI/Cop-cachewrite');
 for (const marker of [
+  "steps.oneoff-dmi-legacy-materialized-write-authority.outcome == 'success'",
   "steps.oneoff-dmi-progress-write-authority.outcome == 'success'",
   "steps.oneoff-dmi-active-write-authority.outcome == 'success'",
   "steps.oneoff-copernicus-progress-write-authority.outcome == 'success'",
@@ -683,14 +708,42 @@ assert.ok(!oneoffActiveLegacyBootstrap.includes('restore-keys:'), 'Engangskørsl
 const oneoffActiveMaterialize = operationalStep('Strictly bind and materialize the active DMI generation');
 for (const marker of [
   'source_path=.cache/dmi-active-complete.json',
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"',
+  'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"',
   'python scripts/build-copernicus-target-registry.py',
   '--require-strict-dmi-ledger',
-  'cp "$source_path" .cache/dmi-active-complete.json.tmp',
+  '--dmi "$materialized_path"',
+  'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
   'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
 ]) {
   assert.ok(oneoffActiveMaterialize.includes(marker), 'Engangskørslens aktive READY-materialisering mangler ' + marker);
 }
+assertMarkersOrdered(oneoffActiveMaterialize, [
+  'python scripts/materialize-dmi-bulk-storage.py',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  'python scripts/build-copernicus-target-registry.py',
+  'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+], 'Oneoff must materialize separate storage before READY and registry readers');
+const oneoffLegacyMaterializedAuthority = operationalStep('Reconfirm exact main before materialized legacy DMI cache');
+for (const marker of [
+  'id: oneoff-dmi-legacy-materialized-write-authority',
+  "steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  "steps.dmi-active-legacy-bootstrap.outcome == 'success'",
+  'continue-on-error: true',
+  'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
+]) {
+  assert.ok(oneoffLegacyMaterializedAuthority.includes(marker), 'Oneoff materialized legacy authority is missing ' + marker);
+}
+const oneoffLegacyMaterializedSave = operationalStep('Save materialized legacy active DMI generation');
+for (const marker of [
+  "steps.oneoff-dmi-legacy-materialized-write-authority.outcome == 'success'",
+  'continue-on-error: true',
+  'path: .cache/dmi-active-complete.json',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  assert.ok(oneoffLegacyMaterializedSave.includes(marker), 'Oneoff materialized legacy save is missing ' + marker);
+}
+assert.ok(!oneoffLegacyMaterializedSave.includes('candidate_promoted'), 'Oneoff must save strict materialized legacy active state even without candidate promotion');
 const oneoffCandidateRestore = operationalStep('Restore isolated DMI candidate progress');
 for (const marker of [
   'id: dmi-candidate-restore',
@@ -741,7 +794,8 @@ for (const marker of [
 const oneoffActiveSnapshot = operationalStep('Strictly snapshot only a promoted READY DMI generation');
 for (const marker of [
   "if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  '--cache data/live/dmi-bulk-cache.json',
   '--require-strict-dmi-ledger',
   '--at "${{ steps.operational-target.outputs.target_hour }}"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
@@ -1256,10 +1310,14 @@ const positions = {
   legacySourceFetch: text.indexOf('name: Fetch exact public Candidate G source commit for first cutover attestation'),
   legacySourceAttestation: text.indexOf('name: Seal privacy-safe local attestation of the legacy Candidate G source'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
+  deployedDmiMaterialize: text.indexOf('name: Materialize bounded deployed DMI storage before conditional point activation'),
+  pointActivationPrepare: text.indexOf('name: Prepare only an explicitly requested READY point activation'),
   dmiActiveRestore: text.indexOf('name: Restore last complete active DMI generation'),
   dmiActiveLegacyResolve: text.indexOf('name: Resolve newest terminal-proven exact-main legacy DMI generation'),
   dmiActiveLegacyBootstrap: text.indexOf('name: Bootstrap the terminal-proven exact legacy DMI generation'),
   dmiActiveMaterialize: text.indexOf('name: Strictly bind and materialize the active DMI generation'),
+  dmiLegacyMaterializedAuthority: text.indexOf('name: Reconfirm exact main before materialized legacy DMI cache'),
+  dmiLegacyMaterializedSave: text.indexOf('name: Save materialized legacy active DMI generation'),
   dmiCandidateRestore: text.indexOf('name: Restore isolated DMI candidate progress for normal maintenance'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
@@ -1329,10 +1387,14 @@ const expected = [
   'legacyCutoverImport',
   'legacySourceAttestation',
   'sourceGate',
+  'deployedDmiMaterialize',
+  'pointActivationPrepare',
   'dmiActiveRestore',
   'dmiActiveLegacyResolve',
   'dmiActiveLegacyBootstrap',
   'dmiActiveMaterialize',
+  'dmiLegacyMaterializedAuthority',
+  'dmiLegacyMaterializedSave',
   'dmiCandidateRestore',
   'dmiBulk',
   'dmiGribSave',
@@ -1389,6 +1451,22 @@ for (let i = 1; i < expected.length; i += 1) {
   if (!(positions[before] < positions[after])) {
     throw new Error(`Forkert rækkefølge: ${before} skal ligge før ${after}`);
   }
+}
+const conditionalPointStorageMaterialize = text.slice(
+  positions.deployedDmiMaterialize,
+  positions.pointActivationPrepare,
+);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''",
+  'materialized="$RUNNER_TEMP/dmi-deployed-materialized.json"',
+  'python scripts/materialize-dmi-bulk-storage.py --input data/live/dmi-bulk-cache.json --output "$materialized"',
+  'cp "$materialized" data/live/dmi-bulk-cache.json.tmp',
+  'mv data/live/dmi-bulk-cache.json.tmp data/live/dmi-bulk-cache.json',
+]) {
+  assert.ok(
+    conditionalPointStorageMaterialize.includes(marker),
+    'Conditional point-activation storage materialization is missing ' + marker,
+  );
 }
 const normalProvenanceBlock = text.slice(positions.provenance, positions.runtime);
 const normalValidationBlock = text.slice(positions.validate, positions.gate);
@@ -1448,16 +1526,52 @@ if (normalActiveLegacyBootstrap.includes('restore-keys:')) {
 if (/key: dmi-zone-cache-v1-Linux-\d{4}-W\d{2}-\d+-\d+/.test(text + operationalPreflight)) {
   throw new Error('Produktionsworkflows må ikke hardkode en kortlivet legacycache.');
 }
-const normalActiveMaterialize = text.slice(positions.dmiActiveMaterialize, positions.dmiCandidateRestore);
+const normalActiveMaterialize = text.slice(positions.dmiActiveMaterialize, positions.dmiLegacyMaterializedAuthority);
 for (const marker of [
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'source_path=.cache/dmi-active-complete.json',
+  'materialized_path="$RUNNER_TEMP/dmi-active-proof/materialized.json"',
+  'python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"',
+  'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"',
   'python scripts/build-copernicus-target-registry.py',
   '--require-strict-dmi-ledger',
-  'cp "$source_path" .cache/dmi-active-complete.json.tmp',
+  '--dmi "$materialized_path"',
+  'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
   'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
 ]) {
   if (!normalActiveMaterialize.includes(marker)) throw new Error('Normal aktiv READY-materialisering mangler ' + marker);
 }
+assertMarkersOrdered(normalActiveMaterialize, [
+  'python scripts/materialize-dmi-bulk-storage.py',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  'python scripts/build-copernicus-target-registry.py',
+  'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+], 'Normal maintenance must materialize separate storage before READY and registry readers');
+const normalLegacyMaterializedAuthority = text.slice(
+  positions.dmiLegacyMaterializedAuthority,
+  positions.dmiLegacyMaterializedSave,
+);
+for (const marker of [
+  'id: dmi-legacy-materialized-write-authority',
+  "steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  "steps.dmi-active-legacy-bootstrap.outcome == 'success'",
+  'continue-on-error: true',
+  'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
+]) {
+  assert.ok(normalLegacyMaterializedAuthority.includes(marker), 'Normal materialized legacy authority is missing ' + marker);
+}
+const normalLegacyMaterializedSave = text.slice(
+  positions.dmiLegacyMaterializedSave,
+  positions.dmiCandidateRestore,
+);
+for (const marker of [
+  "steps.dmi-legacy-materialized-write-authority.outcome == 'success'",
+  'continue-on-error: true',
+  'path: .cache/dmi-active-complete.json',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  assert.ok(normalLegacyMaterializedSave.includes(marker), 'Normal materialized legacy save is missing ' + marker);
+}
+assert.ok(!normalLegacyMaterializedSave.includes('candidate_promoted'), 'Normal maintenance must save strict materialized legacy active state even without candidate promotion');
 const normalCandidateRestore = text.slice(positions.dmiCandidateRestore, positions.dmiBulk);
 for (const marker of [
   'id: dmi-candidate-restore',
@@ -1499,7 +1613,8 @@ assert.ok(!normalCandidateSave.includes('dmi-zone-active-v1-'), 'Delvis normal k
 const normalActiveSnapshot = text.slice(positions.dmiActiveSnapshot, positions.dmiActiveSave);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
-  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  '--cache data/live/dmi-bulk-cache.json',
   '--require-strict-dmi-ledger',
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
@@ -1934,9 +2049,34 @@ for (const step of [
 if (privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime')) {
   throw new Error('Det private produktionsbundle må ikke gendannes i repositoryets cachetræ.');
 }
+if (!privateRuntimeRestoreSection.includes("!(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')")) {
+  throw new Error('Legacy first cutover skal ignorere tidligere private runtime-generationer og bruge den attesterede bootstrap.');
+}
 if (text.includes('private-production-runtime-v1-')
   || /actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(text)) {
   throw new Error('Det fulde private runtimebundle må aldrig lagres i GitHub Actions cache.');
+}
+const legacyOneoffRequirementStart = text.indexOf(
+  'name: Require the exact successful oneoff for approved legacy first cutover',
+);
+const legacyOneoffRequirementEnd = text.indexOf(
+  '\n      - name:',
+  legacyOneoffRequirementStart + 1,
+);
+const legacyOneoffRequirementSection = text.slice(
+  legacyOneoffRequirementStart,
+  legacyOneoffRequirementEnd,
+);
+for (const marker of [
+  "steps.operational-action.outputs.action == 'integrated-cutover'",
+  "steps.operational-model.outputs.legacy_source_required == 'true'",
+  'steps.weather-source-handoff-resolve.outcome }}" = "success"',
+  'steps.weather-source-handoff-cache.outcome }}" = "success"',
+  'steps.weather-source-handoff.outputs.reused }}" = "true"',
+]) {
+  if (!legacyOneoffRequirementSection.includes(marker)) {
+    throw new Error('Legacy first cutover mangler exact oneoff-binding: ' + marker);
+  }
 }
 
 const continuationRestoreSection = text.slice(positions.continuationRestore, positions.privateRuntimeExpected);
@@ -1945,7 +2085,7 @@ for (const marker of [
   'path: .cache/ravscore-continuation-checkpoint',
   'ravscore-continuation-schema6-v2-',
   "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -2041,14 +2181,16 @@ for (const marker of [
   'legacy-candidate-g)',
   'test "$INITIAL_CUTOVER_REQUIRED" = "true"',
   'test "$LEGACY_SOURCE_REQUIRED" = "true"',
-  'test "$FIRST_CUTOVER_REQUESTED" != "true"',
+  'if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then',
+  'action="integrated-cutover"',
+  'else',
   'action="candidate-legacy-maintenance"',
   "steps.operational-action.outputs.action == 'candidate-legacy-maintenance'",
   'node scripts/verify-legacy-candidate-g-source.mjs attest',
   '--source-implementation-closure-sha256 "$source_closure_sha256"',
   '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
 ]) {
-  if (!buildWorkflow.includes(marker)) throw new Error(`Tofaset legacy→current Candidate G-build mangler ${marker}`);
+  if (!buildWorkflow.includes(marker)) throw new Error(`Direkte attesteret legacy→integrated first cutover mangler ${marker}`);
 }
 for (const marker of [
   'node scripts/verify-legacy-candidate-g-source.mjs verify',

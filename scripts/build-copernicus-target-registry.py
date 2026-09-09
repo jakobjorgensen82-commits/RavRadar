@@ -35,6 +35,7 @@ from lib.dmi_native_provenance import (
     validate_current_operational_ledger,
     verified_part_current_pair,
 )
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -268,7 +269,7 @@ def main() -> int:
     reference = utc_hour(args.at)
     all_targets = load_targets(args.targets)
     try:
-        dmi = json.loads(args.dmi.read_text(encoding="utf-8"))
+        dmi = read_dmi_bulk_document(args.dmi)
     except Exception as error:
         raise RuntimeError(f"Cannot read deployed DMI coverage: {error}") from None
     if not isinstance(dmi, dict):

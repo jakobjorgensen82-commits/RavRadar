@@ -1,5 +1,14 @@
 # Aktive krav – samlet register
 
+# 4.0.337 – tabsfri vedvarende cache og afgrænset legacy-cutover (2026-09-09)
+
+- **REQ-4.0.337-DMI-LOSSLESS-CODEC-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / PRODUKTIONSSKALA ÅBEN:** Hele DMI-dokumentets logiske schema-2-visning skal roundtrippe identisk gennem fælles Python/Node-codec. Unknown, Unicode, nested og proto-navne bevares; input muteres ikke; refs, antal, dybde og størrelse valideres før ekspansion.
+- **REQ-4.0.337-DMI-PROOF-CONTINUITY-001 – BINDENDE P0:** Fastlåst ecCodes-runtime og den snævre 2.48.0/2.48.2-kompatibilitet må bevare N−1 uafhængige currentproofs ved én ugyldig række. Originale signatures/hashes består; rå GRIB- og processed-step-reuse kræver stadig eksakt signatur.
+- **REQ-4.0.337-COMPONENT-DONOR-001 – BINDENDE P0:** Current, bølge, vind, vandstand og temperatur må donorbackfilles komponentvis alene som komplette validerede tuples. Nyere gyldig primary vinder; same-asset-konflikt må aldrig afgøres ved last-write-wins.
+- **REQ-4.0.337-LEGACY-DIRECT-CUTOVER-001 – BINDENDE FØRSTE-CUTOVER:** Første integrerede runtime må bygges direkte fra eksakt fastlåst offentligt legacy Candidate G plus aktuelle komplette vejrinputs. HISTORY_INCOMPLETE/BUILDING_MEASURED_ONLY er ærlige starttilstande; ingen historik syntetiseres.
+- **REQ-4.0.337-ONEOFF-CAPACITY-EXCEPTION-001 – BINDENDE SNÆVER EJERUNDTAGELSE:** Kun 4.0.337 og én eksakt succesfuld komplet main-oneoff kan åbne first cutover ved archive højst 50.000.000 bytes, storage/checkpoint inden for deres eksisterende budget og uændrede privacy-, integritets- og readbackgates. Undtagelsen godkender aldrig tilbagevendende automatisk kadence.
+- **REQ-4.0.337-CACHE-TRANSPORT-MIGRATION-001 – BINDENDE ÅBEN P0 FØR HØJFREKVENT DRIFT:** Den nye transport bygges parallelt uden nulstilling, sammenlignes logisk og kryptografisk mod den bevarede cache, aktiveres med atomisk pegepind og beholder rollback. Normal højfrekvent cron/watchdog må ikke aktiveres før positivt skygge- og budgetbevis.
+
 # 4.0.336 – kompakt WAM-cache, tværgående sourceproof og normalt handoff (2026-09-08)
 
 - **REQ-4.0.336-WAM-COMPACT-ATOMIC-WRITE-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** Alle progress-, final-, promotion- og reuse-writes skal være atomisk kompakt UTF-8-JSON. Pretty-print må ikke skabe et falsk cache-size-stop.

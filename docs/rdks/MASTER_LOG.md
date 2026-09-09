@@ -1,3 +1,12 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.337
+
+- Ejeren kræver fortsat, at den eksisterende vejrbase genbruges og aldrig nulstilles ved target-, modelrun- eller transportskift. 4.0.337 implementerer tabsfri codec, fastlåst decoder, granulært proofgenbrug og atomisk komponentdonor.
+- Ejeren godkendte udtrykkeligt en snæver first-cutover-undtagelse for én eksakt succesfuld komplet main-oneoff med archive højst 50 MB. Undtagelsen ændrer ikke privacy, integritet, readback, storage/checkpoint eller completeness.
+- Den nye scoremodel må ikke længere være afhængig af at publicere et moderne Candidate G-mellemartifact. Den fastlåste offentlige legacykilde plus aktuelle komplette vejrdata er tilladt, og manglende målt historik vises ærligt.
+- Cachetransporten er ikke løst af launch. Den står permanent som P0: parallel implementation, shadow-bevis, nul cachetab, atomisk pegepind og rollback før højfrekvent normal cron/watchdog.
+- Helkædekontrollen fandt en særskilt pre-normalization-fejl: 256 MiB-readeren kunne afvise den bevarede 760 MB legacycache, før den tabsfri codec fik lov at komprimere den. Alle fire relevante workflowveje bruger nu en bounded separat materialisering før første reader; originalen bevares ved fejl, og overstor encoded input afvises fortsat.
+- Lokal målmatrix er grøn. Diagnosejob `34288231609` beviste den eksakte tabsfri Python/Node-codec på 760.487.472 inputbyte og 578.063 sourceposter til 94.150.151 encoded byte uden cacheændring. Main/offentlig produktion er uændret; endelig exact-head, merge, komplet oneoff og modelcutover afventer.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.336 kompakt WAM og verificeret handoff-producent
 
 - Pretty-print udvidede DMI/WAM-cachen uden ny information. 4.0.336 bruger kompakt atomisk serialisering på alle writes og bevarer hårdt 256 MiB-loft med kun aggregeret telemetri.

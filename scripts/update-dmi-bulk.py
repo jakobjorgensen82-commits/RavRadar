@@ -39,6 +39,13 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
+from lib.dmi_current_processing_compatibility import (
+    retained_current_processing_signature_compatible,
+)
+from lib.dmi_bulk_storage import (
+    read_dmi_bulk_document,
+    write_dmi_bulk_document,
+)
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
     PUBLIC_END_OFFSET_HOURS,
@@ -65,6 +72,7 @@ from lib.dmi_native_provenance import (
     build_retained_current_asset_proof,
     canonical_time,
     canonical_current_source_asset,
+    canonical_pre_sanitize_current_identity_attestation,
     canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
     component_collection_allowed,
@@ -5020,6 +5028,19 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
         return {}
 
 
+def load_bulk_document(path: pathlib.Path) -> dict[str, Any]:
+    """Read an encoded cache or explicitly migrate one bounded legacy cache."""
+    try:
+        value = read_dmi_bulk_document(
+            path,
+            optional=True,
+            allow_large_legacy=True,
+        )
+        return value if isinstance(value, dict) else {}
+    except Exception:
+        return {}
+
+
 def sanitize_reusable_cache_document_leaves(document: Any) -> dict[str, Any]:
     """Drop malformed cache leaves without weakening document/proof identity.
 
@@ -5370,6 +5391,101 @@ def backfill_compatible_cache_data(
         validated_primary_current_asset_proofs
     )
 
+    component_row_fields = {
+        "current": ("current-u", "current-v"),
+        "wind": (
+            "wind-u-10m", "wind-v-10m",
+            "wind-speed-10m", "wind-dir-10m",
+        ),
+        "windTail": (
+            "wind-tail-u-10m", "wind-tail-v-10m",
+            "wind-tail-speed-10m", "wind-tail-dir-10m",
+        ),
+        "wave": (
+            "significant-wave-height", "dominant-wave-period", "mean-wave-dir",
+        ),
+        "waterLevel": ("sea-mean-deviation",),
+        "waterTemperature": ("water-temperature",),
+    }
+
+    def backfill_native_component(
+        primary_zone: dict[str, Any],
+        donor_zone: dict[str, Any],
+        primary_hourly: dict[str, Any],
+        primary_row: dict[str, Any],
+        donor_row: dict[str, Any],
+        zone_id: str,
+        valid_time: str,
+        component: str,
+    ) -> dict[str, Any]:
+        required_fields = tuple(COMPONENT_FIELD_SET[component])
+        if _exact_validated_dmi_component_present(
+            zone_id, primary_zone, valid_time, component, required_fields,
+        ) or not _exact_validated_dmi_component_present(
+            zone_id, donor_zone, valid_time, component, required_fields,
+        ):
+            return primary_row
+        donor_source = ((donor_row.get("sources") or {}).get(component))
+        optional_fields = tuple(
+            donor_source.get("optionalFieldSet") or ()
+        ) if isinstance(donor_source, dict) else ()
+        if any(
+            not isinstance(donor_row.get(field), (int, float))
+            or isinstance(donor_row.get(field), bool)
+            or not math.isfinite(float(donor_row[field]))
+            for field in optional_fields
+        ):
+            return primary_row
+        copied_fields = (*required_fields, *optional_fields)
+        replacement = copy.deepcopy(primary_row)
+        for field in component_row_fields[component]:
+            replacement.pop(field, None)
+        for field in copied_fields:
+            replacement[field] = copy.deepcopy(donor_row[field])
+        replacement_sources = replacement.get("sources")
+        if not isinstance(replacement_sources, dict):
+            replacement_sources = {}
+        else:
+            replacement_sources = copy.deepcopy(replacement_sources)
+        replacement_sources[component] = copy.deepcopy(donor_source)
+        replacement["sources"] = replacement_sources
+        candidate_zone = {
+            **primary_zone,
+            "hourly": {valid_time: replacement},
+        }
+        if not _exact_validated_dmi_component_present(
+            zone_id, candidate_zone, valid_time, component, required_fields,
+        ):
+            return primary_row
+
+        donor_grid_points = donor_zone.get("gridPoints") or {}
+        donor_collections = donor_zone.get("collections") or {}
+        summary = {
+            field: (
+                copy.deepcopy(donor_grid_points.get(field)),
+                donor_collections.get(field),
+            )
+            for field in copied_fields
+        }
+        primary_hourly[valid_time] = replacement
+        primary_grid_points = primary_zone.setdefault("gridPoints", {})
+        primary_collections = primary_zone.setdefault("collections", {})
+        if not isinstance(primary_grid_points, dict):
+            primary_grid_points = {}
+            primary_zone["gridPoints"] = primary_grid_points
+        if not isinstance(primary_collections, dict):
+            primary_collections = {}
+            primary_zone["collections"] = primary_collections
+        for field in component_row_fields[component]:
+            point, collection = summary.get(field, (None, None))
+            if isinstance(point, dict) and collection == donor_source.get("collection"):
+                primary_grid_points[field] = point
+                primary_collections[field] = collection
+            else:
+                primary_grid_points.pop(field, None)
+                primary_collections.pop(field, None)
+        return replacement
+
     def row_has_trusted_current(
         row: dict[str, Any],
         zone_id: str,
@@ -5446,9 +5562,22 @@ def backfill_compatible_cache_data(
                 # tuple rule below and never receive half a vector.
                 primary_hourly[valid_time] = copy.deepcopy(donor_row)
                 continue
-            if not isinstance(primary_row, dict) or not str(zone_id).startswith(
-                "PART::"
-            ):
+            if not isinstance(primary_row, dict):
+                continue
+            for component in COMPONENT_FIELD_SET:
+                if component == "current" and str(zone_id).startswith("PART::"):
+                    continue
+                primary_row = backfill_native_component(
+                    primary_zone,
+                    donor_zone,
+                    primary_hourly,
+                    primary_row,
+                    donor_row,
+                    str(zone_id),
+                    valid_time,
+                    component,
+                )
+            if not str(zone_id).startswith("PART::"):
                 continue
             if row_has_trusted_current(
                 primary_row,
@@ -5641,7 +5770,109 @@ def _validated_candidate_retained_current_asset_proofs(
         retained_pair_sources,
     )
     if ledger.get("attestation") != sanitized_current_attestation(actual_attestation):
-        return []
+        identity_attestation = (
+            canonical_pre_sanitize_current_identity_attestation(
+                document,
+                targets,
+                donor_reference,
+                donor_end,
+                current_assets,
+                retained_pair_sources,
+            )
+        )
+        if (
+            ledger.get("attestation")
+            != sanitized_current_attestation(identity_attestation)
+        ):
+            return []
+        # The original digest has now been reconstructed exactly. Rebuild the
+        # derived fields only from rows accepted by the normal strict validator.
+        actual_pair_source_keys = {
+            (
+                str(row.get("partId") or "").strip(),
+                str(row.get("validTime") or ""),
+                json.dumps(
+                    canonical_current_source_asset(row.get("source")),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ),
+            )
+            for row in (actual_attestation.get("verifiedPairSources") or [])
+            if canonical_current_source_asset(row.get("source")) is not None
+        }
+        retained_proofs = []
+        for proof in validate_retained_current_asset_proofs(
+            ledger.get("retainedCurrentAssetProofs", []),
+            sorted(str(target.get("partId") or "").strip() for target in targets),
+            donor_reference,
+            donor_end,
+            registry_sha256,
+        ):
+            source_key = json.dumps(
+                proof["sourceAsset"],
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            )
+            surviving = [
+                part_id
+                for part_id in proof["attestedPartIds"]
+                if (part_id, proof["sourceAsset"]["validTime"], source_key)
+                in actual_pair_source_keys
+            ]
+            if surviving:
+                retained_proofs.append(build_retained_current_asset_proof(
+                    proof["sourceAsset"],
+                    proof["processingSignature"],
+                    proof["partOutcomeProof"],
+                    surviving,
+                    sorted(
+                        str(target.get("partId") or "").strip()
+                        for target in targets
+                    ),
+                    registry_sha256,
+                ))
+        retained_proofs.sort(key=lambda proof: (
+            proof["sourceAsset"]["validTime"],
+            proof["sourceAsset"]["collection"],
+            proof["sourceAsset"]["modelRun"],
+            proof["sourceAsset"]["itemId"],
+            proof["sourceAsset"]["contentSha256"],
+        ))
+        ledger["retainedCurrentAssetProofs"] = retained_proofs
+        ledger["retainedCurrentAssetProofCount"] = len(retained_proofs)
+        ledger["retainedCurrentAssetProofsSha256"] = (
+            retained_current_asset_proofs_sha256(retained_proofs)
+        )
+        ledger["attestation"] = sanitized_current_attestation(
+            actual_attestation
+        )
+        actual_source_keys = {
+            source_key
+            for _part_id, _valid_time, source_key in actual_pair_source_keys
+        }
+        for collection_row in ledger.get("collections") or []:
+            for row in collection_row.get("validTimes") or []:
+                source = canonical_current_source_asset(row.get("sourceAsset"))
+                if (
+                    row.get("state") == "VERIFIED"
+                    and source is not None
+                    and json.dumps(
+                        source,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ) not in actual_source_keys
+                ):
+                    row["state"] = "PROCESSED"
+            collection_row["stateCounts"] = {
+                state: sum(
+                    row.get("state") == state
+                    for row in collection_row.get("validTimes") or []
+                )
+                for state in CURRENT_OPERATIONAL_LEDGER_STATES
+            }
 
     partition = derive_current_part_outcome_partition(
         ledger.get("collections"),
@@ -5725,7 +5956,9 @@ def _validated_candidate_retained_current_asset_proofs(
             outcome = row.get("partOutcomeProof")
             if row.get("state") not in {"PROCESSED", "VERIFIED"} or source is None:
                 continue
-            if signature != expected_processing_signature:
+            if not retained_current_processing_signature_compatible(
+                signature, expected_processing_signature,
+            ):
                 continue
             evidence_by_source[json.dumps(
                 source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
@@ -5737,7 +5970,9 @@ def _validated_candidate_retained_current_asset_proofs(
         donor_end,
         registry_sha256,
     ):
-        if proof["processingSignature"] != expected_processing_signature:
+        if not retained_current_processing_signature_compatible(
+            proof["processingSignature"], expected_processing_signature,
+        ):
             continue
         source = proof["sourceAsset"]
         evidence_by_source[json.dumps(
@@ -5801,15 +6036,37 @@ def _select_retained_current_asset_proofs_for_document(
     targets: list[dict[str, Any]],
     reference: datetime,
     proof_candidates: list[dict[str, Any]],
+    expected_processing_signature: str | None = None,
 ) -> list[dict[str, Any]]:
     """Keep only exact proof identities selected by the merged cache's actual rows."""
     if not proof_candidates:
         return []
     registry_sha256 = target_fingerprint(targets)
     target_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
-    evidence: dict[tuple[str, str, str], dict[str, Any]] = {}
-    evidence_by_source: dict[str, dict[str, Any]] = {}
+    evidence: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    evidence_by_source: dict[str, list[dict[str, Any]]] = {}
     authorization: list[dict[str, Any]] = []
+
+    def semantic_evidence(value: dict[str, Any]) -> dict[str, Any]:
+        outcome = copy.deepcopy(value["partOutcomeProof"])
+        outcome.pop("processingSignature", None)
+        outcome.pop("outcomesSha256", None)
+        return {
+            "sourceAsset": value["sourceAsset"],
+            "outcome": outcome,
+        }
+
+    def evidence_compatible(
+        left: dict[str, Any], right: dict[str, Any],
+    ) -> bool:
+        return bool(
+            retained_current_processing_signature_compatible(
+                left["processingSignature"],
+                right["processingSignature"],
+            )
+            and semantic_evidence(left) == semantic_evidence(right)
+        )
+
     for proof in proof_candidates:
         source = proof["sourceAsset"]
         source_key = json.dumps(
@@ -5824,16 +6081,19 @@ def _select_retained_current_asset_proofs_for_document(
             "processingSignature": proof["processingSignature"],
             "partOutcomeProof": proof["partOutcomeProof"],
         }
-        existing_source_evidence = evidence_by_source.get(source_key)
-        if (
-            existing_source_evidence is not None
-            and existing_source_evidence != source_evidence
+        source_candidates = evidence_by_source.setdefault(source_key, [])
+        if any(
+            not evidence_compatible(existing, source_evidence)
+            for existing in source_candidates
         ):
             raise ValueError("Conflicting retained current asset proof")
-        evidence_by_source[source_key] = source_evidence
+        if source_evidence not in source_candidates:
+            source_candidates.append(source_evidence)
         for part_id in proof["attestedPartIds"]:
             key = (part_id, source["validTime"], source_key)
-            evidence[key] = source_evidence
+            pair_candidates = evidence.setdefault(key, [])
+            if source_evidence not in pair_candidates:
+                pair_candidates.append(source_evidence)
             authorization.append({
                 "partId": part_id,
                 "validTime": source["validTime"],
@@ -5865,25 +6125,46 @@ def _select_retained_current_asset_proofs_for_document(
             str(pair_source.get("validTime") or ""),
             source_key,
         )
-        proof = evidence.get(key)
-        if proof is None:
+        proofs = evidence.get(key)
+        if not proofs:
             raise ValueError("Merged retained current row lacks exact proof")
         entry = grouped.setdefault(source_key, {
-            "proof": proof,
+            "proofs": [],
             "partIds": set(),
         })
+        for proof in proofs:
+            if proof not in entry["proofs"]:
+                entry["proofs"].append(proof)
         entry["partIds"].add(key[0])
-    selected = [
-        build_retained_current_asset_proof(
-            entry["proof"]["sourceAsset"],
-            entry["proof"]["processingSignature"],
-            entry["proof"]["partOutcomeProof"],
+    selected = []
+    for entry in grouped.values():
+        candidates = entry["proofs"]
+        if not candidates or any(
+            not evidence_compatible(candidates[0], candidate)
+            for candidate in candidates[1:]
+        ):
+            raise ValueError("Conflicting retained current asset proof")
+        exact = [
+            candidate for candidate in candidates
+            if candidate["processingSignature"] == expected_processing_signature
+        ]
+        chosen = min(
+            exact or candidates,
+            key=lambda candidate: json.dumps(
+                candidate,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+        )
+        selected.append(build_retained_current_asset_proof(
+            chosen["sourceAsset"],
+            chosen["processingSignature"],
+            chosen["partOutcomeProof"],
             sorted(entry["partIds"]),
             target_ids,
             registry_sha256,
-        )
-        for entry in grouped.values()
-    ]
+        ))
     selected.sort(key=lambda proof: (
         proof["sourceAsset"]["validTime"],
         proof["sourceAsset"]["collection"],
@@ -5907,7 +6188,37 @@ def load_previous(
     production_reference: datetime | None = None,
     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    output_document = load_document(OUTPUT_PATH)
+    output_document = load_bulk_document(OUTPUT_PATH)
+    fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
+    candidates = [output_document, fallback_document]
+    proof_candidates: list[dict[str, Any]] = []
+    proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
+    if coastal_part_targets is not None and production_reference is not None:
+        expected_processing_signature = current_marine_processing_signature(
+            expected_signature
+        )
+        # Validate proofs against the exact persisted document before leaf
+        # sanitation. The later selection step applies those authenticated
+        # proofs only to rows that survived sanitation and the donor merge.
+        for document in candidates:
+            if (
+                document.get("zoneRegistrySignature") != expected_signature
+                or not document.get("zones")
+            ):
+                continue
+            try:
+                document_proofs = (
+                    _validated_candidate_retained_current_asset_proofs(
+                        document,
+                        coastal_part_targets,
+                        production_reference,
+                        expected_processing_signature,
+                    )
+                )
+            except (TypeError, ValueError):
+                document_proofs = []
+            proof_candidates_by_document[id(document)] = document_proofs
+            proof_candidates.extend(document_proofs)
     output_quarantined = False
     output_leaf_sanitized = bool(
         sanitize_reusable_cache_document_leaves(output_document)
@@ -5920,7 +6231,6 @@ def load_previous(
         quarantine_invalid_output_cache(OUTPUT_PATH)
         output_document = {}
         output_quarantined = True
-    fallback_document = load_document(DEPLOYED_FALLBACK_PATH)
     sanitize_reusable_cache_document_leaves(fallback_document)
     if not reusable_cache_document_shape(fallback_document):
         fallback_document = {}
@@ -5938,27 +6248,6 @@ def load_previous(
     candidates = [output_document, fallback_document]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
-        proof_candidates: list[dict[str, Any]] = []
-        proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
-        if coastal_part_targets is not None and production_reference is not None:
-            expected_processing_signature = current_marine_processing_signature(
-                expected_signature
-            )
-            for document in compatible:
-                try:
-                    document_proofs = (
-                        _validated_candidate_retained_current_asset_proofs(
-                            document,
-                            coastal_part_targets,
-                            production_reference,
-                            expected_processing_signature,
-                        )
-                    )
-                    proof_candidates_by_document[id(document)] = document_proofs
-                    proof_candidates.extend(document_proofs)
-                except (TypeError, ValueError):
-                    proof_candidates_by_document[id(document)] = []
-                    continue
         primary = (
             output_document
             if PREFER_OUTPUT_CACHE and output_document in compatible
@@ -6004,6 +6293,7 @@ def load_previous(
                     coastal_part_targets or [],
                     production_reference,
                     proof_candidates,
+                    current_marine_processing_signature(expected_signature),
                 ) if production_reference is not None else []
             )
         if output_quarantined or output_leaf_sanitized:
@@ -6631,7 +6921,9 @@ def build_current_operational_ledger(
         collection_row = provisional_by_collection.get(source["collection"])
         if collection_row is None:
             raise ValueError("Retained current proof collection is unavailable")
-        if proof["processingSignature"] != expected_processing_signature:
+        if not retained_current_processing_signature_compatible(
+            proof["processingSignature"], expected_processing_signature,
+        ):
             raise ValueError("Retained current proof uses incompatible processing semantics")
         selected_model_run = canonical_time(collection_row.get("modelRun"))
         locally_unavailable = all(
@@ -7449,26 +7741,9 @@ def atomic_write_bulk_cache(
     *,
     path: pathlib.Path | None = None,
 ) -> int:
-    """Write the private bulk cache atomically as compact UTF-8 JSON.
-
-    Pretty-printing this provenance-rich document can add substantial bytes
-    without adding information. Keep one serialization contract for progress,
-    terminal and promotion writes so a formatting-only expansion can never make
-    a valid cache fail a downstream raw-byte bound.
-    """
+    """Write one bounded, lossless source-dictionary cache atomically."""
     destination = OUTPUT_PATH if path is None else path
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_name(destination.name + ".tmp")
-    with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-        json.dump(
-            document,
-            handle,
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        handle.write("\n")
-    temporary.replace(destination)
-    return destination.stat().st_size
+    return write_dmi_bulk_document(destination, document)
 
 
 def write_final_cache_size_telemetry(raw_bytes: int) -> None:
@@ -8303,6 +8578,9 @@ def main() -> int:
             coastal_part_targets,
             locked_production_reference,
             retained_current_asset_proofs,
+            current_marine_processing_signature(
+                current_zone_registry_signature
+            ),
         )
     )
     # Local coastal parts use the same downloaded GRIB fields as parent zones.

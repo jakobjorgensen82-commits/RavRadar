@@ -49,6 +49,7 @@ from lib.open_meteo_current_fallback import (
     reusable_records_with_salvage,
     safe_projection,
 )
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 
 
 
@@ -931,7 +932,10 @@ def main() -> int:
         raise RuntimeError("OPEN_METEO_REFERENCE_INVALID")
     targets = load_targets(args.targets)
     target_map = {row["partId"]: row for row in targets}
-    dmi = read_object(args.dmi)
+    try:
+        dmi = read_dmi_bulk_document(args.dmi)
+    except (OSError, ValueError):
+        raise RuntimeError("OPEN_METEO_INPUT_INVALID") from None
     registry = read_object(args.registry)
     copernicus = read_object(args.copernicus)
     source_stage = read_object(args.source_stage)

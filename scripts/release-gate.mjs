@@ -275,6 +275,11 @@ const buildWorkflow=productionWorkflows.build;
 const deployWorkflow=productionWorkflows.deploy;
 const weatherSourceProducerWorkflow=await read('.github/workflows/validate-copernicus-current-pilot.yml');
 const dmiBulkProducer=await read('scripts/update-dmi-bulk.py');
+const dmiBulkStorage=await read('scripts/lib/dmi_bulk_storage.py');
+const dmiBulkMaterializer=await read('scripts/materialize-dmi-bulk-storage.py');
+const dmiBulkStoragePythonTest=await read('scripts/test-dmi-bulk-storage.py');
+const dmiBulkStorageNodeTest=await read('scripts/test-dmi-bulk-storage.mjs');
+const dmiWaveBootstrapIntegrationTest=await read('scripts/test_dmi_wave_bootstrap_update_integration.py');
 const candidateOperationalPlanBuilder=await read('scripts/prepare-candidate-g-operational-rollback.mjs');
 const workflowContractTest=await read('scripts/test-workflow-validation-order-4.0.108.mjs');
 const operationalPagesRecovery=await read('scripts/ravscore-operational-pages-recovery.mjs');
@@ -1261,7 +1266,8 @@ for(const marker of [
   'path: .cache/ravscore-continuation-checkpoint',
   'ravscore-continuation-schema6-v2-',
   "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')",
+  "if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -1343,11 +1349,140 @@ for(const marker of [
   'raw_bytes = atomic_write_bulk_cache(result)',
   'write_final_cache_size_telemetry(raw_bytes)',
   'separators=(",", ":")',
-  'return destination.stat().st_size',
+  'from lib.dmi_bulk_storage import (',
+  'write_dmi_bulk_document,',
+  'return write_dmi_bulk_document(destination, document)',
   'write_ocean_diagnostics(result)',
   'class ProgressCheckpointController:',
 ]){
   ok(dmiBulkProducer.includes(marker),`DMI asset-/checkpointkæden mangler atomisk progression: ${marker}`);
+}
+for(const marker of [
+  'def write_dmi_bulk_document(',
+  'handle.flush()',
+  'os.fsync(handle.fileno())',
+  'temporary.replace(destination)',
+  'return destination.stat().st_size',
+  'temporary.unlink()',
+]){
+  ok(dmiBulkStorage.includes(marker),`DMI storage-codecen mangler atomisk progression: ${marker}`);
+}
+for(const marker of [
+  'MAX_LEGACY_BYTES = 1536 * 1024 * 1024',
+  'if info.st_size > MAX_STORED_BYTES and not allow_large_legacy:',
+  'if "storageSchema" in value:',
+  'raise ValueError("DMI encoded input exceeds its stored byte bound")',
+  'def materialize_dmi_bulk_document(',
+  'if source.resolve() == destination.resolve():',
+  'allow_large_legacy=True',
+  'write_dmi_bulk_document(destination, document)',
+  'read_dmi_bulk_document(destination, expand_sources=False)',
+]){
+  ok(dmiBulkStorage.includes(marker),`DMI legacy-normaliseringen mangler den afgrænsede storage-kontrakt: ${marker}`);
+}
+for(const marker of [
+  'from lib.dmi_bulk_storage import materialize_dmi_bulk_document',
+  'parser.add_argument("--input", type=Path, required=True)',
+  'parser.add_argument("--output", type=Path, required=True)',
+  'result = materialize_dmi_bulk_document(args.input, args.output)',
+  '"sourcePreserved": True',
+]){
+  ok(dmiBulkMaterializer.includes(marker),`DMI materializer-helperen mangler ${marker}`);
+}
+for(const marker of [
+  'test_materializer_preserves_legacy_source_and_writes_encoded_output',
+  'test_materializer_copies_valid_encoded_input_byte_for_byte',
+  'test_oversize_encoded_wrapper_is_never_treated_as_legacy',
+  'test_materializer_failure_preserves_source_and_existing_output',
+  'test_materializer_rejects_in_place_replacement',
+]){
+  ok(dmiBulkStoragePythonTest.includes(marker),`Python storage-testen mangler legacy-normaliseringsbevis: ${marker}`);
+}
+for(const marker of [
+  'writeDmiBulkDocument',
+  'readDmiBulkDocument',
+  'decodeDmiBulkWrapper',
+  "console.log('OK: DMI bulk storage is lossless, bounded and immutable for Node readers.')",
+]){
+  ok(dmiBulkStorageNodeTest.includes(marker),`Node storage-testen mangler codecbevis: ${marker}`);
+}
+const dmiStorageTestChain=packageScripts['test:dmi-bulk-forecast-integration']??'';
+ok(dmiStorageTestChain.indexOf('python -B scripts/test-dmi-bulk-storage.py')>=0
+  && dmiStorageTestChain.indexOf('node scripts/test-dmi-bulk-storage.mjs')
+    > dmiStorageTestChain.indexOf('python -B scripts/test-dmi-bulk-storage.py'),
+'Den fulde DMI-forecastintegration skal køre både Python- og Node-storagekontrakten i rækkefølge');
+ok((buildWorkflow.match(/python scripts\/materialize-dmi-bulk-storage\.py/g)||[]).length===2,
+'Normalworkflowet skal materialisere legacy-DMI præcis før conditional point activation og den aktive READY-binding');
+ok((weatherSourceProducerWorkflow.match(/python scripts\/materialize-dmi-bulk-storage\.py/g)||[]).length===2,
+'Pilot/oneoff-workflowet skal materialisere legacy-DMI præcis før pilot- og oneoff-readers');
+for(const marker of [
+  'name: Reconfirm exact main before materialized legacy DMI cache',
+  'id: dmi-legacy-materialized-write-authority',
+  "steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  "steps.dmi-active-legacy-bootstrap.outcome == 'success'",
+  'name: Save materialized legacy active DMI generation',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}',
+]){
+  ok(buildWorkflow.includes(marker),`Normalworkflowet mangler straks-save af valideret materialiseret legacy-DMI: ${marker}`);
+}
+for(const marker of [
+  'name: Reconfirm exact main before materialized legacy DMI cache',
+  'id: oneoff-dmi-legacy-materialized-write-authority',
+  "steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  "steps.dmi-active-legacy-bootstrap.outcome == 'success'",
+  'name: Save materialized legacy active DMI generation',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}',
+]){
+  ok(weatherSourceProducerWorkflow.includes(marker),`Oneoff-workflowet mangler straks-save af valideret materialiseret legacy-DMI: ${marker}`);
+}
+const normalLegacyMaterializedSaveStart=buildWorkflow.indexOf('name: Save materialized legacy active DMI generation');
+const normalLegacyMaterializedSaveEnd=buildWorkflow.indexOf('\n      - name:',normalLegacyMaterializedSaveStart+1);
+const normalLegacyMaterializedSaveSection=buildWorkflow.slice(
+  normalLegacyMaterializedSaveStart,
+  normalLegacyMaterializedSaveEnd<0?undefined:normalLegacyMaterializedSaveEnd,
+);
+const oneoffLegacyMaterializedSaveStart=weatherSourceProducerWorkflow.indexOf('name: Save materialized legacy active DMI generation');
+const oneoffLegacyMaterializedSaveEnd=weatherSourceProducerWorkflow.indexOf('\n      - name:',oneoffLegacyMaterializedSaveStart+1);
+const oneoffLegacyMaterializedSaveSection=weatherSourceProducerWorkflow.slice(
+  oneoffLegacyMaterializedSaveStart,
+  oneoffLegacyMaterializedSaveEnd<0?undefined:oneoffLegacyMaterializedSaveEnd,
+);
+for(const [label,section,authority] of [
+  ['normal',normalLegacyMaterializedSaveSection,'steps.dmi-legacy-materialized-write-authority.outcome'],
+  ['oneoff',oneoffLegacyMaterializedSaveSection,'steps.oneoff-dmi-legacy-materialized-write-authority.outcome'],
+]){
+  ok(section.includes(authority)
+    &&section.includes('continue-on-error: true')
+    &&section.includes('path: .cache/dmi-active-complete.json')
+    &&!section.includes('candidate_promoted'),
+  `${label}-workflowets materialiserede legacy-save skal være exact-main-autoriseret, ikke-blokerende og uafhængigt af kandidatpromovering`);
+}
+for(const marker of [
+  'name: Materialize bounded deployed DMI storage before conditional point activation',
+  'name: Materialize bounded DMI storage before pilot readers',
+  'const pilotStorageMaterialize =',
+  'const oneoffActiveMaterialize =',
+  'deployedDmiMaterialize:',
+  'const conditionalPointStorageMaterialize =',
+  'const normalActiveMaterialize =',
+  'const normalLegacyMaterializedAuthority =',
+  'const normalLegacyMaterializedSave =',
+  'const oneoffLegacyMaterializedAuthority =',
+  'const oneoffLegacyMaterializedSave =',
+]){
+  ok(workflowContractTest.includes(marker),`Den dybe workflowtest mangler legacy-normaliseringsbinding: ${marker}`);
+}
+for(const marker of [
+  'python scripts/materialize-dmi-bulk-storage.py',
+  '--cache "$materialized_path"',
+  '--dmi "$materialized_path"',
+  'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+  'steps.dmi-legacy-materialized-write-authority.outcome',
+  'steps.oneoff-dmi-legacy-materialized-write-authority.outcome',
+  'self.assertNotIn("candidate_promoted", materialized_save)',
+  'self.assertNotIn("candidate_promoted", oneoff_materialized_save)',
+]){
+  ok(dmiWaveBootstrapIntegrationTest.includes(marker),`DMI/WAM-integrationstesten mangler legacy-materialiseringsbinding: ${marker}`);
 }
 ok(!dmiBulkProducer.includes('def reset_private_part_wave_cache(')
   &&!dmiBulkProducer.includes('def clear_operational_wave_window(')

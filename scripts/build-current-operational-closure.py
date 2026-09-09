@@ -17,6 +17,7 @@ from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
     current_attestation_authorization_from_operational_ledger,
 )
+from lib.dmi_bulk_storage import read_dmi_bulk_document
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,7 +96,10 @@ def atomic_write(path: Path, document: dict[str, Any]) -> None:
 def main() -> int:
     args = arguments()
     targets = load_targets(args.targets)
-    dmi = read_object(args.dmi)
+    try:
+        dmi = read_dmi_bulk_document(args.dmi)
+    except (OSError, ValueError):
+        raise RuntimeError("CLOSURE_INPUT_INVALID") from None
     registry = read_object(args.registry)
     copernicus = read_object(args.copernicus)
     source_stage = read_object(args.source_stage, optional=True)

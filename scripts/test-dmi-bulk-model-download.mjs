@@ -153,8 +153,8 @@ assert.match(
 assert.match(finalWriter, /write_ocean_diagnostics\(result\)/);
 assert.match(
   bulk,
-  /def atomic_write_bulk_cache\([\s\S]*?path: pathlib\.Path \| None = None,[\s\S]*?json\.dump\([\s\S]*?separators=\(",", ":"\),[\s\S]*?temporary\.replace\(destination\)[\s\S]*?return destination\.stat\(\)\.st_size/,
-  'Alle cacheveje skal bruge én kompakt, atomisk writer og returnere det faktiske rå byteantal.',
+  /def atomic_write_bulk_cache\([\s\S]*?path: pathlib\.Path \| None = None,[\s\S]*?return write_dmi_bulk_document\(destination, document\)/,
+  'Alle cacheveje skal bruge den fælles, tabsløse og atomiske codec-writer.',
 );
 assert.doesNotMatch(
   bulk.slice(bulk.indexOf('def atomic_write_bulk_cache('), finalWriterEnd),
