@@ -8,11 +8,12 @@ RavRadar kan nu genbruge den store DMI-cache uden at starte forfra, når decoder
 
 - Første integrerede modelskift kan bruge den fastlåste offentlige Candidate G-kilde direkte. Manglende 48-timers målt historik vises som HISTORY_INCOMPLETE og opbygges senere; den opfindes ikke.
 - Første legacy-cutover kræver én konkret succesfuld komplet oneoff og genfinder netop dens forseglede vejrkilder.
+- En stor bevaret cache kontrolleres først på en særskilt sikker migrationsvej og skrives til en ny kompakt fil. Først derefter læser de almindelige strenge kontroller filen. Den oprindelige cache overskrives ikke ved fejl, og samme regel gælder pilot, normal kørsel, oneoff og en eventuel punktaktivering.
 - Ejerens engangsundtagelse gælder kun, når det private archive højst er 50 MB, storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består.
 - Undtagelsen er ikke en godkendelse af hyppige fulde cachetransporter. Efter lanceringen bygges en ny transport parallelt, sammenlignes i shadow og aktiveres atomisk med rollback. Den eksisterende cache nulstilles ikke.
 - Normal højfrekvent cron/watchdog aktiveres først efter positivt transport- og budgetbevis. Oneoff er launchaccelerator; normal drift bliver derefter den permanente vedligeholder.
 
-Status: 4.0.337 er lokalt implementeret og måltestet. Production-sized exact-codec, exact-head GitHub-kontrol, merge, komplet main-oneoff, fulde produktionsgates og offentlig modelaktivering mangler.
+Status: 4.0.337-basecommitten er pushet, og den eksakte codec har read-only genskabt den bevarede 760 MB cache som 94 MB med identisk logisk indhold; Node-readback bestod, og inputfilen blev ikke ændret. Den afsluttende fornormalisering er implementeret lokalt, men ny samlet slutgate mangler. Den separate gamle Open-Meteo-overlapprobe fejlede fortsat og tæller ikke som codecfejl. Exact-head GitHub-kontrol, merge, komplet main-oneoff, fulde produktionsgates og offentlig modelaktivering mangler.
 
 ## 88.38 4.0.336 – normal vejrkørsel kan aflevere det verificerede handoff
 

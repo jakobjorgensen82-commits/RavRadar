@@ -504,20 +504,11 @@ assert.equal(emergencyAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
 assert.equal(emergencyAvailability.selectedReferenceAt, horizonTimes[9]);
 
 const oldSourceReferenceAt = new Date(Date.parse(generatedAt) - 24 * 3_600_000).toISOString();
-const oldSourceFull = structuredClone(full);
-oldSourceFull.weatherSourceAge = buildPublicWeatherSourceAge({
+const oldSourceManifest = structuredClone(manifest);
+oldSourceManifest.weatherSourceAge = buildPublicWeatherSourceAge({
   productionReferenceAt: generatedAt,
   partSourceRows: sourceAgeRows(oldSourceReferenceAt),
 });
-const oldSourceStartupText = compactJson(buildPublicConditions(oldSourceFull));
-const oldSourceDetailsText = compactJson(buildPublicConditionDetails(oldSourceFull));
-const oldSourceManifest = buildPublicManifest(
-  oldSourceFull,
-  oldSourceStartupText,
-  oldSourceDetailsText,
-  '{}\n',
-  zoneRegistryText,
-);
 const oldSourceAvailability = selectPublicRuntimeAvailability(oldSourceManifest, {
   now: Date.parse(generatedAt) + 30 * 60_000,
   modelBinding: binding,
@@ -533,20 +524,11 @@ unknownSourceRows[0].currentProvenance = {
   provider: 'open-meteo',
   acquiredAt: generatedAt,
 };
-const unknownSourceFull = structuredClone(full);
-unknownSourceFull.weatherSourceAge = buildPublicWeatherSourceAge({
+const unknownSourceManifest = structuredClone(manifest);
+unknownSourceManifest.weatherSourceAge = buildPublicWeatherSourceAge({
   productionReferenceAt: generatedAt,
   partSourceRows: unknownSourceRows,
 });
-const unknownSourceStartupText = compactJson(buildPublicConditions(unknownSourceFull));
-const unknownSourceDetailsText = compactJson(buildPublicConditionDetails(unknownSourceFull));
-const unknownSourceManifest = buildPublicManifest(
-  unknownSourceFull,
-  unknownSourceStartupText,
-  unknownSourceDetailsText,
-  '{}\n',
-  zoneRegistryText,
-);
 const unknownSourceAvailability = selectPublicRuntimeAvailability(unknownSourceManifest, {
   now: Date.parse(generatedAt) + 30 * 60_000,
   modelBinding: binding,
@@ -557,19 +539,10 @@ assert.equal(unknownSourceAvailability.reason,
 assert.equal(unknownSourceAvailability.weatherSourceAge.unknownComparableAgeCount, 1,
   'acquisitionAt must never masquerade as a comparable model issuance');
 
-const delayedBuildFull = structuredClone(oldSourceFull);
-delayedBuildFull.generatedAt = new Date(Date.parse(generatedAt) + 96 * 3_600_000).toISOString();
-const delayedStartupText = compactJson(buildPublicConditions(delayedBuildFull));
-const delayedDetailsText = compactJson(buildPublicConditionDetails(delayedBuildFull));
-const delayedManifest = buildPublicManifest(
-  delayedBuildFull,
-  delayedStartupText,
-  delayedDetailsText,
-  '{}\n',
-  zoneRegistryText,
-);
+const delayedManifest = structuredClone(oldSourceManifest);
+delayedManifest.generatedAt = new Date(Date.parse(generatedAt) + 96 * 3_600_000).toISOString();
 const delayedAvailability = selectPublicRuntimeAvailability(delayedManifest, {
-  now: Date.parse(delayedBuildFull.generatedAt) + 30 * 60_000,
+  now: Date.parse(delayedManifest.generatedAt) + 30 * 60_000,
   modelBinding: binding,
 });
 assert.equal(delayedAvailability.mode, 'EMERGENCY_LAST_COMPLETE');

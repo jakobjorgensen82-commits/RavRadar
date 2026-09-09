@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import pathlib
+import shutil
 import stat
 from typing import Any, Iterator
 
@@ -230,19 +231,19 @@ def decode_dmi_bulk_wrapper(
     return document
 
 
-def read_dmi_bulk_document(
+def _read_dmi_bulk_document(
     path: pathlib.Path | str,
     *,
     optional: bool = False,
     expand_sources: bool = True,
     allow_large_legacy: bool = False,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], bool]:
     source = pathlib.Path(path)
     try:
         info = source.lstat()
     except FileNotFoundError:
         if optional:
-            return {}
+            return {}, False
         raise
     if not stat.S_ISREG(info.st_mode) or source.is_symlink() \
             or not 1 < info.st_size <= MAX_LEGACY_BYTES:
@@ -254,12 +255,33 @@ def read_dmi_bulk_document(
     if not isinstance(value, dict):
         raise ValueError("DMI bulk input must be an object")
     if "storageSchema" in value:
-        return decode_dmi_bulk_wrapper(
-            value, stored_bytes=info.st_size, expand_sources=expand_sources,
+        if info.st_size > MAX_STORED_BYTES:
+            raise ValueError("DMI encoded input exceeds its stored byte bound")
+        return (
+            decode_dmi_bulk_wrapper(
+                value, stored_bytes=info.st_size, expand_sources=expand_sources,
+            ),
+            True,
         )
     if not isinstance(value.get("zones"), dict):
         raise ValueError("DMI legacy bulk input has no zones object")
-    return value
+    return value, False
+
+
+def read_dmi_bulk_document(
+    path: pathlib.Path | str,
+    *,
+    optional: bool = False,
+    expand_sources: bool = True,
+    allow_large_legacy: bool = False,
+) -> dict[str, Any]:
+    document, _encoded = _read_dmi_bulk_document(
+        path,
+        optional=optional,
+        expand_sources=expand_sources,
+        allow_large_legacy=allow_large_legacy,
+    )
+    return document
 
 
 def write_dmi_bulk_document(
@@ -286,3 +308,49 @@ def write_dmi_bulk_document(
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def materialize_dmi_bulk_document(
+    source_path: pathlib.Path | str,
+    destination_path: pathlib.Path | str,
+) -> dict[str, int | bool]:
+    """Validate one bounded input and atomically materialize a normal-size copy.
+
+    A large legacy document is source-dictionary encoded.  An already encoded
+    document is copied byte-for-byte after full wrapper validation.  The source
+    and destination must differ so a failed migration can never damage the
+    restored cache.
+    """
+    source = pathlib.Path(source_path)
+    destination = pathlib.Path(destination_path)
+    if source.resolve() == destination.resolve():
+        raise ValueError("DMI storage materialization requires a separate output")
+    input_bytes = source.lstat().st_size
+    document, encoded_input = _read_dmi_bulk_document(
+        source,
+        expand_sources=False,
+        allow_large_legacy=True,
+    )
+    if encoded_input:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_name(destination.name + ".tmp")
+        try:
+            with source.open("rb") as reader, temporary.open("wb") as writer:
+                shutil.copyfileobj(reader, writer, length=1024 * 1024)
+                writer.flush()
+                os.fsync(writer.fileno())
+            if not 1 < temporary.stat().st_size <= MAX_STORED_BYTES:
+                raise ValueError("DMI encoded copy exceeds its stored byte bound")
+            temporary.replace(destination)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+    else:
+        write_dmi_bulk_document(destination, document)
+    read_dmi_bulk_document(destination, expand_sources=False)
+    output_bytes = destination.stat().st_size
+    return {
+        "inputBytes": input_bytes,
+        "outputBytes": output_bytes,
+        "legacyNormalized": not encoded_input,
+    }

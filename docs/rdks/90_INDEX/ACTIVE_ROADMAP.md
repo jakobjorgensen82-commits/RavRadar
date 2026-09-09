@@ -4,8 +4,9 @@
 - [x] Erstat det afviste codecudkast med fælles tabsfri Python/Node-codec og bind alle kendte produktionslæsere/-skrivere til den.
 - [x] Fjern det unødige moderne Candidate G-mellemtrin og bind legacy first cutover til én eksakt succesfuld komplet oneoff.
 - [x] Registrér ejerens first-cutover-undtagelse med 50 MB archiveloft, eksisterende storage/checkpointkrav og uændrede privacy/readbackgates.
-- [ ] Kør exact produktionstor codec-/recoveryprøve; afslut 4.0.337 releasehukommelse og version.
-- [ ] Commit/push, bestå én exact-head GitHub sourcegate og merge kun den eksakte grønne head.
+- [x] Kør exact produktionstor codecprøve read-only på den bevarede cache; `34288231609` bevarer logisk hash/count og inputfil og består Python/Node-readback.
+- [x] Luk pre-normalization legacy-blockeren i pilot, normal vedligeholdelse, oneoff og conditional point activation med separat bounded materialisering før første strenge DMI-reader; bevar kildefilen ved fejl.
+- [ ] Afslut releasehukommelsens sidste head, bestå én exact-head GitHub sourcegate og merge kun den eksakte grønne head.
 - [ ] Kør main-oneoff til komplet vejr/WAM/Feggesund og brug dens runbundne handoff til fulde produktionsgates og offentlig integreret cutover.
 - [ ] Byg cachetransporten parallelt efter launch: ingen nulstilling, shadow-sammenligning, atomisk pegepind og rollback. Aktivér først normal højfrekvent cron/watchdog efter positivt budget-/driftsbevis.
 

@@ -1008,12 +1008,22 @@ assert.match(
 );
 assert.ok(
   activeDmiMaterializeStep.block.includes(
-    'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"',
+    'python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"',
+  )
+    && activeDmiMaterializeStep.block.includes(
+      'reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"',
   )
     && activeDmiMaterializeStep.block.includes(
       'python scripts/build-copernicus-target-registry.py',
     )
+    && activeDmiMaterializeStep.block.includes('--dmi "$materialized_path"')
     && activeDmiMaterializeStep.block.includes('--require-strict-dmi-ledger')
+    && activeDmiMaterializeStep.block.includes(
+      'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
+    )
     && activeDmiMaterializeStep.block.includes(
       'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
     ),

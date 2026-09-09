@@ -6,8 +6,14 @@
 - [x] Implementér tabsfri fælles Python/Node-codec med to-pass-validering og omlæg kendte produktionsreaders/writers, inklusive oneoff-wrapperens progresskontrol.
 - [x] Bind private preflight/size-dryrun til den faktiske DMI-kandidat og understøt fastlåst direkte legacy-source-cutover.
 - [x] Registrér ejerens snævre 4.0.337-undtagelse og kræv eksakt succesfuld oneoff/handoff ved legacy first cutover.
+- [x] Fjern den modstridende legacy-jq-betingelse, så den røde månedsfremskrivning registreres, men ikke gør den ene godkendte launchundtagelse virkningsløs.
 - [x] Bestå målrettede codec-, provenance-, runtime- og workflowtests lokalt.
-- [ ] Kør exact production-sized codec/recoveryprøve, afslut version/RDKS og bestå én GitHub sourcegate på eksakt PR-head.
+- [x] Bind releasegaten til den refaktorerede restore/storage-arkitektur og gør den fulde 210/673-public-runtime-test hukommelseslineær med uændrede assertions; måltesten er grøn.
+- [x] Kør exact production-sized codecprøve read-only: job `34288231609`, 760.487.472 → 94.150.151 byte, 578.063 sourceposter, identisk logisk hash/count, uændret input og Node-readback.
+- [x] Ret pre-normalization legacy-blockeren med separat bounded materialisering før første reader i pilot, normal vedligeholdelse, oneoff og conditional point activation; behold normal 256 MiB-kontrol på det materialiserede output og afvis overstor encoded wrapper.
+- [x] Opdatér releasegate og alle fire normal-/oneoff-DMI-READY-integrationstestmarkører til den fælles codec-aware validator; 24 DMI/WAM-scenarier er grønne.
+- [x] Fjern fuld national deep-clone fra Feggesunds negative auditfixture; samme 210/673-audit består under Nodes normale lokale heaploft. To planlagte Windows Update-genstarter afbrød kun den efterfølgende samlede gate og ændrede ingen data.
+- [ ] Bestå ny samlet lokal slutgate efter legacy-normaliseringen, afslut endelig version/RDKS-head og bestå én GitHub sourcegate på eksakt PR-head. Den historiske Open-Meteo-overlapdiagnose er fortsat separat åben.
 - [ ] Merge, kør komplet main-oneoff og kræv 79.414/79.414, WAM/Feggesund 354/354 samt archive højst 50 MB.
 - [ ] Gennemfør central runtime, fulde gates, artifact/deploy, Phase B og offentlig verifikation af den integrerede model.
 - [ ] Efter launch: byg og skyggeverificér cachetransport uden nulstilling; atomisk cutover/rollback før normal højfrekvent cron/watchdog.

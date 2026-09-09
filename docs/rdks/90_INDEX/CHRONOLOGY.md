@@ -4,7 +4,9 @@
 - Ejeren godkendte én 4.0.337-first-cutover-undtagelse: eksakt succesfuld komplet main-oneoff, højst 50 MB privat archive, eksisterende storage/checkpointgrænser og uændrede integrity/privacy/readbackgates.
 - Legacy cutover kræver nu det konkrete oneoff-run-id og den genfundne forseglede cache; en manglende eller fejlende producent kan ikke erstattes af en ny ubundet hentning.
 - Undtagelsen dækker ikke almindelig højfrekvent drift. Cachetransportmigration uden nulstilling er registreret som P0 efter launch og før normal cron/watchdog.
-- Candidate G er fortsat offentlig. Exact production-sized codecprøve, version, exact-head, merge, main-oneoff, fulde gates og offentlig modelaktivering er åbne.
+- Read-only GitHub-job `34288231609` kørte codec-commit `bce970af` på den bevarede 760.487.472-byte DMI-cache med 578.063 sourceposter. Midlertidigt output var 94.150.151 byte; logisk hash/count var identisk, inputfilen uændret og Node-readback grøn. Den separate historiske Open-Meteo-overlapprobe fejlede fortsat og blev ikke forvekslet med codecbevis eller produktionsruntime.
+- Den efterfølgende helkædekontrol fandt, at 256 MiB-readeren kunne stoppe den 760 MB store legacyfil før codec-normalisering. En særskilt bounded helper og alle fire relevante workflowveje skriver nu et separat atomisk materialiseret output før almindelig READY-/provenance-/registerlæsning; source bevares ved fejl, og overstor encoded input afvises.
+- Candidate G er fortsat offentlig. Endelig exact-head, merge, main-oneoff, fulde gates og offentlig modelaktivering er åbne.
 
 # NYESTE CHECKPOINT – 2026-09-08 – 4.0.336 kompakt WAM og tværgående sourceproof
 

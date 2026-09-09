@@ -173,6 +173,16 @@ jobs:
             echo "No private DMI cache was restored; a checkout file alone is never treated as a cache hit."
           fi
 
+      - name: Materialize bounded DMI storage before pilot readers
+        if: steps.dmi-coverage.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          materialized="$RUNNER_TEMP/dmi-pilot-materialized.json"
+          python scripts/materialize-dmi-bulk-storage.py --input data/live/dmi-bulk-cache.json --output "$materialized"
+          cp "$materialized" data/live/dmi-bulk-cache.json.tmp
+          mv data/live/dmi-bulk-cache.json.tmp data/live/dmi-bulk-cache.json
+
       - name: Bind the pilot to a ready restored DMI ledger
         if: steps.dmi-coverage.outputs.available == 'true' && inputs.full_coast != true
         id: dmi-operational-reference
@@ -678,16 +688,40 @@ jobs:
             source_path=data/live/dmi-bulk-cache.json
           fi
           test -s "$source_path"
-          reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$source_path")"
+          materialized_path="$RUNNER_TEMP/dmi-active-proof/materialized.json"
+          python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"
+          reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"
           python scripts/build-copernicus-target-registry.py \
             --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
-            --dmi "$source_path" \
+            --dmi "$materialized_path" \
             --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
             --at "$reference"
-          cp "$source_path" .cache/dmi-active-complete.json.tmp
+          cp "$materialized_path" .cache/dmi-active-complete.json.tmp
           mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
           cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+
+      - name: Reconfirm exact main before materialized legacy DMI cache
+        id: oneoff-dmi-legacy-materialized-write-authority
+        if: steps.dmi-active-restore.outputs.cache-matched-key == '' && steps.dmi-active-legacy-bootstrap.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save materialized legacy active DMI generation
+        if: steps.oneoff-dmi-legacy-materialized-write-authority.outcome == 'success' && hashFiles('.cache/dmi-active-complete.json') != ''
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Restore isolated DMI candidate progress
         id: dmi-candidate-restore
@@ -1221,8 +1255,11 @@ jobs:
               + $report.checkpointDatabaseEgress.projectedMonthlyRpcMetadataBytes
               + (($report.checkpointDatabaseEgress.projectedCheckpointBytes
                 + $report.checkpointDatabaseEgress.fullRestoreEnvelopeBytesPerRead) * 60))
-          and $report.egress.normalWithCheckpointWithinBudget == true
-          and $report.egress.rollbackWithCheckpointWithinBudget == true
+          and ($report.egress.normalWithCheckpointWithinBudget | type) == "boolean"
+          and ($report.egress.rollbackWithCheckpointWithinBudget | type) == "boolean"
+          and $report.firstCutoverException.generalMonthlyEgressWithinBudget
+            == ($report.egress.normalWithCheckpointWithinBudget
+              and $report.egress.rollbackWithCheckpointWithinBudget)
           and $report.storage.reservePercent == 30
           and $report.storage.usableBudgetPercent == 70
           and $report.storage.retainedObjectGenerations == 2

@@ -78,10 +78,16 @@ assert.match(normalBootstrapBlock, /fail-on-cache-miss: true/);
 assert.doesNotMatch(normalBootstrapBlock, /restore-keys:/);
 
 const normalMaterializeBlock = stepBlock(buildWorkflow, 'Strictly bind and materialize the active DMI generation');
-assert.match(normalMaterializeBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
-assert.match(normalMaterializeBlock, /test "\$\(jq -r '[^']*' "\$source_path"\)" = true/);
-assert.match(normalMaterializeBlock, /build-copernicus-target-registry\.py/);
-assert.match(normalMaterializeBlock, /cp "\$source_path" \.cache\/dmi-active-complete\.json\.tmp/);
+assert.match(normalMaterializeBlock, /materialized_path="\$RUNNER_TEMP\/dmi-active-proof\/materialized\.json"/);
+assert.match(normalMaterializeBlock, /python scripts\/materialize-dmi-bulk-storage\.py --input "\$source_path" --output "\$materialized_path"/);
+assert.match(normalMaterializeBlock, /check-dmi-bulk-operational-ready\.py --cache "\$materialized_path"/);
+assert.match(normalMaterializeBlock, /build-copernicus-target-registry\.py[\s\S]*--dmi "\$materialized_path"/);
+assert.match(normalMaterializeBlock, /cp "\$materialized_path" \.cache\/dmi-active-complete\.json\.tmp/);
+assert.match(
+  normalMaterializeBlock,
+  /materialize-dmi-bulk-storage\.py[\s\S]*check-dmi-bulk-operational-ready\.py[\s\S]*build-copernicus-target-registry\.py[\s\S]*cp "\$materialized_path"/,
+);
+assert.doesNotMatch(normalMaterializeBlock, /\.diagnostics\.currentOperationalLedger\.ready|--cache "\$source_path"|cp "\$source_path"/);
 assert.match(normalMaterializeBlock, /cp \.cache\/dmi-active-complete\.json data\/live\/dmi-bulk-cache\.json/);
 
 const normalCandidateRestoreBlock = stepBlock(buildWorkflow, 'Restore isolated DMI candidate progress for normal maintenance');
@@ -125,8 +131,9 @@ assert.match(normalShadowSaveBlock, /steps\.dmi-bulk\.outcome != 'skipped'/);
 const normalSnapshotBlock = stepBlock(buildWorkflow, 'Strictly snapshot the maintained READY active DMI generation');
 assert.match(normalSnapshotBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
 assert.match(normalSnapshotBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
-assert.match(normalSnapshotBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
-assert.match(normalSnapshotBlock, /build-copernicus-target-registry\.py/);
+assert.match(normalSnapshotBlock, /check-dmi-bulk-operational-ready\.py[\s\S]*--cache data\/live\/dmi-bulk-cache\.json/);
+assert.match(normalSnapshotBlock, /build-copernicus-target-registry\.py[\s\S]*--dmi data\/live\/dmi-bulk-cache\.json/);
+assert.doesNotMatch(normalSnapshotBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
 const normalActiveSaveBlock = stepBlock(buildWorkflow, 'Save the maintained complete active DMI generation');
 assert.match(normalActiveSaveBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
 assert.match(normalActiveSaveBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
@@ -250,8 +257,9 @@ assert.ok(candidateSave < oneoffTerminal, 'Partial kandidatprogression skal gemm
 const promotedSnapshotBlock = stepBlock(oneoffWorkflow, 'Strictly snapshot only a promoted READY DMI generation');
 assert.match(promotedSnapshotBlock, /steps\.dmi-bulk\.outcome == 'success'/);
 assert.match(promotedSnapshotBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
-assert.match(promotedSnapshotBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
-assert.match(promotedSnapshotBlock, /build-copernicus-target-registry\.py/);
+assert.match(promotedSnapshotBlock, /check-dmi-bulk-operational-ready\.py[\s\S]*--cache data\/live\/dmi-bulk-cache\.json/);
+assert.match(promotedSnapshotBlock, /build-copernicus-target-registry\.py[\s\S]*--dmi data\/live\/dmi-bulk-cache\.json/);
+assert.doesNotMatch(promotedSnapshotBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
 const promotedActiveSaveBlock = stepBlock(oneoffWorkflow, 'Save the promoted complete active DMI generation');
 assert.match(promotedActiveSaveBlock, /steps\.dmi-bulk\.outcome == 'success'/);
 assert.match(promotedActiveSaveBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);

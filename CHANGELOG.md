@@ -3,10 +3,12 @@
 - Fastlåser ecCodes og genbruger kompatible verificerede currentproofs granulært uden at omskrive original kildeidentitet.
 - Bevarer gode proofs ved én defekt række og udfylder kun komplette validerede vejrkomponenter atomisk fra en kompatibel donor.
 - Indfører fælles tabsfri Python/Node-codec for den store DMI-cache, retter alle fem fejl fra den afsluttende helhedsaudit og fører også oneoff-wrapperens progresskontrol gennem codec'en.
+- Normaliserer en afgrænset stor legacycache til et separat kompakt output før første strenge DMI-reader i pilot, normal vedligeholdelse, oneoff og betinget punktaktivering. Originalen bevares ved fejl, mens en overstor allerede kodet fil fortsat afvises.
 - Tillader direkte første integrerede cutover fra den fastlåste offentlige legacy Candidate G-kilde med ærlig manglende historik.
 - Binder legacy-cutover til én eksakt succesfuld komplet oneoff. Ejerundtagelsen gælder kun archive højst 50 MB og ikke tilbagevendende automatisk drift.
 - Registrerer cachetransport uden nulstilling som åben P0 før højfrekvent normal cron/watchdog.
-- Lokal målmatrix er grøn; exact production-sized codecprøve, GitHub exact-head, merge, main-runtime og offentlig modelaktivering er åbne.
+- Opdaterer releasegatens og DMI/WAM-integrationstestens statiske bindinger til first-cutover-undtagelsen og den fælles codec-aware READY-/writevej samt gør begge tunge 210/673-public-runtime-tests hukommelsesbegrænsede uden at fjerne assertions.
+- Den tidligere lokale målmatrix er grøn; read-only job `34288231609` beviser exact-codec på 760.487.472 byte/578.063 sourceposter til 94.150.151 byte med identisk logisk indhold og Node-readback. Basecommitten `bce970af` er pushet, mens den afsluttende legacy-normalisering fortsat er lokal og mangler ny samlet slutgate. GitHub exact-head, merge, main-runtime og offentlig modelaktivering er åbne.
 - Se CHANGELOG-4.0.337.md og DEC-0122.
 
 ## 4.0.336 – kompakt WAM-cache og verificeret handoff fra normal kørsel (2026-09-08)

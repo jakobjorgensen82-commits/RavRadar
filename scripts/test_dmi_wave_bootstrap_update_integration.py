@@ -1133,6 +1133,8 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         normal_names = (
             "Restore last complete active DMI generation",
             "Strictly bind and materialize the active DMI generation",
+            "Reconfirm exact main before materialized legacy DMI cache",
+            "Save materialized legacy active DMI generation",
             "Restore isolated DMI candidate progress for normal maintenance",
             "Update DMI bulk model cache",
             "Save isolated DMI candidate progress before any terminal decision",
@@ -1149,15 +1151,43 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("key: dmi-zone-active-v1-", active_restore)
 
         active_materialize = normal[normal_names[1]][1]
-        self.assertIn(".diagnostics.currentOperationalLedger.ready", active_materialize)
+        self.assertIn(
+            'python scripts/materialize-dmi-bulk-storage.py '
+            '--input "$source_path" --output "$materialized_path"',
+            active_materialize,
+        )
+        self.assertIn(
+            'reference="$(python scripts/check-dmi-bulk-operational-ready.py '
+            '--cache "$materialized_path")"',
+            active_materialize,
+        )
+        self.assertNotIn(".diagnostics.currentOperationalLedger.ready", active_materialize)
         self.assertIn("python scripts/build-copernicus-target-registry.py", active_materialize)
         self.assertIn("--require-strict-dmi-ledger", active_materialize)
+        self.assertIn('--dmi "$materialized_path"', active_materialize)
+        self.assertIn(
+            'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+            active_materialize,
+        )
         self.assertIn(
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             active_materialize,
         )
 
-        candidate_restore = normal[normal_names[2]][1]
+        materialized_authority = normal[normal_names[2]][1]
+        self.assertIn("steps.dmi-active-restore.outputs.cache-matched-key == ''", materialized_authority)
+        self.assertIn("steps.dmi-active-legacy-bootstrap.outcome == 'success'", materialized_authority)
+        self.assertIn("continue-on-error: true", materialized_authority)
+        self.assertIn('test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"', materialized_authority)
+
+        materialized_save = normal[normal_names[3]][1]
+        self.assertIn("steps.dmi-legacy-materialized-write-authority.outcome == 'success'", materialized_save)
+        self.assertIn("continue-on-error: true", materialized_save)
+        self.assertIn("path: .cache/dmi-active-complete.json", materialized_save)
+        self.assertIn("-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}", materialized_save)
+        self.assertNotIn("candidate_promoted", materialized_save)
+
+        candidate_restore = normal[normal_names[4]][1]
         self.assertIn("path: .cache/dmi-candidate-progress.json", candidate_restore)
         self.assertIn("key: dmi-zone-candidate-v1-", candidate_restore)
         self.assertIn("restore-keys:", candidate_restore)
@@ -1167,7 +1197,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             workflow,
         )
 
-        dmi = normal[normal_names[3]][1]
+        dmi = normal[normal_names[5]][1]
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
@@ -1177,26 +1207,28 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         ):
             self.assertIn(marker, dmi)
 
-        candidate = normal[normal_names[4]][1]
+        candidate = normal[normal_names[6]][1]
         self.assertIn("if: always()", candidate)
         self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", candidate)
         self.assertIn("path: .cache/dmi-candidate-progress.json", candidate)
         self.assertIn("key: dmi-zone-candidate-v1-", candidate)
         self.assertNotIn("dmi-zone-cache-v1-", candidate)
 
-        terminal = normal[normal_names[5]][1]
+        terminal = normal[normal_names[7]][1]
         self.assertIn('test "$code" = "DMI_READY"', terminal)
         self.assertIn('test "$STRICT_CURRENT_ANCHOR_READY" = "true"', terminal)
 
-        snapshot = normal[normal_names[6]][1]
+        snapshot = normal[normal_names[8]][1]
         self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", snapshot)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", snapshot)
-        self.assertIn(".diagnostics.currentOperationalLedger.ready", snapshot)
+        self.assertIn("python scripts/check-dmi-bulk-operational-ready.py", snapshot)
+        self.assertIn("--cache data/live/dmi-bulk-cache.json", snapshot)
+        self.assertNotIn(".diagnostics.currentOperationalLedger.ready", snapshot)
         self.assertIn("python scripts/build-copernicus-target-registry.py", snapshot)
         self.assertIn("--require-strict-dmi-ledger", snapshot)
         self.assertIn("--at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"", snapshot)
 
-        active = normal[normal_names[7]][1]
+        active = normal[normal_names[9]][1]
         self.assertNotIn("if: always()", active)
         self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", active)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", active)
@@ -1213,6 +1245,8 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         oneoff_names = (
             "Restore last complete active DMI generation",
             "Strictly bind and materialize the active DMI generation",
+            "Reconfirm exact main before materialized legacy DMI cache",
+            "Save materialized legacy active DMI generation",
             "Restore isolated DMI candidate progress",
             "Isolate restored candidate and restore active working copy",
             "Refresh all bounded official DMI collections for the proof",
@@ -1229,22 +1263,50 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("key: dmi-zone-active-v1-", oneoff_active_restore)
 
         oneoff_materialize = oneoff_steps[oneoff_names[1]][1]
-        self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_materialize)
+        self.assertIn(
+            'python scripts/materialize-dmi-bulk-storage.py '
+            '--input "$source_path" --output "$materialized_path"',
+            oneoff_materialize,
+        )
+        self.assertIn(
+            'reference="$(python scripts/check-dmi-bulk-operational-ready.py '
+            '--cache "$materialized_path")"',
+            oneoff_materialize,
+        )
+        self.assertNotIn(".diagnostics.currentOperationalLedger.ready", oneoff_materialize)
         self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_materialize)
         self.assertIn("--require-strict-dmi-ledger", oneoff_materialize)
+        self.assertIn('--dmi "$materialized_path"', oneoff_materialize)
+        self.assertIn(
+            'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
+            oneoff_materialize,
+        )
 
-        oneoff_candidate_restore = oneoff_steps[oneoff_names[2]][1]
+        oneoff_materialized_authority = oneoff_steps[oneoff_names[2]][1]
+        self.assertIn("steps.dmi-active-restore.outputs.cache-matched-key == ''", oneoff_materialized_authority)
+        self.assertIn("steps.dmi-active-legacy-bootstrap.outcome == 'success'", oneoff_materialized_authority)
+        self.assertIn("continue-on-error: true", oneoff_materialized_authority)
+        self.assertIn('test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"', oneoff_materialized_authority)
+
+        oneoff_materialized_save = oneoff_steps[oneoff_names[3]][1]
+        self.assertIn("steps.oneoff-dmi-legacy-materialized-write-authority.outcome == 'success'", oneoff_materialized_save)
+        self.assertIn("continue-on-error: true", oneoff_materialized_save)
+        self.assertIn("path: .cache/dmi-active-complete.json", oneoff_materialized_save)
+        self.assertIn("-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}", oneoff_materialized_save)
+        self.assertNotIn("candidate_promoted", oneoff_materialized_save)
+
+        oneoff_candidate_restore = oneoff_steps[oneoff_names[4]][1]
         self.assertIn("path: .cache/dmi-candidate-progress.json", oneoff_candidate_restore)
         self.assertIn("key: dmi-zone-candidate-v1-", oneoff_candidate_restore)
 
-        oneoff_candidate_state = oneoff_steps[oneoff_names[3]][1]
+        oneoff_candidate_state = oneoff_steps[oneoff_names[5]][1]
         self.assertIn(
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             oneoff_candidate_state,
         )
         self.assertNotIn("retain_preferred", oneoff_candidate_state)
 
-        dmi = oneoff_steps[oneoff_names[4]][1]
+        dmi = oneoff_steps[oneoff_names[6]][1]
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
@@ -1254,17 +1316,19 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         ):
             self.assertIn(marker, dmi)
 
-        oneoff_candidate = oneoff_steps[oneoff_names[5]][1]
+        oneoff_candidate = oneoff_steps[oneoff_names[7]][1]
         self.assertIn("if: always()", oneoff_candidate)
         self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", oneoff_candidate)
         self.assertIn("path: .cache/dmi-candidate-progress.json", oneoff_candidate)
         self.assertIn("key: dmi-zone-candidate-v1-", oneoff_candidate)
         self.assertNotIn("dmi-zone-cache-v1-", oneoff_candidate)
 
-        oneoff_snapshot = oneoff_steps[oneoff_names[6]][1]
+        oneoff_snapshot = oneoff_steps[oneoff_names[8]][1]
         self.assertIn("steps.dmi-bulk.outcome == 'success'", oneoff_snapshot)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", oneoff_snapshot)
-        self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_snapshot)
+        self.assertIn("python scripts/check-dmi-bulk-operational-ready.py", oneoff_snapshot)
+        self.assertIn("--cache data/live/dmi-bulk-cache.json", oneoff_snapshot)
+        self.assertNotIn(".diagnostics.currentOperationalLedger.ready", oneoff_snapshot)
         self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_snapshot)
         self.assertIn("--require-strict-dmi-ledger", oneoff_snapshot)
         self.assertIn(
@@ -1272,7 +1336,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             oneoff_snapshot,
         )
 
-        promoted = oneoff_steps[oneoff_names[7]][1]
+        promoted = oneoff_steps[oneoff_names[9]][1]
         self.assertNotIn("if: always()", promoted)
         self.assertIn("steps.dmi-bulk.outcome == 'success'", promoted)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", promoted)

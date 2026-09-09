@@ -10,6 +10,7 @@ import {
   PRIVATE_RUNTIME_FILES,
   buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation,
+  buildPrivateRuntimeFirstCutoverException,
   buildPrivateRuntimeIncrementalSizeDryRun,
   buildPrivateRuntimeIncrementalSizeProjection,
   buildPrivateRuntimePreflightState,
@@ -373,6 +374,21 @@ try {
     egressUsableBytes: normalCombinedMonthlyBytes - 1,
   });
   assert.equal(normalOneByteOver.egress.normalWithCheckpointWithinBudget, false);
+  const approvedExceptionWithRedMonthlyProjection =
+    buildPrivateRuntimeFirstCutoverException({
+      archiveObjectBytes,
+      projection: normalOneByteOver,
+      decisionMarker: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.invocationMarker,
+    });
+  assert.equal(approvedExceptionWithRedMonthlyProjection.eligible, true);
+  assert.equal(
+    approvedExceptionWithRedMonthlyProjection.generalMonthlyEgressWithinBudget,
+    false,
+  );
+  assert.equal(
+    approvedExceptionWithRedMonthlyProjection.recurringAutomaticCadenceEligible,
+    false,
+  );
   const rollbackBoundary = projectionWithUsableBudgets({
     egressUsableBytes: rollbackCombinedMonthlyBytes,
     storageUsableBytes: retainedStorageBytes,
@@ -743,6 +759,9 @@ try {
     '$report.firstCutoverException.recurringAutomaticCadenceEligible == false',
     '$report.firstCutoverException.cacheTransportMigrationRequired == true',
     '$report.firstCutoverException.existingCacheResetRequired == false',
+    '$report.firstCutoverException.generalMonthlyEgressWithinBudget',
+    '($report.egress.normalWithCheckpointWithinBudget | type) == "boolean"',
+    '($report.egress.rollbackWithCheckpointWithinBudget | type) == "boolean"',
     '$report.incrementalGate.fullCutoverCapacityEvaluated == false',
     '$report.egress.reservePercent == 30',
     '$report.egress.usableBudgetPercent == 70',
@@ -793,6 +812,8 @@ try {
     'Report only aggregate Supabase capacity evidence',
     'ravscore-private-runtime-capacity-safe.json',
     'private-production-runtime-workflow.mjs capacity-dry-run',
+    '$report.egress.normalWithCheckpointWithinBudget == true',
+    '$report.egress.rollbackWithCheckpointWithinBudget == true',
     '.status == "passed"',
     'fullCutoverCapacityEvaluated == true',
   ]) {
