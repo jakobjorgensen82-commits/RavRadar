@@ -20,7 +20,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import urljoin, urlparse
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
@@ -45,6 +45,10 @@ from lib.dmi_current_processing_compatibility import (
 from lib.dmi_bulk_storage import (
     read_dmi_bulk_document,
     write_dmi_bulk_document,
+)
+from lib.weather_acquisition_plan import (
+    planning_regional_covered_pairs,
+    read_current_acquisition_plan,
 )
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
@@ -1354,6 +1358,8 @@ def prioritize_marine_assets_for_current_gaps(
     assets: list[dict[str, Any]],
     target_ids: list[str],
     covered_pair_keys: set[tuple[str, str]],
+    *,
+    critical_by_time: dict[str, bool] | None = None,
 ) -> list[dict[str, Any]]:
     """Process internal holes/tail before refresh-only assets, deterministically."""
     def priority(asset: dict[str, Any]) -> tuple[int, int, float, str, str]:
@@ -1363,7 +1369,7 @@ def prioritize_marine_assets_for_current_gaps(
             for part_id in target_ids
         )
         return (
-            0 if missing_count else 1,
+            0 if missing_count or (critical_by_time or {}).get(valid_time) else 1,
             -missing_count,
             epoch(valid_time),
             str(asset.get("id") or ""),
@@ -1423,15 +1429,17 @@ def classify_dkss_primary_asset(
     cached_zones: dict[str, Any],
     active_zone_ids: list[str],
     enabled: bool,
+    planning_covered_pair_keys: set[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Classify one DKSS asset as critical work or safe refresh-only work.
 
     The cache passed here has already been normalized by ``clean_and_summarize``.
-    Current still requires the independent exact operational pair proof, while
-    every component additionally requires finite values and complete native DMI
-    provenance on the asset's exact valid hour. Optional DKSS temperature and
-    wind-tail fields are critical only on the hours selected by the established
-    stride contract.
+    An optional union plan classifies acquisition priority only; it never
+    authorizes a native DMI tuple. Without it, PART current keeps the existing
+    DMI proof requirement. Parent current is optional overview weather, not an
+    integrated-score input; its absence must not make an asset critical. Other
+    components still require finite values and native DMI provenance. Optional
+    temperature/wind-tail fields remain stride-bound.
     """
     if not enabled or collection not in MARINE_COLLECTIONS:
         return {
@@ -1446,18 +1454,38 @@ def classify_dkss_primary_asset(
     normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
     normalized_zones = sorted({str(value or "").strip() for value in active_zone_ids if str(value or "").strip()})
     missing_components: set[str] = set()
+    part_zone_ids = {f"PART::{part_id}" for part_id in normalized_targets}
+    parent_current_zone_ids = [
+        zone_id for zone_id in normalized_zones
+        if zone_id not in part_zone_ids
+    ]
+    parent_current_missing_count = 0
     if not valid_time or not canonical_run or not normalized_targets or not normalized_zones:
         missing_components.add("configuration")
         current_missing_pair_count = len(normalized_targets)
     else:
         current_missing_pair_count = sum(
-            (target_id, valid_time) not in covered_pair_keys
+            (target_id, valid_time) not in (
+                planning_covered_pair_keys
+                if planning_covered_pair_keys is not None
+                else covered_pair_keys
+            )
             for target_id in normalized_targets
         )
         required_components = dict(DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS)
         if stride_selected(valid_time, canonical_run):
             required_components.update(DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS)
         for component, fields in required_components.items():
+            if component == "current":
+                # The source-union plan proves usable PART coverage for
+                # acquisition priority only. Without that plan, require the
+                # exact native PART rows, never optional parent overview U/V.
+                component_zone_ids = (
+                    [] if planning_covered_pair_keys is not None
+                    else sorted(part_zone_ids)
+                )
+            else:
+                component_zone_ids = normalized_zones
             if any(
                 not _exact_validated_dmi_component_present(
                     zone_id,
@@ -1466,19 +1494,64 @@ def classify_dkss_primary_asset(
                     component,
                     fields,
                 )
-                for zone_id in normalized_zones
+                for zone_id in component_zone_ids
             ):
                 missing_components.add(component)
+        parent_current_missing_count = sum(
+            not _exact_validated_dmi_component_present(
+                zone_id, cached_zones.get(zone_id), valid_time,
+                "current", ("current-u", "current-v"),
+            )
+            for zone_id in parent_current_zone_ids
+        )
         if current_missing_pair_count:
             missing_components.add("current")
 
     critical = bool(missing_components)
-    return {
+    result = {
         "critical": critical,
         "deferValidRefresh": not critical,
         "currentMissingPairCount": current_missing_pair_count,
         "missingComponentKinds": sorted(missing_components),
     }
+    if planning_covered_pair_keys is not None or parent_current_zone_ids:
+        result["optionalParentCurrentCount"] = len(parent_current_zone_ids)
+        result["optionalParentCurrentMissingCount"] = parent_current_missing_count
+    return result
+
+
+def load_current_acquisition_planning_pairs(
+    targets: list[dict[str, Any]],
+    reference: datetime,
+) -> tuple[set[tuple[str, str]] | None, dict[str, Any]]:
+    """Read advisory union coverage without changing DMI admission authority."""
+    path = str(os.getenv("DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH", "")).strip()
+    diagnostics: dict[str, Any] = {
+        "present": bool(path),
+        "valid": False,
+        "scope": "dmi-only",
+    }
+    if not path:
+        return None, diagnostics
+    try:
+        pairs = read_current_acquisition_plan(
+            path,
+            production_reference_at=canonical_time(reference),
+            targets=targets,
+        )
+    except (OSError, TypeError, ValueError, KeyError):
+        diagnostics["failureCode"] = "ACQUISITION_PLAN_UNUSABLE"
+        progress(
+            "global current acquisition plan unavailable or invalid; "
+            "conservative DMI-only acquisition priority retained"
+        )
+        return None, diagnostics
+    diagnostics.update({
+        "valid": True,
+        "scope": "validated-source-union-planning-only",
+        "coveredPairCount": len(pairs),
+    })
+    return pairs, diagnostics
 
 
 def dkss_collection_deferred_only(run_info: dict[str, Any], asset_count: int) -> bool:
@@ -1552,6 +1625,9 @@ def should_skip_previously_processed_asset(
     current-only deficit seen by primary mode is therefore the step's validated
     ``spatialUnavailable`` partition and must not reopen the same asset. Missing
     water level, temperature or wind tail remains independently actionable.
+    Parent current is optional and may be spatially unavailable permanently;
+    it is sampled when an asset is otherwise processed or refreshed, not a
+    reason to reopen the same asset. A PART outcome never proves parent U/V.
     """
     if valid_time not in previously_processed:
         return False
@@ -4674,6 +4750,21 @@ def execute_private_wave_history_bootstrap(
                 "status": "incomplete",
                 "failureCode": "EXACT_NATIVE_CACHE_REQUIRED",
             }
+        # A genuine cold start permits incomplete measured history. Its
+        # mandatory network work is the operational target/lag bridge and
+        # forecast axis, acquired by the normal WAM loop below. Retain and
+        # validate existing history here, but never spend that critical budget
+        # rebuilding a coherent 49-hour historical asset plan. This helper is
+        # deliberately not moved after operational acquisition: its historical
+        # plan also contains target and could overwrite a newly admitted row.
+        aggregate["status"] = "history-incomplete"
+        aggregate["historyIncomplete"] = True
+        aggregate["historyIncompleteCode"] = "HISTORY_INCOMPLETE"
+        aggregate["historyNetworkDeferred"] = True
+        aggregate["lockedHourCount"] = 0
+        controller.mark_bulk_dirty()
+        controller.flush_if_due(force=True)
+        return locked
     bootstrap_collections = [
         collection for collection in sorted(
             WAVE_BOOTSTRAP_COLLECTIONS,
@@ -6740,7 +6831,19 @@ def current_operational_attestation(
     )
 
 
-def build_current_operational_ledger(
+class CurrentOperationalLedgerResult(NamedTuple):
+    """One ledger and its already-validated, same-input full attestation.
+
+    This process-local result is consumed before another document mutation.
+    It is not persisted as validation authority or reused after cache restore.
+    """
+
+    ledger: dict[str, Any]
+    attestation: dict[str, Any]
+    validated: bool
+
+
+def build_current_operational_ledger_result(
     document: dict[str, Any],
     targets: list[dict[str, Any]],
     reference: datetime,
@@ -6749,7 +6852,7 @@ def build_current_operational_ledger(
         tuple[str | None, list[dict[str, Any]], dict[str, Any]],
     ],
     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
+) -> CurrentOperationalLedgerResult:
     """Close every official DKSS asset/hour without inventing fallback gaps."""
     valid_times = operational_current_valid_times(reference)
     valid_time_set = set(valid_times)
@@ -6956,40 +7059,12 @@ def build_current_operational_ledger(
                     # A processed current step already supplies the row, while
                     # a revised official identity must become exact residual.
                     continue
-            elif source_run_epoch < selected_run_epoch:
-                selected_row = next(
-                    (
-                        row for row in collection_row["validTimes"]
-                        if row["validTime"] == source["validTime"]
-                    ),
-                    None,
-                )
-                selected_unavailable = set(
-                    ((selected_row or {}).get("partOutcomeProof") or {}).get(
-                        "spatialUnavailablePartIds"
-                    ) or []
-                )
-                eligible_part_ids = [
-                    part_id for part_id in proof["attestedPartIds"]
-                    if selected_row is None
-                    or selected_row.get("state") != "PROCESSED"
-                    or part_id in selected_unavailable
-                ]
-                if not eligible_part_ids:
-                    # A newer selected asset has a usable processed outcome for
-                    # every retained part/time. Never let an older cache row
-                    # invert source priority; leave the tuple unresolved until
-                    # the newer row is atomically materialized and attested.
-                    continue
-                if eligible_part_ids != proof["attestedPartIds"]:
-                    proof = build_retained_current_asset_proof(
-                        proof["sourceAsset"],
-                        proof["processingSignature"],
-                        proof["partOutcomeProof"],
-                        eligible_part_ids,
-                        part_ids,
-                        registry_sha256,
-                    )
+            # An older, valid row remains eligible until its actual tuple is
+            # atomically replaced. Newer processed/outcome metadata alone is
+            # not a replacement. The attestation below reads the real cached
+            # tuple; used_retained_by_source then keeps only the exact proofs
+            # that this tuple actually used. Same-run official revisions above
+            # remain a separate fail-closed integrity rule.
         eligible_retained_proofs.append(proof)
 
     retained_authorization = [
@@ -7008,12 +7083,13 @@ def build_current_operational_ledger(
         processed_assets,
         [],
     )
-    attestation = current_operational_attestation(
-        document,
-        targets,
-        reference,
-        processed_assets,
-        retained_authorization,
+    attestation = (
+        current_operational_attestation(
+            document, targets, reference, processed_assets,
+            retained_authorization,
+        )
+        if retained_authorization
+        else current_attestation
     )
     current_pair_source_keys = {
         (
@@ -7248,6 +7324,7 @@ def build_current_operational_ledger(
         ),
         "failureCodes": sorted(failure_codes),
     }
+    validated = True
     try:
         validate_current_operational_availability_ledger(
             ledger,
@@ -7258,6 +7335,7 @@ def build_current_operational_ledger(
             registry_sha256,
         )
     except (TypeError, ValueError):
+        validated = False
         ledger["ready"] = False
         ledger["failureCodes"] = ["CURRENT_LEDGER_CONTRACT_INVALID"]
     if ledger["ready"] and not current_operational_ledger_ready(
@@ -7268,9 +7346,49 @@ def build_current_operational_ledger(
         range_end,
         registry_sha256,
     ):
+        validated = False
         ledger["ready"] = False
         ledger["failureCodes"] = ["CURRENT_LEDGER_CONTRACT_INVALID"]
-    return ledger
+    return CurrentOperationalLedgerResult(ledger, attestation, validated)
+
+
+def build_current_operational_ledger(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    official_catalogs: dict[
+        str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]
+    ],
+    retained_current_asset_proofs: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Preserve the existing ledger-only API for independent consumers."""
+    return build_current_operational_ledger_result(
+        document, targets, reference, official_catalogs,
+        retained_current_asset_proofs,
+    ).ledger
+
+
+def seal_current_operational_checkpoint(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    official_catalogs: dict[
+        str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]
+    ],
+    retained_current_asset_proofs: list[dict[str, Any]] | None = None,
+) -> None:
+    """Consume one same-input validation result before any snapshot mutation."""
+    sealed = build_current_operational_ledger_result(
+        document, targets, reference, official_catalogs,
+        retained_current_asset_proofs,
+    )
+    if not sealed.validated:
+        raise ValueError("Current progress ledger validation failed")
+    diagnostics = document.setdefault("diagnostics", {})
+    diagnostics["currentOperationalLedger"] = sealed.ledger
+    diagnostics["currentOperationalAttestation"] = (
+        sanitized_current_attestation(sealed.attestation)
+    )
 
 
 def current_operational_cache_ready(
@@ -8657,6 +8775,17 @@ def main() -> int:
         for target in coastal_part_targets
     )
     current_target_registry_sha256 = target_fingerprint(coastal_part_targets)
+    global_current_planning_pairs, acquisition_plan_diagnostics = (
+        load_current_acquisition_planning_pairs(
+            coastal_part_targets, locked_production_reference,
+        )
+    )
+    current_part_zone_ids = {f"PART::{part_id}" for part_id in current_target_ids}
+    acquisition_plan_diagnostics["optionalParentCurrentCount"] = sum(
+        zone_id not in current_part_zone_ids
+        for zone_id in active_production_zone_ids
+    )
+    result["diagnostics"]["currentAcquisitionPlan"] = acquisition_plan_diagnostics
     for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
@@ -8784,13 +8913,64 @@ def main() -> int:
                 for part_id in set(current_target_ids) - unavailable
             )
 
+    # Regional fallback needs this run's selected official ledger, not merely
+    # the restored shadow header. Its result is advisory planning coverage only
+    # and is never inserted into the native DMI pair/source evidence above.
+    initial_planning_current_pairs: set[tuple[str, str]] | None = None
+    if global_current_planning_pairs is not None:
+        acquisition_plan_diagnostics["regionalPlanningValid"] = False
+        if regional_proxy_configuration_status == "CONFIGURED":
+            try:
+                regional_dmi_result = build_current_operational_ledger_result(
+                    result, coastal_part_targets, locked_production_reference,
+                    prefetched_marine, retained_current_asset_proofs,
+                )
+                if not regional_dmi_result.validated:
+                    raise ValueError("Regional planning requires validated DMI evidence")
+                regional_planning_pairs = planning_regional_covered_pairs(
+                    dmi_ledger=regional_dmi_result.ledger,
+                    dmi_attestation=regional_dmi_result.attestation,
+                    targets=coastal_part_targets,
+                    regional_shadow=current_shadow,
+                    regional_policy=regional_proxy_policy,
+                    production_reference_at=canonical_time(locked_production_reference),
+                )
+                global_current_planning_pairs |= regional_planning_pairs
+                acquisition_plan_diagnostics["regionalPlanningValid"] = True
+                acquisition_plan_diagnostics["regionalCoveredPairCount"] = len(
+                    regional_planning_pairs
+                )
+            except (OSError, TypeError, ValueError, KeyError):
+                acquisition_plan_diagnostics["regionalPlanningFailureCode"] = (
+                    "REGIONAL_ACQUISITION_PLAN_UNUSABLE"
+                )
+                progress(
+                    "regional current planning proof unavailable; "
+                    "unproven regional pairs remain acquisition holes"
+                )
+        else:
+            acquisition_plan_diagnostics["regionalPlanningFailureCode"] = (
+                "REGIONAL_ACQUISITION_POLICY_UNAVAILABLE"
+            )
+        initial_planning_current_pairs = (
+            global_current_planning_pairs | covered_current_pair_keys
+        )
+        acquisition_plan_diagnostics["coveredPairCount"] = len(initial_planning_current_pairs)
+        acquisition_plan_diagnostics["globalMissingPairCountBeforeDmi"] = sum(
+            (part_id, valid_time) not in initial_planning_current_pairs
+            for part_id in current_target_ids
+            for valid_time in required_current_valid_times
+        )
+
     # Primary mode separates maintenance from critical acquisition. A DKSS
     # collection is refresh-only only when every selected official asset is
     # already complete in the validated cache. Those collections are moved
     # behind all potentially critical collections, and no maintenance runs in
     # a cycle that started with any unresolved DKSS asset.
     primary_refresh_only_collections: set[str] = set()
-    primary_critical_work_observed = False
+    primary_critical_work_observed = bool(
+        acquisition_plan_diagnostics.get("globalMissingPairCountBeforeDmi", 0)
+    )
     if DKSS_PRIMARY_MODE:
         for collection in (
             value for value in scheduled if value in MARINE_COLLECTIONS
@@ -8809,6 +8989,7 @@ def main() -> int:
                     cached_zones=result.get("zones") or {},
                     active_zone_ids=active_production_zone_ids,
                     enabled=True,
+                    planning_covered_pair_keys=initial_planning_current_pairs,
                 )
                 for asset in selected_assets
             ]
@@ -8863,35 +9044,12 @@ def main() -> int:
 
     def seal_current_operational_progress() -> None:
         """Bind every persisted bulk checkpoint to its exact usable DMI rows."""
-        ledger = build_current_operational_ledger(
+        seal_current_operational_checkpoint(
             result,
             coastal_part_targets,
             locked_production_reference,
             prefetched_marine,
             retained_current_asset_proofs,
-        )
-        allowed_assets, retained_pair_sources = (
-            current_attestation_authorization_from_operational_ledger(ledger)
-        )
-        attestation = current_operational_attestation(
-            result,
-            coastal_part_targets,
-            locked_production_reference,
-            allowed_assets,
-            retained_pair_sources,
-        )
-        validate_current_operational_availability_ledger(
-            ledger,
-            attestation,
-            coastal_part_targets,
-            locked_production_reference,
-            locked_production_reference
-                + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
-            current_target_registry_sha256,
-        )
-        result["diagnostics"]["currentOperationalLedger"] = ledger
-        result["diagnostics"]["currentOperationalAttestation"] = (
-            sanitized_current_attestation(attestation)
         )
 
     checkpoint_controller = ProgressCheckpointController(
@@ -9131,10 +9289,50 @@ def main() -> int:
                             source_key,
                         ) in actual_current_pair_source_keys:
                             priority_covered_pair_keys.add((part_id, valid_time))
+                planning_current_pairs = (
+                    global_current_planning_pairs | priority_covered_pair_keys
+                    if global_current_planning_pairs is not None
+                    else priority_covered_pair_keys
+                )
+                acquisition_requirements = {
+                    str(asset["valid"]): classify_dkss_primary_asset(
+                        collection=collection,
+                        model_run=run,
+                        asset=asset,
+                        target_ids=current_target_ids,
+                        covered_pair_keys=priority_covered_pair_keys,
+                        cached_zones=result.get("zones") or {},
+                        active_zone_ids=active_production_zone_ids,
+                        enabled=DKSS_PRIMARY_MODE,
+                        planning_covered_pair_keys=planning_current_pairs,
+                    )
+                    for asset in assets
+                } if global_current_planning_pairs is not None else {}
+                if acquisition_requirements:
+                    acquisition_plan_diagnostics.setdefault(
+                        "byCollection", {}
+                    )[collection] = {
+                        "criticalAssetCount": sum(
+                            bool(row["critical"])
+                            for row in acquisition_requirements.values()
+                        ),
+                        "optionalParentCurrentMissingAssetCount": sum(
+                            int(row.get("optionalParentCurrentMissingCount") or 0) > 0
+                            for row in acquisition_requirements.values()
+                        ),
+                        "refreshOnlyAssetCount": sum(
+                            bool(row["deferValidRefresh"])
+                            for row in acquisition_requirements.values()
+                        ),
+                    }
                 assets = prioritize_marine_assets_for_current_gaps(
                     assets,
                     current_target_ids,
-                    priority_covered_pair_keys,
+                    planning_current_pairs,
+                    critical_by_time={
+                        valid_time: bool(row["critical"])
+                        for valid_time, row in acquisition_requirements.items()
+                    },
                 )
             if (
                 collection in MARINE_COLLECTIONS
@@ -9218,6 +9416,10 @@ def main() -> int:
                         cached_zones=result.get("zones") or {},
                         active_zone_ids=active_production_zone_ids,
                         enabled=True,
+                        planning_covered_pair_keys=(
+                            planning_current_pairs
+                            if global_current_planning_pairs is not None else None
+                        ),
                     )
                     if primary_requirement["deferValidRefresh"]:
                         bounded_primary_refresh = (

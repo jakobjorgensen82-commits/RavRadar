@@ -1,5 +1,15 @@
 # DEC-0114 – integreret model frigives før den målte historik er fuldt opbygget
 
+**Opdateret verifikation og autoritet 2026-09-10:** Ejer har godkendt lokale måltests, Sol Ultra og autonom fortsættelse gennem cachevedligeholdelse, scorelaunch og efterkontrol. Den samlede lokale målmatrix er nu grøn; se docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md fra repositoryroden. Ældre udsagn herunder om ikke kørte tests/testpause er historik. Ny exact-head-CI, merge og faktiske drifts-/launchbeviser mangler; den gamle annullerede kørsel genstartes ikke. Udskudte opgaver revurderes mod det faktisk løste.
+
+## Bindende tillæg 2026-09-09 – operationelt behov før fuld cold-start-historik
+
+Ved `genuine-cold-start` skal tidlig indlæsning, validering, granulær salvage og bevaring af eksisterende WAM-historik fortsat udføres. En ufuldstændig historik må derimod ikke udløse obligatorisk hentning af en fuld 48-timersmatrix før den kritiske operationelle indsamling. Returnér ærligt `HISTORY_INCOMPLETE` og fortsæt med de nødvendige direkte input, den eksakte lagbro og 118-timersaksen. WAM-mode må ikke slås fra. Den komplette helper må heller ikke blot flyttes til sidst, hvor dens targetrække kan overskrive et nyere operationelt resultat.
+
+`candidate-g-migration` forbliver streng og uændret. De 48 timers faktiske historik skal fortsat bevares og efter launch opbygges under egen kildeattesteret kontrakt; ingen syntese eller manglende operationel time må skjules som historikmangel.
+
+De almindelige indsamlings-/oneoff-workflows må efter DEC-0118's nye tillæg uploade præcist allowlistede, aggregerede plan-/fetchrapporter med syv dages retention, også når afsluttende datakontrol stopper. Dette er en snæver udvidelse af diagnostikinventaret, ikke tilladelse til donorbanker eller private payloads i artifacts. Det eksisterende runbundne source-handoff forbliver uændret. Den lokale rettelse er endnu ikke samlet valideret eller produktionsverificeret.
+
 - **Status:** Ejerbesluttet og bindende. Fase A-koden på sourcehead `cbc4639af411ee741be938980b2d7a8c08b6b79d` er exact-head-verificeret i `33706215425` og merged via PR #246 som `7198b685f4bc9d86bd6432b049380f4279ab797c`; Candidate G er fortsat den eneste offentlige model. Den lokale 4.0.321-checkpoint-/kapacitetslukning er endnu ikke pushet, exact-head-verificeret, anvendt mod live Supabase eller merged. 673 × 118, Feggesund 3 × 118, live kapacitetsmåling, særskilt manuel Fase B, frisk state-6-produktion og offentlig verifikation er fortsat åbne
 - **Dato:** 2026-09-01
 - **Ejer:** RavRadar

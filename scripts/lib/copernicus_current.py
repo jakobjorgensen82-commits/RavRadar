@@ -40,6 +40,7 @@ OPERATIONAL_SEAL_CONTRACT_ID = "copernicus-current-operational118-advisory-histo
 REQUEST_CONTRACT_ID = "copernicus-current-multitime-bounded-spatial-shards-v1"
 LEGACY_HISTORY_REQUEST_CONTRACT_ID = "copernicus-current-schema1-history-migration-v1"
 SELECTION_POLICY_ID = "per-native-time-nearest-shared-uv-column-then-deepest-common-layer-v1"
+CANDIDATE_CONFLICT_POLICY_ID = "same-source-top-acquisition-exact-physical-tuple-or-ineligible-v1"
 RECORD_PROJECTION_CONTRACT_ID = "copernicus-live-current-record-fixed-decimal-v1"
 DMI_VERIFIER_CONTRACT_ID = "dmi-native-current-provenance-v1"
 COMPONENT_PAIR = "same-time-cell-layer"
@@ -1667,30 +1668,52 @@ def select_required_records(
     records: list[dict[str, Any]],
     production_reference_at: datetime,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+    """Choose source priority, then its newest unambiguous acquisition time.
+
+    Tied top records are equivalent only when every record field other than
+    recordId/acquisitionId is equal, together with the source/product/dataset,
+    request and sampling policies. Request extent/subset identities may differ
+    for byte-independent downloads of the same exact physical tuple. Conflicting
+    top tuples make that source ineligible for this pair, including its older
+    rows; another source can win, or the pair stays honestly missing. A strictly
+    newer unambiguous acquisition can subsequently restore that source. Inputs
+    are never removed or changed by this selection.
+    """
     acquisition_by_id = {row["acquisitionId"]: _validate_acquisition(row) for row in acquisitions}
     by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for record in records:
         by_pair.setdefault((record["partId"], record["validTime"]), []).append(record)
     source_rank = {source: index for index, source in enumerate(COPERNICUS_SOURCE_CONTRACTS)}
+    tuple_fields = RECORD_FIELDS - {"recordId", "acquisitionId"}
+    policy_fields = ("source", "productId", "datasetId", "datasetVersion", "requestContractId",
+                     "selectionPolicyId", "componentPair", "interpolation")
     refs: list[dict[str, str]] = []
     missing: list[dict[str, str]] = []
     for pair in sorted(required_pairs, key=lambda row: (row["validTime"], row["partId"])):
         normalized = {"partId": str(pair["partId"]), "validTime": utc_iso(_hour(pair["validTime"], "required pair time"))}
-        candidates: list[tuple[int, float, str, dict[str, Any]]] = []
+        candidates_by_source: dict[str, list[dict[str, Any]]] = {}
         for record in by_pair.get((normalized["partId"], normalized["validTime"]), []):
             acquisition = acquisition_by_id.get(record["acquisitionId"])
             if acquisition is None:
                 continue
-            candidates.append((
-                source_rank.get(acquisition["source"], len(source_rank)),
-                -acquisition["_acquisitionAt"].timestamp(),
-                record["recordId"],
-                record,
-            ))
-        if not candidates:
+            candidates_by_source.setdefault(acquisition["source"], []).append(record)
+        record = None
+        for source in sorted(candidates_by_source, key=lambda value: (source_rank.get(value, len(source_rank)), value)):
+            candidates = candidates_by_source[source]
+            newest = max(acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] for row in candidates)
+            top = [row for row in candidates if acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] == newest]
+            first_tuple = {key: top[0][key] for key in tuple_fields}
+            first_policy = {key: acquisition_by_id[top[0]["acquisitionId"]][key] for key in policy_fields}
+            if any({key: row[key] for key in tuple_fields} != first_tuple
+                   or {key: acquisition_by_id[row["acquisitionId"]][key] for key in policy_fields} != first_policy
+                   for row in top[1:]):
+                continue
+            # IDs only choose between already-proven physical equivalents.
+            record = min(top, key=lambda row: row["recordId"])
+            break
+        if record is None:
             missing.append(normalized)
             continue
-        record = min(candidates)[3]
         acquisition = acquisition_by_id[record["acquisitionId"]]
         refs.append({
             "partId": record["partId"],

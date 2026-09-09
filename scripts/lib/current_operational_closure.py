@@ -24,6 +24,7 @@ from .copernicus_current_source_stage import (
     SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_STAGE_STATUS,
     select_source_order_admissible_records,
+    stage_positive_evidence,
     validate_reusable_source_stage,
 )
 from .copernicus_target_identity import target_fingerprint
@@ -382,6 +383,7 @@ def _copernicus_state(
             reference,
             list(target_by_id.values()),
             list(validated_stage.get("attempts") or []),
+            **stage_positive_evidence(validated_stage),
         )
         return refs, residual
 

@@ -4,6 +4,10 @@ Open-Meteo is the final operational current source.  Callers must prove the
 exact residual after DMI, Copernicus and the owner-approved regional DMI path
 before this module may accept records.  Coordinates and derived U/V remain in
 the private cache; public projections contain only counts and hashes.
+
+The separate donor bank retains original validated admissions independently of
+later residuals. Its planning projection is not public or historical scoring
+authorization; deployment still consumes the strict current v2 projection.
 """
 from __future__ import annotations
 
@@ -760,7 +764,380 @@ def safe_projection(document: dict[str, Any]) -> dict[str, Any]:
     return safe
 
 
+DONOR_BANK_CONTRACT_ID = "open-meteo-private-current-donor-bank-v1"
+DONOR_BANK_MAX_BYTES = 256 * 1024 * 1024
+DONOR_BANK_HISTORY_HOURS = 48
+_ADMISSION_FIELDS = {
+    "productionReferenceAt", "checkpointedAt", "documentSha256",
+    "requiredPairsSha256", "copernicusSourceStageStatus",
+    "copernicusSourceStageSha256", "copernicusBoundedProgressAccepted",
+    "regionalEvidenceSha256",
+}
+_BANK_IDENTITY_FIELDS = {
+    "schemaVersion", "kind", "contractId", "recordContractId", "source", "model",
+    "targetRegistrySha256", "productionReferenceAt", "checkpointedAt",
+    "retentionStartAt", "retentionEndAt", "historyAdmission", "publicRuntime",
+}
+_BANK_FIELDS = _BANK_IDENTITY_FIELDS | {
+    "identitySha256", "admissions", "entries", "entryCount", "bankSha256",
+    "entryManifest", "manifestSha256", "conflictMasks", "controlSha256",
+}
+_MANIFEST_FIELDS = {
+    "entrySha256", "recordId", "partId", "validTime", "acquiredAt",
+    "source", "admissionSha256",
+}
+
+
+def _bank_identity(targets: list[dict[str, Any]], reference_at: str,
+                   checkpoint_at: str) -> dict[str, Any]:
+    reference_text, reference = _exact_hour(reference_at, "OPEN_METEO_REFERENCE_INVALID")
+    checkpoint_text, _ = _exact_instant(checkpoint_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")
+    fingerprint = target_fingerprint(targets)
+    if fingerprint is None or len({row.get("partId") for row in targets}) != len(targets):
+        _fail("OPEN_METEO_TARGETS_INVALID")
+    return {
+        "schemaVersion": 1,
+        "kind": "RAVRADAR_PRIVATE_OPEN_METEO_CURRENT_DONOR_BANK",
+        "contractId": DONOR_BANK_CONTRACT_ID,
+        "recordContractId": RECORD_CONTRACT_ID,
+        "source": SOURCE, "model": MODEL,
+        "targetRegistrySha256": fingerprint,
+        "productionReferenceAt": reference_text,
+        "checkpointedAt": checkpoint_text,
+        "retentionStartAt": (reference - timedelta(hours=DONOR_BANK_HISTORY_HOURS)).strftime("%Y-%m-%dT%H:00:00Z"),
+        "retentionEndAt": (reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)).strftime("%Y-%m-%dT%H:00:00Z"),
+        "historyAdmission": "STORED_ONLY_NOT_AUTHORIZED",
+        "publicRuntime": False,
+    }
+
+
+def _bank_entry(record: dict[str, Any], admission_sha: str) -> dict[str, Any]:
+    entry = {"record": record, "admissionSha256": admission_sha}
+    return {**entry, "entrySha256": canonical_sha256(entry)}
+
+
+def _entry_membership(entry: dict[str, Any]) -> dict[str, str]:
+    """Immutable original identity, independent of the mutable leaf payload."""
+    record = entry["record"]
+    return {"entrySha256": entry["entrySha256"], "recordId": record["recordId"],
+            "partId": record["partId"], "validTime": record["validTime"],
+            "acquiredAt": record["acquiredAt"], "source": record["source"],
+            "admissionSha256": entry["admissionSha256"]}
+
+
+def _membership_order(row: dict[str, str]) -> tuple[str, str, str]:
+    return row["validTime"], row["partId"], row["recordId"]
+
+
+def _bank_control(bank: dict[str, Any]) -> dict[str, Any]:
+    # Payload damage cannot rewrite membership, its proof dependencies or a
+    # persisted negative barrier. The whole-file seal remains strict on write.
+    return {key: value for key, value in bank.items()
+            if key not in {"entries", "bankSha256", "controlSha256"}}
+
+
+def _validated_bank_admission(admission_sha: Any, admission: Any,
+                              checkpoint: datetime) -> dict[str, Any]:
+    if not valid_sha256(admission_sha) or not isinstance(admission, dict) or set(admission) != _ADMISSION_FIELDS or canonical_sha256(admission) != admission_sha:
+        _fail("OPEN_METEO_DONOR_ADMISSION_INVALID")
+    _, original_reference = _exact_hour(admission["productionReferenceAt"], "OPEN_METEO_DONOR_ADMISSION_INVALID")
+    _, original_checkpoint = _exact_instant(admission["checkpointedAt"], "OPEN_METEO_DONOR_ADMISSION_INVALID")
+    status = admission["copernicusSourceStageStatus"]
+    if (
+        original_checkpoint > checkpoint
+        or status not in {"READY", "IN_PROGRESS", "NOT_APPLICABLE"}
+        or admission["copernicusBoundedProgressAccepted"] is not (status == "IN_PROGRESS")
+        or (status == "NOT_APPLICABLE" and admission["copernicusSourceStageSha256"] is not None)
+        or (status != "NOT_APPLICABLE" and not valid_sha256(admission["copernicusSourceStageSha256"]))
+        or any(not valid_sha256(admission[field]) for field in ("documentSha256", "requiredPairsSha256", "regionalEvidenceSha256"))
+    ):
+        _fail("OPEN_METEO_DONOR_ADMISSION_INVALID")
+    return {"reference": original_reference, "checkpoint": original_checkpoint}
+
+
+def _validated_bank_entry(entry: Any, admissions: dict[str, Any],
+                          target_map: dict[str, Any], checkpoint: datetime) -> dict[str, Any]:
+    if not isinstance(entry, dict) or set(entry) != {"record", "admissionSha256", "entrySha256"}:
+        _fail("OPEN_METEO_DONOR_ENTRY_INVALID")
+    if entry["entrySha256"] != canonical_sha256({key: entry[key] for key in ("record", "admissionSha256")}):
+        _fail("OPEN_METEO_DONOR_ENTRY_INVALID")
+    admission_sha = entry["admissionSha256"]
+    if not isinstance(admission_sha, str):
+        _fail("OPEN_METEO_DONOR_ADMISSION_INVALID")
+    proof = _validated_bank_admission(admission_sha, admissions.get(admission_sha), checkpoint)
+    record = entry["record"]
+    if not isinstance(record, dict):
+        _fail("OPEN_METEO_RECORD_INVALID")
+    # Admission remains bound to its ORIGINAL window, proof and acquisition.
+    # Bank retention is not authorization for historic score/state or closure.
+    _validate_record(record, target_map, {(record.get("partId"), record.get("validTime"))}, proof["reference"], proof["checkpoint"])
+    return entry
+
+
+def _validated_membership(row: Any, bank: dict[str, Any], target_map: dict[str, Any],
+                          proofs: dict[str, dict[str, Any]]) -> dict[str, str]:
+    if not isinstance(row, dict) or set(row) != _MANIFEST_FIELDS:
+        _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
+    if (any(not valid_sha256(row[key]) for key in ("entrySha256", "recordId", "admissionSha256"))
+        or not isinstance(row["partId"], str) or row["partId"] not in target_map
+        or row["source"] != SOURCE):
+        _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
+    _, valid_time = _exact_hour(row["validTime"], "OPEN_METEO_DONOR_MANIFEST_INVALID")
+    _, acquired = _exact_instant(row["acquiredAt"], "OPEN_METEO_DONOR_MANIFEST_INVALID")
+    proof = proofs.get(row["admissionSha256"])
+    if (proof is None or acquired > proof["checkpoint"]
+        or not proof["reference"] <= valid_time <= proof["reference"] + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
+        or not bank["retentionStartAt"] <= row["validTime"] <= bank["retentionEndAt"]):
+        _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
+    return row
+
+
+def _merge_conflict_masks(*groups: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, str]]:
+    """A mask retains its original membership; acquiredAt is its inclusive barrier."""
+    masks: dict[tuple[str, str], dict[str, str]] = {}
+    for group in groups:
+        for row in group:
+            key = row["partId"], row["validTime"]
+            old = masks.get(key)
+            instant = _exact_instant(row["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1]
+            old_instant = _exact_instant(old["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1] if old else None
+            if old is None or instant > old_instant or (instant == old_instant and row["entrySha256"] < old["entrySha256"]):
+                masks[key] = dict(row)
+    return masks
+
+
+def _read_bank_entries(bank: Any, *, targets: list[dict[str, Any]],
+                       strict: bool) -> tuple[list[dict[str, Any]], dict[str, Any], int, list[dict[str, str]]]:
+    if not isinstance(bank, dict) or set(bank) != _BANK_FIELDS:
+        _fail("OPEN_METEO_DONOR_BANK_INVALID")
+    expected = _bank_identity(targets, bank["productionReferenceAt"], bank["checkpointedAt"])
+    if any(bank[key] != value for key, value in expected.items()) or bank["identitySha256"] != canonical_sha256(expected):
+        _fail("OPEN_METEO_DONOR_BANK_IDENTITY_INVALID")
+    entries, admissions = bank["entries"], bank["admissions"]
+    manifest, masks = bank["entryManifest"], bank["conflictMasks"]
+    maximum_pairs = len(targets) * (DONOR_BANK_HISTORY_HOURS + OPERATIONAL_HOUR_COUNT)
+    if (
+        not isinstance(entries, list) or not isinstance(admissions, dict)
+        or not isinstance(manifest, list) or not isinstance(masks, list)
+        or len(entries) > 2 * maximum_pairs or len(manifest) > 2 * maximum_pairs
+        or len(masks) > maximum_pairs or len(admissions) > 3 * maximum_pairs
+        or not isinstance(bank["entryCount"], int) or isinstance(bank["entryCount"], bool)
+        or bank["entryCount"] != len(manifest)
+        or not valid_sha256(bank["bankSha256"])
+        or bank["manifestSha256"] != canonical_sha256(manifest)
+        or bank["controlSha256"] != canonical_sha256(_bank_control(bank))
+    ):
+        _fail("OPEN_METEO_DONOR_CONTROL_INVALID")
+    target_map = {row["partId"]: row for row in targets}
+    checkpoint = _exact_instant(bank["checkpointedAt"], "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+    # Proof/control corruption is never leaf salvage, even if another record
+    # happens to be malformed too. Validate the entire independent channel.
+    proofs = {key: _validated_bank_admission(key, value, checkpoint) for key, value in admissions.items()}
+    for row in [*manifest, *masks]:
+        _validated_membership(row, bank, target_map, proofs)
+    if (manifest != sorted(manifest, key=_membership_order)
+        or masks != sorted(masks, key=_membership_order)
+        or len({row["entrySha256"] for row in manifest}) != len(manifest)
+        or len({row["recordId"] for row in manifest}) != len(manifest)
+        or len({(row["partId"], row["validTime"]) for row in masks}) != len(masks)
+        or {row["admissionSha256"] for row in [*manifest, *masks]} != set(admissions)):
+        _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
+    by_pair: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for row in manifest:
+        by_pair.setdefault((row["partId"], row["validTime"]), []).append(row)
+    mask_by_pair = _merge_conflict_masks(masks)
+    for key, members in by_pair.items():
+        instants = {_exact_instant(row["acquiredAt"], "OPEN_METEO_DONOR_MANIFEST_INVALID")[1] for row in members}
+        if len(members) > 2 or len(instants) != 1:
+            _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
+        if len(members) > 1 and (key not in mask_by_pair
+            or _exact_instant(mask_by_pair[key]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1] < next(iter(instants))):
+            _fail("OPEN_METEO_DONOR_MASK_INVALID")
+    membership_by_id = {row["entrySha256"]: row for row in manifest}
+    payloads_by_id: dict[str, list[Any]] = {}
+    unknown_count = 0
+    for entry in entries:
+        identity = entry.get("entrySha256") if isinstance(entry, dict) else None
+        if not isinstance(identity, str) or identity not in membership_by_id:
+            unknown_count += 1
+        else:
+            payloads_by_id.setdefault(identity, []).append(entry)
+    accepted, damaged = [], []
+    for original in manifest:
+        try:
+            payloads = payloads_by_id.get(original["entrySha256"], [])
+            if len(payloads) != 1:
+                _fail("OPEN_METEO_DONOR_ENTRY_MEMBERSHIP_INVALID")
+            validated = _validated_bank_entry(payloads[0], admissions, target_map, checkpoint)
+            if _entry_membership(validated) != original:
+                _fail("OPEN_METEO_DONOR_ENTRY_MEMBERSHIP_INVALID")
+            accepted.append(validated)
+        except (OpenMeteoCurrentFallbackError, TypeError, ValueError):
+            if strict:
+                _fail("OPEN_METEO_DONOR_ENTRY_INVALID")
+            # Never obtain this pair/time/barrier from the rejected payload.
+            damaged.append(original)
+    try:
+        intact_seal = len(entries) == len(manifest) and bank["bankSha256"] == canonical_sha256({key: value for key, value in bank.items() if key != "bankSha256"})
+    except (TypeError, ValueError):
+        intact_seal = False
+    if (strict and (unknown_count or not intact_seal)) or (not intact_seal and not damaged):
+        _fail("OPEN_METEO_DONOR_BANK_INTEGRITY_UNEXPLAINED")
+    # Unknown payloads can only be discarded locally when missing/invalid
+    # original members independently identify every affected donor identity.
+    # Unexplained extra payloads without such original damage fail closed.
+    if unknown_count and not damaged:
+        _fail("OPEN_METEO_DONOR_BANK_INTEGRITY_UNEXPLAINED")
+    merged_masks = _merge_conflict_masks(masks, damaged)
+    return accepted, admissions, len(damaged), sorted(merged_masks.values(), key=_membership_order)
+
+
+def build_donor_bank(*, targets: list[dict[str, Any]], entries: list[dict[str, Any]],
+                     admissions: dict[str, Any], production_reference_at: str,
+                     checkpointed_at: str) -> dict[str, Any]:
+    checkpoint = _exact_instant(checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+    target_map = {row["partId"]: row for row in targets}
+    for entry in entries:
+        _validated_bank_entry(entry, admissions, target_map, checkpoint)
+    return _build_validated_donor_bank(targets=targets, entries=entries, admissions=admissions,
+                                      production_reference_at=production_reference_at, checkpointed_at=checkpointed_at)
+
+
+def _build_validated_donor_bank(*, targets: list[dict[str, Any]], entries: list[dict[str, Any]],
+                               admissions: dict[str, Any], production_reference_at: str,
+                               checkpointed_at: str,
+                               conflict_masks: list[dict[str, str]] | None = None) -> dict[str, Any]:
+    """Seal already validated leaves without revalidating the whole bank per batch."""
+    identity = _bank_identity(targets, production_reference_at, checkpointed_at)
+    masks = _merge_conflict_masks([
+        row for row in (conflict_masks or [])
+        if identity["retentionStartAt"] <= row["validTime"] <= identity["retentionEndAt"]
+    ])
+    by_pair: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
+    for entry in entries:
+        record = entry["record"]
+        if not identity["retentionStartAt"] <= record["validTime"] <= identity["retentionEndAt"]:
+            continue
+        group = by_pair.setdefault((record["partId"], record["validTime"]), {})
+        old = group.get(record["recordId"])
+        # Keep the earliest original admission when a v2 projection reuses it.
+        if old is None or (admissions[entry["admissionSha256"]]["checkpointedAt"], entry["admissionSha256"]) < (admissions[old["admissionSha256"]]["checkpointedAt"], old["admissionSha256"]):
+            group[record["recordId"]] = entry
+    selected = []
+    for key, group in by_pair.items():
+        newest = max(_exact_instant(item["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1] for item in group.values())
+        candidates = [item for item in group.values() if _exact_instant(item["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1] == newest]
+        candidates.sort(key=lambda item: item["record"]["recordId"])
+        if len(candidates) > 1:
+            masks[key] = _merge_conflict_masks(
+                [masks[key]] if key in masks else [],
+                [_entry_membership(candidates[0])],
+            )[key]
+        elif key in masks and newest > _exact_instant(masks[key]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1]:
+            # A complete original admission and one strictly newer record are
+            # required; same-time/older legacy records cannot heal the barrier.
+            del masks[key]
+        selected.extend(candidates[:2])
+    selected.sort(key=lambda item: (item["record"]["validTime"], item["record"]["partId"], item["record"]["recordId"]))
+    if len(selected) > 2 * len(targets) * (DONOR_BANK_HISTORY_HOURS + OPERATIONAL_HOUR_COUNT):
+        _fail("OPEN_METEO_DONOR_BANK_INVALID")
+    manifest = [_entry_membership(item) for item in selected]
+    persisted_masks = sorted(masks.values(), key=_membership_order)
+    used = {item["admissionSha256"] for item in [*manifest, *persisted_masks]}
+    bank = {
+        **identity, "identitySha256": canonical_sha256(identity),
+        "admissions": {key: admissions[key] for key in sorted(used)},
+        "entries": selected, "entryCount": len(selected),
+        "entryManifest": manifest, "manifestSha256": canonical_sha256(manifest),
+        "conflictMasks": persisted_masks,
+    }
+    bank["controlSha256"] = canonical_sha256(_bank_control(bank))
+    bank["bankSha256"] = canonical_sha256(bank)
+    return bank
+
+
+def validate_donor_bank(bank: Any, *, targets: list[dict[str, Any]]) -> dict[str, Any]:
+    _read_bank_entries(bank, targets=targets, strict=True)
+    return bank
+
+
+def merge_donor_bank(bank: Any, legacy_documents: list[dict[str, Any]], *,
+                     targets: list[dict[str, Any]], production_reference_at: str,
+                     checkpointed_at: str) -> tuple[dict[str, Any], dict[str, int | bool]]:
+    """Import at original v2 proofs, independently of today's CP stage/residual.
+
+    Local damage is scoped only by the independently intact original manifest.
+    A v2 document without such a manifest requires its complete original seal.
+    """
+    identity = _bank_identity(targets, production_reference_at, checkpointed_at)
+    checkpoint = _exact_instant(checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+    entries: list[dict[str, Any]] = []
+    admissions: dict[str, Any] = {}
+    dropped, salvaged = 0, False
+    masks: list[dict[str, str]] = []
+    legacy_suppressed = False
+    if bank is not None:
+        entries, admissions, dropped, masks = _read_bank_entries(bank, targets=targets, strict=False)
+        admissions = dict(admissions)
+        if bank["productionReferenceAt"] > production_reference_at or _exact_instant(bank["checkpointedAt"], "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1] > checkpoint:
+            _fail("OPEN_METEO_DONOR_BANK_TIME_REGRESSION")
+        salvaged = dropped > 0
+        if salvaged:
+            # The pre-DMI planner also calls this API directly. A damaged
+            # bank pair must not be resurrected from its older v2 projection.
+            legacy_documents = []
+            legacy_suppressed = True
+    target_map = {row["partId"]: row for row in targets}
+    for document in legacy_documents:
+        donor = validate_checkpoint_document(document, targets=targets)
+        admission = {key: donor[key] for key in _ADMISSION_FIELDS}
+        admission_sha = canonical_sha256(admission)
+        admissions[admission_sha] = admission
+        if len(donor["records"]) > 2 * len(targets) * OPERATIONAL_HOUR_COUNT:
+            _fail("OPEN_METEO_DONOR_BANK_INVALID")
+        for record in donor["records"]:
+            entry = _bank_entry(record, admission_sha)
+            _validated_bank_entry(entry, admissions, target_map, checkpoint)
+            entries.append(entry)
+    rebuilt = _build_validated_donor_bank(targets=targets, entries=entries, admissions=admissions,
+                              production_reference_at=identity["productionReferenceAt"], checkpointed_at=checkpointed_at,
+                              conflict_masks=masks)
+    return rebuilt, {"salvaged": salvaged or dropped > 0, "droppedRecordCount": dropped,
+                     "droppedPairCount": 0, "ignoredRecordCount": 0,
+                     "legacySuppressed": legacy_suppressed,
+                     "donorRecordCount": rebuilt["entryCount"],
+                     "maskedPairCount": len(rebuilt["conflictMasks"])}
+
+
+def select_donor_records(bank: Any, *, targets: list[dict[str, Any]],
+                         required_pairs: list[dict[str, str]], production_reference_at: str,
+                         checkpointed_at: str) -> list[dict[str, Any]]:
+    """Project ONLY caller's current pairs; never authorize bank history/public data."""
+    validate_donor_bank(bank, targets=targets)
+    _, reference = _exact_hour(production_reference_at, "OPEN_METEO_REFERENCE_INVALID")
+    _, checkpoint = _exact_instant(checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")
+    if _exact_instant(bank["checkpointedAt"], "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1] > checkpoint:
+        _fail("OPEN_METEO_DONOR_BANK_TIME_REGRESSION")
+    pairs = _canonical_pairs(required_pairs, "OPEN_METEO_REQUIRED_PAIRS_INVALID")
+    target_map = {row["partId"]: row for row in targets}
+    required = {(row["partId"], row["validTime"]) for row in pairs}
+    end = (reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)).strftime("%Y-%m-%dT%H:00:00Z")
+    if any(row["partId"] not in target_map or not production_reference_at <= row["validTime"] <= end for row in pairs):
+        _fail("OPEN_METEO_REQUIRED_PAIRS_OUTSIDE_OPERATIONAL_RANGE")
+    masks = _merge_conflict_masks(bank["conflictMasks"])
+    candidates = [entry["record"] for entry in bank["entries"]
+                  if (entry["record"]["partId"], entry["record"]["validTime"]) in required
+                  and ((entry["record"]["partId"], entry["record"]["validTime"]) not in masks
+                       or _exact_instant(entry["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1]
+                       > _exact_instant(masks[(entry["record"]["partId"], entry["record"]["validTime"])]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1])]
+    for record in candidates:
+        _validate_record(record, target_map, required, reference, checkpoint)
+    return merge_records(candidates)[0]
+
+
 __all__ = [
+    "DONOR_BANK_CONTRACT_ID", "DONOR_BANK_MAX_BYTES", "build_donor_bank",
+    "merge_donor_bank", "select_donor_records", "validate_donor_bank",
     "CONTRACT_ID", "DOCUMENT_SCHEMA_VERSION", "LIVE_RECORD_PROJECTION_CONTRACT_ID",
     "MAXIMUM_DISTANCE_KM", "MODEL",
     "OpenMeteoCurrentFallbackError", "PHYSICAL_SCOPE", "SCORE_INPUT_POLICY_ID",

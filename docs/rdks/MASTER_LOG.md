@@ -1,4 +1,14 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – Astra-review af hele 4.0.340
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-10 – samlet vejrlivscyklus og autonom launchplan
+
+Ejeren kræver en grundig fælles løsning fremfor gentagne enkeltrettelser: kritisk planlægning ud fra den samlede gyldige kildeunion, bevaring af eksisterende gyldige data/proofs, alle reelle interne huller og hale før kildekvalitet, derefter DMI før Copernicus før Open-Meteo. Den ventende 4.0.340 WAM-/bindingsrettelse bevares i samme pakke. Ingen gammel-versus-hale-særprioritet eller nulstilling af cache er godkendt.
+
+Lokale måltests er udtrykkeligt godkendt efter den midlertidige pause. Ejer har bekræftet Sol Ultra, kontinuerligt autonomt arbejde og den eksisterende launchovervågning: korrekt cacheopbygning, dokumenteret vedligeholdelse, ny scoremodel online og fortsat kontrol bagefter. Den gamle annullerede gate34398417483 må ikke genstartes; en ny færdig præcis head får nødvendig CI under stående PR-/mergeautoritet. Ingen køb, vilkårlige annulleringer, cache-reset eller integritetsbypass følger af ordren.
+
+Udskudte opgaver skal revideres mod aktuelle ændringer: løst, delvist dækket, fortsat nødvendigt eller bortfaldet. Donorbanker beviser ikke automatisk en løst transport-/egresskontrakt eller kildeattesteret historikreplay. Se AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10.md i docs/ai for syv observerbare etaper og backlogrevision.
+
+Den samlede lokale rettelse er målverificeret for plan, DMI/proveniens/checkpoint/cold-start, WAM, CP-/OM-banker, konflikt/recovery, runner/checker/closure, tilstødende consumers, workflow og privat runtimepakke. To testfixtures blev tilpasset aftalt rækkefølge/acquisition-scope; ingen ny producentændring i testfasen. Fem tidlige bindingschecks er grønne; otte anvendte migrationer bevares bytefast og geodata afviger kun i topversion4.0.339→4.0.340. Se WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md i docs/ai. Ny CI/merge/backend, faktisk komplet vejr/WAM, vedligeholdelse og offentlig modelverifikation mangler.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – Astra-review af hele 4.0.340
 
 Ejeren har skiftet til Astra/Ultra og ønsket både konkret fejlretning og samlet review før nyt modellerskift. Gennemgangen omfatter WAM, bundle/SQL/Edge-bindinger, migrationsgenoptagelse, cachegenbrug, handoff, central profil, backendreadiness, CAS og Pages. To uafhængige reviewers har afsluttet; ingen yderligere konkret launchblokering er fundet i scope. Dette er ikke produktions-GO.
 

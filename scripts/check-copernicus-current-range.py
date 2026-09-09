@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from lib.copernicus_current import (
+    canonical_sha256,
     file_sha256,
     load_targets,
+    required_pairs_sha256,
     validate_legacy_shadow_for_migration,
     validate_shadow,
     validate_target_registry,
@@ -19,7 +21,10 @@ from lib.copernicus_current_source_stage import (
     SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_STAGE_STATUS,
     validate_reusable_source_stage,
+    select_source_order_admissible_records,
+    stage_positive_evidence,
 )
+from lib.copernicus_current_donor_bank import DEFAULT_DONOR_BANK, load_copernicus_donor_bank, projected_donor_shadow
 from lib.copernicus_target_identity import target_fingerprint
 
 
@@ -34,6 +39,7 @@ def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
     parser.add_argument("--source-stage", type=Path)
+    parser.add_argument("--donor-bank", type=Path)
     parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     parser.add_argument("--dmi", type=Path, default=DEFAULT_DMI)
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
@@ -96,6 +102,7 @@ def inspect(
     allow_nonmatching_seal: bool = False,
     source_stage_path: Path | None = None,
     allow_invalid_shadow_as_absent: bool = False,
+    donor_bank_path: Path | None = None,
 ) -> dict[str, Any]:
     registry = validate_target_registry(json.loads(registry_path.read_text(encoding="utf-8")))
     operational_contract = registry["schemaVersion"] == 3
@@ -112,6 +119,40 @@ def inspect(
     if target_fingerprint(targets) != registry["targetRegistrySha256"]:
         raise RuntimeError("Central target registry no longer matches the sealed gap matrix")
     target_identities = {row["partId"]: row for row in targets}
+    def bank_requires_projection(*, invalid: bool = False) -> dict[str, Any]:
+        return {
+            "cachePresent": bool(shadow_path.exists()),
+            "completeRangePresent": False, "operationalSealPresent": False,
+            "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
+            "sourceStageReady": False, "sourceStageReusable": False,
+            "donorBankInvalid": invalid, "donorProjectionRequired": True,
+            "productionReferenceAt": reference, "requiredPairCount": required_pair_count,
+        }
+
+    bank = None
+    if operational_contract:
+        bank_path = donor_bank_path or (DEFAULT_DONOR_BANK if shadow_path == DEFAULT_SHADOW
+                                        else shadow_path.with_name("copernicus-current-donor-bank.json"))
+        try:
+            bank = load_copernicus_donor_bank(bank_path, targets=targets)
+        except (OSError, UnicodeError, TypeError, ValueError, RuntimeError):
+            # A rejected bank cannot be bypassed by an older READY projection.
+            # The runner owns quarantine and fresh progress, not this reader.
+            return bank_requires_projection(invalid=True)
+
+    def bank_matches_stage(stage: dict[str, Any] | None) -> bool:
+        if bank is None:
+            return True
+        if stage is None:
+            return False
+        projection = projected_donor_shadow(bank, targets=targets)
+        refs, missing, _ = select_source_order_admissible_records(
+            registry["operationalRequiredPairs"], projection["acquisitions"],
+            projection["records"], datetime.fromisoformat(reference.replace("Z", "+00:00")),
+            targets, [], **stage_positive_evidence(bank))
+        return (stage["selectedRecordRefsSha256"] == canonical_sha256(refs)
+                and stage["missingPairsSha256"] == required_pairs_sha256(missing))
+
     if not shadow_path.exists() or shadow_path.stat().st_size <= 0:
         return {
             "cachePresent": False,
@@ -197,6 +238,8 @@ def inspect(
                 if not allow_nonmatching_seal:
                     raise
         if validated_stage is not None:
+            if not bank_matches_stage(validated_stage):
+                return bank_requires_projection()
             stage_ready = validated_stage["status"] == SOURCE_STAGE_STATUS
             return {
                 "cachePresent": True,
@@ -291,6 +334,8 @@ def inspect(
                 "Complete Copernicus seal has mismatching source-stage evidence"
             )
         validated_stage = None
+    if not bank_matches_stage(validated_stage):
+        return bank_requires_projection()
     return {
         "cachePresent": True,
         "completeRangePresent": True,
@@ -342,6 +387,8 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
         handle.write(f"source_stage_ready={'true' if state.get('sourceStageReady') else 'false'}\n")
         handle.write(f"source_stage_reusable={'true' if state.get('sourceStageReusable') else 'false'}\n")
         handle.write(f"shadow_invalid={'true' if state.get('shadowInvalid') else 'false'}\n")
+        handle.write(f"donor_bank_invalid={'true' if state.get('donorBankInvalid') else 'false'}\n")
+        handle.write(f"donor_projection_required={'true' if state.get('donorProjectionRequired') else 'false'}\n")
         handle.write(
             "source_stage_status="
             f"{state.get('sourceStageStatus') or 'ABSENT'}\n"
@@ -375,6 +422,7 @@ def main() -> int:
         args.allow_nonmatching_seal,
         source_stage_path,
         args.allow_invalid_shadow_as_absent,
+        args.donor_bank,
     )
     write_outputs(args.github_output, state)
     if args.require_complete and not state["completeRangePresent"]:

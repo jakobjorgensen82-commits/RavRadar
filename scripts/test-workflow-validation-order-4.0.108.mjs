@@ -317,9 +317,9 @@ for (const marker of [
   'id: oneoff-target-freshness',
   '--maximum-age-minutes 240',
   '--github-output "$GITHUB_OUTPUT"',
-  'name: Remove only invalid operational Copernicus source disposition',
+  'name: Preserve original Copernicus admission evidence before operational rebase',
   "steps.current-range.outputs.source_stage_reusable != 'true'",
-  'rm -f .cache/copernicus-current-source-stage.json',
+  'Preserve original source-stage evidence for validated donor migration before rebase.',
   'name: Save validated private Copernicus progress before downstream closure',
   'name: Restore shared private Open-Meteo current progress',
   'name: Build exact DMI-first target through target plus 117 current closure',
@@ -507,7 +507,7 @@ for (const marker of [
 for (const marker of [
   'if: always()',
   "steps.open-meteo-fill.outputs.checkpoint_written == 'true'",
-  "hashFiles('.cache/open-meteo-current-fallback.json') != ''",
+  "steps.open-meteo-fill.outputs.donor_bank_written == 'true'",
   'test "$GITHUB_REF" = "refs/heads/main"',
   'git rev-parse origin/main^{commit}',
 ]) assert.ok(oneoffOpenMeteoAuthority.includes(marker), `Oneoff Open-Meteo write-authority mangler ${marker}`);
@@ -546,14 +546,14 @@ assert.ok(
     && oneoffOpenMeteoCompleteness > oneoffOpenMeteoSkippedExit,
   'Oneoff terminalgaten skal fejle eksplicit på upstream-skip og stadig kræve normal Open-Meteo-komplethed bagefter.',
 );
-assert.doesNotMatch(
-  operationalPreflight.slice(
+for (const block of operationalPreflight.slice(
     operationalPreflight.indexOf('name: Restore shared private Open-Meteo current progress'),
     operationalPreflight.indexOf('name: Classify one-off target freshness after the extended supplier chain'),
-  ),
-  /upload-artifact/,
-  'Den private Open-Meteo-cache må ikke uploades som artifact.',
-);
+  ).split('\n      - name:').filter(block => block.includes('upload-artifact'))) {
+  assert.doesNotMatch(block, /\.cache\//, 'Private donor caches must never be artifacts.');
+  assert.match(block, /weather-acquisition-plan-before-dmi\.json/);
+  assert.match(block, /open-meteo-current-fetch\.json/);
+}
 for (const block of [runtimeBuildStep, oneoffProvenanceStep]) {
   assert.ok(
     block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json'),
@@ -598,7 +598,8 @@ for (const block of operationalPreflight.split('\n      - name:')) {
   }
   if (block.includes('actions/cache/')
     && block.includes('.cache/copernicus-current-shadow.json')
-    && !block.includes('copernicus-current-progress-v3-')) {
+    && !block.includes('copernicus-current-progress-v3-')
+    && !block.includes('copernicus-current-donor-bank-v1-')) {
     throw new Error('Hvert operationalt Copernicus-cachetrin skal bruge den kanoniske progress-v3-familie.');
   }
 }
@@ -637,6 +638,8 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Restore legacy DMI progress only as an isolated candidate'),
   operationalPreflight.indexOf('name: Isolate restored candidate and restore active working copy'),
   operationalPreflight.indexOf('name: Restore private regional current evidence for normal maintenance'),
+  operationalPreflight.indexOf('name: Restore shared private Open-Meteo current progress'),
+  operationalPreflight.indexOf('name: Plan global current acquisition before DMI'),
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
   operationalPreflight.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
@@ -647,13 +650,12 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: "Classify DMI availability ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
-  operationalPreflight.indexOf('name: Remove only invalid operational Copernicus source disposition'),
+  operationalPreflight.indexOf('name: Preserve original Copernicus admission evidence before operational rebase'),
   operationalPreflight.indexOf('name: Install Copernicus acquisition dependency only when source stage is absent'),
   operationalPreflight.indexOf('name: Fill only the exact operational DMI gap seal'),
   operationalPreflight.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
   operationalPreflight.indexOf('name: Require reusable Copernicus source stage'),
   operationalPreflight.indexOf('name: Save validated private Copernicus progress before downstream closure'),
-  operationalPreflight.indexOf('name: Restore shared private Open-Meteo current progress'),
   operationalPreflight.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
   operationalPreflight.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
   operationalPreflight.indexOf('name: Save shared private Open-Meteo current progress'),
@@ -920,10 +922,10 @@ const privacySafeUpload = operationalPreflight.slice(
   privacySafeUploadEnd < 0 ? operationalPreflight.length : privacySafeUploadEnd,
 );
 if (privacySafeUploadStart < 0
-  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 2
+  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 3
   || !privacySafeUpload.includes('uses: actions/upload-artifact@v7')
   || !privacySafeUpload.includes('path: .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json')) {
-  throw new Error('Operational-118-preflight skal uploade præcis de to filtrerede privacy-safe beviser.');
+  throw new Error('Operational-118-preflight skal uploade de to filtrerede beviser samt den præcise allowlist af sikre acquisitionaggregater.');
 }
 const privacySafeUploadPaths = [...privacySafeUpload.matchAll(/^\s*path:\s*(.+?)\s*$/gm)]
   .map((match) => match[1]);
@@ -1050,6 +1052,7 @@ for (const block of text.split('\n      - name:')) {
   if (block.includes('actions/cache/')
     && block.includes('.cache/copernicus-current-shadow.json')
     && !block.includes('copernicus-current-progress-v3-')
+    && !block.includes('copernicus-current-donor-bank-v1-')
     && !block.includes('copernicus-current-post-build-input-v1-')) {
     throw new Error('Hvert produktions-Copernicus-cachetrin skal bruge progress-v3 eller den eksakte run-bundne post-build-inputfamilie.');
   }
@@ -1106,9 +1109,9 @@ for (const marker of [
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
   'Bind production to resolved DMI current hour',
   'Inspect target-bound Copernicus source stage after fresh DMI',
-  'Remove only invalid production Copernicus source disposition',
+  'Preserve original Copernicus admission evidence before production rebase',
   "steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'",
-  'rm -f .cache/copernicus-current-source-stage.json',
+  'Preserve original source-stage evidence for validated donor migration before rebase.',
   'Fill only exact-hour DMI gaps from Copernicus',
   'Require reusable Copernicus source stage before combined current closure',
   'python scripts/check-copernicus-current-range.py',
@@ -1175,7 +1178,7 @@ for (const marker of [
 for (const marker of [
   'if: always()',
   "steps.open-meteo-fill.outputs.checkpoint_written == 'true'",
-  "hashFiles('.cache/open-meteo-current-fallback.json') != ''",
+  "steps.open-meteo-fill.outputs.donor_bank_written == 'true'",
   'test "$GITHUB_REF" = "refs/heads/main"',
   'git rev-parse origin/main^{commit}',
 ]) assert.ok(normalOpenMeteoAuthority.includes(marker), `Normal Open-Meteo write-authority mangler ${marker}`);
@@ -1201,14 +1204,14 @@ for (const marker of [
   'test "$WAM_OUTCOME" = "success"',
   'test "$WAM_CODE" = "NONE"',
 ]) assert.ok(normalWamFinal.includes(marker), `Produktionsflowets WAM-slutgate mangler ${marker}`);
-assert.doesNotMatch(
-  text.slice(
+for (const block of text.slice(
     text.indexOf('name: Restore shared private Open-Meteo current progress'),
     text.indexOf('name: Classify target freshness after the bounded supplier chain'),
-  ),
-  /upload-artifact/,
-  'Den private Open-Meteo-cache må ikke uploades som artifact.',
-);
+  ).split('\n      - name:').filter(block => block.includes('upload-artifact'))) {
+  assert.doesNotMatch(block, /\.cache\//, 'Private donor caches must never be artifacts.');
+  assert.match(block, /weather-acquisition-plan-before-dmi\.json/);
+  assert.match(block, /open-meteo-current-fetch\.json/);
+}
 const productionSourceInspection = text.slice(
   text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
   text.indexOf('name: Install targeted Copernicus dependencies'),
@@ -1329,7 +1332,7 @@ const positions = {
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
   copernicusInspect: text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
-  copernicusNormalize: text.indexOf('name: Remove only invalid production Copernicus source disposition'),
+  copernicusNormalize: text.indexOf('name: Preserve original Copernicus admission evidence before production rebase'),
   copernicusFill: text.indexOf('name: Fill only exact-hour DMI gaps from Copernicus'),
   copernicusProgressSave: text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
   copernicusRangeGate: text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
@@ -1389,6 +1392,7 @@ const expected = [
   'sourceGate',
   'deployedDmiMaterialize',
   'pointActivationPrepare',
+  'openMeteoRestore',
   'dmiActiveRestore',
   'dmiActiveLegacyResolve',
   'dmiActiveLegacyBootstrap',
@@ -1411,7 +1415,6 @@ const expected = [
   'copernicusProgressSave',
   'copernicusRangeGate',
   'copernicusValidatedSave',
-  'openMeteoRestore',
   'openMeteoFill',
   'openMeteoAuthority',
   'openMeteoSave',
@@ -3154,7 +3157,11 @@ for (const marker of [
   'name: Save successful post-build Copernicus maintenance under shared progress prefix',
   'copernicus-current-progress-v3-post-build-refresh-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
 ]) assert.ok(postBuildRefresh.includes(marker), `Post-build Copernicus-refresh mangler ${marker}`);
-assert.ok(!postBuildRefresh.includes('restore-keys:'), 'Post-build refresh-input må kun gendannes på den eksakte run-nøgle.');
+const exactPostBuildInput = postBuildRefresh.slice(
+  postBuildRefresh.indexOf('name: Restore exact private Copernicus post-build refresh input'),
+  postBuildRefresh.indexOf('name: Verify exact private Copernicus post-build refresh input'),
+);
+assert.ok(!exactPostBuildInput.includes('restore-keys:'), 'Post-build refresh-input må kun gendannes på den eksakte run-nøgle; donorbanken er en separat valideret familie.');
 assertMarkersOrdered(postBuildRefresh, [
   'name: Require refresh HEAD to equal GITHUB_SHA and current origin/main',
   'name: Restore exact private Copernicus post-build refresh input',

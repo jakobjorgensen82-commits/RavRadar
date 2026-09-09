@@ -2708,6 +2708,13 @@ assert tail_ledger["failureCodes"] == []
 assert tail_ledger["attestation"]["verifiedPairCount"] == 114
 assert tail_ledger["upstreamAbsencePairCount"] == 4
 assert tail_ledger["operationalComplementPairCount"] == 4
+tail_sealed_result = producer.build_current_operational_ledger_result(
+    tail_ledger_document, targets, tail_reference, tail_official_catalogs,
+)
+assert tail_sealed_result.validated is True
+assert tail_sealed_result.ledger == tail_ledger
+assert tail_sealed_result.attestation["verifiedPairCount"] == 114
+assert len(tail_sealed_result.attestation["verifiedPairSources"]) == 114
 assert all(
     row["stateCounts"]["UPSTREAM_ABSENT"] == 4
     for row in tail_ledger["collections"]
@@ -2721,10 +2728,9 @@ assert producer.current_operational_cache_ready(
     tail_reference,
 )
 
-# A structurally valid future row from an older model generation remains usable
-# only where the newer selected official tuple is locally unavailable. A newer
-# usable processed outcome must win and leave an unresolved gap until its row is
-# atomically materialized; an older cache row may never invert source priority.
+# A structurally valid row remains usable until its actual replacement is
+# admitted. A newer processed outcome without the new cached tuple is metadata,
+# not grounds to remove the older row and create a fallback gap.
 retained_tail_document = copy.deepcopy(tail_ledger_document)
 retained_tail_hour = tail_direct_hours[0]
 retained_tail_source = producer.native_component_source(
@@ -2760,9 +2766,36 @@ priority_inversion_ledger = producer.build_current_operational_ledger(
     tail_official_catalogs,
     [retained_proof(retained_tail_source)],
 )
-assert priority_inversion_ledger["ready"] is False
-assert "UNATTESTED_CURRENT_PART_TIME" in priority_inversion_ledger["failureCodes"]
-assert priority_inversion_ledger["retainedCurrentAssetProofCount"] == 0
+assert priority_inversion_ledger["ready"] is True
+assert priority_inversion_ledger["failureCodes"] == ["RETAINED_CURRENT_PART_TIME"]
+assert priority_inversion_ledger["retainedCurrentAssetProofCount"] == 1
+assert priority_inversion_ledger["attestation"]["verifiedPairCount"] == 114
+assert priority_inversion_ledger["operationalComplementPairCount"] == 4
+
+# Once the exact newer tuple is present, the old proof is no longer persisted.
+# An unused proof cannot be used to claim coverage of any other tuple.
+replacement_document = copy.deepcopy(tail_ledger_document)
+replacement_ledger = producer.build_current_operational_ledger(
+    replacement_document, targets, tail_reference, tail_official_catalogs,
+    [retained_proof(retained_tail_source)],
+)
+assert replacement_ledger["ready"] is True
+assert replacement_ledger["retainedCurrentAssetProofCount"] == 0
+assert replacement_ledger["attestation"]["verifiedPairCount"] == 114
+
+# With neither a valid old tuple nor an admitted new tuple, metadata alone
+# still cannot authorize the pair.
+invalid_retained_document = copy.deepcopy(retained_tail_document)
+invalid_retained_document["zones"]["PART::TEST"]["hourly"][retained_tail_hour].pop(
+    "current-v"
+)
+invalid_retained_ledger = producer.build_current_operational_ledger(
+    invalid_retained_document, targets, tail_reference, tail_official_catalogs,
+    [retained_proof(retained_tail_source)],
+)
+assert invalid_retained_ledger["ready"] is False
+assert invalid_retained_ledger["retainedCurrentAssetProofCount"] == 0
+assert invalid_retained_ledger["attestation"]["verifiedPairCount"] == 113
 
 selected_newer_step = retained_tail_document["runs"]["dkss_lf"][
     "processedSteps"

@@ -1024,5 +1024,42 @@ class CheckpointTests(unittest.TestCase):
             sticky.assert_called_once_with("candidate_promoted", "true")
 
 
+class CurrentLedgerCheckpointTests(unittest.TestCase):
+    def test_one_validated_result_is_consumed_without_another_attestation(self):
+        document = {"zones": {}, "diagnostics": {}}
+        ledger = {"ready": False, "failureCodes": ["LOCALLY_SKIPPED_DKSS_ASSET"]}
+        full_attestation = {"sentinel": "same-input-full-attestation"}
+        summary = {"verifiedPairCount": 1}
+        sealed = producer.CurrentOperationalLedgerResult(
+            ledger, full_attestation, True,
+        )
+        with (
+            patch.object(producer, "build_current_operational_ledger_result", return_value=sealed) as build,
+            patch.object(producer, "current_operational_attestation") as reattest,
+            patch.object(producer, "validate_current_operational_availability_ledger") as revalidate,
+            patch.object(producer, "sanitized_current_attestation", return_value=summary) as sanitize,
+        ):
+            producer.seal_current_operational_checkpoint(
+                document, [], MODEL_RUN, {}, [],
+            )
+        build.assert_called_once_with(document, [], MODEL_RUN, {}, [])
+        reattest.assert_not_called()
+        revalidate.assert_not_called()
+        sanitize.assert_called_once_with(full_attestation)
+        self.assertIs(document["diagnostics"]["currentOperationalLedger"], ledger)
+        self.assertIs(document["diagnostics"]["currentOperationalAttestation"], summary)
+
+    def test_invalid_result_cannot_replace_the_previous_checkpoint_evidence(self):
+        document = {"zones": {}, "diagnostics": {"sentinel": "preserve"}}
+        before = copy.deepcopy(document)
+        invalid = producer.CurrentOperationalLedgerResult({}, {}, False)
+        with patch.object(producer, "build_current_operational_ledger_result", return_value=invalid):
+            with self.assertRaisesRegex(ValueError, "ledger validation failed"):
+                producer.seal_current_operational_checkpoint(
+                    document, [], MODEL_RUN, {}, [],
+                )
+        self.assertEqual(document, before)
+
+
 if __name__ == "__main__":
     unittest.main()

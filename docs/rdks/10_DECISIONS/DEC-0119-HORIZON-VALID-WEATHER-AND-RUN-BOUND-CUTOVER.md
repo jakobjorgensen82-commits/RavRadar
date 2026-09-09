@@ -1,5 +1,15 @@
 # DEC-0119 – horizon-gyldigt vejr og run-bundet første modelcutover
 
+**Opdateret verifikation og autoritet 2026-09-10:** Ejer har godkendt lokale måltests, Sol Ultra og autonom fortsættelse gennem cachevedligeholdelse, scorelaunch og efterkontrol. Den samlede lokale målmatrix er nu grøn; se docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md fra repositoryroden. Ældre udsagn herunder om ikke kørte tests/testpause er historik. Ny exact-head-CI, merge og faktiske drifts-/launchbeviser mangler; den gamle annullerede kørsel genstartes ikke. Udskudte opgaver revurderes mod det faktisk løste.
+
+## Bindende tillæg 2026-09-09 – datalevetid er ikke restlistens levetid
+
+Future-valid reservepar skal bevares med deres originale positive beviser, også når en anden kilde dækker parret i denne kørsel. Den afledte source-stage eller Open-Meteo-restprojektion må derfor ikke være eneste vedvarende donor. Bevar op til de aftalte 48 timers faktisk kildeattesteret historik separat; historiklagring er ikke i sig selv adgang til offentlig historik, mobilisering eller kalibrering.
+
+Punkt 8's krav om stop ved ugyldig autoritativ kontrolinformation gælder fortsat adgang til data, men betyder ikke, at en defekt valgfri donorbank eller hjælpeplan skal standse alle efterfølgende leverandører. Defekte bytes skal isoleres/bevares, gyldige uafhængige bevisenheder må fortsætte, og rest skal forblive missing. En afvist banks kendte konflikter må ikke omgås ved blind import af en ældre projektion. Kan resultatet ikke gemmes sikkert, stoppes den pågældende indsamling før spildte providerkald.
+
+DEC-0118's samtidige tillæg beskriver migration, arbejdsprioritet og retry. Selve godkendelsen af vejr, kildeorden, streng 118-timersakse og runbundet cutover er uændret. Lokal implementation er under review; ingen ny test eller produktionsverifikation er gennemført.
+
 - **Status:** Ejerbesluttet og bindende; 4.0.332 bestod exact-head sourcegate `34125927405` og blev merged via PR #265 som `1e1093dead7fbbf5adcd401592d11c6b1c21d746`. Oneoff `34127986853` beviste horizon-/cacheprogression, men sluttede 79.132/79.414 med 282 missing; komplet runtime og cutover afventer
 - **Besluttet:** 2026-09-07
 - **Ejer:** RavRadar

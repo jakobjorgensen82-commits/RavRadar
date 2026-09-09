@@ -1,3 +1,35 @@
+# NYESTE CHECKPOINT – 2026-09-10 – lokale måltests bestået, CI og drift afventer
+
+Den samlede vejrlivscyklusrettelse og den eksisterende 4.0.340 WAM-/bindingspakke er lokalt målverificeret. Se `docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md` fra repositoryroden for faktiske resultater og de to testfixture-rettelser. Plan/DMI/checkpoint/WAM, CP-/OM-donorbanker, recovery, runner/checker/closure, workflows og privat runtimepakke er grønne. Modelbindingens otte forbrugere er konsistente; dette Python-/workflowdelta kræver ikke nye SQL-/modelhashes. Runtimeproducentens pakkehash beregnes derimod på den endelige kode.
+
+Ingen ny head er endnu committed/pushet, CI-valideret, merged eller produktionsverificeret ved dette checkpoint. Main er senest b0ca7f5d/4.0.339; Candidate G er senest verificerede offentlige model. Gammelt run34398417483 forbliver annulleret. Næste trin er samlet pakke, én ny exact-head-CI og derefter kontrolleret faktisk cache-/launchverifikation efter AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10. Ejer har godkendt Sol Ultra, autonom fortsættelse og launchovervågning; testpausen nedenfor er historik. Udskudte opgaver revideres mod de nye faktiske resultater.
+
+GitHub-cacheinventaret viser47 poster,10.166.365.283 byte, heraf9.742.641.482 rå GRIB-byte. Read-only limit-endpoints svarer HTTP402; den faktiske konfigurerede grænse er derfor ikke verificeret. Ingen betaling, cache eller kvoteindstilling er ændret. Inventar er ikke bevis for cacheindhold eller kvoteoverskridelse. Kapacitet og restore/save måles før gentagen tung drift.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – samlet lokal rettelse og afsluttende review
+
+Se `docs/ai/WEATHER_LIFECYCLE_IMPLEMENTATION_CHECKPOINT_2026-09-10.md` fra repositoryroden og analyseafsnit 7 i `docs/ai/WEATHER_COLLECTION_SYSTEM_REVIEW_2026-09-09.md`. Fælles hulplan, vedvarende CP/OM-reserver, DMI-checkpoint/cold-start og normal/oneoff/quality-integration er skrevet lokalt. Ingen nye tests, compile, CI, providerkald eller produktion er udført.
+
+**Afsluttende review:** Originalmanifest og vedvarende konfliktmasker er nu implementeret i begge nye banker. Uafhængigt review har lukket CP's bankpointer-crashvindue og OM's manglende in-memory-recovery i henteplanen. Ingen yderligere konkret P0/P1 fundet i disse reviewede grene; dette er IKKE funktionelt bevis. En ny lokal antagelse om obligatorisk parent-strøm blev afvist mod PART-forbrugerne, den reelle gate og de kendte 12 geografiske parenthuller. Parent-only current må ikke gøre et asset kritisk eller genåbne en færdig behandling. Krav til alle 673 kystdele består.
+
+PR#274/c4043bf7 og de otte anvendte migrationer bevares. Main er senest b0ca7f5d/4.0.339, gate34398417483 cancelled, seneste oneoff535rest+WAM MISSING_HOUR, integreret model ikke online. Endelig producerbinding, måltests og faktisk driftstid/hukommelse/komplethed er stadig uverificeret. CP-bankvækst under 1GiB og bæredygtig normaldrift er åbne målepunkter, ikke lukkede løfter.
+
+**Ny ejerordre 2026-09-10:** De lokale måltests er godkendt; den midlertidige lokale testpause er ophævet. Ejeren har samtidig bestilt autonom fortsættelse gennem stabil fuld cache, ny scoremodel online, efterfølgende driftskontrol og udskudte opgaver. Se `docs/ai/AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10.md` fra repositoryroden. Den eksisterende 4.0.340 WAM-/bindingsrettelse skal med. Den gamle annullerede gate må ikke genstartes; ny færdig exact-head-CI og sikker release følger gældende autoritet og nødvendigt bevis. Modellen anbefales til Sol Ultra før hovedarbejdet. Spørg ikke igen om allerede godkendte lokale tests; ældre pauseafsnit nedenfor er historik.
+
+# AKTUELT CHECKPOINT – 2026-09-09 – samlet vejrlivscyklusrettelse, IKKE releaseklar
+
+Ejeren har efter computerfrysningen udtrykkeligt bestilt grundig analyse og samlet rettelse med kvalitet først. Se `docs/ai/WEATHER_COLLECTION_SYSTEM_REVIEW_2026-09-09.md` fra repositoryroden: analysen og den fulde løsningskontrakt er gemt, og lokal implementation er igangsat. Ældre GO-/kørselsstatus nedenfor er historik.
+
+- Bevar PR #274/head `c4043bf7f0ae0e9ed147263bb49cce3cd5fc7abc` og hele 4.0.340 WAM-/bindingspakken. Main er fortsat `b0ca7f5d`/4.0.339; den integrerede model er ikke dokumenteret online.
+- Kildegate `34398417483` er completed/cancelled. Ejerens stop består: ingen nye/genstartede tests, push der starter CI, workflowdispatch, merge eller deploy. Ingen tests er kørt i dette nye implementeringsafsnit. Skrevne tests er ikke grøn evidens.
+- Seneste oneoff `34387410217`: alle provider-saves lykkedes, men535 strømrester og WAM `MISSING_HOUR`; intet handoff. Forrige run manglede324. Mindst124 tidligere dækkede overlappar er nu manglende; konkret per-pair-årsag er ikke målt. DMI forbedredes39511→42926/79414; stor egenrest er ikke alene bevis for forkert DMI-klassifikation.
+- Verificerede systemfund: OM-reserver filtreres af dagens rest; CP-positive records kan miste kortlivet kildebevis; DMI/CP planlægger ikke ud fra hele kildeunionen; gentaget DMI-checkpointarbejde fylder cirka23min af hvert48min-trin; seneste cold-start hentede48h-WAM-historik før operationel indsamling; OM gentager uproduktive splits/indholdsfejl.
+- Aftalen er ALLE reelle huller inklusive hale før kvalitet. Ved komplet dækning: DMI skal overtage mest muligt, dernæst CP, sidst OM. Bevar gammel gyldig tuple+proof til ny fuldt valideret atomisk erstatning. Ingen særregel om gammel rest før hale.
+- Implementation deles i DMI/checkpoint/cold-start, CP-positiv donorbank og OM-donorbank/fejlstyret retry. Root ejer fælles acquisition-plan, workflowkoblinger og RDKS. Der må ikke efterlades to forskellige normal-/oneoffalgoritmer. Nye banker må ikke halvt promoveres eller nulstille eksisterende data.
+- Aktuel common planningkontrakt: `scripts/lib/weather_acquisition_plan.py`; plan er kun arbejdsprioritet, aldrig positiv kildeadgang. Provider-/publicclosure forbliver selvstændig. Komplet integration, autoriseret validering, bindingsgenbygning, faktisk535-rest og WAM-livebevis er fortsat åbne.
+- Ingen blind gentagelse af små normalruns på gammel main; de bruger samme retentionfejl. Efter senere launch består shadow-transport/egress,48h-historik og bæredygtig ekstern cron. Ingen cache er ændret af analysen/lokal programmering.
+- Anbefalet indsats i dette kritiske tværgående afsnit: Ultra. En ny session skal fortsætte implementation/integration ud fra rapporten, ikke begynde helikopteranalysen forfra eller genstarte gaten.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – samlet bindings- og WAM-review
 
 - To fejlede PR-kørsler viste manglende synkronisering af først bundles og derefter SQL-/profil-/Edge-/releasebindinger. De er ikke runtimebevis, og den tidligere pakke var ikke klar.

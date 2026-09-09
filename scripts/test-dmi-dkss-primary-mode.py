@@ -7,6 +7,7 @@ import os
 import sys
 import types
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,7 +74,7 @@ CAPTURE = {
 }
 
 
-def native_source(component: str, valid_time: str) -> dict:
+def native_source(component: str, valid_time: str, *, zone: dict = ZONE) -> dict:
     extras = {}
     if component == "current":
         extras = {
@@ -92,7 +93,7 @@ def native_source(component: str, valid_time: str) -> dict:
         MODEL_RUN,
         valid_time,
         component=component,
-        zone=ZONE,
+        zone=zone,
         grid_candidate=CANDIDATE,
         capture=CAPTURE,
         spatial_selection=producer.COMPONENT_SPATIAL_SELECTION[component],
@@ -102,16 +103,16 @@ def native_source(component: str, valid_time: str) -> dict:
     return source
 
 
-def cached_zone(valid_time: str, *, optional: bool = True) -> dict:
-    entity = producer.sampling_identity(ZONE)
+def cached_zone(valid_time: str, *, optional: bool = True, zone: dict = ZONE) -> dict:
+    entity = producer.sampling_identity(zone)
     assert entity is not None
     hour = {
         "sea-mean-deviation": 0.15,
         "current-u": 0.1,
         "current-v": -0.2,
         "sources": {
-            "waterLevel": native_source("waterLevel", valid_time),
-            "current": native_source("current", valid_time),
+            "waterLevel": native_source("waterLevel", valid_time, zone=zone),
+            "current": native_source("current", valid_time, zone=zone),
         },
     }
     if optional:
@@ -121,8 +122,8 @@ def cached_zone(valid_time: str, *, optional: bool = True) -> dict:
             "wind-tail-v-10m": -1.0,
         })
         hour["sources"].update({
-            "waterTemperature": native_source("waterTemperature", valid_time),
-            "windTail": native_source("windTail", valid_time),
+            "waterTemperature": native_source("waterTemperature", valid_time, zone=zone),
+            "windTail": native_source("windTail", valid_time, zone=zone),
         })
     return {**entity, "hourly": {valid_time: hour}}
 
@@ -134,6 +135,7 @@ def classify(
     covered: bool = True,
     enabled: bool = True,
     collection: str = "dkss_lf",
+    global_covered: bool | None = None,
 ) -> dict:
     return producer.classify_dkss_primary_asset(
         collection=collection,
@@ -144,6 +146,10 @@ def classify(
         cached_zones={ZONE_ID: zone},
         active_zone_ids=[ZONE_ID],
         enabled=enabled,
+        planning_covered_pair_keys=(
+            {(TARGET_ID, valid_time)} if global_covered
+            else set() if global_covered is False else None
+        ),
     )
 
 
@@ -222,18 +228,63 @@ missing_current_field = copy.deepcopy(full_stride_zone)
 missing_current_field["hourly"][STRIDE_VALID].pop("current-v")
 assert classify(STRIDE_VALID, missing_current_field)["missingComponentKinds"] == ["current"]
 
+# A valid fallback tuple affects acquisition priority, never native DMI proof.
+# Removing the native part-current field does not make an already union-covered
+# pair critical. The same field is still critical without valid union coverage.
+global_covered = classify(
+    STRIDE_VALID, missing_current_field, covered=False, global_covered=True,
+)
+assert global_covered["deferValidRefresh"] is True
+assert global_covered["currentMissingPairCount"] == 0
+assert global_covered["optionalParentCurrentCount"] == 0
+assert classify(
+    STRIDE_VALID, missing_current_field, covered=False, global_covered=False,
+)["missingComponentKinds"] == ["current"]
+
+# Parent U/V is optional overview weather; the integrated score and detailed
+# weather use exact PART inputs. A parent without a native marine grid point
+# must not turn globally complete PART current into endless critical work.
+parent_zone = {
+    "id": "ZONE-TEST", "coastType": "limfjord", "lon": 2.0, "lat": 1.0,
+}
+parent_cache = cached_zone(STRIDE_VALID, zone=parent_zone)
+parent_cache["hourly"][STRIDE_VALID].pop("current-v")
+parent_requirement = producer.classify_dkss_primary_asset(
+    collection="dkss_lf", model_run=MODEL_RUN,
+    asset={"valid": STRIDE_VALID, "id": "parent-only-current-hole"},
+    target_ids=[TARGET_ID], covered_pair_keys=set(),
+    cached_zones={ZONE_ID: full_stride_zone, "ZONE-TEST": parent_cache},
+    active_zone_ids=[ZONE_ID, "ZONE-TEST"], enabled=True,
+    planning_covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
+)
+assert parent_requirement["critical"] is False
+assert parent_requirement["currentMissingPairCount"] == 0
+assert parent_requirement["optionalParentCurrentCount"] == 1
+assert parent_requirement["optionalParentCurrentMissingCount"] == 1
+assert parent_requirement["missingComponentKinds"] == []
+assert parent_requirement["deferValidRefresh"] is True
+
 invalid_water_level_source = copy.deepcopy(full_stride_zone)
 invalid_water_level_source["hourly"][STRIDE_VALID]["sources"]["waterLevel"]["nativeValidTime"] = NON_STRIDE_VALID
 assert classify(STRIDE_VALID, invalid_water_level_source)["missingComponentKinds"] == ["waterLevel"]
+assert classify(
+    STRIDE_VALID, invalid_water_level_source, global_covered=True,
+)["missingComponentKinds"] == ["waterLevel"]
 
 missing_temperature = copy.deepcopy(full_stride_zone)
 missing_temperature["hourly"][STRIDE_VALID]["water-temperature"] = float("nan")
 missing_temperature_requirement = classify(STRIDE_VALID, missing_temperature)
 assert missing_temperature_requirement["missingComponentKinds"] == ["waterTemperature"]
+assert classify(
+    STRIDE_VALID, missing_temperature, global_covered=True,
+)["missingComponentKinds"] == ["waterTemperature"]
 
 missing_wind_tail = copy.deepcopy(full_stride_zone)
 missing_wind_tail["hourly"][STRIDE_VALID].pop("wind-tail-v-10m")
 assert classify(STRIDE_VALID, missing_wind_tail)["missingComponentKinds"] == ["windTail"]
+assert classify(
+    STRIDE_VALID, missing_wind_tail, global_covered=True,
+)["missingComponentKinds"] == ["windTail"]
 
 # Optional marine fields are intentionally not demanded on non-stride hours.
 non_stride = classify(
@@ -266,6 +317,65 @@ assert [row["valid"] for row in ordered_refresh_assets] == [
     NON_STRIDE_VALID,
     STRIDE_VALID,
 ]
+other_component_critical = producer.prioritize_marine_assets_for_current_gaps(
+    [
+        {"valid": NON_STRIDE_VALID, "id": "covered-refresh"},
+        {"valid": STRIDE_VALID, "id": "covered-current-missing-water"},
+    ],
+    [TARGET_ID],
+    {(TARGET_ID, STRIDE_VALID), (TARGET_ID, NON_STRIDE_VALID)},
+    critical_by_time={STRIDE_VALID: True, NON_STRIDE_VALID: False},
+)
+assert [row["id"] for row in other_component_critical] == [
+    "covered-current-missing-water", "covered-refresh",
+]
+part_gap_before_parent_only = producer.prioritize_marine_assets_for_current_gaps(
+    [
+        {"valid": NON_STRIDE_VALID, "id": "parent-only-current-hole"},
+        {"valid": STRIDE_VALID, "id": "global-part-current-hole"},
+    ],
+    [TARGET_ID], {(TARGET_ID, NON_STRIDE_VALID)},
+    critical_by_time={NON_STRIDE_VALID: True, STRIDE_VALID: True},
+)
+assert [row["id"] for row in part_gap_before_parent_only] == [
+    "global-part-current-hole", "parent-only-current-hole",
+]
+
+# No configured plan preserves old callers; invalid planning input cannot
+# confer coverage or interrupt native cache preservation.
+planning_reference = producer.datetime(2026, 1, 1, tzinfo=producer.timezone.utc)
+with patch.dict(os.environ, {}, clear=True):
+    planned_pairs, plan_diagnostics = producer.load_current_acquisition_planning_pairs(
+        [TARGET], planning_reference,
+    )
+assert planned_pairs is None
+assert plan_diagnostics == {"present": False, "valid": False, "scope": "dmi-only"}
+with (
+    patch.dict(os.environ, {"DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH": "synthetic-plan.json"}),
+    patch.object(producer, "read_current_acquisition_plan", side_effect=ValueError("invalid binding")),
+    patch.object(producer, "progress") as warning,
+):
+    planned_pairs, plan_diagnostics = producer.load_current_acquisition_planning_pairs(
+        [TARGET], planning_reference,
+    )
+assert planned_pairs is None
+assert plan_diagnostics["present"] is True
+assert plan_diagnostics["valid"] is False
+warning.assert_called_once()
+expected_pairs = {(TARGET_ID, STRIDE_VALID)}
+with (
+    patch.dict(os.environ, {"DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH": "synthetic-plan.json"}),
+    patch.object(producer, "read_current_acquisition_plan", return_value=expected_pairs) as read_plan,
+):
+    planned_pairs, plan_diagnostics = producer.load_current_acquisition_planning_pairs(
+        [TARGET], planning_reference,
+    )
+read_plan.assert_called_once_with(
+    "synthetic-plan.json", production_reference_at=MODEL_RUN, targets=[TARGET],
+)
+assert planned_pairs == expected_pairs
+assert plan_diagnostics["valid"] is True
+assert plan_diagnostics["coveredPairCount"] == 1
 
 # Bounded refresh is admitted only for an unprocessed asset after the complete
 # critical phase, and never when the per-run maintenance budget is exhausted.
@@ -315,6 +425,85 @@ assert producer.should_skip_previously_processed_asset(
     set(terminal_reusable),
     missing_pair,
 )
+
+# Parent current remains unproven, but is not a required component. Its absence
+# neither reopens a valid processed asset nor disables a bounded new-asset
+# quality refresh once all critical PART/current and other component holes close.
+assert producer.should_skip_previously_processed_asset(
+    STRIDE_VALID,
+    set(terminal_reusable),
+    parent_requirement,
+)
+for planning_pairs in (None, {(TARGET_ID, STRIDE_VALID)}):
+    for parent_complete in (False, True):
+        requirement = producer.classify_dkss_primary_asset(
+            collection="dkss_lf", model_run=MODEL_RUN,
+            asset={"valid": STRIDE_VALID, "id": "processed-parent-current"},
+            target_ids=[TARGET_ID],
+            covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
+            cached_zones={
+                ZONE_ID: full_stride_zone,
+                "ZONE-TEST": (
+                    cached_zone(STRIDE_VALID, zone=parent_zone)
+                    if parent_complete else parent_cache
+                ),
+            },
+            active_zone_ids=[ZONE_ID, "ZONE-TEST"], enabled=True,
+            planning_covered_pair_keys=planning_pairs,
+        )
+        assert requirement["optionalParentCurrentMissingCount"] == int(not parent_complete)
+        assert requirement["critical"] is False
+        assert requirement["deferValidRefresh"] is True
+        assert producer.should_skip_previously_processed_asset(
+            STRIDE_VALID, set(terminal_reusable), requirement,
+        )
+        assert producer.should_attempt_dkss_primary_refresh(
+            valid_time=STRIDE_VALID,
+            previously_processed=set(),
+            collection_refresh_only=requirement["deferValidRefresh"],
+            critical_work_observed=requirement["critical"],
+            remaining_asset_budget=2,
+        )
+
+# Ignoring optional parent U/V must not hide a real PART gap. No union proof
+# still requires native PART fields; an explicitly missing union pair remains
+# critical even if a native row exists in the separate cache argument.
+for planning_pairs, part_cache, covered_pairs in (
+    (None, missing_current_field, {(TARGET_ID, STRIDE_VALID)}),
+    (set(), full_stride_zone, {(TARGET_ID, STRIDE_VALID)}),
+    (None, full_stride_zone, set()),
+):
+    requirement = producer.classify_dkss_primary_asset(
+        collection="dkss_lf", model_run=MODEL_RUN,
+        asset={"valid": STRIDE_VALID, "id": "real-part-current-hole"},
+        target_ids=[TARGET_ID], covered_pair_keys=covered_pairs,
+        cached_zones={ZONE_ID: part_cache, "ZONE-TEST": parent_cache},
+        active_zone_ids=[ZONE_ID, "ZONE-TEST"], enabled=True,
+        planning_covered_pair_keys=planning_pairs,
+    )
+    assert requirement["critical"] is True
+    assert requirement["missingComponentKinds"] == ["current"]
+    assert requirement["optionalParentCurrentMissingCount"] == 1
+    assert not producer.should_skip_previously_processed_asset(
+        STRIDE_VALID, set(), requirement,
+    )
+
+# Parent water level is unchanged by this current-only scope correction and
+# can still reopen an otherwise reusable exact PART-current outcome.
+parent_missing_water = copy.deepcopy(parent_cache)
+parent_missing_water["hourly"][STRIDE_VALID].pop("sea-mean-deviation")
+requirement = producer.classify_dkss_primary_asset(
+    collection="dkss_lf", model_run=MODEL_RUN,
+    asset={"valid": STRIDE_VALID, "id": "parent-water-level-hole"},
+    target_ids=[TARGET_ID], covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
+    cached_zones={ZONE_ID: full_stride_zone, "ZONE-TEST": parent_missing_water},
+    active_zone_ids=[ZONE_ID, "ZONE-TEST"], enabled=True,
+    planning_covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
+)
+assert requirement["missingComponentKinds"] == ["waterLevel"]
+assert producer.should_skip_previously_processed_asset(
+    STRIDE_VALID, set(terminal_reusable), requirement,
+) is False
 
 # The same exact step is deliberately not reusable when its outcome says that
 # the part was positive but the corresponding pair is absent. It must reopen.

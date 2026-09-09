@@ -169,9 +169,9 @@ def main() -> None:
         "--targets data/live/coastal-parts-v2.json",
         "--source-stage .cache/copernicus-current-source-stage.json",
         "--allow-nonmatching-seal",
-        "Remove only invalid restored Copernicus source disposition",
+        "Preserve original Copernicus admission evidence before pilot rebase",
         "steps.cache-state.outputs.source_stage_reusable != 'true'",
-        "rm -f .cache/copernicus-current-source-stage.json",
+        "Preserve original source-stage evidence for validated donor migration before rebase.",
         "build-copernicus-target-registry.py",
         "full_coast:",
         "steps.cache-state.outputs.source_stage_ready != 'true'",
@@ -195,7 +195,7 @@ def main() -> None:
     need(scheduled_pilot.count(".cache/copernicus-current-source-stage.json") >= 4,
          "Scheduled pilot must restore, inspect, prove and save the source-stage sidecar")
     inspection_position = scheduled_pilot.index("Inspect the exact sealed DMI-gap range")
-    normalization_position = scheduled_pilot.index("Remove only invalid restored Copernicus source disposition")
+    normalization_position = scheduled_pilot.index("Preserve original Copernicus admission evidence before pilot rebase")
     need("complete_range_present == 'true' ||" not in scheduled_pilot,
          "A complete seal must not delete its source-stage evidence")
     install_position = scheduled_pilot.index("Install Copernicus acquisition dependency only when source stage is absent")

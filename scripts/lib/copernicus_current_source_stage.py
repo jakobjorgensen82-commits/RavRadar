@@ -17,8 +17,10 @@ from typing import Any
 
 from .copernicus_current import (
     FUTURE_ACQUISITION_FRESHNESS_HOURS,
+    DMI_VERIFIER_CONTRACT_ID,
     REQUEST_CONTRACT_ID,
     SELECTION_POLICY_ID,
+    CANDIDATE_CONFLICT_POLICY_ID,
     canonical_sha256,
     make_acquisition,
     required_pairs_sha256,
@@ -31,16 +33,17 @@ from .copernicus_current import (
 from .copernicus_target_identity import target_fingerprint
 
 
-SOURCE_STAGE_SCHEMA_VERSION = 4
+SOURCE_STAGE_SCHEMA_VERSION = 5
 SOURCE_STAGE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_SOURCE_STAGE"
-SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v4"
+SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v5"
 SOURCE_STAGE_STATUS = "READY"
-SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 3
-SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v3"
+SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 4
+SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v4"
 SOURCE_STAGE_PROGRESS_STATUS = "IN_PROGRESS"
 SOURCE_ORDER_SELECTED_SOURCE = "copernicus-nws-amm15"
 SOURCE_ORDER_PREREQUISITE_SOURCE = "copernicus-baltic-nemo"
 SOURCE_ORDER_ATTEMPTED_EXHAUSTED = "ATTEMPTED_EXHAUSTED"
+SOURCE_ORDER_ORIGINAL_PREREQUISITE = "ORIGINAL_RECORD_PREREQUISITE_VERIFIED"
 SOURCE_ORDER_NOT_APPLICABLE = "NOT_APPLICABLE"
 SOURCE_ORDER_EXCLUSION_REASON = "BALTIC_PREREQUISITE_NOT_ATTESTED"
 SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
@@ -119,18 +122,43 @@ SOURCE_STAGE_PROGRESS_FIELDS = {
 PAIR_FIELDS = {"partId", "validTime"}
 SOURCE_ORDER_EVIDENCE_FIELDS = {
     "partId", "validTime", "selectedSource", "prerequisiteSource",
-    "disposition", "attemptId", "evidenceSha256",
+    "disposition", "attemptId", "recordId", "acquisitionId", "admissionId", "evidenceSha256",
 }
 SOURCE_ORDER_EXCLUSION_FIELDS = {
     "partId", "validTime", "recordId", "selectedSource",
     "prerequisiteSource", "reason",
 }
+POSITIVE_STAGE_FIELDS = {
+    "positiveAdmissions", "admissionAttempts", "admissionPolicySha256",
+}
+PRE_ADMISSION_SOURCE_STAGE_FIELDS = set(SOURCE_STAGE_FIELDS)
+PRE_ADMISSION_SOURCE_STAGE_PROGRESS_FIELDS = set(SOURCE_STAGE_PROGRESS_FIELDS)
+SOURCE_STAGE_FIELDS |= POSITIVE_STAGE_FIELDS
+SOURCE_STAGE_PROGRESS_FIELDS |= POSITIVE_STAGE_FIELDS
 LEGACY_SOURCE_STAGE_FIELDS = SOURCE_STAGE_FIELDS - {
     "excludedRecordRefCount", "excludedRecordRefsSha256",
-}
+} - POSITIVE_STAGE_FIELDS
 LEGACY_SOURCE_STAGE_PROGRESS_FIELDS = SOURCE_STAGE_PROGRESS_FIELDS - {
     "excludedRecordRefCount", "excludedRecordRefsSha256",
+} - POSITIVE_STAGE_FIELDS
+POSITIVE_ADMISSION_FIELDS = {
+    "admissionId", "recordId", "acquisitionId", "partId", "validTime",
+    "source", "targetRegistrySha256", "admissionPolicySha256",
+    "sourceAttemptId", "prerequisiteAttemptId",
 }
+ADMISSION_CONTRACT_ID = "copernicus-record-bound-positive-admission-v1"
+
+
+def admission_policy_sha256() -> str:
+    """Donor admission policy; pinned physical provider rules are unchanged."""
+    return canonical_sha256({
+        "contractId": ADMISSION_CONTRACT_ID,
+        "requestContractId": REQUEST_CONTRACT_ID,
+        "selectionPolicyId": SELECTION_POLICY_ID,
+        "candidateConflictPolicyId": CANDIDATE_CONFLICT_POLICY_ID,
+        "spatialShardPolicyId": SPATIAL_SHARD_POLICY_ID,
+        "products": list(PINNED_PRODUCTS),
+    })
 
 
 class CopernicusSourceStageError(ValueError):
@@ -344,6 +372,285 @@ def _validate_attempt(
     return attempt
 
 
+def validate_positive_admissions(
+    admissions: Any,
+    witnesses: Any,
+    *,
+    records: list[dict[str, Any]],
+    acquisitions: list[dict[str, Any]],
+    targets: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Validate immutable positive proof at acquisition, never at today's age.
+
+    A witness's own four-hour acquisition contract remains strict. Its age
+    relative to a later consumer cannot revoke the exact already-admitted
+    tuple. The certificate cannot be moved to a different acquisition/record.
+    """
+    if not isinstance(admissions, list) or not isinstance(witnesses, list):
+        raise CopernicusSourceStageError("Positive admission arrays are malformed")
+    products = {row["source"]: row for row in PINNED_PRODUCTS}
+    witness_by_id: dict[str, dict[str, Any]] = {}
+    for raw in witnesses:
+        product = products.get(raw.get("source")) if isinstance(raw, dict) else None
+        if product is None:
+            raise CopernicusSourceStageError("Positive witness product is unknown")
+        witness = _validate_attempt(
+            raw,
+            reference=_time(raw.get("productionReferenceAt"), "Witness reference", exact_hour=True),
+            required_set={(row["partId"], row["validTime"]) for row in
+                          _canonical_pairs(raw.get("requestedPairs"), "Witness pairs")},
+            targets=targets,
+            product=product,
+        )
+        if witness["attemptId"] in witness_by_id:
+            raise CopernicusSourceStageError("Positive witness identity is duplicated")
+        witness_by_id[witness["attemptId"]] = witness
+    if witnesses != sorted(witnesses, key=lambda row: row["attemptId"]):
+        raise CopernicusSourceStageError("Positive witnesses are not canonical")
+    witness_pairs = {key: {(pair["partId"], pair["validTime"])
+                          for pair in row["requestedPairs"]}
+                     for key, row in witness_by_id.items()}
+    records_by_id = {row["recordId"]: row for row in records}
+    acquisitions_by_id = {row["acquisitionId"]: row for row in acquisitions}
+    targets_by_id = {row["partId"]: row for row in targets}
+    registry_sha = target_fingerprint(targets)
+    policy_sha = admission_policy_sha256()
+    used_witnesses: set[str] = set()
+    seen_records: set[str] = set()
+    for raw in admissions:
+        certificate = _exact_dict(raw, POSITIVE_ADMISSION_FIELDS, "Positive admission")
+        record = records_by_id.get(certificate["recordId"])
+        acquisition = acquisitions_by_id.get(certificate["acquisitionId"])
+        source_witness = witness_by_id.get(certificate["sourceAttemptId"])
+        if record is None or acquisition is None:
+            raise CopernicusSourceStageError("Positive admission is detached from its tuple")
+        pair = (certificate["partId"], certificate["validTime"])
+        if (
+            certificate["recordId"] in seen_records
+            or certificate["acquisitionId"] != record["acquisitionId"]
+            or pair != (record["partId"], record["validTime"])
+            or certificate["source"] != acquisition["source"]
+            or certificate["targetRegistrySha256"] != registry_sha
+            or certificate["admissionPolicySha256"] != policy_sha
+            or certificate["admissionId"] != canonical_sha256({
+                key: value for key, value in certificate.items() if key != "admissionId"
+            })
+        ):
+            raise CopernicusSourceStageError("Positive admission tuple/policy binding is invalid")
+        target = targets_by_id.get(pair[0])
+        if target is None or not eligible_target(target, products[acquisition["source"]]):
+            raise CopernicusSourceStageError("Positive admission target is outside its product")
+        prerequisite_id = certificate["prerequisiteAttemptId"]
+        needs_baltic = (acquisition["source"] == SOURCE_ORDER_SELECTED_SOURCE
+                        and eligible_target(target, products[SOURCE_ORDER_PREREQUISITE_SOURCE]))
+        if source_witness is not None:
+            if (source_witness["acquisitionId"] != acquisition["acquisitionId"]
+                or source_witness["source"] != acquisition["source"]
+                or pair not in witness_pairs[source_witness["attemptId"]]):
+                raise CopernicusSourceStageError("Positive source witness is detached")
+            used_witnesses.add(source_witness["attemptId"])
+        elif certificate["sourceAttemptId"] is not None or needs_baltic:
+            raise CopernicusSourceStageError("Positive source acquisition witness is missing")
+        if needs_baltic:
+            prerequisite = witness_by_id.get(prerequisite_id)
+            if (
+                prerequisite is None
+                or prerequisite["source"] != SOURCE_ORDER_PREREQUISITE_SOURCE
+                or pair not in witness_pairs[prerequisite_id]
+                or prerequisite["productionReferenceAt"] != source_witness["productionReferenceAt"]
+                or _time(prerequisite["acquisitionAt"], "Prerequisite acquisition")
+                    > _time(source_witness["acquisitionAt"], "Source acquisition")
+            ):
+                raise CopernicusSourceStageError("Positive AMM15 admission lacks its original Baltic attempt")
+            used_witnesses.add(prerequisite_id)
+        elif prerequisite_id is not None:
+            raise CopernicusSourceStageError("Positive admission has an inapplicable prerequisite")
+        seen_records.add(record["recordId"])
+    if admissions != sorted(admissions, key=lambda row: row["recordId"]):
+        raise CopernicusSourceStageError("Positive admissions are not canonical")
+    if used_witnesses != set(witness_by_id):
+        raise CopernicusSourceStageError("Positive witness table contains unbound evidence")
+    return admissions, witnesses
+
+
+def merge_positive_admissions(
+    *,
+    records: list[dict[str, Any]],
+    acquisitions: list[dict[str, Any]],
+    targets: list[dict[str, Any]],
+    attempts: list[dict[str, Any]],
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Keep exact existing certificates; mint only acquisition-bound new ones.
+
+    Old witnesses are exclusively for their existing certificates. They are
+    deliberately not candidates when admitting another/new AMM15 acquisition.
+    """
+    record_ids = {row["recordId"] for row in records}
+    retained = [row for row in positive_admissions or [] if row["recordId"] in record_ids]
+    used = {row[key] for row in retained for key in ("sourceAttemptId", "prerequisiteAttemptId")
+            if row[key] is not None}
+    witnesses = [row for row in admission_attempts or [] if row["attemptId"] in used]
+    validate_positive_admissions(retained, witnesses, records=records,
+                                 acquisitions=acquisitions, targets=targets)
+    witness_by_id = {row["attemptId"]: row for row in witnesses}
+    certificates = {row["recordId"]: row for row in retained}
+    source_attempts: dict[str, list[dict[str, Any]]] = {}
+    baltic_by_pair: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
+    for raw in attempts:
+        product = product_by_source.get(raw.get("source"))
+        if product is None:
+            raise CopernicusSourceStageError("Admission attempt product is unknown")
+        attempt = _validate_attempt(
+            raw, reference=_time(raw["productionReferenceAt"], "Admission reference", exact_hour=True),
+            required_set={(row["partId"], row["validTime"]) for row in raw["requestedPairs"]},
+            targets=targets, product=product,
+        )
+        source_attempts.setdefault(attempt["acquisitionId"], []).append(attempt)
+        if attempt["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE:
+            for pair in attempt["requestedPairs"]:
+                baltic_by_pair.setdefault((pair["partId"], pair["validTime"],
+                                          attempt["productionReferenceAt"]), []).append(attempt)
+    target_by_id = {row["partId"]: row for row in targets}
+    acquisition_by_id = {row["acquisitionId"]: row for row in acquisitions}
+    registry_sha = target_fingerprint(targets)
+    policy_sha = admission_policy_sha256()
+    for record in records:
+        if record["recordId"] in certificates:
+            continue
+        acquisition = acquisition_by_id[record["acquisitionId"]]
+        # Baltic's own immutable acquisition/record already proves its source.
+        # Only AMM15 needs an additional precedence certificate.
+        if acquisition["source"] != SOURCE_ORDER_SELECTED_SOURCE:
+            continue
+        pair = (record["partId"], record["validTime"])
+        candidates = [attempt for attempt in source_attempts.get(record["acquisitionId"], [])
+                      if {"partId": pair[0], "validTime": pair[1]} in attempt["requestedPairs"]]
+        source_attempt = min(candidates, key=lambda row: row["attemptId"]) if candidates else None
+        prerequisite = None
+        if (acquisition["source"] == SOURCE_ORDER_SELECTED_SOURCE and
+            eligible_target(target_by_id[pair[0]], product_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE])):
+            if source_attempt is None:
+                continue
+            prior = [row for row in baltic_by_pair.get((*pair, source_attempt["productionReferenceAt"]), [])
+                     if _time(row["acquisitionAt"], "Baltic acquisition") <=
+                        _time(source_attempt["acquisitionAt"], "AMM15 acquisition")]
+            if not prior:
+                continue
+            prerequisite = min(prior, key=lambda row: row["attemptId"])
+        identity = {
+            "recordId": record["recordId"], "acquisitionId": record["acquisitionId"],
+            "partId": pair[0], "validTime": pair[1], "source": acquisition["source"],
+            "targetRegistrySha256": registry_sha, "admissionPolicySha256": policy_sha,
+            "sourceAttemptId": source_attempt["attemptId"] if source_attempt else None,
+            "prerequisiteAttemptId": prerequisite["attemptId"] if prerequisite else None,
+        }
+        certificates[record["recordId"]] = {**identity, "admissionId": canonical_sha256(identity)}
+        if source_attempt:
+            witness_by_id[source_attempt["attemptId"]] = source_attempt
+        if prerequisite:
+            witness_by_id[prerequisite["attemptId"]] = prerequisite
+    selected = sorted(certificates.values(), key=lambda row: row["recordId"])
+    witnesses = sorted(witness_by_id.values(), key=lambda row: row["attemptId"])
+    validate_positive_admissions(selected, witnesses, records=records,
+                                 acquisitions=acquisitions, targets=targets)
+    return {"positiveAdmissions": selected, "admissionAttempts": witnesses,
+            "admissionPolicySha256": policy_sha}
+
+
+def stage_positive_evidence(stage: dict[str, Any]) -> dict[str, Any]:
+    """Keyword arguments shared by every operational stage consumer."""
+    return {"positive_admissions": stage.get("positiveAdmissions", []),
+            "admission_attempts": stage.get("admissionAttempts", [])}
+
+
+def project_positive_evidence(positive: dict[str, Any], required_pairs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Bound the operational sidecar; the separate donor bank retains reserves."""
+    required = {(row["partId"], row["validTime"]) for row in required_pairs}
+    certificates = [row for row in positive["positiveAdmissions"]
+                    if (row["partId"], row["validTime"]) in required]
+    needed = {row[key] for row in certificates for key in ("sourceAttemptId", "prerequisiteAttemptId")
+              if row[key] is not None}
+    return {"positiveAdmissions": certificates,
+            "admissionAttempts": [row for row in positive["admissionAttempts"] if row["attemptId"] in needed],
+            "admissionPolicySha256": positive["admissionPolicySha256"]}
+
+
+def _validate_stage_positive(stage: dict[str, Any], shadow: dict[str, Any],
+                             targets: list[dict[str, Any]]) -> None:
+    if stage.get("admissionPolicySha256") != admission_policy_sha256():
+        raise CopernicusSourceStageError("Positive admission policy binding differs")
+    validate_positive_admissions(stage.get("positiveAdmissions"), stage.get("admissionAttempts"),
+                                 records=shadow["records"], acquisitions=shadow["acquisitions"],
+                                 targets=targets)
+
+
+def original_stage_positive_evidence(
+    document: Any, *, shadow: dict[str, Any], targets: list[dict[str, Any]],
+    shadow_sha256: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Extract original per-record proof before projecting a new DMI residual.
+
+    This validates the original envelope and immutable source requests. It
+    grants no old READY/count/negative-disposition authority to the new target.
+    """
+    if not isinstance(document, dict):
+        raise CopernicusSourceStageError("Original source journal is malformed")
+    ready = document.get("status") == SOURCE_STAGE_STATUS
+    version = (document.get("schemaVersion"), document.get("contractId"))
+    current = ((SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID) if ready else
+               (SOURCE_STAGE_PROGRESS_SCHEMA_VERSION, SOURCE_STAGE_PROGRESS_CONTRACT_ID))
+    previous = ((4, "copernicus-current-source-stage-ready-v4") if ready else
+                (3, "copernicus-current-source-stage-in-progress-v3"))
+    supported_legacy = ({(2, "copernicus-current-source-stage-ready-v2"),
+                         (3, "copernicus-current-source-stage-ready-v3")} if ready else
+                        {(1, "copernicus-current-source-stage-in-progress-v1"),
+                         (2, "copernicus-current-source-stage-in-progress-v2")})
+    fields = ((SOURCE_STAGE_FIELDS if ready else SOURCE_STAGE_PROGRESS_FIELDS) if version == current
+              else (PRE_ADMISSION_SOURCE_STAGE_FIELDS if ready else PRE_ADMISSION_SOURCE_STAGE_PROGRESS_FIELDS)
+              if version == previous else (LEGACY_SOURCE_STAGE_FIELDS if ready else LEGACY_SOURCE_STAGE_PROGRESS_FIELDS))
+    stage = _exact_dict(document, fields, "Original source journal")
+    if (version not in {current, previous, *supported_legacy}
+        or stage.get("status") not in {SOURCE_STAGE_STATUS, SOURCE_STAGE_PROGRESS_STATUS}
+        or stage.get("kind") != SOURCE_STAGE_KIND
+        or stage.get("sourceStageId") != _source_stage_id(stage)
+        or stage.get("shadowSha256") != shadow_sha256 or not valid_sha256(shadow_sha256)
+        or stage.get("targetRegistrySha256") != target_fingerprint(targets)
+        or not valid_sha256(stage.get("dmiCurrentInputSha256"))
+        or stage.get("dmiVerifierContractId") != DMI_VERIFIER_CONTRACT_ID
+        or not valid_sha256(stage.get("requiredPairsSha256"))
+        or any(stage.get(key) is not False for key in
+               ("scoreImpact", "publicRuntime", "coordinatesIncluded", "rawVectorsIncluded"))):
+        raise CopernicusSourceStageError("Original source journal integrity/binding mismatch")
+    validate_shadow(shadow, {row["partId"]: row for row in targets}, require_collection=False)
+    reference = _time(stage["productionReferenceAt"], "Original reference", exact_hour=True)
+    recorded_at = _time(stage["sealedAt" if ready else "updatedAt"], "Original journal time")
+    if abs((recorded_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
+        raise CopernicusSourceStageError("Original journal was not time-valid when written")
+    raw_attempts = stage.get("attempts")
+    if not isinstance(raw_attempts, list) or stage.get("attemptsSha256") != canonical_sha256(raw_attempts):
+        raise CopernicusSourceStageError("Original journal attempt hash mismatch")
+    original_pairs = {(row["partId"], row["validTime"]) for attempt in raw_attempts
+                      for row in _canonical_pairs(attempt.get("requestedPairs"), "Original attempt pairs")}
+    # Legacy ordering is source/shard only. Individual immutable attempts are
+    # validated before migration to the new deterministic effective journal.
+    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
+    attempts = [_validate_attempt(attempt, reference=reference, required_set=original_pairs,
+                                  targets=targets, product=product_by_source[attempt["source"]])
+                for attempt in raw_attempts]
+    if len({row["attemptId"] for row in attempts}) != len(attempts):
+        raise CopernicusSourceStageError("Original attempts are duplicated")
+    if version == current:
+        _validate_stage_positive(stage, shadow, targets)
+    positive = merge_positive_admissions(
+        records=shadow["records"], acquisitions=shadow["acquisitions"], targets=targets,
+        attempts=attempts, **stage_positive_evidence(stage),
+    )
+    return positive, attempts
+
+
 def _derive_products(
     required_pairs: list[dict[str, str]],
     targets: list[dict[str, Any]],
@@ -356,8 +663,11 @@ def _derive_products(
         domain_pairs = [row for row in required_pairs if row["partId"] in eligible_ids]
         source_attempts = [row for row in attempts if row["source"] == product["source"]]
         attempted_pairs = sorted(
-            [pair for attempt in source_attempts for pair in attempt["requestedPairs"]
-             if (pair["partId"], pair["validTime"]) in required_set],
+            [{"partId": part_id, "validTime": valid_time}
+             for part_id, valid_time in {
+                 (pair["partId"], pair["validTime"])
+                 for attempt in source_attempts for pair in attempt["requestedPairs"]
+                 if (pair["partId"], pair["validTime"]) in required_set}],
             key=lambda row: (row["validTime"], row["partId"]),
         )
         if len({(row["partId"], row["validTime"]) for row in attempted_pairs}) != len(attempted_pairs):
@@ -381,15 +691,13 @@ def _source_order_evidence(
     targets: list[dict[str, Any]],
     attempts: list[dict[str, Any]],
     production_reference_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Prove the Baltic prerequisite for every selected AMM15 pair.
 
-    An in-domain pair needs one completed Baltic attempt, validated against
-    the current journal reference, and no selected Baltic record. The attempt
-    may retain its immutable preceding reference while it remains inside the
-    pinned reuse window. An out-of-domain pair gets an explicit NOT_APPLICABLE
-    disposition derived only from the pinned Baltic domain; a timeout or
-    failed request can never produce that disposition.
+    The original Baltic witness belongs to the exact admitted record. It does
+    not expire with today's negative journal and must never claim today's
+    exhaustion. Outside-domain NOT_APPLICABLE still comes only from geometry.
     """
     target_by_id = {str(row["partId"]): row for row in targets}
     product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
@@ -397,21 +705,10 @@ def _source_order_evidence(
         row for row in PINNED_PRODUCTS
         if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
     )
-    attempt_by_pair: dict[tuple[str, str], str] = {}
-    for attempt in attempts:
-        # Stage builders and validators bind every immutable attempt to
-        # production_reference_at through _validate_attempts(). Requiring the
-        # attempt's original envelope to equal the current envelope here would
-        # discard still-fresh Baltic proof at every hourly rollover.
-        if attempt.get("source") != SOURCE_ORDER_PREREQUISITE_SOURCE:
-            continue
-        for pair in attempt.get("requestedPairs") or []:
-            key = (str(pair.get("partId") or ""), str(pair.get("validTime") or ""))
-            if key in attempt_by_pair:
-                raise CopernicusSourceStageError(
-                    "A Baltic pair has more than one prerequisite attempt"
-                )
-            attempt_by_pair[key] = str(attempt.get("attemptId") or "")
+    admission_by_record = {row["recordId"]: row for row in positive_admissions or []}
+    current_attempt_ids = {row["attemptId"] for row in attempts
+                           if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+                           and row["productionReferenceAt"] == utc_iso(production_reference_at)}
 
     evidence: list[dict[str, Any]] = []
     for ref in sorted(record_refs, key=lambda row: (row["validTime"], row["partId"])):
@@ -430,13 +727,17 @@ def _source_order_evidence(
             )
         if selected_source != SOURCE_ORDER_SELECTED_SOURCE:
             continue
-        attempt_id = attempt_by_pair.get((part_id, valid_time))
+        admission = admission_by_record.get(ref["recordId"])
+        if admission is None or admission["acquisitionId"] != ref["acquisitionId"]:
+            raise CopernicusSourceStageError("Selected AMM15 record lacks positive admission")
+        attempt_id = admission["prerequisiteAttemptId"]
         if eligible_target(target, baltic):
             if not valid_sha256(attempt_id):
                 raise CopernicusSourceStageError(
                     "An in-domain AMM15 pair lacks a completed Baltic prerequisite attempt"
                 )
-            disposition = SOURCE_ORDER_ATTEMPTED_EXHAUSTED
+            disposition = (SOURCE_ORDER_ATTEMPTED_EXHAUSTED if attempt_id in current_attempt_ids
+                           else SOURCE_ORDER_ORIGINAL_PREREQUISITE)
         else:
             if attempt_id is not None:
                 raise CopernicusSourceStageError(
@@ -451,6 +752,9 @@ def _source_order_evidence(
             "prerequisiteSource": SOURCE_ORDER_PREREQUISITE_SOURCE,
             "disposition": disposition,
             "attemptId": attempt_id,
+            "recordId": ref["recordId"],
+            "acquisitionId": ref["acquisitionId"],
+            "admissionId": admission["admissionId"],
         }
         evidence.append({
             **identity,
@@ -466,6 +770,9 @@ def select_source_order_admissible_records(
     production_reference_at: datetime,
     targets: list[dict[str, Any]],
     attempts: list[dict[str, Any]],
+    *,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
 ) -> tuple[
     list[dict[str, Any]],
     list[dict[str, str]],
@@ -473,25 +780,22 @@ def select_source_order_admissible_records(
 ]:
     """Select records while quarantining only unproved AMM15 precedence.
 
-    Shadow bytes remain immutable retention evidence.  A fresh in-domain AMM15
-    record is operationally ineligible until the exact pair has a completed
-    Baltic attempt that is valid for this source-stage, including immutable
-    prior-reference evidence still inside the pinned reuse window. Every
-    skipped record is bound by an exact deterministic identity so a later
-    Baltic attempt automatically makes it eligible again without rewriting
-    the cache.
+    Shadow bytes remain retention evidence. An in-domain AMM15 record needs
+    either its retained exact admission or matching source/Baltic attempts
+    from its original acquisition reference. A later/old pair-level negative
+    attempt cannot authorize another record merely because the pair matches.
     """
     target_by_id = {str(row["partId"]): row for row in targets}
     baltic = next(
         row for row in PINNED_PRODUCTS
         if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
     )
-    baltic_attempted = {
-        (str(pair["partId"]), str(pair["validTime"]))
-        for attempt in attempts
-        if attempt.get("source") == SOURCE_ORDER_PREREQUISITE_SOURCE
-        for pair in attempt.get("requestedPairs") or []
-    }
+    positive = merge_positive_admissions(
+        records=records, acquisitions=acquisitions, targets=targets,
+        attempts=attempts, positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+    )
+    admitted_ids = {row["recordId"] for row in positive["positiveAdmissions"]}
     eligible_records = list(records)
     exclusions: list[dict[str, str]] = []
     excluded_ids: set[str] = set()
@@ -513,7 +817,7 @@ def select_source_order_admissible_records(
             if (
                 ref["source"] == SOURCE_ORDER_SELECTED_SOURCE
                 and eligible_target(target, baltic)
-                and pair not in baltic_attempted
+                and ref["recordId"] not in admitted_ids
             ):
                 exclusion = {
                     "partId": pair[0],
@@ -582,12 +886,13 @@ def _validate_attempts(
     source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
     canonical_attempts = sorted(
         attempts,
-        key=lambda row: (source_rank[row["source"]], row["shardId"]),
+        key=lambda row: (source_rank[row["source"]], row["shardId"],
+                         row["productionReferenceAt"], row["acquisitionAt"], row["attemptId"]),
     )
     if attempts != canonical_attempts or len({row["attemptId"] for row in attempts}) != len(attempts):
         raise CopernicusSourceStageError("Copernicus source-stage attempts are not canonical and unique")
     attempted_pairs = [
-        (attempt["source"], pair["partId"], pair["validTime"])
+        (attempt["source"], attempt["productionReferenceAt"], pair["partId"], pair["validTime"])
         for attempt in attempts
         for pair in attempt["requestedPairs"]
     ]
@@ -626,6 +931,7 @@ def validate_source_stage_progress(
             "Current central targets do not match the source-stage registry"
         )
     shadow = validate_shadow(shadow, target_identities, require_collection=False)
+    _validate_stage_positive(stage, shadow, targets)
     reference = _time(
         registry["productionReferenceAt"],
         "Registry reference",
@@ -653,6 +959,7 @@ def validate_source_stage_progress(
         reference,
         targets,
         attempts,
+        **stage_positive_evidence(stage),
     )
     if (
         stage.get("schemaVersion") != SOURCE_STAGE_PROGRESS_SCHEMA_VERSION
@@ -788,90 +1095,42 @@ def rebase_source_stage_progress(
     target_identities: dict[str, dict[str, Any]],
     shadow_sha256: str,
 ) -> dict[str, Any]:
-    """Revalidate completed acquisitions, never carry an old READY seal forward.
-
-    Legacy v2/v1 journals are admitted by their original envelope and immutable
-    attempt/acquisition identities. Old matrix counts are not release evidence.
-    Every current count and hash is recomputed against the fresh DMI registry.
-    """
+    """Rebuild today's negative projection without expiring positive tuples."""
     registry = validate_target_registry(registry)
-    if not isinstance(document, dict):
-        raise CopernicusSourceStageError("Source journal is malformed")
-    ready = document.get("status") == SOURCE_STAGE_STATUS
-    version_contract = (document.get("schemaVersion"), document.get("contractId"))
-    if ready:
-        fields = (
-            SOURCE_STAGE_FIELDS
-            if version_contract == (SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID)
-            else LEGACY_SOURCE_STAGE_FIELDS
-        )
-    else:
-        fields = (
-            SOURCE_STAGE_PROGRESS_FIELDS
-            if version_contract == (
-                SOURCE_STAGE_PROGRESS_SCHEMA_VERSION,
-                SOURCE_STAGE_PROGRESS_CONTRACT_ID,
-            )
-            else LEGACY_SOURCE_STAGE_PROGRESS_FIELDS
-        )
-    stage = _exact_dict(document, fields, "Original source journal")
-    supported = (
-        {(2, "copernicus-current-source-stage-ready-v2"),
-         (3, "copernicus-current-source-stage-ready-v3"),
-         (SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID)} if ready else
-        {(1, "copernicus-current-source-stage-in-progress-v1"),
-         (2, "copernicus-current-source-stage-in-progress-v2"),
-         (SOURCE_STAGE_PROGRESS_SCHEMA_VERSION, SOURCE_STAGE_PROGRESS_CONTRACT_ID)}
-    )
-    if ((stage.get("schemaVersion"), stage.get("contractId")) not in supported
-        or stage.get("status") not in (SOURCE_STAGE_STATUS, SOURCE_STAGE_PROGRESS_STATUS)
-        or stage.get("kind") != SOURCE_STAGE_KIND
-        or stage.get("sourceStageId") != _source_stage_id(stage)
-        or stage.get("shadowSha256") != shadow_sha256
-        or not valid_sha256(shadow_sha256)
-        or not valid_sha256(stage.get("dmiCurrentInputSha256"))
-        or stage.get("targetRegistrySha256") != registry["targetRegistrySha256"]
-        or stage.get("dmiVerifierContractId") != registry["dmiVerifierContractId"]
-        or any(stage.get(key) is not False for key in (
-            "scoreImpact", "publicRuntime", "coordinatesIncluded", "rawVectorsIncluded"))):
-        raise CopernicusSourceStageError("Original source journal integrity/binding mismatch")
-    _assert_no_vector_or_coordinate_fields(stage)
-    original_reference = _time(stage["productionReferenceAt"], "Original journal reference", exact_hour=True)
-    reference = _time(registry["productionReferenceAt"], "New journal reference", exact_hour=True)
-    if not 0 <= (reference - original_reference).total_seconds() <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
-        raise CopernicusSourceStageError("Original source journal is outside the reuse window")
     targets = sorted(target_identities.values(), key=lambda row: (row["parentZoneId"], row["partId"]))
-    raw_attempts = stage.get("attempts")
-    if not isinstance(raw_attempts, list) or stage.get("attemptsSha256") != canonical_sha256(raw_attempts):
-        raise CopernicusSourceStageError("Original journal attempt hash mismatch")
-    original_pairs = {
-        (pair["partId"], pair["validTime"])
-        for attempt in raw_attempts for pair in attempt["requestedPairs"]
-    }
-    # First verify every original attempt; corruption is not silently filtered.
-    attempts = _validate_attempts(raw_attempts, reference=original_reference,
-                                  required_set=original_pairs, targets=targets)
-    current_pairs = {(row["partId"], row["validTime"])
-                     for row in registry["operationalRequiredPairs"]}
-    retained = [attempt for attempt in attempts if
+    positive, original_attempts = original_stage_positive_evidence(
+        document, shadow=shadow, targets=targets, shadow_sha256=shadow_sha256,
+    )
+    if document.get("dmiVerifierContractId") != registry["dmiVerifierContractId"]:
+        raise CopernicusSourceStageError("Original source verifier binding differs")
+    reference = _time(registry["productionReferenceAt"], "New reference", exact_hour=True)
+    original_reference = _time(document["productionReferenceAt"], "Original reference", exact_hour=True)
+    if reference < original_reference:
+        raise CopernicusSourceStageError("Source journal cannot rebase backwards")
+    current_pairs = {(row["partId"], row["validTime"]) for row in registry["operationalRequiredPairs"]}
+    acquisition_ids = {row["acquisitionId"] for row in shadow["acquisitions"]}
+    retained = [attempt for attempt in original_attempts if
         any((pair["partId"], pair["validTime"]) in current_pairs for pair in attempt["requestedPairs"])
         and 0 <= (reference - _time(attempt["productionReferenceAt"], "Attempt reference")).total_seconds()
             <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
-        and abs((reference - _time(attempt["acquisitionAt"], "Actual acquisition")).total_seconds())
-            <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600]
-    # An AMM15 attempt may not survive the expiry of its Baltic prerequisite.
+        and abs((reference - _time(attempt["acquisitionAt"], "Attempt acquisition")).total_seconds())
+            <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
+        and (attempt["parsedRecordCount"] == 0 or attempt["acquisitionId"] in acquisition_ids)]
+    # A current AMM15 retry/exhaustion claim still needs current Baltic work.
+    # Positive certificates above survive independently of this short journal.
     baltic = next(row for row in PINNED_PRODUCTS if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE)
-    baltic_pairs = {(pair["partId"], pair["validTime"]) for attempt in retained
-                    if attempt["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+    baltic_pairs = {(pair["partId"], pair["validTime"], attempt["productionReferenceAt"])
+                    for attempt in retained if attempt["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
                     for pair in attempt["requestedPairs"]}
     retained = [attempt for attempt in retained if attempt["source"] != SOURCE_ORDER_SELECTED_SOURCE
         or all((pair["partId"], pair["validTime"]) not in current_pairs
                or not eligible_target(target_identities[pair["partId"]], baltic)
-               or (pair["partId"], pair["validTime"]) in baltic_pairs for pair in attempt["requestedPairs"])]
+               or (pair["partId"], pair["validTime"], attempt["productionReferenceAt"]) in baltic_pairs
+               for pair in attempt["requestedPairs"])]
     return build_source_stage_progress(
         registry=registry, shadow=shadow, target_identities=target_identities,
-        shadow_sha256=shadow_sha256, attempts=retained,
-        updated_at=_time(stage["sealedAt" if ready else "updatedAt"], "Original evidence time"),
+        shadow_sha256=shadow_sha256, attempts=retained, updated_at=reference,
+        **stage_positive_evidence(positive),
     )
 
 
@@ -893,6 +1152,7 @@ def validate_source_stage(
     if target_fingerprint(targets) != registry["targetRegistrySha256"]:
         raise CopernicusSourceStageError("Current central targets do not match the source-stage registry")
     validate_shadow(shadow, target_identities, require_collection=False)
+    _validate_stage_positive(stage, shadow, targets)
     reference = _time(registry["productionReferenceAt"], "Registry reference", exact_hour=True)
     required_pairs = _canonical_pairs(registry["operationalRequiredPairs"], "Operational required pairs")
     required_set = {(row["partId"], row["validTime"]) for row in required_pairs}
@@ -911,6 +1171,7 @@ def validate_source_stage(
         reference,
         targets,
         attempts,
+        **stage_positive_evidence(stage),
     )
     if (
         stage.get("schemaVersion") != SOURCE_STAGE_SCHEMA_VERSION
@@ -957,6 +1218,7 @@ def validate_source_stage(
         targets,
         attempts,
         reference,
+        stage["positiveAdmissions"],
     )
     source_order_evidence = stage.get("sourceOrderEvidence")
     if not isinstance(source_order_evidence, list):
@@ -1022,6 +1284,8 @@ def build_source_stage(
     shadow_sha256: str,
     attempts: list[dict[str, Any]],
     sealed_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     registry = validate_target_registry(registry)
     reference = _time(registry["productionReferenceAt"], "Registry reference", exact_hour=True)
@@ -1031,9 +1295,16 @@ def build_source_stage(
         key=lambda row: (
             next(index for index, product in enumerate(PINNED_PRODUCTS) if product["source"] == row["source"]),
             row["shardId"],
+            row["productionReferenceAt"], row["acquisitionAt"], row["attemptId"],
         ),
     )
     targets = sorted(target_identities.values(), key=lambda row: (row["parentZoneId"], row["partId"]))
+    positive = merge_positive_admissions(
+        records=shadow["records"], acquisitions=shadow["acquisitions"], targets=targets,
+        attempts=canonical_attempts, positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+    )
+    positive = project_positive_evidence(positive, required_pairs)
     record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
         required_pairs,
         list(shadow.get("acquisitions") or []),
@@ -1041,6 +1312,7 @@ def build_source_stage(
         reference,
         targets,
         canonical_attempts,
+        **stage_positive_evidence(positive),
     )
     products = _derive_products(required_pairs, targets, canonical_attempts)
     source_order_evidence = _source_order_evidence(
@@ -1048,12 +1320,14 @@ def build_source_stage(
         targets,
         canonical_attempts,
         reference,
+        positive["positiveAdmissions"],
     )
     value: dict[str, Any] = {
         "schemaVersion": SOURCE_STAGE_SCHEMA_VERSION,
         "kind": SOURCE_STAGE_KIND,
         "contractId": SOURCE_STAGE_CONTRACT_ID,
         "status": SOURCE_STAGE_STATUS,
+        **positive,
         "sealedAt": utc_iso(sealed_at),
         "productionReferenceAt": registry["productionReferenceAt"],
         "targetRegistrySha256": registry["targetRegistrySha256"],
@@ -1099,6 +1373,8 @@ def build_source_stage_progress(
     shadow_sha256: str,
     attempts: list[dict[str, Any]],
     updated_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build resumable private evidence, including a bound zero-attempt start."""
     registry = validate_target_registry(registry)
@@ -1112,7 +1388,8 @@ def build_source_stage_progress(
     try:
         canonical_attempts = sorted(
             attempts,
-            key=lambda row: (source_rank[row["source"]], row["shardId"]),
+            key=lambda row: (source_rank[row["source"]], row["shardId"],
+                             row["productionReferenceAt"], row["acquisitionAt"], row["attemptId"]),
         )
     except (KeyError, TypeError) as error:
         raise CopernicusSourceStageError(
@@ -1122,6 +1399,12 @@ def build_source_stage_progress(
         target_identities.values(),
         key=lambda row: (row["parentZoneId"], row["partId"]),
     )
+    positive = merge_positive_admissions(
+        records=shadow["records"], acquisitions=shadow["acquisitions"], targets=targets,
+        attempts=canonical_attempts, positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+    )
+    positive = project_positive_evidence(positive, required_pairs)
     record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
         required_pairs,
         list(shadow.get("acquisitions") or []),
@@ -1129,12 +1412,14 @@ def build_source_stage_progress(
         reference,
         targets,
         canonical_attempts,
+        **stage_positive_evidence(positive),
     )
     value: dict[str, Any] = {
         "schemaVersion": SOURCE_STAGE_PROGRESS_SCHEMA_VERSION,
         "kind": SOURCE_STAGE_KIND,
         "contractId": SOURCE_STAGE_PROGRESS_CONTRACT_ID,
         "status": SOURCE_STAGE_PROGRESS_STATUS,
+        **positive,
         "updatedAt": utc_iso(updated_at),
         "productionReferenceAt": registry["productionReferenceAt"],
         "targetRegistrySha256": registry["targetRegistrySha256"],
@@ -1251,6 +1536,8 @@ def atomic_write_source_stage(
 
 def safe_source_stage_summary(document: dict[str, Any]) -> dict[str, Any]:
     """Counts and hashes only; no target identities, coordinates or vectors."""
+    products = document.get("products", [])
+    source_order_evidence = document.get("sourceOrderEvidence", [])
     summary = {
         "sourceStageReady": document["status"] == SOURCE_STAGE_STATUS,
         "targetRegistrySha256": document["targetRegistrySha256"],
@@ -1265,7 +1552,7 @@ def safe_source_stage_summary(document: dict[str, Any]) -> dict[str, Any]:
         "excludedRecordRefsSha256": document["excludedRecordRefsSha256"],
         "attemptCount": len(document["attempts"]),
         "attemptsSha256": document["attemptsSha256"],
-        "productCount": len(document["products"]),
+        "productCount": len(products),
         "productAttemptSummaries": [
             {
                 "productOrdinal": index,
@@ -1276,18 +1563,23 @@ def safe_source_stage_summary(document: dict[str, Any]) -> dict[str, Any]:
                 "successfulAttemptCount": row["successfulAttemptCount"],
                 "successfulAttemptsSha256": row["successfulAttemptsSha256"],
             }
-            for index, row in enumerate(document["products"], start=1)
+            for index, row in enumerate(products, start=1)
         ],
-        "productsSha256": document["productsSha256"],
-        "sourceOrderEvidenceCount": document["sourceOrderEvidenceCount"],
-        "sourceOrderEvidenceSha256": document["sourceOrderEvidenceSha256"],
+        "productsSha256": canonical_sha256(products),
+        "sourceOrderEvidenceCount": len(source_order_evidence),
+        "sourceOrderEvidenceSha256": canonical_sha256(source_order_evidence),
+        "positiveAdmissionCount": len(document.get("positiveAdmissions", [])),
         "sourceOrderAttemptedExhaustedCount": sum(
             row["disposition"] == SOURCE_ORDER_ATTEMPTED_EXHAUSTED
-            for row in document["sourceOrderEvidence"]
+            for row in source_order_evidence
         ),
         "sourceOrderNotApplicableCount": sum(
             row["disposition"] == SOURCE_ORDER_NOT_APPLICABLE
-            for row in document["sourceOrderEvidence"]
+            for row in source_order_evidence
+        ),
+        "sourceOrderOriginalPrerequisiteCount": sum(
+            row["disposition"] == SOURCE_ORDER_ORIGINAL_PREREQUISITE
+            for row in source_order_evidence
         ),
         "shadowSha256": document["shadowSha256"],
         "coordinatesIncluded": False,

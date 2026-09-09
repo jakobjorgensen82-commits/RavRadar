@@ -2,6 +2,29 @@
 
 **Håndbogsversion:** 4.0.340
 
+## 88.43 Lokal kandidat – vejrdata skal bevares, før vi henter mere
+
+**Status:** Den samlede rettelse er gennemgået og de målrettede lokale tests er bestået. Den er endnu ikke CI-valideret, merged eller lagt online. Testene omfatter den nye hentelogik, genbrug, sikker gemning, fallback og den tidligere WAM-rettelse. Seneste gennemgåede oneoff på gammel kode sluttede med 535 manglende strømpar og manglende operationelle bølgetimer; Candidate G er fortsat senest verificerede offentlige model.
+
+**Problemet:** Listen over dagens huller blev også brugt til at bestemme, hvilke fallbackdata vi beholdt. Derfor kunne en brugbar Open-Meteo-reserve forsvinde fra den nyeste cache, når DMI midlertidigt dækkede samme time. Copernicus kunne på tilsvarende vis beholde tal, men miste det oprindelige bevis for, at de måtte bruges. Samtidig så leverandørernes arbejdsplan ikke hele den samlede dækning.
+
+**Den samlede ændring:**
+
+- Gem originale, kontrollerede reserveprognoser og deres kildebeviser i private donorbanker. Listen over dagens huller er en separat, afledt liste. En reserve forsvinder ikke, blot fordi en bedre kilde dækker timen i denne kørsel.
+- Gendan både DMI, Copernicus og Open-Meteo før planlægningen. Hent reelle huller først, både inde i vinduet og i den nye hale. DMI forsøges først, derefter Copernicus og den eksisterende fallbackkæde. De øvrige nødvendige vejrkomponenter og bølgetimer må stadig kræve arbejde.
+- Når der er dækning, skal DMI løbende overtage mest muligt, dernæst Copernicus. Den gamle brugbare række og dens bevis bliver liggende, indtil en hel ny række er kontrolleret og erstattet samlet.
+- Undgå dobbeltberegning af den samme kontrol i ét DMI-checkpoint. Bevar løbende sikre gemninger og uafhængig kontrol ved indlæsning og aflevering.
+- Bevar de 48 timers virkelige historik, men lad ikke en ufuldstændig historik ved ægte koldstart bruge hele hentebudgettet før de aktuelle prognoser. Manglende fortid forklares som HISTORY_INCOMPLETE; nødvendige bølgetimer og lagbro er fortsat obligatoriske.
+- Stop gentagen opsplitning, når et isoleret Open-Meteo-svar allerede har bevist det samme grid- eller værdiproblem. Andre huller fortsætter, og næste kørsel må prøve igen. Ingen geografiske eller fysiske datakrav lempes.
+
+**Datasikker overgang:** De eksisterende cacher bevares. Nye banker skrives og genlæses før deres afledte restfiler, og normal-, engangs- og kvalitetskørsler skal bruge samme bankkontrakt. En defekt valgfri hjælpefil må ikke blokere hele leverandørkæden. Ugyldige data må derimod aldrig godkendes, og en kendt konflikt må ikke genindføres via en gammel kopi. Lokalt gemt er ikke det samme som gemt i GitHub; afbrudt eller fejlet remote save skal fremgå ærligt.
+
+**Ekstra review 10. september:** Begge banker har nu en separat fortegnelse over rækkernes oprindelige identitet. Den gør det muligt at isolere en beskadiget række uden at miste de uafhængige raske rækker. En kendt konflikt følger med til næste kørsel og forsvinder ikke ved genindlæsning af en gammel kopi. Originalfilen bliver liggende indtil sikker erstatning; henteplanen bruger samme recovery som selve indsamlingen. Strøm på overordnede zoner er valgfri oversigtsdata, ikke et ekstra krav til den nye scoremodel. Kendte geografiske parenthuller må derfor ikke udløse endeløs genhentning; alle nødvendige lokale kystdele kræves fortsat.
+
+**Verifikation:** Måltestene er grønne, inklusive beskadigede rækker, bevarede kildebeviser og genstart. To testopsætninger skulle tilpasses den nye aftalte kontrakt; ingen datakrav blev sænket. Faktisk køretid, hukommelse og bankernes vækst er endnu ikke målt i drift. Lokale tests er ikke en produktionsgaranti.
+
+**Det, vi endnu ikke ved:** Rettelsen kan bevare intakte eksisterende beviser, men ikke opfinde dem, hvis de allerede er tabt. Der er heller ikke endnu bevis for, at alle rester kan leveres under de godkendte datakrav, eller at almindelig drift kan holde trit. Det skal måles på den færdige kode. Den nye model kræver stadig komplette brugbare direkte input og et reelt samlet releasebevis; dataalder alene og delvis historik er ikke nye stopklodser. Ejeren har godkendt testene og autonom fortsættelse gennem launch og efterkontrol. Udskudte forbedringer revurderes, så allerede løste problemer ikke bygges om igen.
+
 ## 88.42 4.0.340 – samme sikre WAM-valg i hele kæden
 
 En DMI-modelkørsel kan overlappe den foregående. Ved en bestemt prognosetime kan der derfor ligge en eksakt række fra den nye kørsel mellem to rækker fra den gamle. Producenten kunne allerede se, at den manglende nabotime sikkert kunne beregnes mellem de to gamle rækker, men slutkontrollen og den faktiske vejr-runtime kiggede kun på de to nærmeste rækker. De afviste derfor fejlagtigt kombinationen som blandede modelkørsler.

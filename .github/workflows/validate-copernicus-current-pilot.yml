@@ -318,6 +318,19 @@ jobs:
             copernicus-current-range-v2-
             copernicus-current-shadow-v1-
 
+      - name: Restore shared private Copernicus donor bank for pilot
+        if: steps.target-registry.outcome == 'success'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-donor-bank-v1-${{ runner.os }}-
+
       - name: Inspect the exact sealed DMI-gap range
         if: steps.target-registry.outcome == 'success'
         id: cache-state
@@ -332,9 +345,9 @@ jobs:
           --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Remove only invalid restored Copernicus source disposition
+      - name: Preserve original Copernicus admission evidence before pilot rebase
         if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_reusable != 'true'
-        run: rm -f .cache/copernicus-current-source-stage.json
+        run: echo "Preserve original source-stage evidence for validated donor migration before rebase."
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
         if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready != 'true'
@@ -372,13 +385,14 @@ jobs:
           --timeout-seconds 1200
           --backoff-seconds 20
           --
+          --donor-bank .cache/copernicus-current-donor-bank.json
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "${{ steps.target-registry.outputs.target_hour }}"
 
       - name: Reconfirm exact main before pilot Copernicus progress cache
         id: pilot-copernicus-progress-write-authority
-        if: always() && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        if: always() && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && (hashFiles('.cache/copernicus-current-shadow.json') != '' || steps.acquisition.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -388,6 +402,17 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save shared private Copernicus pilot donor bank before projection gates
+        if: always() && steps.pilot-copernicus-progress-write-authority.outcome == 'success' && (steps.acquisition.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-pilot-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save non-cancelled Copernicus source-stage progress
         if: always() && steps.pilot-copernicus-progress-write-authority.outcome == 'success' && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
@@ -774,6 +799,50 @@ jobs:
             copernicus-current-shadow-v1-
             copernicus-current-range-v2-
 
+      - name: Restore shared private Copernicus donor bank before DMI
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-donor-bank-v1-${{ runner.os }}-
+
+      - name: Restore shared private Open-Meteo current progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            open-meteo-current-fallback-v2-${{ runner.os }}-
+
+      - name: Restore shared private Open-Meteo donor bank
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            open-meteo-current-donor-bank-v1-${{ runner.os }}-
+
+      - name: Plan global current acquisition before DMI
+        continue-on-error: true
+        shell: bash
+        run: |
+          if ! python scripts/build-weather-acquisition-plan.py \
+            --at "${{ steps.operational-target.outputs.target_hour }}" \
+            --report data/diagnostics/weather-acquisition-plan-before-dmi.json; then
+            rm -f .cache/weather-current-acquisition-plan.json
+            echo "::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage."
+          fi
+
       - name: Refresh all bounded official DMI collections for the proof
         id: dmi-bulk
         continue-on-error: true
@@ -785,6 +854,7 @@ jobs:
           DMI_BULK_PREFER_OUTPUT_CACHE: true
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
+          DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -968,9 +1038,21 @@ jobs:
           --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Remove only invalid operational Copernicus source disposition
+      - name: Preserve original Copernicus admission evidence before operational rebase
         if: steps.current-range.outputs.source_stage_reusable != 'true'
-        run: rm -f .cache/copernicus-current-source-stage.json
+        run: echo "Preserve original source-stage evidence for validated donor migration before rebase."
+
+      - name: Plan global current acquisition before Copernicus
+        continue-on-error: true
+        shell: bash
+        run: |
+          if ! python scripts/build-weather-acquisition-plan.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --report data/diagnostics/weather-acquisition-plan-before-copernicus.json; then
+            rm -f .cache/weather-current-acquisition-plan.json
+            echo "::warning::Advisory acquisition plan unavailable; Copernicus uses conservative native coverage."
+          fi
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
         if: steps.current-range.outputs.source_stage_ready != 'true'
@@ -1003,13 +1085,15 @@ jobs:
           --timeout-seconds 3300
           --backoff-seconds 20
           --
+          --donor-bank .cache/copernicus-current-donor-bank.json
+          --acquisition-plan .cache/weather-current-acquisition-plan.json
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Reconfirm exact main before one-off shared Copernicus progress cache
         id: oneoff-copernicus-progress-write-authority
-        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && (hashFiles('.cache/copernicus-current-shadow.json') != '' || steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1019,6 +1103,17 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save shared private Copernicus one-off donor bank before projection gates
+        if: always() && steps.oneoff-copernicus-progress-write-authority.outcome == 'success' && (steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save non-cancelled private Copernicus source-stage progress
         if: always() && steps.oneoff-copernicus-progress-write-authority.outcome == 'success' && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
@@ -1061,14 +1156,6 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-118-preflight-ready-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Restore shared private Open-Meteo current progress
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/open-meteo-current-fallback.json
-          key: open-meteo-current-fallback-v2-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            open-meteo-current-fallback-v2-${{ runner.os }}-
-
       - name: Fill only the exact remaining current gaps from Open-Meteo
         id: open-meteo-fill
         continue-on-error: true
@@ -1081,7 +1168,7 @@ jobs:
 
       - name: Reconfirm exact main before shared Open-Meteo progress cache
         id: open-meteo-progress-write-authority
-        if: always() && steps.open-meteo-fill.outcome != 'cancelled' && steps.open-meteo-fill.outcome != 'skipped' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
+        if: always() && steps.open-meteo-fill.outcome != 'cancelled' && steps.open-meteo-fill.outcome != 'skipped' && (steps.open-meteo-fill.outputs.checkpoint_written == 'true' || steps.open-meteo-fill.outputs.donor_bank_written == 'true')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1092,12 +1179,37 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Save shared private Open-Meteo donor bank before projection gates
+        if: always() && steps.open-meteo-progress-write-authority.outcome == 'success' && steps.open-meteo-fill.outputs.donor_bank_written == 'true' && hashFiles('.cache/open-meteo-current-donor-bank.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Save shared private Open-Meteo current progress
         if: always() && steps.open-meteo-progress-write-authority.outcome == 'success' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/open-meteo-current-fallback.json
           key: open-meteo-current-fallback-v2-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Preserve safe weather acquisition diagnostics before terminal gates
+        if: always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: weather-acquisition-safe-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            data/diagnostics/weather-acquisition-plan-before-dmi.json
+            data/diagnostics/weather-acquisition-plan-before-copernicus.json
+            data/diagnostics/open-meteo-current-fetch.json
 
       - name: Require complete Open-Meteo residual before freshness and closure
         if: always()

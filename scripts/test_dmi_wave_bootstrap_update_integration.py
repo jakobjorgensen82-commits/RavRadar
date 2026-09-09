@@ -591,6 +591,7 @@ class ColdCacheFirstTests(unittest.TestCase):
         first_zone = next(iter(result["zones"].values()))
         first_zone["hourly"].pop(self.required[0])
         preserved_hour = first_zone["hourly"][self.required[1]]
+        preserved_target = copy.deepcopy(first_zone["hourly"][TARGET])
         with (
             patch.object(
                 producer,
@@ -610,7 +611,7 @@ class ColdCacheFirstTests(unittest.TestCase):
             )
 
         self.assertEqual(locked, {})
-        stac.assert_called_once()
+        stac.assert_not_called()
         checkpoint.assert_called_once()
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["cacheFirst"]["status"], "incomplete")
@@ -621,9 +622,11 @@ class ColdCacheFirstTests(unittest.TestCase):
         self.assertNotIn("resetWaveRowCount", aggregate["cacheFirst"])
         self.assertEqual(aggregate["status"], "history-incomplete")
         self.assertTrue(aggregate["historyIncomplete"])
-        self.assertEqual(aggregate["historyIncompleteCode"], "NO_COHERENT_RUN")
+        self.assertEqual(aggregate["historyIncompleteCode"], "HISTORY_INCOMPLETE")
+        self.assertTrue(aggregate["historyNetworkDeferred"])
         self.assertIn("significant-wave-height", preserved_hour)
         self.assertIn("wave", preserved_hour["sources"])
+        self.assertEqual(first_zone["hourly"][TARGET], preserved_target)
 
     def test_legacy_missing_cell_salvages_only_invalid_part_hour(self) -> None:
         result = copy.deepcopy(self.complete_cache)
@@ -651,7 +654,7 @@ class ColdCacheFirstTests(unittest.TestCase):
             )
 
         self.assertEqual(locked, {})
-        stac.assert_called_once()
+        stac.assert_not_called()
         self.assertEqual(checkpoint.call_count, 2)
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["cacheFirst"]["failureCode"], "MISSING_CELL")
@@ -1049,6 +1052,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
 
         ordered = (
             resolver_start,
+            workflow.index("- name: Restore shared private Copernicus donor bank before DMI"),
+            workflow.index("- name: Restore shared private Open-Meteo current progress"),
+            workflow.index("- name: Restore shared private Open-Meteo donor bank"),
+            workflow.index("- name: Plan global current acquisition before DMI"),
             dmi_start,
             workflow.index("- name: Save progressed DMI GRIB cache before any terminal decision"),
             workflow.index("- name: Save isolated DMI candidate progress before any terminal decision"),
@@ -1056,7 +1063,6 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             gate_start,
             workflow.index("- name: Seal exact operational DMI gaps for target through target plus 117"),
             workflow.index("- name: Fill only the exact operational DMI gap seal"),
-            workflow.index("- name: Restore shared private Open-Meteo current progress"),
             workflow.index("- name: Require complete operational WAM after provider progress"),
             workflow.index("- name: Build the integrated runtime without release or deploy"),
         )
