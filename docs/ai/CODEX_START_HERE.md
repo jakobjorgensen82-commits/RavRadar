@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-09 – Astra samler 4.0.340 før tredje CI
+
+PR #274 på branch `codex/wam-same-run-resolution-4.0.340` er endnu ikke mergeklar. CI `34391930353` på `8f752334` fandt stale genererede modelbundles; `34393986579` på `2c71ac0f` fandt derefter usynkroniserede SQL-/profil-/Edge-/releasebindinger. Det var mangelfuld releaseforberedelse, og de tidligere korte WAM-tests var utilstrækkelige som samlet pakkecheck.
+
+Astra-reviewet har rettet en konkret yderligere JS/Python-forskel: en alternativ WAM-serie må kun vælges efter kontrol af den fulde bølgetuple og retningen. Nærmeste endepunkter vælges pr. serie; eksakte rækker, firetimerloft og eksisterende delvise input bevares. Python 35/35, producentintegration 24/24 og de korte runtime-/adaptertests er grønne.
+
+Ny migration `20260909194000_wam_same_run_resolution_binding.sql` fremfører alene integrated-/rollback-/continuation-hashes og checkpoint-readbackversion fra den bytefastlåste, allerede anvendte horizon-migration. De otte gamle migrationer er uændrede. Backendplanen understøtter otte applied/kun niende pending og alle øvrige gyldige prefixes. Alle bindingsforbrugere og installationskopier er synkroniseret. De tidligere fejlede måltests samt readiness/installations-/CASE-/migrationstests er nu grønne. Kildekontrollen starter fremover med fem eksisterende hurtige bindingskontroller før de tunge fixtures; fuld gate består fortsat.
+
+Main er fortsat `b0ca7f5d`. Backendbeviset på 4.0.339 gælder ikke de nye hashes; efter merge kræves et nyt backendrun samt en komplet 4.0.340-oneoff på samme main. De kan køre parallelt. Oneoff `34387410217` fortsætter imens cachearbejdet; main flyttes først efter dens provider-saves. Ingen cache nulstilles. Candidate G er fortsat offentlig.
+
+Se `docs/ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md` for samlet scope, fund, test og næste trin. Dokumentations-only status efter CI må gemmes lokalt uden at starte endnu en gate. Astra er nødvendig til dette samlede review; Sol/Ekstra høj er næste model, når pakken er verificeret og pushet.
+
 # NYESTE CHECKPOINT – 2026-09-09 – lokal 4.0.340 retter WAM-seam uden at blande modelkørsler
 
 Backend `34371639398` forsøg 2 er terminalt grøn på merged main `b0ca7f5d`. Oneoff `34371642565` gemte DMI-, Copernicus- og Open-Meteo-progress, men stoppede før handoff: Open-Meteo fyldte 2.057/2.381 aktuelle restpar (1.787 genbrugte, 270 hentede), efterlod 324 og ramte 15-minuttersbudgettet uden global leverandørfejl. WAM-inspektøren stoppede separat med `MIXED_RUN_INTERPOLATION`. Candidate G er fortsat offentlig.

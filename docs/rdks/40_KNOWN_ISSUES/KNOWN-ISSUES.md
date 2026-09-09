@@ -1,3 +1,13 @@
+# AKTUELLE LAUNCHISSUES – 2026-09-09 – efter samlet Astra-review
+
+- **ISSUE-4.0.340-BINDING-CLOSURE – LOKALT RETTET / EXACT-HEAD ÅBEN:** CI 34391930353 og 34393986579 fandt først stale bundles, dernæst afledte bindingsforbrugere. Alle er nu synkroniseret med append-only migration 9 og test af hvert gyldigt migrationsprefix. De tidligere fejlede måltests er grønne; ny exact-head-CI kræves.
+- **ISSUE-WAM-PRODUCER-CONSUMER-SEAM – LOKALT RETTET / LIVE ÅBEN:** Samlet review fandt desuden, at en ugyldig bølgeretning kunne skjule en gyldig alternativ serie i JavaScript. Nærmeste endepunkter pr. serie og fuld tuplevalidering før valg er nu testet i både JS og Python; 35/35 Python og 24/24 integration er grønne.
+- **ISSUE-INTEGRATED-FIRST-CUTOVER – ÅBEN P0:** Backend 4.0.339 er grøn historisk, men gælder ikke den nye commit/binding. Efter merge kræves ny backendreadiness samt komplet corrected-main oneoff; de kan køre parallelt. Provider-saves i gammel oneoff skal være afsluttet før main flyttes.
+- **ISSUE-OPEN-METEO-324 – LIVE ÅBEN:** Sidste afsluttede run efterlod 324 ved budget. Aktuel efterfølger er ikke slutattesteret; ingen påstand om fuld cache før 79.414/79.414 samt WAM/Feggesund 354/354.
+- **ISSUE-POST-LAUNCH-OPERATIONS-BACKLOG – ÅBEN:** Bevar obligatorisk tabsfri shadow-cachetransport, kildeattesteret 48h-OM-historik, normal cron-budgetverifikation og bounded DB-loginretry efter launch. Ingen cache nulstilles i launchrettelsen.
+
+Dette afsnit supersederer ældre formuleringer nedenfor om, at den eksisterende backend allerede er tilstrækkelig til 4.0.340.
+
 # AKTUELLE LAUNCHISSUES – 2026-09-09 – 4.0.340
 
 - **ISSUE-WAM-PRODUCER-CONSUMER-SEAM – LOKALT RETTET P0 / LIVE ÅBEN:** Oneoff `34371642565` viste, at producenten kunne regne en WAM-time som dækket via en same-run bracket, mens slutvalidator/runtime valgte nærmeste mixed-run-naboer. Lokal 4.0.340 ensretter valget med firetimersloft og uden cross-run-interpolation. Exact-head og main-runtime mangler.

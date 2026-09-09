@@ -1,3 +1,13 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – samlet bindings- og WAM-review
+
+- To fejlede PR-kørsler viste manglende synkronisering af først bundles og derefter SQL-/profil-/Edge-/releasebindinger. De er ikke runtimebevis, og den tidligere pakke var ikke klar.
+- Det samlede Astra-review retter også et ekstra WAM-hjørnetilfælde: nærmeste endepunkter pr. native serie og validering af fuld bølgetuple/retning før valg af alternativ. Eksakte rækker og firetimerloft bevares.
+- Integrated/rollback-bundles og alle forbrugere er synkroniseret. Append-only migration 20260909194000 ændrer kun bindingshashes/readbackidentitet; alle otte anvendte migrationer er uændrede. Backend håndterer 8 applied/1 pending og øvrige gyldige prefixes.
+- Fem hurtige eksisterende bindingskontroller ligger nu før tunge kildegatefixtures uden fjernelse af den fulde gate. De tidligere fejlede måltests samt WAM 35/35, producentintegration 24/24 og readiness/installations-/migrationstests er grønne.
+- PR #274 er endnu ikke merged. Efter exact-head-kildegate og gamle provider-saves: merge, derefter NY backendreadiness og corrected-main oneoff parallelt. Backendresultatet fra 4.0.339 dækker ikke den nye pakke. Kravene er fortsat 79.414/79.414, WAM/Feggesund 354/354, gyldigt handoff, fulde produktionsgates og offentlig verifikation.
+- Candidate G er stadig offentlig. Cachetransport i shadow, kildeattesteret 48h-OM-historik og bæredygtig normal cron er fortsat obligatorisk opfølgning efter launch.
+- Samlet evidens: [Astra-review 4.0.340](../../ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md). Ældre statusafsnit nedenfor er historik og supersederes af dette checkpoint.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – lokal 4.0.340 WAM-seam
 
 - [x] Klassificér oneoff `34371642565`: alle provider-saves grønne; Open-Meteo efterlod 324 ved runtimebudget; WAM stoppede separat på `MIXED_RUN_INTERPOLATION`; intet handoff/deploy.

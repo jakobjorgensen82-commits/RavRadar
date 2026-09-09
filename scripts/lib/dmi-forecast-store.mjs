@@ -365,48 +365,63 @@ function sameNativeSeries(bracket, component) {
   return sameNativeIdentity(before, after, component);
 }
 
+function safeWaveInterpolation(bracket) {
+  if (!bracket || bracket.mode !== 'interpolated') return true;
+  const directions = [];
+  for (const item of [bracket.before, bracket.after]) {
+    const height = finite(item?.['significant-wave-height']);
+    const period = finite(item?.['dominant-wave-period']);
+    const rawDirection = item?.['mean-wave-dir'];
+    const direction = finite(rawDirection);
+    const source = provenanceAt(item, 'wave');
+    if (height === null || period === null || height < 0 || period < 0
+      || (height > 0 && period === 0)
+      || !source || source.optionalFieldSet.includes('mean-wave-dir') !== (rawDirection != null)
+      || (rawDirection == null ? height !== 0 : direction === null || direction < 0 || direction >= 360)) return false;
+    directions.push(direction);
+  }
+  if (directions.some(direction => direction === null)) return directions.every(direction => direction === null);
+  // The producer rejects antipodal endpoints at every ratio: the shorter
+  // directional arc is ambiguous, even away from the zero-vector midpoint.
+  const delta = normalizeDegrees(directions[1] - directions[0] + 180) - 180;
+  return Math.abs(Math.abs(delta) - 180) > 1e-9;
+}
+
 function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {}) {
-  const candidates = (items ?? [])
-    .map(item => ({
-      item,
-      time: Date.parse(item?.step ?? item?.time),
-      source: provenanceAt(item, 'wave'),
-    }))
-    .filter(entry => Number.isFinite(entry.time) && entry.source);
+  const groups = new Map();
+  for (const item of items ?? []) {
+    const source = provenanceAt(item, 'wave');
+    if (!source) continue;
+    const key = JSON.stringify([source.collection, source.modelRun, source.gridDefinitionSha256, source.gridPoint]);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
   let best = null;
-  for (const before of candidates) {
-    if (before.time >= targetMs) continue;
-    for (const after of candidates) {
-      if (after.time <= targetMs) continue;
-      const gap = after.time - before.time;
-      if (gap <= 0 || gap > maxGapMs
-        || !sameNativeIdentity(before.source, after.source, 'wave')) continue;
-      const runMs = Date.parse(before.source.modelRun);
-      const stableIdentity = [
-        before.source.collection,
-        before.source.gridDefinitionSha256,
-        ...before.source.gridPoint,
-      ].join('|');
-      const score = [gap, -runMs, -before.time, after.time, stableIdentity];
-      const better = !best || (() => {
-        for (let index = 0; index < score.length; index += 1) {
-          if (score[index] === best.score[index]) continue;
-          return score[index] < best.score[index];
-        }
-        return false;
-      })();
-      if (better) {
-        best = {
-          score,
-          bracket: {
-            before: before.item,
-            after: after.item,
-            ratio: (targetMs - before.time) / gap,
-            mode: 'interpolated',
-          },
-        };
+  for (const group of groups.values()) {
+    // Match the producer: only the nearest endpoints within each native
+    // series may resolve this hour; a wider pair cannot skip a bad tuple.
+    const bracket = timeBracket(group, targetMs, { maxGapMs, edgeToleranceMs: 0 });
+    if (bracket?.mode !== 'interpolated' || !sameNativeSeries(bracket, 'wave')
+      || !safeWaveInterpolation(bracket)) continue;
+    const beforeSource = provenanceAt(bracket.before, 'wave');
+    const beforeTime = Date.parse(bracket.before.step ?? bracket.before.time);
+    const afterTime = Date.parse(bracket.after.step ?? bracket.after.time);
+    const gap = afterTime - beforeTime;
+    const runMs = Date.parse(beforeSource.modelRun);
+    const stableIdentity = [
+      beforeSource.collection,
+      beforeSource.gridDefinitionSha256,
+      ...beforeSource.gridPoint,
+    ].join('|');
+    const score = [gap, -runMs, -beforeTime, afterTime, stableIdentity];
+    const better = !best || (() => {
+      for (let index = 0; index < score.length; index += 1) {
+        if (score[index] === best.score[index]) continue;
+        return score[index] < best.score[index];
       }
-    }
+      return false;
+    })();
+    if (better) best = { score, bracket };
   }
   return best?.bracket ?? null;
 }
@@ -416,7 +431,14 @@ function componentBracket(items, targetMs, component, options) {
     ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
     : options;
   const bracket = timeBracket(items, targetMs, componentOptions);
-  if (sameNativeSeries(bracket, component)) return bracket;
+  if (sameNativeSeries(bracket, component)) {
+    if (component === 'wave' && !safeWaveInterpolation(bracket)) {
+      // Retain the existing partial tuple if no complete alternative exists;
+      // missing direction must not masquerade as a wholly absent local wave.
+      return safeWaveSeriesBracket(items, targetMs, componentOptions) ?? bracket;
+    }
+    return bracket;
+  }
   return component === 'wave'
     ? safeWaveSeriesBracket(items, targetMs, componentOptions)
     : null;

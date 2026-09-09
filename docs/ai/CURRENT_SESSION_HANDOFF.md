@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-09 – Astra samler 4.0.340 før tredje CI
+
+PR #274 på branch `codex/wam-same-run-resolution-4.0.340` er endnu ikke mergeklar. CI `34391930353` på `8f752334` fandt stale genererede modelbundles; `34393986579` på `2c71ac0f` fandt derefter usynkroniserede SQL-/profil-/Edge-/releasebindinger. Det var mangelfuld releaseforberedelse, og de tidligere korte WAM-tests var utilstrækkelige som samlet pakkecheck.
+
+Astra-reviewet har rettet en konkret yderligere JS/Python-forskel: en alternativ WAM-serie må kun vælges efter kontrol af den fulde bølgetuple og retningen. Nærmeste endepunkter vælges pr. serie; eksakte rækker, firetimerloft og eksisterende delvise input bevares. Python 35/35, producentintegration 24/24 og de korte runtime-/adaptertests er grønne.
+
+Ny migration `20260909194000_wam_same_run_resolution_binding.sql` fremfører alene integrated-/rollback-/continuation-hashes og checkpoint-readbackversion fra den bytefastlåste, allerede anvendte horizon-migration. De otte gamle migrationer er uændrede. Backendplanen understøtter otte applied/kun niende pending og alle øvrige gyldige prefixes. Alle bindingsforbrugere og installationskopier er synkroniseret. De tidligere fejlede måltests samt readiness/installations-/CASE-/migrationstests er nu grønne. Kildekontrollen starter fremover med fem eksisterende hurtige bindingskontroller før de tunge fixtures; fuld gate består fortsat.
+
+Main er fortsat `b0ca7f5d`. Backendbeviset på 4.0.339 gælder ikke de nye hashes; efter merge kræves et nyt backendrun samt en komplet 4.0.340-oneoff på samme main. De kan køre parallelt. Oneoff `34387410217` fortsætter imens cachearbejdet; main flyttes først efter dens provider-saves. Ingen cache nulstilles. Candidate G er fortsat offentlig.
+
+Se `docs/ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md` for samlet scope, fund, test og næste trin. Dokumentations-only status efter CI må gemmes lokalt uden at starte endnu en gate. Astra er nødvendig til dette samlede review; Sol/Ekstra høj er næste model, når pakken er verificeret og pushet.
+
 # NYESTE CHECKPOINT – 2026-09-09 – 4.0.340 WAM-seam og fortsat cacheopfyldning
 
 Main er `b0ca7f5d`, backend `34371639398` forsøg 2 er grøn, og Candidate G er fortsat offentlig. Oneoff `34371642565` gemte alle providertrin, men afleverede intet handoff: Open-Meteo efterlod 324 af 2.381 nødvendige restpar efter 15 minutter, og WAM-slutinspektøren gav `MIXED_RUN_INTERPOLATION`. Der er ikke konstateret cachetab eller global Open-Meteo-fejl. Efterfølger `34387410217` kører på samme main og eksisterende cacher; flyt ikke main før dens saves er afsluttet.

@@ -1,5 +1,10 @@
 ## 4.0.340 – ens WAM-semantik fra producent til RavScore (2026-09-09)
 
+- Samlet Astra-review retter desuden valg af nærmeste endepunkter pr. serie og fuld bølgetuple/retning før rangering, så et ugyldigt alternativ ikke skjuler et gyldigt.
+- Synkroniserer integrated-/rollbackbundles og alle SQL-/profil-/Edge-/releasebindinger med append-only migration 9. Alle otte allerede anvendte migrationer er uændrede; readiness genoptager kun det præcise pending suffix.
+- Flytter fem hurtige eksisterende bindingskontroller foran de tunge sourcefixtures, uden at fjerne eller svække den fulde gate.
+- Den grønne backend fra 4.0.339 dækker ikke de nye hashes: efter merge kræves nyt backendbevis parallelt med corrected-main oneoff. Candidate G forbliver offentlig indtil hele launchkæden består. Se `docs/ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md`.
+
 - Retter en dokumenteret kontraktforskel: DMI-planlæggeren kunne se en sikker WAM-interpolation inden for samme modelkørsel, mens slutvalidatoren og Forecast Store kun så de to nærmeste rækker og derfor kunne afvise ved et modelkørselsskifte.
 - Eksakte WAM-rækker vinder fortsat. Kun hvis de nærmeste naboer ikke må blandes, vælges den smalleste validerede bracket fra samme collection, modelkørsel, gitter og fysiske celle; firetimersloftet består absolut.
 - Bevarer fail-closed afvisning af interpolation på tværs af modelkørsel, collection, gitter eller celle. Ingen DMI→Copernicus→Open-Meteo-prioritet, cacheidentitet, geometri, scoreparameter eller offentlig model er ændret.

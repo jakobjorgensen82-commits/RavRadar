@@ -1,3 +1,7 @@
+# Suppleret af samlet Astra-review
+
+Det oprindelige afgrænsede review nedenfor er historik. Det efterfølgende [samlede release-review](RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md) fandt manglende releasebindinger og et ekstra WAM-tuple-hjørnetilfælde. Begge er nu lokalt rettet; Python-testantallet er 35/35, og producentintegration er fortsat 24/24. Ingen exact-head- eller produktionsgodkendelse kan udledes af det oprindelige review.
+
 # WAM same-run resolution – helkædekontrol 2026-09-09
 
 ## Observeret fejl

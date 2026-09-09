@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – Astra-review af hele 4.0.340
+
+Ejeren har skiftet til Astra/Ultra og ønsket både konkret fejlretning og samlet review før nyt modellerskift. Gennemgangen omfatter WAM, bundle/SQL/Edge-bindinger, migrationsgenoptagelse, cachegenbrug, handoff, central profil, backendreadiness, CAS og Pages. To uafhængige reviewers har afsluttet; ingen yderligere konkret launchblokering er fundet i scope. Dette er ikke produktions-GO.
+
+De to tidligere kildegatefejl skyldtes utilstrækkelig samlet releaseforberedelse. Append-only migration 9, alle bindingsforbrugere og en yderligere WAM-tuple-regression er nu samlet i samme PR. Fem hurtige eksisterende checks flyttes foran de tunge fixtures uden gatebypass. Eksisterende ejerautorisation dækker ændringen; ingen ny scorepolitik, historisk SQL-omskrivning, cache-reset eller central profilmigration før cutover.
+
+Målrettede checks er grønne. Exact-head-CI, merge, nyt backendbevis, komplet corrected-main oneoff og fuld launchkæde mangler. Astra afsluttes efter samlet pakkeverifikation/push; Sol/Ekstra høj anbefales til de efterfølgende kørsler. Se [samlet review](../ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md).
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.340 WAM-seam
 
 - Ejerens prioritet er fortsat komplet vejr og derefter øjeblikkelig, sikker offentliggørelse af den integrerede scoremodel; arbejdet skal undgå både cachetab og reparationsspiral.

@@ -127,7 +127,7 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
           supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
 
-      - name: Require only the eight exact integrated cutover migrations
+      - name: Require only the nine exact integrated cutover migrations
         shell: bash
         run: |
           set -euo pipefail
@@ -140,6 +140,7 @@ jobs:
           test -f "$migrations_directory/20260905090000_open_meteo_current_fallback_binding.sql"
           test -f "$migrations_directory/20260906162332_per_pair_weather_fallback_binding.sql"
           test -f "$migrations_directory/20260907084343_horizon_valid_weather_binding.sql"
+          test -f "$migrations_directory/20260909194000_wam_same_run_resolution_binding.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

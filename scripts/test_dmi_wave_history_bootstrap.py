@@ -1381,6 +1381,38 @@ class OperationalHandoffTests(unittest.TestCase):
         self.assertGreater(summary.interpolated_tuple_count, 0)
         self.assertEqual(summary.coherent_run_count, 2)
 
+    def test_antipodal_series_does_not_hide_valid_operational_series(self) -> None:
+        def rows_for_part(part):
+            rows = self.operational_rows(part)
+            del rows[utc_offset(TARGET, 3)]
+            for offset, run_offset, direction in (
+                (0, -1, 0), (1, -2, 30), (4, -1, 180), (5, -2, 30),
+            ):
+                hour = utc_offset(TARGET, offset)
+                rows[hour] = native_hour(
+                    part, hour, utc_offset(TARGET, run_offset), direction=direction,
+                )
+            return rows
+
+        cache = cache_for_registry(self.registry, rows_for_part)
+        wanted = tuple(utc_offset(TARGET, offset) for offset in (2, 3))
+        for part in self.registry.parts:
+            self.assertEqual(resolved_native_wave_hours(
+                cache['zones'][part.cache_key]['hourly'],
+                entity_id=part.cache_key,
+                provenance_entity=part.provenance_entity,
+                collection=COLLECTION,
+                required_hours=wanted,
+            ), wanted)
+        summary = validate_wave_operational_handoff_cache(
+            cache, self.registry,
+            bootstrap_target_hour=self.bootstrap_target,
+            production_target_hour=TARGET,
+            forecast_hour_count=118,
+        )
+        self.assertEqual(summary.verified_part_hour_count, 240)
+        self.assertEqual(summary.coherent_run_count, 3)
+
     def test_interpolated_bridge_hour_is_not_exact_handoff(self) -> None:
         missing = utc_offset(self.bootstrap_target, 1)
         cache = cache_for_registry(

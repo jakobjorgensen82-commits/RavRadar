@@ -8,12 +8,15 @@ En DMI-modelkørsel kan overlappe den foregående. Ved en bestemt prognosetime k
 
 - En eksakt række bruges stadig direkte og bliver ikke erstattet af interpolation.
 - Hvis de nærmeste rækker kommer fra forskellige modelkørsler, leder både slutkontrollen og RavScore-runtime efter den smalleste alternative bracket, hvor collection, modelkørsel, gitter og fysiske celle er identiske.
+- Nærmeste endepunkter findes inden for hver serie. Hele bølgetuplen inklusive retningen valideres før valg af alternativ; en ugyldig serie må ikke skjule et gyldigt alternativ. Eksisterende delvise input bevares, hvis intet fuldt alternativ findes.
 - Afstanden mellem endepunkterne må fortsat højst være fire timer. Findes ingen sådan bracket, markeres timen fortsat som manglende; systemet blander aldrig to modelkørsler.
 - Rettelsen ændrer ikke leverandørprioriteten, cachen, 48-timershistorikken, geometri, land-/vandpunkter eller selve scoreformlen.
 
 Oneoff `34371642565` nåede Open-Meteo, genbrugte 1.787 og hentede 270 nye af 2.381 nødvendige strømpar, men ramte 15-minuttersbudgettet med 324 tilbage. Progressionen blev gemt. Det særskilte WAM-stop var den ovenstående falske klassifikation. En ny oneoff fortsætter derfor cacheopfyldningen, mens 4.0.340 klargøres. Backend er allerede grøn; den integrerede model er endnu ikke offentlig.
 
-Status: De korte tests af validator, DMI-producent, handoff-mål, Forecast Store og RavScore-adapter er grønne. Der mangler exact-head-kildegate, merge, en komplet oneoff på den nye main-head, fulde post-data-gates, deploy og offentlig kontrol.
+Det efterfølgende samlede Astra-review fandt desuden manglende synkronisering af releasebindinger. Selvom scoreformlen er uændret, indgår WAM-adapteren i modellens kontrolsum. Begge bundles og SQL-/profil-/Edge-/releaseforbrugere er derfor opdateret samlet. En ny niende migration viderefører kun kontrolsummer og checkpoint-reference; de otte anvendte migrationer er uændrede. Backend kan sikkert fortsætte med kun nummer ni pending. Den tidligere grønne backend er 4.0.339 og attesterer ikke de nye bindinger.
+
+Fem hurtige eksisterende bindingschecks køres nu før de tunge kildefixtures. De fulde kilde- og produktionsgates består. De korte WAM-, bindings-, migrations-, readiness- og installationstests er grønne. Der mangler exact-head-kildegate, merge, NY backendreadiness parallelt med komplet corrected-main oneoff, fulde post-data-gates, deploy og offentlig kontrol. Cacheformat, providerprioritet og central admin-konfiguration ændres ikke af denne synkronisering.
 
 ## 88.41 4.0.339 – backend fortsætter sikkert efter SQL-stoppet
 
