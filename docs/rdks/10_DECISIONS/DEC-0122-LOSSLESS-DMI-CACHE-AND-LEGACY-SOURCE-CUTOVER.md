@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for 4.0.337. Produktionsbevis, merge og offentlig cutover afventer.
+**Status:** Aktiv for 4.0.338 som snæver parser-only successor til merged 4.0.337. 4.0.338 exact-head-, runtime- og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -28,6 +28,12 @@ Undtagelsen gælder kun, når den faktisk målte komprimerede private runtime er
 Den almindelige månedlige egressfremskrivning skal fortsat beregnes og valideres for intern konsistens, men dens forventede negative resultat er ikke en gate for denne ene first-cutover. Ellers ville undtagelsen være logisk virkningsløs. Resultatet forbliver bindende negativt bevis mod tilbagevendende fuld transport.
 
 Undtagelsen godkender ikke normal højfrekvent drift. Automatisk fuld kadence forbliver blokeret, indtil cachetransporten er omlagt tabsfrit, skyggeverificeret mod den bevarede cache og kan dokumentere et bæredygtigt dataforbrug. Opgaven er obligatorisk post-launch-arbejde og må ikke lukkes alene, fordi den nye model er online.
+
+### Versionsoverførsel til 4.0.338
+
+Under ejerens stående autorisation til nødvendige launchændringer overføres den samme engangsundtagelse alene til 4.0.338. Denne successor retter Supabase CLI-parseren og backendworkflowets skriveafgrænsning; den udvider ikke cache-, runtime-, størrelse-, integritets- eller kadencegrænserne. En 4.0.337-handoff kan ikke bruges, fordi producent, artifact og consumer fortsat skal være bundet til samme eksakte `main`-head. Launch kræver derfor en ny komplet 4.0.338-oneoff.
+
+Policyversionen skal matche `package.json` fail-closed i releaseversionsgaten. 4.0.339 og senere arver dermed ikke undtagelsen uden en ny udtrykkelig beslutning. Alle øvrige betingelser i tillægget ovenfor består uændret.
 
 ## Konsekvenser
 

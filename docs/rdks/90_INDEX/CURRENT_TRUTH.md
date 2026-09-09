@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-09 – 4.0.338 lokal backend-parserkandidat
+
+- Begge `db push`-kald bruger `--skip-vault`; planen kan kun omfatte de otte godkendte migrationer og ingen Vault-secret-opdatering.
+- DEC-0122-engangsundtagelsen gælder kun exact-release 4.0.338 og skal matche `package.json`. Et 4.0.337-handoff kan ikke bruges til 4.0.338-cutover. Derfor kræves en ny komplet oneoff på eksakt merged 4.0.338-main, og 4.0.339 arver ikke undtagelsen.
+- 4.0.337 bestod exact-head `34325630686` på `aa78d75f` og blev merged via PR #271 som `af03659a`. Candidate G er fortsat offentlig; den integrerede model er ikke live.
+- Oneoff `34333689292` fortsætter på den eksakte mergecommit. Cachematerialisering og DMI-progress-save bestod; Copernicus-fyldningen sluttede grønt, begge Copernicus-cacher blev gemt, og Open-Meteo startede kl. 11:31Z. Terminal 79.414/79.414, WAM/Feggesund 354/354, handoff og modelcutover er endnu ikke bevist.
+- Backendrun `34333553305` forsøg 1 stoppede på PostgreSQL `SQLSTATE 28P01` under read-only linked migration list. Ejeren rettede `SUPABASE_DB_PASSWORD` kl. 09:54Z uden at vise værdien. Forsøg 2 bestod autentificering og read-only liste, men stoppede under lokal historikhydrering, fordi Supabase CLI 2.117.0 omsluttede tabelceller med backticks.
+- Begge backendforsøg stoppede før dry-run og før første write. Ingen migration, database-/D1-/Edge-mutation, protected-readiness-write eller offentlig publicering blev udført.
+- Lokal 4.0.338 fastlåser CLI 2.117.0 og accepterer alene ét balanceret backtickpar omkring hele cellen før den uændrede eksakte migrationsversionsregex. Tabellen skal have præcis tre kolonner og én genkendt Local/Remote/Time-header, hvor tidskolonnen må være `Time` eller `Time (UTC)`; entydig local/remote-identitet, ingen dubletter, kronologisk rækkefølge samt eksplicit no-write-markør og præcise dry-run-filnavne forbliver fail-closed.
+- Parser-, workflow- og versionsbindingen er lokalt måltestet, og 4.0.338 er versionssat. Den er endnu ikke committed, exact-head-CI-verificeret, merged eller runtime-/produktionsverificeret. Næste backendrun skal genkøre hele kæden; de to fejlrun må ikke bruges som readinessbevis.
+- Efter launch er readiness-versionintervallets 4.0.337-selvattestation, den gamle ventende runpost `34228112413`, cachetransport uden nulstilling, holdt normal cron/watchdog og en tidligere målrettet test-lane-struktur samlet P0-opfølgning.
+
 # NYESTE SANDHED – 2026-09-09 – 4.0.337 tabsfri cache og kontrolleret first cutover
 
 - 4.0.337-basecommit `bce970af` er implementeret, måltestet og pushet på releasegrenen. De afsluttende legacy-normaliserings-, gate-, test- og dokumentationsændringer er lokale og endnu ikke samlet sourcegated eller committed/pushet som sluthead. Main er fortsat 4.0.336 på `bf471981`; Candidate G er fortsat offentlig.

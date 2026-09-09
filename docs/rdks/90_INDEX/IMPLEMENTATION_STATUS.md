@@ -1,3 +1,21 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.338 lokal backend-parserkandidat
+
+- [x] Begge `db push`-kald bruger `--skip-vault`; kun de otte migrationer kan indgå i plan og apply.
+- [x] DEC-0122-undtagelsen er bundet til 4.0.338 og `package.json`; senere releases stopper fail-closed.
+- [ ] Efter merge skal en ny komplet oneoff køre på eksakt 4.0.338-main. Et 4.0.337-handoff kan ikke bruges.
+- [x] Luk 4.0.337 source/merge: exact-head `34325630686` grøn på `aa78d75f`; PR #271 merged som `af03659a`.
+- [x] Klassificér backend `34333553305` forsøg 1 som read-only authstop `SQLSTATE 28P01`; ejeren rettede passwordsecretet kl. 09:54Z uden at eksponere værdien.
+- [x] Klassificér forsøg 2: auth og read-only migrationsliste bestod; CLI 2.117.0's backtickindrammede tabelceller stoppede lokal historikhydrering. Alle write-, D1-, Edge-, readiness- og publictrin var skipped.
+- [x] Implementér lokal parser, som kun afklæder ét balanceret backtickpar omkring hele cellen og derefter kræver eksakt migrationsversion. Bevar fail-closed header/tre kolonner, tvetydighed, dubletter, rækkefølge, no-write-markør og dry-run-filnavne.
+- [x] Fastlås Supabase CLI til præcis 2.117.0 og før både stdout/stderr fra dry-run ind i den samme kontrollerede parserinputstrøm.
+- [x] Bekræft, at oneoff `34333689292` på `af03659a` har bestået cachematerialisering, DMI-save, Copernicus-fill og begge Copernicus-save-trin samt er gået videre til Open-Meteo; undlad at kalde runnet komplet før terminalbevis.
+- [x] Bestå de målrettede parser-/workflowtests lokalt, inklusive quoted/unquoted output samt malformed, tvetydigt og dubleret input.
+- [x] Afslut 4.0.338-version, RDKS, Markdown- og webhåndbog samt de målrettede lokale kontroller.
+- [ ] Commit/push og kør én GitHub sourcegate på eksakt head. Ingen lokal fuld-gategentagelse uden ny konkret bred risiko.
+- [ ] Merge kun grøn eksakt head og genkør backend fra 4.0.338. Kræv dry-run, exact-main, migrationsapply, DB/D1/Edge-readback og protected readiness; ingen af de to tidligere forsøg er readiness.
+- [ ] Følg oneoff til komplet vejr/handoff og gennemfør først derefter den autoriserede cutover med fulde post-data-gates, artifact/deploy og offentlig 210/673-verifikation.
+- [ ] Efter launch: ret readiness-versionintervallets 4.0.337-selvattestation, afklar stale run `34228112413`, migrér cachetransport i shadow uden nulstilling, bevar cron/watchdog-hold og opdel testkæden i tidligere målrettede risikolanes.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.337
 
 - [x] Fastlås ecCodes og implementér snæver current-proof-kompatibilitet uden relabel af originalt bevis.

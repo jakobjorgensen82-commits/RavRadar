@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
+import { PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY } from './private-production-runtime-workflow.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 const pkg=JSON.parse(await fs.readFile('package.json','utf8'));const version=pkg.version;
+if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion!==version){
+  throw new Error(`DEC-0122-engangsundtagelsen gælder ${PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion}, ikke release ${version}. En ny release må ikke arve undtagelsen uden en udtrykkelig beslutning.`);
+}
 const files=['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','version.json'];
 for(const file of files){const text=await fs.readFile(file,'utf8');if(!text.includes(version))throw new Error(`${file} viser ikke releaseversion ${version}.`);}
 const browserSources=[];

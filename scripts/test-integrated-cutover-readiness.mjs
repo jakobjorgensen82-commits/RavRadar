@@ -19,6 +19,7 @@ import {
   expectedTripBindingPolicy,
   hydrateTemporaryRemoteMigrationHistory,
   inspectMigrationSources,
+  parseSupabaseDryRunMigrationFilenames,
   parseSupabaseMigrationList,
   publishIntegratedCutoverReadiness,
   prepareTemporarySupabaseCutoverWorkdir,
@@ -157,16 +158,31 @@ assert.doesNotMatch(checkpointReadbackSql, /\bfrom\s+public\.admin_documents\b/i
   'cutover metadata readback must not read checkpoint payload rows');
 
 const workflow = await fs.readFile('.github/workflows/deploy-trip-storage.yml', 'utf8');
+assert.match(workflow,
+  /uses: supabase\/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf[\s\S]*?version: 2\.117\.0/,
+  'backend cutover must pin the verified Supabase CLI version');
+assert.ok(workflow.includes('supabase db push --linked --dry-run --skip-vault 2>&1 | tee'),
+  'backend cutover must capture both Supabase dry-run output streams and exclude Vault writes');
+assert.ok(workflow.includes('(supabase db push --linked --skip-vault)'),
+  'backend cutover must exclude Vault writes from the exact migration apply');
+const cutoverDbPushLines = workflow.split(/\r?\n/)
+  .filter(line => line.includes('supabase db push --linked'));
+assert.equal(cutoverDbPushLines.length, 2,
+  'backend cutover must contain exactly one dry-run and one migration apply');
+for (const line of cutoverDbPushLines) {
+  assert.ok(line.includes('--skip-vault'),
+    'every backend cutover db push must exclude unplanned Vault writes');
+}
 for (const marker of [
   'git rev-parse origin/main',
   'node scripts/integrated-cutover-readiness.mjs assert-source',
   'SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}',
   'node scripts/integrated-cutover-readiness.mjs prepare-workdir',
   'supabase migration list --linked',
-  'supabase db push --linked --dry-run',
+  'supabase db push --linked --dry-run --skip-vault',
   'node scripts/integrated-cutover-readiness.mjs plan',
   'Reverify exact main immediately before the first external write',
-  'supabase db push --linked',
+  'supabase db push --linked --skip-vault',
   'node scripts/integrated-cutover-readiness.mjs applied',
   'node scripts/integrated-cutover-readiness.mjs verify-db',
   'supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"',
@@ -176,10 +192,10 @@ for (const marker of [
 const workflowOrder = [
   'npm run validate:source',
   'node scripts/integrated-cutover-readiness.mjs prepare-workdir',
-  'supabase db push --linked --dry-run',
+  'supabase db push --linked --dry-run --skip-vault',
   'node scripts/integrated-cutover-readiness.mjs plan',
   'Reverify exact main immediately before the first external write',
-  'supabase db push --linked)',
+  'supabase db push --linked --skip-vault)',
   'node scripts/integrated-cutover-readiness.mjs verify-db',
   'supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"',
   'node scripts/verify-trip-storage-edge.mjs',
@@ -228,9 +244,78 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260907084343', remote: null },
 ]);
 
+// Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
+const currentFirstInstallList = `
+   Local            | Remote | Time (UTC)
+  ------------------|--------|-----------------------
+   \`20260829010000\` | \` \`    | \`2026-08-29 01:00:00\`
+   \`20260829020000\` | \` \`    | \`2026-08-29 02:00:00\`
+   \`20260901010000\` | \` \`    | \`2026-09-01 01:00:00\`
+   \`20260903010000\` | \` \`    | \`2026-09-03 01:00:00\`
+   \`20260904140000\` | \` \`    | \`2026-09-04 14:00:00\`
+   \`20260905090000\` | \` \`    | \`2026-09-05 09:00:00\`
+   \`20260906162332\` | \` \`    | \`2026-09-06 16:23:32\`
+   \`20260907084343\` | \` \`    | \`2026-09-07 08:43:43\`
+`;
+assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
+assert.deepEqual(parseSupabaseMigrationList(`\u001b[36m${currentFirstInstallList}\u001b[0m`),
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
+for (const malformed of [
+  currentFirstInstallList.replace('`20260829010000`', '`20260829010000` suffix'),
+  currentFirstInstallList.replace('` `    |', '`not-a-version` |'),
+  currentFirstInstallList.replace('`20260829010000` | ` `', '`20260829010000` | `20260829020000`'),
+  currentFirstInstallList.replace(
+    '`20260829020000` | ` `',
+    '`20260829010000` | ` `',
+  ),
+  currentFirstInstallList.replace('Local            | Remote | Time (UTC)', 'Local | Remote | Timestamp'),
+]) assert.throws(() => parseSupabaseMigrationList(malformed),
+  /Supabase migration-list/);
+
+// Exact v2.117.0 strings and bullet shape from legacy-db-push-core.ts.
+const currentFirstInstallDryRun = `
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+${REQUIRED_CUTOVER_MIGRATIONS.map(item => ` • \u001b[1m${item.filename}\u001b[0m`).join('\n')}
+Finished supabase db push.
+`;
+assert.deepEqual(parseSupabaseDryRunMigrationFilenames(currentFirstInstallDryRun),
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => item.filename));
+assert.deepEqual(parseSupabaseDryRunMigrationFilenames(`
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Remote database is up to date.
+`), []);
+for (const malformed of [
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => item.filename).join(' '),
+  currentFirstInstallDryRun.replace('DRY RUN: migrations will *not* be pushed to the database.', ''),
+  currentFirstInstallDryRun.replace(' • \u001b[1m20260829010000_', 'prose \u001b[1m20260829010000_'),
+  currentFirstInstallDryRun.replace(
+    ` • \u001b[1m${REQUIRED_CUTOVER_MIGRATIONS[1].filename}\u001b[0m`,
+    ` • \u001b[1m${REQUIRED_CUTOVER_MIGRATIONS[0].filename}\u001b[0m`,
+  ),
+]) assert.throws(() => parseSupabaseDryRunMigrationFilenames(malformed),
+  /Supabase db push --dry-run/);
+
+const firstInstallPlan = await assertSupabaseMigrationPlan({
+  migrationListText: currentFirstInstallList,
+  dryRunText: currentFirstInstallDryRun,
+});
+assert.deepEqual(firstInstallPlan.pendingVersions,
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
+assert.deepEqual(firstInstallPlan.alreadyAppliedVersions, []);
+
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: unicodeList,
-  dryRunText: 'DRY RUN: 20260903010000_ravscore_checkpoint_metadata_cas.sql 20260904140000_harmonie_wind_reference_binding.sql 20260905090000_open_meteo_current_fallback_binding.sql 20260906162332_per_pair_weather_fallback_binding.sql 20260907084343_horizon_valid_weather_binding.sql',
+  dryRunText: `
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+${REQUIRED_CUTOVER_MIGRATIONS.slice(3).map(item => ` • ${item.filename}`).join('\n')}
+Finished supabase db push.
+`,
 });
 assert.deepEqual(plan.pendingVersions,
   ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343']);
@@ -240,16 +325,20 @@ assert.deepEqual(plan.alreadyAppliedVersions,
 await assert.rejects(
   assertSupabaseMigrationPlan({
     migrationListText: `${unicodeList}\n 20260823 │ │ 2026-08-23 00:00:00`,
-    dryRunText: 'DRY RUN: 20260823_account_trip_log_contract.sql 20260829010000',
+    dryRunText: currentFirstInstallDryRun,
   }),
   /unexpected pending migrations: 20260823/,
 );
 await assert.rejects(
   assertSupabaseMigrationPlan({
     migrationListText: unicodeList,
-    dryRunText: 'DRY RUN: no named migration',
+    dryRunText: `
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Remote database is up to date.
+`,
   }),
-  /did not name pending required migration/,
+  /did not propose exactly the pending required migrations/,
 );
 await assert.rejects(
   assertSupabaseMigrationPlan({
@@ -264,7 +353,7 @@ await assert.rejects(
        20260906162332 | | pending
        20260907084343 | | pending
     `,
-    dryRunText: 'DRY RUN: 20260829010000_ravscore_operational_documents_no_history.sql',
+    dryRunText: currentFirstInstallDryRun,
   }),
   /migration order is inconsistent/,
 );
@@ -282,6 +371,14 @@ const appliedList = `
  20260907084343 | 20260907084343 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
+  REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
+const currentAppliedList = `
+ Local | Remote | Time (UTC)
+ ------|--------|-----------
+${REQUIRED_CUTOVER_MIGRATIONS.map(item =>
+    ` \`${item.version}\` | \`${item.version}\` | \`2026-09-09 10:30:00\``).join('\n')}
+`;
+assert.deepEqual(assertSupabaseMigrationsApplied(currentAppliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
 assert.throws(() => assertSupabaseMigrationsApplied(unicodeList), /was not recorded remotely/);
 
@@ -306,8 +403,17 @@ try {
 const isolatedWorkdir = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-cutover-workdir-'));
 try {
   const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: isolatedWorkdir });
+  const exactMigrationFilenames = REQUIRED_CUTOVER_MIGRATIONS.map(item => item.filename).sort();
   assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),
-    REQUIRED_CUTOVER_MIGRATIONS.map(item => item.filename).sort());
+    exactMigrationFilenames);
+  const firstInstall = await hydrateTemporaryRemoteMigrationHistory({
+    workdir: isolatedWorkdir,
+    migrationListText: currentFirstInstallList,
+  });
+  assert.deepEqual(firstInstall.placeholders, []);
+  assert.deepEqual((await fs.readdir(prepared.migrationsDirectory)).sort(),
+    exactMigrationFilenames,
+    'first-install history must not create a false applied-migration placeholder');
   const initialRemoteHistory = `
  LOCAL │ REMOTE │ TIME
        │ 20260823 │ historical

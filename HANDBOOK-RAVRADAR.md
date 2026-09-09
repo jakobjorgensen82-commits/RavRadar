@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.337
+**Håndbogsversion:** 4.0.338
+
+## 88.40 4.0.338 – Supabase-planen skal kunne læses sikkert før første write
+
+Backendklargøringen læser først Supabases migrationshistorik og laver derefter en dry-run, før RavRadar må ændre database, D1, Edge eller readiness. Supabase CLI 2.117.0 viser i denne installation versionsceller omsluttet af backticks. 4.0.338 accepterer netop denne form uden at gøre parseren bred eller gætte på ukendt output.
+
+- CLI-versionen er fastlåst til 2.117.0, så outputkontrakten ikke ændrer sig ubemærket.
+- Kun ét balanceret backtickpar omkring hele cellen fjernes. Derefter skal indholdet stadig være en eksakt migrationsversion.
+- Tabellen skal fortsat have præcis tre kolonner og én genkendt Local/Remote/Time-header; tidskolonnen må hedde `Time` eller `Time (UTC)`. Local/remote-versionerne skal være entydige, uden dubletter og i korrekt kronologisk rækkefølge.
+- Dry-run skal udtrykkeligt sige, at intet skrives, og skal vise præcis de tilladte migrationsfiler eller det eksakte svar, at databasen allerede er opdateret. Ukendt eller tvetydigt output stopper før apply.
+- Både dry-run og apply bruger `--skip-vault`. Backendplanen kan derfor kun omfatte de otte godkendte migrationer og ikke Supabase CLI's separate Vault-secret-opdatering.
+
+DEC-0122's engangsundtagelse er flyttet snævert til 4.0.338. Vejrproducent og cutover-consumer skal have samme eksakte `main`-head, så et 4.0.337-handoff kan ikke bruges. Der kræves en ny komplet 4.0.338-oneoff. Releaseversionsgaten sikrer, at 4.0.339 ikke automatisk arver undtagelsen.
+
+Backend `34333553305` forsøg 1 stoppede read-only på forkert databasepassword. Ejeren rettede GitHub-secretet kl. 09:54Z uden at eksponere værdien. Forsøg 2 bestod autentificeringen, men stoppede ved den gamle backtick-parser. Begge forsøg stoppede før første write; database, D1, Edge, protected readiness og offentlig drift blev ikke ændret.
+
+Status: Parser- og workflowrettelsen er lokalt måltestet. Exact-head GitHub-kontrol, merge og et nyt komplet backendrun mangler. Samtidig fortsætter oneoff `34333689292` på merged 4.0.337 og har bestået cachematerialiseringen, men har endnu ikke terminalt bevist komplet vejr eller modelcutover. Candidate G er fortsat offentlig.
 
 ## 88.39 4.0.337 – behold cachen og brug ét kontrolleret launchinput
 
