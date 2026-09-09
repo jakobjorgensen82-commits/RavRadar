@@ -1,3 +1,12 @@
+# NYESTE SANDHED – 2026-09-09 – 4.0.339 genoptager backend uden at gentage anvendte migrationer
+
+- 4.0.338 bestod exact-head `34348151097` på `2bddb2db` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`.
+- Backend `34350871769` bestod exact plan, dry-run, `--skip-vault` og main-CAS. Migration 1–3 er anvendt og registreret. Migration 4 stoppede på `SQLSTATE 42601` og blev fuldt rullet tilbage; migration 5–8 samt D1, Edge, Worker, public mode og protected readiness blev ikke kørt.
+- Fejlen var ét ikke-parenteseret PL/pgSQL `IS DISTINCT FROM CASE`-udtryk kopieret til fem pending migrationer, schema og installer. 4.0.339 retter præcis de syv kopier. Isoleret PostgreSQL 16 har kørt hele pending suffix 4–8 grønt; den nye regressionstest og målrettede recovery-/installer-/readiness-/workflowtests er grønne.
+- Ejeren har udtrykkeligt godkendt, at DEC-0122's materielt uændrede engangsundtagelse gælder exact-release 4.0.339. Policyen matcher `package.json` fail-closed; 4.0.340 og senere arver den ikke.
+- Weather `34350872447` fortsætter på merged 4.0.338 og bevarer progression. Dets eventuelle handoff kan ikke bruges af en 4.0.339-consumer, men cachedata må være donor til den nødvendige nye 4.0.339-oneoff. Candidate G er fortsat offentlig.
+- Åben vej: exact-head sourcegate og merge; backend skal se 3 applied/5 pending og bevise resten af DB/D1/Edge/readiness; derefter 4.0.339-oneoff, 79.414/79.414, WAM/Feggesund 354/354, fulde gates, artifact/deploy og offentlig modelverifikation.
+
 # NYESTE SANDHED – 2026-09-09 – 4.0.338 lokal backend-parserkandidat
 
 - Begge `db push`-kald bruger `--skip-vault`; planen kan kun omfatte de otte godkendte migrationer og ingen Vault-secret-opdatering.

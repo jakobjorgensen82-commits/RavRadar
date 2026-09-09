@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-09 – 4.0.339 retter den stoppede backendmigration
+
+4.0.338 bestod exact-head-kildegaten `34348151097` på `2bddb2db` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`. Backendrun `34350871769` bestod parser, migrationsliste, dry-run, eksakt otte-filsplan, `--skip-vault` og sidste main-CAS. Migration 1–3 blev anvendt og registreret. Migration 4 stoppede på PostgreSQL `SQLSTATE 42601`, statement 9, og dens egen transaktion rullede helt tilbage; migration 5–8 samt D1, Edge, Worker, maintenance, synchronization, public mode og protected readiness blev ikke kørt. Vault blev ikke ændret.
+
+Rodårsagen er den samme ugyldige PL/pgSQL-form i fem endnu ikke anvendte migrationer, schemaet og installationskopien: `IS DISTINCT FROM CASE ... END`. 4.0.339 omslutter alene `CASE`-udtrykket med parenteser i alle syv kanoniske kopier. En ny regressionstest afviser den oprindelige form og kræver identiske rettede kopier. Hele det resterende migrationssuffix 4–8 er desuden kørt i rækkefølge på isoleret PostgreSQL 16 uden syntaksfejl; måltests for partial recovery, installer, readiness, releasepolicy og workflows er grønne.
+
+Ejeren har udtrykkeligt flyttet DEC-0122's uændrede one-shot first-cutover-undtagelse til exact-release 4.0.339. Den er fortsat bundet til højst 50 MB archive samt alle integritets-, privacy-, readback-, storage-, checkpoint-, closure- og releasekrav. 4.0.340 arver den ikke. Candidate G er fortsat offentlig. Weather-run `34350872447` arbejder videre på den bevarede cache; dets progression må genbruges, men et 4.0.338-handoff kan ikke bruges af 4.0.339-consumeren.
+
+Næste rækkefølge er én exact-head sourcegate på 4.0.339, merge, backendgenoptagelse fra migration 4, derefter en komplet 4.0.339-main-oneoff på de bevarede cacher og først ved 79.414/79.414, WAM/Feggesund 354/354 og alle fulde produktionsgates den autoriserede modelcutover. Efter launch følger cachetransport, cron/watchdog og den bredere Astra-helhedsaudit uden at forstyrre offentlig drift.
+
 # NYESTE CHECKPOINT – 2026-09-09 – 4.0.338 lokal Supabase-parserrettelse, ingen backendwrites
 
 4.0.337 bestod exact-head-kildegaten `34325630686` på `aa78d75f` og blev merged via PR #271 som `af03659a`. Main-oneoff `34333689292` kører fortsat på denne mergecommit. Den sikre cachematerialisering og DMI-progress-save bestod; Copernicus-fyldningen sluttede grønt, begge Copernicus-cacher blev gemt, og Open-Meteo startede kl. 11:31Z. Runnet er endnu ikke terminalt og beviser derfor ikke komplet vejr, handoff eller modelcutover.

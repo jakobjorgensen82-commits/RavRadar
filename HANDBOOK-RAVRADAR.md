@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.338
+**Håndbogsversion:** 4.0.339
+
+## 88.41 4.0.339 – backend fortsætter sikkert efter SQL-stoppet
+
+4.0.338 kom korrekt igennem kildekontrollen og begyndte den kontrollerede backendinstallation. De første tre databaseændringer blev lagt ind. Den fjerde indeholdt en SQL-syntaksfejl og blev automatisk rullet helt tilbage; de sidste fire og alle efterfølgende D1-, Edge-, Worker- og readiness-trin blev derfor ikke kørt. Der ligger altså ikke en halv fjerde ændring i databasen, og Vault blev ikke ændret.
+
+- Fejlen var det samme CASE-udtryk uden nødvendige parenteser i fem endnu ikke anvendte migrationer, schemaet og installationskopien. 4.0.339 sætter kun parenteser omkring `CASE`-udtrykket.
+- Næste backendkørsel skal genbruge de tre færdige migrationer og kun køre nummer 4–8. En anden rækkefølge eller tilstand stoppes før nye writes.
+- Hele restpakken 4–8 er afprøvet i rækkefølge på en isoleret PostgreSQL 16, og de korte recovery-, installer-, readiness-, release- og workflowtests er grønne.
+- Ejerens engangsundtagelse til første modelskift gælder nu præcis 4.0.339. Den ændrer ikke 50 MB-loftet eller kravene til integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller. 4.0.340 arver den ikke.
+- Den igangværende 4.0.338-vejrkørsel må fortsat fylde de bevarede cacher. Dens cachefremgang kan genbruges, men selve modelskiftets forseglede handoff skal komme fra den samme eksakte 4.0.339-main-kode som consumeren.
+
+Status: Candidate G er fortsat den offentlige model. Før den integrerede model kan gå online, mangler exact-head-kontrol og merge af 4.0.339, en grøn produktionsbackend, en komplet 4.0.339-oneoff med 79.414/79.414 og WAM/Feggesund 354/354 samt de fulde efterfølgende produktionskontroller og offentlig verifikation.
 
 ## 88.40 4.0.338 – Supabase-planen skal kunne læses sikkert før første write
 
@@ -55,11 +67,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.337 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.339 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.337-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.339-cutoverkandidat, ikke produktion
 
-4.0.337 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer vejrvedligeholdelsen og dens beviskæde.
+4.0.339 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer backend-recovery og releasebinding.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

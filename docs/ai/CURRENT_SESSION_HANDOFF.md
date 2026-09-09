@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-09 – 4.0.339 SQL-rettelse klar til exact-head
+
+4.0.338 blev exact-head-grøn i `34348151097` og merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`. Backend `34350871769` bestod hele pre-write-kæden. Migration 1–3 blev anvendt; migration 4 fejlede med `SQLSTATE 42601` på det bare `IS DISTINCT FROM CASE`-udtryk og rullede sin egen transaktion helt tilbage. Migration 5–8 og alle efterfølgende backend-/publictrin blev skipped; Vault var uændret.
+
+4.0.339 tilføjer kun de nødvendige parenteser omkring det samme CASE-udtryk i fem pending migrationer, schema og installer, plus en statisk regressionstest. Et isoleret PostgreSQL 16-bevis har kørt migration 4–8 i rækkefølge grønt. De relevante partial-recovery-, installer-, readiness-, releasepolicy- og workflowtests er grønne. Ejeren har godkendt exact-releaseflytningen af DEC-0122-undtagelsen til 4.0.339; 4.0.340 arver den ikke.
+
+Weather `34350872447` fortsætter uafhængigt på den bevarede cache. Seneste sikre foregående aggregate er 78.913/79.414 med 501 missing; aktuelle tal må først angives, når runnet publicerer dem. Candidate G er offentlig. Næste trin er commit/push, én exact-head sourcegate, merge, backendgenoptagelse fra migration 4 og en ny eksakt 4.0.339-oneoff før cutover.
+
 # NYESTE CHECKPOINT – 2026-09-09 – 4.0.338 lokal Supabase-parserkandidat
 
 4.0.337 bestod exact-head-kildegaten `34325630686` på `aa78d75f` og blev merged via PR #271 som `af03659a`. Main-oneoff `34333689292` er fortsat aktiv på samme mergecommit. Cachematerialisering og DMI-progress-save bestod; Copernicus-fyldningen og begge efterfølgende cache-save-trin er grønne, og Open-Meteo startede kl. 11:31Z. Det er progression, ikke et terminalt komplet vejr-/handoffbevis.

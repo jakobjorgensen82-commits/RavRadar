@@ -1,3 +1,16 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.339 SQL-recovery
+
+- [x] Luk 4.0.338 source/merge: exact-head `34348151097` grøn på `2bddb2db`; PR #272 merged som `208e878453d6d8a21b8ce879eac050d664c50c40`.
+- [x] Klassificér backend `34350871769`: pre-write grøn; migration 1–3 applied; migration 4 SQLSTATE 42601 og fuld transaktionsrollback; 5–8/D1/Edge/Worker/readiness skipped; Vault uændret.
+- [x] Ret det samme PL/pgSQL CASE-udtryk i fem pending migrationer, schema og installer uden anden SQL-semantik.
+- [x] Tilføj regressionstest og bevis migration 4–8 i rækkefølge på isoleret PostgreSQL 16; måltests for partial recovery, installer, readiness, releasepolicy og workflow er grønne.
+- [x] Flyt DEC-0122-undtagelsen efter udtrykkelig ejergodkendelse til exact-release 4.0.339; 4.0.340 arver den ikke.
+- [ ] Afslut 4.0.339-version/RDKS/håndbog, commit/push og kør én GitHub sourcegate på eksakt head.
+- [ ] Merge kun den grønne head. Genkør backend og kræv præcis 3 applied/5 pending samt fuld DB-, D1-, Edge- og protected-readiness-readback.
+- [ ] Kør en komplet oneoff på eksakt merged 4.0.339 og de bevarede cacher. Kræv 79.414/79.414, WAM/Feggesund 354/354 og runbundet handoff.
+- [ ] Udfør den allerede autoriserede first cutover med fulde post-data-gates, artifact/deploy og offentlig 210/673-verifikation. Candidate G forbliver offentlig indtil da.
+- [ ] Efter launch: cachetransport i shadow uden nulstilling, normal cron/watchdog samt Astra-helhedsaudit og målrettet testopdeling.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.338 lokal backend-parserkandidat
 
 - [x] Begge `db push`-kald bruger `--skip-vault`; kun de otte migrationer kan indgå i plan og apply.

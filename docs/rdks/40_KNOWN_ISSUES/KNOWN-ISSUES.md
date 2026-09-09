@@ -1,3 +1,10 @@
+# NYESTE HELHEDSFUND – 2026-09-09 – 4.0.339 backend-SQL-recovery
+
+- **ISSUE-SUPABASE-PLPGSQL-DISTINCT-CASE – LOKALT RETTET P0 / RUNTIME ÅBEN:** Backend `34350871769` anvendte migration 1–3 og stoppede i migration 4 med `SQLSTATE 42601`. Det bare `IS DISTINCT FROM CASE`-udtryk er rettet med parenteser i alle fem pending migrationer, schema og installer. Migration 4 blev fuldt rullet tilbage; ingen halv funktion er aktiv.
+- **ISSUE-SUPABASE-PARTIAL-MIGRATION-RECOVERY – MÅLTESTET / LIVE ÅBEN:** Readinesslogikken accepterer kun et eksakt anvendt præfiks. Næste run skal læse 3 applied og 5 pending, køre 4–8 i rækkefølge og derefter bevise DB/D1/Edge/readiness. Isoleret PostgreSQL 16 og de målrettede kontrakttests er grønne; produktion er ikke endnu.
+- **ISSUE-4.0.339-END-TO-END – ÅBEN P0:** Exact-head, merge, backendreadiness, komplet 4.0.339-weather-handoff, fulde produktionsgates, artifact/deploy og offentlig integreret model mangler. Candidate G er offentlig.
+- **ISSUE-POST-LAUNCH-OPERATIONS-BACKLOG – ÅBEN P0:** Cachetransport skal bygges i shadow uden nulstilling og skifte atomisk med rollback; normal cron/watchdog skal derefter verificeres. Den bredere Astra-audit og tidligere målrettede testlanes må ske uden at forstyrre live drift.
+
 # NYESTE HELHEDSFUND – 2026-09-09 – 4.0.338 backend-readiness
 
 - **ISSUE-SUPABASE-DB-PASSWORD-28P01 – AFKLARET UDEN WRITE:** Backend `34333553305` forsøg 1 fik PostgreSQL `SQLSTATE 28P01` i den read-only migrationsliste. Ejeren rettede GitHub-secretet kl. 09:54Z uden at vise værdien. Forsøg 2 bestod autentificeringen; credentialfejlen er derfor afgrænset, men backendreadiness er ikke bevist.

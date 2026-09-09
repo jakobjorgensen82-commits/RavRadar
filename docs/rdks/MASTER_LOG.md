@@ -1,3 +1,12 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.339 backend-SQL-recovery
+
+- 4.0.338 bestod exact-head `34348151097` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`.
+- Backend `34350871769` bestod pre-write-planen og anvendte migration 1–3. Migration 4 stoppede på `SQLSTATE 42601` og rullede helt tilbage; 5–8 og alle efterfølgende D1-/Edge-/Worker-/readiness-/publictrin blev skipped. Vault var uændret.
+- Rodårsagen var et PL/pgSQL `IS DISTINCT FROM CASE`-udtryk i syv kanoniske SQL-kopier. 4.0.339 omslutter kun CASE-udtrykket med parenteser. Hele pending migrationsuffix 4–8 er kørt grønt på isoleret PostgreSQL 16, og målrettede regressions-/recovery-/workflowtests er grønne.
+- Ejeren godkendte udtrykkeligt exact-releaseflytningen af DEC-0122-undtagelsen til 4.0.339. De materielle grænser er uændrede; 4.0.340 arver den ikke.
+- Weather `34350872447` fortsætter med den bevarede progression. Et 4.0.338-handoff kan ikke autorisere 4.0.339-cutover, så en ny komplet exact-main-oneoff kræves efter merge. Candidate G er offentlig.
+- Næste rækkefølge: exact-head sourcegate, merge, backendgenoptagelse fra migration 4, komplet 4.0.339-vejr/handoff, fulde gates, artifact/deploy og offentlig modelverifikation. Cachetransport/cron og Astra-helhedsaudit følger efter launch uden driftsforstyrrelse.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.338 Supabase-outputkontrakt
 
 - Begge `db push`-kald bruger nu `--skip-vault`. DEC-0122-engangsundtagelsen er flyttet til exact-release 4.0.338 og bundet til `package.json`; 4.0.337-handoff kan ikke genbruges, og 4.0.339 arver ikke undtagelsen.

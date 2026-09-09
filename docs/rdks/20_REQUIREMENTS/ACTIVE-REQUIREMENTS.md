@@ -1,5 +1,13 @@
 # Aktive krav – samlet register
 
+# 4.0.339 – sikker recovery efter delvist anvendt backendpakke (2026-09-09)
+
+- **REQ-4.0.339-PLPGSQL-CASE-001 – BINDENDE P0:** Det kopierede `historyTransition`-udtryk skal være PostgreSQL-gyldigt som `IS DISTINCT FROM (CASE ... END)` i alle fem pending migrationer, `supabase/schema.sql` og den statiske installer. Kopierne skal være identiske; den bare form må ikke findes i Supabase-SQL.
+- **REQ-4.0.339-PREFIX-RECOVERY-001 – BINDENDE P0:** Efter backend `34350871769` er migration 1–3 det eneste gyldige remote-præfiks. Næste run må ikke gentage eller omskrive dem; det skal kræve eksakt pending suffix 4–8. Enhver anden rækkefølge eller status stopper før write.
+- **REQ-4.0.339-TRANSACTION-SAFETY-001 – BINDENDE P0:** Migration 4's fejlede forsøg er fuldt rullet tilbage. D1, Edge, Worker, maintenance, synchronization, public mode og protected readiness forbliver urørte, indtil hele databasesuffixet og readback er grønt.
+- **REQ-4.0.339-CUTOVER-EXCEPTION-001 – BINDENDE SNÆVER EJERUNDTAGELSE:** Efter udtrykkelig ejergodkendelse gælder DEC-0122 alene exact-release 4.0.339 og ét komplet handoff fra samme eksakte main-head. 4.0.340 og senere arver ikke undtagelsen. 50 MB-arkivloft samt storage-, checkpoint-, integrity-, privacy-, readback-, closure- og releasekrav består uændret.
+- **REQ-4.0.339-EVIDENCE-001 – BINDENDE ÅBEN:** Isoleret PostgreSQL 16 og målrettede tests er grønne, men exact-head, merge, produktionsbackend, komplet 4.0.339-vejr, fulde gates, deploy og offentlig modelverifikation mangler. Candidate G forbliver offentlig indtil positivt bevis.
+
 # 4.0.338 – eksakt Supabase CLI-output før backendwrite (2026-09-09)
 
 - **REQ-4.0.338-SUPABASE-CLI-PIN-001 – BINDENDE P0:** Backendmigrationskæden skal bruge præcis Supabase CLI 2.117.0; `latest` eller et flydende versionsinterval må ikke styre den parserbundne outputkontrakt.
@@ -7,8 +15,8 @@
 - **REQ-4.0.338-BLANK-REMOTE-PENDING-001 – BINDENDE P0:** Når alle otte krævede lokale migrationer har blank Remote, betyder det præcis 0 remote-applied og 8 pending. Lokal historikhydrering må ikke opfinde placeholderversioner eller ommærke en pending migration som anvendt.
 - **REQ-4.0.338-DRY-RUN-PROOF-001 – BINDENDE P0:** Før apply skal dry-run indeholde præcis én no-write-markør og enten de eksakte forventede migrationsfilnavne i korrekt rækkefølge uden ekstra/dubletter eller ét entydigt eksakt up-to-date-resultat. Ukendt, tomt eller tvetydigt stdout/stderr-output må ikke autorisere apply.
 - **REQ-4.0.338-DB-PUSH-SCOPE-001 – BINDENDE P0:** Både dry-run og apply skal bruge `--skip-vault`. Planen må kun omfatte de otte eksakte migrationer og må ikke udføre Supabase CLI's separate standardopdatering af Vault-secrets.
-- **REQ-4.0.338-CUTOVER-EXCEPTION-VERSION-001 – BINDENDE SNÆVER EJERUNDTAGELSE:** DEC-0122-engangsundtagelsen gælder alene exact-release 4.0.338 og én succesfuld komplet main-oneoff på samme source-head som consumeren. Et 4.0.337-handoff kan ikke bruges. Policyversionen skal matche `package.json`; 4.0.339 og senere stopper i releaseversionsgaten uden en ny udtrykkelig beslutning. Arkivloft, storage/checkpoint, privacy, integritet, readback og forbuddet mod tilbagevendende fuld kadence er uændrede.
-- **REQ-4.0.338-RUNTIME-EVIDENCE-001 – BINDENDE ÅBEN:** Parser- og workflowrettelsen er lokalt måltestet, men exact-head-CI, merge og et nyt backendrun gennem dry-run, apply, DB/D1/Edge-readback og protected readiness mangler. Backend `34333553305` forsøg 1 og 2 stoppede før første write og er ikke readinessbevis.
+- **REQ-4.0.338-CUTOVER-EXCEPTION-VERSION-001 – ERSTATTET KUN FOR RELEASEVERSION AF REQ-4.0.339-CUTOVER-EXCEPTION-001:** Undtagelsen gjaldt 4.0.338, indtil ejeren udtrykkeligt godkendte 4.0.339. Arkivloft, storage/checkpoint, privacy, integritet, readback og forbuddet mod tilbagevendende fuld kadence består uændret.
+- **REQ-4.0.338-RUNTIME-EVIDENCE-001 – HISTORISK, ERSTATTET AF 4.0.339-EVIDENS:** 4.0.338 blev exact-head-valideret og merged. Backend `34350871769` bestod pre-write og anvendte migration 1–3, men stoppede på den nu lokalt rettede SQL-syntaks i migration 4; fuld backendreadiness afventer 4.0.339.
 
 # 4.0.337 – tabsfri vedvarende cache og afgrænset legacy-cutover (2026-09-09)
 

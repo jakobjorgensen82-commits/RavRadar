@@ -1,3 +1,13 @@
+## 4.0.339 – sikker genoptagelse af den integrerede backendpakke (2026-09-09)
+
+- Bevarer 4.0.338's tre allerede anvendte migrationer og genoptager kun det eksakte pending suffix 4–8.
+- Retter PostgreSQL-syntaksen i det fælles `historyTransition`-udtryk med en semantisk neutral parentes i fem pending migrationer, schemaet og installationskopien.
+- Tilføjer en regressionstest, som afviser den oprindelige bare `IS DISTINCT FROM CASE`-form og kræver identiske rettede SQL-kopier.
+- Dokumenterer isoleret PostgreSQL 16-bevis for migration 4–8 i rækkefølge samt grønne måltests for partial recovery, installer, readiness, releasepolicy og workflows.
+- Flytter efter udtrykkelig ejergodkendelse DEC-0122's uændrede one-shot first-cutover-undtagelse til exact-release 4.0.339; 4.0.340 arver den ikke.
+- Candidate G er fortsat offentlig. Exact-head, merge, produktionsbackend, komplet 4.0.339-weather-handoff, fulde gates og offentlig integreret model er åbne.
+- Se `CHANGELOG-4.0.339.md` og DEC-0122.
+
 ## 4.0.338 – robust Supabase CLI-output før første backendwrite (2026-09-09)
 
 - Fastlåser Supabase CLI til 2.117.0 og accepterer kun balancerede whole-cell-backticks før den eksakte migrationsversionskontrol.
