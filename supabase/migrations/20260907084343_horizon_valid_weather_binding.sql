@@ -1717,11 +1717,11 @@ begin
         or (v_lineage ->> 'boundedUnknownPositionCount')::numeric < 0
         or (v_lineage ->> 'completeCausalPositionCount')::numeric
           + (v_lineage ->> 'boundedUnknownPositionCount')::numeric <> 48
-        or v_lineage ->> 'historyTransition' is distinct from case
+        or v_lineage ->> 'historyTransition' is distinct from (case
           when (v_lineage ->> 'boundedUnknownPositionCount')::numeric > 0
             then 'UNKNOWN_HISTORY_INTERVAL'
           else 'VERIFIED_CAUSAL_HISTORY_WINDOW'
-        end
+        end)
         or not public.ravradar_ravscore_checkpoint_canonical_time(
           v_lineage ->> 'targetReferenceAt'
         )

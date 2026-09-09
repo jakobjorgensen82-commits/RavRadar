@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for 4.0.338 som snæver parser-only successor til merged 4.0.337. 4.0.338 exact-head-, runtime- og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.339. Ejeren har også udtrykkeligt godkendt nødvendig overførsel til 4.0.340 og senere launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. Backend-, komplet vejr- og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -33,7 +33,21 @@ Undtagelsen godkender ikke normal højfrekvent drift. Automatisk fuld kadence fo
 
 Under ejerens stående autorisation til nødvendige launchændringer overføres den samme engangsundtagelse alene til 4.0.338. Denne successor retter Supabase CLI-parseren og backendworkflowets skriveafgrænsning; den udvider ikke cache-, runtime-, størrelse-, integritets- eller kadencegrænserne. En 4.0.337-handoff kan ikke bruges, fordi producent, artifact og consumer fortsat skal være bundet til samme eksakte `main`-head. Launch kræver derfor en ny komplet 4.0.338-oneoff.
 
-Policyversionen skal matche `package.json` fail-closed i releaseversionsgaten. 4.0.339 og senere arver dermed ikke undtagelsen uden en ny udtrykkelig beslutning. Alle øvrige betingelser i tillægget ovenfor består uændret.
+Policyversionen skal matche `package.json` fail-closed i releaseversionsgaten. På dette tidspunkt arvede 4.0.339 og senere ikke undtagelsen uden en ny udtrykkelig beslutning. Den efterfølgende udtrykkelige 4.0.339-beslutning nedenfor supersederer alene denne versionsgrænse; alle øvrige betingelser består.
+
+### Versionsoverførsel til 4.0.339
+
+Efter at 4.0.338 blev exact-head-valideret og merged, bestod backend `34350871769` hele pre-write-planen og anvendte migration 1–3. Migration 4 stoppede på PostgreSQL `SQLSTATE 42601` og rullede sin egen transaktion helt tilbage. Migration 5–8 samt D1, Edge, Worker, protected readiness og offentlig modelændring blev ikke kørt. 4.0.339 retter alene det samme ugyldige `IS DISTINCT FROM CASE`-udtryk i de fem pending migrationer og deres schema-/installationskopier.
+
+Ejeren har derefter udtrykkeligt godkendt, at den materielt uændrede first-cutover-undtagelse overføres alene til exact-release 4.0.339. Et handoff fra 4.0.338 kan ikke bruges, fordi producent og consumer fortsat skal være bundet til samme eksakte `main`-head. Launch kræver derfor en komplet 4.0.339-main-oneoff, selv om fremgang fra de bevarede cacher må genbruges.
+
+Policyversionen skal fortsat matche `package.json` fail-closed. Den oprindelige overførsel omfattede kun 4.0.339. Ejerens efterfølgende udtrykkelige autorisation nedenfor supersederer alene behovet for ny versionsgodkendelse. Arkivloftet på 50.000.000 byte og alle storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release- og deploymentkrav består uændret; tilbagevendende fuld kadence er fortsat ikke godkendt.
+
+### Stående autorisation til nødvendige launchsuccessors
+
+Ejeren har udtrykkeligt godkendt, at undtagelsen også må flyttes til 4.0.340 og senere versioner, hvis en nødvendig launchrettelse kræver det. Codex skal ikke bede om gentagen tilladelse alene til versionsflytningen. Den aktuelle rettelse færdiggøres dog fortsat som 4.0.339 i PR #273; den fejlede test kræver ikke i sig selv en ny release.
+
+Hver nødvendig overførsel skal registreres i projektets hukommelse, bindes til den valgte eksakte release og main-head og kræve et komplet handoff fra samme head. Dette er ikke en flydende versionsmatch eller en ekstra first cutover, og ingen tekniske grænser eller driftskadence udvides. Cacheprogression må fortsat genbruges på tværs af releases efter genvalidering; eksisterende kørsler skal gemme den før main-skift.
 
 ## Konsekvenser
 
