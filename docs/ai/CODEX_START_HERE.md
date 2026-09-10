@@ -1,4 +1,12 @@
-# NYESTE CHECKPOINT – 2026-09-10 – første exact-head-CI afgrænset til forældet test
+# NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
+
+Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.
+
+Det gamle trin slettede source-stage. Den godkendte donorbankkontrakt har med vilje erstattet det med `Preserve original Copernicus admission evidence before production rebase`, så gyldigt originalbevis bevares til kontrolleret migration. Test-only-rettelsen følger den faktiske kontrakt, afviser eksplicit sletning og kontrollerer nu også handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata er ændret i denne opfølgning.
+
+Næste trin er kort dokument-/RDKS-kontrol, ny exact-head-commit og én nødvendig exact-head-CI. Det fejlede run genstartes ikke; merge, backend, komplet main-handoff, post-data-gates og modelcutover afventer fortsat et samlet grønt bevis.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – første exact-head-CI afgrænset til forældet test
 
 Head `e459b826e3fae296ca8074f9a9efeadb8a7f663d` bestod bindingspreflight og den fulde releasegate, men sourcegate `34417094732` stoppede senere i `test-copernicus-target-registry-4.0.244.py`. Tre uafhængige gennemgange og lokal reproduktion viser, at fixturet stadig forventede den nu erstattede regel: nyere `PROCESSED` metadata skulle kassere en ældre, faktisk attesteret cachetuple. Det strider mod den godkendte atomiske kontrakt, hvor gammel gyldig tuple+proof består, indtil en nyere tuple faktisk er materialiseret og attesteret.
 

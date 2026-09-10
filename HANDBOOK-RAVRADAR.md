@@ -2,13 +2,21 @@
 
 **Håndbogsversion:** 4.0.340
 
+## 88.44 4.0.340 – CI-opfølgning uden ændring af produktionen
+
+To exact-head-kørsler har bestået bindingskontrollerne og den fulde releasegate, men er senere stoppet på forældede testforventninger. Den seneste kørsel `34420641243` ledte efter et gammelt workflowtrin, som slettede Copernicus' source-stage. Den nye godkendte donorbankkontrakt bevarer med vilje originalt kildebevis, indtil det kan migreres kontrolleret.
+
+Kun handoff-testen er ændret i denne opfølgning. Den følger nu det faktiske bevaringstrin, afviser eksplicit sletning og kontrollerer, at et genbrugt eksakt handoff springer de nye donorbank- og plantrin over, mens afsluttende closure, validering og releasegate fortsat består. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt. Produktionskode, workflows, migrationer, cache og geodata er uændrede.
+
+Status er fortsat, at Candidate G er offentlig. En ny samlet exact-head-CI skal være helt grøn før merge; derefter mangler backend, komplet main-handoff, post-data-gates og selve modelskiftet.
+
 ## 88.43 Lokal kandidat – vejrdata skal bevares, før vi henter mere
 
-**Status:** Den samlede rettelse er gennemgået og de målrettede lokale tests er bestået. Den er endnu ikke CI-valideret, merged eller lagt online. Testene omfatter den nye hentelogik, genbrug, sikker gemning, fallback og den tidligere WAM-rettelse. Seneste gennemgåede oneoff på gammel kode sluttede med 535 manglende strømpar og manglende operationelle bølgetimer; Candidate G er fortsat senest verificerede offentlige model.
+**Status:** Den samlede rettelse er gennemgået og de målrettede lokale tests er bestået. To exact-head-kørsler har bevist releasegaten og store dele af sourcekæden, men ingen eksakt head er endnu bestået helt; pakken er derfor ikke merged eller lagt online. Testene omfatter den nye hentelogik, genbrug, sikker gemning, fallback og den tidligere WAM-rettelse. Seneste gennemgåede oneoff på gammel kode sluttede med 535 manglende strømpar og manglende operationelle bølgetimer; Candidate G er fortsat senest verificerede offentlige model.
 
-**CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen er rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
+**Første CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen blev rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
 
-**CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen er rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
+**Anden CI-opfølgning:** Næste exact-head-kontrol bestod igen releasegaten og de nye vejrtests, men en handoff-test ledte stadig efter navnet på det gamle trin, som slettede Copernicus-kildebeviset. Det aktive workflow bevarer nu med vilje originalbeviset til sikker donorbankmigration. Testen er rettet til den faktiske kontrakt og kontrollerer også, at handoff springer de nye donorbank- og plantrin over. Den og alle efterfølgende workflowtests er grønne lokalt; produktionsadfærden blev ikke ændret af denne opfølgning.
 
 **Problemet:** Listen over dagens huller blev også brugt til at bestemme, hvilke fallbackdata vi beholdt. Derfor kunne en brugbar Open-Meteo-reserve forsvinde fra den nyeste cache, når DMI midlertidigt dækkede samme time. Copernicus kunne på tilsvarende vis beholde tal, men miste det oprindelige bevis for, at de måtte bruges. Samtidig så leverandørernes arbejdsplan ikke hele den samlede dækning.
 
@@ -25,7 +33,7 @@
 
 **Ekstra review 10. september:** Begge banker har nu en separat fortegnelse over rækkernes oprindelige identitet. Den gør det muligt at isolere en beskadiget række uden at miste de uafhængige raske rækker. En kendt konflikt følger med til næste kørsel og forsvinder ikke ved genindlæsning af en gammel kopi. Originalfilen bliver liggende indtil sikker erstatning; henteplanen bruger samme recovery som selve indsamlingen. Strøm på overordnede zoner er valgfri oversigtsdata, ikke et ekstra krav til den nye scoremodel. Kendte geografiske parenthuller må derfor ikke udløse endeløs genhentning; alle nødvendige lokale kystdele kræves fortsat.
 
-**Verifikation:** Måltestene er grønne, inklusive beskadigede rækker, bevarede kildebeviser og genstart. To testopsætninger skulle tilpasses den nye aftalte kontrakt; ingen datakrav blev sænket. Faktisk køretid, hukommelse og bankernes vækst er endnu ikke målt i drift. Lokale tests er ikke en produktionsgaranti.
+**Verifikation:** Måltestene er grønne, inklusive beskadigede rækker, bevarede kildebeviser og genstart. Fire testopsætninger er tilpasset den nye aftalte rækkefølge, acquisition-, target- og handoffkontrakt; ingen datakrav blev sænket. Faktisk køretid, hukommelse og bankernes vækst er endnu ikke målt i drift. Lokale tests er ikke en produktionsgaranti.
 
 **Det, vi endnu ikke ved:** Rettelsen kan bevare intakte eksisterende beviser, men ikke opfinde dem, hvis de allerede er tabt. Der er heller ikke endnu bevis for, at alle rester kan leveres under de godkendte datakrav, eller at almindelig drift kan holde trit. Det skal måles på den færdige kode. Den nye model kræver stadig komplette brugbare direkte input og et reelt samlet releasebevis; dataalder alene og delvis historik er ikke nye stopklodser. Ejeren har godkendt testene og autonom fortsættelse gennem launch og efterkontrol. Udskudte forbedringer revurderes, så allerede løste problemer ikke bygges om igen.
 

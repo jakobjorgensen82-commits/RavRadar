@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-10",
   "sections": [
     {
+      "id": "weather-lifecycle-ci-followup-2026-09-10",
+      "chapter": "88.44",
+      "title": "4.0.340 – CI-opfølgning uden ændring af produktionen",
+      "summary": "To exact-head-kørsler har bestået releasegaten og senere fundet forældede testforventninger; samlet er fire fixtures nu tilpasset de godkendte kontrakter uden ændring af produktionen.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Exact-head-run 34420641243 bestod bindingskontroller, fuld releasegate og de nye vejrlivscyklustests, men stoppede derefter på et gammelt workflowtrinnavn i handoff-testen.</div><div class=\"handbook-stack\"><p><strong>Rigtig kontrakt:</strong> Det gamle trin slettede Copernicus source-stage. Den godkendte donorbankløsning bevarer originalt kildebevis til kontrolleret migration, så det gamle sletningstrin må ikke genindføres.</p><p><strong>Afgrænset rettelse:</strong> Kun testen følger nu det faktiske bevaringstrin, afviser eksplicit sletning og kontrollerer handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt.</p><p><strong>Uændret drift:</strong> Ingen produktionskode, workflow, migration, cache eller geodata blev ændret. Candidate G er fortsat offentlig, indtil en ny samlet exact-head-CI er helt grøn og backend, komplet main-handoff, post-data-gates og modelcutover er gennemført.</p></div>"
+    },
+    {
       "id": "weather-lifecycle-critical-first-2026-09-09",
       "chapter": "88.43",
       "title": "Lokal kandidat – bevar vejrdata og hent reelle huller først",

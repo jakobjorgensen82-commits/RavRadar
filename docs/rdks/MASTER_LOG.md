@@ -1,4 +1,8 @@
-# NYESTE IMPLEMENTERINGSDELTA – 2026-09-10 – exact-head-CI fandt forældet cachefixture
+# NYESTE IMPLEMENTERINGSDELTA – 2026-09-10 – anden exact-head-CI fandt gammelt handoff-trinnavn
+
+Sourcegate `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye vejrlivscyklustests, men stoppede bagefter i handoff-testen, som stadig søgte efter det fjernede sletningstrin for Copernicus source-stage. Det aktive workflow bevarer med vilje originalt kildebevis til kontrolleret donorbankmigration. Testen følger nu det faktiske trin, afviser eksplicit sletning og dækker handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og de 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata ændres; ny exact-head-CI kræves.
+
+# HISTORISK IMPLEMENTERINGSDELTA – 2026-09-10 – første exact-head-CI fandt forældet cachefixture
 
 Sourcegate `34417094732` på `e459b826` bestod bindingspreflight og fuld releasegate, men stoppede senere i Copernicus-targetregistry-testen. Fejlen var en forældet forventning om, at nyere `PROCESSED` metadata skulle kassere en ældre faktisk attesteret tuple. Det strider mod ejerens atomiske bevaringskrav. Testen beviser nu både metadata-only-bevaring og afvisning af gammelt proof efter faktisk nyere tuple+attestation. Target-registry og DMI-proveniens er grønne; ingen produktionskode er ændret. Ny exact-head-CI kræves.
 

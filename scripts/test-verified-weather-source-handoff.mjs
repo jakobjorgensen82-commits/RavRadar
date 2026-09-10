@@ -171,6 +171,26 @@ assert.equal(
   false,
   'run-bound handoff must validate and accept exact IN_PROGRESS/partial Copernicus evidence',
 );
+const copernicusAdmissionPreservation = stepBlock(
+  reusableWorkflow,
+  'Preserve original Copernicus admission evidence before production rebase',
+);
+assert.equal(
+  copernicusAdmissionPreservation.includes('Preserve original source-stage evidence for validated donor migration before rebase.'),
+  true,
+  'the workflow explicitly preserves original Copernicus admission evidence before rebase',
+);
+for (const forbiddenRemoval of [
+  'rm -f .cache/copernicus-current-source-stage.json',
+  'rm -f .cache/copernicus-current-shadow.json',
+  'rm -f .cache/copernicus-current-donor-bank.json',
+]) {
+  assert.equal(
+    reusableWorkflow.includes(forbiddenRemoval),
+    false,
+    `validated Copernicus admission evidence is not removed: ${forbiddenRemoval}`,
+  );
+}
 assert.equal(
   reusableWorkflow.indexOf('name: Run fast source gate before expensive data refresh')
     < reusableWorkflow.indexOf('name: Update DMI bulk model cache'),
@@ -179,6 +199,9 @@ assert.equal(
 );
 for (const name of [
   'Refresh private Copernicus cache before DMI cache churn',
+  'Restore shared private Copernicus donor bank',
+  'Restore shared private Open-Meteo donor bank',
+  'Plan global current acquisition before DMI',
   'Restore bounded DMI GRIB download cache',
   'Restore last complete active DMI generation',
   'Resolve newest terminal-proven exact-main legacy DMI generation',
@@ -188,7 +211,8 @@ for (const name of [
   'Restore private seven-day current-field research cache',
   'Update DMI bulk model cache',
   'Refresh private Copernicus cache after DMI cache churn',
-  'Remove only invalid production Copernicus source disposition',
+  'Preserve original Copernicus admission evidence before production rebase',
+  'Plan global current acquisition before Copernicus',
   'Install targeted Copernicus dependencies',
   'Verify targeted Copernicus credentials',
   'Fill only exact-hour DMI gaps from Copernicus',

@@ -65,6 +65,14 @@ Lokal reproduktion og tre uafhængige gennemgange fandt en forældet fixture, ik
 
 Test-only-rettelsen har to ben: metadata-only-ledgeren accepterer den gamle actual winner; når cachetuple og actual attestation faktisk skiftes til den nyere kilde, afvises det gamle retained proof som unused. Ingen produktionsfil er ændret. Den rettede target-registry-test er exit0, og `test-dmi-native-provenance.py` er exit0. To uafhængige reviewers fandt ingen analog gammel forventning eller ny P0/P1 i register→plan→fallback→closure-sporet.
 
+## Exact-head-CI 34420641243 og handoff-opfølgning
+
+Exact head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closuretests. Første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`: testen søgte stadig efter det fjernede trin `Remove only invalid production Copernicus source disposition`.
+
+Workflowet erstattede med vilje sletningen med `Preserve original Copernicus admission evidence before production rebase`. Det er den godkendte donorbankkontrakt: gyldigt originalt source-stage-bevis bevares, indtil det kan migreres kontrolleret. Test-only-rettelsen bruger det faktiske trinnavn, afviser eksplicit sletning af stage, shadow og donorbank og kræver handoff-værn på de nye donorbank- og plantrin. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata er ændret i denne opfølgning.
+
+Et uafhængigt workflowreview fandt ingen yderligere konkret P0/P1 i source-stage-, donorbank- og handoff-kæden. Det er statisk og lokalt bevis; faktisk GitHub-cache- og provideradfærd kræver fortsat en helt grøn exact-head-kørsel og efterfølgende kontrolleret main-runtime.
+
 ## Næste kontrolgrænse
 
 Afsluttede tilstødende checks: test-regional-current-operational.py exit0 (5 navngivne testfunktioner), test-current-operational-live-builder.py exit0 og test-current-operational-live-adapter.mjs exit0. Ingen rettelser. Common plan er stadig advisory; exact residual og positiv sourceadmission forbliver selvstændige.
