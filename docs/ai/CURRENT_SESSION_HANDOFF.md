@@ -1,3 +1,17 @@
+# NYESTE HANDOFF – 2026-09-10 – 4.0.341 lokal WAM-kandidat
+
+Main er `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`/4.0.340. Den aktuelle arbejdsgren indeholder en lokal 4.0.341-kandidat, der gør WAM-fornyelsen transaktionel på modelkørselsniveau uden at nulstille eller kassere den vedvarende cache. Candidate G er stadig senest dokumenterede offentlige model. Intet i 4.0.341 er endnu CI-, leverandør-, runtime-, merge- eller produktionsverificeret.
+
+Den nye kontrakt er:
+
+1. Reelle huller og hale fremmes straks efter et komplet og fuldt valideret asset. Hvis en sådan fremgang gør WAM komplet midt i primærfasen, checkpointes den med det samme.
+2. Når aktiv WAM allerede er komplet, ligger resten af primærfasens kvalitetsarbejde isoleret og kan kun fremmes samlet ved en fuldt gennemført faseafslutning. Der køres ikke en dyr WAM-slutvurdering efter hvert kvalitetsasset.
+3. En ufuldstændig assetkandidat, budgetstop eller afbrydelse må ikke skrive ny aktiv run-identitet, `processedSteps`, optælling eller checkpoint. Raw GRIB- og ufarlig genbrugsdiagnostik kan fortsat gemmes uden at blive aktivt databevis.
+4. Højst én ældre, axis-resolvable modelkørsel må forsøges terminalt, når primærfasen er udtømt. Hvert fallbackasset beholder egen provenance, og ingen interpolation må blande modelkørsler.
+5. Bølgeslutkravet er 670 native WAM-dele plus tre Feggesund direct/proxy-dele, alle 118 timer, i alt 79.414. Current vedligeholdes separat gennem DMI → Copernicus → Open-Meteo. Ældre valide rækker forbliver brugbare til en nyere fuldt valideret erstatning; 48 timers faktisk historik bevares som rådgivende input.
+
+Lokal evidens: WAM-integration 52/52, wave-history/bootstrap 35/35, `py_compile`, privat runtimeattestationstest og `git diff --check` er grønne. Dette er ikke CI eller driftsbevis. Normal vejrkørsel og watchdog forbliver deaktiveret, indtil releasepakken er samlet, exact-head-grøn og sikkert merged. Derefter køres én kontrolleret writer, komplet cache/WAM verificeres, og de eksisterende fulde model-launchgates gennemføres. Udskudte transport-, cadence-, performance-, database-retry-, providerskift- og immutable-history-opgaver revideres efter launch; de må ikke forsinke den nødvendige sikre aktivering nu.
+
 # NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
 
 Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.

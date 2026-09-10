@@ -1,3 +1,17 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-10 – lokal 4.0.341 WAM-integritetslukning
+
+- [x] Bevar persistent cache uden target-/modelrun-/release-reset og fasthold `673 × 118 = 79.414`, native WAM for 670 dele, Feggesund `354/354` og op til 48 timers verificeret historik.
+- [x] Isolér WAM-kandidat pr. collection/modelrun og kræv fuld assetdenominator før positive data, tællere, processed steps eller checkpoint kan overtage.
+- [x] Kræv samme target, eksakt pair-superset og ingen nye lineage-konflikter ved promotion. Tillad straks-promotion af sikker hul/hale-fremgang, men saml komplet-cache-kvalitetsrefresh til højst én promotion ved faseafslutning.
+- [x] Gør ældre kausal fallback bounded og terminal-only; bevar hvert assets egen modelrun-proveniens i hele behandlingskæden og åbn aldrig fallback efter budget-/reserve-/interruptionsstop.
+- [x] Sortér Open-Meteos required-par kanonisk som `(validTime, partId)` og bind WAM-bootstrap til den private runtimehash.
+- [x] Bestå lokale måltests: WAM 52/52, historik 35/35, vejrplan 17/17, Open-Meteo-donor 32/32 samt relevante DKSS-, scheduler- og private-runtimekontroller.
+- [x] Afstem tre forældede testforudsætninger med parsergeneration 20, produktionsmodulets copy-on-write-type og helper-baseret WAM-completeness. Ændringerne er test-only og lemper ingen runtime- eller releasegrænse.
+- [ ] Afslut 4.0.341-version, RDKS/håndbog, diff-/privacykontrol, commit/push og én `validate:source` på PR'ens eksakte endelige head.
+- [ ] Merge kun grøn eksakt head; kør main-vejr på bevarede cacher og kræv `79.414/79.414`, native WAM for 670 dele og Feggesund `354/354`.
+- [ ] Kør fulde post-data `validate`/`release:gate`, forsegl runbundet handoff, udfør kontrolleret cutover og verificér den integrerede model offentligt. Candidate G er offentlig indtil positivt bevis.
+- [ ] Genaktivér normalworkflow og watchdog/shadow-dispatch i den sikre sekvens. Efter launch: skyggeverificér tabsfri cachetransport, mål ekstern cron og providerforbrug samt bevis normal vedligeholdelse med tidsoverskud.
+
 # NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
 
 Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.

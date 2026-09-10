@@ -12,6 +12,9 @@ FUNCTIONS = {
 }
 NAMESPACE = {
     "Any": object,
+    # This focused AST fixture exercises plain persisted dictionaries. The
+    # production module defines the copy-on-write subclass separately.
+    "AssetStagedZone": type("AssetStagedZone", (dict,), {}),
     "epoch": lambda _value: 0.0,
     "MAX_GRID_DISTANCE_KM": {"limfjord": 24.0, "west": 40.0, "east": 32.0},
     "MARINE_MODEL_PENALTY_KM": {

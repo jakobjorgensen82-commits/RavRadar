@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-10 – 4.0.341 atomisk WAM-promotion
+
+Ejeren har fastholdt den samlede plan: behold den næsten fyldte cache, luk datakæden sikkert, få den nye scoremodel online og verificér derefter normal vedligeholdelse uden endnu en reparationsspiral. Rebootet ændrede ikke denne ordre og gav ikke tilladelse til cache-reset, gatebypass eller et nyt parallelspor.
+
+Helkædegennemgangen fandt et selvstændigt WAM-integritetsproblem. En fil kunne påvirke aktiv cache, selv om ikke hele dens required denominator var accepteret; en komplet enkeltfil kunne desuden under ren kvalitetsrefresh skabe en seam mod næste tretimersfil. Lokal 4.0.341 isolerer derfor hver collection/modelrun, kræver fuld assetdenominator og promoverer kun ved samme target, eksakt pair-superset og ingen nye lineage-konflikter. Reelle huller/hale må gemmes straks ved sikkert bevis, mens en allerede komplet caches kvalitetsfase promoveres samlet ved terminal faseafslutning.
+
+En ældre kausal WAM-kørsel er højst en bounded terminal fallbackfase og må ikke begynde efter runtime-, reserve- eller interruptionsstop. Hvert asset fører sin egen faktiske modelrun gennem supervisor, cache, download, sourceproof, parser og promotion. Open-Meteos required-par sorteres nu kanonisk som `(validTime, partId)`, og private-runtimehashen omfatter WAM-bootstrap.
+
+Persistent cache/no reset, `673 × 118 = 79.414`, native WAM for 670 dele, Feggesund `3 × 118 = 354`, DMI → Copernicus → Open-Meteo, brug af gamle horizon-gyldige rækker og op til 48 timers verificeret historik består. Lokal teststatus er WAM 52, historik 35, vejrplan 17, Open-Meteo-donor 32 samt grøn DKSS, scheduler og privat runtime. Der er ingen ny CI-, merge-, main-runtime-, gate-, deploy- eller offentlig modelpåstand. Normalworkflow og watchdog/shadow-dispatch er fortsat deaktiveret.
+
+DEC-0123 registrerer kontrakten, og DEC-0122's engangsundtagelse er snævert overført til exact-release 4.0.341 under stående ejerautorisation. Exact-head-CI, merge, komplet main-vejr, fulde post-data-gates, handoff, cutover og offentlig proof er åbne. Efter launch består tabsfri cachetransport i shadow, atomisk pointer/rollback, ekstern cron-/provider-tidsmåling og bevis for stabil normal vedligeholdelse.
+
 # NYESTE IMPLEMENTERINGSDELTA – 2026-09-10 – anden exact-head-CI fandt gammelt handoff-trinnavn
 
 Sourcegate `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye vejrlivscyklustests, men stoppede bagefter i handoff-testen, som stadig søgte efter det fjernede sletningstrin for Copernicus source-stage. Det aktive workflow bevarer med vilje originalt kildebevis til kontrolleret donorbankmigration. Testen følger nu det faktiske trin, afviser eksplicit sletning og dækker handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og de 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata ændres; ny exact-head-CI kræves.

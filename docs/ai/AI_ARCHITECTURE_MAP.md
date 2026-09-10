@@ -21,6 +21,30 @@
 
 # AI Architecture Map – RavRadar
 
+## 2026-09-10 lokal 4.0.341 – isoleret WAM-kandidat og monoton promotion
+
+
+```text
+vedvarende aktiv cache
+        │
+        ├─ reelle huller + hale ──> komplet assetcandidate ──> strakspromotion/checkpoint
+        │
+        └─ allerede komplet WAM ──> isoleret primær qualityfase
+                                          │
+                                          ├─ fuld uafbrudt fase-end ──> samlet monoton promotion
+                                          └─ budget/interrupt/fejl ──> kassér candidate, behold aktiv cache
+
+udtømt primærfase ──> højst én terminal ældre fallbackfase
+                      hvert asset beholder egen modelRun/provenance
+```
+
+- Aktiv WAM-state nulstilles aldrig for at begynde en ny modelkørsel. En candidate er ikke aktiv data, før dens forventede mængde er ikke-tom, alle krævede rækker er accepteret, og promotion beviseligt ikke gør den valgte targetdækning dårligere.
+- Manglende data og ny hale er den kritiske kø og må fremmes pr. komplet asset. Ren kvalitetsrefresh af en allerede komplet WAM promoveres kun ved fuld primærfaseafslutning; det undgår både halv serieblanding og gentagen fuld WAM-performanceberegning.
+- `processedSteps`, runInfo, nye id'er og optællinger følger kun en faktisk promotion. Raw GRIB og ufarlige genbrugsdiagnoser kan persisteres separat, men må ikke få en genstart til at springe upromoveret arbejde over.
+- WAM-slutdomænet er 670 native dele samt Feggesunds tre direct/proxy-dele × 118 = 79.414. Feggesund er ikke ommærket som native WAM. Hvert terminalt fallbackasset beholder sin egen kildeidentitet, og interpolation krydser aldrig modelrun.
+- Currentlaget er parallelt, men separat: DMI → Copernicus → Open-Meteo udfylder den eksakte unionrest. Ældre gyldige rækker forbliver aktive til en nyere fuldt valideret atomisk erstatning; op til 48 timers verificeret historik er rådgivende.
+- Status er lokal implementation og måltest. Normal/watchdog er deaktiveret frem til sikker release; CI, main-runtime, fuld cache og scoremodel-launch er åbne.
+
 ## 2026-09-05 4.0.323 currentfallback
 
 > Historisk kontrakt: READY-only og hårde friskhedsgates i denne blok er supersederet af DEC-0118/DEC-0119; kildeorden, scope og slutclosure består.

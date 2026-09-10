@@ -70,6 +70,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/current_field_shadow.py',
     'scripts/lib/dmi_cache_migration.py',
     'scripts/lib/dmi_bulk_storage.py',
+    'scripts/lib/dmi_wave_history_bootstrap.py',
     'scripts/lib/dmi_grid_vector.py',
     'scripts/lib/dmi_native_provenance.py',
     'scripts/lib/dmi_current_processing_compatibility.py',
@@ -142,7 +143,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.340',
+  releaseVersion: '4.0.341',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,

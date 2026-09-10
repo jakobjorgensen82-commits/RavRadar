@@ -27,6 +27,12 @@ const sourceRepository = path.resolve('.');
 
 try {
   await fs.mkdir(repository, { recursive: true });
+  assert.ok(
+    PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(
+      'scripts/lib/dmi_wave_history_bootstrap.py',
+    ),
+    'The DMI wave-history bootstrap imported by update-dmi-bulk.py must be bound by the full private runtime contract',
+  );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
   for (const relative of contractFiles) {
     const destination = path.join(repository, relative);
@@ -321,7 +327,7 @@ try {
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   );
   assert.equal(approvedCapacity.firstCutoverException.eligible, true);
-  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.340');
+  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.341');
   assert.equal(
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
     50_000_000,
@@ -755,7 +761,7 @@ try {
     '$report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"',
     '$report.incrementalGate.status == "EXCEEDS_INCREMENTAL_SIZE_BOUNDS"',
     'DEC-0122-OWNER-APPROVAL-2026-09-09',
-    '$report.firstCutoverException.releaseVersion == "4.0.340"',
+    '$report.firstCutoverException.releaseVersion == "4.0.341"',
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
     '$report.firstCutoverException.recurringAutomaticCadenceEligible == false',
     '$report.firstCutoverException.cacheTransportMigrationRequired == true',

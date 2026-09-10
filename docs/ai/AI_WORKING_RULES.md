@@ -1,5 +1,15 @@
 # AI Working Rules – RavRadar
 
+## Aktuel lokal 4.0.341 WAM-/cache-regel
+
+- Nulstil aldrig aktiv vejrcache for at starte en ny target- eller modelkørsel. Byg collection/modelRun isoleret og promover kun valideret fremgang, der ikke gør aktiv dækning dårligere.
+- Prioritér alle reelle huller og halen før kvalitet. Et komplet hulasset må promoveres straks. Når aktiv WAM allerede er komplet, må quality-assets først promoveres efter en fuldt gennemført, uafbrudt primærfase.
+- Et asset er ikke komplet uden en ikke-tom fuld forventet mængde og `accepted == required`. Budgetstop, reservegrænse, exception og interrupt må ikke flytte runInfo, `processedSteps`, optællinger eller checkpoint for upromoveret arbejde.
+- Brug kun en ældre modelkørsel som højst én terminal fallbackfase efter faktisk udtømt primærfase. Bevar hver rækkes egen collection/modelRun/provenance; interpolér aldrig på tværs af modelkørsler.
+- Bevis hele bølgedomænet: `(670 native + 3 Feggesund direct/proxy) × 118 = 79.414`. Current bruger sin egen eksakte DMI → Copernicus → Open-Meteo-rest. En ældre strukturelt valid række er brugbar, så længe dens verificerede horizon dækker timen.
+- Bevar op til 48 timers faktisk historik som rådgivende input. Manglende historik må ikke blive syntetisk data eller skjult kalibreringstilladelse.
+- Skeln lokal måltest fra CI og drift. Hold normal- og watchdog-dispatch deaktiveret, indtil releasehead, merge og main-runtime er sikkert bevist. Genaktivér kun én kontrolleret writer og mål vedligeholdelsen efter launch.
+
 ## Aktuel 4.0.333 residual- og release-regel
 
 - Overclaim aldrig cache-reset fra en større ny targetrest. Brug exact reference og slutoptælling; donorrestore på gammel reference er ikke runresultat.

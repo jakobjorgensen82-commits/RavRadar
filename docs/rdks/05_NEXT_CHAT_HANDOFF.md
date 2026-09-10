@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-10 – fortsæt 4.0.341 uden at gentage analysen
+
+- **Aktuel gren/kandidat:** `codex/weather-cache-closure-4.0.341`. Den eksisterende 4.0.340-pakke bevares, og den nye WAM-/Open-Meteo-/runtimebinding er lokal. Ingen 4.0.341-commit, push, exact-head-CI, merge eller produktion er dokumenteret ved dette checkpoint.
+- **Cache og drift:** Cachen er ikke nulstillet. Slutkravet er fortsat `673 × 118 = 79.414`, native WAM for 670 dele og Feggesund `3 × 118 = 354`; op til 48 timers verificeret historik bevares. Normalworkflow og watchdog/shadow-dispatch er stadig deaktiveret og må ikke genaktiveres før den kontrollerede merge-/cutoversekvens.
+- **Seneste runtimebaseline:** Oneoff `34437713821` gemte sikre providercacher, men sluttede uden handoff: DMI 66.487, Copernicus +10.944 og Open-Meteo 883 gav 78.314/79.414 og 1.100 currentrester; WAM stoppede særskilt med `MISSING_HOUR`. Brug ikke dette som 4.0.341-bevis.
+- **Rettelsen:** WAM behandles i isoleret kandidat pr. collection/modelrun. Hver fil kræver fuld denominator. Promotion kræver samme target, eksakt pair-superset og ingen nye lineage-konflikter. Sikre reelle huller/hale kan promoveres straks; ved komplet cache må kvalitetsrefresh først promoveres samlet ved faseafslutning.
+- **Fallback:** Højst en bounded ældre kausal/akseopløselig WAM-fase efter terminal primærfase; aldrig efter budget-, reserve- eller interruptionsstop. Hvert asset bruger sin egen faktiske modelrun gennem hele beviskæden. Open-Meteos required- og donorpar bruger samme `(validTime, partId)`-orden.
+- **Uændret systemkontrakt:** DMI → Copernicus → Open-Meteo med den eksisterende snævre regionale DMI-politik; gamle horizon-gyldige rækker er brugbare og kan senere opgraderes atomisk. Private-runtimehashen omfatter WAM-bootstrap. Ingen kilde-, score-, geometri- eller privacyregel er lempet.
+- **Lokal evidens:** WAM 52/52, historik 35/35, vejrplan 17/17, Open-Meteo-donor 32/32 samt relevante DKSS-, scheduler- og private-runtimekontroller er grønne. Det er ikke CI- eller runtimebevis.
+- **Næste rækkefølge:** Færdiggør 4.0.341-version/håndbog og snæver diff-/privacykontrol → commit/push → én `validate:source` på eksakt head → sikker merge → main-vejr på bevarede cacher → kræv `79.414/79.414`, native WAM 670 og Feggesund `354/354` → fulde post-data-gates/handoff → kontrolleret cutover → offentlig modelverifikation. Candidate G er offentlig indtil da.
+- **Efter launch:** Revidér og udfør tabsfri cachetransport i parallel shadow, atomisk pegepind/rollback, ekstern cron-/provider-tidsmåling og normal vedligeholdelsesbevis. Disse opgaver er ikke lukket af 4.0.341.
+
 # NYESTE CHECKPOINT – 2026-09-10 – 4.0.340 tredje exact-head-CI afventer
 
 - PR #274 samler WAM-seam, bindingspakke og vejrlivscyklusrettelse. Main er fortsat `b0ca7f5d`/4.0.339; Candidate G er fortsat offentlig.

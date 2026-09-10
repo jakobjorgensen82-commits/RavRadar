@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.340. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. Backend er grøn; komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.341. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. 4.0.341 er kun lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -60,6 +60,14 @@ Dette udvider ikke antallet af launches, retained generationer, checkpointgræns
 ### Versionsoverførsel 2026-09-09 – exact-release 4.0.340
 
 Efter den dokumenterede producer/consumer-forskel ved en WAM-modelkørselsseam bruger first-cutoveren exact-release `4.0.340`. Dette er den allerede ejerautoriserede nødvendige launchrettelse, ikke en ny eller bredere undtagelse. Handoff skal komme fra samme eksakte 4.0.340-main-head; kildecacheprogression fra 4.0.339 må kun genbruges efter de eksisterende valideringer. Alle materielle grænser og gates består.
+
+### Versionsoverførsel 2026-09-10 – exact-release 4.0.341
+
+Den efterfølgende helkædekontrol fandt en selvstændig WAM-integritetsfejl: en delvist accepteret fil eller en enkelt fil i en komplet kvalitetsopdatering kunne mutere den aktive kandidat før et sammenhængende modelkørselsbevis og dermed skabe en lineage-/tretimers-seam. DEC-0123 isolerer derfor hver collection/modelkørsel i en kandidat, kræver fuld fildenominator og tillader kun atomisk promotion ved eksakt pair-superset uden nye lineage-konflikter. En ældre kausal fallbackfase bruger altid sin egen modelkørselsproveniens.
+
+Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.341`. Et 4.0.340-handoff kan ikke ommærkes eller bruges til cutoveren; den kræver et komplet handoff fra samme eksakte 4.0.341-main-head. Bevarede DMI-, Copernicus-, Open-Meteo- og WAM-cacher må fortsat genvalideres og genbruges uden nulstilling.
+
+Ingen størrelse-, storage-, checkpoint-, privacy-, readback-, closure-, release-, deployment- eller kadencegrænse er udvidet. 4.0.341 er lokalt måltestet, men er endnu ikke exact-head-CI-valideret, merged, main-runtimeverificeret eller offentliggjort. Candidate G forbliver offentlig, indtil hele kæden har positivt bevis.
 
 ## Konsekvenser
 

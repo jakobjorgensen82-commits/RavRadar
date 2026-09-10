@@ -92,11 +92,15 @@ def atomic_json(path: Path, document: dict[str, Any], *, readback: Any = None) -
 def build(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
     reference_text, reference = exact_hour(args.at)
     targets = load_targets(args.targets)  # Authoritative failures must not be hidden.
-    required = [
-        {"partId": target["partId"],
-         "validTime": (reference + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")}
-        for offset in range(118) for target in targets
-    ]
+    # Target loading is parent-zone ordered; provider pair contracts are time/part ordered.
+    required = sorted(
+        [
+            {"partId": target["partId"],
+             "validTime": (reference + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")}
+            for offset in range(118) for target in targets
+        ],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
     checked_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     covered: set[tuple[str, str]] = set()
     input_hashes: dict[str, str] = {}

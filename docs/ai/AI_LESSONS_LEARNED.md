@@ -2,6 +2,18 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.341-læring
+
+Atomisk udskiftning af én række er ikke tilstrækkelig, når forbrugeren kræver en sammenhængende serie. En ufuldstændig modelkørsel kan bestå rækkevalidering og stadig gøre det aktive samlede WAM-valg dårligere. Kandidat og aktiv state skal derfor være adskilt, og promotion skal vurderes på den sammenhæng, som downstream faktisk bruger.
+
+Hurtig hulreparation og sikker kvalitetsopgradering har forskellige commitpunkter. Et komplet asset, som udfylder et ægte hul eller halen, skal kunne promoveres straks. Når aktiv cache allerede er komplet, skal flere quality-assets derimod samles til en fuld faseafslutning; ellers betales en dyr 79.414-rækkers WAM-vurdering gentagne gange, og en halv modelrunserie kan blive synlig.
+
+Checkpointmetadata er dataadgang. Hvis `processedSteps`, runInfo eller nye tællere skrives for en upromoveret candidate, kan næste proces fejlagtigt springe den over og gøre den midlertidige state permanent. Gem kun aktiv metadata sammen med faktisk promotion; raw downloadcache kan have en anden, ikke-autoriserende levetid.
+
+En ældre fallback er ikke det samme som at ommærke en række. Den kan bruges terminalt, hvis primærfasen er udtømt, men hver række skal beholde sin oprindelige collection, modelRun og provenance. Det gør ældre valide data nyttige uden at åbne for cross-run-interpolation.
+
+“Komplet WAM” skal tælles efter det virkelige forbrugerdomæne: 670 native dele plus tre særskilte Feggesund direct/proxy-dele × 118 = 79.414. Parent-/oversigtsdata eller leverandørens interne assetantal må ikke erstatte denne denominator. Lokal 87/87-test er nødvendig evidens, men siger endnu intet om providerhastighed, CI eller produktionsstabilitet.
+
 ## Aktuel 4.0.333-læring
 
 - “Batchen er isoleret” er utilstrækkeligt, hvis en delvis batch genbestilles samlet eller køen stopper før singleton. Isolation skal bevises under batchniveau og over maksimal realistisk dybde.

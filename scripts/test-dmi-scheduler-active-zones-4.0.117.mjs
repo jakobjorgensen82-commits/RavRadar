@@ -24,7 +24,10 @@ assert.match(bulk,/operational_wave_residual_by_collection\(/);
 assert.match(bulk,/and not has_operational_wave_residual\(/);
 assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
 assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}productive_collections \+= 1/);
-assert.match(bulk,/if budget_stop_code == "CRITICAL_WAM_RUNTIME_RESERVED"[\s\S]{0,500}"reasonCode": budget_stop_code/);
+assert.match(
+  bulk,
+  /if budget_stop_code in \{\s*"CRITICAL_WAM_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
+);
 assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
 
 
@@ -159,28 +162,38 @@ assert run_diag['preferredProgressiveRunDiscardedAsStale'] is True, run_diag
 
 # The operational wave residual uses the exact 118-hour axis and the generic
 # coast-type partition, without any zone-name special case.
-real_wave_resolver=module.resolved_native_wave_hours
+real_wave_resolver=module.resolved_native_wave_hour_evidence
 resolver_calls=[]
 def fake_wave_resolver(_hourly,**kwargs):
  resolver_calls.append(kwargs)
  required=tuple(kwargs['required_hours'])
- return required if kwargs['collection']=='wam_dw' else required[:100]
-module.resolved_native_wave_hours=fake_wave_resolver
+ resolved=required if kwargs['collection']=='wam_dw' else required[:100]
+ return {hour:() for hour in resolved}
+module.resolved_native_wave_hour_evidence=fake_wave_resolver
 wave_reference=datetime(2026,1,1,tzinfo=timezone.utc)
 wave_zones=[
- {'id':'EAST','lon':10.0,'lat':56.0,'coastType':'east'},
- {'id':'WEST','lon':8.0,'lat':56.0,'coastType':'west'},
+ *[
+  {'id':f'PART::EAST-{index:03d}','parentZoneId':'EAST',
+   'lon':10.0+index/100000,'lat':56.0,'coastType':'east','coastalPart':True}
+  for index in range(335)
+ ],
+ *[
+  {'id':f'PART::WEST-{index:03d}','parentZoneId':'WEST',
+   'lon':8.0+index/100000,'lat':56.0,'coastType':'west','coastalPart':True}
+  for index in range(335)
+ ],
 ]
-wave_doc={'zones':{'EAST':{'hourly':{}},'WEST':{'hourly':{}}}}
+wave_doc={'zones':{zone['id']:{'hourly':{}} for zone in wave_zones}}
 wave_gap=module.operational_wave_residual_by_collection(
  wave_doc,wave_zones,wave_reference,
 )
-assert wave_gap['wam_dw']['requiredPairCount']==118, wave_gap
+assert wave_gap['wam_dw']['requiredPairCount']==335*118, wave_gap
 assert wave_gap['wam_dw']['missingPairCount']==0, wave_gap
-assert wave_gap['wam_nsb']['requiredPairCount']==118, wave_gap
-assert wave_gap['wam_nsb']['missingPairCount']==18, wave_gap
-assert {call['entity_id'] for call in resolver_calls}=={'EAST','WEST'}, resolver_calls
-module.resolved_native_wave_hours=real_wave_resolver
+assert wave_gap['wam_nsb']['requiredPairCount']==335*118, wave_gap
+assert wave_gap['wam_nsb']['missingPairCount']==335*18, wave_gap
+assert len(resolver_calls)==670, len(resolver_calls)
+assert {call['collection'] for call in resolver_calls}=={'wam_dw','wam_nsb'}, resolver_calls
+module.resolved_native_wave_hour_evidence=real_wave_resolver
 
 # Missing strict provenance permits one DKSS lead attempt, then every real WAM
 # residual runs before remaining DKSS/slack. Cooldowns remain authoritative.
@@ -215,8 +228,16 @@ planned,plan_diag=module.operational_collection_plan(
  mixed_schedule,{},True,cutover_complete,600,now_epoch=1,
  force_wam_collections={'wam_dw','wam_nsb'},
 )
-assert planned[:2]==['wam_dw','wam_nsb'], planned
-assert plan_diag['forcedFirstCutoverWamCollections']==['wam_dw','wam_nsb'], plan_diag
+assert 'wam_dw' not in planned and 'wam_nsb' not in planned, planned
+assert plan_diag['proofCompleteWamCollectionsSkipped']==['wam_dw','wam_nsb'], plan_diag
+assert plan_diag['proofCompleteWamCollectionsRetainedForQuality']==[], plan_diag
+assert plan_diag['forcedFirstCutoverWamCollections']==[], plan_diag
+planned,plan_diag=module.operational_collection_plan(
+ mixed_schedule,{},True,cutover_complete,600,now_epoch=1,
+)
+assert 'wam_dw' in planned and 'wam_nsb' in planned, planned
+assert plan_diag['proofCompleteWamCollectionsSkipped']==[], plan_diag
+assert plan_diag['proofCompleteWamCollectionsRetainedForQuality']==['wam_dw','wam_nsb'], plan_diag
 small_reserve,small_total=module.wam_runtime_reserve(['wam_dw','wam_nsb'],100)
 assert small_total==100 and set(small_reserve.values())=={50}, (small_reserve,small_total)
 real_remaining=module.runtime_remaining
@@ -294,7 +315,7 @@ assert module.reusable_processed_steps(
  {'processingSignature':reuse_signature,'processedSteps':wam_steps},
  collection='wam_dw',same_processing=True,same_run=True,
  strict_current_anchor_available=False,
-)==wam_steps
+)=={}
 
 # Schedule facts are inferred from the exact STAC response. Missing created
 # stays unknown; no publication timestamp is fabricated.
@@ -442,8 +463,8 @@ assert document['diagnostics']['privateReplayRetentionHours']>=54
 module.time.time=real_time
 
 # End-to-end producer isolation with synthetic ecCodes handles: a Limfjord part
-# samples its own WAM_DW cell, height+period are written atomically, and a
-# direction from another grid definition is discarded rather than borrowed.
+# commits a positive wave tuple only when height, period and direction use its
+# same WAM_DW cell. A mismatched direction remains a fail-closed rejection.
 import pathlib, tempfile
 with tempfile.TemporaryDirectory() as temporary:
  module.RAW_DIR=pathlib.Path(temporary)
@@ -541,12 +562,16 @@ with tempfile.TemporaryDirectory() as temporary:
  parameters={1:'significant-wave-height',2:'dominant-wave-period',3:'mean-wave-dir'}
  module.classify_parameter=lambda gid,collection:parameters[gid]
  module.valid_candidates_batch=lambda gid,collection,wanted:{
-  'PART::TEST':[candidate(cell if gid in (1,2) else other,1,2,0.0,{1:1.2,2:6.0,3:270.0}[gid])]
+  'PART::TEST':[candidate(cell,1,2,0.0,{1:1.2,2:6.0,3:270.0}[gid])]
  }
  module.should_stop_work=lambda:False
  producer_output={
   'generatedAt':'2026-01-01T02:00:00Z',
-  'zones':{'PART::TEST':{'samplingPoint':[2.0,1.0],'hourly':{},'gridPoints':{},'collections':{}}},
+  'zones':{'PART::TEST':{
+   'entityId':'PART::TEST','parentZoneId':'ZONE-TEST',
+   'entityType':'coastal-part','samplingContext':'coastal-part-water-point',
+   'samplingPoint':[2.0,1.0],'hourly':{},'gridPoints':{},'collections':{},
+  }},
  }
  found,touched,interrupted,messages,lookups=module.process_grib(
   asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
@@ -554,12 +579,33 @@ with tempfile.TemporaryDirectory() as temporary:
  )
  produced=producer_output['zones']['PART::TEST']['hourly']['2026-01-01T03:00:00Z']
  assert produced['significant-wave-height']==1.2 and produced['dominant-wave-period']==6.0
- assert 'mean-wave-dir' not in produced
+ assert produced['mean-wave-dir']==270.0
  assert produced['sources']['wave']['entityId']=='PART::TEST'
  assert produced['sources']['wave']['parentZoneId']=='ZONE-TEST'
  assert produced['sources']['wave']['collection']=='wam_dw'
- assert produced['sources']['wave']['optionalFieldSet']==[]
+ assert produced['sources']['wave']['optionalFieldSet']==['mean-wave-dir']
  assert touched=={'PART::TEST'} and not interrupted and messages==3
+
+ gids=iter([1,2,3,None])
+ module.valid_candidates_batch=lambda gid,collection,wanted:{
+  'PART::TEST':[candidate(cell if gid in (1,2) else other,1,2,0.0,{1:1.2,2:6.0,3:270.0}[gid])]
+ }
+ rejected_output={
+  'generatedAt':'2026-01-01T02:00:00Z',
+  'zones':{'PART::TEST':{
+   'entityId':'PART::TEST','parentZoneId':'ZONE-TEST',
+   'entityType':'coastal-part','samplingContext':'coastal-part-water-point',
+   'samplingPoint':[2.0,1.0],'hourly':{},'gridPoints':{},'collections':{},
+  }},
+ }
+ rejected_diagnostics={}
+ _,rejected_touched,rejected_interrupted,_,_=module.process_grib(
+  asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+  [zone],rejected_output,rejected_diagnostics,
+ )
+ assert '2026-01-01T03:00:00Z' not in rejected_output['zones']['PART::TEST']['hourly']
+ assert rejected_diagnostics['rejectedScalarTuples']['PART::TEST']['wave']=='MISSING_WAVE_DIRECTION'
+ assert rejected_touched==set() and not rejected_interrupted
 `;
 const result=spawnSync(process.env.PYTHON || 'python',['-c',behavioral],{encoding:'utf8'});
 assert.equal(result.status,0,`Schedulerens adfærdstest fejlede:\n${result.stdout}\n${result.stderr}`);

@@ -41,7 +41,7 @@ const CHECKPOINT_CONTINUATION_HASH =
 
 await inspectMigrationSources();
 assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 9,
-  '4.0.340 must preserve the eight applied migrations and append one binding migration');
+  'The active cutover must preserve the eight applied migrations and append one binding migration');
 assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260909194000');
 
 const integratedMigration = await fs.readFile(
