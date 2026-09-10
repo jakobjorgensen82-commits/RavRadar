@@ -1908,6 +1908,18 @@ jobs:
           test "$(jq -er '.productionReferenceAt' .cache/copernicus-current-targets.json)" = "$target_hour"
           echo "target_hour=$target_hour" >> "$GITHUB_OUTPUT"
 
+      - name: Restore shared private Copernicus donor bank for post-build maintenance
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-post-build-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-donor-bank-v1-${{ runner.os }}-
+
       - name: Revalidate packaged exact-main source proof before maintenance acquisition
         id: copernicus-refresh-source-proof
         run: node scripts/weather-source-gate.mjs check
@@ -1937,9 +1949,34 @@ jobs:
           --backoff-seconds 0
           --
           --refresh-only
+          --donor-bank .cache/copernicus-current-donor-bank.json
           --at "${{ steps.verified-copernicus-refresh-input.outputs.target_hour }}"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets .cache/copernicus-post-build-authoritative-targets.json
+
+      - name: Reconfirm exact main before post-build donor bank cache save
+        id: copernicus-refresh-bank-write-authority
+        if: always() && steps.copernicus-refresh.outcome != 'cancelled' && steps.copernicus-refresh.outcome != 'skipped' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save post-build Copernicus donor bank before projection validation
+        if: always() && steps.copernicus-refresh-bank-write-authority.outcome == 'success' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-post-build-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Validate refreshed private Copernicus package without changing artifact outcome
         if: steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true'

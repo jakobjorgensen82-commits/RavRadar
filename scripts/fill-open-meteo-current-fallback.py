@@ -40,14 +40,18 @@ from lib.dmi_native_provenance import (
     current_attestation_authorization_from_operational_ledger,
 )
 from lib.open_meteo_current_fallback import (
+    DONOR_BANK_MAX_BYTES,
     MAXIMUM_DISTANCE_KM,
     MODEL,
     OpenMeteoCurrentFallbackError,
     build_document,
     build_record,
     merge_records,
-    reusable_records_with_salvage,
+    merge_donor_bank,
+    select_donor_records,
     safe_projection,
+    validate_checkpoint_document,
+    validate_donor_bank,
 )
 from lib.dmi_bulk_storage import read_dmi_bulk_document
 
@@ -62,7 +66,9 @@ DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_REGIONAL = ROOT / ".cache/current-field-shadow.json"
 DEFAULT_POLICY = ROOT / "data/current-regional-proxy-policy.json"
 DEFAULT_OUTPUT = ROOT / ".cache/open-meteo-current-fallback.json"
+DEFAULT_DONOR_BANK = ROOT / ".cache/open-meteo-current-donor-bank.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/open-meteo-current-fallback.json"
+DEFAULT_FETCH_REPORT = ROOT / "data/diagnostics/open-meteo-current-fetch.json"
 DEFAULT_BASE_URL = "https://marine-api.open-meteo.com/v1/marine"
 BATCH_SIZE = 50
 MAX_TRANSPORT_ATTEMPTS = 3
@@ -70,6 +76,8 @@ MAX_PARTIAL_SAME_WORK_ATTEMPTS = 1
 MAX_TOTAL_REQUEST_ATTEMPTS = 1024
 MAX_PENDING_WORK_ITEMS = 2048
 MAX_RETRY_BACKOFF_SECONDS = 15
+MIN_USEFUL_REQUEST_SECONDS = 10
+MAX_RESPONSE_EVIDENCE_SAMPLES = 32
 RETRYABLE_HTTP_STATUS = {408, 425, 429, 500, 502, 503, 504}
 ISOLATABLE_PERMANENT_HTTP_STATUS = {413, 414}
 PROACTIVE_REFRESH_AGE_HOURS = 2
@@ -87,12 +95,16 @@ class OpenMeteoRequestFailure(RuntimeError):
         http: bool = False,
         retry_after_seconds: int | None = None,
         global_scope: bool = False,
+        transport_kind: str | None = None,
+        http_status: int | None = None,
     ) -> None:
         super().__init__(code)
         self.retryable = retryable
         self.http = http
         self.retry_after_seconds = retry_after_seconds
         self.global_scope = global_scope
+        self.transport_kind = transport_kind
+        self.http_status = http_status
 
 
 @dataclass
@@ -115,7 +127,11 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--regional", type=Path, default=DEFAULT_REGIONAL)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--donor-bank", type=Path, default=DEFAULT_DONOR_BANK)
+    parser.add_argument("--reuse-only", action="store_true", help="Persist a strict current projection from private reserves without provider requests")
+    parser.add_argument("--critical-only", action="store_true", help="Fill real residual gaps without proactive quality refresh")
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--fetch-report", type=Path, default=DEFAULT_FETCH_REPORT)
     parser.add_argument("--at", required=True)
     parser.add_argument("--timeout-seconds", type=int, default=45)
     parser.add_argument("--runtime-seconds", type=int, default=240)
@@ -132,19 +148,140 @@ def read_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def read_optional_progress(path: Path) -> tuple[dict[str, Any] | None, str]:
+def read_optional_snapshot(path: Path) -> bytes | None:
+    """Bounded immutable read; disappearance after stat is not an absent cache."""
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        before = path.stat()
     except FileNotFoundError:
+        return None
+    try:
+        if before.st_size > DONOR_BANK_MAX_BYTES:
+            raise RuntimeError("OPEN_METEO_CACHE_TOO_LARGE")
+        with path.open("rb") as handle:
+            payload = handle.read(DONOR_BANK_MAX_BYTES + 1)
+        after = path.stat()
+        if len(payload) > DONOR_BANK_MAX_BYTES:
+            raise RuntimeError("OPEN_METEO_CACHE_TOO_LARGE")
+        if (before.st_size, before.st_mtime_ns, before.st_ino) != (after.st_size, after.st_mtime_ns, after.st_ino) or len(payload) != before.st_size:
+            raise RuntimeError("OPEN_METEO_CACHE_SNAPSHOT_CHANGED")
+        return payload
+    except OSError:
+        raise RuntimeError("OPEN_METEO_CACHE_SNAPSHOT_CHANGED") from None
+
+
+def read_optional_progress(path: Path) -> tuple[dict[str, Any] | None, str]:
+    payload = read_optional_snapshot(path)
+    if payload is None:
         return None, "absent"
-    except (OSError, UnicodeError, json.JSONDecodeError):
+    try:
+        value = json.loads(payload.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError):
         raise RuntimeError("OPEN_METEO_CACHE_UNPARSEABLE") from None
     if not isinstance(value, dict):
         raise RuntimeError("OPEN_METEO_CACHE_UNPARSEABLE")
     return value, "present"
 
 
-def atomic_write(path: Path, value: dict[str, Any]) -> None:
+def preserve_rejected_snapshot(path: Path) -> bool:
+    """Keep at most two immutable private quarantines; never evict other bytes.
+
+    False disables replacement of the original, not collection from providers.
+    Existing .rejected bytes are never accepted as donor authorization.
+    """
+    temporary: Path | None = None
+    try:
+        original = read_optional_snapshot(path)
+        if original is None:
+            return True
+        for suffix in (".rejected", ".rejected.previous"):
+            destination = path.with_name(path.name + suffix)
+            previous = read_optional_snapshot(destination)
+            if previous == original:
+                return True
+            if previous is not None:
+                continue
+            temporary = destination.with_name(destination.name + ".tmp")
+            with temporary.open("wb") as handle:
+                handle.write(original)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if read_optional_snapshot(temporary) != original or read_optional_snapshot(path) != original:
+                return False
+            # The shared weather writer lock serializes this final boundary.
+            existing = read_optional_snapshot(destination)
+            if existing is not None:
+                if existing == original:
+                    return True
+                temporary.unlink()
+                temporary = None
+                continue
+            os.replace(temporary, destination)
+            temporary = None
+            return read_optional_snapshot(destination) == original
+        return False
+    except (OSError, RuntimeError):
+        return False
+    finally:
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def prepare_donor_bank(bank_path: Path, projection_path: Path, *,
+                        targets: list[dict[str, Any]], reference: str,
+                        checkpointed_at: str) -> tuple[dict[str, Any], dict[str, Any], str, dict[str, bool]]:
+    """Optional donor rejection cannot block fresh provider collection.
+
+    The strict library still refuses every invalid row/header. Recovery never
+    trusts a legacy row after contradictory/damaged bank evidence in this run.
+    Once a bank exists it owns reserves; the startup v2 file is only a projection.
+    """
+    recovery = {"bankRejected": False, "legacyRejected": False, "legacySuppressed": False,
+                "bankWriteEnabled": True, "projectionWriteEnabled": True,
+                "quarantinePreserved": True}
+    parameters = {"targets": targets, "production_reference_at": reference, "checkpointed_at": checkpointed_at}
+    invalid = (OpenMeteoCurrentFallbackError, RuntimeError, OSError, TypeError, ValueError)
+    try:
+        previous_bank, bank_status = read_optional_progress(bank_path)
+        bank, stats = merge_donor_bank(previous_bank, [], **parameters)
+    except invalid:
+        recovery["bankRejected"] = True
+        recovery["legacySuppressed"] = True
+        recovery["bankWriteEnabled"] = preserve_rejected_snapshot(bank_path)
+        recovery["projectionWriteEnabled"] = preserve_rejected_snapshot(projection_path)
+        bank, stats = merge_donor_bank(None, [], **parameters)
+        bank_status = "rejected"
+    else:
+        recovery["legacySuppressed"] = bank_status != "absent"
+        if stats["salvaged"]:
+            recovery["legacySuppressed"] = True
+            recovery["bankWriteEnabled"] = preserve_rejected_snapshot(bank_path)
+            recovery["projectionWriteEnabled"] = preserve_rejected_snapshot(projection_path)
+    status = "absent" if bank_status == "absent" else "valid"
+    if not recovery["legacySuppressed"]:
+        try:
+            previous, legacy_status = read_optional_progress(projection_path)
+            if previous is not None:
+                bank, legacy_stats = merge_donor_bank(bank, [previous], **parameters)
+                stats = {**legacy_stats, "salvaged": bool(stats["salvaged"] or legacy_stats["salvaged"]),
+                         "droppedRecordCount": int(stats["droppedRecordCount"]) + int(legacy_stats["droppedRecordCount"])}
+            if legacy_status != "absent":
+                status = "valid"
+        except invalid:
+            recovery["legacyRejected"] = True
+            recovery["projectionWriteEnabled"] = preserve_rejected_snapshot(projection_path)
+    if recovery["bankRejected"] or recovery["legacyRejected"]:
+        status = "recovered"
+    elif stats["salvaged"]:
+        status = "salvaged"
+    recovery["quarantinePreserved"] = recovery["bankWriteEnabled"] and recovery["projectionWriteEnabled"]
+    return bank, stats, status, recovery
+
+
+def atomic_write(path: Path, value: dict[str, Any], *,
+                 validator: Callable[[dict[str, Any]], Any] | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
     try:
@@ -152,6 +289,11 @@ def atomic_write(path: Path, value: dict[str, Any]) -> None:
             handle.write(json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
+        if validator is not None:
+            readback, _ = read_optional_progress(temporary)
+            if readback is None or canonical_sha256(readback) != canonical_sha256(value):
+                raise RuntimeError("OPEN_METEO_CHECKPOINT_READBACK_FAILED")
+            validator(readback)
         os.replace(temporary, path)
     finally:
         if temporary.exists():
@@ -270,6 +412,7 @@ def request_json(url: str, timeout_seconds: int, deadline: float) -> Any:
                     retry_after_seconds=retry_after_seconds(
                         getattr(response, "headers", None),
                     ),
+                    http_status=status,
                 )
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
@@ -285,6 +428,7 @@ def request_json(url: str, timeout_seconds: int, deadline: float) -> Any:
             retry_after_seconds=retry_after_seconds(
                 getattr(error, "headers", None),
             ),
+            http_status=status,
         ) from error
     except (
         URLError,
@@ -295,8 +439,17 @@ def request_json(url: str, timeout_seconds: int, deadline: float) -> Any:
         UnicodeError,
         json.JSONDecodeError,
     ) as error:
+        cause = getattr(error, "reason", None) if isinstance(error, URLError) else error
+        transport_kind = (
+            "TIMEOUT" if isinstance(cause, TimeoutError)
+            else "TRUNCATED_BODY" if isinstance(error, IncompleteRead)
+            else "BODY_DECODE" if isinstance(error, (UnicodeError, json.JSONDecodeError))
+            else "NETWORK" if isinstance(error, URLError)
+            else "OTHER"
+        )
         raise OpenMeteoRequestFailure(
             "OPEN_METEO_REQUEST_FAILED", retryable=True,
+            transport_kind=transport_kind,
         ) from error
 
 
@@ -346,6 +499,8 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
         datetime.fromisoformat(reference.replace("Z", "+00:00")),
         targets,
         list(stage.get("attempts") or []),
+        positive_admissions=stage.get("positiveAdmissions", []),
+        admission_attempts=stage.get("admissionAttempts", []),
     )
     copernicus_residual = sorted(
         copernicus_residual,
@@ -387,7 +542,7 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
     }
 
 
-def initial_fetch_diagnostics(batch_count: int) -> dict[str, int | bool]:
+def initial_fetch_diagnostics(batch_count: int) -> dict[str, Any]:
     return {
         "batchCount": batch_count,
         "batchAttemptCount": 0,
@@ -418,7 +573,49 @@ def initial_fetch_diagnostics(batch_count: int) -> dict[str, int | bool]:
         "unresolvedWorkItemCount": batch_count,
         "unresolvedPartCount": 0,
         "unresolvedPairCount": 0,
+        "providerNegativePairCount": 0,
+        "negativeRetrySuppressedPairCount": 0,
+        "isolatedNegativeRetryCount": 0,
+        "pairNullSpeedCount": 0,
+        "pairNullDirectionCount": 0,
+        "pairNonFiniteValueCount": 0,
+        "pairRangeInvalidCount": 0,
+        "minimumRequestTimeoutSeconds": 0,
+        "responseEvidence": [],
+        "transportTimeoutCount": 0,
+        "transportTruncatedBodyCount": 0,
+        "transportDecodeCount": 0,
+        "transportNetworkCount": 0,
+        "transportOtherCount": 0,
+        "httpStatusCounts": {},
     }
+
+
+def safe_response_evidence(response: Any, requested_parts: int) -> dict[str, Any]:
+    """Bounded structural evidence only: never provider values, coordinates or URLs."""
+    payloads = [response] if isinstance(response, dict) else response if isinstance(response, list) else []
+    try:
+        response_sha = canonical_sha256(response)
+    except (TypeError, ValueError, UnicodeError):
+        response_sha = None
+    counts = {"nullSpeedCount": 0, "nullDirectionCount": 0,
+              "timeValueCount": 0, "speedValueCount": 0, "directionValueCount": 0}
+    for payload in payloads:
+        hourly = payload.get("hourly") if isinstance(payload, dict) else None
+        if not isinstance(hourly, dict):
+            continue
+        for field, name, null_name in (
+            ("time", "timeValueCount", None),
+            ("ocean_current_velocity", "speedValueCount", "nullSpeedCount"),
+            ("ocean_current_direction", "directionValueCount", "nullDirectionCount"),
+        ):
+            values = hourly.get(field)
+            if isinstance(values, list):
+                counts[name] += len(values)
+                if null_name:
+                    counts[null_name] += sum(value is None for value in values)
+    return {"responseSha256": response_sha, "requestedPartCount": requested_parts,
+            "responsePartCount": len(payloads), "responseContainerValid": isinstance(response, (dict, list)), **counts}
 
 
 def work_pair_keys(work: dict[str, list[str]]) -> set[tuple[str, str]]:
@@ -477,7 +674,7 @@ def fetch_records(
     *,
     checkpoint: Callable[[list[dict[str, Any]], dict[str, int | bool]], None]
         | None = None,
-    diagnostics: dict[str, int | bool] | None = None,
+    diagnostics: dict[str, Any] | None = None,
     deadline_monotonic: float | None = None,
     preserve_input_order: bool = False,
 ) -> list[dict[str, Any]]:
@@ -517,6 +714,7 @@ def fetch_records(
     if diagnostics is not None:
         diagnostics.clear()
         diagnostics.update(stats)
+        stats = diagnostics
     if not required:
         return []
     deadline = (
@@ -533,6 +731,19 @@ def fetch_records(
         PendingWork(work=work) for work in batches
     )
     provider_ready_at_monotonic = 0.0
+    # Invocation-local evidence survives every queue split. A later run gets a
+    # fresh chance; neither provider nor part/hour is permanently blacklisted.
+    negative_observations: dict[tuple[str, str, str], int] = {}
+    negative_pairs: set[tuple[str, str]] = set()
+    parked_negative_pairs: set[tuple[str, str]] = set()
+
+    def note_negative(key: tuple[str, str], reason: str,
+                      batch_reasons: dict[tuple[str, str], str]) -> None:
+        evidence_key = (*key, reason)
+        negative_observations[evidence_key] = negative_observations.get(evidence_key, 0) + 1
+        negative_pairs.add(key)
+        batch_reasons[key] = reason
+        stats["providerNegativePairCount"] = len(negative_pairs)
 
     def terminalize_queue(current: PendingWork | None = None) -> None:
         if current is not None:
@@ -608,15 +819,16 @@ def fetch_records(
         work = work_item.work
         batch_ids = list(work)
         remaining = deadline - now_monotonic
-        work_items_left = len(pending) + 1
-        if remaining <= work_items_left + 1:
+        useful_floor = min(timeout_seconds, MIN_USEFUL_REQUEST_SECONDS)
+        if remaining <= useful_floor + 1:
             stats["runtimeBudgetReached"] = True
             terminalize_queue(work_item)
             break
-        fair_timeout = min(
-            timeout_seconds,
-            max(1, int((remaining - 1) / work_items_left)),
-        )
+        # Queue growth cannot force useful requests down to one-second timeouts.
+        # Leave unresolved pairs checkpointed when the real deadline is near.
+        fair_timeout = min(timeout_seconds, int(remaining - 1))
+        old_minimum = int(stats["minimumRequestTimeoutSeconds"])
+        stats["minimumRequestTimeoutSeconds"] = min(old_minimum, fair_timeout) if old_minimum else fair_timeout
         sampling_points = [
             point(targets[part_id].get("waterPoint"))
             for part_id in batch_ids
@@ -663,6 +875,10 @@ def fetch_records(
             }:
                 retryable = getattr(error, "retryable", True) is True
                 is_http = getattr(error, "http", False) is True
+                http_status = getattr(error, "http_status", None)
+                if is_http and isinstance(http_status, int) and not isinstance(http_status, bool) and 100 <= http_status <= 599:
+                    status_key = str(http_status)
+                    stats["httpStatusCounts"][status_key] = stats["httpStatusCounts"].get(status_key, 0) + 1
                 if is_http and retryable:
                     stats["httpRetryableBatchCount"] = (
                         int(stats["httpRetryableBatchCount"]) + 1
@@ -675,6 +891,13 @@ def fetch_records(
                     stats["transportRetryableBatchCount"] = (
                         int(stats["transportRetryableBatchCount"]) + 1
                     )
+                    diagnostic_key = {
+                        "TIMEOUT": "transportTimeoutCount",
+                        "TRUNCATED_BODY": "transportTruncatedBodyCount",
+                        "BODY_DECODE": "transportDecodeCount",
+                        "NETWORK": "transportNetworkCount",
+                    }.get(getattr(error, "transport_kind", None), "transportOtherCount")
+                    stats[diagnostic_key] += 1
                 if getattr(error, "global_scope", False) is True:
                     stats["globalProviderFailure"] = True
                     terminalize_queue(work_item)
@@ -723,6 +946,13 @@ def fetch_records(
                     enqueue_split(work)
                 continue
             raise
+        sample = {**safe_response_evidence(response, len(batch_ids)),
+                  "attempt": int(stats["batchAttemptCount"]), "requestedPairCount": len(work_pair_keys(work))}
+        if len(stats["responseEvidence"]) >= MAX_RESPONSE_EVIDENCE_SAMPLES:
+            # Keep the first half and latest half, so late residual failures
+            # remain observable without accumulating raw provider payloads.
+            del stats["responseEvidence"][MAX_RESPONSE_EVIDENCE_SAMPLES // 2]
+        stats["responseEvidence"].append(sample)
         if isinstance(response, dict):
             payloads = [response]
         elif isinstance(response, list):
@@ -747,6 +977,7 @@ def fetch_records(
             continue
         batch_acquired_at = acquired_at or canonical_now()
         batch_records: list[dict[str, Any]] = []
+        batch_negative_reasons: dict[tuple[str, str], str] = {}
         for part_id, sampling, payload in zip(
             batch_ids, sampling_points, payloads
         ):
@@ -765,6 +996,8 @@ def fetch_records(
                 stats["payloadTimezoneInvalidCount"] = (
                     int(stats["payloadTimezoneInvalidCount"]) + 1
                 )
+                for valid_time in work[part_id]:
+                    note_negative((part_id, valid_time), "TIMEZONE", batch_negative_reasons)
                 continue
             if (
                 not isinstance(hourly_units, dict)
@@ -774,6 +1007,8 @@ def fetch_records(
                 stats["payloadUnitsInvalidCount"] = (
                     int(stats["payloadUnitsInvalidCount"]) + 1
                 )
+                for valid_time in work[part_id]:
+                    note_negative((part_id, valid_time), "UNITS", batch_negative_reasons)
                 continue
             if grid is None or haversine_km(
                 sampling, grid,
@@ -781,6 +1016,8 @@ def fetch_records(
                 stats["payloadGridDistanceInvalidCount"] = (
                     int(stats["payloadGridDistanceInvalidCount"]) + 1
                 )
+                for valid_time in work[part_id]:
+                    note_negative((part_id, valid_time), "GRID_DISTANCE", batch_negative_reasons)
                 continue
             if not isinstance(hourly, dict):
                 stats["payloadContractInvalidCount"] = (
@@ -849,6 +1086,15 @@ def fetch_records(
                     stats["pairValueInvalidCount"] = (
                         int(stats["pairValueInvalidCount"]) + 1
                     )
+                    if speed is None:
+                        stats["pairNullSpeedCount"] += 1
+                    if direction is None:
+                        stats["pairNullDirectionCount"] += 1
+                    if any(isinstance(value, (float, int)) and not isinstance(value, bool) and not math.isfinite(value) for value in (speed, direction)):
+                        stats["pairNonFiniteValueCount"] += 1
+                    if isinstance(speed, (float, int)) and not isinstance(speed, bool) and math.isfinite(speed) and speed < 0:
+                        stats["pairRangeInvalidCount"] += 1
+                    note_negative((part_id, valid_time), "PAIR_VALUE", batch_negative_reasons)
                     continue
                 try:
                     batch_records.append(build_record(
@@ -865,6 +1111,8 @@ def fetch_records(
                     stats["pairBuildInvalidCount"] = (
                         int(stats["pairBuildInvalidCount"]) + 1
                     )
+                    stats["pairRangeInvalidCount"] += 1
+                    note_negative((part_id, valid_time), "PAIR_BUILD", batch_negative_reasons)
                     continue
         candidates.extend(batch_records)
         selected, conflicts = merge_records(candidates)
@@ -879,11 +1127,26 @@ def fetch_records(
                 stats["partialResponseBatchCount"] = (
                     int(stats["partialResponseBatchCount"]) + 1
                 )
-            unresolved_work = work_from_pair_keys(
-                unresolved_keys, batch_ids,
-            )
-            if not enqueue_content_retry(work_item, unresolved_work):
-                enqueue_split(unresolved_work)
+            known_negative = unresolved_keys & set(batch_negative_reasons)
+            confirmed = {key for key in known_negative if negative_observations[(*key, batch_negative_reasons[key])] >= 2}
+            if confirmed:
+                parked_negative_pairs.update(confirmed)
+                terminal_pending.append(work_from_pair_keys(confirmed, batch_ids))
+                stats["negativeRetrySuppressedPairCount"] = len(parked_negative_pairs)
+            # One isolated part probe can correct multi-location selection.
+            # Binary time splitting cannot repair a confirmed bad grid/null.
+            for part_id, valid_times in work_from_pair_keys(known_negative - confirmed, batch_ids).items():
+                if len(pending) >= MAX_PENDING_WORK_ITEMS:
+                    stats["queueBudgetReached"] = True
+                    terminal_pending.append({part_id: valid_times})
+                else:
+                    pending.append(PendingWork(work={part_id: valid_times}))
+                    stats["isolatedNegativeRetryCount"] += 1
+            unknown = unresolved_keys - known_negative
+            if unknown:
+                unresolved_work = work_from_pair_keys(unknown, batch_ids)
+                if not enqueue_content_retry(work_item, unresolved_work):
+                    enqueue_split(unresolved_work)
         if batch_records and checkpoint is not None:
             checkpoint(selected, dict(stats))
     selected_keys = {
@@ -919,7 +1182,7 @@ def fetch_records(
         part_id for part_id, _ in unresolved_keys
     })
     stats["unresolvedPairCount"] = len(unresolved_keys)
-    if diagnostics is not None:
+    if diagnostics is not None and diagnostics is not stats:
         diagnostics.clear()
         diagnostics.update(stats)
     return selected
@@ -954,51 +1217,97 @@ def main() -> int:
         dmi_path=args.dmi,
     )
     required = plan["requiredPairs"]
-    previous, cache_reuse_status = read_optional_progress(args.output)
-    retained: list[dict[str, Any]] = []
-    cache_salvage: dict[str, int | bool] = {
-        "salvaged": False,
-        "droppedRecordCount": 0,
-        "droppedPairCount": 0,
-        "ignoredRecordCount": 0,
-    }
-    if previous is not None:
-        retained, cache_salvage = reusable_records_with_salvage(
-            previous,
-            targets=targets,
-            required_pairs=required,
-            production_reference_at=reference,
-            checkpointed_at=canonical_now(),
-        )
-        cache_reuse_status = (
-            "salvaged" if cache_salvage["salvaged"] else "valid"
-        )
+    donor_bank_path = getattr(args, "donor_bank", DEFAULT_DONOR_BANK)
+    fetch_report_path = getattr(args, "fetch_report", DEFAULT_FETCH_REPORT)
+    output_paths = {path.resolve() for path in (args.output, args.report, donor_bank_path, fetch_report_path)}
+    quarantine_paths = {path.with_name(path.name + suffix).resolve()
+                        for path in (args.output, donor_bank_path)
+                        for suffix in (".rejected", ".rejected.previous")}
+    if len(output_paths) != 4 or output_paths & quarantine_paths:
+        raise RuntimeError("OPEN_METEO_OUTPUT_PATH_COLLISION")
+    donor_bank, cache_salvage, cache_reuse_status, recovery = prepare_donor_bank(
+        donor_bank_path, args.output, targets=targets, reference=reference,
+        checkpointed_at=canonical_now(),
+    )
+    retained = select_donor_records(
+        donor_bank, targets=targets, required_pairs=required,
+        production_reference_at=reference, checkpointed_at=canonical_now(),
+    )
 
     latest_document: dict[str, Any] | None = None
     latest_conflict_count = 0
+    bank_checkpoint_written = False
+    projection_checkpoint_written = False
     critical_records: list[dict[str, Any]] = []
     refreshed_records: list[dict[str, Any]] = []
+    critical_diagnostics: dict[str, Any] = initial_fetch_diagnostics(0)
+    refresh_diagnostics: dict[str, Any] = initial_fetch_diagnostics(0)
+
+    def persist_fetch_diagnostics() -> None:
+        atomic_write(fetch_report_path, {
+            "schemaVersion": 1,
+            "contractId": "open-meteo-current-safe-fetch-diagnostics-v1",
+            "productionReferenceAt": reference,
+            "checkpointedAt": canonical_now(),
+            "coordinatesIncluded": False, "rawVectorsIncluded": False,
+            "partIdsIncluded": False, "requestUrlsIncluded": False,
+            "recovery": recovery,
+            "critical": critical_diagnostics, "refresh": refresh_diagnostics,
+        })
 
     def persist_checkpoint() -> None:
-        nonlocal latest_document, latest_conflict_count
-        selected, latest_conflict_count = merge_records(
+        nonlocal latest_document, latest_conflict_count, donor_bank
+        nonlocal bank_checkpoint_written, projection_checkpoint_written
+        _selected, latest_conflict_count = merge_records(
             retained, critical_records, refreshed_records,
         )
-        latest_document = build_document(
-            targets=targets,
-            required_pairs=required,
-            records=selected,
-            checkpointed_at=canonical_now(),
+        checkpoint_at = canonical_now()
+
+        def current_document(rows: list[dict[str, Any]]) -> dict[str, Any]:
+            return build_document(
+                targets=targets, required_pairs=required, records=rows,
+                checkpointed_at=checkpoint_at, production_reference_at=reference,
+                copernicus_source_stage_status=plan["sourceStageStatus"],
+                copernicus_source_stage_sha256=plan["sourceStageSha256"],
+                copernicus_bounded_progress_accepted=plan["boundedProgressAccepted"],
+                regional_evidence_sha256=plan["regionalEvidenceSha256"],
+            )
+
+        # Admit independent acquisition groups before choosing a winner. If a
+        # fresh tuple contradicts retained data at the SAME acquisition time,
+        # pre-selection must not erase that new conflict witness from the bank.
+        incoming = [current_document(rows) for rows in (critical_records, refreshed_records) if rows]
+        donor_bank, _ = merge_donor_bank(
+            donor_bank, incoming, targets=targets,
             production_reference_at=reference,
-            copernicus_source_stage_status=plan["sourceStageStatus"],
-            copernicus_source_stage_sha256=plan["sourceStageSha256"],
-            copernicus_bounded_progress_accepted=plan[
-                "boundedProgressAccepted"
-            ],
-            regional_evidence_sha256=plan["regionalEvidenceSha256"],
+            checkpointed_at=checkpoint_at,
         )
-        atomic_write(args.output, latest_document)
-        atomic_write(args.report, safe_projection(latest_document))
+        selected = select_donor_records(
+            donor_bank, targets=targets, required_pairs=required,
+            production_reference_at=reference, checkpointed_at=checkpoint_at,
+        )
+        latest_document = current_document(selected)
+        required_keys = {(row["partId"], row["validTime"]) for row in required}
+        latest_conflict_count = max(latest_conflict_count, sum(
+            (row["partId"], row["validTime"]) in required_keys
+            for row in donor_bank["conflictMasks"]
+        ))
+        # Commit the independently validated reserves FIRST. A crash may leave
+        # an older strict projection, never discard reserves outside this residual.
+        if recovery["bankWriteEnabled"]:
+            atomic_write(donor_bank_path, donor_bank,
+                         validator=lambda value: validate_donor_bank(value, targets=targets))
+            bank_checkpoint_written = True
+            export_github_outputs({"donor_bank_written": True})
+        if recovery["projectionWriteEnabled"]:
+            atomic_write(args.output, latest_document,
+                         validator=lambda value: validate_checkpoint_document(value, targets=targets))
+            projection_checkpoint_written = True
+            export_github_outputs({"checkpoint_written": True})
+            atomic_write(args.report, safe_projection(latest_document))
+        if not recovery["bankWriteEnabled"] and not recovery["projectionWriteEnabled"]:
+            persist_fetch_diagnostics()
+            raise RuntimeError("OPEN_METEO_RECOVERY_STORAGE_UNAVAILABLE")
 
     def checkpoint_critical(
         records: list[dict[str, Any]],
@@ -1019,7 +1328,22 @@ def main() -> int:
     # Rebind and persist retained rows before the first network request. A
     # later request failure therefore cannot erase already validated progress.
     persist_checkpoint()
-    export_github_outputs({"checkpoint_written": True})
+    if not recovery["quarantinePreserved"]:
+        print("Open-Meteo recovery warning: rejected original bytes preserved in place; replacement disabled for affected file; see safe recovery diagnostics.")
+    persist_fetch_diagnostics()
+    if getattr(args, "reuse_only", False):
+        if latest_document is None:
+            raise RuntimeError("OPEN_METEO_CHECKPOINT_WRITE_FAILED")
+        export_github_outputs({
+            "reuse_only": True, "donor_bank_written": bank_checkpoint_written,
+            "donor_record_count": donor_bank["entryCount"],
+            "required_pair_count": latest_document["requiredPairCount"],
+            "filled_pair_count": latest_document["recordCount"],
+            "missing_pair_count": latest_document["missingPairCount"],
+        })
+        # Success means projection completed, NOT complete coverage/closure.
+        print(f"Open-Meteo reuse projection: retained={len(retained)}; missing={latest_document['missingPairCount']}; providerRequests=0.")
+        return 0
     retained_keys = {
         (row["partId"], row["validTime"]) for row in retained
     }
@@ -1028,20 +1352,18 @@ def main() -> int:
         if (row["partId"], row["validTime"]) not in retained_keys
     ]
     deadline_monotonic = time.monotonic() + args.runtime_seconds
-    critical_diagnostics: dict[str, int | bool] = {}
-    critical_records = fetch_records(
-        fetch_required,
-        target_map,
-        None,
-        args.timeout_seconds,
-        args.runtime_seconds,
-        checkpoint=checkpoint_critical,
-        diagnostics=critical_diagnostics,
-        deadline_monotonic=deadline_monotonic,
-    )
+    try:
+        critical_records = fetch_records(
+            fetch_required, target_map, None,
+            args.timeout_seconds, args.runtime_seconds,
+            checkpoint=checkpoint_critical, diagnostics=critical_diagnostics,
+            deadline_monotonic=deadline_monotonic,
+        )
+    finally:
+        persist_fetch_diagnostics()
     persist_checkpoint()
     critical_record_keys = {
-        (row["partId"], row["validTime"]) for row in critical_records
+        (row["partId"], row["validTime"]) for row in latest_document["records"]
     }
     critical_missing_pair_count = sum(
         (row["partId"], row["validTime"]) not in critical_record_keys
@@ -1077,19 +1399,17 @@ def main() -> int:
             ),
         )
     ]
-    refresh_diagnostics = initial_fetch_diagnostics(0)
-    if critical_missing_pair_count == 0 and refresh_required:
-        refreshed_records = fetch_records(
-            refresh_required,
-            target_map,
-            None,
-            args.timeout_seconds,
-            args.runtime_seconds,
-            checkpoint=checkpoint_refresh,
-            diagnostics=refresh_diagnostics,
-            deadline_monotonic=deadline_monotonic,
-            preserve_input_order=True,
-        )
+    if critical_missing_pair_count == 0 and refresh_required and not getattr(args, "critical_only", False):
+        try:
+            refreshed_records = fetch_records(
+                refresh_required, target_map, None,
+                args.timeout_seconds, args.runtime_seconds,
+                checkpoint=checkpoint_refresh, diagnostics=refresh_diagnostics,
+                deadline_monotonic=deadline_monotonic,
+                preserve_input_order=True,
+            )
+        finally:
+            persist_fetch_diagnostics()
         persist_checkpoint()
     if latest_document is None:
         raise RuntimeError("OPEN_METEO_CHECKPOINT_WRITE_FAILED")
@@ -1189,7 +1509,7 @@ def main() -> int:
         f"batchCompleted={batch_completed_count}; "
         f"batchUnresolved={batch_unresolved_count}; "
         f"workUnresolved={unresolved_work_item_count}; "
-        f"checkpointWritten=true; cacheReuse={cache_reuse_status}; "
+        f"checkpointWritten={str(projection_checkpoint_written).lower()}; cacheReuse={cache_reuse_status}; "
         f"regionalQuarantined={quarantined_count}; "
         f"headerQuarantined={str(header_quarantined).lower()}."
     )
@@ -1219,7 +1539,13 @@ def main() -> int:
         f"globalProviderFailure={str(global_provider_failure).lower()}."
     )
     export_github_outputs({
-        "checkpoint_written": True,
+        "checkpoint_written": projection_checkpoint_written,
+        "donor_bank_written": bank_checkpoint_written,
+        "cache_bank_rejected": recovery["bankRejected"],
+        "cache_legacy_rejected": recovery["legacyRejected"],
+        "cache_legacy_suppressed": recovery["legacySuppressed"],
+        "cache_quarantine_preserved": recovery["quarantinePreserved"],
+        "donor_record_count": donor_bank["entryCount"],
         "required_pair_count": document["requiredPairCount"],
         "retained_record_count": len(retained),
         "fetched_record_count": len(fetched),
@@ -1285,7 +1611,7 @@ def main() -> int:
         "cache_dropped_record_count": cache_salvage["droppedRecordCount"],
         "cache_dropped_pair_count": cache_salvage["droppedPairCount"],
     })
-    return 0 if document["status"] == "COMPLETE" else 1
+    return 0 if document["status"] == "COMPLETE" and projection_checkpoint_written else 1
 
 
 if __name__ == "__main__":

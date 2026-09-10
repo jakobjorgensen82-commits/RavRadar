@@ -1,3 +1,35 @@
+## Lokal udvidelse 2026-09-10 – samlet vejrlivscyklus, måltestet; CI og drift afventer
+
+- Exact-head-CI `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye vejrlivscyklustests, men stoppede derefter på et forældet workflowtrinnavn i handoff-testen. Det gamle trin slettede source-stage; den nye godkendte kontrakt bevarer originalt Copernicus-bevis til kontrolleret donorbankmigration. Test-only-rettelsen følger og styrker denne kontrakt. Den isolerede test og alle 14 efterfølgende workflowtests er grønne; ingen produktionskode, workflow, migration, cache eller geodata ændres.
+- Den foregående exact-head-CI `34417094732` bestod også bindingspreflight og fuld releasegate, men fandt én forældet target-registry-fixture. Testen forventede, at nyere `PROCESSED` metadata alene kasserede en ældre attesteret cachetuple. Den blev rettet test-only til både at bevare metadata-only-winneren og afvise gammelt proof efter reel nyere tuple+attestation.
+
+- Bevarer hele den eksisterende 4.0.340 WAM-/bindingspakke og PR #274. Nye lokale ændringer er ikke dækket af de tidligere grønne måltests eller backendbeviser.
+- Adskiller vedvarende private CP-/OM-reserver fra dagens restprojektion; bevarer originale acquisitioner og recordbundne positive beviser ved referenceskift og senere kvalitetsopdateringer.
+- Tilføjer en fælles, eksakt target-/registerbundet arbejdsplan fra valideret kildeunion. Den prioriterer reelle huller, ikke blot mangler i en leverandørs egne data, uden at ændre kildeadgang eller DMI-klassifikation.
+- Bevarer DMI's gyldige gamle tuple/proof til faktisk ny erstatning, fjerner dobbeltkontrol inden for samme checkpoint og lader genuine-cold-start beholde ufuldstændig historik uden obligatorisk fuld historikhentning før operationel WAM.
+- Tilføjer fejlstyret OM-retry, private bank-recoverygrænser og sikker aggregeret diagnosedata. Legacycachekompatibilitet, alle writerkaldesteder og postbuild-kvalitetsforbedring indgår i integrationen.
+- Afsluttende review 10. september: begge banker får originalmanifest og vedvarende konfliktmasker; CP bevarer canonical bankpointer til atomisk replace; lokale succesflag eksporteres før efterfølgende projection/reportfejl. OM-planen anvender samme in-memory-recovery som indsamlingen.
+- En forkert lokal antagelse om obligatorisk parent-strøm er trukket tilbage før produktion: reelle PART-huller forbliver kritiske, mens de dokumenterede geografiske parenthuller ikke genåbner samme asset. De berørte måltests er grønne; faktisk tids-/RAM-/bankvækst er uverificeret.
+- Den samlede målmatrix for plan, DMI/checkpoint/WAM, CP-/OM-banker, recovery, workflow og privat runtime er bestået. Fire testfixtures er tilpasset den besluttede rækkefølge, acquisition-, target- og handoffkontrakt; ingen produktionsregel er lempet i testfasen. Se WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10 i docs/ai.
+- Modelbindingen er fortsat konsistent uden ny SQL-/modelhash alene fra Pythonændringerne. Ny runtimepakke skal dannes på endelig kode. Ny exact-head-CI, merge, backend, faktisk komplet vejr/handoff, vedligeholdelse og modelcutover mangler. Den gamle annullerede gate genstartes ikke.
+- Ejer har godkendt Sol Ultra, autonom fortsættelse og launchovervågning. Udskudte opgaver revideres mod det, denne pakke faktisk løser; cachetransport og bæredygtig drift er ikke automatisk bevist af donorbankerne.
+- Se `docs/ai/WEATHER_COLLECTION_SYSTEM_REVIEW_2026-09-09.md` og tillæggene til DEC-0118/0119/0114. De konkrete 535 rester, WAM MISSING_HOUR og bæredygtig normaldrift er åbne bevisgrænser, ikke erklæret løst.
+
+## 4.0.340 – ens WAM-semantik fra producent til RavScore (2026-09-09)
+
+- Samlet Astra-review retter desuden valg af nærmeste endepunkter pr. serie og fuld bølgetuple/retning før rangering, så et ugyldigt alternativ ikke skjuler et gyldigt.
+- Synkroniserer integrated-/rollbackbundles og alle SQL-/profil-/Edge-/releasebindinger med append-only migration 9. Alle otte allerede anvendte migrationer er uændrede; readiness genoptager kun det præcise pending suffix.
+- Flytter fem hurtige eksisterende bindingskontroller foran de tunge sourcefixtures, uden at fjerne eller svække den fulde gate.
+- Den grønne backend fra 4.0.339 dækker ikke de nye hashes: efter merge kræves nyt backendbevis parallelt med corrected-main oneoff. Candidate G forbliver offentlig indtil hele launchkæden består. Se `docs/ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md`.
+
+- Retter en dokumenteret kontraktforskel: DMI-planlæggeren kunne se en sikker WAM-interpolation inden for samme modelkørsel, mens slutvalidatoren og Forecast Store kun så de to nærmeste rækker og derfor kunne afvise ved et modelkørselsskifte.
+- Eksakte WAM-rækker vinder fortsat. Kun hvis de nærmeste naboer ikke må blandes, vælges den smalleste validerede bracket fra samme collection, modelkørsel, gitter og fysiske celle; firetimersloftet består absolut.
+- Bevarer fail-closed afvisning af interpolation på tværs af modelkørsel, collection, gitter eller celle. Ingen DMI→Copernicus→Open-Meteo-prioritet, cacheidentitet, geometri, scoreparameter eller offentlig model er ændret.
+- Oneoff `34371642565` gemte providerprogression, men stoppede med 324 Open-Meteo-strømpar og den falske WAM-klassifikation `MIXED_RUN_INTERPOLATION`; intet handoff eller deploy blev produceret. Efterfølger `34387410217` fortsætter på den bevarede cache, mens rettelsen gøres klar.
+- Backend `34371639398` forsøg 2 er grøn. Candidate G forbliver offentlig, indtil 4.0.340 har exact-head-kildegate, merge, komplet main-handoff, fulde post-data-gates, deploy og offentlig verifikation.
+- DEC-0122's allerede ejerautoriserede first-cutover-binding flyttes snævert til exact-release 4.0.340; øvrige integritets-, privacy-, størrelse-, storage-, readback-, closure- og releasekrav er uændrede.
+- Målrettede validator-, producent-, målbindings-, Forecast Store- og RavScore-adaptertests er grønne. Se `CHANGELOG-4.0.340.md` og `docs/ai/WAM_SAME_RUN_RESOLUTION_REVIEW_2026-09-09.md`.
+
 ## 4.0.339 – sikker genoptagelse af den integrerede backendpakke (2026-09-09)
 
 - Bevarer 4.0.338's tre allerede anvendte migrationer og genoptager kun det eksakte pending suffix 4–8.
@@ -5,6 +37,7 @@
 - Tilføjer en regressionstest, som afviser den oprindelige bare `IS DISTINCT FROM CASE`-form og kræver identiske rettede SQL-kopier.
 - Dokumenterer isoleret PostgreSQL 16-bevis for migration 4–8 i rækkefølge samt grønne måltests for partial recovery, installer, readiness, releasepolicy og workflows.
 - Flytter DEC-0122's uændrede one-shot-undtagelse til exact-release 4.0.339 og registrerer ejerens udtrykkelige autorisation til nødvendige successors med samme snævre grænser.
+- Præciserer efter ejerens godkendelse, at den ene first-cutover må bruge Supabases officielle Free-grænse på højst 52.428.800 archive-byte; oneoffens strengere 50.000.000-byte-kontrol og alle øvrige sikkerheds-, kapacitets- og releasekrav består.
 - Retter per-pair-testens forældede hash med bevis for kun to parentesers ændring; SQL-regressionen må ikke fejle på håndbogstekst. Supplerer installationsbeviset med faktiske positive/negative PostgreSQL 16.4-funktionskald.
 - Dokumenterer den ekstra Astra-helkædekontrol: same-reference-handoff og backendbinding hænger sammen; aktuelle strøm-/WAM-huller samt OM-historik og bæredygtig cachetransport er fortsat åbne og må ikke skjules af et grønt build.
 - Candidate G er fortsat offentlig. Exact-head, merge, produktionsbackend, komplet 4.0.339-weather-handoff, fulde gates og offentlig integreret model er åbne.

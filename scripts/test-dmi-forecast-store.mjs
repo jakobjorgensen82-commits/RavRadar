@@ -186,6 +186,105 @@ assert.equal(chainedWind.hourly[5].sources.wind.nativeSteps.length, 2, 'Begge ek
 assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windSpeedMps < 23, 'DKSS-halen skal kun interpoleres inden for DKSS-serien');
 assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 
+{
+  const oldRun = new Date(Date.parse(generatedAt) - 6 * 3600000).toISOString();
+  const plus1 = new Date(Date.parse(generatedAt) + 1 * 3600000).toISOString();
+  const plus3 = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const mixedRunWaveSeam = [
+    {
+      step: generatedAt,
+      'significant-wave-height': 1,
+      'mean-wave-dir': 270,
+      'dominant-wave-period': 6,
+      provenance: native('wave', 'wam_dw', generatedAt, oldRun),
+    },
+    {
+      step: plus1,
+      'significant-wave-height': 9,
+      'mean-wave-dir': 90,
+      'dominant-wave-period': 9,
+      provenance: native('wave', 'wam_dw', plus1, generatedAt),
+    },
+    {
+      step: plus3,
+      'significant-wave-height': 4,
+      'mean-wave-dir': 270,
+      'dominant-wave-period': 6,
+      provenance: native('wave', 'wam_dw', plus3, oldRun),
+    },
+  ];
+  const safeWaveSeam = buildDmiForecastHourly({
+    waves: mixedRunWaveSeam,
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(safeWaveSeam.hourly[1].waveHeightM, 9, 'en eksakt nyere WAM-række skal fortsat vinde');
+  assert.equal(safeWaveSeam.hourly[2].waveHeightM, 3, 'manglende time skal bruge den sikre bredere same-run bracket');
+  assert.equal(safeWaveSeam.hourly[2].sources.wave.modelRun, oldRun);
+  assert.deepEqual(
+    safeWaveSeam.hourly[2].sources.wave.nativeValidTimes,
+    [generatedAt, plus3],
+  );
+
+  const unsafeMixedRunSeam = buildDmiForecastHourly({
+    waves: [mixedRunWaveSeam[0], { ...mixedRunWaveSeam[2], provenance: native('wave', 'wam_dw', plus3, generatedAt) }],
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(unsafeMixedRunSeam.hourly[1].waveHeightM, null, 'WAM må fortsat ikke interpolere på tværs af modelkørsler');
+
+  const plus6 = new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString();
+  const overlongSameRun = buildDmiForecastHourly({
+    waves: [
+      mixedRunWaveSeam[0],
+      { ...mixedRunWaveSeam[2], step: plus6, provenance: native('wave', 'wam_dw', plus6, oldRun) },
+    ],
+    generatedAt,
+    hours: 3,
+    sourceCadenceMinutes: 360,
+  });
+  assert.equal(overlongSameRun.hourly[1].waveHeightM, null, 'WAM må aldrig udvide firetimersgrænsen');
+}
+
+{
+  const at = hour => new Date(Date.parse(generatedAt) + hour * 3600000).toISOString();
+  const row = (hour, run, direction, overrides = {}) => ({
+    step: at(hour),
+    'significant-wave-height': 1,
+    'dominant-wave-period': 6,
+    'mean-wave-dir': direction,
+    provenance: native('wave', 'wam_dw', at(hour), at(run), overrides),
+  });
+  const seam = [row(0, -1, 0), row(1, -2, 30), row(4, -1, 180), row(5, -2, 30)];
+  const result = buildDmiForecastHourly({ waves: seam, generatedAt, hours: 6 });
+  for (const hour of [2, 3]) {
+    assert.equal(result.hourly[hour].waveDirectionDeg, 30, 'en antipodal serie må ikke skjule den brugbare same-run serie');
+    assert.equal(result.hourly[hour].sources.wave.modelRun, at(-2));
+    assert.deepEqual(result.hourly[hour].sources.wave.nativeValidTimes, [at(1), at(5)]);
+    assert.ok(verifiedDmiForecastSource(result.hourly[hour].sources.wave, 'wave', at(hour), {
+      entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+      samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+    }), 'begge valgte endepunkter skal fortsat kunne genvalideres');
+  }
+  assert.equal(result.hourly[4].waveDirectionDeg, 180, 'den eksakte native række skal fortsat vinde');
+  const reversed = buildDmiForecastHourly({ waves: [...seam].reverse(), generatedAt, hours: 6 });
+  assert.deepEqual(reversed.hourly, result.hourly, 'serie-valget må ikke afhænge af inputrækkefølgen');
+
+  const noDirectionProof = buildDmiForecastHourly({
+    waves: [row(0, -1, 30, { optionalFieldSet: [] }), row(1, -2, 30), row(4, -1, 30, { optionalFieldSet: [] }), row(5, -2, 30)],
+    generatedAt, hours: 3,
+  });
+  assert.equal(noDirectionProof.hourly[2].waveDirectionDeg, 30, 'en alternativ series retning kræver sit eget native feltbevis');
+  assert.equal(noDirectionProof.hourly[2].sources.wave.modelRun, at(-2));
+
+  const unsafeNearestInSameSeries = buildDmiForecastHourly({
+    waves: [row(0, -1, 30), row(1, -1, 0), row(3, -2, 30), row(4, -1, 180)],
+    generatedAt, hours: 3,
+  });
+  assert.equal(unsafeNearestInSameSeries.hourly[2].waveHeightM, null,
+    'en bredere bracket i samme serie må ikke springe producentens ugyldige nærmeste tuple over');
+}
+
 const normalized = normalizeForecastHourly([
   { time: generatedAt, windSpeedMps: 4 },
   { time: generatedAt, waveHeightM: 0.5 },

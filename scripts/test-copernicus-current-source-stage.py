@@ -45,7 +45,16 @@ from lib.copernicus_current_source_stage import (
     make_source_attempt,
     PINNED_PRODUCTS,
     spatial_shards,
+    stage_positive_evidence,
+    select_source_order_admissible_records,
 )
+from lib.copernicus_current_donor_bank import (
+    legacy_donor_bank, planning_covered_pairs, build_copernicus_donor_bank,
+    validate_copernicus_donor_bank, atomic_write_copernicus_donor_bank,
+    load_copernicus_donor_bank,
+    recover_copernicus_donor_bank, projected_donor_shadow,
+)
+from lib.weather_acquisition_plan import build_current_acquisition_plan
 from lib.copernicus_target_identity import target_fingerprint
 from lib.current_operational_closure import _copernicus_state
 
@@ -314,13 +323,16 @@ def run_runner(
         command.extend(["--fixture-directory", str(fixture_directory)])
     if refresh_only:
         command.append("--refresh-only")
+    runner_env = dict(os.environ if env is None else env)
+    # Fixture commits must never set outputs on the surrounding CI step.
+    runner_env["GITHUB_OUTPUT"] = str(folder / "fixture-github-output.txt")
     return subprocess.run(
         command,
         cwd=ROOT,
         capture_output=True,
         text=True,
         check=False,
-        env=env,
+        env=runner_env,
     )
 
 
@@ -512,9 +524,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     )
     assert len(reactivated_state[0]) == 1
     assert reactivated_state[1] == []
-    # The post-closure cache-only phase accepts IN_PROGRESS. It retries the
-    # missing Baltic prerequisite before any row refresh; a completed zero
-    # result reactivates the physically retained AMM15 record and seals READY.
+    # The post-closure phase accepts IN_PROGRESS. Its independent committed
+    # bank still owns the original exact AMM15 proof even when the disposable
+    # projection has lost it; quality work cannot re-certify arbitrary rows.
     amm15_refresh = root / "amm15-in-progress-refresh"
     shutil.copytree(amm15, amm15_refresh)
     write(amm15_refresh / "source-stage.json", excluded_progress)
@@ -770,6 +782,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     legacy = {**progress_document, "schemaVersion": 1, "contractId": "copernicus-current-source-stage-in-progress-v1"}
     legacy.pop("excludedRecordRefCount")
     legacy.pop("excludedRecordRefsSha256")
+    for key in ("positiveAdmissions", "admissionAttempts", "admissionPolicySha256"):
+        legacy.pop(key)
     legacy["sourceStageId"] = canonical_sha256({k: v for k, v in legacy.items() if k != "sourceStageId"})
     assert rebase(legacy)["attempts"] == progress_document["attempts"]
 
@@ -857,14 +871,431 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     for bad_document, bad_matrix in [
         ({**progress_document, "attemptsSha256": "sha256:" + "0" * 64}, fresh_registry),
         ({**progress_document, "shadowSha256": "sha256:" + "0" * 64}, fresh_registry),
-        (progress_document, shifted_matrix(5)),
     ]:
         try:
             rebase(bad_document, bad_matrix)
         except (ValueError, RuntimeError):
             pass
         else:
-            raise AssertionError("Tampered/stale source evidence must not survive refresh")
+            raise AssertionError("Tampered source evidence must not survive refresh")
+    expired_negative = rebase(progress_document, shifted_matrix(5))
+    assert expired_negative["attempts"] == []
+    assert expired_negative["missingPairCount"] == progress_document["missingPairCount"]
+
+    # Positive availability is horizon-bound, not four-hour-journal-bound.
+    positive_after_five = validate_reusable_source_stage(
+        amm15_stage, registry=shifted_matrix(5), shadow=amm15_shadow_document,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15 / "shadow.json"), allow_rebase=True,
+    )
+    assert positive_after_five["attempts"] == []
+    assert positive_after_five["missingPairCount"] == 0
+    assert positive_after_five["positiveAdmissions"] == amm15_stage["positiveAdmissions"]
+    assert positive_after_five["admissionAttempts"] == amm15_stage["admissionAttempts"]
+
+    # A bank is independent of today's DMI residual, includes the exact
+    # original witnesses once, and cannot authorize a replacement acquisition.
+    donor_bank = legacy_donor_bank(
+        amm15_shadow_document, amm15_stage, targets=[TARGET],
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+    )
+    bank_before = copy.deepcopy(donor_bank)
+    retained_pair = (TARGET["partId"], VALID_TIME.isoformat().replace("+00:00", "Z"))
+
+    # Tied newest acquisitions may deduplicate only exact physical equivalents.
+    # A physical conflict masks this source for the pair, not other providers
+    # or all cache records; older rows of that same source cannot conceal it.
+    baltic_base_record = full_shadow["records"][0]
+    baltic_base_acquisition = next(row for row in full_shadow["acquisitions"]
+                                  if row["acquisitionId"] == baltic_base_record["acquisitionId"])
+    def competing_baltic(tag: str, *, minutes: int = 10, **physical_changes: object) -> tuple[dict, dict]:
+        acquisition = make_acquisition(
+            source="copernicus-baltic-nemo", acquisition_at=REFERENCE + timedelta(minutes=minutes),
+            request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+            targets=[TARGET], native_valid_times=[VALID_TIME],
+            subset_sha256=canonical_sha256({"fixture": tag}), record_count=1)
+        return acquisition, make_record({**baltic_base_record, **physical_changes}, acquisition, TARGET)
+    identical_acquisition, identical_record = competing_baltic("identical-other-subset")
+    conflicting_acquisition, conflicting_record = competing_baltic(
+        "different-vector", uMps=baltic_base_record["uMps"] + 0.01)
+    different_cell_acquisition, different_cell_record = competing_baltic(
+        "different-layer", verticalLayerM=baltic_base_record["verticalLayerM"] + 1)
+    older_acquisition, older_record = competing_baltic("older-unambiguous", minutes=5)
+    newer_good_acquisition, newer_good_record = competing_baltic("newer-unambiguous", minutes=11)
+    conflict_required = [{"partId": retained_pair[0], "validTime": retained_pair[1]}]
+    equivalent_refs, equivalent_missing = select_required_records(
+        conflict_required, [baltic_base_acquisition, identical_acquisition],
+        [baltic_base_record, identical_record], REFERENCE)
+    equivalent_reverse, _ = select_required_records(
+        conflict_required, [identical_acquisition, baltic_base_acquisition],
+        [identical_record, baltic_base_record], REFERENCE)
+    assert equivalent_missing == [] and equivalent_refs == equivalent_reverse
+    for other_acquisition, other_record in ((conflicting_acquisition, conflicting_record),
+                                             (different_cell_acquisition, different_cell_record)):
+        conflict_acquisitions = [baltic_base_acquisition, other_acquisition, older_acquisition]
+        conflict_records = [baltic_base_record, other_record, older_record]
+        untouched_conflict = copy.deepcopy(conflict_records)
+        conflict_refs, conflict_missing = select_required_records(
+            conflict_required, conflict_acquisitions, conflict_records, REFERENCE)
+        assert conflict_refs == [] and conflict_missing == conflict_required
+        assert conflict_records == untouched_conflict
+        fallback_refs, fallback_missing, _ = select_source_order_admissible_records(
+            conflict_required, [*conflict_acquisitions, *donor_bank["shadow"]["acquisitions"]],
+            [*conflict_records, *donor_bank["shadow"]["records"]], REFERENCE, [TARGET], [],
+            **stage_positive_evidence(donor_bank))
+        assert fallback_missing == [] and fallback_refs[0]["source"] == "copernicus-nws-amm15"
+        recovered_refs, recovered_missing = select_required_records(
+            conflict_required, [*conflict_acquisitions, newer_good_acquisition],
+            [*conflict_records, newer_good_record], REFERENCE)
+        assert recovered_missing == [] and recovered_refs[0]["recordId"] == newer_good_record["recordId"]
+
+    assert retained_pair in planning_covered_pairs(
+        donor_bank, targets=[TARGET], production_reference_at=REFERENCE + timedelta(hours=5))
+    masked_refs, masked_missing, _ = select_source_order_admissible_records(
+        [], donor_bank["shadow"]["acquisitions"], donor_bank["shadow"]["records"],
+        REFERENCE + timedelta(hours=3), [TARGET], [], **stage_positive_evidence(donor_bank))
+    assert masked_refs == [] and masked_missing == [] and donor_bank == bank_before
+    assert retained_pair in planning_covered_pairs(
+        donor_bank, targets=[TARGET], production_reference_at=REFERENCE + timedelta(hours=6))
+    assert planning_covered_pairs(donor_bank, targets=[TARGET],
+                                  production_reference_at=VALID_TIME + timedelta(hours=1)) == set()
+
+    legacy_v4 = copy.deepcopy(amm15_stage)
+    legacy_v4.update(schemaVersion=4, contractId="copernicus-current-source-stage-ready-v4")
+    for key in ("positiveAdmissions", "admissionAttempts", "admissionPolicySha256"):
+        legacy_v4.pop(key)
+    for evidence in legacy_v4["sourceOrderEvidence"]:
+        for key in ("recordId", "acquisitionId", "admissionId"):
+            evidence.pop(key)
+        evidence["evidenceSha256"] = canonical_sha256({key: value for key, value in evidence.items()
+                                                      if key != "evidenceSha256"})
+    legacy_v4["sourceOrderEvidenceSha256"] = canonical_sha256(legacy_v4["sourceOrderEvidence"])
+    legacy_v4["sourceStageId"] = canonical_sha256({key: value for key, value in legacy_v4.items()
+                                                 if key != "sourceStageId"})
+    migrated_bank = legacy_donor_bank(
+        amm15_shadow_document, legacy_v4, targets=[TARGET],
+        shadow_sha256=file_sha256(amm15 / "shadow.json"))
+    assert migrated_bank["positiveAdmissions"] == donor_bank["positiveAdmissions"]
+    assert migrated_bank["admissionAttempts"] == donor_bank["admissionAttempts"]
+
+    original_record = next(row for row in donor_bank["shadow"]["records"] if row["recordId"] in amm15_record_ids)
+    newer_acquisition = make_acquisition(
+        source="copernicus-nws-amm15", acquisition_at=REFERENCE + timedelta(hours=5, minutes=10),
+        request_start_at=VALID_TIME, request_end_at=VALID_TIME, targets=[TARGET],
+        native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "new-unproved-amm15"}),
+        record_count=1)
+    newer_record = make_record({**original_record, "uMps": 0.2}, newer_acquisition, TARGET)
+    new_source_attempt = make_source_attempt(
+        production_reference_at=REFERENCE + timedelta(hours=5),
+        acquisition_at=REFERENCE + timedelta(hours=5, minutes=10), product=PINNED_PRODUCTS[1],
+        shard_id=next(row["shardId"] for row in amm15_stage["attempts"] if row["source"] == "copernicus-nws-amm15"),
+        target_part_ids=[TARGET["partId"]], requested_pairs=[{"partId": retained_pair[0], "validTime": retained_pair[1]}],
+        subset_sha256=newer_acquisition["subsetSha256"], acquisition_id=newer_acquisition["acquisitionId"],
+        parsed_record_count=1)
+    all_acquisitions = [*donor_bank["shadow"]["acquisitions"], newer_acquisition]
+    all_records = [*donor_bank["shadow"]["records"], newer_record]
+    selected_old, no_missing, rejected_new = select_source_order_admissible_records(
+        [{"partId": retained_pair[0], "validTime": retained_pair[1]}], all_acquisitions, all_records,
+        REFERENCE + timedelta(hours=5), [TARGET], [new_source_attempt], **stage_positive_evidence(donor_bank))
+    assert no_missing == [] and selected_old[0]["recordId"] == original_record["recordId"]
+    assert {row["recordId"] for row in rejected_new} == {newer_record["recordId"]}
+    new_only, still_missing, _ = select_source_order_admissible_records(
+        [{"partId": retained_pair[0], "validTime": retained_pair[1]}], [newer_acquisition], [newer_record],
+        REFERENCE + timedelta(hours=5), [TARGET],
+        [new_source_attempt, *[row for row in amm15_stage["attempts"] if row["source"] == "copernicus-baltic-nemo"]])
+    assert new_only == [] and len(still_missing) == 1
+
+    bank_path = root / "atomic-donor-bank.json"
+    atomic_write_copernicus_donor_bank(bank_path, donor_bank, targets=[TARGET])
+    before_bytes = bank_path.read_bytes()
+    with patch("lib.copernicus_current_donor_bank.os.replace", side_effect=OSError("fixture atomic swap failure")):
+        try:
+            atomic_write_copernicus_donor_bank(bank_path, donor_bank, targets=[TARGET])
+        except OSError:
+            pass
+        else:
+            raise AssertionError("Injected donor-bank commit failure must propagate")
+    assert bank_path.read_bytes() == before_bytes
+    assert load_copernicus_donor_bank(bank_path, targets=[TARGET]) == donor_bank
+    assert not bank_path.with_name(bank_path.name + ".tmp").exists()
+    crash_folder = root / "bank-before-stage-crash"
+    crash_folder.mkdir()
+    crash_bank_path = crash_folder / "donor-bank.json"
+    crash_state = copy.deepcopy(donor_bank)
+    crash_output = crash_folder / "github-output.txt"
+    with patch.dict(os.environ, {"GITHUB_OUTPUT": str(crash_output)}), patch.object(
+        RUNNER_MODULE, "atomic_write_source_stage_progress", side_effect=OSError("fixture stage crash")):
+        try:
+            RUNNER_MODULE.persist_source_stage_progress(
+                shadow_path=crash_folder / "shadow.json", source_stage_path=crash_folder / "stage.json",
+                registry=shifted_matrix(5), target_identities={TARGET["partId"]: TARGET},
+                acquisitions=donor_bank["shadow"]["acquisitions"], records=donor_bank["shadow"]["records"],
+                attempts=[], updated_at=REFERENCE + timedelta(hours=5), shadow_changed=True,
+                donor_bank_path=crash_bank_path, donor_state=crash_state)
+        except OSError:
+            pass
+        else:
+            raise AssertionError("Injected stage crash must propagate")
+    recovered_bank = load_copernicus_donor_bank(crash_bank_path, targets=[TARGET])
+    assert recovered_bank is not None
+    assert retained_pair in planning_covered_pairs(recovered_bank, targets=[TARGET],
+                                                  production_reference_at=REFERENCE + timedelta(hours=5))
+    assert recovered_bank["positiveAdmissions"] == donor_bank["positiveAdmissions"]
+    assert crash_output.read_text(encoding="utf-8") == "donor_bank_written=true\n"
+
+    # A valid bank is authoritative even when a separately restored legacy
+    # projection has additional, independently valid records. Do not union it
+    # back in or let a stale generation override the atomic donor choice.
+    bank_first = root / "bank-first-not-legacy-union"
+    shutil.copytree(full, bank_first)
+    atomic_write_copernicus_donor_bank(
+        bank_first / "copernicus-current-donor-bank.json", donor_bank, targets=[TARGET])
+    assert run_checker(bank_first, "--require-source-stage-ready").returncode != 0
+    stale_bank_check_output = bank_first / "checker-output.txt"
+    stale_bank_check = run_checker(bank_first, "--allow-nonmatching-seal", "--github-output", str(stale_bank_check_output))
+    assert stale_bank_check.returncode == 0
+    assert "source_stage_ready=false" in stale_bank_check_output.read_text(encoding="utf-8")
+    assert "donor_projection_required=true" in stale_bank_check_output.read_text(encoding="utf-8")
+    bank_first_run = run_runner(bank_first, bank_first / "fixtures")
+    assert bank_first_run.returncode == 0, bank_first_run.stdout + bank_first_run.stderr
+    bank_first_shadow = json.loads((bank_first / "shadow.json").read_text(encoding="utf-8"))
+    assert {row["recordId"] for row in bank_first_shadow["records"]} == {
+        row["recordId"] for row in donor_bank["shadow"]["records"]}
+    assert json.loads((bank_first / "source-stage.json").read_text(encoding="utf-8"))["missingPairCount"] == 0
+    assert run_checker(bank_first, "--require-source-stage-ready").returncode == 0
+
+    # Bank header rejection quarantines that generation and both projections,
+    # but fresh provider collection still gets its own honest empty checkpoint.
+    invalid_bank = root / "invalid-bank-continues-collection"
+    shutil.copytree(full, invalid_bank)
+    write(invalid_bank / "copernicus-current-donor-bank.json", {"invalid": True})
+    invalid_bank_check_output = invalid_bank / "checker-output.txt"
+    invalid_bank_check = run_checker(invalid_bank, "--allow-nonmatching-seal", "--github-output", str(invalid_bank_check_output))
+    assert invalid_bank_check.returncode == 0
+    assert "source_stage_ready=false" in invalid_bank_check_output.read_text(encoding="utf-8")
+    assert "donor_bank_invalid=true" in invalid_bank_check_output.read_text(encoding="utf-8")
+    invalid_bank_run = run_runner(invalid_bank, invalid_bank / "fixtures")
+    assert invalid_bank_run.returncode == 0, invalid_bank_run.stdout + invalid_bank_run.stderr
+    assert list(invalid_bank.glob("copernicus-current-donor-bank.json.invalid-*"))
+    assert list(invalid_bank.glob("shadow.json.invalid-*"))
+    assert list(invalid_bank.glob("source-stage.json.invalid-*"))
+    assert load_copernicus_donor_bank(
+        invalid_bank / "copernicus-current-donor-bank.json", targets=[TARGET]) is not None
+
+    # Quarantine is bounded and never clobbers a different generation. A full
+    # archive stops this writer with the original source bytes still present.
+    quarantine_fixture = root / "bounded-quarantine"
+    quarantine_fixture.mkdir()
+    quarantine_source = quarantine_fixture / "source.json"
+    for index in range(2):
+        write(quarantine_source, {"fixture": index})
+        original_hash = file_sha256(quarantine_source).removeprefix("sha256:")
+        RUNNER_MODULE.quarantine_invalid_private_file(quarantine_source, "fixture")
+        assert not quarantine_source.exists()
+        assert (quarantine_fixture / ("source.json.invalid-" + original_hash)).exists()
+    write(quarantine_source, {"fixture": "third"})
+    quarantine_original = quarantine_source.read_bytes()
+    try:
+        RUNNER_MODULE.quarantine_invalid_private_file(quarantine_source, "fixture")
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Full quarantine must stop before changing original bytes")
+    assert quarantine_source.read_bytes() == quarantine_original
+    assert len(list(quarantine_fixture.glob("source.json.invalid-*"))) == 2
+    byte_limited_source = quarantine_fixture / "byte-limited.json"
+    write(byte_limited_source, {"fixture": "larger than allowed"})
+    with patch.object(RUNNER_MODULE, "QUARANTINE_MAX_BYTES_PER_PATH", 1):
+        try:
+            RUNNER_MODULE.quarantine_invalid_private_file(byte_limited_source, "fixture")
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("Quarantine byte cap must stop before archiving")
+    assert byte_limited_source.exists()
+
+    # DMI can hide the old AMM15 pair while a bounded quality run adds history.
+    # The current stage deliberately has no such admission; the bank must not
+    # replace its full proof set with that empty operational projection.
+    masked_quality = root / "quality-preserves-masked-reserve"
+    shutil.copytree(amm15, masked_quality)
+    masked_registry = json.loads((masked_quality / "registry.json").read_text(encoding="utf-8"))
+    masked_registry.update(operationalRequiredPairs=[], operationalRequiredPairCount=0,
+        operationalDmiVerifiedPairCount=118, dmiVerifiedPairCount=165,
+        operationalPartCount=0, operationalRequiredPairsSha256=required_pairs_sha256([]))
+    write(masked_quality / "registry.json", masked_registry)
+    masked_run = run_runner(masked_quality, masked_quality / "fixtures")
+    assert masked_run.returncode == 0, masked_run.stdout + masked_run.stderr
+    masked_stage = json.loads((masked_quality / "source-stage.json").read_text(encoding="utf-8"))
+    assert masked_stage["positiveAdmissions"] == []
+    dataset(masked_quality / "fixtures/copernicus-baltic-nemo.nc", available=False, advisory_available=True)
+    masked_refresh = run_runner(masked_quality, masked_quality / "fixtures",
+        acquisition_at=REFERENCE + timedelta(minutes=20), refresh_only=True)
+    assert masked_refresh.returncode == 0, masked_refresh.stdout + masked_refresh.stderr
+    masked_bank = load_copernicus_donor_bank(
+        masked_quality / "copernicus-current-donor-bank.json", targets=[TARGET])
+    assert masked_bank["positiveAdmissions"] == donor_bank["positiveAdmissions"]
+    assert masked_bank["admissionAttempts"] == donor_bank["admissionAttempts"]
+    assert len(masked_bank["shadow"]["records"]) > len(donor_bank["shadow"]["records"])
+    for field in ("recordId", "acquisitionId", "targetRegistrySha256", "admissionPolicySha256", "prerequisiteAttemptId"):
+        tampered_bank = copy.deepcopy(donor_bank)
+        certificate = tampered_bank["positiveAdmissions"][0]
+        certificate[field] = "sha256:" + "0" * 64
+        certificate["admissionId"] = canonical_sha256({key: value for key, value in certificate.items()
+                                                       if key != "admissionId"})
+        tampered_bank["bankSha256"] = canonical_sha256({key: value for key, value in tampered_bank.items()
+                                                       if key != "bankSha256"})
+        try:
+            validate_copernicus_donor_bank(tampered_bank, targets=[TARGET])
+        except (ValueError, RuntimeError):
+            pass
+        else:
+            raise AssertionError("Rehashed false positive admission must fail closed")
+
+    # Independent original membership localizes damaged identity fields. Keep
+    # a genuine conflict sibling to prove that salvage cannot make it appear
+    # uniquely selectable merely by dropping its damaged counterpart.
+    other_target = {**TARGET, "partId": "fixture-independent-good-part"}
+    manifest_targets = [TARGET, other_target]
+    other_acquisition = make_acquisition(source="copernicus-baltic-nemo",
+        acquisition_at=REFERENCE + timedelta(minutes=10), request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+        targets=[other_target], native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "disjoint"}), record_count=1)
+    other_record = make_record({**baltic_base_record, "partId": other_target["partId"]}, other_acquisition, other_target)
+    original_amm_record = donor_bank["shadow"]["records"][0]
+    other_amm_acquisition = make_acquisition(source="copernicus-nws-amm15",
+        acquisition_at=REFERENCE + timedelta(minutes=10), request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+        targets=[TARGET], native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "conflict"}), record_count=1)
+    other_amm_record = make_record({**original_amm_record, "uMps": original_amm_record["uMps"] + 0.01}, other_amm_acquisition, TARGET)
+    amm_product = next(row for row in PINNED_PRODUCTS if row["source"] == "copernicus-nws-amm15")
+    baltic_product = next(row for row in PINNED_PRODUCTS if row["source"] == "copernicus-baltic-nemo")
+    def proof_attempt(acquisition: dict, *, product: dict, reference: datetime) -> dict:
+        attempt_targets = [row for row in manifest_targets
+                           if row["partId"] in acquisition["targetPartIds"]]
+        return make_source_attempt(product=product, production_reference_at=reference,
+            acquisition_at=datetime.fromisoformat(acquisition["acquisitionAt"].replace("Z", "+00:00")),
+            shard_id=spatial_shards(attempt_targets, product)[0]["shardId"],
+            target_part_ids=acquisition["targetPartIds"], requested_pairs=conflict_required,
+            subset_sha256=acquisition["subsetSha256"], acquisition_id=acquisition["acquisitionId"],
+            parsed_record_count=acquisition["recordCount"])
+    conflict_manifest_shadow = {**donor_bank["shadow"],
+        "acquisitions": sorted([*donor_bank["shadow"]["acquisitions"], other_acquisition, other_amm_acquisition], key=lambda row: row["acquisitionId"]),
+        "records": sorted([*donor_bank["shadow"]["records"], other_record, other_amm_record], key=lambda row: (row["validTime"], row["partId"], row["recordId"]))}
+    manifest_bank = build_copernicus_donor_bank(conflict_manifest_shadow, targets=manifest_targets,
+        attempts=[*amm15_stage["attempts"], proof_attempt(other_amm_acquisition, product=amm_product, reference=REFERENCE)])
+    other_pair = (other_target["partId"], retained_pair[1])
+    assert planning_covered_pairs(manifest_bank, targets=manifest_targets, production_reference_at=REFERENCE) == {other_pair}
+    for damage in ("partId", "validTime", "recordId", "acquisition-delete"):
+        damaged_bank = copy.deepcopy(manifest_bank)
+        damaged_row = next(row for row in damaged_bank["shadow"]["records"] if row["recordId"] == original_amm_record["recordId"])
+        if damage == "acquisition-delete":
+            damaged_bank["shadow"]["acquisitions"] = [row for row in damaged_bank["shadow"]["acquisitions"]
+                                                       if row["acquisitionId"] != damaged_row["acquisitionId"]]
+        elif damage == "partId":
+            damaged_row["partId"] = other_target["partId"]
+        elif damage == "validTime":
+            damaged_row["validTime"] = (VALID_TIME - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+        else:
+            damaged_row["recordId"] = "sha256:" + "f" * 64
+        recovered_manifest_bank = recover_copernicus_donor_bank(damaged_bank, targets=manifest_targets)
+        assert {(row["partId"], row["validTime"], row["source"]) for row in recovered_manifest_bank["sourceMasks"]} == {
+            (retained_pair[0], retained_pair[1], "copernicus-nws-amm15")}
+        assert other_amm_record["recordId"] in {row["recordId"] for row in recovered_manifest_bank["shadow"]["records"]}
+        assert planning_covered_pairs(recovered_manifest_bank, targets=manifest_targets, production_reference_at=REFERENCE) == {other_pair}
+        for next_hour in (1, 2):
+            projection = projected_donor_shadow(recovered_manifest_bank, targets=manifest_targets)
+            recovered_manifest_bank = build_copernicus_donor_bank(projection, targets=manifest_targets, attempts=[],
+                previous_bank=recovered_manifest_bank, production_reference_at=REFERENCE + timedelta(hours=next_hour))
+            assert len(recovered_manifest_bank["sourceMasks"]) == 1
+            assert other_amm_record["recordId"] in {row["recordId"] for row in recovered_manifest_bank["shadow"]["records"]}
+            assert planning_covered_pairs(recovered_manifest_bank, targets=manifest_targets,
+                production_reference_at=REFERENCE + timedelta(hours=next_hour)) == {other_pair}
+
+    # The shared quality candidate helper preserves masks and reserves while
+    # independently improving an unmasked source/pair.
+    quality_mask_bank, quality_mask_projection = RUNNER_MODULE.donor_candidate_projection(
+        acquisitions=recovered_manifest_bank["shadow"]["acquisitions"], records=recovered_manifest_bank["shadow"]["records"],
+        attempts=[], donor_state=recovered_manifest_bank, targets=manifest_targets,
+        reference=REFERENCE + timedelta(hours=2), updated_at=REFERENCE + timedelta(hours=2, minutes=10))
+    assert quality_mask_bank["sourceMasks"] == recovered_manifest_bank["sourceMasks"]
+    assert other_amm_record["recordId"] not in {row["recordId"] for row in quality_mask_projection["records"]}
+    assert other_amm_record["recordId"] in {row["recordId"] for row in quality_mask_bank["shadow"]["records"]}
+
+    healing_reference = REFERENCE + timedelta(hours=3)
+    healing_acquisition = make_acquisition(source="copernicus-nws-amm15",
+        acquisition_at=healing_reference + timedelta(minutes=20), request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+        targets=[TARGET], native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "healing"}), record_count=1)
+    healing_record = make_record(original_amm_record, healing_acquisition, TARGET)
+    healing_input = {**quality_mask_projection,
+        "acquisitions": sorted([*quality_mask_projection["acquisitions"], healing_acquisition], key=lambda row: row["acquisitionId"]),
+        "records": sorted([*quality_mask_projection["records"], healing_record], key=lambda row: (row["validTime"], row["partId"], row["recordId"]))}
+    healing_source_attempt = proof_attempt(healing_acquisition, product=amm_product, reference=healing_reference)
+    unadmitted_healing = build_copernicus_donor_bank(healing_input, targets=manifest_targets,
+        attempts=[healing_source_attempt], previous_bank=quality_mask_bank, production_reference_at=healing_reference)
+    assert len(unadmitted_healing["sourceMasks"]) == 1
+    fresh_baltic = make_acquisition(source="copernicus-baltic-nemo",
+        acquisition_at=healing_reference + timedelta(minutes=10), request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+        targets=[TARGET], native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "fresh-negative"}), record_count=0)
+    healed_bank = build_copernicus_donor_bank(healing_input, targets=manifest_targets,
+        attempts=[proof_attempt(fresh_baltic, product=baltic_product, reference=healing_reference), healing_source_attempt],
+        previous_bank=unadmitted_healing, production_reference_at=healing_reference)
+    assert healed_bank["sourceMasks"] == []
+    assert planning_covered_pairs(healed_bank, targets=manifest_targets, production_reference_at=healing_reference) == {retained_pair, other_pair}
+
+    control_damage = copy.deepcopy(manifest_bank)
+    control_damage["manifest"]["records"][0]["partId"] = "untrusted-original-membership"
+    try:
+        recover_copernicus_donor_bank(control_damage, targets=manifest_targets)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Damaged original membership must reject the entire bank")
+
+    # Recovery preserves the damaged authoritative pathname until the single
+    # atomic replacement. A failure cannot revive a maskless legacy projection.
+    recovery_folder = root / "manifest-recovery-commit-crash"
+    recovery_folder.mkdir()
+    recovery_path = recovery_folder / "copernicus-current-donor-bank.json"
+    write(recovery_path, damaged_bank)
+    recovery_bytes = recovery_path.read_bytes()
+    recovery_diagnostics = {}
+    recovery_candidate = load_copernicus_donor_bank(recovery_path, targets=manifest_targets, diagnostics=recovery_diagnostics)
+    assert recovery_diagnostics["recovered"] is True
+    assert recovery_path.read_bytes() == recovery_bytes
+    RUNNER_MODULE.RECOVERED_DONOR_BANKS[recovery_path.resolve()] = recovery_diagnostics["originalFileSha256"]
+    with patch.object(RUNNER_MODULE, "atomic_write_copernicus_donor_bank", side_effect=OSError("fixture bank write crash")):
+        try:
+            RUNNER_MODULE.commit_donor_bank(recovery_path, recovery_candidate, targets=manifest_targets)
+        except OSError:
+            pass
+        else:
+            raise AssertionError("Injected bank write failure must propagate")
+    assert recovery_path.read_bytes() == recovery_bytes
+    assert next(recovery_folder.glob("copernicus-current-donor-bank.json.invalid-*")).read_bytes() == recovery_bytes
+    with patch.dict(os.environ, {"GITHUB_OUTPUT": str(recovery_folder / "output.txt")}):
+        RUNNER_MODULE.commit_donor_bank(recovery_path, recovery_candidate, targets=manifest_targets)
+    assert load_copernicus_donor_bank(recovery_path, targets=manifest_targets)["sourceMasks"] == recovery_candidate["sourceMasks"]
+
+    # A current global availability plan defers an already-covered fallback
+    # pair, while a genuine hole gets the provider budget first. The complete
+    # DMI residual still reaches the honest IN_PROGRESS stage unchanged.
+    planned = root / "global-critical-before-quality"
+    planned_fixtures = planned / "fixtures"
+    planned_fixtures.mkdir(parents=True)
+    planned_targets = [TARGET, {**TARGET, "partId": "fixture-real-union-hole", "waterPoint": [9.13, 57.654321]}]
+    prepare_multi(planned, planned_targets)
+    plan = build_current_acquisition_plan(
+        targets=planned_targets, production_reference_at=REFERENCE,
+        covered_pairs=[retained_pair], source_input_hashes={"fixture-fallback": donor_bank["bankSha256"]})
+    write(planned / "weather-current-acquisition-plan.json", plan)
+    dataset(planned_fixtures / "copernicus-baltic-nemo.nc", available=True, target=planned_targets[1])
+    planned_run = run_runner(planned, planned_fixtures)
+    assert planned_run.returncode == 0, planned_run.stdout + planned_run.stderr
+    planned_stage = json.loads((planned / "source-stage.json").read_text(encoding="utf-8"))
+    assert planned_stage["status"] == "IN_PROGRESS"
+    assert planned_stage["requiredPairCount"] == 2 and planned_stage["missingPairCount"] == 1
+    assert {pair["partId"] for attempt in planned_stage["attempts"] for pair in attempt["requestedPairs"]} == {
+        planned_targets[1]["partId"]}
+    assert "Kildeled: IN_PROGRESS" in planned_run.stdout
 
     # The next run has no Baltic fixture.  Success therefore proves that only
     # the exact documented Baltic attempt was skipped before AMM15 continued.
@@ -1137,8 +1568,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     mixed_new_shadow = json.loads(
         (mixed / "shadow.json").read_text(encoding="utf-8")
     )
-    assert len(mixed_new_stage["attempts"]) == 1
-    mixed_new_attempt = mixed_new_stage["attempts"][0]
+    assert len(mixed_new_stage["attempts"]) == 2
+    assert mixed_old_attempt in mixed_new_stage["attempts"]
+    mixed_new_attempt = next(row for row in mixed_new_stage["attempts"]
+                             if row["productionReferenceAt"] == mixed_rolled_registry["productionReferenceAt"])
     assert mixed_new_attempt["productionReferenceAt"] == mixed_rolled_registry[
         "productionReferenceAt"
     ]
@@ -1536,6 +1969,32 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         no_credentials,
         "--require-source-stage-ready",
     ).returncode != 0
+
+    # A broken/stale scheduling hint cannot block the initial durable honest
+    # stage. These failures must reach the ordinary missing-credentials path,
+    # not stop while parsing optional downstream coverage.
+    for plan_case in ("invalid-json", "wrong-reference", "wrong-registry", "wrong-hash"):
+        invalid_plan_folder = root / ("optional-plan-" + plan_case)
+        prepare(invalid_plan_folder)
+        invalid_plan_path = invalid_plan_folder / "weather-current-acquisition-plan.json"
+        if plan_case == "invalid-json":
+            invalid_plan_path.write_text("{", encoding="utf-8")
+        else:
+            invalid_plan = build_current_acquisition_plan(
+                targets=[OUTSIDE_BALTIC_TARGET] if plan_case == "wrong-registry" else [TARGET],
+                production_reference_at=REFERENCE + timedelta(hours=1) if plan_case == "wrong-reference" else REFERENCE,
+                covered_pairs=[], source_input_hashes={"fixture-fallback": donor_bank["bankSha256"]})
+            if plan_case == "wrong-hash":
+                invalid_plan["bindingSha256"] = "sha256:" + "0" * 64
+            write(invalid_plan_path, invalid_plan)
+        invalid_plan_run = run_runner(invalid_plan_folder, None, env=no_credentials_env)
+        assert invalid_plan_run.returncode != 0
+        assert "acquisition plan unavailable or invalid" in invalid_plan_run.stdout
+        assert "credentials are required" in invalid_plan_run.stderr
+        invalid_plan_stage = json.loads((invalid_plan_folder / "source-stage.json").read_text(encoding="utf-8"))
+        assert invalid_plan_stage["status"] == "IN_PROGRESS"
+        assert invalid_plan_stage["missingPairCount"] == 1
+        assert "donor_bank_written=true" in (invalid_plan_folder / "fixture-github-output.txt").read_text(encoding="utf-8")
 
     # Rebuilding from incomplete or absent attempt evidence cannot manufacture READY.
     first_attempt_only = [row for row in stage["attempts"] if row["source"] == "copernicus-baltic-nemo"]

@@ -13,6 +13,11 @@ const canonicalLf = source => {
 const read = async name => canonicalLf(await fs.readFile(`supabase/migrations/${name}.sql`, 'utf8'));
 const PER_PAIR_MIGRATION = '20260906162332_per_pair_weather_fallback_binding';
 const HORIZON_VALID_MIGRATION = '20260907084343_horizon_valid_weather_binding';
+const WAM_MIGRATION = '20260909194000_wam_same_run_resolution_binding';
+const HORIZON_VALID_SHA256 = 'f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d';
+const HORIZON_INTEGRATED_SHA256 = '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9';
+const HORIZON_ROLLBACK_SHA256 = '4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8';
+const HORIZON_CONTINUATION_SHA256 = '260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb';
 // 4.0.339 recovery: this migration was still pending after migration 4 rolled back.
 // Pin the corrected bytes AND prove below that only the two CASE parentheses changed.
 const PER_PAIR_MIGRATION_SHA256 = '8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2';
@@ -76,9 +81,9 @@ assert.equal(body(await read(PER_PAIR_MIGRATION)), perPairExpected,
 
 let horizonValidExpected = body(await read(PER_PAIR_MIGRATION));
 for (const [before, after, count] of [
-  [PER_PAIR_INTEGRATED_BUNDLE_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
-  [PER_PAIR_ROLLBACK_BUNDLE_SHA256, rollbackBinding().modelBundleSha256, 2],
-  [PER_PAIR_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  [PER_PAIR_INTEGRATED_BUNDLE_SHA256, HORIZON_INTEGRATED_SHA256, 3],
+  [PER_PAIR_ROLLBACK_BUNDLE_SHA256, HORIZON_ROLLBACK_SHA256, 2],
+  [PER_PAIR_CONTINUATION_SHA256, HORIZON_CONTINUATION_SHA256, 1],
   ['20260906162332', '20260907084343', 2],
 ]) {
   assert.equal(horizonValidExpected.split(before).length - 1, count);
@@ -86,4 +91,19 @@ for (const [before, after, count] of [
 }
 assert.equal(body(await read(HORIZON_VALID_MIGRATION)), horizonValidExpected,
   'Horizon-valid migration must change only exact seals/readback version, never SQL behaviour or row data');
-console.log('Open-Meteo, per-pair and horizon-valid append-only migrations: exact binding-only forward copies verified.');
+const immutableHorizon = await read(HORIZON_VALID_MIGRATION);
+assert.equal(crypto.createHash('sha256').update(immutableHorizon).digest('hex'), HORIZON_VALID_SHA256,
+  'Applied horizon-valid migration must remain byte-identical after LF normalization');
+let wamExpected = body(immutableHorizon);
+for (const [before, after, count] of [
+  [HORIZON_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
+  [HORIZON_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
+  [HORIZON_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  ['20260907084343', '20260909194000', 2],
+]) {
+  assert.equal(wamExpected.split(before).length - 1, count);
+  wamExpected = wamExpected.replaceAll(before, after);
+}
+assert.equal(body(await read(WAM_MIGRATION)), wamExpected,
+  'WAM migration must change only exact seals/readback version, never SQL behaviour or row data');
+console.log('Open-Meteo, per-pair, horizon-valid and WAM append-only migrations: immutable history and exact binding-only forward copies verified.');

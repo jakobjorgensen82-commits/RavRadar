@@ -5,6 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 
+// Existing deterministic checks run before the expensive runtime fixtures.
+// They never generate files or authorize reuse from another invocation.
+export const SOURCE_BINDING_PREFLIGHT = Object.freeze([
+  'node scripts/build-candidate-g-rollback-bundle.mjs --check',
+  'node scripts/build-ravscore-model-bundle.mjs --check',
+  'node scripts/sync-ravscore-model-binding.mjs --check',
+  'node scripts/sync-release-contract-metadata.mjs --check',
+  'node scripts/test-open-meteo-binding-migration.mjs',
+]);
+
 export function expandSourceCommands(scripts, name, parents = []) {
   assert.ok(!parents.includes(name), `Cyclic source test script: ${name}`);
   assert.ok(typeof scripts[name] === 'string' && scripts[name].trim(), `Missing test script: ${name}`);
@@ -27,8 +37,10 @@ export function buildSourceValidationPlan(scripts) {
   assert.equal(commands.at(-1), gate, 'The source declaration must retain its terminal release gate');
   const gateTests = new Set(RELEASE_GATE_TEST_FILES.map(file => `node ${file}`));
   return {
+    preflight: [...SOURCE_BINDING_PREFLIGHT],
     gate,
-    remaining: commands.filter(command => command !== gate && !gateTests.has(command)),
+    remaining: commands.filter(command => command !== gate && !gateTests.has(command)
+      && !SOURCE_BINDING_PREFLIGHT.includes(command)),
     reused: commands.filter(command => gateTests.has(command)),
   };
 }
@@ -42,6 +54,10 @@ function executeCommand(command) {
 }
 
 export function runSourceValidation(plan, { execute = executeCommand, log = console.log } = {}) {
+  for (const command of plan.preflight) {
+    log(`SOURCE binding preflight: ${command}`);
+    if (execute(command) !== 0) return 1;
+  }
   log(`SOURCE: full release gate first; ${plan.reused.length} identical test invocations need no second run.`);
   if (execute(plan.gate) !== 0) return 1;
   // Reuse exists only in this live invocation after the full gate succeeded.
@@ -60,7 +76,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
     const plan = buildSourceValidationPlan(scripts);
     if (process.argv[2] === '--plan') {
-      console.log(JSON.stringify({ fullReleaseGate: true, gateTests: RELEASE_GATE_TEST_FILES.length,
+      console.log(JSON.stringify({ fullReleaseGate: true, bindingPreflight: plan.preflight.length, gateTests: RELEASE_GATE_TEST_FILES.length,
         remainingCommands: plan.remaining.length, avoidedDuplicateInvocations: plan.reused.length }));
     } else process.exitCode = runSourceValidation(plan);
   } catch (error) {

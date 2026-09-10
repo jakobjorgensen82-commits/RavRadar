@@ -1,6 +1,57 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.339
+**Håndbogsversion:** 4.0.340
+
+## 88.44 4.0.340 – CI-opfølgning uden ændring af produktionen
+
+To exact-head-kørsler har bestået bindingskontrollerne og den fulde releasegate, men er senere stoppet på forældede testforventninger. Den seneste kørsel `34420641243` ledte efter et gammelt workflowtrin, som slettede Copernicus' source-stage. Den nye godkendte donorbankkontrakt bevarer med vilje originalt kildebevis, indtil det kan migreres kontrolleret.
+
+Kun handoff-testen er ændret i denne opfølgning. Den følger nu det faktiske bevaringstrin, afviser eksplicit sletning og kontrollerer, at et genbrugt eksakt handoff springer de nye donorbank- og plantrin over, mens afsluttende closure, validering og releasegate fortsat består. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt. Produktionskode, workflows, migrationer, cache og geodata er uændrede.
+
+Status er fortsat, at Candidate G er offentlig. En ny samlet exact-head-CI skal være helt grøn før merge; derefter mangler backend, komplet main-handoff, post-data-gates og selve modelskiftet.
+
+## 88.43 Lokal kandidat – vejrdata skal bevares, før vi henter mere
+
+**Status:** Den samlede rettelse er gennemgået og de målrettede lokale tests er bestået. To exact-head-kørsler har bevist releasegaten og store dele af sourcekæden, men ingen eksakt head er endnu bestået helt; pakken er derfor ikke merged eller lagt online. Testene omfatter den nye hentelogik, genbrug, sikker gemning, fallback og den tidligere WAM-rettelse. Seneste gennemgåede oneoff på gammel kode sluttede med 535 manglende strømpar og manglende operationelle bølgetimer; Candidate G er fortsat senest verificerede offentlige model.
+
+**Første CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen blev rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
+
+**Anden CI-opfølgning:** Næste exact-head-kontrol bestod igen releasegaten og de nye vejrtests, men en handoff-test ledte stadig efter navnet på det gamle trin, som slettede Copernicus-kildebeviset. Det aktive workflow bevarer nu med vilje originalbeviset til sikker donorbankmigration. Testen er rettet til den faktiske kontrakt og kontrollerer også, at handoff springer de nye donorbank- og plantrin over. Den og alle efterfølgende workflowtests er grønne lokalt; produktionsadfærden blev ikke ændret af denne opfølgning.
+
+**Problemet:** Listen over dagens huller blev også brugt til at bestemme, hvilke fallbackdata vi beholdt. Derfor kunne en brugbar Open-Meteo-reserve forsvinde fra den nyeste cache, når DMI midlertidigt dækkede samme time. Copernicus kunne på tilsvarende vis beholde tal, men miste det oprindelige bevis for, at de måtte bruges. Samtidig så leverandørernes arbejdsplan ikke hele den samlede dækning.
+
+**Den samlede ændring:**
+
+- Gem originale, kontrollerede reserveprognoser og deres kildebeviser i private donorbanker. Listen over dagens huller er en separat, afledt liste. En reserve forsvinder ikke, blot fordi en bedre kilde dækker timen i denne kørsel.
+- Gendan både DMI, Copernicus og Open-Meteo før planlægningen. Hent reelle huller først, både inde i vinduet og i den nye hale. DMI forsøges først, derefter Copernicus og den eksisterende fallbackkæde. De øvrige nødvendige vejrkomponenter og bølgetimer må stadig kræve arbejde.
+- Når der er dækning, skal DMI løbende overtage mest muligt, dernæst Copernicus. Den gamle brugbare række og dens bevis bliver liggende, indtil en hel ny række er kontrolleret og erstattet samlet.
+- Undgå dobbeltberegning af den samme kontrol i ét DMI-checkpoint. Bevar løbende sikre gemninger og uafhængig kontrol ved indlæsning og aflevering.
+- Bevar de 48 timers virkelige historik, men lad ikke en ufuldstændig historik ved ægte koldstart bruge hele hentebudgettet før de aktuelle prognoser. Manglende fortid forklares som HISTORY_INCOMPLETE; nødvendige bølgetimer og lagbro er fortsat obligatoriske.
+- Stop gentagen opsplitning, når et isoleret Open-Meteo-svar allerede har bevist det samme grid- eller værdiproblem. Andre huller fortsætter, og næste kørsel må prøve igen. Ingen geografiske eller fysiske datakrav lempes.
+
+**Datasikker overgang:** De eksisterende cacher bevares. Nye banker skrives og genlæses før deres afledte restfiler, og normal-, engangs- og kvalitetskørsler skal bruge samme bankkontrakt. En defekt valgfri hjælpefil må ikke blokere hele leverandørkæden. Ugyldige data må derimod aldrig godkendes, og en kendt konflikt må ikke genindføres via en gammel kopi. Lokalt gemt er ikke det samme som gemt i GitHub; afbrudt eller fejlet remote save skal fremgå ærligt.
+
+**Ekstra review 10. september:** Begge banker har nu en separat fortegnelse over rækkernes oprindelige identitet. Den gør det muligt at isolere en beskadiget række uden at miste de uafhængige raske rækker. En kendt konflikt følger med til næste kørsel og forsvinder ikke ved genindlæsning af en gammel kopi. Originalfilen bliver liggende indtil sikker erstatning; henteplanen bruger samme recovery som selve indsamlingen. Strøm på overordnede zoner er valgfri oversigtsdata, ikke et ekstra krav til den nye scoremodel. Kendte geografiske parenthuller må derfor ikke udløse endeløs genhentning; alle nødvendige lokale kystdele kræves fortsat.
+
+**Verifikation:** Måltestene er grønne, inklusive beskadigede rækker, bevarede kildebeviser og genstart. Fire testopsætninger er tilpasset den nye aftalte rækkefølge, acquisition-, target- og handoffkontrakt; ingen datakrav blev sænket. Faktisk køretid, hukommelse og bankernes vækst er endnu ikke målt i drift. Lokale tests er ikke en produktionsgaranti.
+
+**Det, vi endnu ikke ved:** Rettelsen kan bevare intakte eksisterende beviser, men ikke opfinde dem, hvis de allerede er tabt. Der er heller ikke endnu bevis for, at alle rester kan leveres under de godkendte datakrav, eller at almindelig drift kan holde trit. Det skal måles på den færdige kode. Den nye model kræver stadig komplette brugbare direkte input og et reelt samlet releasebevis; dataalder alene og delvis historik er ikke nye stopklodser. Ejeren har godkendt testene og autonom fortsættelse gennem launch og efterkontrol. Udskudte forbedringer revurderes, så allerede løste problemer ikke bygges om igen.
+
+## 88.42 4.0.340 – samme sikre WAM-valg i hele kæden
+
+En DMI-modelkørsel kan overlappe den foregående. Ved en bestemt prognosetime kan der derfor ligge en eksakt række fra den nye kørsel mellem to rækker fra den gamle. Producenten kunne allerede se, at den manglende nabotime sikkert kunne beregnes mellem de to gamle rækker, men slutkontrollen og den faktiske vejr-runtime kiggede kun på de to nærmeste rækker. De afviste derfor fejlagtigt kombinationen som blandede modelkørsler.
+
+- En eksakt række bruges stadig direkte og bliver ikke erstattet af interpolation.
+- Hvis de nærmeste rækker kommer fra forskellige modelkørsler, leder både slutkontrollen og RavScore-runtime efter den smalleste alternative bracket, hvor collection, modelkørsel, gitter og fysiske celle er identiske.
+- Nærmeste endepunkter findes inden for hver serie. Hele bølgetuplen inklusive retningen valideres før valg af alternativ; en ugyldig serie må ikke skjule et gyldigt alternativ. Eksisterende delvise input bevares, hvis intet fuldt alternativ findes.
+- Afstanden mellem endepunkterne må fortsat højst være fire timer. Findes ingen sådan bracket, markeres timen fortsat som manglende; systemet blander aldrig to modelkørsler.
+- Rettelsen ændrer ikke leverandørprioriteten, cachen, 48-timershistorikken, geometri, land-/vandpunkter eller selve scoreformlen.
+
+Oneoff `34371642565` nåede Open-Meteo, genbrugte 1.787 og hentede 270 nye af 2.381 nødvendige strømpar, men ramte 15-minuttersbudgettet med 324 tilbage. Progressionen blev gemt. Det særskilte WAM-stop var den ovenstående falske klassifikation. En ny oneoff fortsætter derfor cacheopfyldningen, mens 4.0.340 klargøres. Backend er allerede grøn; den integrerede model er endnu ikke offentlig.
+
+Det efterfølgende samlede Astra-review fandt desuden manglende synkronisering af releasebindinger. Selvom scoreformlen er uændret, indgår WAM-adapteren i modellens kontrolsum. Begge bundles og SQL-/profil-/Edge-/releaseforbrugere er derfor opdateret samlet. En ny niende migration viderefører kun kontrolsummer og checkpoint-reference; de otte anvendte migrationer er uændrede. Backend kan sikkert fortsætte med kun nummer ni pending. Den tidligere grønne backend er 4.0.339 og attesterer ikke de nye bindinger.
+
+Fem hurtige eksisterende bindingschecks køres nu før de tunge kildefixtures. De fulde kilde- og produktionsgates består. De korte WAM-, bindings-, migrations-, readiness- og installationstests er grønne. Der mangler exact-head-kildegate, merge, NY backendreadiness parallelt med komplet corrected-main oneoff, fulde post-data-gates, deploy og offentlig kontrol. Cacheformat, providerprioritet og central admin-konfiguration ændres ikke af denne synkronisering.
 
 ## 88.41 4.0.339 – backend fortsætter sikkert efter SQL-stoppet
 
@@ -9,7 +60,7 @@
 - Fejlen var det samme CASE-udtryk uden nødvendige parenteser i fem endnu ikke anvendte migrationer, schemaet og installationskopien. 4.0.339 sætter kun parenteser omkring `CASE`-udtrykket.
 - Næste backendkørsel skal genbruge de tre færdige migrationer og kun køre nummer 4–8. En anden rækkefølge eller tilstand stoppes før nye writes.
 - Hele restpakken 4–8 er afprøvet i rækkefølge på en isoleret PostgreSQL 16, og de korte recovery-, installer-, readiness-, release- og workflowtests er grønne.
-- Ejerens engangsundtagelse til første modelskift er aktuelt bundet til 4.0.339. Ejeren har også godkendt nødvendig overførsel til senere launchrettelser uden gentagen forespørgsel. Hver flytning skal registreres med én eksakt releasebinding; 50 MB-loftet samt integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller ændres ikke.
+- Ejerens engangsundtagelse til første modelskift er aktuelt bundet til 4.0.339. Ejeren har også godkendt nødvendig overførsel til senere launchrettelser uden gentagen forespørgsel. Hver flytning skal registreres med én eksakt releasebinding. For den ene first-cutover betyder Supabases officielle 50 MB-grænse præcis 52.428.800 byte; det supersederer alene den tidligere decimalgrænse på 50.000.000 byte. Integritet, privacy, storage, readback, komplette vejrdata og fulde releasekontroller ændres ikke.
 - Den igangværende 4.0.338-vejrkørsel må fortsat fylde de bevarede cacher. Dens cachefremgang kan genbruges, men selve modelskiftets forseglede handoff skal komme fra den samme eksakte 4.0.339-main-kode som consumeren.
 - Den første test af 4.0.339 stoppede på en kontrolsum, som stadig beskrev den gamle fil. Kontrollen beviser nu både den rettede fil og at forskellen kun er de nødvendige parenteser. Dokumentation om den gamle fejl må ikke få SQL-testen til at fejle.
 - Den udvidede helhedskontrol viser, at modelskiftet genbruger den komplette kørsels tidsreference; et par timers ventetid åbner ikke automatisk nye huller. Vejrkørsel `34350872447` gemte sin progression, men manglede 301 strømpar og operationelle bølgetimer. Der er ikke bevis for en defekt cachelæser.
@@ -40,7 +91,7 @@ RavRadar kan nu genbruge den store DMI-cache uden at starte forfra, når decoder
 - Første integrerede modelskift kan bruge den fastlåste offentlige Candidate G-kilde direkte. Manglende 48-timers målt historik vises som HISTORY_INCOMPLETE og opbygges senere; den opfindes ikke.
 - Første legacy-cutover kræver én konkret succesfuld komplet oneoff og genfinder netop dens forseglede vejrkilder.
 - En stor bevaret cache kontrolleres først på en særskilt sikker migrationsvej og skrives til en ny kompakt fil. Først derefter læser de almindelige strenge kontroller filen. Den oprindelige cache overskrives ikke ved fejl, og samme regel gælder pilot, normal kørsel, oneoff og en eventuel punktaktivering.
-- Ejerens engangsundtagelse gælder kun, når det private archive højst er 50 MB, storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består.
+- Ejerens engangsundtagelse gælder kun, når det private archive højst er 52.428.800 byte (Supabases officielle Free-grænse på 50 MiB), storage/checkpoint holder deres grænser, og alle integritets-, privacy- og readbackkontroller består. Oneoffens eksisterende strengere 50.000.000-byte-kontrol bevares.
 - Undtagelsen er ikke en godkendelse af hyppige fulde cachetransporter. Efter lanceringen bygges en ny transport parallelt, sammenlignes i shadow og aktiveres atomisk med rollback. Den eksisterende cache nulstilles ikke.
 - Normal højfrekvent cron/watchdog aktiveres først efter positivt transport- og budgetbevis. Oneoff er launchaccelerator; normal drift bliver derefter den permanente vedligeholder.
 

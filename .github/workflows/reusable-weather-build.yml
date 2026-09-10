@@ -416,7 +416,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.339 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.340 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -654,7 +654,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.339 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.340 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -679,7 +679,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.339 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.340 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -852,6 +852,42 @@ jobs:
             echo "::warning title=Private Copernicus cache absent::No private Copernicus shadow cache was available before DMI cache churn"
           fi
 
+      - name: Restore shared private Copernicus donor bank
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-donor-bank-v1-${{ runner.os }}-
+
+      - name: Restore shared private Open-Meteo current progress
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            open-meteo-current-fallback-v2-${{ runner.os }}-
+
+      - name: Restore shared private Open-Meteo donor bank
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            open-meteo-current-donor-bank-v1-${{ runner.os }}-
+
       - name: Restore bounded DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
@@ -958,6 +994,18 @@ jobs:
           restore-keys: |
             current-field-shadow-v1-${{ runner.os }}-
 
+      - name: Plan global current acquisition before DMI
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          if ! python scripts/build-weather-acquisition-plan.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --report data/diagnostics/weather-acquisition-plan-before-dmi.json; then
+            rm -f .cache/weather-current-acquisition-plan.json
+            echo "::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage."
+          fi
+
       - name: Update DMI bulk model cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
@@ -970,6 +1018,7 @@ jobs:
           DMI_BULK_PREFER_OUTPUT_CACHE: true
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
+          DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -994,7 +1043,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.339 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.340 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1210,9 +1259,22 @@ jobs:
           --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Remove only invalid production Copernicus source disposition
+      - name: Preserve original Copernicus admission evidence before production rebase
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'
-        run: rm -f .cache/copernicus-current-source-stage.json
+        run: echo "Preserve original source-stage evidence for validated donor migration before rebase."
+
+      - name: Plan global current acquisition before Copernicus
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          if ! python scripts/build-weather-acquisition-plan.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --report data/diagnostics/weather-acquisition-plan-before-copernicus.json; then
+            rm -f .cache/weather-current-acquisition-plan.json
+            echo "::warning::Advisory acquisition plan unavailable; Copernicus uses conservative native coverage."
+          fi
 
       - name: Install targeted Copernicus dependencies
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
@@ -1244,13 +1306,15 @@ jobs:
           --timeout-seconds 360
           --backoff-seconds 20
           --
+          --donor-bank .cache/copernicus-current-donor-bank.json
+          --acquisition-plan .cache/weather-current-acquisition-plan.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
 
       - name: Reconfirm exact main before shared Copernicus progress cache
         id: copernicus-progress-write-authority
-        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && (hashFiles('.cache/copernicus-current-shadow.json') != '' || steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1260,6 +1324,17 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save shared private Copernicus donor bank before projection gates
+        if: always() && steps.copernicus-progress-write-authority.outcome == 'success' && (steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save non-cancelled private Copernicus source-stage progress
         if: always() && steps.copernicus-progress-write-authority.outcome == 'success' && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
@@ -1304,15 +1379,6 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-production-ready-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Restore shared private Open-Meteo current progress
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/open-meteo-current-fallback.json
-          key: open-meteo-current-fallback-v2-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            open-meteo-current-fallback-v2-${{ runner.os }}-
-
       - name: Fill only the exact remaining current gaps from Open-Meteo
         id: open-meteo-fill
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
@@ -1326,7 +1392,7 @@ jobs:
 
       - name: Reconfirm exact main before shared Open-Meteo progress cache
         id: open-meteo-progress-write-authority
-        if: always() && steps.preflight.outputs.should_run == 'true' && steps.open-meteo-fill.outcome != 'cancelled' && steps.open-meteo-fill.outcome != 'skipped' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.open-meteo-fill.outcome != 'cancelled' && steps.open-meteo-fill.outcome != 'skipped' && (steps.open-meteo-fill.outputs.checkpoint_written == 'true' || steps.open-meteo-fill.outputs.donor_bank_written == 'true')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1337,12 +1403,37 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      - name: Save shared private Open-Meteo donor bank before projection gates
+        if: always() && steps.open-meteo-progress-write-authority.outcome == 'success' && steps.open-meteo-fill.outputs.donor_bank_written == 'true' && hashFiles('.cache/open-meteo-current-donor-bank.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Save shared private Open-Meteo current progress
         if: always() && steps.open-meteo-progress-write-authority.outcome == 'success' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/open-meteo-current-fallback.json
           key: open-meteo-current-fallback-v2-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Preserve safe weather acquisition diagnostics before terminal gates
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: weather-acquisition-safe-normal-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            data/diagnostics/weather-acquisition-plan-before-dmi.json
+            data/diagnostics/weather-acquisition-plan-before-copernicus.json
+            data/diagnostics/open-meteo-current-fetch.json
 
       - name: Require complete Open-Meteo residual before freshness and closure
         if: always() && steps.preflight.outputs.should_run == 'true'
@@ -1424,7 +1515,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.339 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.340 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild

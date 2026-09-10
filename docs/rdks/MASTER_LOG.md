@@ -1,3 +1,37 @@
+# NYESTE IMPLEMENTERINGSDELTA – 2026-09-10 – anden exact-head-CI fandt gammelt handoff-trinnavn
+
+Sourcegate `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye vejrlivscyklustests, men stoppede bagefter i handoff-testen, som stadig søgte efter det fjernede sletningstrin for Copernicus source-stage. Det aktive workflow bevarer med vilje originalt kildebevis til kontrolleret donorbankmigration. Testen følger nu det faktiske trin, afviser eksplicit sletning og dækker handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og de 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata ændres; ny exact-head-CI kræves.
+
+# HISTORISK IMPLEMENTERINGSDELTA – 2026-09-10 – første exact-head-CI fandt forældet cachefixture
+
+Sourcegate `34417094732` på `e459b826` bestod bindingspreflight og fuld releasegate, men stoppede senere i Copernicus-targetregistry-testen. Fejlen var en forældet forventning om, at nyere `PROCESSED` metadata skulle kassere en ældre faktisk attesteret tuple. Det strider mod ejerens atomiske bevaringskrav. Testen beviser nu både metadata-only-bevaring og afvisning af gammelt proof efter faktisk nyere tuple+attestation. Target-registry og DMI-proveniens er grønne; ingen produktionskode er ændret. Ny exact-head-CI kræves.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-10 – samlet vejrlivscyklus og autonom launchplan
+
+Ejeren kræver en grundig fælles løsning fremfor gentagne enkeltrettelser: kritisk planlægning ud fra den samlede gyldige kildeunion, bevaring af eksisterende gyldige data/proofs, alle reelle interne huller og hale før kildekvalitet, derefter DMI før Copernicus før Open-Meteo. Den ventende 4.0.340 WAM-/bindingsrettelse bevares i samme pakke. Ingen gammel-versus-hale-særprioritet eller nulstilling af cache er godkendt.
+
+Lokale måltests er udtrykkeligt godkendt efter den midlertidige pause. Ejer har bekræftet Sol Ultra, kontinuerligt autonomt arbejde og den eksisterende launchovervågning: korrekt cacheopbygning, dokumenteret vedligeholdelse, ny scoremodel online og fortsat kontrol bagefter. Den gamle annullerede gate34398417483 må ikke genstartes; en ny færdig præcis head får nødvendig CI under stående PR-/mergeautoritet. Ingen køb, vilkårlige annulleringer, cache-reset eller integritetsbypass følger af ordren.
+
+Udskudte opgaver skal revideres mod aktuelle ændringer: løst, delvist dækket, fortsat nødvendigt eller bortfaldet. Donorbanker beviser ikke automatisk en løst transport-/egresskontrakt eller kildeattesteret historikreplay. Se AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10.md i docs/ai for syv observerbare etaper og backlogrevision.
+
+Den samlede lokale rettelse er målverificeret for plan, DMI/proveniens/checkpoint/cold-start, WAM, CP-/OM-banker, konflikt/recovery, runner/checker/closure, tilstødende consumers, workflow og privat runtimepakke. To testfixtures blev tilpasset aftalt rækkefølge/acquisition-scope; ingen ny producentændring i testfasen. Fem tidlige bindingschecks er grønne; otte anvendte migrationer bevares bytefast og geodata afviger kun i topversion4.0.339→4.0.340. Se WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md i docs/ai. Ny CI/merge/backend, faktisk komplet vejr/WAM, vedligeholdelse og offentlig modelverifikation mangler.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – Astra-review af hele 4.0.340
+
+Ejeren har skiftet til Astra/Ultra og ønsket både konkret fejlretning og samlet review før nyt modellerskift. Gennemgangen omfatter WAM, bundle/SQL/Edge-bindinger, migrationsgenoptagelse, cachegenbrug, handoff, central profil, backendreadiness, CAS og Pages. To uafhængige reviewers har afsluttet; ingen yderligere konkret launchblokering er fundet i scope. Dette er ikke produktions-GO.
+
+De to tidligere kildegatefejl skyldtes utilstrækkelig samlet releaseforberedelse. Append-only migration 9, alle bindingsforbrugere og en yderligere WAM-tuple-regression er nu samlet i samme PR. Fem hurtige eksisterende checks flyttes foran de tunge fixtures uden gatebypass. Eksisterende ejerautorisation dækker ændringen; ingen ny scorepolitik, historisk SQL-omskrivning, cache-reset eller central profilmigration før cutover.
+
+Målrettede checks er grønne. Exact-head-CI, merge, nyt backendbevis, komplet corrected-main oneoff og fuld launchkæde mangler. Astra afsluttes efter samlet pakkeverifikation/push; Sol/Ekstra høj anbefales til de efterfølgende kørsler. Se [samlet review](../ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md).
+
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.340 WAM-seam
+
+- Ejerens prioritet er fortsat komplet vejr og derefter øjeblikkelig, sikker offentliggørelse af den integrerede scoremodel; arbejdet skal undgå både cachetab og reparationsspiral.
+- `34371642565` gemte providerprogression, men efterlod 324 Open-Meteo-par ved runtimebudget og stoppede separat på WAM `MIXED_RUN_INTERPOLATION`. Intet handoff eller deploy.
+- Helkædegennemgangen fandt én fælles årsag: producenten søgte inden for samme native WAM-serie, mens Python-finalen og JavaScript-runtime kun så nærmeste naboer. Begge consumers er rettet samlet; eksakte rækker vinder, fire timer er absolut loft, og cross-run/cell/collection er fortsat forbudt.
+- Målrettede validator-, producent-, target-, runtime- og RavScore-adaptertests er grønne. Ingen bred lokal gate er kørt uden konkret behov.
+- DEC-0122 er efter stående ejerautorisation flyttet snævert til 4.0.340. Oneoff `34387410217` fortsætter den eksisterende cache på 4.0.339-main; main flyttes først efter dens saves. Derefter exact-head sourcegate, merge, komplet 4.0.340-handoff og fuld launchkæde.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-09 – 4.0.339 backend-SQL-recovery
 
 - 4.0.338 bestod exact-head `34348151097` og blev merged via PR #272 som `208e878453d6d8a21b8ce879eac050d664c50c40`.

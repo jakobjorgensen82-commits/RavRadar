@@ -321,7 +321,7 @@ try {
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   );
   assert.equal(approvedCapacity.firstCutoverException.eligible, true);
-  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.339');
+  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.340');
   assert.equal(
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
     50_000_000,
@@ -755,7 +755,7 @@ try {
     '$report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"',
     '$report.incrementalGate.status == "EXCEEDS_INCREMENTAL_SIZE_BOUNDS"',
     'DEC-0122-OWNER-APPROVAL-2026-09-09',
-    '$report.firstCutoverException.releaseVersion == "4.0.339"',
+    '$report.firstCutoverException.releaseVersion == "4.0.340"',
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
     '$report.firstCutoverException.recurringAutomaticCadenceEligible == false',
     '$report.firstCutoverException.cacheTransportMigrationRequired == true',

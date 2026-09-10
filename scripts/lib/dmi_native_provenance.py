@@ -1875,21 +1875,11 @@ def _validate_current_operational_ledger(
         selected_run_epoch = _epoch(selected_model_run)
         if source_run_epoch > selected_run_epoch:
             raise ValueError("DMI retained current source is newer than selected run")
-        if source_run_epoch < selected_run_epoch:
-            state_row = state_by_collection.get(collection, {}).get(
-                source["validTime"]
-            )
-            if state_row is not None and state_row["state"] in {
-                "PROCESSED", "VERIFIED",
-            }:
-                spatial_unavailable = state_row["spatialUnavailablePartIds"]
-                if any(
-                    part_id not in spatial_unavailable
-                    for part_id in proof["attestedPartIds"]
-                ):
-                    raise ValueError(
-                        "DMI retained current source inverts newer usable tuple priority"
-                    )
+        # For an older model run, availability is decided by the actual
+        # attested row, not a newer asset's positive processing metadata.
+        # retained_pair_source_keys <= attested_pair_source_keys above proves
+        # that every retained tuple is still the exact cached winner. Once a
+        # newer row replaces it, an old retained proof is unused and rejected.
         if source_run_epoch == selected_run_epoch:
             state_row = state_by_collection.get(collection, {}).get(
                 source["validTime"]

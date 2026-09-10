@@ -5,6 +5,15 @@ import { readProductionWorkflowSource } from './lib/production-workflow-sources.
 const buildWorkflow = await readProductionWorkflowSource('build');
 const packageDoc = JSON.parse(await fs.readFile('package.json', 'utf8'));
 const copernicusRunner = await fs.readFile('scripts/run-copernicus-current-pilot.py', 'utf8');
+const copernicusBank = await fs.readFile('scripts/lib/copernicus_current_donor_bank.py', 'utf8');
+
+function pythonFunctionBlock(source, name) {
+  const marker = `def ${name}(`;
+  const start = source.indexOf(marker);
+  assert.ok(start >= 0, `Missing Python contract function: ${name}`);
+  const next = source.indexOf('\ndef ', start + marker.length);
+  return source.slice(start, next < 0 ? undefined : next);
+}
 
 const refreshStart = buildWorkflow.indexOf('- name: Refresh private Copernicus cache before DMI cache churn');
 const dmiRestoreStart = buildWorkflow.indexOf('- name: Restore bounded DMI GRIB download cache');
@@ -13,7 +22,7 @@ const dmiSaveStart = buildWorkflow.indexOf('- name: Save progressed DMI GRIB dow
 const postDmiRefreshStart = buildWorkflow.indexOf('- name: Refresh private Copernicus cache after DMI cache churn');
 const targetSelectStart = buildWorkflow.indexOf('- name: Select exact-hour DMI gaps for targeted Copernicus supplement');
 const targetInspectStart = buildWorkflow.indexOf('- name: Inspect target-bound Copernicus source stage after fresh DMI');
-const targetNormalizeStart = buildWorkflow.indexOf('- name: Remove only invalid production Copernicus source disposition');
+const targetNormalizeStart = buildWorkflow.indexOf('- name: Preserve original Copernicus admission evidence before production rebase');
 const targetRunStart = buildWorkflow.indexOf('- name: Fill only exact-hour DMI gaps from Copernicus');
 const targetProgressSaveStart = buildWorkflow.indexOf('- name: Save non-cancelled private Copernicus source-stage progress');
 const sourceStageGateStart = buildWorkflow.indexOf('- name: Require reusable Copernicus source stage before combined current closure');
@@ -61,7 +70,8 @@ assert.match(postDmiRefreshBlock, /--allow-nonmatching-seal/);
 assert.match(postDmiRefreshBlock, /--allow-invalid-shadow-as-absent/);
 assert.match(postDmiRefreshBlock, /--dmi \.cache\/dmi-candidate-progress\.json/);
 assert.match(postDmiRefreshBlock, /source_stage_reusable != 'true'/);
-assert.match(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-source-stage\.json/);
+assert.match(postDmiRefreshBlock, /Preserve original source-stage evidence for validated donor migration before rebase/);
+assert.doesNotMatch(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-source-stage\.json/);
 assert.doesNotMatch(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-shadow\.json/);
 assert.match(postDmiRefreshBlock, /--require-source-stage-reusable/);
 assert.match(postDmiRefreshBlock, /fill-open-meteo-current-fallback\.py/);
@@ -71,24 +81,66 @@ assert.match(postDmiRefreshBlock, /--targets \.cache\/copernicus-current-targets
 assert.match(postDmiRefreshBlock, /--authoritative-targets data\/live\/coastal-parts-v2\.json/);
 assert.match(postDmiRefreshBlock, /uses: actions\/cache\/save@v6/);
 assert.doesNotMatch(postDmiRefreshBlock, /current_hour_present|--require-complete/);
-assert.doesNotMatch(postDmiRefreshBlock, /actions\/upload-artifact|uMps|vMps/);
-assert.match(copernicusRunner, /def quarantine_invalid_private_file\(path: Path, label: str\)/);
-assert.match(copernicusRunner, /os\.replace\(path, quarantine\)/);
+assert.doesNotMatch(postDmiRefreshBlock, /uMps|vMps/);
+for (const block of postDmiRefreshBlock.split('\n      - name:').filter(block => block.includes('upload-artifact'))) {
+  assert.doesNotMatch(block, /\.cache\//, 'Only explicit safe aggregate diagnostics may be artifacts.');
+  assert.match(block, /weather-acquisition-plan-before-dmi\.json/);
+  assert.match(block, /retention-days: 7/);
+}
+const quarantineBlock = pythonFunctionBlock(copernicusRunner, 'quarantine_invalid_private_file');
+assert.match(quarantineBlock, /preserve_source: bool = False/);
+assert.match(quarantineBlock, /os\.link\(path, quarantine\)/,
+  'Quarantine must create a no-clobber original-byte archive, not replace another generation.');
+assert.doesNotMatch(quarantineBlock, /os\.replace\(|shutil\.copy(?:2|file)?\(/);
+assert.match(quarantineBlock, /quarantine\.stat\(\)\.st_size != path\.stat\(\)\.st_size or file_sha256\(quarantine\) != "sha256:" \+ digest/,
+  'An existing quarantine name must prove exact original size and checksum before reuse.');
+const guardedUnlinks = quarantineBlock.match(/if not preserve_source:\s*path\.unlink\(\)/g) || [];
+const allUnlinks = quarantineBlock.match(/path\.unlink\(\)/g) || [];
+assert.ok(allUnlinks.length > 0 && guardedUnlinks.length === allUnlinks.length,
+  'Archiving with preserve_source must leave the authoritative bank pathname intact.');
+assert.match(quarantineBlock, /len\(retained\) >= QUARANTINE_MAX_FILES_PER_PATH/);
+assert.match(quarantineBlock, /retained_bytes \+ path\.stat\(\)\.st_size > QUARANTINE_MAX_BYTES_PER_PATH/);
+
+const bankCommitBlock = pythonFunctionBlock(copernicusRunner, 'commit_donor_bank');
+const archiveIndex = bankCommitBlock.indexOf('quarantine_invalid_private_file(');
+const commitIndex = bankCommitBlock.indexOf('atomic_write_copernicus_donor_bank(');
+const outputIndex = bankCommitBlock.indexOf('mark_donor_bank_written()');
+assert.match(bankCommitBlock, /file_sha256\(path\) != original_sha/);
+assert.match(bankCommitBlock, /quarantine_invalid_private_file\(path, "recoverable donor bank", preserve_source=True\)/);
+assert.ok(archiveIndex >= 0 && archiveIndex < commitIndex && commitIndex < outputIndex,
+  'Recovered bytes must be archived without removing the bank before atomic promotion and its success flag.');
+assert.match(copernicusRunner,
+  /quarantine_invalid_private_file\(args\.donor_bank, "donor bank", preserve_source=True\)/,
+  'Whole-invalid startup must also keep the rejected bank authoritative until atomic replacement.');
 assert.match(
   copernicusRunner,
-  /existing, shadow_salvage = load_shadow_with_salvage\([\s\S]{0,260}existing_acquisitions, existing_records = merge_cache_evidence\([\s\S]{0,220}shadow_rewritten = bool\(shadow_salvage\["salvaged"\]\)[\s\S]{0,160}existing = atomic_write_shadow_checkpoint\(/,
-  'A parseable private shadow must preserve valid evidence while atomically resealing only its salvaged rows.',
-);
-assert.doesNotMatch(
-  copernicusRunner,
-  /quarantine_invalid_private_file\(args\.shadow/,
-  'The runner must not replace a parseable partially damaged shadow with an all-empty checkpoint.',
+  /existing, shadow_salvage = load_shadow_with_salvage\(args\.shadow, reference, target_identities\)/,
+  'Legacy projection recovery must keep the granular salvage reader.',
 );
 assert.match(
   copernicusRunner,
-  /if shadow_rewritten or not shadow_was_present:[\s\S]{0,120}quarantine_invalid_private_file\(args\.source_stage, "source stage"\)/,
-  'A source-stage binding must be invalidated when its shadow was granularly resealed.',
+  /if donor_state is None:[\s\S]{0,100}original_bank = legacy_donor_bank\(/,
+  'Original legacy admissions may migrate only before an authoritative donor bank exists.',
 );
+assert.match(
+  copernicusRunner,
+  /merged_shadow = \{\*\*donor_state\["shadow"\], "updatedAt": utc_iso\(acquisition_at\)\}/,
+  'Startup rebase must start from the authoritative full bank, not an independently restored projection.',
+);
+assert.match(copernicusRunner,
+  /donor_state = build_copernicus_donor_bank\(\s*merged_shadow,[\s\S]*?previous_bank=donor_state, production_reference_at=reference/);
+const bankBuildBlock = pythonFunctionBlock(copernicusBank, 'build_copernicus_donor_bank');
+assert.match(bankBuildBlock, /previous = validate_copernicus_donor_bank\(previous_bank, targets=targets\)/);
+assert.match(bankBuildBlock, /merge_cache_evidence\(previous\["shadow"\], shadow\["acquisitions"\]/);
+assert.match(bankBuildBlock, /masks\.extend\(previous\["sourceMasks"\]\)/,
+  'Bank rebuild must retain source masks alongside the full prior donor reserve.');
+for (const name of ['persist_source_stage_progress', 'donor_candidate_projection']) {
+  const block = pythonFunctionBlock(copernicusRunner, name);
+  assert.match(block, /previous_bank=donor_state/,
+    `${name} must merge the full previous bank, not only its disposable projection.`);
+  assert.match(block, /projected_donor_shadow\(bank, targets=targets\)/,
+    `${name} must produce operational rows through the same mask-aware projection.`);
+}
 assert.match(
   copernicusRunner,
   /Persist a target\/DMI\/shadow-bound zero-attempt stage before credentials,[\s\S]{0,300}persist_source_stage_progress\(/,

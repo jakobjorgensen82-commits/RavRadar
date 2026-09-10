@@ -1,3 +1,73 @@
+# NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
+
+Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.
+
+Det gamle trin slettede source-stage. Den godkendte donorbankkontrakt har med vilje erstattet det med `Preserve original Copernicus admission evidence before production rebase`, så gyldigt originalbevis bevares til kontrolleret migration. Test-only-rettelsen følger den faktiske kontrakt, afviser eksplicit sletning og kontrollerer nu også handoff-værnet på de nye donorbank- og plantrin. Den isolerede test og alle 14 efterfølgende workflowtests er grønne lokalt. Ingen produktionskode, workflow, migration, cache eller geodata er ændret i denne opfølgning.
+
+Næste trin er kort dokument-/RDKS-kontrol, ny exact-head-commit og én nødvendig exact-head-CI. Det fejlede run genstartes ikke; merge, backend, komplet main-handoff, post-data-gates og modelcutover afventer fortsat et samlet grønt bevis.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – første exact-head-CI afgrænset til forældet test
+
+Head `e459b826e3fae296ca8074f9a9efeadb8a7f663d` bestod bindingspreflight og den fulde releasegate, men sourcegate `34417094732` stoppede senere i `test-copernicus-target-registry-4.0.244.py`. Tre uafhængige gennemgange og lokal reproduktion viser, at fixturet stadig forventede den nu erstattede regel: nyere `PROCESSED` metadata skulle kassere en ældre, faktisk attesteret cachetuple. Det strider mod den godkendte atomiske kontrakt, hvor gammel gyldig tuple+proof består, indtil en nyere tuple faktisk er materialiseret og attesteret.
+
+Kun testen er rettet lokalt. Den beviser nu både, at metadata alene ikke sletter den gamle vinder, og at et gammelt retained proof afvises, når cachetuple og attestation faktisk er skiftet til den nyere kilde. Target-registry-testen og DMI-provenienstesten er grønne. Ingen produktionskode, migration, binding, workflow, cache eller geodata er ændret i opfølgningen. Næste trin er dokument-/diffkontrol, en ny samlet head og ny exact-head-CI; det fejlede run genstartes ikke.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – lokale måltests bestået, CI og drift afventer
+
+Den samlede vejrlivscyklusrettelse og den eksisterende 4.0.340 WAM-/bindingspakke er lokalt målverificeret. Se `docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md` fra repositoryroden for faktiske resultater og de to testfixture-rettelser. Plan/DMI/checkpoint/WAM, CP-/OM-donorbanker, recovery, runner/checker/closure, workflows og privat runtimepakke er grønne. Modelbindingens otte forbrugere er konsistente; dette Python-/workflowdelta kræver ikke nye SQL-/modelhashes. Runtimeproducentens pakkehash beregnes derimod på den endelige kode.
+
+Ingen ny head er endnu committed/pushet, CI-valideret, merged eller produktionsverificeret ved dette checkpoint. Main er senest b0ca7f5d/4.0.339; Candidate G er senest verificerede offentlige model. Gammelt run34398417483 forbliver annulleret. Næste trin er samlet pakke, én ny exact-head-CI og derefter kontrolleret faktisk cache-/launchverifikation efter AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10. Ejer har godkendt Sol Ultra, autonom fortsættelse og launchovervågning; testpausen nedenfor er historik. Udskudte opgaver revideres mod de nye faktiske resultater.
+
+GitHub-cacheinventaret viser47 poster,10.166.365.283 byte, heraf9.742.641.482 rå GRIB-byte. Read-only limit-endpoints svarer HTTP402; den faktiske konfigurerede grænse er derfor ikke verificeret. Ingen betaling, cache eller kvoteindstilling er ændret. Inventar er ikke bevis for cacheindhold eller kvoteoverskridelse. Kapacitet og restore/save måles før gentagen tung drift.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – samlet lokal rettelse og afsluttende review
+
+Se `docs/ai/WEATHER_LIFECYCLE_IMPLEMENTATION_CHECKPOINT_2026-09-10.md` fra repositoryroden og analyseafsnit 7 i `docs/ai/WEATHER_COLLECTION_SYSTEM_REVIEW_2026-09-09.md`. Fælles hulplan, vedvarende CP/OM-reserver, DMI-checkpoint/cold-start og normal/oneoff/quality-integration er skrevet lokalt. Ingen nye tests, compile, CI, providerkald eller produktion er udført.
+
+**Afsluttende review:** Originalmanifest og vedvarende konfliktmasker er nu implementeret i begge nye banker. Uafhængigt review har lukket CP's bankpointer-crashvindue og OM's manglende in-memory-recovery i henteplanen. Ingen yderligere konkret P0/P1 fundet i disse reviewede grene; dette er IKKE funktionelt bevis. En ny lokal antagelse om obligatorisk parent-strøm blev afvist mod PART-forbrugerne, den reelle gate og de kendte 12 geografiske parenthuller. Parent-only current må ikke gøre et asset kritisk eller genåbne en færdig behandling. Krav til alle 673 kystdele består.
+
+PR#274/c4043bf7 og de otte anvendte migrationer bevares. Main er senest b0ca7f5d/4.0.339, gate34398417483 cancelled, seneste oneoff535rest+WAM MISSING_HOUR, integreret model ikke online. Endelig producerbinding, måltests og faktisk driftstid/hukommelse/komplethed er stadig uverificeret. CP-bankvækst under 1GiB og bæredygtig normaldrift er åbne målepunkter, ikke lukkede løfter.
+
+**Ny ejerordre 2026-09-10:** De lokale måltests er godkendt; den midlertidige lokale testpause er ophævet. Ejeren har samtidig bestilt autonom fortsættelse gennem stabil fuld cache, ny scoremodel online, efterfølgende driftskontrol og udskudte opgaver. Se `docs/ai/AUTONOMOUS_WEATHER_LAUNCH_PLAN_2026-09-10.md` fra repositoryroden. Den eksisterende 4.0.340 WAM-/bindingsrettelse skal med. Den gamle annullerede gate må ikke genstartes; ny færdig exact-head-CI og sikker release følger gældende autoritet og nødvendigt bevis. Modellen anbefales til Sol Ultra før hovedarbejdet. Spørg ikke igen om allerede godkendte lokale tests; ældre pauseafsnit nedenfor er historik.
+
+# AKTUELT CHECKPOINT – 2026-09-09 – samlet vejrlivscyklusrettelse, IKKE releaseklar
+
+Ejeren har efter computerfrysningen udtrykkeligt bestilt grundig analyse og samlet rettelse med kvalitet først. Se `docs/ai/WEATHER_COLLECTION_SYSTEM_REVIEW_2026-09-09.md` fra repositoryroden: analysen og den fulde løsningskontrakt er gemt, og lokal implementation er igangsat. Ældre GO-/kørselsstatus nedenfor er historik.
+
+- Bevar PR #274/head `c4043bf7f0ae0e9ed147263bb49cce3cd5fc7abc` og hele 4.0.340 WAM-/bindingspakken. Main er fortsat `b0ca7f5d`/4.0.339; den integrerede model er ikke dokumenteret online.
+- Kildegate `34398417483` er completed/cancelled. Ejerens stop består: ingen nye/genstartede tests, push der starter CI, workflowdispatch, merge eller deploy. Ingen tests er kørt i dette nye implementeringsafsnit. Skrevne tests er ikke grøn evidens.
+- Seneste oneoff `34387410217`: alle provider-saves lykkedes, men535 strømrester og WAM `MISSING_HOUR`; intet handoff. Forrige run manglede324. Mindst124 tidligere dækkede overlappar er nu manglende; konkret per-pair-årsag er ikke målt. DMI forbedredes39511→42926/79414; stor egenrest er ikke alene bevis for forkert DMI-klassifikation.
+- Verificerede systemfund: OM-reserver filtreres af dagens rest; CP-positive records kan miste kortlivet kildebevis; DMI/CP planlægger ikke ud fra hele kildeunionen; gentaget DMI-checkpointarbejde fylder cirka23min af hvert48min-trin; seneste cold-start hentede48h-WAM-historik før operationel indsamling; OM gentager uproduktive splits/indholdsfejl.
+- Aftalen er ALLE reelle huller inklusive hale før kvalitet. Ved komplet dækning: DMI skal overtage mest muligt, dernæst CP, sidst OM. Bevar gammel gyldig tuple+proof til ny fuldt valideret atomisk erstatning. Ingen særregel om gammel rest før hale.
+- Implementation deles i DMI/checkpoint/cold-start, CP-positiv donorbank og OM-donorbank/fejlstyret retry. Root ejer fælles acquisition-plan, workflowkoblinger og RDKS. Der må ikke efterlades to forskellige normal-/oneoffalgoritmer. Nye banker må ikke halvt promoveres eller nulstille eksisterende data.
+- Aktuel common planningkontrakt: `scripts/lib/weather_acquisition_plan.py`; plan er kun arbejdsprioritet, aldrig positiv kildeadgang. Provider-/publicclosure forbliver selvstændig. Komplet integration, autoriseret validering, bindingsgenbygning, faktisk535-rest og WAM-livebevis er fortsat åbne.
+- Ingen blind gentagelse af små normalruns på gammel main; de bruger samme retentionfejl. Efter senere launch består shadow-transport/egress,48h-historik og bæredygtig ekstern cron. Ingen cache er ændret af analysen/lokal programmering.
+- Anbefalet indsats i dette kritiske tværgående afsnit: Ultra. En ny session skal fortsætte implementation/integration ud fra rapporten, ikke begynde helikopteranalysen forfra eller genstarte gaten.
+
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – samlet bindings- og WAM-review
+
+- To fejlede PR-kørsler viste manglende synkronisering af først bundles og derefter SQL-/profil-/Edge-/releasebindinger. De er ikke runtimebevis, og den tidligere pakke var ikke klar.
+- Det samlede Astra-review retter også et ekstra WAM-hjørnetilfælde: nærmeste endepunkter pr. native serie og validering af fuld bølgetuple/retning før valg af alternativ. Eksakte rækker og firetimerloft bevares.
+- Integrated/rollback-bundles og alle forbrugere er synkroniseret. Append-only migration 20260909194000 ændrer kun bindingshashes/readbackidentitet; alle otte anvendte migrationer er uændrede. Backend håndterer 8 applied/1 pending og øvrige gyldige prefixes.
+- Fem hurtige eksisterende bindingskontroller ligger nu før tunge kildegatefixtures uden fjernelse af den fulde gate. De tidligere fejlede måltests samt WAM 35/35, producentintegration 24/24 og readiness/installations-/migrationstests er grønne.
+- PR #274 er endnu ikke merged. Efter exact-head-kildegate og gamle provider-saves: merge, derefter NY backendreadiness og corrected-main oneoff parallelt. Backendresultatet fra 4.0.339 dækker ikke den nye pakke. Kravene er fortsat 79.414/79.414, WAM/Feggesund 354/354, gyldigt handoff, fulde produktionsgates og offentlig verifikation.
+- Candidate G er stadig offentlig. Cachetransport i shadow, kildeattesteret 48h-OM-historik og bæredygtig normal cron er fortsat obligatorisk opfølgning efter launch.
+- Samlet evidens: [Astra-review 4.0.340](../../ai/RELEASE_4_0_340_ASTRA_REVIEW_2026-09-09.md). Ældre statusafsnit nedenfor er historik og supersederes af dette checkpoint.
+
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – lokal 4.0.340 WAM-seam
+
+- [x] Klassificér oneoff `34371642565`: alle provider-saves grønne; Open-Meteo efterlod 324 ved runtimebudget; WAM stoppede separat på `MIXED_RUN_INTERPOLATION`; intet handoff/deploy.
+- [x] Reproducer producer/consumer-forskellen med nye røde regressioner i både Python-handoff og JavaScript Forecast Store.
+- [x] Implementér deterministisk same-series bracketvalg med eksakt-række-prioritet og absolut firetimersloft uden at svække mixed-run/cell/collection-afvisning.
+- [x] Bestå Python WAM 34/34, producentintegration 24/24, Forecast Store, bootstrap-target og RavScore-produktionsadapter.
+- [x] Flyt DEC-0122's allerede godkendte first-cutover-binding til exact-release 4.0.340; ingen generel drifts- eller gateundtagelse.
+- [x] Afslut versions-, RDKS-, håndbogs-, geodatafelt- og målrettede workflowkontroller; releasepakken er klar til commit uden private cache-/diagnosefiler.
+- [ ] Commit/push den præcise releasepakke og kør én exact-head GitHub-sourcegate.
+- [ ] Vent på afsluttende cache-saves i oneoff `34387410217`; kør derefter én exact-head GitHub-sourcegate og merge kun grøn head.
+- [ ] Kør komplet oneoff på eksakt 4.0.340-main og kræv 79.414/79.414, WAM/Feggesund 354/354 og runbundet handoff.
+- [ ] Kør fulde post-data-gates, artifact/deploy og offentlig 210/673-verifikation; Candidate G er offentlig indtil da.
+- [ ] Efter launch: tabsfri cachetransport i shadow, kildeattesteret 48h-OM-historik, almindelig vedligeholdelsesruntime og bounded DB-loginretry uden driftsforstyrrelse.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-09 – 4.0.339 SQL-recovery
 
 - [x] Luk 4.0.338 source/merge: exact-head `34348151097` grøn på `2bddb2db`; PR #272 merged som `208e878453d6d8a21b8ce879eac050d664c50c40`.
@@ -48,7 +118,7 @@
 - [x] Opdatér releasegate og alle fire normal-/oneoff-DMI-READY-integrationstestmarkører til den fælles codec-aware validator; 24 DMI/WAM-scenarier er grønne.
 - [x] Fjern fuld national deep-clone fra Feggesunds negative auditfixture; samme 210/673-audit består under Nodes normale lokale heaploft. To planlagte Windows Update-genstarter afbrød kun den efterfølgende samlede gate og ændrede ingen data.
 - [ ] Bestå ny samlet lokal slutgate efter legacy-normaliseringen, afslut endelig version/RDKS-head og bestå én GitHub sourcegate på eksakt PR-head. Den historiske Open-Meteo-overlapdiagnose er fortsat separat åben.
-- [ ] Merge, kør komplet main-oneoff og kræv 79.414/79.414, WAM/Feggesund 354/354 samt archive højst 50 MB.
+- [ ] Merge, kør komplet main-oneoff og kræv 79.414/79.414, WAM/Feggesund 354/354. Oneoffens eksisterende strengere 50.000.000-byte-kontrol består; den faktiske first-cutover-publisher må efter ejerens præcisering højst acceptere Supabases officielle 52.428.800-byte-grænse.
 - [ ] Gennemfør central runtime, fulde gates, artifact/deploy, Phase B og offentlig verifikation af den integrerede model.
 - [ ] Efter launch: byg og skyggeverificér cachetransport uden nulstilling; atomisk cutover/rollback før normal højfrekvent cron/watchdog.
 

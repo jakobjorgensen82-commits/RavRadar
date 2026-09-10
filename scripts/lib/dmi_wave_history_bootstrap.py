@@ -951,6 +951,65 @@ def _resolve_required_hour(
     return "interpolated", (before, after)
 
 
+def _resolve_operational_required_hour(
+    rows: Sequence[_NativeWaveRow],
+    wanted: datetime,
+    policy: WaveHistoryPolicy,
+) -> tuple[str, tuple[_NativeWaveRow, ...]]:
+    """Resolve one operational hour without interpolating across native series.
+
+    An exact native row keeps the existing precedence.  When the two closest
+    rows belong to different WAM runs/cells, search the already validated rows
+    for the narrowest safe same-series bracket.  This mirrors the producer's
+    residual calculation and never widens the four-hour interpolation bound.
+    """
+    try:
+        return _resolve_required_hour(rows, wanted, policy)
+    except WaveBootstrapError as direct_error:
+        grouped: dict[
+            tuple[str, str, str, tuple[float, float]], list[_NativeWaveRow]
+        ] = {}
+        for row in rows:
+            grouped.setdefault((
+                row.collection,
+                row.model_run,
+                row.grid_definition_sha256,
+                row.grid_point,
+            ), []).append(row)
+
+        candidates: list[tuple[tuple[Any, ...], tuple[_NativeWaveRow, ...]]] = []
+        for group_rows in grouped.values():
+            group_rows.sort(key=lambda row: row.valid_datetime)
+            try:
+                resolution, used = _resolve_required_hour(
+                    group_rows,
+                    wanted,
+                    policy,
+                )
+            except WaveBootstrapError:
+                continue
+            if resolution != "interpolated":
+                continue
+            before, after = used
+            candidates.append((
+                (
+                    (after.valid_datetime - before.valid_datetime).total_seconds(),
+                    -parse_utc_hour(before.model_run).timestamp(),
+                    -before.valid_datetime.timestamp(),
+                    after.valid_datetime.timestamp(),
+                    before.collection,
+                    before.grid_definition_sha256,
+                    before.grid_point,
+                ),
+                used,
+            ))
+
+        if not candidates:
+            raise direct_error
+        _, used = min(candidates, key=lambda candidate: candidate[0])
+        return "interpolated", used
+
+
 def resolved_native_wave_hours(
     hourly: Any,
     *,
@@ -1229,7 +1288,11 @@ def validate_wave_history_cache(
         part_interpolated: dict[str, int] = {}
         part_cells: dict[str, tuple[str, tuple[float, float]]] = {}
         for wanted in required_datetimes:
-            resolution, used = _resolve_required_hour(native_rows, wanted, policy)
+            resolution, used = (
+                _resolve_operational_required_hour(native_rows, wanted, policy)
+                if policy.mode == OPERATIONAL_MODE
+                else _resolve_required_hour(native_rows, wanted, policy)
+            )
             collection = used[0].collection
             part_collections.add(collection)
             part_runs.setdefault(collection, set()).update(row.model_run for row in used)

@@ -719,7 +719,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
-      and p_calibration_features ->> 'modelBundleSha256' = '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9'
+      and p_calibration_features ->> 'modelBundleSha256' = '8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
       p_model_version,p_calibration_features,p_calibration_eligible,
@@ -737,7 +737,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
-      and p_calibration_features ->> 'modelBundleSha256' = '4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8'
+      and p_calibration_features ->> 'modelBundleSha256' = '1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
       p_model_version,p_calibration_features,p_calibration_eligible,
@@ -1764,7 +1764,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9'
+      is distinct from '8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2679,7 +2679,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb'
+      'ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2728,7 +2728,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9"
+    "modelBundleSha256": "8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80"
   }'::jsonb then
     return false;
   end if;
@@ -2809,7 +2809,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8"
+    "modelBundleSha256": "1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5"
   }'::jsonb then
     return false;
   end if;
@@ -3102,8 +3102,8 @@ begin
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20260907084343'
-    ) then '20260907084343' else null end,
+      where m.version::text = '20260909194000'
+    ) then '20260909194000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',
       'definition', v_checkpoint_definition

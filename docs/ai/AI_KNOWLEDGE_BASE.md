@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-10 – 4.0.340 exact-head-CI afventer tredje head
+
+- PR #274 samler WAM-seam, bindingspakke og vejrlivscyklusrettelse. Main er fortsat 4.0.339, og Candidate G er fortsat offentlig.
+- Exact-head-runs `34417094732` og `34420641243` bestod bindingspreflight og fuld releasegate, men fandt bagefter hver sin forældede testfixture. Begge opfølgninger er test-only og bevarer de godkendte atomiske tuple-/Copernicus-donorbankkontrakter.
+- Den seneste isolerede handoff-test og alle 14 efterfølgende workflowtests er grønne lokalt; et uafhængigt workflowreview fandt ingen yderligere konkret P0/P1 i source-stage-/donorbank-/handoff-kæden. Ny helt grøn exact-head-CI, merge, backend, komplet main-handoff, post-data-gates og modelcutover mangler.
+
 ## Nyeste sandhed 2026-09-07 – 4.0.333 exact-unresolved Open-Meteo
 
 - 4.0.332 er merged. Oneoff `34127986853` genbrugte cache og sluttede 79.132/79.414 med 282 Open-Meteo-rester; ingen artifact/deploy/cutover.

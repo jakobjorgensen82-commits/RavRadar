@@ -213,7 +213,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260907084343_horizon_valid_weather_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -728,8 +728,8 @@ for(const marker of [
   '.cache/copernicus-current-shadow.json',
   '.cache/copernicus-current-source-stage.json',
   'copernicus-current-progress-v3-',
-  'Remove only invalid production Copernicus source disposition',
-  'rm -f .cache/copernicus-current-source-stage.json',
+  'Preserve original Copernicus admission evidence before production rebase',
+  'Preserve original source-stage evidence for validated donor migration before rebase.',
   'Require reusable Copernicus source stage before combined current closure',
   '--require-source-stage-reusable',
   'Save validated private Copernicus progress before downstream closure',

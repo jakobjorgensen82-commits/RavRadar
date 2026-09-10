@@ -865,6 +865,7 @@ assert [row["partId"] for row in incomplete_records] == ["I1", "I2"]
 assert len(incomplete_calls) == 3
 assert incomplete_checkpoints == [["I2"], ["I1", "I2"]]
 assert incomplete_diagnostics["batchAttemptCount"] == 3
+assert incomplete_diagnostics["transportTruncatedBodyCount"] == 1
 assert incomplete_diagnostics["batchCompletedCount"] == 2
 assert incomplete_diagnostics["batchUnresolvedCount"] == 0
 assert incomplete_clock.sleeps == [1]
@@ -1649,13 +1650,19 @@ main_args = SimpleNamespace(
     policy=Path("policy.json"),
     output=Path("private.json"),
     report=Path("safe.json"),
+    donor_bank=Path("donor-bank.json"),
+    fetch_report=Path("fetch-safe.json"),
+    reuse_only=False,
+    critical_only=False,
     at=first_hour,
     timeout_seconds=30,
     runtime_seconds=15,
 )
 
 
-def capture_write(path, value):
+def capture_write(path, value, *, validator=None):
+    if validator is not None:
+        validator(value)
     main_writes[path.name] = copy.deepcopy(value)
     main_write_history.append((path.name, copy.deepcopy(value)))
 
@@ -1719,7 +1726,7 @@ assert [
     value["recordCount"] for name, value in main_write_history
     if name == "private.json"
 ] == [0, 1, 1]
-assert main_outputs[0] == {"checkpoint_written": True}
+assert main_outputs[:2] == [{"donor_bank_written": True}, {"checkpoint_written": True}]
 assert main_outputs[-1]["checkpoint_written"] is True
 assert main_outputs[-1]["retained_record_count"] == 0
 assert main_outputs[-1]["fetched_record_count"] == 1
@@ -1802,11 +1809,12 @@ with patch.dict(cli["main"].__globals__, {
         },
     },
     "canonical_now": lambda: reuse_now,
-    "read_optional_progress": lambda _path: (
-        copy.deepcopy(mixed_document), "present",
+    "read_optional_progress": lambda path: (
+        (copy.deepcopy(mixed_document), "present")
+        if path == reuse_args.output else (None, "absent")
     ),
     "fetch_records": reuse_fetch,
-    "atomic_write": lambda path, value: reuse_writes.__setitem__(
+    "atomic_write": lambda path, value, **_kwargs: reuse_writes.__setitem__(
         path.name, copy.deepcopy(value),
     ),
     "export_github_outputs": lambda value: reuse_outputs.append(
@@ -1922,11 +1930,12 @@ with patch.dict(cli["main"].__globals__, {
         },
     },
     "canonical_now": lambda: aged_now,
-    "read_optional_progress": lambda _path: (
-        copy.deepcopy(aged_document), "present",
+    "read_optional_progress": lambda path: (
+        (copy.deepcopy(aged_document), "present")
+        if path == aged_args.output else (None, "absent")
     ),
     "fetch_records": aged_fetch,
-    "atomic_write": lambda path, value: aged_writes.__setitem__(
+    "atomic_write": lambda path, value, **_kwargs: aged_writes.__setitem__(
         path.name, copy.deepcopy(value),
     ),
     "export_github_outputs": lambda value: aged_outputs.append(

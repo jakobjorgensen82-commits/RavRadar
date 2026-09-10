@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { buildSourceValidationPlan, expandSourceCommands, runSourceValidation } from './validate-source-once.mjs';
+import { buildSourceValidationPlan, expandSourceCommands, runSourceValidation, SOURCE_BINDING_PREFLIGHT } from './validate-source-once.mjs';
 import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 
 const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
@@ -8,10 +8,12 @@ const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
 const gateTests = RELEASE_GATE_TEST_FILES.map(file => `node ${file}`);
 assert.equal(new Set(RELEASE_GATE_TEST_FILES).size, RELEASE_GATE_TEST_FILES.length);
-for (const command of declared) assert.ok(command === plan.gate || plan.remaining.includes(command) || gateTests.includes(command), `Lost source check: ${command}`);
-assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate && !gateTests.includes(command)));
+for (const command of declared) assert.ok(command === plan.gate || plan.preflight.includes(command) || plan.remaining.includes(command) || gateTests.includes(command), `Lost source check: ${command}`);
+assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
+assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate && !gateTests.includes(command) && !plan.preflight.includes(command)));
 assert.ok(plan.reused.length >= 29, 'Expected measured duplicate coverage');
-assert.ok(plan.remaining.includes('node scripts/build-ravscore-model-bundle.mjs --check'), 'Different arguments must not be treated as identical tests');
+assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'), 'Generated implementation must be checked before slow fixtures');
+assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'), 'All binding consumers must agree before slow fixtures');
 
 for (const changes of [
   { 'validate:source': 'node other.mjs' },
@@ -26,9 +28,9 @@ for (const changes of [
 
 const calls = [];
 assert.equal(runSourceValidation(plan, { execute: command => { calls.push(command); return 0; }, log() {} }), 0);
-assert.deepEqual(calls, [plan.gate, ...plan.remaining]);
+assert.deepEqual(calls, [...plan.preflight, plan.gate, ...plan.remaining]);
 assert.equal(calls.filter(command => command === plan.gate).length, 1);
-for (const failureIndex of [0, 1, calls.length - 1]) {
+for (const failureIndex of [...plan.preflight.keys(), plan.preflight.length, plan.preflight.length + 1, calls.length - 1]) {
   let executed = 0;
   assert.equal(runSourceValidation(plan, { execute() { return executed++ === failureIndex ? 1 : 0; }, log() {} }), 1);
   assert.equal(executed, failureIndex + 1, 'A failed gate/test cannot produce success or authorize later work');

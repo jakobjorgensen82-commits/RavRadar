@@ -40,6 +40,9 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 9,
+  '4.0.340 must preserve the eight applied migrations and append one binding migration');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260909194000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -82,7 +85,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260907084343_horizon_valid_weather_binding.sql',
+  'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -108,7 +111,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260907084343'",
+  "'20260909194000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -231,6 +234,7 @@ const unicodeList = `
  20260905090000    │                  │ 2026-09-05 09:00:00
  20260906162332    │                  │ 2026-09-06 16:23:32
  20260907084343    │                  │ 2026-09-07 08:43:43
+ 20260909194000    │                  │ 2026-09-09 19:40:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -242,10 +246,11 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260905090000', remote: null },
   { local: '20260906162332', remote: null },
   { local: '20260907084343', remote: null },
+  { local: '20260909194000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
-const currentFirstInstallList = `
+const capturedFirstEightInstallList = `
    Local            | Remote | Time (UTC)
   ------------------|--------|-----------------------
    \`20260829010000\` | \` \`    | \`2026-08-29 01:00:00\`
@@ -256,6 +261,12 @@ const currentFirstInstallList = `
    \`20260905090000\` | \` \`    | \`2026-09-05 09:00:00\`
    \`20260906162332\` | \` \`    | \`2026-09-06 16:23:32\`
    \`20260907084343\` | \` \`    | \`2026-09-07 08:43:43\`
+`;
+assert.deepEqual(parseSupabaseMigrationList(capturedFirstEightInstallList),
+  REQUIRED_CUTOVER_MIGRATIONS.slice(0, 8).map(item => ({ local: item.version, remote: null })));
+// Append the release's new row while preserving the captured eight-row CLI fixture.
+const currentFirstInstallList = `${capturedFirstEightInstallList}
+   \`20260909194000\` | \` \`    | \`2026-09-09 19:40:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -318,7 +329,7 @@ Finished supabase db push.
 `,
 });
 assert.deepEqual(plan.pendingVersions,
-  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343']);
+  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343', '20260909194000']);
 assert.deepEqual(plan.alreadyAppliedVersions,
   ['20260829010000', '20260829020000', '20260901010000']);
 
@@ -352,6 +363,7 @@ await assert.rejects(
        20260905090000 | | pending
        20260906162332 | | pending
        20260907084343 | | pending
+       20260909194000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -369,6 +381,7 @@ const appliedList = `
  20260905090000 | 20260905090000 | now
  20260906162332 | 20260906162332 | now
  20260907084343 | 20260907084343 | now
+ 20260909194000 | 20260909194000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -382,6 +395,35 @@ assert.deepEqual(assertSupabaseMigrationsApplied(currentAppliedList).appliedVers
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
 assert.throws(() => assertSupabaseMigrationsApplied(unicodeList), /was not recorded remotely/);
 
+// The live backend already has the first eight migrations. Every applied prefix
+// must resume at its exact suffix, and a retry after all nine must be a no-op.
+for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; appliedCount += 1) {
+  const appliedPrefix = REQUIRED_CUTOVER_MIGRATIONS.slice(0, appliedCount);
+  const pendingSuffix = REQUIRED_CUTOVER_MIGRATIONS.slice(appliedCount);
+  const prefixList = `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
+    `${item.version} | ${index < appliedCount ? item.version : ''} | state`).join('\n')}`;
+  const suffixDryRun = `DRY RUN: migrations will *not* be pushed to the database.\n${pendingSuffix.length
+    ? `Would push these migrations:\n${pendingSuffix.map(item => ` • ${item.filename}`).join('\n')}\nFinished supabase db push.`
+    : 'Remote database is up to date.'}`;
+  const prefixPlan = await assertSupabaseMigrationPlan({
+    migrationListText: prefixList,
+    dryRunText: suffixDryRun,
+  });
+  assert.deepEqual(prefixPlan.alreadyAppliedVersions, appliedPrefix.map(item => item.version),
+    `prefix ${appliedCount}: applied migrations must not be rerun`);
+  assert.deepEqual(prefixPlan.pendingVersions, pendingSuffix.map(item => item.version),
+    `prefix ${appliedCount}: only the exact remaining suffix may be applied`);
+  if (appliedCount === 8) {
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260909194000'],
+      'the already-installed live backend needs only the WAM binding migration');
+    await assert.rejects(assertSupabaseMigrationPlan({
+      migrationListText: prefixList,
+      dryRunText: currentFirstInstallDryRun,
+    }), /did not propose exactly the pending required migrations/,
+    'the nine-file first-install plan must not replay eight already-applied migrations');
+  }
+}
+
 const duplicateDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-cutover-migrations-'));
 try {
   await Promise.all([
@@ -394,6 +436,7 @@ try {
     fs.writeFile(path.join(duplicateDirectory, '20260905090000_open_meteo_current_fallback_binding.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260906162332_per_pair_weather_fallback_binding.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260907084343_horizon_valid_weather_binding.sql'), '-- test\n'),
+    fs.writeFile(path.join(duplicateDirectory, '20260909194000_wam_same_run_resolution_binding.sql'), '-- test\n'),
   ]);
   await assert.rejects(inspectMigrationSources({ migrationsDirectory: duplicateDirectory }), /duplicate Supabase migration version/);
 } finally {
@@ -425,6 +468,7 @@ try {
  20260905090000 │ │ pending
  20260906162332 │ │ pending
  20260907084343 │ │ pending
+ 20260909194000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -446,6 +490,7 @@ try {
   20260905090000 │ │ pending
   20260906162332 │ │ pending
   20260907084343 │ │ pending
+  20260909194000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -821,6 +866,15 @@ await assert.rejects(verifyIntegratedDatabaseReadback({
   serviceRoleKey: SERVICE_KEY,
   fetchImpl: databaseReadbackFetch(databaseReadback, driftedCheckpointDatabase),
 }), /checkpoint CAS contract definition hash drifted/);
+
+const previousCheckpointDatabase = structuredClone(checkpointDatabaseReadback);
+previousCheckpointDatabase.appliedMigrationVersion = '20260907084343';
+await assert.rejects(verifyIntegratedDatabaseReadback({
+  url: URL,
+  serviceRoleKey: SERVICE_KEY,
+  fetchImpl: databaseReadbackFetch(databaseReadback, previousCheckpointDatabase),
+}), /checkpoint database readback is missing its applied migration/,
+'readiness must reject the old eight-migration backend before publishing the new model binding');
 
 for (const rejectedCheck of Object.keys(checkpointDatabaseReadback.checks)) {
   const rejected = structuredClone(checkpointDatabaseReadback);

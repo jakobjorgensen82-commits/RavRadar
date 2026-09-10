@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 Open-Meteo exact-residual
+# NYESTE CHECKPOINT – 2026-09-10 – 4.0.340 tredje exact-head-CI afventer
+
+- PR #274 samler WAM-seam, bindingspakke og vejrlivscyklusrettelse. Main er fortsat `b0ca7f5d`/4.0.339; Candidate G er fortsat offentlig.
+- Exact-head-run `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye plan-/provider-/closuretests. Det stoppede bagefter på et gammelt handoff-trinnavn, som fejlagtigt forventede sletning af Copernicus source-stage.
+- Test-only-rettelsen følger det godkendte bevaringstrin, afviser sletning og dækker de nye donorbank-/plantrins handoff-værn. Den isolerede test og de 14 efterfølgende workflowtests er grønne lokalt; ingen produktionskode, workflow, migration, cache eller geodata er ændret.
+- Næste: kort RDKS/diff/privacy-kontrol, commit/push, én ny exact-head-CI. Ved helt grøn eksakt head: sikker merge, backend, komplet `operational_118_preflight` main-oneoff/handoff, post-data-gates og modelcutover. Gammelt annulleret run `34398417483` genstartes ikke.
+
+# HISTORISK CHECKPOINT – 2026-09-07 – 4.0.333 Open-Meteo exact-residual
 
 - **Main:** 4.0.332 sourcegate `34125927405` var grøn på `f23f306b…`; PR #265 er merged som `1e1093de…`.
 - **Seneste runtime:** Oneoff `34127986853`, target `2026-09-07T13:00:00Z`: DMI 65.409/79.414 og rest 14.005; Copernicus +12.661 og rest 1.344; Open-Meteo modtog 472 efter regionalleddet, retained 76, fetched 114, filled 190 og missing 282. Cacheprogressionen blev gemt; closure/artifact/deploy/cutover blev skipped. 70.280-linjen var donorrestore på gammel reference.
