@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-10 – lokal 4.0.341 WAM-kandidat, ikke releaseverificeret
+
+Main er nu `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`/4.0.340. Oven på den er en 4.0.341-kandidat implementeret lokalt for den fejl, hvor en delvist behandlet WAM-modelkørsel kunne gøre den aktive, brugbare bølgecache dårligere. Candidate G er fortsat den dokumenterede offentlige model; 4.0.341 er hverken committed, CI-valideret, merged, kørt mod leverandører eller produktionsverificeret.
+
+- Den aktive cache er vedvarende og nulstilles ikke. Hver collection/modelRun behandles i en isoleret kandidat. Et asset kan kun indgå efter fuld validering af en ikke-tom forventet mængde; ufuldstændige kandidater, budgetstop og afbrydelser må ikke flytte `processedSteps`, run-identitet eller aktiv WAM-state.
+- Reelle huller og ny hale behandles straks. Når den aktive WAM-dækning allerede er komplet, samles kvalitetsopgraderinger gennem hele den uafbrudte primærfase og vurderes én gang ved faseafslutning. Det fjerner dyr WAM-slutberegning efter hvert kvalitetsasset uden at forsinke en reel hulrettelse.
+- En ældre modelkørsel må højst bruges i én terminal fallbackfase, efter at primærfasen reelt er udtømt og aldrig efter budget-/interruptstop. Hvert asset beholder egen collection, modelRun og provenance; interpolation må fortsat ikke krydse modelkørsler.
+- Den operationelle 118-timers bølgeakse er 670 native dele plus Feggesunds tre godkendte direct/proxy-dele: `(670 + 3) × 118 = 79.414`. Currentkæden bruger fortsat DMI → Copernicus → Open-Meteo på den eksakte rest. Ældre strukturelt valide data bruges, mens de stadig dækker timen; ny kvalitet erstatter først efter fuld validering. Op til 48 timers verificeret historik bevares rådgivende.
+- Lokalt er WAM-integration 52/52 og bootstrap 35/35 grøn, og den importerede bootstrap-runtime er nu med i den private runtimeattestation. Dette er kun lokal test. Normal vejrkørsel og watchdog skal forblive deaktiveret, indtil 4.0.341 har samlet exact-head-bevis, sikker merge og kontrolleret main-runtime.
+
+Næste rækkefølge er versions-/RDKS-lukning, målrettet slutkontrol, én exact-head sourcegate, sikker merge, kontrolleret cache-/WAM-opfyldning og derefter de fulde launchgates for den integrerede scoremodel. Efter launch revideres de udskudte cachetransport-, cron-/tidsbudget-, kontinuitets- og flerpakkeopgaver mod den nye faktiske drift. Historiske checkpoints nedenfor bevares som revisionsspor.
+
 # NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
 
 Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.

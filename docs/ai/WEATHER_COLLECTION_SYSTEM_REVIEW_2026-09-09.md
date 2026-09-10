@@ -1,5 +1,19 @@
 # Samlet analyse og løsningsdesign for vejropsamling – 9. september 2026
 
+## Nyere implementeringsstatus – lokal 4.0.341-kandidat, 10. september
+
+Den oprindelige statuslinje nedenfor beskriver analysetidspunktet og er historik. Efter at 4.0.340 kom på main, viste en ny gennemgang en tværgående WAM-fejl: atomisk rækkeopdatering var ikke nok, når en ufuldstændig modelkørsels candidate kunne flytte aktiv run-/checkpointstate og gøre en ellers brugbar cache vanskeligere at fuldføre.
+
+4.0.341 er derfor implementeret lokalt med følgende samlede grænse:
+
+- Aktiv cache er persistent og nulstilles ikke. Hver collection/modelRun behandles isoleret. Et asset kræver en ikke-tom fuld denominator og `accepted == required`, før det kan bidrage.
+- Når data mangler, fremmes et komplet forbedrende asset straks; interne huller og hale er samme kritiske kø. Når aktiv WAM allerede er komplet, samles primærfasens kvalitetsrefresh og vurderes én gang ved en fuldt gennemført faseafslutning. Det er både integritetsgrænsen og WAM-performanceforbedringen.
+- Budgetstop, reservegrænse, exception eller interrupt kan ikke promovere en delvis kandidat eller flytte frisk run-identitet, `processedSteps`, optællinger og checkpoint. Allerede promoted fremgang består.
+- Efter udtømt primærfase må højst én ældre axis-resolvable modelkørsel forsøges terminalt. Hvert asset bærer fortsat sin egen collection/modelRun/provenance; en række er ikke ommærket, og interpolation på tværs af modelkørsler er fortsat forbudt.
+- Den komplette bølgeakse er 670 native WAM-dele plus Feggesunds tre godkendte direct/proxy-dele, alle 118 timer: 79.414. Currentkæden vedligeholder sin tilsvarende eksakte rest gennem DMI → Copernicus → Open-Meteo. Ældre strukturelt valide rækker bruges, så længe egen horizon dækker timen, og 48 timers faktisk historik bevares rådgivende.
+
+Lokal målverifikation er grøn: WAM-integration 52/52, wave-history/bootstrap 35/35 samt compile-/runtimeattestationskontrol. Dette er ikke CI-, leverandør-, cache-, runtime- eller produktionsbevis. Normal og watchdog forbliver deaktiveret, mens 4.0.341 samles og valideres; den integrerede model er endnu ikke dokumenteret online.
+
 Status: **analyse og implementeringsdesign, ikke en implementeret eller produktionsverificeret rettelse**. Udarbejdet med Astra/Ultra og tre afgrænsede, uafhængige kode-/logreviews. Den afsluttende gennemgang har ikke startet tests, vejrkørsler, leverandørdownloads, deploy eller merge. Tidligere lokale reproduktioner er angivet særskilt; de er ikke nye tests under ejerens stopinstruktion.
 
 Dette dokument supersederer tidligere vurderinger om, at mere køretid eller WAM-rettelsen alene sandsynligvis afslutter vejrarbejdet. Det erstatter ikke eller forkaster den eksisterende 4.0.340-pakke. Det foreskriver ingen særregel om gamle huller før ny hale: **alle faktisk manglende eller ugyldige nødvendige positioner er kritiske**.

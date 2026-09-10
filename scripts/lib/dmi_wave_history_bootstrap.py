@@ -1010,7 +1010,59 @@ def _resolve_operational_required_hour(
         return "interpolated", used
 
 
-def resolved_native_wave_hours(
+def _native_wave_asset_evidence(
+    row: _NativeWaveRow,
+) -> tuple[tuple[str, str], tuple[str, str, str, str]]:
+    return (
+        (row.collection, row.valid_time),
+        (
+            row.model_run,
+            str(row.source.get("itemId") or ""),
+            str(row.source.get("assetIdentitySha256") or ""),
+            row.grid_definition_sha256,
+        ),
+    )
+
+
+def _record_native_wave_asset_lineage(
+    recorded: dict[tuple[str, str], tuple[str, str, str, str]],
+    key: tuple[str, str],
+    lineage: tuple[str, str, str, str],
+) -> bool:
+    previous = recorded.get(key)
+    if previous is not None:
+        return previous == lineage
+    recorded[key] = lineage
+    return True
+
+
+def conflicting_native_wave_asset_keys(
+    evidence_by_entity: Iterable[
+        Mapping[
+            str,
+            Sequence[
+                tuple[
+                    tuple[str, str],
+                    tuple[str, str, str, str],
+                ]
+            ],
+        ]
+    ],
+) -> frozenset[tuple[str, str]]:
+    """Return native collection/time keys with cross-entity lineage conflicts."""
+    recorded: dict[tuple[str, str], tuple[str, str, str, str]] = {}
+    conflicts: set[tuple[str, str]] = set()
+    for evidence in evidence_by_entity:
+        for used in evidence.values():
+            for key, lineage in used:
+                if not _record_native_wave_asset_lineage(
+                    recorded, key, lineage
+                ):
+                    conflicts.add(key)
+    return frozenset(conflicts)
+
+
+def resolved_native_wave_hour_evidence(
     hourly: Any,
     *,
     entity_id: str,
@@ -1020,8 +1072,14 @@ def resolved_native_wave_hours(
     exact_required_hours: Iterable[str] = (),
     maximum_interpolation_hours: int = MAX_INTERPOLATION_HOURS,
     require_single_group: bool = False,
-) -> tuple[str, ...]:
-    """Resolve one coherent native run/cell without duplicating WAM semantics.
+) -> dict[
+    str,
+    tuple[
+        tuple[tuple[str, str], tuple[str, str, str, str]],
+        ...,
+    ],
+]:
+    """Resolve hours and expose their exact native asset-lineage evidence.
 
     Invalid native rows are ignored here so a scheduler can report a residual;
     the strict history/handoff validators continue to reject the same rows.
@@ -1041,7 +1099,7 @@ def resolved_native_wave_hours(
         or maximum_interpolation_hours > MAX_INTERPOLATION_HOURS
         or not isinstance(require_single_group, bool)
     ):
-        return ()
+        return {}
     try:
         required = tuple(
             format_utc_hour(parse_utc_hour(value)) for value in required_hours
@@ -1051,9 +1109,9 @@ def resolved_native_wave_hours(
             for value in exact_required_hours
         }
     except WaveBootstrapError:
-        return ()
+        return {}
     if not required or len(set(required)) != len(required):
-        return ()
+        return {}
     entity = _WaveCacheEntity(
         cache_key=entity_id,
         provenance_entity=provenance_entity,
@@ -1084,18 +1142,33 @@ def resolved_native_wave_hours(
         ), []).append(row)
 
     policy = WaveHistoryPolicy(
-        mode=MIGRATION_MODE,
+        mode=OPERATIONAL_MODE,
         history_hours=1,
         include_target=False,
         require_single_run_per_collection=True,
         allow_exact_multi_run=False,
         maximum_interpolation_hours=maximum_interpolation_hours,
     )
-    resolved_union: set[str] = set()
-    best: set[str] = set()
-    for rows in grouped.values():
+
+    def resolve_rows(
+        rows: list[_NativeWaveRow],
+        *,
+        operational: bool,
+    ) -> dict[
+        str,
+        tuple[
+            tuple[tuple[str, str], tuple[str, str, str, str]],
+            ...,
+        ],
+    ]:
         rows.sort(key=lambda row: row.valid_datetime)
-        resolved: set[str] = set()
+        resolved: dict[
+            str,
+            tuple[
+                tuple[tuple[str, str], tuple[str, str, str, str]],
+                ...,
+            ],
+        ] = {}
         exact_native = {row.valid_time for row in rows}
         for required_hour in required:
             if (
@@ -1104,24 +1177,71 @@ def resolved_native_wave_hours(
             ):
                 continue
             try:
-                _resolve_required_hour(
-                    rows,
-                    parse_utc_hour(required_hour),
-                    policy,
+                _resolution, used = (
+                    _resolve_operational_required_hour(
+                        rows,
+                        parse_utc_hour(required_hour),
+                        policy,
+                    )
+                    if operational
+                    else _resolve_required_hour(
+                        rows,
+                        parse_utc_hour(required_hour),
+                        policy,
+                    )
                 )
             except WaveBootstrapError:
                 continue
-            resolved.add(required_hour)
+            resolved[required_hour] = tuple(
+                _native_wave_asset_evidence(row) for row in used
+            )
+        return resolved
+
+    if not require_single_group:
+        native_rows = [
+            row for rows in grouped.values() for row in rows
+        ]
+        return resolve_rows(native_rows, operational=True)
+
+    best: dict[
+        str,
+        tuple[
+            tuple[tuple[str, str], tuple[str, str, str, str]],
+            ...,
+        ],
+    ] = {}
+    for rows in grouped.values():
+        resolved = resolve_rows(rows, operational=False)
         if len(resolved) > len(best):
             best = resolved
-        resolved_union.update(resolved)
-        if (
-            len(best if require_single_group else resolved_union)
-            == len(required)
-        ):
+        if len(best) == len(required):
             break
-    accepted = best if require_single_group else resolved_union
-    return tuple(hour for hour in required if hour in accepted)
+    return best
+
+
+def resolved_native_wave_hours(
+    hourly: Any,
+    *,
+    entity_id: str,
+    provenance_entity: Mapping[str, Any],
+    collection: str,
+    required_hours: Sequence[str],
+    exact_required_hours: Iterable[str] = (),
+    maximum_interpolation_hours: int = MAX_INTERPOLATION_HOURS,
+    require_single_group: bool = False,
+) -> tuple[str, ...]:
+    """Resolve native hours with the shared operational evidence contract."""
+    evidence = resolved_native_wave_hour_evidence(
+        hourly,
+        entity_id=entity_id,
+        provenance_entity=provenance_entity,
+        collection=collection,
+        required_hours=required_hours,
+        exact_required_hours=exact_required_hours,
+        maximum_interpolation_hours=maximum_interpolation_hours,
+        require_single_group=require_single_group,
+    )
+    return tuple(evidence)
 
 
 def native_wave_row_error_code(
@@ -1310,17 +1430,13 @@ def validate_wave_history_cache(
                 ):
                     raise WaveBootstrapError("MIXED_CELL_HISTORY")
                 part_cells[row.collection] = cell
-                asset_key = (row.collection, row.valid_time)
-                asset_lineage = (
-                    row.model_run,
-                    str(row.source.get("itemId") or ""),
-                    str(row.source.get("assetIdentitySha256") or ""),
-                    row.grid_definition_sha256,
-                )
-                previous_lineage = global_native_assets.get(asset_key)
-                if previous_lineage is not None and previous_lineage != asset_lineage:
+                asset_key, asset_lineage = _native_wave_asset_evidence(row)
+                if not _record_native_wave_asset_lineage(
+                    global_native_assets,
+                    asset_key,
+                    asset_lineage,
+                ):
                     raise WaveBootstrapError("INCONSISTENT_ASSET_PROVENANCE")
-                global_native_assets[asset_key] = asset_lineage
                 distance_key = (part.cache_key, row.collection, row.valid_time)
                 if distance_key not in distance_evidence_keys:
                     distance_evidence_keys.add(distance_key)

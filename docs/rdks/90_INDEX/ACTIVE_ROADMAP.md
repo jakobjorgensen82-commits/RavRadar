@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-10 – 4.0.341 fra atomisk WAM-cache til model-online
+
+- [x] Bevar den eksisterende cache uden nulstilling og fasthold hele `673 × 118 = 79.414`-domænet, native WAM for 670 dele, Feggesund `354/354` og 48 timers rådgivende historik.
+- [x] Implementér isoleret WAM-kandidat pr. collection/modelrun, fuld assetdenominator, eksakt pair-superset, ingen nye lineage-konflikter og korrekt egen modelrun-proveniens.
+- [x] Tillad sikker straks-promotion af reelle huller/hale, men batch komplet-cache-kvalitetsrefresh ved faseafslutning. Gør ældre kausal fallback bounded og terminal-only.
+- [x] Ensret Open-Meteos required-/donororden til `(validTime, partId)` og bind WAM-bootstrap til den private runtimehash.
+- [x] Bestå den lokale målmatrix: WAM 52, historik 35, vejrplan 17, Open-Meteo-donor 32 samt DKSS, scheduler og privat runtime.
+- [ ] Færdiggør releaseversion, RDKS/håndbog og snæver diff-/privacykontrol; commit/push og kør én exact-head GitHub-sourcegate.
+- [ ] Merge kun den eksakte grønne head. Kør main-vejr på de bevarede cacher og kræv `79.414/79.414`, native WAM 670, Feggesund `354/354` og et gyldigt runbundet handoff.
+- [ ] Kør fulde post-data-gates, artifact/deploy og offentlig verifikation; Candidate G forbliver offentlig, indtil alle beviser er positive.
+- [ ] Genaktivér normalworkflow og watchdog/shadow-dispatch kontrolleret. Efter launch: mål normal vedligeholdelse og ekstern cron/provider-tider; byg cachetransport i parallel shadow med atomisk pegepind og rollback uden cachetab; bind den uændrede `dmi_wind_reference.py` ind i full-runtime-hashen gennem normal append-only procedure.
+
 # NYESTE ROADMAP – 2026-09-09 – 4.0.337 til model-online uden cachetab
 
 - [x] Ret decoderdrift, granulært prooftab, same-asset-konflikt og komponenthuller uden at nulstille bevarede data.

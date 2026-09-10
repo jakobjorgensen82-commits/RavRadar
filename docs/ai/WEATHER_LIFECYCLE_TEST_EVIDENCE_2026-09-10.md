@@ -1,5 +1,19 @@
 # Lokal målverifikation – vejrlivscyklus og WAM – 2026-09-10
 
+## Tillæg – lokal 4.0.341-kandidat
+
+Efter 4.0.340 blev merged, blev WAM-promotion ændret lokalt, så ufuldstændige modelrun-kandidater ikke kan forringe aktiv cache. Følgende nye resultater gælder den konkrete lokale kode ved udførelsen:
+
+| Kontrol | Faktisk lokalt resultat |
+| --- | --- |
+| `scripts/test_dmi_wave_bootstrap_update_integration.py` | 52/52 bestået. Dækker isoleret kandidat, umiddelbar hul-/halepromotion, quality-promotion ved fuld faseafslutning, budget/interrupt, terminal ældre fallback og checkpoint-resume. |
+| `scripts/test_dmi_wave_history_bootstrap.py` | 35/35 bestået. Eksakt/same-series valg og fortsat afvisning af mixed-run-interpolation. |
+| Python `py_compile` for ændrede producentfiler | Bestået. |
+| `scripts/test-private-production-runtime-workflow.mjs` | Bestået efter eksplicit binding af den direkte importerede `dmi_wave_history_bootstrap.py` til den fulde private runtimeattestation. |
+| `git diff --check` | Bestået; kun de kendte LF→CRLF-advarsler på Windows. |
+
+Samlet status er **kun lokal målverifikation**. Ingen 4.0.341 exact-head-CI, merge, providerhentning, normal-/watchdogkørsel, cachepromotion, artifact, deploy eller offentlig modelkontrol er udført. Resultaterne beviser derfor kontrakterne med syntetiske/isolerede input, ikke produktionsstabilitet eller faktisk hastighed.
+
 ## Scope
 
 Ejer har godkendt lokale tests og bekræftet Sol Ultra/autonom fortsættelse. Testene kører på branch codex/wam-same-run-resolution-4.0.340: committed base c4043bf7 plus den samlede lokale rettelse. Ingen ny CI, providerhentning, commit/push, merge, backend eller produktion er kørt i dette testafsnit.
@@ -53,7 +67,9 @@ De to reelle testfixture-rettelser er workflowrækkefølgen ovenfor og CP-helper
 
 ## Binding og read-only driftsstatus
 
-privateRuntimeContractHashes er beregnet read-only: continuationStateContractSha256=7fbe180011fa745e3b0c3a5365c0234358c711e7c8cab425d3c188e248154417; fullRuntimeContractSha256=3e5485844d066a9d886ae93f009eb35455f18e52e58164e34d35d43910218c35; publicProjectionContractSha256=7b255a1143493797c0157afa97976c49f73d6a251f3a431b097a9601652cb7e7. De er checkoutbyte-hashes, ikke normaliserede SQL/model-implementationhashes. Ny privat runtimepakke skal dannes på endelig kode; tidligere pakker må ikke ommærkes. Model-/rollback-/continuation-JS ændres ikke i dette delta, så Pythonændringerne alene kræver ikke nye SQL-bindinger. Den allerede pending niende WAM-migration består.
+Den samlede lokale 4.0.341-slutmatrix genkørte WAM-producentintegration `52/52`, WAM-historik `35/35`, vejrplan `17/17`, Open-Meteo-donor `32/32`, transaktionelle checkpoints `21/21`, schedulerpakken, DMI-lagring/proveniens/DKSS/vind, private runtime-, versions-, håndbogs- og cutoverkontrakter. Tre gamle testforudsætninger blev afstemt: parsergeneration 19 → 20 i en marine-fixture; en fokuseret AST-sele fik den copy-on-write-type, som produktionsmodulet allerede definerer; og model-downloadtesten følger nu helperen, der adskiller generisk assetkomplethed fra bevist aktiv WAM-closure. Det er test-only; ingen completeness-, provenance-, cache- eller releasegrænse er lempet. Et lokalt første forsøg uden bundled Python på `PATH` startede ikke de indlejrede Pythonchecks og tæller ikke som produktfejl; samme workflowtest og DMI-kontrol bestod med projektets bundne runtime.
+
+privateRuntimeContractHashes er genberegnet read-only på den samlede lokale 4.0.341-kandidat: continuationStateContractSha256=7fbe180011fa745e3b0c3a5365c0234358c711e7c8cab425d3c188e248154417; fullRuntimeContractSha256=04e4adbbfb44ec7ee8f5360489c4cf0deeccf9c085d13d794a81cdd9ad78295a; publicProjectionContractSha256=d3d4ba55f389b0536c9a704e559dfbb04ed8bbe1fcfbeebfa98e51b41e1e6e3c. De er checkoutbyte-hashes, ikke normaliserede SQL/model-implementationhashes. Full-runtime- og public-projection-hashene følger både den nye WAM-bootstrapbinding og versionssweepet; continuation-state-kontrakten er uændret. Den aktive normaliserede continuation-implementationhash er ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3 og er verificeret i den pending niende WAM-migration. Ny privat runtimepakke skal dannes på endelig kode; tidligere pakker må ikke ommærkes.
 
 Read-only GitHub: PR274 er åben på c4043bf7, main senest b0ca7f5d; ingen ny CI eller weatherdispatch udført. Cacheinventar47 poster,10.166.365.283 byte, heraf9.742.641.482 rå GRIB-byte. Seneste DMI-, CP- og OM-generationer er listet; dette siger ikke noget om deres fulde indhold. Usage-API viste44 poster, mens liste-API viste47; usage kan være forsinket. Storage-/retention-limit-GET svarer HTTP402 med krav om betalingsmetode. Den faktiske konfigurerede grænse er ukendt; ingen betaling, køb, sletning eller indstillingsændring. Kilde: GitHubs officielle REST cache- og dependency-caching-dokumentation, læst2026-09-10.
 

@@ -1,5 +1,15 @@
 # Vejrlivscyklus – permanent implementeringscheckpoint 2026-09-10
 
+## Nyeste checkpoint – lokal 4.0.341 WAM-kandidat
+
+Main er `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`/4.0.340. 4.0.341 er implementeret i arbejdstræet, men er ikke committed, pushet, CI-valideret, merged, kørt hos leverandører eller produktionsverificeret. Candidate G er derfor fortsat den dokumenterede offentlige model.
+
+Den aktive cache bevares gennem target- og modelrunskift. Den nye WAM-grænse samler hvert collection/modelRun i en isoleret candidate og lader kun komplette, fuldt validerede assets bidrage. Reelle huller og hale fremmes straks. Hvis aktiv WAM allerede er komplet, udsættes ren kvalitets-promotion til hele den uafbrudte primærfases afslutning, så den dyre 670-native-plus-tre-Feggesund × 118-kontrol ikke genkøres efter hvert kvalitetsasset. Hvis et hulasset gør cachen komplet midt i fasen, checkpointes den fremgang straks; efterfølgende quality-assets forbliver isolerede til fase-end.
+
+Ufuldstændige assets, budgetstop, reservegrænser, interrupts og exceptions må ikke flytte aktiv runInfo, `processedSteps`, optællinger eller WAM-checkpoint. Højst én ældre kompatibel modelkørsel må forsøges som terminal fallback efter udtømt primærfase, og hver række beholder egen provenance. Cross-run-interpolation er forbudt. Currenthuller går fortsat DMI → Copernicus → Open-Meteo; ældre valide data og op til 48 timers verificeret historik bevares.
+
+Lokal evidens: WAM-integration 52/52, wave-history/bootstrap 35/35, `py_compile`, privat runtimeattestation og diffkontrol er grønne. Der foreligger intet nyt CI-/runtime-/produktionsbevis. Normal- og watchdog-dispatch skal forblive deaktiveret frem til en sikker samlet release. Derefter: exact-head-CI, merge, kontrolleret main-writer, komplet cache/WAM, fulde launchgates, offentlig integreret modelkontrol og efterfølgende revision af udskudte driftsopgaver.
+
 ## Nuværende arbejdsgrænse
 
 **AKTUEL VERIFIKATION:** Ejeren har bekræftet Sol Ultra, fastholdt launchovervågningen og bedt revidere udskudte opgaver mod det, rettelsen faktisk løser. Plan/DMI/checkpoint/WAM, CP-/OM-banker, recovery, runner/checker/closure, workflows og privat runtime er måltestet grønt. Windows-PATH og to testfixtures er afklaret uden ny producentændring. Modelbinding er konsistent; runtimepakkehash beregnes på endelig kode. Se WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md for faktiske kommandoer/resultater og read-only cachekapacitet. Ny head/CI/merge/drift afventer. Ældre udsagn om ingen tests nedenfor gælder det forudgående implementeringscheckpoint, ikke nu.

@@ -1,4 +1,16 @@
-# AI Roadmap – RavRadar 4.0.333; Candidate G er offentlig – opdateret 2026-09-07
+# AI Roadmap – RavRadar lokal 4.0.341-kandidat; Candidate G er offentlig – opdateret 2026-09-10
+
+## Nyeste releasehale – 4.0.341 WAM/cachestabilitet
+
+1. [x] Bevar 4.0.340 på main og implementér lokalt en persistent, ikke-nulstillende WAM-candidate pr. collection/modelRun.
+2. [x] Lad komplette assets med reelle huller/hale promovere straks; saml quality-refresh af allerede komplet WAM til fuld, uafbrudt primærfase-end.
+3. [x] Stop partial checkpoint/runInfo/`processedSteps`; tillad højst én terminal ældre fallbackfase med assettes egen provenance og uden cross-run-interpolation.
+4. [x] Måltest lokalt WAM 52/52, bootstrap 35/35 og privat runtimeattestation. Dette er ikke CI- eller produktionsbevis.
+5. [ ] Luk version, RDKS, changelog og begge håndbøger; kør den afgrænsede slutmatrix og én exact-head `validate:source` i GitHub.
+6. [ ] Merge kun samme grønne head. Hold normal-/watchdog-dispatch deaktiveret, og kør derefter én kontrolleret main-writer med genbrug af persistent cache.
+7. [ ] Bevis både 670 native WAM-dele og Feggesunds tre direct/proxy-dele × 118 = 79.414, samt komplet currentrest efter DMI → Copernicus → Open-Meteo og bevaret rådgivende 48-timershistorik.
+8. [ ] Gennemfør same-head backend/handoff, fulde post-data validate/releasegate, artifact/deploy, integreret scoremodelcutover og offentlig desktop-/mobilkontrol.
+9. [ ] Følg almindelig vedligeholdelse efter launch. Revidér cachetransport, ekstern cron/cadence, providerbudget og performance, DB-loginretry, providerskiftkontinuitet og immutable flerpakkehistorik mod faktisk drift; lav kun stadig nødvendige ændringer i baggrunden.
 
 ## Nyeste releasehale – 4.0.333
 

@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-10 – 4.0.341 isolerer WAM-promotion
+
+- Efter reboot blev worktree, branch og GitHub-status genfundet uden tegn på tabt tracked arbejde eller afbrudt aktiv vejr-/releasekørsel. Cacherne blev ikke nulstillet. Seneste dokumenterede oneoff `34437713821` gemte sikre providerresultater, men sluttede 78.314/79.414 med 1.100 currentrester og WAM `MISSING_HOUR`; intet handoff eller modelcutover.
+- Helkædekontrollen fandt en ny P0 efter 4.0.340: en delvist accepteret WAM-fil kunne mutere aktiv kandidat, og en enkelt komplet fil kunne under kvalitetsrefresh efterlade en tretimers-seam. Tællere/checkpoint kunne samtidig komme foran den sikkert promoverede state.
+- 4.0.341 bygger derfor en isoleret kandidat pr. WAM-collection/modelrun. En fil kræver fuld denominator, og promotion kræver samme target, eksakt pair-superset og ingen nye lineage-konflikter. Hul/hale-fremgang kan promoveres straks; komplet-cache-kvalitet promoveres højst én gang efter terminal fase.
+- En bounded ældre kausal WAM-fase kan kun følge en terminalt gennemløbet primærfase og bruger hvert assets egen modelrun-proveniens. Budget-, reserve- eller interruptionsstop åbner ikke fallback.
+- Open-Meteos pairorden er ensrettet til `(validTime, partId)`, og den private runtimehash omfatter WAM-bootstrap. DMI → Copernicus → Open-Meteo, gamle horizon-gyldige data, 48 timers historik, `79.414`, native WAM 670 og Feggesund `354/354` består.
+- Lokal målstatus: WAM 52/52, historik 35/35, vejrplan 17/17, Open-Meteo-donor 32/32 samt relevante DKSS-, scheduler- og private-runtimekontroller er grønne. Exact-head-CI, merge, main-runtime, fulde gates, cutover og offentlig modelkontrol er åbne. Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret.
+- DEC-0122's engangscutover er overført snævert til exact-release 4.0.341 under stående ejerautorisation. Cachetransport, ekstern cron-/provider-tidsmåling og normal vedligeholdelseskapacitet er fortsat efter-launch-arbejde.
+
 # NYESTE CHECKPOINT – 2026-09-09 – 4.0.337 tabsfri cache og launchgrænse
 
 - Astra-helkædeauditen fandt decoderdrift, globalt prooftab, source-dictionary-fejl, forkert kandidatbinding og unødigt legacy-mellemtrin. De forhold er nu samlet implementeret lokalt med målrettede grønne tests.

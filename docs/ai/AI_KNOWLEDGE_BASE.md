@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-10 – lokal 4.0.341 WAM-kandidat
+
+- Main er 4.0.340 på `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`; Candidate G er fortsat den dokumenterede offentlige model. 4.0.341 findes kun lokalt og har ingen CI-, runtime-, provider-, merge- eller produktionsverifikation endnu.
+- Aktiv vejrcache er persistent og må ikke nulstilles ved target- eller modelrunskift. Huller og hale fremmes straks efter komplette assets. Kvalitetsrefresh af en allerede komplet WAM samles isoleret og vurderes kun ved fuld, uafbrudt primærfaseafslutning.
+- Ufuldstændige kandidater, reserve-/budgetstop og interrupt kan ikke flytte aktiv WAM-identitet, `processedSteps` eller checkpoint. En terminal ældre fallbackfase må kun starte efter reelt udtømt primærfase; hvert asset beholder egen modelRun/provenance, og cross-run-interpolation forbliver forbudt.
+- WAM-domænet er 670 native dele plus tre Feggesund direct/proxy-dele, alle 118 timer: 79.414 rækker. Currentkæden er fortsat DMI → Copernicus → Open-Meteo. Ældre valide data bruges inden for egen horizon, og 48 timers verificeret historik bevares rådgivende.
+- Målrettet lokal evidens er grøn, herunder WAM 52/52 og bootstrap 35/35. Normal- og watchdog-dispatch forbliver deaktiveret frem til sikker 4.0.341-release; model-launch og efterfølgende revision af udskudte driftsopgaver er fortsat åbne.
+
 ## Nyeste sandhed 2026-09-10 – 4.0.340 exact-head-CI afventer tredje head
 
 - PR #274 samler WAM-seam, bindingspakke og vejrlivscyklusrettelse. Main er fortsat 4.0.339, og Candidate G er fortsat offentlig.

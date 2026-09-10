@@ -12,6 +12,12 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from lib.copernicus_current import canonical_sha256, load_targets
+from lib.open_meteo_current_fallback import (
+    build_document as build_open_meteo_document,
+    build_record as build_open_meteo_record,
+    merge_donor_bank as merge_open_meteo_donor_bank,
+)
 from lib.weather_acquisition_plan import (
     CurrentAcquisitionPlanError, build_current_acquisition_plan, exact_hour,
     read_current_acquisition_plan, validate_current_acquisition_plan,
@@ -234,6 +240,81 @@ class AcquisitionBuilderBoundaryTests(unittest.TestCase):
         self.assertEqual(document["coveredPairs"], [{"partId": "P1", "validTime": at(4)}])
         self.assertEqual(report["sources"]["open-meteo"]["status"], "rejected-optional-donor")
         self.assertNotIn("open-meteo-bank", document["sourceInputHashes"])
+
+
+class AcquisitionBuilderDonorIntegrationTests(unittest.TestCase):
+    def test_valid_om_bank_is_selected_with_authoritative_noncanonical_target_order(self):
+        registry = {
+            "partCount": 2,
+            "zones": {
+                "Z-A": {
+                    "partId": "P-Z",
+                    "name": "Synthetic first parent",
+                    "waterPoint": [10.0, 55.0],
+                },
+                "Z-B": {
+                    "partId": "P-A",
+                    "name": "Synthetic second parent",
+                    "waterPoint": [10.1, 55.0],
+                },
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            targets_path = root / "coastal-parts-v2.json"
+            targets_path.write_text(json.dumps(registry), encoding="utf-8")
+            targets = load_targets(targets_path)
+            target_ids = [target["partId"] for target in targets]
+            self.assertNotEqual(target_ids, sorted(target_ids))
+
+            record = build_open_meteo_record(
+                part_id="P-A", valid_time=at(4), acquired_at=at(),
+                sampling_point=[10.1, 55.0], grid_point=[10.1, 55.0],
+                speed_mps=0.5, toward_direction_deg=90,
+                source_response_sha256=canonical_sha256({"fixture": "planner-order"}),
+            )
+            projection = build_open_meteo_document(
+                targets=targets,
+                required_pairs=[{"partId": "P-A", "validTime": at(4)}],
+                records=[record], checkpointed_at=at(), production_reference_at=at(),
+                copernicus_source_stage_status="READY",
+                copernicus_source_stage_sha256=canonical_sha256({"stage": "planner-order"}),
+                copernicus_bounded_progress_accepted=False,
+                regional_evidence_sha256=canonical_sha256({"regional": "planner-order"}),
+            )
+            bank, _ = merge_open_meteo_donor_bank(
+                None, [projection], targets=targets,
+                production_reference_at=at(), checkpointed_at=at(1),
+            )
+            bank_path = root / "open-meteo-current-donor-bank.json"
+            original_bank_bytes = json.dumps(
+                bank, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+            )
+            bank_path.write_text(original_bank_bytes, encoding="utf-8")
+            args = SimpleNamespace(
+                at=at(), targets=targets_path,
+                copernicus_bank=root / "missing-copernicus-bank.json",
+                copernicus_shadow=root / "missing-copernicus-shadow.json",
+                copernicus_stage=root / "missing-copernicus-stage.json",
+                open_meteo_bank=bank_path,
+                open_meteo_legacy=root / "missing-open-meteo-legacy.json",
+                dmi=None,
+                regional_shadow=root / "missing-regional-shadow.json",
+                regional_policy=root / "missing-regional-policy.json",
+                output=root / "weather-current-acquisition-plan.json",
+                report=root / "weather-acquisition-plan.json",
+            )
+
+            document, report = BUILDER["build"](args)
+
+            self.assertEqual(
+                document["coveredPairs"],
+                [{"partId": "P-A", "validTime": at(4)}],
+            )
+            self.assertEqual(report["sources"]["open-meteo"]["status"], "validated")
+            self.assertEqual(report["sources"]["open-meteo"]["coveredPairCount"], 1)
+            self.assertIn("open-meteo-bank", document["sourceInputHashes"])
+            self.assertEqual(bank_path.read_text(encoding="utf-8"), original_bank_bytes)
 
 
 if __name__ == "__main__":

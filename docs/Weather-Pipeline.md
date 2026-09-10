@@ -1,5 +1,28 @@
 # Weather Pipeline 1.0
 
+## 4.0.341 – WAM bygges som kandidat, før aktiv cache ændres
+
+Den aktive vejrcache er RavRadars vedvarende, brugbare udgangspunkt. Den nulstilles ikke, når en ny prognose- eller modelkørsel kommer. En ny WAM-collection/modelRun bygges først i en isoleret kandidat. Kun et asset med en ikke-tom fuld forventet mængde og alle krævede rækker accepteret kan påvirke den aktive cache.
+
+Der er to forskellige promotionstider:
+
+1. **Manglende data og ny hale:** Et komplet asset, der forbedrer en faktisk mangel, promoveres og checkpointes straks. Hvis det gør WAM komplet midt i primærfasen, bevares denne fremgang med det samme.
+2. **Bedre kvalitet, mens data allerede er komplette:** Quality-assets samles isoleret gennem hele den primære modelrunfase. Først ved en fuld, uafbrudt faseafslutning sammenlignes og promoveres de samlet. Dermed gennemløbes den dyre WAM-slutvurdering ikke efter hvert enkelt kvalitetsasset.
+
+Budgetstop, reservegrænse, exception eller interrupt må ikke promovere en halv kandidat. Nye `processedSteps`, runInfo, optællinger og checkpoint følger kun data, som faktisk er promoveret. Raw GRIB og ufarlige genbrugsdiagnoser kan gemmes separat, men kan ikke få næste kørsel til at tro, at upromoveret arbejde er færdigt.
+
+Efter en reelt udtømt primærfase må højst én ældre kompatibel modelkørsel forsøges som terminal fallback. Hvert asset og hver række beholder sin egen collection, modelRun, grid/celle og provenance. Systemet kan derfor bruge ældre valide data, uden at kalde dem nye; WAM-interpolation må fortsat kun ske inden for samme verificerede serie og aldrig på tværs af modelkørsler.
+
+Den operationelle bølgedækning er:
+
+- 670 native WAM-kystdele × 118 timer = 79.060 rækker.
+- Tre Feggesund-dele med den særskilt godkendte direct/proxy-metode × 118 timer = 354 rækker.
+- Samlet krav: 79.414 bølgerækker.
+
+Current er en separat 673 × 118-kæde. Reelle huller og hale går først til DMI, derefter Copernicus og til sidst Open-Meteo. Når dækningen er komplet, kan efterfølgende kørsler forbedre kildekvaliteten i samme rækkefølge. En ældre strukturelt valid række bliver liggende, til en nyere række er fuldt valideret og atomisk kan overtage. Op til 48 timers faktisk verificeret historik bevares rådgivende; ufuldstændig historik markeres og må ikke opfindes.
+
+**Status:** 4.0.341 er kun en lokal kandidat. WAM-integration 52/52, bootstrap 35/35 og den private runtimeattestation er grønne lokalt. Ingen exact-head-CI, providerkørsel, cachepromotion, merge, deploy eller offentlig modelkontrol er udført. Normal vejropdatering og watchdog forbliver deaktiveret, indtil den samlede release er sikkert igennem. Derefter verificeres én kontrolleret main-kørsel, fuld cache/WAM og de eksisterende launchgates, før den integrerede scoremodel aktiveres. Transport-, cadence-, performance- og flerpakkeopgaver revideres efter launch.
+
 ## 4.0.335 – cachen vedligeholdes i stedet for at blive genopbygget
 
 Den private vejrcache er nu den vedvarende, brugbare base. En ny modelkørsel erstatter kun en ældre kystdel/time, når hele den nye tuple er valideret. En defekt bølgerække fjernes alene som bølgekomponent; andre bølger, vind, strøm og historik bliver liggende.

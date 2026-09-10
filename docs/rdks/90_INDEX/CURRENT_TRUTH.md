@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-10 – 4.0.341 atomisk WAM-kandidat
+
+- Den bevarede cache er fortsat basen og er ikke nulstillet. Det operationelle slutdomæne er `673 × 118 = 79.414`; native WAM gælder 670 dele, mens Feggesund fortsat kræver særskilt `3 × 118 = 354` direct/proxy-bevis. Op til 48 timers verificeret historik bevares til mobilisering.
+- Seneste dokumenterede oneoff `34437713821` gemte sikre providerresultater, men gav intet handoff: DMI 66.487, Copernicus +10.944 og Open-Meteo 883 gav 78.314/79.414 og 1.100 currentrester; WAM stoppede særskilt med `MISSING_HOUR`. Det er den negative før-4.0.341-runtimebaseline, ikke kandidatens livebevis.
+- Lokal 4.0.341 retter en selvstændig P0 efter 4.0.340: WAM bygges nu i en isoleret kandidat pr. collection/modelrun, og en fil tæller kun ved fuld denominator. Aktiv cache kan kun erstattes ved samme target, eksakt pair-superset og ingen nye lineage-konflikter.
+- Ved reelle huller eller hale kan sikker kumulativ fremgang promoveres straks efter en fuldt accepteret fil. Når den aktive cache allerede er komplet, promoveres en sammenhængende kvalitetsfase højst én gang ved faseafslutning, så enkeltfiler ikke skaber en tretimers-seam.
+- En bounded ældre kausal WAM-fase må alene starte efter terminal primærfase og aldrig efter runtime-/reserve-/interruptionsstop. Hvert asset bruger sin egen faktiske modelkørsel gennem supervisor, cache, download, sourceproof, parser og promotion.
+- Open-Meteos required-par sorteres nu kanonisk som `(validTime, partId)`, så henteplan og donorvalidering har samme kontrakt. Overordnet kildeorden er fortsat DMI → Copernicus → Open-Meteo; gamle horizon-gyldige rækker bruges, indtil en højere prioriteret valideret tuple atomisk kan overtage.
+- Den private runtimehash omfatter WAM-bootstrapkoden. Lokal evidens er WAM `52/52`, historik `35/35`, vejrplan `17/17`, Open-Meteo-donor `32/32` samt grønne DKSS-, scheduler- og private-runtimekontroller.
+- 4.0.341 er ikke committed, exact-head-CI-valideret, merged eller main-/produktionsverificeret ved dette checkpoint. Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret. Candidate G er offentlig; komplet main-vejr, fulde gates, runbundet handoff, cutover og offentligt proof er åbne.
+- Efter launch består tabsfri cachetransport, cron-/provider-tidsmåling og bevis for bæredygtig normal vedligeholdelse. DEC-0123 er den bindende detaljekontrakt; ældre 4.0.340-status nedenfor er historik.
+
 # NYESTE CHECKPOINT – 2026-09-10 – anden exact-head-CI afgrænset til forældet handoff-test
 
 Head `f44b7c9cb55bb89c5a15daed61d2c2b2996b1d2e` bestod bindingspreflight, den fulde releasegate og de nye plan-/provider-/closurekontroller i sourcegate `34420641243`. Kørslens første og eneste observerede stop kom derefter i `test-verified-weather-source-handoff.mjs`, som stadig krævede navnet på et fjernet Copernicus-trin.

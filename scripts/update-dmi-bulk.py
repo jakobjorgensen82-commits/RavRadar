@@ -109,15 +109,18 @@ from lib.coastal_point_staging import (
 from lib.dmi_wave_history_bootstrap import (
     COLD_START_MODE as WAVE_BOOTSTRAP_COLD_START_MODE,
     EXPECTED_COASTAL_PART_COUNT as WAVE_BOOTSTRAP_EXPECTED_PART_COUNT,
+    MAX_INTERPOLATION_HOURS as WAVE_MAX_INTERPOLATION_HOURS,
     MIGRATION_MODE as WAVE_BOOTSTRAP_MIGRATION_MODE,
     WAM_COLLECTIONS as WAVE_BOOTSTRAP_COLLECTIONS,
     WaveBootstrapError,
+    conflicting_native_wave_asset_keys,
     format_utc_hour as format_wave_bootstrap_hour,
     load_coastal_part_registry as load_wave_bootstrap_registry,
     native_wave_row_error_code,
     parse_utc_hour as parse_wave_bootstrap_hour,
     policy_for_mode as wave_bootstrap_policy_for_mode,
     policy_utc_hours as wave_bootstrap_policy_utc_hours,
+    resolved_native_wave_hour_evidence,
     resolved_native_wave_hours,
     select_stac_wave_history_assets,
     validate_wave_history_cache,
@@ -200,6 +203,7 @@ MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "204
 MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780")))
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
+MAX_OPERATIONAL_WAM_FALLBACK_RUNS = 1
 CHECKPOINT_MAX_ASSETS = max(1, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8")))
 CHECKPOINT_MAX_SECONDS = max(10, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60")))
 STAC_PAGE_LIMIT = max(1, min(1000, int(os.getenv("DMI_STAC_PAGE_LIMIT", "1000"))))
@@ -277,6 +281,7 @@ CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
 )
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS = frozenset({"DK-B05-11"})
+OPERATIONAL_WAVE_NATIVE_PART_COUNT = 670
 TARGETS = {
     "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"],
     "wind": ["wind-u-10m", "wind-v-10m"],
@@ -829,6 +834,56 @@ def operational_asset_parameter_filter(
     return None
 
 
+def wam_asset_times_resolve_target_window(
+    rows: list[dict[str, Any]],
+    window_start_time: str,
+    window_end_time: str,
+    exact_required_times: set[str],
+) -> bool:
+    """Check one run's STAC time axis against the native WAM resolver bound."""
+    start = iso(window_start_time)
+    end = iso(window_end_time)
+    available = sorted({
+        epoch(valid_time)
+        for row in rows
+        for valid_time in [iso(row.get("valid"))]
+        if valid_time is not None
+    })
+    if not start or not end or not available or epoch(end) < epoch(start):
+        return False
+    available_set = set(available)
+    exact_required = {
+        epoch(valid_time)
+        for raw in exact_required_times
+        for valid_time in [iso(raw)]
+        if valid_time is not None
+    }
+    if not exact_required <= available_set:
+        return False
+
+    wanted = epoch(start)
+    end_epoch = epoch(end)
+    maximum_gap_seconds = WAVE_MAX_INTERPOLATION_HOURS * 3600
+    while wanted <= end_epoch:
+        if wanted not in available_set:
+            before = max(
+                (candidate for candidate in available if candidate < wanted),
+                default=None,
+            )
+            after = min(
+                (candidate for candidate in available if candidate > wanted),
+                default=None,
+            )
+            if (
+                before is None
+                or after is None
+                or after - before > maximum_gap_seconds
+            ):
+                return False
+        wanted += 3600
+    return True
+
+
 def select_forecast_run(
     runs: dict[str, list[dict[str, Any]]],
     preferred_run: str | None = None,
@@ -968,12 +1023,7 @@ def operational_collection_plan(
         collection for collection in scheduled
         if collection not in retry_deferred
     ]
-    lead_dkss = next((
-        collection for collection in eligible
-        if not strict_current_anchor_available
-        and collection in MARINE_COLLECTIONS
-    ), None)
-    critical_wam = [
+    complete_wam = [
         collection
         for collection in sorted(
             WAVE_BOOTSTRAP_COLLECTIONS,
@@ -985,14 +1035,47 @@ def operational_collection_plan(
                 "requiredPairCount"
             ) or 0
         ) > 0
-        and (
-            int(
-                (operational_wave_residual.get(collection) or {}).get(
-                    "missingPairCount"
-                ) or 0
-            ) > 0
-            or collection in (force_wam_collections or set())
+        and int(
+            (operational_wave_residual.get(collection) or {}).get(
+                "missingPairCount"
+            ) or 0
+        ) == 0
+    ]
+    forced_wam = set(force_wam_collections or set())
+    proof_complete_wam = [
+        collection for collection in complete_wam
+        if collection in forced_wam
+    ]
+    quality_eligible_complete_wam = [
+        collection for collection in complete_wam
+        if collection not in forced_wam
+    ]
+    work_eligible = [
+        collection for collection in eligible
+        if collection not in proof_complete_wam
+    ]
+    lead_dkss = next((
+        collection for collection in work_eligible
+        if not strict_current_anchor_available
+        and collection in MARINE_COLLECTIONS
+    ), None)
+    critical_wam = [
+        collection
+        for collection in sorted(
+            WAVE_BOOTSTRAP_COLLECTIONS,
+            key=COLLECTION_ORDER.index,
         )
+        if collection in work_eligible
+        and int(
+            (operational_wave_residual.get(collection) or {}).get(
+                "requiredPairCount"
+            ) or 0
+        ) > 0
+        and int(
+            (operational_wave_residual.get(collection) or {}).get(
+                "missingPairCount"
+            ) or 0
+        ) > 0
     ]
     prioritized = [
         *([lead_dkss] if lead_dkss else []),
@@ -1000,7 +1083,10 @@ def operational_collection_plan(
     ]
     planned = [
         *prioritized,
-        *[collection for collection in eligible if collection not in prioritized],
+        *[
+            collection for collection in work_eligible
+            if collection not in prioritized
+        ],
     ]
     reserve_by_collection, reserve_total = wam_runtime_reserve(
         critical_wam,
@@ -1015,6 +1101,10 @@ def operational_collection_plan(
             collection for collection in critical_wam
             if collection in (force_wam_collections or set())
         ],
+        "proofCompleteWamCollectionsSkipped": proof_complete_wam,
+        "proofCompleteWamCollectionsRetainedForQuality": (
+            quality_eligible_complete_wam
+        ),
         "criticalWamOutsideBaseCollectionQuota": True,
         "criticalWamRuntimeReserveSeconds": round(reserve_total, 3),
         "strictCurrentLeadRuntimeReserveSeconds": (
@@ -1026,6 +1116,19 @@ def operational_collection_plan(
         },
         "retryDeferredCollections": retry_deferred,
     }
+
+
+def strict_current_lead_attempt_available(
+    collection: str,
+    lead_collection: Any,
+    attempted_assets: int,
+    attempt_limit: int,
+) -> bool:
+    """Bound only actual lead downloads/reuses; cache-proof skips are free."""
+    return bool(
+        collection != lead_collection
+        or attempted_assets < max(0, attempt_limit)
+    )
 
 
 def asset_identity_sha256(href: Any) -> str | None:
@@ -1125,11 +1228,47 @@ def official_wave_asset_identity(
     }
 
 
+def asset_identity_is_required_for_resume(
+    collection: str,
+    asset: dict[str, Any],
+    identity: dict[str, Any],
+    required_current_valid_times: set[str],
+) -> bool:
+    """Keep WAM resume proof bound to the primary phase, never its fallback."""
+    if collection in WAVE_BOOTSTRAP_COLLECTIONS:
+        return int(asset.get("operationalWavePhaseRank") or 0) == 0
+    return str(identity.get("validTime") or "") in required_current_valid_times
+
+
 def wave_source_asset_matches_official(source: Any, expected: Any) -> bool:
     return bool(
         isinstance(source, dict)
         and isinstance(expected, dict)
         and source == expected
+    )
+
+
+def wave_native_source_matches_official(
+    source: Any,
+    expected: Any,
+) -> bool:
+    """Match a persisted native wave row to one exact official STAC asset."""
+    return bool(
+        isinstance(source, dict)
+        and isinstance(expected, dict)
+        and source.get("collection") == expected.get("collection")
+        and canonical_time(source.get("modelRun"))
+            == canonical_time(expected.get("modelRun"))
+        and canonical_time(source.get("nativeValidTime"))
+            == canonical_time(expected.get("validTime"))
+        and source.get("itemId") == expected.get("itemId")
+        and source.get("assetIdentitySha256")
+            == expected.get("assetIdentitySha256")
+        and source.get("assetSizeBytes") == expected.get("assetSizeBytes")
+        and canonical_time(source.get("itemCreatedAt"))
+            == canonical_time(expected.get("itemCreatedAt"))
+        and canonical_time(source.get("itemUpdatedAt"))
+            == canonical_time(expected.get("itemUpdatedAt"))
     )
 
 
@@ -1189,6 +1328,7 @@ def reusable_processed_steps(
     covered_pair_keys: set[tuple[str, str]] | None = None,
     wave_cache: dict[str, Any] | None = None,
     wave_zones: list[dict[str, Any]] | None = None,
+    wave_resume_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Reuse only checkpoints bound to an exact asset and actual cache proof."""
     if not same_processing or not same_run:
@@ -1198,7 +1338,7 @@ def reusable_processed_steps(
         return {}
     steps = previous_run.get("processedSteps") or {}
     if not isinstance(steps, dict):
-        return {}
+        steps = {}
     if collection in WAVE_BOOTSTRAP_COLLECTIONS:
         if (
             not isinstance(required_asset_provenance, dict)
@@ -1208,13 +1348,46 @@ def reusable_processed_steps(
         ):
             return {}
         reusable_wave: dict[str, Any] = {}
-        for raw_valid_time, step in steps.items():
+        rejected_by_code: dict[str, int] = {}
+        reconstructed = 0
+        evaluated = 0
+        for raw_valid_time, expected in required_asset_provenance.items():
             valid_time = canonical_time(raw_valid_time)
-            expected = required_asset_provenance.get(valid_time)
             if not (
                 valid_time
-                and isinstance(step, dict)
-                and step.get("complete") is True
+                and isinstance(expected, dict)
+                and expected.get("collection") == collection
+                and canonical_time(expected.get("validTime")) == valid_time
+            ):
+                continue
+            evaluated += 1
+            step = steps.get(raw_valid_time)
+            if not isinstance(step, dict):
+                step = steps.get(valid_time)
+            if not isinstance(step, dict):
+                step = {}
+            asset = MappingWaveAsset({
+                "valid": expected["validTime"],
+                "id": expected["itemId"],
+                "assetIdentitySha256": expected["assetIdentitySha256"],
+            }, expected["modelRun"], official_identity=expected)
+            summary = private_wave_bootstrap_asset_summary(
+                wave_cache,
+                wave_zones,
+                collection,
+                asset,
+            )
+            for code, count in summary["rejectedByCode"].items():
+                rejected_by_code[code] = (
+                    rejected_by_code.get(code, 0) + int(count)
+                )
+            if not (
+                summary["requiredCount"] > 0
+                and summary["acceptedCount"] == summary["requiredCount"]
+            ):
+                continue
+            already_proof_complete = bool(
+                step.get("complete") is True
                 and step.get("parserVersion") == PARSER_VERSION
                 and step.get("processingSignature") == processing_signature
                 and {"significant-wave-height", "dominant-wave-period"}
@@ -1222,26 +1395,37 @@ def reusable_processed_steps(
                 and wave_source_asset_matches_official(
                     step.get("sourceAsset"), expected,
                 )
-            ):
-                continue
-            asset = MappingWaveAsset({
-                "valid": expected["validTime"],
-                "id": expected["itemId"],
-                "assetIdentitySha256": expected["assetIdentitySha256"],
-            }, expected["modelRun"])
-            summary = private_wave_bootstrap_asset_summary(
-                wave_cache,
-                wave_zones,
-                collection,
-                asset,
-            )
-            if not (
-                summary["requiredCount"] > 0
-                and summary["acceptedCount"] == summary["requiredCount"]
                 and step.get("waveTargetProof") == summary
-            ):
-                continue
-            reusable_wave[valid_time] = step
+            )
+            if not already_proof_complete:
+                reconstructed += 1
+            recognized_parameters = sorted({
+                *(step.get("recognizedParameters") or []),
+                *REQUIRED_TARGETS["wave"],
+            })
+            reusable_wave[valid_time] = {
+                **step,
+                "recognizedParameters": recognized_parameters,
+                "requiredParameters": sorted(REQUIRED_TARGETS["wave"]),
+                "missingRequiredParameters": [],
+                "zonesTouched": summary["acceptedCount"],
+                "complete": True,
+                "parserVersion": PARSER_VERSION,
+                "processingSignature": processing_signature,
+                "sourceAsset": expected,
+                "waveTargetProof": summary,
+                **(
+                    {"reconstructedFromNativeCache": True}
+                    if not already_proof_complete else {}
+                ),
+            }
+        if wave_resume_metrics is not None:
+            wave_resume_metrics.update({
+                "assetsEvaluated": evaluated,
+                "proofCompleteAssets": len(reusable_wave),
+                "reconstructedProofCompleteAssets": reconstructed,
+                "rejectedByCode": dict(sorted(rejected_by_code.items())),
+            })
         return reusable_wave
     if collection not in MARINE_COLLECTIONS:
         return {
@@ -1780,6 +1964,7 @@ def list_latest_assets(
     required_horizon_end_time: str | None = None,
     allow_documented_required_gaps: bool = False,
     retain_preferred_native_run: bool = False,
+    include_operational_wave_fallback_phases: bool = False,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
     required = {
         iso(value) for value in (required_valid_times or set())
@@ -1934,9 +2119,60 @@ def list_latest_assets(
     retention_horizon_hours = (
         HARMONIE_RUN_RETENTION_HOURS if collection == "harmonie_dini_sf" else COMPLETE_HORIZON_HOURS
     )
+    wam_target_window = bool(
+        collection in WAVE_BOOTSTRAP_COLLECTIONS
+        and required_horizon_end
+    )
+    target_window_axis_resolvable_runs = {
+        candidate_run: rows
+        for candidate_run, rows in selection_runs.items()
+        if wam_target_window
+        and wam_asset_times_resolve_target_window(
+            rows,
+            inventory_start,
+            required_horizon_end,
+            required,
+        )
+    }
+    target_window_selection_pool = (
+        target_window_axis_resolvable_runs
+        if target_window_axis_resolvable_runs
+        else selection_runs
+    )
+    if wam_target_window:
+        # DEC-0118 requires the newest eligible WAM generation. Existing rows
+        # remain reusable in the cache, but the prior reference is never a run
+        # pin. Prefer a run whose own native time axis safely resolves every
+        # target hour; otherwise let the newest exact/end-covered run make
+        # progressive residual-first repairs without claiming completeness.
+        newest_wam_candidate = max(target_window_selection_pool, key=epoch)
+        target_window_selection_pool = {
+            newest_wam_candidate: target_window_selection_pool[
+                newest_wam_candidate
+            ]
+        }
+    stats["targetWindowAxisResolvableRunCount"] = (
+        len(target_window_axis_resolvable_runs) if wam_target_window else None
+    )
+    stats["targetWindowAxisResolvablePoolUsed"] = bool(
+        wam_target_window and target_window_axis_resolvable_runs
+    )
+    stats["targetWindowProgressiveFallbackUsed"] = bool(
+        wam_target_window and not target_window_axis_resolvable_runs
+    )
+    stats["targetWindowSelectionPolicy"] = (
+        "newest-axis-resolvable-else-newest-exact-end-covered"
+        if wam_target_window else None
+    )
+    stats["targetWindowInterpolationLimitHours"] = (
+        WAVE_MAX_INTERPOLATION_HOURS
+        if collection in WAVE_BOOTSTRAP_COLLECTIONS
+        and required_horizon_end else None
+    )
     run, run_selection = select_forecast_run(
-        selection_runs,
+        target_window_selection_pool,
         (
+            None if wam_target_window else
             preferred_run if preferred_run in selection_runs
             and (
                 retain_preferred_native_run
@@ -1948,6 +2184,13 @@ def list_latest_assets(
         ),
         retention_horizon_hours=retention_horizon_hours,
         retain_preferred_run=retain_preferred_native_run,
+    )
+    selected_target_window_axis_resolvable = bool(
+        wam_target_window and run in target_window_axis_resolvable_runs
+    )
+    stats["selectedTargetWindowAxisResolvable"] = (
+        selected_target_window_axis_resolvable
+        if wam_target_window else None
     )
     selected_valid_times = {
         iso(row.get("valid")) for row in runs[run] if iso(row.get("valid"))
@@ -1970,6 +2213,10 @@ def list_latest_assets(
     stats["requiredHorizonEndCovered"] = selected_horizon_end_covered
     stats["requiredWindowInventoryComplete"] = bool(
         stats.get("catalogInventoryComplete") is True
+        and (
+            not wam_target_window
+            or selected_target_window_axis_resolvable
+        )
         and (
             (
                 allow_documented_required_gaps
@@ -2062,7 +2309,11 @@ def list_latest_assets(
     ):
         if row["valid"] not in required or row["valid"] in official_by_time:
             continue
-        identity = official_current_asset_identity(collection, run, row)
+        identity = (
+            official_wave_asset_identity(collection, run, row)
+            if collection in WAVE_BOOTSTRAP_COLLECTIONS
+            else official_current_asset_identity(collection, run, row)
+        )
         if identity is None:
             stats["catalogInventoryComplete"] = False
             stats["catalogInventoryFailureCodes"] = sorted({
@@ -2077,54 +2328,118 @@ def list_latest_assets(
     ]
     stats["officialRequiredGapCount"] = max(0, len(required) - len(selected_official_required))
     stats["officialNativeCadenceHours"] = 1 if collection in MARINE_COLLECTIONS else None
-    unique: dict[str, dict[str, Any]] = {}
+    def selected_rows_for_run(
+        candidate_run: str,
+        *,
+        phase_rank: int,
+    ) -> list[dict[str, Any]]:
+        unique: dict[str, dict[str, Any]] = {}
+        for row in sorted(
+            runs[candidate_run],
+            key=lambda value: (
+                epoch(value["valid"]),
+                str(value["id"]),
+                str(value.get("assetIdentitySha256") or ""),
+            ),
+        ):
+            if epoch(row["valid"]) < minimum_valid_epoch:
+                if phase_rank == 0:
+                    stats["expiredForecastStepsSkipped"] = int(
+                        stats.get("expiredForecastStepsSkipped") or 0
+                    ) + 1
+                continue
+            if row["valid"] not in required and not stride_selected(
+                row["valid"], candidate_run,
+            ):
+                continue
+            if row["valid"] in unique:
+                if phase_rank == 0:
+                    stats["duplicateValidTimes"] += 1
+                    stats["catalogInventoryComplete"] = False
+                    stats["catalogInventoryFailureCodes"] = sorted({
+                        *(stats.get("catalogInventoryFailureCodes") or []),
+                        "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+                    })
+                continue
+            unique[row["valid"]] = {
+                **row,
+                "collection": collection,
+                "modelRun": candidate_run,
+                "operationalWavePhaseRank": phase_rank,
+                "observedRunCadenceHours": cadence_hours,
+                "latestRun": latest_run,
+                "catalogScheduleFresh": (
+                    catalog_schedule_fresh
+                    if cadence_hours is not None
+                    and publication_lag_hours is not None
+                    else None
+                ),
+            }
+        return sorted(
+            unique.values(),
+            key=lambda row: (
+                0 if row["valid"] in required else 1,
+                epoch(row["valid"]),
+            ),
+        )
+
     minimum_valid_epoch = (
         epoch(minimum_valid_time)
         if minimum_valid_time is not None
         else time.time() - 3600
     )
-    for row in sorted(
-        runs[run],
-        key=lambda r: (
-            epoch(r["valid"]),
-            str(r["id"]),
-            str(r.get("assetIdentitySha256") or ""),
-        ),
-    ):
-        if epoch(row["valid"]) < minimum_valid_epoch:
-            stats["expiredForecastStepsSkipped"] = int(stats.get("expiredForecastStepsSkipped") or 0) + 1
-            continue
-        if row["valid"] not in required and not stride_selected(row["valid"], run):
-            continue
-        if row["valid"] in unique:
-            stats["duplicateValidTimes"] += 1
-            stats["catalogInventoryComplete"] = False
-            stats["catalogInventoryFailureCodes"] = sorted({
-                *(stats.get("catalogInventoryFailureCodes") or []),
-                "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
-            })
-            continue
-        unique[row["valid"]] = {
-            **row,
-            "collection": collection,
-            "modelRun": run,
-            "observedRunCadenceHours": cadence_hours,
-            "latestRun": latest_run,
-            "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
-        }
-    rows = sorted(
-        unique.values(),
-        key=lambda row: (
-            0 if row["valid"] in required else 1,
-            epoch(row["valid"]),
-        ),
-    )
-    selected_rows = rows[:MAX_ASSETS_PER_COLLECTION]
+    primary_rows = selected_rows_for_run(run, phase_rank=0)
+    selected_rows = primary_rows[:MAX_ASSETS_PER_COLLECTION]
     selected_required = sum(row["valid"] in required for row in selected_rows)
     stats["requiredRowsTruncatedByAssetLimit"] = max(
         0,
         len(selected_official_required) - selected_required,
     )
+    fallback_candidates = (
+        sorted(
+            (
+                candidate_run
+                for candidate_run in target_window_axis_resolvable_runs
+                if epoch(candidate_run) < epoch(run)
+            ),
+            key=epoch,
+            reverse=True,
+        )[:MAX_OPERATIONAL_WAM_FALLBACK_RUNS]
+        if include_operational_wave_fallback_phases and wam_target_window
+        else []
+    )
+    fallback_phase_counts: list[int] = []
+    fallback_omitted_by_limit = 0
+    for phase_rank, fallback_run in enumerate(fallback_candidates, start=1):
+        fallback_rows = selected_rows_for_run(
+            fallback_run,
+            phase_rank=phase_rank,
+        )
+        remaining_capacity = MAX_ASSETS_PER_COLLECTION - len(selected_rows)
+        if len(fallback_rows) > remaining_capacity:
+            # A partial run phase could never prove that the older run was fully
+            # attempted. Keep the primary plan intact and omit this fallback
+            # phase instead of silently truncating it.
+            fallback_omitted_by_limit += 1
+            continue
+        selected_rows.extend(fallback_rows)
+        fallback_phase_counts.append(len(fallback_rows))
+    if wam_target_window:
+        stats.update({
+            "operationalWaveRunPhaseCount": 1 + len(fallback_phase_counts),
+            "operationalWaveFallbackCandidateRunCount": len(
+                fallback_candidates
+            ),
+            "operationalWaveFallbackPhaseAssetCounts": fallback_phase_counts,
+            "operationalWaveFallbackPhasesOmittedByAssetLimit": (
+                fallback_omitted_by_limit
+            ),
+            "operationalWaveFallbackPolicy": (
+                "next-older-causal-axis-resolvable-after-terminal-primary"
+                if include_operational_wave_fallback_phases
+                else None
+            ),
+        })
     stats["selectedForecastSteps"] = len(selected_rows)
     return run, selected_rows, stats
 
@@ -3270,6 +3585,33 @@ def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[st
     return zones
 
 
+def native_operational_wave_zones(
+    collection: str,
+    zones: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return the one shared native PART denominator used by every WAM gate.
+
+    Parent rows remain best-effort parser output.  The three approved
+    Feggesund proxy PARTs remain outside this native gate and are proved by the
+    separate downstream direct/proxy contract.
+    """
+    if collection not in WAVE_BOOTSTRAP_COLLECTIONS:
+        return []
+    by_id: dict[str, dict[str, Any]] = {}
+    for zone in relevant_zones(collection, zones):
+        zone_id = str(zone.get("id") or "").strip()
+        if (
+            not zone_id
+            or zone.get("coastalPart") is not True
+            or zone_id in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
+            or str(zone.get("parentZoneId") or "")
+                in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
+        ):
+            continue
+        by_id.setdefault(zone_id, zone)
+    return list(by_id.values())
+
+
 def build_operational_zone_config(
     zones_geo: dict[str, Any],
     coastal_part_targets: list[dict[str, Any]],
@@ -3327,6 +3669,493 @@ def build_operational_zone_config(
     return zones
 
 
+def operational_wave_collection_evidence(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    reference: datetime,
+    collection: str,
+    *,
+    exact_required_times: set[str] | None = None,
+    require_single_group: bool = False,
+) -> dict[str, Any]:
+    """Resolve one family and retain internal pair/lineage promotion proof."""
+    exact_required = {
+        value for raw in (exact_required_times or set())
+        for value in [canonical_time(raw)]
+        if value is not None
+    }
+    valid_times = tuple(sorted({
+        *operational_current_valid_times(reference),
+        *exact_required,
+    }, key=epoch))
+    relevant = native_operational_wave_zones(collection, zones)
+    required_pairs = len(relevant) * len(valid_times)
+    evidence_by_zone: dict[str, dict[str, Any]] = {}
+    missing_valid_times: set[str] = set()
+    for zone in relevant:
+        zone_id = str(zone.get("id") or "")
+        point = (document.get("zones") or {}).get(zone_id) or {}
+        identity = sampling_identity(zone)
+        if identity is None:
+            evidence_by_zone[zone_id] = {}
+            missing_valid_times.update(valid_times)
+            continue
+        evidence_by_zone[zone_id] = resolved_native_wave_hour_evidence(
+            point.get("hourly"),
+            entity_id=zone_id,
+            provenance_entity=identity,
+            collection=collection,
+            required_hours=valid_times,
+            exact_required_hours=exact_required,
+            require_single_group=require_single_group,
+        )
+
+    lineage_conflicts = conflicting_native_wave_asset_keys(
+        evidence_by_zone.values()
+    )
+    target_pair_keys = frozenset(
+        (
+            str(zone.get("id") or "").removeprefix("PART::"),
+            required_hour,
+        )
+        for zone in relevant
+        for required_hour in valid_times
+    )
+    verified_pair_keys: set[tuple[str, str]] = set()
+    resolved_pair_model_runs: dict[tuple[str, str], frozenset[str]] = {}
+    lineage_conflict_pairs = 0
+    for zone_id, evidence in evidence_by_zone.items():
+        resolved_without_conflicts = {
+            required_hour
+            for required_hour, used in evidence.items()
+            if not any(key in lineage_conflicts for key, _lineage in used)
+        }
+        part_id = zone_id.removeprefix("PART::")
+        for required_hour in resolved_without_conflicts:
+            pair_key = (part_id, required_hour)
+            verified_pair_keys.add(pair_key)
+            resolved_pair_model_runs[pair_key] = frozenset(
+                lineage[0]
+                for _native_key, lineage in evidence[required_hour]
+            )
+        lineage_conflict_pairs += len(evidence) - len(
+            resolved_without_conflicts
+        )
+        missing_valid_times.update(
+            set(valid_times) - resolved_without_conflicts
+        )
+    closure = {
+        "relevantZoneCount": len(relevant),
+        "requiredHourCount": len(valid_times),
+        "requiredPairCount": required_pairs,
+        "verifiedPairCount": len(verified_pair_keys),
+        "missingPairCount": required_pairs - len(verified_pair_keys),
+        "lineageConflictNativeTimeCount": len(lineage_conflicts),
+        "lineageConflictRequiredPairCount": lineage_conflict_pairs,
+        "rangeStart": valid_times[0],
+        "rangeEnd": valid_times[-1],
+    }
+    return {
+        "closure": closure,
+        "missingValidTimes": tuple(sorted(missing_valid_times, key=epoch)),
+        "targetPairKeys": target_pair_keys,
+        "verifiedPairKeys": frozenset(verified_pair_keys),
+        "resolvedPairModelRuns": resolved_pair_model_runs,
+        "lineageConflictKeys": frozenset(lineage_conflicts),
+    }
+
+
+def operational_wave_collection_closure(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    reference: datetime,
+    collection: str,
+    *,
+    exact_required_times: set[str] | None = None,
+    require_single_group: bool = False,
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Resolve one family with the exact same native semantics as final gate."""
+    evidence = operational_wave_collection_evidence(
+        document,
+        zones,
+        reference,
+        collection,
+        exact_required_times=exact_required_times,
+        require_single_group=require_single_group,
+    )
+    return evidence["closure"], evidence["missingValidTimes"]
+
+
+def operational_wave_candidate_stage_evidence(
+    candidate: dict[str, Any],
+    zones: list[dict[str, Any]],
+    reference: datetime,
+    collection: str,
+    *,
+    exact_required_times: set[str],
+    active_evidence: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Build normal proof and, only for complete active WAM, quality proof."""
+    candidate_evidence = operational_wave_collection_evidence(
+        candidate,
+        zones,
+        reference,
+        collection,
+        exact_required_times=exact_required_times,
+    )
+    active_targets = frozenset(
+        active_evidence.get("targetPairKeys") or ()
+    )
+    active_pairs = frozenset(
+        active_evidence.get("verifiedPairKeys") or ()
+    )
+    candidate_single_group = None
+    if active_pairs == active_targets and active_targets:
+        candidate_single_group = operational_wave_collection_evidence(
+            candidate,
+            zones,
+            reference,
+            collection,
+            exact_required_times=exact_required_times,
+            require_single_group=True,
+        )
+    return candidate_evidence, candidate_single_group
+
+
+def operational_wave_phase_promotion_decision(
+    active: dict[str, Any],
+    candidate: dict[str, Any],
+    *,
+    fallback_phase: bool,
+    candidate_changed: bool,
+    candidate_phase_model_run: str | None = None,
+    candidate_single_group: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Prove that one cumulative WAM run-stage can replace active cache rows.
+
+    Pair identities, rather than aggregate counts, make an equal-count swap
+    fail closed. A complete active family can change generation only when the
+    cumulative candidate still resolves the whole axis from one coherent run
+    group; this prevents a partially refreshed three-hour seam from becoming
+    active. Incomplete families may make monotone hole/tail progress.
+    """
+    active_targets = frozenset(active.get("targetPairKeys") or ())
+    candidate_targets = frozenset(candidate.get("targetPairKeys") or ())
+    active_pairs = frozenset(active.get("verifiedPairKeys") or ())
+    candidate_pairs = frozenset(candidate.get("verifiedPairKeys") or ())
+    active_conflicts = frozenset(active.get("lineageConflictKeys") or ())
+    candidate_conflicts = frozenset(
+        candidate.get("lineageConflictKeys") or ()
+    )
+    same_target = bool(active_targets) and active_targets == candidate_targets
+    pair_superset = active_pairs <= candidate_pairs
+    no_new_lineage_conflicts = candidate_conflicts <= active_conflicts
+    pair_improvement = len(candidate_pairs) > len(active_pairs)
+    active_complete = bool(active_pairs == active_targets and active_targets)
+    coherent_candidate_complete = bool(
+        candidate_single_group is not None
+        and frozenset(
+            candidate_single_group.get("targetPairKeys") or ()
+        ) == candidate_targets
+        and frozenset(
+            candidate_single_group.get("verifiedPairKeys") or ()
+        ) == candidate_targets
+        and not candidate_single_group.get("lineageConflictKeys")
+    )
+    phase_owned_candidate_complete = bool(
+        candidate_phase_model_run
+        and candidate_pairs == candidate_targets
+        and all(
+            set(model_runs) == {candidate_phase_model_run}
+            for pair_key, model_runs in (
+                candidate.get("resolvedPairModelRuns") or {}
+            ).items()
+            if pair_key in candidate_targets
+        )
+        and candidate_targets <= set(
+            (candidate.get("resolvedPairModelRuns") or {}).keys()
+        )
+    )
+    quality_refresh = bool(
+        not fallback_phase
+        and active_complete
+        and coherent_candidate_complete
+        and phase_owned_candidate_complete
+    )
+    promote = bool(
+        candidate_changed
+        and same_target
+        and pair_superset
+        and no_new_lineage_conflicts
+        and (
+            pair_improvement
+            or quality_refresh
+        )
+        and (not fallback_phase or pair_improvement)
+    )
+    if not candidate_changed:
+        reason_code = "NO_CANDIDATE_CHANGE"
+    elif not same_target:
+        reason_code = "TARGET_DENOMINATOR_CHANGED"
+    elif not pair_superset:
+        reason_code = "RESOLVED_PAIR_REGRESSION"
+    elif not no_new_lineage_conflicts:
+        reason_code = "NEW_LINEAGE_CONFLICT"
+    elif fallback_phase and not pair_improvement:
+        reason_code = "FALLBACK_NO_PAIR_IMPROVEMENT"
+    elif not pair_improvement and not quality_refresh:
+        reason_code = "INCOMPLETE_QUALITY_REFRESH"
+    else:
+        reason_code = "PROMOTED"
+    return {
+        "promote": promote,
+        "reasonCode": reason_code,
+        "activeVerifiedPairCount": len(active_pairs),
+        "candidateVerifiedPairCount": len(candidate_pairs),
+        "pairImprovementCount": max(0, len(candidate_pairs) - len(active_pairs)),
+        "activeLineageConflictCount": len(active_conflicts),
+        "candidateLineageConflictCount": len(candidate_conflicts),
+        "sameTargetDenominator": same_target,
+        "resolvedPairSuperset": pair_superset,
+        "noNewLineageConflicts": no_new_lineage_conflicts,
+        "coherentCandidateComplete": coherent_candidate_complete,
+        "phaseOwnedCandidateComplete": phase_owned_candidate_complete,
+    }
+
+
+def operational_wave_asset_stage_complete(
+    summary: dict[str, Any],
+    outcome: tuple[set[str], set[str], bool, int, int],
+) -> bool:
+    """Require every relevant native target to accept both wave fields."""
+    return bool(
+        {"significant-wave-height", "dominant-wave-period"} <= outcome[0]
+        and int(summary.get("requiredCount") or 0) > 0
+        and int(summary.get("acceptedCount") or 0)
+            == int(summary.get("requiredCount") or 0)
+    )
+
+
+def build_operational_wave_collection_candidate(
+    active: dict[str, Any],
+) -> dict[str, Any]:
+    """Clone active cache rows for one isolated collection/run candidate."""
+    return {
+        "generatedAt": active.get("generatedAt"),
+        "zones": copy.deepcopy(active.get("zones") or {}),
+    }
+
+
+def commit_operational_wave_collection_candidate(
+    active: dict[str, Any],
+    candidate: dict[str, Any],
+    touched_zone_ids: set[str],
+) -> None:
+    """Atomically publish only zones touched by a proved cumulative stage."""
+    if not touched_zone_ids:
+        return
+    candidate_zones = candidate.get("zones") or {}
+    if not touched_zone_ids <= set(candidate_zones):
+        raise RuntimeError("operational WAM candidate lacks a touched zone")
+    committed_zones = dict(active.get("zones") or {})
+    for zone_id in touched_zone_ids:
+        committed_zones[zone_id] = copy.deepcopy(candidate_zones[zone_id])
+    active["zones"] = committed_zones
+
+
+def apply_operational_wave_closure_to_run_info(
+    run_info: dict[str, Any],
+    closure: dict[str, Any],
+    missing_valid_times: tuple[str, ...],
+    exact_required_times: set[str],
+) -> None:
+    """Attach aggregate active-cache closure only at a proved promotion."""
+    missing = set(missing_valid_times)
+    exact_missing = len(missing & set(exact_required_times))
+    run_info.update({
+        "remainingClosureHourCount": len(missing),
+        "remainingClosurePairCount": int(
+            closure.get("missingPairCount") or 0
+        ),
+        "remainingClosureByCategory": {
+            "exactRequiredHourCount": exact_missing,
+            "forecastHourCount": len(missing) - exact_missing,
+            "nativePairCount": int(closure.get("missingPairCount") or 0),
+            "lineageConflictPairCount": int(
+                closure.get("lineageConflictRequiredPairCount") or 0
+            ),
+        },
+        "lineageConflictNativeTimeCount": int(
+            closure.get("lineageConflictNativeTimeCount") or 0
+        ),
+        "nativeGateProofComplete": (
+            operational_wave_native_closure_complete(closure)
+        ),
+        "waveObservedRejectionEventsByCode": dict(sorted(
+            (
+                run_info.get("waveObservedRejectionEventsByCode") or {}
+            ).items()
+        )),
+    })
+
+
+def promote_operational_wave_collection_stage(
+    *,
+    active_result: dict[str, Any],
+    candidate_result: dict[str, Any],
+    collection: str,
+    phase_model_run: str,
+    fallback_phase: bool,
+    active_evidence: dict[str, Any],
+    candidate_evidence: dict[str, Any],
+    candidate_single_group: dict[str, Any] | None,
+    touched_zone_ids: set[str],
+    run_info: dict[str, Any],
+    fresh_zone_ids: set[str],
+    exact_required_times: set[str],
+    checkpoint_controller: Any,
+    asset_processing_seconds: float | None,
+    force_checkpoint: bool = False,
+) -> dict[str, Any]:
+    """Apply all active WAM state changes behind one promotion decision."""
+    decision = operational_wave_phase_promotion_decision(
+        active_evidence,
+        candidate_evidence,
+        fallback_phase=fallback_phase,
+        candidate_changed=bool(touched_zone_ids),
+        candidate_phase_model_run=phase_model_run,
+        candidate_single_group=candidate_single_group,
+    )
+    if not decision["promote"]:
+        if asset_processing_seconds is not None:
+            checkpoint_controller.observe_asset_duration(
+                asset_processing_seconds,
+            )
+        return {**decision, "checkpointWritten": False}
+    commit_operational_wave_collection_candidate(
+        active_result,
+        candidate_result,
+        touched_zone_ids,
+    )
+    fresh_zone_ids.update(touched_zone_ids)
+    apply_operational_wave_closure_to_run_info(
+        run_info,
+        candidate_evidence["closure"],
+        candidate_evidence["missingValidTimes"],
+        exact_required_times,
+    )
+    active_result.setdefault("runs", {})[collection] = copy.deepcopy(
+        run_info
+    )
+    checkpoint_written = checkpoint_controller.note_committed_asset(
+        seconds=asset_processing_seconds,
+    )
+    if force_checkpoint and not checkpoint_written:
+        checkpoint_written = checkpoint_controller.flush_if_due(force=True)
+    return {**decision, "checkpointWritten": checkpoint_written}
+
+
+def operational_wave_phase_defers_primary_quality_promotion(
+    *,
+    phase_rank: int,
+    active_evidence: dict[str, Any],
+) -> bool:
+    """Defer an already-complete primary refresh until its whole run is staged."""
+    return bool(
+        phase_rank == 0
+        and operational_wave_native_closure_complete(
+            active_evidence.get("closure") or {}
+        )
+    )
+
+
+def operational_wave_terminal_quality_promotion_allowed(
+    *,
+    promotion_deferred: bool,
+    phase_fully_traversed: bool,
+    stop_code: str | None,
+    candidate_changed: bool,
+) -> bool:
+    """Only a complete, uninterrupted deferred phase may replace good WAM."""
+    return bool(
+        promotion_deferred
+        and phase_fully_traversed
+        and stop_code is None
+        and candidate_changed
+    )
+
+
+def operational_wave_fallback_phase_allowed(
+    *,
+    previous_phase_rank: int,
+    next_phase_rank: int,
+    previous_phase_fully_traversed: bool,
+    stop_code: str | None,
+    active_evidence: dict[str, Any],
+) -> bool:
+    """Allow a later run phase only after terminal completion with a residual."""
+    closure = active_evidence.get("closure") or {}
+    return bool(
+        next_phase_rank > previous_phase_rank
+        and previous_phase_fully_traversed
+        and stop_code is None
+        and int(closure.get("requiredPairCount") or 0) > 0
+        and int(closure.get("missingPairCount") or 0) > 0
+    )
+
+
+def operational_wave_native_closure_complete(
+    closure: dict[str, Any],
+) -> bool:
+    """Return true only for a non-empty, fully resolved native family gate."""
+    return (
+        int(closure.get("requiredPairCount") or 0) > 0
+        and int(closure.get("missingPairCount") or 0) == 0
+    )
+
+
+def operational_wave_collection_outcome(
+    closure: dict[str, Any],
+    promotion_count: int,
+) -> dict[str, bool]:
+    """Separate useful raw attempts from active-cache semantic progress."""
+    active_complete = operational_wave_native_closure_complete(closure)
+    semantic_progress = promotion_count > 0
+    return {
+        "activeComplete": active_complete,
+        "semanticProgress": semantic_progress,
+        "retryImmediately": not active_complete and not semantic_progress,
+    }
+
+
+def collection_assets_complete_for_state(
+    *,
+    operational_wave: bool,
+    generic_assets_complete: bool,
+    wave_outcome: dict[str, bool],
+) -> bool:
+    """Never let processed STAC counts mask an active native WAM residual."""
+    return bool(
+        wave_outcome.get("activeComplete")
+        if operational_wave
+        else generic_assets_complete
+    )
+
+
+def should_stop_operational_wave_asset_loop(
+    collection: str,
+    closure: dict[str, Any],
+    *,
+    launch_mode: bool,
+) -> bool:
+    """Stop overlap only while closing the explicitly forced launch gate."""
+    return bool(
+        launch_mode
+        and collection in WAVE_BOOTSTRAP_COLLECTIONS
+        and operational_wave_native_closure_complete(closure)
+    )
+
+
 def operational_wave_residual_by_collection(
     document: dict[str, Any],
     zones: list[dict[str, Any]],
@@ -3335,41 +4164,62 @@ def operational_wave_residual_by_collection(
     exact_required_times: set[str] | None = None,
     require_single_group: bool = False,
 ) -> dict[str, dict[str, Any]]:
-    """Count target..+117 resolvable native WAM tuple gaps per family."""
-    valid_times = operational_current_valid_times(reference)
+    """Count native WAM gaps with final-validator resolution semantics."""
     residual: dict[str, dict[str, Any]] = {}
     for collection in sorted(
         WAVE_BOOTSTRAP_COLLECTIONS,
         key=COLLECTION_ORDER.index,
     ):
-        relevant = relevant_zones(collection, zones)
-        required_pairs = len(relevant) * len(valid_times)
-        verified_pairs = 0
-        for zone in relevant:
-            zone_id = str(zone.get("id") or "")
-            point = (document.get("zones") or {}).get(zone_id) or {}
-            identity = sampling_identity(zone)
-            if identity is None:
-                continue
-            verified_pairs += len(resolved_native_wave_hours(
-                point.get("hourly"),
-                entity_id=zone_id,
-                provenance_entity=identity,
-                collection=collection,
-                required_hours=valid_times,
-                exact_required_hours=exact_required_times or (),
-                require_single_group=require_single_group,
-            ))
-        residual[collection] = {
-            "relevantZoneCount": len(relevant),
-            "requiredHourCount": len(valid_times),
-            "requiredPairCount": required_pairs,
-            "verifiedPairCount": verified_pairs,
-            "missingPairCount": required_pairs - verified_pairs,
-            "rangeStart": valid_times[0],
-            "rangeEnd": valid_times[-1],
-        }
+        residual[collection], _missing = operational_wave_collection_closure(
+            document,
+            zones,
+            reference,
+            collection,
+            exact_required_times=exact_required_times,
+            require_single_group=require_single_group,
+        )
+    native_part_count = sum(
+        int(details.get("relevantZoneCount") or 0)
+        for details in residual.values()
+    )
+    if native_part_count != OPERATIONAL_WAVE_NATIVE_PART_COUNT:
+        raise RuntimeError("operational native WAM target registry mismatch")
     return residual
+
+
+def prioritize_operational_wave_assets(
+    assets: list[dict[str, Any]],
+    missing_valid_times: tuple[str, ...],
+    proof_complete_valid_times: set[str],
+) -> list[dict[str, Any]]:
+    """Put exact residual/tail and safe bracket support before old overlap."""
+    missing_epochs = tuple(epoch(value) for value in missing_valid_times)
+
+    def priority(asset: dict[str, Any]) -> tuple[Any, ...]:
+        phase_rank = int(asset.get("operationalWavePhaseRank") or 0)
+        valid_time = str(asset.get("valid") or "")
+        valid_epoch = epoch(valid_time)
+        if valid_time in proof_complete_valid_times:
+            category = 3
+            distance = 0.0
+        elif valid_time in missing_valid_times:
+            category = 0
+            distance = 0.0
+        else:
+            distance = min(
+                (abs(valid_epoch - wanted) / 3600.0 for wanted in missing_epochs),
+                default=float("inf"),
+            )
+            category = 1 if distance <= 4.0 else 2
+        return (
+            phase_rank,
+            category,
+            distance,
+            valid_epoch,
+            str(asset.get("id") or ""),
+        )
+
+    return sorted(assets, key=priority)
 
 
 def has_operational_wave_residual(
@@ -4476,6 +5326,15 @@ def private_wave_bootstrap_hour_rejection_code(
             != (["mean-wave-dir"] if direction_present else [])
     ):
         return "ASSET_PROVENANCE_MISMATCH"
+    official_identity = getattr(asset, "official_identity", None)
+    if (
+        official_identity is not None
+        and not wave_native_source_matches_official(
+            source,
+            official_identity,
+        )
+    ):
+        return "ASSET_PROVENANCE_MISMATCH"
     if not complete_native_source_for_hour(
         source,
         "wave",
@@ -4531,13 +5390,22 @@ def private_wave_bootstrap_asset_summary(
 class MappingWaveAsset:
     """Attribute view of a normal STAC asset for exact wave provenance checks."""
 
-    def __init__(self, asset: dict[str, Any], model_run: str) -> None:
-        self.valid_time = str(asset.get("valid") or "")
+    def __init__(
+        self,
+        asset: dict[str, Any],
+        model_run: str,
+        *,
+        official_identity: dict[str, Any] | None = None,
+    ) -> None:
+        self.valid_time = str(
+            asset.get("valid") or asset.get("validTime") or ""
+        )
         self.model_run = model_run
-        self.item_id = str(asset.get("id") or "")
+        self.item_id = str(asset.get("id") or asset.get("itemId") or "")
         self.asset_identity_sha256 = str(
             asset.get("assetIdentitySha256") or ""
         )
+        self.official_identity = official_identity
 
 
 def salvage_invalid_private_wave_rows(
@@ -4984,9 +5852,9 @@ def execute_private_wave_history_bootstrap(
                 )
                 staged_asset_summary.clear()
                 staged_asset_summary.update(summary)
-                return (
-                    {"significant-wave-height", "dominant-wave-period"}
-                    <= outcome[0]
+                return operational_wave_asset_stage_complete(
+                    summary,
+                    outcome,
                 )
 
             try:
@@ -7988,6 +8856,11 @@ class ProgressCheckpointController:
     def mark_sidecars_dirty(self) -> None:
         self.sidecars_dirty = True
 
+    def observe_asset_duration(self, seconds: float) -> None:
+        """Learn runtime without claiming that candidate rows were committed."""
+        if math.isfinite(float(seconds)):
+            self.asset_seconds.append(float(seconds))
+
     def flush_if_due(self, *, force: bool = False) -> bool:
         due = progress_checkpoint_due(
             self.committed_assets_since_write,
@@ -8499,6 +9372,11 @@ def main() -> int:
             previous,
             active_operational_zones,
             locked_production_reference,
+            exact_required_times=(
+                set(wave_bootstrap_configuration["operationalExactHours"])
+                if wave_bootstrap_configuration is not None
+                else {canonical_time(locked_production_reference)}
+            ),
         )
     )
     previous.setdefault("diagnostics", {})[
@@ -8722,16 +9600,20 @@ def main() -> int:
         result,
         active_zones_config,
     )
+    operational_wave_exact_required_times = (
+        set(wave_bootstrap_configuration["operationalExactHours"])
+        if wave_bootstrap_configuration is not None
+        else {canonical_time(locked_production_reference)}
+    )
     operational_wave_residual = operational_wave_residual_by_collection(
         result,
         active_zones_config,
         locked_production_reference,
-        exact_required_times=(
-            set(wave_bootstrap_configuration["operationalExactHours"])
-            if wave_bootstrap_configuration is not None
-            else None
-        ),
-        require_single_group=wave_bootstrap_configuration is not None,
+        exact_required_times=operational_wave_exact_required_times,
+    )
+    operational_wave_native_part_count = sum(
+        int(details.get("relevantZoneCount") or 0)
+        for details in operational_wave_residual.values()
     )
     scheduled, operational_plan = operational_collection_plan(
         base_schedule,
@@ -8747,6 +9629,12 @@ def main() -> int:
     )
     schedule_coverage.update(operational_plan)
     schedule_coverage["operationalWaveResidual"] = operational_wave_residual
+    schedule_coverage["operationalWaveNativePartCount"] = (
+        operational_wave_native_part_count
+    )
+    schedule_coverage["operationalWaveNativePartCountExpected"] = (
+        OPERATIONAL_WAVE_NATIVE_PART_COUNT
+    )
     schedule_coverage["strictCurrentRecoveryActive"] = not coastal_part_current_cache_healthy
     schedule_coverage["strictCurrentRecoveryDkssFirst"] = (
         not coastal_part_current_cache_healthy
@@ -9109,6 +9997,13 @@ def main() -> int:
         for collection, seconds in critical_wam_reserve.items()
     }
     pending_critical_wam = list(critical_wam_collections)
+    strict_current_lead_collection = schedule_coverage.get(
+        "strictCurrentLeadCollection"
+    )
+    strict_current_lead_attempt_limit = max(
+        0,
+        int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
+    )
 
     for collection in scheduled:
         collection_is_critical_wam = collection in critical_wam_collections
@@ -9134,6 +10029,7 @@ def main() -> int:
         collection_start_bytes = budget["bytes"]
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         collection_start_error_count = len(result["diagnostics"]["errors"])
+        strict_current_lead_attempts = 0
         collection_refresh_only = (
             DKSS_PRIMARY_MODE
             and collection in primary_refresh_only_collections
@@ -9146,22 +10042,21 @@ def main() -> int:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             if collection in prefetched_marine:
                 run, assets, stac_stats = prefetched_marine[collection]
-            elif (
-                wave_bootstrap_configuration is not None
-                and collection in WAVE_BOOTSTRAP_COLLECTIONS
-            ):
+            elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
                 run, assets, stac_stats = list_latest_assets(
                     collection,
-                    previous_run.get("referenceTime"),
-                    minimum_valid_time=wave_bootstrap_configuration["targetHour"],
-                    required_valid_times=set(
-                        wave_bootstrap_configuration["operationalExactHours"]
+                    None,
+                    minimum_valid_time=(
+                        wave_bootstrap_configuration["targetHour"]
+                        if wave_bootstrap_configuration is not None
+                        else canonical_time(locked_production_reference)
                     ),
+                    required_valid_times=operational_wave_exact_required_times,
                     required_horizon_end_time=format_wave_bootstrap_hour(
-                        parse_wave_bootstrap_hour(
-                            wave_bootstrap_configuration["productionTargetHour"]
-                        ) + timedelta(hours=HOURS - 1)
+                        locked_production_reference
+                        + timedelta(hours=HOURS - 1)
                     ),
+                    include_operational_wave_fallback_phases=True,
                 )
             else:
                 run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
@@ -9172,27 +10067,16 @@ def main() -> int:
                 collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
             collection_operational_wave_zones = (
-                [
-                    zone for zone in relevant_zones(
-                        collection,
-                        [
-                            candidate for candidate in zones
-                            if not candidate.get("waterSource")
-                            and not candidate.get("researchCurrent")
-                            and not candidate.get("privateStage")
-                        ],
-                    )
-                    if str(zone.get("id") or "")
-                        not in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
-                    and str(zone.get("parentZoneId") or "")
-                        not in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
-                ]
+                native_operational_wave_zones(
+                    collection,
+                    active_zones_config,
+                )
                 if bootstrap_operational_wam
                 else []
             )
             if bootstrap_operational_wam:
                 result["diagnostics"]["operationalWaveStageMode"] = (
-                    "per-zone-atomic-partial-progress"
+                    "collection-run-candidate-monotone-promotion"
                 )
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
@@ -9204,22 +10088,34 @@ def main() -> int:
                 processing_signature += f"|wind-reference:{WIND_VECTOR_VERSION}"
             required_asset_provenance: dict[str, dict[str, Any]] = {}
             for asset in assets:
+                asset_model_run = (
+                    canonical_time(asset.get("modelRun"))
+                    if collection in WAVE_BOOTSTRAP_COLLECTIONS
+                    else run
+                )
                 identity = (
                     official_current_asset_identity(collection, run, asset)
                     if collection in MARINE_COLLECTIONS
-                    else official_wave_asset_identity(collection, run, asset)
+                    else official_wave_asset_identity(
+                        collection,
+                        asset_model_run,
+                        asset,
+                    )
                     if collection in WAVE_BOOTSTRAP_COLLECTIONS
                     else None
                 )
-                if identity is not None and (
-                    collection in WAVE_BOOTSTRAP_COLLECTIONS
-                    or identity["validTime"] in required_current_valid_times
+                if identity is not None and asset_identity_is_required_for_resume(
+                    collection,
+                    asset,
+                    identity,
+                    required_current_valid_times,
                 ):
                     required_asset_provenance[str(identity["validTime"])] = identity
             same_processing = (
                 previous_run.get("processingSignature") == processing_signature
             )
             same_run = previous_run.get("referenceTime") == run
+            wave_resume_metrics: dict[str, Any] = {}
             previous_steps = reusable_processed_steps(
                 previous_run,
                 collection=collection,
@@ -9260,6 +10156,11 @@ def main() -> int:
                 wave_cache=result if bootstrap_operational_wam else None,
                 wave_zones=(
                     collection_operational_wave_zones
+                    if bootstrap_operational_wam
+                    else None
+                ),
+                wave_resume_metrics=(
+                    wave_resume_metrics
                     if bootstrap_operational_wam
                     else None
                 ),
@@ -9354,28 +10255,358 @@ def main() -> int:
                 and set(step.get("recognizedParameters") or []) >= required_for_family
                 and int(step.get("zonesTouched") or 0) > 0
             }
+            wave_missing_valid_times: tuple[str, ...] = ()
+            if bootstrap_operational_wam:
+                _wave_closure_before_assets, wave_missing_valid_times = (
+                    operational_wave_collection_closure(
+                        result,
+                        active_zones_config,
+                        locked_production_reference,
+                        collection,
+                        exact_required_times=(
+                            operational_wave_exact_required_times
+                        ),
+                    )
+                )
+                assets = prioritize_operational_wave_assets(
+                    assets,
+                    wave_missing_valid_times,
+                    previously_processed,
+                )
             result["diagnostics"]["assetsRetriedIncomplete"] += max(0, len(previous_steps) - len(previously_processed))
-            run_info = {"referenceTime": run, "parserVersion": PARSER_VERSION,
-                        "parameterMapVersion": PARAMETER_MAP_VERSION, "gridLookupVersion": GRID_LOOKUP_VERSION,
-                        "processingSignature": processing_signature,
-                        "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
-                        "assetsSkippedBySupervisor": 0,
-                        "assetsSkippedPreviouslyProcessed": 0, "assetsDeferredValidRefresh": 0,
-                        "assetsBoundedRefreshAttempted": 0,
-                        "assetsBoundedRefreshCompleted": 0,
-                        "assetsBoundedRefreshFailed": 0,
-                        "processedValidTimes": sorted(previously_processed),
-                        "processedSteps": previous_steps, "recognizedParameters": []}
-            result["runs"][collection] = run_info
+            wave_phase_asset_counts = {
+                phase_rank: sum(
+                    int(asset.get("operationalWavePhaseRank") or 0)
+                        == phase_rank
+                    for asset in assets
+                )
+                for phase_rank in {
+                    int(asset.get("operationalWavePhaseRank") or 0)
+                    for asset in assets
+                }
+            } if bootstrap_operational_wam else {0: len(assets)}
+
+            def new_collection_run_info(
+                reference_time: str,
+                discovered: int,
+                steps: dict[str, Any],
+                resume_metrics: dict[str, Any] | None = None,
+            ) -> dict[str, Any]:
+                completed = {
+                    valid for valid, step in steps.items()
+                    if step.get("complete") is True
+                    and set(step.get("recognizedParameters") or [])
+                        >= required_for_family
+                    and int(step.get("zonesTouched") or 0) > 0
+                }
+                metrics = resume_metrics or {}
+                return {
+                    "referenceTime": reference_time,
+                    "parserVersion": PARSER_VERSION,
+                    "parameterMapVersion": PARAMETER_MAP_VERSION,
+                    "gridLookupVersion": GRID_LOOKUP_VERSION,
+                    "processingSignature": processing_signature,
+                    "assetsDiscovered": discovered,
+                    "assetsProcessed": 0,
+                    "assetsReused": 0,
+                    **({
+                        "rawAssetsReused": 0,
+                        "assetsObserved": 0,
+                        "assetsProofCompleteAtStart": len(completed),
+                        "assetsProofComplete": len(completed),
+                        "assetsProofCompleteReconstructed": int(
+                            metrics.get("reconstructedProofCompleteAssets")
+                            or 0
+                        ),
+                        "waveObservedRejectionEventsByCode": dict(
+                            metrics.get("rejectedByCode") or {}
+                        ),
+                        "nativeClosureStoppedAssetLoop": False,
+                        "assetsDeferredAfterNativeClosure": 0,
+                    } if bootstrap_operational_wam else {}),
+                    "assetsSkippedBySupervisor": 0,
+                    "assetsSkippedPreviouslyProcessed": 0,
+                    "assetsDeferredValidRefresh": 0,
+                    "assetsBoundedRefreshAttempted": 0,
+                    "assetsBoundedRefreshCompleted": 0,
+                    "assetsBoundedRefreshFailed": 0,
+                    "processedValidTimes": sorted(completed, key=epoch),
+                    "processedSteps": copy.deepcopy(steps),
+                    "recognizedParameters": [],
+                }
+
+            initial_phase_run = (
+                canonical_time(assets[0].get("modelRun"))
+                if bootstrap_operational_wam
+                else run
+            )
+            if initial_phase_run is None:
+                raise RuntimeError("operational WAM asset lacks its model run")
+            run_info = new_collection_run_info(
+                initial_phase_run,
+                wave_phase_asset_counts.get(0, len(assets)),
+                previous_steps,
+                wave_resume_metrics,
+            )
+            if not bootstrap_operational_wam:
+                result["runs"][collection] = run_info
             recognized: set[str] = set()
             for previous_step in (run_info.get("processedSteps") or {}).values():
                 if previous_step.get("complete"):
                     recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             budget_stop_code = None
+            stop_for_native_wave_closure = False
+            wave_phase_rank = 0
+            wave_phase_run = initial_phase_run
+            wave_phase_seen_asset_count = 0
+            wave_phase_promotion_count = 0
+            wave_collection_promotion_count = 0
+            wave_pending_touched: set[str] = set()
+            wave_phase_summaries: list[dict[str, Any]] = []
+            wave_candidate = (
+                build_operational_wave_collection_candidate(result)
+                if bootstrap_operational_wam
+                else result
+            )
+            wave_active_evidence = (
+                operational_wave_collection_evidence(
+                    result,
+                    active_zones_config,
+                    locked_production_reference,
+                    collection,
+                    exact_required_times=(
+                        operational_wave_exact_required_times
+                    ),
+                )
+                if bootstrap_operational_wam
+                else {}
+            )
+            wave_phase_deferred_quality_promotion = bool(
+                bootstrap_operational_wam
+                and operational_wave_phase_defers_primary_quality_promotion(
+                    phase_rank=wave_phase_rank,
+                    active_evidence=wave_active_evidence,
+                )
+            )
+            wave_phase_terminal_promotion_evaluated = False
+            wave_last_promotion_decision: dict[str, Any] | None = None
+
+            def record_wave_phase_summary(*, fully_traversed: bool) -> None:
+                if not bootstrap_operational_wam:
+                    return
+                if any(
+                    row.get("phaseRank") == wave_phase_rank
+                    for row in wave_phase_summaries
+                ):
+                    return
+                wave_phase_summaries.append({
+                    "phaseRank": wave_phase_rank,
+                    "modelRun": wave_phase_run,
+                    "selectedAssetCount": wave_phase_asset_counts.get(
+                        wave_phase_rank, 0,
+                    ),
+                    "assetsReached": wave_phase_seen_asset_count,
+                    "fullyTraversed": fully_traversed,
+                    "promotionCount": wave_phase_promotion_count,
+                    "lastPromotionDecision": (
+                        dict(wave_last_promotion_decision)
+                        if wave_last_promotion_decision is not None
+                        else None
+                    ),
+                })
+
+            def try_promote_wave_candidate(
+                *,
+                asset_processing_seconds: float | None,
+                force_checkpoint: bool = False,
+            ) -> tuple[bool, str]:
+                nonlocal wave_active_evidence
+                nonlocal wave_pending_touched
+                nonlocal wave_phase_promotion_count
+                nonlocal wave_collection_promotion_count
+                nonlocal wave_last_promotion_decision
+                nonlocal wave_phase_deferred_quality_promotion
+                (
+                    candidate_evidence,
+                    candidate_single_group,
+                ) = operational_wave_candidate_stage_evidence(
+                    wave_candidate,
+                    active_zones_config,
+                    locked_production_reference,
+                    collection,
+                    exact_required_times=(
+                        operational_wave_exact_required_times
+                    ),
+                    active_evidence=wave_active_evidence,
+                )
+                decision = promote_operational_wave_collection_stage(
+                    active_result=result,
+                    candidate_result=wave_candidate,
+                    collection=collection,
+                    phase_model_run=wave_phase_run,
+                    fallback_phase=wave_phase_rank > 0,
+                    active_evidence=wave_active_evidence,
+                    candidate_evidence=candidate_evidence,
+                    candidate_single_group=candidate_single_group,
+                    touched_zone_ids=wave_pending_touched,
+                    run_info=run_info,
+                    fresh_zone_ids=fresh_zone_ids,
+                    exact_required_times=(
+                        operational_wave_exact_required_times
+                    ),
+                    checkpoint_controller=checkpoint_controller,
+                    asset_processing_seconds=asset_processing_seconds,
+                    force_checkpoint=force_checkpoint,
+                )
+                wave_last_promotion_decision = decision
+                if not decision["promote"]:
+                    return False, str(decision["reasonCode"])
+                wave_active_evidence = candidate_evidence
+                wave_pending_touched = set()
+                wave_phase_promotion_count += 1
+                wave_collection_promotion_count += 1
+                wave_phase_deferred_quality_promotion = (
+                    operational_wave_phase_defers_primary_quality_promotion(
+                        phase_rank=wave_phase_rank,
+                        active_evidence=wave_active_evidence,
+                    )
+                )
+                return (
+                    True,
+                    "checkpoint gemt"
+                    if decision["checkpointWritten"]
+                    else "checkpoint samler promoverede assets",
+                )
+
+            def finish_wave_phase(
+                *,
+                fully_traversed: bool,
+            ) -> tuple[bool, str]:
+                nonlocal wave_phase_terminal_promotion_evaluated
+                if wave_phase_terminal_promotion_evaluated:
+                    return False, "faseafslutning allerede vurderet"
+                wave_phase_terminal_promotion_evaluated = True
+                if not operational_wave_terminal_quality_promotion_allowed(
+                    promotion_deferred=(
+                        wave_phase_deferred_quality_promotion
+                    ),
+                    phase_fully_traversed=fully_traversed,
+                    stop_code=budget_stop_code,
+                    candidate_changed=bool(wave_pending_touched),
+                ):
+                    return False, "ingen terminal quality-promotion"
+                return try_promote_wave_candidate(
+                    asset_processing_seconds=None,
+                    force_checkpoint=True,
+                )
+
             for asset_number, asset in enumerate(assets, start=1):
                 bounded_primary_refresh = False
-                supervised_identity = supervised_asset_identity(collection, run, asset)
+                asset_phase_rank = int(
+                    asset.get("operationalWavePhaseRank") or 0
+                )
+                asset_model_run = (
+                    canonical_time(asset.get("modelRun"))
+                    if bootstrap_operational_wam
+                    else run
+                )
+                if asset_model_run is None:
+                    raise RuntimeError(
+                        "operational WAM asset lacks its model run"
+                    )
+                if bootstrap_operational_wam and (
+                    asset_phase_rank < wave_phase_rank
+                    or (
+                        asset_phase_rank == wave_phase_rank
+                        and asset_model_run != wave_phase_run
+                    )
+                ):
+                    raise RuntimeError(
+                        "operational WAM run phases are interleaved"
+                    )
+                if (
+                    bootstrap_operational_wam
+                    and asset_phase_rank > wave_phase_rank
+                ):
+                    if (
+                        wave_phase_deferred_quality_promotion
+                        and budget_stop_code is None
+                        and should_stop_work()
+                    ):
+                        budget_stop = (
+                            "bulk runtime budget reached before terminal WAM "
+                            "quality proof"
+                        )
+                        budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                    previous_fully_traversed = (
+                        wave_phase_seen_asset_count
+                        == wave_phase_asset_counts.get(wave_phase_rank, 0)
+                        and budget_stop_code is None
+                        and not stop_for_native_wave_closure
+                    )
+                    finish_wave_phase(
+                        fully_traversed=previous_fully_traversed,
+                    )
+                    record_wave_phase_summary(
+                        fully_traversed=previous_fully_traversed,
+                    )
+                    if not operational_wave_fallback_phase_allowed(
+                        previous_phase_rank=wave_phase_rank,
+                        next_phase_rank=asset_phase_rank,
+                        previous_phase_fully_traversed=(
+                            previous_fully_traversed
+                        ),
+                        stop_code=budget_stop_code,
+                        active_evidence=wave_active_evidence,
+                    ):
+                        break
+                    if not checkpoint_controller.can_start_asset(
+                        reserve_seconds=reserve_for_pending_wam,
+                    ):
+                        if reserve_for_pending_wam > 0:
+                            budget_stop = (
+                                "older WAM fallback deferred to preserve "
+                                "the critical runtime slice"
+                            )
+                            budget_stop_code = (
+                                "CRITICAL_WAM_RUNTIME_RESERVED"
+                            )
+                        else:
+                            budget_stop = (
+                                "bulk runtime budget reached before older "
+                                "WAM fallback"
+                            )
+                            budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                        break
+                    wave_phase_rank = asset_phase_rank
+                    wave_phase_run = asset_model_run
+                    wave_phase_seen_asset_count = 0
+                    wave_phase_promotion_count = 0
+                    wave_pending_touched = set()
+                    wave_last_promotion_decision = None
+                    wave_phase_deferred_quality_promotion = False
+                    wave_phase_terminal_promotion_evaluated = False
+                    wave_candidate = (
+                        build_operational_wave_collection_candidate(result)
+                    )
+                    previously_processed = set()
+                    run_info = new_collection_run_info(
+                        wave_phase_run,
+                        wave_phase_asset_counts.get(wave_phase_rank, 0),
+                        {},
+                    )
+                    recognized = set()
+                if bootstrap_operational_wam and should_stop_work():
+                    budget_stop = "bulk runtime budget reached"
+                    budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                    break
+                wave_phase_seen_asset_count += int(bootstrap_operational_wam)
+                supervised_identity = supervised_asset_identity(
+                    collection,
+                    asset_model_run,
+                    asset,
+                )
                 supervised_identity_key = json.dumps(
                     supervised_identity,
                     ensure_ascii=False,
@@ -9409,7 +10640,7 @@ def main() -> int:
                 if DKSS_PRIMARY_MODE and collection in MARINE_COLLECTIONS:
                     primary_requirement = classify_dkss_primary_asset(
                         collection=collection,
-                        model_run=run,
+                        model_run=asset_model_run,
                         asset=asset,
                         target_ids=current_target_ids,
                         covered_pair_keys=priority_covered_pair_keys,
@@ -9457,18 +10688,29 @@ def main() -> int:
                 ):
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
+                    if bootstrap_operational_wam and should_stop_work():
+                        budget_stop = (
+                            "bulk runtime budget reached before cached WAM "
+                            "proof reuse"
+                        )
+                        budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                        break
                     if (
                         coastal_point_stage_targets
                         and not stage_asset_complete(coastal_point_stage, coastal_point_stage_targets, collection, asset["valid"])
                         and not should_stop_work()
                     ):
-                        cached_path = reusable_cached_asset_path(asset, collection, run)
+                        cached_path = reusable_cached_asset_path(
+                            asset,
+                            collection,
+                            asset_model_run,
+                        )
                         if cached_path is not None:
                             register_raw_cache_asset(
                                 cached_path,
                                 str(asset.get("href") or ""),
                                 collection,
-                                run,
+                                asset_model_run,
                                 asset["valid"],
                                 item_id=str(asset.get("id") or "") or None,
                                 item_created_at=asset.get("itemCreatedAt"),
@@ -9491,7 +10733,7 @@ def main() -> int:
                                 ) = process_grib_transactionally(
                                     cached_path,
                                     collection,
-                                    run,
+                                    asset_model_run,
                                     asset["valid"],
                                     coastal_point_stage_targets,
                                     {"generatedAt": generated, "zones": {}},
@@ -9499,10 +10741,31 @@ def main() -> int:
                                     None,
                                     coastal_point_stage,
                                     failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
-                                )
+                            )
                             if not staged_interrupted:
                                 checkpoint_controller.mark_sidecars_dirty()
+                            elif bootstrap_operational_wam:
+                                budget_stop = (
+                                    "bulk runtime budget reached inside "
+                                    "cached WAM sidecar replay"
+                                )
+                                budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                                break
                     continue
+                if (
+                    not strict_current_lead_attempt_available(
+                        collection,
+                        strict_current_lead_collection,
+                        strict_current_lead_attempts,
+                        strict_current_lead_attempt_limit,
+                    )
+                ):
+                    budget_stop = (
+                        "strict current lead yielded after its bounded "
+                        "asset attempt"
+                    )
+                    budget_stop_code = "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT"
+                    break
                 if not checkpoint_controller.can_start_asset(
                     reserve_seconds=reserve_for_pending_wam,
                 ):
@@ -9517,6 +10780,11 @@ def main() -> int:
                         budget_stop = "bulk runtime budget reached"
                         budget_stop_code = "RUNTIME_BUDGET_REACHED"
                     break
+                if collection == strict_current_lead_collection:
+                    strict_current_lead_attempts += 1
+                    run_info["strictCurrentLeadAssetsAttempted"] = (
+                        strict_current_lead_attempts
+                    )
                 if bounded_primary_refresh:
                     primary_refresh_assets_remaining -= 1
                     run_info["assetsBoundedRefreshAttempted"] += 1
@@ -9532,7 +10800,7 @@ def main() -> int:
                             asset.get("size"),
                             budget,
                             collection=collection,
-                            model_run=run,
+                            model_run=asset_model_run,
                             valid_time=asset["valid"],
                             item_id=str(asset.get("id") or "") or None,
                             item_created_at=asset.get("itemCreatedAt"),
@@ -9569,11 +10837,18 @@ def main() -> int:
                 if reused:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
+                    if bootstrap_operational_wam:
+                        run_info["rawAssetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
                 asset_processing_started = time.monotonic()
                 current_part_outcome_observation: dict[str, Any] = {}
                 source_capture = (
-                    raw_cache_source_capture(path, collection, run, asset["valid"])
+                    raw_cache_source_capture(
+                        path,
+                        collection,
+                        asset_model_run,
+                        asset["valid"],
+                    )
                     if collection in MARINE_COLLECTIONS
                     or collection in WAVE_BOOTSTRAP_COLLECTIONS
                     else None
@@ -9581,13 +10856,13 @@ def main() -> int:
                 if collection in MARINE_COLLECTIONS:
                     step_source_asset = canonical_current_source_asset({
                         "collection": collection,
-                        "modelRun": run,
+                        "modelRun": asset_model_run,
                         "validTime": asset["valid"],
                         **(source_capture or {}),
                     }) if source_capture is not None else None
                 elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
                     expected_wave_asset = official_wave_asset_identity(
-                        collection, run, asset,
+                        collection, asset_model_run, asset,
                     )
                     step_source_asset = (
                         expected_wave_asset
@@ -9611,11 +10886,19 @@ def main() -> int:
                 allowed_parameters = operational_asset_parameter_filter(
                     collection,
                     asset["valid"],
-                    run,
+                    asset_model_run,
                     required_current_valid_times,
                 )
                 operational_wave_asset = (
-                    MappingWaveAsset(asset, run)
+                    MappingWaveAsset(
+                        asset,
+                        asset_model_run,
+                        official_identity=official_wave_asset_identity(
+                            collection,
+                            asset_model_run,
+                            asset,
+                        ),
+                    )
                     if bootstrap_operational_wam
                     else None
                 )
@@ -9638,9 +10921,9 @@ def main() -> int:
                     )
                     validated_wave_stage.clear()
                     validated_wave_stage.update(summary)
-                    return (
-                        {"significant-wave-height", "dominant-wave-period"}
-                        <= outcome[0]
+                    return operational_wave_asset_stage_complete(
+                        summary,
+                        outcome,
                     )
 
                 def validate_operational_current_stage(
@@ -9759,10 +11042,10 @@ def main() -> int:
                         found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
                             path,
                             collection,
-                            run,
+                            asset_model_run,
                             asset["valid"],
                             zones,
-                            result,
+                            wave_candidate,
                             result["diagnostics"],
                             current_shadow,
                             coastal_point_stage,
@@ -9841,7 +11124,10 @@ def main() -> int:
                     and {"current-u", "current-v"} <= found
                 ):
                     regional_proxy_collection_completed = True
+                if not interrupted and bootstrap_operational_wam:
+                    run_info["assetsObserved"] += 1
                 recognized.update(found)
+                run_info["recognizedParameters"] = sorted(recognized)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups
                 required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
@@ -9854,6 +11140,17 @@ def main() -> int:
                     if bootstrap_operational_wam
                     else None
                 )
+                if step_wave_target_proof is not None:
+                    rejected_by_code = run_info[
+                        "waveObservedRejectionEventsByCode"
+                    ]
+                    for code, count in (
+                        step_wave_target_proof.get("rejectedByCode") or {}
+                    ).items():
+                        rejected_by_code[code] = (
+                            int(rejected_by_code.get(code) or 0)
+                            + int(count)
+                        )
                 wave_step_complete = bool(
                     bootstrap_operational_wam
                     and step_source_asset is not None
@@ -9880,6 +11177,10 @@ def main() -> int:
                 elif not interrupted:
                     previously_processed.discard(asset["valid"])
                     run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
+                if not interrupted and bootstrap_operational_wam:
+                    run_info["assetsProofComplete"] = len(
+                        previously_processed
+                    )
                 if not interrupted:
                     run_info["processedSteps"][asset["valid"]] = {
                         "recognizedParameters": step_recognized,
@@ -9931,7 +11232,10 @@ def main() -> int:
                                 (*pair_identity, selected_source_key)
                             )
                             covered_current_pair_keys.add(pair_identity)
-                fresh_zone_ids.update(touched)
+                if bootstrap_operational_wam and not interrupted:
+                    wave_pending_touched.update(touched)
+                elif not bootstrap_operational_wam:
+                    fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
                 if interrupted:
@@ -9944,17 +11248,92 @@ def main() -> int:
                         ) + 1
                     checkpoint_status = "afbrudt asset kasseret"
                 else:
-                    checkpoint_written = (
-                        checkpoint_controller.note_committed_asset(
+                    wave_promoted = False
+                    if bootstrap_operational_wam and step_complete:
+                        if wave_phase_deferred_quality_promotion:
+                            checkpoint_controller.observe_asset_duration(
+                                seconds=asset_processing_seconds,
+                            )
+                            checkpoint_status = (
+                                "komplet quality-kandidat akkumuleret"
+                            )
+                        else:
+                            wave_promoted, checkpoint_status = (
+                                try_promote_wave_candidate(
+                                    asset_processing_seconds=(
+                                        asset_processing_seconds
+                                    ),
+                                )
+                            )
+                    elif bootstrap_operational_wam:
+                        checkpoint_controller.observe_asset_duration(
                             seconds=asset_processing_seconds,
                         )
-                    )
-                    checkpoint_status = (
-                        "checkpoint gemt"
-                        if checkpoint_written
-                        else "checkpoint samler "
-                            f"{checkpoint_controller.committed_assets_since_write} assets"
-                    )
+                        checkpoint_status = "ufuldstændig kandidat kasseret"
+                    else:
+                        checkpoint_written = (
+                            checkpoint_controller.note_committed_asset(
+                                seconds=asset_processing_seconds,
+                            )
+                        )
+                        checkpoint_status = (
+                            "checkpoint gemt"
+                            if checkpoint_written
+                            else "checkpoint samler "
+                                f"{checkpoint_controller.committed_assets_since_write} assets"
+                        )
+                    if (
+                        bootstrap_operational_wam
+                        and wave_promoted
+                    ):
+                        wave_closure_after_commit = wave_active_evidence[
+                            "closure"
+                        ]
+                        if should_stop_operational_wave_asset_loop(
+                            collection,
+                            wave_closure_after_commit,
+                            launch_mode=(
+                                wave_bootstrap_configuration is not None
+                                or wave_phase_rank > 0
+                            ),
+                        ):
+                            stop_for_native_wave_closure = True
+                            deferred_asset_count = max(
+                                0, len(assets) - asset_number
+                            )
+                            run_info[
+                                "nativeClosureStoppedAssetLoop"
+                            ] = True
+                            run_info[
+                                "assetsDeferredAfterNativeClosure"
+                            ] = deferred_asset_count
+                            result["runs"][collection] = copy.deepcopy(
+                                run_info
+                            )
+                            result["diagnostics"].setdefault(
+                                "operationalWaveClosureStopsByCollection", {}
+                            )[collection] = {
+                                "reasonCode": (
+                                    "OPERATIONAL_WAVE_NATIVE_CLOSURE_COMPLETE"
+                                ),
+                                "requiredPairCount": int(
+                                    wave_closure_after_commit.get(
+                                        "requiredPairCount"
+                                    ) or 0
+                                ),
+                                "remainingClosurePairCount": 0,
+                                "assetsObservedAtClosure": run_info[
+                                    "assetsObserved"
+                                ],
+                                "deferredSelectedAssetCount": (
+                                    deferred_asset_count
+                                ),
+                            }
+                            checkpoint_controller.mark_bulk_dirty()
+                            checkpoint_controller.flush_if_due(force=True)
+                            checkpoint_status = (
+                                "native closure-checkpoint gemt"
+                            )
                     if bounded_primary_refresh:
                         run_info["assetsBoundedRefreshCompleted"] += 1
                         result["diagnostics"]["assetsBoundedDkssRefreshCompleted"] = int(
@@ -9962,10 +11341,17 @@ def main() -> int:
                                 "assetsBoundedDkssRefreshCompleted"
                             ) or 0
                         ) + 1
+                wave_progress = (
+                    f"observed={run_info['assetsObserved']}, "
+                    f"proof-complete={run_info['assetsProofComplete']}, "
+                    f"raw-reused={run_info['rawAssetsReused']}, "
+                    if bootstrap_operational_wam
+                    else f"steps={run_info['assetsProcessed']}, "
+                )
                 progress(
                     f"{collection}: forecast-step behandlet på "
                     f"{asset_processing_seconds:.1f}s; {checkpoint_status}; "
-                    f"steps={run_info['assetsProcessed']}, "
+                    f"{wave_progress}"
                     f"felter={sorted(recognized)}, "
                     f"resterende={runtime_remaining():.0f}s"
                 )
@@ -9973,6 +11359,43 @@ def main() -> int:
                     budget_stop = "bulk runtime budget reached inside GRIB processing"
                     budget_stop_code = "RUNTIME_BUDGET_REACHED"
                     break
+                if stop_for_native_wave_closure:
+                    progress(
+                        f"{collection}: native operational closure complete; "
+                        "remaining quality-overlap assets deferred"
+                    )
+                    break
+            if bootstrap_operational_wam:
+                if (
+                    wave_phase_deferred_quality_promotion
+                    and budget_stop_code is None
+                    and should_stop_work()
+                ):
+                    budget_stop = (
+                        "bulk runtime budget reached before terminal WAM "
+                        "quality proof"
+                    )
+                    budget_stop_code = "RUNTIME_BUDGET_REACHED"
+                final_phase_fully_traversed = bool(
+                    wave_phase_seen_asset_count
+                        == wave_phase_asset_counts.get(
+                            wave_phase_rank, 0,
+                        )
+                    and budget_stop_code is None
+                    and not stop_for_native_wave_closure
+                )
+                finish_wave_phase(
+                    fully_traversed=final_phase_fully_traversed,
+                )
+                record_wave_phase_summary(
+                    fully_traversed=final_phase_fully_traversed,
+                )
+                result["diagnostics"].setdefault(
+                    "operationalWaveRunPhasesByCollection", {}
+                )[collection] = wave_phase_summaries
+                result["diagnostics"].setdefault(
+                    "operationalWavePromotionsByCollection", {}
+                )[collection] = wave_collection_promotion_count
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
             run_info["recognizedParameters"] = sorted(recognized)
             required = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
@@ -9983,15 +11406,115 @@ def main() -> int:
                 valid_time for valid_time in selected_valid_time_values
                 if valid_time
             }
+            wave_collection_outcome = {
+                "activeComplete": False,
+                "semanticProgress": False,
+                "retryImmediately": False,
+            }
+            if bootstrap_operational_wam:
+                (
+                    final_wave_closure,
+                    final_wave_missing_valid_times,
+                ) = operational_wave_collection_closure(
+                    result,
+                    active_zones_config,
+                    locked_production_reference,
+                    collection,
+                    exact_required_times=(
+                        operational_wave_exact_required_times
+                    ),
+                )
+                apply_operational_wave_closure_to_run_info(
+                    run_info,
+                    final_wave_closure,
+                    final_wave_missing_valid_times,
+                    operational_wave_exact_required_times,
+                )
+                wave_collection_outcome = (
+                    operational_wave_collection_outcome(
+                        final_wave_closure,
+                        wave_collection_promotion_count,
+                    )
+                )
+                active_wave_run_info = (
+                    result.get("runs", {}).get(collection) or {}
+                )
+                result["diagnostics"].setdefault(
+                    "operationalWaveProgressByCollection", {}
+                )[collection] = {
+                    "rawAssetsReused": run_info.get("rawAssetsReused", 0),
+                    "attemptAssetsObserved": run_info.get(
+                        "assetsObserved", 0,
+                    ),
+                    "activeProofCompleteAssets": active_wave_run_info.get(
+                        "assetsProofComplete", 0,
+                    ),
+                    "attemptProofCompleteAssets": run_info.get(
+                        "assetsProofComplete", 0,
+                    ),
+                    "proofCompleteAssetsReconstructed": run_info.get(
+                        "assetsProofCompleteReconstructed", 0,
+                    ),
+                    "remainingClosureHourCount": run_info[
+                        "remainingClosureHourCount"
+                    ],
+                    "remainingClosurePairCount": run_info[
+                        "remainingClosurePairCount"
+                    ],
+                    "remainingClosureByCategory": dict(
+                        run_info["remainingClosureByCategory"]
+                    ),
+                    "lineageConflictNativeTimeCount": run_info[
+                        "lineageConflictNativeTimeCount"
+                    ],
+                    "observedRejectionEventsByCode": dict(
+                        run_info.get(
+                            "waveObservedRejectionEventsByCode", {}
+                        )
+                    ),
+                    "nativeGateProofComplete": run_info[
+                        "nativeGateProofComplete"
+                    ],
+                    "nativeClosureStoppedAssetLoop": run_info.get(
+                        "nativeClosureStoppedAssetLoop", False,
+                    ),
+                    "assetsDeferredAfterNativeClosure": run_info.get(
+                        "assetsDeferredAfterNativeClosure", 0,
+                    ),
+                    "promotionCount": wave_collection_promotion_count,
+                }
             completed_or_locked = previously_processed | set(
                 bootstrap_locked_hours.get(collection, set())
             )
-            collection_assets_complete = (
-                bool(selected_valid_time_values)
-                and len(selected_valid_times) == len(selected_valid_time_values)
-                and selected_valid_times <= completed_or_locked
+            collection_assets_complete = collection_assets_complete_for_state(
+                operational_wave=bootstrap_operational_wam,
+                generic_assets_complete=bool(
+                    selected_valid_time_values
+                    and len(selected_valid_times)
+                        == len(selected_valid_time_values)
+                    and selected_valid_times <= completed_or_locked
+                ),
+                wave_outcome=wave_collection_outcome,
             )
-            made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
+            made_progress = (
+                wave_collection_outcome["semanticProgress"]
+                if bootstrap_operational_wam
+                else (
+                    run_info["assetsProcessed"] > 0
+                    or int(result["diagnostics"].get("reusedAssets") or 0)
+                        > collection_start_reused
+                    or budget["bytes"] > collection_start_bytes
+                )
+            )
+            collection_reference_time = (
+                (
+                    result.get("runs", {}).get(collection) or {}
+                ).get("referenceTime")
+                or previous_run.get("referenceTime")
+                or run
+                if bootstrap_operational_wam
+                else run
+            )
             deferred_only = (
                 DKSS_PRIMARY_MODE
                 and collection in MARINE_COLLECTIONS
@@ -10015,28 +11538,64 @@ def main() -> int:
                     result["runs"].pop(collection, None)
             elif not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
                 state["lastCheckedAt"] = generated
-                state["referenceTime"] = run
+                state["referenceTime"] = collection_reference_time
                 state["lastError"] = None
                 state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsUnchanged"].append(collection)
                 result["diagnostics"]["zeroProgressCollections"].append(collection)
-            elif collection_assets_complete and recognized >= required and run_info["assetsProcessed"]:
+            elif (
+                collection_assets_complete
+                and recognized >= required
+                and (
+                    run_info["assetsProcessed"]
+                    or (
+                        bootstrap_operational_wam
+                        and bool(run_info.get("nativeGateProofComplete"))
+                    )
+                )
+            ):
                 state["lastSuccessfulAt"] = generated
-                state["referenceTime"] = run
+                state["referenceTime"] = collection_reference_time
                 state["consecutiveFailures"] = 0
                 state["nextEligibleAt"] = None
                 state["lastError"] = None
                 state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsSucceeded"].append(collection)
+            elif (
+                bootstrap_operational_wam
+                and wave_collection_outcome["retryImmediately"]
+                and not budget_stop
+            ):
+                state["lastCheckedAt"] = generated
+                state["referenceTime"] = collection_reference_time
+                state["lastError"] = (
+                    "operational WAM stage produced no promotable native "
+                    "pair improvement"
+                )
+                state["lastBudgetInterruptedAt"] = None
+                state["nextEligibleAt"] = None
+                result["diagnostics"]["zeroProgressCollections"].append(
+                    collection
+                )
+                result["diagnostics"].setdefault(
+                    "operationalWaveStagesDiscarded", []
+                ).append({
+                    "collection": collection,
+                    "reasonCode": "NO_PROMOTABLE_PAIR_IMPROVEMENT",
+                    "remainingClosurePairCount": int(
+                        final_wave_closure.get("missingPairCount") or 0
+                    ),
+                    "retryImmediately": True,
+                })
             elif recognized:
                 state["lastPartialAt"] = generated
-                state["referenceTime"] = run
+                state["referenceTime"] = collection_reference_time
                 state["consecutiveFailures"] = 0
                 state["nextEligibleAt"] = None
                 result["diagnostics"]["collectionsPartial"].append(collection)
             elif budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
-                state["referenceTime"] = run
+                state["referenceTime"] = collection_reference_time
                 state["lastError"] = None
                 state["nextEligibleAt"] = None
             else:
@@ -10059,15 +11618,32 @@ def main() -> int:
                 productive_collections += 1
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
-                if budget_stop_code == "CRITICAL_WAM_RUNTIME_RESERVED":
+                if budget_stop_code in {
+                    "CRITICAL_WAM_RUNTIME_RESERVED",
+                    "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",
+                }:
                     result["diagnostics"].setdefault(
                         "schedulerYields", []
                     ).append({
                         "collection": collection,
                         "reasonCode": budget_stop_code,
-                        "reservedForCollections": list(pending_critical_wam),
-                        "reservedSeconds": round(
-                            reserve_for_pending_wam, 3,
+                        **(
+                            {
+                                "reservedForCollections": list(
+                                    pending_critical_wam
+                                ),
+                                "reservedSeconds": round(
+                                    reserve_for_pending_wam, 3,
+                                ),
+                            }
+                            if budget_stop_code
+                                == "CRITICAL_WAM_RUNTIME_RESERVED"
+                            else {
+                                "attemptLimit":
+                                    strict_current_lead_attempt_limit,
+                                "attemptedAssets":
+                                    strict_current_lead_attempts,
+                            }
                         ),
                         "partialProgressPreserved": True,
                     })
@@ -10075,7 +11651,10 @@ def main() -> int:
                     result["diagnostics"]["errors"].append({
                         "collection": collection,
                         "message": budget_stop,
-                        "failureCode": "RUNTIME_BUDGET_REACHED",
+                        "failureCode": (
+                            budget_stop_code
+                            or "RUNTIME_BUDGET_REACHED"
+                        ),
                         "partialProgressPreserved": True,
                     })
             if budget_stop:

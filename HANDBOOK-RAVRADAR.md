@@ -1,6 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.340
+**Håndbogsversion:** 4.0.341
+
+## 88.45 4.0.341 – En halv WAM-kørsel må ikke gøre den aktive cache dårligere
+
+**Kort fortalt:** RavRadar begynder ikke forfra, når DMI udsender en ny modelkørsel. Den aktive vejrcache bliver liggende som den brugbare base. Nye bølgedata samles ved siden af og flyttes først ind, når den relevante del er komplet og valideret.
+
+### Huller først, kvalitet bagefter
+
+Hvis en kystdel/time reelt mangler, eller den nye hale endnu ikke er dækket, er den kritisk. Et komplet DMI-asset, som udfylder sådanne mangler, må derfor forbedre og gemme den aktive cache med det samme.
+
+Hvis cachen allerede er komplet, er de nye data derimod en kvalitetsopgradering. De samles gennem hele den primære modelkørsel og vurderes først samlet ved fuld fasegennemgang uden budget- eller interruptionsstop og kun med et komplet, sammenhængende slutbevis. En enkelt defekt leverandørfil kan altså kasseres uden at blokere en ellers bevist sammenhængende kandidat. Det forhindrer, at en halv ny modelkørsel skubber en sammenhængende, brugbar serie ud. Samtidig undgår systemet at beregne den fulde WAM-slutkontrol efter hvert eneste kvalitetsasset.
+
+### Det, der ikke er færdigt, må ikke checkpointes som færdigt
+
+Hver WAM-collection/modelRun behandles som en isoleret kandidat. Et asset skal have en reel, ikke-tom forventet mængde, og alle krævede rækker skal være accepteret. Ellers må nye run-id'er, `processedSteps`, optællinger og checkpoint ikke blive aktive. En afbrudt kørsel kan stadig bevare raw GRIB og ufarlig download-/genbrugsinformation, men næste kørsel må ikke tro, at de upromoverede vejrdata er færdige.
+
+Hvis den primære modelkørsel er helt udtømt, må systemet forsøge højst én ældre kompatibel modelkørsel som terminal fallback. Rækkerne beholder deres rigtige collection, modelRun og kildebevis. De bliver ikke ommærket som nye, og interpolation må aldrig blande to modelkørsler.
+
+### Hvad betyder komplet?
+
+Den operationelle 118-timers bølgeakse består af 670 native WAM-kystdele samt de tre Feggesund-dele, der bruger den særskilt godkendte direct/proxy-løsning:
+
+- 670 × 118 = 79.060 native rækker.
+- 3 × 118 = 354 Feggesund-rækker.
+- I alt 79.414 nødvendige bølgerækker.
+
+Current har sit eget tilsvarende 673 × 118-krav. Den eksakte rest forsøges i rækkefølgen DMI, Copernicus og Open-Meteo. Reelle huller og hale kommer først. Når alt er dækket, forbedres kvaliteten fortsat med DMI som førstevalg, dernæst Copernicus og til sidst Open-Meteo. En ældre strukturelt valid prognose er stadig brugbar, så længe dens egen verificerede horizon dækker timen; den erstattes først af en fuldt valideret nyere række.
+
+RavRadar bevarer fortsat op til 48 timers faktisk verificeret historik som rådgivende input. Manglende historik markeres ærligt og kan slå kalibrering fra, men der opfindes ikke historik.
+
+**Status:** 4.0.341 er implementeret og måltestet lokalt. WAM-integration 52/52 og bootstrap 35/35 er bestået, og den importerede bootstrapkode indgår nu i den private runtimeattestation. Det er ikke bevis for GitHub CI, leverandører eller produktion. Normal vejropdatering og watchdog holdes deaktiveret, mens den samlede release gennemføres. Efter exact-head-kontrol og sikker merge køres én kontrolleret main-opdatering, komplet cache/WAM og de fulde model-launchgates verificeres, og først derefter aktiveres den integrerede scoremodel. De udskudte transport-, cron-, tidsbudget- og historikforbedringer revurderes efter launch.
 
 ## 88.44 4.0.340 – CI-opfølgning uden ændring af produktionen
 
@@ -121,11 +151,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.339 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.341 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.339-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.341-cutoverkandidat, ikke produktion
 
-4.0.339 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Versionsløftet ændrer ikke modelparametrene; det ændrer backend-recovery og releasebinding.
+4.0.341 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer WAM-cachelukningen og dens releasebinding.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -332,7 +362,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

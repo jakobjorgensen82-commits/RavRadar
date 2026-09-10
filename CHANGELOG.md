@@ -1,3 +1,15 @@
+## 4.0.341 – atomisk WAM-kandidat og kanonisk Open-Meteo-donor (2026-09-10, lokal kandidat)
+
+- Bevarer den persistente cache uden reset og fastholder hele `673 × 118 = 79.414`-domænet, native WAM for 670 dele, Feggesund `3 × 118 = 354` samt op til 48 timers verificeret historik.
+- Bygger WAM isoleret pr. collection/modelrun og accepterer kun en fil med fuld required denominator. Delvise filer kan ikke flytte aktiv cache, positive tællere, processed steps eller checkpointstate.
+- Promoverer kun samme target med eksakt pair-superset og uden nye lineage-konflikter. Reelle huller/hale kan gemmes straks efter en fuldt accepteret fil; ved komplet cache promoveres ren kvalitetsrefresh samlet ved terminal faseafslutning for at undgå tretimers-seams.
+- Tillader højst en bounded ældre kausal/akseopløselig WAM-fallback efter terminal primærfase, aldrig efter budget-/reserve-/interruptionsstop, og fører hvert assets egen modelrun-proveniens gennem hele behandlingskæden.
+- Sorterer Open-Meteos required-par kanonisk som `(validTime, partId)`, så donorvalidering og henteplan bruger samme kontrakt, og føjer WAM-bootstrap til private-runtimens hashbinding.
+- Bevarer kildeprioriteten DMI → Copernicus → Open-Meteo, gamle horizon-gyldige rækker indtil atomisk bedre erstatning og fallback uden permanent kildelås.
+- Lokal evidens: WAM 52/52, historik 35/35, vejrplan 17/17, Open-Meteo-donor 32/32 samt grønne DKSS-, scheduler- og private-runtimekontroller. Exact-head-CI, merge, main-vejr, fulde gates, handoff, cutover og offentligt proof mangler. Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret; Candidate G er offentlig.
+- Afstemmer tre gamle testforudsætninger med den allerede gældende parsergeneration 20, produktionsmodulets copy-on-write-type og den nye helper-baserede WAM-completenessgate. Rettelserne er test-only og lemper ingen runtime- eller releasekontrakt.
+- DEC-0122's afgrænsede first-cutover er overført til exact-release 4.0.341 uden ændring af størrelse, storage, checkpoint, integritet, privacy, readback, closure eller kadence. Se `CHANGELOG-4.0.341.md` og DEC-0123.
+
 ## Lokal udvidelse 2026-09-10 – samlet vejrlivscyklus, måltestet; CI og drift afventer
 
 - Exact-head-CI `34420641243` på `f44b7c9c` bestod bindingspreflight, fuld releasegate og de nye vejrlivscyklustests, men stoppede derefter på et forældet workflowtrinnavn i handoff-testen. Det gamle trin slettede source-stage; den nye godkendte kontrakt bevarer originalt Copernicus-bevis til kontrolleret donorbankmigration. Test-only-rettelsen følger og styrker denne kontrakt. Den isolerede test og alle 14 efterfølgende workflowtests er grønne; ingen produktionskode, workflow, migration, cache eller geodata ændres.

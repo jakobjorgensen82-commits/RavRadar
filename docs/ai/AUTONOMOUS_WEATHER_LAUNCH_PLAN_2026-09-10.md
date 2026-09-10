@@ -1,5 +1,13 @@
 # Autonom natteplan – ejerens godkendelse 2026-09-10
 
+## Aktuel 4.0.341-opdatering
+
+4.0.340 er nu på main som `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`. En lokal 4.0.341-kandidat lukker den efterfølgende WAM-fejl uden cache-reset: collection/modelRun behandles i en isoleret kandidat, reelle huller og hale kan fremmes straks efter komplette assets, mens ren kvalitetsrefresh af en allerede komplet WAM kun vurderes ved fuld primærfaseafslutning. Ufuldstændige kandidater, budgetstop og interrupts må ikke flytte aktivt checkpoint eller run-identitet. En eventuel ældre fallbackfase er terminal, bounded og bevarer egen provenance.
+
+Slutdomænet er `(670 native WAM-dele + 3 Feggesund direct/proxy-dele) × 118 = 79.414` bølgerækker. Currentkæden forbliver DMI → Copernicus → Open-Meteo, gamle valide rækker bruges til fuld ny erstatning, og op til 48 timers verificeret historik bevares rådgivende. Måltests er kun grønne lokalt; 4.0.341 er ikke committed, CI-valideret, merged eller kørt i produktion.
+
+Normal vejrkørsel og watchdog skal forblive deaktiveret under releaseforløbet. Næste sikre sekvens er: afslut release-/RDKS-pakken; målrettet sluttest; én exact-head sourcegate; sikker merge; én kontrolleret main-writer med faktisk cache-/WAM-bevis; fulde post-data- og modellanceringsgates; offentlig verifikation. Først derefter genaktiveres vedligeholdelsen kontrolleret. Udskudte opgaver gennemgås efter launch og klassificeres som løst, delvist dækket eller fortsat nødvendige.
+
 ## Autoritet og næste handling
 
 Ejeren har svaret ja til de forberedte lokale måltests og har samtidig givet en aktuel samlet ordre: den anden ventende rettelse skal også i luften; datahentning/cache skal fungere og vedligeholdes stabilt; derefter skal den nye scoremodel online; kontrollen fortsætter efter launch, hvorefter de udskudte opgaver tages op. Helhedsvurdering og kritisk selvkontrol skal ske ved relevante milepæle, ikke som gentagen analyse fra nul.

@@ -487,6 +487,1478 @@ class BootstrapAcquisitionTests(unittest.TestCase):
                     producer.WAM_MAX_FORECAST_LEAD_HOURS * 3600,
                 )
 
+    def test_late_wam_start_selects_newest_axis_resolvable_target_plus_117_run(
+        self,
+    ) -> None:
+        preferred_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+        endpoint = utc_offset(TARGET, 117)
+        items = [
+            official_stac_item(
+                utc_offset(TARGET, offset),
+                model_run,
+                f"{label}-{offset}",
+            )
+            for model_run, label in (
+                (preferred_run, "preferred"),
+                (newer_run, "newer"),
+            )
+            for offset in range(118)
+        ]
+        with (
+            patch.object(
+                producer,
+                "request_json",
+                return_value=feature_collection(items),
+            ),
+            patch.object(
+                producer.time,
+                "time",
+                return_value=producer.epoch(utc_offset(TARGET, 7)),
+            ),
+        ):
+            selected_run, assets, stats = producer.list_latest_assets(
+                "wam_dw",
+                preferred_run,
+                minimum_valid_time=TARGET,
+                required_valid_times={TARGET},
+                required_horizon_end_time=endpoint,
+            )
+
+        self.assertEqual(selected_run, newer_run, stats)
+        self.assertEqual(stats["targetWindowAxisResolvableRunCount"], 2)
+        self.assertTrue(stats["targetWindowAxisResolvablePoolUsed"])
+        self.assertTrue(stats["selectedTargetWindowAxisResolvable"])
+        self.assertNotIn("preferredTargetWindowRunPinned", stats)
+        self.assertTrue(stats["requiredHorizonEndCovered"])
+        self.assertEqual(
+            max((asset["valid"] for asset in assets), key=parse_utc_hour),
+            endpoint,
+        )
+        self.assertEqual(
+            (
+                parse_utc_hour(endpoint) - parse_utc_hour(TARGET)
+            ).total_seconds(),
+            117 * 3600,
+            "118 inclusive public hours are target through target+117.",
+        )
+
+    def test_gapped_preferred_run_yields_to_newer_closable_run(self) -> None:
+        preferred_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+        endpoint = utc_offset(TARGET, 117)
+        preferred_items = [
+            official_stac_item(
+                utc_offset(TARGET, offset),
+                preferred_run,
+                f"preferred-gapped-{offset}",
+            )
+            for offset in range(0, 118, 3)
+            if offset != 60
+        ]
+        newer_items = [
+            official_stac_item(
+                utc_offset(TARGET, offset),
+                newer_run,
+                f"newer-closable-{offset}",
+            )
+            for offset in range(0, 118, 3)
+        ]
+        with (
+            patch.object(
+                producer,
+                "request_json",
+                return_value=feature_collection([
+                    *preferred_items,
+                    *newer_items,
+                ]),
+            ),
+            patch.object(
+                producer.time,
+                "time",
+                return_value=producer.epoch(utc_offset(TARGET, 7)),
+            ),
+        ):
+            selected_run, assets, stats = producer.list_latest_assets(
+                "wam_dw",
+                preferred_run,
+                minimum_valid_time=TARGET,
+                required_valid_times={TARGET},
+                required_horizon_end_time=endpoint,
+            )
+
+        self.assertEqual(selected_run, newer_run, stats)
+        self.assertEqual(stats["targetWindowAxisResolvableRunCount"], 1)
+        self.assertTrue(stats["targetWindowAxisResolvablePoolUsed"])
+        self.assertTrue(stats["selectedTargetWindowAxisResolvable"])
+        self.assertFalse(stats["targetWindowProgressiveFallbackUsed"])
+        self.assertNotIn("preferredTargetWindowRunPinned", stats)
+        selected_times = sorted(
+            (asset["valid"] for asset in assets),
+            key=parse_utc_hour,
+        )
+        self.assertEqual(selected_times[0], TARGET)
+        self.assertEqual(selected_times[-1], endpoint)
+        self.assertTrue(all(
+            (
+                parse_utc_hour(after) - parse_utc_hour(before)
+            ).total_seconds() <= 3 * 3600
+            for before, after in zip(selected_times, selected_times[1:])
+        ))
+
+    def test_newest_exact_end_covered_wam_run_can_progress_when_none_resolve_axis(
+        self,
+    ) -> None:
+        preferred_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+        endpoint = utc_offset(TARGET, 117)
+        items = [
+            official_stac_item(
+                utc_offset(TARGET, offset),
+                model_run,
+                f"{label}-gapped-{offset}",
+            )
+            for model_run, label in (
+                (preferred_run, "preferred"),
+                (newer_run, "newer"),
+            )
+            for offset in (*range(0, 115, 6), 117)
+        ]
+        with (
+            patch.object(
+                producer,
+                "request_json",
+                return_value=feature_collection(items),
+            ),
+            patch.object(
+                producer.time,
+                "time",
+                return_value=producer.epoch(utc_offset(TARGET, 7)),
+            ),
+        ):
+            selected_run, assets, stats = producer.list_latest_assets(
+                "wam_dw",
+                preferred_run,
+                minimum_valid_time=TARGET,
+                required_valid_times={TARGET},
+                required_horizon_end_time=endpoint,
+            )
+
+        self.assertEqual(selected_run, newer_run, stats)
+        self.assertTrue(assets)
+        self.assertEqual(stats["targetWindowAxisResolvableRunCount"], 0)
+        self.assertFalse(stats["targetWindowAxisResolvablePoolUsed"])
+        self.assertTrue(stats["targetWindowProgressiveFallbackUsed"])
+        self.assertFalse(stats["selectedTargetWindowAxisResolvable"])
+        self.assertFalse(stats["requiredWindowInventoryComplete"])
+        self.assertNotIn("preferredTargetWindowRunPinned", stats)
+
+    def test_operational_selector_exposes_one_complete_older_run_phase(
+        self,
+    ) -> None:
+        newer_run = TARGET
+        older_run = utc_offset(TARGET, -6)
+        endpoint = utc_offset(TARGET, 117)
+        items = [
+            official_stac_item(
+                utc_offset(TARGET, offset),
+                model_run,
+                f"{label}-{offset}",
+            )
+            for model_run, label in (
+                (newer_run, "newer"),
+                (older_run, "older"),
+            )
+            for offset in range(0, 118, 3)
+        ]
+        with (
+            patch.object(
+                producer,
+                "request_json",
+                return_value=feature_collection(items),
+            ),
+            patch.object(
+                producer.time,
+                "time",
+                return_value=producer.epoch(utc_offset(TARGET, 7)),
+            ),
+        ):
+            selected_run, assets, stats = producer.list_latest_assets(
+                "wam_dw",
+                minimum_valid_time=TARGET,
+                required_valid_times={TARGET},
+                required_horizon_end_time=endpoint,
+                include_operational_wave_fallback_phases=True,
+            )
+
+        self.assertEqual(selected_run, newer_run)
+        self.assertTrue(stats["catalogInventoryComplete"], stats)
+        self.assertTrue(stats["requiredWindowInventoryComplete"], stats)
+        self.assertEqual(len(stats["officialRequiredAssets"]), 1)
+        self.assertEqual(
+            stats["officialRequiredAssets"][0]["collection"],
+            "wam_dw",
+        )
+        self.assertEqual(
+            stats["officialRequiredAssets"][0]["modelRun"],
+            newer_run,
+        )
+        self.assertEqual(stats["operationalWaveRunPhaseCount"], 2)
+        self.assertEqual(
+            stats["operationalWaveFallbackCandidateRunCount"], 1,
+        )
+        phase_runs = [
+            (
+                asset["operationalWavePhaseRank"],
+                asset["modelRun"],
+            )
+            for asset in assets
+        ]
+        self.assertTrue(phase_runs)
+        self.assertEqual(
+            {run for rank, run in phase_runs if rank == 0},
+            {newer_run},
+        )
+        self.assertEqual(
+            {run for rank, run in phase_runs if rank == 1},
+            {older_run},
+        )
+        self.assertEqual(
+            [rank for rank, _run in phase_runs],
+            sorted(rank for rank, _run in phase_runs),
+        )
+        self.assertNotIn("https://", json.dumps(stats, sort_keys=True))
+
+
+class OperationalWaveClosureTests(unittest.TestCase):
+    @staticmethod
+    def _one_part_wave_fixture() -> tuple[object, object, dict]:
+        registry = load_coastal_part_registry(
+            wave_registry_document(1),
+            expected_part_count=1,
+        )
+        part = registry.parts[0]
+        zone = {
+            "id": part.cache_key,
+            "coastalPart": True,
+            "parentZoneId": part.parent_zone_id,
+            "coastType": "east",
+            "lon": part.water_point[0],
+            "lat": part.water_point[1],
+        }
+        return registry, part, zone
+
+    def test_native_gate_is_exactly_670_parts_and_defers_feggesund(self) -> None:
+        native = [
+            {
+                "id": f"PART::NATIVE-{index:03d}",
+                "coastalPart": True,
+                "parentZoneId": "ZONE-NATIVE",
+                "coastType": "east" if index < 335 else "west",
+            }
+            for index in range(670)
+        ]
+        feggesund = [
+            {
+                "id": f"PART::FEGGESUND-{index}",
+                "coastalPart": True,
+                "parentZoneId": "DK-B05-11",
+                "coastType": "east",
+            }
+            for index in range(3)
+        ]
+        parents = [
+            {"id": "ZONE-NATIVE", "coastType": "east"},
+            {"id": "DK-B05-11", "coastType": "east"},
+        ]
+        zones = [*parents, *native, *feggesund]
+
+        gated = [
+            *producer.native_operational_wave_zones("wam_dw", zones),
+            *producer.native_operational_wave_zones("wam_nsb", zones),
+        ]
+
+        self.assertEqual(len(gated), producer.OPERATIONAL_WAVE_NATIVE_PART_COUNT)
+        self.assertEqual(len({zone["id"] for zone in gated}), 670)
+        self.assertTrue(all(zone.get("coastalPart") is True for zone in gated))
+        self.assertFalse(any(
+            zone.get("parentZoneId") == "DK-B05-11" for zone in gated
+        ))
+
+    def test_producer_closure_allows_exact_multi_run_but_only_safe_brackets(self) -> None:
+        registry = load_coastal_part_registry(
+            wave_registry_document(1),
+            expected_part_count=1,
+        )
+        part = registry.parts[0]
+        zone = {
+            "id": part.cache_key,
+            "coastalPart": True,
+            "parentZoneId": part.parent_zone_id,
+            "coastType": "east",
+            "lon": part.water_point[0],
+            "lat": part.water_point[1],
+        }
+        older_run = utc_offset(TARGET, -6)
+        rows = {
+            utc_offset(TARGET, offset): wave_native_hour(
+                part,
+                utc_offset(TARGET, offset),
+                older_run,
+                collection="wam_dw",
+            )
+            for offset in range(0, 118, 3)
+        }
+        rows[utc_offset(TARGET, 1)] = wave_native_hour(
+            part,
+            utc_offset(TARGET, 1),
+            TARGET,
+            collection="wam_dw",
+            grid_point=(
+                part.water_point[0] + 0.001,
+                part.water_point[1],
+            ),
+            grid_sha="d" * 64,
+        )
+        cache = {"zones": {part.cache_key: {"hourly": rows}}}
+
+        closure, missing = producer.operational_wave_collection_closure(
+            cache,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+
+        self.assertEqual(closure["requiredHourCount"], 118)
+        self.assertEqual(closure["rangeEnd"], utc_offset(TARGET, 117))
+        self.assertEqual(closure["missingPairCount"], 0)
+        self.assertEqual(missing, ())
+
+        unsafe = copy.deepcopy(cache)
+        del unsafe["zones"][part.cache_key]["hourly"][utc_offset(TARGET, 3)]
+        unsafe_closure, unsafe_missing = (
+            producer.operational_wave_collection_closure(
+                unsafe,
+                [zone],
+                parse_utc_hour(TARGET),
+                "wam_dw",
+                exact_required_times={TARGET},
+            )
+        )
+        self.assertGreater(unsafe_closure["missingPairCount"], 0)
+        self.assertIn(utc_offset(TARGET, 2), unsafe_missing)
+
+    def test_global_lineage_conflict_is_targeted_residual_and_final_rejection(
+        self,
+    ) -> None:
+        registry = load_coastal_part_registry(
+            wave_registry_document(2),
+            expected_part_count=2,
+        )
+        run = utc_offset(TARGET, -6)
+        native_times = [
+            utc_offset(TARGET, offset) for offset in range(0, 118, 3)
+        ]
+        cache = wave_cache_for_registry(
+            registry,
+            lambda part: {
+                valid_time: wave_native_hour(
+                    part,
+                    valid_time,
+                    run,
+                    collection="wam_dw",
+                )
+                for valid_time in native_times
+            },
+        )
+        second_part = registry.parts[1]
+        cache["zones"][second_part.cache_key]["hourly"][TARGET][
+            "sources"
+        ]["wave"]["assetIdentitySha256"] = "d" * 64
+        zones = [
+            {
+                "id": part.cache_key,
+                "coastalPart": True,
+                "parentZoneId": part.parent_zone_id,
+                "coastType": "east",
+                "lon": part.water_point[0],
+                "lat": part.water_point[1],
+            }
+            for part in registry.parts
+        ]
+
+        closure, missing = producer.operational_wave_collection_closure(
+            cache,
+            zones,
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+
+        self.assertEqual(closure["lineageConflictNativeTimeCount"], 1)
+        self.assertEqual(closure["lineageConflictRequiredPairCount"], 6)
+        self.assertEqual(closure["missingPairCount"], 6)
+        self.assertEqual(
+            missing,
+            (TARGET, utc_offset(TARGET, 1), utc_offset(TARGET, 2)),
+        )
+        with self.assertRaises(producer.WaveBootstrapError) as raised:
+            producer.validate_wave_operational_handoff_cache(
+                cache,
+                registry,
+                bootstrap_target_hour=TARGET,
+                production_target_hour=TARGET,
+                forecast_hour_count=118,
+                deferred_proxy_parent_zone_ids=(),
+            )
+        self.assertEqual(
+            raised.exception.code,
+            "INCONSISTENT_ASSET_PROVENANCE",
+        )
+
+    def test_complete_cache_rejects_one_asset_mixed_run_seam(self) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        older_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+        active = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": {
+                utc_offset(TARGET, offset): wave_native_hour(
+                    part,
+                    utc_offset(TARGET, offset),
+                    older_run,
+                    collection="wam_dw",
+                )
+                for offset in range(0, 118, 3)
+            }}},
+        }
+        before = copy.deepcopy(active)
+        candidate = producer.build_operational_wave_collection_candidate(
+            active
+        )
+        candidate["zones"][part.cache_key]["hourly"][TARGET] = (
+            wave_native_hour(
+                part,
+                TARGET,
+                newer_run,
+                collection="wam_dw",
+            )
+        )
+        active_evidence = producer.operational_wave_collection_evidence(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_single_group = (
+            producer.operational_wave_collection_evidence(
+                candidate,
+                [zone],
+                parse_utc_hour(TARGET),
+                "wam_dw",
+                exact_required_times={TARGET},
+                require_single_group=True,
+            )
+        )
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence,
+            candidate_evidence,
+            fallback_phase=False,
+            candidate_changed=True,
+            candidate_phase_model_run=newer_run,
+            candidate_single_group=candidate_single_group,
+        )
+
+        self.assertEqual(
+            active_evidence["closure"]["missingPairCount"], 0,
+        )
+        self.assertFalse(decision["promote"], decision)
+        self.assertIn(
+            decision["reasonCode"],
+            {"RESOLVED_PAIR_REGRESSION", "INCOMPLETE_QUALITY_REFRESH"},
+        )
+        self.assertEqual(active, before)
+        retained_closure, _retained_missing = (
+            producer.operational_wave_collection_closure(
+                active,
+                [zone],
+                parse_utc_hour(TARGET),
+                "wam_dw",
+                exact_required_times={TARGET},
+            )
+        )
+        self.assertEqual(retained_closure["missingPairCount"], 0)
+
+    def test_hidden_old_bracket_cannot_authorize_mixed_quality_refresh(
+        self,
+    ) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        older_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+        old_rows = {
+            utc_offset(TARGET, offset): wave_native_hour(
+                part,
+                utc_offset(TARGET, offset),
+                older_run,
+                collection="wam_dw",
+            )
+            for offset in range(0, 118, 2)
+        }
+        old_rows[utc_offset(TARGET, 117)] = wave_native_hour(
+            part,
+            utc_offset(TARGET, 117),
+            older_run,
+            collection="wam_dw",
+        )
+        active = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": old_rows}},
+        }
+        candidate = producer.build_operational_wave_collection_candidate(
+            active
+        )
+        candidate["zones"][part.cache_key]["hourly"][
+            utc_offset(TARGET, 3)
+        ] = wave_native_hour(
+            part,
+            utc_offset(TARGET, 3),
+            newer_run,
+            collection="wam_dw",
+        )
+        active_evidence = producer.operational_wave_collection_evidence(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_single_group = (
+            producer.operational_wave_collection_evidence(
+                candidate,
+                [zone],
+                parse_utc_hour(TARGET),
+                "wam_dw",
+                exact_required_times={TARGET},
+                require_single_group=True,
+            )
+        )
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence,
+            candidate_evidence,
+            fallback_phase=False,
+            candidate_changed=True,
+            candidate_phase_model_run=newer_run,
+            candidate_single_group=candidate_single_group,
+        )
+
+        self.assertEqual(
+            candidate_evidence["closure"]["missingPairCount"], 0,
+        )
+        self.assertTrue(decision["coherentCandidateComplete"])
+        self.assertFalse(decision["phaseOwnedCandidateComplete"])
+        self.assertFalse(decision["promote"], decision)
+
+    def test_complete_new_run_phase_can_replace_complete_old_run(self) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        older_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+
+        def rows(model_run: str) -> dict:
+            return {
+                utc_offset(TARGET, offset): wave_native_hour(
+                    part,
+                    utc_offset(TARGET, offset),
+                    model_run,
+                    collection="wam_dw",
+                )
+                for offset in range(0, 118, 3)
+            }
+
+        active = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": rows(older_run)}},
+        }
+        candidate = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": rows(newer_run)}},
+        }
+        active_evidence = producer.operational_wave_collection_evidence(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_single_group = (
+            producer.operational_wave_collection_evidence(
+                candidate,
+                [zone],
+                parse_utc_hour(TARGET),
+                "wam_dw",
+                exact_required_times={TARGET},
+                require_single_group=True,
+            )
+        )
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence,
+            candidate_evidence,
+            fallback_phase=False,
+            candidate_changed=True,
+            candidate_phase_model_run=newer_run,
+            candidate_single_group=candidate_single_group,
+        )
+
+        self.assertTrue(decision["coherentCandidateComplete"])
+        self.assertTrue(decision["phaseOwnedCandidateComplete"])
+        self.assertTrue(decision["promote"], decision)
+
+    def test_equal_count_pair_swap_is_not_monotone(self) -> None:
+        target = frozenset({("A", TARGET), ("A", utc_offset(TARGET, 1))})
+        active = {
+            "targetPairKeys": target,
+            "verifiedPairKeys": frozenset({("A", TARGET)}),
+            "lineageConflictKeys": frozenset(),
+        }
+        candidate = {
+            "targetPairKeys": target,
+            "verifiedPairKeys": frozenset({
+                ("A", utc_offset(TARGET, 1)),
+            }),
+            "lineageConflictKeys": frozenset(),
+        }
+
+        decision = producer.operational_wave_phase_promotion_decision(
+            active,
+            candidate,
+            fallback_phase=False,
+            candidate_changed=True,
+        )
+
+        self.assertFalse(decision["promote"])
+        self.assertEqual(decision["reasonCode"], "RESOLVED_PAIR_REGRESSION")
+        self.assertFalse(decision["resolvedPairSuperset"])
+
+    def test_safe_tail_candidate_promotes_without_resetting_active_rows(
+        self,
+    ) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        run = utc_offset(TARGET, -6)
+        active = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": {
+                utc_offset(TARGET, offset): wave_native_hour(
+                    part,
+                    utc_offset(TARGET, offset),
+                    run,
+                    collection="wam_dw",
+                )
+                for offset in range(0, 115, 3)
+            }}},
+        }
+        candidate = producer.build_operational_wave_collection_candidate(
+            active
+        )
+        candidate["zones"][part.cache_key]["hourly"][
+            utc_offset(TARGET, 117)
+        ] = wave_native_hour(
+            part,
+            utc_offset(TARGET, 117),
+            run,
+            collection="wam_dw",
+        )
+        active_evidence = producer.operational_wave_collection_evidence(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence,
+            candidate_evidence,
+            fallback_phase=False,
+            candidate_changed=True,
+        )
+
+        self.assertTrue(decision["promote"], decision)
+        self.assertGreater(decision["pairImprovementCount"], 0)
+        producer.commit_operational_wave_collection_candidate(
+            active,
+            candidate,
+            {part.cache_key},
+        )
+        closure, missing = producer.operational_wave_collection_closure(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        self.assertEqual(closure["missingPairCount"], 0)
+        self.assertEqual(missing, ())
+
+    def test_fallback_requires_strict_pair_improvement(self) -> None:
+        target = frozenset({("A", TARGET), ("A", utc_offset(TARGET, 1))})
+        evidence = {
+            "targetPairKeys": target,
+            "verifiedPairKeys": frozenset({("A", TARGET)}),
+            "lineageConflictKeys": frozenset(),
+        }
+        decision = producer.operational_wave_phase_promotion_decision(
+            evidence,
+            evidence,
+            fallback_phase=True,
+            candidate_changed=True,
+        )
+        self.assertFalse(decision["promote"])
+        self.assertEqual(
+            decision["reasonCode"],
+            "FALLBACK_NO_PAIR_IMPROVEMENT",
+        )
+
+    def test_terminal_newest_failure_can_recover_from_older_own_run(
+        self,
+    ) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        older_run = utc_offset(TARGET, -6)
+        active = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": {
+                utc_offset(TARGET, offset): wave_native_hour(
+                    part,
+                    utc_offset(TARGET, offset),
+                    older_run,
+                    collection="wam_dw",
+                )
+                for offset in range(0, 115, 3)
+            }}},
+        }
+        candidate = producer.build_operational_wave_collection_candidate(
+            active
+        )
+        fallback_asset = {
+            "valid": utc_offset(TARGET, 117),
+            "id": "synthetic-older-tail",
+            "assetIdentitySha256": "b" * 64,
+            "modelRun": older_run,
+            "operationalWavePhaseRank": 1,
+        }
+        candidate["zones"][part.cache_key]["hourly"][
+            fallback_asset["valid"]
+        ] = wave_native_hour(
+            part,
+            fallback_asset["valid"],
+            older_run,
+            collection="wam_dw",
+        )
+        active_evidence = producer.operational_wave_collection_evidence(
+            active,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        candidate_evidence = producer.operational_wave_collection_evidence(
+            candidate,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        self.assertTrue(producer.operational_wave_fallback_phase_allowed(
+            previous_phase_rank=0,
+            next_phase_rank=1,
+            previous_phase_fully_traversed=True,
+            stop_code=None,
+            active_evidence=active_evidence,
+        ))
+        decision = producer.operational_wave_phase_promotion_decision(
+            active_evidence,
+            candidate_evidence,
+            fallback_phase=True,
+            candidate_changed=True,
+        )
+        mapped = producer.MappingWaveAsset(
+            fallback_asset,
+            fallback_asset["modelRun"],
+        )
+        self.assertEqual(mapped.model_run, older_run)
+        self.assertTrue(decision["promote"], decision)
+        self.assertGreater(decision["pairImprovementCount"], 0)
+
+    def test_older_phase_requires_terminal_primary_and_no_budget_stop(
+        self,
+    ) -> None:
+        residual = {
+            "closure": {"requiredPairCount": 2, "missingPairCount": 1},
+        }
+        self.assertTrue(producer.operational_wave_fallback_phase_allowed(
+            previous_phase_rank=0,
+            next_phase_rank=1,
+            previous_phase_fully_traversed=True,
+            stop_code=None,
+            active_evidence=residual,
+        ))
+        self.assertFalse(producer.operational_wave_fallback_phase_allowed(
+            previous_phase_rank=0,
+            next_phase_rank=1,
+            previous_phase_fully_traversed=False,
+            stop_code=None,
+            active_evidence=residual,
+        ))
+        self.assertFalse(producer.operational_wave_fallback_phase_allowed(
+            previous_phase_rank=0,
+            next_phase_rank=1,
+            previous_phase_fully_traversed=True,
+            stop_code="RUNTIME_BUDGET_REACHED",
+            active_evidence=residual,
+        ))
+
+    def test_unpromoted_completed_stage_cannot_mask_active_residual(
+        self,
+    ) -> None:
+        outcome = producer.operational_wave_collection_outcome(
+            {"requiredPairCount": 670, "missingPairCount": 1},
+            0,
+        )
+        self.assertFalse(outcome["activeComplete"])
+        self.assertFalse(outcome["semanticProgress"])
+        self.assertTrue(outcome["retryImmediately"])
+        self.assertFalse(producer.collection_assets_complete_for_state(
+            operational_wave=True,
+            generic_assets_complete=True,
+            wave_outcome=outcome,
+        ))
+        self.assertTrue(producer.collection_assets_complete_for_state(
+            operational_wave=False,
+            generic_assets_complete=True,
+            wave_outcome=outcome,
+        ))
+
+        raw_download_did_not_change_outcome = (
+            producer.operational_wave_collection_outcome(
+                {"requiredPairCount": 670, "missingPairCount": 1},
+                0,
+            )
+        )
+        self.assertEqual(raw_download_did_not_change_outcome, outcome)
+
+    def test_stage_orchestrator_mutates_active_state_only_on_promotion(
+        self,
+    ) -> None:
+        class Controller:
+            def __init__(self) -> None:
+                self.observed = 0
+                self.committed = 0
+
+            def observe_asset_duration(self, _seconds: float) -> None:
+                self.observed += 1
+
+            def note_committed_asset(self, *, seconds: float) -> bool:
+                self.committed += 1
+                return seconds > 0
+
+        target = frozenset({("A", TARGET), ("A", utc_offset(TARGET, 1))})
+        active_evidence = {
+            "closure": {
+                "requiredPairCount": 2,
+                "missingPairCount": 1,
+                "lineageConflictNativeTimeCount": 0,
+                "lineageConflictRequiredPairCount": 0,
+            },
+            "missingValidTimes": (utc_offset(TARGET, 1),),
+            "targetPairKeys": target,
+            "verifiedPairKeys": frozenset({("A", TARGET)}),
+            "lineageConflictKeys": frozenset(),
+        }
+        swapped_evidence = {
+            **active_evidence,
+            "verifiedPairKeys": frozenset({
+                ("A", utc_offset(TARGET, 1)),
+            }),
+        }
+        active_result = {
+            "zones": {"PART::A": {"sentinel": "active"}},
+            "runs": {"wam_dw": {
+                "referenceTime": utc_offset(TARGET, -6),
+                "processedSteps": {"active": {"complete": True}},
+            }},
+        }
+        candidate_result = {
+            "zones": {"PART::A": {"sentinel": "candidate"}},
+        }
+        before = copy.deepcopy(active_result)
+        fresh: set[str] = set()
+        controller = Controller()
+        run_info = {
+            "referenceTime": TARGET,
+            "processedSteps": {"unpromoted": {"complete": True}},
+        }
+
+        rejected = producer.promote_operational_wave_collection_stage(
+            active_result=active_result,
+            candidate_result=candidate_result,
+            collection="wam_dw",
+            phase_model_run=TARGET,
+            fallback_phase=False,
+            active_evidence=active_evidence,
+            candidate_evidence=swapped_evidence,
+            candidate_single_group=None,
+            touched_zone_ids={"PART::A"},
+            run_info=run_info,
+            fresh_zone_ids=fresh,
+            exact_required_times={TARGET},
+            checkpoint_controller=controller,
+            asset_processing_seconds=1.0,
+        )
+        self.assertFalse(rejected["promote"])
+        self.assertEqual(active_result, before)
+        self.assertEqual(fresh, set())
+        self.assertEqual(controller.observed, 1)
+        self.assertEqual(controller.committed, 0)
+
+        older_run = utc_offset(TARGET, -6)
+        completed_evidence = {
+            **active_evidence,
+            "closure": {
+                **active_evidence["closure"],
+                "missingPairCount": 0,
+            },
+            "missingValidTimes": (),
+            "verifiedPairKeys": target,
+        }
+        run_info = {"referenceTime": older_run}
+        promoted = producer.promote_operational_wave_collection_stage(
+            active_result=active_result,
+            candidate_result=candidate_result,
+            collection="wam_dw",
+            phase_model_run=older_run,
+            fallback_phase=True,
+            active_evidence=active_evidence,
+            candidate_evidence=completed_evidence,
+            candidate_single_group=None,
+            touched_zone_ids={"PART::A"},
+            run_info=run_info,
+            fresh_zone_ids=fresh,
+            exact_required_times={TARGET},
+            checkpoint_controller=controller,
+            asset_processing_seconds=2.0,
+        )
+        self.assertTrue(promoted["promote"], promoted)
+        self.assertEqual(
+            active_result["zones"]["PART::A"]["sentinel"],
+            "candidate",
+        )
+        self.assertEqual(
+            active_result["runs"]["wam_dw"]["referenceTime"],
+            older_run,
+        )
+        self.assertEqual(fresh, {"PART::A"})
+        self.assertEqual(controller.observed, 1)
+        self.assertEqual(controller.committed, 1)
+
+    def test_complete_primary_quality_phase_scans_once_at_terminal(
+        self,
+    ) -> None:
+        _registry, part, zone = self._one_part_wave_fixture()
+        older_run = utc_offset(TARGET, -6)
+        newer_run = TARGET
+
+        def rows(model_run: str) -> dict:
+            return {
+                utc_offset(TARGET, offset): wave_native_hour(
+                    part,
+                    utc_offset(TARGET, offset),
+                    model_run,
+                    collection="wam_dw",
+                )
+                for offset in range(0, 118, 3)
+            }
+
+        active_result = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": rows(older_run)}},
+            "runs": {"wam_dw": {"referenceTime": older_run}},
+        }
+        candidate_result = {
+            "generatedAt": TARGET,
+            "zones": {part.cache_key: {"hourly": rows(newer_run)}},
+        }
+        active_evidence = producer.operational_wave_collection_evidence(
+            active_result,
+            [zone],
+            parse_utc_hour(TARGET),
+            "wam_dw",
+            exact_required_times={TARGET},
+        )
+        self.assertTrue(
+            producer.operational_wave_phase_defers_primary_quality_promotion(
+                phase_rank=0,
+                active_evidence=active_evidence,
+            )
+        )
+        self.assertFalse(
+            producer.operational_wave_phase_defers_primary_quality_promotion(
+                phase_rank=1,
+                active_evidence=active_evidence,
+            )
+        )
+        incomplete_evidence = copy.deepcopy(active_evidence)
+        incomplete_evidence["closure"]["missingPairCount"] = 1
+        self.assertFalse(
+            producer.operational_wave_phase_defers_primary_quality_promotion(
+                phase_rank=0,
+                active_evidence=incomplete_evidence,
+            )
+        )
+        with patch.object(
+            producer,
+            "operational_wave_collection_evidence",
+            wraps=producer.operational_wave_collection_evidence,
+        ) as evidence_scan:
+            candidate_evidence, candidate_single_group = (
+                producer.operational_wave_candidate_stage_evidence(
+                    candidate_result,
+                    [zone],
+                    parse_utc_hour(TARGET),
+                    "wam_dw",
+                    exact_required_times={TARGET},
+                    active_evidence=active_evidence,
+                )
+            )
+        self.assertEqual(evidence_scan.call_count, 2)
+        self.assertTrue(
+            evidence_scan.call_args_list[1].kwargs["require_single_group"]
+        )
+
+        class Controller:
+            def __init__(self) -> None:
+                self.observed_seconds: list[float] = []
+                self.committed_seconds: list[float | None] = []
+                self.forced_flushes = 0
+
+            def observe_asset_duration(self, seconds: float) -> None:
+                self.observed_seconds.append(seconds)
+
+            def note_committed_asset(
+                self,
+                *,
+                seconds: float | None,
+            ) -> bool:
+                self.committed_seconds.append(seconds)
+                return False
+
+            def flush_if_due(self, *, force: bool = False) -> bool:
+                self.forced_flushes += int(force)
+                return force
+
+        controller = Controller()
+        controller.observe_asset_duration(1.25)
+        controller.observe_asset_duration(2.5)
+        fresh: set[str] = set()
+        self.assertTrue(
+            producer.operational_wave_terminal_quality_promotion_allowed(
+                promotion_deferred=True,
+                phase_fully_traversed=True,
+                stop_code=None,
+                candidate_changed=True,
+            )
+        )
+        decision = producer.promote_operational_wave_collection_stage(
+            active_result=active_result,
+            candidate_result=candidate_result,
+            collection="wam_dw",
+            phase_model_run=newer_run,
+            fallback_phase=False,
+            active_evidence=active_evidence,
+            candidate_evidence=candidate_evidence,
+            candidate_single_group=candidate_single_group,
+            touched_zone_ids={part.cache_key},
+            run_info={"referenceTime": newer_run},
+            fresh_zone_ids=fresh,
+            exact_required_times={TARGET},
+            checkpoint_controller=controller,
+            asset_processing_seconds=None,
+            force_checkpoint=True,
+        )
+        self.assertTrue(decision["promote"], decision)
+        self.assertEqual(controller.observed_seconds, [1.25, 2.5])
+        self.assertEqual(controller.committed_seconds, [None])
+        self.assertEqual(controller.forced_flushes, 1)
+        self.assertTrue(decision["checkpointWritten"])
+        self.assertEqual(
+            active_result["runs"]["wam_dw"]["referenceTime"],
+            newer_run,
+        )
+        self.assertEqual(fresh, {part.cache_key})
+
+    def test_incomplete_or_stopped_quality_phase_cannot_promote_on_restart(
+        self,
+    ) -> None:
+        active = {
+            "zones": {"PART::A": {"sentinel": "active"}},
+            "runs": {
+                "wam_dw": {
+                    "referenceTime": utc_offset(TARGET, -6),
+                    "processedSteps": {"old": {"complete": True}},
+                }
+            },
+        }
+        before = copy.deepcopy(active)
+        attempt_run_info = {
+            "referenceTime": TARGET,
+            "processedSteps": {"new": {"complete": True}},
+        }
+        for fully_traversed, stop_code, candidate_changed in (
+            (False, None, True),
+            (True, "RUNTIME_BUDGET_REACHED", True),
+            (True, "INTERRUPTED", True),
+            (True, None, False),
+        ):
+            self.assertFalse(
+                producer.operational_wave_terminal_quality_promotion_allowed(
+                    promotion_deferred=True,
+                    phase_fully_traversed=fully_traversed,
+                    stop_code=stop_code,
+                    candidate_changed=candidate_changed,
+                )
+            )
+        self.assertEqual(active, before)
+        self.assertNotEqual(
+            active["runs"]["wam_dw"],
+            attempt_run_info,
+        )
+
+    def test_hole_promotion_stays_immediate_before_deferred_quality_work(
+        self,
+    ) -> None:
+        target = frozenset({("A", TARGET), ("A", utc_offset(TARGET, 1))})
+        active_evidence = {
+            "closure": {
+                "requiredPairCount": 2,
+                "missingPairCount": 1,
+                "lineageConflictNativeTimeCount": 0,
+                "lineageConflictRequiredPairCount": 0,
+            },
+            "missingValidTimes": (utc_offset(TARGET, 1),),
+            "targetPairKeys": target,
+            "verifiedPairKeys": frozenset({("A", TARGET)}),
+            "lineageConflictKeys": frozenset(),
+        }
+        completed_evidence = {
+            **active_evidence,
+            "closure": {
+                **active_evidence["closure"],
+                "missingPairCount": 0,
+            },
+            "missingValidTimes": (),
+            "verifiedPairKeys": target,
+        }
+
+        class Controller:
+            def __init__(self) -> None:
+                self.commits = 0
+
+            def observe_asset_duration(self, _seconds: float) -> None:
+                raise AssertionError("an improving hole must not be observation-only")
+
+            def note_committed_asset(self, *, seconds: float | None) -> bool:
+                self.commits += 1
+                return True
+
+        active_result = {
+            "zones": {"PART::A": {"sentinel": "old"}},
+            "runs": {},
+        }
+        promoted = producer.promote_operational_wave_collection_stage(
+            active_result=active_result,
+            candidate_result={
+                "zones": {"PART::A": {"sentinel": "hole-filled"}},
+            },
+            collection="wam_dw",
+            phase_model_run=TARGET,
+            fallback_phase=False,
+            active_evidence=active_evidence,
+            candidate_evidence=completed_evidence,
+            candidate_single_group=None,
+            touched_zone_ids={"PART::A"},
+            run_info={"referenceTime": TARGET},
+            fresh_zone_ids=set(),
+            exact_required_times={TARGET},
+            checkpoint_controller=Controller(),
+            asset_processing_seconds=1.0,
+        )
+        self.assertTrue(promoted["promote"], promoted)
+        self.assertEqual(
+            active_result["zones"]["PART::A"]["sentinel"],
+            "hole-filled",
+        )
+        self.assertTrue(
+            producer.operational_wave_phase_defers_primary_quality_promotion(
+                phase_rank=0,
+                active_evidence=completed_evidence,
+            )
+        )
+        self.assertFalse(
+            producer.operational_wave_terminal_quality_promotion_allowed(
+                promotion_deferred=True,
+                phase_fully_traversed=False,
+                stop_code="RUNTIME_BUDGET_REACHED",
+                candidate_changed=True,
+            )
+        )
+
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        promotion_update = source.index(
+            "wave_phase_deferred_quality_promotion = (",
+            source.index("wave_phase_promotion_count += 1"),
+        )
+        asset_defer = source.index(
+            "if wave_phase_deferred_quality_promotion:",
+            promotion_update,
+        )
+        terminal_finish = source.index(
+            "finish_wave_phase(",
+            asset_defer,
+        )
+        self.assertLess(promotion_update, asset_defer)
+        self.assertLess(asset_defer, terminal_finish)
+
+    def test_fallback_completion_stops_remaining_fallback_assets(self) -> None:
+        fallback_assets = ["fills-last-hole", "quality-1", "quality-2"]
+        processed = []
+        for asset_id in fallback_assets:
+            processed.append(asset_id)
+            closure = {
+                "requiredPairCount": 1,
+                "missingPairCount": 0 if asset_id == "fills-last-hole" else 1,
+            }
+            if producer.should_stop_operational_wave_asset_loop(
+                "wam_dw",
+                closure,
+                launch_mode=True,
+            ):
+                break
+        self.assertEqual(processed, ["fills-last-hole"])
+
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        caller = source.index(
+            "if should_stop_operational_wave_asset_loop(",
+            source.index("and wave_promoted"),
+        )
+        fallback_stop = source.index("or wave_phase_rank > 0", caller)
+        loop_break = source.index("if stop_for_native_wave_closure:", caller)
+        self.assertLess(caller, fallback_stop)
+        self.assertLess(fallback_stop, loop_break)
+
+    def test_tail_closure_precedes_old_overlap_and_proof_complete_assets(self) -> None:
+        assets = [
+            {"valid": TARGET, "id": "old-proof"},
+            {"valid": utc_offset(TARGET, 12), "id": "old-overlap"},
+            {"valid": utc_offset(TARGET, 114), "id": "tail-support"},
+            {"valid": utc_offset(TARGET, 117), "id": "tail-exact"},
+        ]
+        ordered = producer.prioritize_operational_wave_assets(
+            assets,
+            (utc_offset(TARGET, 117),),
+            {TARGET},
+        )
+        self.assertEqual(
+            [asset["id"] for asset in ordered],
+            ["tail-exact", "tail-support", "old-overlap", "old-proof"],
+        )
+
+    def test_launch_committed_native_closure_stops_before_old_overlap(self) -> None:
+        assets = producer.prioritize_operational_wave_assets(
+            [
+                {"valid": utc_offset(TARGET, 12), "id": "old-overlap"},
+                {"valid": utc_offset(TARGET, 117), "id": "tail-exact"},
+            ],
+            (utc_offset(TARGET, 117),),
+            set(),
+        )
+        incomplete = {"requiredPairCount": 1, "missingPairCount": 1}
+        complete = {"requiredPairCount": 1, "missingPairCount": 0}
+        self.assertFalse(
+            producer.operational_wave_native_closure_complete(incomplete)
+        )
+        self.assertFalse(producer.operational_wave_native_closure_complete({}))
+        self.assertTrue(
+            producer.operational_wave_native_closure_complete(complete)
+        )
+        self.assertFalse(
+            producer.should_stop_operational_wave_asset_loop(
+                "wam_dw",
+                incomplete,
+                launch_mode=True,
+            )
+        )
+        self.assertFalse(
+            producer.should_stop_operational_wave_asset_loop(
+                "wam_dw",
+                complete,
+                launch_mode=False,
+            )
+        )
+        self.assertTrue(
+            producer.should_stop_operational_wave_asset_loop(
+                "wam_dw",
+                complete,
+                launch_mode=True,
+            )
+        )
+
+        processed = []
+        for asset in assets:
+            processed.append(asset["id"])
+            closure = complete if asset["id"] == "tail-exact" else incomplete
+            if producer.should_stop_operational_wave_asset_loop(
+                "wam_dw",
+                closure,
+                launch_mode=True,
+            ):
+                break
+        self.assertEqual(processed, ["tail-exact"])
+        self.assertNotIn("old-overlap", processed)
+
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        loop_start = source.rindex(
+            "for asset_number, asset in enumerate(assets, start=1):"
+        )
+        loop_end = source.index(
+            'result["diagnostics"]["parametersByCollection"][collection]',
+            loop_start,
+        )
+        loop = source[loop_start:loop_end]
+        promotion = loop.index("try_promote_wave_candidate(")
+        promotion_guard = loop.index("and wave_promoted", promotion)
+        closure = loop.index(
+            'wave_closure_after_commit = wave_active_evidence[',
+            promotion_guard,
+        )
+        stop_helper = loop.index(
+            "should_stop_operational_wave_asset_loop(", closure
+        )
+        fallback_guard = loop.index(
+            "or wave_phase_rank > 0", stop_helper
+        )
+        stop_metric = loop.index(
+            '"operationalWaveClosureStopsByCollection"', stop_helper
+        )
+        checkpoint_dirty = loop.index(
+            "checkpoint_controller.mark_bulk_dirty()", stop_metric
+        )
+        forced_checkpoint = loop.index(
+            "checkpoint_controller.flush_if_due(force=True)",
+            checkpoint_dirty,
+        )
+        normal_stop = loop.index(
+            "if stop_for_native_wave_closure:", forced_checkpoint
+        )
+        break_after_closure = loop.index("break", normal_stop)
+        self.assertLess(promotion, closure)
+        self.assertLess(promotion, promotion_guard)
+        self.assertLess(promotion_guard, closure)
+        self.assertLess(closure, stop_helper)
+        self.assertLess(stop_helper, fallback_guard)
+        self.assertLess(fallback_guard, stop_metric)
+        self.assertLess(stop_helper, stop_metric)
+        self.assertLess(stop_metric, checkpoint_dirty)
+        self.assertLess(checkpoint_dirty, forced_checkpoint)
+        self.assertLess(forced_checkpoint, normal_stop)
+        self.assertLess(normal_stop, break_after_closure)
+        self.assertNotIn(
+            "budget_stop =",
+            loop[normal_stop:break_after_closure],
+        )
+
+    def test_scheduler_skips_proof_complete_wam_family(self) -> None:
+        planned, diagnostics = producer.operational_collection_plan(
+            ["wam_dw", "wam_nsb", "harmonie_dini_sf"],
+            {},
+            True,
+            {
+                "wam_dw": {
+                    "requiredPairCount": 10,
+                    "missingPairCount": 0,
+                },
+                "wam_nsb": {
+                    "requiredPairCount": 10,
+                    "missingPairCount": 2,
+                },
+            },
+            1200.0,
+            force_wam_collections={"wam_dw", "wam_nsb"},
+        )
+        self.assertNotIn("wam_dw", planned)
+        self.assertEqual(planned[0], "wam_nsb")
+        self.assertEqual(
+            diagnostics["proofCompleteWamCollectionsSkipped"],
+            ["wam_dw"],
+        )
+        self.assertEqual(
+            diagnostics["proofCompleteWamCollectionsRetainedForQuality"],
+            [],
+        )
+
+        normal_planned, normal_diagnostics = producer.operational_collection_plan(
+            ["wam_dw", "wam_nsb", "harmonie_dini_sf"],
+            {},
+            True,
+            {
+                "wam_dw": {
+                    "requiredPairCount": 10,
+                    "missingPairCount": 0,
+                },
+                "wam_nsb": {
+                    "requiredPairCount": 10,
+                    "missingPairCount": 2,
+                },
+            },
+            1200.0,
+        )
+        self.assertIn("wam_dw", normal_planned)
+        self.assertEqual(
+            normal_diagnostics["proofCompleteWamCollectionsSkipped"],
+            [],
+        )
+        self.assertEqual(
+            normal_diagnostics[
+                "proofCompleteWamCollectionsRetainedForQuality"
+            ],
+            ["wam_dw"],
+        )
+
 
 class ColdCacheFirstTests(unittest.TestCase):
     @classmethod
@@ -714,6 +2186,83 @@ class ColdCacheFirstTests(unittest.TestCase):
 
 
 class ResumeAndFailClosedTests(unittest.TestCase):
+    def test_669_of_670_wave_asset_rolls_back_transactionally(self) -> None:
+        zones = [
+            {"id": f"PART::SYNTHETIC-{index:03d}"}
+            for index in range(670)
+        ]
+        active = {
+            "generatedAt": TARGET,
+            "zones": {
+                zone["id"]: {"hourly": {}, "sentinel": "active"}
+                for zone in zones
+            },
+        }
+        before = copy.deepcopy(active)
+
+        def fake_process(*args, **_kwargs):
+            staged = args[5]
+            first_id = zones[0]["id"]
+            staged["zones"][first_id]["hourly"][TARGET] = {
+                "candidate": True,
+            }
+            return (
+                {"significant-wave-height", "dominant-wave-period"},
+                {first_id},
+                False,
+                2,
+                1,
+            )
+
+        summary = {
+            "requiredCount": 670,
+            "acceptedCount": 669,
+            "rejectedCount": 1,
+            "rejectedByCode": {"INVALID_WAVE_PROVENANCE": 1},
+        }
+
+        def stage_validator(_staged, _private, outcome):
+            return producer.operational_wave_asset_stage_complete(
+                summary,
+                outcome,
+            )
+
+        with patch.object(producer, "process_grib", side_effect=fake_process):
+            with self.assertRaises(RuntimeError):
+                producer.process_grib_transactionally(
+                    Path("synthetic.grib"),
+                    "wam_dw",
+                    utc_offset(TARGET, -6),
+                    TARGET,
+                    zones,
+                    active,
+                    {},
+                    stage_validator=stage_validator,
+                    validation_error="synthetic partial WAM asset",
+                )
+
+        self.assertEqual(active, before)
+        self.assertFalse(producer.operational_wave_asset_stage_complete(
+            summary,
+            (
+                {"significant-wave-height", "dominant-wave-period"},
+                set(),
+                False,
+                2,
+                1,
+            ),
+        ))
+        self.assertTrue(producer.operational_wave_asset_stage_complete(
+            {**summary, "acceptedCount": 670, "rejectedCount": 0},
+            (
+                {"significant-wave-height", "dominant-wave-period"},
+                set(),
+                False,
+                2,
+                1,
+            ),
+        ))
+
     def test_wam_resume_receives_exact_selected_asset_proof(self) -> None:
         source = (SCRIPTS / "update-dmi-bulk.py").read_text(encoding="utf-8")
         self.assertRegex(
@@ -722,6 +2271,66 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             r"if collection in MARINE_COLLECTIONS\s*"
             r"or collection in WAVE_BOOTSTRAP_COLLECTIONS",
         )
+
+    def test_wam_fallback_identity_cannot_replace_primary_resume_proof(
+        self,
+    ) -> None:
+        primary_asset = {
+            "valid": TARGET,
+            "id": "primary",
+            "assetIdentitySha256": "a" * 64,
+            "operationalWavePhaseRank": 0,
+        }
+        fallback_asset = {
+            "valid": TARGET,
+            "id": "fallback",
+            "assetIdentitySha256": "b" * 64,
+            "operationalWavePhaseRank": 1,
+        }
+        primary = producer.official_wave_asset_identity(
+            "wam_dw",
+            TARGET,
+            primary_asset,
+        )
+        fallback = producer.official_wave_asset_identity(
+            "wam_dw",
+            utc_offset(TARGET, -6),
+            fallback_asset,
+        )
+        self.assertIsNotNone(primary)
+        self.assertIsNotNone(fallback)
+        required = {TARGET}
+        self.assertTrue(producer.asset_identity_is_required_for_resume(
+            "wam_dw",
+            primary_asset,
+            primary,
+            required,
+        ))
+        self.assertFalse(producer.asset_identity_is_required_for_resume(
+            "wam_dw",
+            fallback_asset,
+            fallback,
+            required,
+        ))
+
+        current_asset = {
+            "valid": TARGET,
+            "id": "dkss",
+            "assetIdentitySha256": "c" * 64,
+            "operationalWavePhaseRank": 1,
+        }
+        current = producer.official_current_asset_identity(
+            "dkss_idw",
+            TARGET,
+            current_asset,
+        )
+        self.assertIsNotNone(current)
+        self.assertTrue(producer.asset_identity_is_required_for_resume(
+            "dkss_idw",
+            current_asset,
+            current,
+            required,
+        ))
 
     def test_resume_requires_selected_asset_identity(self) -> None:
         result, zone, asset = complete_hour(asset_identity="c" * 64)
@@ -747,6 +2356,141 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                 "wam_dw",
                 asset,
             ))
+
+    def test_resume_reconstructs_native_proof_without_parent_blocker(self) -> None:
+        registry = load_coastal_part_registry(
+            wave_registry_document(1),
+            expected_part_count=1,
+        )
+        part = registry.parts[0]
+        run = utc_offset(TARGET, -6)
+        native_zone = {
+            "id": part.cache_key,
+            "coastalPart": True,
+            "parentZoneId": part.parent_zone_id,
+            "coastType": "east",
+        }
+        parent_zone = {
+            "id": part.parent_zone_id,
+            "coastType": "east",
+        }
+        row = wave_native_hour(
+            part,
+            TARGET,
+            run,
+            collection="wam_dw",
+        )
+        source = row["sources"]["wave"]
+        expected = {
+            "collection": "wam_dw",
+            "modelRun": run,
+            "validTime": TARGET,
+            "itemId": source["itemId"],
+            "assetIdentitySha256": source["assetIdentitySha256"],
+            "assetSizeBytes": None,
+            "itemCreatedAt": None,
+            "itemUpdatedAt": None,
+        }
+        cache = {
+            "zones": {
+                part.cache_key: {"hourly": {TARGET: row}},
+                part.parent_zone_id: {"hourly": {}},
+            },
+        }
+        previous_run = {
+            "referenceTime": run,
+            "processingSignature": "wave-signature",
+            "processedSteps": {
+                TARGET: {
+                    "complete": False,
+                    "recognizedParameters": [
+                        "significant-wave-height",
+                        "dominant-wave-period",
+                    ],
+                    "processingSignature": "wave-signature",
+                    "parserVersion": producer.PARSER_VERSION,
+                    "sourceAsset": expected,
+                    "waveTargetProof": {
+                        "requiredCount": 2,
+                        "acceptedCount": 1,
+                        "rejectedCount": 1,
+                        "rejectedByCode": {
+                            "INVALID_WAVE_TUPLE": 1,
+                        },
+                    },
+                },
+            },
+        }
+        native_gate = producer.native_operational_wave_zones(
+            "wam_dw",
+            [parent_zone, native_zone],
+        )
+        metrics: dict = {}
+
+        with patch.object(
+            producer,
+            "complete_native_source_for_hour",
+            return_value=True,
+        ):
+            reusable = producer.reusable_processed_steps(
+                previous_run,
+                collection="wam_dw",
+                same_processing=True,
+                same_run=True,
+                strict_current_anchor_available=True,
+                required_asset_provenance={TARGET: expected},
+                wave_cache=cache,
+                wave_zones=native_gate,
+                wave_resume_metrics=metrics,
+            )
+
+        self.assertEqual(len(native_gate), 1)
+        self.assertTrue(reusable[TARGET]["complete"])
+        self.assertEqual(
+            reusable[TARGET]["waveTargetProof"]["requiredCount"],
+            1,
+        )
+        self.assertTrue(
+            reusable[TARGET]["reconstructedFromNativeCache"]
+        )
+        self.assertEqual(metrics["proofCompleteAssets"], 1)
+        self.assertEqual(metrics["reconstructedProofCompleteAssets"], 1)
+        self.assertEqual(metrics["rejectedByCode"], {})
+
+    def test_strict_current_lead_limit_counts_only_one_actual_attempt(self) -> None:
+        self.assertTrue(producer.strict_current_lead_attempt_available(
+            "dkss_lf", "dkss_lf", 0, 1,
+        ))
+        self.assertFalse(producer.strict_current_lead_attempt_available(
+            "dkss_lf", "dkss_lf", 1, 1,
+        ))
+        self.assertTrue(producer.strict_current_lead_attempt_available(
+            "wam_dw", "dkss_lf", 1, 1,
+        ))
+
+        source = (SCRIPTS / "update-dmi-bulk.py").read_text("utf-8")
+        loop_start = source.rindex(
+            "for asset_number, asset in enumerate(assets, start=1):"
+        )
+        loop = source[loop_start:source.index(
+            'result["diagnostics"]["parametersByCollection"][collection]',
+            loop_start,
+        )]
+        limit_check = loop.index(
+            "not strict_current_lead_attempt_available("
+        )
+        budget_check = loop.index(
+            "checkpoint_controller.can_start_asset(",
+            limit_check,
+        )
+        increment = loop.index("strict_current_lead_attempts += 1")
+        download = loop.index(
+            "path, reused = download_asset(",
+            increment,
+        )
+        self.assertLess(limit_check, budget_check)
+        self.assertLess(budget_check, increment)
+        self.assertLess(increment, download)
 
     def test_duplicate_part_ids_cannot_satisfy_exact_673_registry(self) -> None:
         asset = SimpleNamespace(valid_time=TARGET)

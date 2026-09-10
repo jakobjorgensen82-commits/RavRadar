@@ -251,7 +251,7 @@ assert.ok(
 const completionGate = mainCheckpointScope.slice(completionGateStart, completionGateEnd);
 assert.match(
   completionGate,
-  /collection_assets_complete = \(\s*bool\(selected_valid_time_values\)\s*and len\(selected_valid_times\) == len\(selected_valid_time_values\)\s*and selected_valid_times <= completed_or_locked\s*\)/,
+  /generic_assets_complete=bool\(\s*selected_valid_time_values\s*and len\(selected_valid_times\)\s*== len\(selected_valid_time_values\)\s*and selected_valid_times <= completed_or_locked\s*\),\s*wave_outcome=wave_collection_outcome/,
   'Tom, blank eller duplikeret selected-valid-time-liste må aldrig klassificeres som komplet.',
 );
 assert.match(
@@ -261,8 +261,8 @@ assert.match(
 );
 assert.match(
   completionGate,
-  /elif collection_assets_complete and recognized >= required and run_info\["assetsProcessed"\]:/,
-  'En collection med delvist behandlede assets må ikke registreres som success.',
+  /elif \(\s*collection_assets_complete\s*and recognized >= required\s*and \(\s*run_info\["assetsProcessed"\]\s*or \(\s*bootstrap_operational_wam\s*and bool\(run_info\.get\("nativeGateProofComplete"\)\)\s*\)\s*\)\s*\):/,
+  'En collection må kun registreres som success efter generisk behandling eller bevist komplet aktiv WAM-closure.',
 );
 assert.match(
   completionGate,
