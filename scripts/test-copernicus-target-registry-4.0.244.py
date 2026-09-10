@@ -469,44 +469,79 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert retained_registry["operationalRequiredPairCount"] == 0
     assert retained_registry["operationalRequiredPairs"] == []
 
-    priority_inversion_ledger = copy.deepcopy(retained_ledger)
-    priority_inversion_collection = next(
-        row for row in priority_inversion_ledger["collections"]
+    # Newer processed metadata alone must not discard the older exact cached
+    # winner. The physical tuple and its attestation are replaced atomically;
+    # until then the retained proof remains the only positive source.
+    metadata_only_ledger = copy.deepcopy(retained_ledger)
+    metadata_only_collection = next(
+        row for row in metadata_only_ledger["collections"]
         if row["collection"] == "dkss_idw"
     )
-    priority_inversion_row = next(
-        row for row in priority_inversion_collection["validTimes"]
+    metadata_only_row = next(
+        row for row in metadata_only_collection["validTimes"]
         if row["validTime"] == AT
     )
-    priority_inversion_row.update({
+    metadata_only_row.update({
         "state": "PROCESSED",
         "sourceAsset": selected_newer_source,
         "partOutcomeProof": selected_newer_outcome,
     })
-    priority_inversion_collection["stateCounts"] = {
+    metadata_only_collection["stateCounts"] = {
         state: sum(
             row["state"] == state
-            for row in priority_inversion_collection["validTimes"]
+            for row in metadata_only_collection["validTimes"]
         )
         for state in producer.CURRENT_OPERATIONAL_LEDGER_STATES
     }
-    priority_inversion_ledger.update({
+    metadata_only_ledger.update({
         "ready": True,
         "failureCodes": ["RETAINED_CURRENT_PART_TIME"],
     })
+    validate_current_operational_availability_ledger(
+        metadata_only_ledger,
+        retained_actual,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        metadata_only_ledger["targetRegistrySha256"],
+    )
+
+    # Once the cached tuple and actual attestation are replaced by the newer
+    # source, the stale retained proof must become unused and fail closed.
+    replaced_dmi = copy.deepcopy(retained_dmi)
+    replaced_dmi["zones"]["PART::dmi-ok"]["hourly"][AT]["sources"][
+        "current"
+    ] = selected_newer_source
+    newer_allowed, newer_authorization = (
+        producer.current_attestation_authorization_from_operational_ledger(
+            metadata_only_ledger
+        )
+    )
+    replaced_actual = canonical_verified_part_current_attestation(
+        replaced_dmi,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        newer_allowed,
+        newer_authorization,
+    )
+    replaced_ledger = copy.deepcopy(metadata_only_ledger)
+    replaced_ledger["attestation"] = sanitized_current_attestation(
+        replaced_actual
+    )
     try:
         validate_current_operational_availability_ledger(
-            priority_inversion_ledger,
-            retained_actual,
+            replaced_ledger,
+            replaced_actual,
             targets,
             REFERENCE,
             REFERENCE + timedelta(hours=117),
-            priority_inversion_ledger["targetRegistrySha256"],
+            replaced_ledger["targetRegistrySha256"],
         )
     except ValueError as error:
-        assert "inverts newer usable tuple priority" in str(error)
+        assert "retained current proof is unused" in str(error)
     else:
-        raise AssertionError("Older retained DMI inverted a newer verified tuple")
+        raise AssertionError("Replaced current tuple retained a stale older proof")
 
     # One exact part may be unavailable in all three fully processed official
     # sources while another part verifies the same hour. The national guard

@@ -57,6 +57,14 @@ privateRuntimeContractHashes er beregnet read-only: continuationStateContractSha
 
 Read-only GitHub: PR274 er åben på c4043bf7, main senest b0ca7f5d; ingen ny CI eller weatherdispatch udført. Cacheinventar47 poster,10.166.365.283 byte, heraf9.742.641.482 rå GRIB-byte. Seneste DMI-, CP- og OM-generationer er listet; dette siger ikke noget om deres fulde indhold. Usage-API viste44 poster, mens liste-API viste47; usage kan være forsinket. Storage-/retention-limit-GET svarer HTTP402 med krav om betalingsmetode. Den faktiske konfigurerede grænse er ukendt; ingen betaling, køb, sletning eller indstillingsændring. Kilde: GitHubs officielle REST cache- og dependency-caching-dokumentation, læst2026-09-10.
 
+## Exact-head-CI 34417094732 og afgrænset opfølgning
+
+Exact head `e459b826e3fae296ca8074f9a9efeadb8a7f663d` bestod alle fem bindingspreflights og den fulde releasegate. Sourcegaten fortsatte derefter gennem de efterfølgende checks og stoppede alene i `test-copernicus-target-registry-4.0.244.py` med `Older retained DMI inverted a newer verified tuple`.
+
+Lokal reproduktion og tre uafhængige gennemgange fandt en forældet fixture, ikke en ny producentfejl. Fixturet satte kun nyere kilde/outcome som `PROCESSED` metadata; den cached tuple og den genberegnede actual attestation forblev den ældre, præcist proof-bundne kilde. Det er den tilsigtede atomiske kontrakt: metadata alene må ikke slette brugbare data.
+
+Test-only-rettelsen har to ben: metadata-only-ledgeren accepterer den gamle actual winner; når cachetuple og actual attestation faktisk skiftes til den nyere kilde, afvises det gamle retained proof som unused. Ingen produktionsfil er ændret. Den rettede target-registry-test er exit0, og `test-dmi-native-provenance.py` er exit0. To uafhængige reviewers fandt ingen analog gammel forventning eller ny P0/P1 i register→plan→fallback→closure-sporet.
+
 ## Næste kontrolgrænse
 
 Afsluttede tilstødende checks: test-regional-current-operational.py exit0 (5 navngivne testfunktioner), test-current-operational-live-builder.py exit0 og test-current-operational-live-adapter.mjs exit0. Ingen rettelser. Common plan er stadig advisory; exact residual og positiv sourceadmission forbliver selvstændige.

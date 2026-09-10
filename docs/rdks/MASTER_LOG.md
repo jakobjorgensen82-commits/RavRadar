@@ -1,4 +1,8 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-10 – samlet vejrlivscyklus og autonom launchplan
+# NYESTE IMPLEMENTERINGSDELTA – 2026-09-10 – exact-head-CI fandt forældet cachefixture
+
+Sourcegate `34417094732` på `e459b826` bestod bindingspreflight og fuld releasegate, men stoppede senere i Copernicus-targetregistry-testen. Fejlen var en forældet forventning om, at nyere `PROCESSED` metadata skulle kassere en ældre faktisk attesteret tuple. Det strider mod ejerens atomiske bevaringskrav. Testen beviser nu både metadata-only-bevaring og afvisning af gammelt proof efter faktisk nyere tuple+attestation. Target-registry og DMI-proveniens er grønne; ingen produktionskode er ændret. Ny exact-head-CI kræves.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-10 – samlet vejrlivscyklus og autonom launchplan
 
 Ejeren kræver en grundig fælles løsning fremfor gentagne enkeltrettelser: kritisk planlægning ud fra den samlede gyldige kildeunion, bevaring af eksisterende gyldige data/proofs, alle reelle interne huller og hale før kildekvalitet, derefter DMI før Copernicus før Open-Meteo. Den ventende 4.0.340 WAM-/bindingsrettelse bevares i samme pakke. Ingen gammel-versus-hale-særprioritet eller nulstilling af cache er godkendt.
 

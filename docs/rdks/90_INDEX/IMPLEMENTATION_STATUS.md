@@ -1,4 +1,10 @@
-# NYESTE CHECKPOINT – 2026-09-10 – lokale måltests bestået, CI og drift afventer
+# NYESTE CHECKPOINT – 2026-09-10 – første exact-head-CI afgrænset til forældet test
+
+Head `e459b826e3fae296ca8074f9a9efeadb8a7f663d` bestod bindingspreflight og den fulde releasegate, men sourcegate `34417094732` stoppede senere i `test-copernicus-target-registry-4.0.244.py`. Tre uafhængige gennemgange og lokal reproduktion viser, at fixturet stadig forventede den nu erstattede regel: nyere `PROCESSED` metadata skulle kassere en ældre, faktisk attesteret cachetuple. Det strider mod den godkendte atomiske kontrakt, hvor gammel gyldig tuple+proof består, indtil en nyere tuple faktisk er materialiseret og attesteret.
+
+Kun testen er rettet lokalt. Den beviser nu både, at metadata alene ikke sletter den gamle vinder, og at et gammelt retained proof afvises, når cachetuple og attestation faktisk er skiftet til den nyere kilde. Target-registry-testen og DMI-provenienstesten er grønne. Ingen produktionskode, migration, binding, workflow, cache eller geodata er ændret i opfølgningen. Næste trin er dokument-/diffkontrol, en ny samlet head og ny exact-head-CI; det fejlede run genstartes ikke.
+
+# HISTORISK CHECKPOINT – 2026-09-10 – lokale måltests bestået, CI og drift afventer
 
 Den samlede vejrlivscyklusrettelse og den eksisterende 4.0.340 WAM-/bindingspakke er lokalt målverificeret. Se `docs/ai/WEATHER_LIFECYCLE_TEST_EVIDENCE_2026-09-10.md` fra repositoryroden for faktiske resultater og de to testfixture-rettelser. Plan/DMI/checkpoint/WAM, CP-/OM-donorbanker, recovery, runner/checker/closure, workflows og privat runtimepakke er grønne. Modelbindingens otte forbrugere er konsistente; dette Python-/workflowdelta kræver ikke nye SQL-/modelhashes. Runtimeproducentens pakkehash beregnes derimod på den endelige kode.
 

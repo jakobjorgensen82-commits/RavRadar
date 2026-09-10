@@ -6,6 +6,10 @@
 
 **Status:** Den samlede rettelse er gennemgået og de målrettede lokale tests er bestået. Den er endnu ikke CI-valideret, merged eller lagt online. Testene omfatter den nye hentelogik, genbrug, sikker gemning, fallback og den tidligere WAM-rettelse. Seneste gennemgåede oneoff på gammel kode sluttede med 535 manglende strømpar og manglende operationelle bølgetimer; Candidate G er fortsat senest verificerede offentlige model.
 
+**CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen er rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
+
+**CI-opfølgning:** Den første samlede GitHub-kontrol bestod selve releasegaten, men stoppede senere på en gammel testforventning. Testen antog, at beskeden om en nyere behandlet fil var nok til at kassere den faktisk gemte ældre række. Det er forkert under den atomiske regel: den gemte brugbare række består, indtil den nye række også faktisk er gemt og attesteret. Kun testen er rettet; den kontrollerer samtidig, at det gamle bevis bliver afvist efter en reel erstatning.
+
 **Problemet:** Listen over dagens huller blev også brugt til at bestemme, hvilke fallbackdata vi beholdt. Derfor kunne en brugbar Open-Meteo-reserve forsvinde fra den nyeste cache, når DMI midlertidigt dækkede samme time. Copernicus kunne på tilsvarende vis beholde tal, men miste det oprindelige bevis for, at de måtte bruges. Samtidig så leverandørernes arbejdsplan ikke hele den samlede dækning.
 
 **Den samlede ændring:**

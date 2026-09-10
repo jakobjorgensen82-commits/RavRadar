@@ -2,6 +2,10 @@
 
 ## Lokal udvidelse 2026-09-10 – samlet vejrlivscyklus, måltestet; CI og drift afventer
 
+- Exact-head-CI `34417094732` bestod bindingspreflight og fuld releasegate, men fandt derefter én forældet target-registry-fixture. Testen forventede, at nyere `PROCESSED` metadata alene kasserede en ældre attesteret cachetuple. Den er rettet test-only til både at bevare metadata-only-winneren og afvise gammelt proof efter reel nyere tuple+attestation. De to relevante måltests er grønne; ingen producentkode, binding eller migration ændres.
+
+- Exact-head-CI `34417094732` bestod bindingspreflight og fuld releasegate, men fandt derefter én forældet target-registry-fixture. Testen forventede, at nyere `PROCESSED` metadata alene kasserede en ældre attesteret cachetuple. Den er rettet test-only til både at bevare metadata-only-winneren og afvise gammelt proof efter reel nyere tuple+attestation. De to relevante måltests er grønne; ingen producentkode, binding eller migration ændres.
+
 - Bevarer hele den eksisterende 4.0.340 WAM-/bindingspakke og PR #274. Nye lokale ændringer er ikke dækket af de tidligere grønne måltests eller backendbeviser.
 - Adskiller vedvarende private CP-/OM-reserver fra dagens restprojektion; bevarer originale acquisitioner og recordbundne positive beviser ved referenceskift og senere kvalitetsopdateringer.
 - Tilføjer en fælles, eksakt target-/registerbundet arbejdsplan fra valideret kildeunion. Den prioriterer reelle huller, ikke blot mangler i en leverandørs egne data, uden at ændre kildeadgang eller DMI-klassifikation.
