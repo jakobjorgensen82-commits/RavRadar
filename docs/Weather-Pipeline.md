@@ -1,5 +1,15 @@
 # Weather Pipeline 1.0
 
+## 4.0.343 – alle leverandørfamilier skal faktisk få en tur
+
+Oneoff `34565347360` viste, at cachen blev bevaret, men at arbejdsrækkefølgen kunne forhindre bestemte datakilder i overhovedet at nå frem. DMI's uløste currentfamilier får derfor nu en bounded, fair tur, som roterer mellem pass og kørsler. Når den eksakte forundersøgelse viser, at en familie kun skal forbedre allerede brugbare data, flyttes den efter de reelle huller.
+
+Copernicus behandler Baltic og AMM15 som to separate køer og skifter mellem dem. Par, der kun findes i AMM15, kan hentes straks; et overlap venter kun på Baltic-beviset for netop samme kystdel/time. En fejl i ét shard må ikke stoppe senere shards eller det andet produkt.
+
+WAM bruger én fælles ejerregel gennem hele kæden. Af 670 native dele tilhører 458 DW og 212 NSB. To eksakte vestlige dele hentes fra DW, fordi NSB-gitteret ikke dækker dem. Feggesunds tre direct/proxydele behandles fortsat særskilt. Gamle gyldige data slettes ikke, og en gammel forkert ownerklassifikation ommærkes ikke; korrekt data kan erstatte den efter fuld validering.
+
+Normal vejropdatering og oneoff bruger samme producenter. Oneoff er blot flere bounded gennemløb. Reelle huller går foran kvalitet, kildeordenen er fortsat DMI → Copernicus → Open-Meteo, og intet er komplet før begge 79.414-slutregnskaber er grønne.
+
 ## 4.0.342 – bevar den gyldige del, men kræv stadig komplet slutresultat
 
 4.0.341 beskyttede den aktive WAM-cache med en isoleret candidate, men en fil blev kun brugt, hvis alle dens kystdele kunne godkendes. Main-oneoff `34534764449` viste, at denne grænse var for grov: enkelte afviste NSB-dele fik alle øvrige gyldige dele i 91 assets til at blive rullet tilbage.

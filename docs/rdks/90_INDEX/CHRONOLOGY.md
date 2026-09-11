@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-11 – 4.0.343 retter starvation og ownerkontrakt
+
+- 4.0.342 blev merged som `6a3133fe`. Oneoff `34565347360` bevarede cacherne, men sluttede current 77.859/79.414 med 1.555 rester og terminal WAM-fejl uden handoff/cutover.
+- Tre konkrete runtimefund forklarer manglende closure: `dkss_nsb` fik nul DMI-ture i tre pass, Baltic sultede AMM15, og to vestlige WAM-dele blev sendt til en NSB-collection, der ikke dækker dem.
+- 4.0.343 gør DMI-familybetjening bounded og fair, interleaver separate roterede Copernicus-produktkøer og anvender én fælles eksakt WAM-owner-policy med 458 DW/212 NSB og to DW-overrides.
+- Normal og oneoff anvender samme producenter. Cache, sourceprioritet, granular admission, candidate/promotion, historik og fuld closure består.
+- Målrettede lokale tests er grønne. Exact-head-CI, main-runtime, closure, handoff, cutover og offentlig modelproof mangler.
+
 # NYESTE CHECKPOINT – 2026-09-11 – 4.0.341 livefund bliver 4.0.342-granularitet
 
 - 4.0.341 blev merged på `main` som `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` afsluttede uden handoff og uden cutover. Candidate G forblev offentlig.

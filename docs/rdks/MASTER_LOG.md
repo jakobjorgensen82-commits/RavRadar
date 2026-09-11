@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – 4.0.343 fair providerbetjening
+
+Oneoff `34565347360` på merged 4.0.342/main `6a3133fe` gemte providerprogression uden cache-reset, men forseglede intet handoff: current sluttede 77.859/79.414 med 1.555 rester, og WAM fejlede terminalt. Helkædeanalysen viste, at mere runtime alene ikke kunne rette forløbet. DMI's kvote lod en uløst currentfamilie få nul ture, Baltic kunne sulte AMM15, og to konkrete vestlige WAM-dele blev sendt til NSB, selv om kun DW dækker dem.
+
+Ejeren har beordret en gennemarbejdet løsning for både oneoff og almindelig vejropdatering, med den bevarede cache som base, reelle huller først, efterfølgende kvalitet efter DMI → Copernicus → Open-Meteo, komplet cache før modelcutover og fortsat overvågning efter launch. Ejeren har tilladt nødvendige kode-, PR-, merge- og launchændringer og har stående godkendt, at first-cutoverbindingen flyttes til nødvendige successorversioner. Normalworkflow/watchdog må fortsat holdes deaktiveret i den kontrollerede sekvens.
+
+Lokal 4.0.343 gør DMI-currentfamilier fair og bounded med en vedvarende leadcursor, kvoteundtagelse for reelle huller og prefetch-baseret nedgradering af refresh-only arbejde. Copernicus bruger separate roterede Baltic-/AMM15-køer, round-robin, direkte AMM15-only-adgang, eksakt same-pair overlapforudsætning og lokal shardfejlisolation. Normal og oneoff bruger samme producenter; oneoff giver kun flere bounded pass.
+
+Én fælles WAM-owner-policy anvendes fra plan til slutvalidator. Af 670 native dele ejes 458 af DW og 212 af NSB; præcis `dk-b10-10-national-part-02-locality-02` og `dk-b10-10-national-part-03` er exact DW-overrides. Policy-id bindes i register, receipts, historik og privat runtime. Gamle partielle receipts invalideres uden global cache-reset, og forkert gammel ownerproveniens må ikke ommærkes eller blokere korrekt ny data.
+
+De målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding-, compile-, syntax- og diffkontroller er grønne lokalt. Dette er ikke exact-head-CI eller main-/produktionsbevis. DEC-0125 er bindende; fuld closure, gates, handoff, cutover og offentlig modelverifikation består.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – 4.0.342 granulær provideradmission
 
 Ejeren har fastholdt den overordnede ordre: bevar cacheprogressionen, få komplette brugbare vejrdata, få den integrerede scoremodel online og undgå endnu en reparationsspiral. Slutkvalitet og komplette gates må ikke sænkes; fejlgrænsen skal derimod ligge på den mindste selvstændigt beviselige dataenhed, så én lokal providerfejl ikke kasserer andre gyldige data.

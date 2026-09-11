@@ -13,6 +13,8 @@ import pathlib
 import tempfile
 from typing import Any
 
+from .dmi_wave_owner import wave_owner_for_target
+
 
 STAGE_SCHEMA_VERSION = 1
 ALLOWED_STAGE_STATUSES = {"awaiting-validation", "activation-requested"}
@@ -182,11 +184,11 @@ def stage_asset_complete(document: dict[str, Any], targets: list[dict[str, Any]]
         required = {"wind-u-10m", "wind-v-10m"}
     else:
         return True
-    relevant = [target for target in targets if not (
-        collection == "wam_nsb" and target.get("coastType") != "west"
-    ) and not (
-        collection == "wam_dw" and target.get("coastType") == "west"
-    )]
+    relevant = [
+        target for target in targets
+        if not collection.startswith("wam_")
+        or wave_owner_for_target(target) == collection
+    ]
     if not relevant:
         return True
     for target in relevant:

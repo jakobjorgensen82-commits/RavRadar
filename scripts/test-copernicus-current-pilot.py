@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -150,5 +150,115 @@ assert [[row["partId"] for row in shard["targets"]] for shard in forward] == [
 assert all(1 <= len(shard["targets"]) <= runner.SPATIAL_SHARD_MAX_TARGETS for shard in forward)
 for shard in forward:
     runner.request_bounds(shard["targets"], product)
+
+# Operational work is always interleaved across products and each product queue
+# rotates independently per invocation. Provider evidence is deliberately not
+# a scheduling cursor, so expired negatives and failed calls cannot pin the
+# same first shard forever.
+fair_targets = [
+    {"partId": "amm-only-a", "parentZoneId": "z", "name": "x", "waterPoint": [8.0, 56.0]},
+    {"partId": "overlap-a", "parentZoneId": "z", "name": "x", "waterPoint": [9.2, 56.0]},
+    {"partId": "baltic-only-a", "parentZoneId": "z", "name": "x", "waterPoint": [10.5, 56.0]},
+    {"partId": "baltic-only-b", "parentZoneId": "z", "name": "x", "waterPoint": [12.0, 57.0]},
+]
+cold_order = runner.operational_shard_work_order(
+    targets=fair_targets,
+    rotation_slot=0,
+)
+cold_sources = [row["product"]["source"] for row in cold_order]
+assert cold_sources[:4] == [
+    "copernicus-baltic-nemo",
+    "copernicus-nws-amm15",
+    "copernicus-baltic-nemo",
+    "copernicus-nws-amm15",
+]
+rotated_order = runner.operational_shard_work_order(
+    targets=fair_targets,
+    rotation_slot=1,
+)
+rotated_sources = [row["product"]["source"] for row in rotated_order]
+assert rotated_sources[:4] == cold_sources[:4]
+for source in ("copernicus-baltic-nemo", "copernicus-nws-amm15"):
+    cold_product = [
+        row["shard"]["shardId"] for row in cold_order
+        if row["product"]["source"] == source
+    ]
+    rotated_product = [
+        row["shard"]["shardId"] for row in rotated_order
+        if row["product"]["source"] == source
+    ]
+    assert rotated_product == cold_product[1:] + cold_product[:1]
+
+# Across bounded short runs every stable product shard becomes the first shard
+# for its product, regardless of missing/expired attempt history.
+for source, product in ((row["source"], row) for row in runner.PRODUCTS):
+    product_shards = runner.spatial_shards(
+        [row for row in fair_targets if runner.eligible_target(row, product)],
+        product,
+    )
+    first_shards = {
+        next(
+            row["shard"]["shardId"]
+            for row in runner.operational_shard_work_order(
+                targets=fair_targets,
+                rotation_slot=slot,
+            )
+            if row["product"]["source"] == source
+        )
+        for slot in range(len(product_shards))
+    }
+    assert first_shards == {row["shardId"] for row in product_shards}
+
+# Pair admission remains independent of that historical ordering hint.  An
+# AMM15-only pair can run immediately; an overlap pair needs a Baltic attempt
+# at this exact reference; a downstream-covered pair is never critical work.
+reference = datetime(2026, 8, 18, 10, tzinfo=timezone.utc)
+valid_time = reference.isoformat().replace("+00:00", "Z")
+amm_only_pair = ("amm-only-a", valid_time)
+overlap_pair = ("overlap-a", valid_time)
+covered_pair = ("baltic-only-a", valid_time)
+target_by_id = {row["partId"]: row for row in fair_targets}
+baltic, amm15 = runner.PRODUCTS
+attempted = {
+    "copernicus-baltic-nemo": set(),
+    "copernicus-nws-amm15": set(),
+}
+remaining = {amm_only_pair, overlap_pair, covered_pair}
+downstream_covered = {covered_pair}
+assert runner.operational_source_required_pairs(
+    remaining=remaining,
+    downstream_covered=downstream_covered,
+    product=amm15,
+    attempted_pairs_by_source=attempted,
+    target_by_id=target_by_id,
+    baltic_product=baltic,
+) == {amm_only_pair}
+attempted["copernicus-baltic-nemo"].add(overlap_pair)
+assert runner.operational_source_required_pairs(
+    remaining=remaining,
+    downstream_covered=downstream_covered,
+    product=amm15,
+    attempted_pairs_by_source=attempted,
+    target_by_id=target_by_id,
+    baltic_product=baltic,
+) == {amm_only_pair, overlap_pair}
+attempted["copernicus-nws-amm15"].add(amm_only_pair)
+assert runner.operational_source_required_pairs(
+    remaining=remaining,
+    downstream_covered=downstream_covered,
+    product=amm15,
+    attempted_pairs_by_source=attempted,
+    target_by_id=target_by_id,
+    baltic_product=baltic,
+) == {overlap_pair}
+
+old_attempt = {
+    "source": "copernicus-baltic-nemo",
+    "productionReferenceAt": (reference - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    "requestedPairs": [{"partId": overlap_pair[0], "validTime": overlap_pair[1]}],
+}
+assert runner.current_reference_attempt_pairs(
+    [old_attempt], source="copernicus-baltic-nemo", reference=reference,
+) == set()
 
 print("OK: Copernicus selection is native-time exact and spatial shards are deterministic and bounded.")

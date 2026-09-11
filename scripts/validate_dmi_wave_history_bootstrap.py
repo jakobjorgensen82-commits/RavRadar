@@ -21,16 +21,19 @@ from lib.dmi_wave_history_bootstrap import (
     validate_wave_operational_handoff_cache,
 )
 from lib.dmi_bulk_storage import read_dmi_bulk_document
+from lib.dmi_wave_owner import wave_owner_by_cache_key
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CACHE = ROOT / "data" / "live" / "dmi-bulk-cache.json"
 DEFAULT_REGISTRY = ROOT / "data" / "live" / "coastal-parts-v2.json"
+DEFAULT_ZONES = ROOT / "data" / "zones.geojson"
 # The normal private cache carries complete per-component provenance for up to
 # 673 PART rows and a bounded replay/future horizon. Keep a hard ceiling without
 # rejecting the expected provenance-rich document.
 MAX_CACHE_BYTES = 256 * 1024 * 1024
 MAX_REGISTRY_BYTES = 16 * 1024 * 1024
+MAX_ZONES_BYTES = 64 * 1024 * 1024
 HISTORY_INCOMPLETE_CODES = frozenset({
     "INTERPOLATION_GAP",
     "MISSING_HOUR",
@@ -99,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
+    parser.add_argument("--zones", type=Path, default=DEFAULT_ZONES)
     parser.add_argument("--target-hour", required=True)
     parser.add_argument("--production-target-hour", required=True)
     parser.add_argument("--forecast-hour-count", type=int, default=118)
@@ -118,6 +122,7 @@ def build_attestation(
     target_hour: str,
     production_target_hour: str,
     forecast_hour_count: int,
+    wave_owner_by_part: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Validate direct operational WAM first, then classify older history.
 
@@ -133,6 +138,7 @@ def build_attestation(
         bootstrap_target_hour=target_hour,
         production_target_hour=production_target_hour,
         forecast_hour_count=forecast_hour_count,
+        wave_owner_by_part=wave_owner_by_part,
     )
     policy = policy_for_mode(mode)
     try:
@@ -141,6 +147,7 @@ def build_attestation(
             registry,
             target_hour=target_hour,
             policy=policy,
+            wave_owner_by_part=wave_owner_by_part,
         )
     except WaveBootstrapError as exc:
         if mode != COLD_START_MODE or exc.code not in HISTORY_INCOMPLETE_CODES:
@@ -180,6 +187,32 @@ def main(argv: list[str] | None = None) -> int:
                     args.cache.stat().st_size, MAX_CACHE_BYTES,
                 ) from None
             raise WaveBootstrapError("CACHE_JSON_INVALID") from error
+        zones_document = _read_bounded_json(
+            args.zones,
+            MAX_ZONES_BYTES,
+            "REGISTRY_INVALID",
+        )
+        registry = load_coastal_part_registry(registry_document)
+        if (
+            not isinstance(zones_document, dict)
+            or not isinstance(zones_document.get("features"), list)
+        ):
+            raise WaveBootstrapError("REGISTRY_INVALID")
+        zone_coast_types: dict[str, str] = {}
+        for feature in zones_document["features"]:
+            props = feature.get("properties") if isinstance(feature, dict) else None
+            zone_id = props.get("id") if isinstance(props, dict) else None
+            coast_type = props.get("coastType") if isinstance(props, dict) else None
+            if not isinstance(zone_id, str) or not zone_id or zone_id in zone_coast_types:
+                raise WaveBootstrapError("REGISTRY_INVALID")
+            zone_coast_types[zone_id] = coast_type
+        try:
+            owner_map = wave_owner_by_cache_key(
+                registry.parts,
+                zone_coast_types,
+            )
+        except ValueError:
+            raise WaveBootstrapError("REGISTRY_INVALID") from None
         attestation = build_attestation(
             cache_document,
             registry_document,
@@ -187,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
             target_hour=args.target_hour,
             production_target_hour=args.production_target_hour,
             forecast_hour_count=args.forecast_hour_count,
+            wave_owner_by_part=owner_map,
         )
         print(json.dumps(
             attestation,

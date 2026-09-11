@@ -92,6 +92,7 @@ _SAFE_MESSAGES = {
     "MISSING_PROVENANCE": "Complete native wave provenance is missing.",
     "MISSING_CELL": "Complete same-cell wave provenance is missing.",
     "WAVE_DISTANCE_OUT_OF_BOUNDS": "Native WAM distance exceeds the collection policy.",
+    "WAVE_OWNER_MISMATCH": "Native WAM collection does not match the owner policy.",
     "INVALID_PROVENANCE": "Native wave provenance is invalid.",
     "INCONSISTENT_ASSET_PROVENANCE": "Native WAM asset provenance is inconsistent.",
     "MISSING_HOUR": "A required wave-history hour has no safe native proof.",
@@ -825,6 +826,7 @@ def _validate_native_wave_row(
     valid_time: str,
     hour: Any,
     part: RegistryPart,
+    expected_collection: str | None = None,
 ) -> _NativeWaveRow:
     valid_datetime = parse_utc_hour(valid_time)
     if not isinstance(hour, dict) or hour.get("time") != valid_time:
@@ -849,6 +851,8 @@ def _validate_native_wave_row(
     collection = source.get("collection")
     if collection not in WAM_COLLECTIONS:
         raise WaveBootstrapError("INVALID_PROVENANCE")
+    if expected_collection is not None and collection != expected_collection:
+        raise WaveBootstrapError("WAVE_OWNER_MISMATCH")
     distance = source.get("distanceKm")
     if not wave_distance_allowed(collection, distance):
         raise WaveBootstrapError("WAVE_DISTANCE_OUT_OF_BOUNDS")
@@ -1250,6 +1254,7 @@ def native_wave_row_error_code(
     hour: Any,
     entity_id: str,
     provenance_entity: Mapping[str, Any],
+    expected_collection: str | None = None,
 ) -> str | None:
     """Return a privacy-safe reason code for one native wave row.
 
@@ -1266,6 +1271,7 @@ def native_wave_row_error_code(
                 cache_key=entity_id,
                 provenance_entity=provenance_entity,
             ),
+            expected_collection=expected_collection,
         )
     except WaveBootstrapError as exc:
         return exc.code
@@ -1325,6 +1331,7 @@ def validate_wave_history_cache(
     policy: WaveHistoryPolicy,
     budget: ValidationBudget = ValidationBudget(),
     excluded_parent_zone_ids: Iterable[str] = (),
+    wave_owner_by_part: Mapping[str, str] | None = None,
 ) -> WaveHistoryValidationSummary:
     if (
         not isinstance(cache, dict)
@@ -1344,6 +1351,12 @@ def validate_wave_history_cache(
         raise WaveBootstrapError("CACHE_PART_COUNT")
     if actual_keys != expected_keys:
         raise WaveBootstrapError("CACHE_REGISTRY_MISMATCH")
+    if wave_owner_by_part is not None and (
+        not isinstance(wave_owner_by_part, Mapping)
+        or set(wave_owner_by_part) != expected_keys
+        or any(owner not in WAM_COLLECTIONS for owner in wave_owner_by_part.values())
+    ):
+        raise WaveBootstrapError("INVALID_POLICY")
 
     excluded_parents = frozenset(excluded_parent_zone_ids)
     if any(
@@ -1398,6 +1411,10 @@ def validate_wave_history_cache(
                 valid_time=valid_time,
                 hour=hour,
                 part=part,
+                expected_collection=(
+                    wave_owner_by_part.get(part.cache_key)
+                    if wave_owner_by_part is not None else None
+                ),
             ))
         native_rows.sort(key=lambda row: row.valid_datetime)
         if not native_rows:
@@ -1551,6 +1568,7 @@ def validate_wave_operational_handoff_cache(
     forecast_hour_count: int = 118,
     budget: ValidationBudget = ValidationBudget(),
     deferred_proxy_parent_zone_ids: Iterable[str] = ("DK-B05-11",),
+    wave_owner_by_part: Mapping[str, str] | None = None,
 ) -> WaveOperationalHandoffSummary:
     """Prove an exact bridge and a safely maintained public WAM horizon.
 
@@ -1600,6 +1618,7 @@ def validate_wave_operational_handoff_cache(
         policy=combined_policy,
         budget=budget,
         excluded_parent_zone_ids=deferred_parents,
+        wave_owner_by_part=wave_owner_by_part,
     )
 
     exact_policy = WaveHistoryPolicy(
@@ -1620,6 +1639,7 @@ def validate_wave_operational_handoff_cache(
                 policy=exact_policy,
                 budget=budget,
                 excluded_parent_zone_ids=deferred_parents,
+                wave_owner_by_part=wave_owner_by_part,
             )
         except WaveBootstrapError as exc:
             if exc.code in {"MISSING_HOUR", "INTERPOLATION_GAP"}:

@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-11 – lokal 4.0.343 fair providerbetjening
+
+`origin/main` er 4.0.342 på `6a3133fe`; Candidate G er offentlig, og provider-/WAM-cachen er bevaret. Oneoff `34565347360` gav ingen handoff/cutover: current 77.859/79.414, rest 1.555 og terminal WAM-fejl. Det afgørende fund er scheduler-/owner-starvation, ikke cache-reset eller blot manglende tid.
+
+- DMI-currentfamilier får bounded fair service via vedvarende `lastStrictCurrentTurnAt`; exact prefetch flytter refresh-only arbejde efter reelle huller.
+- Baltic og AMM15 har separate roterede Copernicus-køer, round-robin, direkte AMM15-only-adgang og kun exact same-pair Baltic-forudsætning for overlap.
+- Fælles WAM-owner-policy anvendes i hele kæden: 458 DW/212 NSB blandt 670 native dele, med præcis to exact DW-overrides. Policy-id bindes til register/receipts/historik/runtime; ingen global cache-reset.
+- Normal og oneoff bruger samme producentkode; oneoff giver kun flere bounded pass.
+- Slutkravene består: current 79.414/79.414; bølger 79.060 native + Feggesund 354/354; nul mangler/uløste lineage-konflikter.
+- Målrettede lokale tests er grønne. Exact-head-CI, live providers, closure, gates, handoff, cutover og offentlig modelkontrol er åbne.
+
+Fortsæt med versions-/RDKS-/håndbogslukning, én exact-head sourcegate og den kontrollerede merge/cutoversekvens. Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret. DEC-0125 er nyeste bindende detaljekontrakt.
+
 # NYESTE CHECKPOINT – 2026-09-11 – lokal 4.0.342 granular provideradmission
 
 Main er 4.0.341 på `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` forseglede intet handoff og udførte ingen cutover. Candidate G er fortsat offentlig. Den levende fejl var ikke cache-reset: 4.0.341's isolerede WAM-candidate bevarede aktiv state, men whole-asset-admission rullede alle 91 `wam_nsb`-assets tilbage ved enkelte partafvisninger. Et Copernicus-shard kunne tilsvarende kassere eksakte gyldige timer, når én anden bestilt time manglede.

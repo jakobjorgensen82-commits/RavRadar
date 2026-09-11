@@ -1,3 +1,16 @@
+# NYESTE SANDHED – 2026-09-11 – lokal 4.0.343 lukker provider-starvation uden cache-reset
+
+- `origin/main` er 4.0.342 på mergecommit `6a3133fe`. Candidate G er fortsat offentlig. Cachen er bevaret og er ikke nulstillet.
+- Oneoff `34565347360` gemte alle providerfaser, men gav intet handoff/cutover: DMI havde 61.411/79.414 før fallback; den faktiske unionrest var 2.841, Copernicus lukkede 572 og Open-Meteo 714, så current sluttede 77.859/79.414 med 1.555 rester. WAM fejlede terminalt.
+- Runtimebeviset viser tre scheduler-/ownerfejl, ikke blot for kort tid: `dkss_nsb` fik nul DMI-ture i tre pass, AMM15 fik nul live acquisition mens Baltic gik først, og to eksakte vestlige WAM-dele blev sendt til NSB, selv om kun DW dækker dem.
+- Lokal 4.0.343 giver alle uløste DMI-currentfamilier bounded fair service med vedvarende rotation. Eksakt prefetch flytter dokumenteret refresh-only arbejde efter reelle huller. Kritisk current er ikke længere underlagt den almindelige collectionkvote.
+- Copernicus har separate roterede Baltic-/AMM15-køer, interleaver dem round-robin, starter AMM15-only straks og kræver kun same-pair Baltic-bevis for overlap. En lokal shardfejl stopper ikke senere produktarbejde.
+- Fælles WAM-owner-policy anvendes fra plan til slutvalidator: 458 native dele ejes af DW og 212 af NSB; præcis `dk-b10-10-national-part-02-locality-02` og `dk-b10-10-national-part-03` er exact DW-overrides. Feggesunds tre proxydele er fortsat særskilte.
+- Normal og oneoff bruger samme DMI-supervisor og samme Copernicus-runner. Oneoff giver kun flere bounded pass. Gamle gyldige cacher genvalideres og genbruges; gamle partielle receipts uden owner-policy-id invalideres uden global cache-reset.
+- Slutkravene er uændrede: current 79.414/79.414; bølger 79.060 native WAM plus Feggesund 354/354; nul missing/overlap og uløste lineage-konflikter. Delvis fremgang kan ikke forsegle handoff, artifact eller cutover.
+- Målrettede lokale DMI-, Copernicus-, WAM-, workflow-, runtimebinding- og syntaxkontroller er grønne. 4.0.343 er endnu ikke exact-head-CI-, main-provider-, closure-, handoff-, cutover- eller produktionsbevis.
+- Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret gennem den kontrollerede sekvens. DEC-0125 er den nyeste detaljekontrakt; ældre checkpoints er historik.
+
 # NYESTE SANDHED – 2026-09-11 – 4.0.342 bevarer sikre providerdele uden at lempe slutclosure
 
 - `main` er 4.0.341 på mergecommit `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` skabte intet handoff og udførte ingen modelcutover. Candidate G er fortsat offentlig.

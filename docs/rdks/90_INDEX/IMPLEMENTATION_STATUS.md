@@ -1,3 +1,18 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – lokal 4.0.343 fair providerclosure
+
+- [x] Bevar eksisterende provider- og WAM-cacher; ingen target-, modelrun-, release- eller owner-policy-reset.
+- [x] Giv alle uløste strenge DMI-currentfamilier bounded fair service med valideret vedvarende rotation og kritisk kvoteundtagelse.
+- [x] Nedgradér kun en DMI-familie fra kritisk hul til sen qualityrefresh efter eksakt prefetch-bevis.
+- [x] Adskil og rotér Copernicus' Baltic-/AMM15-køer; interleave round-robin, start AMM15-only straks, genbesøg overlap efter eksakt Baltic-fremgang og isolér shardfejl.
+- [x] Indfør fælles exact WAM-owner-policy i plan, staging, salvage, historik og slutvalidering; bind policy-id til register, receipts og privat runtime.
+- [x] Bevis 670 native WAM-dele, 458 DW, 212 NSB og præcis to DW-overrides; behold Feggesund 354/354 særskilt.
+- [x] Bevis at normal og oneoff bruger samme producenter og regler; oneoff gentager alene bounded pass.
+- [x] Bestå målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding-, compile-, syntax-, package- og diffkontroller lokalt.
+- [x] Afslut 4.0.343-version, RDKS/håndbog/changelog, exact-release-policy og særskilt version-only-geodatadiff.
+- [ ] Kør én `validate:source` på den eksakte endelige PR-head og merge kun det beviste commit.
+- [ ] Kør kontrolleret exact-main-opfyldning og kræv current 79.414/79.414, native WAM 79.060 samt Feggesund 354/354 før fulde gates, handoff og cutover.
+- [ ] Verificér den integrerede model offentligt før normalworkflow/watchdog genaktiveres. Revidér derefter cachetransport, ekstern cron, providertider og normalt vedligeholdelsesoverskud.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – lokal 4.0.342 providergranularitet
 
 - [x] Fasthold persistent cache og de uændrede særskilte current-/bølgeclosures på hver 79.414 par.

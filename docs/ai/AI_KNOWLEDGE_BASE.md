@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+# Nyeste sandhed 2026-09-11 – lokal 4.0.343 fair providerclosure
+
+- `origin/main` er 4.0.342/`6a3133fe`; oneoff `34565347360` bevarede cacherne, men sluttede med 1.555 currentrester og WAM-fejl uden cutover.
+- DMI-family-starvation, AMM15-product-starvation og to eksakte WAM-ownerfejl er de dokumenterede systemårsager.
+- 4.0.343 implementerer bounded fair DMI-rotation, separate roterede/interleavede Copernicus-køer og fælles fail-closed WAM-ownerpolicy (458 DW/212 NSB, to DW-overrides).
+- Normal og oneoff bruger samme producentkode. Cache/reset-, source-, promotion-, historik- og slutclosurekontrakter er uændrede.
+- Lokal måltest er grøn; exact-head-CI og produktion er åbne. DEC-0125 er bindende.
+
 ## Nyeste sandhed 2026-09-11 – lokal 4.0.342 providergranularitet
 
 - Main er 4.0.341 på `caa49c42`; Candidate G er offentlig. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff/cutover.

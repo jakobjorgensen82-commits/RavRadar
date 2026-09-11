@@ -1,5 +1,12 @@
 # AI Working Rules – RavRadar
 
+## Aktuel lokal 4.0.343 scheduler-/ownerregel
+
+- Behandl hele unionens reelle mangler, ikke kun en providers egne huller. Alle uløste kritiske DMI-familier og begge Copernicus-produkter skal kunne bevise en bounded startmulighed.
+- Nedgradér kun arbejde til kvalitet efter eksakt prefetch; gammel gyldig data består til fuldt valideret erstatning.
+- Brug altid den fælles WAM-ownerhelper. Indfør aldrig en ny lokal vest/øst-afledning i en consumer.
+- Normal og oneoff må ikke have forkellig producentsemantik. Exact-head og live closure skal stadig bevises før launchpåstand.
+
 ## Aktuel lokal 4.0.342 provider-admissionsregel
 
 - Sæt fejlgrænsen på den mindste komplet beviselige tuple, men aldrig under den. For WAM er det en komplet `(partId, nativeValidTime)`-bølgetuple med exact assetlineage; for Copernicus-current et eksakt native U/V-par inden for requesten.

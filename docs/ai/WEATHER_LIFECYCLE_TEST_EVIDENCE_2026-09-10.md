@@ -1,3 +1,9 @@
+# Tillæg 2026-09-11 – foreløbig 4.0.343-målevidens
+
+Følgende er lokalt rapporteret grønt for scheduler-/ownerændringen: Copernicus pilot/range/current-stage/bounded-retry/targetregister; DMI DKSS, native provenance, scheduler, modeldownload, supervisor og oneoff; WAM-owner 3/3, WAM-historik 36/36, WAM-integration 63/63 og checkpoint 21/21; normal/oneoff-workflow, reusable workflow, privat runtime og validation-order; Python compile, Node syntax, packageparse og diff-check.
+
+Kontrollerne beviser kontrakt- og integrationsegenskaber, ikke provideradfærd på main. Exact-head-CI, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, fulde post-data-gates, handoff, cutover og offentlig modelverifikation er åbne.
+
 # Tillæg 2026-09-11 – foreløbig 4.0.342-målevidens
 
 Følgende er faktisk rapporteret på den lokale 4.0.342-kandidat:
