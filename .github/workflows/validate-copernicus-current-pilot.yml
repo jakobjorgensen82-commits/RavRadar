@@ -7,92 +7,396 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        probe: [recovery-union, lossless-storage]
-    name: Read-only ${{ matrix.probe }}
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 0
-      - name: Check out the exact 4.0.337 release candidate without executing it
-        if: matrix.probe == 'lossless-storage'
+          fetch-depth: 1
+      - name: Require isolated diagnostic branch
+        run: test "$GITHUB_REF" = refs/heads/codex/weather-cache-forensic
+      - name: Check out exact production readers
         uses: actions/checkout@v7
         with:
-          ref: codex/weather-handoff-runtime-4.0.337
-          path: release-source
+          ref: 5587001b45ffea056addaf6cd20084719540336a
+          path: runtime-source
           persist-credentials: false
           fetch-depth: 1
-      - name: Require isolated branch and unchanged production code
-        if: matrix.probe == 'recovery-union'
-        run: |
-          set -euo pipefail
-          test "$GITHUB_REF" = refs/heads/codex/weather-cache-forensic
-          git diff --exit-code bf47198125401342426532df6de8d8d489188a0a -- scripts/update-dmi-bulk.py scripts/lib requirements-dmi.txt
+      - name: Require exact production source
+        run: test "$(git -C runtime-source rev-parse HEAD)" = 5587001b45ffea056addaf6cd20084719540336a
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
-      - name: Restore exact latest candidate read-only
-        id: latest
+      - name: Install pinned reader dependencies
+        run: python -m pip install --disable-pip-version-check -r runtime-source/requirements-dmi.txt -r runtime-source/requirements-copernicus.txt
+      - name: Restore latest registry and ledger read-only
+        id: reference-dmi
         uses: actions/cache/restore@v6
         with:
           path: .cache/dmi-candidate-progress.json
-          key: dmi-zone-candidate-v1-Linux-2026-W37-normal-34252960481-1
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34588002366-1
           fail-on-cache-miss: true
-      - name: Require exact latest cache identity
-        env:
-          ACTUAL_KEY: ${{ steps.latest.outputs.cache-matched-key }}
-        run: test "$ACTUAL_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-normal-34252960481-1
-      - name: Keep isolated runner copy of latest input
-        if: matrix.probe == 'recovery-union'
-        run: mv .cache/dmi-candidate-progress.json .cache/diagnostic-latest-candidate.json
-      - name: Restore exact newer historical candidate read-only
-        id: historical
-        if: matrix.probe == 'recovery-union'
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/dmi-candidate-progress.json
-          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34212820037-1
-          fail-on-cache-miss: true
-      - name: Require exact historical cache identity
-        if: matrix.probe == 'recovery-union'
-        env:
-          ACTUAL_KEY: ${{ steps.historical.outputs.cache-matched-key }}
-        run: test "$ACTUAL_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34212820037-1
-      - name: Restore exact Open-Meteo checkpoint read-only
-        id: open-meteo
-        if: matrix.probe == 'recovery-union'
+      - name: Restore exact final residual read-only
+        id: reference-residual
         uses: actions/cache/restore@v6
         with:
           path: .cache/open-meteo-current-fallback.json
-          key: open-meteo-current-fallback-v2-Linux-normal-34252960481-1
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34588002366-1
           fail-on-cache-miss: true
-      - name: Require exact Open-Meteo cache identity
-        if: matrix.probe == 'recovery-union'
+      - name: Bind and isolate the reference files
         env:
-          ACTUAL_KEY: ${{ steps.open-meteo.outputs.cache-matched-key }}
-        run: test "$ACTUAL_KEY" = open-meteo-current-fallback-v2-Linux-normal-34252960481-1
-      - name: Measure independently proved overlap and union without saving
-        if: matrix.probe == 'recovery-union'
-        run: python -B scripts/inspect-dmi-reuse-proof.py --cache .cache/dmi-candidate-progress.json --supplement .cache/diagnostic-latest-candidate.json --target 2026-09-08T16:00:00Z --compatibility-probe
-      - name: Measure which Open-Meteo gaps are already recovered by DMI
-        if: matrix.probe == 'recovery-union'
-        run: python -B scripts/inspect-dmi-open-meteo-overlap.py --historical-dmi .cache/dmi-candidate-progress.json --latest-dmi .cache/diagnostic-latest-candidate.json --open-meteo .cache/open-meteo-current-fallback.json --target 2026-09-08T16:00:00Z
-      - name: Measure lossless roundtrip without saving cache
-        if: matrix.probe == 'lossless-storage'
+          DMI_KEY: ${{ steps.reference-dmi.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.reference-residual.outputs.cache-matched-key }}
         run: |
           set -euo pipefail
-          encoded="$RUNNER_TEMP/dmi-production-codec-scale.json"
-          cd release-source
-          python -B scripts/inspect-dmi-source-codec.py \
-            --cache "$GITHUB_WORKSPACE/.cache/dmi-candidate-progress.json" \
-            --encoded-output "$encoded" \
-            --retain-encoded
-          node --input-type=module -e "import {readDmiBulkDocument,DMI_BULK_STORAGE_SCHEMA} from './scripts/lib/dmi-bulk-storage.mjs'; const value=await readDmiBulkDocument(process.argv[1],{expandSources:false}); if(!value?.zones||typeof value.zones!=='object') throw new Error('invalid encoded document'); console.log(JSON.stringify({contract:'DMI_NODE_PRODUCTION_STORAGE_SCALE_PROOF_V1',status:'PRODUCTION_NODE_CODEC_SCALE_VERIFIED',storageSchema:DMI_BULK_STORAGE_SCHEMA,zoneCount:Object.keys(value.zones).length,privatePayloadIncluded:false,cacheReplaced:false}));" "$encoded"
-          rm -f "$encoded"
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34588002366-1
+          test "$OM_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34588002366-1
+          mkdir -p .diagnostic/reference
+          mv .cache/dmi-candidate-progress.json .diagnostic/reference/diagnostic-latest-candidate.json
+          mv .cache/open-meteo-current-fallback.json .diagnostic/reference/open-meteo-current-fallback.json
+      - name: Restore DMI candidate from 34588002366 read-only
+        id: g0-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34588002366-1
+          fail-on-cache-miss: true
+      - name: Restore Copernicus bank from 34588002366 read-only
+        id: g0-cp
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-Linux-oneoff-34588002366-1
+          fail-on-cache-miss: true
+      - name: Restore Open-Meteo bank from 34588002366 read-only
+        id: g0-om
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-Linux-oneoff-34588002366-1
+          fail-on-cache-miss: true
+      - name: Restore original Open-Meteo projection from 34588002366 read-only
+        id: g0-projection
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34588002366-1
+          fail-on-cache-miss: true
+      - name: Restore regional DMI shadow from 34588002366 read-only
+        id: g0-regional
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34588002366-1
+          fail-on-cache-miss: true
+      - name: Bind and isolate generation 34588002366
+        env:
+          DMI_KEY: ${{ steps.g0-dmi.outputs.cache-matched-key }}
+          CP_KEY: ${{ steps.g0-cp.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.g0-om.outputs.cache-matched-key }}
+          REGIONAL_KEY: ${{ steps.g0-regional.outputs.cache-matched-key }}
+          PROJECTION_KEY: ${{ steps.g0-projection.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34588002366-1
+          test "$CP_KEY" = copernicus-current-donor-bank-v1-Linux-oneoff-34588002366-1
+          test "$OM_KEY" = open-meteo-current-donor-bank-v1-Linux-oneoff-34588002366-1
+          test "$REGIONAL_KEY" = current-field-shadow-v1-Linux-118-preflight-34588002366-1
+          test "$PROJECTION_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34588002366-1
+          mkdir -p .diagnostic/34588002366
+          mv .cache/open-meteo-current-fallback.json .diagnostic/34588002366/open-meteo-generation-projection.json
+          mv .cache/dmi-candidate-progress.json .cache/copernicus-current-donor-bank.json .cache/open-meteo-current-donor-bank.json .cache/current-field-shadow.json .diagnostic/34588002366/
+          cp .diagnostic/reference/diagnostic-latest-candidate.json .diagnostic/reference/open-meteo-current-fallback.json .diagnostic/34588002366/
+      - name: Inspect generation 34588002366 and accumulate private union
+        id: audit-g0
+        continue-on-error: true
+        run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34588002366 --target 2026-09-11T10:00:00Z --generation 34588002366 --union-state .diagnostic/union.json
+      - name: Restore DMI candidate from 34565347360 read-only
+        id: g1-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34565347360-1
+          fail-on-cache-miss: true
+      - name: Restore Copernicus bank from 34565347360 read-only
+        id: g1-cp
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-Linux-oneoff-34565347360-1
+          fail-on-cache-miss: true
+      - name: Restore Open-Meteo bank from 34565347360 read-only
+        id: g1-om
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-Linux-oneoff-34565347360-1
+          fail-on-cache-miss: true
+      - name: Restore original Open-Meteo projection from 34565347360 read-only
+        id: g1-projection
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34565347360-1
+          fail-on-cache-miss: true
+      - name: Restore regional DMI shadow from 34565347360 read-only
+        id: g1-regional
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34565347360-1
+          fail-on-cache-miss: true
+      - name: Bind and isolate generation 34565347360
+        env:
+          DMI_KEY: ${{ steps.g1-dmi.outputs.cache-matched-key }}
+          CP_KEY: ${{ steps.g1-cp.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.g1-om.outputs.cache-matched-key }}
+          REGIONAL_KEY: ${{ steps.g1-regional.outputs.cache-matched-key }}
+          PROJECTION_KEY: ${{ steps.g1-projection.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34565347360-1
+          test "$CP_KEY" = copernicus-current-donor-bank-v1-Linux-oneoff-34565347360-1
+          test "$OM_KEY" = open-meteo-current-donor-bank-v1-Linux-oneoff-34565347360-1
+          test "$REGIONAL_KEY" = current-field-shadow-v1-Linux-118-preflight-34565347360-1
+          test "$PROJECTION_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34565347360-1
+          mkdir -p .diagnostic/34565347360
+          mv .cache/open-meteo-current-fallback.json .diagnostic/34565347360/open-meteo-generation-projection.json
+          mv .cache/dmi-candidate-progress.json .cache/copernicus-current-donor-bank.json .cache/open-meteo-current-donor-bank.json .cache/current-field-shadow.json .diagnostic/34565347360/
+          cp .diagnostic/reference/diagnostic-latest-candidate.json .diagnostic/reference/open-meteo-current-fallback.json .diagnostic/34565347360/
+      - name: Inspect generation 34565347360 and accumulate private union
+        id: audit-g1
+        continue-on-error: true
+        run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34565347360 --target 2026-09-11T10:00:00Z --generation 34565347360 --union-state .diagnostic/union.json
+      - name: Restore DMI candidate from 34556012813 read-only
+        id: g2-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34556012813-1
+          fail-on-cache-miss: true
+      - name: Restore Copernicus bank from 34556012813 read-only
+        id: g2-cp
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-Linux-oneoff-34556012813-1
+          fail-on-cache-miss: true
+      - name: Restore Open-Meteo bank from 34556012813 read-only
+        id: g2-om
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-Linux-oneoff-34556012813-1
+          fail-on-cache-miss: true
+      - name: Restore original Open-Meteo projection from 34556012813 read-only
+        id: g2-projection
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34556012813-1
+          fail-on-cache-miss: true
+      - name: Restore regional DMI shadow from 34556012813 read-only
+        id: g2-regional
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34556012813-1
+          fail-on-cache-miss: true
+      - name: Bind and isolate generation 34556012813
+        env:
+          DMI_KEY: ${{ steps.g2-dmi.outputs.cache-matched-key }}
+          CP_KEY: ${{ steps.g2-cp.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.g2-om.outputs.cache-matched-key }}
+          REGIONAL_KEY: ${{ steps.g2-regional.outputs.cache-matched-key }}
+          PROJECTION_KEY: ${{ steps.g2-projection.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34556012813-1
+          test "$CP_KEY" = copernicus-current-donor-bank-v1-Linux-oneoff-34556012813-1
+          test "$OM_KEY" = open-meteo-current-donor-bank-v1-Linux-oneoff-34556012813-1
+          test "$REGIONAL_KEY" = current-field-shadow-v1-Linux-118-preflight-34556012813-1
+          test "$PROJECTION_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34556012813-1
+          mkdir -p .diagnostic/34556012813
+          mv .cache/open-meteo-current-fallback.json .diagnostic/34556012813/open-meteo-generation-projection.json
+          mv .cache/dmi-candidate-progress.json .cache/copernicus-current-donor-bank.json .cache/open-meteo-current-donor-bank.json .cache/current-field-shadow.json .diagnostic/34556012813/
+          cp .diagnostic/reference/diagnostic-latest-candidate.json .diagnostic/reference/open-meteo-current-fallback.json .diagnostic/34556012813/
+      - name: Inspect generation 34556012813 and accumulate private union
+        id: audit-g2
+        continue-on-error: true
+        run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34556012813 --target 2026-09-11T10:00:00Z --generation 34556012813 --union-state .diagnostic/union.json
+      - name: Restore DMI candidate from 34534764449 read-only
+        id: g3-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34534764449-1
+          fail-on-cache-miss: true
+      - name: Restore Copernicus bank from 34534764449 read-only
+        id: g3-cp
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-Linux-oneoff-34534764449-1
+          fail-on-cache-miss: true
+      - name: Restore Open-Meteo bank from 34534764449 read-only
+        id: g3-om
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-Linux-oneoff-34534764449-1
+          fail-on-cache-miss: true
+      - name: Restore original Open-Meteo projection from 34534764449 read-only
+        id: g3-projection
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34534764449-1
+          fail-on-cache-miss: true
+      - name: Restore regional DMI shadow from 34534764449 read-only
+        id: g3-regional
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34534764449-1
+          fail-on-cache-miss: true
+      - name: Bind and isolate generation 34534764449
+        env:
+          DMI_KEY: ${{ steps.g3-dmi.outputs.cache-matched-key }}
+          CP_KEY: ${{ steps.g3-cp.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.g3-om.outputs.cache-matched-key }}
+          REGIONAL_KEY: ${{ steps.g3-regional.outputs.cache-matched-key }}
+          PROJECTION_KEY: ${{ steps.g3-projection.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34534764449-1
+          test "$CP_KEY" = copernicus-current-donor-bank-v1-Linux-oneoff-34534764449-1
+          test "$OM_KEY" = open-meteo-current-donor-bank-v1-Linux-oneoff-34534764449-1
+          test "$REGIONAL_KEY" = current-field-shadow-v1-Linux-118-preflight-34534764449-1
+          test "$PROJECTION_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34534764449-1
+          mkdir -p .diagnostic/34534764449
+          mv .cache/open-meteo-current-fallback.json .diagnostic/34534764449/open-meteo-generation-projection.json
+          mv .cache/dmi-candidate-progress.json .cache/copernicus-current-donor-bank.json .cache/open-meteo-current-donor-bank.json .cache/current-field-shadow.json .diagnostic/34534764449/
+          cp .diagnostic/reference/diagnostic-latest-candidate.json .diagnostic/reference/open-meteo-current-fallback.json .diagnostic/34534764449/
+      - name: Inspect generation 34534764449 and accumulate private union
+        id: audit-g3
+        continue-on-error: true
+        run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34534764449 --target 2026-09-11T10:00:00Z --generation 34534764449 --union-state .diagnostic/union.json
+      - name: Restore DMI candidate from 34437713821 read-only
+        id: g4-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34437713821-1
+          fail-on-cache-miss: true
+      - name: Restore Copernicus bank from 34437713821 read-only
+        id: g4-cp
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-donor-bank.json
+            .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-shadow.json.invalid-*
+            .cache/copernicus-current-source-stage.json.invalid-*
+          key: copernicus-current-donor-bank-v1-Linux-oneoff-34437713821-1
+          fail-on-cache-miss: true
+      - name: Restore Open-Meteo bank from 34437713821 read-only
+        id: g4-om
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/open-meteo-current-donor-bank.json
+            .cache/open-meteo-current-donor-bank.json.rejected
+            .cache/open-meteo-current-donor-bank.json.rejected.previous
+            .cache/open-meteo-current-fallback.json.rejected
+            .cache/open-meteo-current-fallback.json.rejected.previous
+          key: open-meteo-current-donor-bank-v1-Linux-oneoff-34437713821-1
+          fail-on-cache-miss: true
+      - name: Restore original Open-Meteo projection from 34437713821 read-only
+        id: g4-projection
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34437713821-1
+          fail-on-cache-miss: true
+      - name: Restore regional DMI shadow from 34437713821 read-only
+        id: g4-regional
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34437713821-1
+          fail-on-cache-miss: true
+      - name: Bind and isolate generation 34437713821
+        env:
+          DMI_KEY: ${{ steps.g4-dmi.outputs.cache-matched-key }}
+          CP_KEY: ${{ steps.g4-cp.outputs.cache-matched-key }}
+          OM_KEY: ${{ steps.g4-om.outputs.cache-matched-key }}
+          REGIONAL_KEY: ${{ steps.g4-regional.outputs.cache-matched-key }}
+          PROJECTION_KEY: ${{ steps.g4-projection.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test "$DMI_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34437713821-1
+          test "$CP_KEY" = copernicus-current-donor-bank-v1-Linux-oneoff-34437713821-1
+          test "$OM_KEY" = open-meteo-current-donor-bank-v1-Linux-oneoff-34437713821-1
+          test "$REGIONAL_KEY" = current-field-shadow-v1-Linux-118-preflight-34437713821-1
+          test "$PROJECTION_KEY" = open-meteo-current-fallback-v2-Linux-oneoff-34437713821-1
+          mkdir -p .diagnostic/34437713821
+          mv .cache/open-meteo-current-fallback.json .diagnostic/34437713821/open-meteo-generation-projection.json
+          mv .cache/dmi-candidate-progress.json .cache/copernicus-current-donor-bank.json .cache/open-meteo-current-donor-bank.json .cache/current-field-shadow.json .diagnostic/34437713821/
+          cp .diagnostic/reference/diagnostic-latest-candidate.json .diagnostic/reference/open-meteo-current-fallback.json .diagnostic/34437713821/
+      - name: Inspect generation 34437713821 and accumulate private union
+        id: audit-g4
+        continue-on-error: true
+        run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34437713821 --target 2026-09-11T10:00:00Z --generation 34437713821 --union-state .diagnostic/union.json
+      - name: Require all five generations to have been inspected
+        env:
+          AUDIT_G0: ${{ steps.audit-g0.outcome }}
+          AUDIT_G1: ${{ steps.audit-g1.outcome }}
+          AUDIT_G2: ${{ steps.audit-g2.outcome }}
+          AUDIT_G3: ${{ steps.audit-g3.outcome }}
+          AUDIT_G4: ${{ steps.audit-g4.outcome }}
+        run: |
+          set -euo pipefail
+          for outcome in "$AUDIT_G0" "$AUDIT_G1" "$AUDIT_G2" "$AUDIT_G3" "$AUDIT_G4"; do
+            test "$outcome" = success
+          done
+          python -c "import json; s=json.load(open('.diagnostic/union.json')); assert set(s['generations']) == {'34588002366','34565347360','34556012813','34534764449','34437713821'}; print('All five cache generations inspected; private union retained only in this ephemeral runner.')"
 
-# Diagnostic branch only. No saved cache, uploaded data, producer or deploy.
+# Diagnostic branch only. No cache save, artifact upload, supplier fetch, secrets,
+# public output generation, model activation, production gate or deployment.
