@@ -1,0 +1,1181 @@
+diff --git a/scripts/lib/current_field_shadow.py b/scripts/lib/current_field_shadow.py
+index e28f4445..609c9a8c 100644
+--- a/scripts/lib/current_field_shadow.py
++++ b/scripts/lib/current_field_shadow.py
+@@ -13,6 +13,11 @@ import math
+ import pathlib
+ from typing import Any
+ 
++try:
++    from .regional_source_proofs import prune_regional_source_proofs
++except ImportError:  # pragma: no cover
++    from regional_source_proofs import prune_regional_source_proofs
++
+ 
+ SCHEMA_VERSION = 1
+ RETENTION_HOURS = 7 * 24
+@@ -554,9 +559,9 @@ def record_profiles(
+     valid_time: str,
+     captured_at: str,
+     source_asset_sha256: str | None = None,
++    *,
++    locked_operational_reference: str | None = None,
+ ) -> int:
+-    if _epoch(valid_time) < _epoch(captured_at) - 3600:
+-        return 0
+     written = 0
+     anchors = document.setdefault("anchors", {})
+     for target_id, target in target_by_id.items():
+@@ -564,6 +569,20 @@ def record_profiles(
+             target.get("regionalProxyCandidate")
+             and target.get("requiredCollection") == collection
+         )
++        # Regional native-phase samples may support the first operational
++        # hours through the already approved <=3h hold. Ordinary research
++        # retains its narrower -1h collection boundary.
++        maximum_past_hours = 3 if regional_operational_target else 1
++        window_reference = _epoch(captured_at)
++        if regional_operational_target and locked_operational_reference is not None:
++            locked_reference = _exact_utc_hour_or_none(locked_operational_reference)
++            if locked_reference is None:
++                continue
++            # The job can start minutes (or hours) after its locked target.
++            # Observation time must not move either operational window edge.
++            window_reference = locked_reference.timestamp()
++        if _epoch(valid_time) < window_reference - maximum_past_hours * 3600:
++            continue
+         # The regional path can affect the controlled live runtime. Unlike the
+         # score-neutral transect research, every such sample must therefore be
+         # bound to the exact canonical DMI bytes that were processed.
+@@ -582,7 +601,7 @@ def record_profiles(
+             if regional_operational_target
+             else FORECAST_LEAD_MAX_HOURS
+         )
+-        if _epoch(valid_time) > _epoch(captured_at) + maximum_lead_hours * 3600:
++        if _epoch(valid_time) > window_reference + maximum_lead_hours * 3600:
+             continue
+         maximum_distance = _target_maximum_distance_km(target, collection)
+         if maximum_distance is None:
+@@ -617,9 +636,9 @@ def record_profiles(
+         )
+         sample_key = f"{collection}|{model_run}|{valid_time}|{source_binding}"
+         samples = list(anchor.get("samples") or [])
+-        if any(row.get("sampleKey") == sample_key for row in samples):
++        if not regional_operational_target and any(row.get("sampleKey") == sample_key for row in samples):
+             continue
+-        samples.append({
++        captured_sample = {
+             "sampleKey": sample_key,
+             "capturedAt": captured_at,
+             "collection": collection,
+@@ -628,7 +647,14 @@ def record_profiles(
+             **({"sourceAssetSha256": source_binding}
+                if source_binding != "unbound-research" else {}),
+             **profile,
+-        })
++        }
++        if regional_operational_target:
++            # A genuinely re-read regional profile may repair a corrupt or
++            # duplicated leaf. The caller's EOF transaction must attach its
++            # new positive proof before committing this isolated stage.
++            samples = [row for row in samples if not isinstance(row, dict)
++                       or row.get("sampleKey") != sample_key]
++        samples.append(captured_sample)
+         anchor["samples"] = samples
+         written += 1
+     document["generatedAt"] = captured_at
+@@ -734,6 +760,7 @@ def prune(document: dict[str, Any], now_iso: str) -> dict[str, int]:
+         else:
+             document["coverageAudits"].pop(audit_id, None)
+     document["generatedAt"] = now_iso
++    prune_regional_source_proofs(document)
+     return {"removedSamples": removed_samples, "removedAnchors": removed_anchors}
+ 
+ 
+diff --git a/scripts/lib/regional_current_operational.py b/scripts/lib/regional_current_operational.py
+index e2030324..a8aebb56 100644
+--- a/scripts/lib/regional_current_operational.py
++++ b/scripts/lib/regional_current_operational.py
+@@ -23,6 +23,9 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
+     from .current_field_shadow import (
+         REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
+     )
++    from .regional_source_proofs import (
++        create_regional_proof_context, regional_sample_authorization,
++    )
+     from .dmi_native_provenance import (
+         canonical_current_source_asset,
+         canonical_time,
+@@ -36,6 +39,9 @@ except ImportError:  # pragma: no cover - exercised by production-style import.
+     from current_field_shadow import (
+         REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
+     )
++    from regional_source_proofs import (
++        create_regional_proof_context, regional_sample_authorization,
++    )
+     from dmi_native_provenance import (
+         canonical_current_source_asset,
+         canonical_time,
+@@ -526,6 +532,7 @@ def _validated_sample(
+     target_registry_sha256: str,
+     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
+     retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
++    durable_regional_source: dict[str, Any] | None = None,
+ ) -> dict[str, Any] | None:
+     if not isinstance(sample, dict):
+         _fail("SHADOW_SAMPLE_INVALID")
+@@ -572,6 +579,9 @@ def _validated_sample(
+             (part_id, model_run, valid_time, source_asset_sha256)
+         )
+         authorization_rank = 1
++    if source is None:
++        source = durable_regional_source
++        authorization_rank = 1
+     if source is None:
+         _fail("SHADOW_SOURCE_ASSET_HASH_MISMATCH")
+ 
+@@ -658,6 +668,7 @@ def _samples_by_part(
+     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
+     retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
+     selected_model_runs: frozenset[str],
++    regional_proof_context: dict[str, Any] | None = None,
+ ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+     candidate_times: dict[str, set[str]] = {part_id: set() for part_id in bound_parts}
+     for gap in gaps:
+@@ -706,6 +717,15 @@ def _samples_by_part(
+                 )
+                 if collection != REQUIRED_COLLECTION or sample_model_run_dt > sample_time_dt:
+                     _fail("SHADOW_SOURCE_BINDING_INVALID")
++                durable_source = None
++                if regional_proof_context is not None:
++                    proof_state, durable_source = regional_sample_authorization(
++                        regional_proof_context, part_id=part_id, sample=raw_sample,
++                    )
++                    if proof_state == "invalid":
++                        # A present broken binding is a known rejection. A
++                        # selected ledger asset must not resurrect that leaf.
++                        _fail("SHADOW_REGIONAL_SOURCE_PROOF_INVALID")
+                 if sample_model_run not in selected_model_runs:
+                     source_sha256 = raw_sample.get("sourceAssetSha256")
+                     retained_identity = (
+@@ -716,7 +736,8 @@ def _samples_by_part(
+                     )
+                     if (
+                         not isinstance(source_sha256, str)
+-                        or retained_identity not in retained_sources
++                        or (retained_identity not in retained_sources
++                            and durable_source is None)
+                     ):
+                         # Old unproved shadow bytes are irrelevant data-plane
+                         # history. Only an exact retained per-pair proof may
+@@ -730,6 +751,7 @@ def _samples_by_part(
+                     target_registry_sha256=target_registry_sha256,
+                     ledger_sources=ledger_sources,
+                     retained_sources=retained_sources,
++                    durable_regional_source=durable_source,
+                 )
+             except RegionalCurrentOperationalError as error:
+                 # The shadow is optional provider data, never a control plane.
+@@ -1149,6 +1171,11 @@ def build_regional_current_operational_evidence(
+         ledger_sources,
+         retained_sources,
+         selected_model_runs,
++        create_regional_proof_context(
++            shadow, target_ids=[str(row["partId"]) for row in targets],
++            policy_sha256=policy_sha256,
++            target_registry_sha256=target_registry_sha256,
++        ),
+     )
+     pair_refs = _classify_pairs(gaps, samples)
+     native_count = sum(
+diff --git a/scripts/update-dmi-bulk.py b/scripts/update-dmi-bulk.py
+index 42602b33..e06c04ed 100644
+--- a/scripts/update-dmi-bulk.py
++++ b/scripts/update-dmi-bulk.py
+@@ -39,6 +39,10 @@ from lib.current_field_shadow import (
+     status as current_field_shadow_status,
+ )
+ from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
++from lib.regional_source_proofs import (
++    capture_regional_source_proof,
++    migrate_regional_source_proofs,
++)
+ from lib.dmi_current_processing_compatibility import (
+     retained_current_processing_signature_compatible,
+ )
+@@ -1036,6 +1040,27 @@ def strict_current_collection_order(
+     )
+ 
+ 
++def begin_collection_scheduler_turn(
++    state: dict[str, Any],
++    collection: str,
++    lead_collection: Any,
++    turn_at: str,
++) -> bool:
++    """Record an attempted collection and rotate only the actual DKSS lead.
++
++    The lead marker is a liveness hint, not source or admission evidence.  It is
++    recorded before provider work so an attempted lead still yields after a
++    negative or failed turn.  Collections reached later in the same run retain
++    their previous lead marker; otherwise one shared run timestamp makes the
++    next invocation fall back to the fixed collection order again.
++    """
++    state["lastAttemptAt"] = turn_at
++    if collection != lead_collection:
++        return False
++    state["lastStrictCurrentTurnAt"] = turn_at
++    return True
++
++
+ def strict_current_runtime_reserve(
+     collections: list[str],
+     remaining_work_seconds: float,
+@@ -1058,6 +1083,36 @@ def strict_current_runtime_reserve(
+     )
+ 
+ 
++def fair_nonlead_strict_current_runtime_reserve(
++    pending_collections: list[str],
++    remaining_work_seconds: float,
++    minimum_reserve_by_collection: dict[str, float],
++) -> float:
++    """Protect a fair share for DKSS families still waiting in this run.
++
++    The single lead attempt and the critical WAM turns remain unchanged.  Once
++    those turns are behind us, the first non-lead DKSS family may otherwise use
++    all slack while the final family receives only its 120-second start
++    reserve.  Freeze the pending families' proportional share at collection
++    start; unused time naturally rolls forward when the current family has no
++    more work.
++    """
++    pending = [
++        collection for collection in pending_collections
++        if collection in MARINE_COLLECTIONS
++    ]
++    if not pending:
++        return 0.0
++    minimum = sum(
++        max(0.0, float(minimum_reserve_by_collection.get(collection, 0.0)))
++        for collection in pending
++    )
++    fair_share = max(0.0, float(remaining_work_seconds)) * (
++        len(pending) / (len(pending) + 1)
++    )
++    return max(minimum, fair_share)
++
++
+ def operational_collection_plan(
+     scheduled: list[str],
+     state: dict[str, Any],
+@@ -5118,7 +5173,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
+                  allowed_parameters: set[str] | None = None,
+                  trusted_current_pair_source_keys: set[
+                      tuple[str, str, str]
+-                 ] | None = None) -> tuple[set[str], set[str], bool, int, int]:
++                 ] | None = None,
++                 locked_operational_reference: str | None = None) -> tuple[set[str], set[str], bool, int, int]:
+     found, touched = set(), set()
+     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
+     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
+@@ -5598,6 +5654,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
+             valid_time,
+             str(output.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+             shadow_source_asset_sha256,
++            locked_operational_reference=locked_operational_reference,
+         )
+         diagnostics["currentFieldShadowSamplesWritten"] = int(
+             diagnostics.get("currentFieldShadowSamplesWritten") or 0
+@@ -5694,6 +5751,8 @@ def build_current_shadow_stage(
+             if target_id in values:
+                 values[target_id] = copy.deepcopy(values[target_id])
+         stage[key] = values
++    if "regionalSourceProofs" in document:
++        stage["regionalSourceProofs"] = copy.deepcopy(document["regionalSourceProofs"])
+     return stage
+ 
+ 
+@@ -5714,6 +5773,8 @@ def process_grib_transactionally(
+     failure_flush: Any | None = None,
+     stage_validator: Any | None = None,
+     current_stage_validator: Any | None = None,
++    finalize_shadow_stage: Any | None = None,
++    locked_operational_reference: str | None = None,
+     trusted_current_pair_source_keys: set[
+         tuple[str, str, str]
+     ] | None = None,
+@@ -5763,6 +5824,9 @@ def process_grib_transactionally(
+             private_output_stage,
+             part_outcomes_stage,
+             allowed_parameters=allowed_parameters,
++            **({
++                "locked_operational_reference": locked_operational_reference,
++            } if locked_operational_reference is not None else {}),
+             **({
+                 "trusted_current_pair_source_keys":
+                     trusted_current_pair_source_keys,
+@@ -5787,6 +5851,10 @@ def process_grib_transactionally(
+             part_outcomes_stage,
+         ):
+             raise RuntimeError(validation_error)
++        if shadow_stage is not None and finalize_shadow_stage is not None:
++            # Source proof and its regional samples form one private stage.
++            # No bulk or shadow mutation may escape if proof capture fails.
++            finalize_shadow_stage(shadow_stage)
+     except Exception:
+         restore_mapping(diagnostics, diagnostics_snapshot)
+         if failure_flush is not None:
+@@ -7512,11 +7580,50 @@ def _strict_current_donor_ready(
+     return current_operational_cache_ready(document, targets, reference)
+ 
+ 
++def _regional_sources_from_validated_ledger(
++    ledger: dict[str, Any], expected_processing_signature: str,
++) -> list[dict[str, Any]]:
++    """Copy originals without native lifetime filtering or source flattening.
++
++    Caller must already have fully validated this exact ledger and its bound
++    attestation. Keeping separate entries lets regional migration detect
++    competing original decoder/outcome proofs instead of choosing the last.
++    """
++    candidates: list[dict[str, Any]] = []
++    entries = [
++        (row.get("sourceAsset"), collection.get("processingSignature"),
++         row.get("partOutcomeProof"))
++        for collection in ledger.get("collections") or []
++        for row in collection.get("validTimes") or []
++        if row.get("state") in {"PROCESSED", "VERIFIED"}
++    ]
++    entries.extend(
++        (proof.get("sourceAsset"), proof.get("processingSignature"),
++         proof.get("partOutcomeProof"))
++        for proof in ledger.get("retainedCurrentAssetProofs") or []
++    )
++    for raw_source, signature, outcome in entries:
++        source = canonical_current_source_asset(raw_source)
++        if (source is not None
++                and source["collection"] == REGIONAL_PROXY_REQUIRED_COLLECTION
++                and retained_current_processing_signature_compatible(
++                    signature, expected_processing_signature,
++                )):
++            candidates.append({
++                "sourceAsset": copy.deepcopy(source),
++                "processingSignature": signature,
++                "partOutcomeProof": copy.deepcopy(outcome),
++            })
++    return candidates
++
++
+ def _validated_candidate_retained_current_asset_proofs(
+     document: dict[str, Any],
+     targets: list[dict[str, Any]],
+     reference: datetime,
+     expected_processing_signature: str,
++    *,
++    regional_source_proof_candidates: list[dict[str, Any]] | None = None,
+ ) -> list[dict[str, Any]]:
+     """Revalidate canonical pair/source evidence without trusting a legacy complement."""
+     ledger = copy.deepcopy(
+@@ -7540,6 +7647,7 @@ def _validated_candidate_retained_current_asset_proofs(
+         current_assets,
+         retained_pair_sources,
+     )
++    original_regional_candidates: list[dict[str, Any]] = []
+     if ledger.get("attestation") != sanitized_current_attestation(actual_attestation):
+         identity_attestation = (
+             canonical_pre_sanitize_current_identity_attestation(
+@@ -7556,6 +7664,24 @@ def _validated_candidate_retained_current_asset_proofs(
+             != sanitized_current_attestation(identity_attestation)
+         ):
+             return []
++        if regional_source_proof_candidates is not None:
++            try:
++                # Validate the ORIGINAL ledger before native leaf sanitation
++                # removes its final attested tuple. Identity recovery is not
++                # native admission; only independent regional source outcomes
++                # may survive here, after this complete original validation.
++                validate_current_operational_availability_ledger(
++                    ledger, identity_attestation, targets, donor_reference,
++                    donor_end, registry_sha256,
++                )
++            except (TypeError, ValueError):
++                # Keep the existing native recovery behavior unchanged. An
++                # unvalidated original never contributes regional authority.
++                pass
++            else:
++                original_regional_candidates = _regional_sources_from_validated_ledger(
++                    ledger, expected_processing_signature,
++                )
+         # The original digest has now been reconstructed exactly. Rebuild the
+         # derived fields only from rows accepted by the normal strict validator.
+         actual_pair_source_keys = {
+@@ -7718,6 +7844,10 @@ def _validated_candidate_retained_current_asset_proofs(
+         donor_end,
+         registry_sha256,
+     )
++    if regional_source_proof_candidates is not None:
++        original_regional_candidates.extend(_regional_sources_from_validated_ledger(
++            ledger, expected_processing_signature,
++        ))
+ 
+     evidence_by_source: dict[str, tuple[dict[str, Any], str, dict[str, Any]]] = {}
+     for collection_row in ledger["collections"]:
+@@ -7793,13 +7923,19 @@ def _validated_candidate_retained_current_asset_proofs(
+         proof["sourceAsset"]["itemId"],
+         proof["sourceAsset"]["contentSha256"],
+     ))
+-    return validate_retained_current_asset_proofs(
++    validated_proofs = validate_retained_current_asset_proofs(
+         proofs,
+         sorted(str(target.get("partId") or "").strip() for target in targets),
+         reference,
+         range_end,
+         registry_sha256,
+     )
++    if regional_source_proof_candidates is not None:
++        # Preserve already authenticated ORIGINAL regional source outcomes
++        # independently of which native tuples survive this new time window.
++        # These are not retained native attestations and grant no native data.
++        regional_source_proof_candidates.extend(original_regional_candidates)
++    return validated_proofs
+ 
+ 
+ def _select_retained_current_asset_proofs_for_document(
+@@ -7952,18 +8088,40 @@ def _select_retained_current_asset_proofs_for_document(
+     )
+ 
+ 
++def persist_regional_shadow_before_recovery(
++    shadow: dict[str, Any], previous: dict[str, Any],
++    deferred_recovery_checkpoint: dict[str, bool],
++) -> None:
++    """Durably save sample+proof before retiring original bulk source evidence."""
++    save_current_field_shadow(CURRENT_FIELD_SHADOW_PATH, shadow)
++    if deferred_recovery_checkpoint.get("pending"):
++        atomic_write_bulk_cache(previous)
++        deferred_recovery_checkpoint.clear()
++
++
+ def load_previous(
+     expected_signature: str,
+     *,
+     coastal_part_targets: list[dict[str, Any]] | None = None,
+     production_reference: datetime | None = None,
+     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
++    regional_source_proof_candidates: list[dict[str, Any]] | None = None,
++    deferred_recovery_checkpoint: dict[str, bool] | None = None,
+ ) -> dict[str, Any]:
+     output_document = load_bulk_document(OUTPUT_PATH)
+     fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
+     candidates = [output_document, fallback_document]
+     proof_candidates: list[dict[str, Any]] = []
+     proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
++    regional_proofs_by_document: dict[int, list[dict[str, Any]]] = {}
++
++    def persist_recovery(document: dict[str, Any]) -> None:
++        if deferred_recovery_checkpoint is not None:
++            # Main first persists migrated regional proofs with their samples.
++            # Do not overwrite the original proof-bearing donor ahead of it.
++            deferred_recovery_checkpoint["pending"] = True
++        else:
++            atomic_write_bulk_cache(document)
+     if coastal_part_targets is not None and production_reference is not None:
+         expected_processing_signature = current_marine_processing_signature(
+             expected_signature
+@@ -7978,17 +8136,21 @@ def load_previous(
+             ):
+                 continue
+             try:
++                original_regional_proofs: list[dict[str, Any]] = []
+                 document_proofs = (
+                     _validated_candidate_retained_current_asset_proofs(
+                         document,
+                         coastal_part_targets,
+                         production_reference,
+                         expected_processing_signature,
++                        regional_source_proof_candidates=original_regional_proofs,
+                     )
+                 )
+             except (TypeError, ValueError):
+                 document_proofs = []
++                original_regional_proofs = []
+             proof_candidates_by_document[id(document)] = document_proofs
++            regional_proofs_by_document[id(document)] = original_regional_proofs
+             proof_candidates.extend(document_proofs)
+     output_quarantined = False
+     output_leaf_sanitized = bool(
+@@ -8019,6 +8181,11 @@ def load_previous(
+     candidates = [output_document, fallback_document]
+     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
+     if compatible:
++        if regional_source_proof_candidates is not None:
++            for document in compatible:
++                regional_source_proof_candidates.extend(
++                    regional_proofs_by_document.get(id(document), [])
++                )
+         primary = (
+             output_document
+             if PREFER_OUTPUT_CACHE and output_document in compatible
+@@ -8068,7 +8235,7 @@ def load_previous(
+                 ) if production_reference is not None else []
+             )
+         if output_quarantined or output_leaf_sanitized:
+-            atomic_write_bulk_cache(merged)
++            persist_recovery(merged)
+         return merged
+     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
+     # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
+@@ -8077,11 +8244,11 @@ def load_previous(
+     if reusable:
+         recovered = max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+         if output_quarantined or output_leaf_sanitized:
+-            atomic_write_bulk_cache(recovered)
++            persist_recovery(recovered)
+         return recovered
+     recovered = {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
+     if output_quarantined or output_leaf_sanitized:
+-        atomic_write_bulk_cache(recovered)
++        persist_recovery(recovered)
+     return recovered
+ 
+ 
+@@ -9781,6 +9948,9 @@ def replay_current_field_shadow_from_cache(
+     signed-URL cache keys), at most one bounded bootstrap asset per model area is
+     downloaded inside the existing global DMI byte budget.  Processing still
+     receives only private research targets and an isolated scratch output.
++    Regional operational targets are excluded: their samples may only change
++    through the full primary asset/outcome/proof transaction. Research-only
++    EOF cannot replace a bound operational sample without its original proof.
+     """
+     summary: dict[str, Any] = {
+         "attempted": False,
+@@ -9796,6 +9966,13 @@ def replay_current_field_shadow_from_cache(
+         "assetsSkippedBySupervisor": 0,
+         "errors": [],
+     }
++    regional_targets_excluded = sum(
++        bool(target.get("regionalProxyCandidate")) for target in research_targets
++    )
++    research_targets = [
++        target for target in research_targets if not target.get("regionalProxyCandidate")
++    ]
++    summary["regionalTargetsExcluded"] = regional_targets_excluded
+     if not research_targets:
+         summary["reason"] = "no-research-targets"
+         return summary
+@@ -9819,90 +9996,22 @@ def replay_current_field_shadow_from_cache(
+     for collection in sorted(replay_collections, key=COLLECTION_ORDER.index):
+         entry = catalog.get(collection) or {}
+         model_run = str(entry.get("modelRun") or "")
+-        regional_operational_replay = (
+-            collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+-            and any(
+-                target.get("regionalProxyCandidate")
+-                and target.get("requiredCollection") == collection
+-                for target in research_targets
+-            )
++        candidates = eligible_replay_assets(
++            list(entry.get("assets") or []),
++            generated,
++            CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
++            12,
+         )
+-        if regional_operational_replay:
+-            replay_reference = locked_production_reference or datetime.fromtimestamp(
+-                epoch(generated),
+-                timezone.utc,
+-            )
+-            required_times = operational_current_valid_times(replay_reference)
+-            required_time_set = set(required_times)
+-            assets_by_time = {
+-                iso(asset.get("valid")): asset
+-                for asset in list(entry.get("assets") or [])
+-                if iso(asset.get("valid")) in required_time_set
+-            }
+-            candidates = [assets_by_time[value] for value in required_times if value in assets_by_time]
+-        else:
+-            candidates = eligible_replay_assets(
+-                list(entry.get("assets") or []),
+-                generated,
+-                CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+-                12,
+-            )
+         resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
+             (asset, path)
+             for asset in candidates
+             for path in [reusable_cached_asset_path(asset, collection, model_run)]
+             if path is not None
+         ]
+-        fully_bound_cached = False
+-        if regional_operational_replay and resolved:
+-            regional_target_ids = {
+-                str(target.get("id") or "")
+-                for target in research_targets
+-                if target.get("regionalProxyCandidate")
+-                and target.get("requiredCollection") == collection
+-            }
+-            unresolved: list[tuple[dict[str, Any], pathlib.Path]] = []
+-            for asset, path in resolved:
+-                capture = raw_cache_source_capture(
+-                    path,
+-                    collection,
+-                    model_run,
+-                    str(asset.get("valid") or ""),
+-                )
+-                source_asset = canonical_current_source_asset({
+-                    "collection": collection,
+-                    "modelRun": model_run,
+-                    "validTime": str(asset.get("valid") or ""),
+-                    **(capture or {}),
+-                }) if capture is not None else None
+-                source_hash = (
+-                    current_source_asset_sha256(source_asset)
+-                    if source_asset is not None
+-                    else None
+-                )
+-                valid_time = iso(asset.get("valid"))
+-                covered = source_hash is not None and all(
+-                    any(
+-                        sample.get("collection") == collection
+-                        and iso(sample.get("modelRun")) == iso(model_run)
+-                        and iso(sample.get("validTime")) == valid_time
+-                        and sample.get("sourceAssetSha256") == source_hash
+-                        for sample in (
+-                            ((current_shadow.get("anchors") or {}).get(target_id) or {}).get("samples")
+-                            or []
+-                        )
+-                    )
+-                    for target_id in regional_target_ids
+-                )
+-                if not covered:
+-                    unresolved.append((asset, path))
+-            fully_bound_cached = len(resolved) == len(candidates) and not unresolved
+-            resolved = unresolved
+         if (
+             model_run
+             and not resolved
+             and candidates
+-            and not fully_bound_cached
+             and bootstrap_remaining > 0
+             and not should_stop_work()
+         ):
+@@ -10105,11 +10214,15 @@ def main() -> int:
+     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
+     locked_production_reference = production_reference_hour()
+     retained_current_asset_proofs: list[dict[str, Any]] = []
++    regional_source_proof_candidates: list[dict[str, Any]] = []
++    deferred_recovery_checkpoint: dict[str, bool] = {}
+     previous = load_previous(
+         current_zone_registry_signature,
+         coastal_part_targets=coastal_part_targets,
+         production_reference=locked_production_reference,
+         retained_current_asset_proofs=retained_current_asset_proofs,
++        regional_source_proof_candidates=regional_source_proof_candidates,
++        deferred_recovery_checkpoint=deferred_recovery_checkpoint,
+     )
+     zone_coast_types = {
+         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
+@@ -10261,6 +10374,23 @@ def main() -> int:
+     # Limfjordsproxy. Kun den strengt validerede otte-dels allowlist må bruge
+     # dkss_lf op til 15 km; roterende forskning forbliver score-neutral.
+     current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
++    regional_proof_migration: dict[str, Any] = {}
++    if regional_proxy_configuration_status == "CONFIGURED":
++        regional_proof_migration = migrate_regional_source_proofs(
++            current_shadow,
++            policy=regional_proxy_policy,
++            targets=coastal_part_targets,
++            original_proofs=regional_source_proof_candidates,
++        )
++        # Commit sample+proof together before any later bulk checkpoint can
++        # retire the last native reference to these original source outcomes.
++        persist_regional_shadow_before_recovery(
++            current_shadow, previous, deferred_recovery_checkpoint,
++        )
++    elif deferred_recovery_checkpoint.get("pending"):
++        atomic_write_bulk_cache(previous)
++        deferred_recovery_checkpoint.clear()
++    regional_source_proof_candidates.clear()
+     rotating_research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
+         part_doc,
+         zone_coast_types,
+@@ -10269,6 +10399,7 @@ def main() -> int:
+     )
+     research_targets = rotating_research_targets + regional_proxy_targets
+     research_run_metrics: dict[str, Any] = {
++        "regionalSourceProofMigration": regional_proof_migration,
+         "rotationAdvancedThisRun": False,
+         "samplesWrittenThisRun": 0,
+         "cachedReplayAssetsThisRun": 0,
+@@ -10868,6 +10999,19 @@ def main() -> int:
+             strict_current_reserve.get(pending, 0.0)
+             for pending in pending_critical_current
+         )
++        if (
++            collection_is_critical_current
++            and collection != strict_current_lead_collection
++            and not pending_critical_wam
++        ):
++            reserve_for_pending_critical = max(
++                reserve_for_pending_critical,
++                fair_nonlead_strict_current_runtime_reserve(
++                    pending_critical_current,
++                    runtime_remaining(),
++                    strict_current_reserve,
++                ),
++            )
+         if should_stop_work():
+             result["diagnostics"]["errors"].append({
+                 "collection": collection,
+@@ -10880,13 +11024,18 @@ def main() -> int:
+         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
+         collection_start_error_count = len(result["diagnostics"]["errors"])
+         strict_current_lead_attempts = 0
+-        strict_current_turn_started = False
+         collection_refresh_only = (
+             DKSS_PRIMARY_MODE
+             and collection in primary_refresh_only_collections
+         )
+         state = result["collectionState"].setdefault(collection, {})
+-        state["lastAttemptAt"] = generated
++        if begin_collection_scheduler_turn(
++            state,
++            collection,
++            strict_current_lead_collection,
++            generated,
++        ):
++            checkpoint_controller.mark_bulk_dirty()
+         # Progress cadence is shared across collections by checkpoint_controller.
+         # No collection-local checkpoint clock is maintained.
+         try:
+@@ -11707,8 +11856,6 @@ def main() -> int:
+                     run_info["strictCurrentLeadAssetsAttempted"] = (
+                         strict_current_lead_attempts
+                     )
+-                if collection_is_critical_current:
+-                    strict_current_turn_started = True
+                 if bounded_primary_refresh:
+                     primary_refresh_assets_remaining -= 1
+                     run_info["assetsBoundedRefreshAttempted"] += 1
+@@ -11977,6 +12124,20 @@ def main() -> int:
+                     validated_current_stage["partOutcomeProof"] = proof
+                     return True
+ 
++                def preserve_operational_regional_source(shadow_stage: dict[str, Any]) -> None:
++                    if (
++                        collection == REGIONAL_PROXY_REQUIRED_COLLECTION
++                        and regional_proxy_configuration_status == "CONFIGURED"
++                    ):
++                        capture_regional_source_proof(
++                            shadow_stage,
++                            policy=regional_proxy_policy,
++                            targets=coastal_part_targets,
++                            source_asset=step_source_asset,
++                            part_outcome_proof=validated_current_stage["partOutcomeProof"],
++                            processing_signature=processing_signature,
++                        )
++
+                 if bootstrap_operational_wam:
+                     clear_wave_target_rejection_diagnostics(
+                         result["diagnostics"],
+@@ -11999,6 +12160,8 @@ def main() -> int:
+                             failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                             stage_validator=validate_operational_wave_stage,
+                             current_stage_validator=validate_operational_current_stage,
++                            finalize_shadow_stage=preserve_operational_regional_source,
++                            locked_operational_reference=canonical_time(locked_production_reference),
+                             trusted_current_pair_source_keys=(
+                                 actual_current_pair_source_keys
+                                 if collection in MARINE_COLLECTIONS
+@@ -12690,16 +12853,6 @@ def main() -> int:
+                 state["nextEligibleAt"] = None
+             else:
+                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
+-            if collection_is_critical_current and (
+-                strict_current_turn_started
+-                or deferred_only
+-                or (
+-                    collection_assets_complete
+-                    and recognized >= required
+-                )
+-            ):
+-                state["lastStrictCurrentTurnAt"] = generated
+-                checkpoint_controller.mark_bulk_dirty()
+             if (
+                 not collection_refresh_only
+                 and (
+diff --git a/scripts/lib/regional_source_proofs.py b/scripts/lib/regional_source_proofs.py
+new file mode 100644
+index 00000000..dd294e84
+--- /dev/null
++++ b/scripts/lib/regional_source_proofs.py
+@@ -0,0 +1,369 @@
++"""Private, sample-bound regional source evidence co-located with the shadow.
++
++This is not native DMI tuple authority. Producers may capture only after an
++entire asset and its original outcome have passed validation. Migration accepts
++original validated outcomes, never a source identity reconstructed from samples.
++"""
++from __future__ import annotations
++
++from copy import deepcopy
++from datetime import datetime
++import hashlib
++import json
++from typing import Any
++
++try:
++    from .dmi_native_provenance import (
++        DKSS_MAX_FORECAST_LEAD_HOURS,
++        canonical_current_source_asset, current_source_asset_sha256,
++        validate_current_part_outcome_proof,
++    )
++except ImportError:  # pragma: no cover
++    from dmi_native_provenance import (
++        DKSS_MAX_FORECAST_LEAD_HOURS,
++        canonical_current_source_asset, current_source_asset_sha256,
++        validate_current_part_outcome_proof,
++    )
++
++FIELD = "regionalSourceProofs"
++SAMPLE_REF = "regionalSourceProofRef"
++CONTRACT = "regional-dmi-shadow-source-evidence-v1"
++SOURCE_CONTRACT = "regional-dmi-original-asset-outcome-v1"
++BINDING_CONTRACT = "regional-dmi-shadow-sample-binding-v1"
++
++
++def _sha(value: Any) -> str:
++    return "sha256:" + hashlib.sha256(json.dumps(
++        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
++        allow_nan=False,
++    ).encode("utf-8")).hexdigest()
++
++
++def _binding_key(part_id: str, sample_key: Any) -> str:
++    if not isinstance(sample_key, str) or not sample_key:
++        raise ValueError("REGIONAL_SAMPLE_IDENTITY_INVALID")
++    return _sha({"contractId": BINDING_CONTRACT,
++                 "partId": part_id, "sampleKey": sample_key})
++
++
++def _sample_sha(sample: dict[str, Any]) -> str:
++    return _sha({key: value for key, value in sample.items() if key != SAMPLE_REF})
++
++
++def _container_valid(value: Any) -> bool:
++    return (isinstance(value, dict) and value.get("schemaVersion") == 1
++            and value.get("contractId") == CONTRACT
++            and isinstance(value.get("sources"), dict)
++            and isinstance(value.get("bindings"), dict))
++
++
++def _source_body(*, source_asset: Any, part_outcome_proof: Any,
++                 processing_signature: Any, target_ids: list[str],
++                 target_registry_sha256: str, policy_sha256: str) -> dict[str, Any]:
++    source = canonical_current_source_asset(source_asset)
++    if (source is None or source != source_asset
++            or source["collection"] != "dkss_lf"):
++        raise ValueError("REGIONAL_ORIGINAL_SOURCE_INVALID")
++    lead = (datetime.fromisoformat(source["validTime"].replace("Z", "+00:00"))
++            - datetime.fromisoformat(source["modelRun"].replace("Z", "+00:00"))).total_seconds()
++    if not 0 <= lead <= DKSS_MAX_FORECAST_LEAD_HOURS * 3600:
++        raise ValueError("REGIONAL_ORIGINAL_SOURCE_HORIZON_INVALID")
++    outcome = validate_current_part_outcome_proof(
++        part_outcome_proof, target_ids, target_registry_sha256,
++        processing_signature, source,
++    )
++    return {
++        "contractId": SOURCE_CONTRACT, "sourceAsset": source,
++        "processingSignature": processing_signature,
++        "partOutcomeProof": outcome,
++        "targetRegistrySha256": target_registry_sha256,
++        "policySha256": policy_sha256,
++    }
++
++
++def create_regional_proof_context(
++    shadow: dict[str, Any], *, target_ids: list[str],
++    target_registry_sha256: str, policy_sha256: str,
++) -> dict[str, Any]:
++    """Create one read-only validation context; caches stay outside the shadow."""
++    return {"indexPresent": FIELD in shadow, "index": shadow.get(FIELD),
++            "targetIds": target_ids, "targetRegistrySha256": target_registry_sha256,
++            "policySha256": policy_sha256, "validatedSources": {}}
++
++
++def regional_sample_authorization(
++    context: dict[str, Any], *, part_id: str, sample: dict[str, Any],
++) -> tuple[str, dict[str, Any] | None]:
++    """Return legacy/valid/invalid; invalid can NEVER fall back to ledger proof.
++
++Unmarked legacy samples remain subject to the old selected-ledger admission.
++A present binding or reference makes its positive proof mandatory. Corruption
++of one source affects only its referring samples, not sibling assets.
++"""
++    try:
++        key = _binding_key(part_id, sample.get("sampleKey"))
++        index = context["index"]
++        if not context["indexPresent"]:
++            return ("invalid" if SAMPLE_REF in sample else "legacy"), None
++        if not _container_valid(index):
++            return "invalid", None
++        binding = index["bindings"].get(key)
++        if binding is None and SAMPLE_REF not in sample:
++            return "legacy", None
++        if sample.get(SAMPLE_REF) != key or not isinstance(binding, dict):
++            return "invalid", None
++        body = {name: value for name, value in binding.items()
++                if name != "bindingSha256"}
++        expected_fields = {"contractId", "partId", "sampleKey", "sampleSha256",
++                           "sourceProofSha256", "policySha256", "targetRegistrySha256"}
++        if (set(body) != expected_fields or body["contractId"] != BINDING_CONTRACT
++                or body["partId"] != part_id
++                or body["sampleKey"] != sample.get("sampleKey")
++                or body["sampleSha256"] != _sample_sha(sample)
++                or body["policySha256"] != context["policySha256"]
++                or body["targetRegistrySha256"] != context["targetRegistrySha256"]
++                or binding.get("bindingSha256") != _sha(body)):
++            return "invalid", None
++        proof_key = body["sourceProofSha256"]
++        cache = context["validatedSources"]
++        if proof_key not in cache:
++            raw = index["sources"].get(proof_key)
++            canonical = _source_body(
++                source_asset=raw.get("sourceAsset") if isinstance(raw, dict) else None,
++                part_outcome_proof=raw.get("partOutcomeProof") if isinstance(raw, dict) else None,
++                processing_signature=raw.get("processingSignature") if isinstance(raw, dict) else None,
++                target_ids=context["targetIds"],
++                target_registry_sha256=context["targetRegistrySha256"],
++                policy_sha256=context["policySha256"],
++            )
++            if raw != canonical or _sha(canonical) != proof_key:
++                return "invalid", None
++            cache[proof_key] = canonical
++        source = cache[proof_key]["sourceAsset"]
++        if (source["modelRun"] != sample.get("modelRun")
++                or source["validTime"] != sample.get("validTime")
++                or source["collection"] != sample.get("collection")
++                or current_source_asset_sha256(source) != sample.get("sourceAssetSha256")):
++            return "invalid", None
++        return "valid", source
++    except (ValueError, TypeError, KeyError, OverflowError):
++        return "invalid", None
++
++
++def capture_regional_source_proof(
++    shadow: dict[str, Any], *, policy: dict[str, Any], targets: list[dict[str, Any]],
++    source_asset: dict[str, Any], part_outcome_proof: dict[str, Any],
++    processing_signature: str, replace_existing: bool = True,
++) -> dict[str, int]:
++    """Bind matching samples after validated EOF, in the isolated shadow stage.
++
++Existing contradictory/invalid bindings may only be replaced after genuine
++asset processing, never by migration or by a reader's ledger fallback.
++"""
++    # Lazy import avoids a cycle: the operational reader also uses this module.
++    try:
++        from . import regional_current_operational as regional
++    except ImportError:  # pragma: no cover
++        import regional_current_operational as regional
++    bound, policy_sha, target_sha = regional._policy_and_target_binding(
++        policy, targets, allow_target_rebinding_as_missing=True,
++    )
++    body = _source_body(
++        source_asset=source_asset, part_outcome_proof=part_outcome_proof,
++        processing_signature=processing_signature,
++        target_ids=[str(row["partId"]) for row in targets],
++        target_registry_sha256=target_sha, policy_sha256=policy_sha,
++    )
++    index = shadow.get(FIELD)
++    if FIELD in shadow and not _container_valid(index):
++        if not replace_existing:
++            return {"boundSamples": 0, "invalidSamples": 0, "blockedIndex": 1}
++        # Only genuine EOF may recover the envelope. Preserve its exact bytes
++        # as private JSON and retain rejection barriers for every old sample;
++        # only samples actually rebound below regain positive authorization.
++        index = {"schemaVersion": 1, "contractId": CONTRACT, "sources": {},
++                 "bindings": {}, "quarantinedIndexes": [deepcopy(index)]}
++        recovery_anchors = dict(shadow.get("anchors") or {})
++        for anchor_id, old_anchor in list(recovery_anchors.items()):
++            if not isinstance(old_anchor, dict) or not old_anchor.get("regionalProxyCandidate"):
++                continue
++            old_anchor = deepcopy(old_anchor)
++            recovery_anchors[anchor_id] = old_anchor
++            for old_sample in old_anchor.get("samples") or []:
++                if not isinstance(old_sample, dict):
++                    continue
++                try:
++                    old_key = _binding_key(str(old_anchor.get("partId") or ""), old_sample.get("sampleKey"))
++                except ValueError:
++                    continue
++                index["bindings"][old_key] = {"invalid": True}
++                old_sample[SAMPLE_REF] = old_key
++        shadow["anchors"] = recovery_anchors
++        shadow[FIELD] = index
++    if index is None:
++        index = {"schemaVersion": 1, "contractId": CONTRACT, "sources": {}, "bindings": {}}
++    proof_key = _sha(body)
++    source_sha = current_source_asset_sha256(source_asset)
++    ledger_sources = {(source_asset["modelRun"], source_asset["validTime"], source_sha): source_asset}
++    written = invalid = 0
++    for part_id, part in bound.items():
++        if part.get("regionalEvidenceEligible") is False:
++            continue
++        anchor = (shadow.get("anchors") or {}).get(f"REGIONAL_PROXY::{part_id}")
++        try:
++            samples = regional._validate_anchor(anchor, part, part_id)
++        except regional.RegionalCurrentOperationalError:
++            invalid += 1
++            continue
++        key_counts: dict[str, int] = {}
++        for sample in samples:
++            if isinstance(sample, dict) and isinstance(sample.get("sampleKey"), str):
++                sample_key = sample["sampleKey"]
++                key_counts[sample_key] = key_counts.get(sample_key, 0) + 1
++        for sample in samples:
++            if not isinstance(sample, dict) or sample.get("sourceAssetSha256") != source_sha:
++                continue
++            try:
++                key = _binding_key(part_id, sample.get("sampleKey"))
++                if key_counts.get(sample["sampleKey"], 0) != 1:
++                    # Migration must not bind the first of ambiguous legacy
++                    # duplicates and thereby suppress their conflict. Only a
++                    # genuine re-read in record_profiles can replace them.
++                    index["bindings"][key] = {"invalid": True}
++                    sample[SAMPLE_REF] = key
++                    shadow[FIELD] = index
++                    invalid += 1
++                    continue
++                if not replace_existing and (key in index["bindings"] or SAMPLE_REF in sample):
++                    continue
++                validated = regional._validated_sample(
++                    sample, part_id=part_id, part=part, policy_sha256=policy_sha,
++                    target_registry_sha256=target_sha, ledger_sources=ledger_sources,
++                    retained_sources={},
++                )
++                if validated is None:
++                    continue
++                binding = {
++                    "contractId": BINDING_CONTRACT, "partId": part_id,
++                    "sampleKey": sample["sampleKey"], "sampleSha256": _sample_sha(sample),
++                    "sourceProofSha256": proof_key, "policySha256": policy_sha,
++                    "targetRegistrySha256": target_sha,
++                }
++                binding["bindingSha256"] = _sha(binding)
++                # Each source and sample binding is installed before its ref.
++                index["sources"][proof_key] = deepcopy(body)
++                index["bindings"][key] = binding
++                sample[SAMPLE_REF] = key
++                written += 1
++            except (regional.RegionalCurrentOperationalError, ValueError, TypeError, KeyError):
++                invalid += 1
++    if written:
++        shadow[FIELD] = index
++    return {"boundSamples": written, "invalidSamples": invalid, "blockedIndex": 0}
++
++
++def migrate_regional_source_proofs(
++    shadow: dict[str, Any], *, policy: dict[str, Any], targets: list[dict[str, Any]],
++    original_proofs: list[dict[str, Any]],
++) -> dict[str, int]:
++    """Persist already validated original outcomes; never derive one from raw rows.
++
++The caller must obtain these entries from validated original ledger/retained
++metadata. This function independently checks every canonical source/outcome.
++It neither edits native attestation lists nor manufactures native pair proof.
++"""
++    summary = {"boundSamples": 0, "invalidSamples": 0, "blockedIndex": 0, "invalidProofs": 0}
++    try:
++        from . import regional_current_operational as regional
++    except ImportError:  # pragma: no cover
++        import regional_current_operational as regional
++    _, policy_sha, target_sha = regional._policy_and_target_binding(
++        policy, targets, allow_target_rebinding_as_missing=True,
++    )
++    candidates: dict[str, tuple[str, dict[str, Any]]] = {}
++    conflicts: set[str] = set()
++    for original in original_proofs:
++        try:
++            if not isinstance(original, dict):
++                raise ValueError("REGIONAL_ORIGINAL_PROOF_INVALID")
++            source = original.get("sourceAsset")
++            if isinstance(source, dict) and source.get("collection") != "dkss_lf":
++                continue
++            body = _source_body(
++                source_asset=source, part_outcome_proof=original.get("partOutcomeProof"),
++                processing_signature=original.get("processingSignature"),
++                target_ids=[str(row["partId"]) for row in targets],
++                target_registry_sha256=target_sha, policy_sha256=policy_sha,
++            )
++            source_sha, proof_sha = current_source_asset_sha256(source), _sha(body)
++            if source_sha in candidates and candidates[source_sha][0] != proof_sha:
++                conflicts.add(source_sha)
++            else:
++                candidates[source_sha] = (proof_sha, original)
++        except (ValueError, TypeError, KeyError):
++            summary["invalidProofs"] += 1
++    for source_sha, (_, original) in sorted(candidates.items()):
++        if source_sha in conflicts:
++            summary["invalidProofs"] += 1
++            continue
++        try:
++            counts = capture_regional_source_proof(
++                shadow, policy=policy, targets=targets, source_asset=original["sourceAsset"],
++                part_outcome_proof=original.get("partOutcomeProof"),
++                processing_signature=original.get("processingSignature"),
++                replace_existing=False,
++            )
++            for key, value in counts.items():
++                summary[key] += value
++        except (ValueError, TypeError, KeyError):
++            summary["invalidProofs"] += 1
++    if conflicts:
++        index = shadow.get(FIELD)
++        if FIELD not in shadow:
++            index = {"schemaVersion": 1, "contractId": CONTRACT, "sources": {}, "bindings": {}}
++        if _container_valid(index):
++            for anchor in (shadow.get("anchors") or {}).values():
++                if not isinstance(anchor, dict) or not anchor.get("regionalProxyCandidate"):
++                    continue
++                for sample in anchor.get("samples") or []:
++                    if not isinstance(sample, dict) or sample.get("sourceAssetSha256") not in conflicts:
++                        continue
++                    try:
++                        key = _binding_key(str(anchor.get("partId") or ""), sample.get("sampleKey"))
++                    except ValueError:
++                        continue
++                    # An existing durable binding already identifies its exact
++                    # decoder/outcome. Only ambiguous unbound legacy leaves
++                    # receive a rejection barrier here.
++                    if key not in index["bindings"] and SAMPLE_REF not in sample:
++                        index["bindings"][key] = {"invalid": True}
++                        sample[SAMPLE_REF] = key
++            shadow[FIELD] = index
++    return summary
++
++
++def prune_regional_source_proofs(shadow: dict[str, Any]) -> None:
++    """Remove proofs only after their last sample has actually been removed."""
++    index = shadow.get(FIELD)
++    if not _container_valid(index):
++        return
++    referenced = set()
++    for anchor in (shadow.get("anchors") or {}).values():
++        if not isinstance(anchor, dict):
++            continue
++        part_id = str(anchor.get("partId") or "")
++        for sample in anchor.get("samples") or []:
++            if not isinstance(sample, dict):
++                continue
++            # Keep an existing invalid binding too: pruning must not turn a
++            # known rejection into an unmarked legacy sample admitted later.
++            try:
++                referenced.add(_binding_key(part_id, sample.get("sampleKey")))
++            except ValueError:
++                pass
++            if isinstance(sample.get(SAMPLE_REF), str):
++                referenced.add(sample[SAMPLE_REF])
++    index["bindings"] = {key: value for key, value in index["bindings"].items() if key in referenced}
++    source_refs = {row.get("sourceProofSha256") for row in index["bindings"].values()
++                   if isinstance(row, dict) and isinstance(row.get("sourceProofSha256"), str)}
++    index["sources"] = {key: value for key, value in index["sources"].items() if key in source_refs}

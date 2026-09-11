@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""Replay candidate regional migration in memory against exact private inputs.
+
+No provider calls, disk writes, cache saves or production admission. This probes
+the real producer extractor, migrator and strict regional consumer together.
+Only fixed aggregate counts leave the runner.
+"""
+from __future__ import annotations
+
+import argparse
+import contextlib
+import copy
+from collections import Counter
+from datetime import timedelta
+import importlib.util
+import json
+from pathlib import Path
+import sys
+import traceback
+
+sys.dont_write_bytecode = True
+
+
+def load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def regional_horizon_summary(runtime, ledger, remaining, bound, reference):
+    """Temporal/catalog possibilities only, never a promise of usable vectors.
+
+    The operational ledger does not inventory source times before its target.
+    In particular, a missing T-1/T-2/T-3 source cannot be called upstream absent
+    merely because this ledger starts at T.
+    """
+    from lib.regional_current_operational import NATIVE_CADENCE_HOURS, MAXIMUM_HOLD_HOURS
+    from lib.dmi_native_provenance import DKSS_MAX_FORECAST_LEAD_HOURS
+    lf = next(row for row in ledger["collections"] if row["collection"] == "dkss_lf")
+    model_run = lf.get("modelRun")
+    model_epoch = runtime.epoch(model_run) if model_run is not None else None
+    reference_epoch = reference.timestamp()
+    rows_by_time = {row["validTime"]: row for row in lf["validTimes"]}
+    official_native = {
+        time: row for time, row in rows_by_time.items()
+        if row.get("officialAsset") is not None and model_epoch is not None
+        and (runtime.epoch(time) - model_epoch) % (NATIVE_CADENCE_HOURS * 3600) == 0
+    }
+    policy_remaining = sorted(pair for pair in remaining if pair[0] in bound)
+    routes = Counter()
+    offset_counts = Counter()
+    for _part_id, valid_time in policy_remaining:
+        target_epoch = runtime.epoch(valid_time)
+        offset_counts[int((target_epoch - reference_epoch) // 3600)] += 1
+        candidates = [
+            row for time, row in official_native.items()
+            if 0 <= target_epoch - runtime.epoch(time) <= MAXIMUM_HOLD_HOURS * 3600
+        ]
+        if candidates:
+            state = (
+                "COMPLETED_OFFICIAL_ASSET_WITHOUT_ACCEPTED_REGIONAL_PAIR"
+                if any(row["state"] in {"PROCESSED", "VERIFIED"} for row in candidates)
+                else "UNPROCESSED_OFFICIAL_NATIVE_CADENCE_ASSET_AVAILABLE"
+            )
+        elif model_epoch is None:
+            state = "NO_SELECTED_LF_MODEL_RUN"
+        elif target_epoch > model_epoch + (DKSS_MAX_FORECAST_LEAD_HOURS + MAXIMUM_HOLD_HOURS) * 3600:
+            state = "BEYOND_SELECTED_NATIVE_LEAD_AND_APPROVED_HOLD"
+        elif any(
+            target_epoch - age * 3600 < reference_epoch
+            and target_epoch - age * 3600 >= model_epoch
+            and (target_epoch - age * 3600 - model_epoch) % (NATIVE_CADENCE_HOURS * 3600) == 0
+            for age in range(MAXIMUM_HOLD_HOURS + 1)
+        ):
+            state = "LEFT_SOURCE_TIME_OUTSIDE_LEDGER_AXIS_NOT_INVENTORIED"
+        else:
+            state = "NO_OFFICIAL_NATIVE_CADENCE_CANDIDATE_IN_LEDGER_AXIS"
+        routes[state] += 1
+    offset_ranges = []
+    for offset, count in sorted(offset_counts.items()):
+        if offset_ranges and offset == offset_ranges[-1]["endOffset"] + 1:
+            offset_ranges[-1]["endOffset"] = offset
+            offset_ranges[-1]["pairCount"] += count
+        else:
+            offset_ranges.append({"startOffset": offset, "endOffset": offset, "pairCount": count})
+    if sum(routes.values()) != len(policy_remaining):
+        raise ValueError("regional temporal route partition incomplete")
+    last_native = max(official_native, key=runtime.epoch) if official_native else None
+    return {
+        "selectedModelRun": model_run,
+        "targetMinusModelRunHours": (reference_epoch - model_epoch) / 3600 if model_epoch is not None else None,
+        "nativeLeadLimitHours": DKSS_MAX_FORECAST_LEAD_HOURS,
+        "approvedHoldLimitHours": MAXIMUM_HOLD_HOURS,
+        "officialNativeCadenceTimesInsideLedger": len(official_native),
+        "lastOfficialNativeTimeInsideLedger": last_native,
+        "lastOfficialNativeWithHoldEndOffset": int((runtime.epoch(last_native) - reference_epoch) / 3600) + MAXIMUM_HOLD_HOURS if last_native else None,
+        "remainingPolicyPairCount": len(policy_remaining),
+        "remainingPairTemporalRoutes": dict(sorted(routes.items())),
+        "remainingOffsetRanges": offset_ranges,
+        "preTargetCatalogNotInspected": True,
+        "usableVectorAvailabilityProven": False,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--cache", type=Path, required=True)
+    args = parser.parse_args()
+    helper = load_module("residual_reader", Path(__file__).with_name("inspect-current-residual-20260911.py"))
+    sys.path.insert(0, str(args.source.resolve() / "scripts"))
+    from lib.dmi_bulk_storage import read_dmi_bulk_document
+    from lib.copernicus_target_identity import target_fingerprint
+    from lib.dmi_native_provenance import (
+        canonical_verified_part_current_attestation,
+        current_attestation_authorization_from_operational_ledger,
+        validate_current_operational_availability_ledger,
+    )
+    from lib.regional_source_proofs import migrate_regional_source_proofs
+    from lib.regional_current_operational import build_regional_current_operational_evidence, MISSING
+
+    with contextlib.redirect_stdout(helper.Quiet()), contextlib.redirect_stderr(helper.Quiet()):
+        runtime = load_module("candidate_dmi_runtime", args.source / "scripts/update-dmi-bulk.py")
+
+    paths = {
+        "dmi": args.cache / "dmi-candidate-progress.json",
+        "regional": args.cache / "current-field-shadow.json",
+        "residual": args.cache / "open-meteo-current-fallback.json",
+    }
+    before = {name: helper.sha(path) for name, path in paths.items()}
+    try:
+        dmi = read_dmi_bulk_document(paths["dmi"])
+        ledger = dmi["diagnostics"]["currentOperationalLedger"]
+        reference_text = "2026-09-11T10:00:00Z"
+        reference = runtime.production_reference_hour(reference_text)
+        targets = []
+        for key, zone in dmi["zones"].items():
+            if not isinstance(key, str) or not key.startswith("PART::"):
+                continue
+            if zone.get("entityId") != key or zone.get("entityType") != "coastal-part":
+                raise ValueError("invalid target identity")
+            targets.append({"partId": key[6:], "parentZoneId": zone.get("parentZoneId"),
+                            "waterPoint": zone.get("samplingPoint")})
+        target_hash = target_fingerprint(targets)
+        if (len(targets) != 673 or ledger.get("targetRegistrySha256") != target_hash
+                or ledger.get("productionReferenceAt") != reference_text):
+            raise ValueError("invalid exact-generation target binding")
+        range_end = reference + timedelta(hours=117)
+        authorized, retained = current_attestation_authorization_from_operational_ledger(ledger)
+        attestation = canonical_verified_part_current_attestation(
+            dmi, targets, reference_text, runtime.canonical_time(range_end), authorized, retained,
+        )
+        validate_current_operational_availability_ledger(
+            ledger, attestation, targets, reference, range_end, target_hash,
+        )
+        missing = helper.keys(helper.bind_declared_residual(
+            helper.read(paths["residual"]), targets=targets, reference_text=reference_text,
+        ))
+        if len(missing) != 1658:
+            raise ValueError("unexpected residual generation")
+
+        shadow = helper.read(paths["regional"])
+        policy = helper.read(args.source / "data/current-regional-proxy-policy.json")
+        from lib.regional_current_operational import _policy_and_target_binding
+        bound, _, _ = _policy_and_target_binding(policy, targets, allow_target_rebinding_as_missing=True)
+        gaps = [row for row in ledger["operationalComplementPairs"] if row["partId"] in bound]
+
+        def classify(document):
+            evidence = build_regional_current_operational_evidence(
+                policy=policy, targets=targets, current_shadow=document,
+                dmi_ledger=ledger, dmi_attestation=attestation,
+                locked_reference=reference_text, dmi_gap_pairs=gaps,
+                allow_target_rebinding_as_missing=True,
+            )
+            pairs = {(row["partId"], row["validTime"])
+                     for row in evidence["privateProof"]["pairRefs"]
+                     if row["classification"] != MISSING}
+            return pairs, evidence
+
+        baseline, _ = classify(shadow)
+        regional_candidates = []
+        signature = runtime.current_marine_processing_signature(dmi.get("zoneRegistrySignature"))
+        with contextlib.redirect_stdout(helper.Quiet()), contextlib.redirect_stderr(helper.Quiet()):
+            runtime._validated_candidate_retained_current_asset_proofs(
+                dmi, targets, reference, signature,
+                regional_source_proof_candidates=regional_candidates,
+            )
+        migrated = copy.deepcopy(shadow)
+        summary = migrate_regional_source_proofs(
+            migrated, policy=policy, targets=targets, original_proofs=regional_candidates,
+        )
+        after, evidence = classify(migrated)
+        # Exercise the real serialized shape without writing any input/output file.
+        roundtrip = json.loads(json.dumps(migrated, ensure_ascii=False, allow_nan=False))
+        after_roundtrip, roundtrip_evidence = classify(roundtrip)
+        serialized_before_repeat = json.dumps(roundtrip, sort_keys=True, allow_nan=False)
+        repeat = migrate_regional_source_proofs(
+            roundtrip, policy=policy, targets=targets, original_proofs=regional_candidates,
+        )
+        idempotent = serialized_before_repeat == json.dumps(roundtrip, sort_keys=True, allow_nan=False)
+        gained = (after - baseline) & missing
+        helper.emit(
+            "candidate_regional_horizon_routes", productionAuthority=False,
+            **regional_horizon_summary(runtime, ledger, missing - after, bound, reference),
+        )
+        helper.emit(
+            "candidate_regional_migration_replay", productionAuthority=False,
+            originalProofCandidates=len(regional_candidates), migration=summary,
+            baselineCoveredPairCount=len(baseline), migratedCoveredPairCount=len(after),
+            gainedPairsInFixedResidual=len(gained), lostPreviouslyCoveredPairCount=len(baseline - after),
+            remainingFixedResidualCount=len(missing - after),
+            serializationPreservedProof=after_roundtrip == after and roundtrip_evidence == evidence,
+            idempotentMigration=idempotent, repeatMigration=repeat,
+            quarantinedAnchorOrSampleCount=evidence["shadowDiagnostics"]["quarantinedAnchorOrSampleCount"],
+        )
+        if (len(gained) != 656 or baseline - after or after_roundtrip != after
+                or roundtrip_evidence != evidence or not idempotent):
+            raise ValueError("candidate does not reproduce measured non-regressing migration")
+    finally:
+        unchanged = all(helper.sha(paths[name]) == digest for name, digest in before.items())
+        helper.emit("candidate_replay_input_integrity", allInputsUnchanged=unchanged,
+                    cacheSaved=False, providerFetch=False, deploy=False)
+        if not unchanged:
+            raise ValueError("diagnostic input changed")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print(json.dumps({"event": "candidate_replay_failed", "errorType": type(error).__name__,
+                          "frames": [{"file": Path(frame.filename).name, "line": frame.lineno,
+                                      "function": frame.name}
+                                     for frame in traceback.extract_tb(error.__traceback__)[-6:]],
+                          "privatePayloadIncluded": False}), flush=True)
+        sys.exit(1)

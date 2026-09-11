@@ -24,6 +24,20 @@ jobs:
           fetch-depth: 1
       - name: Require exact production source
         run: test "$(git -C runtime-source rev-parse HEAD)" = 5587001b45ffea056addaf6cd20084719540336a
+      - name: Check out isolated candidate replay source
+        uses: actions/checkout@v7
+        with:
+          ref: 5587001b45ffea056addaf6cd20084719540336a
+          path: candidate-runtime
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Apply frozen regional candidate only to isolated reader checkout
+        run: |
+          set -euo pipefail
+          test "$(git -C candidate-runtime rev-parse HEAD)" = 5587001b45ffea056addaf6cd20084719540336a
+          git -C candidate-runtime apply --check ../diagnostic-regional-candidate.patch
+          git -C candidate-runtime apply ../diagnostic-regional-candidate.patch
+          sha256sum diagnostic-regional-candidate.patch
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -31,6 +45,16 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r runtime-source/requirements-dmi.txt -r runtime-source/requirements-copernicus.txt PyYAML==6.0.2
       - name: Check aggregate diagnostic contracts with synthetic data
         run: python -B scripts/test-inspect-current-route-causes.py --source runtime-source
+      - name: Check frozen candidate syntax before reading private caches
+        run: |
+          python -B - <<'PY'
+          import ast
+          from pathlib import Path
+          for name in ('update-dmi-bulk.py', 'lib/current_field_shadow.py', 'lib/regional_current_operational.py', 'lib/regional_source_proofs.py'):
+              ast.parse((Path('candidate-runtime/scripts') / name).read_text(encoding='utf-8'))
+          ast.parse(Path('scripts/inspect-regional-migration-20260911.py').read_text(encoding='utf-8'))
+          print('Frozen regional candidate syntax: OK')
+          PY
       - name: Restore latest registry and ledger read-only
         id: reference-dmi
         uses: actions/cache/restore@v6
@@ -133,6 +157,8 @@ jobs:
       - name: Classify the fixed 1658 residual using exact original journals
         id: audit-g0
         run: python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34588002366 --target 2026-09-11T10:00:00Z --generation 34588002366 --route-causes
+      - name: Replay actual candidate regional migration in memory without changing inputs
+        run: python -B scripts/inspect-regional-migration-20260911.py --source candidate-runtime --cache .diagnostic/34588002366
 
 # Diagnostic branch only. No cache save, artifact upload, supplier fetch, secrets,
 # public output generation, model activation, production gate or deployment.
