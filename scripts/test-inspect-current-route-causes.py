@@ -21,6 +21,7 @@ sys.path.insert(0, str(RUNTIME_ROOT / "scripts"))
 from inspect_current_route_causes import residual_shape, dmi_routes, cp_domain_routes, om_routes, regional_routes
 from lib.open_meteo_current_fallback import build_record, build_document, merge_donor_bank
 from lib.copernicus_current import canonical_sha256
+from lib.dmi_native_provenance import MARINE_COLLECTIONS
 
 AT = "2026-09-11T10:00:00Z"
 
@@ -51,7 +52,7 @@ class DiagnosticTests(unittest.TestCase):
     def test_dmi_partition(self):
         ledger = {"collections": [{"collection": name, "validTimes": [{"validTime": AT,
                   "state": "PROCESSED", "partOutcomeProof": {"spatialUnavailablePartIds": ["SYNTHETIC"]}}]}
-                  for name in ("dkss_lf", "dkss_idw", "dkss_nsb")]}
+                  for name in sorted(MARINE_COLLECTIONS)]}
         result = dmi_routes(ledger, {("SYNTHETIC", AT)})
         self.assertEqual(len(result["families"]), 3)
         self.assertEqual(sum(result["jointOutcomeCounts"].values()), 1)

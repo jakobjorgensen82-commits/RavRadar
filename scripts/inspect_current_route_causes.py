@@ -20,11 +20,11 @@ def residual_shape(missing, reference):
 
 def dmi_routes(ledger, missing):
     """Caller must first validate this exact original ledger and attestation."""
-    from lib.dmi_native_provenance import CURRENT_OPERATIONAL_LEDGER_STATES
+    from lib.dmi_native_provenance import CURRENT_OPERATIONAL_LEDGER_STATES, MARINE_COLLECTIONS
     families, joint = [], {pair: [] for pair in missing}
     for collection in ledger["collections"]:
         name = collection["collection"]
-        if name not in {"dkss_lf", "dkss_idw", "dkss_nsb"}:
+        if name not in MARINE_COLLECTIONS:
             raise ValueError("unexpected current collection")
         by_time = {row["validTime"]: row for row in collection["validTimes"]}
         counts = Counter()
@@ -119,6 +119,11 @@ def regional_routes(ledger, shadow, policy, targets, missing):
             "counterfactualClassifierCoveredInResidual": len(extra_pairs),
             "additionalPairsFromRetainedRegionalOutcome": len(extra_pairs - base_pairs),
             "lostPairsInCounterfactual": len(base_pairs - extra_pairs),
+            "counterfactualMissingShape": residual_shape(
+                {(row["partId"], row["validTime"]) for row in extra_rows if row["classification"] == regional.MISSING},
+                original_reference),
+            "counterfactualMissingWithExactRawSampleCount": len(
+                (regional_missing - extra_pairs) & raw_policy_pairs),
             "counterfactualClassificationCounts": dict(sorted(Counter(row["classification"] for row in extra_rows).items())),
             "baselineQuarantineCount": baseline_quarantine["quarantinedAnchorOrSampleCount"],
             "counterfactualQuarantineCount": expanded_quarantine["quarantinedAnchorOrSampleCount"]}
