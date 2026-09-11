@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import copy
 import importlib.util
 import json
 import pathlib
@@ -278,6 +279,63 @@ regional_anchor = regional_document["anchors"][regional_target["id"]]
 assert regional_anchor["regionalProxyCandidate"] is True
 assert regional_anchor["requiredCollection"] == "dkss_lf"
 assert regional_anchor["samples"][0]["distanceKm"] == 8.0
+
+# Only approved regional collection may retain the native sample three hours
+# before capture; ordinary research keeps its existing one-hour boundary.
+left_capture = "2026-08-16T03:00:00Z"
+left_model = "2026-08-15T18:00:00Z"
+left_valid = "2026-08-16T00:00:00Z"
+left_document = empty_document()
+assert record_profiles(left_document, {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_model,
+    left_valid, left_capture, "sha256:" + "b" * 64) == 1
+assert record_profiles(empty_document(), {target["id"]: target},
+    {target["id"]: [choice(10.01, 55.0, 1.0, "surface:0", 0, 1, 2)]},
+    "dkss_lf", left_model, left_valid, left_capture) == 0
+assert record_profiles(empty_document(), {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_model,
+    "2026-08-15T21:00:00Z", left_capture, "sha256:" + "b" * 64) == 0
+
+# A delayed job must retain the exact locked T-3 boundary without lying about
+# its observation time. The locked target also controls the far window edge.
+delayed_capture = "2026-08-16T03:37:00Z"
+delayed_document = empty_document()
+assert record_profiles(delayed_document, {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_model,
+    left_valid, delayed_capture, "sha256:" + "b" * 64,
+    locked_operational_reference=left_capture) == 1
+assert delayed_document["anchors"][regional_target["id"]]["samples"][0]["capturedAt"] == delayed_capture
+assert record_profiles(empty_document(), {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", "2026-08-15T20:00:00Z",
+    "2026-08-15T23:00:00Z", delayed_capture, "sha256:" + "b" * 64,
+    locked_operational_reference=left_capture) == 0
+assert record_profiles(empty_document(), {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_model,
+    left_valid, delayed_capture, "sha256:" + "b" * 64,
+    locked_operational_reference=delayed_capture) == 0
+assert record_profiles(empty_document(), {target["id"]: target},
+    {target["id"]: [choice(10.01, 55.0, 1.0, "surface:0", 0, 1, 2)]},
+    "dkss_lf", left_model, left_valid, delayed_capture,
+    locked_operational_reference=left_capture) == 0
+assert record_profiles(empty_document(), {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_capture,
+    "2026-08-21T00:00:00Z", "2026-08-16T04:37:00Z", "sha256:" + "b" * 64,
+    locked_operational_reference=left_capture) == 1
+assert record_profiles(empty_document(), {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", "2026-08-16T04:00:00Z",
+    "2026-08-21T01:00:00Z", "2026-08-16T04:37:00Z", "sha256:" + "b" * 64,
+    locked_operational_reference=left_capture) == 0
+
+# Actual reprocessing repairs duplicate/corrupt regional leaves. The producer
+# still owns EOF validation and capture of the replacement's positive proof.
+left_anchor = left_document["anchors"][regional_target["id"]]
+left_anchor["samples"].append(dict(left_anchor["samples"][0]))
+left_anchor["samples"][0]["layers"]["bottom"]["uMps"] = None
+assert record_profiles(left_document, {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices}, "dkss_lf", left_model,
+    left_valid, left_capture, "sha256:" + "b" * 64) == 1
+assert len(left_anchor["samples"]) == 1
+assert left_anchor["samples"][0]["layers"]["bottom"]["uMps"] == 0.21
 
 # The same distant column remains forbidden for an ordinary rotating target,
 # and even an allowlisted target cannot exceed the 15 km physical cap.
@@ -590,12 +648,13 @@ with tempfile.TemporaryDirectory() as directory:
         bulk.process_grib = fake_ordinary_process
         ordinary_replay = bulk.replay_current_field_shadow_from_cache(
             {"dkss_idw": {"modelRun": captured_iso, "assets": ordinary_assets}},
-            targets,
+            [*targets, regional_target],
             empty_document(),
             captured_iso,
             {"bytes": 0},
         )
         assert ordinary_replay["assetsCompleted"] == 1
+        assert ordinary_replay["regionalTargetsExcluded"] == 1
         assert seen_ordinary_times == [
             (captured + timedelta(hours=12)).isoformat().replace("+00:00", "Z")
         ]
@@ -603,9 +662,9 @@ with tempfile.TemporaryDirectory() as directory:
         bulk.process_grib = original_process
         bulk.RAW_DIR = original_raw_dir
 
-# A proxy-only replay must not even inspect/process IDW or NSBS vector files.
-# Its operational exception reaches +117, while +118 remains outside the exact
-# public matrix and must be rejected.
+# Operational proxies now use the primary full-EOF/outcome/proof path. A
+# research-only replay must not even inspect files for them, since that path
+# cannot preserve or replace their positive operational source bindings.
 original_process = bulk.process_grib
 with tempfile.TemporaryDirectory() as directory:
     original_raw_dir = bulk.RAW_DIR
@@ -667,18 +726,23 @@ with tempfile.TemporaryDirectory() as directory:
             return {"current-u", "current-v"}, set(), False, 2, len(zones)
 
         bulk.process_grib = fake_proxy_process
+        unchanged_shadow = empty_document()
+        unchanged_shadow["anchors"][regional_target["id"]] = {
+            "samples": [{"sampleKey": "synthetic-preserved", "regionalSourceProofRef": "synthetic-proof"}]
+        }
+        before_replay = copy.deepcopy(unchanged_shadow)
         replay = bulk.replay_current_field_shadow_from_cache(
             catalog,
             [regional_target],
-            empty_document(),
+            unchanged_shadow,
             captured_iso,
             {"bytes": 0},
         )
-        assert replay["assetsCompleted"] == 1
-        assert seen_collections == ["dkss_lf"]
-        assert seen_proxy_times == [
-            (captured + timedelta(hours=117)).isoformat().replace("+00:00", "Z")
-        ]
+        assert replay["assetsCompleted"] == 0
+        assert replay["reason"] == "no-research-targets"
+        assert replay["regionalTargetsExcluded"] == 1
+        assert seen_collections == [] and seen_proxy_times == []
+        assert unchanged_shadow == before_replay
     finally:
         bulk.process_grib = original_process
         bulk.RAW_DIR = original_raw_dir

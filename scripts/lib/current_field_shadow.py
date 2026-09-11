@@ -13,6 +13,11 @@ import math
 import pathlib
 from typing import Any
 
+try:
+    from .regional_source_proofs import prune_regional_source_proofs
+except ImportError:  # pragma: no cover
+    from regional_source_proofs import prune_regional_source_proofs
+
 
 SCHEMA_VERSION = 1
 RETENTION_HOURS = 7 * 24
@@ -554,9 +559,9 @@ def record_profiles(
     valid_time: str,
     captured_at: str,
     source_asset_sha256: str | None = None,
+    *,
+    locked_operational_reference: str | None = None,
 ) -> int:
-    if _epoch(valid_time) < _epoch(captured_at) - 3600:
-        return 0
     written = 0
     anchors = document.setdefault("anchors", {})
     for target_id, target in target_by_id.items():
@@ -564,6 +569,20 @@ def record_profiles(
             target.get("regionalProxyCandidate")
             and target.get("requiredCollection") == collection
         )
+        # Regional native-phase samples may support the first operational
+        # hours through the already approved <=3h hold. Ordinary research
+        # retains its narrower -1h collection boundary.
+        maximum_past_hours = 3 if regional_operational_target else 1
+        window_reference = _epoch(captured_at)
+        if regional_operational_target and locked_operational_reference is not None:
+            locked_reference = _exact_utc_hour_or_none(locked_operational_reference)
+            if locked_reference is None:
+                continue
+            # The job can start minutes (or hours) after its locked target.
+            # Observation time must not move either operational window edge.
+            window_reference = locked_reference.timestamp()
+        if _epoch(valid_time) < window_reference - maximum_past_hours * 3600:
+            continue
         # The regional path can affect the controlled live runtime. Unlike the
         # score-neutral transect research, every such sample must therefore be
         # bound to the exact canonical DMI bytes that were processed.
@@ -582,7 +601,7 @@ def record_profiles(
             if regional_operational_target
             else FORECAST_LEAD_MAX_HOURS
         )
-        if _epoch(valid_time) > _epoch(captured_at) + maximum_lead_hours * 3600:
+        if _epoch(valid_time) > window_reference + maximum_lead_hours * 3600:
             continue
         maximum_distance = _target_maximum_distance_km(target, collection)
         if maximum_distance is None:
@@ -617,9 +636,9 @@ def record_profiles(
         )
         sample_key = f"{collection}|{model_run}|{valid_time}|{source_binding}"
         samples = list(anchor.get("samples") or [])
-        if any(row.get("sampleKey") == sample_key for row in samples):
+        if not regional_operational_target and any(row.get("sampleKey") == sample_key for row in samples):
             continue
-        samples.append({
+        captured_sample = {
             "sampleKey": sample_key,
             "capturedAt": captured_at,
             "collection": collection,
@@ -628,7 +647,14 @@ def record_profiles(
             **({"sourceAssetSha256": source_binding}
                if source_binding != "unbound-research" else {}),
             **profile,
-        })
+        }
+        if regional_operational_target:
+            # A genuinely re-read regional profile may repair a corrupt or
+            # duplicated leaf. The caller's EOF transaction must attach its
+            # new positive proof before committing this isolated stage.
+            samples = [row for row in samples if not isinstance(row, dict)
+                       or row.get("sampleKey") != sample_key]
+        samples.append(captured_sample)
         anchor["samples"] = samples
         written += 1
     document["generatedAt"] = captured_at
@@ -734,6 +760,7 @@ def prune(document: dict[str, Any], now_iso: str) -> dict[str, int]:
         else:
             document["coverageAudits"].pop(audit_id, None)
     document["generatedAt"] = now_iso
+    prune_regional_source_proofs(document)
     return {"removedSamples": removed_samples, "removedAnchors": removed_anchors}
 
 

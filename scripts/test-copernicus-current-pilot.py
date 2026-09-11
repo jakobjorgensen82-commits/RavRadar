@@ -161,9 +161,10 @@ fair_targets = [
     {"partId": "baltic-only-a", "parentZoneId": "z", "name": "x", "waterPoint": [10.5, 56.0]},
     {"partId": "baltic-only-b", "parentZoneId": "z", "name": "x", "waterPoint": [12.0, 57.0]},
 ]
+rotation_started_at = datetime(2026, 8, 18, 10, 7, tzinfo=timezone.utc)
 cold_order = runner.operational_shard_work_order(
     targets=fair_targets,
-    rotation_slot=0,
+    acquisition_at=rotation_started_at,
 )
 cold_sources = [row["product"]["source"] for row in cold_order]
 assert cold_sources[:4] == [
@@ -174,7 +175,7 @@ assert cold_sources[:4] == [
 ]
 rotated_order = runner.operational_shard_work_order(
     targets=fair_targets,
-    rotation_slot=1,
+    acquisition_at=rotation_started_at + timedelta(hours=1),
 )
 rotated_sources = [row["product"]["source"] for row in rotated_order]
 assert rotated_sources[:4] == cold_sources[:4]
@@ -201,7 +202,7 @@ for source, product in ((row["source"], row) for row in runner.PRODUCTS):
             row["shard"]["shardId"]
             for row in runner.operational_shard_work_order(
                 targets=fair_targets,
-                rotation_slot=slot,
+                acquisition_at=rotation_started_at + timedelta(hours=slot),
             )
             if row["product"]["source"] == source
         )
@@ -260,5 +261,133 @@ old_attempt = {
 assert runner.current_reference_attempt_pairs(
     [old_attempt], source="copernicus-baltic-nemo", reference=reference,
 ) == set()
+
+# Provider envelopes split only when at least 24 whole native hours are absent.
+# Small sparse gaps stay coalesced, and no exact part/time pair is changed.
+def pair(part_id: str, offset_hours: int) -> tuple[str, str]:
+    return (
+        part_id,
+        (reference + timedelta(hours=offset_hours)).isoformat().replace(
+            "+00:00", "Z"
+        ),
+    )
+
+
+small_gap_pairs = {
+    pair("overlap-a", 0),
+    pair("overlap-a", 2),
+    pair("baltic-only-a", 4),
+    pair("overlap-a", 24),
+}
+assert len(runner.operational_request_segments(small_gap_pairs)) == 1
+threshold_pairs = {
+    pair("overlap-a", 0),
+    pair("baltic-only-a", 0),
+    pair("overlap-a", 25),
+    pair("overlap-a", 27),
+    pair("overlap-a", 52),
+}
+segments = runner.operational_request_segments(threshold_pairs)
+assert [len(segment) for segment in segments] == [2, 2, 1]
+assert {
+    (row["partId"], row["validTime"])
+    for segment in segments
+    for row in segment
+} == threshold_pairs
+assert segments == runner.operational_request_segments(set(reversed(sorted(threshold_pairs))))
+
+# A failed exact segment cannot suppress another segment of the same stable
+# full-register shard. Its failure key differs only by exact pair-set hash.
+segment_product = runner.PRODUCTS[0]
+segment_shard = runner.spatial_shards(
+    [target_by_id["overlap-a"], target_by_id["baltic-only-a"]],
+    segment_product,
+)[0]
+segment_keys = [
+    runner.operational_segment_work_key(segment_product, segment_shard, segment)
+    for segment in segments
+]
+assert len(set(segment_keys)) == len(segments)
+assert all(key[:2] == (segment_product["source"], segment_shard["shardId"])
+           for key in segment_keys)
+failed_segment_keys = {segment_keys[0]}
+assert [segment for segment, _ in runner.available_operational_request_segments(
+    product=segment_product,
+    shard=segment_shard,
+    pairs=threshold_pairs,
+    failed_work_items=failed_segment_keys,
+)] == segments[1:]
+
+# An already-failed AMM-only segment must not hide a distinct overlap segment
+# that a later Baltic work item can still unlock in the same fair pass.
+edge_shard = {
+    "shardId": "copernicus-nws-amm15:fixture-edge",
+    "targets": [target_by_id["amm-only-a"], target_by_id["overlap-a"]],
+}
+edge_amm_pair = pair("amm-only-a", 0)
+edge_overlap_pair = pair("overlap-a", 0)
+edge_segment = runner.operational_request_segments({edge_amm_pair})[0]
+edge_failed = {
+    runner.operational_segment_work_key(amm15, edge_shard, edge_segment)
+}
+assert runner.available_operational_request_segments(
+    product=amm15,
+    shard=edge_shard,
+    pairs={edge_amm_pair},
+    failed_work_items=edge_failed,
+) == []
+assert runner.has_deferred_amm15_overlap(
+    shard=edge_shard,
+    remaining={edge_amm_pair, edge_overlap_pair},
+    downstream_covered=set(),
+    attempted_pairs_by_source={
+        "copernicus-baltic-nemo": set(),
+        "copernicus-nws-amm15": set(),
+    },
+    target_by_id=target_by_id,
+    baltic_product=baltic,
+)
+
+# Segmented rollover retires an old wide request only after the union of the
+# completed current-reference segments covers every old exact pair.
+old_reference = reference - timedelta(hours=6)
+old_pairs = [
+    {"partId": row[0], "validTime": row[1]}
+    for row in sorted(threshold_pairs)
+]
+
+def attempt(attempt_id: str, at: datetime, requested: list[dict[str, str]]) -> dict:
+    return {
+        "attemptId": attempt_id,
+        "source": segment_product["source"],
+        "shardId": segment_shard["shardId"],
+        "productionReferenceAt": at.isoformat().replace("+00:00", "Z"),
+        "acquisitionAt": (at + timedelta(minutes=10)).isoformat().replace(
+            "+00:00", "Z"
+        ),
+        "requestedPairs": requested,
+    }
+
+
+legacy_wide = attempt("legacy-wide", old_reference, old_pairs)
+legacy_wide_before = {**legacy_wide, "requestedPairs": list(legacy_wide["requestedPairs"])}
+first_current = attempt("current-a", reference, segments[0])
+second_current = attempt("current-b", reference, segments[1])
+third_current = attempt("current-c", reference, segments[2])
+rolled = runner.replace_stale_shard_attempt([legacy_wide], first_current)
+assert legacy_wide in rolled
+rolled = runner.replace_stale_shard_attempt(rolled, second_current)
+assert legacy_wide in rolled
+rolled = runner.replace_stale_shard_attempt(rolled, third_current)
+assert legacy_wide not in rolled
+assert {row["attemptId"] for row in rolled} == {
+    "current-a", "current-b", "current-c",
+}
+assert legacy_wide == legacy_wide_before
+assert [row["acquisitionAt"] for row in rolled] == [
+    first_current["acquisitionAt"],
+    second_current["acquisitionAt"],
+    third_current["acquisitionAt"],
+]
 
 print("OK: Copernicus selection is native-time exact and spatial shards are deterministic and bounded.")

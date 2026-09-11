@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.343
+**Håndbogsversion:** 4.0.344
+
+## 88.48 Lokal 4.0.344 – Bevar brugbare data og hent de rigtige huller
+
+**Status:** Dette kapitel beskriver den samlede lokale rettelse efter 4.0.343, ikke en ny fungerende produktion. Den læsende cacheprøve er bestået; færdig kodepakke, GitHub-kontrol, faktisk vejrhentning og modellancering mangler fortsat. DEC-0126 præciserer de tidligere kø- og genbrugsregler. Afstande, geografi og krav til gyldige data er ikke lempet.
+
+### Data og deres oprindelse skal blive sammen
+
+Nogle regionale strømdata var stadig gemt, men deres oprindelige kildebevis kunne forsvinde fra den vej, systemet brugte til at godkende dem. Rettelsen gemmer derfor beviset sammen med den konkrete regionale række. En ny native DMI-vinder må ikke gøre en anden stadig gyldig regional række ubrugelig. En afvist ny række må heller ikke overskrive en god gammel række.
+
+En læsende prøve på den eksisterende cache genbrugte 656 af de tidligere 1.658 manglende kystdel/time-par uden at hente nyt eller miste tidligere dækning. De resterende 1.002 er et resultat på det faste prøvegrundlag, ikke en påstand om, at produktionen allerede er fyldt op. Manglende kildebeviser opfindes ikke, og kendt beskadigede bindinger genoplives ikke fra en gammel kopi.
+
+### DMI skal bruge tiden på reelle mangler
+
+Kun den DMI-familie, der faktisk går først, får flyttet sin rotationsmarkør. De øvrige kritiske familier deler den resterende arbejdstid. LF-planen medregner både direkte huller og de regionale timer, et godkendt sample kan dække. Den ser også op til tre timer før det fastlåste prognosevindue, når den eksisterende regionale regel kræver det. Unødvendig genberegning og gentagne uændrede regionale nulresultater undgås, uden at en arbejdskvittering kan godkende data.
+
+Katalogets sidste nødvendige modeltime skal kunne undersøges, selv om den ligger lige efter hjemmesidens 118 timer. Den ekstra katalogoplysning udvider ikke hjemmesidens prognose, får ikke systemet til at hente ekstra GRIB-filer uden for køen og bliver ikke regnet som en vejrmåling.
+
+### Copernicus skal ikke hente lange tomme mellemrum
+
+Prøven fandt forespørgsler med 37 nødvendige timer spredt over 118 timer, herunder et mellemrum på 80 timer uden noget, vi manglede. Den fælles normale/oneoff-kø opdeler derfor ved mindst 24 hele tomme timer. Små mellemrum beholdes samlet, så gevinsten ikke forsvinder i mange små kald og gemninger. Delområder får ét tidsafsnit på skift; en lokal fejl må ikke spærre de andre afsnit. Alle faktisk manglende par forbliver i regnskabet, og der interpoleres ikke nye strømdata.
+
+Kørotationen er tilpasset både kvarters- og timekørsler. Gemningen genbruger allerede kontrollerede interne resultater, men kontrollerer stadig de præcise filer før udskiftning. Tidligere færdiggemte resultater består ved timeout; den aktive endnu ikke gemte hentning kan fortsat gå tabt. Faktiske hente-, parse- og gemmetider måles, før der eventuelt ændres mere på tidsbudgetterne.
+
+### Samme kvalitet og samme slutmål
+
+Reelle huller og hale kommer før bedre kvalitet. Gamle brugbare rækker bliver liggende, indtil fuldt validerede erstatninger overtager. Når dækningen er komplet, forbedrer de almindelige kørsler fortsat kilderne i rækkefølgen DMI, Copernicus og Open-Meteo. Op til 48 timers verificeret historik bevares. Current kræver fortsat 79.414 par; bølger kræver 79.060 native WAM-par og Feggesunds 354 særskilte par. Lokal test og læsende replay erstatter ikke slutkontrol, offentlig modelkontrol eller bevis for almindelig vedligeholdelse.
 
 ## 88.47 4.0.343 – Huller skal ikke vente bag den forkerte kø
 

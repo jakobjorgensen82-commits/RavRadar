@@ -1805,7 +1805,27 @@ def _validate_current_operational_ledger(
             if model_run is not None
             else None
         )
-        if not allow_incomplete and native_terminal_time not in official_times:
+        terminal_asset = None
+        if "nativeTerminalAsset" in collection_row:
+            raw_terminal_asset = collection_row["nativeTerminalAsset"]
+            if (
+                not isinstance(raw_terminal_asset, dict)
+                or set(raw_terminal_asset) != CURRENT_OFFICIAL_ASSET_FIELDS
+            ):
+                raise ValueError("DMI native terminal asset is not sanitized")
+            terminal_asset = _canonical_official_current_asset(
+                raw_terminal_asset, collection, model_run, native_terminal_time,
+            )
+            if terminal_asset is None or terminal_asset != raw_terminal_asset:
+                raise ValueError("DMI native terminal asset identity is invalid")
+            if native_terminal_time in states and (
+                states[native_terminal_time]["officialAsset"] != terminal_asset
+            ):
+                raise ValueError("DMI native terminal asset contradicts required inventory")
+        if (
+            not allow_incomplete and native_terminal_time not in official_times
+            and terminal_asset is None
+        ):
             raise ValueError(
                 "DMI current official inventory lacks its native terminal asset"
             )

@@ -29,6 +29,11 @@ assert.match(
   /if budget_stop_code in \{\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
 );
 assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
+assert.match(
+  bulk,
+  /state = result\["collectionState"\]\.setdefault\(collection, \{\}\)\s+if begin_collection_scheduler_turn\([\s\S]{0,180}checkpoint_controller\.mark_bulk_dirty\(\)\s+# Progress cadence/,
+  'Produktionsloopet skal skrive leadrotationen ved det faktiske collection-forsøg, før providerarbejdet kan fejle.',
+);
 
 
 import {spawnSync} from 'node:child_process';
@@ -252,10 +257,16 @@ assert 'wam_dw' in planned and 'wam_nsb' in planned, planned
 assert plan_diag['proofCompleteWamCollectionsSkipped']==[], plan_diag
 assert plan_diag['proofCompleteWamCollectionsRetainedForQuality']==['wam_dw','wam_nsb'], plan_diag
 
-# Critical DKSS service uses a persisted turn cursor, not lastAttemptAt. Each
-# family therefore gets the bounded first position across consecutive normal
-# or oneoff invocations, including after a failed/negative previous turn.
-turn_state={}
+# Reproduce successive production bookkeeping from a legacy cache where every
+# served family has the same marker.  Each invocation reaches all three DKSS
+# families, exactly as the shared normal/oneoff producer does; only the actual
+# lead may advance the lead marker.  The first turn is considered failed after
+# it starts, proving that failure does not pin the same lead on the next run.
+legacy_turn='1970-01-01T00:15:00Z'
+turn_state={
+ collection:{'lastStrictCurrentTurnAt':legacy_turn}
+ for collection in ('dkss_nsbs','dkss_lf','dkss_idw')
+}
 observed_leads=[]
 for now_epoch in (1000,1100,1200,1300):
  planned,turn_diag=module.operational_collection_plan(
@@ -263,9 +274,19 @@ for now_epoch in (1000,1100,1200,1300):
  )
  lead=turn_diag['strictCurrentLeadCollection']
  observed_leads.append(lead)
- turn_state.setdefault(lead,{})['lastStrictCurrentTurnAt']=datetime.fromtimestamp(
-  now_epoch,timezone.utc,
- ).isoformat().replace('+00:00','Z')
+ turn_at=datetime.fromtimestamp(now_epoch,timezone.utc).isoformat().replace('+00:00','Z')
+ marker_before={
+  collection:turn_state.setdefault(collection,{}).get('lastStrictCurrentTurnAt')
+  for collection in turn_diag['strictCurrentCollections']
+ }
+ for served_collection in turn_diag['strictCurrentCollections']:
+  marker_written=module.begin_collection_scheduler_turn(
+   turn_state[served_collection],served_collection,lead,turn_at,
+  )
+  assert marker_written is (served_collection==lead)
+  assert turn_state[served_collection]['lastAttemptAt']==turn_at
+  expected=turn_at if served_collection==lead else marker_before[served_collection]
+  assert turn_state[served_collection]['lastStrictCurrentTurnAt']==expected, turn_state
 assert observed_leads==['dkss_nsbs','dkss_lf','dkss_idw','dkss_nsbs'], observed_leads
 malformed_state={
  'dkss_nsbs':{'lastStrictCurrentTurnAt':'not-a-time'},
@@ -276,9 +297,176 @@ _,malformed_diag=module.operational_collection_plan(
  mixed_schedule,malformed_state,False,wave_residual,600,now_epoch=1000,
 )
 assert malformed_diag['strictCurrentCollections'][:2]==['dkss_nsbs','dkss_lf'], malformed_diag
+assert module.fair_nonlead_strict_current_runtime_reserve(
+ ['dkss_lf'],900,{'dkss_lf':120},
+)==450
+assert module.fair_nonlead_strict_current_runtime_reserve(
+ ['dkss_lf','dkss_idw'],900,{'dkss_lf':120,'dkss_idw':120},
+)==600
+assert module.fair_nonlead_strict_current_runtime_reserve(
+ ['dkss_lf'],100,{'dkss_lf':120},
+)==120
+
+real_remaining=module.runtime_remaining
+# Exercise the same clock, reservations, lead limit and persisted turn update
+# as the shared producer loop. Across three invocations, every family owns each
+# DKSS position once, while both critical WAM families retain a start.
+production_state={collection:{'lastStrictCurrentTurnAt':legacy_turn}
+                  for collection in ('dkss_nsbs','dkss_lf','dkss_idw')}
+attempts_by_run=[]
+for now_epoch in (2000,2100,2200):
+ remaining=[1200.0]
+ module.runtime_remaining=lambda:remaining[0]
+ controller=module.ProgressCheckpointController({},set(),{})
+ planned,turn_diag=module.operational_collection_plan(
+  mixed_schedule,production_state,False,wave_residual,remaining[0],now_epoch=now_epoch,
+ )
+ strict=list(turn_diag['strictCurrentCollections'])
+ pending_current=list(strict)
+ pending_wam=list(turn_diag['criticalWamCollections'])
+ current_reserve,_=module.strict_current_runtime_reserve(strict,remaining[0])
+ wam_reserve,_=module.wam_runtime_reserve(
+  pending_wam,remaining[0],lead_reserve_seconds=sum(current_reserve.values()),
+ )
+ lead=turn_diag['strictCurrentLeadCollection']
+ turn_at=datetime.fromtimestamp(now_epoch,timezone.utc).isoformat().replace('+00:00','Z')
+ counts={collection:0 for collection in strict}
+ wam_started=[]
+ for collection in planned:
+  is_current=collection in strict
+  is_wam=collection in turn_diag['criticalWamCollections']
+  if not is_current and not is_wam: continue
+  if is_current: pending_current.remove(collection)
+  if is_wam: pending_wam.remove(collection)
+  reserve=sum(wam_reserve.get(value,0) for value in pending_wam)+sum(
+   current_reserve.get(value,0) for value in pending_current
+  )
+  if is_current and collection!=lead and not pending_wam:
+   reserve=max(reserve,module.fair_nonlead_strict_current_runtime_reserve(
+    pending_current,remaining[0],current_reserve,
+   ))
+  module.begin_collection_scheduler_turn(
+   production_state.setdefault(collection,{}),collection,lead,turn_at,
+  )
+  if is_wam:
+   assert controller.can_start_asset(reserve_seconds=reserve), (collection,reserve,remaining)
+   wam_started.append(collection)
+   controller.observe_asset_duration(100)
+   remaining[0]-=100
+   continue
+  while controller.can_start_asset(reserve_seconds=reserve):
+   counts[collection]+=1
+   controller.observe_asset_duration(100)
+   remaining[0]-=100
+   if collection==lead: break
+ assert wam_started==['wam_dw','wam_nsb'], wam_started
+ assert counts[lead]==1, counts
+ nonleads=[collection for collection in strict if collection!=lead]
+ assert abs(counts[nonleads[0]]-counts[nonleads[1]])<=1, counts
+ attempts_by_run.append((lead,counts))
+assert [row[0] for row in attempts_by_run]==['dkss_nsbs','dkss_lf','dkss_idw'], attempts_by_run
+assert len({sum(row[1][collection] for row in attempts_by_run)
+            for collection in ('dkss_nsbs','dkss_lf','dkss_idw')})==1, attempts_by_run
+
+# LF regional acquisition uses only actual global gaps, native three-hour
+# source times and a causal <=3h hold. T-3 is input-only, never a native target.
+regional_reference=datetime(2026,1,1,9,tzinfo=timezone.utc)
+regional_run='2026-01-01T06:00:00Z'
+regional_parts=[f'REGIONAL-{index}' for index in range(8)]
+regional_required=set(module.operational_current_valid_times(regional_reference))
+def regional_asset(valid,suffix):
+ return {'valid':valid,'id':f'regional-{suffix}','assetIdentitySha256':suffix*64}
+left='2026-01-01T06:00:00Z'
+exact='2026-01-01T09:00:00Z'
+off_phase='2026-01-01T07:00:00Z'
+right='2026-01-06T06:00:00Z'
+outside_right='2026-01-06T07:00:00Z'
+malformed_minute='2026-01-01T09:30:00Z'
+regional_assets=[
+ regional_asset(left,'a'),regional_asset(exact,'b'),
+ regional_asset(off_phase,'c'),regional_asset(right,'d'),
+ regional_asset(outside_right,'e'),regional_asset(malformed_minute,'f'),
+]
+regional_by_time=module.regional_lf_asset_gap_pairs_by_time(
+ regional_assets,regional_run,regional_parts,regional_required,set(),regional_reference,
+)
+assert len(regional_by_time[left])==8, regional_by_time
+assert len(regional_by_time[exact])==32, regional_by_time
+assert off_phase not in regional_by_time, regional_by_time
+assert len(regional_by_time[right])==8, regional_by_time
+assert outside_right not in regional_by_time, regional_by_time
+assert malformed_minute not in regional_by_time, regional_by_time
+# A source inside the regional T-3..T+117 interval is still unusable when its
+# forecast lead exceeds the authoritative DKSS horizon.
+too_old_run='2026-01-01T03:00:00Z'
+assert module.regional_lf_asset_gap_pairs(
+ regional_assets[3],too_old_run,
+ module.regional_lf_missing_pair_keys(
+  regional_parts,regional_required,set(),
+ ),regional_reference,
+)==set()
+covered_left={(part,'2026-01-01T09:00:00Z') for part in regional_parts}
+without_left=module.regional_lf_asset_gap_pairs_by_time(
+ regional_assets,regional_run,regional_parts,regional_required,covered_left,regional_reference,
+)
+assert left not in without_left and len(without_left[exact])==24, without_left
+regional_order=module.prioritize_marine_assets_for_current_gaps(
+ regional_assets[:3],regional_parts,set(),direct_valid_times=set(),
+ regional_gap_pairs_by_time=regional_by_time,
+ verified_reusable_valid_times={left},
+)
+assert [row['valid'] for row in regional_order]==[left,exact,off_phase], regional_order
+# Direct and regional gaps may name the same concrete part/time pair. Priority
+# must use their union, otherwise overlap receives a fictitious double gain.
+union_a=regional_asset(exact,'g')
+union_b=regional_asset('2026-01-01T10:00:00Z','h')
+union_order=module.prioritize_marine_assets_for_current_gaps(
+ [union_a,union_b],regional_parts,set(),
+ direct_valid_times={union_a['valid'],union_b['valid']},
+ regional_gap_pairs_by_time={
+  union_a['valid']:{(part,union_a['valid']) for part in regional_parts},
+  union_b['valid']:{('REGIONAL-EXTRA',union_b['valid'])},
+ },
+)
+assert [row['valid'] for row in union_order]==[
+ union_b['valid'],union_a['valid'],
+], union_order
+# Within one DKSS family, an asset that is critical only because of scalar
+# component maintenance cannot overtake a later asset with real current gaps.
+scalar_time='2026-01-01T10:00:00Z'
+current_time='2026-01-01T11:00:00Z'
+scalar_covered={(part,scalar_time) for part in regional_parts}
+current_before_scalar=module.prioritize_marine_assets_for_current_gaps(
+ [regional_asset(scalar_time,'i'),regional_asset(current_time,'j')],
+ regional_parts,scalar_covered,
+ critical_by_time={scalar_time:True,current_time:True},
+ direct_valid_times={scalar_time,current_time},
+)
+assert [row['valid'] for row in current_before_scalar]==[
+ current_time,scalar_time,
+], current_before_scalar
+supplemental=module.classify_dkss_primary_asset(
+ collection='dkss_lf',model_run=regional_run,asset=regional_assets[0],
+ target_ids=regional_parts,covered_pair_keys=set(),cached_zones={},
+ active_zone_ids=['PART::REGIONAL-0'],enabled=True,
+ planning_covered_pair_keys=set(),required_valid_times=regional_required,
+ regional_current_gap_count=8,
+)
+assert supplemental['critical'] is True, supplemental
+assert supplemental['currentMissingPairCount']==0, supplemental
+assert supplemental['missingComponentKinds']==['regionalCurrent'], supplemental
+assert module.should_skip_previously_processed_asset(left,{left},supplemental) is False
+supplemental_done=module.classify_dkss_primary_asset(
+ collection='dkss_lf',model_run=regional_run,asset=regional_assets[0],
+ target_ids=regional_parts,covered_pair_keys=set(),cached_zones={},
+ active_zone_ids=['PART::REGIONAL-0'],enabled=True,
+ planning_covered_pair_keys=set(),required_valid_times=regional_required,
+ regional_current_gap_count=0,
+)
+assert supplemental_done['deferValidRefresh'] is True, supplemental_done
+assert module.should_skip_previously_processed_asset(left,{left},supplemental_done) is True
 small_reserve,small_total=module.wam_runtime_reserve(['wam_dw','wam_nsb'],100)
 assert small_total==100 and set(small_reserve.values())=={50}, (small_reserve,small_total)
-real_remaining=module.runtime_remaining
 module.runtime_remaining=lambda:100
 controller=module.ProgressCheckpointController({},set(),{})
 assert controller.can_start_asset() is True
@@ -375,6 +563,38 @@ def stac_item(run,created,valid,suffix):
   'properties':{'forecast:reference_datetime':run,'datetime':valid,'created':created},
   'assets':{'data':{'href':f'https://example.test/{suffix}.grib','type':'application/x-grib'}},
  }
+# An explicit earlier acquisition edge must widen only the STAC inventory.
+# The official required ledger remains the exact target-axis set.
+inventory_calls=[]
+real_inventory=module._bounded_stac_inventory
+def supplemental_inventory(collection,start,end):
+ inventory_calls.append((collection,start,end))
+ return ([
+  stac_item('2025-12-27T09:00:00Z','2025-12-27T10:00:00Z','2026-01-01T06:00:00Z','supplemental'),
+  stac_item('2025-12-27T09:00:00Z','2025-12-27T10:00:00Z','2026-01-01T09:00:00Z','required'),
+ ],{
+  'paginationPagesFetched':1,'paginationItemsFetched':2,
+  'paginationUniqueItems':2,'paginationNumberMatched':2,
+  'paginationExhausted':True,'catalogInventoryComplete':True,
+  'catalogInventoryFailureCodes':[],
+ })
+module._bounded_stac_inventory=supplemental_inventory
+supplemental_run,supplemental_assets,supplemental_diag=module.list_latest_assets(
+ 'dkss_lf','2025-12-27T09:00:00Z',
+ minimum_valid_time='2026-01-01T06:00:00Z',
+ required_valid_times={'2026-01-01T09:00:00Z'},
+ required_horizon_end_time='2026-01-01T09:00:00Z',
+ allow_documented_required_gaps=True,retain_preferred_native_run=True,
+)
+assert inventory_calls==[('dkss_lf','2026-01-01T06:00:00Z','2026-01-01T09:00:00Z')], inventory_calls
+assert supplemental_run=='2025-12-27T09:00:00Z', supplemental_diag
+assert {row['valid'] for row in supplemental_assets}=={
+ '2026-01-01T06:00:00Z','2026-01-01T09:00:00Z',
+}, supplemental_assets
+assert supplemental_diag['officialRequiredValidTimes']==['2026-01-01T09:00:00Z'], supplemental_diag
+assert supplemental_diag['officialRequiredValidTimeCount']==1, supplemental_diag
+assert len(supplemental_diag['officialRequiredAssets'])==1, supplemental_diag
+module._bounded_stac_inventory=real_inventory
 stac_items=[
  stac_item('2026-01-01T00:00:00Z','2026-01-01T01:00:00Z','2026-01-06T00:00:00Z','a'),
  stac_item('2026-01-01T03:00:00Z','2026-01-01T04:00:00Z','2026-01-06T03:00:00Z','b'),
@@ -645,7 +865,12 @@ with tempfile.TemporaryDirectory() as temporary:
  assert rejected_diagnostics['rejectedScalarTuples']['PART::TEST']['wave']=='MISSING_WAVE_DIRECTION'
  assert rejected_touched==set() and not rejected_interrupted
 `;
-const result=spawnSync(process.env.PYTHON || 'python',['-c',behavioral],{encoding:'utf8'});
+// Feed the behavioral program on stdin. Windows' command-line length limit is
+// substantially smaller than this deliberately broad regression fixture.
+const result=spawnSync(process.env.PYTHON || 'python',['-'],{
+  encoding:'utf8',
+  input:behavioral,
+});
 assert.equal(result.status,0,`Schedulerens adfærdstest fejlede:\n${result.stdout}\n${result.stderr}`);
 
 console.log('OK: scheduler bruger aktive zoner, wind-familien og prioriterer DKSS efter reelt geografisk datagab.');

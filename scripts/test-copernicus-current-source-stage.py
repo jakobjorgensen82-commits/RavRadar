@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import copy
+import hashlib
 import importlib.util
 import os
 import shutil
@@ -17,6 +18,7 @@ from unittest.mock import patch
 import numpy as np
 import xarray as xr
 
+import lib.copernicus_current as CURRENT_MODULE
 from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     OPERATIONAL_MATRIX_CONTRACT_ID,
@@ -55,6 +57,8 @@ from lib.copernicus_current_donor_bank import (
     validate_copernicus_donor_bank, atomic_write_copernicus_donor_bank,
     load_copernicus_donor_bank,
     recover_copernicus_donor_bank, projected_donor_shadow,
+    _advance_validated_copernicus_donor_bank,
+    _project_validated_donor_shadow,
 )
 from lib.weather_acquisition_plan import build_current_acquisition_plan
 from lib.copernicus_target_identity import target_fingerprint
@@ -178,6 +182,33 @@ def dataset(
                 VALID_TIME.replace(tzinfo=None).isoformat(),
             ], dtype="datetime64[s]"),
             "depth": [depth_m],
+            "latitude": [target["waterPoint"][1]],
+            "longitude": [target["waterPoint"][0]],
+        },
+    )
+    document.to_netcdf(path)
+
+
+def sparse_segment_dataset(path: Path, *, target: dict = TARGET) -> None:
+    """One valid fixture carrying two operational request segments."""
+    valid_times = [
+        HISTORY_TIME,
+        REFERENCE,
+        REFERENCE + timedelta(hours=2),
+        VALID_TIME,
+    ]
+    values = np.array([[[[0.1]]]] * len(valid_times), dtype=float)
+    document = xr.Dataset(
+        data_vars={
+            "uo": (("time", "depth", "latitude", "longitude"), values),
+            "vo": (("time", "depth", "latitude", "longitude"), values),
+        },
+        coords={
+            "time": np.array(
+                [value.replace(tzinfo=None).isoformat() for value in valid_times],
+                dtype="datetime64[s]",
+            ),
+            "depth": [5.0],
             "latitude": [target["waterPoint"][1]],
             "longitude": [target["waterPoint"][0]],
         },
@@ -451,6 +482,93 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow=full_shadow,
         target_identities={TARGET["partId"]: TARGET},
         shadow_sha256=file_sha256(full / "shadow.json"),
+    )
+
+    # A real runner fixture splits one sparse shard only across the large
+    # 114-hour empty interval. The two-hour sparse prefix stays coalesced, the
+    # later segment still runs in the next fair pass, and exact pair/shard
+    # identities survive unchanged into the attempt journal.
+    segmented = root / "large-native-time-gap-segments"
+    segmented_fixtures = segmented / "fixtures"
+    segmented_fixtures.mkdir(parents=True)
+    prepare(segmented)
+    segmented_registry = json.loads(
+        (segmented / "registry.json").read_text(encoding="utf-8")
+    )
+    segmented_required = [
+        {
+            "partId": TARGET["partId"],
+            "validTime": value.isoformat().replace("+00:00", "Z"),
+        }
+        for value in (REFERENCE, REFERENCE + timedelta(hours=2), VALID_TIME)
+    ]
+    segmented_registry.update({
+        "operationalRequiredPairs": segmented_required,
+        "operationalRequiredPairsSha256": required_pairs_sha256(
+            segmented_required
+        ),
+        "operationalRequiredPairCount": 3,
+        "operationalDmiVerifiedPairCount": 115,
+        "dmiVerifiedPairCount": 162,
+    })
+    write(segmented / "registry.json", segmented_registry)
+    sparse_segment_dataset(
+        segmented_fixtures / "copernicus-baltic-nemo.nc"
+    )
+    segmented_run = run_runner(segmented, segmented_fixtures)
+    assert segmented_run.returncode == 0, (
+        segmented_run.stdout + segmented_run.stderr
+    )
+    checkpoint_lines = [
+        line for line in segmented_run.stdout.splitlines()
+        if line.startswith("Copernicus shard checkpoint:")
+    ]
+    assert len(checkpoint_lines) == 2
+    assert "requestedPairCount=2" in checkpoint_lines[0]
+    assert "nativeUniqueHourCount=2" in checkpoint_lines[0]
+    assert "requestEnvelopeHourCount=3" in checkpoint_lines[0]
+    assert "requestedPairCount=1" in checkpoint_lines[1]
+    assert "nativeUniqueHourCount=1" in checkpoint_lines[1]
+    assert "requestEnvelopeHourCount=1" in checkpoint_lines[1]
+    assert all(
+        "acquireHashParseSeconds=" in line
+        and "admissionMergeCheckpointSeconds=" in line
+        for line in checkpoint_lines
+    )
+    segmented_shadow = json.loads(
+        (segmented / "shadow.json").read_text(encoding="utf-8")
+    )
+    segmented_stage = validate_source_stage(
+        json.loads(
+            (segmented / "source-stage.json").read_text(encoding="utf-8")
+        ),
+        registry=segmented_registry,
+        shadow=segmented_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(segmented / "shadow.json"),
+    )
+    assert len(segmented_stage["attempts"]) == 2
+    assert {
+        (row["partId"], row["validTime"])
+        for attempt in segmented_stage["attempts"]
+        for row in attempt["requestedPairs"]
+    } == {
+        (row["partId"], row["validTime"])
+        for row in segmented_required
+    }
+    assert len({
+        attempt["shardId"] for attempt in segmented_stage["attempts"]
+    }) == 1
+    assert all(
+        attempt["requestStartAt"] == attempt["requestEndAt"]
+        if attempt["requestedPairCount"] == 1
+        else (
+            RUNNER_MODULE.parse_time(attempt["requestEndAt"], "segment end")
+            - RUNNER_MODULE.parse_time(
+                attempt["requestStartAt"], "segment start"
+            )
+        ) == timedelta(hours=2)
+        for attempt in segmented_stage["attempts"]
     )
 
     # In the shared product domain, AMM15 can be selected only after the same
@@ -935,6 +1053,393 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     bank_before = copy.deepcopy(donor_bank)
     retained_pair = (TARGET["partId"], VALID_TIME.isoformat().replace("+00:00", "Z"))
 
+    # After one full bank -> projection -> stage transaction, an honest
+    # no-record attempt cannot justify rebuilding or rewriting an identical
+    # generation. The attempt journal must still advance and fully validate.
+    fast_checkpoint = root / "normalized-no-record-checkpoint"
+    fast_checkpoint.mkdir()
+    fast_registry = json.loads((full / "registry.json").read_text(encoding="utf-8"))
+    fast_state = build_copernicus_donor_bank(
+        full_shadow,
+        targets=[TARGET],
+        attempts=[],
+        production_reference_at=REFERENCE,
+    )
+    fast_bank_path = fast_checkpoint / "donor-bank.json"
+    fast_shadow_path = fast_checkpoint / "shadow.json"
+    fast_stage_path = fast_checkpoint / "source-stage.json"
+    fast_updated_at = REFERENCE + timedelta(minutes=10)
+    fast_initial_checkpoint = RUNNER_MODULE.persist_source_stage_progress(
+        shadow_path=fast_shadow_path,
+        source_stage_path=fast_stage_path,
+        registry=fast_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        acquisitions=list(fast_state["shadow"]["acquisitions"]),
+        records=list(fast_state["shadow"]["records"]),
+        attempts=[],
+        updated_at=fast_updated_at,
+        shadow_changed=True,
+        donor_bank_path=fast_bank_path,
+        donor_state=fast_state,
+    )
+    fast_bank_bytes = fast_bank_path.read_bytes()
+    fast_shadow_bytes = fast_shadow_path.read_bytes()
+    assert fast_bank_bytes == (
+        json.dumps(
+            fast_state,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ) + "\n"
+    ).encode("utf-8")
+    assert fast_shadow_bytes == (
+        json.dumps(
+            fast_initial_checkpoint.shadow,
+            ensure_ascii=False,
+            indent=2,
+            allow_nan=False,
+        ) + "\n"
+    ).encode("utf-8")
+    baltic_product = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == "copernicus-baltic-nemo"
+    )
+    no_record_acquisition = make_acquisition(
+        source=baltic_product["source"],
+        acquisition_at=fast_updated_at,
+        request_start_at=VALID_TIME,
+        request_end_at=VALID_TIME,
+        targets=[TARGET],
+        native_valid_times=[VALID_TIME],
+        subset_sha256=canonical_sha256({"fixture": "normalized-no-record"}),
+        record_count=0,
+    )
+    no_record_attempt = make_source_attempt(
+        production_reference_at=REFERENCE,
+        acquisition_at=fast_updated_at,
+        product=baltic_product,
+        shard_id=spatial_shards([TARGET], baltic_product)[0]["shardId"],
+        target_part_ids=[TARGET["partId"]],
+        requested_pairs=[{
+            "partId": TARGET["partId"],
+            "validTime": retained_pair[1],
+        }],
+        subset_sha256=no_record_acquisition["subsetSha256"],
+        acquisition_id=no_record_acquisition["acquisitionId"],
+        parsed_record_count=0,
+        observed_native_valid_times=no_record_acquisition["nativeValidTimes"],
+    )
+    fast_attempts = [no_record_attempt]
+    with (
+        patch.object(
+            RUNNER_MODULE,
+            "_advance_validated_copernicus_donor_bank",
+            side_effect=AssertionError("unchanged donor generation was rebuilt"),
+        ),
+        patch.object(
+            RUNNER_MODULE,
+            "build_copernicus_donor_bank",
+            side_effect=AssertionError("unchanged donor generation was rebuilt"),
+        ),
+        patch.object(
+            RUNNER_MODULE,
+            "commit_prepared_donor_generation",
+            side_effect=AssertionError("unchanged donor generation was rewritten"),
+        ),
+    ):
+        reused_checkpoint = RUNNER_MODULE.persist_source_stage_progress(
+            shadow_path=fast_shadow_path,
+            source_stage_path=fast_stage_path,
+            registry=fast_registry,
+            target_identities={TARGET["partId"]: TARGET},
+            acquisitions=list(fast_state["shadow"]["acquisitions"]),
+            records=list(fast_state["shadow"]["records"]),
+            attempts=fast_attempts,
+            updated_at=fast_updated_at,
+            shadow_changed=False,
+            donor_bank_path=fast_bank_path,
+            donor_state=fast_state,
+        )
+    reused_projection = reused_checkpoint.shadow
+    assert fast_bank_path.read_bytes() == fast_bank_bytes
+    assert fast_shadow_path.read_bytes() == fast_shadow_bytes
+    assert reused_projection == json.loads(fast_shadow_bytes)
+    fast_stage = validate_source_stage_progress(
+        json.loads(fast_stage_path.read_text(encoding="utf-8")),
+        registry=fast_registry,
+        shadow=reused_projection,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(fast_shadow_path),
+    )
+    assert fast_stage["attempts"] == [no_record_attempt]
+
+    # The shortcut must not hide the opposite case: a no-record Baltic witness
+    # can admit a retained AMM15 tuple. Such an unresolved generation still
+    # takes the complete provenance/build/atomic-commit path.
+    admission_checkpoint = root / "no-record-admission-checkpoint"
+    admission_checkpoint.mkdir()
+    unadmitted_state = build_copernicus_donor_bank(
+        amm15_shadow_document,
+        targets=[TARGET],
+        attempts=[],
+        production_reference_at=REFERENCE,
+    )
+    assert unadmitted_state["positiveAdmissions"] == []
+    admission_bank_path = admission_checkpoint / "donor-bank.json"
+    admission_shadow_path = admission_checkpoint / "shadow.json"
+    admission_stage_path = admission_checkpoint / "source-stage.json"
+    RUNNER_MODULE.persist_source_stage_progress(
+        shadow_path=admission_shadow_path,
+        source_stage_path=admission_stage_path,
+        registry=json.loads((amm15 / "registry.json").read_text(encoding="utf-8")),
+        target_identities={TARGET["partId"]: TARGET},
+        acquisitions=list(unadmitted_state["shadow"]["acquisitions"]),
+        records=list(unadmitted_state["shadow"]["records"]),
+        attempts=[],
+        updated_at=fast_updated_at,
+        shadow_changed=True,
+        donor_bank_path=admission_bank_path,
+        donor_state=unadmitted_state,
+    )
+    unadmitted_bank_bytes = admission_bank_path.read_bytes()
+    admission_registry = json.loads(
+        (amm15 / "registry.json").read_text(encoding="utf-8")
+    )
+    strict_previous = copy.deepcopy(unadmitted_state)
+    strict_attempts = list(amm15_stage["attempts"])
+    strict_input = empty_shadow(fast_updated_at)
+    strict_input["acquisitions"] = list(strict_previous["shadow"]["acquisitions"])
+    strict_input["records"] = list(strict_previous["shadow"]["records"])
+    strict_bank = build_copernicus_donor_bank(
+        strict_input,
+        targets=[TARGET],
+        attempts=strict_attempts,
+        previous_bank=strict_previous,
+        production_reference_at=REFERENCE,
+        **stage_positive_evidence(strict_previous),
+    )
+    strict_projection = projected_donor_shadow(strict_bank, targets=[TARGET])
+    strict_attempts = RUNNER_MODULE.journal_for_donor_projection(
+        strict_attempts,
+        bank=strict_bank,
+        shadow=strict_projection,
+        required_pairs=admission_registry["operationalRequiredPairs"],
+        target_identities={TARGET["partId"]: TARGET},
+    )
+    strict_shadow = empty_shadow(fast_updated_at)
+    strict_shadow["acquisitions"] = sorted(
+        strict_projection["acquisitions"], key=lambda row: row["acquisitionId"]
+    )
+    strict_shadow["records"] = sorted(
+        strict_projection["records"],
+        key=lambda row: (row["validTime"], row["partId"], row["recordId"]),
+    )
+    strict_shadow_bytes = (
+        json.dumps(strict_shadow, ensure_ascii=False, indent=2, allow_nan=False)
+        + "\n"
+    ).encode("utf-8")
+    strict_shadow_sha256 = "sha256:" + hashlib.sha256(strict_shadow_bytes).hexdigest()
+    strict_stage = build_source_stage_progress(
+        registry=admission_registry,
+        shadow=strict_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=strict_shadow_sha256,
+        attempts=strict_attempts,
+        updated_at=fast_updated_at,
+        **stage_positive_evidence(strict_bank),
+    )
+    strict_bank_bytes = (
+        json.dumps(
+            strict_bank,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ) + "\n"
+    ).encode("utf-8")
+    assert (
+        CURRENT_MODULE._streaming_canonical_sha256(strict_bank)
+        == canonical_sha256(strict_bank)
+    )
+    strict_stage_bytes = (
+        json.dumps(strict_stage, ensure_ascii=False, indent=2, allow_nan=False)
+        + "\n"
+    ).encode("utf-8")
+
+    admission_attempts = list(amm15_stage["attempts"])
+    with (
+        patch.object(
+            RUNNER_MODULE,
+            "commit_prepared_donor_generation",
+            wraps=RUNNER_MODULE.commit_prepared_donor_generation,
+        ) as admission_commit,
+        patch.object(
+            CURRENT_MODULE,
+            "_validate_record",
+            wraps=CURRENT_MODULE._validate_record,
+        ) as record_validator,
+    ):
+        admission_checkpoint_result = RUNNER_MODULE.persist_source_stage_progress(
+            shadow_path=admission_shadow_path,
+            source_stage_path=admission_stage_path,
+            registry=admission_registry,
+            target_identities={TARGET["partId"]: TARGET},
+            acquisitions=list(unadmitted_state["shadow"]["acquisitions"]),
+            records=list(unadmitted_state["shadow"]["records"]),
+            attempts=admission_attempts,
+            updated_at=fast_updated_at,
+            shadow_changed=False,
+            donor_bank_path=admission_bank_path,
+            donor_state=unadmitted_state,
+        )
+    assert admission_commit.call_count == 1
+    assert record_validator.call_count == 2 * len(strict_bank["shadow"]["records"])
+    assert admission_bank_path.read_bytes() != unadmitted_bank_bytes
+    assert admission_bank_path.read_bytes() == strict_bank_bytes
+    assert admission_shadow_path.read_bytes() == strict_shadow_bytes
+    assert admission_stage_path.read_bytes() == strict_stage_bytes
+    assert admission_checkpoint_result.shadow == strict_shadow
+    assert admission_attempts == strict_attempts
+    assert len(unadmitted_state["positiveAdmissions"]) == 1
+
+    # The spooled bytes are checked against the encoder's independently
+    # calculated digest, not a hash first learned from the file. Corrupting the
+    # second prepared write must therefore fail before bank, shadow or stage is
+    # promoted.
+    precommit_bytes = {
+        path: path.read_bytes()
+        for path in (
+            admission_bank_path,
+            admission_shadow_path,
+            admission_stage_path,
+        )
+    }
+    precommit_state = copy.deepcopy(unadmitted_state)
+    real_fsync = os.fsync
+    fsync_calls = [0]
+
+    def truncate_second_prepared_write(descriptor: int) -> None:
+        real_fsync(descriptor)
+        fsync_calls[0] += 1
+        if fsync_calls[0] == 2:
+            os.ftruncate(descriptor, os.fstat(descriptor).st_size - 1)
+
+    with patch.object(
+        CURRENT_MODULE.os,
+        "fsync",
+        side_effect=truncate_second_prepared_write,
+    ):
+        try:
+            RUNNER_MODULE.persist_source_stage_progress(
+                shadow_path=admission_shadow_path,
+                source_stage_path=admission_stage_path,
+                registry=admission_registry,
+                target_identities={TARGET["partId"]: TARGET},
+                acquisitions=list(unadmitted_state["shadow"]["acquisitions"]),
+                records=list(unadmitted_state["shadow"]["records"]),
+                attempts=list(admission_attempts),
+                updated_at=fast_updated_at,
+                shadow_changed=True,
+                donor_bank_path=admission_bank_path,
+                donor_state=unadmitted_state,
+            )
+        except RuntimeError as error:
+            assert "write/readback differs" in str(error)
+        else:
+            raise AssertionError("Corrupt prepared write must fail precommit")
+    assert fsync_calls == [2]
+    assert all(path.read_bytes() == before for path, before in precommit_bytes.items())
+    assert unadmitted_state == precommit_state
+
+    retained_generation = RUNNER_MODULE.reusable_validated_donor_generation(
+        shadow_path=admission_shadow_path,
+        donor_bank_path=admission_bank_path,
+        registry=admission_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        donor_state=unadmitted_state,
+    )
+    assert retained_generation is not None
+    unadmitted_state["sourceMasks"].append({"fixture": "mutated-in-place"})
+    assert RUNNER_MODULE.reusable_validated_donor_generation(
+        shadow_path=admission_shadow_path,
+        donor_bank_path=admission_bank_path,
+        registry=admission_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        donor_state=unadmitted_state,
+    ) is None
+    unadmitted_state["sourceMasks"].pop()
+    assert RUNNER_MODULE.reusable_validated_donor_generation(
+        shadow_path=admission_shadow_path,
+        donor_bank_path=admission_bank_path,
+        registry=admission_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        donor_state=unadmitted_state,
+    ) is retained_generation
+
+    # A prepared stage cannot be rebound to another shadow, journal or registry.
+    stage_binding = RUNNER_MODULE.source_stage_snapshot_binding(
+        bank_sha256=strict_bank["bankSha256"],
+        shadow_sha256=strict_shadow_sha256,
+        registry=admission_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        attempts=strict_attempts,
+    )
+    prepared_stage_document = copy.deepcopy(strict_stage)
+    prepared_stage_a = CURRENT_MODULE._prepare_validated_json_snapshot(
+        admission_checkpoint / "prepared-stage-a.json",
+        prepared_stage_document,
+        binding=stage_binding,
+        indent=2,
+    )
+    try:
+        changed_registry = copy.deepcopy(admission_registry)
+        changed_registry["operationalRequiredPairs"] = []
+        for mixed_binding in (
+            RUNNER_MODULE.source_stage_snapshot_binding(
+                bank_sha256=strict_bank["bankSha256"],
+                shadow_sha256="sha256:" + "0" * 64,
+                registry=admission_registry,
+                target_identities={TARGET["partId"]: TARGET},
+                attempts=strict_attempts,
+            ),
+            RUNNER_MODULE.source_stage_snapshot_binding(
+                bank_sha256=strict_bank["bankSha256"],
+                shadow_sha256=strict_shadow_sha256,
+                registry=admission_registry,
+                target_identities={TARGET["partId"]: TARGET},
+                attempts=[],
+            ),
+            RUNNER_MODULE.source_stage_snapshot_binding(
+                bank_sha256=strict_bank["bankSha256"],
+                shadow_sha256=strict_shadow_sha256,
+                registry=changed_registry,
+                target_identities={TARGET["partId"]: TARGET},
+                attempts=strict_attempts,
+            ),
+        ):
+            try:
+                CURRENT_MODULE._verify_prepared_json_snapshot(
+                    prepared_stage_a,
+                    binding=mixed_binding,
+                )
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError(
+                    "Prepared stage must reject mixed shadow/attempt generations"
+                )
+        prepared_stage_document["attemptsSha256"] = "sha256:" + "0" * 64
+        try:
+            CURRENT_MODULE._verify_prepared_json_snapshot(
+                prepared_stage_a,
+                binding=stage_binding,
+            )
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("A mutated prepared stage must be rejected")
+    finally:
+        CURRENT_MODULE._discard_prepared_json_snapshot(prepared_stage_a)
+
     # A partial multi-hour Baltic response may be the immutable prerequisite
     # for a later AMM15 row.  When Baltic's only positive sibling ages out of
     # the 168-hour donor retention, the admitted AMM15 tuple must keep its
@@ -1170,8 +1675,18 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     crash_bank_path = crash_folder / "donor-bank.json"
     crash_state = copy.deepcopy(donor_bank)
     crash_output = crash_folder / "github-output.txt"
+    real_prepared_commit = RUNNER_MODULE._commit_verified_json_snapshot
+
+    def fail_stage_commit(verified):
+        if verified.snapshot.destination == crash_folder / "stage.json":
+            raise OSError("fixture stage crash")
+        return real_prepared_commit(verified)
+
     with patch.dict(os.environ, {"GITHUB_OUTPUT": str(crash_output)}), patch.object(
-        RUNNER_MODULE, "atomic_write_source_stage_progress", side_effect=OSError("fixture stage crash")):
+        RUNNER_MODULE,
+        "_commit_verified_json_snapshot",
+        side_effect=fail_stage_commit,
+    ):
         try:
             RUNNER_MODULE.persist_source_stage_progress(
                 shadow_path=crash_folder / "shadow.json", source_stage_path=crash_folder / "stage.json",
@@ -1383,11 +1898,124 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     fresh_baltic = make_acquisition(source="copernicus-baltic-nemo",
         acquisition_at=healing_reference + timedelta(minutes=10), request_start_at=VALID_TIME, request_end_at=VALID_TIME,
         targets=[TARGET], native_valid_times=[VALID_TIME], subset_sha256=canonical_sha256({"fixture": "fresh-negative"}), record_count=0)
+    healing_attempts = [
+        proof_attempt(
+            fresh_baltic,
+            product=baltic_product,
+            reference=healing_reference,
+        ),
+        healing_source_attempt,
+    ]
     healed_bank = build_copernicus_donor_bank(healing_input, targets=manifest_targets,
-        attempts=[proof_attempt(fresh_baltic, product=baltic_product, reference=healing_reference), healing_source_attempt],
+        attempts=healing_attempts,
         previous_bank=unadmitted_healing, production_reference_at=healing_reference)
     assert healed_bank["sourceMasks"] == []
     assert planning_covered_pairs(healed_bank, targets=manifest_targets, production_reference_at=healing_reference) == {retained_pair, other_pair}
+
+    # The process-local advance is exactly the strict public mask-healing result.
+    # Its serialized payload is spooled, not retained as another byte copy.
+    advanced_healed_bank = _advance_validated_copernicus_donor_bank(
+        healing_input,
+        targets=manifest_targets,
+        attempts=healing_attempts,
+        previous_bank=validate_copernicus_donor_bank(
+            unadmitted_healing,
+            targets=manifest_targets,
+        ),
+        production_reference_at=healing_reference,
+    )
+    assert advanced_healed_bank == healed_bank
+    assert _project_validated_donor_shadow(advanced_healed_bank) == (
+        projected_donor_shadow(healed_bank, targets=manifest_targets)
+    )
+    prepared_mask_path = root / "prepared-mask-bank.json"
+    prepared_mask_document = copy.deepcopy(advanced_healed_bank)
+    prepared_mask_binding = RUNNER_MODULE.donor_snapshot_binding(
+        advanced_healed_bank["bankSha256"], manifest_targets
+    )
+    prepared_mask = CURRENT_MODULE._prepare_validated_json_snapshot(
+        prepared_mask_path,
+        prepared_mask_document,
+        binding=prepared_mask_binding,
+        indent=None,
+    )
+    try:
+        assert not hasattr(prepared_mask, "payload")
+        assert not any(
+            isinstance(getattr(prepared_mask, name), (bytes, bytearray))
+            for name in prepared_mask.__slots__
+        )
+        prepared_mask_document["sourceMasks"].append({"fixture": "mutation"})
+        try:
+            CURRENT_MODULE._verify_prepared_json_snapshot(
+                prepared_mask,
+                binding=prepared_mask_binding,
+            )
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("A mutated prepared donor must be rejected")
+    finally:
+        CURRENT_MODULE._discard_prepared_json_snapshot(prepared_mask)
+
+    # A failed atomic promotion keeps the old valid generation, and altered
+    # staged bytes cannot be promoted after the initial readback hash.
+    prepared_crash_path = root / "prepared-crash-bank.json"
+    atomic_write_copernicus_donor_bank(
+        prepared_crash_path,
+        unadmitted_healing,
+        targets=manifest_targets,
+    )
+    prepared_crash_before = prepared_crash_path.read_bytes()
+    prepared_crash = CURRENT_MODULE._prepare_validated_json_snapshot(
+        prepared_crash_path,
+        advanced_healed_bank,
+        binding=prepared_mask_binding,
+        indent=None,
+    )
+    try:
+        verified_crash = CURRENT_MODULE._verify_prepared_json_snapshot(
+            prepared_crash,
+            binding=prepared_mask_binding,
+        )
+        with patch.object(
+            CURRENT_MODULE.os,
+            "replace",
+            side_effect=OSError("fixture prepared swap failure"),
+        ):
+            try:
+                RUNNER_MODULE.commit_prepared_donor_generation(
+                    prepared_crash,
+                    verified=verified_crash,
+                )
+            except OSError:
+                pass
+            else:
+                raise AssertionError("Prepared donor swap failure must propagate")
+        assert prepared_crash_path.read_bytes() == prepared_crash_before
+    finally:
+        CURRENT_MODULE._discard_prepared_json_snapshot(prepared_crash)
+
+    prepared_tamper = CURRENT_MODULE._prepare_validated_json_snapshot(
+        prepared_crash_path,
+        advanced_healed_bank,
+        binding=prepared_mask_binding,
+        indent=None,
+    )
+    try:
+        prepared_tamper.temporary.write_bytes(b"tampered\n")
+        try:
+            CURRENT_MODULE._verify_prepared_json_snapshot(
+                prepared_tamper,
+                binding=prepared_mask_binding,
+            )
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("Changed prepared donor bytes must be rejected")
+        assert prepared_crash_path.read_bytes() == prepared_crash_before
+    finally:
+        CURRENT_MODULE._discard_prepared_json_snapshot(prepared_tamper)
 
     control_damage = copy.deepcopy(manifest_bank)
     control_damage["manifest"]["records"][0]["partId"] = "untrusted-original-membership"

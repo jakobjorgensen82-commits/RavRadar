@@ -1,4 +1,20 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – 4.0.343 fair providerbetjening
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – lokal 4.0.344 efter faktiske restårsager
+
+Ejeren har krævet fortsat grundig analyse og fejlsøgning af hele kæden, inklusive historisk fungerende adfærd, genbrug og faktisk prioritering. Den bevarede cache må ikke nulstilles, og en ny lang kørsel er ikke i sig selv en løsning. Den stående ordre er stadig komplette brugbare data, derefter integreret scoremodel og dokumenteret almindelig vedligeholdelse. Én almindelig force=false-opdatering af den eksisterende model blev særskilt godkendt; run `34613079069` blev dispatched og stod fortsat queued/jobs[] ved seneste kontrol. Workflowet er disabled_manually. Den senere særskilte forespørgsel om højst ét minuts genaktivering med mulig reservekø er ubesvaret og må ikke fortolkes som godkendt.
+
+Main 4.0.343 er merged på `5587001b`; oneoff `34588002366` gemte cacherne, men sluttede på 77.756/79.414 currentpar. Native WAM-inspektion accepterede 79.060. Feggesund-slutclosure, handoff og integreret modelcutover mangler; Candidate G er fortsat offentlig. Historiske afsnits lokale 4.0.343-status er dermed erstattet, ikke bevis for en succesfuld lancering.
+
+Læsende generationbundne undersøgelser er gennemført uden providerfetch, cache-save eller deployment. Faktisk regional migration genbruger 656 af den faste 1.658-rest uden tab, med serialisering/idempotens og uændrede input. 1.002 består i dette prøvegrundlag. Af dem har 676 intet afsluttet registreret CP-forsøg i nogen relevant kilde og 326 forsøg på returnerede timer uden accepteret par. Fem produkt/shard-requests efterspørger 37 native timer over 118 med op til 80 tomme timer imellem. DMI-originalregnskabet viste desuden 1.107 af de oprindelige rester lokalt sprunget over i alle tre familier.
+
+Den samlede lokale efterfølger omfatter derfor regional prooflevetid og no-loss-migration, korrekt DMI-leadbookkeeping/fair tidsdeling, faktisk LF-hul-/holdgevinst, katalogets +120-terminal uden udvidet 118-akse, ændringsstyret regional genberegning samt CP-checkpoint-, cadence- og stor-gap-requestrettelse. Den positive CP-checkpointprøve efter write/readback-rettelsen er 27,536 mod 45,926 sekunder for 40.120 rækker med byteidentiske filer. Det er ikke en driftstids- eller leverbarhedsgaranti. Store CP-tidsmellemrum segmenteres i fair pass; små mellemrum splittes ikke til dyre mikrokald. Budgetter ændres ikke på gæt.
+
+Afstandslempelse og global cache-reset er afvist som løsning. Samplingidentitet ved syvdecimal-fingerprint og afstandsregler er uændrede mod det tidligere komplette currentrun. De 4.516 OM-diagnoseafvisninger var diagnosens sub-syvdecimal-punktafrunding og er ikke produktionskorruption. De første diagnosescriptfejl er dokumenteret særskilt, ikke forklaret som nye leverandørfejl.
+
+DEC-0126 er nyeste detaljekontrakt. Den samlede lokale rettelse er endnu ikke committed, exact-head-CI-valideret, merged eller produktionsverificeret. Gældende fulde artifactgates, backend-/modelbinding, current/WAM/Feggesund-closure og offentlig verifikation består. Udskudt cachetransport, ekstern cron, egress/kvoter og driftskapacitet revideres mod faktisk effekt; ingen ny SQL-/score-/geometriændring er indført.
+
+Den lokale releasepakke er nu versioneret 4.0.344. App-/browsercacheidentitet, workflow-User-Agent, håndbog og releasekontrakt er synkroniseret. Separat geodatadiff viser alene topversionsfeltet 4.0.343 → 4.0.344 i begge godkendte filer. DEC-0122's materielt uændrede first-cutover-undtagelse er flyttet snævert til 4.0.344 under stående ejerautorisation. Changelog og dokumentation beskriver fortsat lokal kandidat, ikke en ny fungerende produktion.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – 4.0.343 fair providerbetjening
 
 Oneoff `34565347360` på merged 4.0.342/main `6a3133fe` gemte providerprogression uden cache-reset, men forseglede intet handoff: current sluttede 77.859/79.414 med 1.555 rester, og WAM fejlede terminalt. Helkædeanalysen viste, at mere runtime alene ikke kunne rette forløbet. DMI's kvote lod en uløst currentfamilie få nul ture, Baltic kunne sulte AMM15, og to konkrete vestlige WAM-dele blev sendt til NSB, selv om kun DW dækker dem.
 

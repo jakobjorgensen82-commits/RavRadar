@@ -1,3 +1,11 @@
+## 4.0.344 – regionalt genbrug og målrettet vejrarbejde (2026-09-11, lokal kandidat)
+
+- Originalt regionalt source/outcome-proof følger de konkrete samples; migration før recovery-write og no-loss EOF bevarer gyldige data ved native ejerskifte.
+- DMI-leadbookkeeping, fair tidsdeling, LF's direkte/regionale hulgevinst og venstre kildekant er rettet. Katalogets nødvendige +120-terminal observeres separat uden at udvide 118-timerskravet.
+- Copernicus genbruger præcist valideret internt checkpointarbejde med uændret streng admission/readback/recovery. Kørotationen fungerer ved time- og kvarterskadence; store tomme native-tidsrum segmenteres i fair pass med lokale fejl og immutable forsøgsbeviser.
+- Faktisk læsende cache-replay beviser +656/−0 i en fast 1.658-rest; rester og throughput er ikke produktionsverificeret. Geometri, afstande, fysik, score, SQL-migrationer og fulde artifact-/launchkrav er uændrede.
+- Versionen er under samlet lokal slutkontrol, ikke committed, CI-valideret, merged eller lanceret. Se `CHANGELOG-4.0.344.md` og DEC-0126.
+
 ## 4.0.343 – fair providerbetjening og eksakt WAM-ejerskab (2026-09-11, lokal kandidat)
 
 - Retter den systemiske køfejl fra oneoff `34565347360`: uløste DMI-currentfamilier får bounded fair service med vedvarende rotation, og prefetch flytter dokumenteret refresh-only arbejde efter reelle huller.

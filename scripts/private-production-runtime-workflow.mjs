@@ -86,6 +86,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/live-current-pilot.mjs',
     'scripts/lib/production-reference-time.mjs',
     'scripts/lib/regional_current_operational.py',
+    'scripts/lib/regional_source_proofs.py',
     'data/current-live-pilot-control.json',
     'data/current-regional-proxy-policy.json',
   ]),
@@ -144,7 +145,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.343',
+  releaseVersion: '4.0.344',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,

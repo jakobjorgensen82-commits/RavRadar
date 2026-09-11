@@ -15,9 +15,9 @@ from typing import Any
 
 from .copernicus_current import (
     COPERNICUS_SOURCE_CONTRACTS, RETENTION_HOURS, PUBLIC_END_OFFSET_HOURS,
-    TOP_LEVEL_FIELDS, _validate_acquisition, _validate_record,
-    canonical_sha256, empty_shadow, merge_cache_evidence, utc_iso,
-    valid_sha256, validate_shadow,
+    TOP_LEVEL_FIELDS, _merge_cache_evidence_unvalidated,
+    _validate_acquisition, _validate_record, canonical_sha256, empty_shadow,
+    merge_cache_evidence, utc_iso, valid_sha256, validate_shadow,
 )
 from .copernicus_target_identity import target_fingerprint
 from .copernicus_current_source_stage import (
@@ -212,21 +212,36 @@ def _unhealed_masks(shadow: dict[str, Any], positive: dict[str, Any], masks: lis
     return retained
 
 
-def build_copernicus_donor_bank(
+def _build_copernicus_donor_bank(
     shadow: dict[str, Any], *, targets: list[dict[str, Any]], attempts: list[dict[str, Any]],
     positive_admissions: list[dict[str, Any]] | None = None,
     admission_attempts: list[dict[str, Any]] | None = None,
     previous_bank: dict[str, Any] | None = None,
     source_masks: list[dict[str, Any]] | None = None,
     production_reference_at: datetime | None = None,
+    trusted_previous_generation: bool = False,
 ) -> dict[str, Any]:
     reference = production_reference_at or _time(shadow["updatedAt"]).replace(minute=0, second=0, microsecond=0)
     donor_shadow = {**shadow, "collections": []}
     masks = list(source_masks or [])
     if previous_bank is not None:
-        previous = validate_copernicus_donor_bank(previous_bank, targets=targets)
-        acquisitions, records = merge_cache_evidence(previous["shadow"], shadow["acquisitions"],
-            shadow["records"], reference, {row["partId"]: row for row in targets})
+        previous = (
+            previous_bank
+            if trusted_previous_generation
+            else validate_copernicus_donor_bank(previous_bank, targets=targets)
+        )
+        merge = (
+            _merge_cache_evidence_unvalidated
+            if trusted_previous_generation
+            else merge_cache_evidence
+        )
+        acquisitions, records = merge(
+            previous["shadow"],
+            shadow["acquisitions"],
+            shadow["records"],
+            reference,
+            {row["partId"]: row for row in targets},
+        )
         donor_shadow = {**donor_shadow, "acquisitions": acquisitions, "records": records}
         masks.extend(previous["sourceMasks"])
         # Full previous reserve proof wins over any disposable stage projection.
@@ -236,11 +251,64 @@ def build_copernicus_donor_bank(
         witnesses.update({row["attemptId"]: row for row in previous["admissionAttempts"]})
         positive_admissions = sorted(certs.values(), key=lambda row: row["recordId"])
         admission_attempts = sorted(witnesses.values(), key=lambda row: row["attemptId"])
-    validate_shadow(donor_shadow, {row["partId"]: row for row in targets}, require_collection=False)
+    if not trusted_previous_generation:
+        validate_shadow(
+            donor_shadow,
+            {row["partId"]: row for row in targets},
+            require_collection=False,
+        )
     positive = merge_positive_admissions(records=donor_shadow["records"], acquisitions=donor_shadow["acquisitions"],
         targets=targets, attempts=attempts, positive_admissions=positive_admissions, admission_attempts=admission_attempts)
     masks = _unhealed_masks(donor_shadow, positive, _merge_masks(masks), targets=targets, reference=reference)
     return _seal_bank(donor_shadow, positive, masks, targets=targets)
+
+
+def build_copernicus_donor_bank(
+    shadow: dict[str, Any], *, targets: list[dict[str, Any]], attempts: list[dict[str, Any]],
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+    previous_bank: dict[str, Any] | None = None,
+    source_masks: list[dict[str, Any]] | None = None,
+    production_reference_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Public strict builder; prepared checkpoints use the sealed fast path."""
+    return _build_copernicus_donor_bank(
+        shadow,
+        targets=targets,
+        attempts=attempts,
+        positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+        previous_bank=previous_bank,
+        source_masks=source_masks,
+        production_reference_at=production_reference_at,
+        trusted_previous_generation=False,
+    )
+
+
+def _advance_validated_copernicus_donor_bank(
+    shadow: dict[str, Any],
+    *,
+    targets: list[dict[str, Any]],
+    attempts: list[dict[str, Any]],
+    previous_bank: dict[str, Any],
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+    source_masks: list[dict[str, Any]] | None = None,
+    production_reference_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Advance one process-local validated bank, then validate the result once."""
+    candidate = _build_copernicus_donor_bank(
+        shadow,
+        targets=targets,
+        attempts=attempts,
+        positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+        previous_bank=previous_bank,
+        source_masks=source_masks,
+        production_reference_at=production_reference_at,
+        trusted_previous_generation=True,
+    )
+    return validate_copernicus_donor_bank(candidate, targets=targets)
 
 
 def recover_copernicus_donor_bank(document: Any, *, targets: list[dict[str, Any]]) -> dict[str, Any]:
@@ -308,13 +376,7 @@ def recover_copernicus_donor_bank(document: Any, *, targets: list[dict[str, Any]
     return validate_copernicus_donor_bank(recovered, targets=targets)
 
 
-def projected_donor_shadow(bank_document: dict[str, Any], *, targets: list[dict[str, Any]]) -> dict[str, Any]:
-    """One projection rule for acquisition, planning, checker and handoff.
-
-    The bank keeps valid siblings and proof while a source/pair is masked.
-    Only the disposable projection omits that ENTIRE source for the pair.
-    """
-    bank = validate_copernicus_donor_bank(bank_document, targets=targets)
+def _project_validated_donor_shadow(bank: dict[str, Any]) -> dict[str, Any]:
     masks = {(row["partId"], row["validTime"], row["source"]) for row in bank["sourceMasks"]}
     acquisitions_by_id = {row["acquisitionId"]: row for row in bank["shadow"]["acquisitions"]}
     records = [row for row in bank["shadow"]["records"]
@@ -322,6 +384,16 @@ def projected_donor_shadow(bank_document: dict[str, Any], *, targets: list[dict[
     used = {row["acquisitionId"] for row in records}
     return {**bank["shadow"], "records": records,
             "acquisitions": [row for row in bank["shadow"]["acquisitions"] if row["acquisitionId"] in used]}
+
+
+def projected_donor_shadow(bank_document: dict[str, Any], *, targets: list[dict[str, Any]]) -> dict[str, Any]:
+    """One projection rule for acquisition, planning, checker and handoff.
+
+    The bank keeps valid siblings and proof while a source/pair is masked.
+    Only the disposable projection omits that ENTIRE source for the pair.
+    """
+    bank = validate_copernicus_donor_bank(bank_document, targets=targets)
+    return _project_validated_donor_shadow(bank)
 
 
 def legacy_donor_bank(

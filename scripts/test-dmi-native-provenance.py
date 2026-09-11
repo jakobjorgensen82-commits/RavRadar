@@ -1225,6 +1225,72 @@ assert producer._validated_candidate_retained_current_asset_proofs(
     continuity_signature,
 ) == []
 
+# Original regional source evidence must survive the new window independently
+# of the native tuple filter, without granting any retained native identity.
+regional_original = json.loads(json.dumps(older_continuity))
+regional_original.setdefault("diagnostics", {})["currentOperationalLedger"] = (
+    json.loads(json.dumps(older_ledger))
+)
+regional_before = json.loads(json.dumps(regional_original))
+regional_candidates = []
+producer._validated_candidate_retained_current_asset_proofs(
+    regional_original, targets, reference + timedelta(hours=1), continuity_signature,
+    regional_source_proof_candidates=regional_candidates,
+)
+assert regional_candidates
+assert all(set(item) == {"sourceAsset", "processingSignature", "partOutcomeProof"}
+           for item in regional_candidates)
+assert all(item["sourceAsset"]["collection"] == "dkss_lf" for item in regional_candidates)
+assert any(item["sourceAsset"]["validTime"] == valid_time for item in regional_candidates)
+assert regional_original == regional_before
+invalid_regional_candidates = []
+assert producer._validated_candidate_retained_current_asset_proofs(
+    short_donor, targets, reference, continuity_signature,
+    regional_source_proof_candidates=invalid_regional_candidates,
+) == []
+assert invalid_regional_candidates == []
+
+# Native metadata sanitation may remove the final tuple without invalidating
+# its independently authenticated original asset outcome for regional samples.
+regional_last_native_invalid = copy.deepcopy(regional_original)
+regional_last_native_invalid["zones"]["PART::TEST"]["hourly"][valid_time]["sources"]["current"]["gridPoint"] = "invalid"
+regional_sanitized_candidates = []
+regional_sanitized_native = producer._validated_candidate_retained_current_asset_proofs(
+    regional_last_native_invalid, targets, reference, continuity_signature,
+    regional_source_proof_candidates=regional_sanitized_candidates,
+)
+assert regional_sanitized_native == [], "Invalid native metadata must not gain native admission"
+assert any(row["sourceAsset"] == producer.canonical_current_source_asset(older_retained_source)
+           for row in regional_sanitized_candidates), (
+    "Full original validation must preserve regional outcome before last native tuple pruning"
+)
+regional_bad_original = copy.deepcopy(regional_last_native_invalid)
+regional_bad_original["diagnostics"]["currentOperationalLedger"]["retainedCurrentAssetProofs"][0]["partOutcomeProof"]["targetCount"] = 999
+regional_bad_candidates = []
+try:
+    producer._validated_candidate_retained_current_asset_proofs(
+        regional_bad_original, targets, reference, continuity_signature,
+        regional_source_proof_candidates=regional_bad_candidates,
+    )
+except (TypeError, ValueError):
+    pass
+assert regional_bad_candidates == [], "Invalid original outcome cannot escape through regional recovery"
+
+# The extraction helper preserves distinct canonical decoder/outcome originals
+# for later conflict checks; unlike native selection it must not flatten them.
+regional_duplicate_sources = producer._regional_sources_from_validated_ledger({
+    "collections": [{"processingSignature": decoder_signature_480, "validTimes": [{
+        "state": "PROCESSED", "sourceAsset": decoder_proof_480["sourceAsset"],
+        "partOutcomeProof": decoder_proof_480["partOutcomeProof"],
+    }]}],
+    "retainedCurrentAssetProofs": [decoder_proof_482],
+}, decoder_signature_482)
+assert len(regional_duplicate_sources) == 2
+assert {row["processingSignature"] for row in regional_duplicate_sources} == {
+    decoder_signature_480, decoder_signature_482,
+}
+assert all("attestedPartIds" not in row for row in regional_duplicate_sources)
+
 # Every persisted progress checkpoint is sealed with an availability-valid
 # ledger before its atomic write; restart recovers the exact retained row.
 with tempfile.TemporaryDirectory() as continuity_directory:
@@ -2113,6 +2179,143 @@ older_items = [stac_item(older_run, lead) for lead in range(121)]
 latest_partial_items = [stac_item(latest_run, lead) for lead in range(108)]
 original_request_json = producer.request_json
 original_time = producer.time.time
+# The catalog fixture must obey the actual datetime filter. A complete new
+# run at age 0..2 h has its +120 endpoint beyond target+117, unlike the older
+# fixtures below which returned every item regardless of the query window.
+terminal_model_run = datetime(2026, 1, 5, 11, tzinfo=timezone.utc)
+terminal_previous_run = terminal_model_run - timedelta(hours=5)
+terminal_catalogs = {}
+try:
+    for collection in sorted(producer.MARINE_COLLECTIONS):
+        for age_hours in (0, 1, 2):
+            terminal_reference = terminal_model_run + timedelta(hours=age_hours)
+            producer.time.time = lambda: terminal_reference.timestamp()
+            terminal_required = set(producer.operational_current_valid_times(terminal_reference))
+            terminal_end = max(terminal_required, key=producer.epoch)
+            terminal_items = [
+                stac_item(model_run, lead)
+                for model_run in (terminal_previous_run, terminal_model_run)
+                for lead in range(121)
+            ]
+            query_windows = []
+
+            def filtered_catalog(_url, params=None):
+                start_at, end_at = params["datetime"].split("/")
+                query_windows.append((start_at, end_at))
+                filtered = [item for item in terminal_items if
+                    producer.epoch(start_at) <= producer.epoch(item["properties"]["datetime"])
+                    <= producer.epoch(end_at)]
+                return {"features": filtered, "numberMatched": len(filtered),
+                        "numberReturned": len(filtered), "links": []}
+
+            producer.request_json = filtered_catalog
+            terminal_selected = producer.list_latest_assets(
+                collection,
+                minimum_valid_time=producer.canonical_time(terminal_reference - timedelta(
+                    hours=3 if collection == "dkss_lf" else 0)),
+                required_valid_times=terminal_required,
+                required_horizon_end_time=terminal_end,
+                allow_documented_required_gaps=True,
+            )
+            selected_native_run, native_assets, native_stats = terminal_selected
+            assert selected_native_run == producer.canonical_time(terminal_model_run)
+            assert query_windows[0][1] == producer.canonical_time(
+                terminal_reference + timedelta(hours=120))
+            assert native_stats["selectedNativeRunComplete"] is True
+            assert native_stats["nativeTerminalAsset"]["validTime"] == producer.canonical_time(
+                terminal_model_run + timedelta(hours=120))
+            assert native_stats["nativeTerminalAsset"]["validTime"] not in terminal_required
+            assert {row["valid"] for row in native_assets if row["valid"] in terminal_required} == terminal_required
+            assert all(producer.epoch(row["valid"]) <= producer.epoch(terminal_end) for row in native_assets)
+            assert native_stats["officialRequiredValidTimeCount"] == 118
+            if age_hours == 1:
+                terminal_catalogs[collection] = terminal_selected
+    # Removing the genuine endpoint must still reject the new run. Expanding
+    # the observation window does not synthesize publication evidence.
+    terminal_items = [item for item in terminal_items if not (
+        item["properties"]["forecast:reference_datetime"] == producer.canonical_time(terminal_model_run)
+        and item["properties"]["datetime"] == producer.canonical_time(terminal_model_run + timedelta(hours=120)))]
+    partial_selected, _, _ = producer.list_latest_assets(
+        "dkss_idw", minimum_valid_time=producer.canonical_time(terminal_reference),
+        required_valid_times=terminal_required, required_horizon_end_time=terminal_end,
+        allow_documented_required_gaps=True,
+    )
+    assert partial_selected == producer.canonical_time(terminal_previous_run)
+finally:
+    producer.request_json = original_request_json
+    producer.time.time = original_time
+
+# Exercise the real ledger builder and strict reader with terminal evidence
+# outside its immutable 118-hour axis, not just the catalog selector helper.
+terminal_reference = terminal_model_run + timedelta(hours=1)
+terminal_document = {"zoneRegistrySignature": "test-registry", "runs": {},
+    "zones": {"PART::TEST": {"samplingPoint": [2.0, 1.0], "hourly": {}}}}
+for collection, (model_run, assets, stats) in terminal_catalogs.items():
+    signature = producer.current_marine_processing_signature("test-registry")
+    steps = {}
+    for asset in assets:
+        hour = asset["valid"]
+        if hour not in set(producer.operational_current_valid_times(terminal_reference)):
+            continue
+        official = producer.official_current_asset_identity(collection, model_run, asset)
+        captured = {**official, "acquiredAt": producer.canonical_time(terminal_reference),
+                    "contentLengthBytes": 1024, "contentSha256": "d" * 64}
+        steps[hour] = {"complete": True, "recognizedParameters": ["current-u", "current-v"],
+            "zonesTouched": 1, "parserVersion": producer.PARSER_VERSION,
+            "processingSignature": signature, "sourceAsset": captured,
+            "currentPartOutcomeProof": producer.build_current_part_outcome_proof(
+                [] if collection == "dkss_lf" else [target["partId"]],
+                [target["partId"]], producer.target_fingerprint(targets), signature, captured)}
+        if collection == "dkss_lf":
+            native_source = producer.native_component_source(
+                collection, model_run, hour, component="current", zone=zone,
+                grid_candidate=candidate, capture=captured,
+                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                verticalLayer="depthBelowSea:1", verticalLayerRankM=1.0,
+                vectorSelection=CURRENT_VECTOR_SELECTION, vectorSemanticsVersion=3)
+            assert native_source is not None
+            terminal_document["zones"]["PART::TEST"]["hourly"][hour] = {
+                "time": hour, "current-u": 0.1, "current-v": -0.2,
+                "sources": {"current": native_source}}
+    terminal_document["runs"][collection] = {"referenceTime": model_run,
+        "parserVersion": producer.PARSER_VERSION, "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+        "gridLookupVersion": producer.GRID_LOOKUP_VERSION, "processingSignature": signature,
+        "processedSteps": steps}
+terminal_result = producer.build_current_operational_ledger_result(
+    terminal_document, targets, terminal_reference, terminal_catalogs)
+assert terminal_result.validated and terminal_result.ledger["ready"]
+assert terminal_result.attestation["verifiedPairCount"] == 118
+assert all(row["officialValidTimeCount"] == 118 and len(row["validTimes"]) == 118
+           for row in terminal_result.ledger["collections"])
+assert producer.current_operational_ledger_ready(
+    json.loads(json.dumps(terminal_result.ledger)), terminal_result.attestation,
+    targets, terminal_reference, terminal_reference + timedelta(hours=117),
+    producer.target_fingerprint(targets))
+for mutation in ("missing", "time", "model", "collection", "extra"):
+    mutated = copy.deepcopy(terminal_result.ledger)
+    row = mutated["collections"][0]
+    if mutation == "missing":
+        row.pop("nativeTerminalAsset")
+    elif mutation == "time":
+        row["nativeTerminalAsset"]["validTime"] = producer.canonical_time(terminal_reference)
+    elif mutation == "model":
+        row["nativeTerminalAsset"]["modelRun"] = producer.canonical_time(terminal_previous_run)
+    elif mutation == "collection":
+        row["nativeTerminalAsset"]["collection"] = "other"
+    else:
+        row["nativeTerminalAsset"]["href"] = "https://example.invalid/not-sanitized"
+    assert not producer.current_operational_ledger_ready(
+        mutated, terminal_result.attestation, targets, terminal_reference,
+        terminal_reference + timedelta(hours=117), producer.target_fingerprint(targets)), mutation
+    if mutation != "missing":
+        try:
+            validate_current_operational_availability_ledger(
+                mutated, terminal_result.attestation, targets, terminal_reference,
+                terminal_reference + timedelta(hours=117), producer.target_fingerprint(targets))
+            raise AssertionError(f"Malformed terminal passed availability: {mutation}")
+        except ValueError:
+            pass
+
 try:
     producer.time.time = lambda: selection_reference.timestamp()
     catalog_items = [*latest_partial_items, *older_items]
@@ -2172,7 +2375,7 @@ try:
     assert paged_stats["catalogInventoryComplete"] is True
     assert pagination_requests[0][1]["datetime"] == (
         f"{min(selection_hours, key=producer.epoch)}/"
-        f"{selection_end}"
+        f"{producer.canonical_time(selection_reference + timedelta(hours=120))}"
     )
     assert pagination_requests[1][1] is None
 
@@ -2728,6 +2931,22 @@ assert producer.current_operational_cache_ready(
     tail_reference,
 )
 
+# A separate terminal observation inside the required axis must agree with
+# that exact official row; it cannot override a revised or removed asset.
+inside_terminal_ledger = copy.deepcopy(tail_ledger)
+inside_terminal_collection = inside_terminal_ledger["collections"][0]
+inside_terminal_time = producer.canonical_time(older_run + timedelta(hours=120))
+inside_terminal_collection["nativeTerminalAsset"] = copy.deepcopy(next(
+    row["officialAsset"] for row in inside_terminal_collection["validTimes"]
+    if row["validTime"] == inside_terminal_time))
+assert producer.current_operational_ledger_ready(
+    inside_terminal_ledger, tail_sealed_result.attestation, targets, tail_reference,
+    tail_reference + timedelta(hours=117), producer.target_fingerprint(targets))
+inside_terminal_collection["nativeTerminalAsset"]["itemId"] = "different-terminal-item"
+assert not producer.current_operational_ledger_ready(
+    inside_terminal_ledger, tail_sealed_result.attestation, targets, tail_reference,
+    tail_reference + timedelta(hours=117), producer.target_fingerprint(targets))
+
 # A structurally valid row remains usable until its actual replacement is
 # admitted. A newer processed outcome without the new cached tuple is metadata,
 # not grounds to remove the older row and create a fallback gap.
@@ -3155,6 +3374,18 @@ with tempfile.TemporaryDirectory() as temporary_directory:
         producer.OUTPUT_PATH.write_text(json.dumps(granular), encoding="utf-8")
         producer.DEPLOYED_FALLBACK_PATH.write_text("{}", encoding="utf-8")
         granular_proofs: list[dict] = []
+        deferred_granular: dict[str, bool] = {}
+        original_granular_bytes = producer.OUTPUT_PATH.read_bytes()
+        deferred_selected = producer.load_previous(
+            "test-registry", coastal_part_targets=targets,
+            production_reference=tail_reference,
+            deferred_recovery_checkpoint=deferred_granular,
+        )
+        assert deferred_granular == {"pending": True}
+        assert producer.OUTPUT_PATH.read_bytes() == original_granular_bytes, (
+            "Deferred sanitation cannot retire bulk proofs before shadow migration persists"
+        )
+        assert "current-u" not in deferred_selected["zones"]["PART::TEST"]["hourly"][invalid_current_hour]
         granular_selected = producer.load_previous(
             "test-registry",
             coastal_part_targets=targets,
