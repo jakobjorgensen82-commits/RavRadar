@@ -1,4 +1,12 @@
-# NYESTE CHECKPOINT – 2026-09-11 – 4.0.343 retter starvation og ownerkontrakt
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.345 efter negativ 4.0.344-runtime
+
+- 4.0.344 blev merged som `f2cc2a77` efter grøn PR #278-sourcegate. Normalrun `34635781802` sluttede med 1.335 currentrester; oneoff `34642214559` sluttede 78.381/79.414 med 1.033 provider-negative OM-par, grøn WAM/Feggesund og intet handoff/cutover.
+- DMI roterede alle seks collections og planlagde mod hele 79.414-registeret. Oneoff beviste derfor ikke en gammel positivlistefejl; det målte hovedproblem var 31 gentagne Copernicus-checkpoints på cirka 2.376 sekunder/78,2 % af CP-fasen.
+- 4.0.345 journalfører hvert segment varigt og konsoliderer seks ad gangen gennem uændret strict bank→shadow→stage. 40.120-record-prøven er byteidentisk og reducerer seks segmenter 115,905 → 46,438 sekunder.
+- Dobbelt sourcegate erstattes af PR exact-content proof med live PR/merge/artifact/run/job/step-verifikation og sikker fallback. Faktisk GitHub-run viste tomt `pull_requests`; direkte PR-endpoint bruges nu.
+- DEC-0127 er bindende. Exact-head-CI, merge, komplet main-vejr, gates/handoff/cutover og offentlig integreret model mangler fortsat. Candidate G er offentlig.
+
+# HISTORISK CHECKPOINT – 2026-09-11 – 4.0.343 retter starvation og ownerkontrakt
 
 - 4.0.342 blev merged som `6a3133fe`. Oneoff `34565347360` bevarede cacherne, men sluttede current 77.859/79.414 med 1.555 rester og terminal WAM-fejl uden handoff/cutover.
 - Tre konkrete runtimefund forklarer manglende closure: `dkss_nsb` fik nul DMI-ture i tre pass, Baltic sultede AMM15, og to vestlige WAM-dele blev sendt til en NSB-collection, der ikke dækker dem.

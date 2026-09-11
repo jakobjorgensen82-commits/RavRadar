@@ -75,6 +75,11 @@ const versionedWeatherWorkflows=[
 for(const file of [...new Set(versionedWeatherWorkflows)]){
   let text=await fs.readFile(file,'utf8');
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
+  text=text.replace(
+    /(firstCutoverException\.releaseVersion\s*==\s*")\d+\.\d+\.\d+("\s*)/g,
+    `$1${version}$2`,
+  );
+  text=text.replace(/owner-approved \d+\.\d+\.\d+ successor exception/g,`owner-approved ${version} successor exception`);
   await fs.writeFile(file,text);
 }
 
@@ -91,6 +96,9 @@ await synchronizeReleaseContractMetadata({write:true});
 {
  let text=await fs.readFile('HANDBOOK-RAVRADAR.md','utf8');
  text=text.replace(/(\*\*Håndbogsversion:\*\*\s*)\d+\.\d+\.\d+/,`$1${version}`);
+ text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,`$1${version}$2`);
+ text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,`$1${version}$2`);
+ text=text.replace(/\d+\.\d+\.\d+( er låst med `modelContractSha256=)/,`${version}$1`);
  await fs.writeFile('HANDBOOK-RAVRADAR.md',text);
 }
 {
@@ -99,6 +107,9 @@ await synchronizeReleaseContractMetadata({write:true});
  doc.handbookVersion=version;
  for(const section of doc.sections||[]){
    if(typeof section.title==='string')section.title=section.title.replace(/RavScore \d+\.\d+\.\d+/g,`RavScore ${version}`);
+   if(section.id==='ravscore-final-bindings-4-0-320' && typeof section.body==='string'){
+     section.body=section.body.replace(/Den lokale \d+\.\d+\.\d+-kandidat/,`Den lokale ${version}-kandidat`);
+   }
  }
  await fs.writeFile(file,JSON.stringify(doc,null,2)+'\n');
 }

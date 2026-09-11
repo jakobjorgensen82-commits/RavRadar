@@ -1,4 +1,31 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – målte fejl og samlet lokal 4.0.344
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-12 – lokal 4.0.345 throughput og sourceproof
+
+- [x] Rekonstruér 4.0.344 main-/oneoff-forløbet efter computerens spontane genstart; bevar alle tracked filer og private cacher.
+- [x] Verificér DMI-rotation på tværs af kørsler og fuld planlægning mod alle 79.414 autoritative part/time-par; ingen tidligere positivliste styrer søgningen.
+- [x] Klassificér run `34635781802`: 74.093 før Copernicus, 1.335 slutrester; 976 terminalt negative og 359 ikke terminalt afklarede i dette run.
+- [x] Klassificér oneoff `34642214559`: 2.274 før Copernicus, +965 CP, 1.033 terminalt provider-negative OM-rester, current 78.381/79.414; WAM/Feggesund grøn, intet handoff/cutover.
+- [x] Mål Copernicus-flaskehalsen: 31 checkpoints, cirka 2.376 sekunder/78,2 % af fasen; providerrequests overvejende 13–18 sekunder.
+- [x] Implementér content-hashet durable segmentjournal med exact donor-/reference-/targetbinding, atomisk fsync/readback, positiv acquisition/record og ærligt attempt-only nulresultat.
+- [x] Implementér bounded consolidation efter seks receipts, ved komplet residual, naturlig afslutning og soft boundary; replay/quarantine og sletning kun efter fuld bank→shadow→stage-succes.
+- [x] Transportér journalen i normal, pilot, oneoff og post-build private caches under exact-main write-authority.
+- [x] Mål 40.120-record før/efter: seks fulde commits 115,905 s; ny kæde 46,438 s; journal 0,127 s; bank/shadow/stage byteidentiske.
+- [x] Bestå samlet Copernicus-målpakke, inklusive seks segmenter, restart, injiceret consolidationfejl, nul-native-time, AMM15/Baltic, closure, Open-Meteo-seam og retry.
+- [x] Implementér deterministisk full-tree content-SHA-256 og PR-artifact efter én exact-head `validate:source`.
+- [x] Verificér den faktiske GitHub API-form for PR #278/run `34632503756`; bind PR-identitet gennem `/pulls/{number}` og exact run/job/head i stedet for det tomme valgfrie `pull_requests`-felt.
+- [x] Gør main-genbrug fail-closed på content-, PR-, merge-, repository-, artifact-, run-, attempt-, job-, step- eller live-API-mismatch; behold senere main-fejlinvalidering.
+- [x] Opdatér workflowkontrakterne, så exact-content alene fjerner den dobbelte kildegate; fuld post-data validate/releasegate er uændret.
+- [x] Kræv efter PR-gaten, at tracked source fortsat er ren før proofupload; bestå sourceproof-, workflowrækkefølge-, officielle Action-version-, permissions- og handoffkontrakter.
+- [x] Bestå lokal RDKS-, sikkerheds-, releaseversion-, håndbogs-, browserimport-, privat runtime-/privacy- og uændret RavScore-modelbindingkontrol.
+- [x] Bevis særskilt, at `data/kystdata.json` og `data/zones.geojson` kun ændrer topversionsfeltet 4.0.344 → 4.0.345.
+- [ ] Bestå én `validate:source` på den eksakte endelige 4.0.345-PR-head og verificér proofartifactet.
+- [ ] Merge kun den grønne head og bevis på første main-kørsel, at sourcegaten genbruges som `verified-identical-pull-request-source-content` eller falder sikkert tilbage.
+- [ ] Kør bevaret main-opfyldning til current 79.414/79.414, native WAM 79.060 og Feggesund 354/354; kræv freshness, fulde gates og runbundet handoff.
+- [ ] Udfør kontrolleret integreret cutover og verificér offentlig desktop/mobil før normalworkflow/watchdog genaktiveres.
+- [ ] Mål efter launch normal cachetransport, providerforbrug og vedligeholdelsesoverskud; en grøn oneoff er ikke alene normaldriftsbevis.
+
+DEC-0127, aktive krav/issues, changelog og begge håndbøger skal være synkroniseret før commit. Geodata må kun have topversionsfelt 4.0.344 → 4.0.345. Ingen lokal fuld sourcegate køres oven i den krævede GitHub-gate uden konkret fejlevidens.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-11 – målte fejl og samlet lokal 4.0.344
 
 - [x] Runtime-targetidentitet mellem komplet 4.0.333 og seneste 4.0.343 bevist identisk ved samme immutable active-cache/strenge ledgerbinding.
 - [x] Forklar alle 4.516 OM-diagnoseafvisninger som sub-syvdecimal-punktfølsomhed; ikke produktionscachekorruption.

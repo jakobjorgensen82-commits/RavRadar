@@ -37,6 +37,8 @@ const omLegacy = ['.cache/open-meteo-current-fallback.json'];
 const cpBank = [
   '.cache/copernicus-current-donor-bank.json',
   '.cache/copernicus-current-donor-bank.json.invalid-*',
+  '.cache/copernicus-current-segment-journal.json',
+  '.cache/copernicus-current-segment-journal.json.invalid-*',
   '.cache/copernicus-current-shadow.json.invalid-*',
   '.cache/copernicus-current-source-stage.json.invalid-*',
 ];

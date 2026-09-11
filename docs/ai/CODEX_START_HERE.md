@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-11 – lokal 4.0.344, bevist genbrugsfejl og målrettede CP-segmenter
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.345 efter main/oneoff og helkæderettelse
+
+**Aktuel handling:** Afslut exact-head 4.0.345-pakken, kør kun én fuld `validate:source` i PR-workflowet, merge den eksakte grønne head og følg derefter én kontrolleret main-opfyldning på bevarede cacher. Kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fuld validate/releasegate og runbundet handoff før integreret cutover. Candidate G er offentlig indtil positiv offentlig modelverifikation.
+
+**Faktisk runtime:** 4.0.344 blev merged som `f2cc2a77`. Normalrun `34635781802` sluttede med 1.335 currentrester. Oneoff `34642214559` sluttede med 1.033/79.414 provider-negative Open-Meteo-rester, current 78.381/79.414, grøn WAM/Feggesund og intet handoff/cutover. DMI roterede alle seks collections og planlagde mod hele registeret; “upstream fravær” betyder alene, at den konkrete fallback ikke gav et gyldigt eksakt grid-/værdipar, ikke at DMI/CP aldrig kan levere.
+
+**Rodårsag og rettelse:** Copernicus brugte cirka 54 minutter; 31 gentagne fulde admission/checkpoints tog cirka 2.376 sekunder/78,2 %. 4.0.345 skriver nu hvert segment som en fsync'et, readback-hashet receipt bundet til exact donor/reference/targets og konsoliderer seks ad gangen gennem uændret strict bank→shadow→stage. Positiv receipt bærer acquisition/records; legitimt nulresultat bærer kun immutable attempt og opfinder ingen native tid. Replay, quarantine, soft-boundary og alle fire workflowcacheveje er dækket.
+
+**Måling:** Syntetisk 40.120-record før/efter med seks segmenter: 115,905 sekunder mod 46,438, heraf 0,127 sekunders journal; slutbank, shadow og stage er byteidentiske. Den samlede Copernicus-målpakke er grøn. Dette er lokalt kapacitetsbevis, ikke live closure.
+
+**Kildegate:** PR-workflowet kører sourcegaten én gang på exact head og uploader et artifact bundet til SHA-256 af hele tracked treeindholdet. Main må kun genbruge ved identisk content og live GitHub-verificeret same-repo PR/merge/artifact/run/attempt/head/job/steps. PR #278-runnet beviste, at `run.pull_requests` kan være tomt; bind derfor via `/pulls/{number}`. Enhver uvished kører fuld main-sourcegate. Post-data validate/releasegate må aldrig genbruges eller springes over.
+
+**Driftstilstand:** Produktionsworkflowet er deaktiveret; `34613079069` er en inert queued/jobs[]-post. Start aldrig en dubletwriter uden frisk run/job/main-kontrol. Bevar `.tmp-run-34635781802-safe-inspect/` og `.tmp-run-34642214559-safe-inspect/`; de er untracked sikre diagnoseudtræk. Se DEC-0127 og de nyeste RDKS-indekser.
+
+# HISTORISK CHECKPOINT – 2026-09-11 – lokal 4.0.344, bevist genbrugsfejl og målrettede CP-segmenter
 
 **Aktuel næste handling:** Saml den frosne, måltestede 4.0.344-pakke til én exact-head-CI. `34623745943` er GRØN: regionalt +656/−0, fast rest 1.002, heraf 676 uden afsluttet relevant CP-forsøg og 326 forsøgt uden accepteret par. Fem produkt/shard-requests har 37 nødvendige timer over 118 med 80 tomme timer. Alle input er uændrede. Segmentering ved mindst 24 hele tomme timer er implementeret lokalt; små mellemrum beholdes samlet, ét segment pr. shard/pass, kollektiv attempt-retirement og exact-pair-fejlisolation. De tre samlede CP-måltests er grønne. Den sidste subprocess-regression beviser, at et fejlet AMM-segment ikke spærrer et andet segment efter senere Baltic-unlock; fejlen skaber intet completed witness, og slutstatus bevarer ærligt resthullet. Dette supersederer tidligere afsnits igangværende diagnose/implementation.
 

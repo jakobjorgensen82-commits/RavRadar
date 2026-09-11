@@ -1,4 +1,14 @@
-# Copernicus-checkpointprofil 2026-09-11
+# Copernicus-checkpointprofil 2026-09-11, opdateret 2026-09-12
+
+## 4.0.345-opfølgning efter oneoff `34642214559`
+
+Oneoffen bekræftede, at prepared checkpoint fra 4.0.344 ikke alene løste livegennemløbet. Copernicus brugte cirka 54 minutter. Der blev skrevet 31 segmentcheckpoints; den målte checkpoint-/admissiondel var 2.375,896 sekunder af 3.037,214 sekunder, 78,2 %. De fleste provideracquisitions lå omkring 13–18 sekunder, mens hvert fuldt checkpoint lå omkring 76–78 sekunder.
+
+4.0.345 ændrer ikke validerings- eller commitrækkefølgen. Hvert afsluttet segment gemmes først som en lille fsync'et/readback-hashet receipt bundet til exact donorbase, produktionstime og targetregister. Seks receipts konsolideres derefter gennem den samme fulde bank→shadow→stage-transaction. Komplet residual, naturlig afslutning og soft boundary konsoliderer tidligere/slutteligt. Journalen slettes kun efter succes og replayes ellers gennem alle eksisterende validatorer. Positive receipts bærer acquisition/records; et nulresultat bærer kun immutable attempt og kan derfor ikke opfinde en native provider-tid.
+
+Et nyt sekventielt, ikke-gemt benchmark brugte samme 340 targets × 118 timer = 40.120 records og seks segmenter. Seks fulde commits brugte 115,905 sekunder (`18,953; 19,281; 18,953; 19,062; 19,000; 20,656`). Den nye kæde brugte 0,127 sekunder på journal, 28,467 sekunder på seks validerede in-memory candidates og 17,844 sekunder på én fuld consolidation, i alt 46,438 sekunder. Bank, shadow og stage var byteidentiske. Forbedringen er cirka 2,50× for dette afsnit. Harness og data var syntetiske og blev slettet efter målingen.
+
+Dette er et lokalt kapacitetsbevis. Den første 4.0.345-main-kørsel skal stadig måle provider-, candidate- og full-checkpoint-tider samt bevise komplet 79.414/79.414 closure. Se DEC-0127.
 
 ## Formål og afgrænsning
 

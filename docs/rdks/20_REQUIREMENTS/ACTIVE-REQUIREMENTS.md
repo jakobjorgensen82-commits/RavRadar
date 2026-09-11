@@ -1,5 +1,17 @@
 # Aktive krav – samlet register
 
+# 4.0.345 – varige Copernicus-segmenter og exact-content kildebevis
+
+- **REQ-COPERNICUS-DURABLE-SEGMENT-001 – BINDENDE P0:** Hvert komplet providersegment skal før videre arbejde gemmes som atomisk, fsync'et og readback-hashet receipt bundet til eksakt donorbase, produktionstime og targetregister. Positive rows kræver fuld acquisition/record-validering; nulresultat gemmer kun immutable attempt og må ikke opfinde native tid.
+- **REQ-COPERNICUS-BATCH-CONSOLIDATION-001 – BINDENDE P0:** Højst seks durable receipts må vente mellem fulde bank→shadow→stage-transaktioner. Komplet residual, naturlig afslutning og soft boundary udløser tidligere/sluttelig consolidation. Journalen slettes først efter fuld succes og kan aldrig selv autorisere READY, public runtime, positive admission eller source exhaustion.
+- **REQ-COPERNICUS-JOURNAL-REPLAY-001 – BINDENDE P0:** Genstart må kun replaye en journal mod dens eksakte validerede donorbase og gennem alle eksisterende source-order-, certificate-, mask-, provenance- og stage-validatorer. Mismatch/tamper quarantines. Normal, pilot, oneoff og post-build refresh skal transportere journalen under samme exact-main write-authority.
+- **REQ-SOURCE-GATE-EXACT-CONTENT-001 – BINDENDE P0:** `validate:source` køres én gang på PR'ens eksakte endelige head. Main må kun genbruge resultatet ved identisk deterministisk SHA-256 af hele tracked kildeindholdet samt live-verificeret same-repository PR, mergecommit, artifact, run/attempt/head, job og krævede grønne trin. Cache/artifact er locatorer, ikke autoritet; enhver uvished kræver ny gate.
+- **REQ-SOURCE-GATE-NO-POSTDATA-SKIP-001 – BINDENDE P0:** Exact-content-genbrug fjerner kun den dobbelte kildegate. Fuld `npm run validate`, `npm run release:gate`, freshness, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, handoff og deployverifikation består uændret for hvert nyt produktionsartifact.
+- **REQ-4.0.345-CUTOVER-001 – BINDENDE P0:** DEC-0122's materielt uændrede first-cutover-undtagelse flyttes alene til exact-release 4.0.345. Kun et komplet handoff fra samme eksakte main-head kan bruges; ingen ældre cache/handoff må ommærkes.
+- **REQ-4.0.345-EVIDENCE-001 – LOKAL TEST LUKKET / PRODUKTIONSBEVIS ÅBENT:** 40.120-record benchmark viser seks segmenter 115,905 s → 46,438 s med byteidentisk bank/shadow/stage. Copernicus- og workflowmåltests er grønne. Exact-head-CI, live-GitHub-proofgenbrug, main-providerclosure, fulde gates, cutover, offentlig model og normal vedligeholdelse er fortsat åbne.
+
+DEC-0127 er bindende. 4.0.344's rotation, segmentering, donorbevis og alle tidligere integritetsgrænser består; alene commitfrekvensen og det sikre bevis for allerede udført kildegate ændres.
+
 # 4.0.344 – regionalt genbrug og målt arbejdsprioritering
 
 - **REQ-REGIONAL-ORIGINAL-PROOF-LIFETIME-001 – BINDENDE P0:** Originalt valideret regionalt source/outcome-proof og samplebinding følger samplelevetiden, ikke seneste native vinder. Migration sker før proof-tab/recovery-write og må ikke opfinde eller genoplive kendt ugyldigt bevis. Afvist ny leaf må ikke erstatte gammel stadig gyldig leaf/proof. Research-replay holdes adskilt.

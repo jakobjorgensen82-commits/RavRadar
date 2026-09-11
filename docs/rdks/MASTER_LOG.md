@@ -1,4 +1,18 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – lokal 4.0.344 efter faktiske restårsager
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – autonom 4.0.345 helkæderettelse
+
+Ejeren bad efter spontan computerrestart om at fortsætte autonomt, genskabe det tabte chatdelta, gå op i helikopteren ved fejlsøgning, inkludere fjernelse af dobbelt kildegate og først derefter få den nye scoremodel online. Arbejdet omfatter derfor central targetgeometri, DMI-plan/rotation, CP-sourceorder/admission/masks, OM, freshness/closure, provenance, RavScore/runtime og GitHub/deploy som én kæde. Ingen geometry-, fysik- eller scoreændring er autoriseret eller nødvendig i denne release.
+
+Main `f2cc2a77` / 4.0.344 og runs `34635781802` samt `34642214559` er rekonstrueret. DMI roterede alle seks collections og søgte mod hele 79.414-registeret. Normalrunnet sluttede med 1.335 currentrester. Oneoff sluttede 78.381/79.414 med 1.033 terminalt provider-negative OM-par; WAM/Feggesund var grøn, men intet handoff/cutover blev dannet. Upstream-fravær er kilde-/runafgrænset negativ evidens, ikke bevis for permanent DMI-/CP-fravær.
+
+Profilen viste, at 31 Copernicus-checkpoints tog cirka 2.376 sekunder/78,2 % af fasen. 4.0.345 tilføjer derfor en exact-base/reference/targetbundet durable segmentjournal. Hvert segment fsync'es/readback-hashes straks; seks receipts konsolideres gennem den eksisterende fulde bank→shadow→stage-kæde. Journalen slettes kun efter succes og genafspilles ellers gennem alle gamle validatorer. Nulresultater gemmer attempt uden en opdigtet native tid. Normal, pilot, oneoff og post-build transporterer samme private receipt under exact-main write-authority.
+
+40.120-record benchmark målte seks segmenter 115,905 → 46,438 sekunder med 0,127 sekunders journal og byteidentisk bank/shadow/stage. Samlet CP-målpakke og workflowkontrakter er grønne. Der er endnu intet live-kapacitets- eller closurebevis.
+
+Den dobbelte sourcegate erstattes af exact-content proof. PR'en checker exact head ud, beregner deterministic full-tree SHA-256, kører sourcegaten én gang og uploader et navnebundet artifact. Main genbruger kun efter live verifikation af identisk content, same-repository PR, exact mergecommit, artifact, run/attempt/head, job og grønne steps. Faktisk GitHub-API for PR #278 returnerede et tomt `pull_requests`-felt; rettelsen bruger derfor det separate PR-endpoint. Mismatch eller API-fejl falder sikkert tilbage til fuld gate. Fuld post-data validate/releasegate består.
+
+Version 4.0.345 er lokal kandidat. DEC-0127, aktive krav, status, changelog og håndbøger synkroniseres. Næste trin er én exact-head PR-sourcegate, merge, kontrolleret main-opfyldning til alle closures, fulde gates/handoff, cutover og offentlig modelkontrol. Først derefter genaktiveres normal drift kontrolleret.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – lokal 4.0.344 efter faktiske restårsager
 
 PR #278 exact-head-kontrol `34627392687` stoppede efter de tidligere grønne trin i én forældet schedulertest. Fixturet forventede, at STAC-inventaret sluttede ved required horizon, men DEC-0126-koden observerer med vilje til senest mulig kausal modelkørsel +120 for at kunne bevise terminalen. Testforventning og kommentar følger nu kontrakten; producentkode, required ledger, official118 og admission ændres ikke. Det fejlede run genstartes ikke; ny commit/head skal have ny exact-head-CI.
 

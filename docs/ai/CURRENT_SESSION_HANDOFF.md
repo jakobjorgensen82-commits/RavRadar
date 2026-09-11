@@ -1,4 +1,14 @@
-# NYESTE HANDOFF – 2026-09-11 – 4.0.343 fair scheduler og eksakt owner
+# NYESTE HANDOFF – 2026-09-12 – 4.0.345 varige Copernicus-segmenter og exact-content sourceproof
+
+`origin/main` er 4.0.344/`f2cc2a77`; Candidate G er stadig offentlig, normalworkflowet er manuelt deaktiveret, og den gamle `34613079069` er en inert køpost uden jobs. Main-run `34635781802` og oneoff `34642214559` gav intet handoff/cutover. Oneoff sluttede 78.381/79.414; de sidste 1.033 var alle terminalt provider-negative hos Open-Meteo i den konkrete kørsel, ikke uattempted runtime-rester og ikke bevis for permanent DMI-/Copernicus-fravær. WAM/Feggesund var grøn.
+
+Helkædeanalysen bekræftede korrekt fuld DMI-registerplan og rotation samt særskilt Baltic/AMM15-rotation. Den dominerende kontrollerbare flaskehals var Copernicus-persistensen: 31 fulde checkpoints brugte cirka 2.376 sekunder eller 78 procent af den cirka 54 minutter lange fase; de fleste providerkald tog kun 13–18 sekunder. Lokal 4.0.345 skriver derfor hvert færdigt segment atomisk som exact-base-/target-/reference-/contentbundet journalreceipt, bygger en valideret in-memory donorcandidate og konsoliderer seks receipts ad gangen gennem uændret prepared bank → shadow → source-stage. Journalen afspilles sikkert efter genstart og slettes først efter vellykket commit. Fejl-, tamper-, replay-, positive-, zero- og six-batch-regressioner er grønne.
+
+4.0.345 gør desuden PR-sourcegaten til den ene fulde gate for byteidentisk sourceindhold. PR-artifactet udstedes først efter exact-head-gaten. Main må kun genbruge det efter live GitHub-verifikation af repository, merged PR, head, run/attempt, job, steps, udløb og den kanoniske tracked source-tree-SHA-256; cachefilen er kun locator. Fail-safe fallback er altid en ny main-sourcegate. De fulde post-data-`validate`/`release:gate`, adminhydrering, frisk vejropbygning, handoff, artifact og deploy er uændrede.
+
+Version 4.0.345, DEC-0127, aktiv RDKS, changelog og håndbøger er under afsluttende samling. Målrettede Copernicus-, sourceproof-, workflow- og acquisitiontests er grønne. Kør ikke lokal fuld `validate:source`; den skal køre én gang på PR'ens endelige exact head. Næste sikre rækkefølge er: afslut dokument-/versions-/privacy-/diffkontrol → commit/push/PR → exact-head sourcegate → merge → kontrolleret main-writer på bevarede cacher → kræv current 79.414/79.414 og WAM 79.060 + Feggesund 354/354 → fulde post-data-gates/handoff/cutover → offentlig desktop/mobil/modelverifikation → kontrolleret normalvedligeholdelse. Hvis 1.033 eller andre huller består, diagnosticér hele producent-/cache-/admission-/mask-/closurekæden; gentag ikke blinde oneoffs og lemp ingen faglig regel.
+
+# HISTORISK HANDOFF – 2026-09-11 – 4.0.343 fair scheduler og eksakt owner
 
 `origin/main` er 4.0.342/`6a3133fe`; Candidate G er offentlig, og cachen er ikke nulstillet. Oneoff `34565347360` sluttede uden handoff/cutover med current 77.859/79.414 og WAM-fejl. Analysen beviste tre systemiske årsager: en DMI-currentfamilie fik nul ture, Baltic sultede AMM15, og to vestlige WAM-dele var bundet til NSB, selv om kun DW dækker dem.
 

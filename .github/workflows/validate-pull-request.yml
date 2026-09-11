@@ -22,10 +22,26 @@ jobs:
           # its pinned historical commit. A one-commit PR checkout cannot
           # prove those immutable Git bytes.
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Require exact pull-request source head
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Build deterministic source-tree content identity
+        id: source-content
+        run: node scripts/weather-source-gate.mjs digest
+        env:
+          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
 
       - uses: actions/setup-python@v7
         with:
@@ -43,3 +59,17 @@ jobs:
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
       - name: Validate source contracts and release governance
         run: npm run validate:source
+
+      - name: Require validated source tree to remain unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --short --untracked-files=no)"
+
+      - name: Upload tree-content source validation proof
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.source-content.outputs.artifact_name }}
+          path: .cache/source-tree-content-proof.json
+          if-no-files-found: error
+          retention-days: 30
