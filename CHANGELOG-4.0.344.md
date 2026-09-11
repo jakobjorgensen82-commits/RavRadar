@@ -19,6 +19,8 @@
 
 ## Grænser og status
 
+- Første exact-head-kildekontrol stoppede i en forældet testforventning om katalogforespørgslens højre kant. Testen forventer nu den allerede implementerede separate observation af en mulig kausal modelkørsels +120-terminal; producentkø, required ledger og 118-timersakse ændres ikke. Produktionskoden er uændret af denne opfølgning.
+
 Normal og oneoff bruger samme operationelle producentkode. Vedvarende cache, huller/hale før kvalitet, DMI → Copernicus → Open-Meteo, op til 48 timers verificeret historik, geometri, afstande, fysik, score og allerede anvendte SQL-migrationer er uændrede. DEC-0122's stående godkendte first-cutover-undtagelse flyttes kun til exact-release 4.0.344; ingen materiel grænse eller gate lempes.
 
-4.0.343/main `5587001b` er den aktuelle produktionskode; Candidate G er offentlig. 4.0.344 er under samlet lokal slutkontrol og er endnu ikke committed, exact-head-CI-valideret, merged eller produktionsverificeret. Current 79.414/79.414, native WAM 79.060, Feggesund 354/354, fulde post-data-gates, runbundet handoff, offentlig modelverifikation og faktisk normal vedligeholdelse mangler. Se DEC-0126 og de aktuelle AI-/RDKS-checkpoints.
+4.0.343/main `5587001b` er den aktuelle produktionskode; Candidate G er offentlig. 4.0.344 er committed/pushet i PR #278, men en ny exact-head-CI efter testopfølgningen, merge og produktionsverifikation mangler. Current 79.414/79.414, native WAM 79.060, Feggesund 354/354, fulde post-data-gates, runbundet handoff, offentlig modelverifikation og faktisk normal vedligeholdelse mangler. Se DEC-0126 og de aktuelle AI-/RDKS-checkpoints.

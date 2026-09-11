@@ -563,8 +563,9 @@ def stac_item(run,created,valid,suffix):
   'properties':{'forecast:reference_datetime':run,'datetime':valid,'created':created},
   'assets':{'data':{'href':f'https://example.test/{suffix}.grib','type':'application/x-grib'}},
  }
-# An explicit earlier acquisition edge must widen only the STAC inventory.
-# The official required ledger remains the exact target-axis set.
+# An explicit earlier acquisition edge widens the STAC inventory.  Native
+# completeness must additionally observe the latest causal run's +120 terminal,
+# while the official required ledger remains the exact target-axis set.
 inventory_calls=[]
 real_inventory=module._bounded_stac_inventory
 def supplemental_inventory(collection,start,end):
@@ -586,7 +587,7 @@ supplemental_run,supplemental_assets,supplemental_diag=module.list_latest_assets
  required_horizon_end_time='2026-01-01T09:00:00Z',
  allow_documented_required_gaps=True,retain_preferred_native_run=True,
 )
-assert inventory_calls==[('dkss_lf','2026-01-01T06:00:00Z','2026-01-01T09:00:00Z')], inventory_calls
+assert inventory_calls==[('dkss_lf','2026-01-01T06:00:00Z','2026-01-06T09:00:00Z')], inventory_calls
 assert supplemental_run=='2025-12-27T09:00:00Z', supplemental_diag
 assert {row['valid'] for row in supplemental_assets}=={
  '2026-01-01T06:00:00Z','2026-01-01T09:00:00Z',

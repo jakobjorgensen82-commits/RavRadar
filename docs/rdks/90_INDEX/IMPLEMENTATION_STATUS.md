@@ -20,7 +20,9 @@
 - [ ] Følg ejerautoriseret normalrun `34613079069`, endnu queued ved seneste kontrol; ingen ny writer uden kø-/mainkontrol.
 - [ ] Samlet release, komplet current/WAM/Feggesund, handoff, integreret modelcutover og målt normal vedligeholdelse.
 
-DEC-0126, aktive krav, kendte issues, MASTER_LOG, changelog samt Markdown-/webhåndbogens kapitel 88.48 er opdateret som lokal 4.0.344-kandidat. Versionsværktøjet er kørt, og særskilt diff beviser alene topversionsændring i de to geodatafiler. Releaseversion, RDKS/installationskopi, runtimebinding, uændret modelbundle og browserimports er grønne; sidste statusdelta får en kort RDKS-kontrol før commit. Ingen commit er oprettet. Workflowreview på 5587001b bekræfter startværn mod gammelt main før vejrarbejde; queued/jobs[] er dog ikke en lås mod samtidig start. Kontrollér frisk run/attempt/jobs før merge og afvent en eventuel aktiv writer. Ingen run er annulleret.
+DEC-0126, aktive krav, kendte issues, MASTER_LOG, changelog samt Markdown-/webhåndbogens kapitel 88.48 er opdateret som 4.0.344-kandidat i PR #278. Versionsværktøjet er kørt, og særskilt diff beviser alene topversionsændring i de to geodatafiler. Releaseversion, RDKS/installationskopi, runtimebinding, uændret modelbundle og browserimports er grønne. Workflowreview på 5587001b bekræfter startværn mod gammelt main før vejrarbejde; queued/jobs[] er dog ikke en lås mod samtidig start. Kontrollér frisk run/attempt/jobs før merge og afvent en eventuel aktiv writer.
+
+PR #278 head `1fd4d8a3` nåede DMI-schedulertesten i exact-head-CI `34627392687`, men den ene fixture forventede stadig katalogets gamle højre kant. Produktionsændringen havde allerede udvidet observationen til en mulig kausal +120-terminal uden at udvide producentkø/ledger. Testforventningen rettes præcist; kør kun den isolerede test lokalt, opdatér samme PR med ny head og kræv ny exact-head-CI. Run `34627392687` må ikke genstartes.
 
 Se nyeste slutafsnit i `docs/ai/WEATHER_RESIDUAL_AUDIT_2026-09-11.md`. Alle nedenstående checkpoints er historik.
 
