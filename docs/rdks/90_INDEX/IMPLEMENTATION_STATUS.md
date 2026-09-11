@@ -24,6 +24,8 @@ DEC-0126, aktive krav, kendte issues, MASTER_LOG, changelog samt Markdown-/webh�
 
 PR #278 head `1fd4d8a3` nåede DMI-schedulertesten i exact-head-CI `34627392687`, men den ene fixture forventede stadig katalogets gamle højre kant. Produktionsændringen havde allerede udvidet observationen til en mulig kausal +120-terminal uden at udvide producentkø/ledger. Testforventningen rettes præcist; kør kun den isolerede test lokalt, opdatér samme PR med ny head og kræv ny exact-head-CI. Run `34627392687` må ikke genstartes.
 
+Head `362709cd` passerede schedulerrettelsen i CI `34629975674` og stoppede senere i en statisk cachebevaringstest. Recovery-integriteten er flyttet til fælles helper for begge commitveje; den funktionelle crashfixture er grøn. Den statiske helper-/builder-/rækkefølgetest, den samlede korte workflowkontrakt og de resterende source-tail-kontroller er nu grønne lokalt. Opdatér PR'en med ny exact head og kræv en ny exact-head-CI; genstart ikke de to fejlede runs.
+
 Se nyeste slutafsnit i `docs/ai/WEATHER_RESIDUAL_AUDIT_2026-09-11.md`. Alle nedenstående checkpoints er historik.
 
 # HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-11 – første merged 4.0.343-residualaudit

@@ -20,6 +20,7 @@
 ## Grænser og status
 
 - Første exact-head-kildekontrol stoppede i en forældet testforventning om katalogforespørgslens højre kant. Testen forventer nu den allerede implementerede separate observation af en mulig kausal modelkørsels +120-terminal; producentkø, required ledger og 118-timersakse ændres ikke. Produktionskoden er uændret af denne opfølgning.
+- Anden exact-head-kildekontrol passerede den rettede schedulerfixture og stoppede senere i en cachebevaringstest, som forventede recovery-hash/quarantine direkte inde i commitfunktionen. Kontrollen ligger nu i den fælles `prepare_recovered_donor_replacement`, som bruges af både den klassiske og den forberedte, hurtigere commitvej. Kildetesten følger den fælles helper; den funktionelle crash-/bytebevaringstest består uændret. Hele den korte workflowkontrakt og de efterfølgende source-tail-kontroller er grønne lokalt.
 
 Normal og oneoff bruger samme operationelle producentkode. Vedvarende cache, huller/hale før kvalitet, DMI → Copernicus → Open-Meteo, op til 48 timers verificeret historik, geometri, afstande, fysik, score og allerede anvendte SQL-migrationer er uændrede. DEC-0122's stående godkendte first-cutover-undtagelse flyttes kun til exact-release 4.0.344; ingen materiel grænse eller gate lempes.
 
