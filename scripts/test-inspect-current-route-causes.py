@@ -4,6 +4,7 @@ import argparse
 import copy
 from datetime import datetime, timezone
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -22,6 +23,14 @@ from inspect_current_route_causes import residual_shape, dmi_routes, cp_domain_r
 from lib.open_meteo_current_fallback import build_record, build_document, merge_donor_bank
 from lib.copernicus_current import canonical_sha256
 from lib.dmi_native_provenance import MARINE_COLLECTIONS
+
+migration_spec = importlib.util.spec_from_file_location(
+    "regional_migration_diagnostic",
+    ROOT / "scripts/inspect-regional-migration-20260911.py",
+)
+assert migration_spec and migration_spec.loader
+migration_diagnostic = importlib.util.module_from_spec(migration_spec)
+migration_spec.loader.exec_module(migration_diagnostic)
 
 AT = "2026-09-11T10:00:00Z"
 
@@ -97,6 +106,55 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(result["lostPairsInCounterfactual"], 0)
         self.assertEqual(result["additionalPairsFromRetainedRegionalOutcome"], 0)
         self.assertGreater(result["baselineClassifierCoveredInResidual"], 0)
+
+    def test_post_migration_cp_sparsity_is_aggregate_and_conservative(self):
+        targets = [
+            {"partId": "PRIVATE-A", "parentZoneId": "PRIVATE", "waterPoint": [9.2, 55.0]},
+            {"partId": "PRIVATE-B", "parentZoneId": "PRIVATE", "waterPoint": [9.21, 55.01]},
+        ]
+        missing = {
+            ("PRIVATE-A", "2026-09-11T10:00:00Z"),
+            ("PRIVATE-A", "2026-09-11T11:00:00Z"),
+            ("PRIVATE-A", "2026-09-11T14:00:00Z"),
+            ("PRIVATE-B", "2026-09-11T14:00:00Z"),
+        }
+        result = migration_diagnostic.copernicus_sparse_request_summary(missing, targets)
+        self.assertFalse(result["productionAuthority"])
+        self.assertFalse(result["admissionOrRequestOrderChanged"])
+        self.assertFalse(result["physicalGridCellOrByteWasteMeasured"])
+        self.assertEqual(len(result["products"]), 2)
+        for product in result["products"]:
+            self.assertEqual(product["configuredEligibleTargetCount"], 2)
+            self.assertEqual(product["configuredStableShardCount"], 1)
+            self.assertEqual(product["affectedTargetCount"], 2)
+            self.assertEqual(product["affectedShardCount"], 1)
+            self.assertEqual(product["exactPairCount"], 4)
+            self.assertEqual(product["uniqueNativeHourCountAcrossSource"], 3)
+            self.assertEqual(product["nativeEnvelopeHourCountTotal"], 5)
+            self.assertEqual(product["emptyNativeEnvelopeHourCountTotal"], 2)
+            self.assertEqual(product["largestEmptyNativeGapHours"], 2)
+            self.assertEqual(product["connectedNativeTimeComponentCountTotal"], 2)
+            self.assertEqual(product["logicalEnvelopeTargetHourCellCount"], 10)
+            self.assertEqual(product["logicalUnusedTargetHourCellCount"], 6)
+            self.assertEqual(product["logicalUnusedTargetHourCellRatio"], 0.6)
+            self.assertEqual(
+                product["perAffectedShardHistograms"]["exactPairCount"],
+                {"4": 1},
+            )
+        serialized = json.dumps(result, sort_keys=True)
+        self.assertNotIn("PRIVATE-A", serialized)
+        self.assertNotIn("PRIVATE-B", serialized)
+        self.assertNotIn("9.2", serialized)
+
+    def test_post_migration_cp_sparsity_rejects_non_hour_pair(self):
+        targets = [
+            {"partId": "PRIVATE", "parentZoneId": "PRIVATE", "waterPoint": [9.2, 55.0]},
+        ]
+        with self.assertRaisesRegex(ValueError, "exact UTC hour"):
+            migration_diagnostic.copernicus_sparse_request_summary(
+                {("PRIVATE", "2026-09-11T10:30:00Z")},
+                targets,
+            )
 
     def test_workflow_is_exact_read_only_single_generation(self):
         path = ROOT / ".github/workflows/validate-copernicus-current-pilot.yml"
