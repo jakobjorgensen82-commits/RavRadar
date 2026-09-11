@@ -2247,6 +2247,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         return {
             "schemaVersion": producer.WAVE_ASSET_CACHE_PROOF_SCHEMA,
             "admissionPolicy": producer.WAVE_ASSET_ADMISSION_POLICY,
+            "waveOwnerPolicyId": producer.WAVE_OWNER_POLICY_ID,
             "requiredCount": len(zones),
             "acceptedCount": len(accepted_ids),
             "rejectedCount": len(zones) - len(accepted_ids),
@@ -2433,7 +2434,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
 
     def test_669_of_670_wave_asset_preserves_valid_parts_atomically(self) -> None:
         zones = [
-            {"id": f"PART::SYNTHETIC-{index:03d}"}
+            {
+                "id": f"PART::SYNTHETIC-{index:03d}",
+                "coastType": "east",
+            }
             for index in range(670)
         ]
         active = {
@@ -2653,7 +2657,10 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(active, before)
 
     def test_partial_wave_asset_cannot_mix_with_existing_valid_lineage(self) -> None:
-        zones = [{"id": "PART::ACCEPTED"}, {"id": "PART::OLD-LINEAGE"}]
+        zones = [
+            {"id": "PART::ACCEPTED", "coastType": "east"},
+            {"id": "PART::OLD-LINEAGE", "coastType": "east"},
+        ]
         active = {
             "zones": {
                 "PART::ACCEPTED": {"hourly": {}},
@@ -2752,6 +2759,47 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertTrue(repaired)
         self.assertEqual(
             invalid_old_stage["zones"]["PART::OLD-LINEAGE"],
+            active["zones"]["PART::OLD-LINEAGE"],
+        )
+
+        wrong_owner_stage = copy.deepcopy(staged)
+        observed_expected_owners = []
+
+        def wrong_owner_code(**kwargs):
+            observed_expected_owners.append(kwargs.get("expected_collection"))
+            return "WAVE_OWNER_MISMATCH"
+
+        with (
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_rejection_code",
+                side_effect=rejection_code,
+            ),
+            patch.object(
+                producer,
+                "native_wave_row_error_code",
+                side_effect=wrong_owner_code,
+            ),
+        ):
+            repaired = producer.operational_wave_asset_stage_admissible(
+                active,
+                wrong_owner_stage,
+                zones,
+                "wam_dw",
+                asset,
+                summary,
+                (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    {"PART::ACCEPTED"},
+                    False,
+                    2,
+                    2,
+                ),
+            )
+        self.assertTrue(repaired)
+        self.assertEqual(observed_expected_owners, ["wam_dw"])
+        self.assertEqual(
+            wrong_owner_stage["zones"]["PART::OLD-LINEAGE"],
             active["zones"]["PART::OLD-LINEAGE"],
         )
 
@@ -2858,6 +2906,12 @@ class ResumeAndFailClosedTests(unittest.TestCase):
 
         self.assertTrue(producer.wave_asset_cache_proof_coherent(
             complete,
+            require_complete=True,
+        ))
+        stale_owner_policy = copy.deepcopy(complete)
+        stale_owner_policy["waveOwnerPolicyId"] = "coast-type-v1"
+        self.assertFalse(producer.wave_asset_cache_proof_coherent(
+            stale_owner_policy,
             require_complete=True,
         ))
         self.assertFalse(producer.wave_asset_cache_proof_coherent(

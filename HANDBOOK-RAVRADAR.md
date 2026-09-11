@@ -1,6 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.342
+**Håndbogsversion:** 4.0.343
+
+## 88.47 4.0.343 – Huller skal ikke vente bag den forkerte kø
+
+**Kort fortalt:** Problemet var ikke kun, om en leverandør havde data. Nogle datagrupper nåede slet ikke frem, fordi andre grupper brugte tiden først. RavRadar giver nu hver kritisk datagruppe en reel, afgrænset tur og bruger samme regler i almindelige vejropdateringer og oneoff.
+
+### Først komplette data, derefter bedre kvalitet
+
+Alle reelle huller, ugyldige rækker og den manglende hale er kritiske. DMI's uløste currentfamilier får hver en bounded startmulighed. Den familie, der går først, roterer mellem pass og kørsler, så samme familie ikke kan blive overset igen og igen. Hvis den eksakte forundersøgelse viser, at en familie allerede har brugbare data og kun skal have nyere kvalitet, flyttes den efter de reelle huller.
+
+Gamle, gyldige data bliver liggende brugbare, mens nyere data hentes. De slettes ikke ved modelrun-, target- eller releaseskift. Når cachen er komplet, fortsætter senere kørsler med at forbedre kildekvaliteten efter DMI → Copernicus → Open-Meteo. En række, der midlertidigt kommer fra Open-Meteo, er ikke låst dertil og kan senere erstattes atomisk af Copernicus eller DMI.
+
+### Begge Copernicus-produkter får arbejdstid
+
+Baltic og AMM15 har hver sin stabile arbejdskø. Køerne roteres og flettes, så det ene produkt ikke kan bruge hele tidsbudgettet, før det andet får lov at starte. Et par, der kun findes i AMM15, forsøges straks. Et par, der kræver begge produkter, venter kun på Baltic-beviset for præcis samme kystdel og time, ikke på at hele Baltic-køen bliver færdig. En defekt fil eller et fejlet shard stopper ikke de senere shards eller det andet produkt.
+
+### WAM-delen hentes dér, hvor den faktisk findes
+
+RavRadar har nu én fælles WAM-ejerregel i planlægning, behandling, historik og slutkontrol. Af de 670 native WAM-dele tilhører 458 DW og 212 NSB. To konkrete vestlige dele – `dk-b10-10-national-part-02-locality-02` og `dk-b10-10-national-part-03` – hentes fra DW, fordi den auditerede gridkontrol viser, at NSB ikke kan levere dem. De øvrige dele følger fortsat den almindelige vest/øst/limfjord-regel. Feggesunds tre direct/proxydele er stadig særskilte og tæller ikke som native WAM.
+
+Owner-reglen er fail-closed: ukendt kysttype, ændret type for en undtagelse eller en del i den forkerte providerfil afvises. Gamle partielle kvitteringer uden den nye owner-identitet genbruges ikke som positivt bevis, men den aktive vejrcache nulstilles ikke. En gammel række ommærkes aldrig; en korrekt ny række kan overtage efter fuld validering.
+
+### Samme motor i små og store kørsler
+
+Den almindelige vejropdatering og oneoff bruger samme DMI-supervisor, samme Copernicus-runner, samme cache og samme slutregler. Oneoff får blot lov til at tage flere bounded gennemløb. En rettelse kan derfor ikke virke i engangskørslen og samtidig mangle i den daglige drift.
+
+Komplet betyder fortsat 79.414/79.414 currentpar og 79.060 native WAM-par plus Feggesund 354/354, med nul reelle mangler og nul uløste lineage-konflikter. Delvis fremgang kan ikke udgive et artifact eller aktivere scoremodellen.
+
+**Status:** 4.0.342 er merged som `6a3133fe`. Oneoff `34565347360` bevarede cachefremgang, men sluttede med 1.555 currentrester og terminal WAM-fejl uden handoff/cutover. 4.0.343 er lokalt implementeret og måltestet; exact-head-CI, main-providerbevis, komplette closures, fulde gates og offentlig modelverifikation mangler. Candidate G er fortsat offentlig, og normalworkflow/watchdog forbliver deaktiveret gennem den kontrollerede sekvens.
 
 ## 88.46 4.0.342 – En dårlig del må ikke kassere alle de gode
 

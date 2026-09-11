@@ -1,3 +1,11 @@
+# Nyeste checkpoint 2026-09-11 – lokal 4.0.343 fair providerclosure
+
+4.0.342 er merged som `6a3133fe`. Oneoff `34565347360` bevarede cacheprogression, men gav intet handoff/cutover: current 77.859/79.414, rest 1.555 og terminal WAM-fejl. Helkædekontrollen afviste cache-reset og ren runtime som forklaring og dokumenterede DMI-family-starvation, AMM15-product-starvation og to exact WAM-ownerfejl.
+
+Lokal 4.0.343 retter alle tre i den fælles normal/oneoff-kodevej: bounded fair DMI-rotation, prefetch-nedgradering af refresh-only, separate roterede/interleavede Copernicus-produktkøer og fælles fail-closed WAM-ownerpolicy med 458 DW/212 NSB og to overrides. Runtimehash og sourcegate omfatter den nye helper og de nye schedulerregressioner.
+
+Målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding-, compile- og syntaxkontroller er grønne lokalt. Exact-head-CI, providerclosure, handoff, cutover og offentlig modelkontrol mangler. Normalworkflow/watchdog forbliver deaktiveret. DEC-0125 er bindende.
+
 # Nyeste checkpoint 2026-09-11 – lokal 4.0.342 granulær provideradmission
 
 4.0.341 er merged på `caa49c42`, men oneoff `34534764449` producerede intet handoff/cutover. Whole-asset WAM-rollback kasserede brugbare NSB-søskende, og Copernicus' missing-hour-fejl kasserede et ellers gyldigt shards returnerede timer.

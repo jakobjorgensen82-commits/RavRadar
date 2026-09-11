@@ -1,3 +1,12 @@
+## 4.0.343 – fair providerbetjening og eksakt WAM-ejerskab (2026-09-11, lokal kandidat)
+
+- Retter den systemiske køfejl fra oneoff `34565347360`: uløste DMI-currentfamilier får bounded fair service med vedvarende rotation, og prefetch flytter dokumenteret refresh-only arbejde efter reelle huller.
+- Giver Baltic og AMM15 separate roterede Copernicus-køer med round-robin. AMM15-only kan starte straks, overlap kræver kun eksakt same-pair Baltic-bevis, og en lokal shardfejl blokerer ikke senere arbejde.
+- Indfører én fælles WAM-owner-policy på tværs af plan, staging, salvage, historik og slutvalidering. Præcis to auditerede vestlige dele flyttes til `wam_dw`; samlet ejerskab er 458 DW og 212 NSB blandt 670 native dele.
+- Binder owner-policy til targetregister, receipts og privat runtime. Gamle partielle receipts invalideres uden cache-reset; forkert gammel ejerproveniens ommærkes ikke og må ikke blokere korrekt ny data.
+- Normal og oneoff bruger samme producentlogik. DMI → Copernicus → Open-Meteo, reelle huller før kvalitet, op til 48 timers verificeret historik og de fulde 79.414-closures består.
+- Målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding- og syntaxkontroller er grønne lokalt. Exact-head-CI, main-providerclosure, handoff, cutover og offentlig modelkontrol mangler fortsat. Se `CHANGELOG-4.0.343.md` og DEC-0125.
+
 ## 4.0.342 – granulær WAM- og Copernicus-admission (2026-09-11, lokal kandidat)
 
 - Bevarer 4.0.341's isolerede WAM-candidate og alle promotions-/lineage-/slutgates, men erstatter whole-asset-rollback af uafhængigt gyldige søskende med complete, exact-asset-provenancebundne part/time-tuples efter fuldt assetgennemløb.

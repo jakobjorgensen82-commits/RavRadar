@@ -1,5 +1,11 @@
 # Tillæg 2026-09-11 – livebevis af for grov asset-/shardgrænse
 
+# Tillæg 2026-09-11 – 4.0.343 retter scheduler-/ownerårsagen fra main
+
+Oneoff `34565347360` på 4.0.342 bevarede alle cacher, men current sluttede 77.859/79.414 og WAM terminalt uden handoff/cutover. Provideraktiviteten beviste, at en uløst DMI-currentfamilie kunne få nul ture, at Baltic kunne sulte AMM15, og at to vestlige WAM-dele kun kunne leveres af DW, selv om den grove ownerregel sendte dem til NSB.
+
+4.0.343 indfører derfor bounded fair DMI-familyrotation med prefetch-baseret refreshnedgradering, separate roterede og interleavede Copernicus-produktkøer samt én fælles exact WAM-owner-policy. Normal og oneoff bruger samme producenter. Cache-, provenance-, granular admission-, promotion-, sourceprioritets- og slutclosurekontrakter består. Målrettede lokale tests er grønne; exact-head-CI og live-providerclosure er fortsat åbne. DEC-0125 er bindende.
+
 Efter merge af 4.0.341 viste oneoff `34534764449`, at systemreviewets krav om isolation var rigtigt, men at whole-asset-admission var for grov. `wam_dw` kunne lukke, mens hver NSB-fil mistede sine gyldige søskenderækker ved enkelte delafvisninger. 4.0.342 bevarer derfor isolation og promotion, men flytter admission til komplette exact-asset-provenancebundne part/time-tuples efter fuldt filgennemløb. Rejected slices må ikke ændres, og global filfejl eller komplet anden native lineage bevarer whole-stage rollback.
 
 Samme princip gælder Copernicus-current på timeparniveau: eksakte returnerede native U/V-par fra et strukturelt validt shard bevares, mens fraværende bestilte timer forbliver rest. Attempts gemmer de faktisk observerede native tider i nested v2, accepterer legacy 4.0.341 og bevarer Baltic-prerequisiten efter pruning af sidste søskende. Tom providerakse og subsekundtider er retryable malformed, ikke no-record; tidsinterpolation/hold og permissiv tidsakse er stadig forbudt. Dette supersederer alene reviewets whole-asset-formuleringer; den kritiske rest, providerordenen, persistent cache, WAM-lineage, private historikstatus og de komplette slutgates består.

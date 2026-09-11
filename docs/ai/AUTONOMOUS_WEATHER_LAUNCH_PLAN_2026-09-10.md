@@ -1,3 +1,7 @@
+# Tillæg 2026-09-11 – 4.0.343 fair providerclosure før kontrolleret launch
+
+4.0.342-mainrun `34565347360` bevarede cacherne, men viste DMI-family-starvation, AMM15-product-starvation og to exact WAM-ownerfejl. 4.0.343 retter disse i den fælles normal/oneoff-kodevej uden cache-reset eller lempet slutclosure. Først versions-/RDKS-/håndbogslukning og én exact-head sourcegate; derefter sikker merge, én kontrolleret main-opfyldning, begge closures, fulde gates, handoff/cutover og offentlig kontrol. Normalworkflow/watchdog forbliver deaktiveret gennem sekvensen. Efter launch revideres cachetransport, ekstern cron, providerforbrug/tider og normalt vedligeholdelsesoverskud.
+
 # Tillæg 2026-09-11 – 4.0.342 skal lukke providerresten uden whole-asset-starvation
 
 4.0.341 er merged på `main` som `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff eller cutover. Den isolerede WAM-candidate bevarede aktiv cache, men alle 91 NSB-assets mistede deres ellers gyldige søskenderækker ved enkelte partafvisninger. Copernicus kunne tilsvarende kassere returnerede exact-hour-rækker, når én anden bestilt time manglede.

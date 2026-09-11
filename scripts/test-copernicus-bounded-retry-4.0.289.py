@@ -20,8 +20,11 @@ spec.loader.exec_module(module)
 with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
     marker = Path(raw) / "attempted"
     retry_code = (
-        "from pathlib import Path; import sys; "
-        "p=Path(sys.argv[1]); existed=p.exists(); p.write_text('seen', encoding='utf-8'); "
+        "from pathlib import Path; import os, sys; "
+        "p=Path(sys.argv[1]); existed=p.exists(); "
+        "ordinal=os.environ['RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL']; "
+        "assert ordinal == ('1' if existed else '0'); "
+        "p.write_text(ordinal, encoding='utf-8'); "
         "raise SystemExit(0 if existed else 7)"
     )
     retried = module.run_bounded(
@@ -36,6 +39,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
         "reason": "completed",
         "boundedProgress": False,
     }
+    assert marker.read_text(encoding="utf-8") == "1"
 
     deadline_marker = Path(raw) / "deadline"
     deadline_code = (

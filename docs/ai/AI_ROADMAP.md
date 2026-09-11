@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar lokal 4.0.342-kandidat; Candidate G er offentlig – opdateret 2026-09-11
+# AI Roadmap – RavRadar lokal 4.0.343-kandidat; Candidate G er offentlig – opdateret 2026-09-11
+
+## Nyeste releasehale – 4.0.343 fair providerclosure
+
+1. [x] Afgræns 4.0.342-mainrun: cache bevaret; DMI-family-, Copernicus-product- og WAM-owner-starvation dokumenteret.
+2. [x] Implementér fælles normal/oneoff-plan med bounded fair DMI-service, separate roterede Copernicus-køer og fælles eksakt WAM-owner.
+3. [x] Måltest DMI, Copernicus, WAM, workflows, runtimebinding og syntax.
+4. [x] Luk version/RDKS/håndbog/changelog/exact-release og geodata-version-only-bevis.
+5. [ ] Exact-head sourcegate, sikker merge og kontrolleret main-opfyldning.
+6. [ ] Begge komplette closures, fulde gates, handoff/cutover og offentlig scoremodelverifikation.
+7. [ ] Efter launch: kontrolleret normaldrift, cachetransport, ekstern cron, providertider og målt vedligeholdelsesoverskud.
 
 ## Nyeste releasehale – 4.0.342 granulær provideradmission
 

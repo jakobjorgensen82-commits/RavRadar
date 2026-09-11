@@ -1,3 +1,11 @@
+# NYESTE HANDOFF – 2026-09-11 – 4.0.343 fair scheduler og eksakt owner
+
+`origin/main` er 4.0.342/`6a3133fe`; Candidate G er offentlig, og cachen er ikke nulstillet. Oneoff `34565347360` sluttede uden handoff/cutover med current 77.859/79.414 og WAM-fejl. Analysen beviste tre systemiske årsager: en DMI-currentfamilie fik nul ture, Baltic sultede AMM15, og to vestlige WAM-dele var bundet til NSB, selv om kun DW dækker dem.
+
+Lokal 4.0.343 indfører bounded fair DMI-familyrotation, prefetch-nedgradering af refresh-only arbejde, separate roterede Copernicus-produktkøer med round-robin og en fælles fail-closed WAM-owner-policy. Ejerskabet er 458 DW/212 NSB blandt 670 native dele med præcis to DW-overrides. Normal og oneoff bruger samme producenter; owner-policy bindes til register, receipt, historik og privat runtime uden global cache-reset.
+
+Målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding-, compile- og syntaxkontroller er grønne lokalt. Fortsæt med release-/RDKS-/håndbogslukning og én exact-head-CI, ikke en gammel providerkørsel. Efter sikker merge: kontrolleret main-opfyldning, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, fulde gates, handoff, cutover og offentlig modelverifikation. DEC-0125 og `docs/rdks/05_NEXT_CHAT_HANDOFF.md` er aktuelle.
+
 # NYESTE HANDOFF – 2026-09-11 – 4.0.342 per-part WAM og partial-hour Copernicus
 
 Main er 4.0.341/`caa49c42`; Candidate G er stadig offentlig. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff eller cutover. `wam_dw` kunne lukke, mens whole-asset-rollback fjernede fremgangen fra alle 91 `wam_nsb`-assets ved enkelte delafvisninger.

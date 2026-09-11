@@ -21,6 +21,14 @@
 
 # AI Architecture Map – RavRadar
 
+## 2026-09-11 lokal 4.0.343 – fair providerbetjening og exact WAM-owner
+
+- Normal og oneoff går gennem samme DMI-supervisor og Copernicus-runner; oneoff gentager kun bounded pass.
+- DMI-currentfamilier har vedvarende fair leadrotation og kritisk tidsreservation; exact prefetch flytter refresh-only efter reelle huller.
+- Copernicus har separate roterede Baltic-/AMM15-køer med round-robin og same-pair overlapforudsætning.
+- `scripts/lib/dmi_wave_owner.py` er én fælles fail-closed ownerkilde for plan, staging, salvage, historik og slutvalidator og indgår i privat runtimehash.
+- Persistent cache, candidate/promotion, sourceprioritet og fuld closure er uændret. Exact-head og live-providerbevis er åbne.
+
 ## 2026-09-11 lokal 4.0.342 – granulær admission inden for samme sikre kandidat
 
 ```text

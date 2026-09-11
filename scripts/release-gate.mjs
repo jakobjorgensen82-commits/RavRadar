@@ -275,6 +275,7 @@ const buildWorkflow=productionWorkflows.build;
 const deployWorkflow=productionWorkflows.deploy;
 const weatherSourceProducerWorkflow=await read('.github/workflows/validate-copernicus-current-pilot.yml');
 const dmiBulkProducer=await read('scripts/update-dmi-bulk.py');
+const dmiWaveOwner=await read('scripts/lib/dmi_wave_owner.py');
 const dmiBulkStorage=await read('scripts/lib/dmi_bulk_storage.py');
 const dmiBulkMaterializer=await read('scripts/materialize-dmi-bulk-storage.py');
 const dmiBulkStoragePythonTest=await read('scripts/test-dmi-bulk-storage.py');
@@ -1354,8 +1355,20 @@ for(const marker of [
   'return write_dmi_bulk_document(destination, document)',
   'write_ocean_diagnostics(result)',
   'class ProgressCheckpointController:',
+  'from lib.dmi_wave_owner import (',
+  'if wave_owner_for_target(zone) == collection',
+  'wave_owner_by_part=wave_owner_by_cache_key(',
 ]){
   ok(dmiBulkProducer.includes(marker),`DMI asset-/checkpointkæden mangler atomisk progression: ${marker}`);
+}
+for(const marker of [
+  'WAVE_OWNER_POLICY_ID = "coast-type-exact-part-overrides-v2"',
+  '"dk-b10-10-national-part-02-locality-02"',
+  '"dk-b10-10-national-part-03"',
+  'if coast_type != "west"',
+  'return WAM_NSB if coast_type == "west" else WAM_DW',
+]){
+  ok(dmiWaveOwner.includes(marker),`Den fælles native WAM-ejerpolitik mangler: ${marker}`);
 }
 for(const marker of [
   'def write_dmi_bulk_document(',

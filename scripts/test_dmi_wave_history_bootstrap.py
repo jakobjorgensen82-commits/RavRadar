@@ -505,6 +505,43 @@ class CacheValidationTests(unittest.TestCase):
             self.assertNotIn(str(part.water_point[1]), attestation)
         self.assertNotIn("270.0", attestation)
 
+    def test_exact_wave_owner_is_enforced_when_runtime_policy_is_bound(self) -> None:
+        required = policy_utc_hours(TARGET, MIGRATION_POLICY)
+        run = utc_offset(TARGET, -48)
+        cache = cache_for_registry(
+            self.registry,
+            lambda part: {
+                hour: native_hour(part, hour, run, collection="wam_nsb")
+                for hour in required
+            },
+        )
+        owner_map = {
+            part.cache_key: "wam_dw"
+            for part in self.registry.parts
+        }
+        expect_code(
+            self,
+            "WAVE_OWNER_MISMATCH",
+            lambda: validate_wave_history_cache(
+                cache,
+                self.registry,
+                target_hour=TARGET,
+                policy=MIGRATION_POLICY,
+                wave_owner_by_part=owner_map,
+            ),
+        )
+        for part in self.registry.parts:
+            for hour in cache["zones"][part.cache_key]["hourly"].values():
+                hour["sources"]["wave"]["collection"] = "wam_dw"
+        summary = validate_wave_history_cache(
+            cache,
+            self.registry,
+            target_hour=TARGET,
+            policy=MIGRATION_POLICY,
+            wave_owner_by_part=owner_map,
+        )
+        self.assertEqual(summary.verified_part_hour_count, 80)
+
     def test_genuine_cold_start_cache_requires_all_exact_native_hours(self) -> None:
         required = policy_utc_hours(TARGET, COLD_START_POLICY)
         first_run = utc_offset(TARGET, -60)
@@ -1147,8 +1184,20 @@ class CacheValidationTests(unittest.TestCase):
             folder = Path(temporary)
             registry_path = folder / "registry.json"
             cache_path = folder / "cache.json"
+            zones_path = folder / "zones.geojson"
             registry_path.write_text(json.dumps(registry_doc), encoding="utf-8")
             cache_path.write_text(json.dumps(cache), encoding="utf-8")
+            zones_path.write_text(json.dumps({
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {
+                        "id": "ZONE-1",
+                        "coastType": "east",
+                    },
+                    "geometry": None,
+                }],
+            }), encoding="utf-8")
             completed = subprocess.run(
                 [
                     sys.executable,
@@ -1158,6 +1207,8 @@ class CacheValidationTests(unittest.TestCase):
                     str(registry_path),
                     "--cache",
                     str(cache_path),
+                    "--zones",
+                    str(zones_path),
                     "--target-hour",
                     TARGET,
                     "--production-target-hour",

@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-11 – færdiggør 4.0.343 fair providerclosure
+
+- **Aktuel base:** `origin/main` er 4.0.342 på `6a3133fe`; arbejdsgrenen indeholder lokal 4.0.343. Cachen er bevaret. Candidate G er offentlig.
+- **Negativt runtimebevis:** Oneoff `34565347360` sluttede current 77.859/79.414 og WAM terminalt uden handoff/cutover. DMI lod `dkss_nsb` få nul ture i tre pass, Copernicus lod Baltic sulte AMM15, og to konkrete vestlige WAM-dele var forkert NSB-ejet.
+- **Rettelse:** DMI får bounded fair familyrotation og prefetch-baseret refreshnedgradering. Copernicus får separate roterede produktkøer, round-robin og lokal shardfejlisolation. Fælles owner-policy giver 458 DW/212 NSB med to exact DW-overrides.
+- **Fælles drift:** Normal og oneoff bruger samme producenter. Oneoff gentager kun bounded pass. Gyldig cache nulstilles ikke; gamle partielle owner-receipts invalideres uden at slette aktive data.
+- **Teststatus:** Målrettede DMI-, Copernicus-, WAM-, workflow-, runtimebinding- og syntaxkontroller er grønne lokalt. Exact-head-CI og live-providerbevis mangler.
+- **Næste rækkefølge:** Luk version/RDKS/håndbog/changelog og exact-release-policy → særskilt geodata-version-only-bevis → én exact-head sourcegate → sikker merge → kontrolleret main-opfyldning → begge komplette closures → fulde gates/handoff/cutover → offentlig modelverifikation.
+- **Hold:** Normalworkflow/watchdog forbliver deaktiveret gennem sekvensen. Efter launch revideres cachetransport, ekstern cron, providerforbrug/tider og normalt vedligeholdelsesoverskud.
+
 # NYESTE CHECKPOINT – 2026-09-11 – fortsæt 4.0.342 granularitet uden ny analyse fra nul
 
 - **Aktuel base:** `main`/`origin/main` er 4.0.341 på `caa49c42`; arbejdsgrenen er 4.0.342-kandidat. Cachen er ikke nulstillet. Candidate G er fortsat offentlig.

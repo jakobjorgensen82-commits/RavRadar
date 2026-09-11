@@ -2,6 +2,14 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.343-læring
+
+- En samlet tidsgrænse er ikke fair service: optæl faktisk startmulighed pr. kritisk familie og produkt.
+- Providerens egne mangler er ikke den autoritative kø. Planen skal afledes af hele cacheunionens reelle rest, og refresh-only må først nedgraderes efter eksakt bevis.
+- Parallelle providerprodukter skal have separate roterede køer; fast produktorden kan skabe permanent starvation selv med mange genkørsler.
+- Grov geografisk ownerklassifikation skal have en lille, fælles og attesteret exact-override-mekanisme, når gridbeviset modsiger kysttypen.
+- Samme rettelse skal ligge i fælles producentkode for normal og oneoff; ellers kan launchtesten og den efterfølgende vedligeholdelse divergere.
+
 ## Aktuel 4.0.342-læring
 
 Transaktionel isolation løser ikke i sig selv en for grov transaktionsgrænse. 4.0.341 forhindrede en halv fil i at mutere aktiv cache, men gjorde samtidig én lokal partfejl til rollback af hundredvis af uafhængigt gyldige søskende. Den rigtige enhed er den mindste komplette, provenancebundne tuple inde i en stadig isoleret kandidat.

@@ -1,3 +1,13 @@
+# NYESTE ROADMAP – 2026-09-11 – 4.0.343 fra fair providerclosure til model-online
+
+- [x] Bevar cachen og afgræns 4.0.342's negative runtime til DMI-family-, Copernicus-product- og WAM-owner-starvation.
+- [x] Implementér én fælles normal/oneoff-løsning med bounded fair DMI-service, separate roterede Copernicus-køer og fælles exact WAM-owner.
+- [x] Bestå de målrettede lokale kontrakt-, integration-, workflow-, runtimebinding- og syntaxkontroller.
+- [x] Luk 4.0.343-version, exact-release-policy, RDKS/håndbog/changelog og version-only-geodatabevis; commit/push først den samlede gennemgåede diff.
+- [ ] Bestå én exact-head `validate:source`, merge den eksakte grønne head og kør én kontrolleret main-opfyldning på de bevarede cacher.
+- [ ] Kræv current 79.414/79.414, native WAM 79.060 og Feggesund 354/354; kør fulde gates, handoff og cutover.
+- [ ] Verificér den integrerede scoremodel offentligt. Genaktivér derefter normal vedligeholdelse kontrolleret og mål cachetransport, ekstern cron, providertider og vedligeholdelsesoverskud.
+
 # NYESTE ROADMAP – 2026-09-11 – 4.0.342 fra granular cacheprogression til model-online
 
 - [x] Bevar 4.0.341's isolerede WAM-candidate og alle slutgates; forkast kun whole-asset-kassation af uafhængigt gyldige tuples.

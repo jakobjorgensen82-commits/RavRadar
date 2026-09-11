@@ -233,6 +233,116 @@ def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> li
     return shards
 
 
+def operational_shard_work_order(
+    *,
+    targets: list[dict[str, Any]],
+    rotation_slot: int,
+) -> list[dict[str, Any]]:
+    """Rotate each product queue, then interleave products deterministically.
+
+    The order deliberately does not use provider attempts or acquisitions.
+    Those are admission/provenance evidence with different retention rules and
+    must not double as a durable scheduler cursor.  A time-slot/attempt-derived
+    rotation prevents a slow, negative or failed first shard from becoming the
+    permanent head after target changes, while fixed product round-robin keeps
+    Baltic from hiding AMM15 behind its longer queue.
+    """
+    if isinstance(rotation_slot, bool) or not isinstance(rotation_slot, int):
+        raise ValueError("Copernicus scheduler rotation slot is invalid")
+    queues: list[list[dict[str, Any]]] = []
+    for product_rank, product in enumerate(PRODUCTS):
+        source_targets = [row for row in targets if eligible_target(row, product)]
+        product_rows = [
+            {
+                "product": product,
+                "productRank": product_rank,
+                "shardIndex": shard_index,
+                "shard": shard,
+            }
+            for shard_index, shard in enumerate(
+                spatial_shards(source_targets, product)
+            )
+        ]
+        if product_rows:
+            offset = rotation_slot % len(product_rows)
+            product_rows = product_rows[offset:] + product_rows[:offset]
+        queues.append(product_rows)
+
+    interleaved: list[dict[str, Any]] = []
+    for ordinal in range(max((len(queue) for queue in queues), default=0)):
+        for queue in queues:
+            if ordinal < len(queue):
+                interleaved.append(queue[ordinal])
+    return interleaved
+
+
+def operational_rotation_slot(acquisition_at: datetime) -> int:
+    """Return a bounded per-invocation cursor shared by normal and oneoff."""
+    outer_attempt = int(os.getenv("RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL", "0"))
+    github_attempt = int(os.getenv("GITHUB_RUN_ATTEMPT", "1"))
+    if not 0 <= outer_attempt <= 2 or not 1 <= github_attempt <= 100:
+        raise ValueError("Copernicus scheduler attempt metadata is invalid")
+    return (
+        int(acquisition_at.timestamp() // (15 * 60))
+        + outer_attempt
+        + github_attempt - 1
+    )
+
+
+def operational_source_required_pairs(
+    *,
+    remaining: set[tuple[str, str]],
+    downstream_covered: set[tuple[str, str]],
+    product: dict[str, Any],
+    attempted_pairs_by_source: dict[str, set[tuple[str, str]]],
+    target_by_id: dict[str, dict[str, Any]],
+    baltic_product: dict[str, Any],
+) -> set[tuple[str, str]]:
+    """Return only real union holes currently admissible for one source.
+
+    Historical attempts deliberately do not enter this function.  Only an
+    exact attempt at the current production reference can suppress the same
+    source request or satisfy AMM15's pair-level Baltic prerequisite.
+    """
+    source = product["source"]
+    required = (
+        remaining
+        - downstream_covered
+        - attempted_pairs_by_source[source]
+    )
+    if source != "copernicus-nws-amm15":
+        return required
+    return {
+        pair
+        for pair in required
+        if not eligible_target(target_by_id[pair[0]], baltic_product)
+        or pair in attempted_pairs_by_source["copernicus-baltic-nemo"]
+    }
+
+
+def has_deferred_amm15_overlap(
+    *,
+    shard: dict[str, Any],
+    remaining: set[tuple[str, str]],
+    downstream_covered: set[tuple[str, str]],
+    attempted_pairs_by_source: dict[str, set[tuple[str, str]]],
+    target_by_id: dict[str, dict[str, Any]],
+    baltic_product: dict[str, Any],
+) -> bool:
+    """Whether this AMM15 shard may become actionable after later Baltic work."""
+    shard_part_ids = {row["partId"] for row in shard["targets"]}
+    return any(
+        pair[0] in shard_part_ids
+        and eligible_target(target_by_id[pair[0]], baltic_product)
+        and pair not in attempted_pairs_by_source["copernicus-baltic-nemo"]
+        for pair in (
+            remaining
+            - downstream_covered
+            - attempted_pairs_by_source["copernicus-nws-amm15"]
+        )
+    )
+
+
 def request_bounds(targets: list[dict[str, Any]], product: dict[str, Any]) -> tuple[float, float, float, float]:
     if not targets:
         raise RuntimeError(f"No eligible targets for {product['source']}")
@@ -1506,35 +1616,45 @@ def main() -> int:
     temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-range-"))
     new_acquisitions: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
-    product_reports: list[dict[str, Any]] = []
+    product_report_state = {
+        product["source"]: {
+            "executedShardCount": 0,
+            "verifiedPairCount": 0,
+            "surfaceOnlyCount": 0,
+        }
+        for product in PRODUCTS
+    }
     failed_operational_shards = 0
+    failed_work_items: set[tuple[str, str]] = set()
     try:
-        for product in PRODUCTS:
-            # Stable shard membership belongs to the full authoritative register,
-            # not to this hour's changing subset of DMI gaps. Query only gaps below.
-            source_targets = [row for row in authoritative_targets if eligible_target(row, product)]
-            source_shards = spatial_shards(source_targets, product)
-            product_record_count = 0
-            executed_shards = 0
-            surface_count = 0
-            for shard_index, shard in enumerate(source_shards):
-                # These are network priorities, NOT the source-stage DMI rest.
-                # Already usable fallback pairs are optional post-closure work.
-                source_required_pairs = remaining - downstream_covered
-                if product["source"] == "copernicus-nws-amm15":
-                    # AMM15 may only run for an in-domain pair after Baltic has
-                    # completed an exact attempt for this production reference.
-                    # A failed Baltic shard remains honest IN_PROGRESS evidence;
-                    # it can never be converted into source-order exhaustion.
-                    source_required_pairs = {
-                        pair
-                        for pair in source_required_pairs
-                        if not eligible_target(target_by_id[pair[0]], baltic_product)
-                        or pair in attempted_pairs_by_source["copernicus-baltic-nemo"]
-                    }
-                source_required_pairs = (
-                    source_required_pairs
-                    - attempted_pairs_by_source[product["source"]]
+        # Stable shard membership belongs to the full authoritative register,
+        # not to this hour's changing subset of DMI gaps. The invocation-bound
+        # order rotates bounded service across both products and all spatial
+        # shards. It never changes pair admission or source evidence.
+        pending_work = operational_shard_work_order(
+            targets=authoritative_targets,
+            rotation_slot=operational_rotation_slot(acquisition_at),
+        )
+        while pending_work:
+            deferred_work: list[dict[str, Any]] = []
+            completed_attempt_in_pass = False
+            for work in pending_work:
+                product = work["product"]
+                shard_index = work["shardIndex"]
+                shard = work["shard"]
+                work_key = (product["source"], shard["shardId"])
+                if work_key in failed_work_items:
+                    continue
+                # These are network priorities, NOT source admission.  Only
+                # actual holes after the complete reusable provider union are
+                # critical.  Historical attempts affect ordering above only.
+                source_required_pairs = operational_source_required_pairs(
+                    remaining=remaining,
+                    downstream_covered=downstream_covered,
+                    product=product,
+                    attempted_pairs_by_source=attempted_pairs_by_source,
+                    target_by_id=target_by_id,
+                    baltic_product=baltic_product,
                 )
                 shard_part_ids = {
                     row["partId"] for row in shard["targets"]
@@ -1544,6 +1664,21 @@ def main() -> int:
                     if pair[0] in shard_part_ids
                 }
                 if not critical_shard_pairs:
+                    if (
+                        product["source"] == "copernicus-nws-amm15"
+                        and has_deferred_amm15_overlap(
+                            shard=shard,
+                            remaining=remaining,
+                            downstream_covered=downstream_covered,
+                            attempted_pairs_by_source=attempted_pairs_by_source,
+                            target_by_id=target_by_id,
+                            baltic_product=baltic_product,
+                        )
+                    ):
+                        # The matching Baltic shard can be later in the fair
+                        # queue. Revisit this AMM15 shard after the pass rather
+                        # than reinstating a product-wide Baltic barrier.
+                        deferred_work.append(work)
                     continue
                 times_by_part: dict[str, list[datetime]] = {}
                 for target in shard["targets"]:
@@ -1557,7 +1692,7 @@ def main() -> int:
                 if not times_by_part:
                     continue
                 require_operational_time_budget()
-                executed_shards += 1
+                product_report_state[product["source"]]["executedShardCount"] += 1
                 shard_targets = [row for row in shard["targets"] if row["partId"] in times_by_part]
                 native_times = sorted({value for values in times_by_part.values() for value in values})
                 start, end = native_times[0], native_times[-1]
@@ -1614,6 +1749,7 @@ def main() -> int:
                     # Never manufacture a COMPLETE attempt; later shards and
                     # products may still produce independently valid evidence.
                     failed_operational_shards += 1
+                    failed_work_items.add(work_key)
                     print(
                         "Copernicus shard failed safely: "
                         f"source={product['source']}, shardIndex={shard_index}, "
@@ -1622,6 +1758,7 @@ def main() -> int:
                         flush=True,
                     )
                     continue
+                completed_attempt_in_pass = True
                 source_attempts = replace_stale_shard_attempt(
                     source_attempts,
                     source_attempt,
@@ -1675,18 +1812,33 @@ def main() -> int:
                     f"completedSourceAttempts={len(source_attempts)}."
                 )
                 require_operational_time_budget()
-                product_record_count += len(records)
-                surface_count += sum(row["layerQuality"] == "surface-only" for row in records)
-            product_reports.append({
+                product_report_state[product["source"]]["verifiedPairCount"] += len(records)
+                product_report_state[product["source"]]["surfaceOnlyCount"] += sum(
+                    row["layerQuality"] == "surface-only" for row in records
+                )
+                if (
+                    product["source"] == "copernicus-nws-amm15"
+                    and has_deferred_amm15_overlap(
+                        shard=shard,
+                        remaining=remaining,
+                        downstream_covered=downstream_covered,
+                        attempted_pairs_by_source=attempted_pairs_by_source,
+                        target_by_id=target_by_id,
+                        baltic_product=baltic_product,
+                    )
+                ):
+                    deferred_work.append(work)
+            if not deferred_work or not completed_attempt_in_pass:
+                break
+            pending_work = deferred_work
+        product_reports = [{
                 "source": product["source"],
                 "productId": product["productId"],
                 "datasetId": product["datasetId"],
                 "datasetVersion": product["datasetVersion"],
                 "spatialShardPolicyId": SPATIAL_SHARD_POLICY_ID,
-                "executedShardCount": executed_shards,
-                "verifiedPairCount": product_record_count,
-                "surfaceOnlyCount": surface_count,
-            })
+                **product_report_state[product["source"]],
+            } for product in PRODUCTS]
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
 

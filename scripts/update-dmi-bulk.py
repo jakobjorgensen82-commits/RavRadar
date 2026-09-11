@@ -106,6 +106,11 @@ from lib.coastal_point_staging import (
     stage_asset_complete,
     staged_targets as build_coastal_point_stage_targets,
 )
+from lib.dmi_wave_owner import (
+    WAVE_OWNER_POLICY_ID,
+    wave_owner_by_cache_key,
+    wave_owner_for_target,
+)
 from lib.dmi_wave_history_bootstrap import (
     COLD_START_MODE as WAVE_BOOTSTRAP_COLD_START_MODE,
     EXPECTED_COASTAL_PART_COUNT as WAVE_BOOTSTRAP_EXPECTED_PART_COUNT,
@@ -266,7 +271,7 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 PARSER_VERSION = 20
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 9
-WAVE_ASSET_ADMISSION_POLICY = "per-part-atomic-v1"
+WAVE_ASSET_ADMISSION_POLICY = "per-part-atomic-owner-v2"
 WAVE_ASSET_CACHE_PROOF_SCHEMA = "dmi-wave-asset-cache-proof-v2"
 # The integrated model can replay at most 48 hours before its first public
 # target. Keep a bounded private buffer with one full native-cadence safety
@@ -1002,6 +1007,57 @@ def wam_runtime_reserve(
     )
 
 
+STRICT_CURRENT_TURN_RESERVE_SECONDS = 120.0
+
+
+def strict_current_turn_epoch(entry: Any, now_epoch: float) -> float:
+    """Return a safe scheduler hint; it never becomes data evidence."""
+    if not isinstance(entry, dict):
+        return 0.0
+    value = epoch(entry.get("lastStrictCurrentTurnAt"))
+    if value <= 0 or value > now_epoch:
+        return 0.0
+    return value
+
+
+def strict_current_collection_order(
+    collections: list[str],
+    state: dict[str, Any],
+    now_epoch: float,
+) -> list[str]:
+    """Rotate critical DKSS service without changing provider admission."""
+    base_rank = {collection: index for index, collection in enumerate(collections)}
+    return sorted(
+        collections,
+        key=lambda collection: (
+            strict_current_turn_epoch(state.get(collection), now_epoch),
+            base_rank[collection],
+        ),
+    )
+
+
+def strict_current_runtime_reserve(
+    collections: list[str],
+    remaining_work_seconds: float,
+) -> tuple[dict[str, float], float]:
+    """Reserve a bounded start opportunity for every pending DKSS family."""
+    ordered = [
+        collection for collection in collections
+        if collection in MARINE_COLLECTIONS
+    ]
+    if not ordered:
+        return {}, 0.0
+    total = min(
+        max(0.0, remaining_work_seconds),
+        STRICT_CURRENT_TURN_RESERVE_SECONDS * len(ordered),
+    )
+    per_collection = total / len(ordered)
+    return (
+        {collection: per_collection for collection in ordered},
+        total,
+    )
+
+
 def operational_collection_plan(
     scheduled: list[str],
     state: dict[str, Any],
@@ -1012,7 +1068,7 @@ def operational_collection_plan(
     now_epoch: float | None = None,
     force_wam_collections: set[str] | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
-    """Plan one lead DKSS attempt, then every real WAM residual, then slack."""
+    """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
     retry_deferred = [
         collection for collection in scheduled
@@ -1056,11 +1112,16 @@ def operational_collection_plan(
         collection for collection in eligible
         if collection not in proof_complete_wam
     ]
-    lead_dkss = next((
-        collection for collection in work_eligible
-        if not strict_current_anchor_available
-        and collection in MARINE_COLLECTIONS
-    ), None)
+    strict_current = strict_current_collection_order(
+        [
+            collection for collection in work_eligible
+            if not strict_current_anchor_available
+            and collection in MARINE_COLLECTIONS
+        ],
+        state,
+        now_value,
+    )
+    lead_dkss = strict_current[0] if strict_current else None
     critical_wam = [
         collection
         for collection in sorted(
@@ -1082,6 +1143,7 @@ def operational_collection_plan(
     prioritized = [
         *([lead_dkss] if lead_dkss else []),
         *critical_wam,
+        *strict_current[1:],
     ]
     planned = [
         *prioritized,
@@ -1090,14 +1152,29 @@ def operational_collection_plan(
             if collection not in prioritized
         ],
     ]
+    current_reserve_by_collection, current_reserve_total = (
+        strict_current_runtime_reserve(
+            strict_current,
+            remaining_work_seconds,
+        )
+    )
     reserve_by_collection, reserve_total = wam_runtime_reserve(
         critical_wam,
         remaining_work_seconds,
-        lead_reserve_seconds=120.0 if lead_dkss else 0.0,
+        lead_reserve_seconds=current_reserve_total,
     )
     return planned, {
         "strictCurrentLeadCollection": lead_dkss,
         "strictCurrentLeadAttemptLimit": 1,
+        "strictCurrentCollections": strict_current,
+        "criticalCurrentOutsideBaseCollectionQuota": True,
+        "strictCurrentRuntimeReserveSeconds": round(
+            current_reserve_total, 3,
+        ),
+        "strictCurrentRuntimeReserveSecondsByCollection": {
+            collection: round(seconds, 3)
+            for collection, seconds in current_reserve_by_collection.items()
+        },
         "criticalWamCollections": critical_wam,
         "forcedFirstCutoverWamCollections": [
             collection for collection in critical_wam
@@ -1110,7 +1187,8 @@ def operational_collection_plan(
         "criticalWamOutsideBaseCollectionQuota": True,
         "criticalWamRuntimeReserveSeconds": round(reserve_total, 3),
         "strictCurrentLeadRuntimeReserveSeconds": (
-            120.0 if lead_dkss else 0.0
+            round(current_reserve_by_collection.get(lead_dkss, 0.0), 3)
+            if lead_dkss else 0.0
         ),
         "criticalWamRuntimeReserveSecondsByCollection": {
             collection: round(seconds, 3)
@@ -1808,6 +1886,78 @@ def order_dkss_primary_refresh_collections(
             if collection in refresh_only_collections
         ],
     ]
+
+
+def refine_operational_collection_plan_after_prefetch(
+    scheduled: list[str],
+    coverage: dict[str, Any],
+    refresh_only_collections: set[str],
+    remaining_work_seconds: float,
+) -> tuple[list[str], dict[str, Any]]:
+    """Remove proven maintenance-only DKSS work from critical reservations.
+
+    The first plan is necessarily conservative because it is made before the
+    official asset inventories are prefetched. Once exact cache/asset identity
+    has proved a collection refresh-only, preserving runtime for it would let
+    quality maintenance delay a real hole in another DKSS or WAM family.
+    """
+    refined = dict(coverage)
+    strict_current = [
+        collection
+        for collection in coverage.get("strictCurrentCollections", [])
+        if collection in scheduled
+        and collection not in refresh_only_collections
+    ]
+    critical_wam = [
+        collection
+        for collection in coverage.get("criticalWamCollections", [])
+        if collection in scheduled
+    ]
+    lead = strict_current[0] if strict_current else None
+    prioritized = [
+        *([lead] if lead else []),
+        *critical_wam,
+        *strict_current[1:],
+    ]
+    planned = [
+        *prioritized,
+        *[
+            collection for collection in scheduled
+            if collection not in prioritized
+            and collection not in refresh_only_collections
+        ],
+        *[
+            collection for collection in scheduled
+            if collection in refresh_only_collections
+        ],
+    ]
+    current_reserve, current_total = strict_current_runtime_reserve(
+        strict_current,
+        remaining_work_seconds,
+    )
+    wam_reserve, wam_total = wam_runtime_reserve(
+        critical_wam,
+        remaining_work_seconds,
+        lead_reserve_seconds=current_total,
+    )
+    refined.update({
+        "strictCurrentLeadCollection": lead,
+        "strictCurrentCollections": strict_current,
+        "strictCurrentRuntimeReserveSeconds": round(current_total, 3),
+        "strictCurrentRuntimeReserveSecondsByCollection": {
+            collection: round(seconds, 3)
+            for collection, seconds in current_reserve.items()
+        },
+        "strictCurrentLeadRuntimeReserveSeconds": (
+            round(current_reserve.get(lead, 0.0), 3) if lead else 0.0
+        ),
+        "criticalWamRuntimeReserveSeconds": round(wam_total, 3),
+        "criticalWamRuntimeReserveSecondsByCollection": {
+            collection: round(seconds, 3)
+            for collection, seconds in wam_reserve.items()
+        },
+    })
+    return planned, refined
 
 
 def should_attempt_dkss_primary_refresh(
@@ -3621,10 +3771,11 @@ def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[st
     # men må ikke længere blokere en alternativ DMI-model med et bedre gyldigt havpunkt.
     if collection in MARINE_COLLECTIONS:
         return zones
-    if collection == "wam_nsb":
-        return [z for z in zones if z["coastType"] == "west"]
-    if collection == "wam_dw":
-        return [z for z in zones if z["coastType"] != "west"]
+    if collection in WAVE_BOOTSTRAP_COLLECTIONS:
+        return [
+            zone for zone in zones
+            if wave_owner_for_target(zone) == collection
+        ]
     return zones
 
 
@@ -4054,6 +4205,11 @@ def operational_wave_asset_stage_admissible(
         and getattr(asset, "valid_time", None)
     ):
         return False
+    try:
+        if any(wave_owner_for_target(zone) != collection for zone in zones):
+            return False
+    except ValueError:
+        return False
     integer_fields = ("requiredCount", "acceptedCount", "rejectedCount")
     if any(
         not isinstance(summary.get(key), int)
@@ -4161,6 +4317,7 @@ def operational_wave_asset_stage_admissible(
             hour=before_hour,
             entity_id=zone_id,
             provenance_entity=provenance_entity,
+            expected_collection=collection,
         ) is None:
             old_lineage = wave_asset_lineage_identity(
                 (before_hour.get("sources") or {}).get("wave")
@@ -5738,6 +5895,7 @@ def wave_target_registry_sha256(
     canonical = json.dumps(
         {
             "collection": collection,
+            "waveOwnerPolicyId": WAVE_OWNER_POLICY_ID,
             "targets": sorted(
                 (
                     {
@@ -5827,6 +5985,7 @@ def wave_asset_cache_proof_coherent(
     return bool(
         summary.get("schemaVersion") == WAVE_ASSET_CACHE_PROOF_SCHEMA
         and summary.get("admissionPolicy") == WAVE_ASSET_ADMISSION_POLICY
+        and summary.get("waveOwnerPolicyId") == WAVE_OWNER_POLICY_ID
         and required_count > 0
         and accepted_count > 0
         and accepted_count + rejected_count == required_count
@@ -5906,6 +6065,7 @@ def private_wave_bootstrap_asset_summary(
     return {
         "schemaVersion": WAVE_ASSET_CACHE_PROOF_SCHEMA,
         "admissionPolicy": WAVE_ASSET_ADMISSION_POLICY,
+        "waveOwnerPolicyId": WAVE_OWNER_POLICY_ID,
         "requiredCount": len(zones),
         "acceptedCount": accepted,
         "rejectedCount": len(zones) - accepted,
@@ -6025,6 +6185,10 @@ def salvage_invalid_private_wave_rows(
         part.cache_key: part.provenance_entity
         for part in registry.parts
     }
+    owner_by_id = {
+        str(part.get("id") or ""): wave_owner_for_target(part)
+        for part in parts
+    }
     for zone in parts:
         zone_id = str(zone.get("id") or "")
         point = (result.get("zones") or {}).get(zone_id)
@@ -6050,6 +6214,7 @@ def salvage_invalid_private_wave_rows(
                 hour=hour,
                 entity_id=zone_id,
                 provenance_entity=provenance_by_id.get(zone_id) or {},
+                expected_collection=owner_by_id.get(zone_id),
             )
             if code is None:
                 retained_rows += 1
@@ -6113,6 +6278,10 @@ def execute_private_wave_history_bootstrap(
         or any(not part_id.startswith("PART::") for part_id in part_ids)
     ):
         raise RuntimeError("private WAM bootstrap part registry is incomplete")
+    wave_owners = {
+        str(part.get("id") or ""): wave_owner_for_target(part)
+        for part in parts
+    }
     locked: dict[str, set[str]] = {}
     aggregate = {
         "schemaVersion": "dmi-wave-history-bootstrap-v1",
@@ -6141,6 +6310,7 @@ def execute_private_wave_history_bootstrap(
                 registry,
                 target_hour=configuration["targetHour"],
                 policy=configuration["policy"],
+                wave_owner_by_part=wave_owners,
             )
         except WaveBootstrapError as exc:
             # Cache-first is an optimisation, never permission to infer native
@@ -6157,6 +6327,7 @@ def execute_private_wave_history_bootstrap(
                 "MISSING_PROVENANCE",
                 "MISSING_CELL",
                 "WAVE_DISTANCE_OUT_OF_BOUNDS",
+                "WAVE_OWNER_MISMATCH",
                 "INVALID_PROVENANCE",
                 "FUTURE_RUN",
             }:
@@ -10532,6 +10703,14 @@ def main() -> int:
             scheduled,
             primary_refresh_only_collections,
         )
+        scheduled, schedule_coverage = (
+            refine_operational_collection_plan_after_prefetch(
+                scheduled,
+                schedule_coverage,
+                primary_refresh_only_collections,
+                runtime_remaining(),
+            )
+        )
         schedule_coverage["dkssPrimaryRefreshOnlyCollections"] = sorted(
             primary_refresh_only_collections,
             key=COLLECTION_ORDER.index,
@@ -10541,6 +10720,12 @@ def main() -> int:
         )
         schedule_coverage["dkssPrimaryRefreshAssetBudget"] = (
             DKSS_PRIMARY_REFRESH_MAX_ASSETS
+        )
+        schedule_coverage["strictCurrentRecoveryDkssFirst"] = bool(
+            schedule_coverage.get("strictCurrentCollections")
+            and scheduled
+            and scheduled[0]
+                == schedule_coverage.get("strictCurrentLeadCollection")
         )
         result["diagnostics"]["scheduledCollections"] = scheduled
         result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
@@ -10607,7 +10792,7 @@ def main() -> int:
                     )
                     + float(
                         schedule_coverage.get(
-                            "strictCurrentLeadRuntimeReserveSeconds"
+                            "strictCurrentRuntimeReserveSeconds"
                         ) or 0.0
                     )
                 ),
@@ -10621,14 +10806,21 @@ def main() -> int:
         for collection in schedule_coverage.get("criticalWamCollections", [])
         if collection in scheduled
     ]
+    strict_current_collections = [
+        collection
+        for collection in schedule_coverage.get("strictCurrentCollections", [])
+        if collection in scheduled
+    ]
+    strict_current_reserve, strict_current_reserve_total = (
+        strict_current_runtime_reserve(
+            strict_current_collections,
+            runtime_remaining(),
+        )
+    )
     critical_wam_reserve, critical_wam_reserve_total = wam_runtime_reserve(
         critical_wam_collections,
         runtime_remaining(),
-        lead_reserve_seconds=(
-            120.0
-            if schedule_coverage.get("strictCurrentLeadCollection")
-            else 0.0
-        ),
+        lead_reserve_seconds=strict_current_reserve_total,
     )
     schedule_coverage["criticalWamRuntimeReserveSeconds"] = round(
         critical_wam_reserve_total, 3,
@@ -10637,7 +10829,15 @@ def main() -> int:
         collection: round(seconds, 3)
         for collection, seconds in critical_wam_reserve.items()
     }
+    schedule_coverage["strictCurrentRuntimeReserveSeconds"] = round(
+        strict_current_reserve_total, 3,
+    )
+    schedule_coverage["strictCurrentRuntimeReserveSecondsByCollection"] = {
+        collection: round(seconds, 3)
+        for collection, seconds in strict_current_reserve.items()
+    }
     pending_critical_wam = list(critical_wam_collections)
+    pending_critical_current = list(strict_current_collections)
     strict_current_lead_collection = schedule_coverage.get(
         "strictCurrentLeadCollection"
     )
@@ -10648,16 +10848,25 @@ def main() -> int:
 
     for collection in scheduled:
         collection_is_critical_wam = collection in critical_wam_collections
+        collection_is_critical_current = (
+            collection in strict_current_collections
+        )
         if (
             not collection_is_critical_wam
+            and not collection_is_critical_current
             and productive_collections >= COLLECTIONS_PER_RUN
         ):
             break
         if collection_is_critical_wam:
             pending_critical_wam.remove(collection)
-        reserve_for_pending_wam = sum(
+        if collection_is_critical_current:
+            pending_critical_current.remove(collection)
+        reserve_for_pending_critical = sum(
             critical_wam_reserve.get(pending, 0.0)
             for pending in pending_critical_wam
+        ) + sum(
+            strict_current_reserve.get(pending, 0.0)
+            for pending in pending_critical_current
         )
         if should_stop_work():
             result["diagnostics"]["errors"].append({
@@ -10671,6 +10880,7 @@ def main() -> int:
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         collection_start_error_count = len(result["diagnostics"]["errors"])
         strict_current_lead_attempts = 0
+        strict_current_turn_started = False
         collection_refresh_only = (
             DKSS_PRIMARY_MODE
             and collection in primary_refresh_only_collections
@@ -11262,15 +11472,15 @@ def main() -> int:
                     ):
                         break
                     if not checkpoint_controller.can_start_asset(
-                        reserve_seconds=reserve_for_pending_wam,
+                        reserve_seconds=reserve_for_pending_critical,
                     ):
-                        if reserve_for_pending_wam > 0:
+                        if reserve_for_pending_critical > 0:
                             budget_stop = (
                                 "older WAM fallback deferred to preserve "
                                 "the critical runtime slice"
                             )
                             budget_stop_code = (
-                                "CRITICAL_WAM_RUNTIME_RESERVED"
+                                "CRITICAL_COLLECTION_RUNTIME_RESERVED"
                             )
                         else:
                             budget_stop = (
@@ -11477,15 +11687,17 @@ def main() -> int:
                     budget_stop_code = "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT"
                     break
                 if not checkpoint_controller.can_start_asset(
-                    reserve_seconds=reserve_for_pending_wam,
+                    reserve_seconds=reserve_for_pending_critical,
                 ):
                     checkpoint_controller.flush_if_due(force=True)
-                    if reserve_for_pending_wam > 0:
+                    if reserve_for_pending_critical > 0:
                         budget_stop = (
-                            "asset deferred to preserve the critical WAM "
+                            "asset deferred to preserve the pending critical "
                             "runtime slice"
                         )
-                        budget_stop_code = "CRITICAL_WAM_RUNTIME_RESERVED"
+                        budget_stop_code = (
+                            "CRITICAL_COLLECTION_RUNTIME_RESERVED"
+                        )
                     else:
                         budget_stop = "bulk runtime budget reached"
                         budget_stop_code = "RUNTIME_BUDGET_REACHED"
@@ -11495,6 +11707,8 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
+                if collection_is_critical_current:
+                    strict_current_turn_started = True
                 if bounded_primary_refresh:
                     primary_refresh_assets_remaining -= 1
                     run_info["assetsBoundedRefreshAttempted"] += 1
@@ -12476,6 +12690,16 @@ def main() -> int:
                 state["nextEligibleAt"] = None
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
+            if collection_is_critical_current and (
+                strict_current_turn_started
+                or deferred_only
+                or (
+                    collection_assets_complete
+                    and recognized >= required
+                )
+            ):
+                state["lastStrictCurrentTurnAt"] = generated
+                checkpoint_controller.mark_bulk_dirty()
             if (
                 not collection_refresh_only
                 and (
@@ -12490,12 +12714,13 @@ def main() -> int:
                 made_progress
                 and not refresh_maintenance_no_progress
                 and not collection_is_critical_wam
+                and not collection_is_critical_current
             ):
                 productive_collections += 1
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
                 if budget_stop_code in {
-                    "CRITICAL_WAM_RUNTIME_RESERVED",
+                    "CRITICAL_COLLECTION_RUNTIME_RESERVED",
                     "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",
                 }:
                     result["diagnostics"].setdefault(
@@ -12507,13 +12732,13 @@ def main() -> int:
                             {
                                 "reservedForCollections": list(
                                     pending_critical_wam
-                                ),
+                                ) + list(pending_critical_current),
                                 "reservedSeconds": round(
-                                    reserve_for_pending_wam, 3,
+                                    reserve_for_pending_critical, 3,
                                 ),
                             }
                             if budget_stop_code
-                                == "CRITICAL_WAM_RUNTIME_RESERVED"
+                                == "CRITICAL_COLLECTION_RUNTIME_RESERVED"
                             else {
                                 "attemptLimit":
                                     strict_current_lead_attempt_limit,
@@ -12670,6 +12895,10 @@ def main() -> int:
                 bootstrap_target_hour=wave_bootstrap_configuration["targetHour"],
                 production_target_hour=wave_bootstrap_configuration["productionTargetHour"],
                 forecast_hour_count=HOURS,
+                wave_owner_by_part=wave_owner_by_cache_key(
+                    registry.parts,
+                    zone_coast_types,
+                ),
             )
             bootstrap_diagnostics["operationalHandoff"] = (
                 operational.sanitized_attestation()

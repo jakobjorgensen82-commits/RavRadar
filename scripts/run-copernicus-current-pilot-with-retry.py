@@ -51,6 +51,9 @@ def run_bounded(
         child_environment[SOFT_DEADLINE_EPOCH_ENV] = str(
             time.time() + soft_budget_seconds
         )
+        child_environment["RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL"] = str(
+            attempt - 1
+        )
         try:
             completed = subprocess.run(
                 command,

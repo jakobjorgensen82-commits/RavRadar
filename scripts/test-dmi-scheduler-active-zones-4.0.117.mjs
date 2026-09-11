@@ -22,11 +22,11 @@ assert.match(bulk,/balanced_foundation_recovery/);
 assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
 assert.match(bulk,/operational_wave_residual_by_collection\(/);
 assert.match(bulk,/and not has_operational_wave_residual\(/);
-assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
-assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}productive_collections \+= 1/);
+assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
+assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections \+= 1/);
 assert.match(
   bulk,
-  /if budget_stop_code in \{\s*"CRITICAL_WAM_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
+  /if budget_stop_code in \{\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
 );
 assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
 
@@ -210,9 +210,22 @@ planned,plan_diag=module.operational_collection_plan(
 assert planned[:3]==['dkss_nsbs','wam_dw','wam_nsb'], planned
 assert planned.index('dkss_lf') > planned.index('wam_nsb'), planned
 assert plan_diag['strictCurrentLeadAttemptLimit']==1, plan_diag
+assert plan_diag['strictCurrentCollections']==['dkss_nsbs','dkss_lf','dkss_idw'], plan_diag
+assert plan_diag['criticalCurrentOutsideBaseCollectionQuota'] is True, plan_diag
+assert plan_diag['strictCurrentRuntimeReserveSeconds']==360, plan_diag
+assert set(plan_diag['strictCurrentRuntimeReserveSecondsByCollection'].values())=={120}, plan_diag
 assert plan_diag['criticalWamOutsideBaseCollectionQuota'] is True, plan_diag
 assert plan_diag['criticalWamRuntimeReserveSeconds']==240, plan_diag
 assert set(plan_diag['criticalWamRuntimeReserveSecondsByCollection'].values())=={120}, plan_diag
+refined,refined_diag=module.refine_operational_collection_plan_after_prefetch(
+ planned,plan_diag,{'dkss_nsbs'},600,
+)
+assert refined[:4]==['dkss_lf','wam_dw','wam_nsb','dkss_idw'], refined
+assert refined[-1]=='dkss_nsbs', refined
+assert refined_diag['strictCurrentLeadCollection']=='dkss_lf', refined_diag
+assert refined_diag['strictCurrentCollections']==['dkss_lf','dkss_idw'], refined_diag
+assert refined_diag['strictCurrentRuntimeReserveSeconds']==240, refined_diag
+assert refined_diag['criticalWamRuntimeReserveSeconds']==240, refined_diag
 cooldown_state={'wam_nsb':{'nextEligibleAt':'2099-01-01T00:00:00Z'}}
 planned,plan_diag=module.operational_collection_plan(
  mixed_schedule,cooldown_state,False,wave_residual,600,now_epoch=1,
@@ -238,6 +251,31 @@ planned,plan_diag=module.operational_collection_plan(
 assert 'wam_dw' in planned and 'wam_nsb' in planned, planned
 assert plan_diag['proofCompleteWamCollectionsSkipped']==[], plan_diag
 assert plan_diag['proofCompleteWamCollectionsRetainedForQuality']==['wam_dw','wam_nsb'], plan_diag
+
+# Critical DKSS service uses a persisted turn cursor, not lastAttemptAt. Each
+# family therefore gets the bounded first position across consecutive normal
+# or oneoff invocations, including after a failed/negative previous turn.
+turn_state={}
+observed_leads=[]
+for now_epoch in (1000,1100,1200,1300):
+ planned,turn_diag=module.operational_collection_plan(
+  mixed_schedule,turn_state,False,wave_residual,600,now_epoch=now_epoch,
+ )
+ lead=turn_diag['strictCurrentLeadCollection']
+ observed_leads.append(lead)
+ turn_state.setdefault(lead,{})['lastStrictCurrentTurnAt']=datetime.fromtimestamp(
+  now_epoch,timezone.utc,
+ ).isoformat().replace('+00:00','Z')
+assert observed_leads==['dkss_nsbs','dkss_lf','dkss_idw','dkss_nsbs'], observed_leads
+malformed_state={
+ 'dkss_nsbs':{'lastStrictCurrentTurnAt':'not-a-time'},
+ 'dkss_lf':{'lastStrictCurrentTurnAt':'2099-01-01T00:00:00Z'},
+ 'dkss_idw':{'lastStrictCurrentTurnAt':'1970-01-01T00:01:40Z'},
+}
+_,malformed_diag=module.operational_collection_plan(
+ mixed_schedule,malformed_state,False,wave_residual,600,now_epoch=1000,
+)
+assert malformed_diag['strictCurrentCollections'][:2]==['dkss_nsbs','dkss_lf'], malformed_diag
 small_reserve,small_total=module.wam_runtime_reserve(['wam_dw','wam_nsb'],100)
 assert small_total==100 and set(small_reserve.values())=={50}, (small_reserve,small_total)
 real_remaining=module.runtime_remaining

@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.342. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere 4.0.339-, 4.0.340- og 4.0.341-overførsler nedenfor er historik. 4.0.342 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.343. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.343 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -76,6 +76,14 @@ Ingen størrelse-, storage-, checkpoint-, privacy-, readback-, closure-, release
 DEC-0124 erstatter derfor alene whole-asset-admission med lineage-sikker per-part/time-admission og lader Copernicus bevare eksakte returnerede shardrækker, mens fraværende timer forbliver i resten. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.342`. Et 4.0.341-handoff kan ikke ommærkes eller bruges; cutover kræver et komplet handoff fra samme eksakte 4.0.342-main-head.
 
 Bevarede provider- og WAM-cacher må genvalideres og genbruges uden nulstilling. Arkiv-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Især kræves fortsat særskilt komplet currentclosure på 79.414/79.414 og komplet bølgeclosure med 79.060 native WAM-par plus Feggesund 354/354. Candidate G forbliver offentlig, indtil hele 4.0.342-kæden er positivt bevist.
+
+### Versionsoverførsel 2026-09-11 – exact-release 4.0.343
+
+4.0.342 blev merged som `6a3133fe`. Oneoff `34565347360` bevarede og gemte providerprogression, men sluttede uden komplet handoff eller cutover: current havde 1.555 rester, og WAM fejlede terminalt. Helkædeanalysen viste DMI-family-starvation, Copernicus AMM15-product-starvation og to eksakte WAM-dele med forkert NSB-ejerskab. Det var ikke et cache-reset og kan ikke løses sikkert ved blot at øge runtime.
+
+DEC-0125 indfører bounded fair DMI-familyservice, separate roterede Baltic-/AMM15-køer og én fælles eksakt WAM-owner-policy. Normal og oneoff bruger samme producenter. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.343`. Et 4.0.342-handoff kan ikke ommærkes eller bruges; cutover kræver et komplet handoff fra samme eksakte 4.0.343-main-head.
+
+Bevarede provider- og WAM-cacher genvalideres og genbruges uden nulstilling. Arkiv-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Current kræver stadig 79.414/79.414, og bølger kræver 79.060 native WAM plus Feggesund 354/354. Candidate G forbliver offentlig, indtil hele 4.0.343-kæden er positivt bevist.
 
 ## Konsekvenser
 
