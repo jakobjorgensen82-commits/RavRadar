@@ -308,6 +308,7 @@ def main():
     parser.add_argument("--target", required=True)
     parser.add_argument("--generation", required=True)
     parser.add_argument("--union-state", type=Path)
+    parser.add_argument("--route-causes", action="store_true")
     args = parser.parse_args()
     if re.fullmatch(r"[0-9]{6,20}", args.generation) is None:
         raise ValueError("invalid diagnostic generation")
@@ -337,6 +338,10 @@ def main():
         "residual": "open-meteo-current-fallback.json",
         "regional": "current-field-shadow.json",
     }.items()}
+    if args.route_causes:
+        from inspect_current_route_causes import residual_shape, dmi_routes, regional_routes, om_routes, cp_routes, cp_domain_routes
+        paths.update({"cp_stage": args.cache / "copernicus-current-source-stage.json",
+                      "cp_shadow": args.cache / "copernicus-current-shadow.json"})
     before = {name: sha(path) for name, path in paths.items()}
     reference = runtime.production_reference_hour(args.target)
     reference_text = reference.strftime("%Y-%m-%dT%H:00:00Z")
@@ -376,6 +381,18 @@ def main():
     independently_proved = set()
     legacy_projection_proved = set()
     raw_observed = set()
+    route_failures = []
+    def route_probe(event, callback):
+        try:
+            with contextlib.redirect_stdout(Quiet()), contextlib.redirect_stderr(Quiet()):
+                result = callback()
+            emit(event, **result)
+        except (OSError, ValueError, TypeError, KeyError, RuntimeError, RecursionError) as error:
+            route_failures.append(event)
+            emit(event, status="probe-failed", errorType=safe_error_type(error), errorCode=safe_error_code(error))
+    if args.route_causes:
+        route_probe("residual_shape", lambda: residual_shape(missing, reference))
+        route_probe("copernicus_configured_domains", lambda: cp_domain_routes(targets, missing))
 
     dmi = read_dmi_bulk_document(paths["dmi"])
     dmi_ledger = dmi.get("diagnostics", {}).get("currentOperationalLedger", {})
@@ -438,6 +455,9 @@ def main():
             donor_end,
             target_hash,
         )
+        if args.route_causes:
+            route_probe("dmi_original_outcome_routes", lambda: dmi_routes(dmi_ledger, missing))
+            route_probe("regional_retained_proof_sensitivity", lambda: regional_routes(dmi_ledger, regional_shadow, regional_policy, targets, missing))
         regional_admitted = planning_regional_covered_pairs(
             dmi_ledger=dmi_ledger,
             dmi_attestation=original_attestation,
@@ -451,6 +471,8 @@ def main():
         # establish its normal proof contributes zero, without blocking others.
         regional_status = "not-admissible-for-original-ledger"
         regional_error_type = safe_error_type(error)
+        if args.route_causes:
+            route_failures.append("original_dmi_ledger_validation")
     emit(
         "regional_overlap",
         admissionStatus=regional_status,
@@ -466,6 +488,11 @@ def main():
     dmi = dmi_ledger = proofs = raw = admitted = original_attestation = None
     regional_shadow = regional_policy = raw_regional = regional_admitted = None
     gc.collect()
+
+    if args.route_causes:
+        route_probe("copernicus_original_attempt_routes", lambda: cp_routes(
+            read(paths["cp_stage"]), read(paths["cp_shadow"]), "sha256:" + before["cp_shadow"].hex(),
+            targets, missing, "sha256:" + before["dmi"].hex(), reference_text))
 
     raw_document = read(paths["cp"])
     raw = safe_pair_identities(
@@ -524,6 +551,8 @@ def main():
         legacy_error_type = safe_error_type(error)
 
     bank = read(paths["om"])
+    if args.route_causes:
+        route_probe("open_meteo_original_manifest_routes", lambda: om_routes(bank, targets, missing))
     raw = safe_pair_identities(
         [entry.get("record") for entry in bank.get("entries", [])
          if isinstance(entry, dict)] if isinstance(bank.get("entries"), list) else None,
@@ -605,6 +634,9 @@ def main():
             ),
         )
     emit("input_integrity", allInputsUnchanged=True, cacheSaved=False, providerFetch=False, deploy=False)
+    if route_failures:
+        emit("route_probes_incomplete", failedProbes=route_failures)
+        raise ValueError("route probes incomplete")
 
 
 if __name__ == "__main__":
