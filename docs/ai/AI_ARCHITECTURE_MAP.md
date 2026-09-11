@@ -21,6 +21,35 @@
 
 # AI Architecture Map – RavRadar
 
+## 2026-09-11 lokal 4.0.342 – granulær admission inden for samme sikre kandidat
+
+```text
+officiel immutable WAM-asset, fuldt gennemløbet
+        │
+        ├─ global identitets-/akse-/parserfejl ──> kassér hele stage
+        │
+        └─ kendt denominator og same-asset-lineage
+                 │
+                 ├─ komplet PART/time-tuple ─────> isoleret collection/run-candidate
+                 └─ rejected PART/time ──────────> bit-for-bit uændret rest
+                                                      │
+                                                      ├─ gammel komplet anden lineage: kassér stage
+                                                      └─ reelt hul: behold som rest
+
+ufuldstændig aktiv closure ──> monoton pairpromotion efter asset
+komplet aktiv closure ───────> kun fuld uafbrudt fasepromotion
+
+validt Copernicus-shard ─────> gem eksakte returnerede timer
+                            └> fraværende bestilte par til næste collection/OM
+malformed tidsakse/request ──> kassér shard
+```
+
+- Per-part betyder en komplet bølgetuple med eget sourceproof, ikke løse felter. Komponenter, celler eller modelruns blandes ikke.
+- Privat bootstrap kan checkpoint'e sikre tuples, men `locked` og `history-complete` kræver fortsat fuld forventet time/denominator. Genuine cold-starts historikdefer består.
+- Copernicus-acquisitionen bevarer både hele requestmængden, faktisk recordCount og attemptets `observedNativeValidTimes` i nested v2, så et hul ikke ommærkes som leveret eller globalt providerfravær. Legacy 4.0.341-attempts læses fortsat, Baltic-prerequisiten overlever pruning af sidste søskende, og tom/subsekund providerakse er retryable malformed frem for no-record.
+- Final currentclosure er 673 × 118; final bølgeclosure er 670 native × 118 plus Feggesund 3 × 118. Begge er 79.414 og forbliver fail-closed før handoff/cutover.
+- 4.0.342 er lokal kandidat. Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; tre Copernicus-tests, Python compile og code diff-check er også grønne. Exact-head-CI og runtime mangler.
+
 ## 2026-09-10 lokal 4.0.341 – isoleret WAM-kandidat og monoton promotion
 
 

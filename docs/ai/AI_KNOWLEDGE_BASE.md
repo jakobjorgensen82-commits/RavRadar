@@ -1,5 +1,14 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-11 – lokal 4.0.342 providergranularitet
+
+- Main er 4.0.341 på `caa49c42`; Candidate G er offentlig. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff/cutover.
+- Whole-asset WAM-rollback var for grov: alle 91 NSB-assets mistede deres gyldige søskende ved enkelte partafvisninger. 4.0.342 admitterer i stedet komplette exact-asset-provenancebundne part/time-tuples efter fuldt assetgennemløb, men bevarer whole-stage rollback ved global fejl eller risiko for blandet native lineage.
+- Isoleret collection/modelRun-candidate, monoton promotion, own-run fallback og faseatomisk qualityrefresh består. Privat partial er cacheprogression, ikke locked/history-complete; cold-start er uændret.
+- Copernicus bevarer returnerede eksakte native U/V-par fra et strukturelt validt shard og sender kun den ærlige eksakte rest videre. Attempts gemmer `observedNativeValidTimes` i nested v2, læser fortsat legacy 4.0.341-attempts og bevarer immutable Baltic-prerequisite efter pruning af sidste søskende. Tom provider-timeakse og native subsekundtider er retryable malformed, ikke no-record; tidsinterpolation/hold, dubletter og out-of-request-rækker forbliver forbudt. En varig schema-3 seamtest er grøn.
+- Slutkravene er fortsat current 79.414/79.414 samt bølger 79.060 native WAM + Feggesund 354/354. Delvis progression kan ikke autorisere handoff eller modelskift.
+- Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; de tre Copernicus-måltests, Python compile og code diff-check er også grønne. Exact-head-CI, main-providerclosure, handoff, cutover og offentlig verifikation er fortsat åbne; normalworkflow/watchdog forbliver deaktiveret.
+
 ## Nyeste sandhed 2026-09-10 – lokal 4.0.341 WAM-kandidat
 
 - Main er 4.0.340 på `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`; Candidate G er fortsat den dokumenterede offentlige model. 4.0.341 findes kun lokalt og har ingen CI-, runtime-, provider-, merge- eller produktionsverifikation endnu.

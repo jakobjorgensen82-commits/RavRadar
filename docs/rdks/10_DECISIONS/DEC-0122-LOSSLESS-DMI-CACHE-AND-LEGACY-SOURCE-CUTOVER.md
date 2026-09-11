@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.341. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. 4.0.341 er kun lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.342. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere 4.0.339-, 4.0.340- og 4.0.341-overførsler nedenfor er historik. 4.0.342 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -68,6 +68,14 @@ Den efterfølgende helkædekontrol fandt en selvstændig WAM-integritetsfejl: en
 Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.341`. Et 4.0.340-handoff kan ikke ommærkes eller bruges til cutoveren; den kræver et komplet handoff fra samme eksakte 4.0.341-main-head. Bevarede DMI-, Copernicus-, Open-Meteo- og WAM-cacher må fortsat genvalideres og genbruges uden nulstilling.
 
 Ingen størrelse-, storage-, checkpoint-, privacy-, readback-, closure-, release-, deployment- eller kadencegrænse er udvidet. 4.0.341 er lokalt måltestet, men er endnu ikke exact-head-CI-valideret, merged, main-runtimeverificeret eller offentliggjort. Candidate G forbliver offentlig, indtil hele kæden har positivt bevis.
+
+### Versionsoverførsel 2026-09-11 – exact-release 4.0.342
+
+4.0.341 blev efterfølgende merged som `caa49c42`. Backendkørsel `34534769955` blev rapporteret grøn, men main-oneoff `34534764449` producerede intet komplet handoff og foretog ingen cutover. Den isolerede WAM-candidate beskyttede den aktive cache, men whole-asset-admissionen rullede samtidig alle brugbare søskenderækker tilbage, når enkelte NSB-dele fejlede. Samme helhedsreview fandt en for grov Copernicus-grænse, hvor én manglende bestilt native time kunne kassere de øvrige eksakte rækker i et ellers strukturelt gyldigt shard.
+
+DEC-0124 erstatter derfor alene whole-asset-admission med lineage-sikker per-part/time-admission og lader Copernicus bevare eksakte returnerede shardrækker, mens fraværende timer forbliver i resten. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.342`. Et 4.0.341-handoff kan ikke ommærkes eller bruges; cutover kræver et komplet handoff fra samme eksakte 4.0.342-main-head.
+
+Bevarede provider- og WAM-cacher må genvalideres og genbruges uden nulstilling. Arkiv-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Især kræves fortsat særskilt komplet currentclosure på 79.414/79.414 og komplet bølgeclosure med 79.060 native WAM-par plus Feggesund 354/354. Candidate G forbliver offentlig, indtil hele 4.0.342-kæden er positivt bevist.
 
 ## Konsekvenser
 

@@ -1,3 +1,11 @@
+# Tillæg 2026-09-11 – 4.0.342 skal lukke providerresten uden whole-asset-starvation
+
+4.0.341 er merged på `main` som `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff eller cutover. Den isolerede WAM-candidate bevarede aktiv cache, men alle 91 NSB-assets mistede deres ellers gyldige søskenderækker ved enkelte partafvisninger. Copernicus kunne tilsvarende kassere returnerede exact-hour-rækker, når én anden bestilt time manglede.
+
+4.0.342 erstatter alene de to for grove admissionsgrænser. WAM admitteres pr. komplet exact-asset-lineage part/time-tuple efter fuldt assetgennemløb; rejected slices er uændrede, og global fejl eller komplet anden native lineage stopper fortsat hele stagen. Copernicus bevarer exact returnerede U/V-par fra et strukturelt validt shard og sender kun resten videre. Candidate-isolation, promotion, qualityfase, fallbackproveniens, cold-start, DMI → Copernicus → Open-Meteo og alle slut-/launchgates består.
+
+Den operative rækkefølge ændres ikke: samlet lokal slutmatrix → versions-/RDKS-lukning → én exact-head sourcegate → sikker merge → kontrolleret main-writer på bevarede cacher → current 79.414/79.414 og bølger 79.060 + Feggesund 354/354 → fulde post-data-gates/handoff/cutover → offentlig verifikation. Normal og watchdog forbliver deaktiveret. Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; de tre Copernicus-tests, Python compile og code diff-check er også grønne. Privacy-/releasepakningskontrol, exact-head-CI og runtimebevis mangler fortsat.
+
 # Autonom natteplan – ejerens godkendelse 2026-09-10
 
 ## Aktuel 4.0.341-opdatering

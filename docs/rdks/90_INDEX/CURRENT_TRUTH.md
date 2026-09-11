@@ -1,3 +1,14 @@
+# NYESTE SANDHED – 2026-09-11 – 4.0.342 bevarer sikre providerdele uden at lempe slutclosure
+
+- `main` er 4.0.341 på mergecommit `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` skabte intet handoff og udførte ingen modelcutover. Candidate G er fortsat offentlig.
+- 4.0.341's isolerede WAM-candidate virkede som sikker rollbackgrænse, men whole-asset-kravet kasserede også gyldige søskenderækker: `wam_dw` kunne lukke, mens alle 91 `wam_nsb`-assets blev rullet tilbage ved enkelte delafvisninger. Det er negativt livebevis for admissionsgranulariteten, ikke for persistent cache eller final closure.
+- Lokal 4.0.342 flytter den mindste sikre WAM-enhed til en komplet, exact-asset-provenancebundet `(partId, nativeValidTime)`-tuple. Rejected slices skal være uændrede; komplet anden lineage på samme native tid, global assetfejl eller ukendt denominator stopper fortsat hele stagen.
+- Isolation pr. collection/modelRun, same-target/pair-superset/no-new-lineage-promotion, terminal fallback med egen modelRun og samlet komplet-cache-qualityfase består. Privat historik kan bevare tuples, men en delvis time er ikke locked/history-complete, og cold-start er uændret.
+- Copernicus må bevare eksakte returnerede U/V-rækker fra et structurally valid shard, selv om en anden bestilt native time mangler; kun den eksakte rest går videre til næste Copernicus-collection og Open-Meteo. Attempts gemmer faktisk `observedNativeValidTimes` i nested v2, accepterer legacy 4.0.341 og bevarer immutable Baltic-prerequisite efter pruning af sidste søskende. Tom providerakse og native subsekundtider er retryable malformed, ikke no-record; dubletter, ikke-timejusteret tid og rækker uden for requesten forbliver fatale. Ingen tidsinterpolation eller hold er tilladt. Schema-3 seamtesten og 169-timersregressionen er grønne.
+- Slutkravene er uændrede: current 79.414/79.414; bølger 79.060 native WAM plus Feggesund 354/354; nul missing/overlap og nul uløste lineage-konflikter. Delvis cacheprogression kan ikke forsegle handoff, artifact eller cutover.
+- Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; de tre målrettede Copernicus-tests, Python compile og code diff-check er også grønne. 4.0.342 er fortsat lokal kandidat, ikke exact-head-CI-, provider-, closure-, handoff-, cutover- eller produktionsbevis.
+- Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret gennem exact-head, merge, kontrolleret main-opfyldning, fulde gates og offentlig kontrol. DEC-0124 er den aktuelle detaljekontrakt; ældre checkpoints er historik.
+
 # NYESTE SANDHED – 2026-09-10 – 4.0.341 atomisk WAM-kandidat
 
 - Den bevarede cache er fortsat basen og er ikke nulstillet. Det operationelle slutdomæne er `673 × 118 = 79.414`; native WAM gælder 670 dele, mens Feggesund fortsat kræver særskilt `3 × 118 = 354` direct/proxy-bevis. Op til 48 timers verificeret historik bevares til mobilisering.

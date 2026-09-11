@@ -1,3 +1,13 @@
+## 4.0.342 – granulær WAM- og Copernicus-admission (2026-09-11, lokal kandidat)
+
+- Bevarer 4.0.341's isolerede WAM-candidate og alle promotions-/lineage-/slutgates, men erstatter whole-asset-rollback af uafhængigt gyldige søskende med complete, exact-asset-provenancebundne part/time-tuples efter fuldt assetgennemløb.
+- Rejected WAM-slices forbliver uændrede; global fil-/tidsakse-/parserfejl og risiko for blandet komplet native lineage ruller fortsat hele stagen tilbage. Privat partial er cacheprogression, aldrig locked/history-complete eller launchbevis.
+- Copernicus checkpoint'er eksakte returnerede native U/V-par fra et strukturelt validt shard, mens manglende bestilte timer går videre som rest. Hvert attempt gemmer de faktisk observerede native tider i det eksplicitte nested v2-contract; legacy-attempts fra 4.0.341 kan stadig læses, og Baltic-prerequisiten kan valideres efter pruning af sidste Baltic-søskende.
+- Tom provider-timeakse og native tider med subsekunder er retryable malformed, aldrig no-record. Tidsinterpolation/hold, dubletter og out-of-request-rækker forbliver forbudt; den varige schema-3 seamtest beviser, at kun den eksakte rest går videre til Open-Meteo.
+- Slutkravene er uændrede: current 79.414/79.414; bølger 79.060 native WAM + Feggesund 354/354; nul mangler/overlap/uløste lineage-konflikter før handoff/cutover.
+- Den samlede aktuelle WAM-suite er grøn `63/63`; WAM-historik er grøn `35/35`, checkpoint er grøn `21/21`, de tre Copernicus-måltests er grønne, og Python compile samt code diff-check er grønne. Exact-head-CI, main-runtime, closure og produktion er fortsat åbne.
+- DEC-0124 registrerer kontrakten, og DEC-0122's stående godkendte first-cutover-undtagelse flyttes snævert til exact-release 4.0.342. Se `CHANGELOG-4.0.342.md`.
+
 ## 4.0.341 – atomisk WAM-kandidat og kanonisk Open-Meteo-donor (2026-09-10, lokal kandidat)
 
 - Bevarer den persistente cache uden reset og fastholder hele `673 × 118 = 79.414`-domænet, native WAM for 670 dele, Feggesund `3 × 118 = 354` samt op til 48 timers verificeret historik.

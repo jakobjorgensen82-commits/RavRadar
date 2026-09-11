@@ -9,6 +9,7 @@ import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import xarray as xr
@@ -23,6 +24,8 @@ from lib.copernicus_current import (
     validate_shadow,
 )
 from lib.copernicus_target_identity import target_fingerprint
+from lib.copernicus_current_donor_bank import validate_copernicus_donor_bank
+from lib.copernicus_current_source_stage import validate_source_stage
 from lib.current_operational_closure import (
     ADVISORY_ASSIGNMENT_CONTRACT_ID,
     ADVISORY_RECORD_REF_CONTRACT_ID,
@@ -34,6 +37,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/run-copernicus-current-pilot.py"
 CHECKER = ROOT / "scripts/check-copernicus-current-range.py"
 LIVE_CURRENT = runpy.run_path(str(ROOT / "scripts/build-live-current-pilot.py"))
+OPEN_METEO_CURRENT = runpy.run_path(
+    str(ROOT / "scripts/fill-open-meteo-current-fallback.py")
+)
 REFERENCE = datetime(2026, 8, 29, 8, tzinfo=timezone.utc)
 FUTURE = REFERENCE + timedelta(hours=117)
 TARGET = {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [9.1, 57.0]}
@@ -505,16 +511,197 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert migrated_cache["collections"][0]["requiredPairCount"] == 3
     write(folder / "registry.json", registry(file_sha256(folder / "dmi.json")))
 
-    # A raw subset without every requested native time must fail before any
-    # cache replace or COMPLETE seal is created.
+    # A raw subset may honestly omit one requested native time.  Its valid
+    # sibling is checkpointed, and only the residual pair reaches AMM15.
     incomplete_dir = folder / "incomplete"
     incomplete_dir.mkdir()
     data.isel(time=[0]).to_netcdf(incomplete_dir / "copernicus-baltic-nemo.nc")
-    failed = run(folder, "incomplete-cache.json", "incomplete")
-    assert failed.returncode != 0
-    assert "Copernicus shard failed safely" in failed.stderr
-    assert not (folder / "incomplete-cache.json").exists()
+    data.isel(time=[1]).to_netcdf(incomplete_dir / "copernicus-nws-amm15.nc")
+    partial_then_fallback = run(folder, "incomplete-cache.json", "incomplete")
+    assert partial_then_fallback.returncode == 0, partial_then_fallback.stdout + partial_then_fallback.stderr
+    partial_cache = validate_shadow(
+        json.loads((folder / "incomplete-cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    selected_sources = {
+        row["validTime"]: next(
+            acquisition["source"] for acquisition in partial_cache["acquisitions"]
+            if acquisition["acquisitionId"] == row["acquisitionId"]
+        )
+        for row in partial_cache["records"]
+    }
+    assert selected_sources == {
+        REFERENCE.isoformat().replace("+00:00", "Z"): "copernicus-baltic-nemo",
+        FUTURE.isoformat().replace("+00:00", "Z"): "copernicus-nws-amm15",
+    }
+    acquisition_by_source = {row["source"]: row for row in partial_cache["acquisitions"]}
+    assert acquisition_by_source["copernicus-baltic-nemo"]["recordCount"] == 1
+    assert acquisition_by_source["copernicus-baltic-nemo"]["nativeValidTimes"] == [
+        REFERENCE.isoformat().replace("+00:00", "Z"),
+    ]
+    assert acquisition_by_source["copernicus-nws-amm15"]["recordCount"] == 1
+    assert acquisition_by_source["copernicus-nws-amm15"]["nativeValidTimes"] == [
+        FUTURE.isoformat().replace("+00:00", "Z"),
+    ]
     assert not (folder / "incomplete-cache.json.tmp").exists()
+
+    # Exercise the real schema-3 path. Baltic returns one exact sibling and
+    # honestly omits the other native hour. A failed AMM15 shard leaves an
+    # atomic, donor-backed IN_PROGRESS checkpoint. On resume Baltic is not
+    # repeated; a structurally valid AMM15 response without the residual hour
+    # completes its attempt and exposes exactly that pair at the Open-Meteo
+    # source-stage boundary.
+    operational_partial = folder / "operational-partial"
+    operational_partial.mkdir()
+    partial_fixtures = operational_partial / "partial-fixtures"
+    residual_fixtures = operational_partial / "residual-fixtures"
+    partial_fixtures.mkdir()
+    residual_fixtures.mkdir()
+    write(operational_partial / "targets.json", {"partCount": 1, "zones": {"z1": [{
+        "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
+    }]}})
+    write(operational_partial / "dmi.json", {"fixture": "operational-partial"})
+    operational_partial_registry = operational_registry(
+        file_sha256(operational_partial / "dmi.json")
+    )
+    write(operational_partial / "registry.json", operational_partial_registry)
+    data.isel(time=[0]).to_netcdf(
+        partial_fixtures / "copernicus-baltic-nemo.nc"
+    )
+
+    partial_interrupted = run(
+        operational_partial, "cache.json", "partial-fixtures"
+    )
+    assert partial_interrupted.returncode == 75, (
+        partial_interrupted.stdout + partial_interrupted.stderr
+    )
+    partial_checkpoint = validate_shadow(
+        json.loads((operational_partial / "cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+    )
+    assert partial_checkpoint["collections"] == []
+    assert len(partial_checkpoint["acquisitions"]) == 1
+    assert len(partial_checkpoint["records"]) == 1
+    assert partial_checkpoint["records"][0]["validTime"] == (
+        REFERENCE.isoformat().replace("+00:00", "Z")
+    )
+    assert partial_checkpoint["acquisitions"][0]["nativeValidTimes"] == [
+        REFERENCE.isoformat().replace("+00:00", "Z")
+    ]
+    partial_stage = json.loads(
+        (operational_partial / "cache.json.source-stage.json").read_text(encoding="utf-8")
+    )
+    assert partial_stage["status"] == "IN_PROGRESS"
+    assert partial_stage["missingPairCount"] == 1
+    assert len(partial_stage["attempts"]) == 1
+    assert partial_stage["attempts"][0]["source"] == "copernicus-baltic-nemo"
+    assert partial_stage["attempts"][0]["requestedPairCount"] == 2
+    assert partial_stage["attempts"][0]["parsedRecordCount"] == 1
+    assert partial_stage["attempts"][0]["observedNativeValidTimes"] == [
+        REFERENCE.isoformat().replace("+00:00", "Z")
+    ]
+    validate_copernicus_donor_bank(
+        json.loads((operational_partial / "copernicus-current-donor-bank.json").read_text(
+            encoding="utf-8"
+        )),
+        targets=[TARGET],
+    )
+
+    data.isel(time=[0]).to_netcdf(
+        residual_fixtures / "copernicus-nws-amm15.nc"
+    )
+    partial_resumed = run(
+        operational_partial, "cache.json", "residual-fixtures"
+    )
+    assert partial_resumed.returncode == 0, (
+        partial_resumed.stdout + partial_resumed.stderr
+    )
+    assert "source=copernicus-baltic-nemo" not in partial_resumed.stderr
+    residual_cache = validate_shadow(
+        json.loads((operational_partial / "cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+    )
+    assert len(residual_cache["acquisitions"]) == 1
+    assert len(residual_cache["records"]) == 1
+    residual_stage = json.loads(
+        (operational_partial / "cache.json.source-stage.json").read_text(encoding="utf-8")
+    )
+    assert residual_stage["status"] == "READY"
+    assert residual_stage["missingPairs"] == [{
+        "partId": "p1",
+        "validTime": FUTURE.isoformat().replace("+00:00", "Z"),
+    }]
+    assert [row["source"] for row in residual_stage["attempts"]] == [
+        "copernicus-baltic-nemo", "copernicus-nws-amm15",
+    ]
+    assert residual_stage["attempts"][1]["parsedRecordCount"] == 0
+    assert residual_stage["attempts"][1]["observedNativeValidTimes"] == []
+    validate_source_stage(
+        residual_stage,
+        registry=operational_partial_registry,
+        shadow=residual_cache,
+        target_identities={"p1": TARGET},
+        shadow_sha256=file_sha256(operational_partial / "cache.json"),
+    )
+    validate_copernicus_donor_bank(
+        json.loads((operational_partial / "copernicus-current-donor-bank.json").read_text(
+            encoding="utf-8"
+        )),
+        targets=[TARGET],
+    )
+
+    # Keep the real schema-3 cache/stage validation and source-order selector
+    # across the Copernicus -> Open-Meteo seam.  Only the separate DMI ledger
+    # authorization and regional provider are fixtures here.  The valid Baltic
+    # sibling must stay in Copernicus; exactly the absent future hour proceeds.
+    captured_open_meteo_residual: list[dict[str, str]] = []
+
+    def regional_fixture(**kwargs):
+        captured_open_meteo_residual.extend(
+            dict(row) for row in kwargs["residual_pairs"]
+        )
+        return {
+            "openMeteoRequiredPairs": [
+                dict(row) for row in kwargs["residual_pairs"]
+            ],
+            "regionalPrivate": {"fixture": "schema-3-seam"},
+            "regionalDiagnostics": {},
+        }
+
+    with patch.dict(OPEN_METEO_CURRENT["residual_plan"].__globals__, {
+        "current_attestation_authorization_from_operational_ledger": (
+            lambda _ledger: (set(), set())
+        ),
+        "canonical_verified_part_current_attestation": (
+            lambda *_args, **_kwargs: {"fixture": "valid-dmi-attestation"}
+        ),
+        "build_regional_residual_plan": regional_fixture,
+    }):
+        open_meteo_plan = OPEN_METEO_CURRENT["residual_plan"](
+            targets=[TARGET],
+            dmi={"diagnostics": {"currentOperationalLedger": {
+                "fixture": "schema-3-seam-ledger",
+            }}},
+            registry=operational_partial_registry,
+            copernicus=residual_cache,
+            source_stage=residual_stage,
+            regional={},
+            policy={},
+            reference=REFERENCE.isoformat().replace("+00:00", "Z"),
+            copernicus_path=operational_partial / "cache.json",
+            dmi_path=operational_partial / "dmi.json",
+        )
+    exact_open_meteo_residual = [{
+        "partId": "p1",
+        "validTime": FUTURE.isoformat().replace("+00:00", "Z"),
+    }]
+    assert captured_open_meteo_residual == exact_open_meteo_residual
+    assert open_meteo_plan["requiredPairs"] == exact_open_meteo_residual
+    assert open_meteo_plan["sourceStageStatus"] == "READY"
+    assert {
+        row["validTime"] for row in open_meteo_plan["requiredPairs"]
+    } == {FUTURE.isoformat().replace("+00:00", "Z")}
 
     # Full verified DMI coverage still needs a COMPLETE zero-gap seal.  It must
     # require neither credentials nor a synthetic Copernicus record.

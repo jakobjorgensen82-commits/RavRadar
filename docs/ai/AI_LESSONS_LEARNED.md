@@ -2,6 +2,18 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.342-læring
+
+Transaktionel isolation løser ikke i sig selv en for grov transaktionsgrænse. 4.0.341 forhindrede en halv fil i at mutere aktiv cache, men gjorde samtidig én lokal partfejl til rollback af hundredvis af uafhængigt gyldige søskende. Den rigtige enhed er den mindste komplette, provenancebundne tuple inde i en stadig isoleret kandidat.
+
+Granulær salvage må ikke blive permissiv parsing. Før delvis admission skal hele assettet være gennemløbet, denominator og accepted/rejected-regnskab være eksakt, accepted have én assetlineage, og rejected data være uændrede. Global identitets- eller aksefejl er stadig whole-unit-fatal.
+
+Cacheprogression, assetkomplethed og produktkomplethed er tre forskellige tilstande. En privat deltuple kan være sikkert gemt, mens timen fortsat er ulåst og historikken ufuldstændig. Et Copernicus-shard kan have leveret ét eksakt par uden at have leveret hele requesten. Ingen af delene må skjule den autoritative rest.
+
+Providerfravær er ikke automatisk korruption. En manglende bestilt native time på en ellers gyldig, entydig Copernicus-tidsakse kan sendes videre som rest; en manglende eller malformed tidsakse kan ikke. Skellet skal testes direkte.
+
+Målrettede regressioner er ikke en samlet grøn suite. Når en 55-test-suite først har haft to fixturefejl, er efterfølgende 2/2 kun bevis for de to rettelser; samlet status forbliver åben til fuld genkørsel.
+
 ## Aktuel 4.0.341-læring
 
 Atomisk udskiftning af én række er ikke tilstrækkelig, når forbrugeren kræver en sammenhængende serie. En ufuldstændig modelkørsel kan bestå rækkevalidering og stadig gøre det aktive samlede WAM-valg dårligere. Kandidat og aktiv state skal derfor være adskilt, og promotion skal vurderes på den sammenhæng, som downstream faktisk bruger.

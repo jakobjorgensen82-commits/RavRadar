@@ -1,3 +1,16 @@
+# NYESTE ROADMAP – 2026-09-11 – 4.0.342 fra granular cacheprogression til model-online
+
+- [x] Bevar 4.0.341's isolerede WAM-candidate og alle slutgates; forkast kun whole-asset-kassation af uafhængigt gyldige tuples.
+- [x] Implementér lokal per-part/time-admission med exact assetlineage, kendt denominator, uændrede rejects og værn mod blandet native tidsskive.
+- [x] Bevar privat WAM-progress uden at overclaim'e locked/history-complete, og behold genuine-cold-start uændret.
+- [x] Implementér lokal Copernicus partial-hour-bevaring: checkpoint returned exact pairs, behold fravær som rest, og stop fortsat på strukturel tidsakse-/requestfejl.
+- [x] Bestå tre målrettede Copernicus-tests og de to korrigerede WAM-regressioner.
+- [x] Bestå samlet WAM `63/63`, WAM-historik `35/35`, checkpoint `21/21`, tre Copernicus-måltests, Python compile og code diff-check. Privacykontrol afsluttes fortsat med releasepakningen.
+- [ ] Færdiggør 4.0.342-version, exact-release-policy, RDKS/håndbog/changelog og version-only-geodatabevis; commit/push først den samlede gennemgåede diff.
+- [ ] Bestå én exact-head sourcegate og merge kun dens eksakte head.
+- [ ] Kør én kontrolleret main-writer på bevarede cacher. Kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354, nul konflikter og runbundet handoff.
+- [ ] Kør fulde post-data-gates, artifact/deploy og offentlig modelverifikation. Genaktivér derefter normal vedligeholdelse kontrolleret og mål cachekontinuitet, providerforbrug og tidsoverskud.
+
 # NYESTE ROADMAP – 2026-09-10 – 4.0.341 fra atomisk WAM-cache til model-online
 
 - [x] Bevar den eksisterende cache uden nulstilling og fasthold hele `673 × 118 = 79.414`-domænet, native WAM for 670 dele, Feggesund `354/354` og 48 timers rådgivende historik.

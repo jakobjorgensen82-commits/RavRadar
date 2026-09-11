@@ -1,3 +1,11 @@
+# NYESTE HANDOFF – 2026-09-11 – 4.0.342 per-part WAM og partial-hour Copernicus
+
+Main er 4.0.341/`caa49c42`; Candidate G er stadig offentlig. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` gav intet handoff eller cutover. `wam_dw` kunne lukke, mens whole-asset-rollback fjernede fremgangen fra alle 91 `wam_nsb`-assets ved enkelte delafvisninger.
+
+Den lokale 4.0.342-kontrakt bevarer WAM-candidate-isolation og alle promotions-/lineage-/slutgates, men admitterer efter fuldt assetgennemløb hver komplet same-asset-lineage part/time-tuple. Rejected slices forbliver uændrede; komplet anden native lineage eller global assetfejl stopper hele stagen. Privat partial må gemmes uden at gøre timen locked/history-complete eller ændre cold-start. Copernicus-shards gemmer returnerede exact-hour-søskende og sender kun fraværende par videre. Attempts gemmer observerede native tider i nested v2 med legacy 4.0.341-readback; Baltic-prerequisite overlever pruning af sidste søskende. Tom/subsekund providerakse er retryable malformed, mens dubletter og out-of-request-rækker fortsat stopper shardet. Den varige schema-3 seamtest er grøn.
+
+Current skal stadig nå 79.414/79.414; bølger skal nå 79.060 native plus Feggesund 354/354. Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; de tre Copernicus-tests, Python compile og code diff-check er også grønne. Fortsæt med privacy-/releasepakningskontrol og exact-head-CI, ikke provider-runtime eller cutover endnu. DEC-0124 og `docs/rdks/05_NEXT_CHAT_HANDOFF.md` er de aktuelle detaljer.
+
 # NYESTE HANDOFF – 2026-09-10 – 4.0.341 lokal WAM-kandidat
 
 Main er `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`/4.0.340. Den aktuelle arbejdsgren indeholder en lokal 4.0.341-kandidat, der gør WAM-fornyelsen transaktionel på modelkørselsniveau uden at nulstille eller kassere den vedvarende cache. Candidate G er stadig senest dokumenterede offentlige model. Intet i 4.0.341 er endnu CI-, leverandør-, runtime-, merge- eller produktionsverificeret.

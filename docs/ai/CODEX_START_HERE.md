@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-11 – lokal 4.0.342 granular provideradmission
+
+Main er 4.0.341 på `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` forseglede intet handoff og udførte ingen cutover. Candidate G er fortsat offentlig. Den levende fejl var ikke cache-reset: 4.0.341's isolerede WAM-candidate bevarede aktiv state, men whole-asset-admission rullede alle 91 `wam_nsb`-assets tilbage ved enkelte partafvisninger. Et Copernicus-shard kunne tilsvarende kassere eksakte gyldige timer, når én anden bestilt time manglede.
+
+- 4.0.342 beholder collection/modelRun-isolation, same-target/pair-superset/no-new-lineage-promotion, terminal fallback med egen modelRun og faseatomisk qualityrefresh af komplet WAM.
+- Efter fuldt, uafbrudt assetgennemløb kan komplette exact-asset-provenancebundne `(partId, nativeValidTime)`-tuples bevares. Rejected slices skal være bit-for-bit uændrede; komplet anden gammel lineage på samme native tid eller global asset-/tidsakse-/control-plane-fejl afviser hele stagen.
+- Privat WAM må bevare sikre tuples, men en delvis time er ikke locked/history-complete. Genuine cold-starts `HISTORY_INCOMPLETE` og udsatte historiknetværk ændres ikke.
+- Copernicus må checkpoint'e returnerede exact native U/V-par fra et strukturelt validt shard og sende kun manglende par videre. Tidsinterpolation/hold er forbudt; malformed/non-hourly/duplikeret tidsakse og out-of-request-rækker er fatale.
+- Final closure er uændret: current 79.414/79.414; bølger 79.060 native WAM plus Feggesund 354/354; nul missing/overlap og nul uløste lineage-konflikter. Partial progression er ikke handoff eller launchbevis.
+- Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; de tre Copernicus-måltests, Python compile og code diff-check er også grønne. 4.0.342 mangler fortsat privacy-/releasepakningskontrol, exact-head-CI og main-/produktionsbevis og er derfor ikke release- eller runtime-GO.
+
+Næste sikre rækkefølge er samlet målverifikation, versions-/RDKS-/håndbogslukning, én exact-head sourcegate, sikker merge, én kontrolleret main-writer, begge komplette closures, fulde post-data-gates, runbundet handoff og offentlig modelverifikation. Normalworkflow og watchdog/shadow-dispatch forbliver deaktiveret gennem sekvensen. DEC-0124 er den bindende detaljekontrakt; ældre checkpoints nedenfor er historik.
+
 # NYESTE CHECKPOINT – 2026-09-10 – lokal 4.0.341 WAM-kandidat, ikke releaseverificeret
 
 Main er nu `b41ed5b64ac0ca3e89ab72d16afbdcbe7d474fc7`/4.0.340. Oven på den er en 4.0.341-kandidat implementeret lokalt for den fejl, hvor en delvist behandlet WAM-modelkørsel kunne gøre den aktive, brugbare bølgecache dårligere. Candidate G er fortsat den dokumenterede offentlige model; 4.0.341 er hverken committed, CI-valideret, merged, kørt mod leverandører eller produktionsverificeret.

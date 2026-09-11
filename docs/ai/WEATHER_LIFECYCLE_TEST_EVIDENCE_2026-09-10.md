@@ -1,3 +1,22 @@
+# Tillæg 2026-09-11 – foreløbig 4.0.342-målevidens
+
+Følgende er faktisk rapporteret på den lokale 4.0.342-kandidat:
+
+| Kontrol | Resultat |
+| --- | --- |
+| `python scripts/test-copernicus-current-pilot.py` | Grøn. Dækker bl.a. nested v2 `observedNativeValidTimes`, legacy 4.0.341-readback, 169-timers Baltic-prerequisite efter pruning samt tom/subsekund providerakse som retryable malformed. |
+| `python scripts/test-copernicus-range-runner-v2.py` | Grøn. Dækker checkpoint af returneret søskende og aflevering af den eksakte rest til næste Copernicus-led. |
+| `python scripts/test-copernicus-current-source-stage.py` | Grøn. Den varige schema-3 Copernicus→Open-Meteo-seamtest beviser, at søskenden checkpointes i donorbank/source-stage, mens kun den manglende eksakte rest går videre. |
+| Første samlede WAM-suite, 55 tests | Ikke samlet grøn: 53 bestod, to nye testfixtures fejlede. |
+| Målrettet genkørsel efter korrektion af de to fixtures | Grøn `2/2`. Dette er kun bevis for de to berørte regressioner. |
+| Udvidet samlet WAM-suite efter fixturekorrektion og nye regressioner | Grøn `63/63`, inklusive lineage-evidence og en reel parser→provenance→summary→admission-kæde med to PARTs. Dette er det aktuelle samlede lokale WAM-bevis. |
+| WAM-historik | Grøn `35/35`. |
+| Checkpoint | Grøn `21/21`. |
+| Python compile | Grøn. |
+| Code diff-check | Grøn. |
+
+Den aktuelle lokale WAM-suite er dermed samlet grøn. Dokumentet er fortsat ikke et samlet 4.0.342-release- eller runtime-GO: privacy-/releasepakningskontrol, exact-head-CI, main-providerkørsel, current 79.414/79.414, bølger 79.060 + Feggesund 354/354, handoff, cutover og offentlig verifikation er fortsat åbne.
+
 # Lokal målverifikation – vejrlivscyklus og WAM – 2026-09-10
 
 ## Tillæg – lokal 4.0.341-kandidat

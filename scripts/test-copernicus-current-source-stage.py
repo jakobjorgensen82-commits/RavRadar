@@ -25,8 +25,10 @@ from lib.copernicus_current import (
     required_pairs_sha256,
     select_required_records,
     canonical_sha256,
+    empty_shadow,
     make_acquisition,
     make_record,
+    merge_cache_evidence,
 )
 from lib.copernicus_current_source_stage import (
     SOURCE_STAGE_CONTRACT_ID,
@@ -419,6 +421,36 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     (full / "source-stage.json").write_text(
         full_stage_text,
         encoding="utf-8",
+    )
+
+    # The first run after this release must be able to reuse the exact attempt
+    # format written by 4.0.341.  It is validated with its historical rule
+    # (requested native hours), while every newly minted attempt uses the
+    # self-contained observed-time witness.
+    full_stage_document = json.loads(full_stage_text)
+    legacy_attempt = copy.deepcopy(full_stage_document["attempts"][0])
+    for field in (
+        "attemptSchemaVersion", "attemptContractId", "observedNativeValidTimes",
+    ):
+        legacy_attempt.pop(field)
+    legacy_attempt["attemptId"] = canonical_sha256({
+        key: value for key, value in legacy_attempt.items() if key != "attemptId"
+    })
+    legacy_attempt_progress = build_source_stage_progress(
+        registry=json.loads((full / "registry.json").read_text(encoding="utf-8")),
+        shadow=full_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(full / "shadow.json"),
+        attempts=[legacy_attempt],
+        updated_at=REFERENCE + timedelta(minutes=10),
+    )
+    assert legacy_attempt_progress["attempts"] == [legacy_attempt]
+    validate_source_stage_progress(
+        legacy_attempt_progress,
+        registry=json.loads((full / "registry.json").read_text(encoding="utf-8")),
+        shadow=full_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(full / "shadow.json"),
     )
 
     # In the shared product domain, AMM15 can be selected only after the same
@@ -824,7 +856,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     attempt = make_source_attempt(production_reference_at=REFERENCE,
         acquisition_at=REFERENCE + timedelta(minutes=10), product=product,
         shard_id=progress_document["attempts"][0]["shardId"], target_part_ids=[TARGET["partId"]],
-        requested_pairs=pairs, subset_sha256=acq["subsetSha256"], acquisition_id=acq["acquisitionId"], parsed_record_count=0)
+        requested_pairs=pairs, subset_sha256=acq["subsetSha256"], acquisition_id=acq["acquisitionId"],
+        parsed_record_count=0, observed_native_valid_times=acq["nativeValidTimes"])
     wide_stage = build_source_stage_progress(registry=wide, shadow=progress_shadow,
         target_identities={TARGET["partId"]: TARGET}, shadow_sha256=file_sha256(unfinished / "shadow.json"),
         attempts=[attempt], updated_at=REFERENCE + timedelta(minutes=10))
@@ -901,6 +934,120 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     )
     bank_before = copy.deepcopy(donor_bank)
     retained_pair = (TARGET["partId"], VALID_TIME.isoformat().replace("+00:00", "Z"))
+
+    # A partial multi-hour Baltic response may be the immutable prerequisite
+    # for a later AMM15 row.  When Baltic's only positive sibling ages out of
+    # the 168-hour donor retention, the admitted AMM15 tuple must keep its
+    # self-contained original prerequisite proof instead of making the entire
+    # donor generation unreadable.
+    baltic_product = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == "copernicus-baltic-nemo"
+    )
+    amm_product = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == "copernicus-nws-amm15"
+    )
+    baltic_at = REFERENCE + timedelta(minutes=10)
+    amm_at = REFERENCE + timedelta(minutes=20)
+    partial_baltic_acquisition = make_acquisition(
+        source=baltic_product["source"], acquisition_at=baltic_at,
+        request_start_at=REFERENCE, request_end_at=VALID_TIME,
+        targets=[TARGET], native_valid_times=[REFERENCE],
+        subset_sha256=canonical_sha256({"fixture": "partial-baltic-retention"}),
+        record_count=1,
+    )
+    partial_baltic_record = make_record(
+        {**full_shadow["records"][0], "validTime": REFERENCE},
+        partial_baltic_acquisition,
+        TARGET,
+    )
+    partial_baltic_pairs = [
+        {"partId": TARGET["partId"], "validTime": REFERENCE.isoformat().replace("+00:00", "Z")},
+        {"partId": TARGET["partId"], "validTime": VALID_TIME.isoformat().replace("+00:00", "Z")},
+    ]
+    partial_baltic_attempt = make_source_attempt(
+        production_reference_at=REFERENCE, acquisition_at=baltic_at,
+        product=baltic_product,
+        shard_id=spatial_shards([TARGET], baltic_product)[0]["shardId"],
+        target_part_ids=[TARGET["partId"]], requested_pairs=partial_baltic_pairs,
+        subset_sha256=partial_baltic_acquisition["subsetSha256"],
+        acquisition_id=partial_baltic_acquisition["acquisitionId"],
+        parsed_record_count=1,
+        observed_native_valid_times=partial_baltic_acquisition["nativeValidTimes"],
+    )
+    retained_amm_acquisition = make_acquisition(
+        source=amm_product["source"], acquisition_at=amm_at,
+        request_start_at=VALID_TIME, request_end_at=VALID_TIME,
+        targets=[TARGET], native_valid_times=[VALID_TIME],
+        subset_sha256=canonical_sha256({"fixture": "retained-amm-after-partial-baltic"}),
+        record_count=1,
+    )
+    retained_amm_record = make_record(
+        amm15_shadow_document["records"][0],
+        retained_amm_acquisition,
+        TARGET,
+    )
+    retained_amm_attempt = make_source_attempt(
+        production_reference_at=REFERENCE, acquisition_at=amm_at,
+        product=amm_product,
+        shard_id=spatial_shards([TARGET], amm_product)[0]["shardId"],
+        target_part_ids=[TARGET["partId"]],
+        requested_pairs=[partial_baltic_pairs[1]],
+        subset_sha256=retained_amm_acquisition["subsetSha256"],
+        acquisition_id=retained_amm_acquisition["acquisitionId"],
+        parsed_record_count=1,
+        observed_native_valid_times=retained_amm_acquisition["nativeValidTimes"],
+    )
+    partial_shadow = empty_shadow(amm_at)
+    partial_shadow.update(
+        acquisitions=sorted(
+            [partial_baltic_acquisition, retained_amm_acquisition],
+            key=lambda row: row["acquisitionId"],
+        ),
+        records=sorted(
+            [partial_baltic_record, retained_amm_record],
+            key=lambda row: (row["validTime"], row["partId"], row["recordId"]),
+        ),
+    )
+    partial_prerequisite_bank = build_copernicus_donor_bank(
+        partial_shadow,
+        targets=[TARGET],
+        attempts=[partial_baltic_attempt, retained_amm_attempt],
+        production_reference_at=REFERENCE,
+    )
+    assert len(partial_prerequisite_bank["positiveAdmissions"]) == 1
+    assert {row["attemptId"] for row in partial_prerequisite_bank["admissionAttempts"]} == {
+        partial_baltic_attempt["attemptId"], retained_amm_attempt["attemptId"],
+    }
+    advanced_reference = REFERENCE + timedelta(hours=169)
+    aged_acquisitions, aged_records = merge_cache_evidence(
+        partial_prerequisite_bank["shadow"], [], [], advanced_reference,
+        {TARGET["partId"]: TARGET},
+    )
+    aged_shadow = empty_shadow(advanced_reference)
+    aged_shadow.update(acquisitions=aged_acquisitions, records=aged_records)
+    assert partial_baltic_acquisition["acquisitionId"] not in {
+        row["acquisitionId"] for row in aged_acquisitions
+    }
+    assert retained_amm_acquisition["acquisitionId"] in {
+        row["acquisitionId"] for row in aged_acquisitions
+    }
+    aged_bank = build_copernicus_donor_bank(
+        aged_shadow,
+        targets=[TARGET],
+        attempts=[],
+        previous_bank=partial_prerequisite_bank,
+        production_reference_at=advanced_reference,
+    )
+    validate_copernicus_donor_bank(aged_bank, targets=[TARGET])
+    assert len(aged_bank["positiveAdmissions"]) == 1
+    assert {row["attemptId"] for row in aged_bank["admissionAttempts"]} == {
+        partial_baltic_attempt["attemptId"], retained_amm_attempt["attemptId"],
+    }
+    assert partial_baltic_acquisition["acquisitionId"] not in {
+        row["acquisitionId"] for row in aged_bank["shadow"]["acquisitions"]
+    }
 
     # Tied newest acquisitions may deduplicate only exact physical equivalents.
     # A physical conflict masks this source for the pair, not other providers
@@ -991,7 +1138,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shard_id=next(row["shardId"] for row in amm15_stage["attempts"] if row["source"] == "copernicus-nws-amm15"),
         target_part_ids=[TARGET["partId"]], requested_pairs=[{"partId": retained_pair[0], "validTime": retained_pair[1]}],
         subset_sha256=newer_acquisition["subsetSha256"], acquisition_id=newer_acquisition["acquisitionId"],
-        parsed_record_count=1)
+        parsed_record_count=1, observed_native_valid_times=newer_acquisition["nativeValidTimes"])
     all_acquisitions = [*donor_bank["shadow"]["acquisitions"], newer_acquisition]
     all_records = [*donor_bank["shadow"]["records"], newer_record]
     selected_old, no_missing, rejected_new = select_source_order_admissible_records(
@@ -1176,7 +1323,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
             shard_id=spatial_shards(attempt_targets, product)[0]["shardId"],
             target_part_ids=acquisition["targetPartIds"], requested_pairs=conflict_required,
             subset_sha256=acquisition["subsetSha256"], acquisition_id=acquisition["acquisitionId"],
-            parsed_record_count=acquisition["recordCount"])
+            parsed_record_count=acquisition["recordCount"],
+            observed_native_valid_times=acquisition["nativeValidTimes"])
     conflict_manifest_shadow = {**donor_bank["shadow"],
         "acquisitions": sorted([*donor_bank["shadow"]["acquisitions"], other_acquisition, other_amm_acquisition], key=lambda row: row["acquisitionId"]),
         "records": sorted([*donor_bank["shadow"]["records"], other_record, other_amm_record], key=lambda row: (row["validTime"], row["partId"], row["recordId"]))}
@@ -1771,8 +1919,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert len(advisory_missing) == 1
     assert "advisoryHistoryAcquiredPairCount=1" in completed_refresh.stdout
 
-    # A malformed raw row that reaches the record builder cannot stop a later
-    # independent Baltic shard and
+    # A malformed provider axis rejected by global structure preflight cannot
+    # stop a later independent Baltic shard and
     # cannot authorize AMM15 for the failed in-domain pair. The valid later
     # record and its COMPLETE attempt are checkpointed; the failed shard has no
     # attempt and remains retryable IN_PROGRESS evidence.
@@ -1811,7 +1959,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     isolated_run = run_runner(isolated, isolated_fixtures)
     assert isolated_run.returncode == 75, isolated_run.stdout + isolated_run.stderr
     assert "source=copernicus-baltic-nemo, shardIndex=0" in isolated_run.stderr
-    assert "errorType=ValueError" in isolated_run.stderr
+    assert "errorType=RuntimeError" in isolated_run.stderr
     isolated_shadow = json.loads(
         (isolated / "shadow.json").read_text(encoding="utf-8")
     )

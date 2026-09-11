@@ -50,15 +50,77 @@ assert records[1]["gridPoint"] == [9.04, 57.0] and records[1]["verticalLayerM"] 
 assert all(row["componentPair"] == "same-time-cell-layer" and row["interpolation"] is False for row in records)
 assert "uMps" not in safe_record(records[0]) and "vMps" not in safe_record(records[0])
 
+partial_records = nearest_shared_uv_times(
+    dataset().isel(time=[0]), target, source="fixture", product_id="product", dataset_id="dataset",
+    dataset_version="version", expected_times=times,
+)
+assert len(partial_records) == 1
+assert partial_records[0]["validTime"] == "2026-08-18T10:00:00Z"
+assert partial_records[0]["interpolation"] is False
+
+duplicate_time_dataset = dataset().assign_coords(time=np.array(
+    ["2026-08-18T10:00:00", "2026-08-18T10:00:00"], dtype="datetime64[s]",
+))
 try:
     nearest_shared_uv_times(
-        dataset().isel(time=[0]), target, source="fixture", product_id="product", dataset_id="dataset",
+        duplicate_time_dataset, target, source="fixture", product_id="product", dataset_id="dataset",
         dataset_version="version", expected_times=times,
     )
 except RuntimeError as error:
-    assert "missing 1 exact requested native hour" in str(error)
+    assert "duplicate native time" in str(error)
 else:
-    raise AssertionError("Missing native time must not be interpolated or held")
+    raise AssertionError("A duplicate provider time axis must remain fatal")
+
+for malformed_dataset, expected_error in (
+    (dataset().rename({"time": "forecast_time"}), "missing its native time axis"),
+    (dataset().assign_coords(time=np.array(["NaT", "2026-08-18T11:00:00"], dtype="datetime64[s]")),
+     "invalid native time"),
+    (dataset().isel(time=slice(0, 0)), "native time axis is empty"),
+    (dataset().assign_coords(time=np.array(
+        ["2026-08-18T10:00:00.500", "2026-08-18T11:00:00.000"],
+        dtype="datetime64[ms]",
+    )), "non-hourly native time"),
+):
+    try:
+        nearest_shared_uv_times(
+            malformed_dataset, target, source="fixture", product_id="product", dataset_id="dataset",
+            dataset_version="version", expected_times=times,
+        )
+    except RuntimeError as error:
+        assert expected_error in str(error)
+    else:
+        raise AssertionError("A malformed provider time axis must remain fatal")
+
+# Structural validation must run even when none of the provider's native hours
+# intersects the request.  Otherwise a corrupt response could be attested as an
+# honest no-record attempt and incorrectly authorize the next source.
+disjoint_broken = xr.Dataset(coords={
+    "time": np.array(["2026-08-18T09:00:00"], dtype="datetime64[s]"),
+})
+try:
+    nearest_shared_uv_times(
+        disjoint_broken, target, source="fixture", product_id="product", dataset_id="dataset",
+        dataset_version="version", expected_times=times,
+    )
+except RuntimeError as error:
+    assert "missing" in str(error) and "uo" in str(error) and "vo" in str(error)
+else:
+    raise AssertionError("A disjoint native time axis must not bypass structural validation")
+
+# A component without its own time dimension would hold the same vector over
+# every requested hour, so it remains a fatal structure error.
+time_independent = dataset().isel(time=0, drop=True).assign_coords(time=np.array(
+    ["2026-08-18T10:00:00", "2026-08-18T11:00:00"], dtype="datetime64[s]",
+))
+try:
+    nearest_shared_uv_times(
+        time_independent, target, source="fixture", product_id="product", dataset_id="dataset",
+        dataset_version="version", expected_times=times,
+    )
+except RuntimeError as error:
+    assert "uo must use time/depth/latitude/longitude dimensions" in str(error)
+else:
+    raise AssertionError("Time-independent current components must not be held across hours")
 
 try:
     nearest_shared_uv(

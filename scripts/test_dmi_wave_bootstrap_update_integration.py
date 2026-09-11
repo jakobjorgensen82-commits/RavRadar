@@ -8,6 +8,7 @@ no network request is made.
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import shutil
@@ -53,6 +54,7 @@ from lib.dmi_wave_history_bootstrap import (  # noqa: E402
     COLD_START_POLICY,
     MIGRATION_MODE,
     MIGRATION_POLICY,
+    StacWaveAsset,
     format_utc_hour,
     load_coastal_part_registry,
     parse_utc_hour,
@@ -1658,6 +1660,32 @@ class OperationalWaveClosureTests(unittest.TestCase):
             active["runs"]["wam_dw"],
             attempt_run_info,
         )
+        self.assertTrue(producer.operational_wave_phase_fully_traversed(
+            selected_asset_count=2,
+            proven_asset_count=2,
+            stop_code=None,
+            native_closure_stopped=False,
+        ))
+        for proven, stop_code, stopped in (
+            (1, None, False),       # one selected asset failed/skipped
+            (2, "RUNTIME_BUDGET_REACHED", False),
+            (2, None, True),
+        ):
+            fully_traversed = producer.operational_wave_phase_fully_traversed(
+                selected_asset_count=2,
+                proven_asset_count=proven,
+                stop_code=stop_code,
+                native_closure_stopped=stopped,
+            )
+            self.assertFalse(fully_traversed)
+            self.assertFalse(
+                producer.operational_wave_terminal_quality_promotion_allowed(
+                    promotion_deferred=True,
+                    phase_fully_traversed=fully_traversed,
+                    stop_code=stop_code,
+                    candidate_changed=True,
+                )
+            )
 
     def test_hole_promotion_stays_immediate_before_deferred_quality_work(
         self,
@@ -2186,7 +2214,224 @@ class ColdCacheFirstTests(unittest.TestCase):
 
 
 class ResumeAndFailClosedTests(unittest.TestCase):
-    def test_669_of_670_wave_asset_rolls_back_transactionally(self) -> None:
+    @staticmethod
+    def _synthetic_wave_lineage() -> dict:
+        return {
+            "collection": "wam_dw",
+            "nativeValidTime": TARGET,
+            "modelRun": utc_offset(TARGET, -6),
+            "itemId": "synthetic-item",
+            "assetIdentitySha256": "a" * 64,
+            "gridDefinitionSha256": "b" * 64,
+            "contentSha256": "c" * 64,
+        }
+
+    @staticmethod
+    def _wave_summary(
+        zones: list[dict],
+        accepted_ids: set[str],
+        rejected_by_code: dict[str, int],
+    ) -> dict:
+        target_ids = {str(zone.get("id") or "") for zone in zones}
+        lineage = producer.wave_asset_lineage_identity(
+            ResumeAndFailClosedTests._synthetic_wave_lineage()
+        )
+        if lineage is None:
+            raise AssertionError("synthetic WAM lineage must be valid")
+        canonical_lineage = json.dumps(
+            lineage,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return {
+            "schemaVersion": producer.WAVE_ASSET_CACHE_PROOF_SCHEMA,
+            "admissionPolicy": producer.WAVE_ASSET_ADMISSION_POLICY,
+            "requiredCount": len(zones),
+            "acceptedCount": len(accepted_ids),
+            "rejectedCount": len(zones) - len(accepted_ids),
+            "rejectedByCode": rejected_by_code,
+            "targetRegistrySha256": producer.wave_target_registry_sha256(
+                "wam_dw", zones,
+            ),
+            "acceptedTargetSetSha256": producer.wave_target_set_sha256(
+                accepted_ids,
+            ),
+            "rejectedTargetSetSha256": producer.wave_target_set_sha256(
+                target_ids - accepted_ids,
+            ),
+            "acceptedLineageCount": 1 if accepted_ids else 0,
+            "acceptedLineageEvidenceCount": len(accepted_ids),
+            "acceptedLineageSha256": (
+                hashlib.sha256(canonical_lineage.encode("utf-8")).hexdigest()
+                if accepted_ids
+                else None
+            ),
+            "rawContentSha256": "c" * 64 if accepted_ids else None,
+        }
+
+    def test_real_parser_path_admits_one_part_and_preserves_rejected_sibling(
+        self,
+    ) -> None:
+        """Exercise parser, provenance, summary and admission in one flow."""
+        zones = [
+            {
+                "id": "PART::SYNTHETIC-ACCEPTED",
+                "parentZoneId": "SYNTHETIC-PARENT",
+                "coastalPart": True,
+                "coastType": "east",
+                "lon": 9.0,
+                "lat": 56.0,
+            },
+            {
+                "id": "PART::SYNTHETIC-REJECTED",
+                "parentZoneId": "SYNTHETIC-PARENT",
+                "coastalPart": True,
+                "coastType": "east",
+                "lon": 9.2,
+                "lat": 56.0,
+            },
+        ]
+        active = {
+            "generatedAt": TARGET,
+            "zones": {
+                zone["id"]: {
+                    **(producer.sampling_identity(zone) or {}),
+                    "hourly": {},
+                    "gridPoints": {},
+                    "collections": {},
+                    "sentinel": "unchanged",
+                }
+                for zone in zones
+            },
+        }
+        before = copy.deepcopy(active)
+        model_run = utc_offset(TARGET, -6)
+        official_asset = {
+            "valid": TARGET,
+            "id": "synthetic-parser-item",
+            "assetIdentitySha256": "a" * 64,
+            "size": 7,
+            "itemCreatedAt": utc_offset(TARGET, -7),
+            "itemUpdatedAt": utc_offset(TARGET, -6),
+        }
+        official_identity = producer.official_wave_asset_identity(
+            "wam_dw", model_run, official_asset,
+        )
+        self.assertIsNotNone(official_identity)
+        asset = producer.MappingWaveAsset(
+            official_asset,
+            model_run,
+            official_identity=official_identity,
+        )
+        capture = {
+            "itemId": official_asset["id"],
+            "assetIdentitySha256": official_asset["assetIdentitySha256"],
+            "assetSizeBytes": official_asset["size"],
+            "itemCreatedAt": official_asset["itemCreatedAt"],
+            "itemUpdatedAt": official_asset["itemUpdatedAt"],
+            "acquiredAt": TARGET,
+            "contentLengthBytes": official_asset["size"],
+            "contentSha256": "c" * 64,
+        }
+        parameters = {
+            1: "significant-wave-height",
+            2: "dominant-wave-period",
+            3: "mean-wave-dir",
+        }
+        values = {1: 1.0, 2: 6.0, 3: 270.0}
+
+        def candidates(gid, _collection, requested_zones):
+            return {
+                zone["id"]: ([{
+                    "value": values[gid],
+                    "latitude": zone["lat"],
+                    "longitude": zone["lon"],
+                    "distanceKm": 0.0,
+                    "index": gid,
+                    "gridDefinitionSha256": "d" * 64,
+                    "_candidateCount": 1,
+                }] if zone["id"] == zones[0]["id"] else [])
+                for zone in requested_zones
+            }
+
+        summary: dict = {}
+
+        def stage_validator(staged, _private, outcome):
+            observed = producer.private_wave_bootstrap_asset_summary(
+                staged, zones, "wam_dw", asset,
+            )
+            summary.update(observed)
+            return producer.operational_wave_asset_stage_admissible(
+                active, staged, zones, "wam_dw", asset, observed, outcome,
+            )
+
+        with tempfile.TemporaryDirectory(prefix="ravradar-wam-parser-") as raw:
+            path = Path(raw) / "synthetic.grib"
+            path.write_bytes(b"fixture")
+            with (
+                patch.object(
+                    producer,
+                    "codes_grib_new_from_file",
+                    side_effect=[1, 2, 3, None],
+                ),
+                patch.object(producer, "codes_release", return_value=None),
+                patch.object(
+                    producer,
+                    "field_signature",
+                    side_effect=lambda gid: {"shortName": parameters[gid]},
+                ),
+                patch.object(
+                    producer,
+                    "classify_parameter",
+                    side_effect=lambda gid, _collection: parameters[gid],
+                ),
+                patch.object(
+                    producer,
+                    "valid_candidates_batch",
+                    side_effect=candidates,
+                ),
+                patch.object(
+                    producer,
+                    "raw_cache_source_capture",
+                    return_value=capture,
+                ),
+                patch.object(producer, "should_stop_work", return_value=False),
+            ):
+                outcome = producer.process_grib_transactionally(
+                    path,
+                    "wam_dw",
+                    model_run,
+                    TARGET,
+                    zones,
+                    active,
+                    {},
+                    stage_validator=stage_validator,
+                    validation_error="synthetic real-parser WAM admission",
+                )
+
+        self.assertEqual(outcome[0], set(parameters.values()))
+        self.assertEqual(outcome[1], {zones[0]["id"]})
+        self.assertFalse(outcome[2])
+        self.assertEqual(outcome[3], 3)
+        self.assertEqual(summary["acceptedCount"], 1)
+        self.assertEqual(summary["rejectedCount"], 1)
+        self.assertEqual(summary["acceptedLineageEvidenceCount"], 1)
+        self.assertTrue(producer.wave_asset_cache_proof_coherent(summary))
+        self.assertEqual(
+            active["zones"][zones[1]["id"]],
+            before["zones"][zones[1]["id"]],
+        )
+        accepted_hour = active["zones"][zones[0]["id"]]["hourly"][TARGET]
+        self.assertEqual(accepted_hour["significant-wave-height"], 1.0)
+        self.assertEqual(accepted_hour["dominant-wave-period"], 6.0)
+        self.assertEqual(accepted_hour["mean-wave-dir"], 270.0)
+        self.assertEqual(
+            accepted_hour["sources"]["wave"]["contentSha256"],
+            capture["contentSha256"],
+        )
+
+    def test_669_of_670_wave_asset_preserves_valid_parts_atomically(self) -> None:
         zones = [
             {"id": f"PART::SYNTHETIC-{index:03d}"}
             for index in range(670)
@@ -2199,30 +2444,121 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             },
         }
         before = copy.deepcopy(active)
+        accepted_ids = {zone["id"] for zone in zones[:-1]}
+        asset = SimpleNamespace(valid_time=TARGET)
 
         def fake_process(*args, **_kwargs):
             staged = args[5]
-            first_id = zones[0]["id"]
-            staged["zones"][first_id]["hourly"][TARGET] = {
-                "candidate": True,
-            }
+            for zone_id in accepted_ids:
+                staged["zones"][zone_id]["hourly"][TARGET] = {
+                    "candidate": True,
+                    "sources": {"wave": self._synthetic_wave_lineage()},
+                }
             return (
                 {"significant-wave-height", "dominant-wave-period"},
-                {first_id},
+                set(accepted_ids),
                 False,
                 2,
                 1,
             )
 
-        summary = {
-            "requiredCount": 670,
-            "acceptedCount": 669,
-            "rejectedCount": 1,
-            "rejectedByCode": {"INVALID_WAVE_PROVENANCE": 1},
-        }
+        def rejection_code(document, zone, *_args):
+            hour = (
+                ((document.get("zones") or {}).get(zone["id"]) or {})
+                .get("hourly", {})
+                .get(TARGET, {})
+            )
+            return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
 
-        def stage_validator(_staged, _private, outcome):
-            return producer.operational_wave_asset_stage_complete(
+        summary: dict = {}
+
+        def stage_validator(staged, _private, outcome):
+            observed = producer.private_wave_bootstrap_asset_summary(
+                staged, zones, "wam_dw", asset,
+            )
+            summary.update(observed)
+            return producer.operational_wave_asset_stage_admissible(
+                active,
+                staged,
+                zones,
+                "wam_dw",
+                asset,
+                observed,
+                outcome,
+            )
+
+        with (
+            patch.object(producer, "process_grib", side_effect=fake_process),
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_rejection_code",
+                side_effect=rejection_code,
+            ),
+            patch.object(
+                producer,
+                "complete_native_source_for_hour",
+                return_value=False,
+            ),
+        ):
+            producer.process_grib_transactionally(
+                Path("synthetic.grib"),
+                "wam_dw",
+                utc_offset(TARGET, -6),
+                TARGET,
+                zones,
+                active,
+                {},
+                stage_validator=stage_validator,
+                validation_error="synthetic partial WAM asset",
+            )
+
+        self.assertEqual(summary["acceptedCount"], 669)
+        self.assertEqual(summary["rejectedCount"], 1)
+        for zone_id in accepted_ids:
+            self.assertTrue(active["zones"][zone_id]["hourly"][TARGET]["candidate"])
+        self.assertEqual(active["zones"][zones[-1]["id"]], before["zones"][zones[-1]["id"]])
+        self.assertFalse(producer.operational_wave_asset_stage_complete(
+            summary,
+            (
+                {"significant-wave-height", "dominant-wave-period"},
+                accepted_ids,
+                False,
+                2,
+                1,
+            ),
+        ))
+
+    def test_zero_valid_wave_parts_still_roll_back_whole_asset(self) -> None:
+        zones = [{"id": "PART::SYNTHETIC"}]
+        active = {
+            "generatedAt": TARGET,
+            "zones": {zones[0]["id"]: {"hourly": {}, "sentinel": "active"}},
+        }
+        before = copy.deepcopy(active)
+        asset = SimpleNamespace(valid_time=TARGET)
+
+        def fake_process(*_args, **_kwargs):
+            return (
+                {"significant-wave-height", "dominant-wave-period"},
+                set(),
+                False,
+                2,
+                1,
+            )
+
+        summary = self._wave_summary(
+            zones,
+            set(),
+            {"INVALID_WAVE_TUPLE": 1},
+        )
+
+        def stage_validator(staged, _private, outcome):
+            return producer.operational_wave_asset_stage_admissible(
+                active,
+                staged,
+                zones,
+                "wam_dw",
+                asset,
                 summary,
                 outcome,
             )
@@ -2242,16 +2578,486 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                 )
 
         self.assertEqual(active, before)
-        self.assertFalse(producer.operational_wave_asset_stage_complete(
-            summary,
-            (
+
+    def test_partial_wave_asset_cannot_mutate_a_rejected_part(self) -> None:
+        zones = [{"id": "PART::ACCEPTED"}, {"id": "PART::REJECTED"}]
+        active = {
+            "generatedAt": TARGET,
+            "zones": {
+                zone["id"]: {"hourly": {}, "sentinel": "active"}
+                for zone in zones
+            },
+        }
+        before = copy.deepcopy(active)
+        asset = SimpleNamespace(valid_time=TARGET)
+
+        def fake_process(*args, **_kwargs):
+            staged = args[5]
+            staged["zones"]["PART::ACCEPTED"]["hourly"][TARGET] = {
+                "candidate": True,
+                "sources": {"wave": self._synthetic_wave_lineage()},
+            }
+            staged["zones"]["PART::REJECTED"]["hourly"][TARGET] = {
+                "significant-wave-height": "invalid-mutation",
+            }
+            return (
                 {"significant-wave-height", "dominant-wave-period"},
-                set(),
+                {"PART::ACCEPTED"},
                 False,
                 2,
-                1,
+                2,
+            )
+
+        def rejection_code(document, zone, *_args):
+            hour = (
+                ((document.get("zones") or {}).get(zone["id"]) or {})
+                .get("hourly", {})
+                .get(TARGET, {})
+            )
+            return None if hour.get("candidate") is True else "INVALID_WAVE_TUPLE"
+
+        def stage_validator(staged, _private, outcome):
+            summary = producer.private_wave_bootstrap_asset_summary(
+                staged, zones, "wam_dw", asset,
+            )
+            return producer.operational_wave_asset_stage_admissible(
+                active, staged, zones, "wam_dw", asset, summary, outcome,
+            )
+
+        with (
+            patch.object(producer, "process_grib", side_effect=fake_process),
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_rejection_code",
+                side_effect=rejection_code,
             ),
+            patch.object(
+                producer,
+                "complete_native_source_for_hour",
+                return_value=False,
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                producer.process_grib_transactionally(
+                    Path("synthetic.grib"),
+                    "wam_dw",
+                    utc_offset(TARGET, -6),
+                    TARGET,
+                    zones,
+                    active,
+                    {},
+                    stage_validator=stage_validator,
+                    validation_error="synthetic rejected mutation",
+                )
+
+        self.assertEqual(active, before)
+
+    def test_partial_wave_asset_cannot_mix_with_existing_valid_lineage(self) -> None:
+        zones = [{"id": "PART::ACCEPTED"}, {"id": "PART::OLD-LINEAGE"}]
+        active = {
+            "zones": {
+                "PART::ACCEPTED": {"hourly": {}},
+                "PART::OLD-LINEAGE": {
+                    "hourly": {TARGET: {
+                        "significant-wave-height": 0.5,
+                        "dominant-wave-period": 4.0,
+                        "sources": {"wave": {"old": "lineage"}},
+                    }},
+                },
+            },
+        }
+        staged = copy.deepcopy(active)
+        staged["zones"]["PART::ACCEPTED"]["hourly"][TARGET] = {
+            "candidate": True,
+            "sources": {"wave": self._synthetic_wave_lineage()},
+        }
+        asset = SimpleNamespace(valid_time=TARGET)
+        summary = self._wave_summary(
+            zones,
+            {"PART::ACCEPTED"},
+            {"ASSET_PROVENANCE_MISMATCH": 1},
+        )
+
+        def rejection_code(_document, zone, *_args):
+            return (
+                None
+                if zone["id"] == "PART::ACCEPTED"
+                else "ASSET_PROVENANCE_MISMATCH"
+            )
+
+        with (
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_rejection_code",
+                side_effect=rejection_code,
+            ),
+            patch.object(
+                producer,
+                "native_wave_row_error_code",
+                return_value=None,
+            ),
+        ):
+            admitted = producer.operational_wave_asset_stage_admissible(
+                active,
+                staged,
+                zones,
+                "wam_dw",
+                asset,
+                summary,
+                (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    {"PART::ACCEPTED"},
+                    False,
+                    2,
+                    2,
+                ),
+            )
+
+        self.assertFalse(admitted)
+        self.assertEqual(
+            active["zones"]["PART::OLD-LINEAGE"],
+            staged["zones"]["PART::OLD-LINEAGE"],
+        )
+
+        # Source-shaped metadata on an invalid numeric tuple is a real gap. It
+        # must remain byte-identical, but it must not discard the valid sibling.
+        invalid_old_stage = copy.deepcopy(staged)
+        with (
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_rejection_code",
+                side_effect=rejection_code,
+            ),
+            patch.object(
+                producer,
+                "native_wave_row_error_code",
+                return_value="INVALID_WAVE_TUPLE",
+            ),
+        ):
+            repaired = producer.operational_wave_asset_stage_admissible(
+                active,
+                invalid_old_stage,
+                zones,
+                "wam_dw",
+                asset,
+                summary,
+                (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    {"PART::ACCEPTED"},
+                    False,
+                    2,
+                    2,
+                ),
+            )
+        self.assertTrue(repaired)
+        self.assertEqual(
+            invalid_old_stage["zones"]["PART::OLD-LINEAGE"],
+            active["zones"]["PART::OLD-LINEAGE"],
+        )
+
+    def test_partial_wave_asset_requires_one_cross_part_lineage(self) -> None:
+        zones = [{"id": "PART::ONE"}, {"id": "PART::TWO"}]
+        active = {"zones": {zone["id"]: {"hourly": {}} for zone in zones}}
+        staged = copy.deepcopy(active)
+        for index, zone in enumerate(zones):
+            source = self._synthetic_wave_lineage()
+            source["gridDefinitionSha256"] = str(index + 1) * 64
+            staged["zones"][zone["id"]]["hourly"][TARGET] = {
+                "candidate": True,
+                "sources": {"wave": source},
+            }
+        asset = SimpleNamespace(valid_time=TARGET)
+        summary = self._wave_summary(
+            zones,
+            {zone["id"] for zone in zones},
+            {},
+        )
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_hour_rejection_code",
+            return_value=None,
+        ):
+            admitted = producer.operational_wave_asset_stage_admissible(
+                active,
+                staged,
+                zones,
+                "wam_dw",
+                asset,
+                summary,
+                (
+                    {"significant-wave-height", "dominant-wave-period"},
+                    {zone["id"] for zone in zones},
+                    False,
+                    2,
+                    2,
+                ),
+            )
+        self.assertFalse(admitted)
+
+    def test_complete_cache_reconstruction_rejects_mixed_grid_lineage(
+        self,
+    ) -> None:
+        model_run = utc_offset(TARGET, -6)
+        expected = {
+            "collection": "wam_dw",
+            "modelRun": model_run,
+            "validTime": TARGET,
+            "itemId": "synthetic-item",
+            "assetIdentitySha256": "a" * 64,
+            "assetSizeBytes": None,
+            "itemCreatedAt": None,
+            "itemUpdatedAt": None,
+        }
+        zones = [{"id": "PART::ONE"}, {"id": "PART::TWO"}]
+        cache = {"zones": {}}
+        for index, zone in enumerate(zones, start=1):
+            source = self._synthetic_wave_lineage()
+            source["gridDefinitionSha256"] = str(index) * 64
+            cache["zones"][zone["id"]] = {
+                "hourly": {
+                    TARGET: {
+                        "sources": {"wave": source},
+                    },
+                },
+            }
+        previous_run = {
+            "referenceTime": model_run,
+            "processingSignature": "signature",
+            "processedSteps": {},
+        }
+
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_hour_rejection_code",
+            return_value=None,
+        ):
+            reusable = producer.reusable_processed_steps(
+                previous_run,
+                collection="wam_dw",
+                same_processing=True,
+                same_run=True,
+                strict_current_anchor_available=True,
+                required_asset_provenance={TARGET: expected},
+                wave_cache=cache,
+                wave_zones=zones,
+            )
+
+        self.assertEqual(reusable, {})
+
+    def test_complete_cache_requires_lineage_evidence_for_every_row(
+        self,
+    ) -> None:
+        zones = [{"id": "PART::ONE"}, {"id": "PART::TWO"}]
+        complete = self._wave_summary(
+            zones,
+            {"PART::ONE", "PART::TWO"},
+            {},
+        )
+        one_unproven = copy.deepcopy(complete)
+        one_unproven["acceptedLineageEvidenceCount"] = 1
+
+        self.assertTrue(producer.wave_asset_cache_proof_coherent(
+            complete,
+            require_complete=True,
         ))
+        self.assertFalse(producer.wave_asset_cache_proof_coherent(
+            one_unproven,
+            require_complete=True,
+        ))
+
+    def test_private_cache_requires_the_current_official_asset_revision(
+        self,
+    ) -> None:
+        result, zone, _asset = complete_hour(asset_identity="b" * 64)
+        source = result["zones"][zone["id"]]["hourly"][TARGET]["sources"][
+            "wave"
+        ]
+        source.update({
+            "assetSizeBytes": 100,
+            "itemCreatedAt": utc_offset(TARGET, -5),
+            "itemUpdatedAt": utc_offset(TARGET, -4),
+            "gridDefinitionSha256": "d" * 64,
+            "contentSha256": "e" * 64,
+        })
+        reference = {
+            "valid": TARGET,
+            "id": source["itemId"],
+            "assetIdentitySha256": source["assetIdentitySha256"],
+            "size": 101,
+            "itemCreatedAt": source["itemCreatedAt"],
+            "itemUpdatedAt": utc_offset(TARGET, -3),
+        }
+        official = producer.official_wave_asset_identity(
+            "wam_dw",
+            source["modelRun"],
+            reference,
+        )
+        self.assertIsNotNone(official)
+        asset = producer.MappingWaveAsset(
+            reference,
+            source["modelRun"],
+            official_identity=official,
+        )
+
+        with patch.object(
+            producer,
+            "complete_native_source_for_hour",
+            return_value=True,
+        ):
+            code = producer.private_wave_bootstrap_hour_rejection_code(
+                result,
+                zone,
+                "wam_dw",
+                asset,
+            )
+
+        self.assertEqual(code, "ASSET_PROVENANCE_MISMATCH")
+
+    def test_partial_wave_resume_requires_exact_persisted_traversal_receipt(
+        self,
+    ) -> None:
+        model_run = utc_offset(TARGET, -6)
+        expected = {
+            "collection": "wam_dw",
+            "modelRun": model_run,
+            "validTime": TARGET,
+            "itemId": "synthetic-item",
+            "assetIdentitySha256": "a" * 64,
+            "assetSizeBytes": None,
+            "itemCreatedAt": None,
+            "itemUpdatedAt": None,
+        }
+        zones = [{"id": "PART::ONE"}, {"id": "PART::TWO"}]
+        summary = self._wave_summary(
+            zones,
+            {"PART::ONE"},
+            {"INVALID_WAVE_TUPLE": 1},
+        )
+        receipt = {
+            "complete": False,
+            "assetTraversalComplete": True,
+            "waveAdmissionPolicy": producer.WAVE_ASSET_ADMISSION_POLICY,
+            "rawContentSha256": "c" * 64,
+            "recognizedParameters": [
+                "significant-wave-height",
+                "dominant-wave-period",
+            ],
+            "zonesTouched": 1,
+            "acceptedNativeZoneCount": 1,
+            "parserVersion": producer.PARSER_VERSION,
+            "processingSignature": "signature",
+            "sourceAsset": expected,
+            "waveTargetProof": summary,
+        }
+        previous_run = {
+            "referenceTime": model_run,
+            "processingSignature": "signature",
+            "processedSteps": {TARGET: receipt},
+        }
+        kwargs = {
+            "collection": "wam_dw",
+            "same_processing": True,
+            "same_run": True,
+            "strict_current_anchor_available": True,
+            "required_asset_provenance": {TARGET: expected},
+            "wave_cache": {"zones": {}},
+            "wave_zones": zones,
+        }
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_asset_summary",
+            return_value=summary,
+        ):
+            reusable = producer.reusable_processed_steps(previous_run, **kwargs)
+            without_receipt = copy.deepcopy(previous_run)
+            without_receipt["processedSteps"][TARGET].pop(
+                "assetTraversalComplete"
+            )
+            rejected = producer.reusable_processed_steps(
+                without_receipt,
+                **kwargs,
+            )
+        changed_summary = self._wave_summary(
+            zones,
+            {"PART::TWO"},
+            {"INVALID_WAVE_TUPLE": 1},
+        )
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_asset_summary",
+            return_value=changed_summary,
+        ):
+            changed_targets = producer.reusable_processed_steps(
+                previous_run,
+                **kwargs,
+            )
+        mixed_lineage_summary = copy.deepcopy(summary)
+        mixed_lineage_summary["acceptedLineageCount"] = 2
+        mixed_lineage_summary["acceptedLineageSha256"] = None
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_asset_summary",
+            return_value=mixed_lineage_summary,
+        ):
+            mixed_lineage = producer.reusable_processed_steps(
+                previous_run,
+                **kwargs,
+            )
+        legacy_proof = copy.deepcopy(previous_run)
+        legacy_proof["processedSteps"][TARGET]["waveTargetProof"][
+            "schemaVersion"
+        ] = "dmi-wave-asset-cache-proof-v1"
+        missing_raw_proof = copy.deepcopy(previous_run)
+        missing_raw_proof["processedSteps"][TARGET].pop("rawContentSha256")
+
+        self.assertIn(TARGET, reusable)
+        self.assertTrue(reusable[TARGET]["assetTraversalComplete"])
+        self.assertFalse(reusable[TARGET]["complete"])
+        self.assertEqual(rejected, {})
+        self.assertEqual(changed_targets, {})
+        self.assertEqual(mixed_lineage, {})
+        with patch.object(
+            producer,
+            "private_wave_bootstrap_asset_summary",
+            return_value=summary,
+        ):
+            self.assertEqual(
+                producer.reusable_processed_steps(legacy_proof, **kwargs),
+                {},
+            )
+            self.assertEqual(
+                producer.reusable_processed_steps(missing_raw_proof, **kwargs),
+                {},
+            )
+
+    def test_wave_asset_coverage_is_aggregate_only(self) -> None:
+        zones = [{"id": "PART::PRIVATE-ONE"}, {"id": "PART::PRIVATE-TWO"}]
+        summary = self._wave_summary(
+            zones,
+            {"PART::PRIVATE-ONE"},
+            {"WAM_DISTANCE_OUT_OF_BOUNDS": 1},
+        )
+        coverage: dict = {}
+        producer.accumulate_wave_asset_coverage(
+            coverage,
+            summary,
+            admitted=True,
+        )
+        serialized = json.dumps(coverage, sort_keys=True)
+        self.assertEqual(coverage["partialAssetCount"], 1)
+        self.assertEqual(coverage["admittedTupleCount"], 1)
+        self.assertEqual(coverage["rejectedTupleCount"], 1)
+        self.assertNotIn("PART::", serialized)
+        self.assertNotIn("gridPoint", serialized)
+        self.assertNotIn("example.invalid", serialized)
+
+    def test_complete_wave_asset_contract_remains_strict(self) -> None:
+        summary = {
+            "requiredCount": 670,
+            "acceptedCount": 669,
+            "rejectedCount": 1,
+            "rejectedByCode": {"INVALID_WAVE_PROVENANCE": 1},
+        }
         self.assertTrue(producer.operational_wave_asset_stage_complete(
             {**summary, "acceptedCount": 670, "rejectedCount": 0},
             (
@@ -2381,6 +3187,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             collection="wam_dw",
         )
         source = row["sources"]["wave"]
+        source["contentSha256"] = "c" * 64
         expected = {
             "collection": "wam_dw",
             "modelRun": run,
@@ -2548,20 +3355,36 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertEqual(calls, 0, "No retrying STAC call may consume the finalization reserve.")
 
     def test_tight_runtime_preserves_a_real_attempt_for_the_second_wam_family(self) -> None:
-        asset = SimpleNamespace(valid_time=utc_offset(TARGET, -1))
         attempted: list[str] = []
 
         def fake_list(collection: str, _configuration: dict):
             attempted.append(collection)
+            asset = StacWaveAsset(
+                valid_time=utc_offset(TARGET, -1),
+                model_run=utc_offset(TARGET, -6),
+                item_id=f"synthetic-{collection}",
+                href=f"https://example.invalid/{collection}.grib",
+                collection=collection,
+            )
             return fake_plan(), (asset,)
 
-        def already_complete(
+        def asset_summary(
             _result: dict,
-            _zone: dict,
+            zones: list[dict],
             collection: str,
             _asset: object,
-        ) -> bool:
-            return collection == "wam_nsb"
+        ) -> dict:
+            accepted_ids = (
+                {str(zone["id"]) for zone in zones}
+                if collection == "wam_nsb"
+                else set()
+            )
+            rejected = (
+                {}
+                if accepted_ids
+                else {"INVALID_WAVE_TUPLE": len(zones)}
+            )
+            return self._wave_summary(zones, accepted_ids, rejected)
 
         result = {"zones": {}, "diagnostics": {}}
         with (
@@ -2572,8 +3395,8 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             ),
             patch.object(
                 producer,
-                "private_wave_bootstrap_hour_complete",
-                side_effect=already_complete,
+                "private_wave_bootstrap_asset_summary",
+                side_effect=asset_summary,
             ),
             patch.object(producer, "runtime_remaining", return_value=100.0),
             patch.object(producer, "should_stop_work", return_value=False),
@@ -2594,7 +3417,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
 
         self.assertEqual(attempted, ["wam_dw", "wam_nsb"])
         self.assertEqual(locked["wam_dw"], set())
-        self.assertEqual(locked["wam_nsb"], {asset.valid_time})
+        self.assertEqual(locked["wam_nsb"], {utc_offset(TARGET, -1)})
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["postBootstrapRuntimeReserveSeconds"], 10.0)
         self.assertEqual(

@@ -1,3 +1,11 @@
+# Nyeste checkpoint 2026-09-11 – lokal 4.0.342 granulær provideradmission
+
+4.0.341 er merged på `caa49c42`, men oneoff `34534764449` producerede intet handoff/cutover. Whole-asset WAM-rollback kasserede brugbare NSB-søskende, og Copernicus' missing-hour-fejl kasserede et ellers gyldigt shards returnerede timer.
+
+Lokal 4.0.342 admitterer efter fuldt assetgennemløb komplette same-asset-lineage WAM-part/time-tuples og bevarer rejected slices uændret. Isoleret collection/modelRun-candidate, monoton promotion, own-run fallback og faseatomisk qualityrefresh består. Privat partial kan checkpointes, men gør ikke timen locked/history-complete og ændrer ikke cold-start. Copernicus checkpoint'er eksakte returnerede native timer og sender fraværende par videre; malformed tidsakse/request forbliver fatal.
+
+Testforløbet fandt først to fixturefejl i en 55-test-WAM-suite (`53/55`); fixtures blev rettet, og de to berørte regressioner blev grønne `2/2`. Den udvidede aktuelle WAM-suite er derefter samlet grøn `63/63`, inklusive lineage-evidence og en reel parser→provenance→summary→admission-kæde med to PARTs. WAM-historik er grøn `35/35`, checkpoint er grøn `21/21`, de tre Copernicus-tests er grønne, og Python compile samt code diff-check er grønne. Der foreligger fortsat ingen exact-head-CI-, provider-, cacheclosure- eller produktionspåstand for 4.0.342. Slutkravene er uændrede: current 79.414/79.414 og bølger 79.060 native + Feggesund 354/354 før handoff/cutover.
+
 # Vejrlivscyklus – permanent implementeringscheckpoint 2026-09-10
 
 ## Nyeste checkpoint – lokal 4.0.341 WAM-kandidat

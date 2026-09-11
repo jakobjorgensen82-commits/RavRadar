@@ -1,5 +1,15 @@
 # AI Working Rules – RavRadar
 
+## Aktuel lokal 4.0.342 provider-admissionsregel
+
+- Sæt fejlgrænsen på den mindste komplet beviselige tuple, men aldrig under den. For WAM er det en komplet `(partId, nativeValidTime)`-bølgetuple med exact assetlineage; for Copernicus-current et eksakt native U/V-par inden for requesten.
+- Kræv fuldt og uafbrudt asset-/shardgennemløb, kendt request/denominator og strukturelt gyldig global identitet, før delvis data kan bevares. Global korruption stopper hele enheden.
+- Rejected WAM-slices skal være bit-for-bit uændrede. Bland aldrig et nyt subset med en komplet anden native lineage på samme tidsskive. Bevar collection/modelRun-isolation og slutpromotionens pair-/lineagebevis.
+- Skeln cacheadmission fra komplethed: en delvis WAM-asset kan bevare sikre tuples, men er ikke fuldt komplet; privat time er ikke locked/history-complete; Copernicus-missing forbliver autoritativ rest.
+- Interpolér eller hold aldrig Copernicus-current i tid. Accepter kun returnerede exact native timer; send resten videre gennem kildekæden.
+- Lemp aldrig slutgaten sammen med granulær salvage. Current kræver 79.414/79.414; bølger kræver 79.060 native plus Feggesund 354/354, nul mangler og nul uløste konflikter.
+- Påstå kun samlet grøn test efter faktisk samlet genkørsel. Målrettet 2/2 efter to fixturefejl gør ikke den tidligere 55-test-suite samlet grøn.
+
 ## Aktuel lokal 4.0.341 WAM-/cache-regel
 
 - Nulstil aldrig aktiv vejrcache for at starte en ny target- eller modelkørsel. Byg collection/modelRun isoleret og promover kun valideret fremgang, der ikke gør aktiv dækning dårligere.
