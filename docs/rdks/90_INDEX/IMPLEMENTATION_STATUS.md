@@ -1,4 +1,47 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – lokal 4.0.343 fair providerclosure
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – målte fejl og samlet lokal 4.0.344
+
+- [x] Runtime-targetidentitet mellem komplet 4.0.333 og seneste 4.0.343 bevist identisk ved samme immutable active-cache/strenge ledgerbinding.
+- [x] Forklar alle 4.516 OM-diagnoseafvisninger som sub-syvdecimal-punktfølsomhed; ikke produktionscachekorruption.
+- [x] Regionalt kontrafaktisk genbrugsregnskab: 656 af 912 regionale restpar dækkes ved korrekt original retained-outcome-tilknytning; 256 består. Ingen produktionsændring eller inputmutation.
+- [x] CP-originaljournal/DMI-fil-binding og slutrestforsøg: 1.004 uden afsluttet relevant forsøg, 654 forsøgt på returnerede native timer uden accepteret par. Kunstig AMM-grænse berører kun 48 restpar.
+- [x] DMI-outcome-regnskab i grønt read-only run `34615949813`: 1.107 slutpar lokalt sprunget over i alle tre familier, 477 IDW-spatialUnavailable med mindst én anden familie lokalt sprunget over, 74 upstreamAbsent i alle tre. Uændrede inputhashes.
+- [x] Lokal DMI-leadrotation og faktisk firetrins-bookkeeping-regression måltestet; ikke committed/CI/merged/produktionsverificeret.
+- [x] Regionalt selvstændigt sample-/outcome-proof og producerens migration/EOF/no-loss-integration skrevet lokalt; regional-/shadowtests, 26 transactiontests og native-provenance-test grønne.
+- [x] Faktisk læsende migrationsreplay `34619730789` grøn: +656/−0, serialisering bevarer proof, idempotens, nul quarantine og alle input uændrede. Fast rest 1.002, ikke en ny produktionsstatus. 240 regionale restpar har relevante ubearbejdede officielle LF-assets; 16 kræver den ikke-inventorierede venstre kildekant.
+- [x] Lokal fair tidsdeling inden samme DMI-kørsel, regional -3h bundet til locked target, reel direkte/regional gap-union, kontrolleret GRIB-genbrug og positiv suffix-replan implementeret; scheduler-måltest grøn.
+- [x] Main-flow-review fandt og rettede DMI-katalogets +120/+117-mismatch; separat original terminalidentitet uden udvidet forecastakse, actual datetime-filter/builder/strict-reader/tampertests grønne.
+- [x] Regional offphase-guard, ændringsstyret tung replan og exact in-axis schedulerobservation måltestet; 29 transaktionstests og DKSS-primary grønne. Præ-target-genforsøg og native ejerskifte er dokumenteret begrænsede åbne ydelseskanter.
+- [x] CP efter-readback-måling: 40.120 records, tre byteidentiske filer, 2×N recordvalideringer, 27,536 mod 45,926 sekunder; 77.127.461 bytes ekstra peak uden Mock-historik. Lokal fixture, ikke produktionsgaranti.
+- [x] Supplerende downstreamkontrol: current-closure 6, acquisition-plan 17, native-provenance og DMI-modeldownload/workflowkontrol grønne.
+- [x] CP-kadencerotation er måltestet med faktiske 34/9-køer ved både time- og kvarterskadence, inklusive retries og stable medlemskab; range-runner og pilot grønne.
+- [x] Læsende post-migrationsdiagnose `34623745943` grøn: fast rest 1.002, heraf 676 uden afsluttet relevant CP-forsøg og 326 forsøgt uden accepteret par; fem produkt/shard-requests har 37 nødvendige timer over 118 med 80 tomme timer. Alle input uændrede.
+- [x] Implementér og måltest CP-segmentering ved mindst 24 tomme native timer, fair pass, exact segmentfejlisolation, kollektiv stale-attempt-retirement og aggregerede acquire/parse/checkpointtider. Ingen ny budget-/acceptpolitik. Pilot, source-stage og range-runner er grønne på samlet frossen CP-diff, inklusive fejlet AMM-segment efterfulgt af senere Baltic-unlock af et andet segment.
+- [x] Saml og måltest CP-checkpointoptimering, regional prooflevetid og LF-hulprioritering; bevar native/regional adskillelse og dataintegritet. Dette er lokal kode/test, ikke driftsbevis.
+- [ ] Følg ejerautoriseret normalrun `34613079069`, endnu queued ved seneste kontrol; ingen ny writer uden kø-/mainkontrol.
+- [ ] Samlet release, komplet current/WAM/Feggesund, handoff, integreret modelcutover og målt normal vedligeholdelse.
+
+DEC-0126, aktive krav, kendte issues, MASTER_LOG, changelog samt Markdown-/webhåndbogens kapitel 88.48 er opdateret som 4.0.344-kandidat i PR #278. Versionsværktøjet er kørt, og særskilt diff beviser alene topversionsændring i de to geodatafiler. Releaseversion, RDKS/installationskopi, runtimebinding, uændret modelbundle og browserimports er grønne. Workflowreview på 5587001b bekræfter startværn mod gammelt main før vejrarbejde; queued/jobs[] er dog ikke en lås mod samtidig start. Kontrollér frisk run/attempt/jobs før merge og afvent en eventuel aktiv writer.
+
+PR #278 head `1fd4d8a3` nåede DMI-schedulertesten i exact-head-CI `34627392687`, men den ene fixture forventede stadig katalogets gamle højre kant. Produktionsændringen havde allerede udvidet observationen til en mulig kausal +120-terminal uden at udvide producentkø/ledger. Testforventningen rettes præcist; kør kun den isolerede test lokalt, opdatér samme PR med ny head og kræv ny exact-head-CI. Run `34627392687` må ikke genstartes.
+
+Head `362709cd` passerede schedulerrettelsen i CI `34629975674` og stoppede senere i en statisk cachebevaringstest. Recovery-integriteten er flyttet til fælles helper for begge commitveje; den funktionelle crashfixture er grøn. Den statiske helper-/builder-/rækkefølgetest, den samlede korte workflowkontrakt og de resterende source-tail-kontroller er nu grønne lokalt. Opdatér PR'en med ny exact head og kræv en ny exact-head-CI; genstart ikke de to fejlede runs.
+
+Se nyeste slutafsnit i `docs/ai/WEATHER_RESIDUAL_AUDIT_2026-09-11.md`. Alle nedenstående checkpoints er historik.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-11 – første merged 4.0.343-residualaudit
+
+- [x] PR #277 sourcegate og merge til main `5587001b`; main-sourcekontrol udført i oneoff `34588002366`.
+- [x] Faktiske provider-saves verificeret; native WAM-inspektion accepterer 79.060 par.
+- [ ] Currentclosure: 1.658 rester af 79.414; freshness blev ikke kørt og er ikke dette stops årsag.
+- [x] Gennemfør ejerautoriseret read-only diagnose på fem eksakte generationer: `34608174221` grøn, alle input uændrede; 240 rå shadow-identiteter og nul ekstra accepterede par i den faste 1.658-rest, intet råt overlap fra DMI/CP/OM. Rå shadow inkluderer research og er ikke policyafgrænset regionalt.
+- [ ] Forklar diagnosens OM-recordafvisning og adskil regional rå sample, autentisk proof og afledte holdtimer. De 240 er ikke automatisk reddede par; 1.418 uden eksakt rå sample er ikke et bevist genhentningstal.
+- [x] Sammenlign afstandsregler med komplet 4.0.333-strømrun: DMI/CP 5 km, OM 15 km og regional 5–15 km er uændrede. CP-/OM-recordvalidatorer og centrale checked-in target-/policyfiler er uændrede; donorbank/proof/masks og behandlingsarbejde er ændret.
+- [ ] Luk målte CP-checkpointomkostninger og undersøg DMI-service/regionale proof-tab samlet før rettelse og næste writer.
+- [ ] Feggesund-slutclosure, handoff, integreret modelcutover, offentlig verifikation og normal vedligeholdelse.
+
+Se `docs/ai/WEATHER_RESIDUAL_AUDIT_2026-09-11.md` fra repositoryroden. Punkterne nedenfor er historisk lokal status.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-11 – lokal 4.0.343 fair providerclosure
 
 - [x] Bevar eksisterende provider- og WAM-cacher; ingen target-, modelrun-, release- eller owner-policy-reset.
 - [x] Giv alle uløste strenge DMI-currentfamilier bounded fair service med valideret vedvarende rotation og kritisk kvoteundtagelse.

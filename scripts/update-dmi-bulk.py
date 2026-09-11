@@ -26,6 +26,8 @@ from urllib.parse import urljoin, urlparse
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.dmi_wind_reference import WIND_VECTOR_VERSION, read_wind_reference, earth_relative_wind_pair
 from lib.current_field_shadow import (
+    REGIONAL_PROXY_NATIVE_CADENCE_HOURS,
+    REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS,
     REGIONAL_PROXY_REQUIRED_COLLECTION,
     build_regional_proxy_targets,
     build_rotating_targets,
@@ -39,6 +41,10 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
+from lib.regional_source_proofs import (
+    capture_regional_source_proof,
+    migrate_regional_source_proofs,
+)
 from lib.dmi_current_processing_compatibility import (
     retained_current_processing_signature_compatible,
 )
@@ -287,6 +293,7 @@ CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
     0, int(os.getenv("CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN", "3"))
 )
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
+REGIONAL_PROXY_MAX_HOLD_HOURS = 3
 OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS = frozenset({"DK-B05-11"})
 OPERATIONAL_WAVE_NATIVE_PART_COUNT = 670
 TARGETS = {
@@ -1036,6 +1043,27 @@ def strict_current_collection_order(
     )
 
 
+def begin_collection_scheduler_turn(
+    state: dict[str, Any],
+    collection: str,
+    lead_collection: Any,
+    turn_at: str,
+) -> bool:
+    """Record an attempted collection and rotate only the actual DKSS lead.
+
+    The lead marker is a liveness hint, not source or admission evidence.  It is
+    recorded before provider work so an attempted lead still yields after a
+    negative or failed turn.  Collections reached later in the same run retain
+    their previous lead marker; otherwise one shared run timestamp makes the
+    next invocation fall back to the fixed collection order again.
+    """
+    state["lastAttemptAt"] = turn_at
+    if collection != lead_collection:
+        return False
+    state["lastStrictCurrentTurnAt"] = turn_at
+    return True
+
+
 def strict_current_runtime_reserve(
     collections: list[str],
     remaining_work_seconds: float,
@@ -1056,6 +1084,36 @@ def strict_current_runtime_reserve(
         {collection: per_collection for collection in ordered},
         total,
     )
+
+
+def fair_nonlead_strict_current_runtime_reserve(
+    pending_collections: list[str],
+    remaining_work_seconds: float,
+    minimum_reserve_by_collection: dict[str, float],
+) -> float:
+    """Protect a fair share for DKSS families still waiting in this run.
+
+    The single lead attempt and the critical WAM turns remain unchanged.  Once
+    those turns are behind us, the first non-lead DKSS family may otherwise use
+    all slack while the final family receives only its 120-second start
+    reserve.  Freeze the pending families' proportional share at collection
+    start; unused time naturally rolls forward when the current family has no
+    more work.
+    """
+    pending = [
+        collection for collection in pending_collections
+        if collection in MARINE_COLLECTIONS
+    ]
+    if not pending:
+        return 0.0
+    minimum = sum(
+        max(0.0, float(minimum_reserve_by_collection.get(collection, 0.0)))
+        for collection in pending
+    )
+    fair_share = max(0.0, float(remaining_work_seconds)) * (
+        len(pending) / (len(pending) + 1)
+    )
+    return max(minimum, fair_share)
 
 
 def operational_collection_plan(
@@ -1659,23 +1717,230 @@ def current_pair_evidence_from_retained_proofs(
     return pair_sources, pairs
 
 
+def regional_lf_missing_pair_keys(
+    regional_part_ids: list[str],
+    required_valid_times: set[str],
+    covered_pair_keys: set[tuple[str, str]],
+) -> set[tuple[str, str]]:
+    """Return only real, globally uncovered pairs in the approved LF scope."""
+    part_ids = sorted({
+        str(part_id or "").strip()
+        for part_id in regional_part_ids
+        if str(part_id or "").strip()
+    })
+    valid_times = sorted({
+        value for raw in required_valid_times
+        for value in [canonical_time(raw)]
+        if value is not None
+    }, key=epoch)
+    return {
+        (part_id, valid_time)
+        for part_id in part_ids
+        for valid_time in valid_times
+        if (part_id, valid_time) not in covered_pair_keys
+    }
+
+
+def regional_asset_observation(
+    shadow: dict[str, Any], *, source_asset: dict[str, Any],
+    processing_signature: str, target_registry_sha256: str,
+    policy: dict[str, Any], regional_part_ids: list[str],
+) -> dict[str, str] | None:
+    """Fingerprint exact regional inputs, solely for bounded work scheduling.
+
+    This never proves regional availability or native pair admission. A receipt
+    is installed only after successful EOF/capture; any changed leaf, binding,
+    target, policy or decoder reopens the work. No raw samples leave the hash.
+    """
+    try:
+        source = canonical_current_source_asset(source_asset)
+        if source is None or source["collection"] != REGIONAL_PROXY_REQUIRED_COLLECTION:
+            return None
+        source_sha = current_source_asset_sha256(source)
+        index = shadow.get("regionalSourceProofs")
+        anchors = shadow.get("anchors") or {}
+        bindings = index.get("bindings") if isinstance(index, dict) else None
+        sources = index.get("sources") if isinstance(index, dict) else None
+        leaves = []
+        for part_id in sorted(set(regional_part_ids)):
+            anchor = anchors.get(f"REGIONAL_PROXY::{part_id}")
+            if not isinstance(anchor, dict):
+                leaves.append([part_id, anchor])
+                continue
+            samples = [row for row in anchor.get("samples") or []
+                       if isinstance(row, dict) and (
+                           row.get("sourceAssetSha256") == source_sha
+                           or (row.get("collection") == source["collection"]
+                               and row.get("modelRun") == source["modelRun"]
+                               and row.get("validTime") == source["validTime"]))]
+            refs = {row.get("regionalSourceProofRef") for row in samples
+                    if isinstance(row.get("regionalSourceProofRef"), str)}
+            leaf_bindings = {key: bindings.get(key) for key in sorted(refs)} if isinstance(bindings, dict) else bindings
+            proof_keys = {row.get("sourceProofSha256") for row in (leaf_bindings or {}).values()
+                          if isinstance(row, dict) and isinstance(row.get("sourceProofSha256"), str)} if isinstance(leaf_bindings, dict) else set()
+            leaves.append({
+                "partId": part_id,
+                "anchor": {key: value for key, value in anchor.items() if key != "samples"},
+                "samples": samples,
+                "bindings": leaf_bindings,
+                "sourceProofs": {key: sources.get(key) for key in sorted(proof_keys)} if isinstance(sources, dict) else sources,
+            })
+        def digest(value: Any) -> str:
+            return "sha256:" + hashlib.sha256(json.dumps(
+                value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")).hexdigest()
+        return {
+            "contractId": "dmi-regional-scheduler-observation-v1",
+            "sourceAssetSha256": source_sha,
+            "processingSignature": processing_signature,
+            "targetRegistrySha256": target_registry_sha256,
+            "policySha256": digest(policy),
+            "regionalInputSha256": digest({
+                "shadowHeader": {key: shadow.get(key) for key in (
+                    "schemaVersion", "retentionHours", "scoreImpact", "publicRuntime")},
+                "proofIndexHeader": {key: index.get(key) for key in (
+                    "schemaVersion", "contractId")}
+                    if isinstance(index, dict) else index,
+                "leaves": leaves,
+            }),
+        }
+    except (TypeError, ValueError, KeyError, OverflowError, AttributeError):
+        return None
+
+
+def reusable_regional_asset_observation(
+    step: Any, shadow: dict[str, Any], *, processing_signature: str,
+    target_registry_sha256: str, policy: dict[str, Any],
+    regional_part_ids: list[str],
+) -> bool:
+    """Caller must separately prove this native processed step reusable."""
+    if not isinstance(step, dict) or not isinstance(step.get("regionalObservation"), dict):
+        return False
+    observed = regional_asset_observation(
+        shadow, source_asset=step.get("sourceAsset"),
+        processing_signature=processing_signature,
+        target_registry_sha256=target_registry_sha256, policy=policy,
+        regional_part_ids=regional_part_ids,
+    )
+    return observed is not None and observed == step["regionalObservation"]
+
+
+def regional_lf_is_native_source_time(model_run: Any, valid_time: Any) -> bool:
+    """Regional LF evidence exists only on the run-relative native phase."""
+    canonical_run = canonical_time(model_run)
+    canonical_valid_time = canonical_time(valid_time)
+    if canonical_run is None or canonical_valid_time is None:
+        return False
+    lead_seconds = epoch(canonical_valid_time) - epoch(canonical_run)
+    return bool(
+        0 <= lead_seconds <= DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+        and lead_seconds % (REGIONAL_PROXY_NATIVE_CADENCE_HOURS * 3600) == 0
+    )
+
+
+def regional_lf_asset_gap_pairs(
+    asset: dict[str, Any],
+    model_run: str,
+    missing_pair_keys: set[tuple[str, str]],
+    production_reference: datetime,
+) -> set[tuple[str, str]]:
+    """Map one native LF source time to the real holes it can causally fill."""
+    valid_time = canonical_time(asset.get("valid"))
+    canonical_run = canonical_time(model_run)
+    if not regional_lf_is_native_source_time(canonical_run, valid_time):
+        return set()
+    try:
+        source_at = production_reference_hour(valid_time)
+        reference_at = production_reference_hour(production_reference)
+    except (TypeError, ValueError):
+        return set()
+    if not (
+        reference_at - timedelta(hours=REGIONAL_PROXY_MAX_HOLD_HOURS)
+        <= source_at
+        <= reference_at + timedelta(
+            hours=REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS
+        )
+    ):
+        return set()
+    return {
+        (part_id, target_time)
+        for part_id, target_time in missing_pair_keys
+        if 0 <= epoch(target_time) - source_at.timestamp()
+        <= REGIONAL_PROXY_MAX_HOLD_HOURS * 3600
+    }
+
+
+def regional_lf_asset_gap_pairs_by_time(
+    assets: list[dict[str, Any]],
+    model_run: str,
+    regional_part_ids: list[str],
+    required_valid_times: set[str],
+    covered_pair_keys: set[tuple[str, str]],
+    production_reference: datetime,
+) -> dict[str, set[tuple[str, str]]]:
+    """Build deterministic per-asset regional potential from actual gaps only."""
+    missing = regional_lf_missing_pair_keys(
+        regional_part_ids,
+        required_valid_times,
+        covered_pair_keys,
+    )
+    return {
+        valid_time: pairs
+        for asset in assets
+        for valid_time in [canonical_time(asset.get("valid"))]
+        if valid_time is not None
+        for pairs in [regional_lf_asset_gap_pairs(
+            asset,
+            model_run,
+            missing,
+            production_reference,
+        )]
+        if pairs
+    }
+
+
 def prioritize_marine_assets_for_current_gaps(
     assets: list[dict[str, Any]],
     target_ids: list[str],
     covered_pair_keys: set[tuple[str, str]],
     *,
     critical_by_time: dict[str, bool] | None = None,
+    direct_valid_times: set[str] | None = None,
+    regional_gap_pairs_by_time: dict[
+        str, set[tuple[str, str]]
+    ] | None = None,
+    verified_reusable_valid_times: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Process internal holes/tail before refresh-only assets, deterministically."""
-    def priority(asset: dict[str, Any]) -> tuple[int, int, float, str, str]:
+    def priority(asset: dict[str, Any]) -> tuple[int, int, int, int, float, str, str]:
         valid_time = str(canonical_time(asset.get("valid")) or "")
-        missing_count = sum(
-            (part_id, valid_time) not in covered_pair_keys
-            for part_id in target_ids
+        direct_missing_pairs = (
+            {
+                (part_id, valid_time)
+                for part_id in target_ids
+                if (part_id, valid_time) not in covered_pair_keys
+            }
+            if direct_valid_times is None or valid_time in direct_valid_times
+            else set()
+        )
+        regional_gap_pairs = set(
+            (regional_gap_pairs_by_time or {}).get(valid_time) or set()
+        )
+        regional_gap_count = len(regional_gap_pairs)
+        real_gap_count = len(direct_missing_pairs | regional_gap_pairs)
+        critical = bool(
+            direct_missing_pairs
+            or regional_gap_count
+            or (critical_by_time or {}).get(valid_time)
         )
         return (
-            0 if missing_count or (critical_by_time or {}).get(valid_time) else 1,
-            -missing_count,
+            0 if critical else 1,
+            0 if regional_gap_count
+                and valid_time in (verified_reusable_valid_times or set())
+                else 1,
+            -real_gap_count,
+            -regional_gap_count,
             epoch(valid_time),
             str(asset.get("id") or ""),
             str(asset.get("assetIdentitySha256") or ""),
@@ -1735,6 +2000,8 @@ def classify_dkss_primary_asset(
     active_zone_ids: list[str],
     enabled: bool,
     planning_covered_pair_keys: set[tuple[str, str]] | None = None,
+    required_valid_times: set[str] | None = None,
+    regional_current_gap_count: int = 0,
 ) -> dict[str, Any]:
     """Classify one DKSS asset as critical work or safe refresh-only work.
 
@@ -1751,6 +2018,7 @@ def classify_dkss_primary_asset(
             "critical": True,
             "deferValidRefresh": False,
             "currentMissingPairCount": 0,
+            "regionalCurrentPotentialPairCount": 0,
             "missingComponentKinds": [],
         }
 
@@ -1759,6 +2027,14 @@ def classify_dkss_primary_asset(
     normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
     normalized_zones = sorted({str(value or "").strip() for value in active_zone_ids if str(value or "").strip()})
     missing_components: set[str] = set()
+    valid_regional_gap_count = (
+        regional_current_gap_count
+        if type(regional_current_gap_count) is int
+        and regional_current_gap_count >= 0
+        else 0
+    )
+    if valid_regional_gap_count != regional_current_gap_count:
+        missing_components.add("configuration")
     part_zone_ids = {f"PART::{part_id}" for part_id in normalized_targets}
     parent_current_zone_ids = [
         zone_id for zone_id in normalized_zones
@@ -1768,6 +2044,11 @@ def classify_dkss_primary_asset(
     if not valid_time or not canonical_run or not normalized_targets or not normalized_zones:
         missing_components.add("configuration")
         current_missing_pair_count = len(normalized_targets)
+    elif required_valid_times is not None and valid_time not in required_valid_times:
+        # A T-3..T-1 LF source is supplemental input for the approved regional
+        # hold only. It must not invent a native current/component deficit
+        # outside the immutable T..T+117 operational denominator.
+        current_missing_pair_count = 0
     else:
         current_missing_pair_count = sum(
             (target_id, valid_time) not in (
@@ -1811,12 +2092,15 @@ def classify_dkss_primary_asset(
         )
         if current_missing_pair_count:
             missing_components.add("current")
+    if valid_regional_gap_count:
+        missing_components.add("regionalCurrent")
 
     critical = bool(missing_components)
     result = {
         "critical": critical,
         "deferValidRefresh": not critical,
         "currentMissingPairCount": current_missing_pair_count,
+        "regionalCurrentPotentialPairCount": valid_regional_gap_count,
         "missingComponentKinds": sorted(missing_components),
     }
     if planning_covered_pair_keys is not None or parent_current_zone_ids:
@@ -1994,6 +2278,7 @@ def should_skip_previously_processed_asset(
     valid_time: str,
     previously_processed: set[str],
     primary_requirement: dict[str, Any] | None,
+    *, regional_observation_reusable: bool = False,
 ) -> bool:
     """Keep exact terminal DKSS outcomes closed while reopening other holes.
 
@@ -2014,6 +2299,8 @@ def should_skip_previously_processed_asset(
         primary_requirement.get("missingComponentKinds") or []
     )
     actionable_non_current = missing_components - {"current"}
+    if regional_observation_reusable:
+        actionable_non_current.discard("regionalCurrent")
     return not (
         primary_requirement.get("critical") is True
         and bool(actionable_non_current)
@@ -2163,11 +2450,18 @@ def list_latest_assets(
         iso(value) for value in (required_valid_times or set())
         if iso(value)
     }
+    explicit_minimum = iso(minimum_valid_time)
+    inventory_start_candidates = [
+        value for value in (
+            min(required, key=epoch) if required else None,
+            explicit_minimum,
+        )
+        if value is not None
+    ]
     inventory_start = (
-        min(required, key=epoch)
-        if required
-        else iso(minimum_valid_time)
-        or datetime.fromtimestamp(time.time() - 3600, timezone.utc)
+        min(inventory_start_candidates, key=epoch)
+        if inventory_start_candidates
+        else datetime.fromtimestamp(time.time() - 3600, timezone.utc)
             .isoformat().replace("+00:00", "Z")
     )
     inventory_end = (
@@ -2184,10 +2478,23 @@ def list_latest_assets(
     )
     if epoch(inventory_end) < epoch(inventory_start):
         inventory_end = inventory_start
+    observation_end = inventory_end
+    if allow_documented_required_gaps and collection in MARINE_COLLECTIONS:
+        # Selection requires the exact +120 h terminal of a causal model run.
+        # For a newly published run this lies AFTER target+117. Observe it
+        # without extending the producer queue or the operational denominator.
+        causal_run_ceiling = (
+            min(required, key=epoch) if required else explicit_minimum
+        )
+        if causal_run_ceiling is not None:
+            observation_end = canonical_time(datetime.fromtimestamp(max(
+                epoch(inventory_end),
+                epoch(causal_run_ceiling) + DKSS_MAX_FORECAST_LEAD_HOURS * 3600,
+            ), timezone.utc))
     items, inventory_stats = _bounded_stac_inventory(
         collection,
         inventory_start,
-        inventory_end,
+        observation_end,
     )
     runs: dict[str, list[dict[str, Any]]] = {}
     stats = {
@@ -2519,6 +2826,16 @@ def list_latest_assets(
         official_by_time[valid_time]
         for valid_time in sorted(official_by_time, key=epoch)
     ]
+    if collection in MARINE_COLLECTIONS and selected_native_run_complete:
+        terminal_time = canonical_time(datetime.fromtimestamp(
+            epoch(run) + DKSS_MAX_FORECAST_LEAD_HOURS * 3600, timezone.utc,
+        ))
+        terminal_row = next(
+            row for row in runs[run] if iso(row.get("valid")) == terminal_time
+        )
+        stats["nativeTerminalAsset"] = official_current_asset_identity(
+            collection, run, terminal_row,
+        )
     stats["officialRequiredGapCount"] = max(0, len(required) - len(selected_official_required))
     stats["officialNativeCadenceHours"] = 1 if collection in MARINE_COLLECTIONS else None
     def selected_rows_for_run(
@@ -2535,6 +2852,14 @@ def list_latest_assets(
                 str(value.get("assetIdentitySha256") or ""),
             ),
         ):
+            if (
+                allow_documented_required_gaps
+                and collection in MARINE_COLLECTIONS
+                and epoch(row["valid"]) > epoch(inventory_end)
+            ):
+                # Extra catalog observation proves publication only. It must
+                # not become another download or an invented public hour.
+                continue
             if epoch(row["valid"]) < minimum_valid_epoch:
                 if phase_rank == 0:
                     stats["expiredForecastStepsSkipped"] = int(
@@ -3130,6 +3455,49 @@ def reusable_cached_asset_path(
     ):
         return None
     return path
+
+
+def next_verified_reusable_regional_time(
+    assets: list[dict[str, Any]],
+    collection: str,
+    model_run: str,
+    regional_gap_pairs_by_time: dict[str, set[tuple[str, str]]],
+) -> set[str]:
+    """Verify at most one likely cached regional asset for the next turn.
+
+    Full content hashing is deliberately bounded here: an LF lead runs before
+    critical WAM, so scanning every large cached GRIB merely to sort the queue
+    could consume the service reserve. The selected file is still revalidated
+    by ``download_asset`` immediately before processing.
+    """
+    likely_cached = sorted(
+        (
+            asset for asset in assets
+            if regional_gap_pairs_by_time.get(
+                str(canonical_time(asset.get("valid")) or "")
+            )
+            and cached_asset_path(str(asset.get("href") or "")).is_file()
+        ),
+        key=lambda asset: (
+            -len(regional_gap_pairs_by_time.get(
+                str(canonical_time(asset.get("valid")) or ""),
+                set(),
+            )),
+            epoch(asset.get("valid")),
+            str(asset.get("id") or ""),
+        ),
+    )
+    if not likely_cached:
+        return set()
+    candidate = likely_cached[0]
+    valid_time = canonical_time(candidate.get("valid"))
+    return (
+        {valid_time}
+        if valid_time is not None
+        and reusable_cached_asset_path(candidate, collection, model_run)
+            is not None
+        else set()
+    )
 
 
 def safe_get(gid: int, key: str) -> Any:
@@ -5118,7 +5486,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  allowed_parameters: set[str] | None = None,
                  trusted_current_pair_source_keys: set[
                      tuple[str, str, str]
-                 ] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 ] | None = None,
+                 locked_operational_reference: str | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -5598,6 +5967,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             valid_time,
             str(output.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
             shadow_source_asset_sha256,
+            locked_operational_reference=locked_operational_reference,
         )
         diagnostics["currentFieldShadowSamplesWritten"] = int(
             diagnostics.get("currentFieldShadowSamplesWritten") or 0
@@ -5694,6 +6064,8 @@ def build_current_shadow_stage(
             if target_id in values:
                 values[target_id] = copy.deepcopy(values[target_id])
         stage[key] = values
+    if "regionalSourceProofs" in document:
+        stage["regionalSourceProofs"] = copy.deepcopy(document["regionalSourceProofs"])
     return stage
 
 
@@ -5714,6 +6086,8 @@ def process_grib_transactionally(
     failure_flush: Any | None = None,
     stage_validator: Any | None = None,
     current_stage_validator: Any | None = None,
+    finalize_shadow_stage: Any | None = None,
+    locked_operational_reference: str | None = None,
     trusted_current_pair_source_keys: set[
         tuple[str, str, str]
     ] | None = None,
@@ -5764,6 +6138,9 @@ def process_grib_transactionally(
             part_outcomes_stage,
             allowed_parameters=allowed_parameters,
             **({
+                "locked_operational_reference": locked_operational_reference,
+            } if locked_operational_reference is not None else {}),
+            **({
                 "trusted_current_pair_source_keys":
                     trusted_current_pair_source_keys,
             } if trusted_current_pair_source_keys is not None else {}),
@@ -5787,6 +6164,10 @@ def process_grib_transactionally(
             part_outcomes_stage,
         ):
             raise RuntimeError(validation_error)
+        if shadow_stage is not None and finalize_shadow_stage is not None:
+            # Source proof and its regional samples form one private stage.
+            # No bulk or shadow mutation may escape if proof capture fails.
+            finalize_shadow_stage(shadow_stage)
     except Exception:
         restore_mapping(diagnostics, diagnostics_snapshot)
         if failure_flush is not None:
@@ -7512,11 +7893,50 @@ def _strict_current_donor_ready(
     return current_operational_cache_ready(document, targets, reference)
 
 
+def _regional_sources_from_validated_ledger(
+    ledger: dict[str, Any], expected_processing_signature: str,
+) -> list[dict[str, Any]]:
+    """Copy originals without native lifetime filtering or source flattening.
+
+    Caller must already have fully validated this exact ledger and its bound
+    attestation. Keeping separate entries lets regional migration detect
+    competing original decoder/outcome proofs instead of choosing the last.
+    """
+    candidates: list[dict[str, Any]] = []
+    entries = [
+        (row.get("sourceAsset"), collection.get("processingSignature"),
+         row.get("partOutcomeProof"))
+        for collection in ledger.get("collections") or []
+        for row in collection.get("validTimes") or []
+        if row.get("state") in {"PROCESSED", "VERIFIED"}
+    ]
+    entries.extend(
+        (proof.get("sourceAsset"), proof.get("processingSignature"),
+         proof.get("partOutcomeProof"))
+        for proof in ledger.get("retainedCurrentAssetProofs") or []
+    )
+    for raw_source, signature, outcome in entries:
+        source = canonical_current_source_asset(raw_source)
+        if (source is not None
+                and source["collection"] == REGIONAL_PROXY_REQUIRED_COLLECTION
+                and retained_current_processing_signature_compatible(
+                    signature, expected_processing_signature,
+                )):
+            candidates.append({
+                "sourceAsset": copy.deepcopy(source),
+                "processingSignature": signature,
+                "partOutcomeProof": copy.deepcopy(outcome),
+            })
+    return candidates
+
+
 def _validated_candidate_retained_current_asset_proofs(
     document: dict[str, Any],
     targets: list[dict[str, Any]],
     reference: datetime,
     expected_processing_signature: str,
+    *,
+    regional_source_proof_candidates: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Revalidate canonical pair/source evidence without trusting a legacy complement."""
     ledger = copy.deepcopy(
@@ -7540,6 +7960,7 @@ def _validated_candidate_retained_current_asset_proofs(
         current_assets,
         retained_pair_sources,
     )
+    original_regional_candidates: list[dict[str, Any]] = []
     if ledger.get("attestation") != sanitized_current_attestation(actual_attestation):
         identity_attestation = (
             canonical_pre_sanitize_current_identity_attestation(
@@ -7556,6 +7977,24 @@ def _validated_candidate_retained_current_asset_proofs(
             != sanitized_current_attestation(identity_attestation)
         ):
             return []
+        if regional_source_proof_candidates is not None:
+            try:
+                # Validate the ORIGINAL ledger before native leaf sanitation
+                # removes its final attested tuple. Identity recovery is not
+                # native admission; only independent regional source outcomes
+                # may survive here, after this complete original validation.
+                validate_current_operational_availability_ledger(
+                    ledger, identity_attestation, targets, donor_reference,
+                    donor_end, registry_sha256,
+                )
+            except (TypeError, ValueError):
+                # Keep the existing native recovery behavior unchanged. An
+                # unvalidated original never contributes regional authority.
+                pass
+            else:
+                original_regional_candidates = _regional_sources_from_validated_ledger(
+                    ledger, expected_processing_signature,
+                )
         # The original digest has now been reconstructed exactly. Rebuild the
         # derived fields only from rows accepted by the normal strict validator.
         actual_pair_source_keys = {
@@ -7718,6 +8157,10 @@ def _validated_candidate_retained_current_asset_proofs(
         donor_end,
         registry_sha256,
     )
+    if regional_source_proof_candidates is not None:
+        original_regional_candidates.extend(_regional_sources_from_validated_ledger(
+            ledger, expected_processing_signature,
+        ))
 
     evidence_by_source: dict[str, tuple[dict[str, Any], str, dict[str, Any]]] = {}
     for collection_row in ledger["collections"]:
@@ -7793,13 +8236,19 @@ def _validated_candidate_retained_current_asset_proofs(
         proof["sourceAsset"]["itemId"],
         proof["sourceAsset"]["contentSha256"],
     ))
-    return validate_retained_current_asset_proofs(
+    validated_proofs = validate_retained_current_asset_proofs(
         proofs,
         sorted(str(target.get("partId") or "").strip() for target in targets),
         reference,
         range_end,
         registry_sha256,
     )
+    if regional_source_proof_candidates is not None:
+        # Preserve already authenticated ORIGINAL regional source outcomes
+        # independently of which native tuples survive this new time window.
+        # These are not retained native attestations and grant no native data.
+        regional_source_proof_candidates.extend(original_regional_candidates)
+    return validated_proofs
 
 
 def _select_retained_current_asset_proofs_for_document(
@@ -7952,18 +8401,40 @@ def _select_retained_current_asset_proofs_for_document(
     )
 
 
+def persist_regional_shadow_before_recovery(
+    shadow: dict[str, Any], previous: dict[str, Any],
+    deferred_recovery_checkpoint: dict[str, bool],
+) -> None:
+    """Durably save sample+proof before retiring original bulk source evidence."""
+    save_current_field_shadow(CURRENT_FIELD_SHADOW_PATH, shadow)
+    if deferred_recovery_checkpoint.get("pending"):
+        atomic_write_bulk_cache(previous)
+        deferred_recovery_checkpoint.clear()
+
+
 def load_previous(
     expected_signature: str,
     *,
     coastal_part_targets: list[dict[str, Any]] | None = None,
     production_reference: datetime | None = None,
     retained_current_asset_proofs: list[dict[str, Any]] | None = None,
+    regional_source_proof_candidates: list[dict[str, Any]] | None = None,
+    deferred_recovery_checkpoint: dict[str, bool] | None = None,
 ) -> dict[str, Any]:
     output_document = load_bulk_document(OUTPUT_PATH)
     fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
     candidates = [output_document, fallback_document]
     proof_candidates: list[dict[str, Any]] = []
     proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
+    regional_proofs_by_document: dict[int, list[dict[str, Any]]] = {}
+
+    def persist_recovery(document: dict[str, Any]) -> None:
+        if deferred_recovery_checkpoint is not None:
+            # Main first persists migrated regional proofs with their samples.
+            # Do not overwrite the original proof-bearing donor ahead of it.
+            deferred_recovery_checkpoint["pending"] = True
+        else:
+            atomic_write_bulk_cache(document)
     if coastal_part_targets is not None and production_reference is not None:
         expected_processing_signature = current_marine_processing_signature(
             expected_signature
@@ -7978,17 +8449,21 @@ def load_previous(
             ):
                 continue
             try:
+                original_regional_proofs: list[dict[str, Any]] = []
                 document_proofs = (
                     _validated_candidate_retained_current_asset_proofs(
                         document,
                         coastal_part_targets,
                         production_reference,
                         expected_processing_signature,
+                        regional_source_proof_candidates=original_regional_proofs,
                     )
                 )
             except (TypeError, ValueError):
                 document_proofs = []
+                original_regional_proofs = []
             proof_candidates_by_document[id(document)] = document_proofs
+            regional_proofs_by_document[id(document)] = original_regional_proofs
             proof_candidates.extend(document_proofs)
     output_quarantined = False
     output_leaf_sanitized = bool(
@@ -8019,6 +8494,11 @@ def load_previous(
     candidates = [output_document, fallback_document]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
+        if regional_source_proof_candidates is not None:
+            for document in compatible:
+                regional_source_proof_candidates.extend(
+                    regional_proofs_by_document.get(id(document), [])
+                )
         primary = (
             output_document
             if PREFER_OUTPUT_CACHE and output_document in compatible
@@ -8068,7 +8548,7 @@ def load_previous(
                 ) if production_reference is not None else []
             )
         if output_quarantined or output_leaf_sanitized:
-            atomic_write_bulk_cache(merged)
+            persist_recovery(merged)
         return merged
     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
     # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
@@ -8077,11 +8557,11 @@ def load_previous(
     if reusable:
         recovered = max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
         if output_quarantined or output_leaf_sanitized:
-            atomic_write_bulk_cache(recovered)
+            persist_recovery(recovered)
         return recovered
     recovered = {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
     if output_quarantined or output_leaf_sanitized:
-        atomic_write_bulk_cache(recovered)
+        persist_recovery(recovered)
     return recovered
 
 
@@ -8599,6 +9079,24 @@ def build_current_operational_ledger_result(
             selected_by_time[identity["validTime"]] = identity
         if selected_by_time != official_by_time:
             selected_assets_valid = False
+        native_terminal_asset = None
+        native_terminal_asset_valid = True
+        if isinstance(stats, dict) and "nativeTerminalAsset" in stats:
+            raw_terminal = stats["nativeTerminalAsset"]
+            native_terminal_asset = official_current_asset_identity(
+                collection, model_run, raw_terminal,
+            )
+            native_terminal_asset_valid = bool(
+                model_run and native_terminal_asset is not None
+                and native_terminal_asset == raw_terminal
+                and epoch(native_terminal_asset["validTime"])
+                    == epoch(model_run) + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+                and (
+                    native_terminal_asset["validTime"] not in valid_time_set
+                    or official_by_time.get(native_terminal_asset["validTime"])
+                        == native_terminal_asset
+                )
+            )
         catalog_complete = bool(
             model_run
             and isinstance(stats, dict)
@@ -8614,6 +9112,7 @@ def build_current_operational_ledger_result(
             and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
             and official_assets_valid
             and selected_assets_valid
+            and native_terminal_asset_valid
             and stats.get("officialRequiredValidTimeCount") == len(official_by_time)
         )
         run_info = ((document.get("runs") or {}).get(collection) or {})
@@ -8678,6 +9177,9 @@ def build_current_operational_ledger_result(
             "modelRun": model_run,
             "processingSignature": processing_signature,
             "validTimes": rows,
+            **({"nativeTerminalAsset": native_terminal_asset}
+               if native_terminal_asset_valid and native_terminal_asset is not None
+               else {}),
         })
         if not catalog_complete:
             failure_codes.add("OFFICIAL_DKSS_CATALOG_INCOMPLETE")
@@ -9781,6 +10283,9 @@ def replay_current_field_shadow_from_cache(
     signed-URL cache keys), at most one bounded bootstrap asset per model area is
     downloaded inside the existing global DMI byte budget.  Processing still
     receives only private research targets and an isolated scratch output.
+    Regional operational targets are excluded: their samples may only change
+    through the full primary asset/outcome/proof transaction. Research-only
+    EOF cannot replace a bound operational sample without its original proof.
     """
     summary: dict[str, Any] = {
         "attempted": False,
@@ -9796,6 +10301,13 @@ def replay_current_field_shadow_from_cache(
         "assetsSkippedBySupervisor": 0,
         "errors": [],
     }
+    regional_targets_excluded = sum(
+        bool(target.get("regionalProxyCandidate")) for target in research_targets
+    )
+    research_targets = [
+        target for target in research_targets if not target.get("regionalProxyCandidate")
+    ]
+    summary["regionalTargetsExcluded"] = regional_targets_excluded
     if not research_targets:
         summary["reason"] = "no-research-targets"
         return summary
@@ -9819,90 +10331,22 @@ def replay_current_field_shadow_from_cache(
     for collection in sorted(replay_collections, key=COLLECTION_ORDER.index):
         entry = catalog.get(collection) or {}
         model_run = str(entry.get("modelRun") or "")
-        regional_operational_replay = (
-            collection == REGIONAL_PROXY_REQUIRED_COLLECTION
-            and any(
-                target.get("regionalProxyCandidate")
-                and target.get("requiredCollection") == collection
-                for target in research_targets
-            )
+        candidates = eligible_replay_assets(
+            list(entry.get("assets") or []),
+            generated,
+            CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+            12,
         )
-        if regional_operational_replay:
-            replay_reference = locked_production_reference or datetime.fromtimestamp(
-                epoch(generated),
-                timezone.utc,
-            )
-            required_times = operational_current_valid_times(replay_reference)
-            required_time_set = set(required_times)
-            assets_by_time = {
-                iso(asset.get("valid")): asset
-                for asset in list(entry.get("assets") or [])
-                if iso(asset.get("valid")) in required_time_set
-            }
-            candidates = [assets_by_time[value] for value in required_times if value in assets_by_time]
-        else:
-            candidates = eligible_replay_assets(
-                list(entry.get("assets") or []),
-                generated,
-                CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
-                12,
-            )
         resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
             (asset, path)
             for asset in candidates
             for path in [reusable_cached_asset_path(asset, collection, model_run)]
             if path is not None
         ]
-        fully_bound_cached = False
-        if regional_operational_replay and resolved:
-            regional_target_ids = {
-                str(target.get("id") or "")
-                for target in research_targets
-                if target.get("regionalProxyCandidate")
-                and target.get("requiredCollection") == collection
-            }
-            unresolved: list[tuple[dict[str, Any], pathlib.Path]] = []
-            for asset, path in resolved:
-                capture = raw_cache_source_capture(
-                    path,
-                    collection,
-                    model_run,
-                    str(asset.get("valid") or ""),
-                )
-                source_asset = canonical_current_source_asset({
-                    "collection": collection,
-                    "modelRun": model_run,
-                    "validTime": str(asset.get("valid") or ""),
-                    **(capture or {}),
-                }) if capture is not None else None
-                source_hash = (
-                    current_source_asset_sha256(source_asset)
-                    if source_asset is not None
-                    else None
-                )
-                valid_time = iso(asset.get("valid"))
-                covered = source_hash is not None and all(
-                    any(
-                        sample.get("collection") == collection
-                        and iso(sample.get("modelRun")) == iso(model_run)
-                        and iso(sample.get("validTime")) == valid_time
-                        and sample.get("sourceAssetSha256") == source_hash
-                        for sample in (
-                            ((current_shadow.get("anchors") or {}).get(target_id) or {}).get("samples")
-                            or []
-                        )
-                    )
-                    for target_id in regional_target_ids
-                )
-                if not covered:
-                    unresolved.append((asset, path))
-            fully_bound_cached = len(resolved) == len(candidates) and not unresolved
-            resolved = unresolved
         if (
             model_run
             and not resolved
             and candidates
-            and not fully_bound_cached
             and bootstrap_remaining > 0
             and not should_stop_work()
         ):
@@ -10105,11 +10549,15 @@ def main() -> int:
     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
     locked_production_reference = production_reference_hour()
     retained_current_asset_proofs: list[dict[str, Any]] = []
+    regional_source_proof_candidates: list[dict[str, Any]] = []
+    deferred_recovery_checkpoint: dict[str, bool] = {}
     previous = load_previous(
         current_zone_registry_signature,
         coastal_part_targets=coastal_part_targets,
         production_reference=locked_production_reference,
         retained_current_asset_proofs=retained_current_asset_proofs,
+        regional_source_proof_candidates=regional_source_proof_candidates,
+        deferred_recovery_checkpoint=deferred_recovery_checkpoint,
     )
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
@@ -10261,6 +10709,23 @@ def main() -> int:
     # Limfjordsproxy. Kun den strengt validerede otte-dels allowlist må bruge
     # dkss_lf op til 15 km; roterende forskning forbliver score-neutral.
     current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
+    regional_proof_migration: dict[str, Any] = {}
+    if regional_proxy_configuration_status == "CONFIGURED":
+        regional_proof_migration = migrate_regional_source_proofs(
+            current_shadow,
+            policy=regional_proxy_policy,
+            targets=coastal_part_targets,
+            original_proofs=regional_source_proof_candidates,
+        )
+        # Commit sample+proof together before any later bulk checkpoint can
+        # retire the last native reference to these original source outcomes.
+        persist_regional_shadow_before_recovery(
+            current_shadow, previous, deferred_recovery_checkpoint,
+        )
+    elif deferred_recovery_checkpoint.get("pending"):
+        atomic_write_bulk_cache(previous)
+        deferred_recovery_checkpoint.clear()
+    regional_source_proof_candidates.clear()
     rotating_research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
         part_doc,
         zone_coast_types,
@@ -10269,6 +10734,7 @@ def main() -> int:
     )
     research_targets = rotating_research_targets + regional_proxy_targets
     research_run_metrics: dict[str, Any] = {
+        "regionalSourceProofMigration": regional_proof_migration,
         "rotationAdvancedThisRun": False,
         "samplesWrittenThisRun": 0,
         "cachedReplayAssetsThisRun": 0,
@@ -10489,10 +10955,20 @@ def main() -> int:
     for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
+            collection_minimum_valid_time = canonical_time(
+                locked_production_reference - timedelta(
+                    hours=(
+                        REGIONAL_PROXY_MAX_HOLD_HOURS
+                        if collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                        and regional_proxy_configuration_status == "CONFIGURED"
+                        else 0
+                    )
+                )
+            )
             run, assets, stac_stats = list_latest_assets(
                 collection,
                 previous_run.get("referenceTime"),
-                minimum_valid_time=canonical_time(locked_production_reference),
+                minimum_valid_time=collection_minimum_valid_time,
                 required_valid_times=required_current_valid_times,
                 required_horizon_end_time=required_current_horizon_end,
                 allow_documented_required_gaps=True,
@@ -10617,6 +11093,12 @@ def main() -> int:
     # the restored shadow header. Its result is advisory planning coverage only
     # and is never inserted into the native DMI pair/source evidence above.
     initial_planning_current_pairs: set[tuple[str, str]] | None = None
+    regional_planning_context: tuple[dict[str, Any], dict[str, Any]] | None = None
+    regional_target_part_ids = sorted({
+        str(target.get("partId") or "").strip()
+        for target in regional_proxy_targets
+        if str(target.get("partId") or "").strip()
+    })
     if global_current_planning_pairs is not None:
         acquisition_plan_diagnostics["regionalPlanningValid"] = False
         if regional_proxy_configuration_status == "CONFIGURED":
@@ -10627,6 +11109,10 @@ def main() -> int:
                 )
                 if not regional_dmi_result.validated:
                     raise ValueError("Regional planning requires validated DMI evidence")
+                regional_planning_context = (
+                    regional_dmi_result.ledger,
+                    regional_dmi_result.attestation,
+                )
                 regional_planning_pairs = planning_regional_covered_pairs(
                     dmi_ledger=regional_dmi_result.ledger,
                     dmi_attestation=regional_dmi_result.attestation,
@@ -10661,6 +11147,34 @@ def main() -> int:
             for part_id in current_target_ids
             for valid_time in required_current_valid_times
         )
+    initial_regional_lf_gap_pairs_by_time: dict[
+        str, set[tuple[str, str]]
+    ] = {}
+    if (
+        initial_planning_current_pairs is not None
+        and regional_planning_context is not None
+    ):
+        lf_run, lf_assets, _lf_stats = prefetched_marine.get(
+            REGIONAL_PROXY_REQUIRED_COLLECTION,
+            (None, [], {}),
+        )
+        initial_regional_lf_gap_pairs_by_time = (
+            regional_lf_asset_gap_pairs_by_time(
+                lf_assets,
+                lf_run,
+                regional_target_part_ids,
+                required_current_valid_times,
+                initial_planning_current_pairs,
+                locked_production_reference,
+            )
+        )
+        acquisition_plan_diagnostics["regionalCriticalAssetCount"] = len(
+            initial_regional_lf_gap_pairs_by_time
+        )
+        acquisition_plan_diagnostics["regionalPotentialPairCount"] = sum(
+            len(pairs)
+            for pairs in initial_regional_lf_gap_pairs_by_time.values()
+        )
 
     # Primary mode separates maintenance from critical acquisition. A DKSS
     # collection is refresh-only only when every selected official asset is
@@ -10690,6 +11204,13 @@ def main() -> int:
                     active_zone_ids=active_production_zone_ids,
                     enabled=True,
                     planning_covered_pair_keys=initial_planning_current_pairs,
+                    required_valid_times=required_current_valid_times,
+                    regional_current_gap_count=len(
+                        initial_regional_lf_gap_pairs_by_time.get(
+                            str(canonical_time(asset.get("valid")) or ""),
+                            set(),
+                        )
+                    ) if collection == REGIONAL_PROXY_REQUIRED_COLLECTION else 0,
                 )
                 for asset in selected_assets
             ]
@@ -10868,6 +11389,19 @@ def main() -> int:
             strict_current_reserve.get(pending, 0.0)
             for pending in pending_critical_current
         )
+        if (
+            collection_is_critical_current
+            and collection != strict_current_lead_collection
+            and not pending_critical_wam
+        ):
+            reserve_for_pending_critical = max(
+                reserve_for_pending_critical,
+                fair_nonlead_strict_current_runtime_reserve(
+                    pending_critical_current,
+                    runtime_remaining(),
+                    strict_current_reserve,
+                ),
+            )
         if should_stop_work():
             result["diagnostics"]["errors"].append({
                 "collection": collection,
@@ -10880,13 +11414,18 @@ def main() -> int:
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         collection_start_error_count = len(result["diagnostics"]["errors"])
         strict_current_lead_attempts = 0
-        strict_current_turn_started = False
         collection_refresh_only = (
             DKSS_PRIMARY_MODE
             and collection in primary_refresh_only_collections
         )
         state = result["collectionState"].setdefault(collection, {})
-        state["lastAttemptAt"] = generated
+        if begin_collection_scheduler_turn(
+            state,
+            collection,
+            strict_current_lead_collection,
+            generated,
+        ):
+            checkpoint_controller.mark_bulk_dirty()
         # Progress cadence is shared across collections by checkpoint_controller.
         # No collection-local checkpoint clock is maintained.
         try:
@@ -10914,6 +11453,10 @@ def main() -> int:
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
+            # The loop may replan only its unvisited LF suffix after each
+            # validated regional gain. Never mutate the prefetched official
+            # catalog used by the immutable T..T+117 ledger.
+            assets = list(assets)
             bootstrap_operational_wam = (
                 collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
@@ -11049,6 +11592,44 @@ def main() -> int:
                     if global_current_planning_pairs is not None
                     else priority_covered_pair_keys
                 )
+                regional_gap_pairs_by_time: dict[
+                    str, set[tuple[str, str]]
+                ] = {}
+                verified_reusable_regional_times: set[str] = set()
+                latest_regional_planning_pairs: set[tuple[str, str]] = set()
+                if (
+                    collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                    and regional_planning_context is not None
+                ):
+                    regional_gap_pairs_by_time = (
+                        regional_lf_asset_gap_pairs_by_time(
+                            assets,
+                            run,
+                            regional_target_part_ids,
+                            required_current_valid_times,
+                            planning_current_pairs,
+                            locked_production_reference,
+                        )
+                    )
+                    # Supplemental pre-target assets exist solely to close a
+                    # real regional hold gap. They are never quality work or
+                    # additions to the official current denominator.
+                    assets = [
+                        asset for asset in assets
+                        if canonical_time(asset.get("valid"))
+                            in required_current_valid_times
+                        or regional_gap_pairs_by_time.get(
+                            str(canonical_time(asset.get("valid")) or "")
+                        )
+                    ]
+                    verified_reusable_regional_times = (
+                        next_verified_reusable_regional_time(
+                            assets,
+                            collection,
+                            run,
+                            regional_gap_pairs_by_time,
+                        )
+                    )
                 acquisition_requirements = {
                     str(asset["valid"]): classify_dkss_primary_asset(
                         collection=collection,
@@ -11060,6 +11641,13 @@ def main() -> int:
                         active_zone_ids=active_production_zone_ids,
                         enabled=DKSS_PRIMARY_MODE,
                         planning_covered_pair_keys=planning_current_pairs,
+                        required_valid_times=required_current_valid_times,
+                        regional_current_gap_count=len(
+                            regional_gap_pairs_by_time.get(
+                                str(canonical_time(asset.get("valid")) or ""),
+                                set(),
+                            )
+                        ),
                     )
                     for asset in assets
                 } if global_current_planning_pairs is not None else {}
@@ -11079,6 +11667,16 @@ def main() -> int:
                             bool(row["deferValidRefresh"])
                             for row in acquisition_requirements.values()
                         ),
+                        "regionalCriticalAssetCount": len(
+                            regional_gap_pairs_by_time
+                        ),
+                        "regionalPotentialPairCount": sum(
+                            len(pairs)
+                            for pairs in regional_gap_pairs_by_time.values()
+                        ),
+                        "regionalReusableCriticalAssetCount": len(
+                            verified_reusable_regional_times
+                        ),
                     }
                 assets = prioritize_marine_assets_for_current_gaps(
                     assets,
@@ -11088,6 +11686,11 @@ def main() -> int:
                         valid_time: bool(row["critical"])
                         for valid_time, row in acquisition_requirements.items()
                     },
+                    direct_valid_times=required_current_valid_times,
+                    regional_gap_pairs_by_time=regional_gap_pairs_by_time,
+                    verified_reusable_valid_times=(
+                        verified_reusable_regional_times
+                    ),
                 )
             if (
                 collection in MARINE_COLLECTIONS
@@ -11563,6 +12166,13 @@ def main() -> int:
                             planning_current_pairs
                             if global_current_planning_pairs is not None else None
                         ),
+                        required_valid_times=required_current_valid_times,
+                        regional_current_gap_count=len(
+                            regional_gap_pairs_by_time.get(
+                                str(canonical_time(asset.get("valid")) or ""),
+                                set(),
+                            )
+                        ),
                     )
                     if primary_requirement["deferValidRefresh"]:
                         bounded_primary_refresh = (
@@ -11601,6 +12211,17 @@ def main() -> int:
                         else previously_processed
                     ),
                     primary_requirement,
+                    regional_observation_reusable=(
+                        collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                        and asset["valid"] in previously_processed
+                        and reusable_regional_asset_observation(
+                            previous_steps.get(asset["valid"]), current_shadow,
+                            processing_signature=processing_signature,
+                            target_registry_sha256=current_target_registry_sha256,
+                            policy=regional_proxy_policy,
+                            regional_part_ids=regional_target_part_ids,
+                        )
+                    ),
                 ):
                     if bootstrap_operational_wam:
                         wave_phase_proven_asset_keys.add(
@@ -11707,8 +12328,6 @@ def main() -> int:
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
                     )
-                if collection_is_critical_current:
-                    strict_current_turn_started = True
                 if bounded_primary_refresh:
                     primary_refresh_assets_remaining -= 1
                     run_info["assetsBoundedRefreshAttempted"] += 1
@@ -11806,6 +12425,7 @@ def main() -> int:
                 else:
                     step_source_asset = None
                 validated_current_stage: dict[str, Any] = {}
+                regional_input_changed = False
                 validated_wave_stage: dict[str, Any] = {}
                 validated_wave_rejections: dict[str, int] = {}
                 allowed_parameters = operational_asset_parameter_filter(
@@ -11977,6 +12597,46 @@ def main() -> int:
                     validated_current_stage["partOutcomeProof"] = proof
                     return True
 
+                def preserve_operational_regional_source(shadow_stage: dict[str, Any]) -> None:
+                    nonlocal regional_input_changed
+                    if (
+                        collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                        and regional_proxy_configuration_status == "CONFIGURED"
+                        and regional_lf_is_native_source_time(
+                            asset_model_run, asset["valid"],
+                        )
+                    ):
+                        observation_args = {
+                            "source_asset": step_source_asset,
+                            "processing_signature": processing_signature,
+                            "target_registry_sha256": current_target_registry_sha256,
+                            "policy": regional_proxy_policy,
+                            "regional_part_ids": regional_target_part_ids,
+                        }
+                        before_observation = regional_asset_observation(
+                            current_shadow, **observation_args,
+                        )
+                        capture_counts = capture_regional_source_proof(
+                            shadow_stage,
+                            previous_shadow=current_shadow,
+                            policy=regional_proxy_policy,
+                            targets=coastal_part_targets,
+                            source_asset=step_source_asset,
+                            part_outcome_proof=validated_current_stage["partOutcomeProof"],
+                            processing_signature=processing_signature,
+                        )
+                        after_observation = regional_asset_observation(
+                            shadow_stage, **observation_args,
+                        )
+                        regional_input_changed = (
+                            before_observation is None or after_observation is None
+                            or before_observation != after_observation
+                        )
+                        if (after_observation is not None
+                                and not capture_counts["invalidSamples"]
+                                and not capture_counts["blockedIndex"]):
+                            validated_current_stage["regionalObservation"] = after_observation
+
                 if bootstrap_operational_wam:
                     clear_wave_target_rejection_diagnostics(
                         result["diagnostics"],
@@ -11999,6 +12659,8 @@ def main() -> int:
                             failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
                             stage_validator=validate_operational_wave_stage,
                             current_stage_validator=validate_operational_current_stage,
+                            finalize_shadow_stage=preserve_operational_regional_source,
+                            locked_operational_reference=canonical_time(locked_production_reference),
                             trusted_current_pair_source_keys=(
                                 actual_current_pair_source_keys
                                 if collection in MARINE_COLLECTIONS
@@ -12252,6 +12914,8 @@ def main() -> int:
                            or bootstrap_operational_wam else {}),
                         **({"currentPartOutcomeProof": step_part_outcome_proof}
                            if collection in MARINE_COLLECTIONS else {}),
+                        **({"regionalObservation": validated_current_stage["regionalObservation"]}
+                           if "regionalObservation" in validated_current_stage else {}),
                         **({"waveTargetProof": step_wave_target_proof}
                            if bootstrap_operational_wam else {}),
                     }
@@ -12263,6 +12927,7 @@ def main() -> int:
                             step.get("complete") is True
                             for step in run_info["processedSteps"].values()
                         )
+                    native_planning_changed = False
                     if (
                         collection in MARINE_COLLECTIONS
                         and step_complete
@@ -12296,7 +12961,152 @@ def main() -> int:
                             actual_current_pair_source_keys.add(
                                 (*pair_identity, selected_source_key)
                             )
+                            if pair_identity not in covered_current_pair_keys:
+                                native_planning_changed = True
                             covered_current_pair_keys.add(pair_identity)
+                        priority_covered_pair_keys.update(covered_current_pair_keys)
+                        if global_current_planning_pairs is not None:
+                            planning_current_pairs = (
+                                global_current_planning_pairs | priority_covered_pair_keys
+                                | latest_regional_planning_pairs
+                            )
+                    if (
+                        collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                        and regional_planning_context is not None
+                        and global_current_planning_pairs is not None
+                        and (regional_input_changed or native_planning_changed)
+                    ):
+                        try:
+                            if regional_input_changed:
+                                latest_regional_planning_pairs = planning_regional_covered_pairs(
+                                    dmi_ledger=regional_planning_context[0],
+                                    dmi_attestation=regional_planning_context[1],
+                                    targets=coastal_part_targets,
+                                    regional_shadow=current_shadow,
+                                    regional_policy=regional_proxy_policy,
+                                    production_reference_at=canonical_time(
+                                        locked_production_reference
+                                    ),
+                                )
+                                run_info["regionalCoverageRebuildCount"] = int(
+                                    run_info.get("regionalCoverageRebuildCount") or 0
+                                ) + 1
+                            priority_covered_pair_keys.update(
+                                covered_current_pair_keys
+                            )
+                            planning_current_pairs = (
+                                global_current_planning_pairs
+                                | priority_covered_pair_keys
+                                | latest_regional_planning_pairs
+                            )
+                            remaining_assets = list(assets[asset_number:])
+                            regional_gap_pairs_by_time = (
+                                regional_lf_asset_gap_pairs_by_time(
+                                    remaining_assets,
+                                    run,
+                                    regional_target_part_ids,
+                                    required_current_valid_times,
+                                    planning_current_pairs,
+                                    locked_production_reference,
+                                )
+                            )
+                            remaining_assets = [
+                                remaining_asset
+                                for remaining_asset in remaining_assets
+                                if canonical_time(
+                                    remaining_asset.get("valid")
+                                ) in required_current_valid_times
+                                or regional_gap_pairs_by_time.get(
+                                    str(canonical_time(
+                                        remaining_asset.get("valid")
+                                    ) or "")
+                                )
+                            ]
+                            remaining_requirements = {
+                                str(remaining_asset["valid"]):
+                                    classify_dkss_primary_asset(
+                                        collection=collection,
+                                        model_run=run,
+                                        asset=remaining_asset,
+                                        target_ids=current_target_ids,
+                                        covered_pair_keys=(
+                                            priority_covered_pair_keys
+                                        ),
+                                        cached_zones=result.get("zones") or {},
+                                        active_zone_ids=(
+                                            active_production_zone_ids
+                                        ),
+                                        enabled=DKSS_PRIMARY_MODE,
+                                        planning_covered_pair_keys=(
+                                            planning_current_pairs
+                                        ),
+                                        required_valid_times=(
+                                            required_current_valid_times
+                                        ),
+                                        regional_current_gap_count=len(
+                                            regional_gap_pairs_by_time.get(
+                                                str(canonical_time(
+                                                    remaining_asset.get("valid")
+                                                ) or ""),
+                                                set(),
+                                            )
+                                        ),
+                                    )
+                                for remaining_asset in remaining_assets
+                            }
+                            acquisition_requirements.update(
+                                remaining_requirements
+                            )
+                            verified_reusable_regional_times = (
+                                next_verified_reusable_regional_time(
+                                    remaining_assets,
+                                    collection,
+                                    run,
+                                    regional_gap_pairs_by_time,
+                                )
+                            )
+                            assets[asset_number:] = (
+                                prioritize_marine_assets_for_current_gaps(
+                                    remaining_assets,
+                                    current_target_ids,
+                                    planning_current_pairs,
+                                    critical_by_time={
+                                        valid_time: bool(row["critical"])
+                                        for valid_time, row
+                                        in remaining_requirements.items()
+                                    },
+                                    direct_valid_times=(
+                                        required_current_valid_times
+                                    ),
+                                    regional_gap_pairs_by_time=(
+                                        regional_gap_pairs_by_time
+                                    ),
+                                    verified_reusable_valid_times=(
+                                        verified_reusable_regional_times
+                                    ),
+                                )
+                            )
+                            acquisition_plan_diagnostics[
+                                "regionalPriorityReplanCount"
+                            ] = int(acquisition_plan_diagnostics.get(
+                                "regionalPriorityReplanCount"
+                            ) or 0) + 1
+                            acquisition_plan_diagnostics[
+                                "regionalMissingPairCountAfterLastLfAsset"
+                            ] = len(regional_lf_missing_pair_keys(
+                                regional_target_part_ids,
+                                required_current_valid_times,
+                                planning_current_pairs,
+                            ))
+                        except (OSError, TypeError, ValueError, KeyError):
+                            # Planning evidence is advisory. On any validation
+                            # failure retain the existing conservative suffix;
+                            # never infer coverage or disturb committed rows.
+                            acquisition_plan_diagnostics[
+                                "regionalPriorityReplanFailureCount"
+                            ] = int(acquisition_plan_diagnostics.get(
+                                "regionalPriorityReplanFailureCount"
+                            ) or 0) + 1
                 if bootstrap_operational_wam and not interrupted:
                     wave_pending_touched.update(touched)
                 elif not bootstrap_operational_wam:
@@ -12690,16 +13500,6 @@ def main() -> int:
                 state["nextEligibleAt"] = None
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
-            if collection_is_critical_current and (
-                strict_current_turn_started
-                or deferred_only
-                or (
-                    collection_assets_complete
-                    and recognized >= required
-                )
-            ):
-                state["lastStrictCurrentTurnAt"] = generated
-                checkpoint_controller.mark_bulk_dirty()
             if (
                 not collection_refresh_only
                 and (

@@ -10,16 +10,24 @@ import math
 from pathlib import Path
 import sys
 import types
+import tempfile
 from unittest.mock import patch
 
 from lib.copernicus_target_identity import target_fingerprint
 from lib.current_operational_closure import build_regional_residual_plan
 from lib.dmi_native_provenance import (
+    build_current_part_outcome_proof,
+    build_retained_current_asset_proof,
     current_attestation_authorization_from_operational_ledger,
     current_source_asset_sha256,
     validate_current_operational_availability_ledger,
 )
 from lib import regional_current_operational as evidence
+from lib.current_field_shadow import prune, save_document, load_document, record_profiles
+from lib.regional_source_proofs import (
+    FIELD, SAMPLE_REF, capture_regional_source_proof,
+    migrate_regional_source_proofs,
+)
 
 
 REFERENCE = datetime(2026, 1, 1, 0, tzinfo=timezone.utc)
@@ -861,12 +869,265 @@ def test_null_run_catalog_outage_reaches_open_meteo_residual() -> None:
         expect_error(tampered_bundle, "DMI_LEDGER_SOURCE_INDEX_INVALID")
 
 
+def original_regional_proof(bundle: dict, source: dict, signature: str = "regional-test-decoder") -> dict:
+    target_ids = [row["partId"] for row in bundle["targets"]]
+    return {
+        "sourceAsset": source,
+        "processingSignature": signature,
+        "partOutcomeProof": build_current_part_outcome_proof(
+            target_ids, target_ids, target_fingerprint(bundle["targets"]),
+            signature, source,
+        ),
+    }
+
+
+def real_outage_bundle() -> dict:
+    """Real canonical ledger and attestation: no selected/native source remains."""
+    bundle = fixture()
+    document = {"schemaVersion": 2, "generatedAt": iso(0),
+                "zoneRegistrySignature": "regional-retention-test", "zones": {},
+                "runs": {}, "collectionState": {}, "diagnostics": {}}
+    ledger = producer.build_current_operational_ledger(document, bundle["targets"], REFERENCE, {})
+    allowed, retained = current_attestation_authorization_from_operational_ledger(ledger)
+    attestation = producer.current_operational_attestation(
+        document, bundle["targets"], REFERENCE, allowed, retained,
+    )
+    validate_current_operational_availability_ledger(
+        ledger, attestation, bundle["targets"], iso(0), iso(117),
+        target_fingerprint(bundle["targets"]),
+    )
+    bundle.update(dmi_ledger=ledger, dmi_attestation=attestation,
+                  dmi_gap_pairs=ledger["operationalComplementPairs"])
+    return bundle
+
+
+def bind_fixture(bundle: dict) -> list[dict]:
+    originals = [original_regional_proof(bundle, source_asset(offset)) for offset in (0, 117)]
+    counts = migrate_regional_source_proofs(
+        bundle["current_shadow"], policy=bundle["policy"], targets=bundle["targets"],
+        original_proofs=originals,
+    )
+    need(counts["boundSamples"] == 8 and counts["invalidProofs"] == 0,
+         "Original canonical outcomes must bind all eight synthetic samples")
+    return originals
+
+
+def test_durable_regional_proofs_survive_native_source_removal() -> None:
+    bundle = real_outage_bundle()
+    untouched_ledger = deepcopy(bundle["dmi_ledger"])
+    untouched_attestation = deepcopy(bundle["dmi_attestation"])
+    raw_result = evidence.build_regional_current_operational_evidence(**bundle)
+    need(raw_result["safeProjection"]["regionalNativePairCount"] == 0,
+         "Raw samples alone must not manufacture original source authority")
+    originals = bind_fixture(bundle)
+    result = evidence.build_regional_current_operational_evidence(**bundle)
+    safe = result["safeProjection"]
+    need(safe["regionalNativePairCount"] == 8 and safe["regionalDerivedHoldPairCount"] == 21
+         and safe["missingPairCount"] == 915,
+         "Original regional proofs survive complete removal of native source/selected run")
+    need(bundle["dmi_ledger"] == untouched_ledger and bundle["dmi_attestation"] == untouched_attestation,
+         "Regional proofs must never add native DMI attestation or coverage")
+    original = originals[0]
+    try:
+        build_retained_current_asset_proof(
+            original["sourceAsset"], original["processingSignature"], original["partOutcomeProof"],
+            [bundle["targets"][0]["partId"]], [row["partId"] for row in bundle["targets"]],
+            target_fingerprint(bundle["targets"]),
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Spatially unavailable regional part became native-attested")
+    plan = build_regional_residual_plan(
+        residual_pairs=bundle["dmi_gap_pairs"], regional_policy=bundle["policy"],
+        targets=bundle["targets"], regional_shadow=bundle["current_shadow"],
+        dmi_ledger=bundle["dmi_ledger"], dmi_attestation=bundle["dmi_attestation"],
+        locked_reference=iso(0),
+    )
+    need(len(plan["regionalAssignments"]) == 29 and len(plan["openMeteoRequiredPairs"]) == 915,
+         "Regional admission and downstream OM partition must use identical proof authority")
+    with tempfile.TemporaryDirectory() as temporary:
+        path = Path(temporary) / "shadow.json"
+        save_document(path, bundle["current_shadow"])
+        loaded = load_document(path)
+        need(loaded[FIELD] == bundle["current_shadow"][FIELD],
+             "Atomic shadow roundtrip must preserve original proofs with samples")
+        bundle["current_shadow"] = loaded
+        need(evidence.build_regional_current_operational_evidence(**bundle)["safeProjection"] == safe,
+             "Proof availability must survive independent cache reload")
+    shadow = bundle["current_shadow"]
+    source_count = len(shadow[FIELD]["sources"])
+    prune(shadow, iso(1))
+    need(len(shadow[FIELD]["sources"]) == source_count, "Native removal must not prune regional proofs")
+    for key in list(shadow["anchors"]):
+        if key != "REGIONAL_PROXY::SYNTHETIC-PART-07":
+            shadow["anchors"].pop(key)
+    prune(shadow, iso(1))
+    need(len(shadow[FIELD]["sources"]) == 1 and len(shadow[FIELD]["bindings"]) == 1,
+         "Only the last sample reference governs source-proof pruning")
+    prune(shadow, iso(169))
+    need(not shadow[FIELD]["sources"] and not shadow[FIELD]["bindings"],
+         "Proofs expire with their final removed sample, not as orphaned authority")
+
+
+def test_durable_regional_corruption_migration_and_recovery_are_leaf_scoped() -> None:
+    baseline = real_outage_bundle()
+    originals = bind_fixture(baseline)
+    broken = deepcopy(baseline)
+    sample_zero = broken["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
+    broken["current_shadow"][FIELD]["bindings"][sample_zero[SAMPLE_REF]]["sampleSha256"] = "sha256:" + "0" * 64
+    result = evidence.build_regional_current_operational_evidence(**broken)
+    need(result["safeProjection"]["missingPairCount"] == 919,
+         "One invalid binding must lose only its exact sample and three hold hours")
+    before_migration = deepcopy(broken["current_shadow"])
+    migrate_regional_source_proofs(broken["current_shadow"], policy=broken["policy"],
+                                  targets=broken["targets"], original_proofs=originals)
+    need(broken["current_shadow"] == before_migration,
+         "Migration must not resurrect a known invalid positive binding")
+    selected = fixture()
+    selected["current_shadow"] = deepcopy(broken["current_shadow"])
+    selected_result = invoke(selected)
+    need(all(row["classification"] == evidence.MISSING for row in selected_result["privateProof"]["pairRefs"]
+             if row["partId"] == "SYNTHETIC-PART-00"),
+         "Selected ledger fallback must not resurrect a known invalid sample proof")
+    changed_vector = deepcopy(baseline)
+    changed_vector["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]["layers"]["bottom"]["uMps"] += 0.1
+    need(evidence.build_regional_current_operational_evidence(**changed_vector)["safeProjection"]["missingPairCount"] == 919,
+         "Finite vector edits must invalidate their stored sample binding")
+    malformed = deepcopy(baseline)
+    malformed["current_shadow"][FIELD] = {"corrupt": "private-original"}
+    before = deepcopy(malformed["current_shadow"])
+    migrate_regional_source_proofs(malformed["current_shadow"], policy=malformed["policy"],
+                                  targets=malformed["targets"], original_proofs=originals)
+    need(malformed["current_shadow"] == before, "Migration cannot reset a malformed envelope")
+    counts = capture_regional_source_proof(
+        malformed["current_shadow"], policy=malformed["policy"], targets=malformed["targets"],
+        source_asset=originals[0]["sourceAsset"], part_outcome_proof=originals[0]["partOutcomeProof"],
+        processing_signature=originals[0]["processingSignature"],
+    )
+    need(counts["boundSamples"] == 7 and malformed["current_shadow"][FIELD]["quarantinedIndexes"] == [{"corrupt": "private-original"}],
+         "Fresh validated EOF may recover only its samples while preserving original corrupt metadata")
+    need(evidence.build_regional_current_operational_evidence(**malformed)["safeProjection"]["missingPairCount"] == 916,
+         "Envelope recovery must not silently resurrect an unrelated old sample")
+    rebound = real_outage_bundle()
+    rebound["targets"][0]["waterPoint"][0] += 0.0001
+    rebound_original = original_regional_proof(rebound, source_asset(0))
+    counts = capture_regional_source_proof(
+        rebound["current_shadow"], policy=rebound["policy"], targets=rebound["targets"],
+        source_asset=rebound_original["sourceAsset"], part_outcome_proof=rebound_original["partOutcomeProof"],
+        processing_signature=rebound_original["processingSignature"],
+    )
+    need(counts["boundSamples"] == 6, "Legitimate target rebinding must isolate the moved regional part")
+    conflicting = real_outage_bundle()
+    conflict_originals = [original_regional_proof(conflicting, source_asset(0), value) for value in ("decoder-one", "decoder-two")]
+    migrate_regional_source_proofs(conflicting["current_shadow"], policy=conflicting["policy"],
+                                  targets=conflicting["targets"], original_proofs=conflict_originals)
+    selected_conflict = fixture()
+    selected_conflict["current_shadow"] = conflicting["current_shadow"]
+    need(invoke(selected_conflict)["safeProjection"]["regionalNativePairCount"] == 1,
+         "Conflicting original decoder proofs must not choose the first or revive through the ledger")
+    duplicate = real_outage_bundle()
+    duplicate_rows = duplicate["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"]
+    duplicate_rows.append(deepcopy(duplicate_rows[0]))
+    migrate_regional_source_proofs(duplicate["current_shadow"], policy=duplicate["policy"],
+                                  targets=duplicate["targets"], original_proofs=originals)
+    need(evidence.build_regional_current_operational_evidence(**duplicate)["safeProjection"]["missingPairCount"] == 919,
+         "Migration must not turn duplicate ambiguity into a first-writer winner")
+    missing = real_outage_bundle()
+    counts = migrate_regional_source_proofs(missing["current_shadow"], policy=missing["policy"],
+        targets=missing["targets"], original_proofs=[{"sourceAsset": source_asset(0)}])
+    need(counts["invalidProofs"] == 1 and FIELD not in missing["current_shadow"],
+         "A source identity without original outcome proof must never authorize raw samples")
+
+
+def test_rejected_regional_replacement_preserves_only_valid_previous_leaf() -> None:
+    baseline = real_outage_bundle()
+    bind_fixture(baseline)
+    previous = baseline["current_shadow"]
+    untouched = deepcopy(previous)
+    part_id = "SYNTHETIC-PART-00"
+    anchor_id = f"REGIONAL_PROXY::{part_id}"
+    previous_sample = previous["anchors"][anchor_id]["samples"][0]
+    previous_ref = previous_sample[SAMPLE_REF]
+    previous_binding = deepcopy(previous[FIELD]["bindings"][previous_ref])
+    original = original_regional_proof(baseline, source_asset(0), "new-decoder")
+
+    def reread(stage: dict, distance_valid: bool) -> None:
+        target = deepcopy(previous["anchors"][anchor_id])
+        target.pop("samples")
+        point = [target["targetPoint"][0] + (0.11 if distance_valid else 0.03), 56.0]
+        choices = [{
+            "pointKey": point, "distanceKm": haversine_km(target["targetPoint"], point),
+            "layerKey": "depth:synthetic", "layerRank": 4.0,
+            "first": {"longitude": point[0], "latitude": point[1], "value": 0.14},
+            "second": {"longitude": point[0], "latitude": point[1], "value": -0.08},
+        }]
+        need(record_profiles(
+            stage, {anchor_id: target}, {anchor_id: choices}, "dkss_lf", iso(0), iso(0),
+            iso(1), current_source_asset_sha256(original["sourceAsset"]),
+            locked_operational_reference=iso(0),
+        ) == 1, "Genuine profile collection must stage the same-key replacement")
+        need(SAMPLE_REF not in stage["anchors"][anchor_id]["samples"][0],
+             "A new profile cannot inherit the previous sample's positive binding")
+
+    def capture(stage: dict, prior: dict) -> dict:
+        return capture_regional_source_proof(
+            stage, policy=baseline["policy"], targets=baseline["targets"],
+            source_asset=original["sourceAsset"], part_outcome_proof=original["partOutcomeProof"],
+            processing_signature=original["processingSignature"], previous_shadow=prior,
+        )
+
+    for fault in ("regular-distance", "missing-bottom"):
+        stage = deepcopy(previous)
+        reread(stage, fault != "regular-distance")
+        if fault == "missing-bottom":
+            stage["anchors"][anchor_id]["samples"][0]["layers"]["bottom"] = None
+        counts = capture(stage, previous)
+        need(counts["preservedSamples"] == 1 and counts["boundSamples"] == 6
+             and counts["invalidSamples"] == 1,
+             "A rejected fresh leaf must preserve one valid old leaf, not roll back sibling progress")
+        need(stage["anchors"][anchor_id]["samples"][0] == previous_sample
+             and stage[FIELD]["bindings"][previous_ref] == previous_binding
+             and stage[FIELD]["sources"][previous_binding["sourceProofSha256"]]
+             == previous[FIELD]["sources"][previous_binding["sourceProofSha256"]],
+             "Preservation must restore the exact sample, binding, and original decoder/outcome proof")
+        observed = {**baseline, "current_shadow": stage}
+        need(evidence.build_regional_current_operational_evidence(**observed)["safeProjection"]["missingPairCount"] == 915,
+             "Rejected replacement must lose zero previously authorized native/hold pairs")
+        need(previous == untouched, "Capture must never mutate the pre-stage shadow")
+
+    broken = deepcopy(previous)
+    broken[FIELD]["bindings"][previous_ref]["sampleSha256"] = "sha256:" + "0" * 64
+    broken_snapshot = deepcopy(broken)
+    rejected = deepcopy(broken)
+    reread(rejected, False)
+    need(capture(rejected, broken)["preservedSamples"] == 0,
+         "Known invalid old proof must never be resurrected to rescue an invalid new sample")
+    need(evidence.build_regional_current_operational_evidence(
+        **{**baseline, "current_shadow": rejected},
+    )["safeProjection"]["missingPairCount"] == 919,
+         "Rejected corrupt leaf remains isolated; no ledger fallback can recover it")
+    repaired = deepcopy(broken)
+    reread(repaired, True)
+    counts = capture(repaired, broken)
+    need(counts["boundSamples"] == 7 and counts["preservedSamples"] == 0,
+         "Valid genuine EOF still repairs a corrupt old sample binding")
+    need(evidence.build_regional_current_operational_evidence(
+        **{**baseline, "current_shadow": repaired},
+    )["safeProjection"]["missingPairCount"] == 915,
+         "Repaired positive source authority restores exact/hold coverage")
+    need(broken == broken_snapshot, "Recovery must not mutate the old corrupt snapshot")
+
+
 def main() -> None:
     test_native_hold_missing_offsets_and_privacy()
     test_policy_target_source_and_shadow_tamper_fail_closed()
     test_gap_domain_is_exact_bounded_and_ledger_bound()
     test_future_samples_vector_commitment_and_stored_proof_tamper()
     test_null_run_catalog_outage_reaches_open_meteo_residual()
+    test_durable_regional_proofs_survive_native_source_removal()
+    test_durable_regional_corruption_migration_and_recovery_are_leaf_scoped()
+    test_rejected_regional_replacement_preserves_only_valid_previous_leaf()
     print("OK: standalone regional DMI 118h evidence is bounded, hash-bound, and privacy-safe")
 
 

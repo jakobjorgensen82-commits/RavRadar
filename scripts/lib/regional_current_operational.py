@@ -23,6 +23,9 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
     from .current_field_shadow import (
         REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
     )
+    from .regional_source_proofs import (
+        create_regional_proof_context, regional_sample_authorization,
+    )
     from .dmi_native_provenance import (
         canonical_current_source_asset,
         canonical_time,
@@ -35,6 +38,9 @@ except ImportError:  # pragma: no cover - exercised by production-style import.
     from copernicus_target_identity import target_fingerprint
     from current_field_shadow import (
         REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
+    )
+    from regional_source_proofs import (
+        create_regional_proof_context, regional_sample_authorization,
     )
     from dmi_native_provenance import (
         canonical_current_source_asset,
@@ -526,6 +532,7 @@ def _validated_sample(
     target_registry_sha256: str,
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
     retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
+    durable_regional_source: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     if not isinstance(sample, dict):
         _fail("SHADOW_SAMPLE_INVALID")
@@ -571,6 +578,9 @@ def _validated_sample(
         source = retained_sources.get(
             (part_id, model_run, valid_time, source_asset_sha256)
         )
+        authorization_rank = 1
+    if source is None:
+        source = durable_regional_source
         authorization_rank = 1
     if source is None:
         _fail("SHADOW_SOURCE_ASSET_HASH_MISMATCH")
@@ -658,6 +668,7 @@ def _samples_by_part(
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
     retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
     selected_model_runs: frozenset[str],
+    regional_proof_context: dict[str, Any] | None = None,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     candidate_times: dict[str, set[str]] = {part_id: set() for part_id in bound_parts}
     for gap in gaps:
@@ -706,6 +717,15 @@ def _samples_by_part(
                 )
                 if collection != REQUIRED_COLLECTION or sample_model_run_dt > sample_time_dt:
                     _fail("SHADOW_SOURCE_BINDING_INVALID")
+                durable_source = None
+                if regional_proof_context is not None:
+                    proof_state, durable_source = regional_sample_authorization(
+                        regional_proof_context, part_id=part_id, sample=raw_sample,
+                    )
+                    if proof_state == "invalid":
+                        # A present broken binding is a known rejection. A
+                        # selected ledger asset must not resurrect that leaf.
+                        _fail("SHADOW_REGIONAL_SOURCE_PROOF_INVALID")
                 if sample_model_run not in selected_model_runs:
                     source_sha256 = raw_sample.get("sourceAssetSha256")
                     retained_identity = (
@@ -716,7 +736,8 @@ def _samples_by_part(
                     )
                     if (
                         not isinstance(source_sha256, str)
-                        or retained_identity not in retained_sources
+                        or (retained_identity not in retained_sources
+                            and durable_source is None)
                     ):
                         # Old unproved shadow bytes are irrelevant data-plane
                         # history. Only an exact retained per-pair proof may
@@ -730,6 +751,7 @@ def _samples_by_part(
                     target_registry_sha256=target_registry_sha256,
                     ledger_sources=ledger_sources,
                     retained_sources=retained_sources,
+                    durable_regional_source=durable_source,
                 )
             except RegionalCurrentOperationalError as error:
                 # The shadow is optional provider data, never a control plane.
@@ -1149,6 +1171,11 @@ def build_regional_current_operational_evidence(
         ledger_sources,
         retained_sources,
         selected_model_runs,
+        create_regional_proof_context(
+            shadow, target_ids=[str(row["partId"]) for row in targets],
+            policy_sha256=policy_sha256,
+            target_registry_sha256=target_registry_sha256,
+        ),
     )
     pair_refs = _classify_pairs(gaps, samples)
     native_count = sum(

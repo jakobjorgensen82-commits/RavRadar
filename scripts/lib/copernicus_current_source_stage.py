@@ -1014,13 +1014,14 @@ def _validate_attempts(
     return attempts
 
 
-def validate_source_stage_progress(
+def _validate_source_stage_progress(
     document: Any,
     *,
     registry: dict[str, Any],
     shadow: dict[str, Any],
     target_identities: dict[str, dict[str, Any]],
     shadow_sha256: str,
+    shadow_prevalidated: bool,
 ) -> dict[str, Any]:
     """Validate private resumable evidence without granting READY or closure."""
     stage = _exact_dict(
@@ -1043,7 +1044,12 @@ def validate_source_stage_progress(
         raise CopernicusSourceStageError(
             "Current central targets do not match the source-stage registry"
         )
-    shadow = validate_shadow(shadow, target_identities, require_collection=False)
+    if not shadow_prevalidated:
+        shadow = validate_shadow(
+            shadow,
+            target_identities,
+            require_collection=False,
+        )
     _validate_stage_positive(stage, shadow, targets)
     reference = _time(
         registry["productionReferenceAt"],
@@ -1156,6 +1162,25 @@ def validate_source_stage_progress(
         )
     _assert_no_vector_or_coordinate_fields(stage)
     return stage
+
+
+def validate_source_stage_progress(
+    document: Any,
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+) -> dict[str, Any]:
+    """Public strict validator for loaded or independently supplied files."""
+    return _validate_source_stage_progress(
+        document,
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+        shadow_prevalidated=False,
+    )
 
 
 def validate_reusable_source_stage(
@@ -1480,7 +1505,7 @@ def build_source_stage(
     )
 
 
-def build_source_stage_progress(
+def _build_source_stage_progress(
     *,
     registry: dict[str, Any],
     shadow: dict[str, Any],
@@ -1490,7 +1515,13 @@ def build_source_stage_progress(
     updated_at: datetime,
     positive_admissions: list[dict[str, Any]] | None = None,
     admission_attempts: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
+    shadow_prevalidated: bool,
+) -> tuple[
+    dict[str, Any],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
     """Build resumable private evidence, including a bound zero-attempt start."""
     registry = validate_target_registry(registry)
     reference = _time(
@@ -1557,12 +1588,100 @@ def build_source_stage_progress(
         "rawVectorsIncluded": False,
     }
     value["sourceStageId"] = _source_stage_id(value)
-    return validate_source_stage_progress(
+    validated = _validate_source_stage_progress(
         value,
         registry=registry,
         shadow=shadow,
         target_identities=target_identities,
         shadow_sha256=shadow_sha256,
+        shadow_prevalidated=shadow_prevalidated,
+    )
+    return validated, record_refs, missing_pairs, excluded_refs
+
+
+def build_source_stage_progress(
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+    attempts: list[dict[str, Any]],
+    updated_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Public strict builder for callers without a prepared shadow token."""
+    document, _, _, _ = _build_source_stage_progress(
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+        attempts=attempts,
+        updated_at=updated_at,
+        positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+        shadow_prevalidated=False,
+    )
+    return document
+
+
+def build_source_stage_progress_values(
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+    attempts: list[dict[str, Any]],
+    updated_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+) -> tuple[
+    dict[str, Any],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    """Strict build plus its already-computed source-order partition."""
+    return _build_source_stage_progress(
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+        attempts=attempts,
+        updated_at=updated_at,
+        positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+        shadow_prevalidated=False,
+    )
+
+
+def _build_source_stage_progress_from_validated_shadow(
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+    attempts: list[dict[str, Any]],
+    updated_at: datetime,
+    positive_admissions: list[dict[str, Any]] | None = None,
+    admission_attempts: list[dict[str, Any]] | None = None,
+) -> tuple[
+    dict[str, Any],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    """Internal build for the exact shadow already validated this transaction."""
+    return _build_source_stage_progress(
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+        attempts=attempts,
+        updated_at=updated_at,
+        positive_admissions=positive_admissions,
+        admission_attempts=admission_attempts,
+        shadow_prevalidated=True,
     )
 
 

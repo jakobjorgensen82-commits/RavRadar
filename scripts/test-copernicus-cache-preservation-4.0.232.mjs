@@ -102,12 +102,13 @@ assert.match(quarantineBlock, /len\(retained\) >= QUARANTINE_MAX_FILES_PER_PATH/
 assert.match(quarantineBlock, /retained_bytes \+ path\.stat\(\)\.st_size > QUARANTINE_MAX_BYTES_PER_PATH/);
 
 const bankCommitBlock = pythonFunctionBlock(copernicusRunner, 'commit_donor_bank');
-const archiveIndex = bankCommitBlock.indexOf('quarantine_invalid_private_file(');
+const prepareRecoveredBlock = pythonFunctionBlock(copernicusRunner, 'prepare_recovered_donor_replacement');
+const prepareIndex = bankCommitBlock.indexOf('prepare_recovered_donor_replacement(');
 const commitIndex = bankCommitBlock.indexOf('atomic_write_copernicus_donor_bank(');
 const outputIndex = bankCommitBlock.indexOf('mark_donor_bank_written()');
-assert.match(bankCommitBlock, /file_sha256\(path\) != original_sha/);
-assert.match(bankCommitBlock, /quarantine_invalid_private_file\(path, "recoverable donor bank", preserve_source=True\)/);
-assert.ok(archiveIndex >= 0 && archiveIndex < commitIndex && commitIndex < outputIndex,
+assert.match(prepareRecoveredBlock, /file_sha256\(path\) != original_sha/);
+assert.match(prepareRecoveredBlock, /quarantine_invalid_private_file\(path, "recoverable donor bank", preserve_source=True\)/);
+assert.ok(prepareIndex >= 0 && prepareIndex < commitIndex && commitIndex < outputIndex,
   'Recovered bytes must be archived without removing the bank before atomic promotion and its success flag.');
 assert.match(copernicusRunner,
   /quarantine_invalid_private_file\(args\.donor_bank, "donor bank", preserve_source=True\)/,
@@ -130,17 +131,28 @@ assert.match(
 assert.match(copernicusRunner,
   /donor_state = build_copernicus_donor_bank\(\s*merged_shadow,[\s\S]*?previous_bank=donor_state, production_reference_at=reference/);
 const bankBuildBlock = pythonFunctionBlock(copernicusBank, 'build_copernicus_donor_bank');
-assert.match(bankBuildBlock, /previous = validate_copernicus_donor_bank\(previous_bank, targets=targets\)/);
-assert.match(bankBuildBlock, /merge_cache_evidence\(previous\["shadow"\], shadow\["acquisitions"\]/);
-assert.match(bankBuildBlock, /masks\.extend\(previous\["sourceMasks"\]\)/,
+const internalBankBuildBlock = pythonFunctionBlock(copernicusBank, '_build_copernicus_donor_bank');
+const advanceBankBlock = pythonFunctionBlock(copernicusBank, '_advance_validated_copernicus_donor_bank');
+assert.match(bankBuildBlock, /trusted_previous_generation=False/,
+  'The public donor builder must always validate the previous generation.');
+assert.match(internalBankBuildBlock, /else validate_copernicus_donor_bank\(previous_bank, targets=targets\)/);
+assert.match(internalBankBuildBlock, /else merge_cache_evidence/);
+assert.match(internalBankBuildBlock, /merge\(\s*previous\["shadow"\],\s*shadow\["acquisitions"\]/);
+assert.match(internalBankBuildBlock, /masks\.extend\(previous\["sourceMasks"\]\)/,
   'Bank rebuild must retain source masks alongside the full prior donor reserve.');
-for (const name of ['persist_source_stage_progress', 'donor_candidate_projection']) {
-  const block = pythonFunctionBlock(copernicusRunner, name);
-  assert.match(block, /previous_bank=donor_state/,
-    `${name} must merge the full previous bank, not only its disposable projection.`);
-  assert.match(block, /projected_donor_shadow\(bank, targets=targets\)/,
-    `${name} must produce operational rows through the same mask-aware projection.`);
-}
+assert.match(advanceBankBlock, /trusted_previous_generation=True/);
+assert.match(advanceBankBlock, /return validate_copernicus_donor_bank\(candidate, targets=targets\)/,
+  'The sealed fast path must validate its completed candidate before returning it.');
+const progressBlock = pythonFunctionBlock(copernicusRunner, 'persist_source_stage_progress');
+assert.match(progressBlock, /previous_bank=donor_state/,
+  'persist_source_stage_progress must merge the full previous bank, not only its disposable projection.');
+assert.match(progressBlock, /donor_projection = _project_validated_donor_shadow\(\s*normalized_bank\s*\)/,
+  'Prepared progress must project only the donor generation validated in the same transaction.');
+const donorCandidateBlock = pythonFunctionBlock(copernicusRunner, 'donor_candidate_projection');
+assert.match(donorCandidateBlock, /previous_bank=donor_state/,
+  'donor_candidate_projection must merge the full previous bank, not only its disposable projection.');
+assert.match(donorCandidateBlock, /projected_donor_shadow\(bank, targets=targets\)/,
+  'The ordinary candidate path must keep the public mask-aware projection validator.');
 assert.match(
   copernicusRunner,
   /Persist a target\/DMI\/shadow-bound zero-attempt stage before credentials,[\s\S]{0,300}persist_source_stage_progress\(/,

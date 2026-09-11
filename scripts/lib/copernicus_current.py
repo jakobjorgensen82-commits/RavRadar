@@ -10,6 +10,8 @@ import hashlib
 import json
 import math
 import os
+import tempfile
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -68,6 +70,25 @@ def canonical_sha256(value: Any) -> str:
     return HASH_PREFIX + hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
+def _streaming_canonical_sha256(value: Any) -> str:
+    """Hash canonical JSON without retaining a second full serialized copy."""
+    digest = hashlib.sha256()
+    pending = bytearray()
+    encoder = json.JSONEncoder(
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    for fragment in encoder.iterencode(value):
+        pending.extend(fragment.encode("utf-8"))
+        if len(pending) >= 1024 * 1024:
+            digest.update(pending)
+            pending.clear()
+    digest.update(pending)
+    return HASH_PREFIX + digest.hexdigest()
+
+
 def file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -80,6 +101,182 @@ def valid_sha256(value: Any) -> bool:
     text = str(value or "")
     digest = text[len(HASH_PREFIX):] if text.startswith(HASH_PREFIX) else ""
     return len(digest) == 64 and all(character in "0123456789abcdef" for character in digest)
+
+
+_PREPARED_JSON_SNAPSHOT_SEAL = object()
+_VERIFIED_PREPARED_JSON_SNAPSHOT_SEAL = object()
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedJsonSnapshot:
+    """An exact, already-serialized JSON candidate awaiting atomic promotion.
+
+    Domain modules must validate the document before calling the private
+    factory below.  The snapshot owns one spooled payload instead of retaining
+    another potentially large serialized copy in memory.  Its document is
+    private and content-bound so accidental mutation is rejected before use.
+    """
+
+    destination: Path
+    temporary: Path
+    payloadSha256: str
+    payloadSize: int
+    documentSha256: str
+    bindingSha256: str
+    _document: dict[str, Any] = field(repr=False)
+    _seal: object = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedPreparedJsonSnapshot:
+    """Single-process proof checked immediately before the first commit."""
+
+    snapshot: PreparedJsonSnapshot
+    _seal: object = field(repr=False)
+
+
+def _prepared_json_binding(binding: dict[str, Any]) -> str:
+    if not isinstance(binding, dict):
+        raise TypeError("Prepared JSON binding must be an object")
+    return canonical_sha256(binding)
+
+
+def _prepare_validated_json_snapshot(
+    path: Path,
+    document: dict[str, Any],
+    *,
+    binding: dict[str, Any],
+    indent: int | None,
+    max_bytes: int | None = None,
+) -> PreparedJsonSnapshot:
+    """Serialize one semantically validated document to a bounded temp file."""
+    if not isinstance(document, dict):
+        raise TypeError("Prepared JSON document must be an object")
+    document_sha256 = _streaming_canonical_sha256(document)
+    binding_sha256 = _prepared_json_binding(binding)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, raw_temporary = tempfile.mkstemp(
+        prefix=f".{path.name}.prepared-",
+        suffix=".tmp",
+        dir=path.parent,
+    )
+    os.close(descriptor)
+    temporary = Path(raw_temporary)
+    try:
+        payload_digest = hashlib.sha256()
+        payload_size = 0
+        encoder_options: dict[str, Any] = {
+            "ensure_ascii": False,
+            "allow_nan": False,
+            "indent": indent,
+        }
+        if indent is None:
+            encoder_options["separators"] = (",", ":")
+        encoder = json.JSONEncoder(**encoder_options)
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            for fragment in encoder.iterencode(document):
+                encoded = fragment.encode("utf-8")
+                payload_digest.update(encoded)
+                payload_size += len(encoded)
+                if max_bytes is not None and payload_size + 1 > max_bytes:
+                    raise ValueError("Prepared JSON payload size is invalid")
+                handle.write(fragment)
+            payload_digest.update(b"\n")
+            payload_size += 1
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        payload_sha256 = HASH_PREFIX + payload_digest.hexdigest()
+        if (
+            payload_size <= 0
+            or temporary.stat().st_size != payload_size
+            or file_sha256(temporary) != payload_sha256
+        ):
+            raise RuntimeError("Prepared JSON write/readback differs")
+        return PreparedJsonSnapshot(
+            destination=path,
+            temporary=temporary,
+            payloadSha256=payload_sha256,
+            payloadSize=payload_size,
+            documentSha256=document_sha256,
+            bindingSha256=binding_sha256,
+            _document=document,
+            _seal=_PREPARED_JSON_SNAPSHOT_SEAL,
+        )
+    except Exception:
+        if temporary.exists():
+            temporary.unlink()
+        raise
+
+
+def _prepared_json_document(
+    snapshot: PreparedJsonSnapshot,
+    *,
+    binding: dict[str, Any],
+) -> dict[str, Any]:
+    if (
+        not isinstance(snapshot, PreparedJsonSnapshot)
+        or snapshot._seal is not _PREPARED_JSON_SNAPSHOT_SEAL
+        or snapshot.bindingSha256 != _prepared_json_binding(binding)
+    ):
+        raise RuntimeError("Prepared JSON snapshot identity changed")
+    return snapshot._document
+
+
+def _verify_prepared_json_document(
+    snapshot: PreparedJsonSnapshot,
+    *,
+    binding: dict[str, Any],
+) -> dict[str, Any]:
+    document = _prepared_json_document(snapshot, binding=binding)
+    if _streaming_canonical_sha256(document) != snapshot.documentSha256:
+        raise RuntimeError("Prepared JSON document changed")
+    return document
+
+
+def _verify_prepared_json_snapshot(
+    snapshot: PreparedJsonSnapshot,
+    *,
+    binding: dict[str, Any],
+) -> VerifiedPreparedJsonSnapshot:
+    """Check document identity and exact spooled bytes once before mutation."""
+    _verify_prepared_json_document(snapshot, binding=binding)
+    temporary = snapshot.temporary
+    if (
+        not temporary.exists()
+        or temporary.is_symlink()
+        or not temporary.is_file()
+        or temporary.stat().st_size != snapshot.payloadSize
+        or file_sha256(temporary) != snapshot.payloadSha256
+    ):
+        raise RuntimeError("Prepared JSON payload changed before commit")
+    return VerifiedPreparedJsonSnapshot(
+        snapshot=snapshot,
+        _seal=_VERIFIED_PREPARED_JSON_SNAPSHOT_SEAL,
+    )
+
+
+def _commit_verified_json_snapshot(
+    verified: VerifiedPreparedJsonSnapshot,
+) -> dict[str, Any]:
+    if (
+        not isinstance(verified, VerifiedPreparedJsonSnapshot)
+        or verified._seal is not _VERIFIED_PREPARED_JSON_SNAPSHOT_SEAL
+    ):
+        raise RuntimeError("Prepared JSON snapshot lacks precommit verification")
+    snapshot = verified.snapshot
+    os.replace(snapshot.temporary, snapshot.destination)
+    return snapshot._document
+
+
+def _discard_prepared_json_snapshot(snapshot: PreparedJsonSnapshot | None) -> None:
+    if (
+        snapshot is not None
+        and isinstance(snapshot, PreparedJsonSnapshot)
+        and snapshot._seal is _PREPARED_JSON_SNAPSHOT_SEAL
+        and snapshot.temporary.exists()
+    ):
+        snapshot.temporary.unlink()
 
 
 def fixed_decimal(value: Any, places: int) -> str:
@@ -1734,7 +1931,7 @@ def load_shadow(
     return shadow
 
 
-def merge_cache_evidence(
+def _merge_cache_evidence_unvalidated(
     existing: dict[str, Any],
     new_acquisitions: list[dict[str, Any]],
     new_records: list[dict[str, Any]],
@@ -1756,6 +1953,23 @@ def merge_cache_evidence(
     used_acquisition_ids = {row["acquisitionId"] for row in records.values()}
     retained_acquisitions = [acquisitions[key] for key in sorted(used_acquisition_ids) if key in acquisitions]
     retained_records = sorted(records.values(), key=lambda row: (row["validTime"], row["partId"], row["recordId"]))
+    return retained_acquisitions, retained_records
+
+
+def merge_cache_evidence(
+    existing: dict[str, Any],
+    new_acquisitions: list[dict[str, Any]],
+    new_records: list[dict[str, Any]],
+    production_reference_at: datetime,
+    target_identities: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    retained_acquisitions, retained_records = _merge_cache_evidence_unvalidated(
+        existing,
+        new_acquisitions,
+        new_records,
+        production_reference_at,
+        target_identities,
+    )
     candidate = empty_shadow(production_reference_at)
     candidate["acquisitions"] = retained_acquisitions
     candidate["records"] = retained_records

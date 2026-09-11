@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import runpy
 import subprocess
 import sys
@@ -25,7 +26,10 @@ from lib.copernicus_current import (
 )
 from lib.copernicus_target_identity import target_fingerprint
 from lib.copernicus_current_donor_bank import validate_copernicus_donor_bank
-from lib.copernicus_current_source_stage import validate_source_stage
+from lib.copernicus_current_source_stage import (
+    validate_source_stage,
+    validate_source_stage_progress,
+)
 from lib.current_operational_closure import (
     ADVISORY_ASSIGNMENT_CONTRACT_ID,
     ADVISORY_RECORD_REF_CONTRACT_ID,
@@ -40,6 +44,7 @@ LIVE_CURRENT = runpy.run_path(str(ROOT / "scripts/build-live-current-pilot.py"))
 OPEN_METEO_CURRENT = runpy.run_path(
     str(ROOT / "scripts/fill-open-meteo-current-fallback.py")
 )
+CURRENT_RUNNER = runpy.run_path(str(RUNNER))
 REFERENCE = datetime(2026, 8, 29, 8, tzinfo=timezone.utc)
 FUTURE = REFERENCE + timedelta(hours=117)
 TARGET = {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [9.1, 57.0]}
@@ -47,6 +52,116 @@ RESUME_TARGETS = [
     {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [10.0, 57.0]},
     {"partId": "p2", "parentZoneId": "z1", "name": "P2", "waterPoint": [12.0, 57.0]},
 ]
+AMM_UNLOCK_TARGETS = [
+    {"partId": "amm-only", "parentZoneId": "z1", "name": "AMM only", "waterPoint": [8.8, 56.0]},
+    {"partId": "baltic-only", "parentZoneId": "z1", "name": "Baltic only", "waterPoint": [10.5, 56.0]},
+    {"partId": "overlap", "parentZoneId": "z1", "name": "Overlap", "waterPoint": [8.95, 56.0]},
+]
+
+
+def check_operational_rotation_cadence() -> None:
+    """Use real datetimes and actual fixed-cell queues at observed sizes."""
+    products = CURRENT_RUNNER["PRODUCTS"]
+    # Synthetic, disjoint provider-domain points yield exactly the observed
+    # 34 Baltic / 9 AMM queue lengths through the real shard builder.
+    targets = [
+        {"partId": f"bal-{index:02d}", "parentZoneId": "synthetic", "name": "x",
+         "waterPoint": [10.5 + (index % 4) * 1.25, 54.0 + (index // 4) * 0.75]}
+        for index in range(34)
+    ] + [
+        {"partId": f"amm-{index:02d}", "parentZoneId": "synthetic", "name": "x",
+         "waterPoint": [8.0, 50.0 + index * 0.75]}
+        for index in range(9)
+    ]
+    original_targets = json.dumps(targets, sort_keys=True)
+    shards_by_source = {
+        product["source"]: CURRENT_RUNNER["spatial_shards"](
+            [row for row in targets if CURRENT_RUNNER["eligible_target"](row, product)],
+            product,
+        )
+        for product in products
+    }
+    assert [len(shards_by_source[product["source"]]) for product in products] == [34, 9]
+    def order_at(at: datetime, *, reverse: bool = False) -> list[dict]:
+        return CURRENT_RUNNER["operational_shard_work_order"](
+            targets=list(reversed(targets)) if reverse else targets,
+            acquisition_at=at,
+        )
+    def head_by_source(at: datetime) -> dict[str, int]:
+        heads = {}
+        for row in order_at(at):
+            heads.setdefault(row["product"]["source"], row["shardIndex"])
+        return heads
+    attempts = {"RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL": "0", "GITHUB_RUN_ATTEMPT": "1"}
+    with patch.dict(os.environ, attempts):
+        for quarter in range(4):
+            acquisition = REFERENCE + timedelta(minutes=15 * quarter + 7, seconds=19)
+            for source, shards in shards_by_source.items():
+                count = len(shards)
+                # Hourly service at an unchanged quarter must visit EVERY head,
+                # not just the even half of the 34-shard Baltic queue.
+                hourly_heads = [head_by_source(acquisition + timedelta(hours=hour))[source]
+                                for hour in range(count)]
+                assert set(hourly_heads) == set(range(count))
+                assert all((second - first) % count == 1
+                           for first, second in zip(hourly_heads, hourly_heads[1:]))
+                # Quarter-hour service spreads across four bands, including
+                # starts on each quarter and passage through UTC hour boundaries.
+                run_count = 4 * ((count + 3) // 4 + 1)
+                quarter_heads = [head_by_source(acquisition + timedelta(minutes=15 * step))[source]
+                                 for step in range(run_count)]
+                assert set(quarter_heads) == set(range(count))
+                assert len(set(quarter_heads[:4])) == 4
+                # The forecast reference stays REFERENCE; a +15min retry is
+                # ordered by acquisition time and therefore moves immediately.
+                assert quarter_heads[0] != quarter_heads[1]
+            ordered = order_at(acquisition)
+            assert ordered == order_at(acquisition, reverse=True)
+            assert [row["product"]["source"] for row in ordered[:18]] == [
+                product["source"] for _ in range(9) for product in products
+            ]
+            assert len(ordered) == 43
+            for row in ordered:
+                assert row["shard"] == shards_by_source[row["product"]["source"]][row["shardIndex"]]
+        # Neither a timezone representation nor sub-quarter start jitter
+        # changes ordering; bounded oneoff/GitHub retries do move it.
+        base = REFERENCE + timedelta(minutes=22)
+        assert order_at(base) == order_at(base.astimezone(timezone(timedelta(hours=2))))
+        assert order_at(base) == order_at(base + timedelta(minutes=6, seconds=59))
+        for outer, github in ((0, 1), (1, 1), (2, 1), (0, 2), (2, 100)):
+            with patch.dict(os.environ, {"RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL": str(outer),
+                                         "GITHUB_RUN_ATTEMPT": str(github)}):
+                heads = head_by_source(base)
+                for source, shards in shards_by_source.items():
+                    count = len(shards)
+                    expected = (int(base.timestamp() // 3600) + count // 4 + outer + github - 1) % count
+                    assert heads[source] == expected
+        for bad in (0, -1, True, "34"):
+            try:
+                CURRENT_RUNNER["operational_rotation_slot"](base, shard_count=bad)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Invalid shard count must not select an arbitrary head")
+        for values in ({"RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL": "3"},
+                       {"GITHUB_RUN_ATTEMPT": "0"}, {"GITHUB_RUN_ATTEMPT": "101"}):
+            with patch.dict(os.environ, values):
+                try:
+                    CURRENT_RUNNER["operational_rotation_slot"](base, shard_count=34)
+                except ValueError:
+                    pass
+                else:
+                    raise AssertionError("Out-of-contract attempts must not steer scheduling")
+        try:
+            CURRENT_RUNNER["operational_rotation_slot"](base.replace(tzinfo=None), shard_count=34)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Naive datetimes must not depend on the runner's local timezone")
+    assert json.dumps(targets, sort_keys=True) == original_targets
+
+
+check_operational_rotation_cadence()
 
 
 def write(path: Path, value: object) -> None:
@@ -183,6 +298,54 @@ def resume_registry(dmi_sha: str) -> dict:
     }
 
 
+def amm_unlock_registry(dmi_sha: str) -> dict:
+    operational_pairs = [
+        {"partId": "amm-only", "validTime": REFERENCE.isoformat().replace("+00:00", "Z")},
+        {"partId": "overlap", "validTime": FUTURE.isoformat().replace("+00:00", "Z")},
+    ]
+    advisory_pairs: list[dict[str, str]] = []
+    return {
+        "schemaVersion": 3,
+        "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
+        "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
+        "selectionMode": "dmi-gaps-only",
+        "productionReferenceAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "targetHour": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "rangeStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "rangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "coldBridgeHours": 48, "publicHourCount": 118, "matrixHourCount": 166,
+        "operationalRangeStartAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "operationalRangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "operationalHourCount": 118,
+        "advisoryHistoryStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryEndAt": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryHourCount": 48,
+        "targetCount": 3, "sourcePartCount": 3, "partCount": 2,
+        "operationalPartCount": 2, "advisoryHistoryPartCount": 0,
+        "targetRegistrySha256": target_fingerprint(AMM_UNLOCK_TARGETS),
+        "dmiCurrentInputSha256": dmi_sha,
+        "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
+        "operationalRequiredPairsSha256": required_pairs_sha256(operational_pairs),
+        "operationalRequiredPairCount": 2,
+        "operationalDmiVerifiedPairCount": 352,
+        "operationalTotalPairCount": 354,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_pairs),
+        "advisoryHistoryRequiredPairCount": 0,
+        "advisoryHistoryDmiVerifiedPairCount": 144,
+        "advisoryHistoryTotalPairCount": 144,
+        "dmiVerifiedPairCount": 496, "totalPairCount": 498,
+        "coordinatesChanged": False,
+        "targets": AMM_UNLOCK_TARGETS,
+        "operationalRequiredPairs": operational_pairs,
+        "advisoryHistoryRequiredPairs": advisory_pairs,
+        "zones": {"z1": [
+            {"partId": row["partId"], "sourceZoneId": "z1", "name": row["name"], "waterPoint": row["waterPoint"]}
+            for row in AMM_UNLOCK_TARGETS
+            if row["partId"] in {"amm-only", "overlap"}
+        ]},
+    }
+
+
 def legacy_record(valid_time: datetime) -> dict:
     return {
         "partId": "p1", "parentZoneId": "z1", "name": "P1",
@@ -200,10 +363,11 @@ def legacy_record(valid_time: datetime) -> dict:
 def run(
     folder: Path,
     shadow_name: str = "cache.json",
-    fixture_name: str = "fixtures",
+    fixture_name: str | None = "fixtures",
     *,
     refresh_only: bool = False,
     acquisition_minutes: int = 10,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     command = [
         sys.executable, "-B", str(RUNNER),
@@ -215,12 +379,14 @@ def run(
         "--summary", str(folder / f"{shadow_name}.summary.txt"),
         "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
         "--acquisition-at", (REFERENCE + timedelta(minutes=acquisition_minutes)).isoformat().replace("+00:00", "Z"),
-        "--fixture-directory", str(folder / fixture_name),
     ]
+    if fixture_name is not None:
+        command.extend(["--fixture-directory", str(folder / fixture_name)])
     if refresh_only:
         command.append("--refresh-only")
     return subprocess.run(
         command, cwd=ROOT, capture_output=True, text=True, check=False,
+        env=env,
     )
 
 
@@ -274,6 +440,113 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert cache["acquisitions"][0]["requestEndAt"] == FUTURE.isoformat().replace("+00:00", "Z")
     report_text = (folder / "cache.json.report.json").read_text(encoding="utf-8").lower()
     assert all(token not in report_text for token in ("samplingpoint", "gridpoint", "umps", "vmps"))
+
+    # If an AMM segment fails before a later Baltic shard unlocks another,
+    # independently requested AMM segment, the failed exact segment must not
+    # hide the newly actionable one. The failed request creates no witness.
+    amm_unlock_folder = folder / "amm-unlock"
+    amm_unlock_folder.mkdir()
+    shim_folder = amm_unlock_folder / "shim"
+    shim_folder.mkdir()
+    write(amm_unlock_folder / "targets.json", {
+        "partCount": 3,
+        "zones": {"z1": [
+            {"partId": row["partId"], "sourceZoneId": "z1", "name": row["name"], "waterPoint": row["waterPoint"]}
+            for row in AMM_UNLOCK_TARGETS
+        ]},
+    })
+    write(amm_unlock_folder / "dmi.json", {"fixture": "amm-segment-unlock"})
+    amm_unlock_document = amm_unlock_registry(
+        file_sha256(amm_unlock_folder / "dmi.json")
+    )
+    write(amm_unlock_folder / "registry.json", amm_unlock_document)
+    baltic_empty = amm_unlock_folder / "baltic-empty.nc"
+    amm_future = amm_unlock_folder / "amm-future.nc"
+    data.isel(time=[0]).assign_coords(
+        latitude=[56.0], longitude=[8.95]
+    ).to_netcdf(baltic_empty)
+    data.isel(time=[1]).assign_coords(
+        latitude=[56.0], longitude=[8.95]
+    ).to_netcdf(amm_future)
+    (shim_folder / "copernicusmarine.py").write_text(
+        "import os\n"
+        "from types import SimpleNamespace\n"
+        "def subset(**kwargs):\n"
+        "    if kwargs['dataset_id'].startswith('cmems_mod_nws'):\n"
+        "        if kwargs['start_datetime'].isoformat() == os.environ['TEST_FAILED_START']:\n"
+        "            raise RuntimeError('synthetic first AMM segment failure')\n"
+        "        return SimpleNamespace(file_path=os.environ['TEST_AMM_FIXTURE'])\n"
+        "    return SimpleNamespace(file_path=os.environ['TEST_BALTIC_FIXTURE'])\n",
+        encoding="utf-8",
+    )
+    amm_unlock_env = os.environ.copy()
+    amm_unlock_env.update({
+        "PYTHONPATH": str(shim_folder) + os.pathsep + amm_unlock_env.get("PYTHONPATH", ""),
+        "COPERNICUSMARINE_SERVICE_USERNAME": "fixture-user",
+        "COPERNICUSMARINE_SERVICE_PASSWORD": "fixture-password",
+        "RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL": "0",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "TEST_FAILED_START": REFERENCE.isoformat(),
+        "TEST_AMM_FIXTURE": str(amm_future),
+        "TEST_BALTIC_FIXTURE": str(baltic_empty),
+    })
+    amm_unlock_run = run(
+        amm_unlock_folder,
+        fixture_name=None,
+        acquisition_minutes=40,
+        env=amm_unlock_env,
+    )
+    assert amm_unlock_run.returncode == 75, (
+        amm_unlock_run.stdout + amm_unlock_run.stderr
+    )
+    assert amm_unlock_run.stderr.count(
+        "source=copernicus-nws-amm15"
+    ) == 1
+    assert "requestedPairCount=1" in amm_unlock_run.stderr
+    assert "failedShardCount=1" in amm_unlock_run.stderr
+    amm_unlock_shadow = validate_shadow(
+        json.loads((amm_unlock_folder / "cache.json").read_text(encoding="utf-8")),
+        {row["partId"]: row for row in AMM_UNLOCK_TARGETS},
+    )
+    amm_unlock_stage = validate_source_stage_progress(
+        json.loads((amm_unlock_folder / "cache.json.source-stage.json").read_text(
+            encoding="utf-8"
+        )),
+        registry=amm_unlock_document,
+        shadow=amm_unlock_shadow,
+        target_identities={row["partId"]: row for row in AMM_UNLOCK_TARGETS},
+        shadow_sha256=file_sha256(amm_unlock_folder / "cache.json"),
+    )
+    assert amm_unlock_stage["selectedRecordRefCount"] == 1
+    expected_amm_unlock_missing = [{
+        "partId": "amm-only",
+        "validTime": REFERENCE.isoformat().replace("+00:00", "Z"),
+    }]
+    assert amm_unlock_stage["missingPairCount"] == 1
+    assert amm_unlock_stage["missingPairsSha256"] == required_pairs_sha256(
+        expected_amm_unlock_missing
+    )
+    assert len(amm_unlock_stage["attempts"]) == 2
+    baltic_attempt = next(
+        row for row in amm_unlock_stage["attempts"]
+        if row["source"] == "copernicus-baltic-nemo"
+    )
+    amm_attempt = next(
+        row for row in amm_unlock_stage["attempts"]
+        if row["source"] == "copernicus-nws-amm15"
+    )
+    assert baltic_attempt["requestedPairs"] == [{
+        "partId": "overlap",
+        "validTime": FUTURE.isoformat().replace("+00:00", "Z"),
+    }]
+    assert baltic_attempt["parsedRecordCount"] == 0
+    assert amm_attempt["requestedPairs"] == baltic_attempt["requestedPairs"]
+    assert amm_attempt["parsedRecordCount"] == 1
+    assert all(
+        pair["partId"] != "amm-only"
+        for attempt in amm_unlock_stage["attempts"]
+        for pair in attempt["requestedPairs"]
+    )
 
     # Schema 3 must keep complete target..+117 operation deployable even when
     # bounded advisory backfill cannot recover the historical DMI gap.
@@ -364,6 +637,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
         if row["validTime"]
         == (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
     }
+
+
     assert len(advisory_record_ids_before_primary) == 1
 
     advisory_run = run(
@@ -594,13 +869,36 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     )
     assert partial_stage["status"] == "IN_PROGRESS"
     assert partial_stage["missingPairCount"] == 1
-    assert len(partial_stage["attempts"]) == 1
-    assert partial_stage["attempts"][0]["source"] == "copernicus-baltic-nemo"
-    assert partial_stage["attempts"][0]["requestedPairCount"] == 2
-    assert partial_stage["attempts"][0]["parsedRecordCount"] == 1
-    assert partial_stage["attempts"][0]["observedNativeValidTimes"] == [
+    assert len(partial_stage["attempts"]) == 2
+    assert {
+        attempt["source"] for attempt in partial_stage["attempts"]
+    } == {"copernicus-baltic-nemo"}
+    partial_attempt_by_time = {
+        attempt["requestedPairs"][0]["validTime"]: attempt
+        for attempt in partial_stage["attempts"]
+    }
+    assert set(partial_attempt_by_time) == {
+        REFERENCE.isoformat().replace("+00:00", "Z"),
+        FUTURE.isoformat().replace("+00:00", "Z"),
+    }
+    assert all(
+        attempt["requestedPairCount"] == 1
+        for attempt in partial_stage["attempts"]
+    )
+    assert partial_attempt_by_time[
+        REFERENCE.isoformat().replace("+00:00", "Z")
+    ]["parsedRecordCount"] == 1
+    assert partial_attempt_by_time[
+        REFERENCE.isoformat().replace("+00:00", "Z")
+    ]["observedNativeValidTimes"] == [
         REFERENCE.isoformat().replace("+00:00", "Z")
     ]
+    assert partial_attempt_by_time[
+        FUTURE.isoformat().replace("+00:00", "Z")
+    ]["parsedRecordCount"] == 0
+    assert partial_attempt_by_time[
+        FUTURE.isoformat().replace("+00:00", "Z")
+    ]["observedNativeValidTimes"] == []
     validate_copernicus_donor_bank(
         json.loads((operational_partial / "copernicus-current-donor-bank.json").read_text(
             encoding="utf-8"
@@ -633,10 +931,16 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
         "validTime": FUTURE.isoformat().replace("+00:00", "Z"),
     }]
     assert [row["source"] for row in residual_stage["attempts"]] == [
-        "copernicus-baltic-nemo", "copernicus-nws-amm15",
+        "copernicus-baltic-nemo",
+        "copernicus-baltic-nemo",
+        "copernicus-nws-amm15",
     ]
-    assert residual_stage["attempts"][1]["parsedRecordCount"] == 0
-    assert residual_stage["attempts"][1]["observedNativeValidTimes"] == []
+    residual_amm_attempt = next(
+        row for row in residual_stage["attempts"]
+        if row["source"] == "copernicus-nws-amm15"
+    )
+    assert residual_amm_attempt["parsedRecordCount"] == 0
+    assert residual_amm_attempt["observedNativeValidTimes"] == []
     validate_source_stage(
         residual_stage,
         registry=operational_partial_registry,
@@ -747,13 +1051,18 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
 
     interrupted = run(resume_folder, "cache.json", "partial-fixtures")
     assert interrupted.returncode == 75
-    assert "source=copernicus-baltic-nemo, shardIndex=1" in interrupted.stderr
+    assert interrupted.stderr.count(
+        "source=copernicus-baltic-nemo, shardIndex=1"
+    ) == 2
+    assert "failedShardCount=2" in interrupted.stderr
     checkpoint = validate_shadow(
         json.loads((resume_folder / "cache.json").read_text(encoding="utf-8")),
         {row["partId"]: row for row in RESUME_TARGETS},
     )
     assert checkpoint["collections"] == []
-    assert len(checkpoint["acquisitions"]) == 1 and len(checkpoint["records"]) == 2
+    assert len(checkpoint["acquisitions"]) == 2
+    assert len(checkpoint["records"]) == 2
+    assert all(row["recordCount"] == 1 for row in checkpoint["acquisitions"])
     assert not (resume_folder / "cache.json.tmp").exists()
 
     (partial_fixtures / f"{source}-000.nc").unlink()
@@ -766,7 +1075,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
         {row["partId"]: row for row in RESUME_TARGETS},
         require_collection=True,
     )
-    assert len(completed_checkpoint["acquisitions"]) == 2
+    assert len(completed_checkpoint["acquisitions"]) == 4
     assert len(completed_checkpoint["records"]) == 4
     assert completed_checkpoint["collections"][0]["status"] == "OPERATIONAL_COMPLETE"
 

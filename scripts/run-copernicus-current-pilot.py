@@ -13,16 +13,24 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, NamedTuple
 
 from lib.copernicus_current import (
     COMPONENT_PAIR,
+    PreparedJsonSnapshot,
+    VerifiedPreparedJsonSnapshot,
     empty_shadow,
     LOCAL_MAX_DISTANCE_KM,
     REQUEST_CONTRACT_ID,
     SELECTION_POLICY_ID,
     atomic_write_shadow,
     atomic_write_shadow_checkpoint,
+    canonical_sha256,
+    _commit_verified_json_snapshot,
+    _discard_prepared_json_snapshot,
+    _prepare_validated_json_snapshot,
+    _verify_prepared_json_document,
+    _verify_prepared_json_snapshot,
     file_sha256,
     load_shadow_with_salvage,
     load_targets,
@@ -31,6 +39,7 @@ from lib.copernicus_current import (
     make_record,
     merge_cache_evidence,
     nearest_shared_uv_times,
+    required_pairs_sha256,
     safe_shadow_summary,
     select_required_records,
     utc_iso,
@@ -49,6 +58,8 @@ from lib.copernicus_current_source_stage import (
     atomic_write_source_stage_progress,
     build_source_stage,
     build_source_stage_progress,
+    build_source_stage_progress_values,
+    _build_source_stage_progress_from_validated_shadow,
     eligible_target,
     make_source_attempt,
     stage_positive_evidence,
@@ -58,9 +69,12 @@ from lib.copernicus_current_source_stage import (
 )
 from lib.copernicus_target_identity import target_fingerprint
 from lib.copernicus_current_donor_bank import (
-    DEFAULT_DONOR_BANK, atomic_write_copernicus_donor_bank,
+    BANK_MAX_BYTES, DEFAULT_DONOR_BANK,
+    _advance_validated_copernicus_donor_bank,
+    _project_validated_donor_shadow,
+    atomic_write_copernicus_donor_bank,
     build_copernicus_donor_bank, legacy_donor_bank, load_copernicus_donor_bank,
-    projected_donor_shadow,
+    projected_donor_shadow, validate_copernicus_donor_bank,
 )
 
 
@@ -81,10 +95,64 @@ OPERATIONAL_REFRESH_MIN_REMAINING_SECONDS = 45.0
 QUARANTINE_MAX_FILES_PER_PATH = 2
 QUARANTINE_MAX_BYTES_PER_PATH = 1024 * 1024 * 1024
 RECOVERED_DONOR_BANKS: dict[Path, str] = {}
+# Process-local proof that one exact donor-bank object and its disposable
+# projection completed the full bank -> shadow -> source-stage transaction.
+# This is never persisted and cannot authorize source admission; it only avoids
+# rebuilding and rewriting an already identical generation later in this run.
+NORMALIZED_DONOR_GENERATIONS: dict[tuple[Path, Path], dict[str, Any]] = {}
 
 
 class CopernicusOperationalBudgetReached(RuntimeError):
     """Signal that validated progress was saved before the wrapper deadline."""
+
+
+class PersistedSourceStageProgress(NamedTuple):
+    shadow: dict[str, Any]
+    record_refs: list[dict[str, Any]]
+    missing_pairs: list[dict[str, Any]]
+    excluded_refs: list[dict[str, Any]]
+
+
+def donor_snapshot_binding(
+    bank_sha256: str,
+    targets: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "kind": "copernicus-donor-generation",
+        "bankSha256": bank_sha256,
+        "targetRegistrySha256": target_fingerprint(targets),
+    }
+
+
+def shadow_snapshot_binding(
+    target_identities: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "kind": "copernicus-shadow-checkpoint",
+        "targetRegistrySha256": target_fingerprint(
+            list(target_identities.values())
+        ),
+    }
+
+
+def source_stage_snapshot_binding(
+    *,
+    bank_sha256: str,
+    shadow_sha256: str,
+    registry: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    attempts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "kind": "copernicus-source-stage-progress",
+        "bankSha256": bank_sha256,
+        "shadowSha256": shadow_sha256,
+        "registrySha256": canonical_sha256(registry),
+        "targetRegistrySha256": target_fingerprint(
+            list(target_identities.values())
+        ),
+        "attemptsSha256": canonical_sha256(attempts),
+    }
 
 
 COPERNICUS_SHARD_DATA_ERRORS = (
@@ -143,8 +211,8 @@ def mark_donor_bank_written() -> None:
             handle.write("donor_bank_written=true\n")
 
 
-def commit_donor_bank(path: Path, bank: dict[str, Any], *, targets: list[dict[str, Any]]) -> None:
-    """Preserve damaged original bytes before promoting a recovered generation."""
+def prepare_recovered_donor_replacement(path: Path) -> Path:
+    """Preserve damaged original bytes before one atomic replacement."""
     identity = path.resolve()
     original_sha = RECOVERED_DONOR_BANKS.get(identity)
     if original_sha is not None and path.exists():
@@ -153,9 +221,30 @@ def commit_donor_bank(path: Path, bank: dict[str, Any], *, targets: list[dict[st
         # Keep the authoritative bank pathname until the ONE atomic pointer
         # swap. A crash must not make startup revive a maskless legacy file.
         quarantine_invalid_private_file(path, "recoverable donor bank", preserve_source=True)
+    return identity
+
+
+def commit_donor_bank(path: Path, bank: dict[str, Any], *, targets: list[dict[str, Any]]) -> None:
+    """Preserve damaged original bytes before promoting a recovered generation."""
+    identity = prepare_recovered_donor_replacement(path)
     atomic_write_copernicus_donor_bank(path, bank, targets=targets)
     RECOVERED_DONOR_BANKS.pop(identity, None)
     mark_donor_bank_written()
+
+
+def commit_prepared_donor_generation(
+    prepared: PreparedJsonSnapshot,
+    *,
+    verified: VerifiedPreparedJsonSnapshot,
+) -> dict[str, Any]:
+    path = prepared.destination
+    identity = prepare_recovered_donor_replacement(path)
+    if verified.snapshot is not prepared:
+        raise RuntimeError("Verified Copernicus donor identity changed")
+    bank = _commit_verified_json_snapshot(verified)
+    RECOVERED_DONOR_BANKS.pop(identity, None)
+    mark_donor_bank_written()
+    return bank
 
 
 PRODUCTS = [dict(row) for row in PINNED_PRODUCTS]
@@ -167,6 +256,7 @@ ADVISORY_HISTORY_MAX_SECONDS = max(
     30,
     int(os.getenv("COPERNICUS_ADVISORY_HISTORY_MAX_SECONDS", "180")),
 )
+REQUEST_SEGMENT_SPLIT_MINIMUM_MISSING_HOURS = 24
 
 
 def arguments() -> argparse.Namespace:
@@ -236,19 +326,18 @@ def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> li
 def operational_shard_work_order(
     *,
     targets: list[dict[str, Any]],
-    rotation_slot: int,
+    acquisition_at: datetime,
 ) -> list[dict[str, Any]]:
     """Rotate each product queue, then interleave products deterministically.
 
-    The order deliberately does not use provider attempts or acquisitions.
-    Those are admission/provenance evidence with different retention rules and
+    The order deliberately does not use stored provider-attempt or acquisition
+    records. Those are admission/provenance evidence with different retention rules and
     must not double as a durable scheduler cursor.  A time-slot/attempt-derived
-    rotation prevents a slow, negative or failed first shard from becoming the
-    permanent head after target changes, while fixed product round-robin keeps
-    Baltic from hiding AMM15 behind its longer queue.
+    rotation uses each queue's actual length. Hourly runs at the same quarter
+    move one shard forward, while quarter-hour runs spread across the queue.
+    Fixed product round-robin keeps Baltic from hiding AMM15 behind its longer
+    queue. Shard membership and original shard indices never change.
     """
-    if isinstance(rotation_slot, bool) or not isinstance(rotation_slot, int):
-        raise ValueError("Copernicus scheduler rotation slot is invalid")
     queues: list[list[dict[str, Any]]] = []
     for product_rank, product in enumerate(PRODUCTS):
         source_targets = [row for row in targets if eligible_target(row, product)]
@@ -264,7 +353,9 @@ def operational_shard_work_order(
             )
         ]
         if product_rows:
-            offset = rotation_slot % len(product_rows)
+            offset = operational_rotation_slot(
+                acquisition_at, shard_count=len(product_rows),
+            )
             product_rows = product_rows[offset:] + product_rows[:offset]
         queues.append(product_rows)
 
@@ -276,17 +367,32 @@ def operational_shard_work_order(
     return interleaved
 
 
-def operational_rotation_slot(acquisition_at: datetime) -> int:
-    """Return a bounded per-invocation cursor shared by normal and oneoff."""
+def operational_rotation_slot(acquisition_at: datetime, *, shard_count: int) -> int:
+    """Return a queue-length-aware offset shared by normal and oneoff.
+
+    A quarter-hour ordinal alone advances four places per hourly run and can
+    permanently alias with an even queue length. Instead UTC hours advance by
+    one and the quarter selects a separated band within this product's queue.
+    Actual acquisition time also moves retries at one locked forecast reference;
+    no provider-attempt history or additional persistent cursor is required.
+    """
+    if (not isinstance(acquisition_at, datetime)
+            or acquisition_at.utcoffset() is None):
+        raise ValueError("Copernicus scheduler acquisition time is invalid")
+    if isinstance(shard_count, bool) or not isinstance(shard_count, int) or shard_count < 1:
+        raise ValueError("Copernicus scheduler shard count is invalid")
     outer_attempt = int(os.getenv("RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL", "0"))
     github_attempt = int(os.getenv("GITHUB_RUN_ATTEMPT", "1"))
     if not 0 <= outer_attempt <= 2 or not 1 <= github_attempt <= 100:
         raise ValueError("Copernicus scheduler attempt metadata is invalid")
+    utc_acquisition = acquisition_at.astimezone(timezone.utc)
+    quarter_in_hour = utc_acquisition.minute // 15
     return (
-        int(acquisition_at.timestamp() // (15 * 60))
+        int(utc_acquisition.timestamp() // 3600)
+        + quarter_in_hour * shard_count // 4
         + outer_attempt
         + github_attempt - 1
-    )
+    ) % shard_count
 
 
 def operational_source_required_pairs(
@@ -318,6 +424,85 @@ def operational_source_required_pairs(
         if not eligible_target(target_by_id[pair[0]], baltic_product)
         or pair in attempted_pairs_by_source["copernicus-baltic-nemo"]
     }
+
+
+def operational_request_segments(
+    pairs: set[tuple[str, str]],
+) -> list[list[dict[str, str]]]:
+    """Split exact pairs only across a large empty native-time interval.
+
+    This changes the provider request envelope, never the exact requested-pair
+    set or any admission/validity rule. A gap of 24 whole missing hours means
+    adjacent requested timestamps are at least 25 hours apart.
+    """
+    rows_by_time: dict[datetime, list[dict[str, str]]] = {}
+    for part_id, valid_time in pairs:
+        parsed = parse_time(valid_time, "required pair time")
+        if (
+            not part_id
+            or parsed.minute != 0
+            or parsed.second != 0
+            or parsed.microsecond != 0
+        ):
+            raise RuntimeError("Copernicus request segment pair is invalid")
+        rows_by_time.setdefault(parsed, []).append({
+            "partId": part_id,
+            "validTime": valid_time,
+        })
+    segments: list[list[dict[str, str]]] = []
+    previous_time: datetime | None = None
+    for valid_time in sorted(rows_by_time):
+        missing_hours = (
+            int((valid_time - previous_time).total_seconds() // 3600) - 1
+            if previous_time is not None
+            else 0
+        )
+        if previous_time is None or (
+            missing_hours >= REQUEST_SEGMENT_SPLIT_MINIMUM_MISSING_HOURS
+        ):
+            segments.append([])
+        segments[-1].extend(sorted(
+            rows_by_time[valid_time],
+            key=lambda row: (row["validTime"], row["partId"]),
+        ))
+        previous_time = valid_time
+    flattened = {
+        (row["partId"], row["validTime"])
+        for segment in segments
+        for row in segment
+    }
+    if flattened != pairs or sum(map(len, segments)) != len(pairs):
+        raise RuntimeError("Copernicus request segmentation changed exact pairs")
+    return segments
+
+
+def operational_segment_work_key(
+    product: dict[str, Any],
+    shard: dict[str, Any],
+    requested_pairs: list[dict[str, str]],
+) -> tuple[str, str, str]:
+    """Identify one exact provider segment without changing shard identity."""
+    return (
+        product["source"],
+        shard["shardId"],
+        required_pairs_sha256(requested_pairs),
+    )
+
+
+def available_operational_request_segments(
+    *,
+    product: dict[str, Any],
+    shard: dict[str, Any],
+    pairs: set[tuple[str, str]],
+    failed_work_items: set[tuple[str, str, str]],
+) -> list[tuple[list[dict[str, str]], tuple[str, str, str]]]:
+    """Return exact segments not already failed during this invocation."""
+    available = []
+    for segment in operational_request_segments(pairs):
+        segment_key = operational_segment_work_key(product, shard, segment)
+        if segment_key not in failed_work_items:
+            available.append((segment, segment_key))
+    return available
 
 
 def has_deferred_amm15_overlap(
@@ -543,6 +728,136 @@ def refresh_time_available(*, fixture_directory: Path | None) -> bool:
     return time.time() + OPERATIONAL_REFRESH_MIN_REMAINING_SECONDS < deadline
 
 
+def reusable_validated_donor_generation(
+    *,
+    shadow_path: Path,
+    donor_bank_path: Path,
+    registry: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    donor_state: dict[str, Any] | None,
+) -> PreparedJsonSnapshot | None:
+    if donor_state is None:
+        return None
+    donor_identity = donor_bank_path.resolve()
+    if donor_identity in RECOVERED_DONOR_BANKS:
+        return None
+    generation = NORMALIZED_DONOR_GENERATIONS.get(
+        (donor_identity, shadow_path.resolve())
+    )
+    try:
+        donor_stat = donor_bank_path.stat()
+    except OSError:
+        return None
+    prepared = generation.get("bankSnapshot") if generation else None
+    if (
+        generation is None
+        or not isinstance(prepared, PreparedJsonSnapshot)
+        or prepared.destination.resolve() != donor_identity
+        or generation["state"] is not donor_state
+        or generation["bankSha256"] != donor_state.get("bankSha256")
+        or generation["productionReferenceAt"]
+        != registry.get("productionReferenceAt")
+        or donor_stat.st_size <= 0
+        or donor_stat.st_size != generation["donorFileSize"]
+        or donor_stat.st_mtime_ns != generation["donorFileMtimeNs"]
+        or file_sha256(donor_bank_path) != prepared.payloadSha256
+    ):
+        return None
+    try:
+        validated_document = _verify_prepared_json_document(
+            prepared,
+            binding=donor_snapshot_binding(
+                donor_state["bankSha256"],
+                list(target_identities.values()),
+            ),
+        )
+    except (KeyError, RuntimeError, TypeError, ValueError):
+        return None
+    if validated_document != donor_state:
+        return None
+    return prepared
+
+
+def reusable_normalized_donor_projection(
+    *,
+    shadow_path: Path,
+    donor_bank_path: Path,
+    registry: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    acquisitions: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    updated_at: datetime,
+    shadow_changed: bool,
+    donor_state: dict[str, Any] | None,
+    validated_generation: PreparedJsonSnapshot | None = None,
+) -> dict[str, Any] | None:
+    """Reuse only an unchanged, fully committed in-process generation.
+
+    A new zero-row Baltic attempt can still admit an older AMM15 row.  The
+    shortcut is therefore unavailable while any AMM15 row lacks its immutable
+    positive certificate.  All other uncertainty falls back to the complete
+    donor build/validation/atomic-write path.
+    """
+    if donor_state is None or shadow_changed:
+        return None
+    if validated_generation is None:
+        validated_generation = reusable_validated_donor_generation(
+            shadow_path=shadow_path,
+            donor_bank_path=donor_bank_path,
+            registry=registry,
+            target_identities=target_identities,
+            donor_state=donor_state,
+        )
+    if validated_generation is None:
+        return None
+    generation = NORMALIZED_DONOR_GENERATIONS[
+        (donor_bank_path.resolve(), shadow_path.resolve())
+    ]
+    if generation.get("bankSnapshot") is not validated_generation:
+        return None
+    if donor_state.get("shadow", {}).get("updatedAt") != utc_iso(updated_at):
+        return None
+
+    bank_shadow = donor_state["shadow"]
+    acquisition_by_id = {
+        row["acquisitionId"]: row for row in bank_shadow["acquisitions"]
+    }
+    admitted_record_ids = {
+        row["recordId"] for row in donor_state["positiveAdmissions"]
+    }
+    if any(
+        acquisition_by_id[row["acquisitionId"]]["source"]
+        == "copernicus-nws-amm15"
+        and row["recordId"] not in admitted_record_ids
+        for row in bank_shadow["records"]
+    ):
+        return None
+    if not shadow_path.exists() or shadow_path.stat().st_size <= 0:
+        return None
+    try:
+        projection = validate_shadow(
+            json.loads(shadow_path.read_text(encoding="utf-8")),
+            target_identities,
+            require_collection=False,
+        )
+    except (KeyError, OSError, TypeError, UnicodeError, ValueError, json.JSONDecodeError):
+        return None
+    bank_acquisitions = {
+        row["acquisitionId"]: row for row in bank_shadow["acquisitions"]
+    }
+    bank_records = {row["recordId"]: row for row in bank_shadow["records"]}
+    if file_sha256(shadow_path) != generation["shadowSha256"]:
+        return None
+    if (
+        len({row.get("acquisitionId") for row in acquisitions}) != len(acquisitions)
+        or any(bank_acquisitions.get(row.get("acquisitionId")) != row for row in acquisitions)
+        or len({row.get("recordId") for row in records}) != len(records)
+        or any(bank_records.get(row.get("recordId")) != row for row in records)
+    ):
+        return None
+    return projection
+
+
 def persist_source_stage_progress(
     *,
     shadow_path: Path,
@@ -556,61 +871,254 @@ def persist_source_stage_progress(
     shadow_changed: bool,
     donor_bank_path: Path | None = None,
     donor_state: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+) -> PersistedSourceStageProgress:
     """Commit values plus positive proof before disposable shadow/journal files."""
     targets = list(target_identities.values())
     positive = stage_positive_evidence(donor_state or {})
-    if donor_bank_path is not None:
-        donor_shadow = empty_shadow(updated_at)
-        donor_shadow["acquisitions"] = acquisitions
-        donor_shadow["records"] = records
-        bank = build_copernicus_donor_bank(donor_shadow, targets=targets,
-            attempts=attempts, previous_bank=donor_state,
-            production_reference_at=parse_time(registry["productionReferenceAt"], "Bank reference"), **positive)
-        commit_donor_bank(donor_bank_path, bank, targets=targets)
-        if donor_state is not None:
-            donor_state.clear()
-            donor_state.update(bank)
-        positive = stage_positive_evidence(bank)
-        projection = projected_donor_shadow(bank, targets=targets)
-        acquisitions, records = projection["acquisitions"], projection["records"]
-        attempts[:] = journal_for_donor_projection(attempts, bank=bank, shadow=projection,
-            required_pairs=registry["operationalRequiredPairs"], target_identities=target_identities)
-        # Masks/retention can change the projection even without a new raw row.
-        shadow_changed = True
-    if shadow_changed or not shadow_path.exists() or shadow_path.stat().st_size <= 0:
-        shadow = atomic_write_shadow_checkpoint(
-            shadow_path,
-            acquisitions=acquisitions,
-            records=records,
-            updated_at=updated_at,
-            target_identities=target_identities,
+    normalized_bank: dict[str, Any] | None = None
+    shadow: dict[str, Any] | None = None
+    prepared_donor: PreparedJsonSnapshot | None = None
+    prepared_shadow: PreparedJsonSnapshot | None = None
+    prepared_stage: PreparedJsonSnapshot | None = None
+    retained_generation: PreparedJsonSnapshot | None = None
+    try:
+        if donor_bank_path is not None:
+            retained_generation = reusable_validated_donor_generation(
+                shadow_path=shadow_path,
+                donor_bank_path=donor_bank_path,
+                registry=registry,
+                target_identities=target_identities,
+                donor_state=donor_state,
+            )
+            donor_projection = reusable_normalized_donor_projection(
+                shadow_path=shadow_path,
+                donor_bank_path=donor_bank_path,
+                registry=registry,
+                target_identities=target_identities,
+                acquisitions=acquisitions,
+                records=records,
+                updated_at=updated_at,
+                shadow_changed=shadow_changed,
+                donor_state=donor_state,
+                validated_generation=retained_generation,
+            )
+            if donor_projection is not None:
+                normalized_bank = donor_state
+                shadow = donor_projection
+            else:
+                donor_shadow = empty_shadow(updated_at)
+                donor_shadow["acquisitions"] = acquisitions
+                donor_shadow["records"] = records
+                bank_arguments = {
+                    "targets": targets,
+                    "attempts": attempts,
+                    "production_reference_at": parse_time(
+                        registry["productionReferenceAt"], "Bank reference"
+                    ),
+                    **positive,
+                }
+                if retained_generation is None or donor_state is None:
+                    normalized_bank = validate_copernicus_donor_bank(
+                        build_copernicus_donor_bank(
+                            donor_shadow,
+                            previous_bank=donor_state,
+                            **bank_arguments,
+                        ),
+                        targets=targets,
+                    )
+                else:
+                    normalized_bank = _advance_validated_copernicus_donor_bank(
+                        donor_shadow,
+                        previous_bank=donor_state,
+                        **bank_arguments,
+                    )
+                donor_projection = _project_validated_donor_shadow(
+                    normalized_bank
+                )
+                prepared_donor = _prepare_validated_json_snapshot(
+                    donor_bank_path,
+                    normalized_bank,
+                    binding=donor_snapshot_binding(
+                        normalized_bank["bankSha256"], targets
+                    ),
+                    indent=None,
+                    max_bytes=BANK_MAX_BYTES,
+                )
+                acquisitions = donor_projection["acquisitions"]
+                records = donor_projection["records"]
+                # Masks/retention can change the projection without a new raw row.
+                shadow_changed = True
+            positive = stage_positive_evidence(normalized_bank)
+            attempts[:] = journal_for_donor_projection(
+                attempts,
+                bank=normalized_bank,
+                shadow=donor_projection,
+                required_pairs=registry["operationalRequiredPairs"],
+                target_identities=target_identities,
+            )
+
+        if prepared_donor is not None:
+            shadow = empty_shadow(updated_at)
+            shadow["acquisitions"] = sorted(
+                acquisitions, key=lambda row: row["acquisitionId"]
+            )
+            shadow["records"] = sorted(
+                records,
+                key=lambda row: (
+                    row["validTime"], row["partId"], row["recordId"]
+                ),
+            )
+            shadow = validate_shadow(
+                shadow,
+                target_identities,
+                require_collection=False,
+            )
+            prepared_shadow = _prepare_validated_json_snapshot(
+                shadow_path,
+                shadow,
+                binding=shadow_snapshot_binding(target_identities),
+                indent=2,
+            )
+            shadow_sha256 = prepared_shadow.payloadSha256
+            progress, record_refs, missing_pairs, excluded_refs = (
+                _build_source_stage_progress_from_validated_shadow(
+                    registry=registry,
+                    shadow=shadow,
+                    target_identities=target_identities,
+                    shadow_sha256=shadow_sha256,
+                    attempts=attempts,
+                    updated_at=updated_at,
+                    **positive,
+                )
+            )
+            prepared_stage = _prepare_validated_json_snapshot(
+                source_stage_path,
+                progress,
+                binding=source_stage_snapshot_binding(
+                    bank_sha256=normalized_bank["bankSha256"],
+                    shadow_sha256=shadow_sha256,
+                    registry=registry,
+                    target_identities=target_identities,
+                    attempts=attempts,
+                ),
+                indent=2,
+            )
+
+            # Verify every document, exact input binding and spooled payload
+            # before the first durable pointer changes. The following replaces
+            # are synchronous and preserve bank -> shadow -> stage ordering.
+            verified_donor = _verify_prepared_json_snapshot(
+                prepared_donor,
+                binding=donor_snapshot_binding(
+                    normalized_bank["bankSha256"], targets
+                ),
+            )
+            verified_shadow = _verify_prepared_json_snapshot(
+                prepared_shadow,
+                binding=shadow_snapshot_binding(target_identities),
+            )
+            verified_stage = _verify_prepared_json_snapshot(
+                prepared_stage,
+                binding=source_stage_snapshot_binding(
+                    bank_sha256=normalized_bank["bankSha256"],
+                    shadow_sha256=shadow_sha256,
+                    registry=registry,
+                    target_identities=target_identities,
+                    attempts=attempts,
+                ),
+            )
+            if (
+                progress["selectedRecordRefsSha256"]
+                != canonical_sha256(record_refs)
+                or progress["missingPairsSha256"]
+                != required_pairs_sha256(missing_pairs)
+                or progress["excludedRecordRefsSha256"]
+                != canonical_sha256(excluded_refs)
+            ):
+                raise RuntimeError(
+                    "Prepared Copernicus source-stage selection changed"
+                )
+            committed_bank = commit_prepared_donor_generation(
+                prepared_donor,
+                verified=verified_donor,
+            )
+            if verified_shadow.snapshot is not prepared_shadow:
+                raise RuntimeError("Verified Copernicus shadow identity changed")
+            _commit_verified_json_snapshot(verified_shadow)
+            if verified_stage.snapshot is not prepared_stage:
+                raise RuntimeError("Verified Copernicus source-stage identity changed")
+            _commit_verified_json_snapshot(verified_stage)
+            if donor_state is not None:
+                donor_state.clear()
+                donor_state.update(committed_bank)
+                normalized_bank = donor_state
+            retained_generation = prepared_donor
+        else:
+            if shadow is None and (
+                shadow_changed
+                or not shadow_path.exists()
+                or shadow_path.stat().st_size <= 0
+            ):
+                shadow = atomic_write_shadow_checkpoint(
+                    shadow_path,
+                    acquisitions=acquisitions,
+                    records=records,
+                    updated_at=updated_at,
+                    target_identities=target_identities,
+                )
+            elif shadow is None:
+                shadow = validate_shadow(
+                    json.loads(shadow_path.read_text(encoding="utf-8")),
+                    target_identities,
+                    require_collection=False,
+                )
+            shadow_sha256 = file_sha256(shadow_path)
+            (
+                progress,
+                record_refs,
+                missing_pairs,
+                excluded_refs,
+            ) = build_source_stage_progress_values(
+                registry=registry,
+                shadow=shadow,
+                target_identities=target_identities,
+                shadow_sha256=shadow_sha256,
+                attempts=attempts,
+                updated_at=updated_at,
+                **positive,
+            )
+            atomic_write_source_stage_progress(
+                source_stage_path,
+                progress,
+                registry=registry,
+                shadow=shadow,
+                target_identities=target_identities,
+                shadow_sha256=shadow_sha256,
+            )
+
+        if donor_bank_path is not None and normalized_bank is not None:
+            donor_stat = donor_bank_path.stat()
+            NORMALIZED_DONOR_GENERATIONS[
+                (donor_bank_path.resolve(), shadow_path.resolve())
+            ] = {
+                "state": donor_state,
+                "bankSha256": normalized_bank["bankSha256"],
+                "donorFileSize": donor_stat.st_size,
+                "donorFileMtimeNs": donor_stat.st_mtime_ns,
+                "shadowSha256": shadow_sha256,
+                "productionReferenceAt": registry["productionReferenceAt"],
+                "bankSnapshot": retained_generation,
+            }
+        return PersistedSourceStageProgress(
+            shadow=shadow,
+            record_refs=record_refs,
+            missing_pairs=missing_pairs,
+            excluded_refs=excluded_refs,
         )
-    else:
-        shadow = validate_shadow(
-            json.loads(shadow_path.read_text(encoding="utf-8")),
-            target_identities,
-            require_collection=False,
-        )
-    shadow_sha256 = file_sha256(shadow_path)
-    progress = build_source_stage_progress(
-        registry=registry,
-        shadow=shadow,
-        target_identities=target_identities,
-        shadow_sha256=shadow_sha256,
-        attempts=attempts,
-        updated_at=updated_at,
-        **positive,
-    )
-    atomic_write_source_stage_progress(
-        source_stage_path,
-        progress,
-        registry=registry,
-        shadow=shadow,
-        target_identities=target_identities,
-        shadow_sha256=shadow_sha256,
-    )
-    return shadow
+    finally:
+        _discard_prepared_json_snapshot(prepared_donor)
+        _discard_prepared_json_snapshot(prepared_shadow)
+        _discard_prepared_json_snapshot(prepared_stage)
 
 
 def journal_for_donor_projection(
@@ -680,27 +1188,38 @@ def replace_stale_shard_attempt(
     attempts: list[dict[str, Any]],
     current_attempt: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    """Supersede exact pairs while keeping immutable multi-pair witnesses.
+    """Retire a stale wide request only after current segment union covers it.
 
-    An older request is retired only when every one of its pairs is replaced.
-    Original positive witnesses also remain in the atomic donor generation.
+    Completed attempts keep their original timestamps and exact pair sets.
+    Original positive witnesses remain separately in the atomic donor bank.
     """
     source_rank = {
         product["source"]: index for index, product in enumerate(PRODUCTS)
     }
-    replacing = {(row["partId"], row["validTime"]) for row in current_attempt["requestedPairs"]}
+    candidates = [*attempts, current_attempt]
+    current_pairs = {
+        (pair["partId"], pair["validTime"])
+        for attempt in candidates
+        if attempt["source"] == current_attempt["source"]
+        and attempt["shardId"] == current_attempt["shardId"]
+        and attempt["productionReferenceAt"]
+        == current_attempt["productionReferenceAt"]
+        for pair in attempt["requestedPairs"]
+    }
     retained = [
         attempt
-        for attempt in attempts
+        for attempt in candidates
         if not (
             attempt["source"] == current_attempt["source"]
             and attempt["shardId"] == current_attempt["shardId"]
             and attempt["productionReferenceAt"]
                 != current_attempt["productionReferenceAt"]
-            and {(row["partId"], row["validTime"]) for row in attempt["requestedPairs"]}.issubset(replacing)
+            and {
+                (row["partId"], row["validTime"])
+                for row in attempt["requestedPairs"]
+            }.issubset(current_pairs)
         )
     ]
-    retained.append(current_attempt)
     return sorted(
         retained,
         key=lambda row: (source_rank[row["source"]], row["shardId"],
@@ -1583,7 +2102,7 @@ def main() -> int:
         # Persist a target/DMI/shadow-bound zero-attempt stage before credentials,
         # network or the first shard. A provider outage can therefore hand the
         # complete honest residual to Open-Meteo without claiming exhaustion.
-        existing = persist_source_stage_progress(
+        initial_checkpoint = persist_source_stage_progress(
             shadow_path=args.shadow,
             source_stage_path=args.source_stage,
             registry=registry,
@@ -1596,6 +2115,7 @@ def main() -> int:
             donor_bank_path=args.donor_bank,
             donor_state=donor_state,
         )
+        existing = initial_checkpoint.shadow
     attempted_pairs_by_source = {
         product["source"]: current_reference_attempt_pairs(
             source_attempts,
@@ -1625,7 +2145,7 @@ def main() -> int:
         for product in PRODUCTS
     }
     failed_operational_shards = 0
-    failed_work_items: set[tuple[str, str]] = set()
+    failed_work_items: set[tuple[str, str, str]] = set()
     try:
         # Stable shard membership belongs to the full authoritative register,
         # not to this hour's changing subset of DMI gaps. The invocation-bound
@@ -1633,18 +2153,15 @@ def main() -> int:
         # shards. It never changes pair admission or source evidence.
         pending_work = operational_shard_work_order(
             targets=authoritative_targets,
-            rotation_slot=operational_rotation_slot(acquisition_at),
+            acquisition_at=acquisition_at,
         )
         while pending_work:
             deferred_work: list[dict[str, Any]] = []
-            completed_attempt_in_pass = False
+            serviced_segment_in_pass = False
             for work in pending_work:
                 product = work["product"]
                 shard_index = work["shardIndex"]
                 shard = work["shard"]
-                work_key = (product["source"], shard["shardId"])
-                if work_key in failed_work_items:
-                    continue
                 # These are network priorities, NOT source admission.  Only
                 # actual holes after the complete reusable provider union are
                 # critical.  Historical attempts affect ordering above only.
@@ -1680,30 +2197,67 @@ def main() -> int:
                         # than reinstating a product-wide Baltic barrier.
                         deferred_work.append(work)
                     continue
-                times_by_part: dict[str, list[datetime]] = {}
-                for target in shard["targets"]:
-                    times = sorted(
-                        parse_time(valid_time, "required pair time")
-                        for part_id, valid_time in source_required_pairs
-                        if part_id == target["partId"]
+                if operational_contract:
+                    available_segments = available_operational_request_segments(
+                        product=product,
+                        shard=shard,
+                        pairs=critical_shard_pairs,
+                        failed_work_items=failed_work_items,
                     )
-                    if times:
-                        times_by_part[target["partId"]] = times
-                if not times_by_part:
+                else:
+                    # Legacy schema-2/research acquisition keeps its historical
+                    # single-envelope behavior; only current schema-3 operation
+                    # receives the request-performance segmentation.
+                    legacy_segment = sorted(
+                        [
+                            {"partId": part_id, "validTime": valid_time}
+                            for part_id, valid_time in critical_shard_pairs
+                        ],
+                        key=lambda row: (row["validTime"], row["partId"]),
+                    )
+                    legacy_key = operational_segment_work_key(
+                        product, shard, legacy_segment
+                    )
+                    available_segments = (
+                        [(legacy_segment, legacy_key)]
+                        if legacy_key not in failed_work_items
+                        else []
+                    )
+                if not available_segments:
+                    if (
+                        product["source"] == "copernicus-nws-amm15"
+                        and has_deferred_amm15_overlap(
+                            shard=shard,
+                            remaining=remaining,
+                            downstream_covered=downstream_covered,
+                            attempted_pairs_by_source=attempted_pairs_by_source,
+                            target_by_id=target_by_id,
+                            baltic_product=baltic_product,
+                        )
+                    ):
+                        # A failed exact AMM15 segment must not make this shard
+                        # disappear before later Baltic work unlocks a distinct
+                        # segment. The no-service pass guard still prevents spin.
+                        deferred_work.append(work)
                     continue
+                requested_pairs, work_key = available_segments[0]
+                has_later_segment = len(available_segments) > 1
+                times_by_part: dict[str, list[datetime]] = {}
+                for pair in requested_pairs:
+                    times_by_part.setdefault(pair["partId"], []).append(
+                        parse_time(pair["validTime"], "required pair time")
+                    )
                 require_operational_time_budget()
+                serviced_segment_in_pass = True
                 product_report_state[product["source"]]["executedShardCount"] += 1
                 shard_targets = [row for row in shard["targets"] if row["partId"] in times_by_part]
                 native_times = sorted({value for values in times_by_part.values() for value in values})
                 start, end = native_times[0], native_times[-1]
-                requested_pairs = sorted(
-                    [
-                        {"partId": part_id, "validTime": utc_iso(valid_time)}
-                        for part_id, valid_times in times_by_part.items()
-                        for valid_time in valid_times
-                    ],
-                    key=lambda row: (row["validTime"], row["partId"]),
-                )
+                request_envelope_hour_count = int(
+                    (end - start).total_seconds() // 3600
+                ) + 1
+                acquire_started = time.monotonic()
+                acquire_elapsed: float | None = None
                 try:
                     subset_sha256, observed_native_times, raw_records = acquire_shard_rows(
                         product=product,
@@ -1713,6 +2267,8 @@ def main() -> int:
                         temporary=temporary,
                         shard_index=shard_index,
                     )
+                    acquire_elapsed = time.monotonic() - acquire_started
+                    postprocess_started = time.monotonic()
                     acquisition = make_acquisition(
                         source=product["source"],
                         acquisition_at=acquisition_at,
@@ -1750,15 +2306,33 @@ def main() -> int:
                     # products may still produce independently valid evidence.
                     failed_operational_shards += 1
                     failed_work_items.add(work_key)
+                    if has_later_segment:
+                        deferred_work.append(work)
+                    elif (
+                        product["source"] == "copernicus-nws-amm15"
+                        and has_deferred_amm15_overlap(
+                            shard=shard,
+                            remaining=remaining,
+                            downstream_covered=downstream_covered,
+                            attempted_pairs_by_source=attempted_pairs_by_source,
+                            target_by_id=target_by_id,
+                            baltic_product=baltic_product,
+                        )
+                    ):
+                        deferred_work.append(work)
                     print(
-                        "Copernicus shard failed safely: "
+                        "Copernicus shard failed safely: segment=true, "
                         f"source={product['source']}, shardIndex={shard_index}, "
+                        f"requestedPairCount={len(requested_pairs)}, "
+                        f"nativeUniqueHourCount={len(native_times)}, "
+                        f"requestEnvelopeHourCount={request_envelope_hour_count}, "
+                        "acquireHashParseSeconds="
+                        f"{(acquire_elapsed if acquire_elapsed is not None else time.monotonic() - acquire_started):.3f}, "
                         f"errorType={type(error).__name__}.",
                         file=sys.stderr,
                         flush=True,
                     )
                     continue
-                completed_attempt_in_pass = True
                 source_attempts = replace_stale_shard_attempt(
                     source_attempts,
                     source_attempt,
@@ -1778,7 +2352,7 @@ def main() -> int:
                     target_identities,
                 )
                 if operational_contract:
-                    checkpoint_projection = persist_source_stage_progress(
+                    checkpoint = persist_source_stage_progress(
                         shadow_path=args.shadow,
                         source_stage_path=args.source_stage,
                         registry=registry,
@@ -1791,10 +2365,7 @@ def main() -> int:
                         donor_bank_path=args.donor_bank,
                         donor_state=donor_state,
                     )
-                    _, checkpoint_missing, _ = select_source_order_admissible_records(
-                        required_pairs, checkpoint_projection["acquisitions"], checkpoint_projection["records"],
-                        reference, authoritative_targets, source_attempts, **stage_positive_evidence(donor_state),
-                    )
+                    checkpoint_missing = checkpoint.missing_pairs
                 else:
                     _, checkpoint_missing = select_required_records(
                         required_pairs, checkpoint_acquisitions, checkpoint_records, reference)
@@ -1805,18 +2376,24 @@ def main() -> int:
                     (row["partId"], row["validTime"])
                     for row in checkpoint_missing
                 }
+                postprocess_elapsed = time.monotonic() - postprocess_started
                 print(
                     "Copernicus shard checkpoint: "
                     f"verifiedOperationalPairs={len(required_pairs) - len(remaining)}, "
                     f"remainingOperationalPairs={len(remaining)}, "
-                    f"completedSourceAttempts={len(source_attempts)}."
+                    f"completedSourceAttempts={len(source_attempts)}, "
+                    f"requestedPairCount={len(requested_pairs)}, "
+                    f"nativeUniqueHourCount={len(native_times)}, "
+                    f"requestEnvelopeHourCount={request_envelope_hour_count}, "
+                    f"acquireHashParseSeconds={acquire_elapsed:.3f}, "
+                    f"admissionMergeCheckpointSeconds={postprocess_elapsed:.3f}."
                 )
                 require_operational_time_budget()
                 product_report_state[product["source"]]["verifiedPairCount"] += len(records)
                 product_report_state[product["source"]]["surfaceOnlyCount"] += sum(
                     row["layerQuality"] == "surface-only" for row in records
                 )
-                if (
+                if has_later_segment or (
                     product["source"] == "copernicus-nws-amm15"
                     and has_deferred_amm15_overlap(
                         shard=shard,
@@ -1828,7 +2405,7 @@ def main() -> int:
                     )
                 ):
                     deferred_work.append(work)
-            if not deferred_work or not completed_attempt_in_pass:
+            if not deferred_work or not serviced_segment_in_pass:
                 break
             pending_work = deferred_work
         product_reports = [{

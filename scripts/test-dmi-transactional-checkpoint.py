@@ -141,6 +141,148 @@ def mutate_stages(
 
 
 class TransactionalAssetTests(unittest.TestCase):
+    def test_regional_observation_is_state_bound_and_only_suppresses_regional_work(self) -> None:
+        source = {
+            "collection": "dkss_lf", "modelRun": MODEL_RUN, "validTime": MODEL_RUN,
+            "itemId": "synthetic-lf-observation", "assetIdentitySha256": "a" * 64,
+            "assetSizeBytes": 128, "acquiredAt": MODEL_RUN,
+            "contentLengthBytes": 128, "contentSha256": "b" * 64,
+            "itemCreatedAt": MODEL_RUN, "itemUpdatedAt": MODEL_RUN,
+        }
+        shadow = {"schemaVersion": 1, "retentionHours": 168,
+                  "scoreImpact": False, "publicRuntime": False, "anchors": {}}
+        arguments = {"processing_signature": "synthetic-parser",
+                     "target_registry_sha256": "sha256:" + "c" * 64,
+                     "policy": {"syntheticPolicy": 1}, "regional_part_ids": ["synthetic"]}
+        receipt = producer.regional_asset_observation(shadow, source_asset=source, **arguments)
+        self.assertIsNotNone(receipt)
+        step = {"sourceAsset": source, "regionalObservation": receipt}
+        self.assertTrue(producer.reusable_regional_asset_observation(step, shadow, **arguments))
+        self.assertNotIn("anchors", receipt)
+        self.assertNotIn("samples", receipt)
+        changed_clock = {**shadow, "generatedAt": SECOND_TIME}
+        self.assertTrue(producer.reusable_regional_asset_observation(step, changed_clock, **arguments))
+        self.assertFalse(producer.reusable_regional_asset_observation(
+            step, shadow, **{**arguments, "policy": {"syntheticPolicy": 2}},
+        ))
+        self.assertFalse(producer.reusable_regional_asset_observation(
+            step, shadow, **{**arguments, "processing_signature": "new-decoder"},
+        ))
+        changed = copy.deepcopy(shadow)
+        changed["anchors"]["REGIONAL_PROXY::synthetic"] = {"samples": []}
+        self.assertFalse(producer.reusable_regional_asset_observation(step, changed, **arguments))
+        changed_source = {**step, "sourceAsset": {**source, "contentSha256": "d" * 64}}
+        self.assertFalse(producer.reusable_regional_asset_observation(changed_source, shadow, **arguments))
+        populated = copy.deepcopy(shadow)
+        sample = {"sourceAssetSha256": producer.current_source_asset_sha256(source),
+                  "collection": "dkss_lf", "modelRun": MODEL_RUN, "validTime": MODEL_RUN,
+                  "regionalSourceProofRef": "binding", "syntheticProfile": 1}
+        populated["anchors"]["REGIONAL_PROXY::synthetic"] = {"samples": [sample]}
+        populated["regionalSourceProofs"] = {
+            "schemaVersion": 1, "contractId": "synthetic",
+            "bindings": {"binding": {"sourceProofSha256": "proof", "syntheticBinding": 1}},
+            "sources": {"proof": {"syntheticSourceProof": 1}},
+        }
+        populated_step = {"sourceAsset": source, "regionalObservation":
+                          producer.regional_asset_observation(populated, source_asset=source, **arguments)}
+        for mutation in ("sample", "binding", "source-proof", "removed-sample", "same-time-revision"):
+            with self.subTest(mutation=mutation):
+                altered = copy.deepcopy(populated)
+                if mutation == "sample":
+                    altered["anchors"]["REGIONAL_PROXY::synthetic"]["samples"][0]["syntheticProfile"] = 2
+                elif mutation == "binding":
+                    altered["regionalSourceProofs"]["bindings"]["binding"]["syntheticBinding"] = 2
+                elif mutation == "source-proof":
+                    altered["regionalSourceProofs"]["sources"]["proof"]["syntheticSourceProof"] = 2
+                elif mutation == "removed-sample":
+                    altered["anchors"]["REGIONAL_PROXY::synthetic"]["samples"] = []
+                else:
+                    altered["anchors"]["REGIONAL_PROXY::synthetic"]["samples"][0]["sourceAssetSha256"] = "sha256:" + "e" * 64
+                self.assertFalse(producer.reusable_regional_asset_observation(
+                    populated_step, altered, **arguments,
+                ))
+        regional_only = {"critical": True, "missingComponentKinds": ["current", "regionalCurrent"]}
+        self.assertFalse(producer.should_skip_previously_processed_asset(
+            MODEL_RUN, {MODEL_RUN}, regional_only,
+        ))
+        self.assertTrue(producer.should_skip_previously_processed_asset(
+            MODEL_RUN, {MODEL_RUN}, regional_only, regional_observation_reusable=True,
+        ))
+        self.assertFalse(producer.should_skip_previously_processed_asset(
+            MODEL_RUN, set(), regional_only, regional_observation_reusable=True,
+        ), "A scheduler receipt cannot admit a non-reusable native step")
+        self.assertFalse(producer.should_skip_previously_processed_asset(
+            MODEL_RUN, {MODEL_RUN}, {"critical": True, "missingComponentKinds": ["waterLevel", "regionalCurrent"]},
+            regional_observation_reusable=True,
+        ), "A regional observation must not suppress a missing scalar component")
+
+    def test_regional_replan_main_requires_actual_regional_change(self) -> None:
+        import ast
+        tree = ast.parse((SCRIPTS / "update-dmi-bulk.py").read_text(encoding="utf-8"))
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        guarded = [node for node in ast.walk(main) if isinstance(node, ast.If)
+                   and isinstance(node.test, ast.Name) and node.test.id == "regional_input_changed"]
+        self.assertEqual(len(guarded), 1)
+        self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                            and node.func.id == "planning_regional_covered_pairs"
+                            for node in ast.walk(guarded[0])))
+        finalizer = next(node for node in ast.walk(main) if isinstance(node, ast.FunctionDef)
+                         and node.name == "preserve_operational_regional_source")
+        called = [node.func.id for node in ast.walk(finalizer)
+                  if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)]
+        self.assertEqual(called.count("regional_asset_observation"), 2)
+        self.assertIn("capture_regional_source_proof", called)
+
+    def test_native_phase_and_real_main_finalizer_limit_regional_work(self) -> None:
+        import ast
+        import textwrap
+        # A model run may start on any UTC hour; cadence is relative to it.
+        shifted_run = "2026-01-01T05:00:00Z"
+        for valid, expected in (("2026-01-01T05:00:00Z", True),
+                                ("2026-01-01T08:00:00Z", True),
+                                ("2026-01-01T06:00:00Z", False),
+                                ("2026-01-01T02:00:00Z", False),
+                                ("2026-01-06T05:00:00Z", True),
+                                ("2026-01-06T08:00:00Z", False)):
+            self.assertEqual(producer.regional_lf_is_native_source_time(shifted_run, valid), expected)
+        tree = ast.parse((SCRIPTS / "update-dmi-bulk.py").read_text(encoding="utf-8"))
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        finalizer = next(node for node in ast.walk(main) if isinstance(node, ast.FunctionDef)
+                         and node.name == "preserve_operational_regional_source")
+        # Execute the actual nested production hook, including its nonlocal flag.
+        wrapper = ("def exercise():\n    regional_input_changed = False\n"
+                   + textwrap.indent(ast.unparse(finalizer), "    ")
+                   + "\n    preserve_operational_regional_source(shadow_stage)\n"
+                   + "    return regional_input_changed\n")
+        for valid, after, invalid, expected_change, expected_receipt in (
+                (FIRST_TIME, {"state": "same"}, 0, False, False),
+                (MODEL_RUN, {"state": "same"}, 0, False, True),
+                (MODEL_RUN, {"state": "changed"}, 0, True, True),
+                (MODEL_RUN, {"state": "changed"}, 1, True, False)):
+            with self.subTest(valid=valid, after=after, invalid=invalid):
+                observation = Mock(side_effect=[{"state": "same"}, after])
+                capture = Mock(return_value={"invalidSamples": invalid, "blockedIndex": 0})
+                validated = {"partOutcomeProof": {"synthetic": "validated"}}
+                namespace = {**producer.__dict__,
+                             "collection": "dkss_lf", "regional_proxy_configuration_status": "CONFIGURED",
+                             "asset_model_run": MODEL_RUN, "asset": {"valid": valid},
+                             "step_source_asset": {}, "processing_signature": "synthetic-parser",
+                             "current_target_registry_sha256": "synthetic-targets",
+                             "regional_proxy_policy": {}, "regional_target_part_ids": ["synthetic"],
+                             "current_shadow": {"synthetic": "old"}, "shadow_stage": {"synthetic": "new"},
+                             "coastal_part_targets": [], "validated_current_stage": validated,
+                             "regional_asset_observation": observation, "capture_regional_source_proof": capture}
+                exec(compile(wrapper, "<production-regional-finalizer>", "exec"), namespace)
+                self.assertEqual(namespace["exercise"](), expected_change)
+                self.assertEqual("regionalObservation" in validated, expected_receipt)
+                if valid == FIRST_TIME:
+                    observation.assert_not_called()
+                    capture.assert_not_called()
+                else:
+                    self.assertEqual(observation.call_count, 2)
+                    capture.assert_called_once()
+                    self.assertIs(capture.call_args.kwargs["previous_shadow"], namespace["current_shadow"])
+
     def test_supervised_identity_ignores_query_rotation_but_binds_revision(self) -> None:
         asset = {
             "valid": FIRST_TIME,
@@ -345,6 +487,57 @@ class TransactionalAssetTests(unittest.TestCase):
         self.assertFalse(outcome[2])
         self.assertNotIn(RESEARCH_ID, result["zones"])
 
+    def test_regional_proof_finalize_failure_cannot_escape_shadow_stage(self) -> None:
+        result, private, diagnostics, shadow, outcomes = durable_documents()
+        shadow["regionalSourceProofs"] = {"sources": {"synthetic": {"version": 1}}}
+        before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
+        failure_flush = Mock()
+
+        def finalize(staged_shadow):
+            staged_shadow["regionalSourceProofs"]["sources"]["synthetic"]["version"] = 2
+            self.assertEqual(shadow, before[3])
+            raise RuntimeError("synthetic regional proof failure")
+
+        with patch.object(producer, "process_grib", side_effect=mutate_stages):
+            with self.assertRaisesRegex(RuntimeError, "synthetic regional proof failure"):
+                producer.process_grib_transactionally(
+                    Path("synthetic.grib"), COLLECTION, MODEL_RUN, FIRST_TIME,
+                    zones(), result, diagnostics, shadow, private, outcomes,
+                    finalize_shadow_stage=finalize, failure_flush=failure_flush,
+                )
+        self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
+        failure_flush.assert_called_once_with()
+
+    def test_regional_proof_finalize_runs_after_both_validators_before_commit(self) -> None:
+        result, private, diagnostics, shadow, outcomes = durable_documents()
+        shadow["regionalSourceProofs"] = {"sources": {"synthetic": {"version": 1}}}
+        before_shadow = copy.deepcopy(shadow)
+        order = []
+
+        def validate_wave(*_args):
+            order.append("wave")
+            return True
+
+        def validate_current(*_args):
+            order.append("current")
+            return True
+
+        def finalize(staged_shadow):
+            self.assertEqual(order, ["wave", "current"])
+            self.assertEqual(shadow, before_shadow)
+            staged_shadow["regionalSourceProofs"]["sources"]["synthetic"]["version"] = 2
+            order.append("regional-proof")
+
+        with patch.object(producer, "process_grib", side_effect=mutate_stages):
+            producer.process_grib_transactionally(
+                Path("synthetic.grib"), COLLECTION, MODEL_RUN, FIRST_TIME,
+                zones(), result, diagnostics, shadow, private, outcomes,
+                stage_validator=validate_wave, current_stage_validator=validate_current,
+                finalize_shadow_stage=finalize,
+            )
+        self.assertEqual(order, ["wave", "current", "regional-proof"])
+        self.assertEqual(shadow["regionalSourceProofs"]["sources"]["synthetic"]["version"], 2)
+
     def test_successful_asset_commits_every_staged_surface(self) -> None:
         result, private, diagnostics, shadow, outcomes = durable_documents()
         unrelated_shadow = copy.deepcopy(shadow["unrelated"])
@@ -384,6 +577,18 @@ class TransactionalAssetTests(unittest.TestCase):
         self.assertEqual(shadow["coverageAudits"][RESEARCH_ID]["count"], 2)
         self.assertEqual(shadow["unrelated"], unrelated_shadow)
         self.assertEqual(outcomes, {"complete": True})
+
+    def test_locked_reference_passes_unchanged_to_asset_parser(self) -> None:
+        result, private, diagnostics, shadow, outcomes = durable_documents()
+        def parse(*args, **kwargs):
+            self.assertEqual(kwargs.pop("locked_operational_reference"), MODEL_RUN)
+            return mutate_stages(*args, **kwargs)
+        with patch.object(producer, "process_grib", side_effect=parse):
+            producer.process_grib_transactionally(
+                Path("synthetic.grib"), COLLECTION, MODEL_RUN, FIRST_TIME,
+                zones(), result, diagnostics, shadow, private, outcomes,
+                locked_operational_reference=MODEL_RUN,
+            )
 
     def test_missing_zone_maps_are_normalized_before_successful_parse(self) -> None:
         result = {
@@ -510,6 +715,31 @@ class TransactionalAssetTests(unittest.TestCase):
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_migration_shadow_is_durable_before_recovery_bulk_write(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            shadow_path = Path(directory) / "regional-shadow.json"
+            shadow = {"schemaVersion": 1, "anchors": {},
+                      "regionalSourceProofs": {"synthetic": "original-proof"}}
+            previous = {"schemaVersion": 2, "zones": {}}
+            pending = {"pending": True}
+            def write_bulk(value):
+                self.assertEqual(value, previous)
+                self.assertEqual(json.loads(shadow_path.read_text("utf-8")), shadow)
+            with patch.object(producer, "CURRENT_FIELD_SHADOW_PATH", shadow_path), \
+                 patch.object(producer, "atomic_write_bulk_cache", side_effect=write_bulk) as bulk:
+                producer.persist_regional_shadow_before_recovery(shadow, previous, pending)
+                bulk.assert_called_once_with(previous)
+            self.assertEqual(pending, {})
+
+    def test_failed_migration_shadow_save_preserves_original_bulk_proof(self) -> None:
+        pending = {"pending": True}
+        with patch.object(producer, "save_current_field_shadow", side_effect=OSError("synthetic save failure")), \
+             patch.object(producer, "atomic_write_bulk_cache") as bulk:
+            with self.assertRaisesRegex(OSError, "synthetic save failure"):
+                producer.persist_regional_shadow_before_recovery({}, {}, pending)
+            bulk.assert_not_called()
+        self.assertEqual(pending, {"pending": True})
+
     def test_structurally_invalid_preferred_candidate_is_quarantined_and_recovered(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "candidate.json"

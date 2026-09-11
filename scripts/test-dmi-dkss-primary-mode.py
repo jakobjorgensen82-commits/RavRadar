@@ -216,6 +216,7 @@ assert full == {
     "critical": False,
     "deferValidRefresh": True,
     "currentMissingPairCount": 0,
+    "regionalCurrentPotentialPairCount": 0,
     "missingComponentKinds": [],
 }
 

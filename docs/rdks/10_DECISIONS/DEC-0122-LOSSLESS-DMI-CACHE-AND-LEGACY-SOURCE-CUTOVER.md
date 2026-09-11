@@ -85,6 +85,14 @@ DEC-0125 indfører bounded fair DMI-familyservice, separate roterede Baltic-/AMM
 
 Bevarede provider- og WAM-cacher genvalideres og genbruges uden nulstilling. Arkiv-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Current kræver stadig 79.414/79.414, og bølger kræver 79.060 native WAM plus Feggesund 354/354. Candidate G forbliver offentlig, indtil hele 4.0.343-kæden er positivt bevist.
 
+### Versionsoverførsel 2026-09-11 – exact-release 4.0.344
+
+4.0.343 er merged på `5587001b`, men oneoff `34588002366` sluttede uden currentclosure og handoff. DEC-0126 samler den målte regionale prooflevetidsfejl, DMI-lead-/tidsdeling og katalogterminal, samt CP-checkpoint-, kadence- og spredt-requestrettelse. Faktisk læsende migration genbrugte 656 af en fast 1.658-rest uden tab; det er ikke ny produktionsdækning eller launchbevis.
+
+Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.344`. Et ældre handoff kan ikke ommærkes eller bruges. Cutover kræver et komplet handoff fra samme eksakte 4.0.344-main-head. Bevarede provider- og WAM-cacher genvalideres og genbruges uden nulstilling; tidligere korrekt anvendte SQL-/modelbindinger ændres ikke af denne Python-/schedulerpakke.
+
+Arkiv-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Current kræver 79.414/79.414 og bølger 79.060 native WAM plus Feggesund 354/354. Lokal 4.0.344 er endnu ikke exact-head-CI-valideret, merged eller produktionsverificeret. Candidate G forbliver offentlig, indtil den nye samlede kæde er positivt bevist.
+
 ## Konsekvenser
 
 - Bevarede data kan genbruges på tværs af target- og leverandørskift uden at være låst til Open-Meteo.
