@@ -20,7 +20,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, NamedTuple
+from typing import Any, Iterable, NamedTuple
 from urllib.parse import urljoin, urlparse
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
@@ -266,6 +266,8 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 PARSER_VERSION = 20
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 9
+WAVE_ASSET_ADMISSION_POLICY = "per-part-atomic-v1"
+WAVE_ASSET_CACHE_PROOF_SCHEMA = "dmi-wave-asset-cache-proof-v2"
 # The integrated model can replay at most 48 hours before its first public
 # target. Keep a bounded private buffer with one full native-cadence safety
 # margin; this cache is never part of the Pages artifact.
@@ -1351,6 +1353,8 @@ def reusable_processed_steps(
         rejected_by_code: dict[str, int] = {}
         reconstructed = 0
         evaluated = 0
+        traversal_complete = 0
+        partially_admitted = 0
         for raw_valid_time, expected in required_asset_provenance.items():
             valid_time = canonical_time(raw_valid_time)
             if not (
@@ -1381,13 +1385,43 @@ def reusable_processed_steps(
                 rejected_by_code[code] = (
                     rejected_by_code.get(code, 0) + int(count)
                 )
-            if not (
-                summary["requiredCount"] > 0
-                and summary["acceptedCount"] == summary["requiredCount"]
-            ):
+            summary_complete = wave_asset_cache_proof_coherent(
+                summary,
+                require_complete=True,
+            )
+            persisted_traversal = bool(
+                wave_asset_cache_proof_coherent(summary)
+                and step.get("assetTraversalComplete") is True
+                and step.get("waveAdmissionPolicy")
+                    == WAVE_ASSET_ADMISSION_POLICY
+                and re.fullmatch(
+                    r"[0-9a-f]{64}",
+                    str(step.get("rawContentSha256") or ""),
+                )
+                and step.get("rawContentSha256")
+                    == summary.get("rawContentSha256")
+                and step.get("parserVersion") == PARSER_VERSION
+                and step.get("processingSignature") == processing_signature
+                and {"significant-wave-height", "dominant-wave-period"}
+                    <= set(step.get("recognizedParameters") or [])
+                and int(step.get("acceptedNativeZoneCount") or 0)
+                    == int(summary.get("acceptedCount") or 0)
+                and wave_source_asset_matches_official(
+                    step.get("sourceAsset"), expected,
+                )
+                and step.get("waveTargetProof") == summary
+            )
+            # A complete exact cache can reconstruct its receipt. Partial cache
+            # state is reusable only with the persisted proof that the exact
+            # immutable asset reached EOF under this admission contract.
+            if not (summary_complete or persisted_traversal):
                 continue
+            traversal_complete += 1
+            if not summary_complete:
+                partially_admitted += 1
             already_proof_complete = bool(
-                step.get("complete") is True
+                summary_complete
+                and step.get("complete") is True
                 and step.get("parserVersion") == PARSER_VERSION
                 and step.get("processingSignature") == processing_signature
                 and {"significant-wave-height", "dominant-wave-period"}
@@ -1397,7 +1431,7 @@ def reusable_processed_steps(
                 )
                 and step.get("waveTargetProof") == summary
             )
-            if not already_proof_complete:
+            if summary_complete and not already_proof_complete:
                 reconstructed += 1
             recognized_parameters = sorted({
                 *(step.get("recognizedParameters") or []),
@@ -1409,20 +1443,29 @@ def reusable_processed_steps(
                 "requiredParameters": sorted(REQUIRED_TARGETS["wave"]),
                 "missingRequiredParameters": [],
                 "zonesTouched": summary["acceptedCount"],
-                "complete": True,
+                "acceptedNativeZoneCount": summary["acceptedCount"],
+                "complete": summary_complete,
+                "assetTraversalComplete": True,
+                "waveAdmissionPolicy": WAVE_ASSET_ADMISSION_POLICY,
+                "rawContentSha256": summary.get("rawContentSha256"),
                 "parserVersion": PARSER_VERSION,
                 "processingSignature": processing_signature,
                 "sourceAsset": expected,
                 "waveTargetProof": summary,
                 **(
                     {"reconstructedFromNativeCache": True}
-                    if not already_proof_complete else {}
+                    if summary_complete and not already_proof_complete else {}
                 ),
             }
         if wave_resume_metrics is not None:
             wave_resume_metrics.update({
                 "assetsEvaluated": evaluated,
-                "proofCompleteAssets": len(reusable_wave),
+                "traversalCompleteAssets": traversal_complete,
+                "partiallyAdmittedAssets": partially_admitted,
+                "proofCompleteAssets": sum(
+                    step.get("complete") is True
+                    for step in reusable_wave.values()
+                ),
                 "reconstructedProofCompleteAssets": reconstructed,
                 "rejectedByCode": dict(sorted(rejected_by_code.items())),
             })
@@ -3936,6 +3979,305 @@ def operational_wave_asset_stage_complete(
     )
 
 
+def wave_component_snapshot(
+    document: dict[str, Any],
+    zone_id: str,
+    valid_time: str,
+) -> dict[str, Any]:
+    """Return the complete mutable wave slice for one PART/time pair.
+
+    The GRIB parser stores the tuple on the hour and its cell metadata on the
+    point. Presence is retained explicitly so that a rejected target cannot
+    silently create, remove or normalise a value while another target from the
+    same asset is admitted.
+    """
+    point = (document.get("zones") or {}).get(zone_id)
+    if not isinstance(point, dict):
+        point = {}
+    hour = (point.get("hourly") or {}).get(valid_time)
+    if not isinstance(hour, dict):
+        hour = {}
+    sources = hour.get("sources")
+    if not isinstance(sources, dict):
+        sources = {}
+    grid_points = point.get("gridPoints")
+    if not isinstance(grid_points, dict):
+        grid_points = {}
+    collections = point.get("collections")
+    if not isinstance(collections, dict):
+        collections = {}
+
+    def entry(mapping: dict[str, Any], key: str) -> tuple[bool, Any]:
+        return key in mapping, copy.deepcopy(mapping.get(key))
+
+    fields = (
+        "significant-wave-height",
+        "dominant-wave-period",
+        "mean-wave-dir",
+    )
+    return {
+        "zonePresent": zone_id in (document.get("zones") or {}),
+        "hourPresent": valid_time in (point.get("hourly") or {}),
+        "time": entry(hour, "time"),
+        "hour": {key: entry(hour, key) for key in fields},
+        "source": entry(sources, "wave"),
+        "gridPoints": {key: entry(grid_points, key) for key in fields},
+        "collections": {key: entry(collections, key) for key in fields},
+    }
+
+
+def operational_wave_asset_stage_admissible(
+    before: dict[str, Any],
+    staged: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    asset: Any,
+    summary: dict[str, Any],
+    outcome: tuple[set[str], set[str], bool, int, int],
+) -> bool:
+    """Admit a cleanly traversed WAM asset at atomic PART/time granularity.
+
+    Corrupt/global asset failures are handled before this validator. At EOF we
+    require at least one complete tuple from the exact official asset and prove
+    that every rejected native target is byte-for-byte unchanged. The existing
+    collection candidate/promotion gate then prevents pair regressions and
+    mixed native lineage from reaching the active cache.
+    """
+    if not (
+        collection in WAVE_BOOTSTRAP_COLLECTIONS
+        and isinstance(summary, dict)
+        and isinstance(outcome, tuple)
+        and len(outcome) == 5
+        and {"significant-wave-height", "dominant-wave-period"}
+            <= set(outcome[0])
+        and outcome[2] is False
+        and getattr(asset, "valid_time", None)
+    ):
+        return False
+    integer_fields = ("requiredCount", "acceptedCount", "rejectedCount")
+    if any(
+        not isinstance(summary.get(key), int)
+        or isinstance(summary.get(key), bool)
+        or int(summary[key]) < 0
+        for key in integer_fields
+    ):
+        return False
+    required_count = int(summary["requiredCount"])
+    accepted_count = int(summary["acceptedCount"])
+    rejected_count = int(summary["rejectedCount"])
+    rejected_by_code = summary.get("rejectedByCode")
+    if not isinstance(rejected_by_code, dict) or any(
+        not isinstance(code, str)
+        or not code
+        or not isinstance(count, int)
+        or isinstance(count, bool)
+        or count <= 0
+        for code, count in rejected_by_code.items()
+    ):
+        return False
+    if not wave_asset_cache_proof_coherent(summary):
+        return False
+    target_ids = [str(zone.get("id") or "") for zone in zones]
+    if (
+        summary.get("schemaVersion") != WAVE_ASSET_CACHE_PROOF_SCHEMA
+        or summary.get("admissionPolicy") != WAVE_ASSET_ADMISSION_POLICY
+        or summary.get("targetRegistrySha256")
+            != wave_target_registry_sha256(collection, zones)
+        or not re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("acceptedTargetSetSha256") or ""),
+        )
+        or not re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("rejectedTargetSetSha256") or ""),
+        )
+        or required_count <= 0
+        or accepted_count <= 0
+        or required_count != len(target_ids)
+        or len(set(target_ids)) != len(target_ids)
+        or any(not zone_id for zone_id in target_ids)
+        or accepted_count + rejected_count != required_count
+        or sum(rejected_by_code.values()) != rejected_count
+    ):
+        return False
+    accepted_ids: set[str] = set()
+    rejected_ids: set[str] = set()
+    accepted_lineages: set[str] = set()
+    accepted_content_sha256: set[str] = set()
+    rejected_zones: list[tuple[dict[str, Any], str]] = []
+    for zone in zones:
+        zone_id = str(zone.get("id") or "")
+        rejection = private_wave_bootstrap_hour_rejection_code(
+            staged,
+            zone,
+            collection,
+            asset,
+        )
+        if rejection is None:
+            accepted_ids.add(zone_id)
+            staged_point = (staged.get("zones") or {}).get(zone_id) or {}
+            staged_hour = (staged_point.get("hourly") or {}).get(
+                asset.valid_time
+            ) or {}
+            source = (staged_hour.get("sources") or {}).get("wave") or {}
+            accepted_content_sha256.add(str(source.get("contentSha256") or ""))
+            lineage = wave_asset_lineage_identity(source)
+            if lineage is None:
+                return False
+            accepted_lineages.add(json.dumps(
+                lineage,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ))
+            continue
+        rejected_ids.add(zone_id)
+        rejected_zones.append((zone, zone_id))
+        if wave_component_snapshot(
+            before,
+            zone_id,
+            asset.valid_time,
+        ) != wave_component_snapshot(
+            staged,
+            zone_id,
+            asset.valid_time,
+        ):
+            return False
+    if len(accepted_lineages) != 1:
+        return False
+    admitted_lineage = next(iter(accepted_lineages))
+    for zone, zone_id in rejected_zones:
+        before_point = (before.get("zones") or {}).get(zone_id)
+        if not isinstance(before_point, dict):
+            before_point = {}
+        before_hour = (before_point.get("hourly") or {}).get(
+            asset.valid_time
+        )
+        if not isinstance(before_hour, dict):
+            before_hour = {}
+        provenance_entity = sampling_identity(zone) or before_point
+        if native_wave_row_error_code(
+            valid_time=asset.valid_time,
+            hour=before_hour,
+            entity_id=zone_id,
+            provenance_entity=provenance_entity,
+        ) is None:
+            old_lineage = wave_asset_lineage_identity(
+                (before_hour.get("sources") or {}).get("wave")
+            )
+            if old_lineage is None or json.dumps(
+                old_lineage,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ) != admitted_lineage:
+                # One native time may never contain two valid asset lineages.
+                return False
+        # AssetStagedZone intentionally normalises missing metadata mappings.
+        # Put every rejected target back exactly as it was before the generic
+        # transaction commits, including key presence and unrelated fields.
+        before_zones = before.get("zones") or {}
+        staged_zones = staged.setdefault("zones", {})
+        if zone_id in before_zones:
+            staged_zones[zone_id] = copy.deepcopy(before_zones[zone_id])
+        else:
+            staged_zones.pop(zone_id, None)
+    target_id_set = set(target_ids)
+    touched_target_ids = set(outcome[1]) & target_id_set
+    if not touched_target_ids <= accepted_ids:
+        return False
+    for zone in zones:
+        zone_id = str(zone.get("id") or "")
+        if zone_id not in accepted_ids - touched_target_ids:
+            continue
+        if (
+            wave_component_snapshot(before, zone_id, asset.valid_time)
+            != wave_component_snapshot(staged, zone_id, asset.valid_time)
+            or private_wave_bootstrap_hour_rejection_code(
+                before,
+                zone,
+                collection,
+                asset,
+            ) is not None
+        ):
+            return False
+    return bool(
+        len(accepted_ids) == accepted_count
+        and len(accepted_lineages) == 1
+        and summary.get("acceptedLineageSha256") == hashlib.sha256(
+            next(iter(accepted_lineages)).encode("utf-8")
+        ).hexdigest()
+        and len(accepted_content_sha256) == 1
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            next(iter(accepted_content_sha256)),
+        )
+        and summary.get("rawContentSha256")
+            == next(iter(accepted_content_sha256))
+        and summary.get("acceptedTargetSetSha256")
+            == wave_target_set_sha256(accepted_ids)
+        and summary.get("rejectedTargetSetSha256")
+            == wave_target_set_sha256(rejected_ids)
+    )
+
+
+def accumulate_wave_asset_coverage(
+    coverage: dict[str, Any],
+    summary: dict[str, Any],
+    *,
+    admitted: bool,
+    observed_rejected_by_code: dict[str, int] | None = None,
+) -> None:
+    """Persist privacy-safe aggregate WAM admission evidence."""
+    required_count = int(summary.get("requiredCount") or 0)
+    accepted_count = int(summary.get("acceptedCount") or 0)
+    rejected_count = int(summary.get("rejectedCount") or 0)
+    coverage["observedAssetCount"] = int(
+        coverage.get("observedAssetCount") or 0
+    ) + 1
+    coverage["requiredTupleCount"] = int(
+        coverage.get("requiredTupleCount") or 0
+    ) + required_count
+    coverage["acceptedTupleCount"] = int(
+        coverage.get("acceptedTupleCount") or 0
+    ) + accepted_count
+    coverage["observedValidTupleCount"] = int(
+        coverage.get("observedValidTupleCount") or 0
+    ) + accepted_count
+    coverage["rejectedTupleCount"] = int(
+        coverage.get("rejectedTupleCount") or 0
+    ) + rejected_count
+    if admitted:
+        coverage["admittedTupleCount"] = int(
+            coverage.get("admittedTupleCount") or 0
+        ) + accepted_count
+        coverage["admittedAssetCount"] = int(
+            coverage.get("admittedAssetCount") or 0
+        ) + 1
+        key = (
+            "completeAssetCount"
+            if required_count > 0 and accepted_count == required_count
+            else "partialAssetCount"
+        )
+        coverage[key] = int(coverage.get(key) or 0) + 1
+    else:
+        coverage["withheldValidTupleCount"] = int(
+            coverage.get("withheldValidTupleCount") or 0
+        ) + accepted_count
+        coverage["rejectedAssetCount"] = int(
+            coverage.get("rejectedAssetCount") or 0
+        ) + 1
+    rejected_totals = coverage.setdefault("rejectedByCode", {})
+    rejection_counts = (
+        observed_rejected_by_code
+        if observed_rejected_by_code is not None
+        else summary.get("rejectedByCode") or {}
+    )
+    for code, count in rejection_counts.items():
+        rejected_totals[code] = int(rejected_totals.get(code) or 0) + int(count)
+    coverage["rejectedByCode"] = dict(sorted(rejected_totals.items()))
+
+
 def build_operational_wave_collection_candidate(
     active: dict[str, Any],
 ) -> dict[str, Any]:
@@ -4082,6 +4424,26 @@ def operational_wave_terminal_quality_promotion_allowed(
         and phase_fully_traversed
         and stop_code is None
         and candidate_changed
+    )
+
+
+def operational_wave_phase_fully_traversed(
+    *,
+    selected_asset_count: int,
+    proven_asset_count: int,
+    stop_code: str | None,
+    native_closure_stopped: bool,
+) -> bool:
+    """Require an EOF/admission proof for every selected asset in the phase."""
+    return bool(
+        isinstance(selected_asset_count, int)
+        and not isinstance(selected_asset_count, bool)
+        and selected_asset_count > 0
+        and isinstance(proven_asset_count, int)
+        and not isinstance(proven_asset_count, bool)
+        and proven_asset_count == selected_asset_count
+        and stop_code is None
+        and not native_closure_stopped
     )
 
 
@@ -5360,6 +5722,140 @@ def private_wave_bootstrap_hour_complete(
     ) is None
 
 
+def wave_target_set_sha256(zone_ids: Iterable[str]) -> str:
+    canonical = json.dumps(
+        sorted({str(zone_id) for zone_id in zone_ids}),
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def wave_target_registry_sha256(
+    collection: str,
+    zones: list[dict[str, Any]],
+) -> str:
+    canonical = json.dumps(
+        {
+            "collection": collection,
+            "targets": sorted(
+                (
+                    {
+                        "id": str(zone.get("id") or ""),
+                        "samplingIdentity": sampling_identity(zone),
+                    }
+                    for zone in zones
+                ),
+                key=lambda row: json.dumps(
+                    row,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            ),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def wave_asset_lineage_identity(source: Any) -> dict[str, Any] | None:
+    """Return the immutable cross-target lineage of one admitted WAM row."""
+    if not isinstance(source, dict):
+        return None
+    value = {
+        "collection": str(source.get("collection") or ""),
+        "nativeValidTime": canonical_time(source.get("nativeValidTime")),
+        "modelRun": canonical_time(source.get("modelRun")),
+        "itemId": str(source.get("itemId") or ""),
+        "assetIdentitySha256": str(
+            source.get("assetIdentitySha256") or ""
+        ),
+        "assetSizeBytes": source.get("assetSizeBytes"),
+        "itemCreatedAt": canonical_time(source.get("itemCreatedAt")),
+        "itemUpdatedAt": canonical_time(source.get("itemUpdatedAt")),
+        "gridDefinitionSha256": str(
+            source.get("gridDefinitionSha256") or ""
+        ),
+        "contentSha256": str(source.get("contentSha256") or ""),
+    }
+    if (
+        not value["collection"]
+        or not value["nativeValidTime"]
+        or not value["modelRun"]
+        or not value["itemId"]
+        or (
+            value["assetSizeBytes"] is not None
+            and (
+                not isinstance(value["assetSizeBytes"], int)
+                or isinstance(value["assetSizeBytes"], bool)
+                or value["assetSizeBytes"] <= 0
+            )
+        )
+        or not re.fullmatch(
+            r"[0-9a-f]{64}", value["assetIdentitySha256"]
+        )
+        or not re.fullmatch(
+            r"[0-9a-f]{64}", value["gridDefinitionSha256"]
+        )
+        or not re.fullmatch(r"[0-9a-f]{64}", value["contentSha256"])
+    ):
+        return None
+    return value
+
+
+def wave_asset_cache_proof_coherent(
+    summary: Any,
+    *,
+    require_complete: bool = False,
+) -> bool:
+    """Validate the aggregate receipt without exposing target or lineage IDs."""
+    if not isinstance(summary, dict):
+        return False
+    required_count = summary.get("requiredCount")
+    accepted_count = summary.get("acceptedCount")
+    rejected_count = summary.get("rejectedCount")
+    if any(
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < 0
+        for value in (required_count, accepted_count, rejected_count)
+    ):
+        return False
+    return bool(
+        summary.get("schemaVersion") == WAVE_ASSET_CACHE_PROOF_SCHEMA
+        and summary.get("admissionPolicy") == WAVE_ASSET_ADMISSION_POLICY
+        and required_count > 0
+        and accepted_count > 0
+        and accepted_count + rejected_count == required_count
+        and (not require_complete or accepted_count == required_count)
+        and summary.get("acceptedLineageCount") == 1
+        and summary.get("acceptedLineageEvidenceCount") == accepted_count
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("acceptedLineageSha256") or ""),
+        )
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("rawContentSha256") or ""),
+        )
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("targetRegistrySha256") or ""),
+        )
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("acceptedTargetSetSha256") or ""),
+        )
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(summary.get("rejectedTargetSetSha256") or ""),
+        )
+    )
+
+
 def private_wave_bootstrap_asset_summary(
     result: dict[str, Any],
     zones: list[dict[str, Any]],
@@ -5368,6 +5864,11 @@ def private_wave_bootstrap_asset_summary(
 ) -> dict[str, Any]:
     rejected: dict[str, int] = {}
     accepted = 0
+    accepted_zone_ids: list[str] = []
+    rejected_zone_ids: list[str] = []
+    accepted_content_sha256: set[str] = set()
+    accepted_lineages: set[str] = set()
+    accepted_lineage_evidence_count = 0
     for zone in zones:
         code = private_wave_bootstrap_hour_rejection_code(
             result,
@@ -5377,14 +5878,113 @@ def private_wave_bootstrap_asset_summary(
         )
         if code is None:
             accepted += 1
+            zone_id = str(zone.get("id") or "")
+            accepted_zone_ids.append(zone_id)
+            point = (result.get("zones") or {}).get(zone_id) or {}
+            hour = (point.get("hourly") or {}).get(asset.valid_time) or {}
+            content_sha256 = str(
+                ((hour.get("sources") or {}).get("wave") or {}).get(
+                    "contentSha256"
+                ) or ""
+            )
+            if content_sha256:
+                accepted_content_sha256.add(content_sha256)
+            lineage = wave_asset_lineage_identity(
+                (hour.get("sources") or {}).get("wave")
+            )
+            if lineage is not None:
+                accepted_lineage_evidence_count += 1
+                accepted_lineages.add(json.dumps(
+                    lineage,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ))
         else:
             rejected[code] = rejected.get(code, 0) + 1
+            rejected_zone_ids.append(str(zone.get("id") or ""))
     return {
+        "schemaVersion": WAVE_ASSET_CACHE_PROOF_SCHEMA,
+        "admissionPolicy": WAVE_ASSET_ADMISSION_POLICY,
         "requiredCount": len(zones),
         "acceptedCount": accepted,
         "rejectedCount": len(zones) - accepted,
         "rejectedByCode": dict(sorted(rejected.items())),
+        "targetRegistrySha256": wave_target_registry_sha256(
+            collection,
+            zones,
+        ),
+        "acceptedTargetSetSha256": wave_target_set_sha256(
+            accepted_zone_ids
+        ),
+        "rejectedTargetSetSha256": wave_target_set_sha256(
+            rejected_zone_ids
+        ),
+        "acceptedLineageCount": len(accepted_lineages),
+        "acceptedLineageEvidenceCount": accepted_lineage_evidence_count,
+        "acceptedLineageSha256": (
+            hashlib.sha256(
+                next(iter(accepted_lineages)).encode("utf-8")
+            ).hexdigest()
+            if len(accepted_lineages) == 1
+            else None
+        ),
+        "rawContentSha256": (
+            next(iter(accepted_content_sha256))
+            if len(accepted_content_sha256) == 1
+            else None
+        ),
     }
+
+
+def observed_wave_asset_rejections(
+    diagnostics: dict[str, Any],
+    staged: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    asset: Any,
+) -> dict[str, int]:
+    """Collapse transient per-target parser outcomes before any checkpoint."""
+    scalar_rejections = diagnostics.get("rejectedScalarTuples")
+    if not isinstance(scalar_rejections, dict):
+        scalar_rejections = {}
+    counts: dict[str, int] = {}
+    for zone in zones:
+        if private_wave_bootstrap_hour_rejection_code(
+            staged,
+            zone,
+            collection,
+            asset,
+        ) is None:
+            continue
+        zone_id = str(zone.get("id") or "")
+        observed = scalar_rejections.get(zone_id)
+        if not isinstance(observed, dict):
+            observed = {}
+        code = str(observed.get("wave") or "").strip()
+        if not code:
+            code = str(private_wave_bootstrap_hour_rejection_code(
+                staged,
+                zone,
+                collection,
+                asset,
+            ) or "UNCLASSIFIED_WAVE_REJECTION")
+        counts[code] = counts.get(code, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def clear_wave_target_rejection_diagnostics(
+    diagnostics: dict[str, Any],
+    zones: list[dict[str, Any]],
+) -> None:
+    """Remove private per-target outcomes after their aggregate is captured."""
+    scalar_rejections = diagnostics.get("rejectedScalarTuples")
+    if not isinstance(scalar_rejections, dict):
+        return
+    for zone in zones:
+        scalar_rejections.pop(str(zone.get("id") or ""), None)
+    if not scalar_rejections:
+        diagnostics.pop("rejectedScalarTuples", None)
 
 
 class MappingWaveAsset:
@@ -5736,9 +6336,34 @@ def execute_private_wave_history_bootstrap(
             if epoch(asset.valid_time) < epoch(configuration["targetHour"])
         }
         for asset_number, asset in enumerate(assets, start=1):
-            already_complete = all(
-                private_wave_bootstrap_hour_complete(result, zone, collection, asset)
-                for zone in relevant
+            private_asset_reference = {
+                **asset.download_reference(),
+                "assetIdentitySha256": asset.asset_identity_sha256,
+            }
+            private_official_identity = official_wave_asset_identity(
+                collection,
+                asset.model_run,
+                private_asset_reference,
+            )
+            if private_official_identity is None:
+                controller.flush_if_due(force=True)
+                raise RuntimeError(
+                    "private WAM bootstrap asset identity is incomplete"
+                )
+            verified_asset = MappingWaveAsset(
+                private_asset_reference,
+                asset.model_run,
+                official_identity=private_official_identity,
+            )
+            cached_asset_summary = private_wave_bootstrap_asset_summary(
+                result,
+                relevant,
+                collection,
+                verified_asset,
+            )
+            already_complete = wave_asset_cache_proof_coherent(
+                cached_asset_summary,
+                require_complete=True,
             )
             if already_complete:
                 collection_summary["reusedCompleteAssetCount"] += 1
@@ -5838,6 +6463,12 @@ def execute_private_wave_history_bootstrap(
             )
             asset_processing_started = time.monotonic()
             staged_asset_summary: dict[str, Any] = {}
+            staged_asset_rejections: dict[str, int] = {}
+            asset_coverage = collection_summary.setdefault("assetCoverage", {})
+            clear_wave_target_rejection_diagnostics(
+                result["diagnostics"],
+                relevant,
+            )
 
             def bootstrap_stage_complete(
                 staged_result: dict[str, Any],
@@ -5848,11 +6479,24 @@ def execute_private_wave_history_bootstrap(
                     staged_result,
                     relevant,
                     collection,
-                    asset,
+                    verified_asset,
                 )
                 staged_asset_summary.clear()
                 staged_asset_summary.update(summary)
-                return operational_wave_asset_stage_complete(
+                staged_asset_rejections.clear()
+                staged_asset_rejections.update(observed_wave_asset_rejections(
+                    result["diagnostics"],
+                    staged_result,
+                    relevant,
+                    collection,
+                    verified_asset,
+                ))
+                return operational_wave_asset_stage_admissible(
+                    result,
+                    staged_result,
+                    relevant,
+                    collection,
+                    verified_asset,
                     summary,
                     outcome,
                 )
@@ -5876,6 +6520,13 @@ def execute_private_wave_history_bootstrap(
                 RuntimeError,
                 OSError,
             ) as exc:
+                if staged_asset_summary:
+                    accumulate_wave_asset_coverage(
+                        asset_coverage,
+                        staged_asset_summary,
+                        admitted=False,
+                        observed_rejected_by_code=staged_asset_rejections,
+                    )
                 collection_summary["failedAssetCount"] = int(
                     collection_summary.get("failedAssetCount") or 0
                 ) + 1
@@ -5885,11 +6536,17 @@ def execute_private_wave_history_bootstrap(
                     "message": safe_error_message(exc),
                     "failureCode": collection_failure_code(exc),
                     "failureClass": "private-wave-history-asset",
-                    "partialProgressPreserved": True,
+                    "partialProgressPreserved": False,
+                    "activeCachePreserved": True,
                 })
+                controller.mark_bulk_dirty()
                 controller.flush_if_due(force=True)
                 continue
             asset_processing_seconds = time.monotonic() - asset_processing_started
+            clear_wave_target_rejection_diagnostics(
+                result["diagnostics"],
+                relevant,
+            )
             result["diagnostics"]["messagesSeen"] = int(
                 result["diagnostics"].get("messagesSeen") or 0
             ) + messages_seen
@@ -5900,33 +6557,17 @@ def execute_private_wave_history_bootstrap(
                 raise RuntimeError("private WAM bootstrap runtime budget reached inside GRIB processing")
             if not {"significant-wave-height", "dominant-wave-period"} <= found:
                 raise RuntimeError("private WAM bootstrap GRIB tuple is incomplete")
-            collection_summary.setdefault("assetCoverage", {
-                "completeAssetCount": 0,
-                "partialAssetCount": 0,
-                "acceptedTupleCount": 0,
-                "rejectedTupleCount": 0,
-                "rejectedByCode": {},
-            })
-            coverage = collection_summary["assetCoverage"]
             accepted_count = int(staged_asset_summary.get("acceptedCount") or 0)
             required_count = int(staged_asset_summary.get("requiredCount") or 0)
-            coverage["acceptedTupleCount"] += accepted_count
-            coverage["rejectedTupleCount"] += int(
-                staged_asset_summary.get("rejectedCount") or 0
+            accumulate_wave_asset_coverage(
+                asset_coverage,
+                staged_asset_summary,
+                admitted=True,
+                observed_rejected_by_code=staged_asset_rejections,
             )
-            for code, count in (
-                staged_asset_summary.get("rejectedByCode") or {}
-            ).items():
-                coverage["rejectedByCode"][code] = int(
-                    coverage["rejectedByCode"].get(code) or 0
-                ) + int(count)
             fresh_zone_ids.update(touched)
             collection_summary["processedAssetCount"] += 1
             complete_asset = required_count > 0 and accepted_count == required_count
-            if complete_asset:
-                coverage["completeAssetCount"] += 1
-            else:
-                coverage["partialAssetCount"] += 1
             if complete_asset and asset.valid_time in expected_locked_hours:
                 locked[collection].add(asset.valid_time)
             checkpoint_written = controller.note_committed_asset(
@@ -10076,8 +10717,11 @@ def main() -> int:
             )
             if bootstrap_operational_wam:
                 result["diagnostics"]["operationalWaveStageMode"] = (
-                    "collection-run-candidate-monotone-promotion"
+                    "per-part-atomic-collection-run-candidate-monotone-promotion"
                 )
+                result["diagnostics"].setdefault(
+                    "operationalWaveAssetCoverageByCollection", {}
+                )[collection] = {}
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
@@ -10255,6 +10899,17 @@ def main() -> int:
                 and set(step.get("recognizedParameters") or []) >= required_for_family
                 and int(step.get("zonesTouched") or 0) > 0
             }
+            previously_traversed = (
+                {
+                    valid for valid, step in previous_steps.items()
+                    if step.get("assetTraversalComplete") is True
+                    and set(step.get("recognizedParameters") or [])
+                        >= required_for_family
+                    and int(step.get("zonesTouched") or 0) > 0
+                }
+                if bootstrap_operational_wam
+                else set(previously_processed)
+            )
             wave_missing_valid_times: tuple[str, ...] = ()
             if bootstrap_operational_wam:
                 _wave_closure_before_assets, wave_missing_valid_times = (
@@ -10271,9 +10926,11 @@ def main() -> int:
                 assets = prioritize_operational_wave_assets(
                     assets,
                     wave_missing_valid_times,
-                    previously_processed,
+                    previously_traversed,
                 )
-            result["diagnostics"]["assetsRetriedIncomplete"] += max(0, len(previous_steps) - len(previously_processed))
+            result["diagnostics"]["assetsRetriedIncomplete"] += max(
+                0, len(previous_steps) - len(previously_traversed)
+            )
             wave_phase_asset_counts = {
                 phase_rank: sum(
                     int(asset.get("operationalWavePhaseRank") or 0)
@@ -10299,6 +10956,24 @@ def main() -> int:
                         >= required_for_family
                     and int(step.get("zonesTouched") or 0) > 0
                 }
+                traversed = (
+                    {
+                        valid for valid, step in steps.items()
+                        if step.get("assetTraversalComplete") is True
+                        and set(step.get("recognizedParameters") or [])
+                            >= required_for_family
+                        and int(step.get("zonesTouched") or 0) > 0
+                    }
+                    if bootstrap_operational_wam
+                    else set(completed)
+                )
+                proof_complete = {
+                    valid for valid, step in steps.items()
+                    if step.get("complete") is True
+                    and set(step.get("recognizedParameters") or [])
+                        >= required_for_family
+                    and int(step.get("zonesTouched") or 0) > 0
+                }
                 metrics = resume_metrics or {}
                 return {
                     "referenceTime": reference_time,
@@ -10312,12 +10987,20 @@ def main() -> int:
                     **({
                         "rawAssetsReused": 0,
                         "assetsObserved": 0,
-                        "assetsProofCompleteAtStart": len(completed),
-                        "assetsProofComplete": len(completed),
+                        "assetsTraversalCompleteAtStart": len(traversed),
+                        "assetsTraversalComplete": len(traversed),
+                        "assetsProofCompleteAtStart": len(proof_complete),
+                        "assetsProofComplete": len(proof_complete),
                         "assetsProofCompleteReconstructed": int(
                             metrics.get("reconstructedProofCompleteAssets")
                             or 0
                         ),
+                        "assetsPartiallyAdmittedAtStart": int(
+                            metrics.get("partiallyAdmittedAssets") or 0
+                        ),
+                        "assetsAdmitted": 0,
+                        "assetsPartiallyAdmitted": 0,
+                        "assetsRejectedAfterTraversal": 0,
                         "waveObservedRejectionEventsByCode": dict(
                             metrics.get("rejectedByCode") or {}
                         ),
@@ -10331,6 +11014,9 @@ def main() -> int:
                     "assetsBoundedRefreshCompleted": 0,
                     "assetsBoundedRefreshFailed": 0,
                     "processedValidTimes": sorted(completed, key=epoch),
+                    **({
+                        "traversedValidTimes": sorted(traversed, key=epoch),
+                    } if bootstrap_operational_wam else {}),
                     "processedSteps": copy.deepcopy(steps),
                     "recognizedParameters": [],
                 }
@@ -10352,7 +11038,11 @@ def main() -> int:
                 result["runs"][collection] = run_info
             recognized: set[str] = set()
             for previous_step in (run_info.get("processedSteps") or {}).values():
-                if previous_step.get("complete"):
+                if (
+                    previous_step.get("assetTraversalComplete") is True
+                    if bootstrap_operational_wam
+                    else previous_step.get("complete") is True
+                ):
                     recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             budget_stop_code = None
@@ -10360,6 +11050,7 @@ def main() -> int:
             wave_phase_rank = 0
             wave_phase_run = initial_phase_run
             wave_phase_seen_asset_count = 0
+            wave_phase_proven_asset_keys: set[str] = set()
             wave_phase_promotion_count = 0
             wave_collection_promotion_count = 0
             wave_pending_touched: set[str] = set()
@@ -10407,6 +11098,7 @@ def main() -> int:
                         wave_phase_rank, 0,
                     ),
                     "assetsReached": wave_phase_seen_asset_count,
+                    "assetsProven": len(wave_phase_proven_asset_keys),
                     "fullyTraversed": fully_traversed,
                     "promotionCount": wave_phase_promotion_count,
                     "lastPromotionDecision": (
@@ -10540,10 +11232,18 @@ def main() -> int:
                         )
                         budget_stop_code = "RUNTIME_BUDGET_REACHED"
                     previous_fully_traversed = (
-                        wave_phase_seen_asset_count
-                        == wave_phase_asset_counts.get(wave_phase_rank, 0)
-                        and budget_stop_code is None
-                        and not stop_for_native_wave_closure
+                        operational_wave_phase_fully_traversed(
+                            selected_asset_count=wave_phase_asset_counts.get(
+                                wave_phase_rank, 0,
+                            ),
+                            proven_asset_count=len(
+                                wave_phase_proven_asset_keys
+                            ),
+                            stop_code=budget_stop_code,
+                            native_closure_stopped=(
+                                stop_for_native_wave_closure
+                            ),
+                        )
                     )
                     finish_wave_phase(
                         fully_traversed=previous_fully_traversed,
@@ -10582,6 +11282,7 @@ def main() -> int:
                     wave_phase_rank = asset_phase_rank
                     wave_phase_run = asset_model_run
                     wave_phase_seen_asset_count = 0
+                    wave_phase_proven_asset_keys = set()
                     wave_phase_promotion_count = 0
                     wave_pending_touched = set()
                     wave_last_promotion_decision = None
@@ -10591,6 +11292,7 @@ def main() -> int:
                         build_operational_wave_collection_candidate(result)
                     )
                     previously_processed = set()
+                    previously_traversed = set()
                     run_info = new_collection_run_info(
                         wave_phase_run,
                         wave_phase_asset_counts.get(wave_phase_rank, 0),
@@ -10683,9 +11385,17 @@ def main() -> int:
                     continue
                 if should_skip_previously_processed_asset(
                     asset["valid"],
-                    previously_processed,
+                    (
+                        previously_traversed
+                        if bootstrap_operational_wam
+                        else previously_processed
+                    ),
                     primary_requirement,
                 ):
+                    if bootstrap_operational_wam:
+                        wave_phase_proven_asset_keys.add(
+                            supervised_identity_key
+                        )
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
                     if bootstrap_operational_wam and should_stop_work():
@@ -10883,6 +11593,7 @@ def main() -> int:
                     step_source_asset = None
                 validated_current_stage: dict[str, Any] = {}
                 validated_wave_stage: dict[str, Any] = {}
+                validated_wave_rejections: dict[str, int] = {}
                 allowed_parameters = operational_asset_parameter_filter(
                     collection,
                     asset["valid"],
@@ -10921,7 +11632,22 @@ def main() -> int:
                     )
                     validated_wave_stage.clear()
                     validated_wave_stage.update(summary)
-                    return operational_wave_asset_stage_complete(
+                    validated_wave_rejections.clear()
+                    validated_wave_rejections.update(
+                        observed_wave_asset_rejections(
+                            result["diagnostics"],
+                            staged_result,
+                            operational_wave_zones,
+                            collection,
+                            operational_wave_asset,
+                        )
+                    )
+                    return operational_wave_asset_stage_admissible(
+                        wave_candidate,
+                        staged_result,
+                        operational_wave_zones,
+                        collection,
+                        operational_wave_asset,
                         summary,
                         outcome,
                     )
@@ -11037,6 +11763,11 @@ def main() -> int:
                     validated_current_stage["partOutcomeProof"] = proof
                     return True
 
+                if bootstrap_operational_wam:
+                    clear_wave_target_rejection_diagnostics(
+                        result["diagnostics"],
+                        operational_wave_zones,
+                    )
                 with supervised_asset_operation(supervised_identity):
                     try:
                         found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
@@ -11075,6 +11806,57 @@ def main() -> int:
                         RuntimeError,
                         OSError,
                     ) as exc:
+                        if bootstrap_operational_wam and validated_wave_stage:
+                            wave_asset_coverage = result["diagnostics"].setdefault(
+                                "operationalWaveAssetCoverageByCollection", {}
+                            ).setdefault(collection, {})
+                            accumulate_wave_asset_coverage(
+                                wave_asset_coverage,
+                                validated_wave_stage,
+                                admitted=False,
+                                observed_rejected_by_code=(
+                                    validated_wave_rejections
+                                ),
+                            )
+                            run_info["assetsRejectedAfterTraversal"] += 1
+                            rejected_by_code = run_info[
+                                "waveObservedRejectionEventsByCode"
+                            ]
+                            for code, count in validated_wave_rejections.items():
+                                rejected_by_code[code] = (
+                                    int(rejected_by_code.get(code) or 0)
+                                    + int(count)
+                                )
+                            controlled_reason = (
+                                "NO_USABLE_TUPLES"
+                                if int(
+                                    validated_wave_stage.get("acceptedCount")
+                                    or 0
+                                ) == 0
+                                else "LINEAGE_OR_ADMISSION_DEFERRED"
+                            )
+                            controlled = result["diagnostics"].setdefault(
+                                "operationalWaveControlledRejectionsByCollection",
+                                {},
+                            ).setdefault(collection, {})
+                            controlled[controlled_reason] = int(
+                                controlled.get(controlled_reason) or 0
+                            ) + 1
+                            run_info["assetsObserved"] += 1
+                            recognized.update(REQUIRED_TARGETS["wave"])
+                            run_info["recognizedParameters"] = sorted(recognized)
+                            checkpoint_controller.observe_asset_duration(
+                                time.monotonic() - asset_processing_started
+                            )
+                            checkpoint_controller.mark_bulk_dirty()
+                            checkpoint_controller.flush_if_due(force=True)
+                            progress(
+                                f"{collection}: forecast-step "
+                                f"{asset_number}/{len(assets)} blev læst færdig "
+                                "men gav ingen sikkert admittérbar tidsdel; "
+                                "aktiv cache er uændret, og næste asset fortsætter"
+                            )
+                            continue
                         if bounded_primary_refresh:
                             run_info["assetsBoundedRefreshFailed"] += 1
                             result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
@@ -11088,7 +11870,10 @@ def main() -> int:
                             "message": safe_error_message(exc),
                             "failureCode": collection_failure_code(exc),
                             "failureClass": "asset-processing",
-                            "partialProgressPreserved": True,
+                            "partialProgressPreserved": (
+                                False if bootstrap_operational_wam else True
+                            ),
+                            "activeCachePreserved": True,
                         })
                         checkpoint_controller.flush_if_due(force=True)
                         progress(
@@ -11099,6 +11884,11 @@ def main() -> int:
                         )
                         continue
                 asset_processing_seconds = time.monotonic() - asset_processing_started
+                if bootstrap_operational_wam:
+                    clear_wave_target_rejection_diagnostics(
+                        result["diagnostics"],
+                        operational_wave_zones,
+                    )
                 scrub_private_stage_diagnostics(result["diagnostics"])
                 if coastal_point_stage_targets and not interrupted:
                     checkpoint_controller.mark_sidecars_dirty()
@@ -11140,22 +11930,43 @@ def main() -> int:
                     if bootstrap_operational_wam
                     else None
                 )
-                if step_wave_target_proof is not None:
-                    rejected_by_code = run_info[
-                        "waveObservedRejectionEventsByCode"
-                    ]
-                    for code, count in (
-                        step_wave_target_proof.get("rejectedByCode") or {}
-                    ).items():
-                        rejected_by_code[code] = (
-                            int(rejected_by_code.get(code) or 0)
-                            + int(count)
-                        )
-                wave_step_complete = bool(
+                wave_asset_admitted = bool(
                     bootstrap_operational_wam
                     and step_source_asset is not None
                     and step_wave_target_proof is not None
                     and int(step_wave_target_proof.get("requiredCount") or 0) > 0
+                    and int(step_wave_target_proof.get("acceptedCount") or 0) > 0
+                )
+                if wave_asset_admitted:
+                    wave_phase_proven_asset_keys.add(
+                        supervised_identity_key
+                    )
+                if step_wave_target_proof is not None:
+                    wave_asset_coverage = result["diagnostics"].setdefault(
+                        "operationalWaveAssetCoverageByCollection", {}
+                    ).setdefault(collection, {})
+                    accumulate_wave_asset_coverage(
+                        wave_asset_coverage,
+                        step_wave_target_proof,
+                        admitted=wave_asset_admitted,
+                        observed_rejected_by_code=validated_wave_rejections,
+                    )
+                    rejected_by_code = run_info[
+                        "waveObservedRejectionEventsByCode"
+                    ]
+                    for code, count in validated_wave_rejections.items():
+                        rejected_by_code[code] = (
+                            int(rejected_by_code.get(code) or 0)
+                            + int(count)
+                        )
+                    if wave_asset_admitted:
+                        run_info["assetsAdmitted"] += 1
+                        if step_wave_target_proof.get("acceptedCount") != (
+                            step_wave_target_proof.get("requiredCount")
+                        ):
+                            run_info["assetsPartiallyAdmitted"] += 1
+                wave_step_complete = bool(
+                    wave_asset_admitted
                     and step_wave_target_proof.get("acceptedCount")
                         == step_wave_target_proof.get("requiredCount")
                 )
@@ -11170,16 +11981,34 @@ def main() -> int:
                             and step_part_outcome_proof is not None
                     )
                 )
-                if not interrupted and step_complete:
-                    run_info["assetsProcessed"] += 1
-                    previously_processed.add(asset["valid"])
-                    run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
-                elif not interrupted:
-                    previously_processed.discard(asset["valid"])
-                    run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
-                if not interrupted and bootstrap_operational_wam:
-                    run_info["assetsProofComplete"] = len(
-                        previously_processed
+                asset_traversal_complete = bool(
+                    wave_asset_admitted
+                    if bootstrap_operational_wam
+                    else step_complete
+                )
+                if not interrupted:
+                    if bootstrap_operational_wam:
+                        if asset_traversal_complete:
+                            previously_traversed.add(asset["valid"])
+                        else:
+                            previously_traversed.discard(asset["valid"])
+                        run_info["traversedValidTimes"] = sorted(
+                            previously_traversed,
+                            key=epoch,
+                        )
+                        if step_complete:
+                            run_info["assetsProcessed"] += 1
+                            previously_processed.add(asset["valid"])
+                        else:
+                            previously_processed.discard(asset["valid"])
+                    elif step_complete:
+                        run_info["assetsProcessed"] += 1
+                        previously_processed.add(asset["valid"])
+                    else:
+                        previously_processed.discard(asset["valid"])
+                    run_info["processedValidTimes"] = sorted(
+                        previously_processed,
+                        key=epoch,
                     )
                 if not interrupted:
                     run_info["processedSteps"][asset["valid"]] = {
@@ -11188,6 +12017,20 @@ def main() -> int:
                         "missingRequiredParameters": sorted(required_for_family - set(step_recognized)),
                         "zonesTouched": len(touched),
                         "complete": step_complete,
+                        **({
+                            "assetTraversalComplete": wave_asset_admitted,
+                            "waveAdmissionPolicy": WAVE_ASSET_ADMISSION_POLICY,
+                            "rawContentSha256": (
+                                (step_wave_target_proof or {}).get(
+                                    "rawContentSha256"
+                                )
+                            ),
+                            "acceptedNativeZoneCount": int(
+                                (step_wave_target_proof or {}).get(
+                                    "acceptedCount"
+                                ) or 0
+                            ),
+                        } if bootstrap_operational_wam else {}),
                         "parserVersion": PARSER_VERSION,
                         "processingSignature": processing_signature,
                         **({"sourceAsset": step_source_asset}
@@ -11198,6 +12041,14 @@ def main() -> int:
                         **({"waveTargetProof": step_wave_target_proof}
                            if bootstrap_operational_wam else {}),
                     }
+                    if bootstrap_operational_wam:
+                        run_info["assetsTraversalComplete"] = len(
+                            previously_traversed
+                        )
+                        run_info["assetsProofComplete"] = sum(
+                            step.get("complete") is True
+                            for step in run_info["processedSteps"].values()
+                        )
                     if (
                         collection in MARINE_COLLECTIONS
                         and step_complete
@@ -11249,13 +12100,13 @@ def main() -> int:
                     checkpoint_status = "afbrudt asset kasseret"
                 else:
                     wave_promoted = False
-                    if bootstrap_operational_wam and step_complete:
+                    if bootstrap_operational_wam and wave_asset_admitted:
                         if wave_phase_deferred_quality_promotion:
                             checkpoint_controller.observe_asset_duration(
                                 seconds=asset_processing_seconds,
                             )
                             checkpoint_status = (
-                                "komplet quality-kandidat akkumuleret"
+                                "quality-kandidat akkumuleret"
                             )
                         else:
                             wave_promoted, checkpoint_status = (
@@ -11269,7 +12120,7 @@ def main() -> int:
                         checkpoint_controller.observe_asset_duration(
                             seconds=asset_processing_seconds,
                         )
-                        checkpoint_status = "ufuldstændig kandidat kasseret"
+                        checkpoint_status = "asset-kandidat afvist"
                     else:
                         checkpoint_written = (
                             checkpoint_controller.note_committed_asset(
@@ -11376,13 +12227,19 @@ def main() -> int:
                         "quality proof"
                     )
                     budget_stop_code = "RUNTIME_BUDGET_REACHED"
-                final_phase_fully_traversed = bool(
-                    wave_phase_seen_asset_count
-                        == wave_phase_asset_counts.get(
+                final_phase_fully_traversed = (
+                    operational_wave_phase_fully_traversed(
+                        selected_asset_count=wave_phase_asset_counts.get(
                             wave_phase_rank, 0,
-                        )
-                    and budget_stop_code is None
-                    and not stop_for_native_wave_closure
+                        ),
+                        proven_asset_count=len(
+                            wave_phase_proven_asset_keys
+                        ),
+                        stop_code=budget_stop_code,
+                        native_closure_stopped=(
+                            stop_for_native_wave_closure
+                        ),
+                    )
                 )
                 finish_wave_phase(
                     fully_traversed=final_phase_fully_traversed,
@@ -11446,6 +12303,12 @@ def main() -> int:
                     "attemptAssetsObserved": run_info.get(
                         "assetsObserved", 0,
                     ),
+                    "activeTraversalCompleteAssets": active_wave_run_info.get(
+                        "assetsTraversalComplete", 0,
+                    ),
+                    "attemptTraversalCompleteAssets": run_info.get(
+                        "assetsTraversalComplete", 0,
+                    ),
                     "activeProofCompleteAssets": active_wave_run_info.get(
                         "assetsProofComplete", 0,
                     ),
@@ -11454,6 +12317,19 @@ def main() -> int:
                     ),
                     "proofCompleteAssetsReconstructed": run_info.get(
                         "assetsProofCompleteReconstructed", 0,
+                    ),
+                    "attemptPartiallyAdmittedAssets": run_info.get(
+                        "assetsPartiallyAdmitted", 0,
+                    ),
+                    "attemptRejectedAfterTraversal": run_info.get(
+                        "assetsRejectedAfterTraversal", 0,
+                    ),
+                    "assetCoverage": copy.deepcopy(
+                        (
+                            result["diagnostics"].get(
+                                "operationalWaveAssetCoverageByCollection", {}
+                            ) or {}
+                        ).get(collection, {})
                     ),
                     "remainingClosureHourCount": run_info[
                         "remainingClosureHourCount"

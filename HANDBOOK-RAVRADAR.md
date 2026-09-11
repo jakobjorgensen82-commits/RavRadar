@@ -1,8 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.341
+**Håndbogsversion:** 4.0.342
 
-## 88.45 4.0.341 – En halv WAM-kørsel må ikke gøre den aktive cache dårligere
+## 88.46 4.0.342 – En dårlig del må ikke kassere alle de gode
+
+**Kort fortalt:** RavRadar skal stadig kontrollere hele filen, men det skal ikke smide hundredvis af gode bølgerækker væk, fordi én kystdel i filen mangler eller er ugyldig. Hver komplet og sikkert dokumenteret kystdel/time kan gemmes, mens den defekte del bliver stående som et ærligt hul til næste forsøg eller en ældre godkendt DMI-kørsel.
+
+### WAM: den mindste sikre enhed
+
+En DMI-WAM-fil gennemløbes stadig helt, før noget fra den må accepteres. Systemet skal kende præcis, hvor mange dele filen skulle dække, og regnskabet over accepterede og afviste dele skal passe. Hver accepteret del skal have komplette relevante bølgefelter og samme eksakte fil-, collection-, modelrun-, grid-, celle- og kildebevis.
+
+En afvist del ændres ikke. Hvis den allerede indeholder en komplet anden DMI-lineage på samme native time, må en delvis ny fil ikke skabe en blandet tidsskive; så kasseres hele den nye stage. Det samme gælder, hvis selve filidentiteten, tidsaksen, parseren eller det overordnede kontrolbevis er ugyldigt. Granulær bevaring er altså ikke en lempelig parser.
+
+De accepterede dele bygges fortsat i en isoleret kandidat. Hvis cachen mangler data, kan kandidatens sikre pairfremgang promoveres, når den ikke fjerner gamle resolved pairs eller skaber nye lineage-konflikter. Hvis cachen allerede er komplet, bliver en delvis kvalitetsopdatering ikke synlig: hele den nye modelkørselsfase skal være fuldt gennemløbet og sammenhængende, før den kan overtage.
+
+Privat bølgehistorik må bevare de samme sikre enkelttuples, så arbejdet ikke går tabt. En time bliver dog først låst og historikken først komplet, når hele den forventede mængde er til stede. Ufuldstændig historik kan derfor ikke ommærkes som launchbevis, og genuine cold-starts eksisterende `HISTORY_INCOMPLETE`-adfærd ændres ikke.
+
+### Copernicus: behold timerne, der faktisk kom
+
+Et Copernicus-shard kan være korrekt, selv om providerens svar mangler én af de bestilte native timer. RavRadar gemmer nu de returnerede eksakte U/V-par og sender kun de manglende par videre til næste godkendte Copernicus-collection og derefter Open-Meteo. En varig schema-3-test følger netop denne overgang og beviser, at en gyldig søskende gemmes, mens kun det manglende par går videre. En manglende time bliver ikke opfundet, interpoleret eller holdt fra nabotimen.
+
+Denne bevaring kræver stadig en eksisterende, endimensional, læsbar, timejusteret og dubletfri tidsakse. En tom provider-timeakse og native tider med subsekunder klassificeres som retryable malformed i stedet for fejlagtigt at blive kaldt no-record. En ugyldig tidsakse, to udgaver af samme time eller en række uden for den eksakte request stopper hele shardet. Hvert attempt gemmer de faktisk observerede native tider i en ny eksplicit v2-struktur; forsøg fra 4.0.341 kan stadig læses. Det immutable Baltic-forbevis kan derfor også valideres, efter at den sidste Baltic-søskende er fjernet fra arbejdsresten.
+
+### Komplet betyder stadig alt
+
+Ingen delvis fil eller shard kan gøre vejret launchklart. Current kræver fortsat 673 × 118 = 79.414 eksakte par med én godkendt kilde pr. par og nul mangler/overlap. Bølger kræver 670 native WAM-dele × 118 = 79.060 plus Feggesunds tre godkendte direct/proxy-dele × 118 = 354, samlet 79.414, med nul mangler og nul uløste lineage-konflikter.
+
+**Status:** 4.0.341 er merged på `caa49c42`, men oneoff `34534764449` producerede intet handoff eller cutover. 4.0.342 er en lokal kandidat. Den samlede aktuelle WAM-suite er grøn `63/63`; WAM-historik er grøn `35/35`, checkpoint er grøn `21/21`, og de tre målrettede Copernicus-tests, schema-3 seamtesten, 169-timers Baltic-regressionen, Python compile samt code diff-check er grønne. Exact-head-CI, main-providerclosure, fulde gates og offentlig modelkontrol mangler fortsat. Candidate G er fortsat offentlig; normalworkflow og watchdog forbliver deaktiveret.
+
+## 88.45 HISTORISK 4.0.341 – En halv WAM-kørsel må ikke gøre den aktive cache dårligere
+
+> Whole-asset-admissionen i dette historiske afsnit er snævert supersederet af kapitel 88.46 og DEC-0124. Candidate-isolation, promotion, fallbackproveniens, kvalitetsfase og komplet slutgate består.
 
 **Kort fortalt:** RavRadar begynder ikke forfra, når DMI udsender en ny modelkørsel. Den aktive vejrcache bliver liggende som den brugbare base. Nye bølgedata samles ved siden af og flyttes først ind, når den relevante del er komplet og valideret.
 
@@ -151,11 +179,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.341 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.342 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.341-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.342-cutoverkandidat, ikke produktion
 
-4.0.341 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer WAM-cachelukningen og dens releasebinding.
+4.0.342 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer WAM-cachelukningen og dens releasebinding.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

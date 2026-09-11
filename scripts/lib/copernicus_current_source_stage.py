@@ -78,13 +78,18 @@ PINNED_PRODUCTS: tuple[dict[str, Any], ...] = (
     },
 )
 
-ATTEMPT_FIELDS = {
+LEGACY_ATTEMPT_FIELDS = {
     "attemptId", "status", "productionReferenceAt", "acquisitionAt",
     "source", "productId", "datasetId", "datasetVersion",
     "requestContractId", "selectionPolicyId", "spatialShardPolicyId",
     "shardId", "requestStartAt", "requestEndAt", "targetPartIds",
     "requestedPairs", "requestedPairCount", "requestedPairsSha256",
     "subsetSha256", "acquisitionId", "parsedRecordCount",
+}
+ATTEMPT_SCHEMA_VERSION = 2
+ATTEMPT_CONTRACT_ID = "copernicus-source-attempt-observed-native-times-v2"
+ATTEMPT_FIELDS = LEGACY_ATTEMPT_FIELDS | {
+    "attemptSchemaVersion", "attemptContractId", "observedNativeValidTimes",
 }
 PRODUCT_FIELDS = {
     "source", "productId", "datasetId", "datasetVersion",
@@ -203,6 +208,23 @@ def _canonical_pairs(value: Any, label: str) -> list[dict[str, str]]:
     return pairs
 
 
+def _canonical_native_times(value: Any, label: str) -> list[str]:
+    """Validate the immutable native time-axis witness on a source attempt."""
+    if not isinstance(value, list):
+        raise CopernicusSourceStageError(f"{label} is not an array")
+    times: list[str] = []
+    for raw in value:
+        if not isinstance(raw, str):
+            raise CopernicusSourceStageError(f"{label} contains a non-string time")
+        canonical = utc_iso(_time(raw, f"{label} time", exact_hour=True))
+        if raw != canonical:
+            raise CopernicusSourceStageError(f"{label} contains a non-canonical time")
+        times.append(canonical)
+    if times != sorted(set(times)):
+        raise CopernicusSourceStageError(f"{label} is not canonical and unique")
+    return times
+
+
 def eligible_target(target: dict[str, Any], product: dict[str, Any]) -> bool:
     point = target.get("waterPoint")
     if (
@@ -260,6 +282,7 @@ def make_source_attempt(
     subset_sha256: str,
     acquisition_id: str,
     parsed_record_count: int,
+    observed_native_valid_times: list[Any],
 ) -> dict[str, Any]:
     pairs = sorted(requested_pairs, key=lambda row: (row["validTime"], row["partId"]))
     pairs = _canonical_pairs(pairs, "Attempt requested pairs")
@@ -267,7 +290,13 @@ def make_source_attempt(
         raise CopernicusSourceStageError("A completed source attempt cannot be empty")
     start = pairs[0]["validTime"]
     end = pairs[-1]["validTime"]
+    observed_times = _canonical_native_times(
+        sorted({utc_iso(value) for value in observed_native_valid_times}),
+        "Attempt observed native times",
+    )
     value: dict[str, Any] = {
+        "attemptSchemaVersion": ATTEMPT_SCHEMA_VERSION,
+        "attemptContractId": ATTEMPT_CONTRACT_ID,
         "status": "COMPLETE",
         "productionReferenceAt": utc_iso(production_reference_at),
         "acquisitionAt": utc_iso(acquisition_at),
@@ -282,6 +311,7 @@ def make_source_attempt(
         "subsetSha256": subset_sha256,
         "acquisitionId": acquisition_id,
         "parsedRecordCount": parsed_record_count,
+        "observedNativeValidTimes": observed_times,
     }
     value["attemptId"] = canonical_sha256(value)
     return value
@@ -294,8 +324,24 @@ def _validate_attempt(
     required_set: set[tuple[str, str]],
     targets: list[dict[str, Any]],
     product: dict[str, Any],
+    acquisitions: list[dict[str, Any]],
+    allow_detached_positive_witness: bool = False,
 ) -> dict[str, Any]:
-    attempt = _exact_dict(raw, ATTEMPT_FIELDS, "Copernicus source attempt")
+    if not isinstance(raw, dict):
+        raise CopernicusSourceStageError("Copernicus source attempt fields differ")
+    fields = set(raw)
+    if fields == ATTEMPT_FIELDS:
+        attempt_format = "current"
+    elif fields == LEGACY_ATTEMPT_FIELDS:
+        attempt_format = "legacy"
+    else:
+        raise CopernicusSourceStageError("Copernicus source attempt fields differ")
+    attempt = raw
+    if attempt_format == "current" and (
+        attempt.get("attemptSchemaVersion") != ATTEMPT_SCHEMA_VERSION
+        or attempt.get("attemptContractId") != ATTEMPT_CONTRACT_ID
+    ):
+        raise CopernicusSourceStageError("Copernicus source attempt evidence contract is invalid")
     contract = _product_contract(product)
     if attempt.get("status") != "COMPLETE" or any(attempt.get(key) != value for key, value in contract.items()):
         raise CopernicusSourceStageError("Copernicus source attempt contract is not pinned")
@@ -351,21 +397,83 @@ def _validate_attempt(
         raise CopernicusSourceStageError("Copernicus source attempt parsed count is invalid")
     if not valid_sha256(attempt.get("subsetSha256")) or not valid_sha256(attempt.get("acquisitionId")):
         raise CopernicusSourceStageError("Copernicus source attempt source identity is invalid")
+    # Current attempts carry their actually observed native time axis.  This
+    # keeps an immutable prerequisite witness verifiable after its last cache
+    # row legitimately leaves retention.  Legacy attempts predate partial-hour
+    # success, so their requested exact hours are also their observed axis.
+    if attempt_format == "current":
+        observed_native_time_texts = _canonical_native_times(
+            attempt.get("observedNativeValidTimes"),
+            "Attempt observed native times",
+        )
+        if any(
+            not _time(attempt["requestStartAt"], "Attempt request start", exact_hour=True)
+            <= _time(value, "Attempt observed native time", exact_hour=True)
+            <= _time(attempt["requestEndAt"], "Attempt request end", exact_hour=True)
+            for value in observed_native_time_texts
+        ):
+            raise CopernicusSourceStageError(
+                "Copernicus source attempt observed time lies outside its request envelope"
+            )
+        if parsed_count > 0 and not observed_native_time_texts:
+            raise CopernicusSourceStageError(
+                "Positive Copernicus source attempt has no observed native time"
+            )
+    else:
+        observed_native_time_texts = sorted({row["validTime"] for row in pairs})
+    observed_native_times = [
+        _time(value, "Attempt observed native time", exact_hour=True)
+        for value in observed_native_time_texts
+    ]
+    acquisition_by_id = {
+        str(row.get("acquisitionId") or ""): row
+        for row in acquisitions
+        if isinstance(row, dict)
+    }
+    persisted_acquisition = acquisition_by_id.get(str(attempt["acquisitionId"]))
+    if (
+        parsed_count > 0
+        and persisted_acquisition is None
+        and not allow_detached_positive_witness
+    ):
+        raise CopernicusSourceStageError(
+            "Positive Copernicus source attempt is detached from its acquisition"
+        )
+    full_persisted_acquisition = bool(
+        persisted_acquisition is not None
+        and "nativeValidTimes" in persisted_acquisition
+    )
+    if parsed_count > 0 and persisted_acquisition is not None and not full_persisted_acquisition:
+        # Donor-bank control validation deliberately supplies only its minimal
+        # manifest leaf.  The complete shadow acquisition is validated in the
+        # second donor-bank pass; here the manifest still binds source/time/id.
+        if (
+            set(persisted_acquisition) != {"acquisitionId", "source", "acquisitionAt"}
+            or persisted_acquisition["source"] != product["source"]
+            or persisted_acquisition["acquisitionAt"] != attempt["acquisitionAt"]
+        ):
+            raise CopernicusSourceStageError(
+                "Copernicus source attempt has an invalid acquisition manifest"
+            )
     rebuilt_acquisition = make_acquisition(
         source=product["source"],
         acquisition_at=acquisition_at,
         request_start_at=_time(attempt["requestStartAt"], "Attempt request start", exact_hour=True),
         request_end_at=_time(attempt["requestEndAt"], "Attempt request end", exact_hour=True),
         targets=[target_by_id[part_id] for part_id in target_ids],
-        native_valid_times=sorted({
-            _time(row["validTime"], "Attempt native time", exact_hour=True) for row in pairs
-        }),
+        native_valid_times=observed_native_times,
         subset_sha256=attempt["subsetSha256"],
         record_count=parsed_count,
         request_contract_id=REQUEST_CONTRACT_ID,
     )
     if attempt["acquisitionId"] != rebuilt_acquisition["acquisitionId"]:
-        raise CopernicusSourceStageError("Copernicus source attempt acquisition identity mismatch")
+        raise CopernicusSourceStageError(
+            f"Copernicus source attempt acquisition identity mismatch for {product['source']}"
+        )
+    if full_persisted_acquisition and persisted_acquisition != rebuilt_acquisition:
+        raise CopernicusSourceStageError(
+            "Copernicus source attempt does not match its observed acquisition"
+        )
     expected_id = canonical_sha256({key: value for key, value in attempt.items() if key != "attemptId"})
     if attempt.get("attemptId") != expected_id:
         raise CopernicusSourceStageError("Copernicus source attempt identity mismatch")
@@ -401,6 +509,8 @@ def validate_positive_admissions(
                           _canonical_pairs(raw.get("requestedPairs"), "Witness pairs")},
             targets=targets,
             product=product,
+            acquisitions=acquisitions,
+            allow_detached_positive_witness=True,
         )
         if witness["attemptId"] in witness_by_id:
             raise CopernicusSourceStageError("Positive witness identity is duplicated")
@@ -506,7 +616,7 @@ def merge_positive_admissions(
         attempt = _validate_attempt(
             raw, reference=_time(raw["productionReferenceAt"], "Admission reference", exact_hour=True),
             required_set={(row["partId"], row["validTime"]) for row in raw["requestedPairs"]},
-            targets=targets, product=product,
+            targets=targets, product=product, acquisitions=acquisitions,
         )
         source_attempts.setdefault(attempt["acquisitionId"], []).append(attempt)
         if attempt["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE:
@@ -638,7 +748,8 @@ def original_stage_positive_evidence(
     # validated before migration to the new deterministic effective journal.
     product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
     attempts = [_validate_attempt(attempt, reference=reference, required_set=original_pairs,
-                                  targets=targets, product=product_by_source[attempt["source"]])
+                                  targets=targets, product=product_by_source[attempt["source"]],
+                                  acquisitions=shadow["acquisitions"])
                 for attempt in raw_attempts]
     if len({row["attemptId"] for row in attempts}) != len(attempts):
         raise CopernicusSourceStageError("Original attempts are duplicated")
@@ -867,6 +978,7 @@ def _validate_attempts(
     reference: datetime,
     required_set: set[tuple[str, str]],
     targets: list[dict[str, Any]],
+    acquisitions: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     if not isinstance(attempts_raw, list):
         raise CopernicusSourceStageError("Copernicus source-stage attempts are malformed")
@@ -882,6 +994,7 @@ def _validate_attempts(
             required_set=required_set,
             targets=targets,
             product=product,
+            acquisitions=acquisitions,
         ))
     source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
     canonical_attempts = sorted(
@@ -947,6 +1060,7 @@ def validate_source_stage_progress(
         reference=reference,
         required_set=required_set,
         targets=targets,
+        acquisitions=shadow["acquisitions"],
     )
     if stage.get("attemptsSha256") != canonical_sha256(attempts):
         raise CopernicusSourceStageError(
@@ -1161,6 +1275,7 @@ def validate_source_stage(
         reference=reference,
         required_set=required_set,
         targets=targets,
+        acquisitions=shadow["acquisitions"],
     )
     if stage.get("attemptsSha256") != canonical_sha256(attempts):
         raise CopernicusSourceStageError("Copernicus source-stage attempt hash mismatch")

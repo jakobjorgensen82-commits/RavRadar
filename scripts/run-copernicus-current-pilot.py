@@ -34,6 +34,7 @@ from lib.copernicus_current import (
     safe_shadow_summary,
     select_required_records,
     utc_iso,
+    validated_native_times,
     validate_shadow,
     validate_target_registry,
 )
@@ -302,11 +303,24 @@ def acquire_shard_rows(
     fixture_directory: Path | None,
     temporary: Path,
     shard_index: int,
-) -> tuple[str, list[dict[str, Any]]]:
-    """Download/read one provider shard and return only parsed raw rows."""
+) -> tuple[str, list[datetime], list[dict[str, Any]]]:
+    """Download/read one provider shard and return its exact requested rows.
+
+    An absent requested native hour is an honest no-record in the COMPLETE
+    request attempt.  A malformed time axis or any row outside the immutable
+    part/time request remains fatal.  The caller checkpoints returned siblings
+    and derives the residual from the full original request.
+    """
     native_times = sorted({
         value for values in times_by_part.values() for value in values
     })
+    requested_pairs = {
+        (part_id, utc_iso(valid_time))
+        for part_id, valid_times in times_by_part.items()
+        for valid_time in valid_times
+    }
+    if len(requested_pairs) != sum(len(values) for values in times_by_part.values()):
+        raise RuntimeError("Copernicus shard request contains duplicate part/time pairs")
     path = (
         fixture_path(fixture_directory, product, shard_index)
         if fixture_directory
@@ -323,6 +337,17 @@ def acquire_shard_rows(
     raw_records: list[dict[str, Any]] = []
     import xarray as xr
     with xr.open_dataset(path) as dataset:
+        # Validate the complete provider structure before an absent requested
+        # hour can be interpreted as an honest no-record.  Persist only native
+        # times actually observed inside this immutable request envelope.
+        observed_native_times = [
+            parse_time(value, "observed Copernicus native time")
+            for value in validated_native_times(dataset)
+        ]
+        observed_native_times = [
+            value for value in observed_native_times
+            if native_times[0] <= value <= native_times[-1]
+        ]
         for target in shard_targets:
             raw_records.extend(nearest_shared_uv_times(
                 dataset,
@@ -333,7 +358,19 @@ def acquire_shard_rows(
                 dataset_version=product["datasetVersion"],
                 expected_times=times_by_part[target["partId"]],
             ))
-    return subset_sha256, raw_records
+    returned_pairs: set[tuple[str, str]] = set()
+    for row in raw_records:
+        pair = (str(row.get("partId") or ""), str(row.get("validTime") or ""))
+        if pair not in requested_pairs:
+            raise RuntimeError("Copernicus shard returned a row outside its exact part/time request")
+        if pair in returned_pairs:
+            raise RuntimeError("Copernicus shard returned a duplicate part/time row")
+        returned_pairs.add(pair)
+    return (
+        subset_sha256,
+        observed_native_times,
+        sorted(raw_records, key=lambda row: (row["validTime"], row["partId"])),
+    )
 
 
 def no_credentials_in_report(report: dict[str, Any]) -> None:
@@ -664,7 +701,7 @@ def fill_bounded_advisory_history(
                     value for values in times_by_part.values() for value in values
                 })
                 try:
-                    subset_sha256, raw_records = acquire_shard_rows(
+                    subset_sha256, observed_native_times, raw_records = acquire_shard_rows(
                         product=product,
                         shard_targets=shard_targets,
                         times_by_part=times_by_part,
@@ -678,7 +715,7 @@ def fill_bounded_advisory_history(
                         request_start_at=native_times[0],
                         request_end_at=native_times[-1],
                         targets=shard_targets,
-                        native_valid_times=native_times,
+                        native_valid_times=observed_native_times,
                         subset_sha256=subset_sha256,
                         record_count=len(raw_records),
                         request_contract_id=REQUEST_CONTRACT_ID,
@@ -1003,7 +1040,7 @@ def run_bounded_operational_refresh(
                 value for values in times_by_part.values() for value in values
             })
             try:
-                subset_sha256, raw_records = acquire_shard_rows(
+                subset_sha256, observed_native_times, raw_records = acquire_shard_rows(
                     product=product,
                     shard_targets=shard_targets,
                     times_by_part=times_by_part,
@@ -1019,7 +1056,7 @@ def run_bounded_operational_refresh(
                     request_start_at=request_start,
                     request_end_at=request_end,
                     targets=shard_targets,
-                    native_valid_times=native_times,
+                    native_valid_times=observed_native_times,
                     subset_sha256=subset_sha256,
                     record_count=len(raw_records),
                     request_contract_id=REQUEST_CONTRACT_ID,
@@ -1049,6 +1086,7 @@ def run_bounded_operational_refresh(
                     subset_sha256=subset_sha256,
                     acquisition_id=acquisition["acquisitionId"],
                     parsed_record_count=len(parsed_records),
+                    observed_native_valid_times=observed_native_times,
                 )
             except COPERNICUS_SHARD_DATA_ERRORS as error:
                 blocked_shards.add((source, shard["shardId"]))
@@ -1348,6 +1386,21 @@ def main() -> int:
                 existing, None, targets=authoritative_targets,
                 shadow_sha256=file_sha256(args.shadow) if shadow_was_present else "0" * 64,
             )
+        # The donor bank is authoritative over an independently restored
+        # projection.  Drop attempts whose positive acquisition is absent from
+        # that generation before validating/merging its observed native axis.
+        # Zero-row attempts remain valid negative evidence and are retained.
+        authoritative_projection = projected_donor_shadow(
+            donor_state,
+            targets=authoritative_targets,
+        )
+        source_attempts = journal_for_donor_projection(
+            source_attempts,
+            bank=donor_state,
+            shadow=authoritative_projection,
+            required_pairs=required_pairs,
+            target_identities=target_identities,
+        )
         merged_shadow = {**donor_state["shadow"], "updatedAt": utc_iso(acquisition_at)}
         donor_state = build_copernicus_donor_bank(
             merged_shadow, targets=authoritative_targets, attempts=source_attempts,
@@ -1508,8 +1561,16 @@ def main() -> int:
                 shard_targets = [row for row in shard["targets"] if row["partId"] in times_by_part]
                 native_times = sorted({value for values in times_by_part.values() for value in values})
                 start, end = native_times[0], native_times[-1]
+                requested_pairs = sorted(
+                    [
+                        {"partId": part_id, "validTime": utc_iso(valid_time)}
+                        for part_id, valid_times in times_by_part.items()
+                        for valid_time in valid_times
+                    ],
+                    key=lambda row: (row["validTime"], row["partId"]),
+                )
                 try:
-                    subset_sha256, raw_records = acquire_shard_rows(
+                    subset_sha256, observed_native_times, raw_records = acquire_shard_rows(
                         product=product,
                         shard_targets=shard_targets,
                         times_by_part=times_by_part,
@@ -1523,7 +1584,7 @@ def main() -> int:
                         request_start_at=start,
                         request_end_at=end,
                         targets=shard_targets,
-                        native_valid_times=native_times,
+                        native_valid_times=observed_native_times,
                         subset_sha256=subset_sha256,
                         record_count=len(raw_records),
                         request_contract_id=REQUEST_CONTRACT_ID,
@@ -1542,17 +1603,11 @@ def main() -> int:
                         product=product,
                         shard_id=shard["shardId"],
                         target_part_ids=[row["partId"] for row in shard_targets],
-                        requested_pairs=sorted(
-                            [
-                                {"partId": part_id, "validTime": utc_iso(valid_time)}
-                                for part_id, valid_times in times_by_part.items()
-                                for valid_time in valid_times
-                            ],
-                            key=lambda row: (row["validTime"], row["partId"]),
-                        ),
+                        requested_pairs=requested_pairs,
                         subset_sha256=subset_sha256,
                         acquisition_id=acquisition["acquisitionId"],
                         parsed_record_count=len(records),
+                        observed_native_valid_times=observed_native_times,
                     )
                 except COPERNICUS_SHARD_DATA_ERRORS as error:
                     # A provider/file/parser failure is local to this shard.

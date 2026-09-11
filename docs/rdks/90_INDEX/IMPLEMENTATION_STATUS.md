@@ -1,3 +1,17 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-11 – lokal 4.0.342 providergranularitet
+
+- [x] Fasthold persistent cache og de uændrede særskilte current-/bølgeclosures på hver 79.414 par.
+- [x] Afgræns den lokale WAM-admission til fuldt gennemløbne assets, kendt denominator, komplette same-lineage part/time-tuples og bit-for-bit uændrede rejects; behold whole-stage rollback ved global fejl eller komplet gammel anden lineage på rejected target.
+- [x] Bevar isoleret collection/modelRun-candidate, monoton pairpromotion, terminal own-run fallback og faseatomisk kvalitetsrefresh af allerede komplet WAM.
+- [x] Lad privat bootstrap bevare sikre tuples uden at markere en delvis time locked/history-complete eller ændre genuine-cold-starts netværksdefer.
+- [x] Lad strukturelt valide Copernicus-shards checkpoint'e returnerede exact-hour-søskende og sende den eksakte rest videre. Gem `observedNativeValidTimes` i nested v2 med legacy-readback, bevar Baltic-prerequisite efter pruning, og klassificér tom/subsekund providerakse som retryable malformed frem for no-record; behold fatal kontrol af dubletter og out-of-request-rækker.
+- [x] Bestå samlet WAM `63/63`, WAM-historik `35/35`, checkpoint `21/21`, de tre Copernicus-måltests, varig schema-3 seamtest, 169-timers Baltic-regression, `py_compile` og code diff-check.
+- [ ] Afslut privacykontrol sammen med den samlede releasepakning.
+- [ ] Afslut 4.0.342-version, RDKS/håndbog/changelog, exact-release-policy og særskilt version-only-geodatadiff.
+- [ ] Kør én `validate:source` på den eksakte endelige PR-head og merge kun det beviste commit.
+- [ ] Kør kontrolleret exact-main-opfyldning og kræv current 79.414/79.414, native WAM 79.060 samt Feggesund 354/354 før post-data-gates, handoff og cutover.
+- [ ] Verificér den integrerede model offentligt før normalworkflow/watchdog genaktiveres. Efter launch består cachetransport, cron/provider-tidsmåling og normal vedligeholdelsesbevis.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-10 – lokal 4.0.341 WAM-integritetslukning
 
 - [x] Bevar persistent cache uden target-/modelrun-/release-reset og fasthold `673 × 118 = 79.414`, native WAM for 670 dele, Feggesund `354/354` og op til 48 timers verificeret historik.

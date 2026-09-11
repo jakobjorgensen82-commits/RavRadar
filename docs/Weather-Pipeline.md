@@ -1,5 +1,17 @@
 # Weather Pipeline 1.0
 
+## 4.0.342 – bevar den gyldige del, men kræv stadig komplet slutresultat
+
+4.0.341 beskyttede den aktive WAM-cache med en isoleret candidate, men en fil blev kun brugt, hvis alle dens kystdele kunne godkendes. Main-oneoff `34534764449` viste, at denne grænse var for grov: enkelte afviste NSB-dele fik alle øvrige gyldige dele i 91 assets til at blive rullet tilbage.
+
+4.0.342 gennemløber fortsat hele den eksakte officielle asset først. Derefter kan hver komplet `(kystdel, native time)`-bølgetuple med samme asset-, collection-, modelrun-, grid-, celle- og kildebevis admitteres. En afvist tuple forbliver uændret og manglende. Hvis filens globale identitet/tidsakse er ugyldig, eller en delvis stage ville blande en ny lineage med en allerede komplet anden lineage på samme native tid, kasseres hele stagen fortsat.
+
+Admission sker stadig i en isoleret collection/modelRun-candidate. Ved reelle huller kan sikker pairfremgang promoveres monotont. En allerede komplet WAM kan kun kvalitetsopgraderes ved en fuld, uafbrudt og sammenhængende fase; budget- eller interruptionsstop kan ikke flytte den aktive generation. Privat historik må gemme sikre tuples, men en delvis time er ikke låst eller historikkomplet.
+
+Copernicus-current bevarer tilsvarende de eksakte native U/V-timer, som et strukturelt gyldigt shard faktisk returnerer. En bestilt time, som ikke findes i svaret, bliver i restlisten og går videre til næste Copernicus-collection og derefter Open-Meteo; den varige schema-3 seamtest beviser, at kun denne eksakte rest afleveres. Hvert attempt gemmer `observedNativeValidTimes` i et eksplicit nested v2-contract, mens legacy 4.0.341-attempts fortsat accepteres. Dermed kan den immutable Baltic-prerequisite valideres, selv efter at sidste Baltic-søskende er prunet. Der interpoleres eller holdes ikke i tid. Tom provider-timeakse, native subsekundtider, manglende/ugyldig, ikke-timejusteret eller dubleret tidsakse og rækker uden for requesten stopper shardet; tom/subsekund klassificeres retryable malformed, ikke no-record.
+
+Slutkontrollen er ikke lempet. Current kræver præcis 673 × 118 = 79.414. Bølger kræver 670 native WAM-dele × 118 = 79.060 plus Feggesunds tre direct/proxy-dele × 118 = 354. Først nul mangler/overlap, nul uløste lineage-konflikter, fulde gates og et runbundet handoff kan føre til cutover. Den samlede aktuelle WAM-suite er grøn 63/63, WAM-historik 35/35 og checkpoint 21/21; de tre Copernicus-måltests, Python compile og code diff-check er også grønne. Exact-head-CI og al main-/produktionsverifikation mangler endnu.
+
 ## 4.0.341 – WAM bygges som kandidat, før aktiv cache ændres
 
 Den aktive vejrcache er RavRadars vedvarende, brugbare udgangspunkt. Den nulstilles ikke, når en ny prognose- eller modelkørsel kommer. En ny WAM-collection/modelRun bygges først i en isoleret kandidat. Kun et asset med en ikke-tom fuld forventet mængde og alle krævede rækker accepteret kan påvirke den aktive cache.

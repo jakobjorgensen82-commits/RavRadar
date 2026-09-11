@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-11 – 4.0.341 livefund bliver 4.0.342-granularitet
+
+- 4.0.341 blev merged på `main` som `caa49c42`. Backend `34534769955` blev rapporteret grøn, men oneoff `34534764449` afsluttede uden handoff og uden cutover. Candidate G forblev offentlig.
+- WAM-candidate-isolationen beskyttede aktiv cache, men afslørede en for grov commitgrænse: `wam_dw` kunne lukke, mens alle 91 `wam_nsb`-assets blev rullet tilbage, fordi enkelte delmål fejlede. Hele-filen-eller-intet gjorde dermed selvstændigt gyldige søskenderækker utilgængelige.
+- 4.0.342 bevarer den isolerede collection/modelRun-candidate og promotionens target-/pair-/lineageværn, men admitterer komplette exact-asset-provenancebundne part/time-tuples efter fuldt assetgennemløb. Rejected slices forbliver uændrede; komplet anden gammel lineage eller global assetfejl stopper hele stagen.
+- Privat bootstrap bruger samme granulære cachebevaring uden at kalde en delvis time locked eller history-complete. Cold-start og slutvalidering er uændret.
+- Copernicus-current bevarer nu returnerede eksakte native timer fra et ellers gyldigt shard og lader kun fraværende par gå videre. Attempts gemmer `observedNativeValidTimes` i nested v2 med legacy 4.0.341-readback, og Baltic-prerequisiten overlever pruning af sidste søskende. Tom/subsekund providerakse er retryable malformed, ikke no-record; dubletter, non-hourly tid og rækker uden for requesten forbliver fail-closed. Schema-3 seamtesten og 169-timersregressionen er grønne.
+- Testforløbet fandt først to fixturefejl i en 55-test-WAM-suite (`53/55`) og bekræftede derefter de to korrektioner `2/2`. Den udvidede aktuelle WAM-suite er samlet grøn `63/63`, inklusive lineage-evidence og en reel parser→provenance→summary→admission-kæde med to PARTs; WAM-historik er grøn `35/35`, checkpoint er grøn `21/21`, og de tre Copernicus-måltests, Python compile samt code diff-check er grønne. Ingen 4.0.342 exact-head-CI-, provider-, closure-, handoff-, cutover- eller produktionspåstand er endnu tilladt.
+- DEC-0124 registrerer den nye grænse. DEC-0122's allerede godkendte first-cutover-undtagelse flyttes snævert til exact-release 4.0.342; alle materielle gates består.
+
 # NYESTE CHECKPOINT – 2026-09-10 – 4.0.341 isolerer WAM-promotion
 
 - Efter reboot blev worktree, branch og GitHub-status genfundet uden tegn på tabt tracked arbejde eller afbrudt aktiv vejr-/releasekørsel. Cacherne blev ikke nulstillet. Seneste dokumenterede oneoff `34437713821` gemte sikre providerresultater, men sluttede 78.314/79.414 med 1.100 currentrester og WAM `MISSING_HOUR`; intet handoff eller modelcutover.

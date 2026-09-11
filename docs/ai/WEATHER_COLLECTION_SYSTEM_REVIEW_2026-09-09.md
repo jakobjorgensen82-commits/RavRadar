@@ -1,3 +1,11 @@
+# Tillæg 2026-09-11 – livebevis af for grov asset-/shardgrænse
+
+Efter merge af 4.0.341 viste oneoff `34534764449`, at systemreviewets krav om isolation var rigtigt, men at whole-asset-admission var for grov. `wam_dw` kunne lukke, mens hver NSB-fil mistede sine gyldige søskenderækker ved enkelte delafvisninger. 4.0.342 bevarer derfor isolation og promotion, men flytter admission til komplette exact-asset-provenancebundne part/time-tuples efter fuldt filgennemløb. Rejected slices må ikke ændres, og global filfejl eller komplet anden native lineage bevarer whole-stage rollback.
+
+Samme princip gælder Copernicus-current på timeparniveau: eksakte returnerede native U/V-par fra et strukturelt validt shard bevares, mens fraværende bestilte timer forbliver rest. Attempts gemmer de faktisk observerede native tider i nested v2, accepterer legacy 4.0.341 og bevarer Baltic-prerequisiten efter pruning af sidste søskende. Tom providerakse og subsekundtider er retryable malformed, ikke no-record; tidsinterpolation/hold og permissiv tidsakse er stadig forbudt. Dette supersederer alene reviewets whole-asset-formuleringer; den kritiske rest, providerordenen, persistent cache, WAM-lineage, private historikstatus og de komplette slutgates består.
+
+Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`. De tre Copernicus-måltests, den varige schema-3 seamtest, 169-timers Baltic-prerequisite-regressionen, Python compile og code diff-check er grønne. Exact-head-CI, provider-runtime og closure er fortsat åbne; de historiske målinger nedenfor må ikke ommærkes som 4.0.342-runtimebevis.
+
 # Samlet analyse og løsningsdesign for vejropsamling – 9. september 2026
 
 ## Nyere implementeringsstatus – lokal 4.0.341-kandidat, 10. september

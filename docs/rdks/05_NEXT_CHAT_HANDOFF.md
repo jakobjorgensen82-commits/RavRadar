@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-11 – fortsæt 4.0.342 granularitet uden ny analyse fra nul
+
+- **Aktuel base:** `main`/`origin/main` er 4.0.341 på `caa49c42`; arbejdsgrenen er 4.0.342-kandidat. Cachen er ikke nulstillet. Candidate G er fortsat offentlig.
+- **Livefund:** Backend `34534769955` blev rapporteret grøn. Oneoff `34534764449` gav intet handoff/cutover. `wam_dw` kunne lukke, men alle 91 `wam_nsb`-assets blev rullet tilbage ved enkelte delafvisninger; whole-asset-admission var derfor en reel P0-starvation.
+- **WAM-rettelsen:** Efter fuldt assetgennemløb admitteres komplette exact-asset-provenancebundne `(partId, nativeValidTime)`-tuples. Denominator og accepted/rejected-sum skal være eksakt, rejected slices uændrede, accepted lineage entydig. Global assetfejl eller komplet gammel anden lineage på et rejected target ruller fortsat hele stagen tilbage.
+- **Promotion og historik:** Isoleret collection/modelRun-candidate, same-target/pair-superset/no-new-lineage, terminal own-run fallback og faseatomisk qualityrefresh består. Privat partial må gemme sikre tuples, men er ikke locked/history-complete; genuine cold-start er uændret.
+- **Copernicus:** Et strukturelt gyldigt shard bevarer returnerede exact native U/V-par, mens kun manglende bestilte timer går videre som rest. Attempts gemmer `observedNativeValidTimes` i nested v2 og læser legacy 4.0.341; Baltic-prerequisite overlever pruning af sidste søskende. Tom providerakse og subsekundtider er retryable malformed, ikke no-record. Ingen interpolation/hold; dubletter og out-of-request-rækker er fortsat fatale. Schema-3-seamtesten er grøn.
+- **Uændrede slutkrav:** Current 79.414/79.414; native WAM 79.060; Feggesund 354/354; nul missing/overlap/uløste lineage-konflikter; DMI → Copernicus → Open-Meteo; op til 48 timers verificeret rådgivende historik.
+- **Teststatus:** Samlet WAM er grøn `63/63`, WAM-historik `35/35` og checkpoint `21/21`; tre Copernicus-måltests, Python compile og code diff-check er også grønne. Ingen exact-head-CI eller runtime er endnu bevist.
+- **Næste rækkefølge:** Privacy-/releasepakningskontrol → version/RDKS/håndbog/changelog og exact-release-policy → én exact-head sourcegate → sikker merge → kontrolleret main-writer → kræv begge closures og handoff → fulde post-data-gates/cutover → offentlig modelverifikation. Normalworkflow/watchdog forbliver deaktiveret indtil da.
+- **Efter launch:** Revidér cachetransport, ekstern cron, providerforbrug/tider og normal vedligeholdelseskapacitet mod den nye faktiske drift; 4.0.342 lukker dem ikke automatisk.
+
 # NYESTE CHECKPOINT – 2026-09-10 – fortsæt 4.0.341 uden at gentage analysen
 
 - **Aktuel gren/kandidat:** `codex/weather-cache-closure-4.0.341`. Den eksisterende 4.0.340-pakke bevares, og den nye WAM-/Open-Meteo-/runtimebinding er lokal. Ingen 4.0.341-commit, push, exact-head-CI, merge eller produktion er dokumenteret ved dette checkpoint.

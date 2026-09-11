@@ -322,33 +322,35 @@ def nearest_shared_uv_times(
     expected_times: list[datetime],
     maximum_distance_km: float = LOCAL_MAX_DISTANCE_KM,
 ) -> list[dict[str, Any]]:
-    """Select one independent native U/V pair for every requested time.
+    """Select independent native U/V pairs for the requested times that exist.
 
     The dataset may contain additional native hours because a bounded spatial
-    shard is fetched as one range.  Every requested hour must nevertheless be
-    present exactly; nearest-time selection, temporal interpolation and holding
-    a vector across hours are forbidden.
+    shard is fetched as one range.  A requested hour absent from an otherwise
+    valid provider time axis is an honest no-record result for that hour.  Any
+    returned row must still match an exact requested native hour; nearest-time
+    selection, temporal interpolation and holding a vector across hours are
+    forbidden.
     """
-    if np is None:
-        raise RuntimeError("Copernicus numerical selection requires numpy")
-    raw_times = np.asarray(dataset["time"].values).reshape(-1) if "time" in dataset else np.asarray([])
-    by_time: dict[str, int] = {}
-    for index, raw_time in enumerate(raw_times):
-        time_text = utc_iso(raw_time)
-        if time_text in by_time:
-            raise RuntimeError(f"Copernicus subset contains duplicate native time {time_text}")
-        by_time[time_text] = index
-    requested = sorted({utc_iso(value) for value in expected_times})
+    by_time = _validated_native_time_index(dataset)
+    requested_values: list[str] = []
+    for index, value in enumerate(expected_times):
+        try:
+            time_text = utc_iso(value)
+            parsed_time = _parse_shadow_time(time_text)
+        except (OverflowError, TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"Copernicus acquisition contains an invalid requested native time at index {index}"
+            ) from error
+        if parsed_time != parsed_time.replace(minute=0, second=0, microsecond=0):
+            raise RuntimeError(
+                f"Copernicus acquisition contains a non-hourly requested native time at index {index}"
+            )
+        requested_values.append(time_text)
+    requested = sorted(set(requested_values))
     if len(requested) != len(expected_times):
         raise RuntimeError("Copernicus acquisition contains duplicate requested native times")
-    missing = [value for value in requested if value not in by_time]
-    if missing:
-        raise RuntimeError(
-            f"Copernicus subset is missing {len(missing)} exact requested native hour(s); "
-            "temporal interpolation is forbidden"
-        )
     selected: list[dict[str, Any]] = []
-    for time_text in requested:
+    for time_text in (value for value in requested if value in by_time):
         one_time = dataset.isel(time=[by_time[time_text]])
         record = nearest_shared_uv(
             one_time,
@@ -363,6 +365,105 @@ def nearest_shared_uv_times(
         if record is not None:
             selected.append(record)
     return selected
+
+
+def _validated_native_time_index(dataset: Any) -> dict[str, int]:
+    """Validate one complete provider subset before interpreting absent hours.
+
+    This validation is deliberately independent of the requested-time
+    intersection.  Otherwise a file with a plausible but disjoint time axis
+    could omit the current variables or their time dimension and be mistaken
+    for an honest no-record response.  Requiring an explicit time dimension on
+    both components also prevents a three-dimensional vector from being held
+    across several requested hours.
+    """
+    if np is None:
+        raise RuntimeError("Copernicus numerical selection requires numpy")
+    if "time" not in dataset:
+        raise RuntimeError("Copernicus subset is missing its native time axis")
+    required = {"uo", "vo", "longitude", "latitude", "depth", "time"}
+    missing = sorted(name for name in required if name not in dataset)
+    if missing:
+        raise RuntimeError(f"Copernicus subset is missing {', '.join(missing)}")
+
+    for coordinate in ("longitude", "latitude", "depth"):
+        axis = dataset[coordinate]
+        if tuple(axis.dims) != (coordinate,):
+            raise RuntimeError(
+                f"Copernicus subset {coordinate} axis must be one-dimensional"
+            )
+        try:
+            values = np.asarray(axis.values, dtype=float)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"Copernicus subset {coordinate} axis is not numeric"
+            ) from error
+        if (
+            values.ndim != 1
+            or len(values) < 1
+            or not np.all(np.isfinite(values))
+            or len(np.unique(values)) != len(values)
+        ):
+            raise RuntimeError(
+                f"Copernicus subset {coordinate} axis is empty, non-finite or duplicated"
+            )
+
+    component_dimensions = {"time", "depth", "latitude", "longitude"}
+    for component in ("uo", "vo"):
+        variable = dataset[component]
+        if len(variable.dims) != 4 or set(variable.dims) != component_dimensions:
+            raise RuntimeError(
+                f"Copernicus subset {component} must use time/depth/latitude/longitude dimensions"
+            )
+        try:
+            numeric = np.issubdtype(np.dtype(variable.dtype), np.number)
+        except TypeError:
+            numeric = False
+        if not numeric:
+            raise RuntimeError(f"Copernicus subset {component} is not numeric")
+
+    time_axis = dataset["time"]
+    if tuple(time_axis.dims) != ("time",):
+        raise RuntimeError("Copernicus subset native time axis must be one-dimensional")
+    raw_times = np.asarray(time_axis.values)
+    if raw_times.ndim != 1:
+        raise RuntimeError("Copernicus subset native time axis must be one-dimensional")
+    if raw_times.size < 1:
+        raise RuntimeError("Copernicus subset native time axis is empty")
+    by_time: dict[str, int] = {}
+    for index, raw_time in enumerate(raw_times):
+        try:
+            # utc_iso intentionally serializes numpy datetimes at second
+            # precision.  Inspect the raw value first so a provider timestamp
+            # such as 10:00:00.500 cannot be truncated into a false exact-hour
+            # observation.
+            if isinstance(raw_time, np.datetime64):
+                if np.isnat(raw_time):
+                    raise ValueError("NaT")
+                nanoseconds = int(raw_time.astype("datetime64[ns]").astype(np.int64))
+                if nanoseconds % (60 * 60 * 1_000_000_000) != 0:
+                    raise RuntimeError(
+                        f"Copernicus subset contains a non-hourly native time at index {index}"
+                    )
+            time_text = utc_iso(raw_time)
+            parsed_time = _parse_shadow_time(time_text)
+        except (OverflowError, TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"Copernicus subset contains an invalid native time at index {index}"
+            ) from error
+        if parsed_time != parsed_time.replace(minute=0, second=0, microsecond=0):
+            raise RuntimeError(
+                f"Copernicus subset contains a non-hourly native time at index {index}"
+            )
+        if time_text in by_time:
+            raise RuntimeError(f"Copernicus subset contains duplicate native time {time_text}")
+        by_time[time_text] = index
+    return by_time
+
+
+def validated_native_times(dataset: Any) -> list[str]:
+    """Return the structurally validated native time axis in canonical order."""
+    return sorted(_validated_native_time_index(dataset))
 
 
 def safe_record(record: dict[str, Any]) -> dict[str, Any]:

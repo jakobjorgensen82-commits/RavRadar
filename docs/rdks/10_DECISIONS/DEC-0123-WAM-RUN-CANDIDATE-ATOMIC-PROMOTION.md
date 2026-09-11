@@ -1,12 +1,14 @@
 # DEC-0123 – WAM-kandidat pr. modelkørsel og atomisk promotion
 
-- **Status:** Ejerbesluttet, lokalt implementeret og måltestet i 4.0.341; exact-head-CI, main-runtime og produktion er åbne
+- **Status:** Implementeret og merged i 4.0.341. Isoleret candidate, monoton promotion, kvalitetsfase og fallbackproveniens består; whole-asset-admissionen i punkt 3, punkt 5 og den relevante del af punkt 8 er snævert supersederet af DEC-0124 efter negativ main-runtime.
 - **Besluttet:** 2026-09-10
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0119, DEC-0120, DEC-0121 og DEC-0122
 - **Supersederer snævert:** løbende direkte WAM-mutation af den aktive cache under en endnu uafsluttet fil- eller modelkørselsfase
 
 ## Baggrund
+
+> **Efterfølgende afgrænsning 2026-09-11:** 4.0.341 beviste, at isoleret candidate og promotion var nødvendige, men oneoff `34534764449` viste også, at kravet om fuld accept af hver fil kunne kassere alle uafhængigt gyldige søskenderækker. DEC-0124 erstatter alene denne admissionsgranularitet med lineage-sikker per-part/time-admission. Den historiske beslutning nedenfor bevares som revisionsspor; slutkomplethed og de øvrige værn er ikke lempet.
 
 Den operationelle WAM-indlæsning kunne tidligere nå at skrive en delvist behandlet fil direkte ind i den aktive kandidat. En fil med eksempelvis 669 accepterede mål ud af 670 kunne dermed efterlade en blanding af gamle og nye modelkørsler, selv om filen ikke var komplet. Også en fuldt accepteret enkeltfil kunne under en kvalitetsopdatering danne en midlertidig seam mod næste tretimersfil. Samtidig kunne tællere og checkpointmarkører komme foran den faktisk sikkert promoverede dækning, og en ældre fallbackfil risikerede at blive behandlet med den nyere modelkørsels identitet.
 

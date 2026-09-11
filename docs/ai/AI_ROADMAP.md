@@ -1,4 +1,15 @@
-# AI Roadmap – RavRadar lokal 4.0.341-kandidat; Candidate G er offentlig – opdateret 2026-09-10
+# AI Roadmap – RavRadar lokal 4.0.342-kandidat; Candidate G er offentlig – opdateret 2026-09-11
+
+## Nyeste releasehale – 4.0.342 granulær provideradmission
+
+1. [x] Bevar 4.0.341's isolerede WAM-candidate og uændrede final closure; erstat kun whole-asset-starvation med sikker per-part/time-admission.
+2. [x] Bevar sikre private WAM-tuples uden at overclaim'e locked/history-complete eller ændre genuine cold-start.
+3. [x] Bevar eksakte Copernicus-timer fra validt partial-hour-shard og send kun resten videre; behold strukturelle stop.
+4. [x] Bestå tre Copernicus-måltests og de to korrigerede WAM-regressioner.
+5. [x] Bestå samlet WAM `63/63`, WAM-historik `35/35`, checkpoint `21/21`, de tre Copernicus-måltests, Python compile og code diff-check. Privacykontrol afsluttes fortsat som del af releasepakningen.
+6. [ ] Luk 4.0.342-version, RDKS/håndbog/changelog og exact-release-policy; bestå én exact-head sourcegate og merge den eksakte grønne head.
+7. [ ] Kør kontrolleret main-writer og kræv current 79.414/79.414, native WAM 79.060 og Feggesund 354/354 før handoff og fulde post-data-gates.
+8. [ ] Udfør cutover og offentlig modelverifikation; genaktivér derefter normalworkflow/watchdog kontrolleret og fortsæt de udskudte driftsopgaver.
 
 ## Nyeste releasehale – 4.0.341 WAM/cachestabilitet
 
