@@ -110,10 +110,19 @@ class DiagnosticTests(unittest.TestCase):
                 self.assertIn(step["uses"], {"actions/checkout@v7", "actions/setup-python@v7", "actions/cache/restore@v6"})
                 self.assertNotIn("restore-keys", step.get("with", {}))
         runs = [s["run"] for s in steps if s.get("run", "").startswith("python -B scripts/inspect-")]
-        self.assertEqual(len(runs), 1)
-        self.assertIn("--route-causes", runs[0])
+        self.assertEqual(runs, [
+            "python -B scripts/inspect-current-residual-20260911.py --source runtime-source --cache .diagnostic/34588002366 --target 2026-09-11T10:00:00Z --generation 34588002366 --route-causes",
+            "python -B scripts/inspect-regional-migration-20260911.py --source candidate-runtime --cache .diagnostic/34588002366",
+        ])
+        source_checkouts = [s for s in steps if s.get("uses") == "actions/checkout@v7" and s.get("with", {}).get("path")]
+        self.assertEqual({s["with"]["path"] for s in source_checkouts}, {"runtime-source", "candidate-runtime"})
+        self.assertTrue(all(s["with"]["ref"] == "5587001b45ffea056addaf6cd20084719540336a" for s in source_checkouts))
+        apply_steps = [s["run"] for s in steps if "git -C candidate-runtime apply" in s.get("run", "")]
+        self.assertEqual(len(apply_steps), 1)
+        self.assertIn("git -C candidate-runtime apply --check ../diagnostic-regional-candidate.patch", apply_steps[0])
+        self.assertIn("git -C candidate-runtime apply ../diagnostic-regional-candidate.patch", apply_steps[0])
         self.assertNotIn("secrets.", path.read_text(encoding="utf-8"))
-        for script in ("inspect-current-residual-20260911.py", "inspect_current_route_causes.py"):
+        for script in ("inspect-current-residual-20260911.py", "inspect_current_route_causes.py", "inspect-regional-migration-20260911.py"):
             ast.parse((ROOT / "scripts" / script).read_text(encoding="utf-8"))
 
 
