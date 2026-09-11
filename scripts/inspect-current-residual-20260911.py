@@ -42,6 +42,63 @@ def safe_error_type(error):
     return type(error).__name__ if type(error).__name__ in allowed else "Exception"
 
 
+def safe_error_code(error):
+    # Fixed production enum only: never publish arbitrary exception messages.
+    allowed = {
+        "OPEN_METEO_DOCUMENT_INVALID", "OPEN_METEO_DOCUMENT_IDENTITY_INVALID",
+        "OPEN_METEO_RECORD_INVALID", "OPEN_METEO_RECORD_DUPLICATE",
+        "OPEN_METEO_TARGETS_INVALID", "OPEN_METEO_TARGET_BINDING_INVALID",
+        "OPEN_METEO_REFERENCE_INVALID", "OPEN_METEO_CHECKPOINT_TIME_INVALID",
+        "OPEN_METEO_REQUIRED_PAIRS_INVALID",
+        "OPEN_METEO_REQUIRED_PAIRS_OUTSIDE_OPERATIONAL_RANGE",
+        "OPEN_METEO_UPSTREAM_DISPOSITION_INVALID",
+        "OPEN_METEO_DONOR_BANK_INVALID", "OPEN_METEO_DONOR_BANK_TIME_REGRESSION",
+        "OPEN_METEO_DONOR_MASK_INVALID",
+    }
+    code = getattr(error, "code", None)
+    return code if code in allowed else None
+
+
+def bind_declared_residual(document, *, targets, reference_text):
+    """Bind the investigation's pair list, NOT positive weather admission.
+
+    A damaged weather row must not prevent inspecting unrelated provider banks.
+    The reference list still requires intact original control, whole-document
+    hash, exact target/hour binding and its separately sealed missing-pair hash.
+    """
+    from lib.copernicus_current import canonical_sha256, required_pairs_sha256
+    from lib.open_meteo_current_fallback import (
+        PRIVATE_FIELDS, _canonical_pairs, _validate_reusable_envelope,
+        validate_checkpoint_document,
+    )
+
+    emit("reference_checkpoint_structure",
+         exactFieldSetMatch=set(document) == PRIVATE_FIELDS,
+         declaredSchemaIsV2=document.get("schemaVersion") == 2,
+         referenceMatches=document.get("productionReferenceAt") == reference_text,
+         recordsAreList=isinstance(document.get("records"), list),
+         missingPairsAreList=isinstance(document.get("missingPairs"), list))
+    _validate_reusable_envelope(document, targets=targets)
+    if document["productionReferenceAt"] != reference_text:
+        raise ValueError("residual target mismatch")
+    if canonical_sha256({key: value for key, value in document.items()
+                         if key != "documentSha256"}) != document["documentSha256"]:
+        raise ValueError("residual document digest mismatch")
+    missing_rows = _canonical_pairs(document["missingPairs"], "OPEN_METEO_DOCUMENT_INVALID")
+    if (len(missing_rows) != document["missingPairCount"]
+            or required_pairs_sha256(missing_rows) != document["missingPairsSha256"]):
+        raise ValueError("residual pair binding mismatch")
+    status, error_code = "validated", None
+    try:
+        validate_checkpoint_document(document, targets=targets)
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError, RecursionError) as error:
+        status, error_code = "whole-weather-checkpoint-rejected", safe_error_code(error)
+    emit("reference_checkpoint_validation", admissionStatus=status,
+         admissionErrorCode=error_code, declaredMissingPairCount=len(missing_rows),
+         intactControlAndPairHashes=True, productionAuthority=False)
+    return missing_rows
+
+
 def sha(path):
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -301,12 +358,9 @@ def main():
     gc.collect()
 
     residual = read(paths["residual"])
-    validate_checkpoint_document(residual, targets=targets)
-    if residual["productionReferenceAt"] != reference_text:
-        raise ValueError("residual target mismatch")
-    missing = keys(residual["missingPairs"])
-    if len(missing) != residual["missingPairCount"]:
-        raise ValueError("residual count mismatch")
+    missing = keys(bind_declared_residual(
+        residual, targets=targets, reference_text=reference_text,
+    ))
     missing_sha256 = residual["missingPairsSha256"]
     required = [{"partId": target["partId"], "validTime":
                  (reference + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")}
@@ -315,7 +369,8 @@ def main():
     if not missing <= universe:
         raise ValueError("residual out of range")
     emit("bound_residual", requiredPairCount=len(universe), missingPairCount=len(missing),
-         targetBinding="LATEST_CACHED_LEDGER_AND_OM_PROOF_MATCH")
+         targetBinding="LATEST_CACHED_LEDGER_AND_DECLARED_OM_MISSING_PAIR_HASH_MATCH",
+         productionAuthority=False)
     residual = None
     gc.collect()
     independently_proved = set()
@@ -324,8 +379,7 @@ def main():
 
     dmi = read_dmi_bulk_document(paths["dmi"])
     dmi_ledger = dmi.get("diagnostics", {}).get("currentOperationalLedger", {})
-    if dmi_ledger.get("targetRegistrySha256") != target_hash:
-        raise ValueError("historical DMI target mismatch")
+    dmi_target_matches = dmi_ledger.get("targetRegistrySha256") == target_hash
     raw = set()
     for target in targets:
         zone = dmi.get("zones", {}).get("PART::" + target["partId"], {})
@@ -335,13 +389,21 @@ def main():
                     and math.isfinite(row[k]) for k in ("current-u", "current-v")):
                 raw.add((target["partId"], valid))
     signature = runtime.current_marine_processing_signature(dmi.get("zoneRegistrySignature"))
-    with contextlib.redirect_stdout(Quiet()), contextlib.redirect_stderr(Quiet()):
-        proofs = runtime._validated_candidate_retained_current_asset_proofs(dmi, targets, reference, signature)
+    proofs = []
+    dmi_status, dmi_error_type = "validated", None
+    try:
+        if not dmi_target_matches:
+            raise ValueError("historical DMI target mismatch")
+        with contextlib.redirect_stdout(Quiet()), contextlib.redirect_stderr(Quiet()):
+            proofs = runtime._validated_candidate_retained_current_asset_proofs(dmi, targets, reference, signature)
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError, RecursionError) as error:
+        dmi_status, dmi_error_type = "not-admissible", safe_error_type(error)
     admitted = {(part_id, proof["sourceAsset"]["validTime"])
                 for proof in proofs for part_id in proof["attestedPartIds"]} & universe
     emit("dmi_overlap", rawCurrentPairCount=len(raw), independentlyProvedPairCount=len(admitted),
          rawPairsInFinalResidual=len(raw & missing), provedPairsInFinalResidual=len(admitted & missing),
-         provedPairCountOutsideRaw=len(admitted - raw))
+         provedPairCountOutsideRaw=len(admitted - raw), targetRegistryMatches=dmi_target_matches,
+         admissionStatus=dmi_status, admissionErrorType=dmi_error_type)
     raw_observed.update(raw)
     independently_proved.update(admitted)
 
@@ -551,5 +613,6 @@ if __name__ == "__main__":
     except Exception as exc:
         frame = traceback.extract_tb(exc.__traceback__)[-1]
         emit("inspection_failed", errorType=safe_error_type(exc),
+             errorCode=safe_error_code(exc),
              sourceFile=Path(frame.filename).name, sourceLine=frame.lineno)
         sys.exit(1)
