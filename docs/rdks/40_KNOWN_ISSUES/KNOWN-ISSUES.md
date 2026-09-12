@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 retter oneoffens falske multipass
+
+- **ISSUE-4.0.345-END-TO-END – NEGATIV RUNTIME / SUPERSEDED:** PR #279-sourcegate `34666410182` var grøn, merge `64d2f23f` var byteidentisk, og oneoff `34667430392` genbrugte proof uden dobbelt gate. Vejrclosure stoppede korrekt ved 79.230/79.414 med 184 provider-negative OM-par; intet handoff/deploy/cutover.
+- **ISSUE-DMI-ONEOFF-MULTIPASS-UNREACHABLE – LOKALT RETTET / RUNTIME ÅBEN P0:** Wrapperen returnerede straks producentens exit 2 for en ufuldstændig currentledger og gav alle pass én fælles 3.000-sekundersramme. Sikkert checkpointet runtimefremgang kunne derfor ikke få en ny roteret passage. 4.0.346 tillader højst tre selvstændigt bounded pass efter streng same-target/slutcache/fejl-/fremgangsklassifikation og kræver pargevinst før et tredje strict-current-runtimepass; exit-0-downloadbudgetvejen er særskilt.
+- **ISSUE-OPEN-METEO-184-PROVIDER-NEGATIVE – ÅBEN P0-RUNTIME:** Alle 184 var forsøgt og isoleret genprøvet. Diagnosen viser 14 grid-distance-afvisninger og 280 null speed/direction-værdier på tværs af forsøg, men ingen runtime-/attempt-/køudtømning eller global providerfejl. Et andet gridvalg er ikke autoriseret; først forbedret DMI-service og uændrede strenge slutgates prøves.
+- **ISSUE-COPERNICUS-4.0.345-LIVE-THROUGHPUT – DELVIST LUKKET / OPTIMERING ÅBEN:** CP fuldførte 73 forsøg på 39m25s mod tidligere cirka 54 minutter. Durable journalwrites var billige, men tolv seks-segment-konsolideringer brugte cirka 66 sekunder hver og candidate-admission cirka 19–20 sekunder pr. segment. Det gamle checkpointmønster er brudt; yderligere optimering er efter closure/launch medmindre ny evidens gør den blokerende.
+- **ISSUE-4.0.346-END-TO-END – ÅBEN P0:** Exact-head-CI, merge, reelt multipass-mainrun, current 79.414/79.414, WAM/Feggesund, freshness, fulde gates, handoff, integreret cutover og offentlig modelproof mangler. Candidate G er fortsat offentlig.
+- **ISSUE-NORMAL-MAINTENANCE-REACTIVATION – BEVIDST HOLDT:** Workflowet forbliver disabled. Den inerte jobløse køpost `34613079069` må ikke forveksles med en aktiv writer; normal drift aktiveres først kontrolleret efter model-launch og bæredygtighedsbevis.
+
+DEC-0128 og `CHANGELOG-4.0.346.md` er aktuelle. Afsnittet nedenfor er historisk pre-4.0.345-runtime.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.345 lokalt rettet, drift fortsat åben
 
 - **ISSUE-COPERNICUS-LIVE-CHECKPOINT-DOMINANCE – LOKALT RETTET/MÅLT, MAIN ÅBEN:** Oneoff `34642214559` brugte cirka 2.376 sekunder/78,2 % af CP-fasen på 31 admission/checkpoints. Durable receipts og seks-segment-consolidation måler lokalt 115,905 → 46,438 sekunder ved 40.120 records med byteidentisk resultat. GitHub-runnerens reelle throughput og closure er endnu ikke bevist.

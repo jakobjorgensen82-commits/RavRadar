@@ -17,13 +17,45 @@ ENV = {"DMI_BULK_MAX_DOWNLOAD_MB": "4096", "DMI_BULK_RAW_CACHE_MAX_MB": "4096",
 
 
 class FillTests(unittest.TestCase):
-    def fixture(self):
+    def fixture(self, *, ready=True, verified_pairs=118, runtime_limited=False):
+        ledger_codes = [] if ready else ["LOCALLY_SKIPPED_DKSS_ASSET"]
+        errors = [{
+            "collection": "harmonie_dini_sf",
+            "message": "DMI bulk download budget would be exceeded",
+            "failureCode": "RUNTIME_BUDGET_REACHED",
+            "partialProgressPreserved": True,
+        }]
+        attempted = ["harmonie_dini_sf"]
+        runs = {"harmonie_dini_sf": {"assetsProcessed": 6}}
+        if runtime_limited:
+            errors = [
+                {"collection": "dkss_lf", "message": "bulk runtime budget reached",
+                 "failureCode": "RUNTIME_BUDGET_REACHED", "partialProgressPreserved": True},
+                {"collection": "dmi-current-ledger-gate",
+                 "message": "current ledger incomplete", "failureCodes": ledger_codes},
+            ]
+            attempted = ["dkss_lf"]
+            runs = {"dkss_lf": {"assetsProcessed": 6}}
         return {"diagnostics": {
-            "currentOperationalLedger": {"productionReferenceAt": REFERENCE, "ready": True},
-            "errors": [{"collection": "harmonie_dini_sf", "message": "DMI bulk download budget would be exceeded", "failureCode": "RUNTIME_BUDGET_REACHED", "partialProgressPreserved": True}],
-            "collectionsAttempted": ["harmonie_dini_sf"],
+            "currentOperationalLedger": {
+                "productionReferenceAt": REFERENCE, "ready": ready,
+                "failureCodes": ledger_codes, "targetCount": 1, "hourCount": 118,
+                "attestation": {"verifiedPairCount": verified_pairs},
+            },
+            "errors": errors,
+            "collectionsAttempted": attempted,
             "rawCache": {"maxBytes": 4 * oneoff.GIB, "after": {"bytes": 4 * oneoff.GIB}},
-        }, "runs": {"harmonie_dini_sf": {"assetsProcessed": 6}}, "privateFixture": "never-print"}
+        }, "runs": runs, "privateFixture": "never-print"}
+
+    def progress(self, reason, verified_pairs=118, processed_assets=6):
+        return {
+            "continuationReason": reason,
+            "currentReady": reason != "strict-current-runtime",
+            "onlyDownloadStops": reason == "download-budget",
+            "processedAssets": processed_assets,
+            "requiredPairCount": 118,
+            "verifiedPairCount": verified_pairs,
+        }
 
     def simulate(self, summaries, codes=None, durations=None, free=None, env=None):
         self.calls, self.logs, elapsed = [], [], [0]
@@ -40,34 +72,49 @@ class FillTests(unittest.TestCase):
                            clock=lambda: elapsed[0], free_bytes=lambda: free[len(self.calls)],
                            log=self.logs.append)
 
-    def test_continue_only_download_stop_and_keep_one_deadline(self):
-        limited = {"onlyDownloadStops": True, "processedAssets": 6}
-        done = {"onlyDownloadStops": False, "processedAssets": 14}
+    def test_download_stop_gets_a_new_bounded_pass(self):
+        limited = self.progress("download-budget")
+        done = self.progress(None, processed_assets=14)
         self.assertEqual(self.simulate([limited, done]), 0)
         self.assertEqual(len(self.calls), 2)
-        self.assertEqual([call["DMI_BULK_MAX_RUNTIME_SECONDS"] for call in self.calls], ["3000", "2600"])
+        self.assertEqual(
+            [call["DMI_BULK_MAX_RUNTIME_SECONDS"] for call in self.calls],
+            ["3000", "3000"],
+        )
         for call in self.calls:
             for key in ENV.keys() - {"DMI_BULK_MAX_RUNTIME_SECONDS"}:
                 self.assertEqual(call[key], ENV[key])
         self.assertNotIn("never-print", " ".join(self.logs))
 
-    def test_no_retries_for_failure_or_no_progress(self):
-        limited = {"onlyDownloadStops": True, "processedAssets": 6}
-        self.assertEqual(self.simulate([limited], codes=[2]), 2)
+    def test_runtime_limited_exit_two_continues_when_verified_pairs_grow(self):
+        first = self.progress("strict-current-runtime", verified_pairs=80)
+        second = self.progress("strict-current-runtime", verified_pairs=90)
+        done = self.progress(None, verified_pairs=118)
+        self.assertEqual(self.simulate([first, second, done], codes=[2, 2, 0]), 0)
+        self.assertEqual(len(self.calls), 3)
+        self.assertIn("reason=strict-current-runtime", " ".join(self.logs))
+
+    def test_no_retries_for_unclassified_failure_or_no_progress(self):
+        limited = self.progress("download-budget")
+        self.assertEqual(self.simulate([dict(limited, continuationReason=None)], codes=[2]), 2)
         self.assertEqual(len(self.calls), 1)
         self.assertEqual(self.simulate([dict(limited, processedAssets=0)]), 0)
         self.assertEqual(len(self.calls), 1)
 
+    def test_runtime_continuation_stops_after_no_verified_pair_gain(self):
+        limited = self.progress("strict-current-runtime", verified_pairs=80)
+        self.assertEqual(self.simulate([limited, limited], codes=[2, 2]), 2)
+        self.assertEqual(len(self.calls), 2)
+        self.assertIn("NO_VERIFIED_PAIR_GAIN", self.logs[-1])
+
     def test_maximum_three_passes(self):
-        self.assertEqual(self.simulate([{"onlyDownloadStops": True, "processedAssets": 1}] * 3), 0)
+        limited = self.progress("download-budget", processed_assets=1)
+        self.assertEqual(self.simulate([limited] * 3), 0)
         self.assertEqual(len(self.calls), 3)
         self.assertIn("PASS_LIMIT", self.logs[-1])
 
-    def test_time_and_disk_reserves_stop_without_discarding_pass(self):
-        limited = {"onlyDownloadStops": True, "processedAssets": 6}
-        self.assertEqual(self.simulate([limited], durations=[2750]), 0)
-        self.assertEqual(len(self.calls), 1)
-        self.assertIn("SHARED_TIME_RESERVE", self.logs[-1])
+    def test_disk_reserve_stops_without_discarding_pass(self):
+        limited = self.progress("download-budget")
         self.assertEqual(self.simulate([limited], free=[8 * oneoff.GIB, 4 * oneoff.GIB]), 0)
         self.assertEqual(len(self.calls), 1)
         self.assertIn("DISK_RESERVE", self.logs[-1])
@@ -85,9 +132,9 @@ class FillTests(unittest.TestCase):
 
     def test_finalized_report_is_private_and_exact(self):
         report = oneoff.summarize_progress(self.fixture(), REFERENCE)
-        self.assertEqual(report, {"onlyDownloadStops": True, "processedAssets": 6})
+        self.assertEqual(report, self.progress("download-budget"))
         for mutate in [
-            lambda x: x["diagnostics"]["currentOperationalLedger"].update(ready=False),
+            lambda x: x["diagnostics"]["currentOperationalLedger"].update(ready="false"),
             lambda x: x["diagnostics"]["currentOperationalLedger"].update(productionReferenceAt="2026-09-04T18:00:00Z"),
             lambda x: x["diagnostics"]["rawCache"]["after"].update(bytes=4 * oneoff.GIB + 1),
             lambda x: x["runs"]["harmonie_dini_sf"].update(assetsProcessed=True),
@@ -96,6 +143,27 @@ class FillTests(unittest.TestCase):
             mutate(document)
             with self.assertRaises(ValueError):
                 oneoff.summarize_progress(document, REFERENCE)
+
+    def test_finalized_runtime_limited_report_is_the_only_exit_two_retry(self):
+        report = oneoff.summarize_progress(
+            self.fixture(ready=False, verified_pairs=80, runtime_limited=True),
+            REFERENCE,
+        )
+        self.assertEqual(
+            report,
+            self.progress("strict-current-runtime", verified_pairs=80),
+        )
+        for mutate in [
+            lambda x: x["diagnostics"]["currentOperationalLedger"]["failureCodes"].append("UNATTESTED_CURRENT_PART_TIME"),
+            lambda x: x["diagnostics"]["errors"][0].update(failureCode="ASSET_REQUEST_FAILED"),
+            lambda x: x["diagnostics"]["errors"][0].update(partialProgressPreserved=False),
+            lambda x: x["diagnostics"]["errors"].append({"collection": "wam_dw", "failureCode": "RUNTIME_BUDGET_REACHED"}),
+        ]:
+            document = self.fixture(ready=False, verified_pairs=80, runtime_limited=True)
+            mutate(document)
+            self.assertIsNone(
+                oneoff.summarize_progress(document, REFERENCE)["continuationReason"]
+            )
 
     def test_mixed_errors_timeouts_or_unpreserved_data_never_trigger_retry(self):
         for mutate in [
@@ -106,7 +174,9 @@ class FillTests(unittest.TestCase):
         ]:
             document = self.fixture()
             mutate(document["diagnostics"]["errors"])
-            self.assertFalse(oneoff.summarize_progress(document, REFERENCE)["onlyDownloadStops"])
+            report = oneoff.summarize_progress(document, REFERENCE)
+            self.assertFalse(report["onlyDownloadStops"])
+            self.assertIsNone(report["continuationReason"])
 
     def test_real_entry_point_requires_a_new_finalized_report(self):
         for changed in [False, True]:

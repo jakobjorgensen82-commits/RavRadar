@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.343. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.343 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.346. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.346 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -100,6 +100,14 @@ PR #278 blev efterfølgende merged som `f2cc2a77`, men main-run `34635781802` og
 Under ejerens stående autorisation og aktuelle instruktion om autonom sikker lancering flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.345`. Et 4.0.344-handoff findes ikke og må ikke konstrueres eller ommærkes. 4.0.345 bevarer cacherne, men tilføjer durable segmentreceipts og bounded consolidation efter DEC-0127. Kun et komplet runbundet handoff fra samme eksakte 4.0.345-main-head kan bruges.
 
 Alle eksisterende arkiv-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Exact-content sourceproof kan alene undgå gentagelse af en allerede grøn kildegate på byteidentisk tracked indhold; det ændrer ikke de fulde post-data-gates. Current kræver fortsat 79.414/79.414 og bølger 79.060 native WAM plus Feggesund 354/354. Candidate G forbliver offentlig, indtil den komplette kæde og den integrerede model er verificeret i produktion.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.346
+
+4.0.345 blev exact-head-valideret og merged som `64d2f23f`. Main-oneoff `34667430392` genbrugte den eksakte kildeproof uden en anden kildegate, men sluttede fail-closed uden handoff eller cutover. Den bevarede cache nåede 64.400/79.414 DMI-currentpar, hvorefter producentens 3.000-sekunders runtime udløb. Den efterfølgende kæde reducerede resten til 184 provider-negative par, men fuld 79.414/79.414-currentclosure blev ikke opnået.
+
+DEC-0128 retter den systemiske wrapperfejl, hvor alle påståede DMI-passager delte én deadline, og hvor producentens sikre exit-kode 2 ved ufuldstændig strict-current-ledger stoppede før rotationen kunne gavne en ny passage. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse derfor alene til exact-release `4.0.346`. Et ældre handoff må ikke ommærkes eller bruges; cutover kræver et komplet, succesfuldt og runbundet handoff fra samme eksakte 4.0.346-main-head.
+
+Alle eksisterende archive-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Hver ny DMI-passage får en selvstændig 3.000-sekunders producentgrænse, men wrapperen fortsætter kun efter en snævert klassificeret lokal runtime-rest og stopper et tredje strict-current-runtimepass uden verificeret pair-fremgang. Den allerede eksisterende exit-0-downloadbudgetvej forbliver særskilt. Dette er ikke en generel retry eller godkendelse af løbende fuld cachetransport. Candidate G forbliver offentlig, indtil hele same-head-kæden og den integrerede model er positivt verificeret.
 
 ## Konsekvenser
 

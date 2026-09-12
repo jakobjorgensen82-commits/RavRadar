@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.345
+**Håndbogsversion:** 4.0.346
+
+## 88.50 Lokal 4.0.346 – Oneoffens DMI-rotation får reelle efterfølgende pass
+
+**Status:** 4.0.345 blev kontrolleret og merged. Den nye kildegateordning virkede i praksis: den samme byteidentiske kilde blev ikke fuldt kontrolleret to gange. Den efterfølgende oneoff forbedrede dækningen kraftigt, men stoppede stadig korrekt med 184 currenthuller. 4.0.346 er en lokal rettelse; ny GitHub-kontrol, merge, komplet vejr og offentlig modelverifikation mangler.
+
+### Hvad den seneste kørsel faktisk viste
+
+Oneoffen brugte 1 time og 41 minutter og endte med 79.230 af 79.414 strømpar. De sidste 184 var ikke glemt: Open-Meteo forsøgte dem og genprøvede hvert berørt punkt isoleret. Svarene manglede gyldige værdier eller en godkendelig havcelle. Det er ærligt fravær hos den konkrete kilde og modelkørsel, men ikke bevis for, at DMI eller Copernicus aldrig kan levere parrene.
+
+DMI søgte fortsat mod alle 673 kystdele og alle 118 timer. Den genbrugte gode data, prøvede de officielle DKSS-filer og lukkede begge bølgefamilier. Den behandlede også alle tre strømfamilier, men nåede ikke alle deres relevante filer inden den enkelte passages tidsgrænse.
+
+Copernicus-rettelsen fra 4.0.345 havde en reel effekt. Fasen gennemførte 73 forsøg på cirka 39 minutter mod cirka 54 minutter i den tidligere kørsel. De små segmentkvitteringer var hurtige, og det gamle mønster med en fuld kontrol efter hvert segment var brudt. De samlede seks-segment-kontroller er stadig tunge, men Copernicus afsluttede sit planlagte arbejde; de sidste 184 var derfor ikke blot en afbrudt Copernicus-kø.
+
+### Hvorfor de lovede tre DMI-pass kun blev til ét
+
+Oneoff-wrapperen sagde “højst tre pass”, men alle pass delte én samlet tidsramme på 3.000 sekunder. Endnu vigtigere returnerer DMI-producenten med vilje en fejlkode, så længe den eksakte currentmatrix ikke er komplet. Wrapperen stoppede straks på denne kode, før den undersøgte, om producenten faktisk havde gemt sikker fremgang og kun var løbet tør for sin lokale arbejdstid. Den situation, der havde mest brug for næste roterede pass, kunne derfor aldrig få det.
+
+4.0.346 giver højst tre selvstændige DMI-pass på hver højst 3.000 sekunder. Hvert pass beholder 180 sekunder til sikker afslutning og højst 4 GiB nyt download og råcache. Et nyt pass kræver samme fastlåste prognosetime, en ny validerbar slutcache, faktisk behandlede filer og kun den snævert kendte kombination af lokalt ubehandlede DKSS-filer og udløbet runtime. Provider-, parser-, watchdog-, kontrakt- eller ukendte fejl bliver ikke automatisk gentaget.
+
+Før et tredje strict-current-runtimepass kræves det desuden, at det andet runtimebegrænsede pass faktisk øgede antallet af verificerede DMI-par. Ellers stopper oneoffen i stedet for at gentage blindt. Den eksisterende exit-0-fortsættelse ved et rent, sikkert gemt downloadbudgetstop har sin egen snævre klassifikation. Under 5 GiB ledig disk startes intet nyt pass.
+
+### Tidsramme og uændrede kvalitetskrav
+
+DMI-trinnet kan nu højst bruge 160 minutter, og hele oneoff-jobbet højst 330 minutter. Der er fortsat særskilt plads til Copernicus, Open-Meteo, cachegemning, samlet closure og alle efterfølgende gates. Kildekoden får stadig kun én fuld gate for identisk indhold; en ny 4.0.346-head skal dog have sit eget nye PR-bevis.
+
+Rettelsen ændrer ikke den almindelige vejropdatering, kildeordenen DMI → Copernicus → Open-Meteo, havcellevalg, afstandsgrænser, interpolation, geometri, land-/vandpunkter eller scoreformel. Slutmålet er stadig 79.414/79.414 currentpar, 79.060 native WAM-par og Feggesund 354/354. Først en komplet kørsel med fuld datavalidering, releasegate, handoff og offentlig kontrol må sætte den integrerede scoremodel online. Candidate G er offentlig indtil da.
 
 ## 88.49 Lokal 4.0.345 – Gem hvert Copernicus-afsnit og kontrollér samme kilde én gang
 
@@ -263,11 +289,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.345 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.346 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.345-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.346-cutoverkandidat, ikke produktion
 
-4.0.345 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer Copernicus-persistensen, kildegatebeviset og releasebindingen.
+4.0.346 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; 4.0.346 ændrer oneoffens afgrænsede DMI-fortsættelse, dens ydre tidsgrænser og exact-releasebindingen.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

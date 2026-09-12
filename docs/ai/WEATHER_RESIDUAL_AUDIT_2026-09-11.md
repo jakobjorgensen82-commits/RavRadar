@@ -1,3 +1,13 @@
+# 4.0.345-mainbevis og 4.0.346-konklusion – 2026-09-12
+
+4.0.345 bestod exact-head-sourcegate `34666410182`, blev merged som `64d2f23f`, og oneoff `34667430392` genbrugte sourceproofet uden en ny fuld gate. Oneoffen var fail-closed efter 1h41m38s: current 79.230/79.414, 184 rester, intet handoff/artifact/deploy/cutover.
+
+DMI-planen var 673 × 118 og omfattede alle par. Faktisk behandling startede i rækkefølgen NSBS 1, WAM DW 5, WAM NSB 5, IDW 21 og LF 29 assets; WAM lukkede native. DMI-current var 64.400, egenrest 15.014, spatialt utilgængelig 1.126 og upstream-fravær 3.365. Terminalen `DMI_LOCALLY_SKIPPED_DKSS_ASSET; RUNTIME_BUDGET_REACHED` betyder her, at officielle assets i den valgte katalogmatrix stadig var lokalt ubehandlede ved passets runtimegrænse, ikke at DMI kun søgte gamle positive par.
+
+Copernicus gennemførte 73 sourceforsøg på 39m25s og efterlod 3.396 efter CP. Durable journalwrite var cirka 0,006–0,067 sekunder; tolv fulde konsolideringer var cirka 66–67 sekunder, og candidate-admission fortsat cirka 19–20 sekunder pr. segment. Den gamle 31-gange-fulde checkpointdominans er brudt, selv om konsolidering stadig kan optimeres senere. Regional dækkede 928. Open-Meteo skulle løse 2.468, bevarede/hentede 2.284 og efterlod 184. Alle 184 var provider-negative efter isoleret retry; der var 14 grid-distance-afvisninger og 280 null speed/direction-værdier på tværs af forsøg, men intet runtime-, attempt-, kø- eller globalt providerstop.
+
+Den kontrollerbare næste årsag ligger i oneoff-wrapperen. De historiske højst tre pass delte én 3.000-sekundersramme, og exit 2 ved en ufuldstændig currentledger returnerede før læsning af den atomiske progresscache. Derfor var flerpassagen utilgængelig netop ved sikkert runtimebegrænset DMI-fremgang. 4.0.346 giver højst tre separate pass med stram progress-/fejlklassifikation og kræver stigende verifiedPairCount før et tredje strict-current-runtimepass; den eksisterende exit-0-downloadbudgetvej er særskilt. Der ændres ikke Open-Meteo-grid, afstand, interpolation, geometri, sourceorder eller closure.
+
 # Residualaudit efter 4.0.343 – 2026-09-11, opdateret efter 4.0.344-runtime 2026-09-12
 
 ## Nyeste 4.0.344-resultat og 4.0.345-konklusion

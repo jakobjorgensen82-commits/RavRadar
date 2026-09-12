@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.346 reelle DMI-multipass
+
+Main er 4.0.345 på `64d2f23f`. PR #279 exact head `47275529` bestod sourcegate `34666410182`, og oneoff `34667430392` live-genbrugte exact-content-proofet uden en anden fuld kildegate. Normalproduktionen er disabled; den inerte jobløse køpost `34613079069` må ikke behandles som aktiv writer. Candidate G er offentlig.
+
+Oneoffen stoppede korrekt uden handoff/deploy efter 1h41m38s: DMI 64.400/79.414, Copernicus gennemførte 73 forsøg på 39m25s, regional dækkede 928, og Open-Meteo løste 2.284/2.468. De sidste 184 var alle forsøgt og singleton-genprøvet; null/grid-resultater uden runtime-/attempt-/køstop er ærlig provider-negativ evidens for target/kilde, ikke permanente umuligheder.
+
+Helkædefejlen er oneoffens falske multipass: producentens korrekte exit 2 ved ufuldstændig currentledger blev returneret før den gemte fremgang blev klassificeret, og alle pass delte én 3.000-sekundersramme. DMI planlagde hele registeret og betjente alle tre DKSS-familier, men kunne derfor ikke få næste roterede passage.
+
+Lokal 4.0.346 tillader højst tre separate 3.000-sekunders/4-GiB-pass efter exact same-target-slutcache, allowlistet runtime/lokal-skip og faktisk assetfremgang. Et tredje strict-current-runtimepass kræver højere verifiedPairCount; den eksisterende exit-0-downloadbudgetvej er særskilt. Andre fejl stopper. Normalproducent, sourceorder, grids, afstande, score og closure er uændrede. Oneoff har 160 minutter til DMI og 330 samlet.
+
+Næste bindende trin: afslut version/RDKS/håndbog, kør måltests, én exact-head PR-sourcegate, merge, derefter én kontrolleret main-oneoff på bevarede cacher. Kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fulde post-data-gates, handoff, integreret cutover og offentlig modelkontrol. Se DEC-0128 og `CHANGELOG-4.0.346.md`. GPT-5.6 Sol/Indsats Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.345 efter main/oneoff og helkæderettelse
 
 **Aktuel handling:** PR #279's tredje head `e1e9dd1e` beviste i run `34664907674` igen hele `validate:source` grøn og viste den præcise dirty-state: `release/RELEASE-REPORT.json` og `.md`. Rodårsagen var ikke Linux, modellen eller tests, men at den fulde releasegate altid skrev en ny tidsstemplet tracked rapport. Sourcevalideringen kalder nu samme fulde gate med `--no-write-report`; kun de to rapportwrites undertrykkes. Den separate post-data-produktionsgate og `release:package` bruger fortsat almindelig `npm run release:gate` og skriver rapporterne. Kør ny exact-head-CI, merge kun hvis gate, rent træ og proofartifact alle er grønne, og følg derefter én kontrolleret main-opfyldning på bevarede cacher. Kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fuld validate/releasegate og runbundet handoff før integreret cutover. Candidate G er offentlig indtil positiv offentlig modelverifikation.

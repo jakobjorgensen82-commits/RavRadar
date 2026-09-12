@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 efter negativ 4.0.345-oneoff
+
+PR #279-sourcegate `34666410182` var grøn på exact head `47275529`; merge `64d2f23f` var contentidentisk. Oneoff `34667430392` genbrugte proofet uden dobbelt fuld kildegate. DMI planlagde alle 79.414 par, nåede 64.400 og lukkede WAM. Copernicus gennemførte 73 forsøg på 39m25s; regional dækkede 928; Open-Meteo løste 2.284/2.468. De sidste 184 var gennemprøvede provider-negative null/grid-par. Kørslens 1h41m38s gav intet handoff/deploy/cutover.
+
+Helkædereview fandt, at `run-dmi-oneoff-fill.py` ikke kunne udføre de annoncerede næste pass ved runtime-uafsluttet current: producentens exit 2 blev returneret før progresscacheklassifikation, og alle pass delte samme 3.000 sekunder. Lokal branch `codex/4.0.346-dmi-multipass-closure` fra `origin/main` retter wrapperen til højst tre separate 3.000-sekunderspass. Hvert pass bevarer 4-GiB download-/råcacheloft; exit 2 kræver exact target, ny valid slutcache, kun allowlistet runtime-/lokal-skip-evidens og assetfremgang. Et tredje strict-current-runtimepass kræver verificeret pargevinst; den eksisterende exit-0-downloadbudgetvej er særskilt. Andre fejl og under 5 GiB disk stopper.
+
+Workflowets DMI-step er 160 minutter og hele job 330, så Copernicus/Open-Meteo og mindst 60 minutters øvrig reserve består. Normaldrift, kildeorden, grid/afstand, score, geometri og slutclosure er uændrede. Version er løftet til 4.0.346; geodata må kun ændre topversionsfelt.
+
+Lokal evidens: wrapper `12/12`, workflowinventar grønt med korrekt Python-runtime på PATH, DMI-budgetrotation grøn, Python compile og diff-check grøn. RDKS/handbook/changelog er opdateret, men slutvalidering og exact-head-CI mangler. Ingen providerfetch, cache-reset, deploy eller eksternt gridalternativ er udført. Normalworkflowet forbliver disabled; gammel `34613079069` er inert jobs[].
+
+Næste: afslut målrettet test/RDKS/version/geodatadiff, commit/push, én exact-head PR-sourcegate, merge eksakt grøn head, main-oneoff, alle closures/post-data-gates/handoff/cutover og offentlig verifikation. GPT-5.6 Sol, Indsats Ekstra høj.
+
 # NYESTE HANDOFF – 2026-09-12 – 4.0.345 varige Copernicus-segmenter og exact-content sourceproof
 
 `origin/main` er 4.0.344/`f2cc2a77`; Candidate G er stadig offentlig, normalworkflowet er manuelt deaktiveret, og den gamle `34613079069` er en inert køpost uden jobs. Main-run `34635781802` og oneoff `34642214559` gav intet handoff/cutover. Oneoff sluttede 78.381/79.414; de sidste 1.033 var alle terminalt provider-negative hos Open-Meteo i den konkrete kørsel, ikke uattempted runtime-rester og ikke bevis for permanent DMI-/Copernicus-fravær. WAM/Feggesund var grøn.

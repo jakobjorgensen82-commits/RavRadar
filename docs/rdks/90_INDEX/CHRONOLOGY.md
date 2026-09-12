@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 gør DMI-multipass reelt
+
+- PR #279 exact head `47275529` bestod sourcegate `34666410182`; 4.0.345 blev merged som `64d2f23f`, og oneoff `34667430392` live-genbrugte exact-content-proofet uden en anden fuld sourcegate.
+- Oneoffen stoppede fail-closed efter 1h41m38s med current 79.230/79.414 og 184 provider-negative OM-par. Alle 184 var forsøgt og isoleret genprøvet; intet handoff, artifact, deploy eller modelskift blev dannet.
+- DMI søgte mod alle 79.414 par, lukkede WAM og betjente alle tre DKSS-familier, men nåede kun én producentpassage. Wrapperens exit-2-retur og fælles 3.000-sekundersramme gjorde de annoncerede senere pass utilgængelige netop ved runtime-uafsluttet current.
+- 4.0.346 tillader højst tre særskilte 3.000-sekunderspass efter streng same-target/slutcache/runtimeklassifikation; et tredje strict-current-runtimepass kræver stigende DMI-parantal, mens exit-0-downloadbudgetvejen er særskilt. Normal drift, providerregler og slutclosure er uændrede.
+- DEC-0128 er bindende. Exact-head-CI, merge, nyt main-runtimebevis, fulde closures/gates, integreret cutover og offentlig verifikation afventer. Candidate G er offentlig.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.345 efter negativ 4.0.344-runtime
 
 - 4.0.344 blev merged som `f2cc2a77` efter grøn PR #278-sourcegate. Normalrun `34635781802` sluttede med 1.335 currentrester; oneoff `34642214559` sluttede 78.381/79.414 med 1.033 provider-negative OM-par, grøn WAM/Feggesund og intet handoff/cutover.
