@@ -207,6 +207,7 @@ function scoreState(state, row = baseRow) {
     ...state,
     historyScoreView: structuredClone(row.historyScoreView),
     currentVerified: true,
+    currentDirectInputAvailable: row.currentDirectInputAvailable,
     currentTransition: row.currentTransition,
     currentCoastNormalSpeedMps: row.currentCoastNormalSpeedMps,
     lastMileWaveReferenceAt: state.waveApproachState.waveReferenceAt,

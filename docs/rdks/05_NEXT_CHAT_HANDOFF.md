@@ -8,6 +8,7 @@
 - **Test:** Korte relevante kontroller grønne. Lang national lokal audit må ikke gentages. Bred workflowtest stoppede kun på lokal Python Store-alias; GitHub tager exact-head-beviset.
 - **Næste:** RDKS/geodatadiff → commit/push/PR → én exact-head sourcegate → merge → backend migration 13/readback → cache-only preflight → cutover → offentlig 210/673.
 - **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny oneoff og ingen dobbelt kildegate.
+- **PR #286-opfølgning:** Første head `d30faf93`/run `34724378629` bestod hele releasegaten og fandt derefter auditens current-historikrekonstruktion. Fixturet og auditten er rettet samlet; fuld lokal 210/673-regression er grøn, mens modelbundle og migration 13 er uændrede. Næste handling er ny commit/push og én ny exact-head-CI, ikke rerun af den røde head.
 
 # NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 efter første CI-migrationsfejl
 

@@ -9,6 +9,8 @@
 - [x] Bevar højst to eksisterende part-identiteter pr. zone i startpakken, også når en mode er lokalt `UNAVAILABLE`; opfind ingen score eller vinder.
 - [x] Versionér 4.0.351, byg append-only migration 13 fra fastlåst migration 12 og synkronisér integrated/rollback/continuation til alle forbrugere.
 - [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, private-runtime- og releasemetadatakontroller. Den kendte lokale Python-aliasfejl er overladt til GitHub; ingen lang lokal gentagelse.
+- [x] Afgræns sourcegate `34724378629`: fuld releasegate grøn; eneste stop var den nye current-historikfixtures afsløring af auditens gamle memory-ready-genvej.
+- [x] Rekonstruér current-historik med producentens kanoniske bounds-funktion, kræv eksakt state-bound-match og bestå den berørte fulde 210/673-regression lokalt. Modelbindingen er uændret.
 - [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
 - [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight.
 - [ ] Gennemfør cutover ved grøn preflight og verificér den integrerede model offentligt på 210/673.

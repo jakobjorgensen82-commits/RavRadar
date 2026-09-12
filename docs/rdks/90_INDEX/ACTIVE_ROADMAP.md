@@ -5,6 +5,7 @@
 - [x] Adskil coverage fra memory/migration, gør H0-current og last-mile offentligt rekonstruerbare og bevar en kompakt part-identitet ved lokal `UNAVAILABLE`.
 - [x] Versionér 4.0.351, tilføj append-only migration 13, fastlås migration 12 og synkronisér bundle/continuation/releasebindinger.
 - [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, engangsundtagelses- og releasekontraktkontroller. Gentag ikke den lange lokale nationale audit.
+- [x] Brug første exact-head-run `34724378629` som samlet diagnose: releasegaten bestod, men en ny fixture afdækkede auditens gamle current-memory-genvej. Ret auditten til kanonisk evidence→bounds-rekonstruktion og bestå den ene berørte fulde 210/673-regression lokalt.
 - [ ] Kør én exact-head GitHub-sourcegate og merge kun den eksakte grønne kode.
 - [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight uden providerhentning.
 - [ ] Ved grøn preflight: gennemfør den rigtige cutover og verificér offentligt 210 zoner/673 kystdele. Ved fejl: brug den samlede rapport til én rettelsesrunde uden ny oneoff.

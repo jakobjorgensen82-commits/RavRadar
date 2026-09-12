@@ -6,6 +6,8 @@ Main er `f6e725ec`/4.0.350, branch `codex/4.0.351-public-runtime-oracle`. PR #28
 
 Korte relevante kontroller er grønne. Genstart ikke lang lokal national audit. Den brede workflowtest stoppede efter de relevante kontroller på kendt Windows Python Store-alias; GitHub skal levere én exact-head sourcegate. Derefter merge, backend migration-13 readback, samme cache-only preflight, rigtig cutover og offentlig 210/673-kontrol. Ingen ny oneoff. Bevar fire untracked inspectmapper. Sol/Ekstra høj.
 
+PR #286-head `d30faf93`/run `34724378629` bestod den fulde releasegate og stoppede først i den nye current-historikfixture. Auditten brugte fejlagtigt continuationens memory-ready-dækning som det offentlige konservative scoreview. Fixturet fører nu direct-input-faktummet igennem, og auditten genbruger producentens kanoniske evidence→bounds-beregning samt kræver eksakt lower/upper-match. Den ene fulde lokale 210/673-regression er grøn; modelhash/migration er uændret. Push ny head og kør én ny exact-head-CI; genkør ikke den røde head eller andre lokale brede pakker.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 fælles closure-v2-modelseam
 
 Main er `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`/4.0.348; branch `codex/4.0.349-state-only-closure-v2`. PR #282 er grøn/merged. Backendrun `34697586057` genbrugte sourceproof uden dobbelt fuld gate, anvendte kun 4.0.348-migrationen og bestod readback. Normalworkflow disabled; gammel `34613079069` inert `jobs:[]`. Bevar fire untracked private inspectmapper.

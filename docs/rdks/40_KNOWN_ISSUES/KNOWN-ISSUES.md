@@ -7,6 +7,7 @@
 - **ISSUE-PUBLIC-PROFILE-NOT-READY – LOKALT RETTET / CI ÅBEN P0:** Lokal coveragefejl nulstiller ikke længere selvstændigt gyldig memory/migration.
 - **ISSUE-STARTUP-WINNER-SET-EMPTY – LOKALT RETTET / CI ÅBEN P0:** En utilgængelig mode uden vinder medtager en deterministisk eksisterende part-identitet, højst to pr. zone og uden scoreopfindelse.
 - **ISSUE-4.0.351-BACKEND-BINDING – LOKALT RETTET / LIVE ÅBEN P0:** Migration 13 er append-only og binding-only; den anvendte migration 12 er byteuændret ved SHA-256 `24a7450a…`.
+- **ISSUE-4.0.351-CURRENT-HISTORY-AUDIT-RECONSTRUCTION – LOKALT LUKKET / NY CI ÅBEN P0:** PR-head `d30faf93`/run `34724378629` bestod hele releasegaten, men den nye current-historikfixture viste, at auditten fejlagtigt brugte continuationens memory-ready-dækning i stedet for scoreviewets kanoniske 47/48-timers bounds. Fixturet fører nu direct-input-faktum igennem; auditten genbruger producentens evidence→bounds-funktion, kontrollerer lower/upper eksakt og accepterer ikke rå, opdigtet eller urekonstruerbar historik. Fuld lokal 210/673-regression er grøn; modellen og migrationen er uændrede.
 - **ISSUE-4.0.351-RELEASE-AND-LAUNCH – ÅBEN P0:** Én exact-head-CI, merge, migration-13 readback, cache-only preflight, cutover og offentlig 210/673-verifikation mangler. Candidate G er stadig offentlig indtil faktisk cutover.
 
 DEC-0133 og `CHANGELOG-4.0.351.md` er aktuelle. Ingen ny provider-oneoff er planlagt.

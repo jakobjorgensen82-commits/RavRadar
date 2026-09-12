@@ -8,6 +8,7 @@ Dato: 2026-09-13
 - Producent og offentlig audit bruger samme H0-currentregel, samme publicerede strøm/provenance og samme bølge-/last-mile-fortolkning.
 - Den kompakte startpakke beholder en deterministisk kystdelsidentitet for lokalt utilgængelige modes, så den ikke bliver tom uden at opfinde en score eller en vinder.
 - Den afsluttende 210/673-audit er ikke lempet; rettelsen fjerner kun forskelle mellem producentens og auditens fortolkning af de samme publicerede data.
+- Første PR-head `d30faf93` nåede gennem den fulde releasegate, men den nye current-historikfixture afslørede, at auditten stadig brugte memory-ready-feltet som mål for et konservativt historikview. Auditten genbruger nu producentens kanoniske bounds-beregning fra kompakt evidence, kræver eksakt match med state-bounds og består den fulde 210/673-regression.
 
 ## Binding og drift
 
