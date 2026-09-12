@@ -3,7 +3,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
-import { reconstructCandidateGRollbackState } from '../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+  reconstructCandidateGRollbackState,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
   buildBoundedCurrentTransportMemory,
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
@@ -312,7 +315,7 @@ function stateOnlyCurrentHold(validHour, sourceHour) {
     source: 'dmi-dkss-lf-regional-proxy',
     collection: 'dkss_lf',
     modelRun: time(-54),
-    closureContractId: 'current-operational-673x118-closure-ready-v1',
+    closureContractId: RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
     closureId: HOLD_SHA,
     closureAssignmentSha256: HOLD_SHA,
     sourceAssetSha256: HOLD_SHA,

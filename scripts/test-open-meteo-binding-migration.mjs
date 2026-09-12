@@ -15,6 +15,7 @@ const PER_PAIR_MIGRATION = '20260906162332_per_pair_weather_fallback_binding';
 const HORIZON_VALID_MIGRATION = '20260907084343_horizon_valid_weather_binding';
 const WAM_MIGRATION = '20260909194000_wam_same_run_resolution_binding';
 const MEASURED_WARMUP_MIGRATION = '20260912122607_measured_rollback_warmup_binding';
+const STATE_ONLY_HOLD_V2_MIGRATION = '20260912141641_state_only_hold_closure_v2_binding';
 const HORIZON_VALID_SHA256 = 'f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d';
 const HORIZON_INTEGRATED_SHA256 = '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9';
 const HORIZON_ROLLBACK_SHA256 = '4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8';
@@ -23,6 +24,10 @@ const WAM_MIGRATION_SHA256 = 'a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e
 const WAM_INTEGRATED_SHA256 = '8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80';
 const WAM_ROLLBACK_SHA256 = '1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5';
 const WAM_CONTINUATION_SHA256 = 'ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3';
+const MEASURED_WARMUP_MIGRATION_SHA256 = '704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137';
+const MEASURED_WARMUP_INTEGRATED_SHA256 = 'e545cb547923aeabc503b9d0178a996ca2ce2427200121cef6228ece29748b5a';
+const MEASURED_WARMUP_ROLLBACK_SHA256 = '157698f07f017516e52cf8f47680a2ac7c37008d8b3f9a4ee665eba2ad03e1bd';
+const MEASURED_WARMUP_CONTINUATION_SHA256 = 'b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2';
 // 4.0.339 recovery: this migration was still pending after migration 4 rolled back.
 // Pin the corrected bytes AND prove below that only the two CASE parentheses changed.
 const PER_PAIR_MIGRATION_SHA256 = '8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2';
@@ -116,9 +121,9 @@ assert.equal(crypto.createHash('sha256').update(immutableWam).digest('hex'), WAM
   'Applied WAM migration must remain byte-identical after LF normalization');
 let measuredWarmupExpected = body(immutableWam);
 for (const [before, after, count] of [
-  [WAM_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
-  [WAM_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
-  [WAM_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  [WAM_INTEGRATED_SHA256, MEASURED_WARMUP_INTEGRATED_SHA256, 3],
+  [WAM_ROLLBACK_SHA256, MEASURED_WARMUP_ROLLBACK_SHA256, 2],
+  [WAM_CONTINUATION_SHA256, MEASURED_WARMUP_CONTINUATION_SHA256, 1],
   ['20260909194000', '20260912122607', 2],
 ]) {
   assert.equal(measuredWarmupExpected.split(before).length - 1, count);
@@ -126,4 +131,22 @@ for (const [before, after, count] of [
 }
 assert.equal(body(await read(MEASURED_WARMUP_MIGRATION)), measuredWarmupExpected,
   'Measured warmup migration must change only exact seals/readback version, never SQL behaviour or row data');
-console.log('Open-Meteo through measured-warmup append-only migrations: immutable history and exact binding-only forward copies verified.');
+const immutableMeasuredWarmup = await read(MEASURED_WARMUP_MIGRATION);
+assert.equal(
+  crypto.createHash('sha256').update(immutableMeasuredWarmup).digest('hex'),
+  MEASURED_WARMUP_MIGRATION_SHA256,
+  'Applied measured-warmup migration must remain byte-identical after LF normalization',
+);
+let stateOnlyHoldV2Expected = body(immutableMeasuredWarmup);
+for (const [before, after, count] of [
+  [MEASURED_WARMUP_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
+  [MEASURED_WARMUP_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
+  [MEASURED_WARMUP_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  ['20260912122607', '20260912141641', 2],
+]) {
+  assert.equal(stateOnlyHoldV2Expected.split(before).length - 1, count);
+  stateOnlyHoldV2Expected = stateOnlyHoldV2Expected.replaceAll(before, after);
+}
+assert.equal(body(await read(STATE_ONLY_HOLD_V2_MIGRATION)), stateOnlyHoldV2Expected,
+  'State-only hold closure-v2 migration must change only exact seals/readback version, never SQL behaviour or row data');
+console.log('Open-Meteo through state-only hold closure-v2 append-only migrations: immutable history and exact binding-only forward copies verified.');

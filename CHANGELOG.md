@@ -1,3 +1,12 @@
+## 4.0.349 – fælles v2-kontrakt for state-only-strømhold (2026-09-12, lokal kandidat)
+
+- 4.0.348 blev exact-head-valideret, merged som `c86cc2a0`, og backendrun `34697586057` genbrugte kildebeviset uden dobbelt fuld gate, anvendte alene 4.0.348-bindingen og bestod readback.
+- Cachekontrol `34697760571` beviste, at de gemte vejrdata kunne genbruges uden providerhentning: DMI/Copernicus blev sprunget over, Open-Meteo var reuse-only, og current-, WAM- og freshnessgates var grønne.
+- Modelbygningen stoppede bagefter, fordi live-current udstedte den gældende closuremarkør v2, mens RavScore-recovery og fixtures stadig krævede v1. Intet handoff, artifact, cutover eller deploy blev dannet; Candidate G er fortsat offentlig.
+- Producent og forbruger deler nu én v2-konstant, den virkelige live-adapter testes gennem RavScore-tillidsgrænsen, og v1 afvises stadig eksplicit. Ingen score-, fysik-, vejr-, grid-, afstands- eller geometriregel ændres.
+- Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql` ændrer kun tre model-/continuationforseglinger og readbackversion. Den anvendte 4.0.348-migration forbliver immutable; begge builders er versionsfastlåste og reproducerbare.
+- Exact-head-CI, merge, backendapply/readback, ny cache-only-kontrol, fulde post-data-gates/handoff, cutover, offentlig 210/673-verifikation og kontrolleret normal drift afventer. Se `CHANGELOG-4.0.349.md` og DEC-0131.
+
 ## 4.0.348 – målbar model-warmup og låst cachekontrol (2026-09-12, lokal kandidat)
 
 - Main-oneoff `34682428800` genbrugte PR #281's exact-head-kildebevis uden en anden fuld kildegate. De 193 var en rest før Copernicus; den afsluttende currentclosure var 79.414/79.414 med missing 0, og native WAM var grøn 79.060.

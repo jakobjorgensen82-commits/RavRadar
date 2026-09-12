@@ -1,4 +1,7 @@
 import crypto from 'node:crypto';
+import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+} from '../../js/core/ravscore-integrated-state-pipeline.js';
 
 const COPERNICUS_SOURCES = new Set(['copernicus-baltic-nemo', 'copernicus-nws-amm15']);
 const COPERNICUS_SOURCE_CONTRACTS = new Map([
@@ -33,7 +36,8 @@ const COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID = 'copernicus-current-schema
 const COPERNICUS_RECORD_PROJECTION_CONTRACT_ID = 'copernicus-live-current-record-fixed-decimal-v1';
 const COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID = 'copernicus-required-part-time-pairs-v1';
 const COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID = 'copernicus-current-operational118-advisory-history48-seal-v1';
-const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID = 'current-operational-673x118-closure-ready-v2';
+const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID =
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID;
 const CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID = 'current-operational-673x118-closure-safe-v2';
 const CURRENT_OPERATIONAL_ASSIGNMENT_CONTRACT_ID = 'current-operational-source-assignment-v2';
 const CURRENT_ADVISORY_ASSIGNMENT_CONTRACT_ID = 'current-advisory-past-model-field-source-assignment-v1';

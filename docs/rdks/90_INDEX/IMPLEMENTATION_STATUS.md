@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – 4.0.349 fælles v2-kontrakt
+
+- [x] Bestå 4.0.348 exact-head-CI, merge byteidentisk som `c86cc2a0`, genbrug sourceproof uden dobbelt kildegate i backendrun `34697586057`, anvend alene 4.0.348-bindingen og bestå readback.
+- [x] Kør cachekontrol `34697760571` uden providerhentning og bevis genbrug af complete DMI/CP/regional/OM-current, native WAM og freshness før modelbygningen.
+- [x] Afgræns stoppet `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID` til live-producentens gældende closure-v2 mod RavScore-validatorens og fixtures' forældede v1.
+- [x] Del én eksporteret v2-konstant mellem producent og forbruger, før faktisk live-adapteroutput gennem RavScore-tillidsgrænsen og afvis fortsat v1 eksplicit.
+- [x] Regenerér integrated/rollback-bundles og continuationbinding deterministisk; bevar score-, fysik-, vejr-, grid-, afstands-, geometri- og provenancekontrakter.
+- [x] Bevar anvendt 4.0.348-migration immutable, tilføj append-only `20260912141641_state_only_hold_closure_v2_binding.sql`, og fastlås begge historiske builders til deres egne versionshashes.
+- [x] Før den 11. migration gennem readiness, install, checkpoint, releaseplan, metadata og backendworkflow; bestå målrettet lokal model-/migrations-/workflowmatrix.
+- [x] Få ejerens udtrykkelige godkendelse og flyt alene DEC-0122-engangsundtagelsens releaseVersion til exact 4.0.349; bestå private-runtime-, privacy-, workflow- og releaseversionkontroller uden ændrede grænser.
+- [x] Versionér 4.0.349 og synkronisér DEC-0131, aktive krav/issues, status, roadmap, chronology, masterlog, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
+- [ ] Bestå én exact-head 4.0.349-PR-sourcegate og merge kun den eksakte grønne head.
+- [ ] Anvend alene den nye append-only migration på exact main og kræv grøn 11-leddet readiness/readback med live sourceproof-genbrug eller sikker fuld fallbackgate.
+- [ ] Gentag cache-only-kontrollen på `2026-09-12T08:00:00Z`; kræv Feggesund, model/runtime/privacy, fuld post-data validate/releasegate og same-head-handoff.
+- [ ] Udfør kontrolleret cutover og verificér den integrerede model offentligt på 210 zoner/673 kystdele. Genaktivér derefter normal vedligeholdelse kontrolleret og mål DMI-rotation/tidsoverskud.
+
+Vejrdataene bestod cachekontrollen; den aktuelle blokering er den lokalt rettede kontraktseam i model-recovery. Candidate G er stadig offentlig, og ingen provider-oneoff startes automatisk. DEC-0131 er den aktive kontrakt; ældre afsnit nedenfor er historik.
+
 # Aktuel implementeringsstatus – 4.0.348 lokal cachekontrol og model-warmup
 
 - [x] Verificér PR #281 exact-head-sourcegate `34681246581`, byteidentisk merge `6868ae04` og kildeproofgenbrug uden dobbelt fuld gate i `34682428800`.

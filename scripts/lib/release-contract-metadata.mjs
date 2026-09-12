@@ -53,6 +53,10 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0130',
       path: 'docs/rdks/10_DECISIONS/DEC-0130-MEASURED-ROLLBACK-WARMUP-AND-LOCKED-WEATHER-RESUME.md',
     }),
+    Object.freeze({
+      id: 'DEC-0131',
+      path: 'docs/rdks/10_DECISIONS/DEC-0131-STATE-ONLY-CURRENT-HOLD-CLOSURE-V2-BINDING.md',
+    }),
   ]),
 });
 

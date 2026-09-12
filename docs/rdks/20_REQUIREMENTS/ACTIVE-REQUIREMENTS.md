@@ -1,5 +1,19 @@
 # Aktive krav – samlet register
 
+# 4.0.349 – fælles v2-kontrakt for state-only-strømhold
+
+- **REQ-4.0.349-CLOSURE-CONTRACT-001 – BINDENDE P0 / LOKALT TESTET:** Live-current-producent og RavScore state-only-recovery skal bruge samme eksporterede identitet `current-operational-673x118-closure-ready-v2`. Den udgåede v1 og alle ukendte identiteter skal afvises.
+- **REQ-4.0.349-LIVE-SEAM-001 – BINDENDE P0 / LOKALT TESTET:** En integrationstest skal føre den faktiske live-adapters state-only-hold gennem den kanoniske RavScore-validator. Fixtures skal følge den delte konstant, og en særskilt negativ regression skal bevise v1-afvisning.
+- **REQ-4.0.349-NO-WIDENING-001 – BINDENDE P0:** Rettelsen må ikke acceptere både v1/v2, ommærke gammel state eller lempe model-, target-, register-, coverage-, provenance-, hash-, score-, fysik-, grid-, afstands-, geometri- eller providerkrav.
+- **REQ-4.0.349-APPEND-ONLY-BINDING-001 – BINDENDE P0 / LOKALT TESTET:** Den centralt anvendte `20260912122607_measured_rollback_warmup_binding.sql` forbliver immutable ved normaliseret SHA-256 `704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137`. Ny `20260912141641_state_only_hold_closure_v2_binding.sql` må kun føre tre forseglinger og readbackversion frem.
+- **REQ-4.0.349-REPRODUCIBLE-MIGRATION-BUILDERS-001 – BINDENDE:** Enhver builder for en allerede udstedt migration skal have fastlåste versionsspecifikke før-/efterhashes. Aktuelle fremtidige modelhashes må ikke ændre eller gøre historisk output stale.
+- **REQ-4.0.349-SOURCE-ONCE-001 – BINDENDE P0:** Én fuld sourcegate skal bestå på 4.0.349-PR'ens eksakte slut-head. Byteidentisk main/backend må genbruge proofet efter live exact-content-kontrol; ukendt evidens giver fuld fallbackgate.
+- **REQ-4.0.349-CACHE-ONLY-CUTOVER-001 – BINDENDE P0:** Efter exact-main backendapply/readback gentages `locked_weather_resume` på `2026-09-12T08:00:00Z` uden providerhentning eller automatisk refill. Current 79.414, native WAM 79.060, Feggesund 354, freshness, model/runtime/privacy, fulde post-data-gates og same-head-handoff kræves før cutover.
+- **REQ-4.0.349-PUBLIC-AND-NORMAL-PROOF-001 – BINDENDE P0:** Candidate G forbliver offentlig indtil den integrerede model er verificeret på 210 zoner/673 kystdele. Først derefter må normal vejrdrift genaktiveres kontrolleret og DMI-rotation/tidsoverskud måles.
+- **REQ-4.0.349-FIRST-CUTOVER-EXCEPTION-001 – BINDENDE P0 / EKSPLICIT EJERGODKENDT 2026-09-12:** DEC-0122's materielt uændrede engangsundtagelse gælder alene exact release 4.0.349. Den ændrer ingen storage-, checkpoint-, integrity-, privacy-, readback-, closure- eller cadencegate, og et ældre handoff må ikke ommærkes.
+
+Run `34697760571` er positivt cache-/vejrevidens og negativt modelseambevis; det er ikke et handoff eller launchbevis. DEC-0131 er bindende.
+
 # 4.0.348 – målt rollback-opvarmning og fastlåst cachekontrol
 
 - **REQ-4.0.348-MEASURED-WARMUP-001 – BINDENDE P0 / LOKALT TESTET:** Ved attesteret målt first-cutover-koldstart må Candidate G-rollback-oraklet beholde privat numerisk state, mens mindre end 48 timers ægte historik er til rådighed. Dets valgbare/offentlige modes skal samtidig være utilgængelige med null-score, indtil historikken er eksakt READY; den integrerede model må fortsætte ærligt som `HISTORY_INCOMPLETE`.

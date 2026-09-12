@@ -1,6 +1,40 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.348
+**Håndbogsversion:** 4.0.349
+
+## 88.53 Lokal 4.0.349 – Modellen og strømdataene bruger nu samme v2-mærke
+
+**Status:** 4.0.348 kom gennem GitHub og databaseinstallationen. Den hurtige cachekontrol beviste derefter, at de komplette gemte vejrdata stadig kunne bruges uden at hente nyt vejr. Modellen stoppede på en gammel intern v1-forventning, ikke på manglende data. 4.0.349 retter dette lokalt; ny GitHub-kontrol, databasebinding, cachekontrol, modelskift og offentlig kontrol mangler endnu.
+
+### Hvad den hurtige kontrol faktisk viste
+
+Backendkørslen `34697586057` brugte den allerede godkendte kildekontrol fra Pull Requesten. Den kørte derfor ikke samme fulde kildekontrol igen. Den installerede kun den forventede nye databasebinding og læste den korrekt tilbage.
+
+Cachekontrol `34697760571` brugte igen tidspunktet `2026-09-12T08:00:00Z`. DMI og Copernicus hentede intet. Open-Meteo måtte kun læse de gemte resultater. De gemte strømdata, bølgedata og friskhedskontroller bestod. Det betyder, at vi ikke har fundet nye huller, og at der ikke er behov for en ny lang oneoff på grund af denne fejl.
+
+### Hvorfor modellen stoppede
+
+Den del, der laver de levende strømdata, mærkede det komplette datasæt med version 2 af sin interne kontrolkode. Det var korrekt og havde været den gældende regel siden 4.0.323. Den del, der skulle genstarte den nye scoremodel, forventede stadig version 1. Derfor afviste modellen de rigtige data som ukendte.
+
+De gamle tests opdagede ikke fejlen, fordi deres testdata også stadig brugte version 1. Det var altså en uoverensstemmelse mellem producenten, forbrugeren og testene – ikke et problem med DMI, Copernicus, køretid eller de 79.414 strømpar.
+
+### Hvad der er rettet
+
+Producenten og modellen bruger nu den samme fælles version 2-kode. En ny test tager koden direkte fra den virkelige strømproducent og sender den gennem modellens kontrol. En anden test beviser, at den gamle version 1 stadig bliver afvist. Ukendte eller forældede data bliver derfor ikke gjort gyldige ved et uheld.
+
+Rettelsen ændrer ingen scoreformel, vægt, tærskel, fysik, vejrkilde, grid, afstand, geometri eller land-/vandpunkt. Den får kun to dele af systemet til at være enige om den kontrakt, der allerede var gældende.
+
+### Hvorfor der igen er en lille databaseændring
+
+Databasebindingen fra 4.0.348 er allerede installeret og må ikke redigeres bagefter. 4.0.349 tilføjer derfor en ny, separat ændring. Den fører kun de nye kontrolhashes og databasens versionskvittering frem.
+
+Begge migrationsbyggere bruger nu deres egne fastlåste versionshashes. En senere modelændring kan derfor ikke få en gammel, allerede installeret migration til at se forkert ud eller lokke os til at omskrive historikken.
+
+### Vejen til modelskiftet
+
+4.0.349 skal først have én fuld kildekontrol på Pull Requestens eksakte slutversion. Byteidentisk main og backend må genbruge det bevis efter live kontrol. De senere data-, model-, privatlivs-, release-, handoff-, deploy- og offentlige kontroller køres stadig.
+
+Efter databaseinstallationen gentages den samme hurtige cachekontrol uden providerhentning. Den skal nå helt gennem Feggesund, modelbygning og handoff. Først derefter udføres den kontrollerede cutover og offentlig kontrol af 210 zoner og 673 kystdele. Den almindelige vejrdrift forbliver deaktiveret indtil offentlig succes; bagefter genaktiveres den kontrolleret, så DMI-rotation og normalt tidsoverskud kan måles særskilt.
 
 ## 88.52 Lokal 4.0.348 – Brug de komplette gemte data uden en ny lang vejrkørsel
 
@@ -355,11 +389,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.348 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.349 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.348-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.349-cutoverkandidat, ikke produktion
 
-4.0.348 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=e545cb547923aeabc503b9d0178a996ca2ce2427200121cef6228ece29748b5a` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=157698f07f017516e52cf8f47680a2ac7c37008d8b3f9a4ee665eba2ad03e1bd` over 57 transitive filer. Continuationbindingen er `b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2`. Den nye append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun disse forseglinger og readbackversionen frem fra den uændrede, allerede anvendte forgænger. Den seneste oneoff havde 79.414/79.414 strømpar og native WAM 79.060, men stoppede før handoff på warmup-fejlen; Candidate G er derfor fortsat offentlig.
+4.0.349 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89` over 57 transitive filer. Continuationbindingen er `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`. Den nye append-only migration `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun disse forseglinger og readbackversionen frem fra den uændrede, allerede anvendte 4.0.348-forgænger. Cachekontrol `34697760571` beviste de gemte strøm-/bølgedata uden providerhentning, men stoppede før handoff på v1/v2-modelseamen; Candidate G er derfor fortsat offentlig.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -566,7 +600,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

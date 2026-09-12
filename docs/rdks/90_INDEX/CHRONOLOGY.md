@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 retter v1/v2-seam efter positiv cachekontrol
+
+- 4.0.348 bestod exact-head-sourcegaten, PR #282 blev merged som `c86cc2a0`, og backendrun `34697586057` genbrugte kildebeviset uden dobbelt fuld gate.
+- Backendrunnet anvendte alene `20260912122607_measured_rollback_warmup_binding.sql` og bestod den efterfølgende readiness/readback.
+- Cache-only-run `34697760571` fastholdt `2026-09-12T08:00:00Z`, sprang DMI/Copernicus over, brugte Open-Meteo reuse-only og bestod de gemte current-, WAM- og freshnessled. Ingen providerhentning eller automatisk refill.
+- Modelbygningen stoppede på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`: producenten leverede gældende closure-v2, mens RavScore-validator og fire fixtures stadig krævede v1. Intet handoff/cutover/deploy.
+- 4.0.349 deler én v2-konstant mellem producent/forbruger, tester faktisk live-output gennem RavScore-grænsen og afviser fortsat v1. Ingen faglig eller datarelateret kontrakt lempes.
+- Ny append-only migration `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun tre hashes/readbackversion frem. Den anvendte 4.0.348-migration forbliver immutable, og begge builders er versionsfastlåste.
+- Lokal målmatrix er grøn. Exact-head-CI, merge, backendapply/readback, gentaget cachekontrol, Feggesund/full gates/handoff, cutover, offentlig 210/673-kontrol og normal vedligeholdelsesbevis afventer.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 genbruger komplet cache efter modelstop
 
 - PR #281-head `c4c70ac7` bestod sourcegate `34681246581` og blev merged byteidentisk som `6868ae04`. Oneoff `34682428800` genbrugte proofet uden en anden fuld kildegate.

@@ -1,7 +1,7 @@
 # RavRadar 4.0.348 – målbar model-warmup og låst cachekontrol
 
 Dato: 2026-09-12
-Status: lokal releasekandidat; exact-head-CI, merge, backendbinding, cachekontrol, cutover og offentlig verifikation afventer
+Status: exact-head-valideret og merged; backendbinding/readback grøn; cachekontrol beviste komplet gemt vejr, men fandt en separat v1/v2-modelkontraktfejl. Afløst af 4.0.349 før cutover.
 
 ## Faktisk produktionsgrundlag
 
@@ -40,3 +40,7 @@ Status: lokal releasekandidat; exact-head-CI, merge, backendbinding, cachekontro
 Én fuld `validate:source` skal bestå på 4.0.348-PR'ens eksakte slut-head. Byteidentisk main må genbruge beviset efter den eksisterende live GitHub-kontrol. Fuld post-data `validate`/`release:gate`, handoff, artifact/privacy, cutover, deployment og offentlig 210/673-verifikation kan ikke springes over.
 
 Efter merge anvendes først den append-only backendbinding og dens readback verificeres. Derefter køres cachekontrollen mod target `2026-09-12T08:00:00Z`. Kun et nyt same-head-handoff efter alle uændrede gates må bruges til den autoriserede integrerede cutover. Normal drift forbliver deaktiveret, indtil den offentlige model er verificeret; derefter bevises almindelig vedligeholdelse særskilt.
+
+## Faktisk efterforløb
+
+PR #282 blev siden grøn og merged som main `c86cc2a0`. Backendrun `34697586057` genbrugte exact-content-kildebeviset, anvendte alene denne releases append-only migration og bestod readback. Cachekontrol `34697760571` hentede intet nyt vejr og bestod current-, WAM- og freshnessleddene, men stoppede i modelbygningen på en gammel RavScore-v1-forventning mod live-current-producentens gældende v2-markør. 4.0.349 retter denne særskilte kontraktseam; 4.0.348 udførte ingen cutover eller offentlig modelændring.

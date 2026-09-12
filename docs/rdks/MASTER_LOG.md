@@ -1,3 +1,21 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.349 efter positiv cache og v1/v2-modelstop
+
+Ejeren fastholder autonomt arbejde, helikopterperspektiv, ingen blind ny tretimers-oneoff, én sourcegate for byteidentisk kilde og den integrerede scoremodel online så snart hele beviskæden er grøn. Arbejdet fortsætter på GPT-5.6 Sol/Ekstra høj gennem exact-head-, runtime-, cutover- og slutvalidering.
+
+Ejeren godkendte efter den lokale sikkerhedskontrol udtrykkeligt: “Ja, flyt engangsundtagelsen til 4.0.349.” Kun releaseVersion i DEC-0122's eksisterende, snævre one-exact-verified-first-cutover-policy føres frem. Alle arkivstørrelses-, storage-, checkpointdatabase-, integrity-, privacy-, readback-, exact-handoff- og recurring-cadenceforbud består.
+
+4.0.348 blev exact-head-valideret og merged som `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`. Backendrun `34697586057` genbrugte live PR-sourceproof uden en anden fuld kildegate, anvendte alene den forventede append-only 4.0.348-migration og bestod readback. Dette er første faktiske positive bevis for både den snævre migrationskæde og den ønskede fjernelse af kildegaten nummer to.
+
+Cache-only-run `34697760571` brugte det låste target `2026-09-12T08:00:00Z`. DMI og Copernicus blev sprunget over, Open-Meteo var reuse-only, og gemt DMI active/candidate, CP source-stage, residual, exact currentclosure, native WAM og freshness bestod. Ingen ny providerhentning skete. Fejlen skyldtes derfor ikke nye huller, gammel cache eller for lidt DMI-/Copernicus-tid.
+
+Modelbygningen stoppede med `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`. Den faktiske live-current-producent udstedte korrekt kontrakt v2, mens den kanoniske RavScore state-only-validator og fire fixtures stadig krævede v1. De forældede fixtures skjulte mismatchen. Kørselen udstedte intet handoff, artifact, cutover eller deploy; Candidate G forbliver offentlig.
+
+4.0.349 samler producent og forbruger om én eksporteret v2-konstant. En ny end-to-end-seamtest fører den virkelige adapters hold gennem RavScore-validatoren; en negativ test afviser v1. Scoreformel, fysik, weights, thresholds, dataadmission, sourceorder, grids, afstande, geometri og land-/vandpunkter er uændrede.
+
+Den anvendte 4.0.348-migration er låst ved normaliseret SHA-256 `704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137`. 4.0.349 tilføjer alene `20260912141641_state_only_hold_closure_v2_binding.sql`, som fører integrated/rollback/continuationhashes og readbackversion frem. Begge migrationsbyggere har nu historiske faste efterhashes, så senere modelversioner ikke gør anvendte migrationsoutput stale.
+
+Målrettede model-, bundle-, migration-, readiness-, install-, checkpoint-, release-metadata- og workflowtests er grønne. DEC-0131, krav, issues, status, roadmap, changelog og begge håndbøger er den aktuelle kontrakt. Næste sekvens er slutvalidering/diff, exact-head-CI, byteidentisk merge, migration 11 apply/readback, samme hurtige cachekontrol, full gates/handoff, integreret cutover og offentlig 210/673-verifikation. Normalworkflowet forbliver disabled indtil offentlig succes og genaktiveres derefter kontrolleret til særskilt DMI-rotations-/vedligeholdelsesbevis.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.348 komplet cache, modelstop og hurtig genoptagelse
 
 Ejeren kræver den integrerede scoremodel online nu, uden en ny blind tretimers-oneoff, men stadig med komplet data og alle sikkerhedsgates. PR #281-head `c4c70ac7` bestod sourcegate `34681246581` og blev merged byteidentisk som `6868ae04`. Oneoff `34682428800` genbrugte dette bevis, så kilden ikke blev fuldt kontrolleret to gange.

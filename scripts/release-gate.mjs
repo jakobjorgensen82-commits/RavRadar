@@ -221,7 +221,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -596,7 +596,7 @@ ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-v
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs',
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs',
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
@@ -1122,8 +1122,8 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the ten exact integrated cutover migrations',
-  '20260912122607_measured_rollback_warmup_binding.sql',
+  'Require only the eleven exact integrated cutover migrations',
+  '20260912141641_state_only_hold_closure_v2_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

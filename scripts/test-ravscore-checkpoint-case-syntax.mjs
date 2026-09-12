@@ -11,6 +11,7 @@ const CHECKPOINT_SQL_COPIES = [
   'supabase/migrations/20260907084343_horizon_valid_weather_binding.sql',
   'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
   'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql',
+  'supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql',
   'supabase/schema.sql',
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ];

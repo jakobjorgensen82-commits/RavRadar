@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 v2-modelseam
+
+- **ISSUE-4.0.348-SOURCE/BACKEND – LUKKET:** PR #282 blev exact-head-valideret og merged som `c86cc2a0`. Backendrun `34697586057` genbrugte det levende sourceproof uden dobbelt fuld gate, anvendte alene 4.0.348-bindingen og bestod readback.
+- **ISSUE-CACHE-COMPLETE-WITHOUT-PROVIDER – BEVIST:** Run `34697760571` sprang DMI/Copernicus over, brugte Open-Meteo reuse-only og bestod de gemte current-, WAM- og freshnessled. Der er ikke evidens for nye huller eller behov for mere providertid i dette stop.
+- **ISSUE-RAVSCORE-STATE-ONLY-CLOSURE-V1/V2 – LOKALT RETTET/MÅLTESTET, CI ÅBEN P0:** Live-current udstedte korrekt v2, mens RavScore-validator og fixtures stadig krævede v1. Producent/forbruger deler nu v2-konstant; live-seam er testet og v1 afvises stadig.
+- **ISSUE-MIGRATION-BUILDER-FUTURE-DRIFT – LOKALT LUKKET:** 4.0.348-builderen brugte tidligere aktuelle modelhashes og ville blive stale ved næste modelversion. Begge builders er nu fastlåst til deres egne historiske hashes. Den anvendte migration omskrives ikke.
+- **ISSUE-4.0.349-BACKEND-BINDING – LOKALT RETTET/MÅLTESTET, LIVE APPLY ÅBEN P0:** Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql` ændrer kun tre forseglinger og readbackversion. Exact-main apply/readback af migration 11 skal være grøn før cachekontrollen.
+- **ISSUE-4.0.349-FEGGESUND/HANDOFF – ÅBEN P0:** Cache-runnet stoppede i modelbygningen før det afsluttende Feggesund-/handoffbevis. Ny cache-only-kørsel skal nå 354/354, fulde post-data-gates og same-head-handoff.
+- **ISSUE-4.0.349-RELEASE-AND-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, backendapply/readback, ny cachekontrol, cutover og offentlig 210/673-modelverifikation mangler. Candidate G er offentlig, og normalworkflowet er disabled.
+- **ISSUE-DMI-MULTIPASS/NORMAL-ROTATION – ÅBEN EFTER LAUNCH:** Komplet samlet fallbackdækning er bevist, men almindelig vedligeholdelsesrotation og tidsoverskud skal stadig måles efter modelskiftet.
+- **ISSUE-INERT-QUEUED-RUN-34613079069 – ÅBEN UI/API-ANOMALI, IKKE WRITER:** Den gamle run står fortsat queued med `jobs:[]`, mens workflowet er disabled; cancel-endpointet betragter den som afsluttet. Den må ikke bruges som lås eller produktionsevidens.
+
+DEC-0131 og `CHANGELOG-4.0.349.md` er aktuelle. Ingen automatisk ny oneoff, ingen lempet dataadmission og ingen dobbelt kildegate.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 cachebundet modelrettelse
 
 - **ISSUE-193-INTERMEDIATE-RESIDUAL – LUKKET AF SAMME RUN:** De 193 var den målte rest før Copernicus, ikke kørslens slutmangler. Fallbackkæden lukkede dem og resten, så run `34682428800` sluttede current 79.414/79.414 med missing 0.

@@ -4,33 +4,33 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 
 const predecessor =
-  'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql';
-const destination =
   'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql';
+const destination =
+  'supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql';
 const normalize = text => text.replace(/\r\n?/g, '\n');
 let source = normalize(await fs.readFile(predecessor, 'utf8'));
 assert.equal(
   crypto.createHash('sha256').update(source).digest('hex'),
-  'a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d',
+  '704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137',
   'Applied predecessor must remain immutable',
 );
 for (const [before, after, count] of [
   [
-    '8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80',
     'e545cb547923aeabc503b9d0178a996ca2ce2427200121cef6228ece29748b5a',
+    'c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19',
     3,
   ],
   [
-    '1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5',
     '157698f07f017516e52cf8f47680a2ac7c37008d8b3f9a4ee665eba2ad03e1bd',
+    'd4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89',
     2,
   ],
   [
-    'ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3',
     'b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2',
+    '7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43',
     1,
   ],
-  ['20260909194000', '20260912122607', 2],
+  ['20260912122607', '20260912141641', 2],
 ]) {
   assert.equal(
     source.split(before).length - 1,
@@ -40,11 +40,11 @@ for (const [before, after, count] of [
   source = source.replaceAll(before, after);
 }
 const predecessorComment =
-  '-- Generated WAM same-run resolution binding successor; predecessor remains immutable.';
+  '-- Generated measured rollback-warmup binding successor; predecessor remains immutable.';
 assert.equal(source.split(predecessorComment).length - 1, 1);
 source = source.replace(
   predecessorComment,
-  '-- Generated measured rollback-warmup binding successor; predecessor remains immutable.',
+  '-- Generated state-only hold closure-v2 binding successor; predecessor remains immutable.',
 );
 assert.ok(
   process.argv.length === 2
@@ -57,9 +57,9 @@ if (process.argv.includes('--write')) {
   assert.equal(
     normalize(await fs.readFile(destination, 'utf8')),
     source,
-    'Measured rollback-warmup binding successor is stale',
+    'State-only hold closure-v2 binding successor is stale',
   );
 }
 console.log(
-  'Measured rollback-warmup binding migration verified against immutable predecessor; no database access.',
+  'State-only hold closure-v2 binding migration verified against immutable predecessor; no database access.',
 );
