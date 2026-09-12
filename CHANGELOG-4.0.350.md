@@ -18,6 +18,7 @@ Dato: 2026-09-12
 - Continuationhash: `87ea235809d1c305d93fd04ae434ecca07e2c573b5e4929b5b8a7446687eec06`.
 - Kildegaten skal kun køre én gang på PR'ens eksakte slut-head. Fulde post-data-kontroller består fortsat for hvert nyt produktionsartifact.
 - Den lokale slutmatrix er grøn, inklusive de tunge offentlige 210/673-runtime- og auditregressioner, versionskontrol, RDKS-validering og ren slutdiff.
+- PR #285's første sourcegate afslørede, at den historiske migrationskædetest brugte den aktuelle modelbinding til at genopbygge 4.0.349-leddet. Historiske 4.0.349-hashes og migrationens SHA-256 er nu fastlåst, mens 4.0.350 kontrolleres som et separat append-only efterfølgerled.
 - Versionen er lokal, indtil exact-head-CI, merge, backendreadback, cache-only cutover og offentlig 210/673-verifikation er grønne. Normal vejrdrift forbliver deaktiveret indtil da.
 
 Se DEC-0132.

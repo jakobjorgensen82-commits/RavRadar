@@ -12,6 +12,7 @@
 - [x] Regenerér Candidate G-rollback før integrated bundle, synkronisér continuation og alle otte forbrugere, og tilføj append-only migration 12 uden at ændre migration 11.
 - [x] Bestå korte måltests for vind, current, state, generator, local availability, Pages, admin, ture, cutoverrapport, workflowrækkefølge, migrationskæde og bundles.
 - [x] Versionér/synkronisér 4.0.350, bestå de tunge public-runtime-/auditregressioner og afsluttende RDKS-/diffkontrol.
+- [x] Ret den historiske migrationskædetest efter rød PR #285-head `fe4969f1`/run `34717671774`: 4.0.349 er nu versionsfastlåst, og 4.0.350 testes som selvstændigt append-only efterfølgerled.
 - [ ] Bestå én exact-head GitHub-sourcegate, merge byteidentisk og anvend/readback-verificér migration 12.
 - [ ] Kør samme cache-only main-cutover. Fem grønne kontroller skal fortsætte automatisk; ellers ret den samlede fejlrapport i én omgang uden provider-oneoff.
 - [ ] Verificér integreret model offentligt på 210/673. Genaktivér derefter normal vedligeholdelse og bevis kommende vind/current, DMI-rotation, cachetransport og tidsoverskud.

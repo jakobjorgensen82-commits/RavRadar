@@ -1,4 +1,4 @@
-# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 klar til slutvalidering og cutover
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 efter første CI-migrationsfejl
 
 - **Aktuel base:** Main `512f889d`/4.0.349 efter PR #284; branch `codex/4.0.350-local-unavailable-cutover`. Candidate G er stadig offentlig, normalworkflow disabled, gammel `34613079069` inert, fire untracked inspectmapper bevares.
 - **Databevis:** Cache-only `34706453561` hentede intet providervejr og beholdt current 79.414/79.414: DMI 67.686, CP 8.668, regional 944, OM 2.116.
@@ -8,7 +8,8 @@
 - **Lokal availability:** Kun berørt del/mode/time er `UNAVAILABLE`/null og ude af ranking; øvrige scorer/210/673-struktur fortsætter. Conditions, manifest, audit, Pages, browser, admin og ture deler kontrakten. De seks øvrige currentdele afgøres live.
 - **Cutover:** Ejerens godkendte fem kontroller kører alle og samler trinresultater. Fejl stopper før første ekstern write; fem grønne fortsætter automatisk gennem eksisterende cutover. Normal weather er uændret.
 - **Binding:** Ny migration 12 er append-only; migration 11 er byteuændret. Integrated `d3b6c829…`, rollback `343f9f53…`, continuation `87ea2358…`.
-- **Næste:** Version/RDKS/håndbog → tunge regressioner → én exact-head GitHub-sourcegate → merge → backendapply/readback → cache-only cutover → offentlig 210/673-kontrol → reaktivér normal weather og bevis fremtidig rotation/data.
+- **Første CI-head:** PR #285 `fe4969f1`/run `34717671774` stoppede før sourceproof, fordi den historiske test brugte aktuelle hashes mod 4.0.349-migrationen. Lokal opfølgning låser 4.0.349-hashes og SHA `548c2925…`, tester 4.0.350 som næste led og er grøn; migration 11 er stadig byteuændret.
+- **Næste:** Ny exact-head GitHub-sourcegate → merge → backendapply/readback → cache-only cutover → offentlig 210/673-kontrol → reaktivér normal weather og bevis fremtidig rotation/data.
 - **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny lang provider-oneoff og ingen lokal dobbelt fuld sourcegate.
 
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main fra komplet cache til samlet scorefejlrapport
