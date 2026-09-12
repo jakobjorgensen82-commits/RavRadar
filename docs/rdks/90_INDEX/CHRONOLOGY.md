@@ -5,8 +5,9 @@
 - Modelbygningen stoppede derefter på rollback-oraklets READY-48h-krav under en tilladt målt koldstart. Intet handoff/cutover/deploy.
 - DEC-0130 holder rollback privat numerisk og offentligt utilgængelig/null til READY og tillader kun attesteret koldstart eller privat `BUILDING_MEASURED_ONLY`-fortsættelse.
 - Den tidligere WAM-binding er allerede centralt anvendt og forbliver checksumlåst. Ny append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun 4.0.348-forseglinger/readbackversion frem og skal anvendes før cachekontrollen; backendworkflowet genbruger kun exact-content-sourceproof efter live GitHub-verifikation.
+- PR #282-head `cc06fa37`/run `34695465328` bestod model-, public-stage-, privacy-, runtime- og migrationsled, men stoppede i releasegatens forældede statiske testinventar. Migrationsbyggeren er lokalt føjet præcis én gang til planen og bundet til package-aliaset med regression; den røde head udstedte intet proof.
 - En fastlåst cachekontrol genvaliderer samme target uden DMI-/Copernicus-acquisition eller Open-Meteo-netværk og uden automatisk genopfyldning. Alle post-data-gates består.
-- DMI loggede kun pass 1. Multipass og normal rotation er fortsat liveåbne. Exact-head-CI, merge, backendapply/readback, cachekontrol, handoff, cutover, offentlig integreret model og normal vedligeholdelse afventer.
+- DMI loggede kun pass 1. Multipass og normal rotation er fortsat liveåbne. Ny exact-head-CI, merge, backendapply/readback, cachekontrol, handoff, cutover, offentlig integreret model og normal vedligeholdelse afventer.
 
 # HISTORISK CHECKPOINT – 2026-09-12 – 4.0.346 gør DMI-multipass reelt
 

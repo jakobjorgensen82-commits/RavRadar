@@ -7,6 +7,7 @@
 - [x] Lås den allerede anvendte WAM-migration ved dens kendte checksum, og byg en ny append-only backendbinding, som kun fører 4.0.348-hashes/readbackversion frem.
 - [x] Versionér 4.0.348 og synkronisér DEC-0130, krav, issues, checkpoints, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
 - [x] Bestå den målrettede lokale slutmatrix og udfør Sol/Ekstra høj-review af model-, cache-, workflow- og cutovergrænserne.
+- [x] Diagnostisér første PR #282-run `34695465328` og ret den manglende releaseplanbinding for den nye migrationsbygger; kræv ny exact-head frem for at genbruge den røde head.
 - [ ] Bestå én exact-head 4.0.348-PR-sourcegate og merge kun byteidentisk grøn head.
 - [ ] Anvend og readback-verificér den nye backendbinding på exact main; genbrug kun PR-sourceproof efter live exact-content-kontrol.
 - [ ] Kør den låste cachekontrol; kræv current 79.414, native WAM 79.060, Feggesund 354, freshness, fulde post-data-gates og same-head-handoff.

@@ -8,6 +8,8 @@ Lokal 4.0.348 gør rollback privat numerisk, men offentligt/valgbart unavailable
 
 Den gamle WAM-migration er allerede centralt anvendt og må ikke omskrives. Lokal append-only `20260912122607_measured_rollback_warmup_binding.sql` fører kun 4.0.348-forseglinger/readbackversion frem. Efter merge skal den anvendes og readback-verificeres før cachekontrollen. Backendworkflowet genbruger PR-sourceproof efter live exact-content-kontrol og kører ellers fuld kildegate.
 
+PR #282's første head `cc06fa37`/run `34695465328` er negativ: alle lange model-/privacy-/runtimeled var grønne, men releasegatens statiske testplan manglede den nye migrationsbygger, så intet sourceproof blev uploadet. Lokal opfølgning binder byggeren præcis én gang til releaseplan/package og er måltestet. Push ny head; rerun eller genbrug ikke den røde.
+
 Næste trin er lokal slutmatrix og Sol/Ekstra høj-review, én exact-head 4.0.348-PR-sourcegate, byteidentisk merge, append-only backendapply/readback, fastlåst cachekontrol, fuldt same-head-handoff, cutover og offentlig 210/673-verifikation. Normal drift aktiveres først kontrolleret bagefter. Runnet viste kun DMI-pass 1; multipass/rotation forbliver et åbent normaldriftsbevis. Bevar de fire untracked `.tmp-run-*-safe-inspect`-mapper.
 
 # HISTORISK CHECKPOINT – 2026-09-12 – lokal 4.0.347 måltestet, exact-head og drift åbne

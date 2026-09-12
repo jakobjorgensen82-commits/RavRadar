@@ -10,6 +10,8 @@ Lokal 4.0.348 lader det private rollback-orakel opbygge ægte numerisk historik 
 
 GitHub-backendrun `34564209781` beviser, at `20260909194000_wam_same_run_resolution_binding.sql` allerede er centralt anvendt. Den fil er derfor checksum-låst. Lokal append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun bundle-/continuationhashes og readbackversionen frem; den skal anvendes og readback-verificeres på exact main før cachekontrollen. Backendworkflowet genbruger kun PR-kildebeviset efter live exact-content-kontrol og falder ellers sikkert tilbage til fuld kildegate.
 
+PR #282's første head `cc06fa37` kørte exact-head-run `34695465328`. Alle model-, 210/673-public-stage-, privacy-, runtime- og migrationskontroller i loggen var grønne, men releasegaten stoppede efter 17m40s, fordi dens statiske testinventar ikke nævnte den nye migrationsbygger, selv om package-aliaset gjorde. Intet sourceproof blev uploadet. Lokal opfølgning tilføjer byggeren præcis én gang til releaseplanen, retter packageforventningen og låser sammenhængen i metadata-regressionen. Den målrettede migrations-/sourceplan-/fejlaggregeringsmatrix er grøn; ny exact-head kræves.
+
 Runnet loggede kun DMI-pass 1. Multipassrettelsen er derfor fortsat ikke livebevist, selv om fallback gav fuld samlet closure. Næste rækkefølge er målrettet lokal slutvalidering, én exact-head 4.0.348-PR-sourcegate, byteidentisk merge, append-only backendapply/readback, cachekontrol på det låste target, fulde post-data-gates/same-head-handoff, kontrolleret cutover og offentlig 210/673-kontrol. Først derefter genaktiveres normal vedligeholdelse kontrolleret og DMI-rotation/tidsoverskud måles. Se DEC-0130.
 
 # HISTORISK SANDHED – 2026-09-12 – lokal 4.0.347 måltestet efter negativ oneoff

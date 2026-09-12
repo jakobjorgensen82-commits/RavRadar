@@ -30,6 +30,8 @@ Den tidligere databaseændring er allerede taget i brug. Derfor må vi ikke redi
 
 Efter merge skal den nye databaseændring køres og læses tilbage med de forventede koder, før cachekontrollen starter. Backendkørslen genbruger den samme godkendte kildekontrol fra Pull Requesten, når GitHub beviser, at kildeindholdet er identisk. Hvis beviset ikke passer, køres den fulde kildekontrol igen.
 
+Den første GitHub-kontrol af 4.0.348 nåede gennem alle de lange model-, offentligheds-, privatlivs- og runtimekontroller, men stoppede til sidst i selve releasegatens testliste. Den nye databasekontrol stod i package-aliaset, men manglede i releasegatens liste. Listen er nu rettet, så kontrollen står præcis én gang, og en lille regressionstest holder de to lister ens. Den første røde kørsel gav intet kildebevis og kan ikke genbruges.
+
 ### Hvad den hurtige cachekontrol gør
 
 Den nye kontrol bruger præcis prognosetimen `2026-09-12T08:00:00Z` og de caches, oneoffen allerede gemte. Den springer nye DMI- og Copernicus-hentninger over. Open-Meteo må kun læse sine gemte data. En ekstra central spærring stopper kørslen, hvis noget alligevel forsøger at hente nyt vejr.

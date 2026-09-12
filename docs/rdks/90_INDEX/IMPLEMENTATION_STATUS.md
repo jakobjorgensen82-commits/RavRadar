@@ -9,6 +9,7 @@
 - [x] Bevar den allerede anvendte WAM-migration checksumlåst, tilføj en ny append-only 4.0.348-binding og før den gennem schema, installer, releasebinding, readiness og migrationsregressioner.
 - [x] Versionér 4.0.348 og synkronisér DEC-0130, aktiv RDKS, changelog, begge håndbøger/SQL og exact-release-cutoverbinding.
 - [x] Bestå den afsluttende lokale måltestmatrix, versions-/RDKS-/håndbogskontroller, YAML/diff-kontrol og geodata-only-version-diff. Begge modelbundles, recovery/rollback, 210/673 public-stage, migrationskæde, backendreadiness, cacheworkflow og kildebevis er grønne.
+- [x] Afgræns PR #282-run `34695465328`: alle model-/privacy-/runtimeled grønne; eneste stop var en manglende ny migrationsbygger i releasegatens statiske testinventar. Tilføj den præcis én gang, ret packageforventningen og lås sammenhængen med målregression. Intet proof fra den røde head genbruges.
 - [ ] Bestå én exact-head 4.0.348-PR-sourcegate og merge kun byteidentisk grøn head.
 - [ ] Anvend den nye append-only backendmigration på exact main, kræv grøn readiness-readback og genbrug kun PR-kildebeviset efter live exact-content-verifikation.
 - [ ] Kør cachekontrollen mod `2026-09-12T08:00:00Z` uden ny providerindsamling; kræv current, WAM, Feggesund, freshness, fulde post-data-gates og same-head-handoff.

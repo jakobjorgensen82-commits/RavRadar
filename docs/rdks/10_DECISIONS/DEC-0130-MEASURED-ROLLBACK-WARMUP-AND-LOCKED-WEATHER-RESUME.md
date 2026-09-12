@@ -42,6 +42,8 @@ Modelregressionerne beviser både en målt koldstart med 47/48 timers hukommelse
 
 Workflowregressionen beviser skip af DMI/Copernicus, Open-Meteo `--reuse-only`, det eksakte target og at det eneste `fetch` i `update:weather` ligger bag cache-only-værnet. YAML, workflowrækkefølge, DMI-wrapperens 16 tests og begge modelbundles er grønne lokalt.
 
+PR #282's første exact-head-run `34695465328` beviste de lange model-, 210/673-, privacy-, runtime- og migrationsled, men stoppede før sourceproof, fordi releasegatens statiske testinventar ikke var ført frem med den nye migrationsbygger. Opfølgningen gør denne bygger til præcis ét obligatorisk releasegatetrin og binder inventaret til package-aliaset med en måltest. Den røde head er ikke bevis; ny exact-head-CI er påkrævet.
+
 GitHub-run `34564209781` beviser, at den checksum-låste forgænger allerede er anvendt centralt. Efter exact-head-CI og merge anvendes derfor først den nye append-only binding, og dens exact-version/hash-readback skal være grøn. Derefter køres cachetilstanden alene mod `2026-09-12T08:00:00Z`. Hvis de gemte caches igen giver de fulde closures og model/runtime/handoff består, udføres den allerede autoriserede integrerede cutover uden ny providerindsamling. Hvis backendreadback eller cachen ikke kan genvalideres, stopper sekvensen; en ny lang oneoff startes ikke automatisk.
 
 DEC-0122's materielt uændrede first-cutover-undtagelse flyttes under den stående ejerautorisation alene til exact-release 4.0.348. Et ældre handoff må ikke ommærkes eller bruges.

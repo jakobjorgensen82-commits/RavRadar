@@ -6,6 +6,7 @@
 - Den allerede centralt anvendte WAM-migration forbliver checksumlåst. Ny append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun de nye integrated-, rollback- og continuationhashes samt readbackversionen frem; backendapply/readback skal være grøn før cachekontrollen.
 - En eksplicit cachekontrol fastholder target `2026-09-12T08:00:00Z`, springer DMI og Copernicus over, bruger Open-Meteo reuse-only og stopper skjulte providerkald. Ufuldstændig cache stopper uden automatisk lang genopfyldning.
 - PR'ens exact-content-kildebevis må også genbruges af backendworkflowet efter live GitHub-kontrol; enhver ukendt eller modstridende evidens udløser sikkert en fuld kildegate. Alle current-, WAM/Feggesund-, provenance-, freshness-, privacy-, post-data-, handoff-, cutover- og offentlig-verifikationsgates består. Ét DMI-pass er standard for senere acquisition; runnet beviste kun pass 1, så multipass og normal rotation er fortsat åbne driftsbeviser.
+- PR #282's første head `cc06fa37` bestod alle model-/privacy-/runtimeled, men exact-head-run `34695465328` stoppede sent, fordi releasegatens statiske testinventar endnu ikke indeholdt den nye migrationsbygger. Intet sourceproof blev dannet. Inventaret, packageforventningen og en ny målregression er lokalt rettet; ny head og ny exact-head-gate kræves.
 - Se `CHANGELOG-4.0.348.md` og DEC-0130.
 
 ## 4.0.347 – terminalbevist DMI-fortsættelse og frisk Pages-write (2026-09-12, lokal kandidat)

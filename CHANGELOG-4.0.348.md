@@ -32,6 +32,8 @@ Status: lokal releasekandidat; exact-head-CI, merge, backendbinding, cachekontro
 - Ny migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun den integrerede bundlehash til `e545cb54…`, rollbackbundlehashen til `157698f0…`, continuationhashen til `b7555f63…` og readbackversionen frem. Rækker, statekrav og databaseadfærd er ellers identiske med den låste forgænger.
 - Backendmigrationen skal anvendes og dens readiness-readback være grøn på exact main før cachekontrollen. Backendworkflowet må genbruge PR'ens live-verificerede exact-content-kildebevis; manglende eller modstridende bevis udløser sikkert en ny fuld kildekontrol.
 - Den lokale slutmatrix er grøn for begge modelbundles, recovery/rollback, den fulde isolerede 210/673-public-stage, migrationskæde, backendreadiness, cacheworkflow, DMI-wrapper, dokumentation, sikkerhed, version, YAML og diff. Dette er lokalt bevis, ikke exact-head-, database- eller produktionsbevis.
+- PR #282's første exact head `cc06fa37` nåede gennem model-, 210/673-public-stage-, privacy-, runtime- og migrationskontrollerne, men run `34695465328` stoppede efter 17m40s i releasegatens egen statiske testliste. Package-aliaset indeholdt den nye migrationsbygger, mens releasegatens forventning og eksekveringsplan stadig sluttede ved Open-Meteo-testen; intet sourceproof blev uploadet.
+- Opfølgningen føjer migrationsbyggeren præcis én gang til releaseplanen, retter den eksakte packageforventning og lader metadata-regressionen låse begge dele sammen. Migrationskæde, sourceplan med 35 korrekt genbrugte underkommandoer, fejlaggregering og produktionsudfald er grønne lokalt. Den røde head genbruges ikke; ny exact-head-CI kræves.
 
 ## Kildegate og næste rækkefølge
 

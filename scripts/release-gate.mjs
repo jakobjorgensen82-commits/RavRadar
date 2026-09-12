@@ -596,7 +596,7 @@ ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-v
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs',
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs',
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',

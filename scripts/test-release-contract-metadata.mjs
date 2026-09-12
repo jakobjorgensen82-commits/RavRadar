@@ -20,8 +20,17 @@ import {
 import { synchronizeRavScoreModelBinding } from './sync-ravscore-model-binding.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 import { computeCandidateGRollbackBundle } from './build-candidate-g-rollback-bundle.mjs';
+import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 
 const REPOSITORY_ROOT = path.resolve('.');
+const MEASURED_WARMUP_BINDING_CHECK =
+  'node scripts/build-measured-rollback-warmup-binding-migration.mjs';
+const RELEASE_METADATA_TEST_COMMAND = [
+  'node scripts/test-release-contract-metadata.mjs',
+  'node scripts/test-harmonie-binding-migration.mjs',
+  'node scripts/test-open-meteo-binding-migration.mjs',
+  MEASURED_WARMUP_BINDING_CHECK,
+].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
   'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
@@ -49,6 +58,20 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
+
+const packageScripts = JSON.parse(await fs.readFile('package.json', 'utf8')).scripts;
+assert.equal(
+  packageScripts['test:release-contract-metadata'],
+  RELEASE_METADATA_TEST_COMMAND,
+  'Release metadata package command must include the exact measured-warmup binding check',
+);
+assert.equal(
+  RELEASE_GATE_TEST_FILES.filter(
+    file => file === 'scripts/build-measured-rollback-warmup-binding-migration.mjs',
+  ).length,
+  1,
+  'Release gate must run the measured-warmup binding check exactly once',
+);
 
 function checkpointOuterBlock(source, label) {
   const normalized = source.replace(/\r\n?/g, '\n');
