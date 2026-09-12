@@ -1,3 +1,12 @@
+## 4.0.350 – lokal utilgængelighed og samlet cutoverkontrol (2026-09-12, lokal kandidat)
+
+- Cache-only-run `34706453561` viste den konkrete scorefejl: 659 dele fik gyldig `windTail`-vind afvist af en adapter, som kun tillod navnet `wind`; 14 dele manglede direkte current ved H0, heraf otte regionale fastholdelser uden synligt privat præ-H0-kildebevis.
+- Adapteren validerer nu både `wind` og `windTail`, og live-current fører closure-bundne regionale kildereferencer sikkert ind i den private scorebygning. Det gælder også kommende almindelige vejrdata.
+- Direkte inputmangel gør kun berørt del, jagtform og time `UNAVAILABLE` med null-score. Resten af den strukturelt komplette 210/673-pakke kan publiceres, og utilgængelige dele kan ikke vinde en rangering.
+- Conditions, manifest, Pages, audit, browser, administration, ture og nødruntime deler én eksakt availabilitykontrakt.
+- `integrated-cutover` gennemfører fem uafhængige kontroller og samler resultaterne. Ved fejl stopper den én gang før ekstern skrivning; hvis alle er grønne, fortsætter cutover automatisk.
+- En ny append-only tolvte migration fører kun model-/continuationforseglinger og readbackversion frem. Én exact-head GitHub-kildegate og alle post-data-gates består. Se `CHANGELOG-4.0.350.md` og DEC-0132.
+
 ## 4.0.349 – fælles v2-kontrakt for state-only-strømhold (2026-09-12, lokal kandidat)
 
 - 4.0.348 blev exact-head-valideret, merged som `c86cc2a0`, og backendrun `34697586057` genbrugte kildebeviset uden dobbelt fuld gate, anvendte alene 4.0.348-bindingen og bestod readback.

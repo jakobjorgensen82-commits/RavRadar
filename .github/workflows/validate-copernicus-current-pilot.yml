@@ -681,7 +681,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.349 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.350 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         id: ravscore-wave-bootstrap-target
@@ -922,7 +922,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.349 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.350 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -1358,7 +1358,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
           RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.locked_weather_resume }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.349 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.350 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Upload only the safe integrated-build failure report
@@ -1413,7 +1413,7 @@ jobs:
           and $report.incrementalGate.fullCutoverCapacityEvaluated == false
           and $report.firstCutoverException.decisionId
             == "DEC-0122-OWNER-APPROVAL-2026-09-09"
-          and $report.firstCutoverException.releaseVersion == "4.0.349"
+          and $report.firstCutoverException.releaseVersion == "4.0.350"
           and $report.firstCutoverException.scope
             == "ONE_EXACT_VERIFIED_FIRST_CUTOVER"
           and $report.firstCutoverException.status
@@ -1565,7 +1565,7 @@ jobs:
             cutoverGate,
             controls
           }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
-          echo "The owner-approved 4.0.349 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
+          echo "The owner-approved 4.0.350 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

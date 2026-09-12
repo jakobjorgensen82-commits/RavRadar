@@ -192,11 +192,54 @@ function buildFixture(binding, mode) {
     { available: true, modelBinding: binding },
   ]));
   const scoreProfile = profileFor(binding, mode);
+  const integratedScore = {
+    available: true,
+    score: 50,
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: true,
+    scoreSemantics: 'EXACT_POINT_SCORE',
+    conservativeTailResetApplied: false,
+    scoreBounds: {
+      lower: 50, upper: 50, modelUncertaintyPoints: 0, rawLower: 50, rawUpper: 50,
+    },
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
+    modelBinding: binding,
+  };
+  const scoreZones = Object.fromEntries(Object.keys(zones).map(zoneId => [zoneId, {
+    currentReferenceAt: productionReferenceAt,
+    hourly: [{
+      time: productionReferenceAt,
+      waders: structuredClone(integratedScore),
+      beach: structuredClone(integratedScore),
+    }],
+  }]));
+  const integratedAvailability = {
+    schemaVersion: 2,
+    policy: 'integrated-model-local-fail-closed',
+    allZonesActive: true,
+    activeZoneCount: 210,
+    unavailableZoneCount: 0,
+    totalZoneCount: 210,
+    allCurrentScoresFullHistory: true,
+    fullHistoryModeCount: 420,
+    historyIncompleteModeCount: 0,
+    historyIncompleteZoneCount: 0,
+    evaluatedAt: productionReferenceAt,
+    unavailableZones: [],
+    historyIncompleteZones: [],
+  };
   const startupBody = {
     datasetId,
     productionReferenceAt,
     zones,
-    coastalParts: { scoreProfile },
+    coastalParts: mode === 'integrated'
+      ? {
+        scoreProfile,
+        scoreAvailability: structuredClone(integratedAvailability),
+        zones: structuredClone(scoreZones),
+      }
+      : { scoreProfile },
   };
   const startup = {
     ...startupBody,
@@ -213,7 +256,15 @@ function buildFixture(binding, mode) {
     datasetId,
     productionReferenceAt,
     zones,
-    coastalParts: { modelBinding: binding, scoreProfile, parts },
+    coastalParts: mode === 'integrated'
+      ? {
+        modelBinding: binding,
+        scoreProfile,
+        scoreAvailability: structuredClone(integratedAvailability),
+        parts,
+        zones: structuredClone(scoreZones),
+      }
+      : { modelBinding: binding, scoreProfile, parts },
   };
   const details = {
     ...detailsBody,
@@ -327,6 +378,78 @@ function installHistoryIncompleteIntegratedState(fixture) {
       historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
     }],
   };
+  for (const document of [fixture.startup, fixture.details]) {
+    document.coastalParts.scoreAvailability = structuredClone(
+      fixture.manifest.ravScoreAvailability,
+    );
+    Object.assign(document.coastalParts.zones['zone-1'].hourly[0].waders, {
+      scoreQuality: 'HISTORY_INCOMPLETE',
+      calibrationEligible: false,
+      scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+      historyCoverageHours: 24,
+      historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    });
+  }
+  resealPublicDocuments(fixture);
+}
+
+function installLocallyUnavailableIntegratedState(fixture) {
+  const localProfile = {
+    ...fixture.startup.coastalParts.scoreProfile,
+    modelCoverageReady: false,
+    advisories: ['LOCAL_MODEL_COVERAGE_INCOMPLETE'],
+  };
+  const localAvailability = {
+    ...fixture.manifest.ravScoreAvailability,
+    allZonesActive: false,
+    activeZoneCount: 209,
+    unavailableZoneCount: 1,
+    allCurrentScoresFullHistory: false,
+    fullHistoryModeCount: 419,
+    unavailableZones: [{
+      zoneId: 'zone-1',
+      zoneName: 'Zone 1',
+      modes: ['waders'],
+      reasons: ['Et direkte lokalt input mangler.'],
+    }],
+  };
+  const unavailableMode = {
+    available: false,
+    score: null,
+    scoreQuality: 'UNAVAILABLE',
+    calibrationEligible: false,
+    scoreSemantics: null,
+    conservativeTailResetApplied: false,
+    scoreBounds: null,
+    historyCoverageHours: null,
+    historyReasonCodes: [],
+    validPartCount: 0,
+    expectedPartCount: 1,
+    unavailableParts: [{
+      partId: 'part-1',
+      name: 'Part 1',
+      code: 'DIRECT_INPUT_MISSING',
+      reason: 'Et direkte lokalt input mangler.',
+    }],
+    modelBinding: fixture.manifest.ravScoreModelBinding,
+    status: 'unavailable',
+    reasons: ['Et direkte lokalt input mangler.'],
+    unavailability: {
+      available: false,
+      code: 'DIRECT_INPUT_MISSING',
+      messageDa: 'Et direkte lokalt input mangler.',
+      policy: 'integrated-model-local-fail-closed',
+      validPartCount: 0,
+      expectedPartCount: 1,
+    },
+  };
+  for (const document of [fixture.startup, fixture.details]) {
+    document.coastalParts.scoreProfile = structuredClone(localProfile);
+    document.coastalParts.scoreAvailability = structuredClone(localAvailability);
+    document.coastalParts.zones['zone-1'].hourly[0].waders = structuredClone(unavailableMode);
+  }
+  fixture.manifest.ravScoreProfile = structuredClone(localProfile);
+  fixture.manifest.ravScoreAvailability = structuredClone(localAvailability);
   resealPublicDocuments(fixture);
 }
 
@@ -582,6 +705,49 @@ const historyIncomplete = attachIntegratedImplementation(
 installHistoryIncompleteIntegratedState(historyIncomplete);
 assert.equal((await verifyIntegratedFixture(historyIncomplete)).status, 'passed',
   'an exact all-active HISTORY_INCOMPLETE deployment remains operational');
+
+const locallyUnavailable = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installLocallyUnavailableIntegratedState(locallyUnavailable);
+assert.equal((await verifyIntegratedFixture(locallyUnavailable)).status, 'passed',
+  'one exact local direct-input gap must not reject the otherwise sealed deployment');
+
+const combinedButFalseMemoryReady = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installLocallyUnavailableIntegratedState(combinedButFalseMemoryReady);
+const combinedAvailability = {
+  ...combinedButFalseMemoryReady.manifest.ravScoreAvailability,
+  fullHistoryModeCount: 418,
+  historyIncompleteModeCount: 1,
+  historyIncompleteZoneCount: 1,
+  historyIncompleteZones: [{
+    zoneId: 'zone-2',
+    zoneName: 'Zone 2',
+    modes: ['waders'],
+    historyCoverageHours: 24,
+    historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+  }],
+};
+combinedButFalseMemoryReady.manifest.ravScoreAvailability = combinedAvailability;
+for (const document of [
+  combinedButFalseMemoryReady.startup,
+  combinedButFalseMemoryReady.details,
+]) {
+  document.coastalParts.scoreAvailability = structuredClone(combinedAvailability);
+  Object.assign(document.coastalParts.zones['zone-2'].hourly[0].waders, {
+    scoreQuality: 'HISTORY_INCOMPLETE',
+    calibrationEligible: false,
+    scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    historyCoverageHours: 24,
+    historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+  });
+}
+resealPublicDocuments(combinedButFalseMemoryReady);
+await assert.rejects(() => verifyIntegratedFixture(combinedButFalseMemoryReady),
+  /history controls/i,
+  'local unavailability must not hide a false memory-ready profile elsewhere');
 
 for (const [label, mutate] of [
   ['malformed history counts', fixture => {

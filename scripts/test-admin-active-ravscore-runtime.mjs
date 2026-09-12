@@ -13,6 +13,7 @@ import {
 
 const integratedBinding = { ...ravScoreModelBinding() };
 const candidateBinding = { ...candidateRollbackModelBinding() };
+const evaluatedAt = '2026-09-12T08:00:00.000Z';
 
 assert.equal(MODEL_BINDING_FIELDS.length, 11);
 assert.ok(MODEL_BINDING_FIELDS.includes('modelContractSha256'));
@@ -69,6 +70,8 @@ function runtimeFor(binding, kind) {
     fullHistoryModeCount: 420,
     historyIncompleteModeCount: 0,
     historyIncompleteZoneCount: 0,
+    evaluatedAt,
+    unavailableZones: [],
     historyIncompleteZones: [],
   };
   return {
@@ -259,6 +262,7 @@ for (const availability of [
   availability.historyIncompleteZoneCount = 1;
   availability.historyIncompleteZones = [{
     zoneId: 'ZONE-1',
+    zoneName: 'Zone 1',
     modes: ['waders', 'beach'],
     historyCoverageHours: 24,
     historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
@@ -280,11 +284,39 @@ const historyIncompleteDto = applyAdminObservationModelPolicy({
 assert.equal(historyIncompleteDto.calibration_eligible, false);
 assert.equal(historyIncompleteDto.calibration_binding_status, 'current-ineligible');
 
+const locallyUnavailableIntegratedRuntime = clone(integratedRuntime);
+mutateBothProfiles(locallyUnavailableIntegratedRuntime, profile => {
+  profile.modelCoverageReady = false;
+  profile.advisories = ['LOCAL_MODEL_COVERAGE_INCOMPLETE'];
+});
+for (const availability of [
+  locallyUnavailableIntegratedRuntime.manifest.ravScoreAvailability,
+  locallyUnavailableIntegratedRuntime.conditions.coastalParts.scoreAvailability,
+]) {
+  availability.allZonesActive = false;
+  availability.activeZoneCount = 209;
+  availability.unavailableZoneCount = 1;
+  availability.allCurrentScoresFullHistory = false;
+  availability.fullHistoryModeCount = 419;
+  availability.unavailableZones = [{
+    zoneId: 'ZONE-1',
+    zoneName: 'Zone 1',
+    modes: ['waders'],
+    reasons: ['Et direkte lokalt input mangler.'],
+  }];
+}
+const locallyUnavailableIntegrated = resolveAdminActivePublicRavScore(
+  locallyUnavailableIntegratedRuntime,
+);
+assert.equal(locallyUnavailableIntegrated.kind, 'integrated');
+assert.equal(locallyUnavailableIntegrated.scoreProfile.modelCoverageReady, false);
+assert.equal(locallyUnavailableIntegrated.observationCalibrationEligible, false);
+
 const malformedHistoryRuntime = clone(historyIncompleteIntegratedRuntime);
 malformedHistoryRuntime.conditions.coastalParts.scoreAvailability
   .historyIncompleteZones[0].historyReasonCodes = [];
 assert.throws(() => resolveAdminActivePublicRavScore(malformedHistoryRuntime),
-  /ukendt eller blandet driftsvej/,
+  /ukendt eller blandet driftsvej|history reason codes/,
   'Admin must reject an incomplete-history readiness bypass without safe reason codes.');
 
 assert.throws(() => resolveAdminActivePublicRavScore({

@@ -767,7 +767,10 @@ const fallbackContext = {
     coastalParts: {
       modelBinding: publicBinding,
       evidenceTrust: verifiedOnlyTrust,
-      scoreAvailability: fallbackManifest.ravScoreAvailability,
+      scoreAvailability: {
+        ...fallbackManifest.ravScoreAvailability,
+        evaluatedAt: fallbackAvailability.selectedReferenceAt,
+      },
       zones: {
         'zone-42': { currentReferenceAt: fallbackAvailability.selectedReferenceAt },
       },

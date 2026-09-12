@@ -90,6 +90,14 @@ try {
     ]);
   assert.deepEqual(stagedModelBinding(), candidateBinding,
     'Candidate Pages overlay must replace the canonical client contract');
+  assert.equal(stagedPublicRuntime.assertPublicScoreAvailability(
+    candidateScoreAvailability,
+    { label: 'Candidate trip fixture availability' },
+  ), true);
+  assert.throws(() => stagedPublicRuntime.assertPublicScoreAvailability({
+    ...candidateScoreAvailability,
+    fullHistoryModeCount: 419,
+  }), /inexact Candidate G availability contract/);
 
   const candidateManifest = {
     datasetId,

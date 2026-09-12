@@ -54,6 +54,8 @@ const REGIONAL_HOLD_CLASSIFICATION = 'REGIONAL_DMI_DERIVED_HOLD';
 const OPEN_METEO_CLASSIFICATION = 'OPEN_METEO_COMBINED_CURRENT';
 export const REGIONAL_STATE_ONLY_HOLD_MARKER_CONTRACT_ID =
   'regional-dmi-exact-state-only-hold-v1';
+const REGIONAL_REFERENCE_CONTRACT_ID =
+  'regional-dmi-private-native-cadence-reference-v1';
 const SHA256_PATTERN = /^sha256:[0-9a-f]{64}$/;
 const REGIONAL_STATE_ONLY_HOLD_MARKER_FIELDS = Object.freeze([
   'contractId',
@@ -77,6 +79,39 @@ const REGIONAL_STATE_ONLY_HOLD_MARKER_FIELDS = Object.freeze([
   'sourceAssetSha256',
   'sourceProofSha256',
   'vectorCommitmentSha256',
+]);
+const REGIONAL_REFERENCE_FIELDS = Object.freeze([
+  'referenceContractId',
+  'classification',
+  'partId',
+  'parentZoneId',
+  'targetIdentityFingerprint',
+  'validTime',
+  'sourceValidTime',
+  'capturedAt',
+  'productionReferenceAt',
+  'provider',
+  'sourceClass',
+  'source',
+  'collection',
+  'modelRun',
+  'closureContractId',
+  'closureId',
+  'sourceAssetSha256',
+  'sourceProofSha256',
+  'vectorCommitmentSha256',
+  'authorizedHoldAssignmentSha256s',
+  'samplingPoint',
+  'gridPoint',
+  'distanceKm',
+  'verticalLayer',
+  'verticalLayerRankM',
+  'layerQuality',
+  'componentPair',
+  'interpolation',
+  'vectorSemanticsVersion',
+  'uMps',
+  'vMps',
 ]);
 const REGIONAL_HOLD_FORBIDDEN_VECTOR_FIELDS = Object.freeze([
   'samplingPoint', 'samplePoint', 'samplingCoordinates', 'gridPoint', 'gridIndex',
@@ -952,6 +987,163 @@ function operationalClosureDocumentProof(document, { revalidate = false } = {}) 
   }
 }
 
+function buildRegionalReferenceDocumentProof(document, closureProof) {
+  if (!basicControlledLiveDocument(document) || !closureProof) return null;
+  const references = document.regionalReferenceEntries;
+  if (references === undefined) {
+    // Schema-1 documents produced before the boundary-reference extension stay
+    // readable.  They simply cannot authorize a cold-start hold whose source
+    // predates H0; every newly built document carries the explicit array.
+    return Object.freeze({
+      entries: Object.freeze([]),
+      entryMembership: new WeakSet(),
+      entrySha256ByObject: new WeakMap(),
+      entryIndexByObject: new WeakMap(),
+      entriesByPartId: new Map(),
+      entryByPartAndTime: new Map(),
+    });
+  }
+  if (!Array.isArray(references)) return null;
+  const productionReferenceAt = exactUtcHour(
+    document.operationalClosure?.productionReferenceAt,
+  );
+  if (!productionReferenceAt) return null;
+
+  const expectedByPartAndTime = new Map();
+  for (const hold of closureProof.entries) {
+    if (hold?.classification !== REGIONAL_HOLD_CLASSIFICATION
+      || Date.parse(hold.sourceValidTime) >= Date.parse(productionReferenceAt)) continue;
+    const key = `${hold.partId}\u0000${hold.sourceValidTime}`;
+    const existing = expectedByPartAndTime.get(key);
+    const identity = {
+      partId: hold.partId,
+      parentZoneId: hold.parentZoneId,
+      targetIdentityFingerprint: hold.targetIdentityFingerprint,
+      sourceValidTime: hold.sourceValidTime,
+      modelRun: hold.modelRun,
+      sourceAssetSha256: hold.sourceAssetSha256,
+      sourceProofSha256: hold.sourceProofSha256,
+      vectorCommitmentSha256: hold.vectorCommitmentSha256,
+    };
+    if (existing && JSON.stringify(existing.identity) !== JSON.stringify(identity)) return null;
+    const group = existing ?? { identity, assignmentSha256s: [] };
+    group.assignmentSha256s.push(hold.closureAssignmentSha256);
+    expectedByPartAndTime.set(key, group);
+  }
+
+  const entryMembership = new WeakSet();
+  const entrySha256ByObject = new WeakMap();
+  const entryIndexByObject = new WeakMap();
+  const entriesByPartId = new Map();
+  const entryByPartAndTime = new Map();
+  const seen = new Set();
+  let previousKey = null;
+  for (const [entryIndex, entry] of references.entries()) {
+    const validTime = exactUtcHour(entry?.validTime);
+    const sourceValidTime = exactUtcHour(entry?.sourceValidTime);
+    const modelRun = exactUtcHour(entry?.modelRun);
+    const capturedAt = canonicalTime(entry?.capturedAt);
+    const samplingPoint = point(entry?.samplingPoint);
+    const gridPoint = point(entry?.gridPoint);
+    const distanceKm = finite(entry?.distanceKm);
+    const layerRank = finite(entry?.verticalLayerRankM);
+    const uMps = finite(entry?.uMps);
+    const vMps = finite(entry?.vMps);
+    const key = validTime && exactString(entry?.partId) !== null
+      ? `${entry.partId}\u0000${validTime}`
+      : null;
+    const sortKey = validTime && exactString(entry?.partId) !== null
+      ? `${validTime}\u0000${entry.partId}`
+      : null;
+    const expected = key ? expectedByPartAndTime.get(key) : null;
+    const authorized = entry?.authorizedHoldAssignmentSha256s;
+    const expectedAuthorized = expected
+      ? [...expected.assignmentSha256s].sort()
+      : [];
+    const commitment = uMps === null || vMps === null || layerRank === null
+      ? null
+      : canonicalSha256({
+        schemaVersion: 1,
+        contractId: REGIONAL_VECTOR_COMMITMENT_CONTRACT_ID,
+        partId: entry.partId,
+        collection: 'dkss_lf',
+        modelRun,
+        validTime,
+        sourceAssetSha256: entry.sourceAssetSha256,
+        verticalLayer: entry.verticalLayer,
+        verticalLayerRankM: fixedDecimal(layerRank, 3),
+        uMps: fixedDecimal(uMps, 5),
+        vMps: fixedDecimal(vMps, 5),
+      });
+    if (!exactObjectFields(entry, REGIONAL_REFERENCE_FIELDS)
+      || entry.referenceContractId !== REGIONAL_REFERENCE_CONTRACT_ID
+      || entry.classification !== REGIONAL_NATIVE_CLASSIFICATION
+      || !key || !sortKey || !expected || seen.has(key)
+      || (previousKey !== null && sortKey <= previousKey)
+      || validTime !== sourceValidTime
+      || entry.validTime !== validTime || entry.sourceValidTime !== sourceValidTime
+      || entry.modelRun !== modelRun || !capturedAt
+      || entry.productionReferenceAt !== productionReferenceAt
+      || Date.parse(validTime) >= Date.parse(productionReferenceAt)
+      || Date.parse(productionReferenceAt) - Date.parse(validTime) > 3 * 3_600_000
+      || Date.parse(modelRun) > Date.parse(validTime)
+      || entry.provider !== 'dmi'
+      || entry.sourceClass !== 'owner-approved-regional-proxy'
+      || entry.source !== REGIONAL_SOURCE || entry.collection !== 'dkss_lf'
+      || entry.closureContractId !== CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID
+      || entry.closureId !== document.operationalClosure.closureId
+      || !SHA256_PATTERN.test(entry.targetIdentityFingerprint ?? '')
+      || !SHA256_PATTERN.test(entry.sourceAssetSha256 ?? '')
+      || !SHA256_PATTERN.test(entry.sourceProofSha256 ?? '')
+      || !SHA256_PATTERN.test(entry.vectorCommitmentSha256 ?? '')
+      || !samplingPoint || !gridPoint || distanceKm === null
+      || distanceKm < 0 || distanceKm > 15
+      || Math.abs(haversineKm(samplingPoint, gridPoint) - distanceKm) > 0.02
+      || typeof entry.verticalLayer !== 'string' || !entry.verticalLayer
+      || layerRank === null
+      || entry.layerQuality !== 'regional-proxy-bottom-layer'
+      || entry.componentPair !== 'same-time-cell-layer'
+      || entry.interpolation !== false || entry.vectorSemanticsVersion !== 4
+      || uMps === null || vMps === null
+      || commitment !== entry.vectorCommitmentSha256
+      || !Array.isArray(authorized) || authorized.length === 0
+      || authorized.some(hash => !SHA256_PATTERN.test(hash ?? ''))
+      || new Set(authorized).size !== authorized.length
+      || JSON.stringify(authorized) !== JSON.stringify([...authorized].sort())
+      || JSON.stringify(authorized) !== JSON.stringify(expectedAuthorized)
+      || entry.partId !== expected.identity.partId
+      || entry.parentZoneId !== expected.identity.parentZoneId
+      || entry.targetIdentityFingerprint !== expected.identity.targetIdentityFingerprint
+      || entry.sourceValidTime !== expected.identity.sourceValidTime
+      || entry.modelRun !== expected.identity.modelRun
+      || entry.sourceAssetSha256 !== expected.identity.sourceAssetSha256
+      || entry.sourceProofSha256 !== expected.identity.sourceProofSha256
+      || entry.vectorCommitmentSha256 !== expected.identity.vectorCommitmentSha256
+      || !regionalSampleTimeValid(entry)) return null;
+    previousKey = sortKey;
+    seen.add(key);
+    entryMembership.add(entry);
+    entrySha256ByObject.set(entry, canonicalSha256(entry));
+    entryIndexByObject.set(entry, entryIndex);
+    const partEntries = entriesByPartId.get(entry.partId) ?? [];
+    partEntries.push(entry);
+    entriesByPartId.set(entry.partId, partEntries);
+    const partTimes = entryByPartAndTime.get(entry.partId) ?? new Map();
+    partTimes.set(validTime, entry);
+    entryByPartAndTime.set(entry.partId, partTimes);
+  }
+  if (references.length !== expectedByPartAndTime.size
+    || seen.size !== expectedByPartAndTime.size) return null;
+  return Object.freeze({
+    entries: references,
+    entryMembership,
+    entrySha256ByObject,
+    entryIndexByObject,
+    entriesByPartId,
+    entryByPartAndTime,
+  });
+}
+
 function advisoryClosureAssignmentIdentity(entry) {
   const validTime = exactUtcHour(entry?.validTime);
   if (!validTime || validTime !== entry.validTime
@@ -1129,7 +1321,13 @@ function controlledDocumentProofs(document, { revalidate = false } = {}) {
   const closureProof = operationalClosureDocumentProof(document, { revalidate });
   if (!closureProof) return null;
   const advisoryProof = advisoryDocumentProof(document, { revalidate });
-  return advisoryProof ? { closureProof, advisoryProof } : null;
+  const regionalReferenceProof = buildRegionalReferenceDocumentProof(
+    document,
+    closureProof,
+  );
+  return advisoryProof && regionalReferenceProof
+    ? { closureProof, advisoryProof, regionalReferenceProof }
+    : null;
 }
 
 function proofEntryStillBound(proof, entry) {
@@ -1425,6 +1623,37 @@ function verifiedEntry(entry, part, document, proofs = null) {
   return proof ? { entry, source, validTime, uMps, vMps, proof } : null;
 }
 
+function verifiedRegionalReferenceEntry(entry, part, document, proofs = null) {
+  const proof = proofs?.regionalReferenceProof;
+  if (!proof?.entryMembership.has(entry)) return null;
+  try {
+    if (!proofEntryStillBound(proof, entry)
+      || proof.entrySha256ByObject.get(entry) !== canonicalSha256(entry)) return null;
+  } catch {
+    return null;
+  }
+  const validTime = canonicalTime(entry?.validTime);
+  const uMps = finite(entry?.uMps);
+  const vMps = finite(entry?.vMps);
+  if (!validTime || uMps === null || vMps === null
+    || entry?.partId !== part?.partId
+    || entry?.parentZoneId !== expectedParentZoneId(part)
+    || entry?.targetIdentityFingerprint !== targetIdentityFingerprint(part)) return null;
+  const source = {
+    ...entry,
+    status: 'verified',
+    controlledLivePilot: true,
+    vectorSelection: 'dmi-local-then-copernicus-local-then-owner-approved-regional-proxy-then-open-meteo-combined-current',
+    temporalResolution: 'native',
+    nativeValidTimes: [validTime],
+    fallback: false,
+  };
+  const spatialProof = verifiedLivePilotSource(source, part, { requireStatus: true });
+  return spatialProof
+    ? { entry, source, validTime, uMps, vMps, proof: spatialProof }
+    : null;
+}
+
 /**
  * Reduces one already closure-bound derived hold to the only marker allowed to
  * cross the weather sanitizer. The marker binds one exact part/hour pair to
@@ -1534,8 +1763,17 @@ export function verifiedNativeCadenceReferenceForPart(part, document, referenceA
   const reference = canonicalTime(referenceAt);
   const proofs = controlledDocumentProofs(document);
   if (!reference || !proofs) return false;
-  const raw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
-  const candidate = raw ? verifiedEntry(raw, part, document, proofs) : null;
+  const closureRaw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
+  const referenceRaw = proofEntryForPartAndTime(
+    proofs.regionalReferenceProof,
+    part,
+    reference,
+  );
+  const candidate = closureRaw
+    ? verifiedEntry(closureRaw, part, document, proofs)
+    : referenceRaw
+      ? verifiedRegionalReferenceEntry(referenceRaw, part, document, proofs)
+      : null;
   return candidate?.validTime === reference
     && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
     && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
@@ -1561,8 +1799,17 @@ export function latestVerifiedNativeCadenceSampleForPart(
   const onshoreDirectionDeg = finite(part?.onshoreDirectionDeg);
   const proofs = controlledDocumentProofs(document);
   if (!reference || onshoreDirectionDeg === null || !proofs) return null;
-  const raw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
-  const candidate = raw ? verifiedEntry(raw, part, document, proofs) : null;
+  const closureRaw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
+  const referenceRaw = proofEntryForPartAndTime(
+    proofs.regionalReferenceProof,
+    part,
+    reference,
+  );
+  const candidate = closureRaw
+    ? verifiedEntry(closureRaw, part, document, proofs)
+    : referenceRaw
+      ? verifiedRegionalReferenceEntry(referenceRaw, part, document, proofs)
+      : null;
   const latest = candidate?.validTime === reference
     && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
     && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
@@ -1594,7 +1841,15 @@ export function latestVerifiedNativeCadenceSampleForPart(
   };
 }
 
-export function mergeLiveCurrentPilotIntoRecord(record, part, document, { primaryCurrentVerified = () => false } = {}) {
+export function mergeLiveCurrentPilotIntoRecord(
+  record,
+  part,
+  document,
+  {
+    primaryCurrentVerified = () => false,
+    includePrivateNativeCadenceReferences = false,
+  } = {},
+) {
   if (!record || !Array.isArray(record.hourly)) return record;
   const proofs = controlledDocumentProofs(document);
   if (!proofs) return record;
@@ -1602,20 +1857,44 @@ export function mergeLiveCurrentPilotIntoRecord(record, part, document, { primar
     const raw = proofEntryForPartAndTime(proof, part, validTime);
     return raw ? verifiedEntry(raw, part, document, proofs) : null;
   };
+  const referenceEntries = includePrivateNativeCadenceReferences
+    ? proofEntriesForPart(proofs.regionalReferenceProof, part)
+    : [];
   if (!proofEntriesForPart(proofs.closureProof, part).length
-    && !proofEntriesForPart(proofs.advisoryProof, part).length) return record;
+    && !proofEntriesForPart(proofs.advisoryProof, part).length
+    && !referenceEntries.length) return record;
+
+  const sourceRows = [...record.hourly];
+  if (includePrivateNativeCadenceReferences) {
+    const existingTimes = new Set(sourceRows.map(row => canonicalTime(row?.time)).filter(Boolean));
+    for (const entry of referenceEntries) {
+      if (!existingTimes.has(entry.validTime)) {
+        sourceRows.push({ time: entry.validTime });
+        existingTimes.add(entry.validTime);
+      }
+    }
+    sourceRows.sort((left, right) => Date.parse(left.time) - Date.parse(right.time));
+  }
 
   let supplementalHours = 0;
   let stateOnlyHoldHours = 0;
-  const hourly = record.hourly.map(row => {
+  const hourly = sourceRows.map(row => {
     const validTime = canonicalTime(row?.time);
     const operationalCandidate = candidateAt(proofs.closureProof, validTime);
-    const candidate = operationalCandidate ?? candidateAt(proofs.advisoryProof, validTime);
+    const referenceRaw = includePrivateNativeCadenceReferences
+      ? proofEntryForPartAndTime(proofs.regionalReferenceProof, part, validTime)
+      : null;
+    const referenceCandidate = referenceRaw
+      ? verifiedRegionalReferenceEntry(referenceRaw, part, document, proofs)
+      : null;
+    const candidate = operationalCandidate
+      ?? referenceCandidate
+      ?? candidateAt(proofs.advisoryProof, validTime);
     if (!candidate) return row;
     // An operational entry is already authorized by the exact 79,414-pair
     // closure and must therefore replace any stale-but-structural DMI row for
     // the same pair. Advisory history remains subordinate to verified DMI.
-    if (!operationalCandidate
+    if (!operationalCandidate && !referenceCandidate
       && finite(row?.currentUMps) !== null
       && finite(row?.currentVMps) !== null
       && primaryCurrentVerified(row)) return row;

@@ -551,7 +551,8 @@ assert.doesNotMatch(updater, /evaluateRavScoreCandidateG|buildCandidateGDerivedS
   'the production generator must not calculate a second public or shadow score model');
 assert.doesNotMatch(updater, /currentUMps:\s*weather\.currentUMps|currentVMps:\s*weather\.currentVMps/,
   'public-destined part score rows must not copy raw current vectors');
-assert.match(updater, /policy:\s*'integrated-model-local-fail-closed'/);
+assert.match(updater, /buildIntegratedPublicScoreAvailability\(\{/,
+  'availability must be derived by the shared exact public score contract');
 
 function workflowStep(name, role = 'build') {
   const productionWorkflow = productionWorkflows[role];

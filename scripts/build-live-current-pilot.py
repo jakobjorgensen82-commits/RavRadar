@@ -80,6 +80,7 @@ REGIONAL_MAX_KM = 15.0
 COPERNICUS_SOURCES = ("copernicus-baltic-nemo", "copernicus-nws-amm15")
 REGIONAL_PREFIX = "REGIONAL_PROXY::"
 REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS = 12
+REGIONAL_REFERENCE_CONTRACT_ID = "regional-dmi-private-native-cadence-reference-v1"
 
 
 def arguments() -> argparse.Namespace:
@@ -530,6 +531,140 @@ def regional_entries(
     return selected
 
 
+def regional_reference_entries(
+    document: dict[str, Any],
+    targets: dict[str, dict[str, Any]],
+    assignments: list[dict[str, Any]],
+    closure_proof: dict[str, Any],
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """Build exact private source samples for holds crossing the H0 boundary.
+
+    These are not additional operational assignments.  Each reference is
+    instead bound to one or more already closure-verified hold assignments and
+    exists only so a cold RavScore replay can see the real regional sample that
+    the H0/H1/H2 state-only hold preserves.
+    """
+    reference_at = utc_iso(now)
+    grouped: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = {}
+    for assignment in assignments:
+        if (
+            assignment.get("classification") != REGIONAL_DMI_DERIVED_HOLD
+            or not isinstance(assignment.get("sourceValidTime"), str)
+            or assignment["sourceValidTime"] >= reference_at
+        ):
+            continue
+        key = (
+            str(assignment.get("partId")),
+            assignment["sourceValidTime"],
+            str(assignment.get("sourceModelRun")),
+            str(assignment.get("sourceAssetSha256")),
+            str(assignment.get("sourceProofSha256")),
+            str(assignment.get("vectorCommitmentSha256")),
+        )
+        grouped.setdefault(key, []).append(assignment)
+
+    if not grouped:
+        return []
+    if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
+        raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
+    anchors = document.get("anchors")
+    if not isinstance(anchors, dict):
+        raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
+
+    references: list[dict[str, Any]] = []
+    for (
+        part_id, source_valid_time, source_model_run, source_asset_sha256,
+        source_proof_sha256, vector_commitment_sha256,
+    ), holds in grouped.items():
+        target = targets.get(part_id)
+        anchor = anchors.get(f"{REGIONAL_PREFIX}{part_id}")
+        if target is None or not isinstance(anchor, dict):
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        matches = [
+            sample for sample in anchor.get("samples") or []
+            if isinstance(sample, dict)
+            and sample.get("collection") == "dkss_lf"
+            and sample.get("validTime") == source_valid_time
+            and sample.get("modelRun") == source_model_run
+            and sample.get("sourceAssetSha256") == source_asset_sha256
+        ]
+        if len(matches) != 1 or not regional_sample_time_valid(matches[0], now):
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        sample = matches[0]
+        grid = canonical_point(sample.get("gridPoint"))
+        distance = finite(sample.get("distanceKm"))
+        bottom = ((sample.get("layers") or {}).get("bottom") or {})
+        u_value, v_value = finite(bottom.get("uMps")), finite(bottom.get("vMps"))
+        layer_rank = finite(bottom.get("verticalLayerRankM"))
+        captured_at = utc_iso(parse_time(sample.get("capturedAt")))
+        if (
+            grid is None
+            or distance is None
+            or u_value is None
+            or v_value is None
+            or not isinstance(bottom.get("verticalLayer"), str)
+            or not bottom.get("verticalLayer")
+            or layer_rank is None
+        ):
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        computed_commitment = canonical_sha256({
+            "schemaVersion": 1,
+            "contractId": VECTOR_COMMITMENT_CONTRACT_ID,
+            "partId": part_id,
+            "collection": "dkss_lf",
+            "modelRun": source_model_run,
+            "validTime": source_valid_time,
+            "sourceAssetSha256": source_asset_sha256,
+            "verticalLayer": bottom["verticalLayer"],
+            "verticalLayerRankM": f"{layer_rank:.3f}",
+            "uMps": f"{u_value:.5f}",
+            "vMps": f"{v_value:.5f}",
+        })
+        if computed_commitment != vector_commitment_sha256:
+            raise RuntimeError("REGIONAL_CLOSURE_VECTOR_INVALID")
+        authorized_holds = sorted({
+            str(hold.get("assignmentSha256")) for hold in holds
+            if isinstance(hold.get("assignmentSha256"), str)
+        })
+        if len(authorized_holds) != len(holds):
+            raise RuntimeError("REGIONAL_CLOSURE_ASSIGNMENT_INVALID")
+        references.append({
+            "referenceContractId": REGIONAL_REFERENCE_CONTRACT_ID,
+            "classification": REGIONAL_DMI_NATIVE,
+            "partId": part_id,
+            "parentZoneId": target["parentZoneId"],
+            "targetIdentityFingerprint": target_fingerprint([target]),
+            "validTime": source_valid_time,
+            "sourceValidTime": source_valid_time,
+            "capturedAt": captured_at,
+            "productionReferenceAt": closure_proof["productionReferenceAt"],
+            "provider": "dmi",
+            "sourceClass": "owner-approved-regional-proxy",
+            "source": "dmi-dkss-lf-regional-proxy",
+            "collection": "dkss_lf",
+            "modelRun": source_model_run,
+            "closureContractId": CLOSURE_CONTRACT_ID,
+            "closureId": closure_proof["closureId"],
+            "sourceAssetSha256": source_asset_sha256,
+            "sourceProofSha256": source_proof_sha256,
+            "vectorCommitmentSha256": vector_commitment_sha256,
+            "authorizedHoldAssignmentSha256s": authorized_holds,
+            "samplingPoint": canonical_point(target["waterPoint"]),
+            "gridPoint": grid,
+            "distanceKm": distance,
+            "verticalLayer": bottom["verticalLayer"],
+            "verticalLayerRankM": layer_rank,
+            "layerQuality": "regional-proxy-bottom-layer",
+            "componentPair": "same-time-cell-layer",
+            "interpolation": False,
+            "vectorSemanticsVersion": 4,
+            "uMps": round(u_value, 5),
+            "vMps": round(v_value, 5),
+        })
+    return sorted(references, key=lambda row: (row["validTime"], row["partId"]))
+
+
 def open_meteo_entries(
     document: dict[str, Any],
     targets_list: list[dict[str, Any]],
@@ -656,6 +791,7 @@ def main() -> int:
     copernicus: list[dict[str, Any]] = []
     advisory: list[dict[str, Any]] = []
     regional: list[dict[str, Any]] = []
+    regional_references: list[dict[str, Any]] = []
     open_meteo: list[dict[str, Any]] = []
     copernicus_range_seal = None
     if enabled:
@@ -715,6 +851,9 @@ def main() -> int:
             copernicus_cache, targets, cop_assignments, closure_proof,
         )
         regional = regional_entries(
+            regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
+        )
+        regional_references = regional_reference_entries(
             regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
         )
         open_meteo = open_meteo_entries(
@@ -783,6 +922,7 @@ def main() -> int:
         "copernicusRangeSeal": copernicus_range_seal,
         "entries": entries,
         "advisoryEntries": advisory,
+        "regionalReferenceEntries": regional_references,
     }
     safe_report = {
         "schemaVersion": 1,
@@ -812,6 +952,7 @@ def main() -> int:
         "copernicusAdvisoryRecordCount": len(advisory),
         "copernicusCompleteRangeSealPresent": copernicus_range_seal is not None,
         "regionalProxyRecordCount": len(regional),
+        "regionalPrivateReferenceCount": len(regional_references),
         "openMeteoRecordCount": len(open_meteo),
         "operationalClosure": closure_safe,
         "sourceOrder": raw_projection["sourceOrder"],

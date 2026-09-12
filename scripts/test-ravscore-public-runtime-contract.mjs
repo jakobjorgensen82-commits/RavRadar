@@ -20,6 +20,7 @@ import {
 } from './lib/ravscore-production-adapters.mjs';
 import {
   RAVSCORE_PUBLIC_FORECAST_HOURS,
+  assertIntegratedPublicScoreAvailability,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   assertPublicRuntimeAvailability,
@@ -424,7 +425,23 @@ Object.assign(directMissingFull.coastalParts.zones['zone-0'].hourly[0].waders, {
   scoreBounds: null,
   historyCoverageHours: null,
   historyReasonCodes: [],
+  validPartCount: 3,
+  expectedPartCount: 4,
+  unavailableParts: [{
+    partId: 'part-1',
+    name: 'Part 1',
+    code: 'DIRECT_INPUT_MISSING',
+    reason: 'Et direkte input mangler.',
+  }],
   reasons: ['Et direkte input mangler.'],
+  unavailability: {
+    available: false,
+    code: 'DIRECT_INPUT_MISSING',
+    messageDa: 'Et direkte input mangler.',
+    policy: 'integrated-model-local-fail-closed',
+    validPartCount: 3,
+    expectedPartCount: 4,
+  },
 });
 Object.assign(directMissingFull.coastalParts.scoreAvailability, {
   allZonesActive: false,
@@ -435,7 +452,8 @@ Object.assign(directMissingFull.coastalParts.scoreAvailability, {
   historyIncompleteModeCount: 0,
   historyIncompleteZoneCount: 0,
   unavailableZones: [{
-    zoneId: 'zone-0', zoneName: 'Zone 0', modes: ['waders'], reasons: ['DIRECT_INPUT_MISSING'],
+    zoneId: 'zone-0', zoneName: 'Zone 0', modes: ['waders'],
+    reasons: ['Et direkte input mangler.'],
   }],
   historyIncompleteZones: [],
 });
@@ -446,14 +464,41 @@ assert.equal(directMissingStartup.coastalParts.scoreAvailability.historyIncomple
 assert.equal(directMissingStartup.coastalParts.zones['zone-0'].hourly[0].waders.scoreQuality,
   'UNAVAILABLE',
   'direct input absence must remain distinct from HISTORY_INCOMPLETE');
-assert.throws(() => buildPublicManifest(
+const directMissingManifest = buildPublicManifest(
   directMissingFull,
   compactJson(directMissingStartup),
   compactJson(directMissingDetails),
   '{}\n',
   zoneRegistryText,
-), /lacks waders|complete 210\/673 package/,
-'a direct input gap must still fail the exact public release horizon');
+);
+assert.equal(directMissingManifest.complete, true);
+assert.equal(directMissingManifest.ravScoreAvailability.unavailableZoneCount, 1,
+  'one explicit local input gap must keep the complete national package publishable');
+const duplicateUnavailableZone = structuredClone(
+  directMissingManifest.ravScoreAvailability,
+);
+duplicateUnavailableZone.activeZoneCount = 208;
+duplicateUnavailableZone.unavailableZoneCount = 2;
+duplicateUnavailableZone.fullHistoryModeCount = 418;
+duplicateUnavailableZone.unavailableZones.push({
+  zoneId: 'zone-0', zoneName: 'Zone 0', modes: ['beach'],
+  reasons: ['Et andet direkte input mangler.'],
+});
+assert.throws(
+  () => assertIntegratedPublicScoreAvailability(duplicateUnavailableZone),
+  /invalid unavailable zone/,
+  'one zone must not be counted twice by splitting its unavailable modes',
+);
+const tamperedDirectMissing = structuredClone(directMissingFull);
+tamperedDirectMissing.coastalParts.scoreAvailability.fullHistoryModeCount = 420;
+assert.throws(() => buildPublicManifest(
+  tamperedDirectMissing,
+  compactJson(directMissingStartup),
+  compactJson(directMissingDetails),
+  '{}\n',
+  zoneRegistryText,
+), /inconsistent current score-quality counts|does not match its exact current score rows/,
+'a local unavailable marker must not hide inconsistent national counts');
 const manifest = buildPublicManifest(full, startupText, detailsText, '{}\n', zoneRegistryText);
 
 for (const invalidTrust of [
@@ -696,7 +741,7 @@ for (const [label, mutate] of [
   mutate(invalid);
   assert.throws(
     () => buildPublicManifest(invalid, startupText, detailsText, '{}\n', zoneRegistryText),
-    /horizon|lacks beach|gap, duplicate or shifted/i,
+    /horizon|lacks beach|gap, duplicate or shifted|explicit valid available/i,
     label,
   );
 }

@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.348. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.348 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.350. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.350 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
 
 ### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
 
@@ -10,7 +10,7 @@ DEC-0130 retter denne snævre model-warmup-kant og indfører en eksplicit, fastl
 
 Den tidligere WAM-binding er allerede centralt anvendt og må ikke omskrives. Exact-release 4.0.348 kræver derfor først den nye append-only migration `20260912122607_measured_rollback_warmup_binding.sql`, som kun fører model-/continuationforseglinger og readbackversion frem. Backendreadiness skal være grøn på same-head, før cachekontrollen og det nye handoff må begynde.
 
-Under den stående ejerautorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.348`. Et ældre handoff må ikke ommærkes. Current, WAM, Feggesund, freshness, privacy, full post-data validate/releasegate, same-head-handoff, deployment og offentlig verifikation består uændret. DMI-multipass er fortsat ikke livebevist, fordi den observerede kørsel kun loggede pass 1; dette er et særskilt normaldriftsmålepunkt og ikke en lempelse af launchkrav.
+Ejeren bekræftede 2026-09-12 direkte, at den materielt uændrede first-cutover-undtagelse alene flyttes til exact-release `4.0.350`. Et ældre handoff må ikke ommærkes. Current, WAM, Feggesund, freshness, privacy, full post-data validate/releasegate, same-head-handoff, deployment og offentlig verifikation består uændret. DMI-multipass er fortsat ikke livebevist, fordi den observerede kørsel kun loggede pass 1; dette er et særskilt normaldriftsmålepunkt og ikke en lempelse af launchkrav.
 
 ## Baggrund
 
@@ -126,6 +126,20 @@ Alle eksisterende archive-, storage-, checkpoint-, privacy-, readback-, datainte
 DEC-0129 indfører først et særskilt opt-in terminalbevis efter fuld producentfinalisering. Derefter må alene den eksakte indre HARMONIE-runtime med `partialProgressPreserved:true` eller den eksakte ydre tre-feltsform være en tilladt ledsagefejl, når alle eksisterende DKSS-/ledger-/same-target-/slutcache-/frisk-fremgangskrav allerede er opfyldt. HARMONIE kan ikke selv åbne et pass; watchdoghistorik, download, WAM og alle andre fejl forbliver blokerende. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.347`. Et 4.0.346-handoff kan ikke ommærkes eller bruges; den næste oneoff må genbruge, genvalidere og videreføre de bevarede cacher uden nulstilling.
 
 Alle størrelse-, archive-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Current kræver fortsat 79.414/79.414, bølger 79.060 native WAM plus Feggesund 354/354, og Candidate G forbliver offentlig indtil positiv same-head-cutover og offentlig modelkontrol.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
+
+4.0.347 blev merged som `6868ae04`. Oneoff `34682428800` opnåede current 79.414/79.414 og native WAM 79.060, men modelbygningen stoppede på Candidate G-rollbackgrenens READY-48h-krav. DEC-0130 indførte en målt privat warmup og en providerfri `locked_weather_resume`. Under ejerens stående autorisation blev den materielt uændrede engangsundtagelse flyttet til exact 4.0.348. Alle materielle grænser bestod.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.349
+
+Ejeren godkendte udtrykkeligt: “Ja, flyt engangsundtagelsen til 4.0.349.” DEC-0131 rettede alene state-only closure-v1/v2-seamen, og 4.0.349 blev exact-head-valideret, merged og backendbundet. Cache-only-run `34702471040` passerede denne fejl, men stoppede senere i den offentlige 210/673-scorepakke. Et ældre 4.0.348-handoff fandtes ikke og kunne ikke ommærkes. Alle størrelse-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, handoff-, deployment- og kadencegrænser bestod.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.350
+
+PR #284 og cache-only-run `34706453561` fandt derefter den konkrete scoreinputfordeling. DEC-0132 retter verificeret `windTail`, fører private closure-bundne regionale præ-H0-referencer ind i scoring og håndhæver lokal `UNAVAILABLE` uden at opfinde data. Den samler fem uafhængige cutoverkontroller før én skrivebarriere og fortsætter automatisk, når alle fem er grønne.
+
+Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.350`. Et ældre handoff må ikke ommærkes eller bruges. Currentclosure, WAM/Feggesund, exact target, sourceproof, full post-data validate/releasegate/data, privacy, artifact, backend/readback, CAS, Pages og offentlig verifikation består. Lokal `UNAVAILABLE` er en scorekontrakt, ikke tilladelse til manglende 79.414-currentclosure. Candidate G er ikke automatisk offentlig fallback.
 
 ## Konsekvenser
 

@@ -12,6 +12,9 @@ import {
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import {
+  buildIntegratedPublicScoreAvailability,
+} from '../js/core/ravscore-public-runtime-contract.js';
 import { buildPublicWeatherSourceAge } from '../js/core/ravscore-public-weather-source-age.js';
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
@@ -2138,6 +2141,7 @@ function scoreCoastalPartsRuntime(
             { ...part, zoneId },
             liveCurrentPilot,
             {
+              includePrivateNativeCadenceReferences: true,
               primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
                 deployedBulkCache,
                 deployedBulkCache?.zones?.[bulkId],
@@ -2175,6 +2179,7 @@ function scoreCoastalPartsRuntime(
           { ...part, zoneId },
           liveCurrentPilot,
           {
+            includePrivateNativeCadenceReferences: true,
             primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
               bulkCache,
               bulkCache?.zones?.[bulkId],
@@ -2314,80 +2319,14 @@ function scoreCoastalPartsRuntime(
       flowPoints,
     })];
   }));
-  const unavailableZones = [];
-  const historyIncompleteZones = [];
-  let fullHistoryModeCount = 0;
-  let historyIncompleteModeCount = 0;
-  for (const [zoneId, zone] of Object.entries(zones)) {
-    const current = selectLatestLocalScoreRowAtOrBefore(zone.hourly, generatedAt);
-    const unavailableModes = ['waders', 'beach'].filter(mode => current?.[mode]?.available !== true || !Number.isFinite(current?.[mode]?.score));
-    const zoneName = parentById.get(zoneId)?.properties?.name ?? zoneId;
-    if (unavailableModes.length) {
-      const reasons = [...new Set(unavailableModes.flatMap(mode => current?.[mode]?.reasons ?? ['Datagrundlaget er ikke sammenhængende.']))];
-      unavailableZones.push({ zoneId, zoneName, modes: unavailableModes, reasons });
-    }
-    const historyIncompleteModes = [];
-    const historyCoverageHours = [];
-    const historyReasonCodes = new Set();
-    for (const mode of ['waders', 'beach']) {
-      const result = current?.[mode];
-      if (result?.available !== true || !Number.isFinite(result.score)) continue;
-      if (result.scoreQuality === 'FULL_HISTORY') {
-        if (typeof result.calibrationEligible !== 'boolean'
-          || result.historyCoverageHours !== RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-          || !Array.isArray(result.historyReasonCodes)
-          || result.historyReasonCodes.length !== 0) {
-          throw new Error('Available FULL_HISTORY RavScore lacks an exact history-quality contract');
-        }
-        fullHistoryModeCount += 1;
-        continue;
-      }
-      if (result.scoreQuality !== 'HISTORY_INCOMPLETE'
-        || result.calibrationEligible !== false
-        || !Number.isFinite(result.historyCoverageHours)
-        || result.historyCoverageHours < 0
-        || result.historyCoverageHours > RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-        || !Array.isArray(result.historyReasonCodes)
-        || result.historyReasonCodes.length === 0) {
-        throw new Error('Available integrated RavScore lacks an exact history-quality contract');
-      }
-      historyIncompleteModeCount += 1;
-      historyIncompleteModes.push(mode);
-      if (Number.isFinite(result.historyCoverageHours)
-        && result.historyCoverageHours >= 0) {
-        historyCoverageHours.push(result.historyCoverageHours);
-      }
-      for (const code of result.historyReasonCodes ?? []) {
-        if (typeof code === 'string') historyReasonCodes.add(code);
-      }
-    }
-    if (historyIncompleteModes.length) {
-      historyIncompleteZones.push({
-        zoneId,
-        zoneName,
-        modes: historyIncompleteModes,
-        historyCoverageHours: Math.min(...historyCoverageHours),
-        historyReasonCodes: [...historyReasonCodes].sort(),
-      });
-    }
-  }
-  const totalZoneCount = expectedByZone.size;
-  const scoreAvailability = {
-    schemaVersion: 2,
-    policy: 'integrated-model-local-fail-closed',
-    allZonesActive: unavailableZones.length === 0,
-    activeZoneCount: totalZoneCount - unavailableZones.length,
-    unavailableZoneCount: unavailableZones.length,
-    totalZoneCount,
-    allCurrentScoresFullHistory:
-      unavailableZones.length === 0 && historyIncompleteZones.length === 0,
-    fullHistoryModeCount,
-    historyIncompleteModeCount,
-    historyIncompleteZoneCount: historyIncompleteZones.length,
-    evaluatedAt: generatedAt,
-    unavailableZones,
-    historyIncompleteZones,
-  };
+  const scoreAvailability = buildIntegratedPublicScoreAvailability({
+    zones,
+    referenceAt: generatedAt,
+    zoneNames: new Map([...parentById].map(([zoneId, feature]) => [
+      zoneId,
+      feature?.properties?.name ?? zoneId,
+    ])),
+  });
   const feggesundWaveCoverage = buildFeggesundWaveCoverageProof({
     forecastStartAt: partForecastStartAt,
     forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,

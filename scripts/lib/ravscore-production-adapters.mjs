@@ -307,12 +307,18 @@ export function verifiedControlledLiveCurrentSource(source, rowTime, part, rowUM
 }
 
 function sanitizeWind(hour, expectedIdentity) {
-  const source = verifiedDmiForecastComponentSource(
-    hour?.sources?.wind,
-    hour?.time,
-    'wind',
-    expectedIdentity,
-  );
+  const declaredComponent = hour?.sources?.wind?.component;
+  const component = declaredComponent === 'wind' || declaredComponent === 'windTail'
+    ? declaredComponent
+    : null;
+  const source = component
+    ? verifiedDmiForecastComponentSource(
+      hour.sources.wind,
+      hour?.time,
+      component,
+      expectedIdentity,
+    )
+    : null;
   const speed = finite(hour?.windSpeedMps);
   const direction = finite(hour?.windDirectionDeg);
   const valid = source && speed !== null && speed >= 0

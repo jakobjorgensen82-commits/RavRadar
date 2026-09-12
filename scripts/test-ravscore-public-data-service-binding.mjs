@@ -598,6 +598,17 @@ const emergencyStart = createTripStartFromPublicState({
 });
 assert.deepEqual(emergencyStart.calibrationFeatures.reasonCodes,
   ['public-emergency-last-complete']);
+const wrongEmergencyAvailability = structuredClone(emergency);
+wrongEmergencyAvailability.coastalParts.scoreAvailability.evaluatedAt = generatedAt;
+assert.throws(() => createTripStartFromPublicState({
+  tripId: '45454545-4545-4545-8545-454545454545',
+  startedAt: new Date(emergencyNow + 60_000).toISOString(),
+  mode: 'waders', zoneId: 'zone-1', coastalPartId: 'part-1',
+  manifest: primary.manifest, conditions: wrongEmergencyAvailability,
+  coastalPart: wrongEmergencyAvailability.coastalParts.parts['part-1'], appVersion: '4.0.999',
+  modelVersion: binding.modelId, modelBinding: binding,
+}), /valgte tidspunkt/i,
+'Nøddriftens gemte turgrundlag skal bindes til det faktisk valgte scoretidspunkt.');
 const emergencyEvidence = completeTripEvidence(emergencyStart, {
   endedAt: new Date(emergencyNow + 31 * 60_000).toISOString(),
   zoneId: 'zone-1', coastalPartId: 'part-1', searchCoverage: 'normal', found: false,

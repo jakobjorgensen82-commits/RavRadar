@@ -22,6 +22,9 @@ import {
   RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION,
   RAVSCORE_PUBLIC_STARTUP_KIND,
   RAVSCORE_PUBLIC_ZONE_COUNT,
+  assertIntegratedPublicScoreAvailability,
+  assertIntegratedPublicScoreResult,
+  assertPublicScoreAvailability,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   canonicalPublicRuntimeJson,
@@ -684,6 +687,9 @@ function projectScoreProfile(value, binding) {
 
 function projectScoreAvailability(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  assertPublicScoreAvailability(value, {
+    label: 'Public score availability',
+  });
   if (typeof value.allZonesActive !== 'boolean') {
     throw new Error('Public score availability allZonesActive must be an exact boolean');
   }
@@ -1065,11 +1071,15 @@ export function assertCompletePublicRavScoreHorizon(full) {
     || partIds.length !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
     || full?.coastalParts?.expectedPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
     || full?.coastalParts?.scoredPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
-    || full?.coastalParts?.scoreAvailability?.allZonesActive !== true
     || scoreZoneIds.some(zoneId => !Object.hasOwn(full.zones, zoneId))
     || weatherZoneIds.some(zoneId => !Object.hasOwn(scoreZones, zoneId))) {
     throw new Error('Public RavScore horizon is not one complete 210/673 package');
   }
+  assertPublicScoreAvailability(full.coastalParts.scoreAvailability, {
+    zoneIds: scoreZoneIds,
+    zones: scoreZones,
+    label: 'Public score availability',
+  });
   let expectedPartCount = 0;
   let scoredPartCount = 0;
   for (const zoneId of weatherZoneIds) {
@@ -1089,9 +1099,10 @@ export function assertCompletePublicRavScoreHorizon(full) {
     assertExactHorizonRows(scoreZone.hourly, expectedTimes, `Public score zone ${zoneId}`, row => {
       for (const mode of PUBLIC_FORECAST_MODES) {
         const result = row[mode];
-        if (result?.available !== true || !scoreNumber(result.score)) {
-          throw new Error(`Public score zone ${zoneId} lacks ${mode} at ${row.time}`);
-        }
+        assertIntegratedPublicScoreResult(
+          result,
+          `Public score zone ${zoneId} ${mode} at ${row.time}`,
+        );
         assertPublicScoreQuality(result);
         const declared = result.modelBinding
           ?? (result.explanation && typeof result.explanation === 'object'

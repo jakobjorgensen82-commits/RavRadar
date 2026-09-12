@@ -1,5 +1,20 @@
 # Aktive krav – samlet register
 
+# 4.0.350 – lokale inputfejl og samlet cutoverkontrol
+
+- **REQ-4.0.350-WIND-COMPONENT-001 – BINDENDE P0 / LOKALT TESTET:** Den fælles scoreadapter skal acceptere alene verificeret `wind` eller `windTail` efter det faktisk deklarerede komponentnavn. Deklaration/proof-mismatch, ukendt navn eller mangelfuld vindtuple stopper lokalt. Reglen gælder gemte og kommende vejrdata.
+- **REQ-4.0.350-REGIONAL-REFERENCE-001 – BINDENDE P0 / LOKALT TESTET:** En regional `NATIVE_CADENCE_HOLD` må kun autorisere privat scoring med eksakt closure-bundet præ-H0-kildereference valideret mod cache, proof, grid, lag, U/V, hash, target og kanonisk `(validTime, partId)`-rækkefølge. Referencen må ikke publiceres.
+- **REQ-4.0.350-LOCAL-UNAVAILABLE-001 – BINDENDE P0 / LOKALT TESTET:** Direkte inputmangel gør alene berørt kystdel, jagtform og time `UNAVAILABLE`/`score=null`. Den øvrige 210/673-struktur og gyldige scorer fortsætter; utilgængelige dele udelades fra rangering. Ingen score, current, vind, retning eller historik må opfindes eller lånes.
+- **REQ-4.0.350-SHARED-AVAILABILITY-001 – BINDENDE P0 / LOKALT TESTET:** Generator, conditions, manifest, public audit, Pages, browserdataservice, administration og ture skal validere samme eksakte availabilitykontrakt. Nødruntime må kun genberegne den ved faktisk valgt, valideret tidspunkt og uændret schema/policy/zonetal.
+- **REQ-4.0.350-HISTORY-SEPARATION-001 – BINDENDE P0:** `HISTORY_INCOMPLETE` og `UNAVAILABLE` må ikke blandes. Manglende historik kan have konservativ numerisk score og er ikke kalibreringsegnet; direkte inputmangel har null-score. Kombinationen må ikke mærkes som fuld modelhukommelse.
+- **REQ-4.0.350-CUTOVER-AGGREGATE-001 – BINDENDE P0 / EKSPLICIT EJERGODKENDT / LOKALT TESTET:** `integrated-cutover` kører præcis runtimeaudit, referencezoner, fuld validering, releasegate og datavalidering og samler kun trin-id/resultat. Enhver fejl stopper én gang før database/checkpoint/privat runtime/Pages-write; fem grønne resultater fortsætter automatisk gennem den eksisterende cutover.
+- **REQ-4.0.350-NORMAL-WEATHER-UNCHANGED-001 – BINDENDE:** Almindelige vejrkørsler beholder deres stoprækkefølge. Normal drift genaktiveres først efter offentlig integreret 210/673-verifikation og skal derefter bevise fremtidig vind/current, rotation og tidsoverskud.
+- **REQ-4.0.350-SOURCE-ONCE-001 – BINDENDE P0:** Én fuld kildegate køres på PR'ens eksakte slut-head. Byteidentisk main/backend må genbruge live exact-content-beviset; post-data validate/releasegate/data-/privacy-/deploymentkontroller genbruges ikke.
+- **REQ-4.0.350-APPEND-ONLY-BINDING-001 – BINDENDE P0 / LOKALT TESTET:** Den anvendte 4.0.349-migration forbliver byteuændret. Ny `20260912194206_local_unavailable_cutover_binding.sql` fører kun integrated-, rollback- og continuationhash samt readbackversion frem.
+- **REQ-4.0.350-RUNTIME-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, migration-12 apply/readback, ny cache-only main-kørsel, fem grønne cutoverkontroller, handoff, Pages og offentlig 210/673-verifikation mangler. De seks ikke-regionale H0-currentdele skal klassificeres på ny same-main-kørsel; de må forblive lokale `UNAVAILABLE`, hvis input stadig reelt mangler.
+
+Run `34706453561` er årsagsbevis, ikke launchbevis. Hele vejrclosure var komplet; fejlen lå i scoreinputtilpasning og privat regional reference. DEC-0132 er bindende.
+
 # 4.0.349 – fælles v2-kontrakt for state-only-strømhold
 
 - **REQ-4.0.349-CLOSURE-CONTRACT-001 – BINDENDE P0 / LOKALT TESTET:** Live-current-producent og RavScore state-only-recovery skal bruge samme eksporterede identitet `current-operational-673x118-closure-ready-v2`. Den udgåede v1 og alle ukendte identiteter skal afvises.

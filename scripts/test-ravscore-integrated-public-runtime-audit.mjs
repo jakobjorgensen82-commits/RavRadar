@@ -22,6 +22,9 @@ import {
   resolvePublicRavScoreProfile,
   selectPublicRavScoreResult,
 } from '../js/core/ravscore-public-model.js';
+import {
+  buildIntegratedPublicScoreAvailability,
+} from '../js/core/ravscore-public-runtime-contract.js';
 import { auditIntegratedRavScorePublicRuntime } from './audit-ravscore-integrated-public-runtime.mjs';
 import {
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
@@ -29,6 +32,7 @@ import {
   buildFeggesundWaveInputProofEntry,
 } from './lib/feggesund-wave-proxy.mjs';
 import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
+import { buildIntegratedZoneHourlyProjection } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import {
@@ -206,13 +210,14 @@ function partRuntime(part, transition, {
   series = baseSeries,
   row = baseRow,
   scoreProfile = profile,
+  scoreWeather = weather,
 } = {}) {
   const state = readyState(part, transition, series);
   const evaluationState = scoreState(state, row);
   const publicContext = {
-    windSpeedMps: weather.windSpeedMps,
-    waveHeightM: weather.waveHeightM,
-    currentSpeedMps: weather.currentSpeedMps,
+    windSpeedMps: scoreWeather.windSpeedMps,
+    waveHeightM: scoreWeather.waveHeightM,
+    currentSpeedMps: scoreWeather.currentSpeedMps,
     currentAlignment: 1,
     currentVerified: true,
     currentTransition: row.currentTransition,
@@ -234,7 +239,7 @@ function partRuntime(part, transition, {
     mode,
     compactIntegratedRavScoreMode(evaluateRavScoreIntegrated({
       mode,
-      weather,
+      weather: scoreWeather,
       zone: { onshoreDirectionDeg: part.onshoreDirectionDeg },
     }, { state: evaluationState })),
   ]));
@@ -334,6 +339,7 @@ function syntheticFull({
   partCounts,
   transition = 'continuation',
   historyIncomplete = false,
+  directMissing = false,
   includeFeggesund = false,
 }) {
   assert.equal(partCounts.length, zoneCount);
@@ -343,7 +349,7 @@ function syntheticFull({
   const runtimeRow = transition === 'cold' ? coldBaseRow
     : historyIncomplete ? historyIncompleteBaseRow : baseRow;
   const scoreProfile = resolvePublicRavScoreProfile({
-    modelCoverageReady: true,
+    modelCoverageReady: !directMissing,
     modelMemoryReady: !historyIncomplete && transition !== 'cold',
     modelMigrationReady: true,
   });
@@ -352,6 +358,10 @@ function syntheticFull({
   const parts = {};
   let partNumber = 0;
   for (let zoneNumber = 0; zoneNumber < zoneCount; zoneNumber += 1) {
+    const zoneDirectMissing = directMissing && zoneNumber === 0;
+    const scoreWeather = zoneDirectMissing
+      ? { ...weather, windSpeedMps: null }
+      : weather;
     const zoneId = includeFeggesund && zoneNumber === zoneCount - 1
       ? FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID
       : `synthetic-zone-${zoneNumber + 1}`;
@@ -384,6 +394,7 @@ function syntheticFull({
         series:selectedSeries,
         row:runtimeRow,
         scoreProfile,
+        scoreWeather,
       });
       firstRuntime ??= runtime;
       partIds.push(partId);
@@ -398,18 +409,33 @@ function syntheticFull({
         flowPoints: part.flowPoints,
         current: {
           time: REFERENCE_AT,
-          weather: structuredClone(weather),
+          weather: structuredClone(scoreWeather),
           waders: runtime.publicModes.waders,
           beach: runtime.publicModes.beach,
         },
         ravScoreModel: runtime.model,
       };
     }
-    const hourly = publicForecastOffsets.map(offsetHours => ({
-      time: time(offsetHours),
-      waders: zoneMode(firstRuntime, 'waders', partIds, parts),
-      beach: zoneMode(firstRuntime, 'beach', partIds, parts),
-    }));
+    const hourly = zoneDirectMissing
+      ? publicForecastOffsets.map(offsetHours => buildIntegratedZoneHourlyProjection({
+        rows: partIds.map(partId => ({
+          partId,
+          name: parts[partId].name,
+          scores: [{
+            time: time(offsetHours),
+            weather: { ...scoreWeather, time: time(offsetHours) },
+            waders: parts[partId].current.waders,
+            beach: parts[partId].current.beach,
+          }],
+        })),
+        expectedPartCount: partIds.length,
+        selectedMode: (scoreRow, mode) => scoreRow[mode],
+      })[0])
+      : publicForecastOffsets.map(offsetHours => ({
+        time: time(offsetHours),
+        waders: zoneMode(firstRuntime, 'waders', partIds, parts),
+        beach: zoneMode(firstRuntime, 'beach', partIds, parts),
+      }));
     coastalZones[zoneId] = {
       expectedPartCount: partIds.length,
       scoredPartCount: partIds.length,
@@ -451,23 +477,14 @@ function syntheticFull({
       },
     };
   }
-  const historyIncompleteZones = Object.entries(coastalZones).flatMap(([zoneId, zone]) => {
-    const current = zone.hourly[0];
-    const modes = ['waders', 'beach'].filter(mode =>
-      current[mode].scoreQuality === 'HISTORY_INCOMPLETE');
-    if (!modes.length) return [];
-    return [{
+  const scoreAvailability = buildIntegratedPublicScoreAvailability({
+    zones: coastalZones,
+    referenceAt: REFERENCE_AT,
+    zoneNames: new Map(Object.keys(coastalZones).map(zoneId => [
       zoneId,
-      zoneName: `Synthetic zone ${zoneId.split('-').at(-1)}`,
-      modes,
-      historyCoverageHours: Math.min(...modes.map(mode =>
-        current[mode].historyCoverageHours)),
-      historyReasonCodes: [...new Set(modes.flatMap(mode =>
-        current[mode].historyReasonCodes))].sort(),
-    }];
+      `Synthetic zone ${zoneId.split('-').at(-1)}`,
+    ])),
   });
-  const historyIncompleteModeCount = historyIncompleteZones
-    .reduce((sum, zone) => sum + zone.modes.length, 0);
   const rollbackBinding = candidateGRollbackModelBinding();
   const candidateRollbackParts = Object.fromEntries(Object.entries(parts)
     .map(([partId, part]) => [partId, {
@@ -541,21 +558,7 @@ function syntheticFull({
       modelBinding: binding,
       evidenceTrust: ravScoreVerifiedEvidenceTrust(),
       scoreProfile,
-      scoreAvailability: {
-        schemaVersion: 2,
-        policy: 'integrated-model-local-fail-closed',
-        allZonesActive: true,
-        allCurrentScoresFullHistory: historyIncompleteModeCount === 0,
-        activeZoneCount: zoneCount,
-        unavailableZoneCount: 0,
-        totalZoneCount: zoneCount,
-        fullHistoryModeCount: zoneCount * 2 - historyIncompleteModeCount,
-        historyIncompleteModeCount,
-        historyIncompleteZoneCount: historyIncompleteZones.length,
-        evaluatedAt: REFERENCE_AT,
-        unavailableZones: [],
-        historyIncompleteZones,
-      },
+      scoreAvailability,
       ...(waveInputProofs ? { waveInputProofs } : {}),
       expectedPartCount: partNumber,
       scoredPartCount: partNumber,
@@ -776,6 +779,7 @@ assert.deepEqual(nationalReport.history, {
   allCurrentScoresFullHistory: true,
   currentFullHistoryModeCount: 420,
   currentHistoryIncompleteModeCount: 0,
+  currentUnavailableModeCount: 0,
 });
 assert.equal(nationalReport.rollback.status, 'READY');
 assert.equal(nationalReport.rollback.activationReady, true);
@@ -896,9 +900,32 @@ assert.deepEqual(historyIncompleteReport.history, {
   allCurrentScoresFullHistory: false,
   currentFullHistoryModeCount: 0,
   currentHistoryIncompleteModeCount: 2,
+  currentUnavailableModeCount: 0,
 });
 assert.equal(historyIncompleteReport.rollback.activationReady, true);
 assert.equal(historyIncompleteReport.rollback.readyPartCount, 1);
+
+const directMissingSmall = syntheticFull({
+  zoneCount: 2,
+  partCounts: [1, 1],
+  directMissing: true,
+});
+const directMissingPackage = publicPackage(directMissingSmall);
+const directMissingReport = audit(directMissingSmall, directMissingPackage, 2, 2);
+assert.deepEqual(directMissingReport.errors, [],
+  'Et reelt manglende direkte H0-input skal være lokalt UNAVAILABLE uden nationalt stop.');
+assert.equal(directMissingReport.history.currentUnavailableModeCount, 2);
+assert.equal(directMissingReport.coverage.unavailableZoneModeCount,
+  RAVSCORE_PUBLIC_FORECAST_HOURS * 2);
+for (const mode of ['waders', 'beach']) {
+  assert.ok(directMissingPackage.startup.nationalForecast.modes[mode]
+    .every(day => day.rows.length === 1
+      && day.rows[0].zoneId === 'synthetic-zone-2'),
+  'En lokalt utilgængelig zone skal udelades, mens den aktive zone fortsat rangeres.');
+}
+assert.equal(directMissingSmall.coastalParts.scoreProfile.modelCoverageReady, false);
+assert.deepEqual(directMissingSmall.coastalParts.scoreProfile.advisories,
+  ['LOCAL_MODEL_COVERAGE_INCOMPLETE']);
 
 const mismatchedHistorySummary = structuredClone(historyIncompleteSmall);
 mismatchedHistorySummary.coastalParts.scoreAvailability.historyIncompleteModeCount = 1;
@@ -952,7 +979,8 @@ for (const malformed of ['1', true, [1]]) {
 for (const malformed of ['true', 1, [true]]) {
   const poisonedAvailability = structuredClone(small);
   poisonedAvailability.coastalParts.scoreAvailability.allZonesActive = malformed;
-  assert.throws(() => publicPackage(poisonedAvailability), /exact boolean/,
+  assert.throws(() => publicPackage(poisonedAvailability),
+    /exact boolean|inexact integrated availability contract/,
     `public producer must reject allZonesActive=${JSON.stringify(malformed)}`);
 }
 for (const [label, mutate] of [
@@ -1083,11 +1111,22 @@ for (const [index, row] of fiveIsolatedReadyHours.coastalParts
       conservativeTailResetApplied: false,
       historyCoverageHours: null,
       historyReasonCodes: [],
+      validPartCount: 0,
+      expectedPartCount: 1,
+      unavailableParts: [{
+        partId: 'synthetic-part-1',
+        name: 'Synthetic part 1',
+        code: 'CURRENT_DIRECT_INPUT_NOT_READY',
+        reason: 'Syntetisk manglende sammenhængende strømbevis.',
+      }],
       reasons: ['Syntetisk manglende sammenhængende strømbevis.'],
       unavailability: {
         available: false,
         code: 'INTEGRATED_RAVSCORE_LOCAL_DATA_INCOMPLETE',
         messageDa: 'Syntetisk manglende sammenhængende strømbevis.',
+        policy: 'integrated-model-local-fail-closed',
+        validPartCount: 0,
+        expectedPartCount: 1,
       },
     };
   }
@@ -1099,13 +1138,22 @@ const fiveIsolatedReadyReport = audit(
   1,
   1,
 );
-assert.ok(fiveIsolatedReadyReport.errors
-  .includes('ZONE_PUBLIC_FORECAST_MODE_UNAVAILABLE'));
-assert.ok(fiveIsolatedReadyReport.errors
-  .includes('PUBLIC_FORECAST_CONTAINS_UNAVAILABLE_ZONE_MODES'));
-assert.ok(!fiveIsolatedReadyReport.errors
-  .includes('ZONE_FIVE_DAY_MODE_COVERAGE_INCOMPLETE'),
-'Den negative fixture skal bevise, at fem isolerede dage ikke længere kan snyde den fulde timegate.');
+assert.deepEqual(fiveIsolatedReadyReport.errors, [],
+  'Eksakte lokale UNAVAILABLE-timer må ikke stoppe andre gyldige fremtidstimer.');
+assert.equal(fiveIsolatedReadyReport.coverage.unavailableZoneModeCount,
+  (RAVSCORE_PUBLIC_FORECAST_HOURS - readyIndexes.size) * 2);
+
+const malformedLocalUnavailable = structuredClone(fiveIsolatedReadyHours);
+malformedLocalUnavailable.coastalParts.zones['synthetic-zone-1'].hourly[1]
+  .waders.unavailability.code = 'not-a-safe-code';
+const malformedLocalUnavailablePackage = publicPackage(fiveIsolatedReadyHours);
+assert.ok(audit(
+  malformedLocalUnavailable,
+  malformedLocalUnavailablePackage,
+  1,
+  1,
+).errors.includes('PUBLIC_ZONE_MODE_CONTRACT_INVALID'),
+'En lokal mangel må kun fortsætte, når dens eksplicitte UNAVAILABLE-kontrakt er gyldig.');
 
 const missingForecastHour = structuredClone(small);
 missingForecastHour.coastalParts.zones['synthetic-zone-1'].hourly.splice(57, 1);

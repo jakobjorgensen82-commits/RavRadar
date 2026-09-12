@@ -6,6 +6,7 @@ import {
   verifyCoastalPartCurrentProjection,
 } from './lib/current-spatial-runtime-proof.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
@@ -60,6 +61,15 @@ const componentContract = {
     vectorSemanticsVersion: 2,
     vectorReference: 'earth-relative-east-north',
     vectorTransform: 'lambert-conformal-to-earth-relative',
+    vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
+  },
+  windTail: {
+    collection: 'dkss_idw',
+    collectionFamily: 'marine',
+    componentKind: 'marine-wind-tail-vector',
+    fieldSet: ['wind-tail-u-10m', 'wind-tail-v-10m'],
+    spatialSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
+    vectorSemanticsVersion: 1,
     vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
   },
   wave: {
@@ -500,6 +510,47 @@ const physical = verifiedIntegratedPartHourly(
   bulkId,
   partContext,
 );
+
+const windTailLater = '2026-08-29T15:00:00.000Z';
+const generatedWindTail = buildDmiForecastHourly({
+  windTail: [
+    {
+      step: sourceTime,
+      'wind-speed-10m': 5,
+      'wind-dir-10m': 180,
+      provenance: { wind: dmiSourceFor('windTail', sourceTime) },
+    },
+    {
+      step: windTailLater,
+      'wind-speed-10m': 8,
+      'wind-dir-10m': 210,
+      provenance: { wind: dmiSourceFor('windTail', windTailLater) },
+    },
+  ],
+  generatedAt: sourceTime,
+  startAt: sourceTime,
+  hours: 2,
+}).hourly;
+const verifiedWindTail = verifiedIntegratedPartHourly(
+  { hourly: generatedWindTail },
+  bulkCache,
+  bulkId,
+  partContext,
+);
+assert.equal(verifiedWindTail[0].windSpeedMps, 5,
+  'the exact DKSS wind tail must cross the integrated production boundary');
+assert.equal(verifiedWindTail[1].windProvenance.component, 'windTail',
+  'the interpolated DKSS wind tail must retain its exact fallback component');
+const forgedWindTail = structuredClone(generatedWindTail[0]);
+forgedWindTail.sources.wind.component = 'wind';
+const rejectedForgedWindTail = verifiedIntegratedPartHourly(
+  { hourly: [forgedWindTail] },
+  bulkCache,
+  bulkId,
+  partContext,
+)[0];
+assert.equal(rejectedForgedWindTail.windSpeedMps, null,
+  'a DKSS tuple relabelled as primary HARMONIE wind must still fail closed');
 assert.deepEqual({
   wind: physical[0].windSpeedMps,
   windDirection: physical[0].windDirectionDeg,

@@ -1,6 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.349
+**Håndbogsversion:** 4.0.350
+
+## 88.54 Lokal 4.0.350 – Gyldige områder fortsætter, og cutover samler fejl
+
+**Status:** Den komplette gemte vejrcache er stadig 79.414/79.414. Den seneste hurtige kontrol fandt ikke nye vejrhuller, men to fejl mellem vejrdata og den nye scoremodel: gyldig DMI-vind med navnet `windTail` blev afvist, og otte regionale strømfastholdelser manglede deres private kildebevis ved scoring. Begge er rettet lokalt. Seks andre kystdele skal afgøres i den næste hurtige kørsel.
+
+Når et direkte input reelt mangler, får kun den berørte kystdel, søgemåde og time beskeden **Utilgængelig**. Den får ingen score og kan ikke vinde rangeringen. Andre steder med gyldige data fortsætter. Systemet låner ikke tal fra naboer og kalder ikke manglende data for nul.
+
+Ved cutover får fem kontroller alle lov til at afslutte, så eventuelle fejl ses samlet. Hvis én fejler, stoppes der før databasen eller den offentlige side ændres. Hvis alle fem er grønne, fortsætter modelskiftet automatisk. Dette ændrer ikke den almindelige vejrdrift.
+
+Rettelsen får én fuld kildekontrol på Pull Requestens eksakte slutversion. Den samme byteidentiske kode må genbruge beviset på main, mens alle data-, release-, privacy-, database-, handoff-, Pages- og offentlige kontroller stadig køres. Først efter offentlig kontrol af alle 210 zoner og 673 kystdele genaktiveres normal weather, så kommende vind, strøm og DMI-rotation kan bevises.
 
 ## 88.53 4.0.349 på main – Dataene er komplette, og næste modelstop samles nu præcist
 
@@ -389,11 +399,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.349 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.350 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – 4.0.349 på main, cutover afventer scorepakkediagnosen
+### Status for det aktuelle modelarbejde – lokal 4.0.350, exact-head og cutover afventer
 
-4.0.349 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89` over 57 transitive filer. Continuationbindingen er `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`. Migration `20260912141641_state_only_hold_closure_v2_binding.sql` er nu installeret og readback-verificeret. Cachekontrol `34702471040` bestod de komplette strøm-/bølgedata uden providerhentning og passerede v1/v2-seamen, men stoppede senere ved den offentlige 210/673-scorepakke. Candidate G er derfor stadig offentlig rent teknisk, mens den samlede lokale fejlrapport og cutover afventer.
+4.0.350 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d3b6c829dfb0d66251d7ebf0b0f4d0a1c357bbf0083aa6076b3f8743eaca397d` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=343f9f539146c61fbd0b75e2c4d1148189f56602abb85bff24bbbd708e43aae2` over 57 transitive filer. Continuationbindingen er `87ea235809d1c305d93fd04ae434ecca07e2c573b5e4929b5b8a7446687eec06`. Migration `20260912141641_state_only_hold_closure_v2_binding.sql` er installeret og uændret; ny append-only `20260912194206_local_unavailable_cutover_binding.sql` afventer exact-main apply/readback. Cachekontrol `34706453561` beviste komplette strømdata og fandt de konkrete scoreinputfejl. Candidate G er derfor stadig offentlig rent teknisk, mens 4.0.350 afventer exact-head, automatisk grøn cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -600,7 +610,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `87ea235809d1c305d93fd04ae434ecca07e2c573b5e4929b5b8a7446687eec06` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 
@@ -3447,3 +3457,17 @@ Fra 4.0.272 er den atomiske hentning af manifest og conditions obligatorisk. Hvi
 Den aktuelle rettelse genoptager kun Candidate G's kompakte tilstand fra den sidste fuldt grønne 673-deles produktion. Kilden er bundet til én eksakt, uforanderlig Actions-kørsel, samme delbestand og en kontrolleret samlet integritet. Vejr, scoreformel, profilvægtning, geometri, zoner og land-/vandpunkter kopieres ikke. Hvis blot én kontrol ikke passer, stopper recoveryen.
 
 Den særskilte kystdel, som efter punktflytningen midlertidigt mangler en komplet ny offentlig vejrrække, må ikke låne strøm fra sin moderzone eller nabo. Den almindelige 673/673-gate forbliver derfor uændret og stopper en ufuldstændig produktion, indtil kystdelen igen har frisk, tilladt evidens. Se DEC-0071.
+
+## 64. Når en enkelt kystdel mangler data – 4.0.350
+
+**Kort fortalt:** Et lokalt datahul skal ikke slukke hele RavRadar. Kun den berørte kystdel, søgemåde og time bliver vist som utilgængelig. Alle andre steder med gyldige data fortsætter.
+
+En utilgængelig score er ikke nul point. Den har slet ingen score og forklarer, hvilket direkte input der mangler. Den del må derfor heller ikke vinde en rangering. RavRadar låner ikke vind eller strøm fra en anden del og gætter ikke en retning.
+
+Det er noget andet end manglende ældre historik. Hvis de aktuelle direkte data findes, men modellen endnu ikke har hele sit historiske forløb, kan den vise en forsigtig score med besked om ufuldstændig historik. Den score bruges ikke til kalibrering.
+
+RavRadar accepterer DMI-vind, når det fulde kildebevis korrekt kalder komponenten enten `wind` eller `windTail`. De regionale kystdele kan bruge en tidligere målt strømværdi i den allerede godkendte korte fastholdelse, men kun når den private produktion kan bevise præcis måling, tidspunkt, modelpunkt og sammenhæng. Den private reference vises ikke som en ny måling eller pil.
+
+Ved første skift til den integrerede model gennemføres fem kontroller: selve den offentlige modelpakke, faste referencezoner, hele projektets validering, releasekontrollen og vejrdatakontrollen. Alle fem får lov at afslutte, så eventuelle fejl kan ses samlet. Hvis én fejler, stoppes der før database og offentlig side ændres. Hvis alle består, fortsætter skiftet automatisk.
+
+Den almindelige vejrdrift ændres ikke af denne samlede cutoverkontrol. Efter en verificeret offentlig lancering genaktiveres den kontrolleret, så kommende vind- og strømdata samt DMI-rotationen kan bevises i en normal kørsel.
