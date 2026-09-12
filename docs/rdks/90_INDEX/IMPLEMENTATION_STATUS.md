@@ -1,4 +1,18 @@
-# Lokal implementeringsstatus – 4.0.346 reelle DMI-multipass
+# Aktuel implementeringsstatus – 4.0.347 lokalt måltestet, CI og drift åbne
+
+- [x] PR #280 exact-head-sourcegate `34673860241`, merge `e912ef9a`/4.0.346 og live genbrug af kildeproof i `34675040245`.
+- [x] Verificér terminal oneoff failure: ét DMI-pass, 66.998/79.414 direkte par, NSBS/HARMONIE bevaret runtime-stop, alle providerprogresssaves og Open-Meteo 2.170/2.212 med 42 provider-negative restpar.
+- [x] Afslut uafhængigt Astra/Ultra-review af fortsættelse, producent/cache/rotation og handoff/gates; dokumentér konkrete modbeviser og afviste hypoteser.
+- [x] Implementér opt-in terminalkode efter fuld finalisering, generic2-fail-closed, bevaret watchdoghistorik, begge HARMONIE-runtimeformer, eksakt downloadadskillelse og frisk accepteret-asset-tæller.
+- [x] Tilføj serialiseret producent→wrapper-seam samt negative exception/pending/watchdog/historik/download/WAM/unknown-tests; luk udløbskanten før begin-CAS og Pages med eksisterende reconciliation.
+- [x] Bestå wrapper 15/15, supervisor 12/12, checkpoint 32/32, Python compile, DMI-modeldownload, freshness-boundary og fuld workflowrækkefølge lokalt.
+- [x] Færdiggør 4.0.347-dokumentation, changelog, begge håndbøger/SQL, geodata-only-version-diff og den afgrænsede lokale måltestmatrix.
+- [ ] Bestå én exact-head-PR-sourcegate og kontrollér byteidentisk main før sikker merge.
+- [ ] Opnå komplet ny oneoff, handoff, fulde post-data-cutover-gates, offentlig modelverifikation og efterfølgende kontrolleret normalvedligeholdelse.
+
+Kandidaten er ucommitted og endnu ikke releaseklar, fordi dokument-/versionslukning og exact-head-CI mangler. [Astra-reviewet](../../ai/ASTRA_HELICOPTER_REVIEW_2026-09-12.md) er løsningsgrundlaget; DEC-0129 er den aktive kontrakt. Oneoffen er terminal, så der er ingen aktiv writer, men frisk run/main-kontrol kræves stadig før merge/dispatch. Ældre afkrydsninger nedenfor gælder deres historiske versioner.
+
+# Historisk lokal implementeringsstatus – 4.0.346 reelle DMI-multipass
 
 Main `64d2f23f` er 4.0.345. Exact-head-sourcegate `34666410182` var grøn, PR #279 blev merged, og oneoff `34667430392` beviste exact-content sourceproof-genbrug uden dobbelt fuld kildegate. Kørslens vejrfase var negativ og udgav intet: current sluttede 79.230/79.414 med 184 provider-negative Open-Meteo-par; WAM-inspektionen var grøn, men closure stoppede før handoff/cutover.
 

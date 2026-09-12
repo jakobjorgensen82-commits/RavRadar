@@ -1,4 +1,4 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.346';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.347';
 
 let cachedRules = null;
 

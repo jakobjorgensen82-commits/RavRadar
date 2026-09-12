@@ -1,10 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.346
+**Håndbogsversion:** 4.0.347
+
+## 88.51 Lokal 4.0.347 – Næste DMI-runde kræver et ægte afslutningsbevis
+
+**Status:** 4.0.346 er kontrolleret og merged. Dens oneoff gemte al sikker fremgang, men blev ikke komplet og gav derfor intet modelskift. 4.0.347 er lokalt måltestet; GitHubs exact-head-kontrol, merge, ny oneoff, cutover og offentlig verifikation mangler.
+
+### Hvorfor den seneste kørsel ikke kunne bruges til cutover
+
+Oneoffen nåede kun første DMI-pass. Den afsluttende DMI-rapport viste både et forventet tidsstop i en strømfamilie og et samtidig tidsstop i HARMONIE-vind. Den daværende wrapper kendte ikke den kombination og stoppede sikkert. Det var bedre end at gætte, men det betød, at næste roterede DMI-pass aldrig startede.
+
+De efterfølgende kilder fortsatte og gemte deres fremgang. Open-Meteo modtog 2.212 restpar, løste 2.170 og efterlod 42 fordelt på 21 kystdele. Alle 42 blev forsøgt igen enkeltvis og gav stadig ikke et gyldigt accepterbart svar. De var altså ikke glemt eller efterladt i en kø, men de er heller ikke brugbare data. Derfor fejlede slutgaten, og der kom intet handoff, artifact, cutover eller skift til den integrerede scoremodel.
+
+### Hvad der nu gør en ny passage sikker
+
+DMI-producenten har fået et internt oneoff-signal, som først kan udstedes efter hele den normale afslutning: slutcache, outputs, rapport og oprydning skal være færdige. En almindelig fejl bruger stadig den gamle fejlkode. Wrapperen læser derfor slet ikke cachen efter en ukendt fejl; en fil med ny tidsstempel kan ikke længere alene blive forvekslet med en sikker delafslutning.
+
+Supervisoren husker også et eventuelt watchdogstop gennem hele passet. En senere child kan ikke skjule den hændelse ved at skrive en pænere slutrapport. HARMONIE må kun være en tilladt ledsagenote til et reelt DKSS-tidsstop i to helt præcise former: før HARMONIE starter, eller inde i arbejdet med udtrykkeligt bevis for bevaret fremgang. HARMONIE kan aldrig alene åbne næste pass. Downloadbudget, WAM-fejl, parser-, katalog-, request- og ukendte fejl stopper fortsat.
+
+Kun assets, der faktisk blev færdigbehandlet i netop dette producentkald, tæller som fremgang. Gamle run-tællere kan ikke starte en ekstra passage. Same-target, ny finaliseret cache, 4-GiB-loft, 5-GiB-diskreserve og stigende DMI-pardækning før pass 3 består.
+
+### Cutover og den dobbelte gate
+
+Hvis den næste oneoff giver fuld current 79.414/79.414, native WAM 79.060, Feggesund 354/354 og et gyldigt same-head-handoff, går vi direkte videre til den kontrollerede cutover. Cutover henter ikke et nyt rullende vejrvindue; den installerer oneoffens eksakte fem kilder og genbygger den samme fastlåste closure. Pages kontrollerer nu også targetets hårde 117-timershorisont både før central begin og igen lige før deployment, så en lang kø ikke kan udgive et allerede udløbet datasæt.
+
+Kildekoden skal stadig have én fuld gate på Pull Requestens eksakte slut-head. Hvis den mergede main er byteidentisk, genbruges det bevis efter live kontrol i stedet for at køre den samme kildegate igen. Frisk central hydrering, fuld datavalidering, releasegate, artifact/privacy, deployment og offentlig kontrol køres stadig hver gang. Ingen grid-, afstands-, kilde-, fysik- eller scoreregel er lempet for at få de 42 til at forsvinde.
 
 ## 88.50 Lokal 4.0.346 – Oneoffens DMI-rotation får reelle efterfølgende pass
 
-**Status:** 4.0.345 blev kontrolleret og merged. Den nye kildegateordning virkede i praksis: den samme byteidentiske kilde blev ikke fuldt kontrolleret to gange. Den efterfølgende oneoff forbedrede dækningen kraftigt, men stoppede stadig korrekt med 184 currenthuller. 4.0.346 er en lokal rettelse; ny GitHub-kontrol, merge, komplet vejr og offentlig modelverifikation mangler.
+**Historisk status:** 4.0.345 blev kontrolleret og merged. Den nye kildegateordning virkede i praksis: den samme byteidentiske kilde blev ikke fuldt kontrolleret to gange. Den efterfølgende oneoff forbedrede dækningen kraftigt, men stoppede stadig korrekt med 184 currenthuller. 4.0.346 blev senere merged og afprøvet; den aktuelle efterfølger og det nyere 42-restresultat står i kapitel 88.51.
 
 ### Hvad den seneste kørsel faktisk viste
 
@@ -289,11 +313,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.346 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.347 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.346-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.347-cutoverkandidat, ikke produktion
 
-4.0.346 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; 4.0.346 ændrer oneoffens afgrænsede DMI-fortsættelse, dens ydre tidsgrænser og exact-releasebindingen.
+4.0.347 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; 4.0.346 ændrer oneoffens afgrænsede DMI-fortsættelse, dens ydre tidsgrænser og exact-releasebindingen.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

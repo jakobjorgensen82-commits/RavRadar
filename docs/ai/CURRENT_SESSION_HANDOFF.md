@@ -1,4 +1,26 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 efter negativ 4.0.345-oneoff
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.347 implementeret og måltestet lokalt
+
+Main er `e912ef9a53d62c489402531fc318f4c3b3ccaf7f`/4.0.346; lokal branch er `codex/4.0.347-dmi-harmonie-runtime-continuation`. Oneoff `34675040245` er afsluttet failure. DMI nåede 66.998/79.414 i pass 1, alle relevante cachesaves lykkedes, og Open-Meteo løste 2.170/2.212 med 42 provider-negative restpar fordelt på 21 kystdele efter isolerede genforsøg. Ingen OM-runtime-/attempt-/køgrænse; ingen handoff, cutover eller modelændring. De private `.tmp-run-…-safe-inspect/`-mapper er untracked og skal bevares.
+
+4.0.347 lukker Astra-reviewets konkrete kanter: producentens opt-in kode 75 kommer først efter fuld terminalbehandling; exception/finalize-only/normal drift beholder exit 2; wrapperen læser ikke cache efter exit 2; supervisoren afviser fortsættelse efter enhver tidligere watchdog; DKSS/HARMONIE inner/outer runtime har eksakte former og kan ikke forveksles med download; kun frisk per-invocation-assettæller gælder; Pages rechecker target+117h før begin og før deploy. Alle kvalitets- og closurekrav består.
+
+Grøn lokal evidens: wrapper 15, supervisor 12, transactional checkpoint 32, Python compile, modeldownload, freshness og workflowrækkefølge. Versions-/RDKS-/håndbogs-/SQL-lukning og øvrige måltests færdiggøres nu. Derefter én exact-head PR-sourcegate, ikke en anden identisk main-sourcegate; merge; ny oneoff på gemte cacher; ved fuld closure kontrolleret cutover med fuld post-data validate/releasegate og offentlig modelverifikation. Normalworkflow forbliver disabled gennem cutover og genaktiveres først kontrolleret bagefter. Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – Astra-review afsluttet, fortsæt på Sol/Ekstra høj
+
+**Seneste liveopdatering:** Run `34675040245` er nu i Open-Meteo-trin 62. Copernicus er afsluttet, og donorbank, source-stage samt valideret cache blev gemt med succes i trin 57/58/61. Tidligere Copernicus-status nedenfor er afløst; samlet slutclosure er fortsat ukendt. RDKS-validering og diff-check er grønne for dokumentationscheckpointet, ikke et bevis for releaseklar kode.
+
+Læs [ASTRA_HELICOPTER_REVIEW_2026-09-12.md](ASTRA_HELICOPTER_REVIEW_2026-09-12.md): her står frisk runbevis, seks konkrete fund, minimumsløsning, måltests, afviste hypoteser og næste sikre rækkefølge. Ejeren bad udtrykkeligt om at skifte tilbage, når Astra-arbejdet var færdigt; den grænse er nået. Implementering skal fortsætte på GPT-5.6 Sol / Indsats Ekstra høj.
+
+Main `e912ef9a53d62c489402531fc318f4c3b3ccaf7f` er 4.0.346. Lokal branch `codex/4.0.347-dmi-harmonie-runtime-continuation` har ucommitted versionsændringer og første wrapper/testpatch; **ingen 4.0.347-PR eller merge**. Patchen genkender den faktiske HARMONIE-fejl, men må ikke frigives før reviewfundene er rettet. Producent/supervisor er endnu ikke ændret. Bevar alle fire untracked `.tmp-run-…-safe-inspect/`-mapper og øvrige private cacher.
+
+Run `34675040245`/job `103503274163` var fortsat aktivt i Copernicus ved sidste kontrol. DMI nåede kun pass 1: 66.998/79.414, NSBS+HARMONIE runtime/preserve=true, grønne GRIB-/kandidat-/regionalsaves og WAM-inspektion. READY-promotion blev ikke udført. HARMONIEs tomme recognized-parameterliste beviser ikke nul planlagt arbejde. Brug korrekt GitHub-remote `jakobjorgensen82-commits/RavRadar`; loggens afsluttende JSON er diagnostikken direkte. Ingen rå private payloads i chat/commit.
+
+Næste kodearbejde: opt-in expected-partial-terminalkode, som først kan udstedes efter normal finalisering og aldrig efter exception/finalize-only/watchdoghistorik; eksakt runtimeklassifikation for indre/ydre HARMONIE og DKSS uden downloadforveksling; frisk accepteret-asset-tæller; serialiseret producent/wrapper/genstart-regression. Luk den eksisterende horisontkontrolkant før begin-CAS/Pages med abortbevaring. Bevar alle datakrav og fulde produktionsgates.
+
+Færdiggør derefter changelog/RDKS/krav/issues/begge håndbøger/SQL og versionsdiff, måltests, én exact-head-kildegate og sikker merge efter writerkontrol. Ny oneoff genbruger genvalideret cache; afsluttet review eller gemt progression er ikke closure, launch eller normaldriftsbevis. Det autonome overordnede mål er fortsat aktivt og ikke opnået.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.346 efter negativ 4.0.345-oneoff
 
 PR #279-sourcegate `34666410182` var grøn på exact head `47275529`; merge `64d2f23f` var contentidentisk. Oneoff `34667430392` genbrugte proofet uden dobbelt fuld kildegate. DMI planlagde alle 79.414 par, nåede 64.400 og lukkede WAM. Copernicus gennemførte 73 forsøg på 39m25s; regional dækkede 928; Open-Meteo løste 2.284/2.468. De sidste 184 var gennemprøvede provider-negative null/grid-par. Kørslens 1h41m38s gav intet handoff/deploy/cutover.
 

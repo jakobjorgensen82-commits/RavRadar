@@ -95,6 +95,15 @@ jobs:
           test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.legacy_source_required }}"
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
 
+      - name: Require horizon-valid weather before any Pages begin CAS
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(jq -er '.productionReferenceAt | select(type == "string")' "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json")"
+          node scripts/check-production-target-freshness.mjs \
+            --target "$target" \
+            --maximum-age-minutes 240
+
       - name: Validate checkpoint disposition before any Pages begin CAS
         id: checkpoint-disposition-begin
         shell: bash
@@ -391,6 +400,15 @@ jobs:
           git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Require horizon-valid weather immediately before Pages deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(jq -er '.productionReferenceAt | select(type == "string")' "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json")"
+          node scripts/check-production-target-freshness.mjs \
+            --target "$target" \
+            --maximum-age-minutes 240
 
       - name: Deploy to GitHub Pages
         id: deployment

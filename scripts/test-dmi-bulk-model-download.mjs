@@ -85,6 +85,31 @@ assert.match(
   'Progress-checkpointcadencen skal som default være højst 60 sekunder.',
 );
 const bulkMainStart = bulk.indexOf('def main()');
+const finalCacheWrite = bulk.indexOf(
+  'write_finalized_cache(result, result["refreshStatus"])',
+  bulkMainStart,
+);
+const finalOutputs = bulk.indexOf('write_github_outputs(', finalCacheWrite);
+const finalSummary = bulk.indexOf('write_step_summary(', finalOutputs);
+const finalPrint = bulk.indexOf('print(json.dumps(summary', finalSummary);
+const finalExit = bulk.indexOf('return producer_process_exit_code(', finalPrint);
+assert.ok(
+  finalCacheWrite > bulkMainStart
+    && finalOutputs > finalCacheWrite
+    && finalSummary > finalOutputs
+    && finalPrint > finalSummary
+    && finalExit > finalPrint,
+  'Oneoffens særskilte partialkode må først dannes efter normal cache-, output- og summary-finalisering.',
+);
+assert.match(
+  bulk.slice(finalExit, bulk.indexOf('if __name__ == "__main__":', finalExit)),
+  /producer_success_is_blocked=producer_success_is_blocked[\s\S]*producer_productive=producer_productive/,
+);
+assert.match(
+  bulk.slice(bulk.indexOf('if __name__ == "__main__":', finalExit)),
+  /except Exception as exc:[\s\S]*terminal_code="DMI_PRODUCER_EXCEPTION"[\s\S]*raise SystemExit\(2\)/,
+  'Alle exceptions efter en cachewrite skal fortsat ende som generisk exit 2.',
+);
 const processingSignatureHelperStart = bulk.indexOf('def current_marine_processing_signature(');
 const processingSignatureHelperEnd = bulk.indexOf(
   'def _strict_current_donor_ready(',

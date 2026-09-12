@@ -205,6 +205,40 @@ class SupervisorTests(unittest.TestCase):
         )
         finalize.assert_not_called()
 
+    def test_finalized_incomplete_code_requires_opt_in_and_no_watchdog_history(self):
+        partial = supervisor.SupervisedResult(
+            supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE,
+            False,
+            None,
+        )
+        for environment, expected in [
+            ({}, 2),
+            ({supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "0"}, 2),
+            ({supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "1"},
+             supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE),
+        ]:
+            with (
+                patch.dict(supervisor.os.environ, environment, clear=True),
+                patch.object(supervisor.time, "monotonic", return_value=100.0),
+                patch.object(supervisor, "run_supervised", return_value=partial),
+            ):
+                self.assertEqual(supervisor.main(), expected)
+
+        timed_out = supervisor.SupervisedResult(143, True, ASSET_A)
+        with (
+            patch.dict(supervisor.os.environ, {
+                supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "1",
+            }, clear=True),
+            patch.object(supervisor.time, "monotonic", return_value=100.0),
+            patch.object(
+                supervisor,
+                "run_supervised",
+                side_effect=[timed_out, partial],
+            ) as run,
+        ):
+            self.assertEqual(supervisor.main(), 2)
+        self.assertEqual(run.call_count, 2)
+
     def test_main_repeated_timeout_is_bounded_and_finalizes_checkpoint(self):
         timeout = supervisor.SupervisedResult(143, True, ASSET_A)
         with (
@@ -249,6 +283,18 @@ class SupervisorTests(unittest.TestCase):
             supervisor.WATCHDOG_FAILURE_CODE,
         )
         self.assertLessEqual(child.call_args.kwargs["timeout"], 600)
+
+        finalized_partial = subprocess.CompletedProcess(
+            [], supervisor.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
+        )
+        with patch.object(
+            supervisor.subprocess,
+            "run",
+            return_value=finalized_partial,
+        ):
+            self.assertEqual(supervisor.finalize_checkpoint({
+                supervisor.ONEOFF_CONTINUATION_PROTOCOL_ENV: "1",
+            }), 2)
 
     def test_failed_finalizer_writes_bounded_nonempty_outputs(self):
         with tempfile.TemporaryDirectory() as directory:

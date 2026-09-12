@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.346. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.346 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.347. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.347 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
 
 ## Baggrund
 
@@ -108,6 +108,14 @@ Alle eksisterende arkiv-, storage-, checkpoint-, privacy-, readback-, dataintegr
 DEC-0128 retter den systemiske wrapperfejl, hvor alle påståede DMI-passager delte én deadline, og hvor producentens sikre exit-kode 2 ved ufuldstændig strict-current-ledger stoppede før rotationen kunne gavne en ny passage. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse derfor alene til exact-release `4.0.346`. Et ældre handoff må ikke ommærkes eller bruges; cutover kræver et komplet, succesfuldt og runbundet handoff fra samme eksakte 4.0.346-main-head.
 
 Alle eksisterende archive-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Hver ny DMI-passage får en selvstændig 3.000-sekunders producentgrænse, men wrapperen fortsætter kun efter en snævert klassificeret lokal runtime-rest og stopper et tredje strict-current-runtimepass uden verificeret pair-fremgang. Den allerede eksisterende exit-0-downloadbudgetvej forbliver særskilt. Dette er ikke en generel retry eller godkendelse af løbende fuld cachetransport. Candidate G forbliver offentlig, indtil hele same-head-kæden og den integrerede model er positivt verificeret.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.347
+
+4.0.346 blev exact-head-valideret og merged som `e912ef9a`. Main-oneoff `34675040245` genbrugte sourceproofet uden en anden fuld kildegate og gemte både DMI-GRIB og kandidatprogression, men startede kun pass 1. Den afsluttende rapport havde den forventede DKSS-runtime/currentrest samt et samtidigt checkpointet HARMONIE-runtime-stop, som DEC-0128's for snævre wrapperallowlist behandlede som veto.
+
+DEC-0129 indfører først et særskilt opt-in terminalbevis efter fuld producentfinalisering. Derefter må alene den eksakte indre HARMONIE-runtime med `partialProgressPreserved:true` eller den eksakte ydre tre-feltsform være en tilladt ledsagefejl, når alle eksisterende DKSS-/ledger-/same-target-/slutcache-/frisk-fremgangskrav allerede er opfyldt. HARMONIE kan ikke selv åbne et pass; watchdoghistorik, download, WAM og alle andre fejl forbliver blokerende. Under ejerens stående autorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.347`. Et 4.0.346-handoff kan ikke ommærkes eller bruges; den næste oneoff må genbruge, genvalidere og videreføre de bevarede cacher uden nulstilling.
+
+Alle størrelse-, archive-, storage-, checkpoint-, integritets-, privacy-, readback-, closure-, release-, deployment- og kadencegrænser består. Current kræver fortsat 79.414/79.414, bølger 79.060 native WAM plus Feggesund 354/354, og Candidate G forbliver offentlig indtil positiv same-head-cutover og offentlig modelkontrol.
 
 ## Konsekvenser
 

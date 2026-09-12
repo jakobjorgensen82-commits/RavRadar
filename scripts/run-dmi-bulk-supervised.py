@@ -24,6 +24,8 @@ LEGACY_ASSET_END = re.compile(
 )
 WATCHDOG_FAILURE_CODE = "HARMONIE_ASSET_WATCHDOG_TIMEOUT"
 WATCHDOG_LIMIT_CODE = "ASSET_PROCESSING_WATCHDOG_LIMIT"
+ONEOFF_CONTINUATION_PROTOCOL_ENV = "DMI_BULK_ONEOFF_CONTINUATION_PROTOCOL"
+ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE = 75
 ASSET_MARKER_FIELDS = {
     "collection", "modelRun", "validTime", "itemId", "assetIdentitySha256",
     "assetRevisionSha256",
@@ -182,7 +184,11 @@ def finalize_checkpoint(
     except subprocess.TimeoutExpired:
         write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
         return 2
-    return int(completed.returncode)
+    return (
+        2
+        if int(completed.returncode) == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
+        else int(completed.returncode)
+    )
 
 
 def main() -> int:
@@ -229,6 +235,12 @@ def main() -> int:
             watchdog_seconds=min(timeout, max(60, remaining)),
         )
         if not result.watchdog_timed_out:
+            if result.returncode == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE:
+                if (
+                    environment.get(ONEOFF_CONTINUATION_PROTOCOL_ENV) != "1"
+                    or skipped_assets
+                ):
+                    return 2
             return result.returncode
         if (
             result.timed_out_asset is None

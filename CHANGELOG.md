@@ -1,3 +1,11 @@
+## 4.0.347 – terminalbevist DMI-fortsættelse og frisk Pages-write (2026-09-12, lokal kandidat)
+
+- Main-oneoff `34675040245` genbrugte sourceproofet uden dobbelt kildegate og gemte alle providerfremskridt, men 4.0.346 startede kun DMI-pass 1. Open-Meteo sluttede med 42 provider-negative par efter 21 isolerede genforsøg; der var intet handoff eller cutover.
+- En intern opt-in-terminalkode adskiller nu forventet, fuldt finaliseret DMI-partial fra generisk exit 2. Post-cache-exception, finalize-only og tidligere watchdoghistorik kan derfor ikke åbne næste pass.
+- DKSS/HARMONIE-runtime klassificeres efter eksakte beskeder og feltformer; downloadbudget, WAM og ukendte fejl stopper. Kun dette kalds færdigbehandlede assets tæller som fremgang, og pass 3 kræver fortsat voksende DMI-pardækning.
+- Pages genkontrollerer target+117h-horisonten både før begin-CAS og umiddelbart før deployment, med eksisterende reconciliation ved fejl efter begin. De bløde 90/150/240-minuttersgrænser er fortsat kun advarsler.
+- Kilde-, grid-, afstands-, score- og closurekrav er uændrede. Én exact-head PR-sourcegate kan genbruges på byteidentisk main; fulde post-data-gates kan ikke. Se `CHANGELOG-4.0.347.md` og DEC-0129.
+
 ## 4.0.346 – reelle bounded DMI-multipass (2026-09-12, lokal kandidat)
 
 - 4.0.345-sourceproof blev live genbrugt uden dobbelt kildegate, men oneoff `34667430392` stoppede sikkert med 184 gennemprøvede Open-Meteo-null/grid-rester og intet handoff/cutover.

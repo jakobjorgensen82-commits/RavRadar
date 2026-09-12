@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-12 – lokal 4.0.346 efter 4.0.345-mainbevis
+# NYESTE SANDHED – 2026-09-12 – lokal 4.0.347 måltestet efter negativ oneoff
+
+Main er `e912ef9a`/4.0.346 efter grøn PR #280-sourcegate. Oneoff `34675040245` genbrugte exact-content-proofet uden dobbelt kildegate og gemte alle providerfaser, men blev ikke komplet. DMI nåede 66.998/79.414 i kun pass 1. Open-Meteo modtog 2.212 restpar, løste 2.170 og efterlod 42 provider-negative par på 21 kystdele efter isolerede genforsøg; ingen runtime-, attempt- eller køgrænse forklarede dem. Slutgaten fejlede, så der findes intet handoff/cutoverbevis, og Candidate G er fortsat offentlig.
+
+Lokal 4.0.347 har nu en snæver terminalprotokol: kun opt-in exit 75 efter fuld normal finalisering kan åbne cacheklassifikation; generic exit 2, exception, finalize-only og watchdoghistorik kan ikke. DKSS-runtime skal findes; HARMONIE må kun ledsage som eksakt ydre tre-feltsstop eller indre bevaret stop, og download/WAM/ukendt fejl blokerer. Frisk per-invocation-assettæller erstatter historiske runmetadata. Pages håndhæver target+117h før begin-CAS og igen umiddelbart før deployment; bløde aldersgrænser er fortsat advarsler.
+
+Wrapper 15/15, supervisor 12/12, checkpoint 32/32, compile, modeldownload, freshness og workflowkontrakt er grønne lokalt. Dette er ikke CI eller runtimebevis. Næste sekvens er dokument-/versionslukning, én exact-head PR-sourcegate, merge, ny oneoff på genvaliderede cacher og kun ved 79.414 current + 79.060 native WAM + 354 Feggesund et same-head-handoff og kontrolleret cutover. Fuld post-data validate/releasegate og offentlig modelkontrol består; normaldriftskapacitet skal bevises efter launch. Se DEC-0129.
+
+# HISTORISK SANDHED – 2026-09-12 – 4.0.346 main, 4.0.347 under revision
+
+PR #280/sourcegate `34673860241` er grøn; main er `e912ef9a`/4.0.346. Oneoff `34675040245` genbrugte exact-content-proofet og gemte GRIB-/DMI-kandidat-/regionalprogression. DMI nåede ét pass og 66.998/79.414 direkte par; NSBS og HARMONIE sluttede begge med bevaret runtime-stop. WAM-inspektion var grøn, og Copernicus var fortsat aktiv ved sidste kontrol. Dette er ikke et samlet slutresultat eller cutoverbevis.
+
+Lokal ucommitted 4.0.347 er ikke releaseklar. Det afsluttede Astra/Ultra-review beviser yderligere terminalkode-, watchdoghistorik-, runtimeklassifikations- og fremgangstællerkanter samt manglende udløbskontrol ved Pages-write. Se [review og konkret Sol-arbejdsplan](../../ai/ASTRA_HELICOPTER_REVIEW_2026-09-12.md). Den første HARMONIE-patch skal revideres; tomme genkendte parametre må ikke beskrives som nul planlagt arbejde. Rotation bruger hele registeret, og cutover fastholder oneoffens target; normaldriftskapacitet er fortsat ubevist. Ældre sandhedsafsnit nedenfor er historik.
+
+# HISTORISK SANDHED – 2026-09-12 – lokal 4.0.346 efter 4.0.345-mainbevis
 
 Main er `64d2f23f` / 4.0.345. PR #279's exact head `47275529` bestod hele sourcegaten i run `34666410182`; det SHA-256-bundne sourceproof blev live genbrugt i oneoff `34667430392`, så den samme fulde kildegate ikke blev kørt igen. Produktionsworkflowet er fortsat manuelt deaktiveret, og den gamle jobløse køpost `34613079069` er fortsat inert. Candidate G er offentlig; integreret cutover er ikke sket.
 
