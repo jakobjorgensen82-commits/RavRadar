@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Bounded continuation of the existing DMI producer, for the one-off job only.
 
-Each completed pass finalizes and prunes using the existing producer. Neither
-the 4-GiB raw cache ceiling nor the shared 50-minute deadline is increased.
+Each completed pass finalizes and prunes using the existing producer. Every
+pass keeps the producer's 50-minute bound and 4-GiB raw-cache ceiling; the
+one-off wrapper may spend at most three passes when a finalized report proves
+either download-limited progress or strict-current runtime-limited progress.
 """
 from __future__ import annotations
 
@@ -24,6 +26,14 @@ CACHE = Path(os.getenv(
 MAX_PASSES = 3
 GIB = 1024 ** 3
 COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf", "harmonie_dini_sf", "wam_dw", "wam_nsb"}
+MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
+PASS_RUNTIME_SECONDS = 3000
+MIN_FREE_BYTES = 5 * GIB
+CURRENT_RUNTIME_LEDGER_CODES = {
+    "LOCALLY_SKIPPED_DKSS_ASSET",
+    "RETAINED_CURRENT_PART_TIME",
+    "SYSTEMIC_CURRENT_TIME_COLLAPSE",
+}
 DOWNLOAD_MESSAGES = {
     "DMI bulk download budget would be exceeded",
     "DMI bulk download budget exceeded before next asset",
@@ -35,8 +45,24 @@ def summarize_progress(document: dict, reference: str) -> dict:
     """Return only counters/booleans from the finalized private cache."""
     diagnostics = document["diagnostics"]
     ledger = diagnostics["currentOperationalLedger"]
-    if ledger.get("productionReferenceAt") != reference or ledger.get("ready") is not True:
+    if ledger.get("productionReferenceAt") != reference or type(ledger.get("ready")) is not bool:
         raise ValueError("ONEOFF_REFERENCE_OR_READINESS_INVALID")
+    ready = ledger["ready"]
+    failure_codes = ledger.get("failureCodes")
+    attestation = ledger.get("attestation")
+    counts = [ledger.get("targetCount"), ledger.get("hourCount")]
+    if (
+        not isinstance(failure_codes, list)
+        or any(not isinstance(code, str) for code in failure_codes)
+        or not isinstance(attestation, dict)
+        or type(attestation.get("verifiedPairCount")) is not int
+        or any(type(value) is not int or value <= 0 for value in counts)
+    ):
+        raise ValueError("ONEOFF_REPORT_INVALID")
+    verified_pairs = attestation["verifiedPairCount"]
+    required_pairs = counts[0] * counts[1]
+    if verified_pairs < 0 or verified_pairs > required_pairs:
+        raise ValueError("ONEOFF_REPORT_INVALID")
     errors = diagnostics.get("errors")
     if not isinstance(errors, list):
         raise ValueError("ONEOFF_REPORT_INVALID")
@@ -46,18 +72,69 @@ def summarize_progress(document: dict, reference: str) -> dict:
         and row.get("partialProgressPreserved") is True
         for row in errors
     )
+    ledger_code_set = set(failure_codes)
+
+    def safe_runtime_error(row: object) -> bool:
+        if not isinstance(row, dict):
+            return False
+        collection = row.get("collection")
+        if collection == "dmi-current-ledger-gate":
+            codes = row.get("failureCodes")
+            return (
+                isinstance(codes, list)
+                and all(isinstance(code, str) for code in codes)
+                and set(codes) == ledger_code_set
+            )
+        return bool(
+            collection in MARINE_COLLECTIONS
+            and row.get("failureCode") == "RUNTIME_BUDGET_REACHED"
+            and row.get("partialProgressPreserved") is not False
+        )
+
+    strict_current_runtime_limited = bool(
+        not ready
+        and "LOCALLY_SKIPPED_DKSS_ASSET" in ledger_code_set
+        and ledger_code_set <= CURRENT_RUNTIME_LEDGER_CODES
+        and errors
+        and all(safe_runtime_error(row) for row in errors)
+        and any(
+            isinstance(row, dict)
+            and row.get("collection") in MARINE_COLLECTIONS
+            and row.get("failureCode") == "RUNTIME_BUDGET_REACHED"
+            for row in errors
+        )
+    )
     attempted = diagnostics.get("collectionsAttempted")
     if not isinstance(attempted, list) or not set(attempted) <= COLLECTIONS:
         raise ValueError("ONEOFF_REPORT_INVALID")
-    processed = [document["runs"][collection]["assetsProcessed"] for collection in attempted]
+    processed = []
+    runs = document.get("runs")
+    if not isinstance(runs, dict):
+        raise ValueError("ONEOFF_REPORT_INVALID")
+    for collection in attempted:
+        run = runs.get(collection)
+        if not isinstance(run, dict):
+            raise ValueError("ONEOFF_REPORT_INVALID")
+        processed.append(run.get("assetsProcessed"))
     raw = diagnostics["rawCache"]
     numeric = [*processed, raw["after"]["bytes"], raw["maxBytes"]]
     if any(type(value) is not int or value < 0 for value in numeric):
         raise ValueError("ONEOFF_REPORT_INVALID")
     if raw["maxBytes"] != 4 * GIB or raw["after"]["bytes"] > 4 * GIB:
         raise ValueError("ONEOFF_CACHE_CEILING_NOT_RESTORED")
-    return {"onlyDownloadStops": only_download_stops,
-            "processedAssets": sum(processed)}
+    continuation_reason = None
+    if ready and only_download_stops:
+        continuation_reason = "download-budget"
+    elif strict_current_runtime_limited:
+        continuation_reason = "strict-current-runtime"
+    return {
+        "continuationReason": continuation_reason,
+        "currentReady": ready,
+        "onlyDownloadStops": only_download_stops,
+        "processedAssets": sum(processed),
+        "requiredPairCount": required_pairs,
+        "verifiedPairCount": verified_pairs,
+    }
 
 
 def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
@@ -69,25 +146,52 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
     parsed = datetime.fromisoformat(reference.replace("Z", "+00:00"))
     if parsed.tzinfo is None or parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:00:00Z") != reference:
         raise ValueError("ONEOFF_REFERENCE_INVALID")
-    deadline = clock() + 3000
+    _ = clock  # Dependency retained for deterministic callers; child bounds are authoritative.
     last_code = 2
+    previous_runtime_verified_pairs = None
     for pass_number in range(1, MAX_PASSES + 1):
-        remaining = int(deadline - clock())
-        if remaining < 300:
-            log(f"DMI one-off continuation stopped: SHARED_TIME_RESERVE; completedPasses={pass_number - 1}.")
-            return last_code
-        if free_bytes() < 5 * GIB:
+        if free_bytes() < MIN_FREE_BYTES:
             log(f"DMI one-off continuation stopped: DISK_RESERVE; completedPasses={pass_number - 1}.")
             return last_code
-        child_environment = dict(environment, DMI_BULK_MAX_RUNTIME_SECONDS=str(remaining))
-        log(f"DMI one-off pass {pass_number}/{MAX_PASSES}; remainingSeconds={remaining}; downloadLimitGiB=4; rawCacheLimitGiB=4.")
+        child_environment = dict(
+            environment,
+            DMI_BULK_MAX_RUNTIME_SECONDS=str(PASS_RUNTIME_SECONDS),
+        )
+        log(
+            f"DMI one-off pass {pass_number}/{MAX_PASSES}; "
+            f"passRuntimeSeconds={PASS_RUNTIME_SECONDS}; "
+            "downloadLimitGiB=4; rawCacheLimitGiB=4."
+        )
         last_code = run_pass(child_environment)
-        if last_code != 0:
-            return last_code  # No automatic retries of producer/ledger failures.
-        summary = read_progress(reference)
-        if not summary["onlyDownloadStops"] or summary["processedAssets"] <= 0:
+        if last_code not in {0, 2}:
             return last_code
-        log(f"DMI one-off saved download-limited progress: pass={pass_number}; processedAssets={summary['processedAssets']}.")
+        summary = read_progress(reference)
+        reason = summary["continuationReason"]
+        expected_reason = (
+            "download-budget" if last_code == 0
+            else "strict-current-runtime"
+        )
+        if reason != expected_reason or summary["processedAssets"] <= 0:
+            return last_code
+        if reason == "strict-current-runtime":
+            verified_pairs = summary["verifiedPairCount"]
+            if (
+                previous_runtime_verified_pairs is not None
+                and verified_pairs <= previous_runtime_verified_pairs
+            ):
+                log(
+                    "DMI one-off continuation stopped: NO_VERIFIED_PAIR_GAIN; "
+                    f"completedPasses={pass_number}; "
+                    f"verifiedPairCount={verified_pairs}."
+                )
+                return last_code
+            previous_runtime_verified_pairs = verified_pairs
+        log(
+            "DMI one-off saved bounded progress: "
+            f"pass={pass_number}; reason={reason}; "
+            f"processedAssets={summary['processedAssets']}; "
+            f"verifiedPairCount={summary['verifiedPairCount']}."
+        )
     log("DMI one-off continuation stopped: PASS_LIMIT; completedPasses=3.")
     return last_code  # Existing final weather/closure gates still decide completeness.
 

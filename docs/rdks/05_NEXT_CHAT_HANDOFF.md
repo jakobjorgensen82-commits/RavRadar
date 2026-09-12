@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 DMI-multipass før ny main-oneoff
+
+- **Aktuel base:** `origin/main` er 4.0.345 på `64d2f23f`; arbejdsgrenen er `codex/4.0.346-dmi-multipass-closure`. Candidate G er offentlig. Normalproduktionen er disabled; `34613079069` er fortsat en inert queued/jobs[]-post.
+- **Positivt 4.0.345-bevis:** PR #279-head `47275529` bestod sourcegate `34666410182`; mergeindholdet var identisk. Oneoff `34667430392` genbrugte exact-content-proofet og sprang den dobbelte fulde kildegate over.
+- **Negativt runtimebevis:** Oneoffen brugte 1h41m38s og sluttede 79.230/79.414. De sidste 184 OM-par var alle forsøgt/singleton-genprøvet og provider-negative. Intet handoff, artifact, deploy eller cutover.
+- **DMI-fund:** Hele 79.414-registeret var planlagt. DMI nåede 64.400, lukkede WAM og betjente NSBS/IDW/LF, men wrapperen kørte kun én producentpassage. Exit 2 ved ufuldstændig ledger blev returneret før progressklassifikation, og den fælles 3.000-sekundersramme gav ingen reel ny passage.
+- **Lokal rettelse:** Højst tre separate 3.000-sekunders/4-GiB-pass; exit-2-fortsættelse kræver same-target, valid ny slutcache, allowlistet runtime-/lokal-skip-evidens og assetfremgang. Et tredje strict-current-runtimepass kræver højere `verifiedPairCount`; exit-0-downloadbudgetvejen er særskilt. DMI-step 160 minutter, job 330, mindst 60 minutter til resten. Normal drift/sourceorder/grids/gates er uændrede.
+- **Lokal test:** 12 wrappertests, workflowinventar, DMI-budgetrotation, Python compile og diff-check er grønne. RDKS og version 4.0.346 skal slutvalideres før commit.
+- **Næste handling:** Én exact-head PR-sourcegate; merge kun grøn exact head; derefter én main-oneoff på bevarede cacher og fulde closures/gates/handoff/cutover. Genaktivér ikke normal drift før offentlig modelverifikation.
+- **Model/indsats:** GPT-5.6 Sol, Indsats Ekstra høj til integration, CI/runtime og slutvalidering.
+
 # NYESTE CHECKPOINT – 2026-09-12 – færdiggør 4.0.345 og den kontrollerede model-launch
 
 - **Aktuel base:** `origin/main` er 4.0.344 på `f2cc2a77`; arbejdsgrenen er `codex/4.0.345-current-throughput-source-proof`. Candidate G er offentlig. Normalproduktionen er manuelt deaktiveret; gammel run `34613079069` er en inert køpost uden jobs og må ikke behandles som aktiv writer eller genstartes.

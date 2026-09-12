@@ -1,5 +1,13 @@
 # Afgrænset fortsættelse af engangsopfyldning
 
+## Tillæg 2026-09-12 – den fælles deadline var ikke en reel currentfortsættelse
+
+Main-oneoff `34667430392` på 4.0.345 viste, at wrapperens højst tre kald ikke kunne fortsætte en runtime-uafsluttet currentledger. Første producentpassage brugte sin normale 3.000-sekundersramme og returnerede korrekt exit 2, fordi officielle DKSS-assets stadig var lokalt ubehandlede. Wrapperen returnerede straks før den nye afsluttende progresscache blev klassificeret; selv en exit-0-downloadfortsættelse havde næsten ingen tid tilbage under den delte ramme.
+
+4.0.346 supersederer derfor alene tids-/exitforudsætningen nedenfor. Oneoff kan bruge højst tre separate 3.000-sekunderspass, hvert med den samme 180-sekunders afslutningsreserve og 4-GiB download-/råcachegrænse. Exit 2 fortsættes kun efter same-target, ny valid slutcache, faktisk assetfremgang og udelukkende allowlistet lokal-current/runtimeevidens. Andre fejl stopper. Pass 3 kræver målbar verified-pair-gevinst fra pass 2, og under 5 GiB disk startes intet nyt pass. Workflowets ydre grænser er 160 minutter for DMI og 330 minutter samlet.
+
+Normal drift, DMI-producentens per-pass-plan, sourceorder, grids, afstande og fuld closure er uændrede. Dette er en faktisk continuation af den eksisterende vedvarende leadrotation, ikke længere ventetid i én proces og ikke et READY-løfte. Se DEC-0128.
+
 ## Tillæg 2026-09-05
 
 Run `33918250039` viste en anden fejlklasse end downloadbudget: ét HARMONIE-asset hang over 52 minutter i ecCodes, til GitHub dræbte DMI-trinnet efter 55 minutter. Derfor går oneoff-wrapperens producentkald nu gennem den samme bounded supervisor som normal drift. Downloadbudgetfortsættelsens højst tre passeringer, fælles deadline, 4-GiB-grænser og øvrige adgangskrav er uændrede. Se `DMI_HARMONIE_ASSET_WATCHDOG_2026-09-05.md`.

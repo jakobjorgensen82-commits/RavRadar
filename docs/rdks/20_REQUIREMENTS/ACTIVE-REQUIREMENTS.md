@@ -1,5 +1,14 @@
 # Aktive krav – samlet register
 
+# 4.0.346 – reelle bounded DMI-multipass efter verificeret fremgang
+
+- **REQ-4.0.346-RUNTIME-CLASSIFICATION-001 – BINDENDE P0:** En DMI-producent-exit 2 må kun åbne et nyt oneoff-pass, når en ny same-target-slutcache er strukturelt valid, råcacheloftet er genoprettet, mindst ét asset er behandlet, og eneste operative fejl er allowlistet lokal DKSS-skip/systemisk rest sammen med faktisk runtimebudget. Alle andre fejl stopper.
+- **REQ-4.0.346-MULTIPASS-PROGRESS-001 – BINDENDE P0:** Oneoff må bruge højst tre separate 3.000-sekunders pass med 180 sekunders slutreserve og 4-GiB download-/råcachegrænser pr. pass. Før et tredje strict-current-runtimepass skal det foregående runtimebegrænsede pass have øget verificeret DMI-parantal; nul/regression stopper. Den særskilte exit-0-downloadbudgetfortsættelse bevarer sin eksisterende snævre klassifikation. Under 5 GiB disk starter intet nyt pass.
+- **REQ-4.0.346-JOB-BUDGET-001 – BINDENDE:** Oneoffens DMI-trin må bruge højst 160 minutter og hele jobbet 330 minutter, så højst tre pass, 57 minutters Copernicus, 17 minutters øvrig provider-runtime og mindst 60 minutters setup/cache/closure/gates kan rummes. Normal drift og kadence ændres ikke.
+- **REQ-4.0.346-NO-QUALITY-LOOSENING-001 – BINDENDE:** 184-restens null/grid-svar må ikke medføre ændret `cell_selection`, afstandsgrænse, interpolation, neighbor loan, historiksyntese eller svækket closure uden særskilt ejerbeslutning og nyt bevis. DMI → Copernicus → Open-Meteo og 79.414/79.414 består.
+- **REQ-4.0.346-SOURCE-GATE-001 – BINDENDE:** 4.0.346 kræver én ny exact-head PR-sourcegate. Byteidentisk merged main må genbruge den efter DEC-0127; fuld post-data validate/releasegate består. Kildegaten må ikke køres to gange alene fordi commit-SHA ændres ved merge.
+- **REQ-4.0.346-CUTOVER-001 – BINDENDE P0:** DEC-0122's materielt uændrede first-cutover-undtagelse følger alene exact release 4.0.346. Current 79.414, native WAM 79.060, Feggesund 354, freshness, full gates, handoff og offentlig modelproof er ufravigelige.
+
 # 4.0.345 – varige Copernicus-segmenter og exact-content kildebevis
 
 - **REQ-COPERNICUS-DURABLE-SEGMENT-001 – BINDENDE P0:** Hvert komplet providersegment skal før videre arbejde gemmes som atomisk, fsync'et og readback-hashet receipt bundet til eksakt donorbase, produktionstime og targetregister. Positive rows kræver fuld acquisition/record-validering; nulresultat gemmer kun immutable attempt og må ikke opfinde native tid.

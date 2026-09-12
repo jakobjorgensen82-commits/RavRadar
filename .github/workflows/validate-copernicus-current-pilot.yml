@@ -514,10 +514,11 @@ jobs:
   operational-118-preflight:
     if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true
     runs-on: ubuntu-latest
-    # 55m DMI + 57m Copernicus + 17m runtime + at least 60m for
-    # setup, cache restore/save and closure. Acquisition soft deadlines remain
-    # below their step limits so progress can be saved before terminal gates.
-    timeout-minutes: 200
+    # Up to 160m DMI + 57m Copernicus + 17m runtime + at least 60m for
+    # setup, cache restore/save and closure. Every DMI pass and the other
+    # acquisition soft deadlines remain below their step limits so progress can
+    # be saved before terminal gates.
+    timeout-minutes: 330
     env:
       RAVRADAR_PRIVATE_PREFLIGHT_REPORT: .geometry-v2-work/ravscore-integrated-118h-preflight.json
     steps:
@@ -658,7 +659,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.345 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.346 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         id: ravscore-wave-bootstrap-target
@@ -854,7 +855,7 @@ jobs:
       - name: Refresh all bounded official DMI collections for the proof
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: 55
+        timeout-minutes: 160
         run: python -u scripts/run-dmi-oneoff-fill.py
         env:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
@@ -884,7 +885,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.345 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.346 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -1290,7 +1291,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.345 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.346 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
@@ -1335,7 +1336,7 @@ jobs:
           and $report.incrementalGate.fullCutoverCapacityEvaluated == false
           and $report.firstCutoverException.decisionId
             == "DEC-0122-OWNER-APPROVAL-2026-09-09"
-          and $report.firstCutoverException.releaseVersion == "4.0.345"
+          and $report.firstCutoverException.releaseVersion == "4.0.346"
           and $report.firstCutoverException.scope
             == "ONE_EXACT_VERIFIED_FIRST_CUTOVER"
           and $report.firstCutoverException.status
@@ -1487,7 +1488,7 @@ jobs:
             cutoverGate,
             controls
           }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
-          echo "The owner-approved 4.0.345 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
+          echo "The owner-approved 4.0.346 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-12 – 4.0.346 fra reel DMI-multipass til model-online
+
+- [x] Luk 4.0.345 exact-head-sourcegate, merge og exact-content proofgenbrug uden dobbelt fuld gate.
+- [x] Rekonstruér oneoff `34667430392` gennem targetplan, DMI/WAM, Copernicus, regional, Open-Meteo og closure; klassificér 184 som forsøgte provider-negative par.
+- [x] Find oneoff-wrapperens falske multipass: exit 2 og fælles 3.000-sekundersramme forhindrede næste roterede DMI-passage.
+- [x] Implementér højst tre selvstændigt bounded DMI-pass med exact slutrapport, allowlistet runtimefejl, disk-/cacheværn og pargevinst før et tredje strict-current-runtimepass; bevar exit-0-downloadbudgetvejen særskilt.
+- [x] Versionér 4.0.346 og synkronisér DEC-0128, krav, issues, changelog, checkpoints og begge håndbøger; geodata må kun ændre topversionsfelt.
+- [ ] Bestå én exact-head PR-sourcegate for 4.0.346 og merge kun den eksakte grønne head.
+- [ ] Kør én kontrolleret main-oneoff på bevarede cacher; verificér reelle roterede DMI-pass og kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354 samt freshness.
+- [ ] Kræv fuld post-data validate/releasegate, runbundet handoff, artifact/deploy og integreret cutover; verificér desktop/mobil offentligt.
+- [ ] Håndtér den inerte køpost sikkert, genaktivér normal drift kontrolleret efter launch og mål cachetransport, providerforbrug og tidsoverskud. Optimer CP-konsolidering kun på ny relevant evidens.
+
 # NYESTE ROADMAP – 2026-09-12 – 4.0.345 fra målte flaskehalse til model-online
 
 - [x] Rekonstruér main `34635781802` og oneoff `34642214559`; adskil DMI-plan/rotation, CP-throughput, OM provider-negative svar og fuld closure.

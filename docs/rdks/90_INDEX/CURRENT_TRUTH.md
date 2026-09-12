@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-12 – lokal 4.0.346 efter 4.0.345-mainbevis
+
+Main er `64d2f23f` / 4.0.345. PR #279's exact head `47275529` bestod hele sourcegaten i run `34666410182`; det SHA-256-bundne sourceproof blev live genbrugt i oneoff `34667430392`, så den samme fulde kildegate ikke blev kørt igen. Produktionsworkflowet er fortsat manuelt deaktiveret, og den gamle jobløse køpost `34613079069` er fortsat inert. Candidate G er offentlig; integreret cutover er ikke sket.
+
+Oneoff `34667430392` kørte 1h41m38s og stoppede fail-closed før handoff, artifact eller deploy. DMI planlagde alle 673 × 118 = 79.414 par og nåede 64.400. Faktisk samlingsrækkefølge var NSBS-lead, begge WAM-familier, IDW og LF; startede assets var 1/5/5/21/29, og WAM opnåede native closure. DMI-resten var 15.014, heraf 1.126 spatialt utilgængelige og 3.365 upstream-fraværende. Resten skyldtes især officielle assets, som den lokale 50-minutters passage ikke nåede.
+
+Copernicus gennemførte 73 forsøg på 39m25s. Durable journalwrites var millisekundsmå, mens tolv fulde konsolideringer fortsat kostede cirka 66 sekunder hver; det gamle 31-gange-fuld-checkpointmønster er brudt, men konsolidering/candidate-admission er stadig et målepunkt. Før Copernicus var den validerede union 76.653; efter Copernicus var 3.396 par tilbage. Regionalleddet dækkede 928, og Open-Meteo fik 2.468 eksakte restpar. Det løste 2.284 og efterlod 184 provider-negative par. Alle 184 blev forsøgt og isoleret genprøvet; der var intet runtime-, attempt- eller købudgetstop. Null/grid-resultaterne er kildespecifikt upstream-fravær, ikke uattempted par og ikke tilladelse til launch med huller. Resten faldt fra 1.033 til 184, men closure er fortsat negativ.
+
+Helkædeauditen fandt en selvstændig oneoff-fejl: `run-dmi-oneoff-fill.py` lovede højst tre pass, men alle delte én 3.000-sekundersramme, og wrapperen returnerede straks ved producentens korrekte exit 2 for en ufuldstændig currentledger. Derfor kunne en sikkert checkpointet runtime-uafsluttet passage aldrig udløse den næste roterede DMI-passage.
+
+Lokal 4.0.346 giver højst tre reelle, separate 3.000-sekunders DMI-pass. Hvert beholder 180 sekunders slutreserve, 4-GiB download-/råcacheloft og 5-GiB diskreserve. Exit 2 fortsættes kun efter same-target, ny validerbar slutcache, faktisk assetfremgang og en allowlistet kombination af lokal DKSS-skip samt runtimebudget. Andre fejl stopper. Et tredje strict-current-runtimepass kræver, at det foregående runtimebegrænsede pass øgede `verifiedPairCount`; exit-0-downloadbudgetvejen er særskilt. Oneoff-jobbet har 160 minutter til DMI og 330 minutter samlet; normal drift, producentalgoritme, kildeorden, grids, afstande, score og closure er uændrede.
+
+Næste bindende sekvens er målrettet review/validering, én exact-head PR-sourcegate for 4.0.346, merge, derefter én kontrolleret main-oneoff på bevarede cacher. Kun current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fulde post-data-gates og runbundet handoff kan åbne integreret cutover. Se DEC-0128. En ekstern prøve af et andet Open-Meteo-gridvalg er ikke autoriseret og indgår ikke i rettelsen.
+
 # NYESTE SANDHED – 2026-09-12 – lokal 4.0.345 efter negative main-/oneoff-beviser
 
 Main er `f2cc2a77` / 4.0.344 efter grøn PR #278-sourcegate. Det gamle produktionsworkflow er manuelt deaktiveret, og run `34613079069` er en inert queued/jobs[]-post, ikke en aktiv writer. Candidate G er fortsat offentlig; ingen 4.0.344-kørsel producerede handoff, artifact, deploy eller integreret cutover.

@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.346 reelle DMI-multipass
+
+Ejeren fastholdt autonomt arbejde, helikopterperspektiv og komplette data før den integrerede scoremodel. 4.0.345 er nu sourcegate-valideret og merged: PR #279-head `47275529`, run `34666410182`, merge `64d2f23f`. Oneoff `34667430392` beviste, at exact-content sourceproof fjernede den dobbelte fulde kildegate i virkelig main-drift.
+
+Vejrresultatet var fortsat negativt og blev ikke udgivet. DMI planlagde hele 79.414-registeret, opnåede 64.400 currentpar og lukkede begge WAM-familier. Den faktiske rækkefølge NSBS→WAM DW→WAM NSB→IDW→LF startede 1/5/5/21/29 assets. Copernicus gennemførte 73 forsøg på 39m25s; journalmønsteret virkede, men fulde konsolideringer er fortsat målbare. Regional dækkede 928, Open-Meteo løste 2.284 af 2.468 og efterlod 184 gennemprøvede provider-negative null/grid-par. Slutgaten stoppede før handoff/deploy/cutover.
+
+Helkædeanalysen fandt, at oneoffens højst tre DMI-pass kun var nominelle. Alle delte én 3.000-sekundersramme, og wrapperen returnerede producentens korrekte exit 2 for ufuldstændig ledger før læsning af den sikkert afsluttede progresscache. Derfor kunne runtimebegrænset current aldrig få en ny roteret passage.
+
+Lokal 4.0.346 giver højst tre separate 3.000-sekunderspass. Hvert bevarer 4-GiB download-/råcacheloft og slutreserve. Exit 2 kan kun fortsættes ved same-target, valid ny slutcache, allowlistet lokal-current/runtimefejl og faktisk assetfremgang. Et tredje strict-current-runtimepass kræver øget verificeret parantal; den eksisterende exit-0-downloadbudgetvej er særskilt. Ukendte/provider/parser/watchdog-/kontraktfejl stopper, og normal drift er uændret. Jobgrænsen er 330 minutter med 160 til DMI og mindst 60 minutters øvrig reserve.
+
+DEC-0128, 4.0.346-krav/issues/changelog og håndbøger synkroniseres. Næste sekvens er én exact-head PR-sourcegate, merge, kontrolleret main-oneoff, fulde current/WAM/Feggesund/freshness/post-data-gates og først derefter integreret modelcutover. Et andet Open-Meteo-gridvalg blev ikke autoriseret og er ikke implementeret.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – autonom 4.0.345 helkæderettelse
 
 Ejeren bad efter spontan computerrestart om at fortsætte autonomt, genskabe det tabte chatdelta, gå op i helikopteren ved fejlsøgning, inkludere fjernelse af dobbelt kildegate og først derefter få den nye scoremodel online. Arbejdet omfatter derfor central targetgeometri, DMI-plan/rotation, CP-sourceorder/admission/masks, OM, freshness/closure, provenance, RavScore/runtime og GitHub/deploy som én kæde. Ingen geometry-, fysik- eller scoreændring er autoriseret eller nødvendig i denne release.

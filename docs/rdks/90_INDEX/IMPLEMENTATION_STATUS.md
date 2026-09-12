@@ -1,3 +1,22 @@
+# Lokal implementeringsstatus – 4.0.346 reelle DMI-multipass
+
+Main `64d2f23f` er 4.0.345. Exact-head-sourcegate `34666410182` var grøn, PR #279 blev merged, og oneoff `34667430392` beviste exact-content sourceproof-genbrug uden dobbelt fuld kildegate. Kørslens vejrfase var negativ og udgav intet: current sluttede 79.230/79.414 med 184 provider-negative Open-Meteo-par; WAM-inspektionen var grøn, men closure stoppede før handoff/cutover.
+
+- [x] Rekonstruér hele 4.0.345-oneoffen: DMI-plan/rotation, WAM, Copernicus, regional, Open-Meteo, sourceproof, closure og deployisolering.
+- [x] Bevis at DMI planlagde hele 79.414-registeret og faktisk nåede alle tre DKSS-familier; WAM sluttede native komplet.
+- [x] Bevis at alle sidste 184 OM-par var forsøgt/singleton-genprøvet og provider-negative uden runtime-/attempt-/købudgetstop.
+- [x] Afgræns wrapperfejlen: exit 2 ved sikkert runtime-uafsluttet current stoppede før progressklassifikation, og den fælles 3.000-sekundersramme gav ingen reel anden passage.
+- [x] Implementér højst tre særskilte 3.000-sekunders DMI-pass med same-target-/slutcache-/allowlist-/asset-/råcache-/diskværn.
+- [x] Kræv verificeret DMI-pargevinst før et tredje strict-current-runtimepass; stop andre exit-2-fejl og nulgevinst fail-closed, mens den særskilte exit-0-downloadbudgetvej består.
+- [x] Udvid kun den isolerede oneoff til 160 minutters DMI/330 minutter samlet med mindst 60 minutters øvrig reserve; normal workflowalgoritme og kadence er uændret.
+- [x] Bestå wrapperens 12 syntetiske tests, workflowinventaret, exact-content/én-kildegate-kontrakten, private-runtime/handoff, DMI-budgetrotation, RavScore-binding/modelbundle/cutover-readiness, RDKS, begge håndbøger, releaseversion, Python compile og diff-check.
+- [ ] Bestå én exact-head 4.0.346-PR-sourcegate, merge den eksakte head og genbrug kun proof ved identisk main-indhold.
+- [ ] Kør én kontrolleret main-oneoff på bevarede cacher; kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354 og freshness.
+- [ ] Kræv fuld post-data validate/releasegate, handoff, integreret cutover og offentlig desktop/mobil/modelverifikation.
+- [ ] Genaktivér normal drift kontrolleret efter launch og mål tids-/cache-/providerbæredygtighed. Den inerte køpost skal fortsat håndteres sikkert.
+
+Geometri, land-/vandpunkter, sourceorder, gridvalg, afstande, strøm-/bølgefysik, scoreformel, modelbundles og databaseskema/migrationer er uændrede. Installations-SQL'ens indlejrede håndbogskopi følger den opdaterede webhåndbog. Geodata må kun have topversionsfelt 4.0.345 → 4.0.346. DEC-0128 er bindende.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-12 – lokal 4.0.345 throughput og sourceproof
 
 - [x] Rekonstruér 4.0.344 main-/oneoff-forløbet efter computerens spontane genstart; bevar alle tracked filer og private cacher.

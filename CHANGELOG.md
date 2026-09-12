@@ -1,3 +1,10 @@
+## 4.0.346 – reelle bounded DMI-multipass (2026-09-12, lokal kandidat)
+
+- 4.0.345-sourceproof blev live genbrugt uden dobbelt kildegate, men oneoff `34667430392` stoppede sikkert med 184 gennemprøvede Open-Meteo-null/grid-rester og intet handoff/cutover.
+- Helkædeaudit viste, at DMI roterede hele 79.414-registeret, men at oneoff-wrapperen aldrig kunne starte pass 2 efter en runtime-uafsluttet ledger: producentens korrekte exit 2 blev returneret før den gemte fremgang blev klassificeret, og alle pass delte én 3.000-sekundersramme.
+- Oneoff kan nu bruge højst tre særskilte 3.000-sekunders/4-GiB-pass. Exit-2-fortsættelse kræver exact target, valideret slutcache, kun allowlistet runtime-/lokal-skip-evidens og faktisk fremgang; et tredje strict-current-runtimepass kræver vækst i verificerede DMI-par.
+- Normal drift, kilder, grids, afstande, score, geometri og fuld closure er uændrede. Se `CHANGELOG-4.0.346.md` og DEC-0128.
+
 ## 4.0.345 – varige Copernicus-segmenter og én exact-content kildegate (2026-09-12, lokal kandidat)
 
 - Hvert afsluttet Copernicus-segment fsync'es/readback-hashes nu straks mod eksakt donorbase/reference/targets; seks receipts konsolideres gennem uændret strict bank→shadow→stage, og restart replayes uden at journalen selv kan autorisere data.
