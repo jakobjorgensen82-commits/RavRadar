@@ -24,7 +24,22 @@ const full = {
   coastalParts: {
     expectedPartCount: 3,
     scoredPartCount: 3,
-    parts: { 'DK-A-P1': {}, 'DK-B-P1': {}, 'DK-B-P2': {} },
+    parts: {
+      'DK-A-P1': {},
+      'DK-B-P1': {
+        ravScoreModel: {
+          currentMemoryStatus: 'LATEST_SAMPLE_MISSING',
+          currentTransition: 'UNVERIFIED_MISSING',
+          privateSentinel: 'PRIVATE_SENTINEL',
+        },
+      },
+      'DK-B-P2': {
+        ravScoreModel: {
+          currentMemoryStatus: 'WINDOW_INCOMPLETE',
+          currentTransition: 'VERIFIED_REPLAY',
+        },
+      },
+    },
     zones: {
       'DK-A': { hourly: [{ time: at, waders: { available: true }, beach: { available: true } }] },
       'DK-B': {
@@ -68,8 +83,18 @@ assert.deepEqual(report.failures.zones, [{
   modes: ['beach', 'waders'],
   partFailureCount: 2,
   partFailures: [
-    { partId: 'DK-B-P1', codes: ['CURRENT_DIRECT_INPUT_NOT_READY'] },
-    { partId: 'DK-B-P2', codes: ['WAVE_PHYSICAL_INPUT_NOT_READY'] },
+    {
+      partId: 'DK-B-P1',
+      codes: ['CURRENT_DIRECT_INPUT_NOT_READY'],
+      currentMemoryStatus: 'LATEST_SAMPLE_MISSING',
+      currentTransition: 'UNVERIFIED_MISSING',
+    },
+    {
+      partId: 'DK-B-P2',
+      codes: ['WAVE_PHYSICAL_INPUT_NOT_READY'],
+      currentMemoryStatus: 'WINDOW_INCOMPLETE',
+      currentTransition: 'VERIFIED_REPLAY',
+    },
   ],
 }]);
 const serialized = JSON.stringify(report);

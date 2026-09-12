@@ -1,3 +1,23 @@
+# Aktuel implementeringsstatus – lokal 4.0.350 scoreinput og samlet cutoverkontrol
+
+- [x] Merge PR #284 som main `512f889d` efter exact-head-kildegate og bounded fejlrapport.
+- [x] Klassificér cache-only-run `34706453561`: current fortsat 79.414/79.414 uden providerhentning; 659 dele × to modes med vindinputfejl og 14 dele × to modes med currentinput ikke klar.
+- [x] Ret fælles vindadapter fra hardcodet `wind` til strengt deklareret og verificeret `wind|windTail`; tilføj faktisk DKSS-regression og mislabeled negativ test.
+- [x] Før eksakte closure-bundne regionale præ-H0-kildereferencer fra live-current ind i privat scoring/recovery; valider cache/proof/grid/lag/U/V/hash og kanonisk `(validTime, partId)`.
+- [x] Indfør fælles lokal `UNAVAILABLE`/`score=null` for berørt del, mode og time; hold resten af 210/673-strukturen aktiv og udelad utilgængelige dele fra rangering.
+- [x] Bind samme availability til conditions, manifest, public audit, Pages, browserdataservice, admin og ture; afvis mismatch og bind nødruntime til valgt reference.
+- [x] Adskil direkte inputmangel fra `HISTORY_INCOMPLETE`, også når begge findes i samme zone, og afvis falsk fuld modelhukommelse.
+- [x] Implementér ejerens femleddede cutoverkontrol: kør alle fem, saml kun trinresultater, stop før writes ved fejl og fortsæt automatisk ved fem grønne.
+- [x] Bevar almindelige vejrjobs og én exact-head-sourcegate; ingen lokal dobbelt fuld sourcegate.
+- [x] Regenerér Candidate G-rollback før integrated bundle, synkronisér continuation og alle otte forbrugere, og tilføj append-only migration 12 uden at ændre migration 11.
+- [x] Bestå korte måltests for vind, current, state, generator, local availability, Pages, admin, ture, cutoverrapport, workflowrækkefølge, migrationskæde og bundles.
+- [x] Versionér/synkronisér 4.0.350, bestå de tunge public-runtime-/auditregressioner og afsluttende RDKS-/diffkontrol.
+- [ ] Bestå én exact-head GitHub-sourcegate, merge byteidentisk og anvend/readback-verificér migration 12.
+- [ ] Kør samme cache-only main-cutover. Fem grønne kontroller skal fortsætte automatisk; ellers ret den samlede fejlrapport i én omgang uden provider-oneoff.
+- [ ] Verificér integreret model offentligt på 210/673. Genaktivér derefter normal vedligeholdelse og bevis kommende vind/current, DMI-rotation, cachetransport og tidsoverskud.
+
+Candidate G er stadig offentlig, og 4.0.350 er endnu kun lokal. De seks ikke-regionale H0-currentdele er et åbent runtimebevis, ikke en kodeantagelse. DEC-0132 er aktiv.
+
 # Aktuel implementeringsstatus – 4.0.349 main og samlet cutover-fejlrapport
 
 - [x] Bestå 4.0.348 exact-head-CI, merge byteidentisk som `c86cc2a0`, genbrug sourceproof uden dobbelt kildegate i backendrun `34697586057`, anvend alene 4.0.348-bindingen og bestå readback.

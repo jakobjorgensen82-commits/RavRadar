@@ -17,6 +17,7 @@ import {
 } from './lib/live-current-pilot.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import { buildRavScoreRecoveryReplay } from './lib/ravscore-recovery-replay.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 import {
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
@@ -272,6 +273,24 @@ const live = {
   credentialsIncluded: false, targetFingerprint: TARGET_REGISTRY_SHA,
   operationalClosure: safeClosure, copernicusRangeSeal: null, entries, advisoryEntries: [],
 };
+const regionalReferenceSeed = regionalEntry({
+  validTime: SOURCE_TIME,
+  sourceValidTime: SOURCE_TIME,
+  classification: 'REGIONAL_DMI_NATIVE',
+});
+const {
+  closureAssignmentSha256: _discardedReferenceAssignment,
+  ...regionalReferenceBody
+} = regionalReferenceSeed;
+const regionalReferenceEntry = {
+  referenceContractId: 'regional-dmi-private-native-cadence-reference-v1',
+  ...regionalReferenceBody,
+  authorizedHoldAssignmentSha256s: [heldEntry.closureAssignmentSha256],
+};
+const liveWithRegionalReference = {
+  ...live,
+  regionalReferenceEntries: [regionalReferenceEntry],
+};
 
 const liveWithSourceStageDisposition = (status, boundedProgressAccepted) => {
   const operationalClosure = {
@@ -286,6 +305,52 @@ const liveWithSourceStageDisposition = (status, boundedProgressAccepted) => {
 
 assert.equal(controlledLiveCurrentEnabled(live), true,
   'missing past model fields must not block operational readiness');
+assert.equal(controlledLiveCurrentEnabled(liveWithRegionalReference), true,
+  'an exact private regional source reference must preserve operational readiness');
+assert.equal(
+  latestVerifiedNativeCadenceSampleForPart(regionalPart, live, SOURCE_TIME),
+  null,
+  'a legacy document without the private source row must not reconstruct it from hashes',
+);
+const exactPrivateReference = latestVerifiedNativeCadenceSampleForPart(
+  regionalPart,
+  liveWithRegionalReference,
+  SOURCE_TIME,
+);
+assert.equal(exactPrivateReference.time, new Date(SOURCE_TIME).toISOString());
+assert.equal(exactPrivateReference.currentVerified, true);
+const privateRecoveryMerge = mergeLiveCurrentPilotIntoRecord(
+  { hourly: [] },
+  regionalPart,
+  liveWithRegionalReference,
+  { includePrivateNativeCadenceReferences: true },
+);
+assert.equal(privateRecoveryMerge.hourly.length, 1);
+assert.equal(privateRecoveryMerge.hourly[0].time, SOURCE_TIME);
+assert.equal(privateRecoveryMerge.hourly[0].currentUMps, 0.12345);
+assert.equal(privateRecoveryMerge.hourly[0].currentVMps, -0.23456);
+const sanitizedPrivateRecovery = verifiedIntegratedPartHourly(
+  privateRecoveryMerge,
+  { zones: {} },
+  'PART::FIXTURE-REGIONAL',
+  regionalPart,
+);
+assert.equal(
+  mergeLiveCurrentPilotIntoRecord({ hourly: [] }, regionalPart, liveWithRegionalReference)
+    .hourly.length,
+  0,
+  'the private boundary row must be added only to causal recovery, never public forecast rows',
+);
+const tamperedRegionalReference = structuredClone(liveWithRegionalReference);
+tamperedRegionalReference.regionalReferenceEntries[0].uMps += 0.01;
+assert.equal(controlledLiveCurrentEnabled(tamperedRegionalReference), false,
+  'a changed private regional vector must invalidate the controlled document');
+const unboundRegionalReference = structuredClone(liveWithRegionalReference);
+unboundRegionalReference.regionalReferenceEntries[0].authorizedHoldAssignmentSha256s = [
+  sha256({ unbound: true }),
+];
+assert.equal(controlledLiveCurrentEnabled(unboundRegionalReference), false,
+  'a private regional source row must remain bound to its exact closure hold assignment');
 assert.equal(
   controlledLiveCurrentEnabled(liveWithSourceStageDisposition('IN_PROGRESS', true)),
   true,
@@ -450,6 +515,30 @@ const sanitizedRegional = verifiedIntegratedPartHourly(
   'PART::FIXTURE-REGIONAL',
   regionalPart,
 );
+const coldHoldRecovery = buildRavScoreRecoveryReplay({
+  part: regionalPart,
+  initialState: null,
+  targetReferenceAt: REFERENCE,
+  sourceRecords: [{
+    source: 'private-regional-boundary-reference',
+    record: { point: regionalPart.waterPoint, hourly: sanitizedPrivateRecovery },
+  }],
+  publicHourly: [sanitizedRegional[0]],
+  nativeCadenceHoldHours: 3,
+});
+const coldHoldState = buildIntegratedPartScoreSeries({
+  part: regionalPart,
+  zone: { id: regionalPart.zoneId, onshoreDirectionDeg: regionalPart.onshoreDirectionDeg },
+  hourly: coldHoldRecovery.hourly,
+  initialState: null,
+  nativeCadenceHoldHours: 3,
+  coldReplayBootstrap: coldHoldRecovery.coldStartHistoryLineage,
+  scoreStartAt: coldHoldRecovery.scoreStartAt,
+});
+assert.equal(coldHoldState.ravScoreState.rows.at(-1).time, new Date(REFERENCE).toISOString());
+assert.equal(coldHoldState.ravScoreState.rows.at(-1).currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(coldHoldState.ravScoreState.rows.at(-1).currentDirectInputAvailable, true,
+  'a cold production replay must accept H0 hold only after seeing its exact private source row');
 assert.equal(sanitizedRegional[0].currentProvenance.status, 'unverified');
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.validTime, REFERENCE);
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.sourceValidTime, SOURCE_TIME);

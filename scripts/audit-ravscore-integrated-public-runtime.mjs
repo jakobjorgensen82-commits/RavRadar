@@ -8,6 +8,7 @@ import {
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
+import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { buildIntegratedRavScoreStateSeries }
   from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -40,6 +41,8 @@ import {
 import {
   RAVSCORE_PUBLIC_DETAILS_KIND,
   RAVSCORE_PUBLIC_STARTUP_KIND,
+  assertIntegratedPublicScoreAvailability,
+  assertIntegratedPublicScoreResult,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   canonicalPublicRuntimeJson,
@@ -49,6 +52,9 @@ import {
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
+import {
+  buildIntegratedZoneHourlyProjection,
+} from './lib/ravscore-production-adapters.mjs';
 import {
   compactIntegratedRavScoreMode,
   integratedInputCalibrationEligible,
@@ -182,6 +188,24 @@ const INTEGRATED_READY_MODE_FIELDS = Object.freeze([
   'diagnostics',
   'explanation',
   'confidence',
+]);
+const INTEGRATED_UNAVAILABLE_MODE_FIELDS = Object.freeze([
+  'available',
+  'score',
+  'scoreQuality',
+  'calibrationEligible',
+  'scoreSemantics',
+  'conservativeTailResetApplied',
+  'scoreBounds',
+  'historyCoverageHours',
+  'historyReasonCodes',
+  'modelVersion',
+  'modelId',
+  'modelContractSha256',
+  'modelBundleSha256',
+  'modelBinding',
+  'reason',
+  'readiness',
 ]);
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -717,10 +741,21 @@ function addPublicPackageChecks({
     collector.add(Array.isArray(days) && days.length === 5,
       'PUBLIC_FIVE_DAY_MODE_CONTRACT_INVALID');
     for (const day of Array.isArray(days) ? days : []) {
+      const eligibleZoneIds = Object.keys(full?.coastalParts?.zones ?? {})
+        .filter(zoneId => selectLocalBestForDay({
+          coastalParts: full.coastalParts,
+          zoneId,
+          mode,
+          date: day?.date,
+          now: 0,
+        }))
+        .sort();
+      const eligibleZoneIdSet = new Set(eligibleZoneIds);
       collector.add(dates?.includes(day?.date)
         && Array.isArray(day?.rows)
-        && day.rows.length === Math.min(5, expectedZoneCount)
-        && new Set(day.rows.map(row => row?.zoneId)).size === day.rows.length,
+        && day.rows.length === Math.min(5, eligibleZoneIds.length)
+        && new Set(day.rows.map(row => row?.zoneId)).size === day.rows.length
+        && day.rows.every(row => eligibleZoneIdSet.has(row?.zoneId)),
       'PUBLIC_FIVE_DAY_RANKING_CONTRACT_INVALID');
     }
   }
@@ -852,9 +887,6 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   'INTEGRATED_ACTIVATION_POLICY_MISMATCH');
   collector.add(profile?.memoryReferenceScope === RAVSCORE_MEMORY_REFERENCE_SCOPE,
     'MEMORY_REFERENCE_SCOPE_MISMATCH');
-  const profileCoverageAndMigrationReady = profile?.modelCoverageReady === true
-    && profile?.modelMigrationReady === true;
-
   // Candidate G has exactly one private root. A READY runtime is the strict
   // manual rollback source. A measured warmup is continuation-only and can
   // never be treated as a rollback companion or activation proof.
@@ -984,17 +1016,16 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       : 'CANDIDATE_G_WARMUP_PART_COVERAGE_MISMATCH');
 
   const availability = coastal?.scoreAvailability;
-  const availabilityBaseReady = availability?.schemaVersion === 2
-    && availability?.policy === 'integrated-model-local-fail-closed'
-    && availability?.allZonesActive === true
-    && safeNonNegativeInteger(availability?.activeZoneCount)
-    && availability.activeZoneCount === expectedZoneCount
-    && safeNonNegativeInteger(availability?.unavailableZoneCount)
-    && availability.unavailableZoneCount === 0
-    && safeNonNegativeInteger(availability?.totalZoneCount)
-    && availability.totalZoneCount === expectedZoneCount
-    && Array.isArray(availability?.unavailableZones)
-    && availability.unavailableZones.length === 0;
+  let availabilityBaseReady = false;
+  try {
+    availabilityBaseReady = assertIntegratedPublicScoreAvailability(availability, {
+      zoneIds: zones.map(([zoneId]) => zoneId),
+      zones: coastal?.zones,
+      label: 'integrated public runtime availability',
+    });
+  } catch {
+    availabilityBaseReady = false;
+  }
   collector.add(availabilityBaseReady, 'PUBLIC_CURRENT_AVAILABILITY_INCOMPLETE');
   const declaredHistoryIncompleteZones = Array.isArray(availability?.historyIncompleteZones)
     ? availability.historyIncompleteZones : [];
@@ -1015,6 +1046,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   let unavailableZoneModeCount = 0;
   let currentFullHistoryModeCount = 0;
   let currentHistoryIncompleteModeCount = 0;
+  let currentUnavailableModeCount = 0;
   const expectedHistoryIncompleteZones = [];
   const currentRowsByZone = new Map();
   const publicReferenceMs = Date.parse(full?.productionReferenceAt ?? '');
@@ -1036,36 +1068,36 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     const current = hourly.find(row => row?.time === zone.currentReferenceAt);
     collector.add(Boolean(current), 'ZONE_CURRENT_ROW_MISSING');
     if (current) currentRowsByZone.set(zoneId, current);
-    const usableDatesByMode = Object.fromEntries(MODES.map(mode => [mode, new Set()]));
+    const contractDatesByMode = Object.fromEntries(MODES.map(mode => [mode, new Set()]));
     for (const row of hourly) {
       collector.add(validTime(row?.time), 'ZONE_SCORE_TIME_INVALID');
       for (const mode of MODES) {
         zoneModeCount += 1;
         let consistent = false;
         try {
-          consistent = publicModeFormulaIsConsistent(mode, row?.[mode]);
+          consistent = assertIntegratedPublicScoreResult(
+            row?.[mode],
+            `integrated public zone ${zoneId} ${row?.time ?? 'invalid-time'} ${mode}`,
+          ) && publicModeFormulaIsConsistent(mode, row?.[mode]);
         } catch {
           consistent = false;
         }
         collector.add(consistent, 'PUBLIC_ZONE_MODE_CONTRACT_INVALID');
         if (row?.[mode]?.available !== true) unavailableZoneModeCount += 1;
-        else usableDatesByMode[mode].add(String(row?.time ?? '').slice(0, 10));
+        if (consistent) contractDatesByMode[mode].add(String(row?.time ?? '').slice(0, 10));
       }
     }
-    collector.add(MODES.every(mode => usableDatesByMode[mode].size >= 5),
+    collector.add(MODES.every(mode => contractDatesByMode[mode].size >= 5),
       'ZONE_FIVE_DAY_MODE_COVERAGE_INCOMPLETE');
-    collector.add(hourly.every(row => MODES.every(mode => row?.[mode]?.available === true
-      && finite(row?.[mode]?.score))),
-    'ZONE_PUBLIC_FORECAST_MODE_UNAVAILABLE');
-    collector.add(MODES.every(mode => current?.[mode]?.available === true
-      && finite(current?.[mode]?.score)),
-    'ZONE_CURRENT_MODE_UNAVAILABLE');
     const historyIncompleteModes = [];
     const historyCoverageHours = [];
     const historyReasonCodes = new Set();
     for (const mode of MODES) {
       const result = current?.[mode];
-      if (result?.available !== true || !finite(result.score)) continue;
+      if (result?.available !== true || !finite(result.score)) {
+        currentUnavailableModeCount += 1;
+        continue;
+      }
       if (result.scoreQuality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY) {
         currentFullHistoryModeCount += 1;
       } else if (result.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE) {
@@ -1084,8 +1116,6 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       });
     }
   }
-  collector.add(unavailableZoneModeCount === 0,
-    'PUBLIC_FORECAST_CONTAINS_UNAVAILABLE_ZONE_MODES');
   const normalizedDeclaredHistoryIncompleteZones = declaredHistoryIncompleteZones
     .map(zone => ({
       zoneId: zone.zoneId,
@@ -1104,24 +1134,43 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     && availability.historyIncompleteModeCount === currentHistoryIncompleteModeCount
     && availability.historyIncompleteZoneCount === expectedHistoryIncompleteZones.length
     && availability.allCurrentScoresFullHistory
-      === (currentHistoryIncompleteModeCount === 0)
+      === (currentHistoryIncompleteModeCount === 0 && currentUnavailableModeCount === 0)
     && currentFullHistoryModeCount + currentHistoryIncompleteModeCount
-      === expectedZoneCount * MODES.length
+      + currentUnavailableModeCount === expectedZoneCount * MODES.length
     && sameCanonical(
       normalizedDeclaredHistoryIncompleteZones,
       normalizedExpectedHistoryIncompleteZones,
     );
   collector.add(currentHistoryQualitySummaryReady,
     'PUBLIC_CURRENT_HISTORY_QUALITY_INVALID');
-  const fullHistoryProfileReady = profile?.modelMemoryReady === true
+  const fullHistoryProfileReady = profile?.modelCoverageReady === true
+    && profile?.modelMemoryReady === true
     && currentHistoryQualitySummaryReady
-    && currentHistoryIncompleteModeCount === 0;
-  const historyIncompleteProfileReady = profile?.modelMemoryReady === false
+    && currentHistoryIncompleteModeCount === 0
+    && currentUnavailableModeCount === 0;
+  const historyIncompleteProfileReady = profile?.modelCoverageReady === true
+    && profile?.modelMemoryReady === false
     && currentHistoryQualitySummaryReady
     && currentHistoryIncompleteModeCount > 0
+    && currentUnavailableModeCount === 0
     && expectedHistoryIncompleteZones.length > 0;
-  collector.add(profileCoverageAndMigrationReady
-    && (fullHistoryProfileReady || historyIncompleteProfileReady),
+  const localUnavailableProfileReady = profile?.modelCoverageReady === false
+    && currentHistoryQualitySummaryReady
+    && currentUnavailableModeCount > 0
+    && profile?.modelMemoryReady === (currentHistoryIncompleteModeCount === 0)
+    && Array.isArray(profile?.advisories)
+    && profile.advisories.includes('LOCAL_MODEL_COVERAGE_INCOMPLETE');
+  const expectedProfileAdvisories = [
+    ...(profile?.modelCoverageReady === false ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
+    ...(profile?.modelMemoryReady === false ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
+    ...(profile?.modelMigrationReady === false
+      ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
+  ];
+  collector.add(profile?.modelMigrationReady === true
+    && sameCanonical(profile?.advisories, expectedProfileAdvisories)
+    && (fullHistoryProfileReady
+      || historyIncompleteProfileReady
+      || localUnavailableProfileReady),
   'PUBLIC_PROFILE_NOT_READY');
 
   let reconstructedModeCount = 0;
@@ -1146,6 +1195,8 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     const persistedHistoryIncomplete = persistedModesHaveExactQuality
       && MODES.some(mode =>
         model?.modes?.[mode]?.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+    const persistedUnavailable = persistedModesHaveExactQuality
+      && MODES.some(mode => model?.modes?.[mode]?.available === false);
     collector.add(Boolean(zone), 'PART_ZONE_MISSING');
     collector.add(part?.current?.time === zone?.currentReferenceAt,
       'PART_ZONE_REFERENCE_MISMATCH');
@@ -1166,13 +1217,15 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && model?.referenceAt === state?.time
       && model?.currentReferenceAt === state?.currentReferenceAt,
     'PART_STATE_REFERENCE_MISMATCH');
-    collector.add((model?.currentMemoryReady === true || persistedHistoryIncomplete)
+    collector.add((model?.currentMemoryReady === true
+        || persistedHistoryIncomplete || persistedUnavailable)
       && model?.currentMemoryReady === state?.currentMemoryReady
       && model?.currentMemoryStatus === state?.currentMemoryStatus
       && model?.currentMemoryCoverageHours === state?.currentMemoryCoverageHours
       && model?.currentMemoryWindowHours === state?.currentMemoryWindowHours,
     'PART_CURRENT_STATE_METADATA_MISMATCH');
-    collector.add((model?.waveMemoryReady === true || persistedHistoryIncomplete)
+    collector.add((model?.waveMemoryReady === true
+        || persistedHistoryIncomplete || persistedUnavailable)
       && model?.waveMemoryReady === state?.waveMemoryReady
       && model?.waveMemoryStatus === state?.waveMemoryStatus
       && model?.waveLastVerifiedAt === state?.waveLastVerifiedAt,
@@ -1185,7 +1238,8 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         part?.current?.weather ?? {},
         model?.modes?.waders,
       );
-      collector.add((model?.lastMileMemoryReady === true || persistedHistoryIncomplete)
+      collector.add((model?.lastMileMemoryReady === true
+          || persistedHistoryIncomplete || persistedUnavailable)
         && model?.lastMileMemoryReady === state?.waveApproachState?.readiness
         && model?.lastMileMemoryStatus === state?.waveApproachState?.status
         && model?.lastMileWaveReferenceAt === state?.waveApproachState?.waveReferenceAt,
@@ -1244,17 +1298,19 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     }
     collector.add(state?.samplingContextKey === expectedSamplingContextKey,
       'STATE_SAMPLING_CONTEXT_MISMATCH');
-    collector.add((state?.currentMemoryReady === true || persistedHistoryIncomplete)
+    collector.add(persistedUnavailable || ((state?.currentMemoryReady === true
+        || persistedHistoryIncomplete)
       && finite(state?.supplyPotential)
       && state.supplyPotential >= 0
-      && state.supplyPotential <= 100,
+      && state.supplyPotential <= 100),
     'STATE_CURRENT_MEMORY_NOT_READY');
-    collector.add((state?.waveMemoryReady === true || persistedHistoryIncomplete)
+    collector.add(persistedUnavailable || ((state?.waveMemoryReady === true
+        || persistedHistoryIncomplete)
       && (RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(state?.waveMemoryStatus)
         || persistedHistoryIncomplete)
       && finite(state?.mobilisationPotential)
       && state.mobilisationPotential >= 0
-      && state.mobilisationPotential <= 100,
+      && state.mobilisationPotential <= 100),
     'STATE_WAVE_MEMORY_NOT_READY');
     const migrationLineage = sameKeys(state?.lineage, [
       'currentEvidenceSource',
@@ -1404,7 +1460,12 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       const persisted = model?.modes?.[mode];
       collector.add(!containsForbiddenPublicDestinationMaterial(persisted),
         'PART_MODE_CONTAINS_PRIVATE_MATERIAL');
-      collector.add(sameKeys(persisted, INTEGRATED_READY_MODE_FIELDS),
+      collector.add(sameKeys(
+        persisted,
+        persisted?.available === false
+          ? INTEGRATED_UNAVAILABLE_MODE_FIELDS
+          : INTEGRATED_READY_MODE_FIELDS,
+      ),
         'PART_MODE_FIELD_SET_MISMATCH');
       try {
         const expected = compactIntegratedRavScoreMode(evaluateRavScoreIntegrated({
@@ -1421,7 +1482,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       }
       let publicModeConsistent = false;
       try {
-        publicModeConsistent = publicModeFormulaIsConsistent(mode, part?.current?.[mode]);
+        publicModeConsistent = assertIntegratedPublicScoreResult(
+          part?.current?.[mode],
+          `integrated public part ${partId} ${mode}`,
+        ) && publicModeFormulaIsConsistent(mode, part?.current?.[mode]);
       } catch {
         publicModeConsistent = false;
       }
@@ -1437,7 +1501,9 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         && sameCanonical(
           part?.current?.[mode]?.historyReasonCodes,
           persisted?.historyReasonCodes,
-        ),
+        )
+        && (persisted?.available === true
+          || part?.current?.[mode]?.unavailability?.code === persisted?.reason),
         'PUBLIC_PART_MODE_SCORE_MISMATCH');
     }
 
@@ -1457,7 +1523,29 @@ export function auditIntegratedRavScorePublicRuntime(full, {
 
   for (const [zoneId, current] of currentRowsByZone) {
     const zoneParts = parts.filter(([, part]) => part?.zoneId === zoneId);
+    let expectedCurrent = null;
+    try {
+      expectedCurrent = buildIntegratedZoneHourlyProjection({
+        rows: zoneParts.map(([partId, part]) => ({
+          partId,
+          name: part?.name,
+          scores: [part?.current],
+        })),
+        expectedPartCount: partCountByZone.get(zoneId) ?? 0,
+        selectedMode: (scoreRow, mode) => scoreRow?.[mode],
+      })[0] ?? null;
+    } catch {
+      expectedCurrent = null;
+    }
     for (const mode of MODES) {
+      if (current?.[mode]?.available === false) {
+        const exactProjection = expectedCurrent !== null
+          && sameCanonical(current[mode], expectedCurrent?.[mode]);
+        collector.add(exactProjection, 'ZONE_CURRENT_WINNER_RECONSTRUCTION_MISMATCH');
+        collector.add(exactProjection, 'ZONE_CURRENT_COVERAGE_CLASSIFICATION_MISMATCH');
+        collector.add(exactProjection, 'ZONE_CURRENT_QUALITY_RECONSTRUCTION_MISMATCH');
+        continue;
+      }
       const available = zoneParts.map(([partId, part]) => ({
         partId,
         name: part?.name,
@@ -1613,9 +1701,11 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     history: {
       allCurrentScoresFullHistory:
         currentFullHistoryModeCount === expectedZoneCount * MODES.length
-          && currentHistoryIncompleteModeCount === 0,
+          && currentHistoryIncompleteModeCount === 0
+          && currentUnavailableModeCount === 0,
       currentFullHistoryModeCount,
       currentHistoryIncompleteModeCount,
+      currentUnavailableModeCount,
     },
     rollback: {
       status: rollbackDescriptorPresent

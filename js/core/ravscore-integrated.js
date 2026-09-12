@@ -399,6 +399,11 @@ export function evaluateRavScoreIntegrated(
   }
   const historyScoreView = canonicalHistoryScoreView(state);
   if (historyScoreView === null) {
+    if (state?.historyScoreView?.quality === RAVSCORE_SCORE_QUALITY.UNAVAILABLE
+      && Array.isArray(state.historyScoreView.reasonCodes)
+      && state.historyScoreView.reasonCodes.includes('CURRENT_HISTORY_STATE_INVALID')) {
+      return unavailable('CURRENT_HISTORY_STATE_INVALID', state);
+    }
     if (state?.historyScoreView === undefined
       && (state?.currentMemoryReady !== true
         || !RAVSCORE_MODEL_CONTRACT.currentSupply.readyStatuses

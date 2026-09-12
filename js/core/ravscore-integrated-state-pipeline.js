@@ -2055,7 +2055,11 @@ export function buildIntegratedRavScoreStateSeries(
       currentMemoryCoverageHours: current.coverageHours,
       currentTransition: current.transition,
       currentVerified: current.currentVerified,
-      currentDirectInputAvailable: current.scoreBounds.available === true,
+      // Direct input and historical score state are separate facts.  A real
+      // H0 vector/hold may be present even when the retained 48-hour state is
+      // invalid; do not misreport that case as a missing current input.
+      currentDirectInputAvailable: current.currentVerified === true
+        || current.transition === 'NATIVE_CADENCE_HOLD',
       currentReferenceProvenance: current.currentNativeHoldAuthorization === null
         ? null
         : {

@@ -112,6 +112,9 @@ assert not builder.regional_sample_time_valid({
 regional = builder.regional_entries(
     regional_cache, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
 )
+regional_references = builder.regional_reference_entries(
+    regional_cache, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
+)
 assert len(regional) == 1
 assert regional[0]["validTime"] == REFERENCE_TEXT
 assert regional[0]["sourceValidTime"] == SOURCE_TEXT
@@ -126,6 +129,19 @@ for forbidden in (
     "arrowSource",
 ):
     assert forbidden not in regional[0], f"Regional state-only hold leaked {forbidden}"
+assert len(regional_references) == 1
+assert regional_references[0]["referenceContractId"] == (
+    "regional-dmi-private-native-cadence-reference-v1"
+)
+assert regional_references[0]["validTime"] == SOURCE_TEXT
+assert regional_references[0]["sourceValidTime"] == SOURCE_TEXT
+assert regional_references[0]["classification"] == "REGIONAL_DMI_NATIVE"
+assert regional_references[0]["uMps"] == u_value
+assert regional_references[0]["vMps"] == v_value
+assert regional_references[0]["vectorCommitmentSha256"] == assignment["vectorCommitmentSha256"]
+assert regional_references[0]["authorizedHoldAssignmentSha256s"] == [
+    assignment["assignmentSha256"]
+]
 
 poisoned = json.loads(json.dumps(regional_cache))
 poisoned["anchors"][f"REGIONAL_PROXY::{PART_ID}"]["samples"][0]["layers"]["bottom"]["uMps"] += 0.01
@@ -135,6 +151,14 @@ except RuntimeError as error:
     assert str(error) == "REGIONAL_CLOSURE_VECTOR_INVALID"
 else:
     raise AssertionError("Regional vector tamper must fail closed")
+try:
+    builder.regional_reference_entries(
+        poisoned, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
+    )
+except RuntimeError as error:
+    assert str(error) == "REGIONAL_CLOSURE_VECTOR_INVALID"
+else:
+    raise AssertionError("Regional reference vector tamper must fail closed")
 
 # Closure-selected operational and past model-field advisory records remain separate,
 # including the READY-stage path with no OPERATIONAL_COMPLETE collection.

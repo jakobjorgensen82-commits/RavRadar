@@ -1403,7 +1403,7 @@ const positions = {
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  publicAudit: text.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  publicAudit: text.indexOf('name: Audit runtime and collect independent cutover validation failures'),
   checkpointDisposition: text.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
@@ -1745,7 +1745,7 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the eleven exact integrated cutover migrations',
+  'Require only the twelve exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1757,6 +1757,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260909194000_wam_same_run_resolution_binding.sql"',
   'test -f "$migrations_directory/20260912122607_measured_rollback_warmup_binding.sql"',
   'test -f "$migrations_directory/20260912141641_state_only_hold_closure_v2_binding.sql"',
+  'test -f "$migrations_directory/20260912194206_local_unavailable_cutover_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -2289,9 +2290,27 @@ for (const marker of [
   'id: ravscore-integrated-runtime-audit',
   "if: steps.preflight.outputs.should_run == 'true'",
   'audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
+  'if test "${{ steps.operational-action.outputs.action }}" = "integrated-cutover"; then',
+  'run_validation runtime_audit_outcome "Integrated public runtime audit"',
+  'run_validation state_reference_outcome "Strict production reference zones"',
+  'run_validation full_validation_outcome "Full hydrated project validation"',
+  'run_validation release_gate_outcome "Release governance gate"',
+  'run_validation data_validation_outcome "Updated weather data validation"',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
+  'node scripts/generate-state-reference-report-4.0.113.mjs --strict',
+  'npm run validate',
+  'npm run release:gate',
+  'npm run validate:data',
+  'node scripts/cutover-validation-report.mjs build',
+  '--step "runtime-audit|true|$runtime_audit_outcome"',
+  '--step "state-reference|true|$state_reference_outcome"',
+  '--step "full-validation|true|$full_validation_outcome"',
+  '--step "release-gate|true|$release_gate_outcome"',
+  '--step "data-validation|true|$data_validation_outcome"',
+  'if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then',
+  'exit 1',
   '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
   '.rollback.activationReady | select(type == "boolean")',
   '.history.allCurrentScoresFullHistory | select(type == "boolean")',
@@ -2305,6 +2324,16 @@ for (const marker of [
 }
 if (publicAuditBlock.includes('continue-on-error')) {
   throw new Error('Den faktiske integrerede public runtime-gate må ikke være vejledende.');
+}
+for (const block of [
+  text.slice(positions.reference, positions.validate),
+  text.slice(positions.validate, positions.gate),
+  text.slice(positions.gate, positions.validateData),
+  text.slice(positions.validateData, positions.deployFreshness),
+]) {
+  if (!block.includes("steps.operational-action.outputs.action != 'integrated-cutover'")) {
+    throw new Error('De fire normale efterkontroller må kun springes over, når cutover allerede har kørt dem i den samlede barriere.');
+  }
 }
 for (const forbidden of [
   'Inspect verified Candidate G continuation recovery',
@@ -3450,8 +3479,8 @@ for (const marker of [
 for (const marker of [
   'preflight_should_run: ${{ steps.preflight.outputs.should_run }}',
   'weather_outcome: ${{ steps.weather.outcome }}',
-  'full_validation_outcome: ${{ steps.full-validation.outcome }}',
-  'release_gate_outcome: ${{ steps.release-gate.outcome }}',
+  "full_validation_outcome: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.ravscore-integrated-runtime-audit.outputs.full_validation_outcome || steps.full-validation.outcome }}",
+  "release_gate_outcome: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.ravscore-integrated-runtime-audit.outputs.release_gate_outcome || steps.release-gate.outcome }}",
   'pages_build_outcome: ${{ steps.pages-build.outcome }}',
   'pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}',
   'handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}',

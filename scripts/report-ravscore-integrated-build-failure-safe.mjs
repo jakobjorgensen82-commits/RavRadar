@@ -26,6 +26,12 @@ function exactSafeCode(value) {
     : 'INTEGRATED_RAVSCORE_REASON_UNAVAILABLE';
 }
 
+function optionalSafeCode(value) {
+  return value === null || value === undefined
+    ? null
+    : exactSafeCode(value);
+}
+
 function safeCount(value) {
   return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
@@ -115,9 +121,16 @@ export function buildSafeIntegratedBuildFailureReport(full) {
         const code = exactSafeCode(row?.code);
         unavailablePartOccurrenceCount += 1;
         codeCounts.set(code, (codeCounts.get(code) ?? 0) + 1);
-        const codes = partCodes.get(partId) ?? new Set();
-        codes.add(code);
-        partCodes.set(partId, codes);
+        const existing = partCodes.get(partId) ?? {
+          codes: new Set(),
+          currentMemoryStatus: null,
+          currentTransition: null,
+        };
+        existing.codes.add(code);
+        const partModel = safeObject(parts[partId]?.ravScoreModel);
+        existing.currentMemoryStatus = optionalSafeCode(partModel.currentMemoryStatus);
+        existing.currentTransition = optionalSafeCode(partModel.currentTransition);
+        partCodes.set(partId, existing);
       }
       if (rows.length === 0) {
         const code = exactSafeCode(result?.unavailability?.code);
@@ -129,7 +142,12 @@ export function buildSafeIntegratedBuildFailureReport(full) {
       modes,
       partFailureCount: partCodes.size,
       partFailures: [...partCodes.entries()]
-        .map(([partId, codes]) => ({ partId, codes: [...codes].sort() }))
+        .map(([partId, detail]) => ({
+          partId,
+          codes: [...detail.codes].sort(),
+          currentMemoryStatus: detail.currentMemoryStatus,
+          currentTransition: detail.currentTransition,
+        }))
         .sort((left, right) => left.partId.localeCompare(right.partId)),
     };
   }).sort((left, right) => left.zoneId.localeCompare(right.zoneId));

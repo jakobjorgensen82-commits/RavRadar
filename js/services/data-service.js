@@ -1,10 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.349';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.350';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.349';
+} from '../core/ravscore-model-contract.js?v=4.0.350';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -12,6 +12,9 @@ import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
   RAVSCORE_PUBLIC_STARTUP_KIND,
   RAVSCORE_PUBLIC_ZONE_COUNT,
+  assertIntegratedPublicScoreAvailability,
+  assertIntegratedPublicScoreResult,
+  buildIntegratedPublicScoreAvailability,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   canonicalPublicRuntimeJson,
@@ -19,18 +22,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.349';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.350';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.349';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.350';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.349';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.350';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.349';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.350';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.349';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.350';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -225,6 +228,14 @@ function assertManifest(manifest) {
   });
   assertExactPublicRavScoreProfile(manifest.ravScoreProfile,
     manifest.ravScoreModelBinding, 'manifestets RavScore-scoreprofil');
+  if (manifest.ravScoreAvailability?.policy === 'integrated-model-local-fail-closed') {
+    assertIntegratedPublicScoreAvailability(manifest.ravScoreAvailability, {
+      label: 'Manifestets scoretilgængelighed',
+    });
+    if (manifest.ravScoreAvailability.totalZoneCount !== manifest.zoneCount) {
+      throw new Error('Manifestets scoretilgængelighed dækker ikke de samme 210 zoner.');
+    }
+  }
   const runtime = manifest.ravScoreRuntime;
   assertPublicRuntimeManifest(runtime, {
     modelBinding: manifest.ravScoreModelBinding,
@@ -494,6 +505,9 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
 }
 
 function assertScoreAvailabilityQuality(value, label) {
+  if (value?.policy === 'integrated-model-local-fail-closed') {
+    return assertIntegratedPublicScoreAvailability(value, { label });
+  }
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || typeof value.allCurrentScoresFullHistory !== 'boolean') {
     throw new Error(label + ' mangler sin historikkvalitetssummering.');
@@ -531,7 +545,6 @@ function assertStartupCoverage(document, manifest) {
     || scoreZoneIds.length !== RAVSCORE_PUBLIC_ZONE_COUNT
     || document?.coastalParts?.expectedPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
     || document?.coastalParts?.scoredPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
-    || document?.coastalParts?.scoreAvailability?.allZonesActive !== true
     || weatherZoneIds.some(zoneId => !Object.hasOwn(document.coastalParts.zones, zoneId))) {
     throw new Error('Startpakken er ikke den komplette manifestbundne 210/673-pakke.');
   }
@@ -539,6 +552,19 @@ function assertStartupCoverage(document, manifest) {
     document.coastalParts.scoreAvailability,
     'Startpakkens scoretilgængelighed',
   );
+  if (document.coastalParts.scoreAvailability?.policy
+      === 'integrated-model-local-fail-closed') {
+    assertIntegratedPublicScoreAvailability(document.coastalParts.scoreAvailability, {
+      zoneIds: scoreZoneIds,
+      label: 'Startpakkens scoretilgængelighed',
+    });
+    if (canonicalPublicRuntimeJson(document.coastalParts.scoreAvailability)
+        !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
+      throw new Error('Startpakken og manifestet har forskellig scoretilgængelighed.');
+    }
+  } else if (document.coastalParts.scoreAvailability?.allZonesActive !== true) {
+    throw new Error('Startpakkens ældre scoremodel har en utilgængelig zone.');
+  }
   for (const zoneId of scoreZoneIds) {
     const rows = document.coastalParts.zones[zoneId]?.hourly;
     if (!Array.isArray(rows) || rows.length !== 1) {
@@ -546,9 +572,15 @@ function assertStartupCoverage(document, manifest) {
     }
     for (const mode of ['waders', 'beach']) {
       const score = rows[0]?.[mode];
-      if (score?.available !== true
-        || typeof score.score !== 'number'
-        || !Number.isFinite(score.score)) {
+      if (document.coastalParts.scoreAvailability?.policy
+          === 'integrated-model-local-fail-closed') {
+        if (!score || (score.available === true
+          ? typeof score.score !== 'number' || !Number.isFinite(score.score)
+          : score.available !== false || score.score !== null)) {
+          throw new Error('Startpakkens aktuelle score har ikke en gyldig lokal availability-status.');
+        }
+      } else if (score?.available !== true
+        || typeof score.score !== 'number' || !Number.isFinite(score.score)) {
         throw new Error('Startpakkens aktuelle score er ikke numerisk tilgængelig.');
       }
       assertPublicScoreQuality(score, 'Startpakkens aktuelle score');
@@ -588,7 +620,6 @@ function assertDetailedCoverage(document, manifest) {
     || partIds.length !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
     || coastalParts?.expectedPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
     || coastalParts?.scoredPartCount !== RAVSCORE_PUBLIC_COASTAL_PART_COUNT
-    || coastalParts?.scoreAvailability?.allZonesActive !== true
     || weatherZoneIds.some(zoneId => !Object.hasOwn(scoreZones, zoneId))) {
     throw new Error('Detaljepakken er ikke den komplette manifestbundne 210/673-pakke.');
   }
@@ -596,6 +627,19 @@ function assertDetailedCoverage(document, manifest) {
     coastalParts.scoreAvailability,
     'Detaljepakkens scoretilgængelighed',
   );
+  if (coastalParts.scoreAvailability?.policy === 'integrated-model-local-fail-closed') {
+    assertIntegratedPublicScoreAvailability(coastalParts.scoreAvailability, {
+      zoneIds: scoreZoneIds,
+      zones: scoreZones,
+      label: 'Detaljepakkens scoretilgængelighed',
+    });
+    if (canonicalPublicRuntimeJson(coastalParts.scoreAvailability)
+        !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
+      throw new Error('Detaljepakken og manifestet har forskellig scoretilgængelighed.');
+    }
+  } else if (coastalParts.scoreAvailability?.allZonesActive !== true) {
+    throw new Error('Detaljepakkens ældre scoremodel har en utilgængelig zone.');
+  }
   let expectedPartCount = 0;
   let scoredPartCount = 0;
   for (const zoneId of weatherZoneIds) {
@@ -616,10 +660,19 @@ function assertDetailedCoverage(document, manifest) {
       `Detaljepakkens scorezone ${zoneId}`, row => {
         for (const mode of ['waders', 'beach']) {
           assertPublicScoreQuality(row[mode], 'Detaljepakkens timebaserede score');
-          if (row[mode]?.available !== true
-            || typeof row[mode].score !== 'number'
-            || !Number.isFinite(row[mode].score)
-            || !sameRavScoreModelBinding(row[mode].modelBinding, manifest.ravScoreModelBinding)) {
+          if (coastalParts.scoreAvailability?.policy
+              === 'integrated-model-local-fail-closed') {
+            assertIntegratedPublicScoreResult(
+              row[mode],
+              `Detaljepakkens ${mode}-score`,
+            );
+          }
+          if ((coastalParts.scoreAvailability?.policy
+              !== 'integrated-model-local-fail-closed'
+            && (row[mode]?.available !== true
+              || typeof row[mode].score !== 'number'
+              || !Number.isFinite(row[mode].score)))
+            || !sameRavScoreModelBinding(row[mode]?.modelBinding, manifest.ravScoreModelBinding)) {
             throw new Error(`Detaljepakkens ${mode}-score mangler eller har forkert modelbinding.`);
           }
         }
@@ -715,6 +768,11 @@ function projectCurrentHourConditions(startup, details, availability, manifest) 
 
     for (const mode of ['waders', 'beach']) {
       const score = scoreRow[mode];
+      assertPublicScoreQuality(score, `Nøddriftens ${mode}-score`);
+      if (score?.available === false) {
+        assertIntegratedPublicScoreResult(score, `Nøddriftens ${mode}-score`);
+        continue;
+      }
       const winnerId = score?.winningPartId;
       if (typeof winnerId !== 'string' || !winnerId || !Object.hasOwn(projectedParts, winnerId)) {
         throw new Error(`Nøddriftens ${mode}-vinder mangler i den samme 673-dels-pakke.`);
@@ -742,6 +800,15 @@ function projectCurrentHourConditions(startup, details, availability, manifest) 
     }
   }
 
+  const projectedScoreAvailability = buildIntegratedPublicScoreAvailability({
+    zones: scoreZones,
+    referenceAt: selectedReferenceAt,
+    zoneNames: Object.fromEntries(Object.keys(scoreZones).map(zoneId => [
+      zoneId,
+      details.zones?.[zoneId]?.name ?? startup.zones?.[zoneId]?.name ?? zoneId,
+    ])),
+  });
+
   return {
     ...startup,
     available: true,
@@ -751,6 +818,7 @@ function projectCurrentHourConditions(startup, details, availability, manifest) 
     zones,
     coastalParts: {
       ...details.coastalParts,
+      scoreAvailability: projectedScoreAvailability,
       zones: scoreZones,
       parts: projectedParts,
     },

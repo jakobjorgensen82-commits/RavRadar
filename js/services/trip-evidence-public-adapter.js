@@ -6,21 +6,22 @@ import {
   HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
-} from './trip-evidence-contract.js?v=4.0.349';
+} from './trip-evidence-contract.js?v=4.0.350';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.349';
+} from '../core/ravscore-model-contract.js?v=4.0.350';
 import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
+  assertIntegratedPublicScoreAvailability,
   assertPublicRuntimeAvailability,
   canonicalPublicRuntimeJson,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.349';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.350';
 import {
   assertRavScoreEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.349';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.350';
 
 const TRUST_FIELDS = Object.freeze([
   'schemaVersion', 'status', 'incidentId', 'decisionId', 'method', 'evidenceClassification',
@@ -167,14 +168,28 @@ export function createTripStartFromPublicState({
   }
   const manifestScoreAvailability = manifest?.ravScoreAvailability;
   const conditionsScoreAvailability = conditions?.coastalParts?.scoreAvailability;
-  if (!manifestScoreAvailability || !conditionsScoreAvailability
-    || typeof manifestScoreAvailability.allCurrentScoresFullHistory !== 'boolean'
-    || canonicalPublicRuntimeJson(manifestScoreAvailability)
-      !== canonicalPublicRuntimeJson(conditionsScoreAvailability)) {
+  try {
+    assertIntegratedPublicScoreAvailability(manifestScoreAvailability, {
+      label: 'Turens manifestbundne scoretilgængelighed',
+    });
+    assertIntegratedPublicScoreAvailability(conditionsScoreAvailability, {
+      label: 'Turens valgte scoretilgængelighed',
+    });
+  } catch {
     throw new Error('Turens globale RavScore-historikkvalitet er ikke eksakt manifestbundet.');
   }
+  if ((!publicEmergency && canonicalPublicRuntimeJson(manifestScoreAvailability)
+      !== canonicalPublicRuntimeJson(conditionsScoreAvailability))
+    || (publicEmergency && (
+      conditionsScoreAvailability.schemaVersion !== manifestScoreAvailability.schemaVersion
+      || conditionsScoreAvailability.policy !== manifestScoreAvailability.policy
+      || conditionsScoreAvailability.totalZoneCount !== manifestScoreAvailability.totalZoneCount
+      || conditionsScoreAvailability.evaluatedAt !== runtimeAvailability.selectedReferenceAt
+    ))) {
+    throw new Error('Turens globale RavScore-historikkvalitet er ikke manifestbundet til det valgte tidspunkt.');
+  }
   const globalWarmupLocked = !historyIncomplete
-    && manifestScoreAvailability.allCurrentScoresFullHistory === false;
+    && conditionsScoreAvailability.allCurrentScoresFullHistory === false;
   const dataQualityFlags = [
     ...(publicEmergency ? [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG] : []),
     ...(historyIncomplete ? [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG] : []),

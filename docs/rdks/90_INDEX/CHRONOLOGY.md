@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.350 lokale inputfejl og samlet cutover
+
+- PR #284's bounded fejlrapport blev merged som main `512f889d`.
+- Cache-only-run `34706453561` hentede intet nyt vejr og beholdt current 79.414/79.414 med fordelingen DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116.
+- Rapporten viste 659 kystdele i begge modes med `WIND_INPUT_MISSING` og 14 kystdele i begge modes med `CURRENT_DIRECT_INPUT_NOT_READY`.
+- Kodegennemgangen fandt hardcodet `wind`, som afviste gyldig DKSS `windTail`, og manglende private præ-H0-referencer til de otte regionale closure-hold.
+- 4.0.350 retter begge årsager for gemte og kommende data og gør resterende direkte inputmangel lokalt `UNAVAILABLE` i stedet for globalt stop. Den fælles kontrakt går gennem offentlig runtime, browser, admin og ture.
+- Ejeren godkendte, at cutover kører fem uafhængige kontroller, samler alle fejl og stopper før writes, mens fem grønne resultater fortsætter automatisk.
+- Append-only migration 12 og de nye model-/continuationhashes er lokalt måltestet. Exact-head-CI, merge, backendreadback, cache-only cutover, offentlig verifikation og normaldriftsbevis afventer.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main passerer v1/v2 og stopper senere i scorepakken
 
 - 4.0.349-head `fa5e648c` bestod PR #283-sourcegate `34700907469` og blev merged med byteidentisk tree som main `187e5998`.

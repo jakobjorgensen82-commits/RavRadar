@@ -221,7 +221,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -588,6 +588,7 @@ ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test:reusable-production-workflows')
   && workflowActionChain.includes('test:verified-weather-source-handoff')
   && workflowActionChain.includes('test-workflow-validation-order-4.0.108.mjs')
+  && workflowActionChain.includes('test-cutover-validation-report.mjs')
   && workflowActionChain.includes('test-ravscore-operational-pages-recovery.mjs')
   && workflowActionChain.includes('test:production-workflow-outcome')
   && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
@@ -596,7 +597,7 @@ ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-v
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs',
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs',
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
@@ -1122,8 +1123,8 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the eleven exact integrated cutover migrations',
-  '20260912141641_state_only_hold_closure_v2_binding.sql',
+  'Require only the twelve exact integrated cutover migrations',
+  '20260912194206_local_unavailable_cutover_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
@@ -1182,8 +1183,9 @@ const workflowPositions={
   resolvedTarget:buildWorkflow.indexOf('name: Bind production to resolved DMI current hour'),
   weather:buildWorkflow.indexOf('name: Update central weather cache'),
   runtime:buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  runtimeAudit:buildWorkflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  runtimeAudit:buildWorkflow.indexOf('name: Audit runtime and collect independent cutover validation failures'),
   checkpointDisposition:buildWorkflow.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
+  reference:buildWorkflow.indexOf('name: Generate and strictly validate production reference zones'),
   validate:buildWorkflow.indexOf('name: Validate full project after fresh weather and current provenance'),
   releaseGate:buildWorkflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:buildWorkflow.indexOf('name: Validate updated weather cache'),
@@ -1207,7 +1209,7 @@ const workflowOrder=[
   'preflightCache','publicPreflightManifest','preflight','checkpointRestore','protectedCheckpointRestore',
   'privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall',
   'legacyBootstrapGate','legacyBootstrapImport',
-  'resolvedTarget','weather','runtime','runtimeAudit','checkpointDisposition','validate','releaseGate','validateData',
+  'resolvedTarget','weather','runtime','runtimeAudit','checkpointDisposition','reference','validate','releaseGate','validateData',
   'checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
   'privateRuntimeSpec','privateRuntimeCreate','privateRuntimeSave','privateRuntimeAnonAudit','artifact','pagesPrivacyAudit','pagesUpload',
 ];
@@ -1523,9 +1525,27 @@ for(const marker of [
   'id: ravscore-integrated-runtime-audit',
   "if: steps.preflight.outputs.should_run == 'true'",
   'audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
+  'if test "${{ steps.operational-action.outputs.action }}" = "integrated-cutover"; then',
+  'run_validation runtime_audit_outcome "Integrated public runtime audit"',
+  'run_validation state_reference_outcome "Strict production reference zones"',
+  'run_validation full_validation_outcome "Full hydrated project validation"',
+  'run_validation release_gate_outcome "Release governance gate"',
+  'run_validation data_validation_outcome "Updated weather data validation"',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
+  'node scripts/generate-state-reference-report-4.0.113.mjs --strict',
+  'npm run validate',
+  'npm run release:gate',
+  'npm run validate:data',
+  'node scripts/cutover-validation-report.mjs build',
+  '--step "runtime-audit|true|$runtime_audit_outcome"',
+  '--step "state-reference|true|$state_reference_outcome"',
+  '--step "full-validation|true|$full_validation_outcome"',
+  '--step "release-gate|true|$release_gate_outcome"',
+  '--step "data-validation|true|$data_validation_outcome"',
+  'if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then',
+  'exit 1',
   '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
   '.rollback.activationReady | select(type == "boolean")',
   '.history.allCurrentScoresFullHistory | select(type == "boolean")',
@@ -1536,6 +1556,15 @@ for(const marker of [
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
+for(const section of [
+  buildWorkflow.slice(workflowPositions.reference,workflowPositions.validate),
+  buildWorkflow.slice(workflowPositions.validate,workflowPositions.releaseGate),
+  buildWorkflow.slice(workflowPositions.releaseGate,workflowPositions.validateData),
+  buildWorkflow.slice(workflowPositions.validateData,workflowPositions.checkpointBuild),
+]){
+  ok(section.includes("steps.operational-action.outputs.action != 'integrated-cutover'"),
+    'En kontrol, der allerede indgår i cutoverbarrieren, må ikke køres igen i samme cutover');
+}
 const checkpointDispositionSection=buildWorkflow.slice(
   workflowPositions.checkpointDisposition,
   workflowPositions.validate,

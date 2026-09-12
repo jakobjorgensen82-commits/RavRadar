@@ -2,7 +2,11 @@ import {
   RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS as MODEL_BINDING_FIELDS,
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.349';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.350';
+import {
+  assertIntegratedPublicScoreAvailability,
+  canonicalPublicRuntimeJson,
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.350';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/;
@@ -109,10 +113,22 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     || manifestAvailability.policy !== mode.availabilityPolicy) {
     throw new Error('Scoretilgængelighed og aktiv RavScore-profil bruger ikke samme policy.');
   }
+  if (mode.kind === 'integrated') {
+    assertIntegratedPublicScoreAvailability(availability, {
+      label: 'Startpakkens scoretilgængelighed',
+    });
+    assertIntegratedPublicScoreAvailability(manifestAvailability, {
+      label: 'Manifestets scoretilgængelighed',
+    });
+    if (availability.totalZoneCount !== 210
+      || canonicalPublicRuntimeJson(availability)
+        !== canonicalPublicRuntimeJson(manifestAvailability)) {
+      throw new Error('Manifestet og startpakken har ikke samme eksakte lokale scoretilgængelighed.');
+    }
+  }
   const historyIncompleteZones = Array.isArray(availability.historyIncompleteZones)
     ? availability.historyIncompleteZones : [];
   const historyIncompleteReady = mode.historyIncompleteAllowed === true
-    && availability.allZonesActive === true
     && Number.isSafeInteger(availability.historyIncompleteModeCount)
     && availability.historyIncompleteModeCount > 0
     && Number.isSafeInteger(availability.historyIncompleteZoneCount)
@@ -134,21 +150,35 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
       && profile.rollbackModelId !== runtimeBinding.modelId;
   const readinessFieldsValid = ['modelCoverageReady', 'modelMemoryReady', 'modelMigrationReady']
     .every(field => typeof profile[field] === 'boolean');
+  const localUnavailableReady = mode.kind === 'integrated'
+    && Number.isSafeInteger(availability.unavailableZoneCount)
+    && availability.unavailableZoneCount > 0
+    && profile.modelCoverageReady === false;
+  const expectedAdvisories = [
+    ...(profile.modelCoverageReady === false ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
+    ...(profile.modelMemoryReady === false ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
+    ...(profile.modelMigrationReady === false ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
+  ];
+  const advisoriesMatchReadiness = Array.isArray(profile.advisories)
+    && canonicalPublicRuntimeJson(profile.advisories)
+      === canonicalPublicRuntimeJson(expectedAdvisories);
   const readinessValid = readinessFieldsValid && (mode.completeReadinessRequired !== true
-    || (profile.modelCoverageReady === true
-      && profile.modelMigrationReady === true
-      && (profile.modelMemoryReady === true || historyIncompleteReady)));
+    || (profile.modelMigrationReady === true
+      && (profile.modelCoverageReady === true || localUnavailableReady)
+      && (profile.modelMemoryReady === true
+        || historyIncompleteReady
+        || localUnavailableReady)));
   const historyQualityMatchesProfile = mode.historyIncompleteAllowed !== true
     || (profile.modelMemoryReady === true
-      ? availability.allCurrentScoresFullHistory === true
-        && availability.historyIncompleteModeCount === 0
-      : historyIncompleteReady);
+      ? availability.historyIncompleteModeCount === 0
+      : historyIncompleteReady || localUnavailableReady);
   if (typeof profile.schemaVersion !== 'string'
     || !SAFE_ID_PATTERN.test(profile.schemaVersion)
     || profile.switchVersion !== mode.switchVersion
     || profile.memoryReferenceScope !== 'CURRENT_COMMON_ZONE_REFERENCE'
     || !rollbackTargetValid
     || !readinessValid
+    || !advisoriesMatchReadiness
     || !historyQualityMatchesProfile
     || profile.publicAvailabilityPolicy !== mode.availabilityPolicy
     || profile.runtimeFallbackModelId !== null

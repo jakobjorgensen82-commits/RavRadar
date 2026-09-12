@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "sourceVersion": "4.0.349",
+  "sourceVersion": "4.0.350",
   "switchVersion": "RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0",
   "requestedProfileId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
   "activeModelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -13,7 +13,7 @@
   "bestTimePolicyId": "score-history-water-tie-earliest-v3",
   "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
   "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  "modelBundleSha256": "c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19",
+  "modelBundleSha256": "d3b6c829dfb0d66251d7ebf0b0f4d0a1c357bbf0083aa6076b3f8743eaca397d",
   "rollbackModelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
   "runtimeFallbackModelId": null,
   "modelActivationEnabled": true,

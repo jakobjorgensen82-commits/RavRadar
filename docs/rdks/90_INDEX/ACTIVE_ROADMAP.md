@@ -1,3 +1,20 @@
+# NYESTE ROADMAP – 2026-09-12 – lokal 4.0.350 til automatisk grøn cutover
+
+- [x] Merge den bounded 4.0.349-fejlrapport via PR #284 og genkør locked cache uden providerhentning.
+- [x] Afgræns `34706453561`: komplet current 79.414/79.414, men 659 dele × to modes med afvist vind og 14 dele × to modes med current ikke klar.
+- [x] Ret `windTail` i den fælles produktionsadapter og bevis, at rettelsen gælder fremtidige vejrbygninger.
+- [x] Før otte regionale closure-bundne præ-H0-kildereferencer ind i privat scoring/recovery uden offentlig payload eller opdigtet current.
+- [x] Gør direkte inputmangel lokalt `UNAVAILABLE`/null og udelad alene disse dele fra rangering; bevar komplet 210/673-struktur og særskilt `HISTORY_INCOMPLETE`.
+- [x] Bind availability ens gennem conditions/manifest, audit, Pages, browser, administration, ture og nødruntime.
+- [x] Implementér ejerens femleddede cutoverkontrol, som samler fejl før én skrivebarriere og automatisk fortsætter ved fem grønne resultater.
+- [x] Tilføj append-only migration 12, regenerér rollback/integrated/continuation i korrekt rækkefølge og bestå den korte målmatrix.
+- [x] Luk 4.0.350-version/RDKS/håndbøger, genkør tunge public-runtime-/auditregressioner og slutdiff.
+- [ ] Kør præcis én fuld GitHub-sourcegate på exact PR-head; merge kun byteidentisk grøn tree.
+- [ ] Anvend/readback-verificér migration 12 og kør cache-only integrated-cutover. Hvis de fem kontroller er grønne, skal den fortsætte; ellers ret den samlede trin-/fejlrapport i én omgang.
+- [ ] Verificér integreret model offentligt på 210/673. Genaktivér derefter normal weather kontrolleret og mål de kommende data, DMI-rotation, cachetransport og tidsoverskud.
+
+Ingen ny lang provider-oneoff er planlagt. De seks ikke-regionale currentdele afgøres af den nye same-main-runtime og kan ærligt være lokale `UNAVAILABLE` uden at blokere resten.
+
 # NYESTE ROADMAP – 2026-09-12 – 4.0.349 fra samlet fejlrapport til model-online
 
 - [x] Luk 4.0.348 exact-head-CI/merge og backendapply/readback med exact-content-sourceproof uden dobbelt fuld kildegate.

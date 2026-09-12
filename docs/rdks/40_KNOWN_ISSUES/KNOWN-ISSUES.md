@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 scoreinput/cutover
+
+- **ISSUE-4.0.349-GENERIC-PACKAGE-STOP – ÅRSAG FUNDET / SUPERSEDERET AF DEC-0132:** Run `34706453561` viste alle lokale årsager. Current var fortsat komplet; stoppet var 659 × 2 afviste vindinputs og 14 × 2 ikke-klare currentinputs, ikke ny providerrest.
+- **ISSUE-DKSS-WINDTAIL-REJECTED – LOKALT RETTET/MÅLTESTET P0:** Fællesadapteren hardcodede `wind` og afviste gyldig verificeret `windTail`. Den følger nu deklareret `wind|windTail`, og mismatch/ukendt komponent afvises. Dette gælder også kommende almindelige vejrdata.
+- **ISSUE-REGIONAL-H0-REFERENCE-NOT-VISIBLE – LOKALT RETTET/MÅLTESTET P0:** Otte regionale closure-hold manglede deres private præ-H0-reference ved scoring. Producenten leverer nu eksakt cache-/proof-/grid-/lag-/U/V-/hashbundet reference i kanonisk rækkefølge; den kan kun bruges privat.
+- **ISSUE-SIX-NONREGIONAL-H0-CURRENTS – ÅBEN RUNTIME P0:** Seks andre kystdele havde current ikke klar ved H0. De skal klassificeres efter exact-main-rettelsen. De må blive lokale `UNAVAILABLE`, men må ikke få opdigtet input eller blokere øvrige gyldige zoner.
+- **ISSUE-GLOBAL-STOP-FOR-LOCAL-MISSING – LOKALT LUKKET / LIVE ÅBEN P0:** Direkte inputmangel er nu lokal null-score med årsag; 210/673-strukturen består, og ranking ignorerer utilgængelige dele. Samme kontrakt er bundet gennem generator, offentlig runtime, Pages, browser, admin og ture.
+- **ISSUE-CUTOVER-FIRST-ERROR-LOOP – LOKALT LUKKET / LIVE ÅBEN P0:** Integreret cutover kører fem uafhængige kontroller og samler fejl før én skrivebarriere. Fejl stopper før eksterne writes; alle grønne fortsætter automatisk. Normal weather er uændret.
+- **ISSUE-4.0.350-BACKEND-BINDING – LOKALT RETTET/MÅLTESTET / LIVE ÅBEN P0:** Migration 12 er append-only og fører kun de tre forseglinger/readbackversion frem. Exact-main apply/readback mangler; migration 11 er byteuændret.
+- **ISSUE-4.0.350-RELEASE-AND-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, backend, cache-only cutover, offentlig integreret 210/673-verifikation og efterfølgende normaldriftsbevis mangler. Candidate G er teknisk offentlig indtil cutover.
+- **ISSUE-DMI-MULTIPASS/NORMAL-ROTATION – FORTSAT ÅBEN EFTER LAUNCH:** Rettelsen dækker fremtidig vejrbygning, men faktisk almindelig DMI-rotation og tidsoverskud skal stadig måles efter offentlig launch.
+
+DEC-0132 og `CHANGELOG-4.0.350.md` er aktuelle. Der startes ingen ny provider-oneoff som del af denne rettelse.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main og samlet scorepakkediagnose
 
 - **ISSUE-4.0.348-SOURCE/BACKEND – LUKKET:** PR #282 blev exact-head-valideret og merged som `c86cc2a0`. Backendrun `34697586057` genbrugte det levende sourceproof uden dobbelt fuld gate, anvendte alene 4.0.348-bindingen og bestod readback.

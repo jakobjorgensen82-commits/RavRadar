@@ -40,6 +40,25 @@ export const RAVSCORE_PUBLIC_COASTAL_PART_COUNT = 673;
 // so the same horizon remains verifiable when the canonical contract is
 // overlaid by the sealed Candidate G rollback model.
 export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
+export const RAVSCORE_INTEGRATED_AVAILABILITY_SCHEMA_VERSION = 2;
+export const RAVSCORE_INTEGRATED_AVAILABILITY_POLICY =
+  'integrated-model-local-fail-closed';
+export const RAVSCORE_PUBLIC_SCORE_MODES = Object.freeze(['waders', 'beach']);
+export const RAVSCORE_INTEGRATED_AVAILABILITY_FIELDS = Object.freeze([
+  'schemaVersion',
+  'policy',
+  'allZonesActive',
+  'activeZoneCount',
+  'unavailableZoneCount',
+  'totalZoneCount',
+  'allCurrentScoresFullHistory',
+  'fullHistoryModeCount',
+  'historyIncompleteModeCount',
+  'historyIncompleteZoneCount',
+  'evaluatedAt',
+  'unavailableZones',
+  'historyIncompleteZones',
+]);
 // Four missed 15-minute production opportunities cover the 45-minute watchdog
 // without presenting a multi-hour outage as fresh data.
 export const RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS = 1;
@@ -64,6 +83,9 @@ export const RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_FIELDS = Object.freeze([
 ]);
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const PUBLIC_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
+const RAVSCORE_HISTORY_COVERAGE_HOURS = 48;
 
 function exactKeys(value, fields) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -100,6 +122,359 @@ function canonicalValue(value) {
     if (nested === undefined || typeof nested === 'function' || typeof nested === 'symbol') return [];
     return [[key, canonicalValue(nested)]];
   }));
+}
+
+function strictCount(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${label} must be a strict non-negative safe integer`);
+  }
+  return value;
+}
+
+function exactModeList(value, label) {
+  if (!Array.isArray(value) || value.length < 1
+    || value.some(mode => !RAVSCORE_PUBLIC_SCORE_MODES.includes(mode))
+    || new Set(value).size !== value.length) {
+    throw new Error(`${label} must contain unique supported score modes`);
+  }
+  return [...value];
+}
+
+function exactStringList(value, label, { pattern = null } = {}) {
+  if (!Array.isArray(value) || value.length < 1
+    || value.some(item => typeof item !== 'string' || item.length < 1
+      || item.length > 1000 || (pattern && !pattern.test(item)))
+    || new Set(value).size !== value.length) {
+    throw new Error(`${label} must contain unique safe strings`);
+  }
+  return [...value];
+}
+
+function exactZoneId(value, label) {
+  if (typeof value !== 'string' || !PUBLIC_ID_PATTERN.test(value)) {
+    throw new Error(`${label} must be a safe public zone id`);
+  }
+  return value;
+}
+
+function zoneNameFor(zoneId, zoneNames) {
+  const candidate = zoneNames instanceof Map
+    ? zoneNames.get(zoneId)
+    : zoneNames?.[zoneId];
+  return typeof candidate === 'string' && candidate.length > 0 && candidate.length <= 500
+    ? candidate : zoneId;
+}
+
+function exactScoreRow(zone, referenceAt, label) {
+  const rows = Array.isArray(zone?.hourly) ? zone.hourly : [];
+  const matches = rows.filter(row => row?.time === referenceAt);
+  if (matches.length !== 1) {
+    throw new Error(`${label} must contain exactly one score row at the availability reference`);
+  }
+  return matches[0];
+}
+
+function unavailableReasons(result) {
+  const direct = Array.isArray(result?.reasons)
+    ? result.reasons.filter(reason => typeof reason === 'string' && reason.length > 0)
+    : [];
+  const fallback = typeof result?.unavailability?.messageDa === 'string'
+    && result.unavailability.messageDa.length > 0
+    ? [result.unavailability.messageDa]
+    : ['Datagrundlaget er ikke sammenhængende.'];
+  return [...new Set(direct.length ? direct : fallback)];
+}
+
+function assertUnavailableScore(result, label) {
+  const unavailability = result?.unavailability;
+  if (!result || typeof result !== 'object' || Array.isArray(result)
+    || result.available !== false
+    || result.score !== null
+    || result.scoreQuality !== 'UNAVAILABLE'
+    || result.scoreBounds !== null
+    || result.calibrationEligible !== false
+    || result.scoreSemantics !== null
+    || result.conservativeTailResetApplied !== false
+    || result.historyCoverageHours !== null
+    || !Array.isArray(result.historyReasonCodes)
+    || result.historyReasonCodes.length !== 0
+    || !unavailability
+    || typeof unavailability !== 'object'
+    || Array.isArray(unavailability)
+    || unavailability.available !== false
+    || typeof unavailability.code !== 'string'
+    || !REASON_CODE_PATTERN.test(unavailability.code)
+    || typeof unavailability.messageDa !== 'string'
+    || unavailability.messageDa.length < 1
+    || unavailability.messageDa.length > 1000
+    || !Array.isArray(result.reasons)
+    || result.reasons.length < 1
+    || result.reasons.some(reason => typeof reason !== 'string'
+      || reason.length < 1 || reason.length > 1000)
+    || new Set(result.reasons).size !== result.reasons.length) {
+    throw new Error(`${label} is not an explicit valid local UNAVAILABLE result`);
+  }
+  try {
+    assertExactPublicRavScoreModelBindingShape(
+      result.modelBinding,
+      `${label} model binding`,
+    );
+  } catch {
+    throw new Error(`${label} is not an explicit valid local UNAVAILABLE result`);
+  }
+  const zoneAggregate = result.status === 'unavailable';
+  const expectedUnavailabilityFields = zoneAggregate
+    ? ['available', 'code', 'messageDa', 'policy', 'validPartCount', 'expectedPartCount']
+    : ['available', 'code', 'messageDa'];
+  if (!exactKeys(unavailability, expectedUnavailabilityFields)
+    || (zoneAggregate && (unavailability.policy !== RAVSCORE_INTEGRATED_AVAILABILITY_POLICY
+      || !Number.isSafeInteger(result.validPartCount) || result.validPartCount < 0
+      || !Number.isSafeInteger(result.expectedPartCount) || result.expectedPartCount < 1
+      || result.validPartCount >= result.expectedPartCount
+      || unavailability.validPartCount !== result.validPartCount
+      || unavailability.expectedPartCount !== result.expectedPartCount
+      || !Array.isArray(result.unavailableParts)
+      || result.unavailableParts.some(part => !exactKeys(part, [
+        'partId', 'name', 'code', 'reason',
+      ]) || typeof part.partId !== 'string' || !PUBLIC_ID_PATTERN.test(part.partId)
+        || typeof part.name !== 'string' || part.name.length < 1 || part.name.length > 500
+        || typeof part.code !== 'string' || !REASON_CODE_PATTERN.test(part.code)
+        || typeof part.reason !== 'string' || part.reason.length < 1
+        || part.reason.length > 1000)
+      || new Set(result.unavailableParts.map(part => part.partId)).size
+        !== result.unavailableParts.length))) {
+    throw new Error(`${label} has an inexact local UNAVAILABLE explanation`);
+  }
+}
+
+function assertAvailableHistoryScore(result, label) {
+  if (!result || typeof result !== 'object' || Array.isArray(result)
+    || result.available !== true
+    || typeof result.score !== 'number' || !Number.isFinite(result.score)
+    || result.score < 0 || result.score > 100
+    || !['FULL_HISTORY', 'HISTORY_INCOMPLETE'].includes(result.scoreQuality)
+    || typeof result.calibrationEligible !== 'boolean'
+    || !Number.isFinite(result.historyCoverageHours)
+    || result.historyCoverageHours < 0
+    || result.historyCoverageHours > RAVSCORE_HISTORY_COVERAGE_HOURS
+    || !Array.isArray(result.historyReasonCodes)
+    || result.historyReasonCodes.some(code => typeof code !== 'string'
+      || !REASON_CODE_PATTERN.test(code))
+    || new Set(result.historyReasonCodes).size !== result.historyReasonCodes.length) {
+    throw new Error(`${label} is not an explicit valid available score result`);
+  }
+  if (result.scoreQuality === 'FULL_HISTORY'
+    && (result.historyCoverageHours !== RAVSCORE_HISTORY_COVERAGE_HOURS
+      || result.historyReasonCodes.length !== 0)) {
+    throw new Error(`${label} does not carry one exact full-history window`);
+  }
+  if (result.scoreQuality === 'HISTORY_INCOMPLETE'
+    && (result.calibrationEligible !== false || result.historyReasonCodes.length < 1)) {
+    throw new Error(`${label} does not explain its incomplete history`);
+  }
+}
+
+export function assertIntegratedPublicScoreResult(result, label = 'integrated public score') {
+  if (result?.available === false) assertUnavailableScore(result, label);
+  else assertAvailableHistoryScore(result, label);
+  return true;
+}
+
+export function buildIntegratedPublicScoreAvailability({
+  zones,
+  referenceAt,
+  zoneNames = {},
+} = {}) {
+  if (!zones || typeof zones !== 'object' || Array.isArray(zones)) {
+    throw new Error('Integrated score availability requires a score-zone object');
+  }
+  const evaluatedAt = canonicalTime(referenceAt);
+  if (!evaluatedAt) {
+    throw new Error('Integrated score availability requires one canonical reference time');
+  }
+  const zoneIds = Object.keys(zones).sort();
+  if (zoneIds.length < 1 || new Set(zoneIds).size !== zoneIds.length) {
+    throw new Error('Integrated score availability requires unique public zones');
+  }
+  const unavailableZones = [];
+  const historyIncompleteZones = [];
+  let fullHistoryModeCount = 0;
+  let historyIncompleteModeCount = 0;
+  for (const zoneId of zoneIds) {
+    exactZoneId(zoneId, 'Integrated score availability zone id');
+    const row = exactScoreRow(zones[zoneId], evaluatedAt, `Integrated score zone ${zoneId}`);
+    const unavailableModes = [];
+    const reasons = [];
+    const historyIncompleteModes = [];
+    const historyCoverageHours = [];
+    const historyReasonCodes = [];
+    for (const mode of RAVSCORE_PUBLIC_SCORE_MODES) {
+      const result = row?.[mode];
+      if (result?.available === false) {
+        assertUnavailableScore(result, `Integrated score zone ${zoneId} ${mode}`);
+        unavailableModes.push(mode);
+        reasons.push(...unavailableReasons(result));
+        continue;
+      }
+      assertAvailableHistoryScore(result, `Integrated score zone ${zoneId} ${mode}`);
+      if (result.scoreQuality === 'FULL_HISTORY') {
+        fullHistoryModeCount += 1;
+      } else {
+        historyIncompleteModeCount += 1;
+        historyIncompleteModes.push(mode);
+        historyCoverageHours.push(result.historyCoverageHours);
+        historyReasonCodes.push(...result.historyReasonCodes);
+      }
+    }
+    const zoneName = zoneNameFor(zoneId, zoneNames);
+    if (unavailableModes.length) {
+      unavailableZones.push({
+        zoneId,
+        zoneName,
+        modes: unavailableModes,
+        reasons: [...new Set(reasons)],
+      });
+    }
+    if (historyIncompleteModes.length) {
+      historyIncompleteZones.push({
+        zoneId,
+        zoneName,
+        modes: historyIncompleteModes,
+        historyCoverageHours: Math.min(...historyCoverageHours),
+        historyReasonCodes: [...new Set(historyReasonCodes)].sort(),
+      });
+    }
+  }
+  const totalZoneCount = zoneIds.length;
+  const unavailableModeCount = unavailableZones
+    .reduce((count, zone) => count + zone.modes.length, 0);
+  return {
+    schemaVersion: RAVSCORE_INTEGRATED_AVAILABILITY_SCHEMA_VERSION,
+    policy: RAVSCORE_INTEGRATED_AVAILABILITY_POLICY,
+    allZonesActive: unavailableZones.length === 0,
+    activeZoneCount: totalZoneCount - unavailableZones.length,
+    unavailableZoneCount: unavailableZones.length,
+    totalZoneCount,
+    allCurrentScoresFullHistory:
+      unavailableModeCount === 0 && historyIncompleteModeCount === 0,
+    fullHistoryModeCount,
+    historyIncompleteModeCount,
+    historyIncompleteZoneCount: historyIncompleteZones.length,
+    evaluatedAt,
+    unavailableZones,
+    historyIncompleteZones,
+  };
+}
+
+export function assertIntegratedPublicScoreAvailability(value, {
+  zoneIds = null,
+  zones = null,
+  label = 'integrated public score availability',
+} = {}) {
+  if (!exactKeys(value, RAVSCORE_INTEGRATED_AVAILABILITY_FIELDS)
+    || value.schemaVersion !== RAVSCORE_INTEGRATED_AVAILABILITY_SCHEMA_VERSION
+    || value.policy !== RAVSCORE_INTEGRATED_AVAILABILITY_POLICY
+    || typeof value.allZonesActive !== 'boolean'
+    || typeof value.allCurrentScoresFullHistory !== 'boolean'
+    || !canonicalTime(value.evaluatedAt)) {
+    throw new Error(`${label} has an inexact integrated availability contract`);
+  }
+  for (const field of [
+    'activeZoneCount', 'unavailableZoneCount', 'totalZoneCount',
+    'fullHistoryModeCount', 'historyIncompleteModeCount', 'historyIncompleteZoneCount',
+  ]) strictCount(value[field], `${label}.${field}`);
+  if (!Array.isArray(value.unavailableZones)
+    || !Array.isArray(value.historyIncompleteZones)) {
+    throw new Error(`${label} lacks its exact local availability lists`);
+  }
+  const expectedZoneIds = zoneIds === null
+    ? null : [...zoneIds].map(zoneId => exactZoneId(zoneId, `${label} zone id`));
+  if ((expectedZoneIds && new Set(expectedZoneIds).size !== expectedZoneIds.length)
+    || (expectedZoneIds && value.totalZoneCount !== expectedZoneIds.length)
+    || value.activeZoneCount + value.unavailableZoneCount !== value.totalZoneCount
+    || value.allZonesActive !== (value.unavailableZoneCount === 0)
+    || value.unavailableZoneCount !== value.unavailableZones.length
+    || value.historyIncompleteZoneCount !== value.historyIncompleteZones.length) {
+    throw new Error(`${label} has inconsistent zone counts`);
+  }
+  const zoneIdSet = expectedZoneIds ? new Set(expectedZoneIds) : null;
+  const unavailableKeys = new Set();
+  const unavailableZoneIds = new Set();
+  let unavailableModeCount = 0;
+  for (const zone of value.unavailableZones) {
+    if (!exactKeys(zone, ['zoneId', 'zoneName', 'modes', 'reasons'])) {
+      throw new Error(`${label} has an inexact unavailable-zone entry`);
+    }
+    const zoneId = exactZoneId(zone.zoneId, `${label} unavailable zone id`);
+    if ((zoneIdSet && !zoneIdSet.has(zoneId))
+      || unavailableZoneIds.has(zoneId)
+      || typeof zone.zoneName !== 'string' || zone.zoneName.length < 1
+      || zone.zoneName.length > 500) {
+      throw new Error(`${label} has an invalid unavailable zone`);
+    }
+    const modes = exactModeList(zone.modes, `${label} unavailable modes`);
+    exactStringList(zone.reasons, `${label} unavailable reasons`);
+    unavailableZoneIds.add(zoneId);
+    unavailableModeCount += modes.length;
+    for (const mode of modes) {
+      const key = `${zoneId}\u0000${mode}`;
+      if (unavailableKeys.has(key)) throw new Error(`${label} repeats an unavailable mode`);
+      unavailableKeys.add(key);
+    }
+  }
+  const historyIncompleteKeys = new Set();
+  const historyIncompleteZoneIds = new Set();
+  let declaredHistoryIncompleteModeCount = 0;
+  for (const zone of value.historyIncompleteZones) {
+    if (!exactKeys(zone, [
+      'zoneId', 'zoneName', 'modes', 'historyCoverageHours', 'historyReasonCodes',
+    ])) throw new Error(`${label} has an inexact history-incomplete entry`);
+    const zoneId = exactZoneId(zone.zoneId, `${label} history-incomplete zone id`);
+    if ((zoneIdSet && !zoneIdSet.has(zoneId))
+      || historyIncompleteZoneIds.has(zoneId)
+      || typeof zone.zoneName !== 'string' || zone.zoneName.length < 1
+      || zone.zoneName.length > 500
+      || !Number.isFinite(zone.historyCoverageHours)
+      || zone.historyCoverageHours < 0
+      || zone.historyCoverageHours > RAVSCORE_HISTORY_COVERAGE_HOURS) {
+      throw new Error(`${label} has an invalid history-incomplete zone`);
+    }
+    const modes = exactModeList(zone.modes, `${label} history-incomplete modes`);
+    exactStringList(zone.historyReasonCodes, `${label} history reason codes`, {
+      pattern: REASON_CODE_PATTERN,
+    });
+    declaredHistoryIncompleteModeCount += modes.length;
+    historyIncompleteZoneIds.add(zoneId);
+    for (const mode of modes) {
+      const key = `${zoneId}\u0000${mode}`;
+      if (historyIncompleteKeys.has(key) || unavailableKeys.has(key)) {
+        throw new Error(`${label} repeats or overlaps a current score mode`);
+      }
+      historyIncompleteKeys.add(key);
+    }
+  }
+  if (value.historyIncompleteModeCount !== declaredHistoryIncompleteModeCount
+    || value.fullHistoryModeCount + value.historyIncompleteModeCount
+      + unavailableModeCount !== value.totalZoneCount * RAVSCORE_PUBLIC_SCORE_MODES.length
+    || value.allCurrentScoresFullHistory
+      !== (unavailableModeCount === 0 && value.historyIncompleteModeCount === 0)) {
+    throw new Error(`${label} has inconsistent current score-quality counts`);
+  }
+  if (zones !== null) {
+    const declaredNames = new Map([
+      ...value.unavailableZones.map(zone => [zone.zoneId, zone.zoneName]),
+      ...value.historyIncompleteZones.map(zone => [zone.zoneId, zone.zoneName]),
+    ]);
+    const expected = buildIntegratedPublicScoreAvailability({
+      zones,
+      referenceAt: value.evaluatedAt,
+      zoneNames: declaredNames,
+    });
+    if (canonicalPublicRuntimeJson(value) !== canonicalPublicRuntimeJson(expected)) {
+      throw new Error(`${label} does not match its exact current score rows`);
+    }
+  }
+  return true;
 }
 
 export function canonicalPublicRuntimeJson(value) {

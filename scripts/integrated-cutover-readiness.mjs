@@ -99,6 +99,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260912141641_state_only_hold_closure_v2_binding',
     filename: '20260912141641_state_only_hold_closure_v2_binding.sql',
   }),
+  Object.freeze({
+    version: '20260912194206',
+    id: '20260912194206_local_unavailable_cutover_binding',
+    filename: '20260912194206_local_unavailable_cutover_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

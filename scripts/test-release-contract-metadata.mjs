@@ -27,15 +27,18 @@ const MEASURED_WARMUP_BINDING_CHECK =
   'node scripts/build-measured-rollback-warmup-binding-migration.mjs';
 const STATE_ONLY_HOLD_CLOSURE_V2_BINDING_CHECK =
   'node scripts/build-state-only-hold-closure-v2-binding-migration.mjs';
+const LOCAL_UNAVAILABLE_CUTOVER_BINDING_CHECK =
+  'node scripts/build-local-unavailable-cutover-binding-migration.mjs';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
   'node scripts/test-open-meteo-binding-migration.mjs',
   MEASURED_WARMUP_BINDING_CHECK,
   STATE_ONLY_HOLD_CLOSURE_V2_BINDING_CHECK,
+  LOCAL_UNAVAILABLE_CUTOVER_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql';
+  'supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -60,6 +63,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260907084343_horizon_valid_weather_binding.sql',
   'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
   'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql',
+  'supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 
@@ -82,6 +86,13 @@ assert.equal(
   ).length,
   1,
   'Release gate must run the state-only hold closure-v2 binding check exactly once',
+);
+assert.equal(
+  RELEASE_GATE_TEST_FILES.filter(
+    file => file === 'scripts/build-local-unavailable-cutover-binding-migration.mjs',
+  ).length,
+  1,
+  'Release gate must run the local-unavailable cutover binding check exactly once',
 );
 
 function checkpointOuterBlock(source, label) {
