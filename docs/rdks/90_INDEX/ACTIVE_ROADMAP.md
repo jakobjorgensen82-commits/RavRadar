@@ -1,4 +1,4 @@
-# NYESTE ROADMAP – 2026-09-12 – 4.0.349 fra komplet cache til model-online
+# NYESTE ROADMAP – 2026-09-12 – 4.0.349 fra samlet fejlrapport til model-online
 
 - [x] Luk 4.0.348 exact-head-CI/merge og backendapply/readback med exact-content-sourceproof uden dobbelt fuld kildegate.
 - [x] Bevis i cache-only-run `34697760571`, at DMI/Copernicus springes over, Open-Meteo er reuse-only, og de gemte current-/WAM-/freshnessled består uden providerhentning.
@@ -6,12 +6,15 @@
 - [x] Implementér fælles v2-konstant, virkelig producer→RavScore-seamtest og eksplicit negativ v1-test uden at lempe state-, score-, fysik-, vejr- eller provenancekrav.
 - [x] Regenerér modelbundles/binding og tilføj en append-only 11. migration; fastlås gamle og nye migrationsbyggere til deres versionsspecifikke hashes.
 - [x] Versionér 4.0.349 og synkronisér DEC-0131, krav, issues, checkpoints, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
-- [ ] Bestå målrettet slutmatrix/RDKS/diff, én exact-head GitHub-sourcegate og merge kun byteidentisk grøn head.
-- [ ] Anvend/readback-verificér alene migration 11 på exact main med live sourceproof-genbrug eller sikker fuld fallbackgate.
-- [ ] Gentag den hurtige cachekontrol uden providerhentning; kræv current/WAM/Feggesund/freshness, fulde post-data-gates og same-head-handoff.
-- [ ] Udfør kontrolleret integreret cutover og offentlig 210/673-verifikation. Genaktivér derefter normal drift kontrolleret og mål DMI-rotation, cachetransport, providerforbrug og tidsoverskud.
+- [x] Bestå PR #283 exact-head-sourcegate, merge byteidentisk som `187e5998`, genbrug kildebeviset i backend og anvend/readback-verificér alene migration 11.
+- [x] Kør `34702471040` cache-only uden providerhentning; bevis current 79.414/79.414, WAM/freshness og at v1/v2-rettelsen virker.
+- [x] Afgræns det senere stop til den upræcise offentlige 210/673-assertion og tilføj lokalt en bounded, privacy-sikker samlet zone-/fejlkoderapport uden modelhashændring.
+- [ ] Exact-head-validér og merge rapport-hotfixen; gentag samme hurtige cachekontrol og hent den samlede fejlfordeling.
+- [ ] Kør et afgrænset Astra/Ultra-review af fejlfordelingen og ejerens retning om integreret launch med tydelig lokal `UNAVAILABLE`; skift derefter tilbage til Sol.
+- [ ] Implementér og exact-head-/produktionsverificér den mindst mulige cutover-/modelrettelse, få den integrerede model online og kontrollér den offentlige struktur.
+- [ ] Genaktivér normal drift kontrolleret og mål DMI-rotation, cachetransport, providerforbrug og tidsoverskud.
 
-En ny lang oneoff er ikke del af denne plan. Hvis cachekontrollen igen stopper, diagnosticeres det konkrete led før enhver ny acquisition. DEC-0131 er bindende.
+En ny lang oneoff er ikke del af denne plan. Den næste kørsel genbruger samme cache uden providerkald og har alene til formål at vise alle konkrete scorefejl på én gang.
 
 # NYESTE ROADMAP – 2026-09-12 – 4.0.348 fra komplet cache til model-online
 

@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – 4.0.349 fælles v2-kontrakt
+# Aktuel implementeringsstatus – 4.0.349 main og samlet cutover-fejlrapport
 
 - [x] Bestå 4.0.348 exact-head-CI, merge byteidentisk som `c86cc2a0`, genbrug sourceproof uden dobbelt kildegate i backendrun `34697586057`, anvend alene 4.0.348-bindingen og bestå readback.
 - [x] Kør cachekontrol `34697760571` uden providerhentning og bevis genbrug af complete DMI/CP/regional/OM-current, native WAM og freshness før modelbygningen.
@@ -9,12 +9,16 @@
 - [x] Før den 11. migration gennem readiness, install, checkpoint, releaseplan, metadata og backendworkflow; bestå målrettet lokal model-/migrations-/workflowmatrix.
 - [x] Få ejerens udtrykkelige godkendelse og flyt alene DEC-0122-engangsundtagelsens releaseVersion til exact 4.0.349; bestå private-runtime-, privacy-, workflow- og releaseversionkontroller uden ændrede grænser.
 - [x] Versionér 4.0.349 og synkronisér DEC-0131, aktive krav/issues, status, roadmap, chronology, masterlog, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
-- [ ] Bestå én exact-head 4.0.349-PR-sourcegate og merge kun den eksakte grønne head.
-- [ ] Anvend alene den nye append-only migration på exact main og kræv grøn 11-leddet readiness/readback med live sourceproof-genbrug eller sikker fuld fallbackgate.
-- [ ] Gentag cache-only-kontrollen på `2026-09-12T08:00:00Z`; kræv Feggesund, model/runtime/privacy, fuld post-data validate/releasegate og same-head-handoff.
-- [ ] Udfør kontrolleret cutover og verificér den integrerede model offentligt på 210 zoner/673 kystdele. Genaktivér derefter normal vedligeholdelse kontrolleret og mål DMI-rotation/tidsoverskud.
+- [x] Bestå PR #283 exact-head-sourcegate `34700907469` på `fa5e648c`, og merge den byteidentiske tree som main `187e5998`.
+- [x] Genbrug exact-content-sourceproof uden dobbelt fuld gate i backendrun `34702305208`; anvend alene migration 11 og bestå live readiness/readback.
+- [x] Gentag cache-only-kontrollen i `34702471040` uden providerhentning; bevis current 79.414/79.414, WAM, freshness, live-current-selection og at v1/v2-stoppet er løst.
+- [x] Afgræns det nye stop til den efterfølgende samlede 210/673-scoreassertion; afkræft løs WAM-retning og undlad at overfortolke netværksspærret, score-neutral vandstand.
+- [x] Byg og måltest en bounded rapport med kun offentlige id'er, antal og fejlkoder; upload den ved modelstop og bevar rødt job uden handoff/deploy. Model- og metadatahash er uændrede.
+- [ ] Bestå exact-head-sourcegate for rapport-hotfixen, merge byteidentisk og kør samme cache-only-kontrol for at hente den samlede fejlfordeling.
+- [ ] Udfør Astra/Ultra-helikopterreview af rapporten og ejerens ønskede cutoverretning; implementér den mindst mulige testede model-/publiceringsrettelse uden opdigtede scores.
+- [ ] Få den integrerede model online, verificér offentlig struktur og lokal availability, og genaktivér derefter normal vedligeholdelse kontrolleret for DMI-rotation/tidsoverskud.
 
-Vejrdataene bestod cachekontrollen; den aktuelle blokering er den lokalt rettede kontraktseam i model-recovery. Candidate G er stadig offentlig, og ingen provider-oneoff startes automatisk. DEC-0131 er den aktive kontrakt; ældre afsnit nedenfor er historik.
+Vejrdataene er komplette, og v1/v2-seamen er produktionsløst. Den aktuelle blokering ligger i den nye models offentlige scorepakke. Candidate G er stadig offentlig rent teknisk, men ejeren ønsker ikke at bruge en ubrugelig gammel model som launchstopklods. Ingen provider-oneoff startes automatisk.
 
 # Aktuel implementeringsstatus – 4.0.348 lokal cachekontrol og model-warmup
 

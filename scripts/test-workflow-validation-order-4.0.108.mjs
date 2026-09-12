@@ -961,16 +961,31 @@ const privacySafeUpload = operationalPreflight.slice(
   privacySafeUploadEnd < 0 ? operationalPreflight.length : privacySafeUploadEnd,
 );
 if (privacySafeUploadStart < 0
-  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 3
+  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 4
   || !privacySafeUpload.includes('uses: actions/upload-artifact@v7')
   || !privacySafeUpload.includes('path: .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json')) {
-  throw new Error('Operational-118-preflight skal uploade de to filtrerede beviser samt den præcise allowlist af sikre acquisitionaggregater.');
+  throw new Error('Operational-118-preflight skal uploade de tre filtrerede beviser samt den præcise allowlist af sikre acquisitionaggregater.');
 }
 const privacySafeUploadPaths = [...privacySafeUpload.matchAll(/^\s*path:\s*(.+?)\s*$/gm)]
   .map((match) => match[1]);
 if (privacySafeUploadPaths.length !== 1
   || privacySafeUploadPaths[0] !== '.geometry-v2-work/ravscore-integrated-118h-preflight-safe.json') {
   throw new Error('Operational-118-preflight må kun uploade den eksakte filtrerede privacy-safe rapport.');
+}
+const integratedFailureUploadMarker = 'name: Upload only the safe integrated-build failure report';
+const integratedFailureUploadStart = operationalPreflight.indexOf(integratedFailureUploadMarker);
+const integratedFailureUploadEnd = operationalPreflight.indexOf(
+  '\n      - name:', integratedFailureUploadStart + 1,
+);
+const integratedFailureUpload = operationalPreflight.slice(
+  integratedFailureUploadStart,
+  integratedFailureUploadEnd < 0 ? operationalPreflight.length : integratedFailureUploadEnd,
+);
+if (integratedFailureUploadStart < 0
+  || !integratedFailureUpload.includes("if: failure() && hashFiles('.geometry-v2-work/ravscore-integrated-build-failure-safe.json') != ''")
+  || !integratedFailureUpload.includes('uses: actions/upload-artifact@v7')
+  || !integratedFailureUpload.includes('path: .geometry-v2-work/ravscore-integrated-build-failure-safe.json')) {
+  throw new Error('Operational-118-preflight mangler den eksakte fail-only og privacy-sikre modelrapport.');
 }
 for (const forbiddenUpload of [
   'RAVRADAR_PRIVATE_PREFLIGHT_REPORT',

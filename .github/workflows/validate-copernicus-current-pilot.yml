@@ -1320,7 +1320,26 @@ jobs:
 
       - name: Build the integrated runtime without release or deploy
         timeout-minutes: 17
-        run: npm run update:weather
+        shell: bash
+        run: |
+          set +e
+          npm run update:weather
+          build_status=$?
+          set -e
+          if test "$build_status" -ne 0; then
+            diagnostic_status=0
+            node scripts/report-ravscore-integrated-build-failure-safe.mjs \
+              --input data/live/conditions.json \
+              --output .geometry-v2-work/ravscore-integrated-build-failure-safe.json \
+              || diagnostic_status=$?
+            if test -s .geometry-v2-work/ravscore-integrated-build-failure-safe.json; then
+              jq -c . .geometry-v2-work/ravscore-integrated-build-failure-safe.json
+            fi
+            if test "$diagnostic_status" -ne 0; then
+              echo "::warning title=Safe integrated-build diagnosis unavailable::The model build still fails closed, but its bounded aggregate report could not be produced."
+            fi
+            exit "$build_status"
+          fi
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           DMI_MAX_RETRIES: 0
@@ -1341,6 +1360,16 @@ jobs:
           RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.locked_weather_resume }}
           WEATHER_USER_AGENT: "RavRadar/4.0.349 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Upload only the safe integrated-build failure report
+        if: failure() && hashFiles('.geometry-v2-work/ravscore-integrated-build-failure-safe.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-integrated-build-failure-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          path: .geometry-v2-work/ravscore-integrated-build-failure-safe.json
 
       - name: Attach exact current provenance and rebuild the public projection
         env:

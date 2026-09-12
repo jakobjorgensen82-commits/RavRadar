@@ -11,8 +11,10 @@
 - **REQ-4.0.349-CACHE-ONLY-CUTOVER-001 – BINDENDE P0:** Efter exact-main backendapply/readback gentages `locked_weather_resume` på `2026-09-12T08:00:00Z` uden providerhentning eller automatisk refill. Current 79.414, native WAM 79.060, Feggesund 354, freshness, model/runtime/privacy, fulde post-data-gates og same-head-handoff kræves før cutover.
 - **REQ-4.0.349-PUBLIC-AND-NORMAL-PROOF-001 – BINDENDE P0:** Candidate G forbliver offentlig indtil den integrerede model er verificeret på 210 zoner/673 kystdele. Først derefter må normal vejrdrift genaktiveres kontrolleret og DMI-rotation/tidsoverskud måles.
 - **REQ-4.0.349-FIRST-CUTOVER-EXCEPTION-001 – BINDENDE P0 / EKSPLICIT EJERGODKENDT 2026-09-12:** DEC-0122's materielt uændrede engangsundtagelse gælder alene exact release 4.0.349. Den ændrer ingen storage-, checkpoint-, integrity-, privacy-, readback-, closure- eller cadencegate, og et ældre handoff må ikke ommærkes.
+- **REQ-4.0.349-SAFE-CUTOVER-ERROR-REPORT-001 – BINDENDE P0 / LOKALT TESTET:** En modelbygning, som har gennemgået alle zoner men stopper ved den offentlige pakkegate, skal kunne udlede én bounded rapport med alene offentlige zone-/kystdels-id'er, antal og fejlkoder. Ingen vejr-/statepayload, koordinater eller vektorer må logges/uploades. Runnet forbliver rødt og må ikke udstede handoff eller deploy.
+- **REQ-4.0.349-CUTOVER-POLICY-REVIEW-001 – ÅBEN P0 EJERRETNING:** Candidate G må ikke antages at være en brugbar automatisk backup. Efter den konkrete samlede rapport skal et Astra/Ultra-review afklare den mindst mulige kontraktændring, som kan gøre den integrerede model offentlig med strukturel 210/673-komplethed og tydelig lokal `UNAVAILABLE`, uden opdigtede scores eller skjult modelblanding.
 
-Run `34697760571` er positivt cache-/vejrevidens og negativt modelseambevis; det er ikke et handoff eller launchbevis. DEC-0131 er bindende.
+Run `34702471040` er positivt cache-/vejrevidens og beviser v1/v2-rettelsen, men er negativt scorepakke-/launchbevis. DEC-0131 er bindende for closureseamen; cutoverpolitikken er åbnet særskilt af ejerens nye retning.
 
 # 4.0.348 – målt rollback-opvarmning og fastlåst cachekontrol
 

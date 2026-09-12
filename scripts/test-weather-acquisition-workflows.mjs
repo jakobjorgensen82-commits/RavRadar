@@ -172,6 +172,18 @@ assert.match(lockedOpenMeteo, /LOCKED_WEATHER_RESUME:/);
 assert.match(lockedOpenMeteo, /reuse_args\+=\(--reuse-only\)/);
 assert.match(lockedOpenMeteo, /"\$\{reuse_args\[@\]\}"/);
 assert.match(step(oneoff, 'Build the integrated runtime without release or deploy'), /RAVRADAR_WEATHER_CACHE_ONLY:/);
+const integratedBuild = step(oneoff, 'Build the integrated runtime without release or deploy');
+assert.match(integratedBuild, /build_status=\$\?/);
+assert.match(integratedBuild, /report-ravscore-integrated-build-failure-safe\.mjs/);
+assert.match(integratedBuild, /exit "\$build_status"/);
+assert.doesNotMatch(integratedBuild, /continue-on-error:/);
+const integratedFailureReport = step(oneoff, 'Upload only the safe integrated-build failure report');
+assert.match(integratedFailureReport, /if: failure\(\)/);
+assert.match(integratedFailureReport, /actions\/upload-artifact@v7/);
+assert.match(integratedFailureReport, /retention-days: 7/);
+assert.deepEqual(paths(integratedFailureReport), [
+  '.geometry-v2-work/ravscore-integrated-build-failure-safe.json',
+]);
 const weatherRuntime = read('scripts/update-weather.mjs');
 assert.equal((weatherRuntime.match(/\bfetch\(/g) || []).length, 1, 'All update:weather network access must remain behind fetchJson');
 const cacheOnlyGuard = weatherRuntime.indexOf("if (WEATHER_CACHE_ONLY) {");

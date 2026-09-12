@@ -1,12 +1,12 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 retter v1/v2-seam efter positiv cachekontrol
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main passerer v1/v2 og stopper senere i scorepakken
 
-- 4.0.348 bestod exact-head-sourcegaten, PR #282 blev merged som `c86cc2a0`, og backendrun `34697586057` genbrugte kildebeviset uden dobbelt fuld gate.
-- Backendrunnet anvendte alene `20260912122607_measured_rollback_warmup_binding.sql` og bestod den efterfølgende readiness/readback.
-- Cache-only-run `34697760571` fastholdt `2026-09-12T08:00:00Z`, sprang DMI/Copernicus over, brugte Open-Meteo reuse-only og bestod de gemte current-, WAM- og freshnessled. Ingen providerhentning eller automatisk refill.
-- Modelbygningen stoppede på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`: producenten leverede gældende closure-v2, mens RavScore-validator og fire fixtures stadig krævede v1. Intet handoff/cutover/deploy.
-- 4.0.349 deler én v2-konstant mellem producent/forbruger, tester faktisk live-output gennem RavScore-grænsen og afviser fortsat v1. Ingen faglig eller datarelateret kontrakt lempes.
-- Ny append-only migration `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun tre hashes/readbackversion frem. Den anvendte 4.0.348-migration forbliver immutable, og begge builders er versionsfastlåste.
-- Lokal målmatrix er grøn. Exact-head-CI, merge, backendapply/readback, gentaget cachekontrol, Feggesund/full gates/handoff, cutover, offentlig 210/673-kontrol og normal vedligeholdelsesbevis afventer.
+- 4.0.349-head `fa5e648c` bestod PR #283-sourcegate `34700907469` og blev merged med byteidentisk tree som main `187e5998`.
+- Backendrun `34702305208` genbrugte exact-content-beviset uden dobbelt fuld gate, anvendte alene migration 11 og bestod central readiness/readback.
+- Cache-only-run `34702471040` fastholdt `2026-09-12T08:00:00Z`, hentede intet nyt vejr og bestod current 79.414/79.414, WAM, freshness og kontrolleret live-current-selection.
+- Runnet passerede `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`; v1/v2-rettelsen er dermed produktionsbevist.
+- Modelbygningen stoppede senere i den generiske offentlige 210/673-assertion. WAM-retning er strengt valideret, og score-neutral vandstand er ikke bevist som årsag.
+- En lokal 4.0.349-hotfix udleder alle allerede beregnede lokale fejl som bounded offentlige id'er/antal/koder, uploader kun denne rapport og bevarer fail-closed uden handoff/deploy. Model- og metadatahash er uændrede.
+- Ejeren ønsker ikke Candidate G som praktisk backup og har åbnet designet for integreret launch med tydelig lokal `UNAVAILABLE`. Før kontraktændring hentes rapporten og gennemføres et afgrænset Astra/Ultra-review.
 
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 genbruger komplet cache efter modelstop
 

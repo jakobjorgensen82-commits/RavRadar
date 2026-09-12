@@ -2,27 +2,27 @@
 
 **Håndbogsversion:** 4.0.349
 
-## 88.53 Lokal 4.0.349 – Modellen og strømdataene bruger nu samme v2-mærke
+## 88.53 4.0.349 på main – Dataene er komplette, og næste modelstop samles nu præcist
 
-**Status:** 4.0.348 kom gennem GitHub og databaseinstallationen. Den hurtige cachekontrol beviste derefter, at de komplette gemte vejrdata stadig kunne bruges uden at hente nyt vejr. Modellen stoppede på en gammel intern v1-forventning, ikke på manglende data. 4.0.349 retter dette lokalt; ny GitHub-kontrol, databasebinding, cachekontrol, modelskift og offentlig kontrol mangler endnu.
+**Status:** 4.0.349 er gennem GitHub og databaseinstallationen. En ny hurtig cachekontrol beviste igen komplette gemte vejrdata uden nye hentninger og passerede den gamle v1/v2-fejl. Modellen stoppede senere ved den offentlige scorepakke. Den nuværende fejltekst siger ikke hvilke zoner og fejlkoder, selv om modellen allerede har gennemgået dem alle. En lille driftsrettelse samler derfor hele listen sikkert før næste beslutning.
 
 ### Hvad den hurtige kontrol faktisk viste
 
-Backendkørslen `34697586057` brugte den allerede godkendte kildekontrol fra Pull Requesten. Den kørte derfor ikke samme fulde kildekontrol igen. Den installerede kun den forventede nye databasebinding og læste den korrekt tilbage.
+PR #283 bestod den fulde kildekontrol på sin eksakte slutversion. Den samme kode blev merged som main `187e5998`. Backendkørslen `34702305208` genbrugte det levende bevis og kørte derfor ikke den samme fulde kildekontrol igen. Den installerede kun den forventede nye databasebinding og læste den korrekt tilbage.
 
-Cachekontrol `34697760571` brugte igen tidspunktet `2026-09-12T08:00:00Z`. DMI og Copernicus hentede intet. Open-Meteo måtte kun læse de gemte resultater. De gemte strømdata, bølgedata og friskhedskontroller bestod. Det betyder, at vi ikke har fundet nye huller, og at der ikke er behov for en ny lang oneoff på grund af denne fejl.
+Cachekontrol `34702471040` brugte igen tidspunktet `2026-09-12T08:00:00Z`. DMI og Copernicus hentede intet. Open-Meteo måtte kun læse de gemte resultater. Alle 79.414 strømpar, bølgekontrollen, friskheden og den levende strømudvælgelse bestod. Den passerede også den gamle v1/v2-fejl. Der er derfor ikke behov for en ny lang oneoff på grund af dette stop.
 
-### Hvorfor modellen stoppede
+### Hvor modellen nu stoppede
 
-Den del, der laver de levende strømdata, mærkede det komplette datasæt med version 2 af sin interne kontrolkode. Det var korrekt og havde været den gældende regel siden 4.0.323. Den del, der skulle genstarte den nye scoremodel, forventede stadig version 1. Derfor afviste modellen de rigtige data som ukendte.
+Modellen gennemgik alle zoner og byggede den private conditions-pakke. Da den skulle lave den offentlige pakke, opdagede den, at ikke alle krav til 210 zoner og 673 kystdele var opfyldt. Den stoppede sikkert, men viste kun én samlet sætning. Derfor kan loggen endnu ikke fortælle os, om det er ét antal eller konkrete lokale scores, der er utilgængelige.
 
-De gamle tests opdagede ikke fejlen, fordi deres testdata også stadig brugte version 1. Det var altså en uoverensstemmelse mellem producenten, forbrugeren og testene – ikke et problem med DMI, Copernicus, køretid eller de 79.414 strømpar.
+Bølgeretning er kontrolleret strengt for alle positive bølger, så en løs WAM-gate er afkræftet. De mange manglende onlinevandstandskald i cache-only-kørslen er heller ikke bevist som årsag; vandstand er kun forklarende sammenhæng i den nye score og giver ikke i sig selv et stop.
 
-### Hvad der er rettet
+### Hvad den nye rapport gør
 
-Producenten og modellen bruger nu den samme fælles version 2-kode. En ny test tager koden direkte fra den virkelige strømproducent og sender den gennem modellens kontrol. En anden test beviser, at den gamle version 1 stadig bliver afvist. Ukendte eller forældede data bliver derfor ikke gjort gyldige ved et uheld.
+Den eksisterende modelgennemgang får lov at afslutte, som den allerede gør. Hvis den offentlige pakke derefter stopper, skrives en lille rapport med kun offentlige zone- og kystdels-id'er, antal og fejlkoder. Rå vejrdata, koordinater, strømvektorer og privat modeltilstand kommer ikke med.
 
-Rettelsen ændrer ingen scoreformel, vægt, tærskel, fysik, vejrkilde, grid, afstand, geometri eller land-/vandpunkt. Den får kun to dele af systemet til at være enige om den kontrakt, der allerede var gældende.
+Kørslen forbliver rød og kan ikke udgive noget. Rapporten ændrer ingen scoreformel, vægt, tærskel, fysik, vejrkilde, grid, afstand, geometri, land-/vandpunkt, modelhash eller databasebinding.
 
 ### Hvorfor der igen er en lille databaseændring
 
@@ -32,9 +32,9 @@ Begge migrationsbyggere bruger nu deres egne fastlåste versionshashes. En sener
 
 ### Vejen til modelskiftet
 
-4.0.349 skal først have én fuld kildekontrol på Pull Requestens eksakte slutversion. Byteidentisk main og backend må genbruge det bevis efter live kontrol. De senere data-, model-, privatlivs-, release-, handoff-, deploy- og offentlige kontroller køres stadig.
+Rapportrettelsen får én fuld kildekontrol på sin eksakte slutversion. Byteidentisk main kan derefter genbruge beviset. Den samme hurtige cachekontrol køres igen uden providerhentning, så vi får alle konkrete fejl på én gang.
 
-Efter databaseinstallationen gentages den samme hurtige cachekontrol uden providerhentning. Den skal nå helt gennem Feggesund, modelbygning og handoff. Først derefter udføres den kontrollerede cutover og offentlig kontrol af 210 zoner og 673 kystdele. Den almindelige vejrdrift forbliver deaktiveret indtil offentlig succes; bagefter genaktiveres den kontrolleret, så DMI-rotation og normalt tidsoverskud kan måles særskilt.
+Ejeren har samtidig præciseret, at den gamle Candidate G ikke skal blokere lanceringen som en påstået backup, hvis den allerede er ubrugelig. Målet er derfor én ny integreret offentlig model med komplet struktur og tydelig besked på de konkrete zoner, hvor en score ikke kan beregnes — aldrig en skjult blanding eller en opdigtet score. Når rapporten foreligger, gennemgås denne ændring kort på Astra/Ultra, hvorefter implementationen fortsætter på Sol. Den almindelige vejrdrift genaktiveres først kontrolleret efter lanceringen.
 
 ## 88.52 Lokal 4.0.348 – Brug de komplette gemte data uden en ny lang vejrkørsel
 
@@ -391,9 +391,9 @@ Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff,
 
 ### Aktuel status – RavScore 4.0.349 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.349-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – 4.0.349 på main, cutover afventer scorepakkediagnosen
 
-4.0.349 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89` over 57 transitive filer. Continuationbindingen er `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`. Den nye append-only migration `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun disse forseglinger og readbackversionen frem fra den uændrede, allerede anvendte 4.0.348-forgænger. Cachekontrol `34697760571` beviste de gemte strøm-/bølgedata uden providerhentning, men stoppede før handoff på v1/v2-modelseamen; Candidate G er derfor fortsat offentlig.
+4.0.349 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89` over 57 transitive filer. Continuationbindingen er `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`. Migration `20260912141641_state_only_hold_closure_v2_binding.sql` er nu installeret og readback-verificeret. Cachekontrol `34702471040` bestod de komplette strøm-/bølgedata uden providerhentning og passerede v1/v2-seamen, men stoppede senere ved den offentlige 210/673-scorepakke. Candidate G er derfor stadig offentlig rent teknisk, mens den samlede lokale fejlrapport og cutover afventer.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
