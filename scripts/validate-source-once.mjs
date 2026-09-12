@@ -45,9 +45,12 @@ export function buildSourceValidationPlan(scripts) {
   };
 }
 
-function executeCommand(command) {
+function executeCommand(command, { suppressReleaseReport = false } = {}) {
   const [program, ...args] = command.split(' ');
-  const result = spawnSync(program === 'node' ? process.execPath : program, args, {
+  assert.ok(!suppressReleaseReport || command === 'node scripts/release-gate.mjs',
+    'Only the source invocation of the full release gate may suppress its generated report');
+  const executionArgs = suppressReleaseReport ? [...args, '--no-write-report'] : args;
+  const result = spawnSync(program === 'node' ? process.execPath : program, executionArgs, {
     cwd: process.cwd(), stdio: 'inherit', shell: false,
   });
   return result.status === 0 && !result.error && !result.signal ? 0 : 1;
@@ -59,7 +62,7 @@ export function runSourceValidation(plan, { execute = executeCommand, log = cons
     if (execute(command) !== 0) return 1;
   }
   log(`SOURCE: full release gate first; ${plan.reused.length} identical test invocations need no second run.`);
-  if (execute(plan.gate) !== 0) return 1;
+  if (execute(plan.gate, { suppressReleaseReport: true }) !== 0) return 1;
   // Reuse exists only in this live invocation after the full gate succeeded.
   // No marker, file, environment flag or previous workflow can authorize it.
   for (const command of plan.remaining) {

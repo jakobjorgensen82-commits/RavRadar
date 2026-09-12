@@ -27,9 +27,18 @@ for (const changes of [
 ]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
 
 const calls = [];
-assert.equal(runSourceValidation(plan, { execute: command => { calls.push(command); return 0; }, log() {} }), 0);
+const executionOptions = [];
+assert.equal(runSourceValidation(plan, { execute: (command, options) => {
+  calls.push(command);
+  executionOptions.push(options);
+  return 0;
+}, log() {} }), 0);
 assert.deepEqual(calls, [...plan.preflight, plan.gate, ...plan.remaining]);
 assert.equal(calls.filter(command => command === plan.gate).length, 1);
+assert.deepEqual(executionOptions[plan.preflight.length], { suppressReleaseReport: true },
+  'The PR source invocation must run the full gate without mutating tracked release reports.');
+assert.ok(executionOptions.every((options, index) => index === plan.preflight.length
+  || options === undefined), 'Only the full source release-gate invocation may suppress its report.');
 for (const failureIndex of [...plan.preflight.keys(), plan.preflight.length, plan.preflight.length + 1, calls.length - 1]) {
   let executed = 0;
   assert.equal(runSourceValidation(plan, { execute() { return executed++ === failureIndex ? 1 : 0; }, log() {} }), 1);
@@ -37,7 +46,14 @@ for (const failureIndex of [...plan.preflight.keys(), plan.preflight.length, pla
 }
 // Standalone production releasegate must execute the same complete inventory.
 const gate = fs.readFileSync('scripts/release-gate.mjs', 'utf8');
+const sourceRunner = fs.readFileSync('scripts/validate-source-once.mjs', 'utf8');
 assert.match(gate, /for\(const rel of RELEASE_GATE_TEST_FILES\)\{\s*const result=spawnSync\(process.execPath,\[rel\]/);
 assert.match(gate, /ok\(result.status===0/);
+assert.match(gate, /releaseGateArguments\[0\]==='--no-write-report'/);
+assert.match(gate, /if\(!suppressReleaseReport\)\{\s*await fs\.mkdir\('release'/,
+  'Only report emission, never release validation, may be suppressed by the PR source invocation.');
+assert.match(sourceRunner,
+  /const executionArgs = suppressReleaseReport \? \[\.\.\.args, '--no-write-report'\] : args;/,
+  'The real source executor must translate only the release-gate option into report suppression.');
 assert.ok(gateTests.includes('node scripts/test-harmonie-binding-migration.mjs'));
 console.log(`Source validation: complete coverage, full gate first, ${plan.reused.length} duplicate invocations removed, all failures remain blocking.`);

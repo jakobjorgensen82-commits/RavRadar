@@ -20,6 +20,8 @@
 - [x] Klassificér PR #279/run `34659873681`: exact checkout/digest/dependencies grønne; sourcegate stoppede i en forældet statisk rebaseforventning; ingen proofupload. Opdatér kun kontrakttesten, og genbevis journal/restart/source-stage funktionelt.
 - [x] Klassificér anden head `581dfae9`/run `34661632590`: fuld sourcegate grøn; tracked-clean bagefter rød; proofupload korrekt blokeret. Genkør 116 efter-gate-kommandoer og 35 releasegate-testfiler enkeltvis med lokal renhedskontrol; alle rene.
 - [x] Gør tracked-clean-fejlen selvforklarende med fail-closed short-status, diff-summary og diff-stat uden at uploade proof ved afvigelse.
+- [x] Klassificér tredje head `e1e9dd1e`/run `34664907674`: releasegaten omskrev alene de to tracked, tidsstemplede release-rapporter efter alle grønne tests.
+- [x] Undertryk kun dynamisk rapportskrivning i sourcegavens releasegatekald; bevar fuld testudførelse og almindelig rapportskrivning i post-data-produktion/`release:package`.
 - [ ] Bestå én `validate:source` på den eksakte endelige 4.0.345-PR-head og verificér proofartifactet.
 - [ ] Merge kun den grønne head og bevis på første main-kørsel, at sourcegaten genbruges som `verified-identical-pull-request-source-content` eller falder sikkert tilbage.
 - [ ] Kør bevaret main-opfyldning til current 79.414/79.414, native WAM 79.060 og Feggesund 354/354; kræv freshness, fulde gates og runbundet handoff.

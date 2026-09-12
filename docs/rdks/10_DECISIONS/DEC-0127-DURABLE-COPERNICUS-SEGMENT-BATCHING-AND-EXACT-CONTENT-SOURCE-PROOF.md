@@ -29,12 +29,12 @@ Live GitHub-API for PR #278/run `34632503756` viste desuden, at et gyldigt same-
 ## Beslutning B – én fuld kildegate for identisk indhold
 
 1. Pull-request-workflowet checker eksplicit PR-headen ud, beviser exact head og kører `validate:source` én gang på den eksakte endelige PR-head.
-2. Før gaten beregnes en deterministisk SHA-256-identitet over hele tracked Git-træet: mode, type, råt indhold pr. blob og sti. Efter grøn gate kræves det, at ingen tracked fil er ændret af valideringen; først derefter uploades et privacy-sikkert artifact, hvis navn binder PR-nummer, PR-head og contentdigest.
+2. Før gaten beregnes en deterministisk SHA-256-identitet over hele tracked Git-træet: mode, type, råt indhold pr. blob og sti. Efter grøn gate kræves det, at ingen tracked fil er ændret af valideringen; først derefter uploades et privacy-sikkert artifact, hvis navn binder PR-nummer, PR-head og contentdigest. Sourcekaldet kører hele releasegaten med `--no-write-report`, så alene dens dynamiske tracked `RELEASE-REPORT`-slutwrites undertrykkes; alle tests kører fortsat.
 3. Et efterfølgende main-workflow må kun genbruge beviset, hvis main-træets beregnede contentdigest er identisk, committen er den eksakte mergecommit for den samme lukkede same-repository PR, artifactet er uforældet, og GitHub live bekræfter workflow, run, attempt, repository, head, job samt alle krævede grønne trin.
 4. PR-metadata læses direkte fra `/pulls/{number}`. Det tomme valgfrie `run.pull_requests` bruges ikke som autoritet.
 5. Cachefilen er kun en locator. Den giver ingen autoritet uden live GitHub-verifikation. Ukendt, udløbet, ændret eller utilgængeligt bevis betyder `required=true`, så den fulde kildegate køres sikkert på main.
 6. Eksisterende kontrol af senere modstridende main-kildegateevidens består. Et nyt sourceindhold kræver altid en ny PR-gate.
-7. Fuld `npm run validate` og `npm run release:gate` efter central hydrering og frisk vejr er ikke dubletter af sourcegaten og må aldrig springes over for et nyt produktionsartifact.
+7. Fuld `npm run validate` og almindelig `npm run release:gate` efter central hydrering og frisk vejr er ikke dubletter af sourcegaten og må aldrig springes over for et nyt produktionsartifact. Dette direkte post-data-kald skriver fortsat de aktuelle release-rapporter; `release:package` gør det samme.
 
 ## Uændrede slutgrænser
 

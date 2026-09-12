@@ -26,6 +26,8 @@ Den fulde kildekodegate skal fortsat bestå på Pull Requestens eksakte head. N�
 
 Det fjerner den meningsløse anden fulde kildegate før den samme vejropbygning. Det fjerner ikke den centrale adminhydrering, frisk DMI/Copernicus/Open-Meteo/WAM-produktion, fuld datavalidering, releasegate, handoff, artifactkontrol, deploy eller offentlig runtimekontrol.
 
+PR-kildekaldet kører fortsat samtlige releasegate-tests, men skriver ikke releasegatens to dynamiske, tidsstemplede tracked rapportfiler. Ellers ville kontrollen selv ændre den kilde, dens SHA-256 skal forsegle. Den almindelige releasegate efter frisk produktionsdata og ved releasepakning skriver fortsat rapporterne; ingen datakontrol eller produktionsgate er fjernet.
+
 ### Slutmålet og scoremodellen er uændret
 
 Current skal stadig være præcis 79.414/79.414 med én gyldig kilde pr. par og nul mangler eller overlap. Bølger skal stadig være 79.060 native WAM-par plus Feggesund 354/354. Først derefter må det runbundne handoff og den allerede godkendte integrerede scoremodel gå videre gennem de fulde gates. Candidate G forbliver offentlig, indtil hele den nye kæde er positivt bevist.

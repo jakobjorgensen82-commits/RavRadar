@@ -40,6 +40,14 @@ import {
   RAVSCORE_MODEL_CONTRACT_SHA256 as CANDIDATE_G_MODEL_CONTRACT_SHA256,
 } from './rollback-assets/ravscore-model-contract.js';
 
+const releaseGateArguments=process.argv.slice(2);
+const suppressReleaseReport=releaseGateArguments.length===1
+  && releaseGateArguments[0]==='--no-write-report';
+if(releaseGateArguments.length!==0&&!suppressReleaseReport){
+  console.error('Unsupported release-gate option');
+  process.exit(1);
+}
+
 const errors=[];
 const ok=(cond,msg)=>{if(!cond)errors.push(msg)};
 const root=process.cwd();
@@ -1839,7 +1847,9 @@ for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'scr
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
 const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema6Continuation:true,activeHistoryIncompleteForecast:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacySourceTransition:true,historicalBindingMaintenance:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,operationalPagesRecovery:true,productionWorkflowOutcome:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
-await fs.mkdir('release',{recursive:true});
-await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
-await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Aktiv 118-timers/5-dages HISTORY_INCOMPLETE-prognose: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Attesteret legacy-kilde, afgrænset Candidate G-bro og første cutover: OK\n- Historisk Candidate/integrated exact-binding-vedligeholdelse: OK\n- Atomisk schema-4 public runtime uden offentlig shadowmodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Operationel exact-target Pages-recovery med delt writer/finalizer: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+if(!suppressReleaseReport){
+  await fs.mkdir('release',{recursive:true});
+  await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
+  await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Aktiv 118-timers/5-dages HISTORY_INCOMPLETE-prognose: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Attesteret legacy-kilde, afgrænset Candidate G-bro og første cutover: OK\n- Historisk Candidate/integrated exact-binding-vedligeholdelse: OK\n- Atomisk schema-4 public runtime uden offentlig shadowmodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Operationel exact-target Pages-recovery med delt writer/finalizer: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+}
 console.log(`Release gate bestået for RavRadar ${version}.`);

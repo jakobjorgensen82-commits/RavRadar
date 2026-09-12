@@ -28,6 +28,7 @@ DMI roterede alle seks currentcollections og planlagde mod hele det autoritative
 - Source-tree-digest, PR-discovery og fail-closed content/PR/repository/head/run/job/step/artifact-scenarier.
 - Første PR-head `72db0a70` afslørede i run `34659873681` en forældet statisk pre-journal-rebaseforventning. Ingen proof blev udstedt. Testen beviser nu den autoritative bankmerge af journalens validerede acquisitions/records og den efterfølgende fulde donorbuild; funktionel restart/source-stage-evidens er genkørt grøn.
 - Anden head `581dfae9` bestod hele sourcegaten i run `34661632590`, men ren-tree-trinnet blokerede proof ved en Linux-tracked ændring. Alle 151 underkommandoer var enkeltvis rene på Windows. Renhedstrinnet viser nu exact short status samt diff summary/stat ved fejl og forbliver fail-closed.
+- Tredje head `e1e9dd1e`/run `34664907674` identificerede `release/RELEASE-REPORT.json` og `.md`: den fulde gate omskrev sine tracked tidsstemplede rapporter. Sourcekaldet bruger nu samme fulde gate med `--no-write-report`; almindelig post-data-/pakke-gate skriver fortsat rapporterne.
 
 ## Uændret og åbent
 
