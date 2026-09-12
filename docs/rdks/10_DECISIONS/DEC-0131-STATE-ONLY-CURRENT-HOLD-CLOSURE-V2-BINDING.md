@@ -1,7 +1,7 @@
 # DEC-0131 – state-only-strømhold følger den aktuelle closurekontrakt
 
 - **Dato:** 2026-09-12
-- **Status:** AKTIV; lokal 4.0.349 implementeret og måltestet, exact-head-CI, backendbinding, cachekontrol, cutover og offentlig verifikation afventer
+- **Status:** AKTIV og produktionsbevist gennem v1/v2-seamen; senere offentlig scorepakkestop og cutover afventer
 - **Ejergrundlag:** Ejerens ordre om at bruge den komplette gemte vejrtilstand og få den integrerede scoremodel online uden en ny lang providerkørsel
 - **Præciserer:** DEC-0113, DEC-0114, DEC-0122 og DEC-0130
 - **Bevarer:** én exact-content-kildegate, alle post-data-gates, 79.414-currentclosure, native WAM, Feggesund, privacy, same-head-handoff og offentlig 210/673-verifikation
@@ -27,6 +27,8 @@ Modelbygningen stoppede på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`. 
 9. Ejeren godkendte 2026-09-12 udtrykkeligt, at DEC-0122's materielt uændrede first-cutover-engangsundtagelse flyttes alene til exact release 4.0.349. Et ældre handoff må ikke ommærkes eller bruges.
 
 ## Bevis og næste rækkefølge
+
+PR #283-head `fa5e648c5fbbb4263dfae539a4707b920fe8646c` bestod exact-head `34700907469` og blev merged byteidentisk som `187e599879e39d20014277e9afc4cb96029a78b3`. Backend `34702305208` anvendte alene migration 11 og bestod readback. Cache-only `34702471040` passerede det tidligere `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`; beslutningens v2-seam er derfor produktionsbevist. Det senere stop i den generiske offentlige 210/673-assertion er et nyt issue og ændrer ikke dette bevis.
 
 De fem målrettede modeltests er grønne. De beviser den virkelige live-v2-seam, eksplicit v1-afvisning, recovery replay, Candidate G-rollback og integreret generator. Begge modelbundles og modelbindingen er deterministiske med integrated hash `c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19`, rollback hash `d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89` og continuation hash `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`.
 

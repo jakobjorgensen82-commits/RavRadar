@@ -1,14 +1,14 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 fra komplet cache til korrigeret model
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main fra komplet cache til samlet scorefejlrapport
 
-- **Aktuel base:** Main `c86cc2a0`/4.0.348; branch `codex/4.0.349-state-only-closure-v2`. Candidate G er offentlig, normalworkflow disabled, gammel `34613079069` inert, fire untracked inspectmapper bevares.
-- **4.0.348 fuldført frem til modelkontrol:** PR #282 grøn/merged. Backend `34697586057` genbrugte exact-content-sourceproof uden dobbelt gate, anvendte kun 4.0.348-bindingen og bestod readback.
-- **Cachebevis:** `34697760571` fastholdt `2026-09-12T08:00:00Z`, hentede intet nyt vejr, sprang DMI/CP over, brugte OM reuse-only og bestod current/WAM/freshness.
-- **Modelstop:** Actual live-current udstedte korrekt closure-v2; RavScore-validator og fixtures krævede v1. Stop `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`; intet Feggesund-slutbevis/handoff/cutover/deploy.
-- **Lokal rettelse:** Én shared v2-konstant, actual producer→consumer-seamtest, explicit v1 rejection; ingen score-, fysik-, vejr-, grid-, afstands-, geometri- eller provenancelempelse.
-- **Binding:** Applied 4.0.348 SHA `704439…` immutable. Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql`; historical builders pinned; 11-leddet readiness/workflow måltestet grøn.
-- **First cutover:** Ejeren godkendte udtrykkeligt at flytte DEC-0122's uændrede engangsundtagelse alene til exact 4.0.349. Kun releaseVersion ændres; alle øvrige grænser består.
-- **Næste rækkefølge:** Metadata/SQL-sync og slutmatrix → exact-head sourcegate → exact green merge → backend migration 11/readback → samme cache-only-run → Feggesund/full gates/handoff → cutover → offentlig 210/673 → kontrolleret normaldrifts-/DMI-rotationsbevis.
-- **Model/indsats:** GPT-5.6 Sol, Indsats Ekstra høj gennem CI, runtime, cutover og slutvalidering. En ny lang oneoff startes ikke automatisk.
+- **Aktuel base:** Main `187e5998`/4.0.349; branch `codex/4.0.349-cutover-error-report`. Candidate G er stadig offentlig rent teknisk, normalworkflow disabled, gammel `34613079069` inert, fire untracked inspectmapper bevares.
+- **4.0.349 releasebevis:** PR #283-head `fa5e648c`/sourcegate `34700907469` grøn; byteidentisk merge `187e5998`. Backend `34702305208` genbrugte exact-content-proof uden dobbelt gate, anvendte kun migration 11 og bestod readback.
+- **Nyt cachebevis:** `34702471040` fastholdt `2026-09-12T08:00:00Z`, hentede intet nyt vejr og bestod exact current 79.414/79.414, WAM, freshness og live-current-selection.
+- **V1/v2 løst:** Runnet passerede det gamle `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`; 4.0.349-rettelsen virker i den virkelige cache.
+- **Nyt stop:** `Public RavScore horizon is not one complete 210/673 package` efter fuld zonegennemgang. Assertionen skjuler antal/lokale fejlkoder. WAM-retning er strengt valideret; vandstand er score-neutral og ikke bevist årsag.
+- **Lokal hotfix:** Ny bounded reporter læser kun den allerede byggede private conditions-fil og skriver offentlige zone-/part-id'er, antal og årsagskoder. Workflowet logger/uploader kun denne rapport, forbliver rødt og udsteder intet handoff/deploy. Måltests, modelbundle og metadatahash er grønne/uændrede.
+- **Ejerretning:** Candidate G skal ikke bruges som praktisk backup, hvis den offentlige score er ubrugelig. Ønsket mål er integreret offentlig model med komplet struktur og tydelig lokal `UNAVAILABLE`, ikke skjult modelblanding eller opdigtede scores.
+- **Næste rækkefølge:** RDKS/sluttest → exact-head sourcegate → byteidentisk merge → samme cache-only-run → hent samlet rapport → Astra/Ultra-review → tilbage til Sol → mindst mulige model-/cutoverfix → launch/offentlig kontrol → normal drift/rotation.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj nu. Bed om Astra/Ultra først, når runtime-rapporten foreligger. Ingen ny lang oneoff.
 
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 fra komplet cache til integreret model
 

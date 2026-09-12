@@ -1,7 +1,21 @@
 # RavRadar 4.0.349 – fælles v2-kontrakt for state-only-strømhold
 
 Dato: 2026-09-12
-Status: lokal releasekandidat; exact-head-CI, merge, backendbinding, ny cachekontrol, cutover og offentlig verifikation afventer
+Status: merged på main; backendbinding og cachedata grønne, samlet scorepakkediagnose og cutover afventer
+
+## Produktionsbevis og senere stop
+
+- PR #283-head `fa5e648c` bestod exact-head-sourcegate `34700907469` og blev merged med byteidentisk tree som main `187e5998`.
+- Backendrun `34702305208` genbrugte sourceproofet uden dobbelt fuld kildegate, anvendte kun migration 11 og bestod apply/readback.
+- Cache-only-run `34702471040` hentede intet nyt vejr og bestod current 79.414/79.414, WAM, freshness og live-current-selection. Det gamle v1/v2-stop blev passeret; 4.0.349-rettelsen virker.
+- Runnet stoppede senere med den upræcise samlefejl `Public RavScore horizon is not one complete 210/673 package`. Intet handoff, artifact, cutover eller deploy blev udstedt.
+
+## Samlet, sikker fejldiagnose
+
+- Modelbygningen gennemgår allerede alle zoner og gemmer de lokale årsager før den ydre assertion. En efterfølgende 4.0.349-drifts-hotfix udleder derfor én bounded rapport med kun offentlige zone-/kystdels-id'er, antal og fejlkoder.
+- Rå vejrdata, state, koordinater, U/V og private payloads logges eller uploades ikke. Workflowet forbliver rødt og kan ikke fortsætte til handoff/deploy.
+- Diagnosen ændrer ikke scoremodelbundle, releasekontraktmetadata eller backendbinding. Målrettet rapport-, workflow-, sourceplan-, bundle- og metadatakontrol er grøn lokalt.
+- Ejeren har åbnet en efterfølgende cutoverændring: Candidate G skal ikke fungere som praktisk launchstopklods, hvis den allerede er ubrugelig. Den integrerede model kan i stedet få tydelig lokal `UNAVAILABLE`, men strukturel komplethed, ærlige data og ingen skjult modelblanding består. Den præcise ændring besluttes efter runtime-rapport og Astra/Ultra-review.
 
 ## Hvad 4.0.348 beviste i produktion
 
