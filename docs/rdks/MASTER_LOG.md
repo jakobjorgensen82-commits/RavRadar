@@ -12,6 +12,8 @@ Den dobbelte sourcegate erstattes af exact-content proof. PR'en checker exact he
 
 Version 4.0.345 er lokal kandidat. DEC-0127, aktive krav, status, changelog og håndbøger synkroniseres. Næste trin er én exact-head PR-sourcegate, merge, kontrolleret main-opfyldning til alle closures, fulde gates/handoff, cutover og offentlig modelkontrol. Først derefter genaktiveres normal drift kontrolleret.
 
+PR #279's første head `72db0a70` nåede sourcegate-run `34659873681`, hvor exact checkout, contentdigest og dependencies bestod. Gaten fejlede derefter alene i en forældet statisk cachetest, som forventede den gamle énlinje-rebase og ikke 4.0.345-journalens validerede acquisitions/records. Runtimekoden er uændret; testen kræver nu både autoritativ bankmerge og efterfølgende fuld donorbuild. Den statiske test og funktionelle journal-/restart-/source-stage-tests er grønne. Prooftrinnene blev korrekt sprunget over; kun en ny exact head kan skabe bevis.
+
 # HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – lokal 4.0.344 efter faktiske restårsager
 
 PR #278 exact-head-kontrol `34627392687` stoppede efter de tidligere grønne trin i én forældet schedulertest. Fixturet forventede, at STAC-inventaret sluttede ved required horizon, men DEC-0126-koden observerer med vilje til senest mulig kausal modelkørsel +120 for at kunne bevise terminalen. Testforventning og kommentar følger nu kontrakten; producentkode, required ledger, official118 og admission ændres ikke. Det fejlede run genstartes ikke; ny commit/head skal have ny exact-head-CI.

@@ -10,7 +10,9 @@ Copernicus brugte cirka 54 minutter; cirka 2.376 sekunder/78,2 % lå i gentagne 
 
 Den dobbelte kildegate erstattes af exact-content-bevis: PR-gaten kører én gang på exact head og udsteder et SHA-256-bundet artifact; main genbruger kun efter live GitHub-verifikation af identisk treeindhold, PR/merge, run/attempt/head, job og steps. Den faktiske GitHub-API returnerer `pull_requests: []` for PR #278-runnet, så 4.0.345 bruger det autoritative PR-endpoint. Enhver mismatch/utilgængelighed falder sikkert tilbage til fuld main-sourcegate. Fuld post-data validate/releasegate består.
 
-Lokal kode og måltests er ikke produktion. Næste bindende sekvens er version/RDKS-slutkontrol, én exact-head PR-sourcegate, sikker merge, kontrolleret 4.0.345-main-opfyldning på bevarede cacher, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fulde gates/handoff/cutover, offentlig integreret modelkontrol og først derefter kontrolleret normaldrift. Se DEC-0127.
+PR #279's første head `72db0a70` bestod exact checkout, tree-digest og dependencies, men sourcegate-run `34659873681` stoppede i en forældet statisk cachetest, der stadig forventede pre-journal énlinje-rebase. Der blev korrekt ikke uploadet proof. Testen er lokalt opdateret til at kræve journalens validerede acquisitions/records flettet ind i den autoritative donor-shadow og derefter den fulde donorbuild. Den isolerede test og funktionelle journal-/restart-/source-stage-tests er grønne; en ny exact head og ny CI er fortsat nødvendig.
+
+Lokal kode og måltests er ikke produktion. Næste bindende sekvens er ny PR-head, én exact-head PR-sourcegate med proofartifact, sikker merge, kontrolleret 4.0.345-main-opfyldning på bevarede cacher, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fulde gates/handoff/cutover, offentlig integreret modelkontrol og først derefter kontrolleret normaldrift. Se DEC-0127.
 
 # HISTORISK SANDHED – 2026-09-11 – samlet lokal 4.0.344, endnu ikke produktion
 

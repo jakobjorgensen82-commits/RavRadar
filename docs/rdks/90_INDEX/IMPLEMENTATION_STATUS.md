@@ -17,6 +17,7 @@
 - [x] Kræv efter PR-gaten, at tracked source fortsat er ren før proofupload; bestå sourceproof-, workflowrækkefølge-, officielle Action-version-, permissions- og handoffkontrakter.
 - [x] Bestå lokal RDKS-, sikkerheds-, releaseversion-, håndbogs-, browserimport-, privat runtime-/privacy- og uændret RavScore-modelbindingkontrol.
 - [x] Bevis særskilt, at `data/kystdata.json` og `data/zones.geojson` kun ændrer topversionsfeltet 4.0.344 → 4.0.345.
+- [x] Klassificér PR #279/run `34659873681`: exact checkout/digest/dependencies grønne; sourcegate stoppede i en forældet statisk rebaseforventning; ingen proofupload. Opdatér kun kontrakttesten, og genbevis journal/restart/source-stage funktionelt.
 - [ ] Bestå én `validate:source` på den eksakte endelige 4.0.345-PR-head og verificér proofartifactet.
 - [ ] Merge kun den grønne head og bevis på første main-kørsel, at sourcegaten genbruges som `verified-identical-pull-request-source-content` eller falder sikkert tilbage.
 - [ ] Kør bevaret main-opfyldning til current 79.414/79.414, native WAM 79.060 og Feggesund 354/354; kræv freshness, fulde gates og runbundet handoff.

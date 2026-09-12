@@ -26,6 +26,7 @@ DMI roterede alle seks currentcollections og planlagde mod hele det autoritative
 - Positive og tomme receipts, tamper/basebinding, seks-segment-batch, soft/naturlig consolidation, restart/replay og injiceret precommitfejl.
 - Samlet Copernicus source-stage/range/closure/Open-Meteo/retry-pakke og alle journalcache-workflowkontrakter.
 - Source-tree-digest, PR-discovery og fail-closed content/PR/repository/head/run/job/step/artifact-scenarier.
+- Første PR-head `72db0a70` afslørede i run `34659873681` en forældet statisk pre-journal-rebaseforventning. Ingen proof blev udstedt. Testen beviser nu den autoritative bankmerge af journalens validerede acquisitions/records og den efterfølgende fulde donorbuild; funktionel restart/source-stage-evidens er genkørt grøn.
 
 ## Uændret og åbent
 
