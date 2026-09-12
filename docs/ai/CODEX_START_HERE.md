@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.347 måltestet, exact-head og drift åbne
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.348 fra komplet cache til model-online
+
+Læs først `CURRENT_SESSION_HANDOFF.md` og de nyeste RDKS-topafsnit. Main er `6868ae04`/4.0.347; branch er `codex/4.0.348-candidate-warmup-projection`. PR #281 exact head bestod sourcegate `34681246581`, og main-oneoff `34682428800` genbrugte beviset uden en anden fuld kildegate.
+
+Oneoffens vejr var komplet: DMI 67.686 + Copernicus 8.668 + regional 944 + Open-Meteo 2.116 = 79.414/79.414, missing 0. De 193 var kun resten før Copernicus. Native WAM 79.060 var grøn. Kørselen stoppede først bagefter på Candidate G-rollback-oraklets READY-48h-krav, så der findes intet handoff, artifact, cutover eller deploy; Candidate G er fortsat offentlig.
+
+Lokal 4.0.348 gør rollback privat numerisk, men offentligt/valgbart unavailable/null indtil READY, kun ved attesteret målt koldstart eller privat `BUILDING_MEASURED_ONLY`-fortsættelse. Ny `locked_weather_resume` fastholder `2026-09-12T08:00:00Z`, springer DMI/Copernicus over, bruger Open-Meteo reuse-only og spærrer skjulte providerkald. Mangelfuld cache stopper uden automatisk ny oneoff; alle efterfølgende gates genkøres.
+
+Den gamle WAM-migration er allerede centralt anvendt og må ikke omskrives. Lokal append-only `20260912122607_measured_rollback_warmup_binding.sql` fører kun 4.0.348-forseglinger/readbackversion frem. Efter merge skal den anvendes og readback-verificeres før cachekontrollen. Backendworkflowet genbruger PR-sourceproof efter live exact-content-kontrol og kører ellers fuld kildegate.
+
+Næste trin er lokal slutmatrix og Sol/Ekstra høj-review, én exact-head 4.0.348-PR-sourcegate, byteidentisk merge, append-only backendapply/readback, fastlåst cachekontrol, fuldt same-head-handoff, cutover og offentlig 210/673-verifikation. Normal drift aktiveres først kontrolleret bagefter. Runnet viste kun DMI-pass 1; multipass/rotation forbliver et åbent normaldriftsbevis. Bevar de fire untracked `.tmp-run-*-safe-inspect`-mapper.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – lokal 4.0.347 måltestet, exact-head og drift åbne
 
 Main er fortsat 4.0.346 på `e912ef9a`; Candidate G er offentlig. Oneoff `34675040245` er terminal failure, ikke cutoverinput. Den gemte DMI-, Copernicus-, regional- og Open-Meteo-fremgang består, men Open-Meteo sluttede 2.170/2.212 med 42 provider-negative par fordelt på 21 kystdele efter isolerede genforsøg. Der var ingen runtime-, attempt- eller køgrænse i OM, men de 42 er stadig reelle mangler. Intet handoff/artifact/deploy/modelskift blev udført.
 

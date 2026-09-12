@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-12 – lokal 4.0.347 måltestet efter negativ oneoff
+# NYESTE SANDHED – 2026-09-12 – lokal 4.0.348 efter komplet vejr og modelstop
+
+PR #281-head `c4c70ac7` bestod exact-head-sourcegaten i run `34681246581` og blev merged med identisk indhold som main `6868ae04`/4.0.347. Main-oneoff `34682428800` genbrugte sourceproofet uden en anden fuld kildegate og låste target `2026-09-12T08:00:00Z`. Der findes ingen aktiv run fra den kørsel; den sluttede failure efter modelbygningen.
+
+Vejrresultatet var komplet før fejlen. DMI gav 67.686/79.414 direkte currentpar. Før Copernicus var unionen 79.221/79.414, altså 193 reelle rester på dette mellemtrin. Slutunionen var DMI 67.686 + Copernicus 8.668 + regional 944 + Open-Meteo 2.116 = 79.414/79.414, missing 0, med closurehash `sha256:f2668b39bffdcf2bc237edc5d12965b594ca10b4f2abc2b23810adeaec83e642`. Native WAM-gaten var grøn med 79.060 verificerede part/timer. Et særskilt afsluttende Feggesund-bevis skal stadig ses i den næste handoffkørsel.
+
+Kørslen stoppede bagefter på `Candidate G rollback score quality requires exact READY 48-hour state`. Den integrerede model måtte godt starte med ærlig `HISTORY_INCOMPLETE`, men rollback-oraklets offentlige projektor krævede alligevel fulde 48 timer. Derfor blev intet handoff, artifact, cutover eller deploy dannet, og Candidate G er fortsat offentlig.
+
+Lokal 4.0.348 lader det private rollback-orakel opbygge ægte numerisk historik under attesteret koldstart eller valideret `BUILDING_MEASURED_ONLY`-fortsættelse, mens dets offentlige/valgbare modes er utilgængelige/null til READY. En ny `locked_weather_resume`-kontrol genbruger kun de gemte data ved det eksakte target: DMI og Copernicus springes over, Open-Meteo bruger kun `--reuse-only`, og en central spærring stopper skjulte providerkald. Hvis cachen ikke kan genvalideres komplet, stopper den uden automatisk genopfyldning.
+
+GitHub-backendrun `34564209781` beviser, at `20260909194000_wam_same_run_resolution_binding.sql` allerede er centralt anvendt. Den fil er derfor checksum-låst. Lokal append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun bundle-/continuationhashes og readbackversionen frem; den skal anvendes og readback-verificeres på exact main før cachekontrollen. Backendworkflowet genbruger kun PR-kildebeviset efter live exact-content-kontrol og falder ellers sikkert tilbage til fuld kildegate.
+
+Runnet loggede kun DMI-pass 1. Multipassrettelsen er derfor fortsat ikke livebevist, selv om fallback gav fuld samlet closure. Næste rækkefølge er målrettet lokal slutvalidering, én exact-head 4.0.348-PR-sourcegate, byteidentisk merge, append-only backendapply/readback, cachekontrol på det låste target, fulde post-data-gates/same-head-handoff, kontrolleret cutover og offentlig 210/673-kontrol. Først derefter genaktiveres normal vedligeholdelse kontrolleret og DMI-rotation/tidsoverskud måles. Se DEC-0130.
+
+# HISTORISK SANDHED – 2026-09-12 – lokal 4.0.347 måltestet efter negativ oneoff
 
 Main er `e912ef9a`/4.0.346 efter grøn PR #280-sourcegate. Oneoff `34675040245` genbrugte exact-content-proofet uden dobbelt kildegate og gemte alle providerfaser, men blev ikke komplet. DMI nåede 66.998/79.414 i kun pass 1. Open-Meteo modtog 2.212 restpar, løste 2.170 og efterlod 42 provider-negative par på 21 kystdele efter isolerede genforsøg; ingen runtime-, attempt- eller køgrænse forklarede dem. Slutgaten fejlede, så der findes intet handoff/cutoverbevis, og Candidate G er fortsat offentlig.
 

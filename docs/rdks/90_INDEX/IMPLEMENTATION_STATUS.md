@@ -1,4 +1,22 @@
-# Aktuel implementeringsstatus – 4.0.347 lokalt måltestet, CI og drift åbne
+# Aktuel implementeringsstatus – 4.0.348 lokal cachekontrol og model-warmup
+
+- [x] Verificér PR #281 exact-head-sourcegate `34681246581`, byteidentisk merge `6868ae04` og kildeproofgenbrug uden dobbelt fuld gate i `34682428800`.
+- [x] Klassificér de 193 som mellemresultat før Copernicus og bevis den afsluttende currentclosure 79.414/79.414, missing 0, samt native WAM 79.060.
+- [x] Afgræns modelstoppet til Candidate G-rollback-projektorens READY-48h-krav; bevar den integrerede models tilladte `HISTORY_INCOMPLETE`.
+- [x] Implementér privat numerisk rollback-warmup med offentlige/valgbare modes unavailable/null og streng fortsættelse kun fra attesteret koldstart eller privat `BUILDING_MEASURED_ONLY`.
+- [x] Implementér `locked_weather_resume` med eksakt target, DMI-/Copernicus-skip, Open-Meteo `--reuse-only`, central provider-netværksspærre og intet automatisk skift til genopfyldning.
+- [x] Gør ét DMI-pass til standard for fremtidig acquisition; behold to/tre som eksplicit diagnose. Registrér at runnet kun viste pass 1, så multipass/rotation stadig kræver live normaldriftsbevis.
+- [x] Bevar den allerede anvendte WAM-migration checksumlåst, tilføj en ny append-only 4.0.348-binding og før den gennem schema, installer, releasebinding, readiness og migrationsregressioner.
+- [x] Versionér 4.0.348 og synkronisér DEC-0130, aktiv RDKS, changelog, begge håndbøger/SQL og exact-release-cutoverbinding.
+- [x] Bestå den afsluttende lokale måltestmatrix, versions-/RDKS-/håndbogskontroller, YAML/diff-kontrol og geodata-only-version-diff. Begge modelbundles, recovery/rollback, 210/673 public-stage, migrationskæde, backendreadiness, cacheworkflow og kildebevis er grønne.
+- [ ] Bestå én exact-head 4.0.348-PR-sourcegate og merge kun byteidentisk grøn head.
+- [ ] Anvend den nye append-only backendmigration på exact main, kræv grøn readiness-readback og genbrug kun PR-kildebeviset efter live exact-content-verifikation.
+- [ ] Kør cachekontrollen mod `2026-09-12T08:00:00Z` uden ny providerindsamling; kræv current, WAM, Feggesund, freshness, fulde post-data-gates og same-head-handoff.
+- [ ] Udfør kontrolleret cutover, verificér integreret model offentligt på 210/673 og bevis derefter almindelig vedligeholdelse/rotation før fuld genaktivering.
+
+De gemte data er komplette efter den seneste closure, men launch er ikke bevist, før den nye same-head-cachekontrol og hele deploykæden er grøn. Candidate G er stadig offentlig. DEC-0130 er den aktive kontrakt; ældre afkrydsninger nedenfor er historiske.
+
+# Historisk implementeringsstatus – 4.0.347 lokalt måltestet, CI og drift åbne
 
 - [x] PR #280 exact-head-sourcegate `34673860241`, merge `e912ef9a`/4.0.346 og live genbrug af kildeproof i `34675040245`.
 - [x] Verificér terminal oneoff failure: ét DMI-pass, 66.998/79.414 direkte par, NSBS/HARMONIE bevaret runtime-stop, alle providerprogresssaves og Open-Meteo 2.170/2.212 med 42 provider-negative restpar.

@@ -1,4 +1,18 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.347 lokalt måltestet
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.348 komplet cache, modelstop og hurtig genoptagelse
+
+Ejeren kræver den integrerede scoremodel online nu, uden en ny blind tretimers-oneoff, men stadig med komplet data og alle sikkerhedsgates. PR #281-head `c4c70ac7` bestod sourcegate `34681246581` og blev merged byteidentisk som `6868ae04`. Oneoff `34682428800` genbrugte dette bevis, så kilden ikke blev fuldt kontrolleret to gange.
+
+Runnet låste target `2026-09-12T08:00:00Z`. DMI leverede 67.686/79.414. De 193 var et mellemresultat før Copernicus, ikke slutmangler. Efter Copernicus, regional og Open-Meteo var currentclosure 79.414/79.414 med missing 0; native WAM var grøn 79.060. Dataene blev gemt. Kørselen stoppede først bagefter, fordi rollback-oraklets offentlige scoreprojektor krævede præcis READY 48 timers historik under en tilladt målt koldstart. Derfor blev intet handoff, artifact, cutover eller deploy dannet.
+
+4.0.348 bevarer privat numerisk rollbackstate, men gør alle offentlige/valgbare rollbackmodes unavailable/null indtil READY. Dette gælder kun attesteret målt koldstart eller valideret privat `BUILDING_MEASURED_ONLY`-fortsættelse; ukendt og legacy non-READY stopper. Den integrerede model fortsætter ærligt med `HISTORY_INCOMPLETE` uden syntetisk historik.
+
+GitHub-backendrun `34564209781` viser, at den tidligere WAM-binding allerede er anvendt. Den migration omskrives derfor ikke og er låst ved normaliseret SHA-256 `a76ae8bd…`. En ny append-only 4.0.348-migration fører alene integrated-, rollback- og continuationhashes samt readbackversion frem. Den skal anvendes/readback-verificeres på exact main før cachekontrollen. Backendworkflowet genbruger kun PR'ens sourceproof efter live exact-content-kontrol; ellers kører det sikkert fuld kildegate.
+
+En ny fastlåst cachekontrol genbruger target og providerbanker uden ny weather-provider-indsamling: DMI og Copernicus springes over, Open-Meteo er reuse-only, og weatherbuilderen har central netværksspærre. Alle target-, closure-, WAM/Feggesund-, provenance-, freshness-, privacy-, model-, handoff- og post-data-gates genkøres. En mangelfuld cache stopper; den udløser ikke automatisk en lang oneoff.
+
+Runnet viste kun DMI-pass 1, så multipass og normal rotationskapacitet er fortsat åbne driftsbeviser. DEC-0130, 4.0.348-krav/issues/changelog og begge håndbøger er den aktuelle kontrakt. Næste sikre sekvens er måltests, én exact-head PR-sourcegate, byteidentisk merge, append-only backendapply/readback, låst cachekontrol, fuld cutover/offentlig kontrol og derefter normal vedligeholdelsesbevis.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.347 lokalt måltestet
 
 Ejeren fastholder autonom helkædefejlsøgning, komplette data før cutover, én kildegate for byteidentisk PR/main-kilde og derefter den integrerede scoremodel online. Astra/Ultra-reviewet er afsluttet; implementationen fortsætter på Sol/Ekstra høj. Main er 4.0.346/`e912ef9a`, Candidate G er offentlig, og normalworkflowet er deaktiveret.
 

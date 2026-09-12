@@ -23,7 +23,7 @@ import { computeCandidateGRollbackBundle } from './build-candidate-g-rollback-bu
 
 const REPOSITORY_ROOT = path.resolve('.');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql';
+  'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -46,6 +46,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql',
   'supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql',
   'supabase/migrations/20260907084343_horizon_valid_weather_binding.sql',
+  'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 

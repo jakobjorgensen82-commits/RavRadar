@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.347 lokalt rettet, runtime åben
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 cachebundet modelrettelse
+
+- **ISSUE-193-INTERMEDIATE-RESIDUAL – LUKKET AF SAMME RUN:** De 193 var den målte rest før Copernicus, ikke kørslens slutmangler. Fallbackkæden lukkede dem og resten, så run `34682428800` sluttede current 79.414/79.414 med missing 0.
+- **ISSUE-ROLLBACK-READY-48H-COLD-START – LOKALT RETTET/MÅLTESTET, CI ÅBEN P0:** Modelbygningen krævede fejlagtigt READY 48 timer i en tilladt målt koldstart. Privat rollbackstate kan nu vokse numerisk, mens offentlige/valgbare rollbackmodes forbliver utilgængelige/null. Ukendt eller legacy non-READY stopper fortsat.
+- **ISSUE-LOCKED-WEATHER-RESUME – LOKALT RETTET/MÅLTESTET, CI/RUNTIME ÅBEN P0:** Ny eksplicit cachekontrol fastholder `2026-09-12T08:00:00Z`, springer DMI og Copernicus over, lader Open-Meteo genbruge uden netværk og har central provider-netværksspærre. Ufuldstændig cache stopper uden automatisk genopfyldning.
+- **ISSUE-4.0.348-BACKEND-BINDING – LOKALT RETTET/MÅLTESTET, LIVE APPLY ÅBEN P0:** Den gamle WAM-binding er allerede centralt anvendt og må ikke omskrives. Ny append-only migration `20260912122607_measured_rollback_warmup_binding.sql` ændrer kun de tre model-/continuationforseglinger og readbackversionen. Exact-main apply og readiness-readback skal være grønne før cachekontrollen; mismatch stopper.
+- **ISSUE-DMI-MULTIPASS-LIVE-PROOF – ÅBEN DRIFT:** Run `34682428800` loggede kun `DMI one-off pass 1/3`. Samlet closure var komplet via fallback, men pass 2/3 og rotationens tidsoverskud er derfor stadig ikke bevist i virkelig drift.
+- **ISSUE-4.0.348-FEGGESUND-EXPLICIT-PROOF – ÅBEN I NY KØRSEL:** Native WAM-gaten var grøn med 79.060 part/timer. Et særskilt afsluttende Feggesund 354/354-bevis blev ikke observeret før modelstoppet og skal kræves i den nye cachekontrol/handoff.
+- **ISSUE-4.0.348-RELEASE-AND-LAUNCH – ÅBEN P0:** Main er `6868ae04`/4.0.347, Candidate G er stadig offentlig, og normalworkflowet er fortsat deaktiveret. 4.0.348 kræver exact-head-CI, byteidentisk merge, append-only backendapply/readback, cachekontrol, alle post-data-gates, same-head-handoff, cutover, offentlig modelverifikation og derefter normal vedligeholdelsesbevis.
+
+DEC-0130 og `CHANGELOG-4.0.348.md` er aktuelle. Der startes ikke automatisk en ny lang oneoff ved et cacheproblem.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.347 lokalt rettet, runtime åben
 
 - **ISSUE-ONEOFF-TERMINAL-PROOF – LOKALT RETTET/MÅLTESTET, RUNTIME ÅBEN P0:** Intern opt-in-kode 75 udstedes først efter normal terminalbehandling; generic2, post-cache-exception, finalize-only og normal drift kan ikke åbne klassifikation. Supervisor-watchdoghistorik blokerer videresendelse. Reelt pass 2/3 afventer main-run.
 - **ISSUE-ONEOFF-CLASSIFICATION-AND-PROGRESS – LOKALT RETTET/MÅLTESTET, RUNTIME ÅBEN:** Indre/ydre DKSS/HARMONIE-runtime har eksakte beskeder/feltformer, download/WAM/ukendt stopper, og kun `assetsProcessedThisInvocation` tæller. Serialiseret cache-seam og negative kanter er grønne; live rotation/fremgang er endnu ikke bevist.

@@ -1,4 +1,18 @@
-# NYESTE ROADMAP – 2026-09-12 – 4.0.346 fra reel DMI-multipass til model-online
+# NYESTE ROADMAP – 2026-09-12 – 4.0.348 fra komplet cache til model-online
+
+- [x] Verificér én exact-head-sourcegate for 4.0.347 og byteidentisk main-genbrug uden dobbelt fuld kildegate.
+- [x] Bevis at run `34682428800` sluttede current 79.414/79.414 med missing 0 og native WAM 79.060; klassificér 193 som mellemresultat før Copernicus.
+- [x] Find modelstoppet efter vejrclosure og implementér privat numerisk rollback-warmup med public/selectable unavailable/null til READY.
+- [x] Byg fastlåst cachekontrol på `2026-09-12T08:00:00Z` uden DMI-/Copernicus-acquisition, med Open-Meteo reuse-only, central provider-netværksspærre og intet automatisk refill.
+- [x] Lås den allerede anvendte WAM-migration ved dens kendte checksum, og byg en ny append-only backendbinding, som kun fører 4.0.348-hashes/readbackversion frem.
+- [x] Versionér 4.0.348 og synkronisér DEC-0130, krav, issues, checkpoints, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
+- [x] Bestå den målrettede lokale slutmatrix og udfør Sol/Ekstra høj-review af model-, cache-, workflow- og cutovergrænserne.
+- [ ] Bestå én exact-head 4.0.348-PR-sourcegate og merge kun byteidentisk grøn head.
+- [ ] Anvend og readback-verificér den nye backendbinding på exact main; genbrug kun PR-sourceproof efter live exact-content-kontrol.
+- [ ] Kør den låste cachekontrol; kræv current 79.414, native WAM 79.060, Feggesund 354, freshness, fulde post-data-gates og same-head-handoff.
+- [ ] Udfør kontrolleret cutover og offentlig 210/673-verifikation. Genaktivér derefter normal drift kontrolleret og mål DMI-rotation/pass, cachetransport, providerforbrug og tidsoverskud.
+
+# HISTORISK ROADMAP – 2026-09-12 – 4.0.346 fra reel DMI-multipass til model-online
 
 - [x] Luk 4.0.345 exact-head-sourcegate, merge og exact-content proofgenbrug uden dobbelt fuld gate.
 - [x] Rekonstruér oneoff `34667430392` gennem targetplan, DMI/WAM, Copernicus, regional, Open-Meteo og closure; klassificér 184 som forsøgte provider-negative par.

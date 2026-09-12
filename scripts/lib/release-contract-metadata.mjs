@@ -49,6 +49,10 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0116',
       path: 'docs/rdks/10_DECISIONS/DEC-0116-ACTIVE-CANDIDATE-WEATHER-CACHE-GENERATIONS.md',
     }),
+    Object.freeze({
+      id: 'DEC-0130',
+      path: 'docs/rdks/10_DECISIONS/DEC-0130-MEASURED-ROLLBACK-WARMUP-AND-LOCKED-WEATHER-RESUME.md',
+    }),
   ]),
 });
 

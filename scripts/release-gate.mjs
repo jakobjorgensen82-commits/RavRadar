@@ -221,7 +221,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -1119,6 +1119,11 @@ ok(/if \(url\.pathname === '\/v1\/trips\/count'\) \{[\s\S]*?return json\(503, \{
   'Kun intern count-read-fejl skal blive en fast datasikker 503, så bounded retry kan skelne den fra kontraktfejl');
 ok(String(pkg.scripts?.['test:hybrid-trip-storage']||'').includes('test-trip-storage-edge-transient-retry.mjs'),'Trip-storage Edge-retrytesten mangler package-binding');
 for(const marker of [
+  'Verify exact-content source validation with GitHub',
+  "if: steps.source-proof.outputs.required != 'false'",
+  "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
+  'Require only the ten exact integrated cutover migrations',
+  '20260912122607_measured_rollback_warmup_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

@@ -138,6 +138,7 @@ const DMI_SCHEDULE_INTERVAL_MINUTES = Math.max(1, Number(process.env.DMI_SCHEDUL
 const DMI_OBSERVATION_INTERVAL_MINUTES = Math.max(10, Number(process.env.DMI_OBSERVATION_INTERVAL_MINUTES ?? 60));
 const STATION_CACHE_GRACE_HOURS = Math.max(1, Number(process.env.STATION_CACHE_GRACE_HOURS ?? 6));
 const DMI_DEPLOYED_CACHE_URL = process.env.DMI_DEPLOYED_CACHE_URL ?? null;
+const WEATHER_CACHE_ONLY = process.env.RAVRADAR_WEATHER_CACHE_ONLY === 'true';
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
@@ -248,6 +249,11 @@ async function waterStationRouting() {
 
 
 async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+  if (WEATHER_CACHE_ONLY) {
+    const error = new Error(provider + ': network disabled in weather cache-only mode');
+    error.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED';
+    throw error;
+  }
   if (dmi && dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
     const error = new Error(`${provider}: DMI requestbudget opbrugt (${DMI_REQUEST_BUDGET} kald)`);
     error.code = 'DMI_REQUEST_BUDGET_EXHAUSTED';
@@ -2039,6 +2045,7 @@ function scoreCoastalPartsRuntime(
       let previousCandidateGContinuation = null;
       let legacyCandidateGMigrationState = null;
       let candidateGRollbackMeasuredColdStart = false;
+      let candidateGRollbackMeasuredWarmupContinuation = false;
       if (initialSelection.source === 'CANDIDATE_G_MIGRATION') {
         if (!publicCandidateGMigrationState
           || JSON.stringify(initialSelection.state)
@@ -2055,7 +2062,8 @@ function scoreCoastalPartsRuntime(
       ) {
         candidateGRollbackMeasuredColdStart = true;
       } else {
-        previousCandidateGContinuation = selectCoastalPointCandidateGRollbackContinuation({
+        const candidateGContinuationSelection =
+          selectCoastalPointCandidateGRollbackContinuation({
           partId: part.partId,
           part,
           initialSelection,
@@ -2063,7 +2071,12 @@ function scoreCoastalPartsRuntime(
           privateCandidateGContinuation,
           checkpointCandidateGContinuation,
           targetReferenceAt: generatedAt,
-        }).state;
+          });
+        previousCandidateGContinuation = candidateGContinuationSelection.state;
+        candidateGRollbackMeasuredWarmupContinuation =
+          candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'
+          && previousCandidateGRollbackRuntime?.status
+            === CANDIDATE_G_MEASURED_WARMUP_STATUS;
       }
       const feature = {
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
@@ -2197,6 +2210,7 @@ function scoreCoastalPartsRuntime(
         previousCandidateGContinuation,
         legacyCandidateGMigrationState,
         candidateGRollbackMeasuredColdStart,
+        candidateGRollbackMeasuredWarmupContinuation,
         targetReferenceAt: generatedAt,
         recoverySources,
         publicHourly: hourly,

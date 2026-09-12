@@ -1,4 +1,4 @@
-import { evaluateDirectionAnchors } from './direction-anchors.js?v=4.0.347';
+import { evaluateDirectionAnchors } from './direction-anchors.js?v=4.0.348';
 function finite(v){const n=Number(v);return Number.isFinite(n)?n:null;}
 function norm(v){return ((Number(v)%360)+360)%360;}
 export function directionFromComponents(u,v){

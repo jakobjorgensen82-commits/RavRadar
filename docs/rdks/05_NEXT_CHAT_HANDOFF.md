@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 DMI-multipass før ny main-oneoff
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 fra komplet cache til integreret model
+
+- **Aktuel base:** `origin/main` er `6868ae04`/4.0.347; arbejdsgrenen er `codex/4.0.348-candidate-warmup-projection`. Candidate G er offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper skal bevares.
+- **Positivt data- og kildebevis:** PR #281-head `c4c70ac7` bestod sourcegate `34681246581` og blev merged byteidentisk. Oneoff `34682428800` genbrugte proofet, låste `2026-09-12T08:00:00Z` og sluttede current 79.414/79.414, missing 0. De 193 var kun resten før Copernicus. Native WAM 79.060 var grøn.
+- **Negativt modelbevis:** Kørselen stoppede derefter på rollback-oraklets fejlagtige READY-48h-krav. Intet handoff, artifact, cutover eller deploy. Et særskilt afsluttende Feggesund 354/354-bevis skal stadig ses i næste kørsel.
+- **Lokal modelrettelse:** Under attesteret målt koldstart/valideret privat fortsættelse beholdes Candidate G numerisk privat, men offentlige og valgbare rollbackmodes er unavailable/null til READY. Ukendt eller legacy non-READY stopper fortsat.
+- **Append-only backendbinding:** GitHub-run `34564209781` beviser, at den gamle WAM-migration allerede er centralt anvendt. Bevar den checksumlåst. Ny `20260912122607_measured_rollback_warmup_binding.sql` fører kun integrated-/rollback-/continuationhashes og readbackversion frem; exact-main apply/readback skal være grøn før cachekontrollen. Backendworkflowet må genbruge PR-sourceproof efter live exact-content-kontrol og falder ellers tilbage til fuld gate.
+- **Hurtig cachekontrol:** Ny eksplicit `locked_weather_resume` fastholder target, springer DMI og Copernicus over, kører Open-Meteo reuse-only og stopper skjulte providerkald. Den genkører alle slutgates og bliver aldrig automatisk til en lang oneoff.
+- **Åbent DMI-bevis:** Runnet loggede kun pass 1/3. Samlet dækning var komplet via fallback, men reelt pass 2/3 og normalt rotationsoverskud er ikke bevist.
+- **Næste rækkefølge:** Afslut lokal test/dokumentation → én exact-head 4.0.348-sourcegate → byteidentisk merge → append-only backendapply/readback → cachekontrol på det låste target → fulde post-data-gates/handoff → kontrolleret cutover → offentlig 210/673-verifikation → kontrolleret normal vedligeholdelse.
+- **Model/indsats:** Høj er nok til dokumentlukning og måltests. GPT-5.6 Sol med Indsats Ekstra høj kræves til exact-head-review, runtime, cutover og slutvalidering.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.346 DMI-multipass før ny main-oneoff
 
 - **Aktuel base:** `origin/main` er 4.0.345 på `64d2f23f`; arbejdsgrenen er `codex/4.0.346-dmi-multipass-closure`. Candidate G er offentlig. Normalproduktionen er disabled; `34613079069` er fortsat en inert queued/jobs[]-post.
 - **Positivt 4.0.345-bevis:** PR #279-head `47275529` bestod sourcegate `34666410182`; mergeindholdet var identisk. Oneoff `34667430392` genbrugte exact-content-proofet og sprang den dobbelte fulde kildegate over.

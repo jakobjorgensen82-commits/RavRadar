@@ -1,3 +1,13 @@
+## 4.0.348 – målbar model-warmup og låst cachekontrol (2026-09-12, lokal kandidat)
+
+- Main-oneoff `34682428800` genbrugte PR #281's exact-head-kildebevis uden en anden fuld kildegate. De 193 var en rest før Copernicus; den afsluttende currentclosure var 79.414/79.414 med missing 0, og native WAM var grøn 79.060.
+- Modelbygningen stoppede bagefter, fordi Candidate G-rollback krævede READY 48 timer under en tilladt målt koldstart. Intet handoff, artifact, cutover eller deploy blev dannet.
+- Rollback-oraklet kan nu opbygge privat numerisk state under attesteret koldstart eller valideret `BUILDING_MEASURED_ONLY`, mens offentlige/valgbare modes forbliver unavailable/null til READY. Ukendt og legacy non-READY stopper fortsat.
+- Den allerede centralt anvendte WAM-migration forbliver checksumlåst. Ny append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun de nye integrated-, rollback- og continuationhashes samt readbackversionen frem; backendapply/readback skal være grøn før cachekontrollen.
+- En eksplicit cachekontrol fastholder target `2026-09-12T08:00:00Z`, springer DMI og Copernicus over, bruger Open-Meteo reuse-only og stopper skjulte providerkald. Ufuldstændig cache stopper uden automatisk lang genopfyldning.
+- PR'ens exact-content-kildebevis må også genbruges af backendworkflowet efter live GitHub-kontrol; enhver ukendt eller modstridende evidens udløser sikkert en fuld kildegate. Alle current-, WAM/Feggesund-, provenance-, freshness-, privacy-, post-data-, handoff-, cutover- og offentlig-verifikationsgates består. Ét DMI-pass er standard for senere acquisition; runnet beviste kun pass 1, så multipass og normal rotation er fortsat åbne driftsbeviser.
+- Se `CHANGELOG-4.0.348.md` og DEC-0130.
+
 ## 4.0.347 – terminalbevist DMI-fortsættelse og frisk Pages-write (2026-09-12, lokal kandidat)
 
 - Main-oneoff `34675040245` genbrugte sourceproofet uden dobbelt kildegate og gemte alle providerfremskridt, men 4.0.346 startede kun DMI-pass 1. Open-Meteo sluttede med 42 provider-negative par efter 21 isolerede genforsøg; der var intet handoff eller cutover.

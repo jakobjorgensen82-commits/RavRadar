@@ -40,9 +40,9 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 9,
-  'The active cutover must preserve the eight applied migrations and append one binding migration');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260909194000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 10,
+  'The active cutover must preserve the nine applied migrations and append one binding migration');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260912122607');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -85,7 +85,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql',
+  'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -111,7 +111,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260909194000'",
+  "'20260912122607'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -235,6 +235,7 @@ const unicodeList = `
  20260906162332    │                  │ 2026-09-06 16:23:32
  20260907084343    │                  │ 2026-09-07 08:43:43
  20260909194000    │                  │ 2026-09-09 19:40:00
+ 20260912122607    │                  │ 2026-09-12 12:26:07
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -247,6 +248,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260906162332', remote: null },
   { local: '20260907084343', remote: null },
   { local: '20260909194000', remote: null },
+  { local: '20260912122607', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -264,9 +266,10 @@ const capturedFirstEightInstallList = `
 `;
 assert.deepEqual(parseSupabaseMigrationList(capturedFirstEightInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.slice(0, 8).map(item => ({ local: item.version, remote: null })));
-// Append the release's new row while preserving the captured eight-row CLI fixture.
+// Append both later binding rows while preserving the captured eight-row CLI fixture.
 const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260909194000\` | \` \`    | \`2026-09-09 19:40:00\`
+   \`20260912122607\` | \` \`    | \`2026-09-12 12:26:07\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -329,7 +332,7 @@ Finished supabase db push.
 `,
 });
 assert.deepEqual(plan.pendingVersions,
-  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343', '20260909194000']);
+  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343', '20260909194000', '20260912122607']);
 assert.deepEqual(plan.alreadyAppliedVersions,
   ['20260829010000', '20260829020000', '20260901010000']);
 
@@ -364,6 +367,7 @@ await assert.rejects(
        20260906162332 | | pending
        20260907084343 | | pending
        20260909194000 | | pending
+       20260912122607 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -382,6 +386,7 @@ const appliedList = `
  20260906162332 | 20260906162332 | now
  20260907084343 | 20260907084343 | now
  20260909194000 | 20260909194000 | now
+ 20260912122607 | 20260912122607 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -395,8 +400,8 @@ assert.deepEqual(assertSupabaseMigrationsApplied(currentAppliedList).appliedVers
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
 assert.throws(() => assertSupabaseMigrationsApplied(unicodeList), /was not recorded remotely/);
 
-// The live backend already has the first eight migrations. Every applied prefix
-// must resume at its exact suffix, and a retry after all nine must be a no-op.
+// The live backend already has the first nine migrations. Every applied prefix
+// must resume at its exact suffix, and a retry after all ten must be a no-op.
 for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; appliedCount += 1) {
   const appliedPrefix = REQUIRED_CUTOVER_MIGRATIONS.slice(0, appliedCount);
   const pendingSuffix = REQUIRED_CUTOVER_MIGRATIONS.slice(appliedCount);
@@ -414,13 +419,17 @@ for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; a
   assert.deepEqual(prefixPlan.pendingVersions, pendingSuffix.map(item => item.version),
     `prefix ${appliedCount}: only the exact remaining suffix may be applied`);
   if (appliedCount === 8) {
-    assert.deepEqual(prefixPlan.pendingVersions, ['20260909194000'],
-      'the already-installed live backend needs only the WAM binding migration');
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260909194000', '20260912122607'],
+      'the eight-migration historical prefix needs both later binding migrations');
+  }
+  if (appliedCount === 9) {
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260912122607'],
+      'the installed live backend needs only the measured-warmup binding migration');
     await assert.rejects(assertSupabaseMigrationPlan({
       migrationListText: prefixList,
       dryRunText: currentFirstInstallDryRun,
     }), /did not propose exactly the pending required migrations/,
-    'the nine-file first-install plan must not replay eight already-applied migrations');
+    'the ten-file first-install plan must not replay nine already-applied migrations');
   }
 }
 
@@ -437,6 +446,7 @@ try {
     fs.writeFile(path.join(duplicateDirectory, '20260906162332_per_pair_weather_fallback_binding.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260907084343_horizon_valid_weather_binding.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260909194000_wam_same_run_resolution_binding.sql'), '-- test\n'),
+    fs.writeFile(path.join(duplicateDirectory, '20260912122607_measured_rollback_warmup_binding.sql'), '-- test\n'),
   ]);
   await assert.rejects(inspectMigrationSources({ migrationsDirectory: duplicateDirectory }), /duplicate Supabase migration version/);
 } finally {
@@ -469,6 +479,7 @@ try {
  20260906162332 │ │ pending
  20260907084343 │ │ pending
  20260909194000 │ │ pending
+ 20260912122607 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -491,6 +502,7 @@ try {
   20260906162332 │ │ pending
   20260907084343 │ │ pending
   20260909194000 │ │ pending
+  20260912122607 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -868,13 +880,13 @@ await assert.rejects(verifyIntegratedDatabaseReadback({
 }), /checkpoint CAS contract definition hash drifted/);
 
 const previousCheckpointDatabase = structuredClone(checkpointDatabaseReadback);
-previousCheckpointDatabase.appliedMigrationVersion = '20260907084343';
+previousCheckpointDatabase.appliedMigrationVersion = '20260909194000';
 await assert.rejects(verifyIntegratedDatabaseReadback({
   url: URL,
   serviceRoleKey: SERVICE_KEY,
   fetchImpl: databaseReadbackFetch(databaseReadback, previousCheckpointDatabase),
 }), /checkpoint database readback is missing its applied migration/,
-'readiness must reject the old eight-migration backend before publishing the new model binding');
+'readiness must reject the old nine-migration backend before publishing the new model binding');
 
 for (const rejectedCheck of Object.keys(checkpointDatabaseReadback.checks)) {
   const rejected = structuredClone(checkpointDatabaseReadback);
