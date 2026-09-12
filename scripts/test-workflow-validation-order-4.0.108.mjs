@@ -3355,12 +3355,58 @@ const publicVerificationPosition = deployWorkflow.indexOf('name: Verify deployed
 const checkpointCompletePosition = deployWorkflow.indexOf('name: Revalidate checkpoint disposition before Pages completion CAS');
 const failureReconciliationPosition = deployWorkflow.indexOf('name: Reconcile an ambiguous failed transition from observed public identity');
 const deploymentTerminalPosition = deployWorkflow.indexOf('name: Seal exact verified deployment terminal');
+const handoffIdentityPosition = deployWorkflow.indexOf('name: Verify exact privacy-safe handoff identity');
+const checkpointBeginPosition = deployWorkflow.indexOf('name: Validate checkpoint disposition before any Pages begin CAS');
+const preBeginHorizonPosition = deployWorkflow.indexOf('name: Require horizon-valid weather before any Pages begin CAS');
+const preDeployHorizonPosition = deployWorkflow.indexOf('name: Require horizon-valid weather immediately before Pages deployment');
+const beginCasPositions = [...deployWorkflow.matchAll(/\n      - name: Begin [^\n]+ with exact central CAS/g)]
+  .map(match => match.index);
+if (!(beginCasPositions.length > 0
+  && handoffIdentityPosition < preBeginHorizonPosition
+  && preBeginHorizonPosition < checkpointBeginPosition
+  && preBeginHorizonPosition < Math.min(...beginCasPositions)
+  && Math.max(...beginCasPositions) < preDeployHorizonPosition
+  && preDeployHorizonPosition < deploymentPosition)) {
+  throw new Error('Pages skal genvalidere den eksakte vejrhorizont både før første begin-CAS og umiddelbart før deployment.');
+}
+for (const horizonPosition of [preBeginHorizonPosition, preDeployHorizonPosition]) {
+  const nextStep = deployWorkflow.indexOf('\n      - name:', horizonPosition + 1);
+  const horizonSection = deployWorkflow.slice(
+    horizonPosition,
+    nextStep < 0 ? deployWorkflow.length : nextStep,
+  );
+  for (const marker of [
+    'set -euo pipefail',
+    "jq -er '.productionReferenceAt | select(type == \"string\")'",
+    'node scripts/check-production-target-freshness.mjs',
+    '--target "$target"',
+    '--maximum-age-minutes 240',
+  ]) {
+    if (!horizonSection.includes(marker)) throw new Error(`Pages-horisontgaten mangler ${marker}`);
+  }
+}
 const outcomeJobPosition = orchestratorWorkflow.indexOf('\n  production-outcome:');
 if (!(deploymentPosition < publicVerificationPosition
   && publicVerificationPosition < checkpointCompletePosition
   && checkpointCompletePosition < failureReconciliationPosition
   && failureReconciliationPosition < deploymentTerminalPosition)) {
   throw new Error('DEPLOYED-beviset skal ligge efter Pages, disposition-complete, offentlig exact 210/673-verifikation og alle activation/reconciliation-trin.');
+}
+const failureReconciliationSection = deployWorkflow.slice(
+  failureReconciliationPosition,
+  deploymentTerminalPosition,
+);
+for (const beginId of [
+  'candidate-begin',
+  'candidate-refresh-begin',
+  'candidate-historical-refresh-begin',
+  'candidate-legacy-refresh-begin',
+  'integrated-transition-begin',
+  'integrated-historical-maintenance-begin',
+]) {
+  if (!failureReconciliationSection.includes(`steps.${beginId}.outcome == 'success'`)) {
+    throw new Error(`Pages-fejl efter ${beginId} skal udløse den eksisterende transition reconciliation.`);
+  }
 }
 const deploymentTerminalSection = deployWorkflow.slice(deploymentTerminalPosition);
 for (const marker of [

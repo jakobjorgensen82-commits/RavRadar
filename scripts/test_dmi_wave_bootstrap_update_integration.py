@@ -3552,19 +3552,29 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "producer_success_is_blocked = producer_success_blocked(",
             operational_binding,
         )
-        fail_closed_return = source.index(
-            "if producer_success_is_blocked:\n"
-            "        return 2",
-            success_gate_binding,
+        exit_helper_start = source.index(
+            "def producer_process_exit_code("
         )
-        final_return = source.index(
-            "return 0 if producer_productive else 2",
-            fail_closed_return,
+        exit_helper_end = source.index(
+            "\ndef note_asset_processed_this_invocation(",
+            exit_helper_start,
+        )
+        exit_helper = source[exit_helper_start:exit_helper_end]
+        final_exit = source.index(
+            "return producer_process_exit_code(",
+            success_gate_binding,
         )
         self.assertLess(validator, operational_binding)
         self.assertLess(operational_binding, success_gate_binding)
-        self.assertLess(success_gate_binding, fail_closed_return)
-        self.assertLess(fail_closed_return, final_return)
+        self.assertLess(exit_helper_start, success_gate_binding)
+        self.assertLess(success_gate_binding, final_exit)
+        self.assertIn("if producer_success_is_blocked:", exit_helper)
+        self.assertIn("return 2", exit_helper)
+        self.assertIn("return 0 if producer_productive else 2", exit_helper)
+        self.assertIn(
+            "producer_success_is_blocked=producer_success_is_blocked",
+            source[final_exit:],
+        )
 
     def test_partial_dmi_inspects_wam_then_blocks_only_after_provider_progress(self) -> None:
         workflow = (

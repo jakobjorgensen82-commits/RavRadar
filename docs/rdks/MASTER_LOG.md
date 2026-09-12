@@ -1,4 +1,20 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.346 reelle DMI-multipass
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.347 lokalt måltestet
+
+Ejeren fastholder autonom helkædefejlsøgning, komplette data før cutover, én kildegate for byteidentisk PR/main-kilde og derefter den integrerede scoremodel online. Astra/Ultra-reviewet er afsluttet; implementationen fortsætter på Sol/Ekstra høj. Main er 4.0.346/`e912ef9a`, Candidate G er offentlig, og normalworkflowet er deaktiveret.
+
+Oneoff `34675040245` er afsluttet failure. Den gemte DMI-/Copernicus-/regional-/Open-Meteo-fremgang består. DMI nåede 66.998/79.414 i pass 1; wrapperen stoppede på samtidig NSBS- og HARMONIE-runtime. Open-Meteo løste 2.170/2.212 og efterlod 42 provider-negative par efter 21 isolerede genforsøg, uden runtime-/attempt-/køstop. De 42 er forsøgt, men ikke gyldige data; ingen handoff/cutover.
+
+4.0.347 implementerer den afgrænsede expected-partial-protokol med intern exit 75 efter hele producentfinaliseringen, generic2-fail-closed, bevaret supervisor-watchdoghistorik, eksakt DKSS/HARMONIE inner/outer-klassifikation uden downloadkollision, frisk `assetsProcessedThisInvocation` og Pages-horisontkontrol før begin og deploy. Kildeorden, grids, afstande, fysik, score og slutclosure ændres ikke. Måltests er grønne 15/15, 12/12, 32/32 samt compile/modeldownload/freshness/workflow. Exact-head-CI, merge, reelt pass 2/3, komplette data, handoff, cutover, offentlig model og normal vedligeholdelse er åbne. DEC-0129 og `CHANGELOG-4.0.347.md` er aktuelle.
+
+PR #281's første exact-head-run `34680013012` bestod bindingspreflight og hele releasegaten, men stoppede senere i `test_dmi_wave_bootstrap_update_integration.py`. Den ene statiske assertion søgte de gamle direkte `return 2`/`return 0`-linjer, som 4.0.347 med vilje har flyttet til `producer_process_exit_code`. Test-only-opfølgningen kontrollerer nu helperens fail-closed gren, produktivitetsgren og det endelige argumentbundne kald; den samlede 63-testssuite er grøn lokalt. Ingen producent-, workflow-, data- eller modelkode er ændret. Ny commit/head kræver ny exact-head-CI; det fejlede run genstartes ikke.
+
+# HISTORISK EJER- OG REVIEWDELTA – 2026-09-12 – 4.0.347 ikke releaseklar
+
+Ejeren valgte udtrykkeligt Astra/Ultra til helikoptergennemgangen og bad om skift tilbage straks derefter. Reviewet er afsluttet; næste afgrænsede implementation er Sol/Ekstra høj. Main er 4.0.346/`e912ef9a` efter grøn PR #280/sourcegate `34673860241`. Oneoff `34675040245` beviste kildeproofgenbrug, ét DMI-pass med 66.998/79.414 og gemt fremgang; Copernicus var stadig aktiv ved seneste kontrol. Ingen ny merge, writer, annullering eller produktionsændring under reviewet.
+
+Den lokale 4.0.347-patch matcher den faktiske HARMONIE-runtime-note, men reviewet fandt reproducerbare huller i terminalkodebevis, watchdoghistorik og download/runtimeklassifikation samt historiske assettællere. Et ydre HARMONIE-stop skal også håndteres efter positiv finalisering. Den tidligere nul-planlagt-arbejde-forklaring er forkastet. En separat eksisterende Pages-udløbskant skal lukkes ved writegrænsen. Alle detaljer, minimumsdesign, teststatus og næste trin er gemt i [Astra-reviewet](../ai/ASTRA_HELICOPTER_REVIEW_2026-09-12.md). Dette er et checkpoint, ikke en leveret version; resterende versions-/håndbogs-/releasearbejde er eksplicit åbent.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – 4.0.346 reelle DMI-multipass
 
 Ejeren fastholdt autonomt arbejde, helikopterperspektiv og komplette data før den integrerede scoremodel. 4.0.345 er nu sourcegate-valideret og merged: PR #279-head `47275529`, run `34666410182`, merge `64d2f23f`. Oneoff `34667430392` beviste, at exact-content sourceproof fjernede den dobbelte fulde kildegate i virkelig main-drift.
 

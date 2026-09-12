@@ -1,4 +1,17 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 retter oneoffens falske multipass
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.347 lokalt rettet, runtime åben
+
+- **ISSUE-ONEOFF-TERMINAL-PROOF – LOKALT RETTET/MÅLTESTET, RUNTIME ÅBEN P0:** Intern opt-in-kode 75 udstedes først efter normal terminalbehandling; generic2, post-cache-exception, finalize-only og normal drift kan ikke åbne klassifikation. Supervisor-watchdoghistorik blokerer videresendelse. Reelt pass 2/3 afventer main-run.
+- **ISSUE-ONEOFF-CLASSIFICATION-AND-PROGRESS – LOKALT RETTET/MÅLTESTET, RUNTIME ÅBEN:** Indre/ydre DKSS/HARMONIE-runtime har eksakte beskeder/feltformer, download/WAM/ukendt stopper, og kun `assetsProcessedThisInvocation` tæller. Serialiseret cache-seam og negative kanter er grønne; live rotation/fremgang er endnu ikke bevist.
+- **ISSUE-PAGES-EXPIRED-ARTIFACT-WRITE – LOKALT RETTET/MÅLTESTET, CI ÅBEN:** Target+117h genkontrolleres før enhver begin-CAS og umiddelbart før Pages. Fejl efter begin rammer eksisterende reconciliation/abort. De bløde 90/150/240-minuttersgrænser forbliver advarsler.
+- **ISSUE-OPEN-METEO-42-PROVIDER-NEGATIVE – ÅBEN P0-RUNTIME:** Run `34675040245` forsøgte og isoleret genprøvede alle 42 slutpar på 21 kystdele. Ingen runtime-/attempt-/køgrænse; de er provider-negative for denne kilde/kørsel, ikke launchbare og ikke bevis for permanent DMI-/CP-fravær. Ingen grid-/afstandslempelse er autoriseret.
+- **ISSUE-4.0.347-STALE-WAM-EXIT-TEST – LOKALT LUKKET / NY EXACT-HEAD ÅBEN:** Run `34680013012` bestod releasegaten, men én statisk test fandt ikke de gamle direkte exitlinjer efter terminalhelper-refaktoreringen. Testen kontrollerer nu helperens blokering/succes og det endelige kald; 63/63 er grønne. Ingen produktionsændring.
+- **ISSUE-4.0.347-RELEASE-AND-LAUNCH – ÅBEN P0:** Main er 4.0.346/`e912ef9a`; PR #281's første 4.0.347-head fejlede alene på den stale test, og den grønne test-only-opfølgning er endnu lokal. Ny exact-head-CI, merge, ny complete oneoff, handoff, cutover, offentlig integreret model og normal vedligeholdelse mangler. Candidate G er offentlig.
+
+DEC-0129 og `CHANGELOG-4.0.347.md` er aktuelle. De tre første issues er ikke længere lokale kodeblokeringer, men deres exact-head-/main-runtimebevis er åbent.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.347 reviewfund åbne
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.346 retter oneoffens falske multipass
 
 - **ISSUE-4.0.345-END-TO-END – NEGATIV RUNTIME / SUPERSEDED:** PR #279-sourcegate `34666410182` var grøn, merge `64d2f23f` var byteidentisk, og oneoff `34667430392` genbrugte proof uden dobbelt gate. Vejrclosure stoppede korrekt ved 79.230/79.414 med 184 provider-negative OM-par; intet handoff/deploy/cutover.
 - **ISSUE-DMI-ONEOFF-MULTIPASS-UNREACHABLE – LOKALT RETTET / RUNTIME ÅBEN P0:** Wrapperen returnerede straks producentens exit 2 for en ufuldstændig currentledger og gav alle pass én fælles 3.000-sekundersramme. Sikkert checkpointet runtimefremgang kunne derfor ikke få en ny roteret passage. 4.0.346 tillader højst tre selvstændigt bounded pass efter streng same-target/slutcache/fejl-/fremgangsklassifikation og kræver pargevinst før et tredje strict-current-runtimepass; exit-0-downloadbudgetvejen er særskilt.

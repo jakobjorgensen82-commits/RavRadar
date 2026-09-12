@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.346 reelle DMI-multipass
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.347 måltestet, exact-head og drift åbne
+
+Main er fortsat 4.0.346 på `e912ef9a`; Candidate G er offentlig. Oneoff `34675040245` er terminal failure, ikke cutoverinput. Den gemte DMI-, Copernicus-, regional- og Open-Meteo-fremgang består, men Open-Meteo sluttede 2.170/2.212 med 42 provider-negative par fordelt på 21 kystdele efter isolerede genforsøg. Der var ingen runtime-, attempt- eller køgrænse i OM, men de 42 er stadig reelle mangler. Intet handoff/artifact/deploy/modelskift blev udført.
+
+Lokal 4.0.347 implementerer Astra-reviewets seks kanter: opt-in terminalkode 75 først efter fuld producentfinalisering; generisk exit 2 læses aldrig som cachebevis; supervisoren bevarer watchdoghistorik; indre/ydre DKSS/HARMONIE-runtime adskilles eksakt fra download; kun `assetsProcessedThisInvocation` tæller; Pages genkontrollerer target+117h før begin-CAS og umiddelbart før deploy med eksisterende reconciliation efter begin. Normal drift, sources, grids, afstande, score og closure er uændrede.
+
+Målbevis er grønt: wrapper 15/15, supervisor 12/12, checkpoint 32/32, Python compile, DMI-modeldownload, freshness og workflowrækkefølge. PR #281's første exact-head-run `34680013012` bestod releasegaten, men stoppede senere på én statisk WAM-test, der søgte de nu erstattede direkte exitlinjer. Testen følger terminalhelperen og er grøn 63/63; produktionskode er uændret. Opdatér dokumentcheckpoint og branch-head, kør én ny exact-head PR-sourcegate, merge sikkert og start ny main-oneoff på de genvaliderede cacher. Cutover må kun følge ved current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness og gyldigt same-head-handoff. Fuld post-data validate/releasegate og offentlig kontrol må ikke genbruges. GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – Astra-review af ufuldstændig 4.0.347
+
+Main er nu 4.0.346 på `e912ef9a`, CI-valideret via PR #280/run `34673860241`. Oneoff `34675040245` genbrugte kildeproofet, gemte DMI/GRIB/regional progression og nåede 66.998/79.414 direkte DMI-par i ét pass. NSBS og HARMONIE havde begge eksplicit bevaret runtime-stop; fallbackkæden var stadig aktiv ved sidste kontrol. HARMONIEs tomme liste betyder genkendte, ikke planlagte, parametre.
+
+Lokal 4.0.347 på `codex/4.0.347-dmi-harmonie-runtime-continuation` er **ikke releaseklar**. Astra/Ultra-review har fundet manglende skel mellem forventet partial og post-cache-exception, bortfaldende watchdoghistorik, ydre HARMONIE-stop, overbelastet download/runtimekode, historiske assettællere og en eksisterende udløbskant før Pages. Læs [det permanente review](ASTRA_HELICOPTER_REVIEW_2026-09-12.md) og [handoff](CURRENT_SESSION_HANDOFF.md) før videre arbejde. Reviewet er afsluttet; bed ejeren skifte tilbage til **GPT-5.6 Sol / Ekstra høj** før implementering og releasearbejde. Ingen ny writer/merge før frisk kontrol af den aktive oneoff. Ældre checkpoints nedenfor er historik.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – lokal 4.0.346 reelle DMI-multipass
 
 Main er 4.0.345 på `64d2f23f`. PR #279 exact head `47275529` bestod sourcegate `34666410182`, og oneoff `34667430392` live-genbrugte exact-content-proofet uden en anden fuld kildegate. Normalproduktionen er disabled; den inerte jobløse køpost `34613079069` må ikke behandles som aktiv writer. Candidate G er offentlig.
 

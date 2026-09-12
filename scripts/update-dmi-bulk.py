@@ -254,6 +254,10 @@ FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECO
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
 FINALIZE_ONLY = os.getenv("DMI_BULK_FINALIZE_ONLY", "").strip().lower() == "true"
 FINALIZE_REASON = os.getenv("DMI_BULK_FINALIZE_REASON", "").strip()
+ONEOFF_CONTINUATION_PROTOCOL = (
+    os.getenv("DMI_BULK_ONEOFF_CONTINUATION_PROTOCOL", "").strip() == "1"
+)
+ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE = 75
 ALLOWED_FINALIZE_REASONS = frozenset({
     "ASSET_PROCESSING_WATCHDOG_LIMIT",
     "HARMONIE_ASSET_WATCHDOG_TIMEOUT",
@@ -9635,6 +9639,28 @@ def producer_success_blocked(
     )
 
 
+def producer_process_exit_code(
+    *,
+    producer_success_is_blocked: bool,
+    producer_productive: bool,
+) -> int:
+    """Keep generic failures distinct from an opt-in, fully finalized partial."""
+    if producer_success_is_blocked:
+        if ONEOFF_CONTINUATION_PROTOCOL and not FINALIZE_ONLY:
+            return ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE
+        return 2
+    return 0 if producer_productive else 2
+
+
+def note_asset_processed_this_invocation(result: dict[str, Any]) -> None:
+    """Count only an asset accepted by this process, never restored run history."""
+    diagnostics = result.setdefault("diagnostics", {})
+    count = diagnostics.get("assetsProcessedThisInvocation")
+    if type(count) is not int or count < 0:
+        raise RuntimeError("invalid per-invocation DMI asset counter")
+    diagnostics["assetsProcessedThisInvocation"] = count + 1
+
+
 def producer_terminal_code(
     *,
     strict_current_anchor_available: bool,
@@ -10802,6 +10828,7 @@ def main() -> int:
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
                               "removedSamplingPointMismatches": removed_sampling_mismatches,
                               "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0,
+                              "assetsProcessedThisInvocation": 0,
                               "assetsDeferredValidDkssRefresh": 0, "collectionsDeferredValidDkssRefresh": [],
                               "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
@@ -12862,6 +12889,7 @@ def main() -> int:
                     if bootstrap_operational_wam
                     else step_complete
                 )
+                asset_processed_this_invocation = False
                 if not interrupted:
                     if bootstrap_operational_wam:
                         if asset_traversal_complete:
@@ -12874,11 +12902,13 @@ def main() -> int:
                         )
                         if step_complete:
                             run_info["assetsProcessed"] += 1
+                            asset_processed_this_invocation = True
                             previously_processed.add(asset["valid"])
                         else:
                             previously_processed.discard(asset["valid"])
                     elif step_complete:
                         run_info["assetsProcessed"] += 1
+                        asset_processed_this_invocation = True
                         previously_processed.add(asset["valid"])
                     else:
                         previously_processed.discard(asset["valid"])
@@ -12886,6 +12916,8 @@ def main() -> int:
                         previously_processed,
                         key=epoch,
                     )
+                    if asset_processed_this_invocation:
+                        note_asset_processed_this_invocation(result)
                 if not interrupted:
                     run_info["processedSteps"][asset["valid"]] = {
                         "recognizedParameters": step_recognized,
@@ -13774,9 +13806,10 @@ def main() -> int:
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
-    if producer_success_is_blocked:
-        return 2
-    return 0 if producer_productive else 2
+    return producer_process_exit_code(
+        producer_success_is_blocked=producer_success_is_blocked,
+        producer_productive=producer_productive,
+    )
 
 
 if __name__ == "__main__":

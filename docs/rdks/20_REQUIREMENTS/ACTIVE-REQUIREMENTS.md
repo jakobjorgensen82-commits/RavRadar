@@ -1,5 +1,17 @@
 # Aktive krav – samlet register
 
+# 4.0.347 – terminalbevist DMI-fortsættelse og frisk Pages-write
+
+- **REQ-4.0.347-EXPECTED-PARTIAL-PROTOCOL-001 – BINDENDE P0 / LOKALT TESTET:** Oneoff-wrapperen må kun læse en DMI-slutcache som fortsættelsesbevis efter exit 0 eller den opt-in-interne kode 75. Kode 75 må først dannes efter producentens normale slutcache, outputs, summary og terminalrapport. Exception, tidlig fejl, `FINALIZE_ONLY` og normal drift uden opt-in beholder exit 2; wrapperen læser aldrig progresscache efter generisk exit 2 og normaliserer kode 75 til exit 2, hvis den ender uden komplet READY.
+- **REQ-4.0.347-SUPERVISOR-HISTORY-001 – BINDENDE P0 / LOKALT TESTET:** Supervisoren må kun videresende kode 75, hvis ingen child i samme pass tidligere blev watchdogstoppet. Watchdog-finalisering og ethvert pass med bevaret skiphistorik returnerer fortsat generisk fejl, så en senere childrapport ikke kan skjule en tidligere stall.
+- **REQ-4.0.347-EXACT-RUNTIME-CLASSIFICATION-001 – BINDENDE P0 / LOKALT TESTET:** Nyt strict-current-pass kræver mindst ét eksakt DKSS-runtime-stop og den eksisterende snævre ledgerallowlist. En samtidig HARMONIE-note må kun ledsage dette som enten præcis ydre tre-felts-runtime før collectionstart eller indre runtime med `partialProgressPreserved:true`; HARMONIE kan aldrig selv åbne et pass. Downloadbudget, WAM, request, parser, katalog, watchdog, ukendt felt eller anden fejl stopper.
+- **REQ-4.0.347-FRESH-PROGRESS-001 – BINDENDE P0 / LOKALT TESTET:** Wrapperen kræver producentdiagnostikkens nulstillede `assetsProcessedThisInvocation`; historiske `runs[*].assetsProcessed` må ikke bruges. Same-target, ny finaliseret cache uden pending checkpoint, 4-GiB-loft, 5-GiB-diskreserve og stigende DMI-parantal før pass 3 består.
+- **REQ-4.0.347-PAGES-HORIZON-001 – BINDENDE P0 / LOKALT TESTET:** `manifest.productionReferenceAt` kontrolleres mod target+117h både før enhver Pages begin-CAS og umiddelbart før deployment. 90/150/240 minutter forbliver advarselsgrænser; kun overskredet operationel horisont stopper. Stop efter begin skal udløse den eksisterende fail-closed reconciliation/abort.
+- **REQ-4.0.347-NO-QUALITY-LOOSENING-001 – BINDENDE:** Oneoff `34675040245` sluttede med 42 provider-negative Open-Meteo-par efter 21 isolerede genforsøg og uden runtime-/attempt-/køstop. De må ikke accepteres, syntetiseres eller mødes med bredere grid-/afstandskrav. Næste same-main-oneoff skal genvalidere og videreføre de gemte DMI-, Copernicus-, regional- og Open-Meteo-cacher.
+- **REQ-4.0.347-SOURCE-AND-CUTOVER-001 – BINDENDE P0:** 4.0.347 kræver én exact-head PR-sourcegate. Byteidentisk merged main må genbruge den efter DEC-0127; sourcegaten køres ikke igen alene på grund af merge-SHA. Fuld post-data `validate`/`release:gate`, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, runbundet handoff, cutover og offentlig modelkontrol består.
+
+DEC-0129 er bindende. Måltests er grønne lokalt; exact-head-CI, merge, reelt pass 2/3, komplette data, cutover, offentlig integreret model og normal vedligeholdelse er fortsat åbne.
+
 # 4.0.346 – reelle bounded DMI-multipass efter verificeret fremgang
 
 - **REQ-4.0.346-RUNTIME-CLASSIFICATION-001 – BINDENDE P0:** En DMI-producent-exit 2 må kun åbne et nyt oneoff-pass, når en ny same-target-slutcache er strukturelt valid, råcacheloftet er genoprettet, mindst ét asset er behandlet, og eneste operative fejl er allowlistet lokal DKSS-skip/systemisk rest sammen med faktisk runtimebudget. Alle andre fejl stopper.

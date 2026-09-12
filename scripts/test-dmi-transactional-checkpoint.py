@@ -1167,6 +1167,66 @@ class CheckpointTests(unittest.TestCase):
         )
         self.assertNotEqual(terminal, "DMI_READY")
 
+    def test_oneoff_finalized_incomplete_exit_is_opt_in_and_not_finalize_only(self) -> None:
+        for protocol, finalize_only, expected in [
+            (False, False, 2),
+            (True, True, 2),
+            (True, False, producer.ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE),
+        ]:
+            with (
+                patch.object(producer, "ONEOFF_CONTINUATION_PROTOCOL", protocol),
+                patch.object(producer, "FINALIZE_ONLY", finalize_only),
+            ):
+                self.assertEqual(producer.producer_process_exit_code(
+                    producer_success_is_blocked=True,
+                    producer_productive=True,
+                ), expected)
+        with patch.object(producer, "ONEOFF_CONTINUATION_PROTOCOL", True):
+            self.assertEqual(producer.producer_process_exit_code(
+                producer_success_is_blocked=False,
+                producer_productive=True,
+            ), 0)
+            self.assertEqual(producer.producer_process_exit_code(
+                producer_success_is_blocked=False,
+                producer_productive=False,
+            ), 2)
+
+    def test_per_invocation_asset_counter_ignores_historical_runs(self) -> None:
+        result = {
+            "runs": {COLLECTION: {"assetsProcessed": 999}},
+            "diagnostics": {"assetsProcessedThisInvocation": 0},
+        }
+        producer.note_asset_processed_this_invocation(result)
+        self.assertEqual(
+            result["diagnostics"]["assetsProcessedThisInvocation"],
+            1,
+        )
+        self.assertEqual(result["runs"][COLLECTION]["assetsProcessed"], 999)
+
+    def test_post_cache_diagnostics_exception_is_not_a_finalized_write(self) -> None:
+        result = {"diagnostics": {}, "refreshStatus": "partial"}
+        calls: list[str] = []
+        with (
+            patch.object(
+                producer,
+                "atomic_write_bulk_cache",
+                side_effect=lambda *_args, **_kwargs: calls.append("cache") or 123,
+            ),
+            patch.object(
+                producer,
+                "write_final_cache_size_telemetry",
+                side_effect=lambda *_args: calls.append("telemetry"),
+            ),
+            patch.object(
+                producer,
+                "write_ocean_diagnostics",
+                side_effect=OSError("synthetic post-cache diagnostics failure"),
+            ),
+            self.assertRaisesRegex(OSError, "synthetic post-cache diagnostics failure"),
+        ):
+            producer.write_finalized_cache(result, "failed")
+        self.assertEqual(calls, ["cache", "telemetry"])
+
     def test_final_writer_removes_pending_marker_and_orders_diagnostics_last(self) -> None:
         result = {
             "refreshStatus": "partial",

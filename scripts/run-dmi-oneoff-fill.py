@@ -27,6 +27,13 @@ MAX_PASSES = 3
 GIB = 1024 ** 3
 COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf", "harmonie_dini_sf", "wam_dw", "wam_nsb"}
 MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
+# HARMONIE may be reached after the strict-current work has consumed the pass.
+# Its inner runtime-stop paths explicitly attest that all accepted progress was
+# preserved.  That auxiliary stop must not veto another DKSS pass, but it never
+# justifies a pass by itself and no other HARMONIE failure is continuable.
+AUXILIARY_CHECKPOINTED_RUNTIME_COLLECTIONS = {"harmonie_dini_sf"}
+ONEOFF_CONTINUATION_PROTOCOL_ENV = "DMI_BULK_ONEOFF_CONTINUATION_PROTOCOL"
+FINALIZED_INCOMPLETE_EXIT_CODE = 75
 PASS_RUNTIME_SECONDS = 3000
 MIN_FREE_BYTES = 5 * GIB
 CURRENT_RUNTIME_LEDGER_CODES = {
@@ -39,11 +46,17 @@ DOWNLOAD_MESSAGES = {
     "DMI bulk download budget exceeded before next asset",
     "DMI bulk download budget exceeded during asset download",
 }
+RUNTIME_MESSAGES = {
+    "bulk runtime budget reached",
+    "bulk runtime budget reached inside GRIB processing",
+}
 
 
 def summarize_progress(document: dict, reference: str) -> dict:
     """Return only counters/booleans from the finalized private cache."""
     diagnostics = document["diagnostics"]
+    if "progressCheckpoint" in diagnostics:
+        raise ValueError("ONEOFF_REPORT_NOT_FINALIZED")
     ledger = diagnostics["currentOperationalLedger"]
     if ledger.get("productionReferenceAt") != reference or type(ledger.get("ready")) is not bool:
         raise ValueError("ONEOFF_REFERENCE_OR_READINESS_INVALID")
@@ -85,10 +98,26 @@ def summarize_progress(document: dict, reference: str) -> dict:
                 and all(isinstance(code, str) for code in codes)
                 and set(codes) == ledger_code_set
             )
+        if collection not in MARINE_COLLECTIONS | AUXILIARY_CHECKPOINTED_RUNTIME_COLLECTIONS:
+            return False
+        message = row.get("message")
+        if row.get("failureCode") != "RUNTIME_BUDGET_REACHED" or message not in RUNTIME_MESSAGES:
+            return False
+        marker = row.get("partialProgressPreserved")
+        base_fields = {"collection", "message", "failureCode"}
+        # The outer boundary is reached before collection work begins and may
+        # therefore omit the marker. Once GRIB work began, explicit preservation
+        # is mandatory. The dedicated child exit proves normal finalization.
         return bool(
-            collection in MARINE_COLLECTIONS
-            and row.get("failureCode") == "RUNTIME_BUDGET_REACHED"
-            and row.get("partialProgressPreserved") is not False
+            (
+                marker is True
+                and set(row) == base_fields | {"partialProgressPreserved"}
+            )
+            or (
+                message == "bulk runtime budget reached"
+                and "partialProgressPreserved" not in row
+                and set(row) == base_fields
+            )
         )
 
     strict_current_runtime_limited = bool(
@@ -101,23 +130,16 @@ def summarize_progress(document: dict, reference: str) -> dict:
             isinstance(row, dict)
             and row.get("collection") in MARINE_COLLECTIONS
             and row.get("failureCode") == "RUNTIME_BUDGET_REACHED"
+            and row.get("message") in RUNTIME_MESSAGES
             for row in errors
         )
     )
     attempted = diagnostics.get("collectionsAttempted")
     if not isinstance(attempted, list) or not set(attempted) <= COLLECTIONS:
         raise ValueError("ONEOFF_REPORT_INVALID")
-    processed = []
-    runs = document.get("runs")
-    if not isinstance(runs, dict):
-        raise ValueError("ONEOFF_REPORT_INVALID")
-    for collection in attempted:
-        run = runs.get(collection)
-        if not isinstance(run, dict):
-            raise ValueError("ONEOFF_REPORT_INVALID")
-        processed.append(run.get("assetsProcessed"))
+    processed_assets = diagnostics.get("assetsProcessedThisInvocation")
     raw = diagnostics["rawCache"]
-    numeric = [*processed, raw["after"]["bytes"], raw["maxBytes"]]
+    numeric = [processed_assets, raw["after"]["bytes"], raw["maxBytes"]]
     if any(type(value) is not int or value < 0 for value in numeric):
         raise ValueError("ONEOFF_REPORT_INVALID")
     if raw["maxBytes"] != 4 * GIB or raw["after"]["bytes"] > 4 * GIB:
@@ -131,7 +153,7 @@ def summarize_progress(document: dict, reference: str) -> dict:
         "continuationReason": continuation_reason,
         "currentReady": ready,
         "onlyDownloadStops": only_download_stops,
-        "processedAssets": sum(processed),
+        "processedAssets": processed_assets,
         "requiredPairCount": required_pairs,
         "verifiedPairCount": verified_pairs,
     }
@@ -156,19 +178,21 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
         child_environment = dict(
             environment,
             DMI_BULK_MAX_RUNTIME_SECONDS=str(PASS_RUNTIME_SECONDS),
+            **{ONEOFF_CONTINUATION_PROTOCOL_ENV: "1"},
         )
         log(
             f"DMI one-off pass {pass_number}/{MAX_PASSES}; "
             f"passRuntimeSeconds={PASS_RUNTIME_SECONDS}; "
             "downloadLimitGiB=4; rawCacheLimitGiB=4."
         )
-        last_code = run_pass(child_environment)
-        if last_code not in {0, 2}:
-            return last_code
+        child_code = run_pass(child_environment)
+        last_code = 2 if child_code == FINALIZED_INCOMPLETE_EXIT_CODE else child_code
+        if child_code not in {0, FINALIZED_INCOMPLETE_EXIT_CODE}:
+            return child_code
         summary = read_progress(reference)
         reason = summary["continuationReason"]
         expected_reason = (
-            "download-budget" if last_code == 0
+            "download-budget" if child_code == 0
             else "strict-current-runtime"
         )
         if reason != expected_reason or summary["processedAssets"] <= 0:
