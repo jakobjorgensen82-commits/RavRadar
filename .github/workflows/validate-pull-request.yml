@@ -64,7 +64,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -z "$(git status --short --untracked-files=no)"
+          tracked_status="$(git status --short --untracked-files=no)"
+          if [[ -n "$tracked_status" ]]; then
+            echo "::error::Source validation changed tracked files; proof is forbidden."
+            printf '%s\n' "$tracked_status"
+            git diff --summary
+            git diff --stat
+            exit 1
+          fi
+          test -z "$tracked_status"
 
       - name: Upload tree-content source validation proof
         uses: actions/upload-artifact@v7

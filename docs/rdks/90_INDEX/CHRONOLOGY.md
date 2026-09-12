@@ -5,6 +5,7 @@
 - 4.0.345 journalfører hvert segment varigt og konsoliderer seks ad gangen gennem uændret strict bank→shadow→stage. 40.120-record-prøven er byteidentisk og reducerer seks segmenter 115,905 → 46,438 sekunder.
 - Dobbelt sourcegate erstattes af PR exact-content proof med live PR/merge/artifact/run/job/step-verifikation og sikker fallback. Faktisk GitHub-run viste tomt `pull_requests`; direkte PR-endpoint bruges nu.
 - PR #279's første head `72db0a70` fejlede run `34659873681` i en forældet statisk pre-journal-rebaseforventning. Ingen proof blev uploadet. Testen er lokalt rettet og journal/restart/source-stage genverificeret; ny exact-head-CI kræves.
+- Anden head `581dfae9` bestod hele sourcegaten i run `34661632590`, men ren-tree-trinnet fandt en tracked Linux-ændring og blokerede proof. Alle 151 underkommandoer var enkeltvis rene på Windows; næste head logger exact path/mode/stat og forbliver fail-closed.
 - DEC-0127 er bindende. Exact-head-CI, merge, komplet main-vejr, gates/handoff/cutover og offentlig integreret model mangler fortsat. Candidate G er offentlig.
 
 # HISTORISK CHECKPOINT – 2026-09-11 – 4.0.343 retter starvation og ownerkontrakt

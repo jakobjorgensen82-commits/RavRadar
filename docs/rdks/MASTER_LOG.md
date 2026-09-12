@@ -14,6 +14,8 @@ Version 4.0.345 er lokal kandidat. DEC-0127, aktive krav, status, changelog og h
 
 PR #279's første head `72db0a70` nåede sourcegate-run `34659873681`, hvor exact checkout, contentdigest og dependencies bestod. Gaten fejlede derefter alene i en forældet statisk cachetest, som forventede den gamle énlinje-rebase og ikke 4.0.345-journalens validerede acquisitions/records. Runtimekoden er uændret; testen kræver nu både autoritativ bankmerge og efterfølgende fuld donorbuild. Den statiske test og funktionelle journal-/restart-/source-stage-tests er grønne. Prooftrinnene blev korrekt sprunget over; kun en ny exact head kan skabe bevis.
 
+Anden head `581dfae9` bestod hele sourcegaten i run `34661632590`, men det efterfølgende nye ren-tree-trin fandt en tracked ændring og forbød korrekt proofupload. Fordi trinnet kun kørte `test -z`, viste loggen ikke path. Alle 116 efter-gate-kommandoer og alle 35 releasegate-testfiler er derefter genkørt enkeltvis på Windows med renhedskontrol efter hver; ingen muterede tracked indhold. Næste head gør Linux-fejlen selvforklarende med short status, diff summary og stat uden at svække stopadfærden.
+
 # HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-11 – lokal 4.0.344 efter faktiske restårsager
 
 PR #278 exact-head-kontrol `34627392687` stoppede efter de tidligere grønne trin i én forældet schedulertest. Fixturet forventede, at STAC-inventaret sluttede ved required horizon, men DEC-0126-koden observerer med vilje til senest mulig kausal modelkørsel +120 for at kunne bevise terminalen. Testforventning og kommentar følger nu kontrakten; producentkode, required ledger, official118 og admission ændres ikke. Det fejlede run genstartes ikke; ny commit/head skal have ny exact-head-CI.
