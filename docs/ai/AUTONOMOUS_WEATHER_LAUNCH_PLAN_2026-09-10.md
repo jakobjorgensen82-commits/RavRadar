@@ -1,4 +1,12 @@
-# Tillæg 2026-09-11 – 4.0.343 fair providerclosure før kontrolleret launch
+# Tillæg 2026-09-12 – 4.0.345 efter målte 4.0.344-produktionskørsler
+
+4.0.344 blev exact-head-valideret og merged som `f2cc2a77`, men main-run `34635781802` og oneoff `34642214559` producerede intet handoff eller cutover. Oneoff sluttede 78.381/79.414 med 1.033 terminalt provider-negative Open-Meteo-par; WAM/Feggesund var grøn. DMI planlagde hele registeret og roterede alle seks collections, og Copernicus roterede Baltic/AMM15. De 1.033 var faktisk forsøgt hos sidste fallback, men er ikke bevist permanent fraværende hos højere kilder og kan ikke godkendes som huller.
+
+Copernicus-fasen målte 31 fulde checkpoints til cirka 2.376 sekunder eller 78 procent af cirka 54 minutter. 4.0.345 gør derfor hvert komplet segment varigt straks og samler seks receipts ad gangen gennem uændret transaktionel bank/shadow/stage-admission. Exact-base-replay efter genstart, tamper/mismatch-stop og byteidentiske resultater er måltestet. Samtidig erstattes den dobbelte fulde kildegate af et live-verificeret, exact-content proof fra PR-head til byteidentisk merged main; fail-safe er fortsat en fuld main-gate. Post-data-validate, releasegate, handoff, artifact og deploy må aldrig genbruges eller springes over.
+
+Fortsæt planen autonomt med 4.0.345 release-/RDKS-lukning, én exact-head PR-sourcegate, sikker merge og én kontrolleret writer. Før scorelaunch kræves stadig current 79.414/79.414, native WAM 79.060, Feggesund 354/354, fulde post-data-gates og offentlig verifikation. Hvis rester består, skal hele DMI/CP/OM-plan-, provider-, journal-, admission-, mask-, cache-, provenance- og closurekæden undersøges før nyt runtimeforsøg. Normal og watchdog forbliver deaktiveret gennem den kontrollerede launchsekvens.
+
+# Historisk tillæg 2026-09-11 – 4.0.343 fair providerclosure før kontrolleret launch
 
 4.0.342-mainrun `34565347360` bevarede cacherne, men viste DMI-family-starvation, AMM15-product-starvation og to exact WAM-ownerfejl. 4.0.343 retter disse i den fælles normal/oneoff-kodevej uden cache-reset eller lempet slutclosure. Først versions-/RDKS-/håndbogslukning og én exact-head sourcegate; derefter sikker merge, én kontrolleret main-opfyldning, begge closures, fulde gates, handoff/cutover og offentlig kontrol. Normalworkflow/watchdog forbliver deaktiveret gennem sekvensen. Efter launch revideres cachetransport, ekstern cron, providerforbrug/tider og normalt vedligeholdelsesoverskud.
 

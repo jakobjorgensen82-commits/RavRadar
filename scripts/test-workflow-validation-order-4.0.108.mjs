@@ -50,6 +50,21 @@ const pinnedSourceTreeMarkers = [
   'test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"',
   'test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"',
 ];
+const assertCopernicusSegmentJournal = (section, label) => {
+  const journalPath = '.cache/copernicus-current-segment-journal.json';
+  const invalidPath = '.cache/copernicus-current-segment-journal.json.invalid-*';
+  for (const marker of [
+    `--segment-journal ${journalPath}`,
+    invalidPath,
+    `hashFiles('${journalPath}') != ''`,
+  ]) {
+    assert.ok(section.includes(marker), `${label} mangler durable segment-journal markøren ${marker}`);
+  }
+  assert.ok(
+    section.split(journalPath).length - 1 >= 5,
+    `${label} skal binde journalen til restore, runner, write-authority og save.`,
+  );
+};
 const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
   .readFileSync(`${workflowDirectory}/${name}`, 'utf8')
   .includes('npm run validate:source'));
@@ -154,6 +169,17 @@ for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
   'fetch-depth: 0',
+  'ref: ${{ github.event.pull_request.head.sha }}',
+  'name: Require exact pull-request source head',
+  'name: Build deterministic source-tree content identity',
+  'run: node scripts/weather-source-gate.mjs digest',
+  'name: Require validated source tree to remain unchanged',
+  'git status --short --untracked-files=no',
+  'Source validation changed tracked files; proof is forbidden.',
+  'git diff --summary',
+  'git diff --stat',
+  'name: Upload tree-content source validation proof',
+  'uses: actions/upload-artifact@v7',
   'timeout-minutes: 45',
   '-r requirements-dmi.txt',
   '-r requirements-geometry.txt',
@@ -161,6 +187,16 @@ for (const marker of [
   'npm run validate:source',
 ]) {
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
+}
+const prGateOrder = [
+  'name: Require exact pull-request source head',
+  'name: Build deterministic source-tree content identity',
+  'name: Validate source contracts and release governance',
+  'name: Require validated source tree to remain unchanged',
+  'name: Upload tree-content source validation proof',
+].map(marker => pullRequestValidation.indexOf(marker));
+if (prGateOrder.some((position, index) => position < 0 || (index > 0 && position <= prGateOrder[index - 1]))) {
+  throw new Error('PR-kildegatens exact-head, digest, validering, renhed og proofupload står i forkert rækkefølge.');
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 if (packageJson?.scripts?.['validate:source'] !== 'node scripts/validate-source-once.mjs') {
@@ -270,11 +306,11 @@ for (const marker of [
   'name: Require requested one-off HEAD to equal current origin/main',
   'test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"',
   'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
-  'name: Verify previous exact-main source validation with GitHub',
+  'name: Verify exact-content source validation with GitHub',
   'run: node scripts/weather-source-gate.mjs check',
   'name: Run exact-main source gate before private acquisition',
   'name: Run exact-main source gate before one-off acquisition',
-  'weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-',
+  'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
 ]) {
   if (!copernicusPilot.includes(marker)) throw new Error(`Den private Copernicus-pilot mangler ${marker}`);
 }
@@ -363,7 +399,7 @@ const operationalPreflight = copernicusPilot.slice(operationalPreflightStart);
 const scheduledPilot = copernicusPilot.slice(0, operationalPreflightStart);
 assertMarkersOrdered(scheduledPilot, [
   'name: Require exact main before private DMI cache selection',
-  'name: Verify previous exact-main source validation with GitHub',
+  'name: Verify exact-content source validation with GitHub',
   'name: Run exact-main source gate before private acquisition',
   'name: Materialize bounded DMI storage before pilot readers',
   'name: Complete only the exact sealed DMI-gap range',
@@ -376,6 +412,7 @@ for (const marker of [
   "steps.pilot-copernicus-progress-write-authority.outcome == 'success'",
   "steps.pilot-copernicus-ready-write-authority.outcome == 'success'",
 ]) assert.ok(scheduledPilot.includes(marker), `Pilotens cachewrite mangler ${marker}`);
+assertCopernicusSegmentJournal(scheduledPilot, 'Den private Copernicus-pilot');
 const scheduledStep = (name) => {
   const start = scheduledPilot.indexOf('name: ' + name);
   assert.ok(start >= 0, 'Missing scheduled pilot step: ' + name);
@@ -398,7 +435,7 @@ assertMarkersOrdered(scheduledPilot, [
 ], 'Pilot legacy storage must be materialized before DMI readers');
 assertMarkersOrdered(operationalPreflight, [
   'name: Require requested one-off HEAD to equal current origin/main',
-  'name: Verify previous exact-main source validation with GitHub',
+  'name: Verify exact-content source validation with GitHub',
   'name: Run exact-main source gate before one-off acquisition',
   'name: Strictly bind and materialize the active DMI generation',
   'name: Reconfirm exact main before materialized legacy DMI cache',
@@ -424,6 +461,7 @@ for (const marker of [
   "steps.oneoff-copernicus-progress-write-authority.outcome == 'success'",
   "steps.oneoff-copernicus-ready-write-authority.outcome == 'success'",
 ]) assert.ok(operationalPreflight.includes(marker), `Oneoff-cachewrite mangler ${marker}`);
+assertCopernicusSegmentJournal(operationalPreflight, 'Den isolerede operational-118-oneoff');
 const operationalStep = (name) => {
   const start = operationalPreflight.indexOf(`name: ${name}`);
   assert.ok(start >= 0, `Missing operational step: ${name}`);
@@ -3090,14 +3128,14 @@ if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' 
   throw new Error('Kildegaten må kun genbruges efter live-verificeret exact-main-bevis; ukendt evidens kræver kontrol før DMI.');
 }
 for (const marker of [
-  'name: Verify previous exact-main source validation with GitHub',
+  'name: Verify exact-content source validation with GitHub',
   'run: node scripts/weather-source-gate.mjs check',
   'GITHUB_TOKEN: ${{ github.token }}',
   'name: Record actual source validation outcome',
   'SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}',
   "steps.source-gate.outcome == 'failure'",
-  "if: always() && steps.source-record.outcome == 'success'",
-  'weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-',
+  "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
+  'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
 ]) assert.ok(buildWorkflow.includes(marker), `Exact-main source proof lacks ${marker}`);
 
 assertMarkersOrdered(buildWorkflow, [
@@ -3128,6 +3166,7 @@ for (const marker of [
   'RAVRADAR_PRIVATE_COPERNICUS_POST_BUILD_REFRESH_INPUT',
   'containsPrivatePayload:true',
 ]) assert.ok(buildWorkflow.includes(marker), `Normal cache-write/refresh-input-kontrakt mangler ${marker}`);
+assertCopernicusSegmentJournal(buildWorkflow, 'Det normale produktionsbuild');
 
 const postBuildRefreshStart = orchestratorWorkflow.indexOf('\n  copernicus-post-build-refresh:');
 const deployPagesStart = orchestratorWorkflow.indexOf('\n  deploy-pages:', postBuildRefreshStart);
@@ -3145,7 +3184,7 @@ for (const marker of [
   'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
   'name: Restore exact private Copernicus post-build refresh input',
   'fail-on-cache-miss: true',
-  'name: Revalidate packaged exact-main source proof before maintenance acquisition',
+  'name: Revalidate packaged exact-content source proof before maintenance acquisition',
   'run: node scripts/weather-source-gate.mjs check',
   'run: test "$SOURCE_GATE_REQUIRED" = "false"',
   'name: Refresh only the next-run private Copernicus cache',
@@ -3157,6 +3196,7 @@ for (const marker of [
   'name: Save successful post-build Copernicus maintenance under shared progress prefix',
   'copernicus-current-progress-v3-post-build-refresh-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
 ]) assert.ok(postBuildRefresh.includes(marker), `Post-build Copernicus-refresh mangler ${marker}`);
+assertCopernicusSegmentJournal(postBuildRefresh, 'Det advisory post-build Copernicus-refresh');
 const exactPostBuildInput = postBuildRefresh.slice(
   postBuildRefresh.indexOf('name: Restore exact private Copernicus post-build refresh input'),
   postBuildRefresh.indexOf('name: Verify exact private Copernicus post-build refresh input'),
@@ -3166,7 +3206,7 @@ assertMarkersOrdered(postBuildRefresh, [
   'name: Require refresh HEAD to equal GITHUB_SHA and current origin/main',
   'name: Restore exact private Copernicus post-build refresh input',
   'name: Verify exact private Copernicus post-build refresh input',
-  'name: Revalidate packaged exact-main source proof before maintenance acquisition',
+  'name: Revalidate packaged exact-content source proof before maintenance acquisition',
   'name: Refresh only the next-run private Copernicus cache',
   'name: Validate refreshed private Copernicus package without changing artifact outcome',
   'name: Reconfirm exact main immediately before refreshed Copernicus cache save',

@@ -1,4 +1,6 @@
-# RavRadar 4.0.344 – lokal kandidat
+# RavRadar 4.0.344 – merged, men uden komplet produktionsresultat
+
+PR #278 bestod exact-head-sourcegaten og blev merged som `f2cc2a77`. Main-run `34635781802` og oneoff `34642214559` gav intet handoff eller cutover; oneoff sluttede 78.381/79.414 med 1.033 provider-negative Open-Meteo-rester og grøn WAM/Feggesund. DEC-0127/4.0.345 følger op på den efterfølgende målte Copernicus-checkpointflaskehals.
 
 ## Genbrug og DMI
 

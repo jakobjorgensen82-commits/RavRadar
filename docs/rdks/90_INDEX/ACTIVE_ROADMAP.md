@@ -1,4 +1,16 @@
-# NYESTE ROADMAP – 2026-09-11 – 4.0.343 fra fair providerclosure til model-online
+# NYESTE ROADMAP – 2026-09-12 – 4.0.345 fra målte flaskehalse til model-online
+
+- [x] Rekonstruér main `34635781802` og oneoff `34642214559`; adskil DMI-plan/rotation, CP-throughput, OM provider-negative svar og fuld closure.
+- [x] Implementér durable CP-segmentreceipts, restart/replay og seks-segment-consolidation uden ændret sourceorder, admission, masks, geometri eller fysik.
+- [x] Bevis 40.120-record byteidentitet og 115,905 → 46,438 sekunders seks-segment-forbedring; bestå samlet CP-/workflowmålpakke.
+- [x] Implementér exact-content PR-sourceproof, live-verificér den faktiske GitHub API-form og gør enhver mismatch til sikker fuld main-gate.
+- [x] Versionér 4.0.345 og synkronisér DEC-0127, krav, issues, checkpoints, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
+- [ ] Bestå én exact-head PR-`validate:source`; merge kun den eksakte grønne head.
+- [ ] Kør én kontrolleret main-opfyldning på bevarede cacher; verificér sourceproof-genbrug/fallback og kræv current 79.414/79.414, native WAM 79.060, Feggesund 354/354 samt freshness.
+- [ ] Kræv fuld post-data validate/releasegate, runbundet handoff og artifact/deploy; udfør integreret cutover og verificér desktop/mobil offentligt.
+- [ ] Genaktivér normal drift kontrolleret og mål cachetransport, providerforbrug, ekstern cadence og tidsoverskud. En grøn oneoff lukker ikke dette punkt alene.
+
+# HISTORISK ROADMAP – 2026-09-11 – 4.0.343 fra fair providerclosure til model-online
 
 - [x] Bevar cachen og afgræns 4.0.342's negative runtime til DMI-family-, Copernicus-product- og WAM-owner-starvation.
 - [x] Implementér én fælles normal/oneoff-løsning med bounded fair DMI-service, separate roterede Copernicus-køer og fælles exact WAM-owner.

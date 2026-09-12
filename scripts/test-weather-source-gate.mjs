@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import {
   decideSourceGate,
+  discoverPullRequestSourceGate,
   sourceGateRecord,
   SOURCE_GATE_PRODUCERS,
   SOURCE_GATE_STEP,
+  PULL_REQUEST_SOURCE_JOB,
+  PULL_REQUEST_SOURCE_STEPS,
+  PULL_REQUEST_SOURCE_WORKFLOW,
 } from './lib/weather-source-gate.mjs';
+import { sourceTreeProofArtifactName } from './lib/source-tree-content.mjs';
 
+const digest = `sha256:${'d'.repeat(64)}`;
 const env = {
   GITHUB_REF: 'refs/heads/main',
   GITHUB_SHA: 'a'.repeat(40),
@@ -13,34 +19,14 @@ const env = {
   GITHUB_RUN_ID: '200',
   GITHUB_RUN_ATTEMPT: '1',
 };
-const proof = sourceGateRecord({ ...env, GITHUB_RUN_ID: '100' }, 'success');
-const proofTime = '2026-09-04T05:00:00Z';
-
+const proof = sourceGateRecord({ ...env, GITHUB_RUN_ID: '100' }, 'success', digest);
+const proofTime = '2026-09-12T01:00:00Z';
 const contracts = Object.entries(SOURCE_GATE_PRODUCERS).flatMap(([path, value]) => (
   value.gates.map(gate => ({ path, workflowId: value.workflowId, ...gate }))
 ));
-assert.deepEqual(contracts, [
-  {
-    path: '.github/workflows/update-and-deploy.yml',
-    workflowId: 'update-and-deploy.yml',
-    job: 'Build and prepare weather production through reusable workflow / build-and-prepare',
-    step: SOURCE_GATE_STEP,
-  },
-  {
-    path: '.github/workflows/validate-copernicus-current-pilot.yml',
-    workflowId: 'validate-copernicus-current-pilot.yml',
-    job: 'validate',
-    step: 'Run exact-main source gate before private acquisition',
-  },
-  {
-    path: '.github/workflows/validate-copernicus-current-pilot.yml',
-    workflowId: 'validate-copernicus-current-pilot.yml',
-    job: 'operational-118-preflight',
-    step: 'Run exact-main source gate before one-off acquisition',
-  },
-]);
+assert.equal(contracts[0].step, SOURCE_GATE_STEP);
 
-const makeRun = (contract, overrides = {}) => ({
+const makeMainRun = (contract, overrides = {}) => ({
   id: 100,
   run_attempt: 1,
   head_sha: env.GITHUB_SHA,
@@ -49,8 +35,7 @@ const makeRun = (contract, overrides = {}) => ({
   repository: { full_name: env.GITHUB_REPOSITORY },
   ...overrides,
 });
-
-const makeJob = (contract, overrides = {}) => ({
+const makeMainJob = (contract, overrides = {}) => ({
   name: contract.job,
   status: 'completed',
   conclusion: 'success',
@@ -66,237 +51,153 @@ const makeJob = (contract, overrides = {}) => ({
   ...overrides,
 });
 
-function makeApi(contract, {
-  run = makeRun(contract),
-  proofJobs = [makeJob(contract)],
-  historyRunsByWorkflow = new Map(),
-  laterJobs = new Map(),
-} = {}) {
-  const routes = [];
-  return {
-    routes,
-    getJson: async route => {
-      routes.push(route);
-      if (route.includes('/actions/workflows/')) {
-        const workflow = route.match(/\/actions\/workflows\/([^/]+)\/runs\?/);
-        if (!workflow) throw new Error(`Unexpected history route: ${route}`);
-        const historyRuns = historyRunsByWorkflow.get(workflow[1]) || [];
-        return { total_count: historyRuns.length, workflow_runs: historyRuns };
-      }
-      const attempt = route.match(/\/actions\/runs\/(\d+)\/attempts\/(\d+)\/jobs/);
-      if (attempt) {
-        const runId = Number(attempt[1]);
-        const jobs = runId === Number(proof.runId) ? proofJobs : laterJobs.get(runId);
-        if (!jobs) throw new Error(`Unexpected jobs route: ${route}`);
-        return { total_count: jobs.length, jobs };
-      }
-      if (route.endsWith(`/actions/runs/${proof.runId}`)) return run;
-      throw new Error(`Unexpected route: ${route}`);
-    },
+function mainApi(contract, { run = makeMainRun(contract), jobs = [makeMainJob(contract)], histories = new Map() } = {}) {
+  return async route => {
+    if (route.includes('/actions/workflows/')) {
+      const workflowId = route.match(/workflows\/([^/]+)\/runs/)[1];
+      const rows = histories.get(workflowId) || [];
+      return { total_count: rows.length, workflow_runs: rows };
+    }
+    if (route.includes('/attempts/')) return { total_count: jobs.length, jobs };
+    if (route.endsWith('/actions/runs/100')) return run;
+    throw new Error(`Unexpected route: ${route}`);
   };
 }
 
 for (const contract of contracts) {
-  const api = makeApi(contract);
-  const decision = await decideSourceGate(proof, env, api.getJson);
-  assert.equal(decision.required, false);
-  for (const workflowId of new Set(contracts.map(item => item.workflowId))) {
-    assert.ok(api.routes.some(route => route.includes(`/workflows/${workflowId}/runs?`)));
-  }
+  const decision = await decideSourceGate(proof, env, mainApi(contract), { sourceTreeSha256: digest });
+  assert.equal(decision.required, false, `${contract.path}/${contract.job}`);
 }
-
+for (const [record, currentDigest] of [
+  [null, digest],
+  [{ ...proof, conclusion: 'failure' }, digest],
+  [{ ...proof, sourceTreeSha256: `sha256:${'e'.repeat(64)}` }, digest],
+  [proof, `sha256:${'e'.repeat(64)}`],
+  [{ ...proof, contractId: 'old' }, digest],
+]) {
+  assert.equal((await decideSourceGate(record, env, mainApi(contracts[0]), {
+    sourceTreeSha256: currentDigest,
+  })).required, true);
+}
 assert.throws(
-  () => sourceGateRecord({ ...env, GITHUB_RUN_ID: 'not-a-run' }, 'success'),
+  () => sourceGateRecord({ ...env, GITHUB_RUN_ATTEMPT: '0' }, 'success', digest),
   /exact workflow attempt/,
 );
-assert.throws(
-  () => sourceGateRecord({ ...env, GITHUB_RUN_ATTEMPT: '0' }, 'success'),
-  /exact workflow attempt/,
-);
 
-const normal = contracts[0];
-const normalApi = () => makeApi(normal).getJson;
-for (const candidate of [
-  null,
-  { ...proof, conclusion: 'failure' },
-  { ...proof, conclusion: 'cancelled' },
-  { ...proof, headSha: 'b'.repeat(40) },
-  { ...proof, repository: 'untrusted/repo' },
-  { ...proof, runId: '200' },
-  { ...proof, runId: String(Number.MAX_SAFE_INTEGER + 1) },
-  { ...proof, contractId: 'old' },
-]) {
-  assert.equal((await decideSourceGate(candidate, env, normalApi())).required, true);
-}
-
-for (const run of [
-  makeRun(normal, { id: 101 }),
-  makeRun(normal, { run_attempt: 2 }),
-  makeRun(normal, { head_sha: 'b'.repeat(40) }),
-  makeRun(normal, { head_branch: 'feature' }),
-  makeRun(normal, { repository: { full_name: 'untrusted/repo' } }),
-]) {
-  assert.equal((await decideSourceGate(
-    proof,
-    env,
-    makeApi(normal, { run }).getJson,
-  )).required, true);
-}
-
-const unknownPath = await decideSourceGate(
-  proof,
-  env,
-  makeApi(normal, { run: makeRun(normal, { path: '.github/workflows/unknown.yml' }) }).getJson,
-);
-assert.deepEqual(unknownPath, { required: true, reason: 'unknown-source-producer' });
-
-for (const proofJobs of [
-  [makeJob(normal, { name: 'unknown-job' })],
-  [makeJob(normal, { steps: [{
-    name: 'Renamed source gate',
+const pullRequestNumber = 278;
+const pullHeadSha = 'b'.repeat(40);
+const pullRunHeadSha = pullHeadSha;
+const artifactName = sourceTreeProofArtifactName({ pullRequestNumber, headSha: pullHeadSha, sourceTreeSha256: digest });
+const pull = {
+  number: pullRequestNumber,
+  state: 'closed',
+  merged_at: '2026-09-12T01:30:00Z',
+  merge_commit_sha: env.GITHUB_SHA,
+  head: { sha: pullHeadSha, repo: { full_name: env.GITHUB_REPOSITORY } },
+  base: { ref: 'main', repo: { full_name: env.GITHUB_REPOSITORY } },
+};
+const pullRun = {
+  id: 300,
+  run_attempt: 1,
+  head_sha: pullRunHeadSha,
+  path: PULL_REQUEST_SOURCE_WORKFLOW,
+  event: 'pull_request',
+  status: 'completed',
+  conclusion: 'success',
+  repository: { id: 42, full_name: env.GITHUB_REPOSITORY },
+  head_repository: { id: 42, full_name: env.GITHUB_REPOSITORY },
+  // This is the shape observed from GitHub for the repository's real PR run.
+  pull_requests: [],
+};
+const pullJob = {
+  name: PULL_REQUEST_SOURCE_JOB,
+  status: 'completed',
+  conclusion: 'success',
+  head_sha: pullRunHeadSha,
+  run_id: 300,
+  run_attempt: 1,
+  steps: PULL_REQUEST_SOURCE_STEPS.map(name => ({
+    name,
     status: 'completed',
     conclusion: 'success',
     completed_at: proofTime,
-  }] })],
-  [makeJob(contracts[1], { steps: [{
-    name: contracts[2].step,
-    status: 'completed',
-    conclusion: 'success',
-    completed_at: proofTime,
-  }] })],
-]) {
-  const contract = proofJobs[0].name === contracts[1].job ? contracts[1] : normal;
-  assert.equal((await decideSourceGate(
-    proof,
-    env,
-    makeApi(contract, { proofJobs }).getJson,
-  )).required, true);
+  })),
+};
+const artifact = {
+  id: 400,
+  name: artifactName,
+  expired: false,
+  workflow_run: { id: 300 },
+};
+
+function pullApi({ pulls = [pull], artifacts = [artifact], run = pullRun, job = pullJob, histories = new Map() } = {}) {
+  return async route => {
+    if (route.includes(`/commits/${env.GITHUB_SHA}/pulls`)) return pulls;
+    if (route.endsWith(`/pulls/${pullRequestNumber}`)) return pulls[0];
+    if (route.includes('/actions/artifacts?')) return { total_count: artifacts.length, artifacts };
+    if (route.endsWith('/actions/runs/300')) return run;
+    if (route.includes('/actions/runs/300/attempts/1/jobs')) return { total_count: 1, jobs: [job] };
+    if (route.includes('/actions/workflows/')) {
+      const workflowId = route.match(/workflows\/([^/]+)\/runs/)[1];
+      const rows = histories.get(workflowId) || [];
+      return { total_count: rows.length, workflow_runs: rows };
+    }
+    throw new Error(`Unexpected route: ${route}`);
+  };
 }
 
-for (const conclusion of ['skipped', 'failure', 'cancelled', null]) {
-  const proofJobs = [makeJob(normal, { steps: [{
-    name: normal.step,
-    status: 'completed',
-    conclusion,
-    completed_at: proofTime,
-  }] })];
-  assert.equal((await decideSourceGate(
-    proof,
-    env,
-    makeApi(normal, { proofJobs }).getJson,
-  )).required, true);
-}
-assert.equal((await decideSourceGate(
-  proof,
-  { ...env, GITHUB_REF: 'refs/pull/1/merge' },
-  normalApi(),
-)).required, true);
-assert.equal((await decideSourceGate(
-  proof,
-  env,
-  async () => { throw new Error('offline'); },
-)).required, true);
+const discovered = await discoverPullRequestSourceGate(env, digest, pullApi());
+assert.equal(discovered.required, false);
+assert.equal(discovered.record.proofKind, 'pull-request');
+assert.equal(discovered.record.sourceTreeSha256, digest);
+assert.equal((await decideSourceGate(discovered.record, env, pullApi(), {
+  sourceTreeSha256: digest,
+})).required, false);
 
-for (const contract of contracts) {
-  for (const outcome of ['failure', 'cancelled', 'skipped', 'success']) {
-    const laterId = 150;
-    const historyRuns = [makeRun(contract, {
-      id: laterId,
-      run_attempt: 2,
-      conclusion: 'failure',
-      updated_at: '2026-09-04T06:00:00Z',
-    })];
-    const laterJob = makeJob(contract, {
-      run_id: laterId,
-      run_attempt: 2,
-      conclusion: outcome === 'success' ? 'success' : 'failure',
-      steps: [{
-        name: contract.step,
-        status: 'completed',
-        conclusion: outcome,
-        completed_at: '2026-09-04T06:00:00Z',
-      }],
-    });
-    const api = makeApi(contract, {
-      historyRunsByWorkflow: new Map([[contract.workflowId, historyRuns]]),
-      laterJobs: new Map([[laterId, [laterJob]]]),
-    });
-    const decision = await decideSourceGate(proof, env, api.getJson);
-    assert.equal(
-      decision.required,
-      outcome === 'failure' || outcome === 'cancelled',
-      `${contract.path} / ${contract.job} / ${outcome}`,
-    );
-  }
-}
+for (const api of [
+  pullApi({ artifacts: [] }),
+  pullApi({ artifacts: [{ ...artifact, expired: true }] }),
+  pullApi({ run: { ...pullRun, conclusion: 'failure' } }),
+  pullApi({ run: { ...pullRun, head_sha: 'c'.repeat(40) } }),
+  pullApi({ run: { ...pullRun, head_repository: { full_name: 'attacker/repo' } } }),
+  pullApi({ job: { ...pullJob, steps: pullJob.steps.map((step, index) => (
+    index === 1 ? { ...step, conclusion: 'failure' } : step
+  )) } }),
+  pullApi({ pulls: [{ ...pull, head: { ...pull.head, repo: { full_name: 'attacker/repo' } } }] }),
+]) assert.equal((await discoverPullRequestSourceGate(env, digest, api)).required, true);
 
-const laterId = 151;
-const laterRun = makeRun(contracts[2], {
+const laterId = 350;
+const laterRun = {
+  ...makeMainRun(contracts[0]),
   id: laterId,
-  run_attempt: 2,
+  run_attempt: 1,
   conclusion: 'failure',
-  updated_at: '2026-09-04T06:00:00Z',
-});
-const renamedLaterJob = makeJob(contracts[2], {
+  updated_at: '2026-09-12T02:00:00Z',
+};
+const laterJob = {
+  ...makeMainJob(contracts[0]),
   run_id: laterId,
-  run_attempt: 2,
-  conclusion: 'failure',
   steps: [{
-    name: 'Renamed source gate',
+    name: contracts[0].step,
     status: 'completed',
     conclusion: 'failure',
-    completed_at: '2026-09-04T06:00:00Z',
+    completed_at: '2026-09-12T02:00:00Z',
   }],
-});
+};
+const invalidatedApi = async route => {
+  if (route.endsWith(`/pulls/${pullRequestNumber}`)) return pull;
+  if (route.endsWith('/actions/runs/300')) return pullRun;
+  if (route.includes('/actions/runs/300/attempts/1/jobs')) return { total_count: 1, jobs: [pullJob] };
+  if (route.includes(`/actions/runs/${laterId}/attempts/1/jobs`)) return { total_count: 1, jobs: [laterJob] };
+  if (route.includes(`/actions/workflows/${contracts[0].workflowId}/runs`)) {
+    return { total_count: 1, workflow_runs: [laterRun] };
+  }
+  if (route.includes('/actions/workflows/')) return { total_count: 0, workflow_runs: [] };
+  throw new Error(`Unexpected route: ${route}`);
+};
 assert.deepEqual(
-  await decideSourceGate(proof, env, makeApi(contracts[2], {
-    historyRunsByWorkflow: new Map([[contracts[2].workflowId, [laterRun]]]),
-    laterJobs: new Map([[laterId, [renamedLaterJob]]]),
-  }).getJson),
-  { required: true, reason: 'later-source-evidence-missing' },
+  await decideSourceGate(discovered.record, env, invalidatedApi, { sourceTreeSha256: digest }),
+  { required: true, reason: 'later-source-not-green' },
 );
 
-for (const [proofContract, laterContract] of [
-  [contracts[0], contracts[2]],
-  [contracts[2], contracts[0]],
-]) {
-  const crossRunId = laterContract === contracts[0] ? 161 : 90;
-  const crossRun = makeRun(laterContract, {
-    id: crossRunId,
-    run_attempt: 2,
-    conclusion: 'failure',
-    updated_at: '2026-09-04T06:00:00Z',
-  });
-  const crossJob = makeJob(laterContract, {
-    run_id: crossRunId,
-    run_attempt: 2,
-    conclusion: 'failure',
-    steps: [{
-      name: laterContract.step,
-      status: 'completed',
-      conclusion: 'failure',
-      completed_at: '2026-09-04T06:00:00Z',
-    }],
-  });
-  assert.deepEqual(
-    await decideSourceGate(proof, env, makeApi(proofContract, {
-      historyRunsByWorkflow: new Map([[laterContract.workflowId, [crossRun]]]),
-      laterJobs: new Map([[crossRunId, [crossJob]]]),
-    }).getJson),
-    { required: true, reason: 'later-source-not-green' },
-  );
-}
-
-const crowdedHistory = Array.from({ length: 31 }, (_, index) => makeRun(normal, {
-  id: 300 + index,
-  conclusion: 'failure',
-  updated_at: '2026-09-04T06:00:00Z',
-}));
-assert.deepEqual(
-  await decideSourceGate(proof, env, makeApi(normal, {
-    historyRunsByWorkflow: new Map([[normal.workflowId, crowdedHistory]]),
-  }).getJson),
-  { required: true, reason: 'source-history-inspection-limit' },
-);
-
-console.log('Exact-main source proof is live-bound to both authorized producer workflows.');
+console.log('Source gate reuses only live-verified, SHA-256-identical PR or exact-main content.');

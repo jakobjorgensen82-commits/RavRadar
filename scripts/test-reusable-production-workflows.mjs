@@ -143,16 +143,17 @@ const deployInternal = jobBlock(deploy, deployContract.jobId);
 
 assertExactKeys(
   directKeys(indentedBody(build, 'permissions:'), 2),
-  ['contents', 'actions'],
+  ['contents', 'actions', 'pull-requests'],
   'build top permissions',
 );
 assertExactKeys(
   directKeys(indentedBody(buildInternal, '    permissions:'), 6),
-  ['contents', 'actions'],
+  ['contents', 'actions', 'pull-requests'],
   'build job permissions',
 );
 assert.equal(build.includes('contents: write'), false, 'build contents remains read-only');
 assert.equal(build.includes('actions: write'), false, 'build actions remains read-only');
+assert.equal(build.includes('pull-requests: write'), false, 'build pull requests remain read-only');
 
 assertExactKeys(
   directKeys(indentedBody(deploy, 'permissions:'), 2),

@@ -1,6 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.344
+**Håndbogsversion:** 4.0.345
+
+## 88.49 Lokal 4.0.345 – Gem hvert Copernicus-afsnit og kontrollér samme kilde én gang
+
+**Status:** 4.0.344 blev korrekt kontrolleret og merged, men de efterfølgende produktionskørsler blev ikke komplette og udgav derfor hverken nyt vejrdatasæt eller den integrerede scoremodel. 4.0.345 er den lokale rettelse på den målte årsag. Den er måltestet, men mangler endnu GitHubs kontrol på den endelige kode, merge, komplet produktionskørsel og offentlig verifikation.
+
+### De 1.033 rester var faktisk forsøgt hos sidste fallback
+
+Den lange oneoff nåede 78.381 af 79.414 currentpar. De sidste 1.033 fik alle et afsluttet negativt svar fra Open-Meteo i netop den kørsel. Det betyder ikke, at DMI eller Copernicus aldrig kan levere dem, og det betyder heller ikke, at hullerne må accepteres. Det betyder, at den sidste fallback blev forsøgt uden at finde et gyldigt felt dér og da. Slutgaten gjorde derfor det rigtige: intet handoff, artifact, deploy eller modelskift.
+
+DMI planlægger fortsat ud fra hele registeret på 673 × 118 par, ikke kun de par, som DMI tidligere har fundet. DMI-familiernes startposition roterer mellem gennemløb og kørsler, så én familie ikke permanent bruger eller mister førstepladsen. Copernicus' Baltic- og AMM15-køer roterer også særskilt og flettes. Open-Meteo modtager kun den eksakte rest efter de højere prioriterede kilder.
+
+### Hentning var ikke den store tidsrøver
+
+Oneoffens Copernicus-fase tog cirka 54 minutter. De fleste providerkald tog 13–18 sekunder, mens 31 gentagne fulde bank-, shadow- og source-stage-kontroller brugte cirka 2.376 sekunder, omtrent 78 procent af den målte fase. Mere rå køretid ville derfor gentage meget internt arbejde og var ikke i sig selv en tilfredsstillende løsning.
+
+4.0.345 skriver nu straks hvert færdigt Copernicus-segment som en lille, atomisk og hashkontrolleret kvittering bundet til den eksakte donorbank, produktionstime og targetregister. Positive rækker og ærlige nulresultater kan dermed overleve timeout eller genstart. Kvitteringen er aldrig alene adgang til produktion: den afspilles gennem de eksisterende kilde-, maske-, provenance- og valideringsregler. Efter seks segmenter samles fremgangen i den fulde transaktionelle bank → shadow → source-stage-kæde; en sidste mindre gruppe samles ved normal afslutning eller sikkert budgetstop. Kvitteringer slettes først efter en vellykket samlet commit.
+
+En syntetisk prøve med 40.120 records og seks segmenter gav byteidentisk bank, shadow og source-stage. Det gamle mønster brugte cirka 116 sekunder; journal og én samlet konsolidering brugte cirka 46 sekunder. Det er et lokalt gennemløbsbevis, ikke en garanti for leverandørdækning eller produktionstid.
+
+### Kildekoden kontrolleres én gang, dataene stadig fuldt ud
+
+Den fulde kildekodegate skal fortsat bestå på Pull Requestens eksakte head. Når den mergede `main` har præcis samme sporede filindhold, kan produktionskørslen genbruge det grønne PR-bevis efter live kontrol af repository, PR, head, job, trin og ikke-udløbet artifact. Identiteten er indholdets SHA-256, ikke blot en commitbesked eller en lokal cachefil. Ukendt, ændret, udløbet eller modstridende bevis giver sikker fallback til en ny fuld kildegate på `main`.
+
+Det fjerner den meningsløse anden fulde kildegate før den samme vejropbygning. Det fjerner ikke den centrale adminhydrering, frisk DMI/Copernicus/Open-Meteo/WAM-produktion, fuld datavalidering, releasegate, handoff, artifactkontrol, deploy eller offentlig runtimekontrol.
+
+PR-kildekaldet kører fortsat samtlige releasegate-tests, men skriver ikke releasegatens to dynamiske, tidsstemplede tracked rapportfiler. Ellers ville kontrollen selv ændre den kilde, dens SHA-256 skal forsegle. Den almindelige releasegate efter frisk produktionsdata og ved releasepakning skriver fortsat rapporterne; ingen datakontrol eller produktionsgate er fjernet.
+
+### Slutmålet og scoremodellen er uændret
+
+Current skal stadig være præcis 79.414/79.414 med én gyldig kilde pr. par og nul mangler eller overlap. Bølger skal stadig være 79.060 native WAM-par plus Feggesund 354/354. Først derefter må det runbundne handoff og den allerede godkendte integrerede scoremodel gå videre gennem de fulde gates. Candidate G forbliver offentlig, indtil hele den nye kæde er positivt bevist.
 
 ## 88.48 Lokal 4.0.344 – Bevar brugbare data og hent de rigtige huller
 
@@ -233,11 +263,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.342 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.345 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.342-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.345-cutoverkandidat, ikke produktion
 
-4.0.342 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer WAM-cachelukningen og dens releasebinding.
+4.0.345 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; det ændrer Copernicus-persistensen, kildegatebeviset og releasebindingen.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

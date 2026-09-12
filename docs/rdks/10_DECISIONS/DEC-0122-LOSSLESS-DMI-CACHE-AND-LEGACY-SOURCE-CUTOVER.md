@@ -93,6 +93,14 @@ Under ejerens stående autorisation flyttes den materielt uændrede first-cutove
 
 Arkiv-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Current kræver 79.414/79.414 og bølger 79.060 native WAM plus Feggesund 354/354. Lokal 4.0.344 er endnu ikke exact-head-CI-valideret, merged eller produktionsverificeret. Candidate G forbliver offentlig, indtil den nye samlede kæde er positivt bevist.
 
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.345
+
+PR #278 blev efterfølgende merged som `f2cc2a77`, men main-run `34635781802` og oneoff `34642214559` producerede intet komplet handoff og ingen cutover. Oneoff sluttede 78.381/79.414 med 1.033 provider-negative currentpar; WAM/Feggesund var grøn. Den målte Copernicus-efterbehandling brugte hovedparten af fasen på gentagne fulde checkpoints.
+
+Under ejerens stående autorisation og aktuelle instruktion om autonom sikker lancering flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.345`. Et 4.0.344-handoff findes ikke og må ikke konstrueres eller ommærkes. 4.0.345 bevarer cacherne, men tilføjer durable segmentreceipts og bounded consolidation efter DEC-0127. Kun et komplet runbundet handoff fra samme eksakte 4.0.345-main-head kan bruges.
+
+Alle eksisterende arkiv-, storage-, checkpoint-, privacy-, readback-, dataintegritets-, closure-, release-, deployment- og kadencegrænser består. Exact-content sourceproof kan alene undgå gentagelse af en allerede grøn kildegate på byteidentisk tracked indhold; det ændrer ikke de fulde post-data-gates. Current kræver fortsat 79.414/79.414 og bølger 79.060 native WAM plus Feggesund 354/354. Candidate G forbliver offentlig, indtil den komplette kæde og den integrerede model er verificeret i produktion.
+
 ## Konsekvenser
 
 - Bevarede data kan genbruges på tværs af target- og leverandørskift uden at være låst til Open-Meteo.

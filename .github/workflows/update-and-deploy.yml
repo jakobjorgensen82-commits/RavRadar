@@ -86,6 +86,8 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 
 # GitHub starter den normale vejropdatering hvert 15. minut. En særskilt
 # current-hour-gate låser den eksakte UTC-time. Den endelige Copernicus-målliste
@@ -1914,19 +1916,21 @@ jobs:
           path: |
             .cache/copernicus-current-donor-bank.json
             .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-segment-journal.json
+            .cache/copernicus-current-segment-journal.json.invalid-*
             .cache/copernicus-current-shadow.json.invalid-*
             .cache/copernicus-current-source-stage.json.invalid-*
           key: copernicus-current-donor-bank-v1-${{ runner.os }}-post-build-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             copernicus-current-donor-bank-v1-${{ runner.os }}-
 
-      - name: Revalidate packaged exact-main source proof before maintenance acquisition
+      - name: Revalidate packaged exact-content source proof before maintenance acquisition
         id: copernicus-refresh-source-proof
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Require reusable exact-main source proof for advisory maintenance
+      - name: Require reusable exact-content source proof for advisory maintenance
         shell: bash
         env:
           SOURCE_GATE_REQUIRED: ${{ steps.copernicus-refresh-source-proof.outputs.required }}
@@ -1950,13 +1954,14 @@ jobs:
           --
           --refresh-only
           --donor-bank .cache/copernicus-current-donor-bank.json
+          --segment-journal .cache/copernicus-current-segment-journal.json
           --at "${{ steps.verified-copernicus-refresh-input.outputs.target_hour }}"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets .cache/copernicus-post-build-authoritative-targets.json
 
       - name: Reconfirm exact main before post-build donor bank cache save
         id: copernicus-refresh-bank-write-authority
-        if: always() && steps.copernicus-refresh.outcome != 'cancelled' && steps.copernicus-refresh.outcome != 'skipped' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        if: always() && steps.copernicus-refresh.outcome != 'cancelled' && steps.copernicus-refresh.outcome != 'skipped' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1968,12 +1973,14 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save post-build Copernicus donor bank before projection validation
-        if: always() && steps.copernicus-refresh-bank-write-authority.outcome == 'success' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        if: always() && steps.copernicus-refresh-bank-write-authority.outcome == 'success' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         uses: actions/cache/save@v6
         with:
           path: |
             .cache/copernicus-current-donor-bank.json
             .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-segment-journal.json
+            .cache/copernicus-current-segment-journal.json.invalid-*
             .cache/copernicus-current-shadow.json.invalid-*
             .cache/copernicus-current-source-stage.json.invalid-*
           key: copernicus-current-donor-bank-v1-${{ runner.os }}-post-build-${{ github.run_id }}-${{ github.run_attempt }}

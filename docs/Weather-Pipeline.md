@@ -1,5 +1,19 @@
 # Weather Pipeline 1.0
 
+## 4.0.345 – varige Copernicus-segmenter og ét sourceproof for samme indhold
+
+4.0.344 bestod sin exact-head-PR-gate og blev merged, men main-run `34635781802` og oneoff `34642214559` blev ikke komplette og foretog intet handoff eller cutover. Oneoff sluttede 78.381/79.414. De sidste 1.033 par var alle terminalt provider-negative hos Open-Meteo i netop den kørsel; de var ikke uattempted runtime-rester. Klassifikationen er hverken et permanent DMI-/Copernicus-fraværsbevis eller tilladelse til launch med huller.
+
+DMI planlægger fortsat fra hele det eksakte 673 × 118-register og roterer family-lead mellem pass og kørsler. Copernicus roterer Baltic og AMM15 særskilt og fletter dem round-robin. Resten efter disse højere prioriterede kilder går til Open-Meteo. Kildeordenen, masker, afstandskrav, native tider, provenance og slutclosure er uændret.
+
+Oneoffens Copernicus-fase varede cirka 54 minutter. 31 fulde segmentcheckpoints brugte cirka 2.376 sekunder, omtrent 78 procent af fasen, mens de fleste providerrequests tog 13–18 sekunder. Hvert færdigt segment skrives derfor nu først som en kompakt atomisk journalreceipt med contenthash, eksakt donor-basehash, production reference og targetregisterhash. Positive records og validerede nulresultat-attempts kan overleve timeout/genstart. Journalen er aldrig selvstændig admission: replay bygger og validerer en donorcandidate og gennemfører fortsat den eksisterende prepared bank → shadow → source-stage-transaktion. Seks receipts konsolideres ad gangen, og en sidste mindre batch konsolideres ved naturlig afslutning eller soft-budget-exit. Journalen fjernes først efter vellykket commit; forkert base eller manipuleret indhold sættes i karantæne.
+
+Den målrettede syntetiske seks-segmentprøve med 40.120 records gav byteidentisk bank, shadow og stage. Seks gamle fulde checkpoints brugte cirka 116 sekunder mod cirka 46 sekunder for journal, in-memory kandidat og én konsolidering. Det er et lokalt performance-/integritetsbevis, ikke provider- eller komplethedsbevis.
+
+Den fulde sourcegate produceres på PR'ens eksakte head. Producenten uploader efter grøn gate et contentbundet proof-artifact. Sourcekaldets fulde releasegate undertrykker kun sine to dynamiske, tidsstemplede tracked release-rapporter, så valideringen ikke ændrer det sourceindhold, den skal forsegle; alle tests kører. Den almindelige post-data-releasegate skriver fortsat rapporterne. På merged main beregnes samme kanoniske tracked source-tree-SHA-256 og beviset kan kun genbruges efter live GitHub-verifikation af samme repository, merged PR, exact head, run, attempt, job, krævede steps og ikke-udløbet exact-name artifact. Locatorcachen har ingen autoritet. Enhver mismatch, utilgængelighed, udløb eller senere modstridende main-gate betyder `required=true` og kører den fulde main-sourcegate. Dermed køres den samme kildekode ikke dyrt to gange, mens central adminhydrering, frisk vejr/proveniens, `npm run validate`, almindelig `npm run release:gate`, handoff, artifact og deploy fortsat kræves for hvert nyt produktionsartifact.
+
+4.0.345 er lokalt måltestet, men endnu ikke exact-head-CI-valideret, merged eller produktionsverificeret. Current kræver stadig 79.414/79.414; WAM kræver 79.060 native par plus Feggesund 354/354. Candidate G forbliver offentlig, indtil en komplet same-head-kørsel har bestået alle post-data-gates, handoff, cutover og offentlig verifikation.
+
 ## 4.0.343 – alle leverandørfamilier skal faktisk få en tur
 
 Oneoff `34565347360` viste, at cachen blev bevaret, men at arbejdsrækkefølgen kunne forhindre bestemte datakilder i overhovedet at nå frem. DMI's uløste currentfamilier får derfor nu en bounded, fair tur, som roterer mellem pass og kørsler. Når den eksakte forundersøgelse viser, at en familie kun skal forbedre allerede brugbare data, flyttes den efter de reelle huller.

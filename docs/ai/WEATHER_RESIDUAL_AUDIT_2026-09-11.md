@@ -1,4 +1,14 @@
-# Residualaudit efter 4.0.343 – 2026-09-11
+# Residualaudit efter 4.0.343 – 2026-09-11, opdateret efter 4.0.344-runtime 2026-09-12
+
+## Nyeste 4.0.344-resultat og 4.0.345-konklusion
+
+4.0.344 blev merged som `f2cc2a77`. Normalrun `34635781802` og oneoff `34642214559` afløser de ældre resttal som nyeste driftsbevis. Normalrunnet nåede 74.093/79.414 før Copernicus og sluttede med 1.335 mangler. 976 var terminalt negative i tidligere/aktuelle fallbackforsøg, mens 359 ikke var terminalt afklarede i dette run. Det betyder, at de første var forsøgt hos den konkrete fallback uden gyldigt resultat; det er ikke et permanent DMI-/CP-fraværsbevis.
+
+Oneoffen startede Copernicus med 2.274 mangler, tilføjede 965 og sluttede efter Open-Meteo med 1.033 terminalt provider-negative par, altså 78.381/79.414. WAM og Feggesund var grønne; intet handoff/cutover blev produceret. DMI roterede alle seks collections og planlagde mod det fulde autoritative register. Hypotesen om, at DMI kun søgte blandt tidligere fund, er afvist. Hypotesen om, at en længere oneoff alene sikkert lukker resten, er også afvist.
+
+Den dominerende kontrollerbare flaskehals var Copernicus' 31 gentagne fulde checkpoints: cirka 2.376 sekunder/78,2 % af CP-fasen. 4.0.345 løser dette med durable per-segment receipts og seks-segment-consolidation uden ændring af sourceorder eller admission. En 40.120-record fixture er byteidentisk og reducerer seks segmenters efterbehandling 115,905 → 46,438 sekunder. Exact-content PR-proof fjerner samtidig kun den dobbelte kildegate; post-data-gates består. Se DEC-0127 og den opdaterede CP-profil.
+
+De 1.033 er fortsat ægte launchblokeringer for oneoffens eksakte targettime. Først en ny main-kørsel kan vise, om den forbedrede CP-kapacitet lader DMI/CP lukke flere, om en ny providerkørsel ændrer upstream-tilgængeligheden, eller om yderligere source-/gridårsager består. Ingen afstands-, geometri-, fysik- eller completenessregel lempes på forhånd.
 
 Dette er et analysecheckpoint, ikke en ny release eller en erklæring om løst drift. Ejerens ordre er dybere samlet analyse, historisk sammenligning og ekstern verifikation før endnu en rettelse. Astra / Ultra er valgt af ejeren til dette arbejde.
 

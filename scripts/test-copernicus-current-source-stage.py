@@ -532,9 +532,23 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert "requestEnvelopeHourCount=1" in checkpoint_lines[1]
     assert all(
         "acquireHashParseSeconds=" in line
+        and "durableJournalSeconds=" in line
+        and "candidateAdmissionSeconds=" in line
+        and "fullCheckpointSeconds=" in line
+        and "pendingDurableSegmentCount=" in line
         and "admissionMergeCheckpointSeconds=" in line
         for line in checkpoint_lines
     )
+    assert "fullCheckpoint=false" in checkpoint_lines[0]
+    assert "pendingDurableSegmentCount=1" in checkpoint_lines[0]
+    assert "fullCheckpoint=true" in checkpoint_lines[1]
+    assert "pendingDurableSegmentCount=0" in checkpoint_lines[1]
+    final_consolidation_lines = [
+        line for line in segmented_run.stdout.splitlines()
+        if line.startswith("Copernicus final durable segment consolidation:")
+    ]
+    assert final_consolidation_lines == []
+    assert not (segmented / "copernicus-current-segment-journal.json").exists()
     segmented_shadow = json.loads(
         (segmented / "shadow.json").read_text(encoding="utf-8")
     )
@@ -570,6 +584,159 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         ) == timedelta(hours=2)
         for attempt in segmented_stage["attempts"]
     )
+
+    # A receipt left by a terminated process is rebound only to its exact donor
+    # generation and then replayed through the normal validators on restart.
+    segmented_bank_path = segmented / "copernicus-current-donor-bank.json"
+    segmented_bank = load_copernicus_donor_bank(
+        segmented_bank_path,
+        targets=[TARGET],
+    )
+    assert segmented_bank is not None
+    segmented_baltic_product = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == "copernicus-baltic-nemo"
+    )
+    replay_valid_time = REFERENCE + timedelta(hours=4)
+    replay_pair = {
+        "partId": TARGET["partId"],
+        "validTime": replay_valid_time.isoformat().replace("+00:00", "Z"),
+    }
+    segmented_registry["operationalRequiredPairs"].append(replay_pair)
+    segmented_registry["operationalRequiredPairs"] = sorted(
+        segmented_registry["operationalRequiredPairs"],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    segmented_registry.update({
+        "operationalRequiredPairsSha256": required_pairs_sha256(
+            segmented_registry["operationalRequiredPairs"]
+        ),
+        "operationalRequiredPairCount": 4,
+        "operationalDmiVerifiedPairCount": 114,
+        "dmiVerifiedPairCount": 161,
+    })
+    write(segmented / "registry.json", segmented_registry)
+    replay_acquired_at = REFERENCE + timedelta(minutes=20)
+    replay_acquisition = make_acquisition(
+        source=segmented_baltic_product["source"],
+        acquisition_at=replay_acquired_at,
+        request_start_at=replay_valid_time,
+        request_end_at=replay_valid_time,
+        targets=[TARGET],
+        native_valid_times=[replay_valid_time],
+        subset_sha256=canonical_sha256({"fixture": "restart-replay"}),
+        record_count=1,
+    )
+    replay_record = make_record({
+        "partId": TARGET["partId"],
+        "parentZoneId": TARGET["parentZoneId"],
+        "validTime": replay_valid_time,
+        "samplingPoint": TARGET["waterPoint"],
+        "gridPoint": TARGET["waterPoint"],
+        "distanceKm": 0.0,
+        "verticalLayerM": 5.0,
+        "layerQuality": "full-water-column",
+        "sharedLayerCount": 2,
+        "uMps": 0.1,
+        "vMps": 0.2,
+    }, replay_acquisition, TARGET)
+    replay_attempt = make_source_attempt(
+        production_reference_at=REFERENCE,
+        acquisition_at=replay_acquired_at,
+        product=segmented_baltic_product,
+        shard_id=spatial_shards([TARGET], segmented_baltic_product)[0]["shardId"],
+        target_part_ids=[TARGET["partId"]],
+        requested_pairs=[replay_pair],
+        subset_sha256=replay_acquisition["subsetSha256"],
+        acquisition_id=replay_acquisition["acquisitionId"],
+        parsed_record_count=1,
+        observed_native_valid_times=replay_acquisition["nativeValidTimes"],
+    )
+    replay_journal_path = segmented / "copernicus-current-segment-journal.json"
+    RUNNER_MODULE.append_segment_journal(
+        replay_journal_path,
+        None,
+        base_bank_sha256=segmented_bank["bankSha256"],
+        production_reference_at=REFERENCE,
+        targets=[TARGET],
+        acquisition=replay_acquisition,
+        records=[replay_record],
+        attempt=replay_attempt,
+    )
+    replayed_run = run_runner(
+        segmented,
+        segmented_fixtures,
+        acquisition_at=replay_acquired_at + timedelta(minutes=1),
+    )
+    assert replayed_run.returncode == 0, replayed_run.stdout + replayed_run.stderr
+    assert "Replayed and consolidated durable Copernicus segment receipts: entryCount=1." in (
+        replayed_run.stdout
+    )
+    assert not replay_journal_path.exists()
+    replayed_shadow = json.loads(
+        (segmented / "shadow.json").read_text(encoding="utf-8")
+    )
+    replayed_stage = validate_source_stage(
+        json.loads((segmented / "source-stage.json").read_text(encoding="utf-8")),
+        registry=segmented_registry,
+        shadow=replayed_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(segmented / "shadow.json"),
+    )
+    assert replay_attempt in replayed_stage["attempts"]
+
+    # Six independent spatial receipts take exactly one full consolidation.
+    # This is the live throughput contract: five segments remain individually
+    # crash-safe in the journal, then the sixth promotes the complete batch.
+    batched = root / "six-segment-consolidation"
+    batched_fixtures = batched / "fixtures"
+    batched_fixtures.mkdir(parents=True)
+    batched_targets = [
+        {
+            **TARGET,
+            "partId": f"fixture-batched-part-{index}",
+            "name": f"Batched fixture {index}",
+            "waterPoint": [9.1 + (1.3 * index), TARGET["waterPoint"][1]],
+        }
+        for index in range(RUNNER_MODULE.SEGMENTS_PER_DONOR_CONSOLIDATION)
+    ]
+    prepare_multi(batched, batched_targets)
+    batched_baltic = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == "copernicus-baltic-nemo"
+    )
+    batched_shards = spatial_shards(batched_targets, batched_baltic)
+    assert len(batched_shards) == RUNNER_MODULE.SEGMENTS_PER_DONOR_CONSOLIDATION
+    for index, shard in enumerate(batched_shards):
+        assert len(shard["targets"]) == 1
+        dataset(
+            batched_fixtures / f"copernicus-baltic-nemo-{index:03d}.nc",
+            available=True,
+            target=shard["targets"][0],
+        )
+    batched_run = run_runner(batched, batched_fixtures)
+    assert batched_run.returncode == 0, batched_run.stdout + batched_run.stderr
+    batched_checkpoints = [
+        line for line in batched_run.stdout.splitlines()
+        if line.startswith("Copernicus shard checkpoint:")
+    ]
+    assert len(batched_checkpoints) == RUNNER_MODULE.SEGMENTS_PER_DONOR_CONSOLIDATION
+    assert all(
+        "fullCheckpoint=false" in line
+        for line in batched_checkpoints[:-1]
+    )
+    assert "fullCheckpoint=true" in batched_checkpoints[-1]
+    assert "pendingDurableSegmentCount=0" in batched_checkpoints[-1]
+    assert not (batched / "copernicus-current-segment-journal.json").exists()
+    batched_stage = validate_source_stage(
+        json.loads((batched / "source-stage.json").read_text(encoding="utf-8")),
+        registry=json.loads((batched / "registry.json").read_text(encoding="utf-8")),
+        shadow=json.loads((batched / "shadow.json").read_text(encoding="utf-8")),
+        target_identities={row["partId"]: row for row in batched_targets},
+        shadow_sha256=file_sha256(batched / "shadow.json"),
+    )
+    assert batched_stage["missingPairCount"] == 0
+    assert len(batched_stage["attempts"]) == len(batched_targets)
 
     # In the shared product domain, AMM15 can be selected only after the same
     # exact pair has one completed Baltic attempt with no selected Baltic row.
@@ -1172,6 +1339,84 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow_sha256=file_sha256(fast_shadow_path),
     )
     assert fast_stage["attempts"] == [no_record_attempt]
+
+    # Every completed segment first lands in a small fsynced receipt. The
+    # receipt disappears only after the unchanged strict bank -> shadow ->
+    # stage transaction succeeds; a failed transaction must leave it replayable.
+    segment_journal_path = fast_checkpoint / "copernicus-current-segment-journal.json"
+    segment_journal = RUNNER_MODULE.append_segment_journal(
+        segment_journal_path,
+        None,
+        base_bank_sha256=fast_state["bankSha256"],
+        production_reference_at=REFERENCE,
+        targets=[TARGET],
+        acquisition=no_record_acquisition,
+        records=[],
+        attempt=no_record_attempt,
+    )
+    assert segment_journal_path.exists()
+    assert len(segment_journal["entries"]) == 1
+    consolidated_attempts = [no_record_attempt]
+    consolidated = RUNNER_MODULE.consolidate_durable_segment_progress(
+        shadow_path=fast_shadow_path,
+        source_stage_path=fast_stage_path,
+        segment_journal_path=segment_journal_path,
+        registry=fast_registry,
+        target_identities={TARGET["partId"]: TARGET},
+        attempts=consolidated_attempts,
+        updated_at=fast_updated_at,
+        donor_bank_path=fast_bank_path,
+        donor_state=fast_state,
+        validated_donor_candidate=fast_state,
+        bank_changed=False,
+    )
+    assert not segment_journal_path.exists()
+    assert consolidated.shadow == reused_projection
+    assert fast_bank_path.read_bytes() == fast_bank_bytes
+
+    RUNNER_MODULE.append_segment_journal(
+        segment_journal_path,
+        None,
+        base_bank_sha256=fast_state["bankSha256"],
+        production_reference_at=REFERENCE,
+        targets=[TARGET],
+        acquisition=no_record_acquisition,
+        records=[],
+        attempt=no_record_attempt,
+    )
+    before_failed_consolidation = {
+        path: path.read_bytes()
+        for path in (fast_bank_path, fast_shadow_path, fast_stage_path)
+    }
+    with patch.object(
+        RUNNER_MODULE,
+        "persist_source_stage_progress",
+        side_effect=OSError("fixture consolidation failure"),
+    ):
+        try:
+            RUNNER_MODULE.consolidate_durable_segment_progress(
+                shadow_path=fast_shadow_path,
+                source_stage_path=fast_stage_path,
+                segment_journal_path=segment_journal_path,
+                registry=fast_registry,
+                target_identities={TARGET["partId"]: TARGET},
+                attempts=[no_record_attempt],
+                updated_at=fast_updated_at,
+                donor_bank_path=fast_bank_path,
+                donor_state=fast_state,
+                validated_donor_candidate=fast_state,
+                bank_changed=False,
+            )
+        except OSError as error:
+            assert "consolidation failure" in str(error)
+        else:
+            raise AssertionError("Failed consolidation must remain fatal")
+    assert segment_journal_path.exists()
+    assert all(
+        path.read_bytes() == payload
+        for path, payload in before_failed_consolidation.items()
+    )
+    RUNNER_MODULE.remove_segment_journal(segment_journal_path)
 
     # The shortcut must not hide the opposite case: a no-record Baltic witness
     # can admit a retained AMM15 tuple. Such an unresolved generation still

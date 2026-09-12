@@ -125,8 +125,13 @@ assert.match(
 );
 assert.match(
   copernicusRunner,
-  /merged_shadow = \{\*\*donor_state\["shadow"\], "updatedAt": utc_iso\(acquisition_at\)\}/,
-  'Startup rebase must start from the authoritative full bank, not an independently restored projection.',
+  /merged_acquisitions, merged_records = merge_cache_evidence\(\s*donor_state\["shadow"\],\s*journal_acquisitions,\s*journal_records,\s*reference,\s*target_identities,\s*\)/,
+  'Startup rebase must merge journal evidence into the authoritative donor-bank shadow.',
+);
+assert.match(
+  copernicusRunner,
+  /merged_shadow = \{\s*\*\*donor_state\["shadow"\],\s*"updatedAt": utc_iso\(acquisition_at\),\s*"acquisitions": merged_acquisitions,\s*"records": merged_records,\s*"collections": \[\],\s*\}/,
+  'Startup rebase must retain the authoritative bank metadata while replacing only validated journal-backed evidence.',
 );
 assert.match(copernicusRunner,
   /donor_state = build_copernicus_donor_bank\(\s*merged_shadow,[\s\S]*?previous_bank=donor_state, production_reference_at=reference/);

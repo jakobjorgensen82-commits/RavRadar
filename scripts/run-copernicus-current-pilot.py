@@ -76,6 +76,12 @@ from lib.copernicus_current_donor_bank import (
     build_copernicus_donor_bank, legacy_donor_bank, load_copernicus_donor_bank,
     projected_donor_shadow, validate_copernicus_donor_bank,
 )
+from lib.copernicus_current_segment_journal import (
+    append_segment_journal,
+    default_segment_journal_path,
+    load_segment_journal,
+    remove_segment_journal,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -257,6 +263,10 @@ ADVISORY_HISTORY_MAX_SECONDS = max(
     int(os.getenv("COPERNICUS_ADVISORY_HISTORY_MAX_SECONDS", "180")),
 )
 REQUEST_SEGMENT_SPLIT_MINIMUM_MISSING_HOURS = 24
+# Every completed segment is first fsync'ed as a small immutable receipt.  The
+# full bank -> shadow -> source-stage transaction remains mandatory, but is
+# amortized across this bounded number of already durable receipts.
+SEGMENTS_PER_DONOR_CONSOLIDATION = 6
 
 
 def arguments() -> argparse.Namespace:
@@ -266,6 +276,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
     parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
     parser.add_argument("--donor-bank", type=Path)
+    parser.add_argument("--segment-journal", type=Path)
     parser.add_argument("--acquisition-plan", type=Path)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
@@ -281,6 +292,8 @@ def arguments() -> argparse.Namespace:
     if parsed.donor_bank is None:
         parsed.donor_bank = (DEFAULT_DONOR_BANK if parsed.shadow == DEFAULT_SHADOW else
                              parsed.shadow.with_name("copernicus-current-donor-bank.json"))
+    if parsed.segment_journal is None:
+        parsed.segment_journal = default_segment_journal_path(parsed.donor_bank)
     if parsed.acquisition_plan is None:
         parsed.acquisition_plan = (Path(".cache/weather-current-acquisition-plan.json")
                                    if parsed.shadow == DEFAULT_SHADOW else
@@ -871,6 +884,7 @@ def persist_source_stage_progress(
     shadow_changed: bool,
     donor_bank_path: Path | None = None,
     donor_state: dict[str, Any] | None = None,
+    validated_donor_candidate: dict[str, Any] | None = None,
 ) -> PersistedSourceStageProgress:
     """Commit values plus positive proof before disposable shadow/journal files."""
     targets = list(target_identities.values())
@@ -890,51 +904,70 @@ def persist_source_stage_progress(
                 target_identities=target_identities,
                 donor_state=donor_state,
             )
-            donor_projection = reusable_normalized_donor_projection(
-                shadow_path=shadow_path,
-                donor_bank_path=donor_bank_path,
-                registry=registry,
-                target_identities=target_identities,
-                acquisitions=acquisitions,
-                records=records,
-                updated_at=updated_at,
-                shadow_changed=shadow_changed,
-                donor_state=donor_state,
-                validated_generation=retained_generation,
-            )
-            if donor_projection is not None:
-                normalized_bank = donor_state
-                shadow = donor_projection
+            if validated_donor_candidate is not None:
+                if donor_state is None or not shadow_changed:
+                    raise RuntimeError(
+                        "Prepared Copernicus donor candidate lacks changed base state"
+                    )
+                normalized_bank = validate_copernicus_donor_bank(
+                    validated_donor_candidate,
+                    targets=targets,
+                )
+                donor_projection = _project_validated_donor_shadow(normalized_bank)
+                if (
+                    donor_projection["acquisitions"] != acquisitions
+                    or donor_projection["records"] != records
+                ):
+                    raise RuntimeError(
+                        "Prepared Copernicus donor candidate differs from its projection"
+                    )
             else:
-                donor_shadow = empty_shadow(updated_at)
-                donor_shadow["acquisitions"] = acquisitions
-                donor_shadow["records"] = records
-                bank_arguments = {
-                    "targets": targets,
-                    "attempts": attempts,
-                    "production_reference_at": parse_time(
-                        registry["productionReferenceAt"], "Bank reference"
-                    ),
-                    **positive,
-                }
-                if retained_generation is None or donor_state is None:
-                    normalized_bank = validate_copernicus_donor_bank(
-                        build_copernicus_donor_bank(
+                donor_projection = reusable_normalized_donor_projection(
+                    shadow_path=shadow_path,
+                    donor_bank_path=donor_bank_path,
+                    registry=registry,
+                    target_identities=target_identities,
+                    acquisitions=acquisitions,
+                    records=records,
+                    updated_at=updated_at,
+                    shadow_changed=shadow_changed,
+                    donor_state=donor_state,
+                    validated_generation=retained_generation,
+                )
+                if donor_projection is not None:
+                    normalized_bank = donor_state
+                    shadow = donor_projection
+                else:
+                    donor_shadow = empty_shadow(updated_at)
+                    donor_shadow["acquisitions"] = acquisitions
+                    donor_shadow["records"] = records
+                    bank_arguments = {
+                        "targets": targets,
+                        "attempts": attempts,
+                        "production_reference_at": parse_time(
+                            registry["productionReferenceAt"], "Bank reference"
+                        ),
+                        **positive,
+                    }
+                    if retained_generation is None or donor_state is None:
+                        normalized_bank = validate_copernicus_donor_bank(
+                            build_copernicus_donor_bank(
+                                donor_shadow,
+                                previous_bank=donor_state,
+                                **bank_arguments,
+                            ),
+                            targets=targets,
+                        )
+                    else:
+                        normalized_bank = _advance_validated_copernicus_donor_bank(
                             donor_shadow,
                             previous_bank=donor_state,
                             **bank_arguments,
-                        ),
-                        targets=targets,
+                        )
+                    donor_projection = _project_validated_donor_shadow(
+                        normalized_bank
                     )
-                else:
-                    normalized_bank = _advance_validated_copernicus_donor_bank(
-                        donor_shadow,
-                        previous_bank=donor_state,
-                        **bank_arguments,
-                    )
-                donor_projection = _project_validated_donor_shadow(
-                    normalized_bank
-                )
+            if shadow is None:
                 prepared_donor = _prepare_validated_json_snapshot(
                     donor_bank_path,
                     normalized_bank,
@@ -1119,6 +1152,42 @@ def persist_source_stage_progress(
         _discard_prepared_json_snapshot(prepared_donor)
         _discard_prepared_json_snapshot(prepared_shadow)
         _discard_prepared_json_snapshot(prepared_stage)
+
+
+def consolidate_durable_segment_progress(
+    *,
+    shadow_path: Path,
+    source_stage_path: Path,
+    segment_journal_path: Path,
+    registry: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    attempts: list[dict[str, Any]],
+    updated_at: datetime,
+    donor_bank_path: Path,
+    donor_state: dict[str, Any],
+    validated_donor_candidate: dict[str, Any],
+    bank_changed: bool,
+) -> PersistedSourceStageProgress:
+    """Promote all durable receipts through the unchanged strict transaction."""
+    projection = _project_validated_donor_shadow(validated_donor_candidate)
+    checkpoint = persist_source_stage_progress(
+        shadow_path=shadow_path,
+        source_stage_path=source_stage_path,
+        registry=registry,
+        target_identities=target_identities,
+        acquisitions=projection["acquisitions"],
+        records=projection["records"],
+        attempts=attempts,
+        updated_at=updated_at,
+        shadow_changed=bank_changed,
+        donor_bank_path=donor_bank_path,
+        donor_state=donor_state,
+        validated_donor_candidate=(
+            validated_donor_candidate if bank_changed else None
+        ),
+    )
+    remove_segment_journal(segment_journal_path)
+    return checkpoint
 
 
 def journal_for_donor_projection(
@@ -1986,6 +2055,7 @@ def main() -> int:
     reusable_stage: dict[str, Any] | None = None
     original_stage = None
     original_bank = None
+    restored_segment_journal: dict[str, Any] | None = None
     if operational_contract and args.source_stage.exists() and args.source_stage.stat().st_size > 0:
         try:
             if shadow_salvage["salvaged"] or not shadow_was_present:
@@ -2011,10 +2081,42 @@ def main() -> int:
             quarantine_invalid_private_file(args.source_stage, "source stage")
     if operational_contract:
         if donor_state is None:
+            if args.segment_journal.exists():
+                quarantine_invalid_private_file(
+                    args.segment_journal,
+                    "detached segment journal",
+                )
             donor_state = original_bank or legacy_donor_bank(
                 existing, None, targets=authoritative_targets,
                 shadow_sha256=file_sha256(args.shadow) if shadow_was_present else "0" * 64,
             )
+        else:
+            try:
+                restored_segment_journal = load_segment_journal(
+                    args.segment_journal,
+                    targets=authoritative_targets,
+                    expected_base_bank_sha256=donor_state["bankSha256"],
+                )
+            except (
+                KeyError,
+                OSError,
+                TypeError,
+                UnicodeError,
+                ValueError,
+                json.JSONDecodeError,
+            ):
+                quarantine_invalid_private_file(
+                    args.segment_journal,
+                    "segment journal",
+                )
+                restored_segment_journal = None
+        journal_acquisitions: list[dict[str, Any]] = []
+        journal_records: list[dict[str, Any]] = []
+        if restored_segment_journal is not None:
+            for entry in restored_segment_journal["entries"]:
+                if entry["records"]:
+                    journal_acquisitions.append(entry["acquisition"])
+                    journal_records.extend(entry["records"])
         # The donor bank is authoritative over an independently restored
         # projection.  Drop attempts whose positive acquisition is absent from
         # that generation before validating/merging its observed native axis.
@@ -2030,7 +2132,26 @@ def main() -> int:
             required_pairs=required_pairs,
             target_identities=target_identities,
         )
-        merged_shadow = {**donor_state["shadow"], "updatedAt": utc_iso(acquisition_at)}
+        if restored_segment_journal is not None:
+            for entry in restored_segment_journal["entries"]:
+                source_attempts = replace_stale_shard_attempt(
+                    source_attempts,
+                    entry["attempt"],
+                )
+        merged_acquisitions, merged_records = merge_cache_evidence(
+            donor_state["shadow"],
+            journal_acquisitions,
+            journal_records,
+            reference,
+            target_identities,
+        )
+        merged_shadow = {
+            **donor_state["shadow"],
+            "updatedAt": utc_iso(acquisition_at),
+            "acquisitions": merged_acquisitions,
+            "records": merged_records,
+            "collections": [],
+        }
         donor_state = build_copernicus_donor_bank(
             merged_shadow, targets=authoritative_targets, attempts=source_attempts,
             previous_bank=donor_state, production_reference_at=reference,
@@ -2115,6 +2236,13 @@ def main() -> int:
             donor_bank_path=args.donor_bank,
             donor_state=donor_state,
         )
+        if restored_segment_journal is not None:
+            remove_segment_journal(args.segment_journal)
+            print(
+                "Replayed and consolidated durable Copernicus segment receipts: "
+                f"entryCount={len(restored_segment_journal['entries'])}.",
+                flush=True,
+            )
         existing = initial_checkpoint.shadow
     attempted_pairs_by_source = {
         product["source"]: current_reference_attempt_pairs(
@@ -2136,6 +2264,10 @@ def main() -> int:
     temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-range-"))
     new_acquisitions: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
+    segment_journal: dict[str, Any] | None = None
+    pending_segment_count = 0
+    pending_bank_changed = False
+    working_bank = donor_state
     product_report_state = {
         product["source"]: {
             "executedShardCount": 0,
@@ -2333,6 +2465,26 @@ def main() -> int:
                         flush=True,
                     )
                     continue
+                journal_elapsed = 0.0
+                candidate_elapsed = 0.0
+                full_checkpoint_elapsed = 0.0
+                full_checkpoint = False
+                if operational_contract:
+                    journal_started = time.monotonic()
+                    segment_journal = append_segment_journal(
+                        args.segment_journal,
+                        segment_journal,
+                        base_bank_sha256=donor_state["bankSha256"],
+                        production_reference_at=reference,
+                        targets=authoritative_targets,
+                        acquisition=acquisition,
+                        records=records,
+                        attempt=source_attempt,
+                    )
+                    journal_elapsed = time.monotonic() - journal_started
+                    pending_segment_count += 1
+                    pending_bank_changed = pending_bank_changed or bool(records)
+
                 source_attempts = replace_stale_shard_attempt(
                     source_attempts,
                     source_attempt,
@@ -2344,29 +2496,75 @@ def main() -> int:
                 if records:
                     new_acquisitions.append(acquisition)
                     new_records.extend(records)
-                checkpoint_acquisitions, checkpoint_records = merge_cache_evidence(
-                    existing,
-                    new_acquisitions,
-                    new_records,
-                    reference,
-                    target_identities,
-                )
                 if operational_contract:
-                    checkpoint = persist_source_stage_progress(
-                        shadow_path=args.shadow,
-                        source_stage_path=args.source_stage,
-                        registry=registry,
-                        target_identities=target_identities,
-                        acquisitions=checkpoint_acquisitions,
-                        records=checkpoint_records,
+                    candidate_started = time.monotonic()
+                    donor_delta = empty_shadow(acquisition_at)
+                    if records:
+                        donor_delta["acquisitions"] = [acquisition]
+                        donor_delta["records"] = records
+                    working_bank = _advance_validated_copernicus_donor_bank(
+                        donor_delta,
+                        targets=authoritative_targets,
                         attempts=source_attempts,
-                        updated_at=acquisition_at,
-                        shadow_changed=bool(records),
-                        donor_bank_path=args.donor_bank,
-                        donor_state=donor_state,
+                        previous_bank=working_bank,
+                        production_reference_at=reference,
+                        **stage_positive_evidence(working_bank),
                     )
-                    checkpoint_missing = checkpoint.missing_pairs
+                    working_projection = _project_validated_donor_shadow(
+                        working_bank
+                    )
+                    source_attempts = journal_for_donor_projection(
+                        source_attempts,
+                        bank=working_bank,
+                        shadow=working_projection,
+                        required_pairs=required_pairs,
+                        target_identities=target_identities,
+                    )
+                    _, checkpoint_missing, _ = select_source_order_admissible_records(
+                        required_pairs,
+                        working_projection["acquisitions"],
+                        working_projection["records"],
+                        reference,
+                        authoritative_targets,
+                        source_attempts,
+                        **stage_positive_evidence(working_bank),
+                    )
+                    candidate_elapsed = time.monotonic() - candidate_started
+                    if (
+                        pending_segment_count >= SEGMENTS_PER_DONOR_CONSOLIDATION
+                        or not checkpoint_missing
+                    ):
+                        full_checkpoint_started = time.monotonic()
+                        checkpoint = consolidate_durable_segment_progress(
+                            shadow_path=args.shadow,
+                            source_stage_path=args.source_stage,
+                            segment_journal_path=args.segment_journal,
+                            registry=registry,
+                            target_identities=target_identities,
+                            attempts=source_attempts,
+                            updated_at=acquisition_at,
+                            donor_bank_path=args.donor_bank,
+                            donor_state=donor_state,
+                            validated_donor_candidate=working_bank,
+                            bank_changed=pending_bank_changed,
+                        )
+                        checkpoint_missing = checkpoint.missing_pairs
+                        working_bank = donor_state
+                        segment_journal = None
+                        pending_segment_count = 0
+                        pending_bank_changed = False
+                        full_checkpoint = True
+                        full_checkpoint_elapsed = (
+                            time.monotonic() - full_checkpoint_started
+                        )
                 else:
+                    checkpoint_acquisitions, checkpoint_records = merge_cache_evidence(
+                        existing,
+                        new_acquisitions,
+                        new_records,
+                        reference,
+                        target_identities,
+                    )
                     _, checkpoint_missing = select_required_records(
                         required_pairs, checkpoint_acquisitions, checkpoint_records, reference)
                     if records:
@@ -2386,6 +2584,11 @@ def main() -> int:
                     f"nativeUniqueHourCount={len(native_times)}, "
                     f"requestEnvelopeHourCount={request_envelope_hour_count}, "
                     f"acquireHashParseSeconds={acquire_elapsed:.3f}, "
+                    f"durableJournalSeconds={journal_elapsed:.3f}, "
+                    f"candidateAdmissionSeconds={candidate_elapsed:.3f}, "
+                    f"fullCheckpointSeconds={full_checkpoint_elapsed:.3f}, "
+                    f"fullCheckpoint={'true' if full_checkpoint else 'false'}, "
+                    f"pendingDurableSegmentCount={pending_segment_count}, "
                     f"admissionMergeCheckpointSeconds={postprocess_elapsed:.3f}."
                 )
                 require_operational_time_budget()
@@ -2408,6 +2611,37 @@ def main() -> int:
             if not deferred_work or not serviced_segment_in_pass:
                 break
             pending_work = deferred_work
+        if operational_contract and pending_segment_count:
+            final_consolidation_started = time.monotonic()
+            checkpoint = consolidate_durable_segment_progress(
+                shadow_path=args.shadow,
+                source_stage_path=args.source_stage,
+                segment_journal_path=args.segment_journal,
+                registry=registry,
+                target_identities=target_identities,
+                attempts=source_attempts,
+                updated_at=acquisition_at,
+                donor_bank_path=args.donor_bank,
+                donor_state=donor_state,
+                validated_donor_candidate=working_bank,
+                bank_changed=pending_bank_changed,
+            )
+            remaining = {
+                (row["partId"], row["validTime"])
+                for row in checkpoint.missing_pairs
+            }
+            print(
+                "Copernicus final durable segment consolidation: "
+                f"segmentCount={pending_segment_count}, "
+                "remainingOperationalPairs="
+                f"{len(remaining)}, fullCheckpointSeconds="
+                f"{time.monotonic() - final_consolidation_started:.3f}.",
+                flush=True,
+            )
+            working_bank = donor_state
+            segment_journal = None
+            pending_segment_count = 0
+            pending_bank_changed = False
         product_reports = [{
                 "source": product["source"],
                 "productId": product["productId"],
@@ -2416,6 +2650,32 @@ def main() -> int:
                 "spatialShardPolicyId": SPATIAL_SHARD_POLICY_ID,
                 **product_report_state[product["source"]],
             } for product in PRODUCTS]
+    except CopernicusOperationalBudgetReached:
+        if operational_contract and pending_segment_count:
+            checkpoint = consolidate_durable_segment_progress(
+                shadow_path=args.shadow,
+                source_stage_path=args.source_stage,
+                segment_journal_path=args.segment_journal,
+                registry=registry,
+                target_identities=target_identities,
+                attempts=source_attempts,
+                updated_at=acquisition_at,
+                donor_bank_path=args.donor_bank,
+                donor_state=donor_state,
+                validated_donor_candidate=working_bank,
+                bank_changed=pending_bank_changed,
+            )
+            remaining = {
+                (row["partId"], row["validTime"])
+                for row in checkpoint.missing_pairs
+            }
+            print(
+                "Copernicus soft-boundary durable segment consolidation: "
+                f"segmentCount={pending_segment_count}, "
+                f"remainingOperationalPairs={len(remaining)}.",
+                flush=True,
+            )
+        raise
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
 

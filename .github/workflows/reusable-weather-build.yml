@@ -140,6 +140,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   build-and-prepare:
@@ -148,6 +149,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     env:
       # Every production build remains bound to the UTC hour resolved at
       # readiness, even if the job crosses an hour boundary. The authoritative
@@ -416,7 +418,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.344 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.345 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -654,7 +656,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.344 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.345 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -679,7 +681,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.344 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.345 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -725,16 +727,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Restore exact-main source validation locator
+      - name: Restore source-content validation locator
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
-          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
 
-      - name: Verify previous exact-main source validation with GitHub
+      - name: Verify exact-content source validation with GitHub
         id: source-proof
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/weather-source-gate.mjs check
@@ -773,12 +775,12 @@ jobs:
         env:
           SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
 
-      - name: Preserve latest exact-main source validation outcome
-        if: always() && steps.source-record.outcome == 'success'
+      - name: Preserve latest verified source-content validation outcome
+        if: always() && (steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false'))
         uses: actions/cache/save@v6
         with:
           path: .cache/weather-source-validation.json
-          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Restore private staged coastal-point cache
         if: steps.preflight.outputs.should_run == 'true'
@@ -859,6 +861,8 @@ jobs:
           path: |
             .cache/copernicus-current-donor-bank.json
             .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-segment-journal.json
+            .cache/copernicus-current-segment-journal.json.invalid-*
             .cache/copernicus-current-shadow.json.invalid-*
             .cache/copernicus-current-source-stage.json.invalid-*
           key: copernicus-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
@@ -1043,7 +1047,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.344 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.345 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1307,6 +1311,7 @@ jobs:
           --backoff-seconds 20
           --
           --donor-bank .cache/copernicus-current-donor-bank.json
+          --segment-journal .cache/copernicus-current-segment-journal.json
           --acquisition-plan .cache/weather-current-acquisition-plan.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
@@ -1314,7 +1319,7 @@ jobs:
 
       - name: Reconfirm exact main before shared Copernicus progress cache
         id: copernicus-progress-write-authority
-        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && (hashFiles('.cache/copernicus-current-shadow.json') != '' || steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && (hashFiles('.cache/copernicus-current-shadow.json') != '' || steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1326,12 +1331,14 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save shared private Copernicus donor bank before projection gates
-        if: always() && steps.copernicus-progress-write-authority.outcome == 'success' && (steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
+        if: always() && steps.copernicus-progress-write-authority.outcome == 'success' && (steps.copernicus-fill.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         uses: actions/cache/save@v6
         with:
           path: |
             .cache/copernicus-current-donor-bank.json
             .cache/copernicus-current-donor-bank.json.invalid-*
+            .cache/copernicus-current-segment-journal.json
+            .cache/copernicus-current-segment-journal.json.invalid-*
             .cache/copernicus-current-shadow.json.invalid-*
             .cache/copernicus-current-source-stage.json.invalid-*
           key: copernicus-current-donor-bank-v1-${{ runner.os }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
@@ -1515,7 +1522,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.344 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.345 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild

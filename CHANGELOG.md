@@ -1,10 +1,17 @@
-## 4.0.344 – regionalt genbrug og målrettet vejrarbejde (2026-09-11, lokal kandidat)
+## 4.0.345 – varige Copernicus-segmenter og én exact-content kildegate (2026-09-12, lokal kandidat)
+
+- Hvert afsluttet Copernicus-segment fsync'es/readback-hashes nu straks mod eksakt donorbase/reference/targets; seks receipts konsolideres gennem uændret strict bank→shadow→stage, og restart replayes uden at journalen selv kan autorisere data.
+- 40.120-record benchmark reducerer seks segmenters efterbehandling 115,905 → 46,438 sekunder med byteidentisk bank, shadow og stage. Nulresultater bevarer attempt uden at opfinde native provider-tid.
+- PR-sourcegaten kører én gang på exact head. Main må kun genbruge et SHA-256-identisk tracked tree efter live GitHub-verificeret PR/merge/artifact/run/job/step; enhver uvished falder tilbage til fuld gate. Post-data validate/releasegate består.
+- 4.0.344-main/oneoff var negative: senest 78.381/79.414 current med 1.033 provider-negative OM-rester; WAM/Feggesund grøn, intet handoff/cutover. 4.0.345 er ikke CI-valideret, merged eller lanceret. Se `CHANGELOG-4.0.345.md` og DEC-0127.
+
+## 4.0.344 – regionalt genbrug og målrettet vejrarbejde (2026-09-11, merged men negativ runtime)
 
 - Originalt regionalt source/outcome-proof følger de konkrete samples; migration før recovery-write og no-loss EOF bevarer gyldige data ved native ejerskifte.
 - DMI-leadbookkeeping, fair tidsdeling, LF's direkte/regionale hulgevinst og venstre kildekant er rettet. Katalogets nødvendige +120-terminal observeres separat uden at udvide 118-timerskravet.
 - Copernicus genbruger præcist valideret internt checkpointarbejde med uændret streng admission/readback/recovery. Kørotationen fungerer ved time- og kvarterskadence; store tomme native-tidsrum segmenteres i fair pass med lokale fejl og immutable forsøgsbeviser.
-- Faktisk læsende cache-replay beviser +656/−0 i en fast 1.658-rest; rester og throughput er ikke produktionsverificeret. Geometri, afstande, fysik, score, SQL-migrationer og fulde artifact-/launchkrav er uændrede.
-- Versionen er under samlet lokal slutkontrol, ikke committed, CI-valideret, merged eller lanceret. Se `CHANGELOG-4.0.344.md` og DEC-0126.
+- Faktisk læsende cache-replay beviste +656/−0 i en fast 1.658-rest. PR #278 bestod siden exact-head-sourcegaten og blev merged som `f2cc2a77`; geometri, afstande, fysik, score, SQL-migrationer og fulde artifact-/launchkrav var uændrede.
+- Main-run `34635781802` sluttede med 1.335 currentrester, og oneoff `34642214559` sluttede 78.381/79.414 med 1.033 provider-negative Open-Meteo-rester. WAM/Feggesund var grøn, men intet handoff eller cutover blev dannet. DEC-0127/4.0.345 følger op på den målte checkpointflaskehals; se `CHANGELOG-4.0.344.md` og DEC-0126.
 
 ## 4.0.343 – fair providerbetjening og eksakt WAM-ejerskab (2026-09-11, lokal kandidat)
 
