@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.349 efter positiv cache og v1/v2-modelstop
+
+Main er `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`/4.0.348; branch er `codex/4.0.349-state-only-closure-v2`. PR #282 var exact-head-grøn og merged byteidentisk. Backendrun `34697586057` genbrugte sourceproofet uden dobbelt fuld kildegate, anvendte alene `20260912122607_measured_rollback_warmup_binding.sql` og bestod readiness/readback.
+
+Cache-only-run `34697760571` brugte `2026-09-12T08:00:00Z`, sprang DMI-register/plan/producer og CP-plan/credentials/producer over, brugte OM reuse-only og bestod gemt currentclosure, native WAM og freshness. Ingen providerhentning. Modelbygningen stoppede derefter på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`, fordi live-current udstedte korrekt closure-v2, mens RavScore-validator/fixtures stadig krævede v1. Intet handoff/cutover/deploy; Candidate G er offentlig.
+
+Lokal 4.0.349 deler én v2-konstant mellem producent og RavScore, har en faktisk live-adapter→validator-seamtest og afviser v1 særskilt. Ingen score-, fysik-, vejr-, grid-, afstands-, geometri- eller provenancekontrakt ændres. Integrated bundle `c1e75371…`, rollback `d4fd8620…`, continuation `7f6e1c2d…`.
+
+Den anvendte 4.0.348-migration forbliver immutable ved normaliseret SHA-256 `704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137`. Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun tre forseglinger/readbackversion frem. Begge builders er versionsfastlåste. 11-leddet readiness/install/checkpoint/release/workflowmatrix er måltestet grøn.
+
+Ejeren har udtrykkeligt godkendt at flytte DEC-0122's uændrede engangsundtagelse til exact 4.0.349. Policy, workflow og tests må kun ændre releaseVersion; alle størrelses-, storage-, checkpoint-, integrity-, privacy-, readback-, handoff- og recurring-forbud består.
+
+Næste: slut RDKS/metadata/diff, én exact-head PR-sourcegate, byteidentisk merge, apply/readback af migration 11, gentag samme cache-only-run, kræv Feggesund/full post-data gates/same-head-handoff, cutover og offentlig 210/673-kontrol. Normalworkflowet er disabled; `34613079069` er inert `jobs:[]`. Genaktivér først efter offentlig succes og mål normal DMI-rotation særskilt. Bevar fire untracked `.tmp-run-*-safe-inspect`. Sol/Ekstra høj gennem slutvalideringen.
+
 # NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.348 fra komplet cache til model-online
 
 Læs først `CURRENT_SESSION_HANDOFF.md` og de nyeste RDKS-topafsnit. Main er `6868ae04`/4.0.347; branch er `codex/4.0.348-candidate-warmup-projection`. PR #281 exact head bestod sourcegate `34681246581`, og main-oneoff `34682428800` genbrugte beviset uden en anden fuld kildegate.

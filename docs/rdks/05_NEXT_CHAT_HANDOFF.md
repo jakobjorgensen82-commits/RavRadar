@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 fra komplet cache til korrigeret model
+
+- **Aktuel base:** Main `c86cc2a0`/4.0.348; branch `codex/4.0.349-state-only-closure-v2`. Candidate G er offentlig, normalworkflow disabled, gammel `34613079069` inert, fire untracked inspectmapper bevares.
+- **4.0.348 fuldført frem til modelkontrol:** PR #282 grøn/merged. Backend `34697586057` genbrugte exact-content-sourceproof uden dobbelt gate, anvendte kun 4.0.348-bindingen og bestod readback.
+- **Cachebevis:** `34697760571` fastholdt `2026-09-12T08:00:00Z`, hentede intet nyt vejr, sprang DMI/CP over, brugte OM reuse-only og bestod current/WAM/freshness.
+- **Modelstop:** Actual live-current udstedte korrekt closure-v2; RavScore-validator og fixtures krævede v1. Stop `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`; intet Feggesund-slutbevis/handoff/cutover/deploy.
+- **Lokal rettelse:** Én shared v2-konstant, actual producer→consumer-seamtest, explicit v1 rejection; ingen score-, fysik-, vejr-, grid-, afstands-, geometri- eller provenancelempelse.
+- **Binding:** Applied 4.0.348 SHA `704439…` immutable. Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql`; historical builders pinned; 11-leddet readiness/workflow måltestet grøn.
+- **First cutover:** Ejeren godkendte udtrykkeligt at flytte DEC-0122's uændrede engangsundtagelse alene til exact 4.0.349. Kun releaseVersion ændres; alle øvrige grænser består.
+- **Næste rækkefølge:** Metadata/SQL-sync og slutmatrix → exact-head sourcegate → exact green merge → backend migration 11/readback → samme cache-only-run → Feggesund/full gates/handoff → cutover → offentlig 210/673 → kontrolleret normaldrifts-/DMI-rotationsbevis.
+- **Model/indsats:** GPT-5.6 Sol, Indsats Ekstra høj gennem CI, runtime, cutover og slutvalidering. En ny lang oneoff startes ikke automatisk.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 fra komplet cache til integreret model
 
 - **Aktuel base:** `origin/main` er `6868ae04`/4.0.347; arbejdsgrenen er `codex/4.0.348-candidate-warmup-projection`. Candidate G er offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper skal bevares.

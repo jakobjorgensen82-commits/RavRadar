@@ -94,6 +94,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260912122607_measured_rollback_warmup_binding',
     filename: '20260912122607_measured_rollback_warmup_binding.sql',
   }),
+  Object.freeze({
+    version: '20260912141641',
+    id: '20260912141641_state_only_hold_closure_v2_binding',
+    filename: '20260912141641_state_only_hold_closure_v2_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

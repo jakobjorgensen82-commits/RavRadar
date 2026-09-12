@@ -15,6 +15,7 @@ import {
   currentSupplyStrength,
 } from '../js/core/ravscore-current-supply-memory.js';
 import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
   buildIntegratedRavScoreStateSeries as buildIntegratedRavScoreStateSeriesRaw,
   reconstructCandidateGRollbackState,
 } from '../js/core/ravscore-integrated-state-pipeline.js';
@@ -725,7 +726,7 @@ const regionalStateOnlyHold = (validHour, sourceHour = 0) => ({
   source: regionalAuthorization.source,
   collection: regionalAuthorization.collection,
   modelRun: time(-48),
-  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureContractId: RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
   closureId: regionalHoldSha256,
   closureAssignmentSha256: regionalHoldSha256,
   sourceAssetSha256: regionalHoldSha256,
@@ -757,6 +758,18 @@ const nativeHold = buildIntegratedRavScoreStateSeries([{
 assert.equal(nativeHold.rows[0].currentMemoryReady, true);
 assert.equal(nativeHold.rows[0].currentMemoryStatus, 'READY_NATIVE_HOLD');
 assert.equal(nativeHold.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.throws(() => buildIntegratedRavScoreStateSeries([{
+  ...missingCurrentAt(2),
+  currentStateOnlyHold: {
+    ...regionalStateOnlyHold(2),
+    closureContractId: 'current-operational-673x118-closure-ready-v1',
+  },
+}], {
+  samplingContextKey,
+  initialState: regionalMigrated.continuationState,
+  nativeCadenceHoldHours: 3,
+}), /state-only current hold marker is invalid/,
+'the retired v1 operational closure may not authorize a current state hold');
 assert.equal(nativeHold.rows[0].supplyPotential, regionalMigrated.rows[0].supplyPotential);
 assert.deepEqual(nativeHold.rows[0].currentReferenceProvenance, {
   status: 'verified',

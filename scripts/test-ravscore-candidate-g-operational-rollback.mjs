@@ -10,6 +10,9 @@ import {
   buildBoundedCurrentTransportMemory,
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
 } from '../js/core/ravscore-regime-memory.js';
+import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import {
   CANDIDATE_G_CONTINUATION_FIELDS,
@@ -315,7 +318,7 @@ const stateOnlyCurrentHold = (validOffset, sourceOffset) => ({
   source: regionalProvenance.source,
   collection: regionalProvenance.collection,
   modelRun: time(-60),
-  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureContractId: RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
   closureId: HOLD_SHA,
   closureAssignmentSha256: HOLD_SHA,
   sourceAssetSha256: HOLD_SHA,

@@ -81,6 +81,8 @@ const NATIVE_HOLD_AUTHORIZATION_KEYS = Object.freeze([
 ]);
 export const RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID =
   'regional-dmi-exact-state-only-hold-v1';
+export const RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID =
+  'current-operational-673x118-closure-ready-v2';
 const STATE_ONLY_CURRENT_HOLD_KEYS = Object.freeze([
   'contractId',
   'status',
@@ -826,7 +828,7 @@ export function canonicalRavScoreStateOnlyCurrentHold(value, sampleTime = null) 
     || value.sourceClass !== 'owner-approved-regional-proxy'
     || value.source !== 'dmi-dkss-lf-regional-proxy'
     || value.collection !== 'dkss_lf'
-    || value.closureContractId !== 'current-operational-673x118-closure-ready-v1'
+    || value.closureContractId !== RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID
     || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.closureId ?? '')
     || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.closureAssignmentSha256 ?? '')
     || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.sourceAssetSha256 ?? '')

@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-12 – lokal 4.0.349 efter komplet cache og v1/v2-modelstop
+
+4.0.348 er ikke længere kun lokal. PR #282 blev exact-head-valideret og merged byteidentisk som main `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`. Backendrun `34697586057` live-verificerede og genbrugte PR-sourceproofet uden en anden fuld kildegate, anvendte alene `20260912122607_measured_rollback_warmup_binding.sql` og bestod exact readiness/readback. Normalworkflowet er stadig `disabled_manually`; den gamle `34613079069` står fortsat jobløs/inert og er ikke en aktiv writer.
+
+Cache-only-run `34697760571` brugte target `2026-09-12T08:00:00Z`. DMI-register/plan/producer og Copernicus-plan/credentials/producer blev sprunget over, Open-Meteo var reuse-only, og ingen ny providerindsamling fandt sted. Gemte DMI active/candidate, Copernicus source-stage, residual, exact currentclosure, native WAM og freshness bestod. Kørselen nåede derfor forbi vejret og beviser, at den nye fejl ikke skyldes huller eller for kort providerkøretid.
+
+Modelbygningen stoppede på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`. Live-current-producenten udstedte korrekt `current-operational-673x118-closure-ready-v2`, mens RavScore-recoveryens fælles state-only-validator og fire fixtures stadig krævede v1. De gamle fixtures gjorde mismatchen usynlig. Intet handoff, artifact, cutover eller deploy blev dannet, og Candidate G er fortsat offentlig.
+
+Lokal 4.0.349 eksporterer én fælles v2-konstant, som både producent og RavScore-forbruger bruger. Den faktiske live-adapters output føres nu gennem RavScore-validatoren i en integrationstest, mens v1 afvises eksplicit. Ukendt state, hashes, model-, target-, register-, coverage- og provenancekrav er uændrede. Score, fysik, vejr, grids, afstande, geometri og land-/vandpunkter ændres ikke.
+
+Ejeren har udtrykkeligt godkendt, at DEC-0122's uændrede engangsundtagelse flyttes fra 4.0.348 til exact 4.0.349. Det åbner ikke recurring drift og ændrer ingen størrelses-, storage-, checkpoint-, integrity-, privacy-, readback-, closure- eller handoffgate.
+
+Den anvendte 4.0.348-migration forbliver immutable med normaliseret SHA-256 `704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137`. Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql` fører kun integrated hash `c1e75371…`, rollback hash `d4fd8620…`, continuation hash `7f6e1c2d…` og readbackversion frem. Begge versionsspecifikke migrationsbyggere er fastlåste, så senere modelændringer ikke omskriver historien.
+
+Måltests, begge bundlechecks, modelbinding, begge migrationsbyggere, 11-leddet readiness/install/checkpoint/release-metadata og workflowrækkefølge er grønne lokalt. Næste bindende sekvens er RDKS/diffslutkontrol, én exact-head 4.0.349-sourcegate, byteidentisk merge, apply/readback af alene migration 11, samme cache-only-run, fulde post-data-gates/handoff, kontrolleret cutover og offentlig 210/673-verifikation. Normal drift genaktiveres først efter offentlig succes og beviser derefter DMI-rotation og vedligeholdelsesoverskud. Se DEC-0131.
+
 # NYESTE SANDHED – 2026-09-12 – lokal 4.0.348 efter komplet vejr og modelstop
 
 PR #281-head `c4c70ac7` bestod exact-head-sourcegaten i run `34681246581` og blev merged med identisk indhold som main `6868ae04`/4.0.347. Main-oneoff `34682428800` genbrugte sourceproofet uden en anden fuld kildegate og låste target `2026-09-12T08:00:00Z`. Der findes ingen aktiv run fra den kørsel; den sluttede failure efter modelbygningen.

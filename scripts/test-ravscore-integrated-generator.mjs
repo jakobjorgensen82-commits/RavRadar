@@ -14,6 +14,9 @@ import {
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
 import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
+import {
   integratedRavScoreReferenceReadiness,
   resolvePublicRavScoreProfile,
   selectPublicRavScoreResult,
@@ -60,7 +63,7 @@ const stateOnlyCurrentHold = (validOffset, sourceOffset) => ({
   source: 'dmi-dkss-lf-regional-proxy',
   collection: 'dkss_lf',
   modelRun: time(-48),
-  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureContractId: RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
   closureId: HOLD_SHA,
   closureAssignmentSha256: HOLD_SHA,
   sourceAssetSha256: HOLD_SHA,

@@ -1,3 +1,18 @@
+# NYESTE ROADMAP – 2026-09-12 – 4.0.349 fra komplet cache til model-online
+
+- [x] Luk 4.0.348 exact-head-CI/merge og backendapply/readback med exact-content-sourceproof uden dobbelt fuld kildegate.
+- [x] Bevis i cache-only-run `34697760571`, at DMI/Copernicus springes over, Open-Meteo er reuse-only, og de gemte current-/WAM-/freshnessled består uden providerhentning.
+- [x] Find den systemiske modelstopper: live-current-producerens korrekte closure-v2 blev afvist af RavScore-recoveryens og testfixtures' gamle v1-forventning.
+- [x] Implementér fælles v2-konstant, virkelig producer→RavScore-seamtest og eksplicit negativ v1-test uden at lempe state-, score-, fysik-, vejr- eller provenancekrav.
+- [x] Regenerér modelbundles/binding og tilføj en append-only 11. migration; fastlås gamle og nye migrationsbyggere til deres versionsspecifikke hashes.
+- [x] Versionér 4.0.349 og synkronisér DEC-0131, krav, issues, checkpoints, changelog og begge håndbøger; geodata må kun ændre topversionsfelt.
+- [ ] Bestå målrettet slutmatrix/RDKS/diff, én exact-head GitHub-sourcegate og merge kun byteidentisk grøn head.
+- [ ] Anvend/readback-verificér alene migration 11 på exact main med live sourceproof-genbrug eller sikker fuld fallbackgate.
+- [ ] Gentag den hurtige cachekontrol uden providerhentning; kræv current/WAM/Feggesund/freshness, fulde post-data-gates og same-head-handoff.
+- [ ] Udfør kontrolleret integreret cutover og offentlig 210/673-verifikation. Genaktivér derefter normal drift kontrolleret og mål DMI-rotation, cachetransport, providerforbrug og tidsoverskud.
+
+En ny lang oneoff er ikke del af denne plan. Hvis cachekontrollen igen stopper, diagnosticeres det konkrete led før enhver ny acquisition. DEC-0131 er bindende.
+
 # NYESTE ROADMAP – 2026-09-12 – 4.0.348 fra komplet cache til model-online
 
 - [x] Verificér én exact-head-sourcegate for 4.0.347 og byteidentisk main-genbrug uden dobbelt fuld kildegate.

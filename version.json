@@ -1,10 +1,10 @@
 {
-  "version": "4.0.348",
-  "releasedAt": "2026-09-12T12:07:15.421Z",
-  "minimumSupportedVersion": "4.0.348",
+  "version": "4.0.349",
+  "releasedAt": "2026-09-12T14:20:22.977Z",
+  "minimumSupportedVersion": "4.0.349",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.348",
+    "releaseVersion": "4.0.349",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "e545cb547923aeabc503b9d0178a996ca2ce2427200121cef6228ece29748b5a"
+        "modelBundleSha256": "c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "157698f07f017516e52cf8f47680a2ac7c37008d8b3f9a4ee665eba2ad03e1bd"
+        "modelBundleSha256": "d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89"
       }
     },
     "publicManifestAuthority": {
@@ -91,6 +91,10 @@
         {
           "id": "DEC-0130",
           "path": "docs/rdks/10_DECISIONS/DEC-0130-MEASURED-ROLLBACK-WARMUP-AND-LOCKED-WEATHER-RESUME.md"
+        },
+        {
+          "id": "DEC-0131",
+          "path": "docs/rdks/10_DECISIONS/DEC-0131-STATE-ONLY-CURRENT-HOLD-CLOSURE-V2-BINDING.md"
         }
       ]
     },

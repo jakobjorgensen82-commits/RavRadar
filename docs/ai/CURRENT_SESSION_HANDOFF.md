@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 fælles closure-v2-modelseam
+
+Main er `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`/4.0.348; branch `codex/4.0.349-state-only-closure-v2`. PR #282 er grøn/merged. Backendrun `34697586057` genbrugte sourceproof uden dobbelt fuld gate, anvendte kun 4.0.348-migrationen og bestod readback. Normalworkflow disabled; gammel `34613079069` inert `jobs:[]`. Bevar fire untracked private inspectmapper.
+
+Cache-run `34697760571` var ægte cache-only på `2026-09-12T08:00:00Z`: ingen DMI/CP-producer, OM reuse-only, current/WAM/freshness grøn. Modellen stoppede på `RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID`: actual live-current closure-v2 mod RavScore/fixture v1. Ingen Feggesund-slutlinje, handoff, artifact, cutover eller deploy; Candidate G offentlig.
+
+4.0.349 deler eksporteret v2-konstant, tester actual live adapter gennem kanonisk validator og afviser v1. Bundles/binding: integrated `c1e753719e856b2c97291c01cd18186598f6acc4409e619681e0c45752acab19`, rollback `d4fd862002642b173f937b8ded725e15a5ca752ebb5143a5b60386f72133ae89`, continuation `7f6e1c2d1f30a0a81c61bfdd9af43fe5c4c541c469de6eb4551ed613ec9baf43`. Ingen faglig model-/vejrændring.
+
+Applied 4.0.348 migration normalized SHA `704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137`. Ny append-only `20260912141641_state_only_hold_closure_v2_binding.sql`; begge historical builders pinned. 11 migrations i readiness/install/checkpoint/release/workflow. Targeted matrix green.
+
+Ejeren godkendte eksplicit at flytte DEC-0122-engangsundtagelsen til exact 4.0.349. Opdatér kun policyens releaseVersion og de eksakte tests; alle øvrige kapacitets-/privacy-/handoffkrav består.
+
+Fortsæt: sync release metadata + handbook SQL, sluttests/RDKS/version/geodata-only diff, commit/push uden `.tmp-run-*`, exact-head PR sourcegate, merge exact green, backend apply/readback only migration 11, rerun cache-only exact target, require current/WAM/Feggesund/freshness/full gates/handoff, controlled cutover/public 210/673, then controlled normal maintenance proof. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 cachebundet model-warmup
 
 Main er `6868ae04a0dd335050930418905e617acc27c7db`/4.0.347; lokal branch er `codex/4.0.348-candidate-warmup-projection`. PR #281-head `c4c70ac7` bestod exact-head-sourcegate `34681246581` og blev merged med identisk indhold. Oneoff `34682428800` genbrugte kildebeviset og er terminal failure; ingen aktiv writer blev efterladt. De fire private `.tmp-run-…-safe-inspect/`-mapper er untracked og skal bevares.

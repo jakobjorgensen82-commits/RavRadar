@@ -18,6 +18,10 @@ import {
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import {
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+  canonicalRavScoreStateOnlyCurrentHold,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
 
 const canonicalJson = value => {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
@@ -450,6 +454,24 @@ assert.equal(sanitizedRegional[0].currentProvenance.status, 'unverified');
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.validTime, REFERENCE);
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.sourceValidTime, SOURCE_TIME);
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.partId, regionalPart.partId);
+assert.equal(
+  sanitizedRegional[0].currentStateOnlyHold.closureContractId,
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+  'the live producer and RavScore consumer must share the exact closure contract',
+);
+assert.deepEqual(
+  canonicalRavScoreStateOnlyCurrentHold(
+    sanitizedRegional[0].currentStateOnlyHold,
+    REFERENCE,
+  ),
+  {
+    ...sanitizedRegional[0].currentStateOnlyHold,
+    validTime: new Date(REFERENCE).toISOString(),
+    sourceValidTime: new Date(SOURCE_TIME).toISOString(),
+    modelRun: new Date(MODEL_RUN).toISOString(),
+  },
+  'the exact live v2 marker must cross the RavScore trust boundary',
+);
 assert.deepEqual(stateOnlyCurrentRowForbiddenFields(sanitizedRegional[0]), [],
   'integrated sanitizer must retain only the state marker, never a current projection');
 const regionalSpatial = spatialProjectionProof({
