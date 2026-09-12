@@ -32,6 +32,8 @@ Producentkoden skelner mellem to tilfælde. Et tidsstop før en collection overh
 
 Regressionerne gengiver DKSS-runtime + ledgergate + indre/ydre HARMONIE, downloadkollision, generic2/post-cache-exception, watchdoghistorik, pending cache, historisk assettæller og serialiseret cache-seam. Lokalt er wrapper 15/15, supervisor 12/12, checkpoint 32/32 samt compile, modeldownload, freshness og workflowrækkefølge grønne. 4.0.347 afviser fortsat HARMONIE uden eksakt form, anden HARMONIE-fejl, HARMONIE uden DKSS-runtime, WAM-runtime, ukendt ledgerkode og manglende pair-gain.
 
+PR #281's første exact-head-run `34680013012` bestod hele releasegaten og fandt derefter én forældet statisk WAM-test, som søgte de erstattede direkte exitlinjer. Testen følger nu `producer_process_exit_code` og det endelige kald; 63/63 scenarier er grønne lokalt. Opfølgningen ændrer ingen produktionskode og kræver et nyt exact-head-bevis frem for genstart af det røde run.
+
 Run `34675040245` sluttede efter alle provider-cachesaves med 42 provider-negative Open-Meteo-par på 21 kystdele efter isolerede genforsøg; ingen handoff eller cutover blev dannet. En ny oneoff må først starte efter exact-head-CI og merge og skal gendanne/genvalidere DMI-, Copernicus-, regional- og Open-Meteo-fremgangen frem for at nulstille den. Runtimebeviset er først positivt, når loggen faktisk viser pass 2; launch kræver fortsat current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, fulde post-data-gates, runbundet handoff, cutover og offentlig modelkontrol.
 
 DEC-0122's materielt uændrede first-cutover-undtagelse flyttes under den stående ejerautorisation alene til exact-release 4.0.347. Et 4.0.346-handoff kan ikke ommærkes eller bruges.

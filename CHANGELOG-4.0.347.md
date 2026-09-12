@@ -29,4 +29,5 @@ Exact-content-proofet fjerner alene den dobbelte kildegate: én `validate:source
 - DMI-wrapper 15/15, supervisor 12/12 og transaktionel checkpoint 32/32 er grønne.
 - Python compile, DMI-modeldownloadkontrakten, target-freshness-grænser og hele workflowrækkefølgen er grønne.
 - Serialiseret cache-seam, generic-exit/post-cache-exception, watchdoghistorik, indre/ydre HARMONIE, downloadkollision, ukendte felter, historisk assettæller og pending checkpoint er dækket.
+- PR #281's første exact-head-run `34680013012` bestod hele releasegaten, men stoppede senere i én forældet statisk WAM-test, som søgte de erstattede direkte `return 2/0`-linjer. Testen beviser nu den nye helper og dens fail-closed kald; hele dens 63-scenarie-suite er grøn lokalt. Ingen produktionskode blev ændret i opfølgningen.
 - Exact-head-CI, main-runtime med faktisk pass 2/3, komplet closure, cutover, offentlig integreret model og normal vedligeholdelseskapacitet er fortsat åbne. Se DEC-0129.

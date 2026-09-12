@@ -5,6 +5,7 @@
 - DKSS/HARMONIE-runtime klassificeres efter eksakte beskeder og feltformer; downloadbudget, WAM og ukendte fejl stopper. Kun dette kalds færdigbehandlede assets tæller som fremgang, og pass 3 kræver fortsat voksende DMI-pardækning.
 - Pages genkontrollerer target+117h-horisonten både før begin-CAS og umiddelbart før deployment, med eksisterende reconciliation ved fejl efter begin. De bløde 90/150/240-minuttersgrænser er fortsat kun advarsler.
 - Kilde-, grid-, afstands-, score- og closurekrav er uændrede. Én exact-head PR-sourcegate kan genbruges på byteidentisk main; fulde post-data-gates kan ikke. Se `CHANGELOG-4.0.347.md` og DEC-0129.
+- Første PR #281-gate `34680013012` bestod releasegaten og nåede WAM-integrationssuiten, men én statisk test ledte stadig efter de gamle direkte exitlinjer. Testen følger nu den nye terminalhelper og er grøn 63/63; produktionskoden er uændret, og en ny exact head kræver en ny gate.
 
 ## 4.0.346 – reelle bounded DMI-multipass (2026-09-12, lokal kandidat)
 

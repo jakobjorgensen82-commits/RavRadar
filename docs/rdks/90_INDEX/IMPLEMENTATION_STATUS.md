@@ -7,6 +7,7 @@
 - [x] Tilføj serialiseret producent→wrapper-seam samt negative exception/pending/watchdog/historik/download/WAM/unknown-tests; luk udløbskanten før begin-CAS og Pages med eksisterende reconciliation.
 - [x] Bestå wrapper 15/15, supervisor 12/12, checkpoint 32/32, Python compile, DMI-modeldownload, freshness-boundary og fuld workflowrækkefølge lokalt.
 - [x] Færdiggør 4.0.347-dokumentation, changelog, begge håndbøger/SQL, geodata-only-version-diff og den afgrænsede lokale måltestmatrix.
+- [x] Afgræns første PR #281-run `34680013012`: releasegate grøn; eneste senere fejl var stale statisk WAM-test for gamle direkte exits. Ret test-only til terminalhelperen og bestå alle 63 scenarier lokalt.
 - [ ] Bestå én exact-head-PR-sourcegate og kontrollér byteidentisk main før sikker merge.
 - [ ] Opnå komplet ny oneoff, handoff, fulde post-data-cutover-gates, offentlig modelverifikation og efterfølgende kontrolleret normalvedligeholdelse.
 
