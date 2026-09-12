@@ -220,6 +220,7 @@ ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookV
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
+const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const checkpointMetadataCasMigration=await read('supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
@@ -237,9 +238,11 @@ ok(pythonAdminSync.includes('is_integrated_selection')
 'Central adminhydrering mangler den integrerede cutover-/runtimekontrakt');
 ok(/ACCEPTED_FORECAST_HOURS\s*=\s*RAVSCORE_PUBLIC_FORECAST_HOURS/.test(activeWeatherGenerator)
   && /normalizeForecastHourly\(merged,\s*\{\s*limit:\s*ACCEPTED_FORECAST_HOURS\s*\}\)/.test(activeWeatherGenerator)
-  && /result\.scoreQuality\s*!==\s*'HISTORY_INCOMPLETE'/.test(activeWeatherGenerator)
-  && /result\.calibrationEligible\s*!==\s*false/.test(activeWeatherGenerator)
-  && /result\.historyReasonCodes\.length\s*===\s*0/.test(activeWeatherGenerator)
+  && /buildIntegratedPublicScoreAvailability\(\{\s*zones,\s*referenceAt:\s*generatedAt/.test(activeWeatherGenerator)
+  && /function assertAvailableHistoryScore\(result, label\)/.test(publicRuntimeContractSource)
+  && /result\.scoreQuality\s*===\s*'HISTORY_INCOMPLETE'/.test(publicRuntimeContractSource)
+  && /result\.calibrationEligible\s*!==\s*false/.test(publicRuntimeContractSource)
+  && /result\.historyReasonCodes\.length\s*<\s*1/.test(publicRuntimeContractSource)
   && /providerLabel:\s*'[^']*5-day forecast'/.test(activeWeatherGenerator),
 'Den aktive 118-timers/5-dages prognose mangler fail-closed HISTORY_INCOMPLETE-validering');
 ok(sync.includes('assertIntegratedRavScoreSelection')

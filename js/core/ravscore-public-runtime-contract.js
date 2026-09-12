@@ -43,6 +43,8 @@ export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
 export const RAVSCORE_INTEGRATED_AVAILABILITY_SCHEMA_VERSION = 2;
 export const RAVSCORE_INTEGRATED_AVAILABILITY_POLICY =
   'integrated-model-local-fail-closed';
+export const RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY =
+  'candidate-g-local-fail-closed';
 export const RAVSCORE_PUBLIC_SCORE_MODES = Object.freeze(['waders', 'beach']);
 export const RAVSCORE_INTEGRATED_AVAILABILITY_FIELDS = Object.freeze([
   'schemaVersion',
@@ -475,6 +477,82 @@ export function assertIntegratedPublicScoreAvailability(value, {
     }
   }
   return true;
+}
+
+export function buildPublicScoreAvailability({
+  policy,
+  zones,
+  referenceAt,
+  zoneNames = {},
+} = {}) {
+  const integrated = buildIntegratedPublicScoreAvailability({
+    zones,
+    referenceAt,
+    zoneNames,
+  });
+  if (policy === RAVSCORE_INTEGRATED_AVAILABILITY_POLICY) return integrated;
+  if (policy !== RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY
+    || integrated.allZonesActive !== true
+    || integrated.allCurrentScoresFullHistory !== true) {
+    throw new Error('Candidate G public availability requires one complete full-history package');
+  }
+  return {
+    ...integrated,
+    policy: RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY,
+  };
+}
+
+export function assertCandidateGPublicScoreAvailability(value, {
+  zoneIds = null,
+  zones = null,
+  label = 'Candidate G public score availability',
+} = {}) {
+  if (!exactKeys(value, RAVSCORE_INTEGRATED_AVAILABILITY_FIELDS)
+    || value.schemaVersion !== RAVSCORE_INTEGRATED_AVAILABILITY_SCHEMA_VERSION
+    || value.policy !== RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY
+    || value.allZonesActive !== true
+    || value.activeZoneCount !== RAVSCORE_PUBLIC_ZONE_COUNT
+    || value.unavailableZoneCount !== 0
+    || value.totalZoneCount !== RAVSCORE_PUBLIC_ZONE_COUNT
+    || value.allCurrentScoresFullHistory !== true
+    || value.fullHistoryModeCount
+      !== RAVSCORE_PUBLIC_ZONE_COUNT * RAVSCORE_PUBLIC_SCORE_MODES.length
+    || value.historyIncompleteModeCount !== 0
+    || value.historyIncompleteZoneCount !== 0
+    || !canonicalTime(value.evaluatedAt)
+    || !Array.isArray(value.unavailableZones) || value.unavailableZones.length !== 0
+    || !Array.isArray(value.historyIncompleteZones)
+    || value.historyIncompleteZones.length !== 0) {
+    throw new Error(`${label} has an inexact Candidate G availability contract`);
+  }
+  const expectedZoneIds = zoneIds === null
+    ? null : [...zoneIds].map(zoneId => exactZoneId(zoneId, `${label} zone id`));
+  if (expectedZoneIds
+    && (expectedZoneIds.length !== RAVSCORE_PUBLIC_ZONE_COUNT
+      || new Set(expectedZoneIds).size !== expectedZoneIds.length)) {
+    throw new Error(`${label} does not cover the exact national zone set`);
+  }
+  if (zones !== null) {
+    const expected = buildPublicScoreAvailability({
+      policy: RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY,
+      zones,
+      referenceAt: value.evaluatedAt,
+    });
+    if (canonicalPublicRuntimeJson(value) !== canonicalPublicRuntimeJson(expected)) {
+      throw new Error(`${label} does not match its exact Candidate G score rows`);
+    }
+  }
+  return true;
+}
+
+export function assertPublicScoreAvailability(value, options = {}) {
+  if (value?.policy === RAVSCORE_INTEGRATED_AVAILABILITY_POLICY) {
+    return assertIntegratedPublicScoreAvailability(value, options);
+  }
+  if (value?.policy === RAVSCORE_CANDIDATE_G_AVAILABILITY_POLICY) {
+    return assertCandidateGPublicScoreAvailability(value, options);
+  }
+  throw new Error(`${options.label ?? 'public score availability'} has an unknown policy`);
 }
 
 export function canonicalPublicRuntimeJson(value) {

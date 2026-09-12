@@ -24,6 +24,7 @@ import {
   RAVSCORE_PUBLIC_ZONE_COUNT,
   assertIntegratedPublicScoreAvailability,
   assertIntegratedPublicScoreResult,
+  assertPublicScoreAvailability,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   canonicalPublicRuntimeJson,
@@ -686,11 +687,9 @@ function projectScoreProfile(value, binding) {
 
 function projectScoreAvailability(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  if (value.policy === 'integrated-model-local-fail-closed') {
-    assertIntegratedPublicScoreAvailability(value, {
-      label: 'Public integrated score availability',
-    });
-  }
+  assertPublicScoreAvailability(value, {
+    label: 'Public score availability',
+  });
   if (typeof value.allZonesActive !== 'boolean') {
     throw new Error('Public score availability allZonesActive must be an exact boolean');
   }
@@ -1076,10 +1075,10 @@ export function assertCompletePublicRavScoreHorizon(full) {
     || weatherZoneIds.some(zoneId => !Object.hasOwn(scoreZones, zoneId))) {
     throw new Error('Public RavScore horizon is not one complete 210/673 package');
   }
-  assertIntegratedPublicScoreAvailability(full.coastalParts.scoreAvailability, {
+  assertPublicScoreAvailability(full.coastalParts.scoreAvailability, {
     zoneIds: scoreZoneIds,
     zones: scoreZones,
-    label: 'Public integrated score availability',
+    label: 'Public score availability',
   });
   let expectedPartCount = 0;
   let scoredPartCount = 0;

@@ -8,6 +8,7 @@
 - Ejeren godkendte, at cutover kører fem uafhængige kontroller, samler alle fejl og stopper før writes, mens fem grønne resultater fortsætter automatisk.
 - Append-only migration 12 og de nye model-/continuationhashes er lokalt måltestet. Exact-head-CI, merge, backendreadback, cache-only cutover, offentlig verifikation og normaldriftsbevis afventer.
 - PR #285's første head `fe4969f1`/run `34717671774` stoppede før sourceproof, fordi den historiske migrationskædetest sammenlignede 4.0.349-filen med aktuelle 4.0.350-hashes. Opfølgningen fastlåser 4.0.349-hashes og filhash og tester 4.0.350 som næste append-only led; lokal kædetest er grøn, ny exact-head-CI kræves.
+- Head `66338d63`/run `34717905077` bestod migrationsleddet og samlede tre senere fejl: Candidate G-stage/ture blev valideret som integrated, og releasegaten søgte den fjernede inline-historikkode. Én modelafhængig fælles validator og shared-validator-gatemarkør retter alle tre. Ejerens stop for testspiralen betyder ingen ny lang lokal fuldpakketest; exact-head-CI er næste samlede bevis.
 
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 main passerer v1/v2 og stopper senere i scorepakken
 

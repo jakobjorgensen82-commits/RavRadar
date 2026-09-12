@@ -14,6 +14,8 @@ import {
   RAVSCORE_PUBLIC_ZONE_COUNT,
   assertIntegratedPublicScoreAvailability,
   assertIntegratedPublicScoreResult,
+  assertPublicScoreAvailability,
+  buildPublicScoreAvailability,
   buildIntegratedPublicScoreAvailability,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
@@ -228,13 +230,11 @@ function assertManifest(manifest) {
   });
   assertExactPublicRavScoreProfile(manifest.ravScoreProfile,
     manifest.ravScoreModelBinding, 'manifestets RavScore-scoreprofil');
-  if (manifest.ravScoreAvailability?.policy === 'integrated-model-local-fail-closed') {
-    assertIntegratedPublicScoreAvailability(manifest.ravScoreAvailability, {
-      label: 'Manifestets scoretilgængelighed',
-    });
-    if (manifest.ravScoreAvailability.totalZoneCount !== manifest.zoneCount) {
-      throw new Error('Manifestets scoretilgængelighed dækker ikke de samme 210 zoner.');
-    }
+  assertPublicScoreAvailability(manifest.ravScoreAvailability, {
+    label: 'Manifestets scoretilgængelighed',
+  });
+  if (manifest.ravScoreAvailability.totalZoneCount !== manifest.zoneCount) {
+    throw new Error('Manifestets scoretilgængelighed dækker ikke de samme 210 zoner.');
   }
   const runtime = manifest.ravScoreRuntime;
   assertPublicRuntimeManifest(runtime, {
@@ -505,25 +505,7 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
 }
 
 function assertScoreAvailabilityQuality(value, label) {
-  if (value?.policy === 'integrated-model-local-fail-closed') {
-    return assertIntegratedPublicScoreAvailability(value, { label });
-  }
-  if (!value || typeof value !== 'object' || Array.isArray(value)
-    || typeof value.allCurrentScoresFullHistory !== 'boolean') {
-    throw new Error(label + ' mangler sin historikkvalitetssummering.');
-  }
-  for (const field of ['fullHistoryModeCount', 'historyIncompleteModeCount', 'historyIncompleteZoneCount']) {
-    if (!Number.isSafeInteger(value[field]) || value[field] < 0) {
-      throw new Error(label + ' har en ugyldig historikkvalitetstælling.');
-    }
-  }
-  if (value.allCurrentScoresFullHistory !== (value.unavailableZoneCount === 0
-      && value.historyIncompleteModeCount === 0)
-    || !Array.isArray(value.historyIncompleteZones)
-    || value.historyIncompleteZones.length !== value.historyIncompleteZoneCount) {
-    throw new Error(label + ' har en inkonsistent historikkvalitetssummering.');
-  }
-  return true;
+  return assertPublicScoreAvailability(value, { label });
 }
 
 function assertExactPublicRows(rows, expectedTimes, label, validateRow = null) {
@@ -552,18 +534,13 @@ function assertStartupCoverage(document, manifest) {
     document.coastalParts.scoreAvailability,
     'Startpakkens scoretilgængelighed',
   );
-  if (document.coastalParts.scoreAvailability?.policy
-      === 'integrated-model-local-fail-closed') {
-    assertIntegratedPublicScoreAvailability(document.coastalParts.scoreAvailability, {
-      zoneIds: scoreZoneIds,
-      label: 'Startpakkens scoretilgængelighed',
-    });
-    if (canonicalPublicRuntimeJson(document.coastalParts.scoreAvailability)
-        !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
-      throw new Error('Startpakken og manifestet har forskellig scoretilgængelighed.');
-    }
-  } else if (document.coastalParts.scoreAvailability?.allZonesActive !== true) {
-    throw new Error('Startpakkens ældre scoremodel har en utilgængelig zone.');
+  assertPublicScoreAvailability(document.coastalParts.scoreAvailability, {
+    zoneIds: scoreZoneIds,
+    label: 'Startpakkens scoretilgængelighed',
+  });
+  if (canonicalPublicRuntimeJson(document.coastalParts.scoreAvailability)
+      !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
+    throw new Error('Startpakken og manifestet har forskellig scoretilgængelighed.');
   }
   for (const zoneId of scoreZoneIds) {
     const rows = document.coastalParts.zones[zoneId]?.hourly;
@@ -627,18 +604,14 @@ function assertDetailedCoverage(document, manifest) {
     coastalParts.scoreAvailability,
     'Detaljepakkens scoretilgængelighed',
   );
-  if (coastalParts.scoreAvailability?.policy === 'integrated-model-local-fail-closed') {
-    assertIntegratedPublicScoreAvailability(coastalParts.scoreAvailability, {
-      zoneIds: scoreZoneIds,
-      zones: scoreZones,
-      label: 'Detaljepakkens scoretilgængelighed',
-    });
-    if (canonicalPublicRuntimeJson(coastalParts.scoreAvailability)
-        !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
-      throw new Error('Detaljepakken og manifestet har forskellig scoretilgængelighed.');
-    }
-  } else if (coastalParts.scoreAvailability?.allZonesActive !== true) {
-    throw new Error('Detaljepakkens ældre scoremodel har en utilgængelig zone.');
+  assertPublicScoreAvailability(coastalParts.scoreAvailability, {
+    zoneIds: scoreZoneIds,
+    zones: scoreZones,
+    label: 'Detaljepakkens scoretilgængelighed',
+  });
+  if (canonicalPublicRuntimeJson(coastalParts.scoreAvailability)
+      !== canonicalPublicRuntimeJson(manifest.ravScoreAvailability)) {
+    throw new Error('Detaljepakken og manifestet har forskellig scoretilgængelighed.');
   }
   let expectedPartCount = 0;
   let scoredPartCount = 0;
@@ -800,7 +773,8 @@ function projectCurrentHourConditions(startup, details, availability, manifest) 
     }
   }
 
-  const projectedScoreAvailability = buildIntegratedPublicScoreAvailability({
+  const projectedScoreAvailability = buildPublicScoreAvailability({
+    policy: manifest.ravScoreAvailability.policy,
     zones: scoreZones,
     referenceAt: selectedReferenceAt,
     zoneNames: Object.fromEntries(Object.keys(scoreZones).map(zoneId => [

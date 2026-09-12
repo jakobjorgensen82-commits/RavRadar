@@ -7,8 +7,9 @@
 - **Currentfix:** Otte regionale hold får eksakt closure-bundet præ-H0-reference i privat scoring/recovery. Referencen valideres mod cache/proof/grid/lag/U/V/hash, sorteres `(validTime, partId)` og publiceres aldrig.
 - **Lokal availability:** Kun berørt del/mode/time er `UNAVAILABLE`/null og ude af ranking; øvrige scorer/210/673-struktur fortsætter. Conditions, manifest, audit, Pages, browser, admin og ture deler kontrakten. De seks øvrige currentdele afgøres live.
 - **Cutover:** Ejerens godkendte fem kontroller kører alle og samler trinresultater. Fejl stopper før første ekstern write; fem grønne fortsætter automatisk gennem eksisterende cutover. Normal weather er uændret.
-- **Binding:** Ny migration 12 er append-only; migration 11 er byteuændret. Integrated `d3b6c829…`, rollback `343f9f53…`, continuation `87ea2358…`.
+- **Binding:** Ny migration 12 er append-only; migration 11 er byteuændret. Efter Candidate-policyrettelsen: integrated `a575f767…`, rollback `ca184522…`, continuation `dce13d51…`.
 - **Første CI-head:** PR #285 `fe4969f1`/run `34717671774` stoppede før sourceproof, fordi den historiske test brugte aktuelle hashes mod 4.0.349-migrationen. Lokal opfølgning låser 4.0.349-hashes og SHA `548c2925…`, tester 4.0.350 som næste led og er grøn; migration 11 er stadig byteuændret.
+- **Anden CI-head:** `66338d63`/run `34717905077` bestod migrationen og samlede tre senere fejl: Candidate G-stage/ture brugte integrated-validatoren, og releasegaten søgte gammel inline-historikkode. Modelafhængig fælles validator og ny shared-validator-markør er implementeret. Hurtige kontroller er grønne; lang lokal 210/673-gentagelse blev stoppet efter ejerens besked.
 - **Næste:** Ny exact-head GitHub-sourcegate → merge → backendapply/readback → cache-only cutover → offentlig 210/673-kontrol → reaktivér normal weather og bevis fremtidig rotation/data.
 - **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny lang provider-oneoff og ingen lokal dobbelt fuld sourcegate.
 

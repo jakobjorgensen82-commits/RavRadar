@@ -10,6 +10,7 @@
 - [x] Tilføj append-only migration 12, regenerér rollback/integrated/continuation i korrekt rækkefølge og bestå den korte målmatrix.
 - [x] Luk 4.0.350-version/RDKS/håndbøger, genkør tunge public-runtime-/auditregressioner og slutdiff.
 - [x] Diagnostisér PR #285-head `fe4969f1`'s røde migrationskædetest: fastlås 4.0.349-hashes/filhash historisk og kontrollér 4.0.350 som separat append-only led uden at ændre migration 11.
+- [x] Ret de tre samlede fejl fra `66338d63`/run `34717905077`: modelafhængig Candidate/integrated availability og releasegatebinding til den fælles historikvalidator. Stop lokal langtest; brug ny exact-head-CI som samlet bevis.
 - [ ] Kør præcis én fuld GitHub-sourcegate på exact PR-head; merge kun byteidentisk grøn tree.
 - [ ] Anvend/readback-verificér migration 12 og kør cache-only integrated-cutover. Hvis de fem kontroller er grønne, skal den fortsætte; ellers ret den samlede trin-/fejlrapport i én omgang.
 - [ ] Verificér integreret model offentligt på 210/673. Genaktivér derefter normal weather kontrolleret og mål de kommende data, DMI-rotation, cachetransport og tidsoverskud.

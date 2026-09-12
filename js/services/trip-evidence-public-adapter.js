@@ -14,7 +14,7 @@ import {
 } from '../core/ravscore-model-contract.js?v=4.0.350';
 import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
-  assertIntegratedPublicScoreAvailability,
+  assertPublicScoreAvailability,
   assertPublicRuntimeAvailability,
   canonicalPublicRuntimeJson,
   sameRavScoreModelBinding,
@@ -169,10 +169,10 @@ export function createTripStartFromPublicState({
   const manifestScoreAvailability = manifest?.ravScoreAvailability;
   const conditionsScoreAvailability = conditions?.coastalParts?.scoreAvailability;
   try {
-    assertIntegratedPublicScoreAvailability(manifestScoreAvailability, {
+    assertPublicScoreAvailability(manifestScoreAvailability, {
       label: 'Turens manifestbundne scoretilgængelighed',
     });
-    assertIntegratedPublicScoreAvailability(conditionsScoreAvailability, {
+    assertPublicScoreAvailability(conditionsScoreAvailability, {
       label: 'Turens valgte scoretilgængelighed',
     });
   } catch {
