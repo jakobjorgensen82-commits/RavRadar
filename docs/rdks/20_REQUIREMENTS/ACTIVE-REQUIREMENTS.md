@@ -1,5 +1,18 @@
 # Aktive krav – samlet register
 
+# 4.0.351 – ens offentlig rekonstruktion og ikke-tom startpakke
+
+- **REQ-4.0.351-INDEPENDENT-READINESS-001 – BINDENDE P0 / LOKALT TESTET:** Efter eksakt 673-delsstruktur skal coverage, hukommelse og migration bedømmes selvstændigt. Lokal `UNAVAILABLE` må ikke omskrive gyldig hukommelse eller migration til false.
+- **REQ-4.0.351-CURRENT-RECONSTRUCTION-001 – BINDENDE P0 / LOKALT TESTET:** Producent og offentlig audit skal rekonstruere H0-current fra samme publicerede værdi, retning, provenance og transition. `NATIVE_CADENCE_HOLD` er direkte input, men ikke en ny verificeret måling.
+- **REQ-4.0.351-LAST-MILE-RECONSTRUCTION-001 – BINDENDE P0 / LOKALT TESTET:** Last-mile-status og faktorer skal udledes ens fra publiceret bølgevejr og kompakt `waveApproachState`; eksakt calm, aktiv bølge uden retning og manglende fysik må ikke blandes.
+- **REQ-4.0.351-NONEMPTY-STARTUP-001 – BINDENDE P0 / LOKALT TESTET:** En lokalt utilgængelig mode uden vinder skal medføre en deterministisk eksisterende kystdelsidentitet i startpakken. Det må ikke opfinde score/vinder, og maksimum er fortsat to identiteter pr. zone.
+- **REQ-4.0.351-NO-GATE-WEAKENING-001 – BINDENDE P0:** Slutauditen skal fortsat rekonstruere og kontrollere 210 zoner, 673 dele og 1.346 aktuelle modes. Reel afvigelse stopper før writes.
+- **REQ-4.0.351-APPEND-ONLY-BINDING-001 – BINDENDE P0 / LOKALT TESTET:** Den centralt anvendte migration 12 forbliver byteuændret ved SHA-256 `24a7450a…`. Ny migration `20260913010000_public_runtime_oracle_binding.sql` fører kun tre forseglinger og readbackversion frem.
+- **REQ-4.0.351-NO-NEW-ONEOFF-001 – BINDENDE P0:** Brug den komplette låste vejrpakke. Kun én exact-head-kildegate, backendreadback, cache-only preflight, cutover og offentligt bevis må tilføjes; ingen ny provider-oneoff.
+- **REQ-4.0.351-RUNTIME-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, migration-13 apply/readback, grøn cache-only preflight, faktisk cutover og offentlig 210/673-verifikation mangler.
+
+Run `34720789985` er positivt vejr-/strukturbevis og negativt public-runtime-orakelbevis. DEC-0133 er bindende.
+
 # 4.0.350 – lokale inputfejl og samlet cutoverkontrol
 
 - **REQ-4.0.350-WIND-COMPONENT-001 – BINDENDE P0 / LOKALT TESTET:** Den fælles scoreadapter skal acceptere alene verificeret `wind` eller `windTail` efter det faktisk deklarerede komponentnavn. Deklaration/proof-mismatch, ukendt navn eller mangelfuld vindtuple stopper lokalt. Reglen gælder gemte og kommende vejrdata.

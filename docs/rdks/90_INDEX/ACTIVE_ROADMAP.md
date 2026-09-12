@@ -1,3 +1,17 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.351 direkte til model-online
+
+- [x] Merge PR #285 som main `f6e725ec`, anvend/readback-verificér migration 12 i backend `34720600286` og genbrug den komplette låste vejrcache.
+- [x] Klassificér cache-only `34720789985`: 79.414/79.414 current og 210/673/1.346 modelstruktur var til stede; stoppet lå i fire forskelle mellem offentlig samling og audit.
+- [x] Adskil coverage fra memory/migration, gør H0-current og last-mile offentligt rekonstruerbare og bevar en kompakt part-identitet ved lokal `UNAVAILABLE`.
+- [x] Versionér 4.0.351, tilføj append-only migration 13, fastlås migration 12 og synkronisér bundle/continuation/releasebindinger.
+- [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, engangsundtagelses- og releasekontraktkontroller. Gentag ikke den lange lokale nationale audit.
+- [ ] Kør én exact-head GitHub-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight uden providerhentning.
+- [ ] Ved grøn preflight: gennemfør den rigtige cutover og verificér offentligt 210 zoner/673 kystdele. Ved fejl: brug den samlede rapport til én rettelsesrunde uden ny oneoff.
+- [ ] Genaktivér normal weather kontrolleret og mål fremtidig vind/current, DMI-rotation og tidsoverskud.
+
+Der startes ingen ny tre timers oneoff. DEC-0133 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-12 – lokal 4.0.350 til automatisk grøn cutover
 
 - [x] Merge den bounded 4.0.349-fejlrapport via PR #284 og genkør locked cache uden providerhentning.

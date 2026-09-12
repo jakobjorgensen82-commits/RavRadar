@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  integratedRavScoreProfileReadiness,
   integratedRavScoreReferenceReadiness,
   projectIntegratedRavScoreForPublic,
   publicRavScoreConfigurationFromDocument,
@@ -221,6 +222,14 @@ assert.equal(readiness.modelMemoryReady, true);
 assert.equal(readiness.modelMigrationReady, true);
 assert.equal(readiness.referenceZoneCount, 2);
 assert.equal(readiness.referencePartCount, 3);
+assert.deepEqual(integratedRavScoreProfileReadiness({
+  ...readiness,
+  modelCoverageReady: false,
+}, 3), {
+  modelCoverageReady: false,
+  modelMemoryReady: true,
+  modelMigrationReady: true,
+}, 'lokal scoremangel må ikke omskrive gyldig hukommelse eller migration til false');
 
 const mixed = structuredClone(partRows);
 mixed[2].scores[0].ravScoreModel.modes.beach.modelId = 'WRONG';

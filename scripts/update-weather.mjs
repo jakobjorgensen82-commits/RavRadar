@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import {
+  integratedRavScoreProfileReadiness,
   integratedRavScoreReferenceReadiness,
   publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
@@ -2262,13 +2263,14 @@ function scoreCoastalPartsRuntime(
   }
 
   const referenceReadiness = integratedRavScoreReferenceReadiness(partRows, generatedAt);
-  const modelCoverageReady = partRows.length === Number(contract?.partCount)
-    && referenceReadiness.referencePartCount === partRows.length
-    && referenceReadiness.modelCoverageReady;
-  const modelMemoryReady = modelCoverageReady
-    && referenceReadiness.modelMemoryReady;
-  const modelMigrationReady = modelCoverageReady
-    && referenceReadiness.modelMigrationReady;
+  const {
+    modelCoverageReady,
+    modelMemoryReady,
+    modelMigrationReady,
+  } = integratedRavScoreProfileReadiness(
+    referenceReadiness,
+    Number(contract?.partCount),
+  );
   const scoreProfile = resolvePublicRavScoreProfile({
     selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
     evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,

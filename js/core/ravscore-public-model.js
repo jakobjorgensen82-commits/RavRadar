@@ -143,6 +143,23 @@ export function integratedRavScoreReferenceReadiness(partRows = [], referenceTim
   });
 }
 
+export function integratedRavScoreProfileReadiness(
+  referenceReadiness,
+  expectedPartCount,
+) {
+  const structurallyComplete = Number.isSafeInteger(expectedPartCount)
+    && expectedPartCount > 0
+    && referenceReadiness?.referencePartCount === expectedPartCount;
+  return Object.freeze({
+    modelCoverageReady: structurallyComplete
+      && referenceReadiness?.modelCoverageReady === true,
+    modelMemoryReady: structurallyComplete
+      && referenceReadiness?.modelMemoryReady === true,
+    modelMigrationReady: structurallyComplete
+      && referenceReadiness?.modelMigrationReady === true,
+  });
+}
+
 export function publicRavScoreConfigurationFromDocument(document) {
   if (!document || typeof document !== 'object' || Array.isArray(document)) {
     throw new Error('The central RavScore profile document is missing or invalid');

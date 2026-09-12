@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
+
+- **Base:** Main `f6e725ec`/4.0.350 efter PR #285 og backend `34720600286`; lokal branch `codex/4.0.351-public-runtime-oracle`. Candidate G er stadig offentlig. Bevar fire untracked `.tmp-run-*-safe-inspect`.
+- **Vejr:** Cache-only `34720789985` brugte `2026-09-12T08:00:00Z`, hentede intet nyt providervejr og bestod current 79.414/79.414, WAM, freshness og current selection 673/673.
+- **Stop:** Bygningen nåede 210/673/1.346, men slutauditen gav fire public-runtime-samlings-/rekonstruktionskoder. Intet handoff, cutover eller deploy blev startet.
+- **Fix:** Readiness-fakta er uafhængige; current/native hold og last-mile rekonstrueres fra samme publicerede data; utilgængelige modes bevarer en deterministisk eksisterende part-identitet uden score/vinder.
+- **Binding:** Migration 12 er applied og SHA-fastlåst. Ny append-only migration 13. Integrated/rollback/continuation `79d5118a…` / `84311c92…` / `9d396013…`.
+- **Test:** Korte relevante kontroller grønne. Lang national lokal audit må ikke gentages. Bred workflowtest stoppede kun på lokal Python Store-alias; GitHub tager exact-head-beviset.
+- **Næste:** RDKS/geodatadiff → commit/push/PR → én exact-head sourcegate → merge → backend migration 13/readback → cache-only preflight → cutover → offentlig 210/673.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny oneoff og ingen dobbelt kildegate.
+
 # NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 efter første CI-migrationsfejl
 
 - **Aktuel base:** Main `512f889d`/4.0.349 efter PR #284; branch `codex/4.0.350-local-unavailable-cutover`. Candidate G er stadig offentlig, normalworkflow disabled, gammel `34613079069` inert, fire untracked inspectmapper bevares.

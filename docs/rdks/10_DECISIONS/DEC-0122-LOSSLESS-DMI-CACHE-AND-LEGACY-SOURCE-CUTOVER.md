@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.350. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.350 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.351. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.351 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
 
 ### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
 
@@ -10,7 +10,7 @@ DEC-0130 retter denne snævre model-warmup-kant og indfører en eksplicit, fastl
 
 Den tidligere WAM-binding er allerede centralt anvendt og må ikke omskrives. Exact-release 4.0.348 kræver derfor først den nye append-only migration `20260912122607_measured_rollback_warmup_binding.sql`, som kun fører model-/continuationforseglinger og readbackversion frem. Backendreadiness skal være grøn på same-head, før cachekontrollen og det nye handoff må begynde.
 
-Ejeren bekræftede 2026-09-12 direkte, at den materielt uændrede first-cutover-undtagelse alene flyttes til exact-release `4.0.350`. Et ældre handoff må ikke ommærkes. Current, WAM, Feggesund, freshness, privacy, full post-data validate/releasegate, same-head-handoff, deployment og offentlig verifikation består uændret. DMI-multipass er fortsat ikke livebevist, fordi den observerede kørsel kun loggede pass 1; dette er et særskilt normaldriftsmålepunkt og ikke en lempelse af launchkrav.
+Under ejerens stående autorisation til nødvendige launchsuccessors følger den materielt uændrede first-cutover-undtagelse nu alene exact-release `4.0.351`. Et ældre handoff må ikke ommærkes. Current, WAM, Feggesund, freshness, privacy, full post-data validate/releasegate, same-head-handoff, deployment og offentlig verifikation består uændret. DMI-multipass er fortsat ikke livebevist, fordi den observerede kørsel kun loggede pass 1; dette er et særskilt normaldriftsmålepunkt og ikke en lempelse af launchkrav.
 
 ## Baggrund
 
@@ -140,6 +140,12 @@ Ejeren godkendte udtrykkeligt: “Ja, flyt engangsundtagelsen til 4.0.349.” DE
 PR #284 og cache-only-run `34706453561` fandt derefter den konkrete scoreinputfordeling. DEC-0132 retter verificeret `windTail`, fører private closure-bundne regionale præ-H0-referencer ind i scoring og håndhæver lokal `UNAVAILABLE` uden at opfinde data. Den samler fem uafhængige cutoverkontroller før én skrivebarriere og fortsætter automatisk, når alle fem er grønne.
 
 Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.350`. Et ældre handoff må ikke ommærkes eller bruges. Currentclosure, WAM/Feggesund, exact target, sourceproof, full post-data validate/releasegate/data, privacy, artifact, backend/readback, CAS, Pages og offentlig verifikation består. Lokal `UNAVAILABLE` er en scorekontrakt, ikke tilladelse til manglende 79.414-currentclosure. Candidate G er ikke automatisk offentlig fallback.
+
+### Versionsoverførsel 2026-09-13 – exact-release 4.0.351
+
+4.0.350 blev merged og backendbundet. Cache-only `34720789985` beviste fortsat komplet vejr og byggede alle 210/673/1.346 modelresultater, men den offentlige audit stoppede før handoff/cutover/deploy på fire rekonstruktions-/samlingsforskelle. DEC-0133 retter alene denne public-runtime-kant uden at lempe slutauditen eller ændre vejradmission.
+
+Under ejerens stående autorisation til at føre den nødvendige launchrettelse helt online flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.351`. Ingen gammel preflight eller handoff ommærkes. Samme låste vejrdata må genbruges, men sourceproof, migration-13 readback, full post-data validate/releasegate/data, privacy, artifact, CAS, Pages og offentlig 210/673-verifikation skal være nye og bundet til 4.0.351.
 
 ## Konsekvenser
 

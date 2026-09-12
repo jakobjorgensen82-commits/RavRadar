@@ -7,6 +7,7 @@ import {
   CANDIDATE_G_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
+import { waveMobilisationEnergy } from '../js/core/ravscore-mobilisation-memory.js';
 import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { buildIntegratedRavScoreStateSeries }
@@ -401,19 +402,43 @@ function historyScoreViewFromContinuation(state, persisted) {
   };
 }
 
-function integratedEvaluationState(state, model, weather, persisted) {
+function integratedEvaluationState(state, model, weather, persisted, onshoreDirectionDeg) {
   const lastMile = waveApproachDeliveryContext(state?.waveApproachState);
+  const currentAlignment = finite(weather?.currentSpeedMps)
+    && finite(weather?.currentDirectionDeg)
+    && finite(onshoreDirectionDeg)
+    ? Math.cos((Number(weather.currentDirectionDeg) - Number(onshoreDirectionDeg))
+      * Math.PI / 180)
+    : null;
+  const currentVerified = weather?.currentProvenance?.status === 'verified'
+    && model?.currentTransition !== 'NATIVE_CADENCE_HOLD';
+  const currentDirectInputAvailable = currentVerified
+    || model?.currentTransition === 'NATIVE_CADENCE_HOLD';
+  const waveEnergy = waveMobilisationEnergy({
+    waveHeightM: weather?.waveHeightM,
+    wavePeriodS: weather?.wavePeriodS,
+  });
+  const lastMileEvidenceStatus = !waveEnergy.available
+    ? `WAVE_PHYSICS_${waveEnergy.inputStatus}`
+    : waveEnergy.exactCalm
+      ? 'EXACT_CALM_DIRECTION_NEUTRAL'
+      : !finite(weather?.waveDirectionDeg)
+        ? 'ACTIVE_WAVE_DIRECTION_MISSING'
+        : 'DIRECTIONAL_WAVE_EVIDENCE_READY';
   return {
     ...state,
     historyScoreView: historyScoreViewFromContinuation(state, persisted),
-    currentVerified: weather?.currentProvenance?.status === 'verified',
+    currentVerified,
+    currentDirectInputAvailable,
     currentTransition: model?.currentTransition ?? null,
+    currentCoastNormalSpeedMps: currentVerified
+      && finite(weather?.currentSpeedMps) && finite(currentAlignment)
+      ? Number(weather.currentSpeedMps) * currentAlignment
+      : null,
     lastMileWaveReferenceAt: state?.waveApproachState?.waveReferenceAt ?? null,
     lastMileMemoryReady: state?.waveApproachState?.readiness === true,
     lastMileMemoryStatus: state?.waveApproachState?.status ?? null,
-    lastMileEvidenceStatus: lastMile.available
-      ? 'DIRECTIONAL_WAVE_EVIDENCE_READY'
-      : 'WAVE_APPROACH_STATE_NOT_READY',
+    lastMileEvidenceStatus,
     lastMileWaveActivity: lastMile.activity,
     lastMileNormalAlignment: lastMile.normalAlignment,
     lastMileTangentAlignment: lastMile.tangentAlignment,
@@ -1237,6 +1262,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         model,
         part?.current?.weather ?? {},
         model?.modes?.waders,
+        part?.onshoreDirectionDeg,
       );
       collector.add((model?.lastMileMemoryReady === true
           || persistedHistoryIncomplete || persistedUnavailable)

@@ -777,9 +777,28 @@ export function buildStartupCoastalParts(full) {
   const scoreAvailability = projectScoreAvailability(source.scoreAvailability);
   const zones = {};
   const winnerIds = new Set();
+  const partIdsByZone = new Map();
+  for (const [partId, part] of Object.entries(source.parts || {})) {
+    if (typeof part?.zoneId !== 'string') continue;
+    if (!partIdsByZone.has(part.zoneId)) partIdsByZone.set(part.zoneId, []);
+    partIdsByZone.get(part.zoneId).push(partId);
+  }
+  for (const partIds of partIdsByZone.values()) partIds.sort();
   for (const [zoneId, zone] of Object.entries(source.zones || {})) {
     const row = currentLocalRow(zone, source, full);
-    for (const mode of PUBLIC_FORECAST_MODES) if (row?.[mode]?.winningPartId) winnerIds.add(row[mode].winningPartId);
+    for (const mode of PUBLIC_FORECAST_MODES) {
+      if (row?.[mode]?.winningPartId) {
+        winnerIds.add(row[mode].winningPartId);
+        continue;
+      }
+      if (row?.[mode]?.available !== false) continue;
+      const representativeId = row[mode].unavailableParts
+        ?.map(part => part?.partId)
+        .find(partId => source.parts?.[partId]?.zoneId === zoneId)
+        ?? partIdsByZone.get(zoneId)?.[0]
+        ?? null;
+      if (representativeId) winnerIds.add(representativeId);
+    }
     const startupRow = projectZoneRow(row, binding, { startup: true });
     zones[zoneId] = {
       expectedPartCount: requiredCount(zone.expectedPartCount, 'Public zone expectedPartCount'),

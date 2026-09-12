@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 direkte til offentlig integreret model
+
+Main er `f6e725ec`/4.0.350 efter grøn PR #285 og backend `34720600286`; migration 12 er anvendt. Cache-only `34720789985` hentede intet providervejr og bestod current 79.414/79.414, WAM, freshness og 673/673 current selection. Modelbygningen nåede 210 zoner/673 dele/1.346 modes, men public-auditen stoppede før handoff/cutover/deploy på fire samlings-/rekonstruktionskoder.
+
+Lokal branch `codex/4.0.351-public-runtime-oracle` retter kun denne offentlige kant: independent coverage/memory/migration, ens publiceret H0-current/native-hold og last-mile samt deterministisk eksisterende part-identitet ved lokal `UNAVAILABLE`. Ingen score opfindes, og slutauditen lempes ikke. Migration 13 er append-only; migration 12 er SHA-fastlåst uændret. Hashes `79d5118a…` / `84311c92…` / `9d396013…`.
+
+Korte kontroller er grønne. Kør ikke ny lang lokal national audit og ingen ny oneoff. Næste: slut-RDKS/geodatadiff, én exact-head GitHub-sourcegate, merge, migration-13 apply/readback, samme cache-only preflight, faktisk cutover og offentlig 210/673-verifikation. Bevar fire untracked inspectmapper. Sol/Ekstra høj. Se DEC-0133.
+
 # NYESTE CHECKPOINT – 2026-09-12 – lokal 4.0.350 fra komplet cache til sikker cutover
 
 Main er `512f889dbb301bc7fb801478358625f5404586b2`/4.0.349 efter PR #284's samlede, privacy-sikre fejlrapport. Cache-only-run `34706453561` bevarede target `2026-09-12T08:00:00Z`, hentede intet providervejr og havde fortsat current 79.414/79.414: DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116. Rapporten viste i stedet scoreinputfejl: 659 dele × begge modes manglede accepteret vind, og 14 dele × begge modes havde `CURRENT_DIRECT_INPUT_NOT_READY`.

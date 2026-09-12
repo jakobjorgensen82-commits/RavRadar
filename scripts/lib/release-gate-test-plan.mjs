@@ -35,6 +35,7 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/build-measured-rollback-warmup-binding-migration.mjs',
   'scripts/build-state-only-hold-closure-v2-binding-migration.mjs',
   'scripts/build-local-unavailable-cutover-binding-migration.mjs',
+  'scripts/build-public-runtime-oracle-binding-migration.mjs',
   'scripts/test-reusable-production-workflows.mjs',
   'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
   'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',

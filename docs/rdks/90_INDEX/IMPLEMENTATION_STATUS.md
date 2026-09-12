@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – lokal 4.0.351 offentlig modelkontrol
+
+- [x] Merge 4.0.350 via PR #285 som main `f6e725ec` og anvend/readback-verificér migration 12 i backend `34720600286`.
+- [x] Kør cache-only preflight `34720789985` uden providerhentning og bevis current 79.414/79.414, WAM, freshness samt 210/673/1.346 modelstruktur.
+- [x] Afgræns de fire slutfejl til public-runtime-samling/audit, ikke vejrdata eller manglende køretid.
+- [x] Adskil `modelCoverageReady` fra gyldig `modelMemoryReady` og `modelMigrationReady` efter strukturel 673-delskontrol.
+- [x] Normalisér producentens og auditens H0-current-/native-hold-semantik ud fra publiceret weather/provenance.
+- [x] Normalisér last-mile metadata og faktorer ud fra publiceret bølgevejr og kompakt `waveApproachState`.
+- [x] Bevar højst to eksisterende part-identiteter pr. zone i startpakken, også når en mode er lokalt `UNAVAILABLE`; opfind ingen score eller vinder.
+- [x] Versionér 4.0.351, byg append-only migration 13 fra fastlåst migration 12 og synkronisér integrated/rollback/continuation til alle forbrugere.
+- [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, private-runtime- og releasemetadatakontroller. Den kendte lokale Python-aliasfejl er overladt til GitHub; ingen lang lokal gentagelse.
+- [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
+- [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight.
+- [ ] Gennemfør cutover ved grøn preflight og verificér den integrerede model offentligt på 210/673.
+- [ ] Genaktivér derefter normal weather kontrolleret og mål DMI-rotation/tidsoverskud.
+
+Candidate G er stadig offentlig, og 4.0.351 er endnu kun lokal. Ingen ny provider-oneoff er planlagt. DEC-0133 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.350 scoreinput og samlet cutoverkontrol
 
 - [x] Merge PR #284 som main `512f889d` efter exact-head-kildegate og bounded fejlrapport.

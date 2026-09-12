@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.351 retter den offentlige modelkontrol før cutover
+
+PR #285 er exact-head-grøn og merged som main `f6e725ecb9930fc5b7f0d85418bf5b7ef20c1e68`. Backendrun `34720600286` anvendte migration 12 og bestod readback. Cache-only preflight `34720789985` genbrugte target `2026-09-12T08:00:00Z` uden providerhentning og beviste fortsat current 79.414/79.414: DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116. WAM, freshness og current selection 673/673 bestod.
+
+Producenten gennemgik alle 210 zoner, 673 kystdele og 1.346 aktuelle mode-resultater. Den afsluttende offentlige audit stoppede derefter med `MODE_RECONSTRUCTION_MISMATCH`, `PART_LAST_MILE_STATE_METADATA_MISMATCH`, `PUBLIC_PROFILE_NOT_READY` og `PUBLIC_STARTUP_WINNER_PART_SET_NOT_COMPACT`. Det var ikke nye vejrhuller. Intet handoff, cutover eller deploy blev startet.
+
+Lokal 4.0.351 retter den fælles kant: coverage, hukommelse og migration bedømmes selvstændigt; producent og audit rekonstruerer H0-current og last-mile fra samme publicerede data/continuation; og en lokalt utilgængelig mode bevarer en deterministisk eksisterende part-identitet i startpakken uden score eller vinder. Slutauditen er ikke lempet.
+
+Migration 12 er centralt anvendt og byteuændret ved SHA-256 `24a7450ae913ceef37375e6df200a0e85e6a001128c4a1ca9b6652ae6642fbd8`. Ny append-only `20260913010000_public_runtime_oracle_binding.sql` fører alene de tre bindinger og readbackversion frem. Integrated/rollback/continuation er `79d5118a…` / `84311c92…` / `9d396013…`.
+
+Korte målrettede kontroller er grønne. Den brede lokale workflowtest stoppede alene på den kendte Windows Python Store-aliasfejl efter de relevante statiske kontroller; den gentages ikke lokalt. Næste bevis er én exact-head GitHub-sourcegate, derefter merge, migration-13 apply/readback, cache-only preflight, faktisk cutover og offentlig 210/673-verifikation. Ingen ny oneoff. Candidate G er stadig offentlig indtil cutover. Se DEC-0133.
+
 # NYESTE SANDHED – 2026-09-12 – lokal 4.0.350 retter scoreinput og samler cutoverfejl
 
 PR #284's fejlrapport er merged som main `512f889dbb301bc7fb801478358625f5404586b2`. Cache-only-run `34706453561` brugte det låste target uden providerhentning og bekræftede igen komplet current 79.414/79.414: DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116. Det gamle 210/673-stop skyldtes ikke nye vejrhuller. 659 kystdele i begge jagtformer fik afvist vindinput, og 14 kystdele i begge jagtformer havde direkte currentinput ikke klar.

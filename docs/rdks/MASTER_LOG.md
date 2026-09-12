@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.351 direkte mod model-online
+
+Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Den komplette låste vejrpakke genbruges. Én ny exact-head-kildegate er nødvendig, fordi koden er ændret; den køres én gang i GitHub.
+
+4.0.350 blev merged som `f6e725ec`, og backend `34720600286` installerede migration 12. Cache-only `34720789985` hentede intet providervejr, bevarede current 79.414/79.414 og gennemgik 210 zoner/673 kystdele/1.346 aktuelle modes. Runnet stoppede efter bygningen på fire offentlige samlings-/auditkoder; actual cutover startede aldrig.
+
+4.0.351 bedømmer coverage, hukommelse og migration selvstændigt, rekonstruerer H0-current/native hold samt last-mile fra samme publicerede vejr og continuation og medtager en deterministisk eksisterende part-identitet ved lokal `UNAVAILABLE`. Ingen score eller vinder opfindes, og slutauditen er uændret streng.
+
+Ny append-only migration 13 er genereret fra fastlåst migration 12. Hashene er integrated `79d5118a…`, rollback `84311c92…`, continuation `9d396013…`. Korte måltests er grønne. Den brede lokale workflowtest nåede de berørte kontroller og stoppede senere kun på Windows Python Store-alias; den gentages i GitHub på exact head. Næste rækkefølge: exact-head-CI → merge → migration-13 readback → cache-only preflight → rigtig cutover → offentlig 210/673-kontrol. Se DEC-0133.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – lokal 4.0.350 direkte input og samlet cutover
 
 Ejeren har bekræftet den præcise cutoveradfærd: runtimeaudit, referencezoner, fuld validering, releasegate og datavalidering må alle køre og samle deres fejl; hvis ingen fejler, skal cutover fortsætte automatisk. Samlingen må ikke flytte eller omgå database-, checkpoint-, privacy-, handoff-, CAS-, Pages- eller offentlig-verifikationsgrænser. Almindelige vejrjobs skal ikke ændres af denne cutoveroptimering.

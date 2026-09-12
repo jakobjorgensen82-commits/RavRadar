@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 offentlig modelkontrol før cutover
+
+- PR #285 blev merged som main `f6e725ec`; backend `34720600286` anvendte migration 12 og bestod readback.
+- Cache-only `34720789985` hentede intet providervejr og beholdt 79.414/79.414 current. Bygningen nåede 210 zoner, 673 dele og 1.346 aktuelle modes.
+- Runnet stoppede før handoff/cutover/deploy på fire forskelle mellem producentens offentlige pakke og auditens rekonstruktion.
+- 4.0.351 adskiller coverage fra memory/migration, bruger samme publicerede current-/last-mile-grundlag på begge sider og bevarer en eksisterende part-identitet ved lokal `UNAVAILABLE`.
+- Migration 12 forbliver byteuændret; append-only migration 13 fører kun nye bindinger/readback frem.
+- Korte kontroller er grønne. Næste er én exact-head-CI, merge, migration-13 readback, cache-only preflight, faktisk cutover og offentlig 210/673-verifikation. Ingen ny oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.350 lokale inputfejl og samlet cutover
 
 - PR #284's bounded fejlrapport blev merged som main `512f889d`.

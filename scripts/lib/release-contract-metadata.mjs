@@ -57,6 +57,14 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0131',
       path: 'docs/rdks/10_DECISIONS/DEC-0131-STATE-ONLY-CURRENT-HOLD-CLOSURE-V2-BINDING.md',
     }),
+    Object.freeze({
+      id: 'DEC-0132',
+      path: 'docs/rdks/10_DECISIONS/DEC-0132-LOCAL-UNAVAILABLE-AND-AGGREGATED-CUTOVER.md',
+    }),
+    Object.freeze({
+      id: 'DEC-0133',
+      path: 'docs/rdks/10_DECISIONS/DEC-0133-PUBLIC-RUNTIME-ORACLE-AND-NONEMPTY-STARTUP.md',
+    }),
   ]),
 });
 

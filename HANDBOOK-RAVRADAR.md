@@ -1,6 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.350
+**Håndbogsversion:** 4.0.351
+
+## 88.55 Lokal 4.0.351 – Den offentlige kontrol bruger nu samme modelgrundlag som producenten
+
+**Status:** Den hurtige cachekontrol `34720789985` havde stadig alle 79.414 strømpar og hentede ikke nyt vejr. Den nye model blev beregnet for alle 210 zoner og 673 kystdele, men kom ikke online, fordi den afsluttende kontrol fortolkede nogle af de samme data anderledes end producenten. Cutover og deploy var ikke startet.
+
+Rettelsen holder nu tre ting adskilt: Om alle aktuelle scorer findes, om modellens hukommelse er gyldig, og om den nødvendige migration er udført. Et lokalt manglende input må derfor ikke få en gyldig hukommelse til at se ugyldig ud. Producenten og kontrollen beregner desuden aktuelle strømforhold og bølgernes sidste transportstykke ud fra de samme publicerede værdier og den samme gemte tilstand.
+
+Hvis en zone aktuelt kun har utilgængelige resultater, indeholder startpakken stadig identiteten på en virkelig kystdel. Den får ikke en opdigtet score og bliver ikke kaldt vinder; identiteten gør blot pakken komplet og kontrollerbar. Der er fortsat højst to sådanne aktuelle kystdele pr. zone.
+
+Den landsdækkende slutkontrol er ikke gjort svagere. Den skal fortsat kontrollere 210 zoner, 673 kystdele og 1.346 aktuelle resultater og stopper før database eller offentlig side ved en reel forskel. Næste kørsel genbruger de komplette gemte vejrdata. Der startes ikke en ny tre timers oneoff.
 
 ## 88.54 Lokal 4.0.350 – Gyldige områder fortsætter, og cutover samler fejl
 
@@ -399,11 +409,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.350 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.351 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.350, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.351, exact-head og cutover afventer
 
-4.0.350 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d3b6c829dfb0d66251d7ebf0b0f4d0a1c357bbf0083aa6076b3f8743eaca397d` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=343f9f539146c61fbd0b75e2c4d1148189f56602abb85bff24bbbd708e43aae2` over 57 transitive filer. Continuationbindingen er `87ea235809d1c305d93fd04ae434ecca07e2c573b5e4929b5b8a7446687eec06`. Migration `20260912141641_state_only_hold_closure_v2_binding.sql` er installeret og uændret; ny append-only `20260912194206_local_unavailable_cutover_binding.sql` afventer exact-main apply/readback. Cachekontrol `34706453561` beviste komplette strømdata og fandt de konkrete scoreinputfejl. Candidate G er derfor stadig offentlig rent teknisk, mens 4.0.350 afventer exact-head, automatisk grøn cutover og offentlig 210/673-kontrol.
+4.0.351 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Migration `20260912194206_local_unavailable_cutover_binding.sql` er installeret og uændret; ny append-only `20260913010000_public_runtime_oracle_binding.sql` afventer exact-main apply/readback. Cachekontrol `34720789985` beviste komplette strømdata og fandt forskellene mellem producentens offentlige pakke og auditens rekonstruktion. Candidate G er derfor stadig offentlig rent teknisk, mens 4.0.351 afventer exact-head, automatisk grøn cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

@@ -3,6 +3,8 @@ import {
   buildIntegratedRavScoreStateSeries,
   canonicalRavScoreStateOnlyCurrentHold,
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
+import { waveApproachDeliveryContext }
+  from '../../js/core/ravscore-wave-approach-state.js';
 import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -334,15 +336,43 @@ export function buildIntegratedPartScoreSeries({
         ?? weather.currentProvenance
         ?? null,
     );
+    const currentAlignment = finite(weather.currentSpeedMps)
+      && finite(weather.currentDirectionDeg)
+      ? Math.cos((Number(weather.currentDirectionDeg) - Number(part.onshoreDirectionDeg))
+        * Math.PI / 180)
+      : null;
+    const currentVerified = effectiveCurrentProvenance?.status === 'verified'
+      && modelState.currentTransition !== 'NATIVE_CADENCE_HOLD';
+    const currentDirectInputAvailable = currentVerified
+      || modelState.currentTransition === 'NATIVE_CADENCE_HOLD';
+    const publicCurrentCoastNormalSpeedMps = currentVerified
+      && finite(weather.currentSpeedMps) && finite(currentAlignment)
+      ? Number(weather.currentSpeedMps) * currentAlignment
+      : null;
+    const waveApproachState = modelState.continuationState?.waveApproachState;
+    const lastMile = waveApproachDeliveryContext(waveApproachState);
+    const evaluationState = {
+      ...modelState,
+      currentVerified,
+      currentDirectInputAvailable,
+      currentCoastNormalSpeedMps: publicCurrentCoastNormalSpeedMps,
+      lastMileWaveReferenceAt: waveApproachState?.waveReferenceAt ?? null,
+      lastMileMemoryReady: waveApproachState?.readiness === true,
+      lastMileMemoryStatus: waveApproachState?.status ?? null,
+      lastMileWaveActivity: lastMile.activity,
+      lastMileNormalAlignment: lastMile.normalAlignment,
+      lastMileTangentAlignment: lastMile.tangentAlignment,
+      lastMileCoherence: lastMile.coherence,
+      lastMileApproach: lastMile.approach,
+      lastMileFactor: lastMile.factor,
+    };
     const publicContext = {
       windSpeedMps: weather.windSpeedMps,
       waveHeightM: weather.waveHeightM,
       currentSpeedMps: weather.currentSpeedMps,
-      currentCoastNormalSpeedMps: modelState.currentCoastNormalSpeedMps,
-      currentAlignment: finite(weather.currentSpeedMps) && finite(weather.currentDirectionDeg)
-        ? Math.cos((Number(weather.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180)
-        : null,
-      currentVerified: modelState.currentVerified === true,
+      currentCoastNormalSpeedMps: publicCurrentCoastNormalSpeedMps,
+      currentAlignment,
+      currentVerified,
       currentTransition: modelState.currentTransition,
       currentReferenceAt: modelState.currentReferenceAt,
       currentReferenceProvenance: effectiveCurrentProvenance,
@@ -354,9 +384,9 @@ export function buildIntegratedPartScoreSeries({
       waveMemoryReady: modelState.waveMemoryReady,
       waveMemoryStatus: modelState.waveMemoryStatus,
       waveTransition: modelState.waveTransition,
-      lastMileWaveReferenceAt: modelState.lastMileWaveReferenceAt,
-      lastMileMemoryReady: modelState.lastMileMemoryReady,
-      lastMileMemoryStatus: modelState.lastMileMemoryStatus,
+      lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt,
+      lastMileMemoryReady: evaluationState.lastMileMemoryReady,
+      lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
       lastMileTransition: modelState.lastMileTransition,
     };
     const inputCalibrationEligible = integratedInputCalibrationEligible(weather);
@@ -364,7 +394,7 @@ export function buildIntegratedPartScoreSeries({
       mode,
       compactIntegratedRavScoreMode(evaluateRavScoreIntegrated(
         { mode, zone, weather },
-        { state: modelState },
+        { state: evaluationState },
       ), { inputCalibrationEligible }),
     ]));
     return [{
@@ -385,9 +415,9 @@ export function buildIntegratedPartScoreSeries({
         waveLastVerifiedAt: modelState.waveLastVerifiedAt,
         waveMemoryReady: modelState.waveMemoryReady,
         waveMemoryStatus: modelState.waveMemoryStatus,
-        lastMileWaveReferenceAt: modelState.lastMileWaveReferenceAt,
-        lastMileMemoryReady: modelState.lastMileMemoryReady,
-        lastMileMemoryStatus: modelState.lastMileMemoryStatus,
+        lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt,
+        lastMileMemoryReady: evaluationState.lastMileMemoryReady,
+        lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
         migrationApplied: modelState.migrationApplied,
         publicContext,
         modes,
