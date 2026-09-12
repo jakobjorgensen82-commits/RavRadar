@@ -7,6 +7,7 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
+  candidateGLocalAvailability,
   candidateGReferenceReadiness,
   projectCandidateGForPublic,
 } from '../../js/core/ravscore-profile-switch.js';
@@ -509,6 +510,39 @@ function compactCandidateGMode(result) {
   };
 }
 
+const CANDIDATE_G_MEASURED_WARMUP_MEMORY_STATUSES = Object.freeze(new Set([
+  'WINDOW_INCOMPLETE',
+  'WINDOW_HAS_MISSING_EVIDENCE',
+  'WINDOW_HAS_TIME_GAP',
+  'LATEST_SAMPLE_MISSING',
+]));
+
+function projectUnavailableCandidateGRollbackWarmup(compact, state, profile) {
+  const localAvailability = candidateGLocalAvailability(compact, state);
+  if (compact?.available !== true
+    || !finite(compact.score)
+    || state?.transportMemoryReady !== false
+    || !CANDIDATE_G_MEASURED_WARMUP_MEMORY_STATUSES
+      .has(state?.transportMemoryStatus)
+    || state?.transportMemoryWindowHours !== 48
+    || !inRange(state?.transportMemoryCoverageHours, 0, 48)
+    || localAvailability.available !== false
+    || localAvailability.code !== state.transportMemoryStatus
+    || profile?.activeProfileId !== RAVSCORE_MODEL_ID) {
+    throw new Error('Candidate G measured warmup projection requires an exact non-READY measured state');
+  }
+  const unavailable = compactCandidateGMode({
+    available: false,
+    reason: localAvailability.code,
+  });
+  return {
+    ...unavailable,
+    scoreProfileId: profile.activeProfileId,
+    unavailability: localAvailability,
+    reasons: [localAvailability.messageDa],
+  };
+}
+
 /**
  * Named, fail-closed quality projection for the sealed manual Candidate G
  * rollback. This is not an integrated-model fallback and never infers missing
@@ -615,12 +649,22 @@ export function buildCandidateGRollbackPartScoreSeries({
   previousCandidateGContinuation = null,
   legacyCandidateGMigrationState = null,
   measuredColdStart = false,
+  measuredWarmupContinuation = false,
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
   scoreStartAt = null,
 } = {}) {
   if (!part || typeof part !== 'object' || !Array.isArray(hourly)) {
     throw new Error('Candidate G rollback adapter requires one part and hourly rows');
+  }
+  if (typeof measuredWarmupContinuation !== 'boolean'
+    || (measuredWarmupContinuation
+      && (measuredColdStart
+        || previousCandidateGContinuation === null
+        || previousCandidateGContinuation === undefined
+        || legacyCandidateGMigrationState !== null
+          && legacyCandidateGMigrationState !== undefined))) {
+    throw new Error('Candidate G measured warmup continuation requires its exclusive previous private state');
   }
   assertStrictWeatherRows(hourly, part);
   if (!inRange(nativeCadenceHoldHours, 0, 3)) {
@@ -748,10 +792,17 @@ export function buildCandidateGRollbackPartScoreSeries({
         },
       ));
       const projected = compact.available
-        ? projectReadyCandidateGRollbackScoreQuality({
-          ...projectCandidateGForPublic(compact, { mode, profile, context: publicContext }),
-          modelBinding: ravScoreModelBinding(),
-        }, derivedState)
+        ? derivedState.transportMemoryReady === true
+          ? projectReadyCandidateGRollbackScoreQuality({
+            ...projectCandidateGForPublic(compact, { mode, profile, context: publicContext }),
+            modelBinding: ravScoreModelBinding(),
+          }, derivedState)
+          : measuredColdStart || measuredWarmupContinuation
+            ? projectUnavailableCandidateGRollbackWarmup(compact, derivedState, profile)
+            : projectReadyCandidateGRollbackScoreQuality({
+              ...projectCandidateGForPublic(compact, { mode, profile, context: publicContext }),
+              modelBinding: ravScoreModelBinding(),
+            }, derivedState)
         : compact;
       return [mode, { compact, projected }];
     }));

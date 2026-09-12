@@ -1,4 +1,20 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.347 implementeret og måltestet lokalt
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 cachebundet model-warmup
+
+Main er `6868ae04a0dd335050930418905e617acc27c7db`/4.0.347; lokal branch er `codex/4.0.348-candidate-warmup-projection`. PR #281-head `c4c70ac7` bestod exact-head-sourcegate `34681246581` og blev merged med identisk indhold. Oneoff `34682428800` genbrugte kildebeviset og er terminal failure; ingen aktiv writer blev efterladt. De fire private `.tmp-run-…-safe-inspect/`-mapper er untracked og skal bevares.
+
+Target var `2026-09-12T08:00:00Z`. DMI gav 67.686/79.414. Før Copernicus manglede 193, men slutunionen var DMI 67.686 + CP 8.668 + regional 944 + OM 2.116 = 79.414/79.414, missing 0, closurehash `sha256:f2668b39bffdcf2bc237edc5d12965b594ca10b4f2abc2b23810adeaec83e642`. Native WAM 79.060 var grøn. Separat Feggesund 354/354 skal fortsat kræves i næste fulde handoffbevis.
+
+Modellen stoppede bagefter på `Candidate G rollback score quality requires exact READY 48-hour state`. Lokal 4.0.348 retter kun denne warmup-kant: Candidate G-rollback er privat numerisk under attesteret målt cold-start eller valideret privat `BUILDING_MEASURED_ONLY`, men public/selectable modes er unavailable/null til READY. Ukendt og legacy non-READY stopper stadig. Den integrerede model forbliver ærligt `HISTORY_INCOMPLETE` uden syntese.
+
+GitHub-backendrun `34564209781` beviser, at den gamle WAM-migration er centralt anvendt. Bevar den uændret med normaliseret SHA-256 `a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d`. Ny append-only `20260912122607_measured_rollback_warmup_binding.sql` ændrer kun integrated-/rollback-/continuationforseglinger og readbackversion. Den skal anvendes/readback-verificeres på exact main før cachekontrollen. Backendworkflowet genbruger kun PR-sourceproof efter live exact-content-verifikation og falder ellers sikkert tilbage til fuld kildegate.
+
+PR #282's første head `cc06fa37`/run `34695465328` er terminal failure efter 17m40s. Loggen er grøn gennem model, 210/673-public-stage, privacy, runtime og migrationskæde; den eneste fejl var releasegatens gamle statiske forventning med tre metadata-kommandoer, mens package-aliaset korrekt havde den fjerde nye migrationsbygger. Intet rent-træ-trin eller sourceproof. Lokal opfølgning tilføjer byggeren præcis én gang til releaseplanen, retter expected alias og tilføjer målregression; sourceplan viser nu 35 korrekt genbrugte underkommandoer. Ny commit/head og ny exact-head-CI kræves.
+
+Workflowet har en eksplicit `locked_weather_resume`-kontrol. Den kræver det eksakte target, springer DMI-register/plan/producer og CP-plan/credentials/producer over, kører OM `--reuse-only` og sætter en central provider-netværksspærre i weatherbuilderen. Alle downstream gates genkøres; manglende cache stopper uden automatisk providerkørsel. Ét DMI-pass er standard for senere reel acquisition; 2/3 er kun eksplicit diagnose. Runnet loggede kun pass 1, så multipass er ikke livebevist.
+
+Rettelsen er endnu ucommitted. Afslut RDKS/håndbog/SQL/version/geodata-diff og måltests, commit/push uden `.tmp-run-*`, kør én exact-head sourcegate, merge kun byteidentisk grøn head, anvend/readback-verificér backendbindingen, dispatch derefter cachekontrollen mod target, kræv current/WAM/Feggesund/freshness/full gates/handoff, og udfør kontrolleret cutover/offentlig 210/673-verifikation. Normalworkflowet forbliver deaktiveret til launch er bevist. Sol/Ekstra høj til exact-head-review, runtime og slutvalidering.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.347 implementeret og måltestet lokalt
 
 Main er `e912ef9a53d62c489402531fc318f4c3b3ccaf7f`/4.0.346; lokal branch er `codex/4.0.347-dmi-harmonie-runtime-continuation`. Oneoff `34675040245` er afsluttet failure. DMI nåede 66.998/79.414 i pass 1, alle relevante cachesaves lykkedes, og Open-Meteo løste 2.170/2.212 med 42 provider-negative restpar fordelt på 21 kystdele efter isolerede genforsøg. Ingen OM-runtime-/attempt-/køgrænse; ingen handoff, cutover eller modelændring. De private `.tmp-run-…-safe-inspect/`-mapper er untracked og skal bevares.
 

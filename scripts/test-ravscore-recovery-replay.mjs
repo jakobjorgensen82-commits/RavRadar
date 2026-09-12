@@ -1625,6 +1625,69 @@ assert.equal(
   true,
   'the separate rollback oracle must become READY only from its own complete measured replay',
 );
+const partialMeasuredColdRollbackProduction = buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: null,
+    source: 'COLD_START',
+    rejectedSources: [],
+    candidateGSourceDisposition:
+      'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY',
+  },
+  targetReferenceAt: time(4),
+  recoverySources: [{
+    source: 'measured-cold-start-with-one-boundary-hour-missing',
+    record: record(Array.from({ length: 47 }, (_, index) => weather(index - 43))),
+  }],
+  publicHourly: [weather(4), weather(5), weather(6)],
+  candidateGRollbackMeasuredColdStart: true,
+});
+assert.equal(
+  partialMeasuredColdRollbackProduction.candidateGState.initialStateSource,
+  'VERIFIED_MEASURED_COLD_START',
+);
+assert.equal(
+  partialMeasuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.transportMemoryReady,
+  false,
+  'measured cold-start rollback memory must remain non-READY without the boundary hour',
+);
+assert.equal(
+  partialMeasuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.transportMemoryStatus,
+  'WINDOW_INCOMPLETE',
+);
+assert.equal(
+  partialMeasuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.transportMemoryCoverageHours,
+  47,
+);
+for (const mode of ['waders', 'beach']) {
+  const candidate = partialMeasuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.modes[mode];
+  const unavailable = partialMeasuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.publicModes[mode];
+  assert.equal(candidate.available, true,
+    'the private measured oracle may retain its numeric warmup calculation');
+  assert.equal(unavailable.available, false,
+    'a non-READY measured oracle must not expose a rollback score');
+  assert.equal(unavailable.score, null);
+  assert.equal(unavailable.scoreQuality, 'UNAVAILABLE');
+  assert.equal(unavailable.unavailability.code, 'WINDOW_INCOMPLETE');
+  assert.equal(unavailable.calibrationEligible, false);
+}
+assert.deepEqual(
+  partialMeasuredColdRollbackProduction.scores.map(row => row.time),
+  partialMeasuredColdRollbackProduction.candidateGRollbackScores.map(row => row.time),
+  'integrated and measured rollback warmup rows must retain exact time parity',
+);
+assert.equal(
+  partialMeasuredColdRollbackProduction.scores[0]
+    .ravScoreModel.modes.waders.scoreQuality,
+  'HISTORY_INCOMPLETE',
+  'the integrated score must continue honestly while rollback memory warms up',
+);
 assert.throws(() => buildRavScoreProductionPartSeries({
   part,
   zone,

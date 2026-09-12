@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.347",
+  "version": "4.0.348",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -20,7 +20,7 @@
     "test:ravscore-model-bundle": "node scripts/build-ravscore-model-bundle.mjs --check && node scripts/test-ravscore-model-bundle.mjs",
     "test:ravscore-model-binding": "node scripts/sync-ravscore-model-binding.mjs --check && npm run test:release-contract-metadata",
     "sync:release-contract-metadata": "node scripts/sync-release-contract-metadata.mjs --write",
-    "test:release-contract-metadata": "node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs",
+    "test:release-contract-metadata": "node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs",
     "test:integrated-cutover-readiness": "node scripts/test-integrated-cutover-readiness.mjs",
     "test:ravscore-public-browser-closure": "node scripts/test-ravscore-public-browser-closure.mjs",
     "sync:ravscore-model-binding": "node scripts/sync-ravscore-model-binding.mjs --write",

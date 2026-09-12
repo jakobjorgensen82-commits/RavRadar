@@ -17,6 +17,20 @@ on:
         required: false
         default: false
         type: boolean
+      locked_weather_resume:
+        description: "Revalidate one exact saved 118h target and continue model/handoff without provider acquisition"
+        required: false
+        default: false
+        type: boolean
+      dmi_oneoff_passes:
+        description: "Bounded DMI rounds for 118h preflight; use extra rounds only when native-DMI diagnosis requires them"
+        required: false
+        default: "1"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
 
 permissions:
   contents: read
@@ -609,15 +623,23 @@ jobs:
         env:
           PREFLIGHT_SAMPLE_TIME: ${{ inputs.sample_time }}
           PILOT_FULL_COAST: ${{ inputs.full_coast }}
+          LOCKED_WEATHER_RESUME: ${{ inputs.locked_weather_resume }}
         run: |
+          set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/main"
           test "$PILOT_FULL_COAST" != "true"
-          test -z "$PREFLIGHT_SAMPLE_TIME"
-          target_hour="$(date -u +%Y-%m-%dT%H:00:00Z)"
+          if test "$LOCKED_WEATHER_RESUME" = "true"; then
+            test -n "$PREFLIGHT_SAMPLE_TIME"
+            target_hour="$PREFLIGHT_SAMPLE_TIME"
+          else
+            test -z "$PREFLIGHT_SAMPLE_TIME"
+            target_hour="$(date -u +%Y-%m-%dT%H:00:00Z)"
+          fi
           printf '%s\n' "$target_hour" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$'
+          test "$(date -u -d "$target_hour" +%Y-%m-%dT%H:00:00Z)" = "$target_hour"
           echo "target_hour=$target_hour" >> "$GITHUB_OUTPUT"
           echo "cache_generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
-          echo "Accepted a current-hour, non-deploying 118-hour data preflight."
+          echo "Accepted a non-deploying 118-hour data preflight (locked_resume=$LOCKED_WEATHER_RESUME)."
 
       - name: Install only weather-source dependencies
         run: >-
@@ -659,7 +681,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.347 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.348 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         id: ravscore-wave-bootstrap-target
@@ -671,6 +693,7 @@ jobs:
           --production-target "${{ steps.operational-target.outputs.target_hour }}"
 
       - name: Refresh the official DMI water-source registry
+        if: inputs.locked_weather_resume != true
         run: node scripts/update-water-source-registry.mjs
         env:
           WEATHER_USER_AGENT: "RavRadar 118h preflight water-source registry (${{ github.server_url }}/${{ github.repository }})"
@@ -786,6 +809,17 @@ jobs:
           fi
           cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
 
+      - name: Require the saved DMI candidate for locked weather resume
+        if: inputs.locked_weather_resume == true
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/dmi-candidate-progress.json
+          python scripts/build-copernicus-target-registry.py \
+            --at "${{ steps.operational-target.outputs.target_hour }}" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --output "$RUNNER_TEMP/locked-dmi-target-registry.json"
+
       - name: Restore private regional current evidence for normal maintenance
         uses: actions/cache/restore@v6
         with:
@@ -842,6 +876,7 @@ jobs:
             open-meteo-current-donor-bank-v1-${{ runner.os }}-
 
       - name: Plan global current acquisition before DMI
+        if: inputs.locked_weather_resume != true
         continue-on-error: true
         shell: bash
         run: |
@@ -854,6 +889,7 @@ jobs:
 
       - name: Refresh all bounded official DMI collections for the proof
         id: dmi-bulk
+        if: inputs.locked_weather_resume != true
         continue-on-error: true
         timeout-minutes: 160
         run: python -u scripts/run-dmi-oneoff-fill.py
@@ -868,6 +904,7 @@ jobs:
           DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
           DMI_BULK_MAX_RUNTIME_SECONDS: 3000
+          DMI_BULK_ONEOFF_MAX_PASSES: ${{ inputs.dmi_oneoff_passes || '1' }}
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 180
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
@@ -885,7 +922,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.347 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.348 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -1052,6 +1089,7 @@ jobs:
         run: echo "Preserve original source-stage evidence for validated donor migration before rebase."
 
       - name: Plan global current acquisition before Copernicus
+        if: inputs.locked_weather_resume != true
         continue-on-error: true
         shell: bash
         run: |
@@ -1064,12 +1102,12 @@ jobs:
           fi
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
-        if: steps.current-range.outputs.source_stage_ready != 'true'
+        if: inputs.locked_weather_resume != true && steps.current-range.outputs.source_stage_ready != 'true'
         continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify Copernicus credentials only when exact gaps remain
-        if: steps.current-range.outputs.source_stage_ready != 'true'
+        if: inputs.locked_weather_resume != true && steps.current-range.outputs.source_stage_ready != 'true'
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -1082,7 +1120,7 @@ jobs:
 
       - name: Fill only the exact operational DMI gap seal
         id: copernicus-fill
-        if: steps.current-range.outputs.source_stage_ready != 'true'
+        if: inputs.locked_weather_resume != true && steps.current-range.outputs.source_stage_ready != 'true'
         continue-on-error: true
         timeout-minutes: 57
         env:
@@ -1171,12 +1209,21 @@ jobs:
       - name: Fill only the exact remaining current gaps from Open-Meteo
         id: open-meteo-fill
         continue-on-error: true
-        run: >-
-          python scripts/fill-open-meteo-current-fallback.py
-          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --dmi .cache/dmi-candidate-progress.json
-          --timeout-seconds 45
-          --runtime-seconds 900
+        shell: bash
+        env:
+          LOCKED_WEATHER_RESUME: ${{ inputs.locked_weather_resume }}
+        run: |
+          set -euo pipefail
+          reuse_args=()
+          if test "$LOCKED_WEATHER_RESUME" = "true"; then
+            reuse_args+=(--reuse-only)
+          fi
+          python scripts/fill-open-meteo-current-fallback.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --timeout-seconds 45 \
+            --runtime-seconds 900 \
+            "${reuse_args[@]}"
 
       - name: Reconfirm exact main before shared Open-Meteo progress cache
         id: open-meteo-progress-write-authority
@@ -1291,7 +1338,8 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.347 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.locked_weather_resume }}
+          WEATHER_USER_AGENT: "RavRadar/4.0.348 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
@@ -1336,7 +1384,7 @@ jobs:
           and $report.incrementalGate.fullCutoverCapacityEvaluated == false
           and $report.firstCutoverException.decisionId
             == "DEC-0122-OWNER-APPROVAL-2026-09-09"
-          and $report.firstCutoverException.releaseVersion == "4.0.347"
+          and $report.firstCutoverException.releaseVersion == "4.0.348"
           and $report.firstCutoverException.scope
             == "ONE_EXACT_VERIFIED_FIRST_CUTOVER"
           and $report.firstCutoverException.status
@@ -1488,7 +1536,7 @@ jobs:
             cutoverGate,
             controls
           }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
-          echo "The owner-approved 4.0.347 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
+          echo "The owner-approved 4.0.348 successor exception permits only this exact successful oneoff as first-cutover input. It does not approve recurring automatic cadence; cache transport migration remains mandatory. Live Supabase egress/database before-and-after measurements and all other unified egress remain mandatory before recurring operation."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

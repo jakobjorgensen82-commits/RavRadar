@@ -51,7 +51,22 @@ jobs:
         with:
           node-version: 22
 
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-trip-storage
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Verify exact-content source validation with GitHub
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Prepare exact pinned Candidate G source before source validation
+        if: steps.source-proof.outputs.required != 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -63,10 +78,12 @@ jobs:
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
 
       - uses: actions/setup-python@v7
+        if: steps.source-proof.outputs.required != 'false'
         with:
           python-version: "3.12"
 
       - name: Install source-gate dependencies
+        if: steps.source-proof.outputs.required != 'false'
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
@@ -74,7 +91,23 @@ jobs:
           -r requirements-copernicus.txt
 
       - name: Validate exact source head before external writes
+        id: source-gate
+        if: steps.source-proof.outputs.required != 'false'
         run: npm run validate:source
+
+      - name: Record actual source validation outcome
+        id: source-record
+        if: always() && github.ref == 'refs/heads/main' && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+
+      - name: Preserve latest verified source-content validation outcome
+        if: always() && (steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false'))
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-trip-storage
 
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
@@ -127,7 +160,7 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
           supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
 
-      - name: Require only the nine exact integrated cutover migrations
+      - name: Require only the ten exact integrated cutover migrations
         shell: bash
         run: |
           set -euo pipefail
@@ -141,6 +174,7 @@ jobs:
           test -f "$migrations_directory/20260906162332_per_pair_weather_fallback_binding.sql"
           test -f "$migrations_directory/20260907084343_horizon_valid_weather_binding.sql"
           test -f "$migrations_directory/20260909194000_wam_same_run_resolution_binding.sql"
+          test -f "$migrations_directory/20260912122607_measured_rollback_warmup_binding.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

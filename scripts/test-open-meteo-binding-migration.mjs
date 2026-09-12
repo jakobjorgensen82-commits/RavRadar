@@ -14,10 +14,15 @@ const read = async name => canonicalLf(await fs.readFile(`supabase/migrations/${
 const PER_PAIR_MIGRATION = '20260906162332_per_pair_weather_fallback_binding';
 const HORIZON_VALID_MIGRATION = '20260907084343_horizon_valid_weather_binding';
 const WAM_MIGRATION = '20260909194000_wam_same_run_resolution_binding';
+const MEASURED_WARMUP_MIGRATION = '20260912122607_measured_rollback_warmup_binding';
 const HORIZON_VALID_SHA256 = 'f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d';
 const HORIZON_INTEGRATED_SHA256 = '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9';
 const HORIZON_ROLLBACK_SHA256 = '4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8';
 const HORIZON_CONTINUATION_SHA256 = '260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb';
+const WAM_MIGRATION_SHA256 = 'a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d';
+const WAM_INTEGRATED_SHA256 = '8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80';
+const WAM_ROLLBACK_SHA256 = '1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5';
+const WAM_CONTINUATION_SHA256 = 'ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3';
 // 4.0.339 recovery: this migration was still pending after migration 4 rolled back.
 // Pin the corrected bytes AND prove below that only the two CASE parentheses changed.
 const PER_PAIR_MIGRATION_SHA256 = '8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2';
@@ -96,9 +101,9 @@ assert.equal(crypto.createHash('sha256').update(immutableHorizon).digest('hex'),
   'Applied horizon-valid migration must remain byte-identical after LF normalization');
 let wamExpected = body(immutableHorizon);
 for (const [before, after, count] of [
-  [HORIZON_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
-  [HORIZON_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
-  [HORIZON_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  [HORIZON_INTEGRATED_SHA256, WAM_INTEGRATED_SHA256, 3],
+  [HORIZON_ROLLBACK_SHA256, WAM_ROLLBACK_SHA256, 2],
+  [HORIZON_CONTINUATION_SHA256, WAM_CONTINUATION_SHA256, 1],
   ['20260907084343', '20260909194000', 2],
 ]) {
   assert.equal(wamExpected.split(before).length - 1, count);
@@ -106,4 +111,19 @@ for (const [before, after, count] of [
 }
 assert.equal(body(await read(WAM_MIGRATION)), wamExpected,
   'WAM migration must change only exact seals/readback version, never SQL behaviour or row data');
-console.log('Open-Meteo, per-pair, horizon-valid and WAM append-only migrations: immutable history and exact binding-only forward copies verified.');
+const immutableWam = await read(WAM_MIGRATION);
+assert.equal(crypto.createHash('sha256').update(immutableWam).digest('hex'), WAM_MIGRATION_SHA256,
+  'Applied WAM migration must remain byte-identical after LF normalization');
+let measuredWarmupExpected = body(immutableWam);
+for (const [before, after, count] of [
+  [WAM_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
+  [WAM_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
+  [WAM_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  ['20260909194000', '20260912122607', 2],
+]) {
+  assert.equal(measuredWarmupExpected.split(before).length - 1, count);
+  measuredWarmupExpected = measuredWarmupExpected.replaceAll(before, after);
+}
+assert.equal(body(await read(MEASURED_WARMUP_MIGRATION)), measuredWarmupExpected,
+  'Measured warmup migration must change only exact seals/readback version, never SQL behaviour or row data');
+console.log('Open-Meteo through measured-warmup append-only migrations: immutable history and exact binding-only forward copies verified.');

@@ -1,6 +1,16 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.347. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.347 er lokal kandidat; exact-head-CI, komplet same-head-vejr og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.348. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.348 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
+
+### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
+
+PR #281 blev sourcegate-valideret på exact head og merged byteidentisk som `6868ae04`. Oneoff `34682428800` genbrugte dette bevis uden en anden fuld kildegate og opnåede komplet currentclosure på 79.414/79.414 samt grøn native WAM-gate. Den stoppede først bagefter, fordi rollback-oraklet krævede READY 48-timershistorik i en tilladt målt koldstart. Intet handoff, artifact eller cutover blev dannet.
+
+DEC-0130 retter denne snævre model-warmup-kant og indfører en eksplicit, fastlåst cachekontrol mod target `2026-09-12T08:00:00Z`. Kontrollen må ikke hente nyt vejr hos DMI, Copernicus eller Open-Meteo; den genvaliderer de gemte data, kører alle uændrede slutgates og stopper uden automatisk genopfyldning, hvis cachen ikke længere kan bevises komplet.
+
+Den tidligere WAM-binding er allerede centralt anvendt og må ikke omskrives. Exact-release 4.0.348 kræver derfor først den nye append-only migration `20260912122607_measured_rollback_warmup_binding.sql`, som kun fører model-/continuationforseglinger og readbackversion frem. Backendreadiness skal være grøn på same-head, før cachekontrollen og det nye handoff må begynde.
+
+Under den stående ejerautorisation flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.348`. Et ældre handoff må ikke ommærkes. Current, WAM, Feggesund, freshness, privacy, full post-data validate/releasegate, same-head-handoff, deployment og offentlig verifikation består uændret. DMI-multipass er fortsat ikke livebevist, fordi den observerede kørsel kun loggede pass 1; dette er et særskilt normaldriftsmålepunkt og ikke en lempelse af launchkrav.
 
 ## Baggrund
 

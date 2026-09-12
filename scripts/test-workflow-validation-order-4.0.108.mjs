@@ -1725,9 +1725,12 @@ for (const marker of [
   'permissions:\n  contents: read',
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
+  'name: Verify exact-content source validation with GitHub',
+  'run: node scripts/weather-source-gate.mjs check',
+  'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the nine exact integrated cutover migrations',
+  'Require only the ten exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1737,6 +1740,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260906162332_per_pair_weather_fallback_binding.sql"',
   'test -f "$migrations_directory/20260907084343_horizon_valid_weather_binding.sql"',
   'test -f "$migrations_directory/20260909194000_wam_same_run_resolution_binding.sql"',
+  'test -f "$migrations_directory/20260912122607_measured_rollback_warmup_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -1761,13 +1765,23 @@ if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.incl
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
 const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
+const exactSourceProof = tripStorageDeployment.indexOf('name: Verify exact-content source validation with GitHub');
 const legacySourceFetchBeforeValidation = Math.max(
   tripStorageDeployment.indexOf('name: Fetch exact public Candidate G source commit before source validation'),
   tripStorageDeployment.indexOf('name: Prepare exact pinned Candidate G source before source validation'),
 );
-if (!(legacySourceFetchBeforeValidation >= 0 && legacySourceFetchBeforeValidation < exactSourceValidation)
+if (!(exactSourceProof >= 0 && exactSourceProof < legacySourceFetchBeforeValidation
+  && legacySourceFetchBeforeValidation < exactSourceValidation)
   || tripStorageDeployment.split('git fetch --no-tags --depth=1 origin "$legacy_source_head"').length - 1 !== 1) {
-  throw new Error('Turlager-deploymentet skal hente præcis den pinnede Candidate G-sourcecommit før validate:source.');
+  throw new Error('Turlager-deploymentet skal kontrollere sourceproof og kun derefter hente præcis den pinnede Candidate G-sourcecommit før validate:source.');
+}
+for (const marker of [
+  "if: steps.source-proof.outputs.required != 'false'",
+  "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
+]) {
+  if (!tripStorageDeployment.includes(marker)) {
+    throw new Error(`Turlager-deploymentets exact-content sourceproof mangler ${marker}`);
+  }
 }
 const tripQualityCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before the Candidate G database contract');
 const tripQualityWrite = tripStorageDeployment.indexOf('name: Atomically apply and verify the Candidate G trip-quality contract');
@@ -3523,5 +3537,5 @@ for (const forbidden of ['secrets.', 'SUPABASE_', 'data/live/', 'currentUMps', '
   if (outcomeSection.includes(forbidden)) throw new Error(`Det payloadfri outcomejob må ikke indeholde ${forbidden}`);
 }
 
-execFileSync('python', ['scripts/test-dmi-oneoff-fill.py'], { stdio: 'inherit' });
+execFileSync(process.env.PYTHON || 'python', ['scripts/test-dmi-oneoff-fill.py'], { stdio: 'inherit' });
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');

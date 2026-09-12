@@ -1,5 +1,19 @@
 # Aktive krav – samlet register
 
+# 4.0.348 – målt rollback-opvarmning og fastlåst cachekontrol
+
+- **REQ-4.0.348-MEASURED-WARMUP-001 – BINDENDE P0 / LOKALT TESTET:** Ved attesteret målt first-cutover-koldstart må Candidate G-rollback-oraklet beholde privat numerisk state, mens mindre end 48 timers ægte historik er til rådighed. Dets valgbare/offentlige modes skal samtidig være utilgængelige med null-score, indtil historikken er eksakt READY; den integrerede model må fortsætte ærligt som `HISTORY_INCOMPLETE`.
+- **REQ-4.0.348-WARMUP-CONTINUATION-001 – BINDENDE P0 / LOKALT TESTET:** Efter koldstart må non-READY kun fortsætte fra en valideret privat runtime med status `BUILDING_MEASURED_ONLY`. Umærket, legacy-omdøbt, blandet eller ukendt non-READY-state stopper. Ingen historik syntetiseres, lånes eller udfyldes.
+- **REQ-4.0.348-LOCKED-TARGET-001 – BINDENDE P0 / LOKALT TESTET:** Cachekontrollen kræver det kanoniske eksakte target `2026-09-12T08:00:00Z` og må ikke flytte det til en nyere time. Forkert eller manglende target/cachebinding stopper før handoff.
+- **REQ-4.0.348-NO-PROVIDER-ACQUISITION-001 – BINDENDE P0 / LOKALT TESTET:** I `locked_weather_resume` springes DMI-register/plan/producer og Copernicus-plan/credentials/producer over. Open-Meteo må kun genbruge gemte rækker med `--reuse-only`. En central spærring i weatherbuilderen stopper ethvert skjult vejrnetværkskald med `WEATHER_CACHE_ONLY_NETWORK_DISABLED`.
+- **REQ-4.0.348-NO-AUTOMATIC-REFILL-001 – BINDENDE P0:** Manglende eller ugyldig cache giver et sikkert stop. Cachekontrollen må aldrig automatisk blive til en lang oneoff eller hente nye providerdata. En ny genopfyldning kræver særskilt diagnose og beslutning.
+- **REQ-4.0.348-FULL-GATES-001 – BINDENDE P0:** Cachegenbrug er ikke gategenbrug. Exact target/registry, current 79.414/79.414, native WAM 79.060, Feggesund 354/354, freshness, provenance, 210/673/118-runtime, privacy, fuld post-data `validate`/`release:gate`, handoff, cutover og offentlig verifikation består.
+- **REQ-4.0.348-SOURCE-ONCE-001 – BINDENDE P0:** 4.0.348 kræver én fuld kildegate på PR'ens eksakte slut-head. Byteidentisk main må genbruge det live-verificerede bevis; merge-SHA alene udløser ikke en dobbelt kildegate.
+- **REQ-4.0.348-APPEND-ONLY-BACKEND-BINDING-001 – BINDENDE P0 / LOKALT TESTET:** Den centralt anvendte migration `20260909194000_wam_same_run_resolution_binding.sql` skal forblive byte-/checksumlåst. En ny migration `20260912122607_measured_rollback_warmup_binding.sql` må kun føre integrated-, rollback- og continuationhashes samt readbackversion frem. Backendreadiness skal være grøn før cachekontrol, og backendworkflowet skal genbruge PR'ens live-verificerede exact-content-sourceproof eller sikkert køre en fuld kildegate.
+- **REQ-4.0.348-DMI-PASS-SELECTION-001 – BINDENDE DRIFT:** En fremtidig reel acquisition-oneoff bruger ét DMI-pass som workflowstandard; to eller tre kræver eksplicit diagnostisk valg og alle tidligere fail-closed-værn. Run `34682428800` loggede kun pass 1, så multipass er ikke livebevist og skal måles i normal vedligeholdelse.
+
+Run `34682428800` havde 193 reelle rester før Copernicus, men sluttede med 79.414/79.414 og nul currentmangler efter fallback. Modelbygningen stoppede derefter, så der findes endnu intet 4.0.348-handoff eller cutoverbevis. DEC-0130 er bindende.
+
 # 4.0.347 – terminalbevist DMI-fortsættelse og frisk Pages-write
 
 - **REQ-4.0.347-EXPECTED-PARTIAL-PROTOCOL-001 – BINDENDE P0 / LOKALT TESTET:** Oneoff-wrapperen må kun læse en DMI-slutcache som fortsættelsesbevis efter exit 0 eller den opt-in-interne kode 75. Kode 75 må først dannes efter producentens normale slutcache, outputs, summary og terminalrapport. Exception, tidlig fejl, `FINALIZE_ONLY` og normal drift uden opt-in beholder exit 2; wrapperen læser aldrig progresscache efter generisk exit 2 og normaliserer kode 75 til exit 2, hvis den ender uden komplet READY.

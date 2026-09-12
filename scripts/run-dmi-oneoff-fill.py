@@ -2,9 +2,9 @@
 """Bounded continuation of the existing DMI producer, for the one-off job only.
 
 Each completed pass finalizes and prunes using the existing producer. Every
-pass keeps the producer's 50-minute bound and 4-GiB raw-cache ceiling; the
-one-off wrapper may spend at most three passes when a finalized report proves
-either download-limited progress or strict-current runtime-limited progress.
+pass keeps the producer's 50-minute bound and 4-GiB raw-cache ceiling. The
+workflow defaults to one completion-first pass and may explicitly request at
+most three passes when native-DMI diagnosis requires more bounded progress.
 """
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ CACHE = Path(os.getenv(
     str(ROOT / "data/live/dmi-bulk-cache.json"),
 ))
 MAX_PASSES = 3
+MAX_PASSES_ENV = "DMI_BULK_ONEOFF_MAX_PASSES"
 GIB = 1024 ** 3
 COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf", "harmonie_dini_sf", "wam_dw", "wam_nsb"}
 MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
@@ -164,6 +165,10 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
                 "DMI_BULK_MAX_RUNTIME_SECONDS": "3000", "DMI_BULK_FINALIZE_RESERVE_SECONDS": "180"}
     if any(environment.get(key) != value for key, value in expected.items()):
         raise ValueError("ONEOFF_BUDGET_CONFIGURATION_INVALID")
+    configured_passes = environment.get(MAX_PASSES_ENV, "3")
+    if configured_passes not in {str(value) for value in range(1, MAX_PASSES + 1)}:
+        raise ValueError("ONEOFF_PASS_CONFIGURATION_INVALID")
+    pass_limit = int(configured_passes)
     reference = environment.get("RAVRADAR_PRODUCTION_TARGET_HOUR", "")
     parsed = datetime.fromisoformat(reference.replace("Z", "+00:00"))
     if parsed.tzinfo is None or parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:00:00Z") != reference:
@@ -171,7 +176,7 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
     _ = clock  # Dependency retained for deterministic callers; child bounds are authoritative.
     last_code = 2
     previous_runtime_verified_pairs = None
-    for pass_number in range(1, MAX_PASSES + 1):
+    for pass_number in range(1, pass_limit + 1):
         if free_bytes() < MIN_FREE_BYTES:
             log(f"DMI one-off continuation stopped: DISK_RESERVE; completedPasses={pass_number - 1}.")
             return last_code
@@ -181,7 +186,7 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
             **{ONEOFF_CONTINUATION_PROTOCOL_ENV: "1"},
         )
         log(
-            f"DMI one-off pass {pass_number}/{MAX_PASSES}; "
+            f"DMI one-off pass {pass_number}/{pass_limit}; "
             f"passRuntimeSeconds={PASS_RUNTIME_SECONDS}; "
             "downloadLimitGiB=4; rawCacheLimitGiB=4."
         )
@@ -216,7 +221,10 @@ def fill(environment, *, run_pass, read_progress, clock, free_bytes, log=print):
             f"processedAssets={summary['processedAssets']}; "
             f"verifiedPairCount={summary['verifiedPairCount']}."
         )
-    log("DMI one-off continuation stopped: PASS_LIMIT; completedPasses=3.")
+    log(
+        "DMI one-off continuation stopped: PASS_LIMIT; "
+        f"completedPasses={pass_limit}."
+    )
     return last_code  # Existing final weather/closure gates still decide completeness.
 
 

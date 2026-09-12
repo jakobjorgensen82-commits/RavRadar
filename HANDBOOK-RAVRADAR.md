@@ -1,6 +1,48 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.347
+**Håndbogsversion:** 4.0.348
+
+## 88.52 Lokal 4.0.348 – Brug de komplette gemte data uden en ny lang vejrkørsel
+
+**Status:** Den seneste oneoff fik faktisk alle 79.414 strømpar på plads og bestod den native bølgekontrol. Den nye model kom ikke online, fordi modelbygningen bagefter stoppede på et for strengt krav om 48 timers historik. 4.0.348 retter denne modelkant og tilføjer en hurtig kontrol af de allerede gemte data. GitHub-kontrol, merge, databasebinding, cachekontrol og selve modelskiftet mangler stadig.
+
+### De 193 var ikke slutresultatet
+
+Efter DMI og de allerede gemte kilder manglede der på et tidspunkt 193 strømpar. Det var et mellemresultat, før Copernicus og resten af fallbackkæden var færdige. Kørslens slutresultat var:
+
+- 67.686 par fra DMI
+- 8.668 fra Copernicus
+- 944 fra den regionale kilde
+- 2.116 fra Open-Meteo
+- i alt 79.414 af 79.414 og nul mangler
+
+Det er derfor forkert at sige, at oneoffen sluttede med 193 huller. De var lukket, før modelbygningen begyndte. Den native WAM-kontrol var også grøn med 79.060 part/timer. Den næste fulde kontrol skal stadig vise Feggesund 354/354 som sit eget afsluttende bevis.
+
+### Hvorfor modellen alligevel stoppede
+
+Den integrerede model må i sin første tid ærligt sige, at dens målte historik endnu ikke dækker alle 48 timer. Det er forventet og betyder ikke, at de aktuelle vejrdata mangler. En separat nødmodel, som kun bruges til sikker tilbagerulning, krævede derimod allerede fulde 48 timer. Det gjorde det umuligt at komme gennem den allerførste opvarmning.
+
+Rettelsen lader nødmodellen beregne og gemme sine egne tal privat, mens den virkelige historik vokser. Den kan ikke vælges eller vises offentligt, før alle 48 timer er klar. Reglen gælder kun ved en dokumenteret første opstart eller en dokumenteret fortsættelse af netop denne private opvarmning. Ukendt eller gammel omdøbt tilstand stopper stadig. Der opfindes ingen historik, og ingen score-, fysik- eller vejrregel er ændret.
+
+### Hvorfor databasen får en ny, separat ændring
+
+Den tidligere databaseændring er allerede taget i brug. Derfor må vi ikke redigere den bagefter. I stedet tilføjer 4.0.348 en ny ændring, som kun opdaterer modellens tre kontrolkoder og databasens readbackversion. De gamle regler, rækker og sikkerhedskontroller ændres ikke.
+
+Efter merge skal den nye databaseændring køres og læses tilbage med de forventede koder, før cachekontrollen starter. Backendkørslen genbruger den samme godkendte kildekontrol fra Pull Requesten, når GitHub beviser, at kildeindholdet er identisk. Hvis beviset ikke passer, køres den fulde kildekontrol igen.
+
+Den første GitHub-kontrol af 4.0.348 nåede gennem alle de lange model-, offentligheds-, privatlivs- og runtimekontroller, men stoppede til sidst i selve releasegatens testliste. Den nye databasekontrol stod i package-aliaset, men manglede i releasegatens liste. Listen er nu rettet, så kontrollen står præcis én gang, og en lille regressionstest holder de to lister ens. Den første røde kørsel gav intet kildebevis og kan ikke genbruges.
+
+### Hvad den hurtige cachekontrol gør
+
+Den nye kontrol bruger præcis prognosetimen `2026-09-12T08:00:00Z` og de caches, oneoffen allerede gemte. Den springer nye DMI- og Copernicus-hentninger over. Open-Meteo må kun læse sine gemte data. En ekstra central spærring stopper kørslen, hvis noget alligevel forsøger at hente nyt vejr.
+
+Kontrollen genkører stadig alle vigtige beviser: korrekt tidspunkt og kystregister, fuld strøm- og bølgedækning, datakilder, friskhed, modelbygning, privatliv, releasekontrol og handoff. Hvis de gemte data mangler noget eller ikke længere kan bevises gyldige, stopper den. Den går ikke automatisk over i en ny tretimers oneoff.
+
+### Kildekontrol, modelskift og DMI-rotation
+
+4.0.348 skal have én fuld kildekontrol på Pull Requestens eksakte slutversion. Hvis main og backendkørslen derefter har byteidentisk indhold, bruges det samme levende GitHub-bevis; kildekontrollen køres ikke en gang til bare på grund af merge eller databaseinstallationen. De senere data-, release-, handoff-, deploy- og offentlige kontroller køres stadig.
+
+Den seneste oneoff loggede kun DMI-pass 1. Derfor er det stadig ikke bevist i virkelig drift, at pass 2 og 3 starter korrekt. Det ændrer ikke, at den samlede datadækning blev komplet denne gang, men DMI-rotation og tidsoverskud skal kontrolleres særskilt i den almindelige drift efter modelskiftet.
 
 ## 88.51 Lokal 4.0.347 – Næste DMI-runde kræver et ægte afslutningsbevis
 
@@ -313,11 +355,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.347 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.348 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.347-cutoverkandidat, ikke produktion
+### Status for det aktuelle modelarbejde – lokal 4.0.348-cutoverkandidat, ikke produktion
 
-4.0.347 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8a94a4ef1f33c7e9714ac5b634037ae3a4b5d9b7c2861230f32e766696d02c80` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1e6d4e747dc89be971dc01f3cc51a0710fadda4bb49920b597b359d6ca520ad5` over 57 transitive filer. Versionsløftet ændrer ikke modelparametrene; 4.0.346 ændrer oneoffens afgrænsede DMI-fortsættelse, dens ydre tidsgrænser og exact-releasebindingen.
+4.0.348 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=e545cb547923aeabc503b9d0178a996ca2ce2427200121cef6228ece29748b5a` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=157698f07f017516e52cf8f47680a2ac7c37008d8b3f9a4ee665eba2ad03e1bd` over 57 transitive filer. Continuationbindingen er `b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2`. Den nye append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun disse forseglinger og readbackversionen frem fra den uændrede, allerede anvendte forgænger. Den seneste oneoff havde 79.414/79.414 strømpar og native WAM 79.060, men stoppede før handoff på warmup-fejlen; Candidate G er derfor fortsat offentlig.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -524,7 +566,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `ff1d884f32825f44fd5c1cafa6b3e211e44900dc0663261b86b890e0cbbb85f3` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `b7555f6312519ed4e4f5fb1cd545dccd2745ce2437ce0bbd466926ecb90ecee2` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

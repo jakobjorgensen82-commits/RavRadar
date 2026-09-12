@@ -89,6 +89,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260909194000_wam_same_run_resolution_binding',
     filename: '20260909194000_wam_same_run_resolution_binding.sql',
   }),
+  Object.freeze({
+    version: '20260912122607',
+    id: '20260912122607_measured_rollback_warmup_binding',
+    filename: '20260912122607_measured_rollback_warmup_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

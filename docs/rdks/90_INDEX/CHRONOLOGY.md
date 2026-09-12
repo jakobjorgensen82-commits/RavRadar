@@ -1,4 +1,15 @@
-# NYESTE CHECKPOINT – 2026-09-12 – 4.0.346 gør DMI-multipass reelt
+# NYESTE CHECKPOINT – 2026-09-12 – 4.0.348 genbruger komplet cache efter modelstop
+
+- PR #281-head `c4c70ac7` bestod sourcegate `34681246581` og blev merged byteidentisk som `6868ae04`. Oneoff `34682428800` genbrugte proofet uden en anden fuld kildegate.
+- DMI leverede 67.686/79.414. Resten før Copernicus var 193; slutunionen blev 79.414/79.414 med missing 0. Native WAM-gaten var grøn 79.060.
+- Modelbygningen stoppede derefter på rollback-oraklets READY-48h-krav under en tilladt målt koldstart. Intet handoff/cutover/deploy.
+- DEC-0130 holder rollback privat numerisk og offentligt utilgængelig/null til READY og tillader kun attesteret koldstart eller privat `BUILDING_MEASURED_ONLY`-fortsættelse.
+- Den tidligere WAM-binding er allerede centralt anvendt og forbliver checksumlåst. Ny append-only migration `20260912122607_measured_rollback_warmup_binding.sql` fører kun 4.0.348-forseglinger/readbackversion frem og skal anvendes før cachekontrollen; backendworkflowet genbruger kun exact-content-sourceproof efter live GitHub-verifikation.
+- PR #282-head `cc06fa37`/run `34695465328` bestod model-, public-stage-, privacy-, runtime- og migrationsled, men stoppede i releasegatens forældede statiske testinventar. Migrationsbyggeren er lokalt føjet præcis én gang til planen og bundet til package-aliaset med regression; den røde head udstedte intet proof.
+- En fastlåst cachekontrol genvaliderer samme target uden DMI-/Copernicus-acquisition eller Open-Meteo-netværk og uden automatisk genopfyldning. Alle post-data-gates består.
+- DMI loggede kun pass 1. Multipass og normal rotation er fortsat liveåbne. Ny exact-head-CI, merge, backendapply/readback, cachekontrol, handoff, cutover, offentlig integreret model og normal vedligeholdelse afventer.
+
+# HISTORISK CHECKPOINT – 2026-09-12 – 4.0.346 gør DMI-multipass reelt
 
 - PR #279 exact head `47275529` bestod sourcegate `34666410182`; 4.0.345 blev merged som `64d2f23f`, og oneoff `34667430392` live-genbrugte exact-content-proofet uden en anden fuld sourcegate.
 - Oneoffen stoppede fail-closed efter 1h41m38s med current 79.230/79.414 og 184 provider-negative OM-par. Alle 184 var forsøgt og isoleret genprøvet; intet handoff, artifact, deploy eller modelskift blev dannet.

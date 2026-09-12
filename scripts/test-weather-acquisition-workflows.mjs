@@ -142,4 +142,40 @@ const qualityRestore = step(quality, 'Restore shared private Copernicus donor ba
 assert.ok(quality.indexOf(qualityRestore) > quality.indexOf(step(quality, 'Verify exact private Copernicus post-build refresh input')));
 assert.ok(quality.indexOf(qualityRestore) < quality.indexOf(step(quality, 'Refresh only the next-run private Copernicus cache')));
 assert.match(step(pilot, 'Restore shared private Copernicus donor bank for pilot'), /target-registry\.outcome == 'success'/);
+
+assert.match(pilotWorkflow, /locked_weather_resume:\n\s+description: "Revalidate one exact saved 118h target and continue model\/handoff without provider acquisition"/);
+const lockedTarget = step(oneoff, 'Validate the operational request and bind the exact target hour');
+assert.match(lockedTarget, /LOCKED_WEATHER_RESUME:/);
+assert.match(lockedTarget, /test -n "\$PREFLIGHT_SAMPLE_TIME"/);
+assert.match(lockedTarget, /target_hour="\$PREFLIGHT_SAMPLE_TIME"/);
+const lockedDmi = step(oneoff, 'Require the saved DMI candidate for locked weather resume');
+assert.match(lockedDmi, /if: inputs\.locked_weather_resume == true/);
+assert.match(lockedDmi, /test -s \.cache\/dmi-candidate-progress\.json/);
+assert.match(lockedDmi, /--at "\$\{\{ steps\.operational-target\.outputs\.target_hour \}\}"/);
+for (const name of [
+  'Refresh the official DMI water-source registry',
+  'Plan global current acquisition before DMI',
+  'Refresh all bounded official DMI collections for the proof',
+  'Plan global current acquisition before Copernicus',
+]) {
+  assert.match(step(oneoff, name), /if: inputs\.locked_weather_resume != true/);
+}
+for (const name of [
+  'Install Copernicus acquisition dependency only when source stage is absent',
+  'Verify Copernicus credentials only when exact gaps remain',
+  'Fill only the exact operational DMI gap seal',
+]) {
+  assert.match(step(oneoff, name), /if: inputs\.locked_weather_resume != true && steps\.current-range\.outputs\.source_stage_ready != 'true'/);
+}
+const lockedOpenMeteo = step(oneoff, 'Fill only the exact remaining current gaps from Open-Meteo');
+assert.match(lockedOpenMeteo, /LOCKED_WEATHER_RESUME:/);
+assert.match(lockedOpenMeteo, /reuse_args\+=\(--reuse-only\)/);
+assert.match(lockedOpenMeteo, /"\$\{reuse_args\[@\]\}"/);
+assert.match(step(oneoff, 'Build the integrated runtime without release or deploy'), /RAVRADAR_WEATHER_CACHE_ONLY:/);
+const weatherRuntime = read('scripts/update-weather.mjs');
+assert.equal((weatherRuntime.match(/\bfetch\(/g) || []).length, 1, 'All update:weather network access must remain behind fetchJson');
+const cacheOnlyGuard = weatherRuntime.indexOf("if (WEATHER_CACHE_ONLY) {");
+const networkFetch = weatherRuntime.indexOf('const response = await fetch(url');
+assert.ok(cacheOnlyGuard >= 0 && networkFetch > cacheOnlyGuard, 'Cache-only guard must fail before the sole network fetch');
+assert.match(weatherRuntime, /error\.code = 'WEATHER_CACHE_ONLY_NETWORK_DISABLED'/);
 console.log('OK: exact legacy cache versions, private donor banks, advisory union planning and independent final gates.');

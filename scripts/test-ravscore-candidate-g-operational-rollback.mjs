@@ -139,6 +139,54 @@ assert.deepEqual(Object.keys(warm.candidateGState.continuationState).sort(),
   [...CANDIDATE_G_CONTINUATION_FIELDS].sort());
 assertCandidateGRollbackContinuation(warm.candidateGState.continuationState, part);
 
+const measuredWarmup = buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [weather(1)],
+  measuredColdStart: true,
+});
+assert.equal(measuredWarmup.candidateGState.initialStateSource,
+  'VERIFIED_MEASURED_COLD_START');
+assert.equal(measuredWarmup.candidateGState.rows[0].transportMemoryReady, false);
+assert.equal(measuredWarmup.candidateGState.rows[0].transportMemoryStatus,
+  'WINDOW_INCOMPLETE');
+for (const mode of ['beach', 'waders']) {
+  assert.equal(measuredWarmup.scores[0].candidateG.modes[mode].available, true);
+  assert.equal(measuredWarmup.scores[0].candidateG.publicModes[mode].available, false);
+  assert.equal(measuredWarmup.scores[0].candidateG.publicModes[mode].score, null);
+  assert.equal(
+    measuredWarmup.scores[0].candidateG.publicModes[mode].unavailability.code,
+    'WINDOW_INCOMPLETE',
+  );
+}
+const continuedMeasuredWarmup = buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [weather(2)],
+  previousCandidateGContinuation: measuredWarmup.candidateGState.continuationState,
+  measuredWarmupContinuation: true,
+});
+assert.equal(continuedMeasuredWarmup.candidateGState.initialStateSource,
+  'PREVIOUS_PRIVATE_ROLLBACK');
+assert.equal(continuedMeasuredWarmup.candidateGState.rows[0].transportMemoryReady, false);
+assert.equal(continuedMeasuredWarmup.scores[0].candidateG.publicModes.waders.available,
+  false);
+assert.throws(() => buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [weather(2)],
+  previousCandidateGContinuation: measuredWarmup.candidateGState.continuationState,
+}), /exact READY 48-hour state/,
+'a non-READY previous state must be explicitly attested as measured warmup');
+assert.throws(() => buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [weather(1)],
+  legacyCandidateGMigrationState: legacyState,
+  measuredWarmupContinuation: true,
+}), /exclusive previous private state/,
+'a one-time legacy migration state must never be relabeled as measured warmup');
+
 for (const field of [
   'windSpeedMps', 'windDirectionDeg', 'waveHeightM', 'wavePeriodS',
   'waveDirectionDeg', 'waterLevelCm', 'waterLevelTrendCm3h',

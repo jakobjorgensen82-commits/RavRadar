@@ -124,6 +124,15 @@ class FillTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 3)
         self.assertIn("PASS_LIMIT", self.logs[-1])
 
+    def test_completion_first_configuration_stops_after_one_pass(self):
+        limited = self.progress("download-budget", processed_assets=1)
+        self.assertEqual(self.simulate(
+            [limited],
+            env=dict(ENV, **{oneoff.MAX_PASSES_ENV: "1"}),
+        ), 0)
+        self.assertEqual(len(self.calls), 1)
+        self.assertIn("completedPasses=1", self.logs[-1])
+
     def test_disk_reserve_stops_without_discarding_pass(self):
         limited = self.progress("download-budget")
         self.assertEqual(self.simulate([limited], free=[8 * oneoff.GIB, 4 * oneoff.GIB]), 0)
@@ -136,7 +145,9 @@ class FillTests(unittest.TestCase):
 
     def test_configuration_and_target_are_locked(self):
         for change in [{"DMI_BULK_MAX_DOWNLOAD_MB": "8192"}, {"DMI_BULK_MAX_RUNTIME_SECONDS": "6000"},
-                       {"RAVRADAR_PRODUCTION_TARGET_HOUR": "2026-09-04T17:01:00Z"}]:
+                       {"RAVRADAR_PRODUCTION_TARGET_HOUR": "2026-09-04T17:01:00Z"},
+                       {oneoff.MAX_PASSES_ENV: "0"}, {oneoff.MAX_PASSES_ENV: "4"},
+                       {oneoff.MAX_PASSES_ENV: "01"}]:
             with self.assertRaises(ValueError):
                 self.simulate([], env=dict(ENV, **change))
             self.assertEqual(self.calls, [])
