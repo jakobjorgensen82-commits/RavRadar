@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.352
+**Håndbogsversion:** 4.0.353
+
+## 88.57 Lokal 4.0.353 – Plads til hele den private cache med faste sikkerhedsgrænser
+
+**Status:** Fortsættelse `34745557797` hentede ikke nyt vejr og gentog ikke den store 210/673-kontrol. Den gendannede de fire gemte cacher og byggede den private runtime. Komprimeringen fra 4.0.352 virkede og fjernede den gamle tekstfejl.
+
+Det nye stop skyldtes, at alle private filer tilsammen var større end den gamle samlede grænse på 768 MiB. En enkelt fil var ikke nødvendigvis for stor, og fejlen siger intet om huller i vejret eller scoren.
+
+Efter ejerens præcise godkendelse må den nye komprimerede arkivtype rumme højst 2 GiB, når man regner filernes oprindelige størrelser sammen. Hver fil må stadig højst være 768 MiB. Gamle arkiver må stadig højst være 768 MiB samlet. Første cutover må stadig højst sende 50.000.000 komprimerede byte til Supabase, inden for det tekniske loft på 50 MiB.
+
+Ved gendannelse behandles én fil ad gangen. Den pakkes ud, dens størrelse og kontrolsum kontrolleres, og den skrives til et privat midlertidigt område. Først når alle filer er kontrolleret, bliver hele pakken gjort gældende på én gang. En fejl midtvejs efterlader derfor ikke en halv pakke.
+
+Rettelsen ændrer ikke vejrdata, scoremodel, geometri eller den offentlige side. Næste trin er én samlet GitHub-kildekontrol og derefter den samme hurtige cachefortsættelse uden oneoff. Hvis kapacitet og handoff er grønne, fortsætter den eksisterende fuldt kontrollerede cutover.
 
 ## 88.56 Lokal 4.0.352 – Den private pakke komprimeres før den gøres til tekst
 
@@ -425,11 +437,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.352 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.353 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.352, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.353, exact-head og cutover afventer
 
-4.0.352 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
+4.0.353 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

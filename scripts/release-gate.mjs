@@ -1010,8 +1010,12 @@ for(const marker of [
 for(const marker of [
   "documentKey: 'ravscore-private-production-runtime-pointer'",
   "bucketId: 'ravradar-private-production-runtime'",
-  'maximumRawPayloadBytes:',
+  'maximumFilePayloadBytes: 768 * 1024 * 1024',
+  'maximumLegacyRawPayloadBytes: 768 * 1024 * 1024',
+  'maximumRawPayloadBytes: 2 * 1024 * 1024 * 1024',
   'maximumArchiveBytes: 50 * 1024 * 1024',
+  'for (const file of decoded.files)',
+  'await fs.rename(stage, destination)',
   'uploadImmutable',
   'compare-and-swap',
   'previous: existing?.payload.current ?? null',

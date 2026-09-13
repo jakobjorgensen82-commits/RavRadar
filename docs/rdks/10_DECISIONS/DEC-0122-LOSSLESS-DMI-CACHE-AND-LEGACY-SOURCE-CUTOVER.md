@@ -153,6 +153,12 @@ Under ejerens stående autorisation til at føre den nødvendige launchrettelse 
 
 Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.352`. Intet 4.0.351-handoff findes eller ommærkes. Samme locked cache må genbruges uden providerhentning; storage-, checkpoint-, integritets-, privacy-, readback-, closure-, CAS-, Pages-, offentlig verifikations- og cadencegrænser består.
 
+### Versionsoverførsel 2026-09-13 – exact-release 4.0.353
+
+4.0.352 blev exact-head-valideret og merged. Handoff-fortsættelse `34745557797` gendannede de fire eksakte cacher og genbyggede runtime uden provider eller ny 210/673-audit. Den kom forbi V8-strengfejlen, men stoppede ved det gamle samlede 768 MiB-råpayloadloft.
+
+Efter særskilt oplysning om indstilling og påvirkningsområde godkendte ejeren udtrykkeligt DEC-0135's 2 GiB-loft alene for nye `GZIP_BASE64`-arkiver. Filgrænsen 768 MiB, legacygrænsen 768 MiB samlet, Storage-objectgrænsen 50 MiB og alle øvrige privacy-, integritets-, handoff-, cutover- og cadencekrav består. Den materielt uændrede first-cutover-undtagelse flyttes alene til exact-release `4.0.353`; intet ældre handoff ommærkes.
+
 ## Konsekvenser
 
 - Bevarede data kan genbruges på tværs af target- og leverandørskift uden at være låst til Open-Meteo.

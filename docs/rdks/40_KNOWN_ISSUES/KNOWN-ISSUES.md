@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.353 efter samlet privat payloadstop
+
+- **ISSUE-4.0.352-PR289/SOURCE – LUKKET:** Exact-head `8cb545cd` bestod sourcegate `34744340201` og blev merged som main `ec198c73` med identisk tree.
+- **ISSUE-CONTINUATION-34745557797-CACHE/RUNTIME – LUKKET:** Fire eksakte cacher blev gendannet, providere og ny 210/673-audit blev ikke kørt, og den private runtime blev genbygget.
+- **ISSUE-PRIVATE-RUNTIME-V8-STRING-LIMIT – PRODUKTIONSBEVIST LUKKET:** Komprimering før base64 passerede den tidligere Nodestrengfejl i real-skala.
+- **ISSUE-PRIVATE-RUNTIME-AGGREGATE-768M – LOKALT RETTET / CI OG LIVE ÅBEN P0:** Flere verificerede filer var samlet over 768 MiB. Ejerens præcist godkendte rettelse giver alene nye `GZIP_BASE64`-arkiver 2 GiB samlet, mens fil/legacy forbliver 768 MiB og første cutover forbliver 50.000.000 komprimerede byte inden for 50 MiB-objectloftet.
+- **ISSUE-RESTORE-PEAK-MEMORY – LOKALT RETTET / LIVE ÅBEN:** Restore beholdt tidligere alle ukomprimerede filer samtidig. Den afkoder, dekomprimerer, kontrollerer og skriver nu én fil ad gangen til atomisk privat stage.
+- **ISSUE-4.0.353-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, real-skala kapacitet, handoff, fuldt gated cutover og offentlig 210/673/118-verifikation mangler.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal bevise fuld registerplan, vedvarende rotation, cachebevarelse, fallbackbidrag og tidsoverskud.
+
+DEC-0135 og `CHANGELOG-4.0.353.md` er aktuelle. Ingen provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.352 privat pakkefix
 
 - **ISSUE-PR288/BACKEND – LUKKET:** Head `9511c9f4` bestod sourcegate `34737474686`, blev merged tree-identisk som main `099b70a8`, og backend `34738543144` readback-verificerede alle 13 migrationer.
