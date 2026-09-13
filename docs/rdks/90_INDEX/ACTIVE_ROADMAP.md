@@ -4,6 +4,7 @@
 - [x] Brug locked cache-only `34738698219` til at bevise komplette data og 210/673/118-modelstruktur uden providerhentning.
 - [x] Afgræns eneste nye stop til V8-strenggrænsen i privat raw-base64-pakning efter de produktkritiske kontroller.
 - [x] Ret packer/unpacker med deterministisk komprimering før base64, bounded dekomprimering, SHA-256 og legacy-kompatibilitet; bestå de to måltests.
+- [x] Brug hele PR-run `34740223620` som samlet fejlrapport: ret kun de to stale testforventninger til package-styret version og bekræft den direkte test grønt.
 - [ ] Kør én exact-head 4.0.352-sourcegate, merge og exact-main readback.
 - [ ] Genskab kun nødvendigt privat runtimearbejde fra locked cache; kør ingen provider-oneoff. Fortsæt derefter fra størrelsesmåling til handoff og cutover.
 - [ ] Verificér offentligt 210 zoner, 673 kystdele, begge modes, 118 timer/fem døgn og release 4.0.352.

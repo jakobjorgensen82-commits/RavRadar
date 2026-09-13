@@ -4,6 +4,7 @@
 - Locked cache-only `34738698219` hentede intet providervejr og bestod current, WAM, freshness, modelbygning samt offentlig 210/673/118-struktur.
 - Runnet stoppede derefter ved privat størrelsesmåling, fordi raw-base64-konvolutten overskred Nodes faste strenggrænse. Intet handoff eller deploy blev udstedt.
 - Lokal 4.0.352 komprimerer hver fil før base64 og bevarer bounded bytes/SHA-256, privacy, rollback, CAS og legacylæsning. De to måltests er grønne.
+- PR #289-run `34740223620` fortsatte hele releasegaten og fandt kun to stale `4.0.351`-forventninger i samme workflowtest. De er package-styrede nu, og den direkte test er grøn.
 - Næste er én exact-head-sourcegate, merge, locked cache-genopbygning uden provider-oneoff, rettet størrelsesmåling, handoff, cutover og offentlig verifikation.
 
 # NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix

@@ -8,6 +8,8 @@ Det næste private størrelsestrin fejlede med `Cannot create a string longer th
 
 Den gamle runner og dens midlertidige private bundle findes ikke længere. Næste exact-main-run må derfor genskabe bundle fra den låste cache, men må ikke kalde providere eller starte oneoff. Derefter fortsætter den fra den rettede størrelsesmåling til handoff/cutover. Se DEC-0134.
 
+PR #289's første sourcegate `34740223620` blev kørt som én samlet kontrol og fortsatte gennem resten af releasegaten efter fejlen. Den eneste rapporterede fejl var testens hardcodede forventning om `4.0.351` både i resultatassertionen og workflowteksten. Package, policy og workflow var korrekt 4.0.352. Begge testforventninger udledes nu af package-versionen, så samme manuelle versionskant ikke gentages. Den direkte test er grøn; ingen ny bred lokal gate er kørt.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Efter cutover skal almindelige weather-runs, ikke oneoff, bevise cachevedligeholdelse og rotation. Hele hjemmesiden skal derefter gennemgås meningsfuldt, og post-cutover-roadmappet skal renses mod faktisk live evidens.

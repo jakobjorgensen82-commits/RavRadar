@@ -4,6 +4,7 @@
 - Locked cache-only `34738698219` hentede intet providervejr og bestod current, WAM, freshness, modelbygning samt offentlig 210/673/118-struktur.
 - Det næste private størrelsestrin stoppede på Nodes faste strenggrænse, fordi rå filer blev base64-kodet før komprimering. Intet handoff/cutover/deploy blev udstedt.
 - Filer komprimeres nu deterministisk før base64. Udpakning er bounded til deklareret størrelse og kræver samme bytes/SHA-256; legacylæsning og alle eksisterende sikkerhedsgrænser består.
+- PR #289's første sourcegate `34740223620` fandt kun to stale `4.0.351`-forventninger i private-runtime-workflowtesten. Begge følger nu package-versionen automatisk; den direkte test er grøn.
 - Næste run genskaber kun den private runtime fra locked cache og fortsætter fra størrelsesmålingen uden provider-oneoff. Se `CHANGELOG-4.0.352.md` og DEC-0134.
 
 ## 4.0.351 – ens offentlig modelrekonstruktion før cutover (2026-09-13, main med lokal audit-hotfix)

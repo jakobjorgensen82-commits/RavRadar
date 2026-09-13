@@ -6,5 +6,6 @@
 - Runnet stoppede først ved den produktionsækvivalente private størrelsesmåling, fordi rå base64-data blev samlet i én tekststreng over Nodes faste maksimum. Intet handoff, cutover eller deploy blev udstedt.
 - Hver privat fil komprimeres nu deterministisk før base64. Det reducerer tekstkonvolutten uden at ændre filindhold, model eller vejrdata.
 - Udpakning er bagudkompatibel, bounded til deklareret filstørrelse og genkontrollerer byteantal og SHA-256 før skrivning.
+- PR #289-sourcegate `34740223620` fortsatte hele releasegaten og rapporterede kun to hardcodede testforventninger om 4.0.351. De udledes nu af package-versionen, og den direkte fejlede test er grøn.
 - Storage-, checkpoint-, privacy-, integritets-, rollback-, CAS-, readback- og offentlighedskrav er uændrede. DEC-0122's engangsundtagelse gælder alene exact 4.0.352.
 - Den målrettede pakke/udpakke/rollback/anonym-adgangstest og private workflowtest er grønne lokalt. Næste GitHub-kørsel genbruger den låste cache og henter ikke nyt providervejr.

@@ -8,9 +8,10 @@
 - **REQ-4.0.352-RESUME-BOUNDARY-001 – BINDENDE P0:** Ny runner må genskabe den private runtime fra locked cache, men må ikke hente providerdata eller starte ny oneoff. Efter genskabelse fortsættes fra størrelsesmåling til handoff/cutover.
 - **REQ-4.0.352-LAUNCH-BLOCKER-CLASSIFICATION-001 – BINDENDE:** Vejr-, score-, datatabs-, privacy/sikkerheds-, databasebindings- og offentlig strukturfejl stopper launch. Dokumentations-/rapporteringsfejl må kun flyttes efter launch, når de konkret er bevist uden produktpåvirkning.
 - **REQ-4.0.352-FIRST-CUTOVER-EXCEPTION-001 – BINDENDE P0 / EKSPLICIT EJERRETNING:** DEC-0122's materielt uændrede engangsundtagelse gælder alene exact 4.0.352; ingen gammel preflight eller handoff ommærkes.
+- **REQ-4.0.352-VERSION-TEST-SOURCE-001 – BINDENDE / LOKALT TESTET:** Private-runtime-workflowtestens releaseforventning skal udledes af package-versionen og samtidig kontrollere workflowets eksakte tekst. Den må ikke kræve manuel ændring af samme versionsliteral to steder ved hver release.
 - **REQ-4.0.352-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, exact-main readback, locked cache-genopbygning, størrelses-/storagebevis, handoff, cutover og offentlig 210/673/118-verifikation mangler.
 
-Run `34738698219` er positivt vejr-/model-/public-structure-bevis og negativt pakningsbevis. DEC-0134 er bindende.
+Run `34738698219` er positivt vejr-/model-/public-structure-bevis og negativt pakningsbevis. PR-run `34740223620` fandt kun den stale testversion efter at øvrige tests fortsatte; det er negativt exact-head-sourceproof, ikke en produktionsfejl. DEC-0134 er bindende.
 
 # 4.0.351 – ens offentlig rekonstruktion og ikke-tom startpakke
 

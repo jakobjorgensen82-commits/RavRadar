@@ -12,6 +12,8 @@ Den gamle pakker gjorde først store binære data til base64-tekst. Det gør dat
 
 GitHubs afsluttede maskine kan ikke genoptages midt i et trin, så den midlertidige private pakke skal genskabes fra den allerede gemte cache. Der hentes ikke nyt providervejr og startes ingen oneoff. Derefter fortsætter kæden fra størrelsesmålingen til handoff og cutover.
 
+Den første GitHub-kontrol af rettelsen fandt kun en gammel versionsforventning i selve testen: testen sagde 4.0.351, mens release, regel og workflow korrekt sagde 4.0.352. De to teststeder følger nu automatisk releaseversionen. Den direkte test er grøn; det ændrer ikke pakningen eller modellen.
+
 ## 88.55 Lokal 4.0.351 – Den offentlige kontrol bruger nu samme modelgrundlag som producenten
 
 **Status:** Den hurtige cachekontrol `34720789985` havde stadig alle 79.414 strømpar og hentede ikke nyt vejr. Den nye model blev beregnet for alle 210 zoner og 673 kystdele, men kom ikke online, fordi den afsluttende kontrol fortolkede nogle af de samme data anderledes end producenten. Cutover og deploy var ikke startet.

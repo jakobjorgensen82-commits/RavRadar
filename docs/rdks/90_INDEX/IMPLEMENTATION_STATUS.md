@@ -5,6 +5,7 @@
 - [x] Afgræns stoppet til rå-base64-konvoluttens V8-strenggrænse efter alle produktdata- og modelkontroller; intet handoff/deploy blev udstedt.
 - [x] Komprimér hver privat fil deterministisk før base64, markér encoding eksakt, bevar legacylæsning og begræns indre dekomprimering til deklarerede bytes med SHA-256-kontrol.
 - [x] Bestå målrettet archive/storage/rollback/anonymous-denial-test og private-runtime-workflowtest.
+- [x] Saml hele PR #289-sourcegate `34740223620`: kun to stale `4.0.351`-forventninger i samme workflowtest fejlede; alle øvrige rapporterede tests fortsatte. Bind begge til package-versionen og bestå kun den direkte fejlede test lokalt.
 - [ ] Bestå én exact-head sourcegate for 4.0.352, merge byteidentisk og readback-verificér exact main.
 - [ ] Genskab kun den nødvendige private runtime fra locked cache, fortsæt gennem størrelsesmåling/handoff og gennemfør cutover uden provider-oneoff.
 - [ ] Verificér den integrerede model offentligt på 210/673/118 og gennemgå derefter hjemmesiden meningsfuldt.

@@ -24,6 +24,9 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-private-workflow-
 const repository = path.join(temp, 'repository');
 const restored = path.join(temp, 'private', 'restored');
 const sourceRepository = path.resolve('.');
+const sourceVersion = JSON.parse(
+  await fs.readFile(path.join(sourceRepository, 'package.json'), 'utf8'),
+).version;
 
 try {
   await fs.mkdir(repository, { recursive: true });
@@ -333,7 +336,7 @@ try {
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   );
   assert.equal(approvedCapacity.firstCutoverException.eligible, true);
-  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, '4.0.351');
+  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, sourceVersion);
   assert.equal(
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
     50_000_000,
@@ -767,7 +770,7 @@ try {
     '$report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"',
     '$report.incrementalGate.status == "EXCEEDS_INCREMENTAL_SIZE_BOUNDS"',
     'DEC-0122-OWNER-APPROVAL-2026-09-09',
-    '$report.firstCutoverException.releaseVersion == "4.0.351"',
+    `$report.firstCutoverException.releaseVersion == "${sourceVersion}"`,
     'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
     '$report.firstCutoverException.recurringAutomaticCadenceEligible == false',
     '$report.firstCutoverException.cacheTransportMigrationRequired == true',
