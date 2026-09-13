@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.357 retter kanonisk decimalretning
+
+4.0.356-head `dfce04f1` bestod sourcegate `34761823518`, blev merged gennem PR #293 som main `b75672f7` med identisk filtræ, og handoff `34763228997` blev grønt fra fire cacher uden provider, oneoff eller ny 210/673-audit.
+
+Cutover `34763820124` startede og gennemførte alle fem uafhængige kontroller. Runtime/modelaudit, referencezoner, releasegate og vejrdata bestod. Fuld validering var eneste fejl: retnings-roundtrip krævede `126.6`, mens den kanoniske funktion leverede samme retning som `126.60000000000002`.
+
+Funktionen havde normaliseret igen efter korrekt én-decimal-afrunding. Lokal 4.0.357 returnerer nu den afrundede værdi direkte og behandler alene `360` som `0`. Den tidligere fejlede test er grøn, og en syntetisk regression låser stabil decimalrepræsentation. Vejr, RavScore, geometri, punkter, modelstate, database og privacy er uændrede. Næste er én exact-head-gate, byteidentisk merge, nyt SHA-handoff fra samme cacher og cutover. Se DEC-0139.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.356 retter GitHub-startkontrakten
 
 4.0.355-head `69a05164` bestod sourcegate `34759300669`, blev merged gennem PR #292 som main `5bcd5fb2`, og filtræerne er identiske. Cachefortsættelse `34760554781` gendannede fire cacher, bestod real-skala-kapaciteten og forseglede handoff uden provider, oneoff eller ny 210/673-audit.

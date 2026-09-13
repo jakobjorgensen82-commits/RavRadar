@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.357 efter én samlet cutoverfejl
+
+4.0.356-head `dfce04f10ce17e8257edd8a499973a1dd7a866de` bestod exact-head-sourcegate `34761823518` og blev merged som main `b75672f7688ed6ef35cdb90822f47e95a995783e` med identisk filtræ. SHA-handoff `34763228997` bestod fra de fire cacher uden provider, oneoff eller ny 210/673-audit.
+
+Cutover `34763820124` startede korrekt og lod alle fem uafhængige kontroller afslutte. Public-runtime/modelaudit, strenge referencezoner, releasegate og vejrdatavalidering var grønne. Kun den fulde projektvalidering fejlede: adminens hav→land-roundtrip sammenlignede faktisk `126.60000000000002` med forventet `126.6`.
+
+Rodårsagen er en ekstra modulo-normalisering efter korrekt én-decimal-afrunding i `canonicalOnshoreBearing`. Lokal 4.0.357 returnerer den afrundede værdi direkte og mapper kun præcis `360` til `0`. Fysisk retning, geometri, land-/vandpunkter, vejr, RavScore, modelstate, database og privacy ændres ikke. Næste er én exact-head-sourcegate, byteidentisk merge, nyt SHA-bundet handoff fra de samme cacher og cutover uden oneoff eller provideropfyldning. Se DEC-0139.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.356 efter GitHub afviste workflowgrafen
 
 PR #292-head `69a05164b0e37a5fac44a5896d81448e810d51fc` bestod exact-head-sourcegate `34759300669` og blev merged som main `5bcd5fb2ff3736307a5563a86618b8181d231a26` med identisk filtræ. Cachefortsættelse `34760554781` bestod real-skala-kapacitet og forseglede det låste handoff uden provider, oneoff eller ny 210/673-audit.

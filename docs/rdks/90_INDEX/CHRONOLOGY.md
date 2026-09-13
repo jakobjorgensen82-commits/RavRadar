@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter samlet cutoverkontrol
+
+- PR #293/sourcegate `34761823518` og main `b75672f7` er grønne og filtræ-identiske.
+- Handoff `34763228997` bestod uden provider, oneoff eller ny 210/673-audit.
+- Cutover `34763820124` kørte alle fem kontroller. Runtime/model, referencezoner, releasegate og vejrdata bestod; fuld validering fejlede alene på `126.60000000000002` mod `126.6`.
+- Lokal 4.0.357 fjerner den ekstra normalisering efter én-decimal-afrunding og bevarer 360→0. Se DEC-0139.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 efter grøn kapacitet og GitHub-startafvisning
 
 - PR #292/sourcegate `34759300669` og main `5bcd5fb2` er grønne og filtræ-identiske.

@@ -1,3 +1,9 @@
+## 4.0.357 – kanonisk retningsafrunding efter samlet cutoverkontrol (2026-09-13, lokal kandidat)
+
+- PR #293/sourcegate `34761823518`, main `b75672f7` og cache-handoff `34763228997` er grønne; handoffet brugte ingen provider, oneoff eller ny 210/673-audit.
+- Cutover `34763820124` gennemførte alle fem kontroller og samlede præcis én fejl: fuld validering afviste `126.60000000000002` mod `126.6`. Runtime/model, referencezoner, releasegate og vejrdata bestod.
+- Den kanoniske hav→land-retning normaliseres nu før én-decimal-afrunding og normaliseres ikke igen bagefter; kun afrundet `360` bliver fortsat `0`. Ingen retning, geometri, punkter, vejrdata eller scorematematik ændres. Se `CHANGELOG-4.0.357.md` og DEC-0139.
+
 ## 4.0.356 – caller/callee-tilladelser for den samlede cutover (2026-09-13, lokal kandidat)
 
 - PR #292/sourcegate `34759300669` blev merged som main `5bcd5fb2`; cachefortsættelse `34760554781` bestod kapacitet og forseglede handoff uden provider, oneoff eller ny 210/673-audit.
