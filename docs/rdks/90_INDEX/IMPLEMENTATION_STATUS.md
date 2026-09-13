@@ -1,22 +1,25 @@
-# Aktuel implementeringsstatus – lokal 4.0.351 offentlig modelkontrol
+# Aktuel implementeringsstatus – 4.0.351 main med lokal H0-audit-hotfix
 
-- [x] Merge 4.0.350 via PR #285 som main `f6e725ec` og anvend/readback-verificér migration 12 i backend `34720600286`.
-- [x] Kør cache-only preflight `34720789985` uden providerhentning og bevis current 79.414/79.414, WAM, freshness samt 210/673/1.346 modelstruktur.
-- [x] Afgræns de fire slutfejl til public-runtime-samling/audit, ikke vejrdata eller manglende køretid.
+- [x] Bestå PR #286 exact-head-sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.
+- [x] Kør cache-only preflight `34728026044` uden providerhentning og bevis current, WAM, freshness samt 210/673-modelbygning.
+- [x] Afgræns de tre slutfejl til public-runtime-audit, ikke vejrdata, modelbygning eller manglende køretid.
 - [x] Adskil `modelCoverageReady` fra gyldig `modelMemoryReady` og `modelMigrationReady` efter strukturel 673-delskontrol.
 - [x] Normalisér producentens og auditens H0-current-/native-hold-semantik ud fra publiceret weather/provenance.
 - [x] Normalisér last-mile metadata og faktorer ud fra publiceret bølgevejr og kompakt `waveApproachState`.
 - [x] Bevar højst to eksisterende part-identiteter pr. zone i startpakken, også når en mode er lokalt `UNAVAILABLE`; opfind ingen score eller vinder.
 - [x] Versionér 4.0.351, byg append-only migration 13 fra fastlåst migration 12 og synkronisér integrated/rollback/continuation til alle forbrugere.
 - [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, private-runtime- og releasemetadatakontroller. Den kendte lokale Python-aliasfejl er overladt til GitHub; ingen lang lokal gentagelse.
-- [x] Afgræns sourcegate `34724378629`: fuld releasegate grøn; eneste stop var den nye current-historikfixtures afsløring af auditens gamle memory-ready-genvej.
-- [x] Rekonstruér current-historik med producentens kanoniske bounds-funktion, kræv eksakt state-bound-match og bestå den berørte fulde 210/673-regression lokalt. Modelbindingen er uændret.
+- [x] Reproducér et ægte manglende direkte H0-current og bevis, at producenten korrekt danner lokal `UNAVAILABLE` med `null` current-bounds.
+- [x] Rekonstruér samme direct-input-missing-historik i auditten, hold wave/last-mile-valideringen streng og udled profilens coverage/memory/migration uafhængigt.
+- [x] Bestå den målrettede fulde 210/673-audit med datasikre negative fixtures. Modelbinding, fysik, migration og vejrcache er uændrede.
 - [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
-- [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight.
+- [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Gennemfør cutover ved grøn preflight og verificér den integrerede model offentligt på 210/673.
-- [ ] Genaktivér derefter normal weather kontrolleret og mål DMI-rotation/tidsoverskud.
+- [ ] Genaktivér derefter normal weather kontrolleret og bevis cachevedligeholdelse, DMI-rotation, fallbackbidrag og tidsoverskud.
+- [ ] Gennemgå hele hjemmesidens felter og sammenhæng på desktop/mobil og DA/DE/EN; brug målrettede kontroller efter konkret funktion og risiko.
+- [ ] Revider de resterende roadmap-punkter mod live 4.0.351 og faktisk normal drift; luk eller nedprioritér historiske punkter uden nutidig evidens.
 
-Candidate G er stadig offentlig, og 4.0.351 er endnu kun lokal. Ingen ny provider-oneoff er planlagt. DEC-0133 er aktiv.
+Candidate G er stadig offentlig, men 4.0.351-koden og migration 13 er på main. Kun audit-hotfixen er lokal. Ingen ny provider-oneoff er planlagt. DEC-0133 er aktiv.
 
 # Aktuel implementeringsstatus – lokal 4.0.350 scoreinput og samlet cutoverkontrol
 

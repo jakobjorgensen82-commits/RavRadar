@@ -1,17 +1,20 @@
-# NYESTE ROADMAP – 2026-09-13 – 4.0.351 direkte til model-online
+# NYESTE ROADMAP – 2026-09-13 – 4.0.351 audit-hotfix direkte til model-online og normal drift
 
-- [x] Merge PR #285 som main `f6e725ec`, anvend/readback-verificér migration 12 i backend `34720600286` og genbrug den komplette låste vejrcache.
-- [x] Klassificér cache-only `34720789985`: 79.414/79.414 current og 210/673/1.346 modelstruktur var til stede; stoppet lå i fire forskelle mellem offentlig samling og audit.
+- [x] Bestå PR #286/sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.
+- [x] Klassificér cache-only `34728026044`: current, WAM, freshness og 210/673-modelbygning bestod uden providerhentning; stoppet lå i tre auditforskelle.
 - [x] Adskil coverage fra memory/migration, gør H0-current og last-mile offentligt rekonstruerbare og bevar en kompakt part-identitet ved lokal `UNAVAILABLE`.
 - [x] Versionér 4.0.351, tilføj append-only migration 13, fastlås migration 12 og synkronisér bundle/continuation/releasebindinger.
 - [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, engangsundtagelses- og releasekontraktkontroller. Gentag ikke den lange lokale nationale audit.
-- [x] Brug første exact-head-run `34724378629` som samlet diagnose: releasegaten bestod, men en ny fixture afdækkede auditens gamle current-memory-genvej. Ret auditten til kanonisk evidence→bounds-rekonstruktion og bestå den ene berørte fulde 210/673-regression lokalt.
+- [x] Reproducér den resterende H0-kant lokalt: auditten krævede endelige current-bounds ved producentens lovlige direct-input-missing `UNAVAILABLE` og registrerede kastet misvisende som last-mile.
+- [x] Spejl producentens H0-gate, bevar uafhængig coverage/memory/migration og bestå den målrettede fulde 210/673-audit med negative fixtures.
 - [ ] Kør én exact-head GitHub-sourcegate og merge kun den eksakte grønne kode.
-- [ ] Anvend/readback-verificér alene migration 13 og kør samme cache-only preflight uden providerhentning.
+- [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Ved grøn preflight: gennemfør den rigtige cutover og verificér offentligt 210 zoner/673 kystdele. Ved fejl: brug den samlede rapport til én rettelsesrunde uden ny oneoff.
-- [ ] Genaktivér normal weather kontrolleret og mål fremtidig vind/current, DMI-rotation og tidsoverskud.
+- [ ] Genaktivér normal weather kontrolleret. Brug almindelige kørsler til at bevise cachevedligeholdelse, fuld rotationsplan, kildebidrag, huller og tidsoverskud; oneoff er ikke dette bevis.
+- [ ] Gennemgå hele den levende hjemmeside på desktop/mobil og DA/DE/EN: begge modes, kort, ranking, zonevalg, fem døgn, pile, konti/ture, assistent, Om/Lær og admin-reachability.
+- [ ] Revider de resterende post-cutover-punkter mod live evidens. Behold kun aktuelle problemer: cachetransport/atomisk pointer, normal provider/cadence, eventuel privat vind-hash-kant, sourcegate-fail-chain, historisk Open-Meteo-retention og dokumenterede drifts-/UI-fejl.
 
-Der startes ingen ny tre timers oneoff. DEC-0133 er aktiv.
+Der startes ingen ny tre timers oneoff. Kontroller skal være begrundet i konkret risiko eller faktisk fejl. DEC-0133 er aktiv.
 
 # NYESTE ROADMAP – 2026-09-12 – lokal 4.0.350 til automatisk grøn cutover
 
