@@ -594,8 +594,12 @@ ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test-cutover-validation-report.mjs')
   && workflowActionChain.includes('test-ravscore-operational-pages-recovery.mjs')
   && workflowActionChain.includes('test:production-workflow-outcome')
+  && workflowActionChain.includes('test:validation-collection')
   && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
-'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
+'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus, komplet valideringsopsamling og releasegate-fejlaggregering');
+ok(packageScripts['test:workflow-validation-order']==='node scripts/test-workflow-validation-order-4.0.108.mjs && npm run test:validation-collection'
+  && packageScripts['test:validation-collection']==='node scripts/test-validation-collection.mjs && python scripts/test-dmi-oneoff-fill.py',
+'Fuld validering skal deklarere collector- og oneoff-kontrollerne som selvstændige plantrin');
 ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-verified-weather-source-handoff.mjs',
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
@@ -1546,11 +1550,14 @@ for(const marker of [
   'run_validation full_validation_outcome "Full hydrated project validation"',
   'run_validation release_gate_outcome "Release governance gate"',
   'run_validation data_validation_outcome "Updated weather data validation"',
+  'full_validation_report_path=.geometry-v2-work/ravscore-integrated-full-validation-report.json',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
   'node scripts/generate-state-reference-report-4.0.113.mjs --strict',
-  'npm run validate',
+  'node scripts/run-validation-collection.mjs',
+  '--script validate',
+  '--output "$full_validation_report_path"',
   'npm run release:gate',
   'npm run validate:data',
   'node scripts/cutover-validation-report.mjs build',
@@ -1562,14 +1569,23 @@ for(const marker of [
   'if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then',
   'exit 1',
   '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
-  '.rollback.activationReady | select(type == "boolean")',
-  '.history.allCurrentScoresFullHistory | select(type == "boolean")',
+  '.rollback.activationReady | select(type == "boolean") | tostring',
+  '.history.allCurrentScoresFullHistory | select(type == "boolean") | tostring',
   'echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"',
   'echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"',
   'echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"',
 ]){
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
+ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
+'First-cutover skal have et afgrænset større loft til fuld fejlopsamling uden at ændre normaldriften');
+ok((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g)||[]).length===2,
+'Begge boolske rollbackudtræk skal bevare gyldigt false som tekst');
+for(const marker of [
+  'name: Upload the incremental payload-free full-validation report',
+  'ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}',
+  'path: .geometry-v2-work/ravscore-integrated-full-validation-report.json',
+])ok(buildWorkflow.includes(marker),`Cutoverens uafhængige fejlrapport mangler ${marker}`);
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
 for(const section of [
   buildWorkflow.slice(workflowPositions.reference,workflowPositions.validate),

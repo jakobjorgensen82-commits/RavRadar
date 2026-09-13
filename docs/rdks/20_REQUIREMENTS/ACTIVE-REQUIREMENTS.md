@@ -1,5 +1,21 @@
 # Aktive krav – samlet register
 
+# 4.0.358 – fuld underfejlopsamling og samlet cutoverrettelse
+
+- **REQ-4.0.358-COMPLETE-PLAN-001 – BINDENDE P0 / LOKALT TESTET:** Alle deklarerede selvstændige leaf-kommandoer i fuld validering forsøges. Fejl i én child-proces må ikke skjule senere plantrin.
+- **REQ-4.0.358-INCREMENTAL-REPORT-001 – BINDENDE P0 / LOKALT TESTET:** Hele planen SHA-bindes og rapporteres payloadfrit før, under og efter kørsel. Uafsluttede planer forbliver `IN_PROGRESS`; kun komplet udfald kan klassificeres PASSED/FAILED.
+- **REQ-4.0.358-FIVE-BLOCKING-GATES-001 – BINDENDE P0:** Alle fem hovedkontroller gennemføres og samles. Enhver fejl stopper én gang efter blokken og før eksterne writes; alle grønne udfald fortsætter automatisk gennem den afhængige installation.
+- **REQ-4.0.358-NO-BLANKET-ADVISORY-001 – BINDENDE:** Fuld validering er fortsat bindende i workflow, releasegate og slutstatus. Kun konkret beviselig ufarlig kontrol kan klassificeres anderledes ved en særskilt beslutning.
+- **REQ-4.0.358-INDEPENDENT-ONEOFF-TEST-001 – BINDENDE / LOKALT TESTET:** `test-dmi-oneoff-fill.py` er et selvstændigt deklareret plantrin og må ikke skjules efter workflowtestens assertions.
+- **REQ-4.0.358-FALSE-BOOLEAN-001 – BINDENDE P0 / LOKALT TESTET:** Tre boolske auditfelter accepterer både typed true og false; manglende, null eller forkert type afvises.
+- **REQ-4.0.358-PAGES-MEMORY-001 – BINDENDE P0 / LOKALT TESTET:** Lokal scoretilgængelighed og rå modelhukommelse er uafhængige. Pages må acceptere en forseglet lokal UNAVAILABLE + memory=false-profil, men afviser fortsat falsk memory=true ved synlig HISTORY_INCOMPLETE.
+- **REQ-4.0.358-TEST-ORACLES-001 – BINDENDE / LOKALT TESTET:** Forecasttesten følger fuld DMI-proveniens og numerisk interpolation. Public-runtime-testen følger materialiseret integreret score, ikke den gamle motor eller private vindhistorik.
+- **REQ-4.0.358-TIME-BOUND-001 – BINDENDE:** Kun first-cutover får 180 minutters samlet buildloft; normal build forbliver 90 minutter, og providerbudgetter ændres ikke.
+- **REQ-4.0.358-NO-MODEL-WEATHER-CHANGE-001 – BINDENDE:** Scoreformel, modelstate, vejrdata/sourceorder, geometri, land-/vandpunkter, database og privacy ændres ikke.
+- **REQ-4.0.358-LIVE-PROOF-001 – ÅBEN P0:** Én exact-head-sourcegate, byteidentisk merge, samme cachebaserede handoff, cutover og offentlig/siteverifikation mangler. Ingen oneoff.
+
+DEC-0140 er bindende.
+
 # 4.0.357 – stabil kanonisk decimalretning efter samlet cutover
 
 - **REQ-4.0.357-ONE-ROUND-001 – BINDENDE P0 / LOKALT RETTET:** Hav→land-retningen normaliseres før én-decimal-afrunding og må ikke modulo-normaliseres igen bagefter.

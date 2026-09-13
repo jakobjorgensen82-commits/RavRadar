@@ -145,7 +145,7 @@ permissions:
 jobs:
   build-and-prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: ${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}
     permissions:
       contents: read
       actions: read
@@ -418,7 +418,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.357 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.358 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -656,7 +656,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.357 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.358 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -681,7 +681,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.357 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.358 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1047,7 +1047,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.357 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.358 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1522,7 +1522,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.357 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.358 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1555,6 +1555,7 @@ jobs:
           audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
           if test "${{ steps.operational-action.outputs.action }}" = "integrated-cutover"; then
             report_path=.geometry-v2-work/ravscore-integrated-cutover-validation-report.json
+            full_validation_report_path=.geometry-v2-work/ravscore-integrated-full-validation-report.json
             run_validation() {
               local result_variable="$1"
               local label="$2"
@@ -1572,7 +1573,9 @@ jobs:
             run_validation state_reference_outcome "Strict production reference zones" \
               node scripts/generate-state-reference-report-4.0.113.mjs --strict
             run_validation full_validation_outcome "Full hydrated project validation" \
-              npm run validate
+              node scripts/run-validation-collection.mjs \
+                --script validate \
+                --output "$full_validation_report_path"
             run_validation release_gate_outcome "Release governance gate" \
               npm run release:gate
             run_validation data_validation_outcome "Updated weather data validation" \
@@ -1599,8 +1602,8 @@ jobs:
               --output "$audit_path"
           fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
-          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean")' "$audit_path")"
-          all_current_scores_full_history="$(jq -er '.history.allCurrentScoresFullHistory | select(type == "boolean")' "$audit_path")"
+          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"
+          all_current_scores_full_history="$(jq -er '.history.allCurrentScoresFullHistory | select(type == "boolean") | tostring' "$audit_path")"
           if test "$rollback_status" = "READY"; then
             test "$rollback_activation_ready" = "true"
           else
@@ -1609,6 +1612,15 @@ jobs:
           echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"
           echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"
           echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the incremental payload-free full-validation report
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-full-validation-report.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .geometry-v2-work/ravscore-integrated-full-validation-report.json
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload the payload-free cutover validation summary
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-cutover-validation-report.json') != ''
@@ -1629,7 +1641,7 @@ jobs:
           disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json
           base_path="$disposition_path.base"
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
-          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean")' "$audit_path")"
+          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"
           case "$rollback_status:$rollback_activation_ready" in
             READY:true)
               disposition="READY_PUBLISHED"

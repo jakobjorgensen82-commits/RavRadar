@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 klar til samlet slutkontrol
+
+Main er 4.0.357/`2c243d9e`; PR #294/sourcegate `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` stoppede før deploy i en forældet strømtest. På `codex/4.0.358-cutover-error-collection` er den gamle strømfixture, den gamle public-runtime-scoretest, tre boolske `jq -e`-udtræk og Pages-kontrollens memory/UNAVAILABLE-sammenblanding rettet samlet.
+
+Cutoverens fem topkontroller fortsætter som hidtil alle til ende. Den tidligere monolitiske `npm run validate` er nu også foldet ud til alle 272 deklarerede bladkommandoer, som fortsætter uafhængigt efter fejl. En atomisk, payloadfri rapport skrives før første kommando, ved start og efter hvert resultat og uploades også ved fejl. Først efter hele femkontrolblokken stoppes der én gang før eksterne writes ved en reel fejl; er alt grønt, fortsætter cutover automatisk. Første cutover har 180 minutter; normale kørsler forbliver 90 minutter.
+
+Måltests, version/RDKS og geodata-only-versiondiff er grønne. Kør én exact-head GitHub-sourcegate, merge byteidentisk og fortsæt fra det eksisterende grønne handoff til cutover uden provider-oneoff eller lokal fuld kildegate. Efter offentlig 210/673/118- og hjemmesidekontrol genaktiveres almindeligt vejr, så cachevedligeholdelse og DMI-rotation bevises i normal drift.
+
+# HISTORISK CHECKPOINT – 2026-09-13 – udvidet Astra-modelreview klar til Sol
+
+Anden ejerbestilte gennemgang omfattede også input, hukommelse, beregning og offentlige forbrugere. Ingen ny sikker regnefejl; lille 61-timersprøve beviste samme fortsættelsesstate samlet/opdelt og forventet retning/null/waders-adfærd. Ny konkret Pages-fejl: nul HISTORY_INCOMPLETE-scorer beviser ikke fuld hukommelse, når den berørte del samtidig er UNAVAILABLE. Føj reviewets punkt 7 til samme rettelsesrunde. Den eksisterende zoneregel skjuler zonens samlede score ved én utilgængelig del; afstem senere med lokalitetskravet uden stiltiende modelændring nu. Reviewet er afsluttet, ikke modellen empirisk godkendt; ingen deploy udført.
+
+Fortsæt fra [ASTRA_CUTOVER_REVIEW_2026-09-13.md](ASTRA_CUTOVER_REVIEW_2026-09-13.md). Main 4.0.357/`2c243d9e`, PR #294/sourcegate `34767862281` grøn; handoff `34768997271` grøn; cutover `34769550035` fejlende gammel strømtest, ingen deploy. Den gamle fixture og tekstmatch er rettet lokalt, øvrige DMI-seamtests grønne. Reviewet fandt også en forældet public-runtime-test, tre endnu unåede `jq -e`/false-stop og uforenelige advisory-/release-/slutstatuskrav. Disse samles med collectorrettelsen i én 4.0.358. Den generelle advisory-fritagelse er ikke klar til merge. Der findes endnu ingen 4.0.358-PR eller commit. Root har ændringerne; hjælpe-worktree har korrekt ny branch fra main. Bevar alle eksisterende brugerændringer og inspectmapper. Brug reviewets afgrænsede test-/releaseplan, uden provider-oneoff eller ny generel testplatform. **Astra er færdig; bed ejeren skifte til Sol / Ekstra høj nu.**
+
+# HISTORISK CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
 
 Main er `f6e725ec`/4.0.350, branch `codex/4.0.351-public-runtime-oracle`. PR #285 og backendrun `34720600286` er grønne; migration 12 er anvendt. Cache-only `34720789985` hentede intet providervejr og bestod 79.414/79.414 current, WAM, freshness og 673/673 current selection. Bygningen nåede 210/673/1.346, men den afsluttende audit stoppede før handoff/cutover/deploy på fire forskelle mellem producentens offentlige pakke og auditens rekonstruktion.
 

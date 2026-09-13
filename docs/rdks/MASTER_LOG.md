@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.358 samler alle underfejl
+
+Main 4.0.357/`2c243d9e`, sourcegate `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` stoppede før deploy i en forældet forecasttest. Fire øvrige hovedkontroller var grønne, men `npm run validate` havde skjult senere leaf-kontroller efter den første fejl.
+
+Ejeren kræver, at hele den selvstændige kontrolplan køres og fejl samles i én omgang. 4.0.358 udvider derfor validate-træet til 272 deklarerede Node-/Python-kommandoer, fortsætter efter hvert child-udfald og skriver en payloadfri, SHA-planbundet rapport løbende. En afbrudt plan forbliver `IN_PROGRESS`. De fem hovedkontroller er fortsat bindende; samlet fejl stopper én gang før writes, samlet grøn fortsætter installationen automatisk. First-cutover-loftet er 180 minutter; normal build og providerbudgetter består.
+
+Forecast-fixturen bruger komplet DMI-proveniens og numeriske strømforventninger. Den gamle public-runtime-test kontrollerer materialiseret integreret score uden legacy-motor. Tre `jq -e` boolske tildelinger bevarer false som tekst. Pages accepterer ærlig lokal UNAVAILABLE sammen med memory=false, mens synlig HISTORY_INCOMPLETE fortsat kræver memory=false. Scoreformel, modelstate, vejrværdier/sourceorder, geometri, punkter, database og privacy er uændrede. Ingen oneoff. Se DEC-0140 og `CHANGELOG-4.0.358.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.357 retter kanonisk decimalretning
 
 4.0.356-head `dfce04f1` bestod sourcegate `34761823518`, blev merged gennem PR #293 som main `b75672f7` med identisk filtræ, og handoff `34763228997` blev grønt fra fire cacher uden provider, oneoff eller ny 210/673-audit.

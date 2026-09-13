@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import './test-weather-source-gate.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
@@ -208,8 +207,12 @@ if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery'))
   throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');
 }
 if (!workflowActionContracts.includes('npm run test:production-workflow-outcome')
-  || packageJson?.scripts?.['test:production-workflow-outcome'] !== 'node scripts/test-production-workflow-outcome.mjs') {
-  throw new Error('Den maskinlæsbare produktionsslutstatus skal være registreret i workflow-kontraktsuiten.');
+  || !workflowActionContracts.includes('npm run test:validation-collection')
+  || packageJson?.scripts?.['test:production-workflow-outcome']
+    !== 'node scripts/test-production-workflow-outcome.mjs'
+  || packageJson?.scripts?.['test:validation-collection']
+    !== 'node scripts/test-validation-collection.mjs && python scripts/test-dmi-oneoff-fill.py') {
+  throw new Error('Produktionsslutstatus og valideringsopsamling skal være registreret som separate trin i workflow-kontraktsuiten.');
 }
 for (const marker of [
   'npm run validate:rdks',
@@ -2307,11 +2310,14 @@ for (const marker of [
   'run_validation full_validation_outcome "Full hydrated project validation"',
   'run_validation release_gate_outcome "Release governance gate"',
   'run_validation data_validation_outcome "Updated weather data validation"',
+  'full_validation_report_path=.geometry-v2-work/ravscore-integrated-full-validation-report.json',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
   'node scripts/generate-state-reference-report-4.0.113.mjs --strict',
-  'npm run validate',
+  'node scripts/run-validation-collection.mjs',
+  '--script validate',
+  '--output "$full_validation_report_path"',
   'npm run release:gate',
   'npm run validate:data',
   'node scripts/cutover-validation-report.mjs build',
@@ -2323,8 +2329,8 @@ for (const marker of [
   'if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then',
   'exit 1',
   '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
-  '.rollback.activationReady | select(type == "boolean")',
-  '.history.allCurrentScoresFullHistory | select(type == "boolean")',
+  '.rollback.activationReady | select(type == "boolean") | tostring',
+  '.history.allCurrentScoresFullHistory | select(type == "boolean") | tostring',
   'echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"',
   'echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"',
   'echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"',
@@ -2335,6 +2341,18 @@ for (const marker of [
 }
 if (publicAuditBlock.includes('continue-on-error')) {
   throw new Error('Den faktiske integrerede public runtime-gate må ikke være vejledende.');
+}
+assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
+  'Kun first-cutover skal have tid til at gennemføre hele den udvidede valideringsplan');
+assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
+  'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
+for (const marker of [
+  'name: Upload the incremental payload-free full-validation report',
+  'ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}',
+  'path: .geometry-v2-work/ravscore-integrated-full-validation-report.json',
+  'name: Upload the payload-free cutover validation summary',
+]) {
+  assert.ok(buildWorkflow.includes(marker), `Cutoverens løbende fejlrapport mangler ${marker}`);
 }
 for (const block of [
   text.slice(positions.reference, positions.validate),
@@ -3345,7 +3363,9 @@ if (geometryPilotSection.includes('pages: write') || geometryPilotSection.includ
 if (!orchestratorWorkflow.includes('needs: build-and-prepare')) throw new Error('Deployjobbet skal afhænge af det færdige buildjob.');
 const buildSection = buildWorkflow.slice(buildWorkflow.indexOf('\n  build-and-prepare:'));
 const deploySection = deployWorkflow.slice(deployWorkflow.indexOf('\n  deploy-pages:'));
-const buildTimeoutMinutes = Number(buildSection.match(/^    timeout-minutes: (\d+)$/m)?.[1]);
+const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
+const buildTimeoutMinutes = buildTimeoutContract
+  === '${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}' ? 90 : Number(buildTimeoutContract);
 const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
 const dmiBulkSection = buildWorkflow.slice(
   positions.dmiBulk,
@@ -3593,5 +3613,4 @@ for (const forbidden of ['secrets.', 'SUPABASE_', 'data/live/', 'currentUMps', '
   if (outcomeSection.includes(forbidden)) throw new Error(`Det payloadfri outcomejob må ikke indeholde ${forbidden}`);
 }
 
-execFileSync(process.env.PYTHON || 'python', ['scripts/test-dmi-oneoff-fill.py'], { stdio: 'inherit' });
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');
