@@ -317,36 +317,56 @@ function lastMileFactorFromTrack(track) {
   );
 }
 
-function historyScoreViewFromContinuation(state, persisted, currentTransition) {
+function historyScoreViewFromContinuation(
+  state,
+  persisted,
+  currentTransition,
+  currentDirectInputAvailable,
+) {
   const bounds = state?.historyBounds;
   const current = bounds?.current;
   const wave = bounds?.waveMobilisation;
   const lastMile = bounds?.lastMile;
-  if (![current?.lowerPotential, current?.upperPotential,
-    wave?.lowerPotential, wave?.upperPotential,
+  if (![wave?.lowerPotential, wave?.upperPotential,
     lastMile?.minimumFactorTrack?.activityMoment,
     lastMile?.minimumFactorTrack?.normalMoment,
     lastMile?.maximumFactorTrack?.activityMoment,
     lastMile?.maximumFactorTrack?.normalMoment].every(finite)) {
     throw new Error('Schema-6 continuation lacks finite history bounds');
   }
+  if (typeof currentDirectInputAvailable !== 'boolean') {
+    throw new Error('Current direct-input availability must be explicit');
+  }
   const waveOpen = wave.lastUnknownAt !== null && wave.conservativeResetAt === null;
   const lastMileOpen = lastMile.lastUnknownAt !== null
     && lastMile.conservativeResetAt === null;
-  const currentScoreBounds = buildCurrentSupplyScoreBounds(state?.currentEvidence, {
-    referenceTime: state?.time,
-    nativeHold: currentTransition === 'NATIVE_CADENCE_HOLD',
-    nativeHoldIntervalEnds: state?.currentNativeHoldIntervalEnds,
-  });
+  const currentScoreBounds = currentDirectInputAvailable
+    ? buildCurrentSupplyScoreBounds(state?.currentEvidence, {
+      referenceTime: state?.time,
+      nativeHold: currentTransition === 'NATIVE_CADENCE_HOLD',
+      nativeHoldIntervalEnds: state?.currentNativeHoldIntervalEnds,
+    })
+    : {
+      available: false,
+      quality: RAVSCORE_SCORE_QUALITY.UNAVAILABLE,
+      windowHours: RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours,
+      coverageHours: 0,
+      lowerPotential: null,
+      upperPotential: null,
+      reasonCodes: ['CURRENT_DIRECT_INPUT_MISSING'],
+    };
   const currentHistoryAvailable = currentScoreBounds.available === true;
   if (currentHistoryAvailable
-    && (!close(current.lowerPotential, currentScoreBounds.lowerPotential)
+    && (![current?.lowerPotential, current?.upperPotential].every(finite)
+      || !close(current.lowerPotential, currentScoreBounds.lowerPotential)
       || !close(current.upperPotential, currentScoreBounds.upperPotential))) {
     throw new Error('Schema-6 continuation current bounds do not reconstruct');
   }
-  const currentReasonCodes = currentHistoryAvailable
-    ? currentScoreBounds.reasonCodes
-    : [];
+  if (!currentHistoryAvailable
+    && (current?.lowerPotential !== null || current?.upperPotential !== null)) {
+    throw new Error('Unavailable current history must have null continuation bounds');
+  }
+  const currentReasonCodes = currentScoreBounds.reasonCodes ?? [];
   const currentIncomplete = currentHistoryAvailable
     ? currentScoreBounds.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
     : true;
@@ -356,9 +376,11 @@ function historyScoreViewFromContinuation(state, persisted, currentTransition) {
   ];
   const expectedReasonCodes = [...currentReasonCodes, ...expectedTailReasonCodes];
   const incomplete = currentIncomplete || waveOpen || lastMileOpen;
-  const quality = incomplete
-    ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
-    : RAVSCORE_SCORE_QUALITY.FULL_HISTORY;
+  const quality = !currentHistoryAvailable
+    ? RAVSCORE_SCORE_QUALITY.UNAVAILABLE
+    : incomplete
+      ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+      : RAVSCORE_SCORE_QUALITY.FULL_HISTORY;
   const conservativeTailResetApplied = wave.conservativeResetAt !== null
     || lastMile.conservativeResetAt !== null;
   const persistedUnavailable = persisted?.scoreQuality
@@ -391,9 +413,9 @@ function historyScoreViewFromContinuation(state, persisted, currentTransition) {
     throw new Error('Persisted history quality is not derivable from schema-6 continuation');
   }
   return {
-    available: true,
+    available: currentHistoryAvailable,
     quality,
-    calibrationEligible: !incomplete,
+    calibrationEligible: currentHistoryAvailable && !incomplete,
     coverageHours: currentScoreBounds.coverageHours,
     requiredHours: RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours,
     reasonCodes: expectedReasonCodes,
@@ -442,6 +464,7 @@ function integratedEvaluationState(state, model, weather, persisted, onshoreDire
       state,
       persisted,
       model?.currentTransition,
+      currentDirectInputAvailable,
     ),
     currentVerified,
     currentDirectInputAvailable,
@@ -1183,34 +1206,51 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     );
   collector.add(currentHistoryQualitySummaryReady,
     'PUBLIC_CURRENT_HISTORY_QUALITY_INVALID');
-  const fullHistoryProfileReady = profile?.modelCoverageReady === true
-    && profile?.modelMemoryReady === true
-    && currentHistoryQualitySummaryReady
-    && currentHistoryIncompleteModeCount === 0
-    && currentUnavailableModeCount === 0;
-  const historyIncompleteProfileReady = profile?.modelCoverageReady === true
-    && profile?.modelMemoryReady === false
-    && currentHistoryQualitySummaryReady
-    && currentHistoryIncompleteModeCount > 0
-    && currentUnavailableModeCount === 0
-    && expectedHistoryIncompleteZones.length > 0;
-  const localUnavailableProfileReady = profile?.modelCoverageReady === false
-    && currentHistoryQualitySummaryReady
-    && currentUnavailableModeCount > 0
-    && profile?.modelMemoryReady === (currentHistoryIncompleteModeCount === 0)
-    && Array.isArray(profile?.advisories)
-    && profile.advisories.includes('LOCAL_MODEL_COVERAGE_INCOMPLETE');
+  const expectedModelCoverageReady = parts.length === expectedPartCount
+    && parts.every(([, part]) => MODES.every(mode => {
+      const result = part?.ravScoreModel?.modes?.[mode];
+      try {
+        return result?.available === true
+          && finite(result.score)
+          && result.modelId === RAVSCORE_MODEL_ID
+          && result.modelContractSha256 === RAVSCORE_MODEL_CONTRACT_SHA256
+          && result.modelBundleSha256 === RAVSCORE_MODEL_BUNDLE_SHA256
+          && assertRavScoreModelBinding(result.modelBinding) === true;
+      } catch {
+        return false;
+      }
+    }));
+  const expectedModelMemoryReady = parts.length === expectedPartCount
+    && parts.every(([, part]) => {
+      const model = part?.ravScoreModel;
+      return model?.currentMemoryReady === true
+        && RAVSCORE_CURRENT_SUPPLY_POLICY.readyStatuses
+          .includes(model.currentMemoryStatus)
+        && model?.waveMemoryReady === true
+        && RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses
+          .includes(model.waveMemoryStatus)
+        && model?.lastMileMemoryReady === true
+        && RAVSCORE_LAST_MILE_POLICY.readyStatuses
+          .includes(model.lastMileMemoryStatus);
+    });
+  const expectedModelMigrationReady = parts.length === expectedPartCount
+    && parts.every(([, part]) => part?.ravScoreModel?.initialStateAccepted === true
+      || part?.ravScoreModel?.migrationApplied === true);
   const expectedProfileAdvisories = [
-    ...(profile?.modelCoverageReady === false ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
-    ...(profile?.modelMemoryReady === false ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
-    ...(profile?.modelMigrationReady === false
+    ...(!expectedModelCoverageReady ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
+    ...(!expectedModelMemoryReady ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
+    ...(!expectedModelMigrationReady
       ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
   ];
-  collector.add(profile?.modelMigrationReady === true
+  collector.add(currentHistoryQualitySummaryReady
+    && profile?.modelCoverageReady === expectedModelCoverageReady
+    && profile?.modelMemoryReady === expectedModelMemoryReady
+    && profile?.modelMigrationReady === expectedModelMigrationReady
+    && profile?.modelMigrationReady === true
+    && profile?.modelCoverageReady === (currentUnavailableModeCount === 0)
     && sameCanonical(profile?.advisories, expectedProfileAdvisories)
-    && (fullHistoryProfileReady
-      || historyIncompleteProfileReady
-      || localUnavailableProfileReady),
+    && (currentHistoryIncompleteModeCount === 0
+      || expectedHistoryIncompleteZones.length > 0),
   'PUBLIC_PROFILE_NOT_READY');
 
   let reconstructedModeCount = 0;
@@ -1829,6 +1869,7 @@ async function main() {
   ].join('; '));
   if (report.status !== 'passed') {
     console.error(`Integreret RavScore public runtime fejlkoder: ${report.errors.join(', ')}`);
+    console.error(`Integreret RavScore public runtime fejltal: ${JSON.stringify(report.errorCounts)}`);
     process.exitCode = 1;
   }
 }

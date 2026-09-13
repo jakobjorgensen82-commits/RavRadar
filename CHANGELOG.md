@@ -1,3 +1,12 @@
+## 4.0.351 – ens offentlig modelrekonstruktion før cutover (2026-09-13, main med lokal audit-hotfix)
+
+- PR #286 bestod exact-head-sourcegate `34726624728` og blev merged som main `6d4adbb2`; backendrun `34727884447` anvendte/readback-verificerede migration 13.
+- Cache-only-preflight `34728026044` genbrugte target `2026-09-12T08:00:00Z` uden providerhentning og bestod current, WAM, freshness samt 210/673-modelbygningen. Intet blev deployet, fordi slutauditten stoppede på tre kontrolkoder.
+- Den konkrete H0-kant er nu lokalt reproduceret: producenten sætter current-historikgrænser til `null` ved manglende direkte H0-current, mens auditten fejlagtigt krævede endelige tal. Kastet blev misvisende registreret som last-mile-fejl og gav en afledt mode-fejl.
+- Auditten rekonstruerer nu den samme rene lokale `UNAVAILABLE`-historiktilstand som producenten, mens profilets coverage, memory og migration fortsat udledes som tre selvstændige fakta. En ægte H0-current-mangel er dækket eksplicit.
+- Den fulde målrettede 210/673-audit med datasikre negative fixtures er grøn. Modelkode, fysik, inputdata, bundle, migration og den komplette vejrcache er uændrede. Næste bevis er én exact-head-sourcegate og samme cache-only-preflight før cutover.
+- Se `CHANGELOG-4.0.351.md` og DEC-0133.
+
 ## 4.0.350 – lokal utilgængelighed og samlet cutoverkontrol (2026-09-12, lokal kandidat)
 
 - Cache-only-run `34706453561` viste den konkrete scorefejl: 659 dele fik gyldig `windTail`-vind afvist af en adapter, som kun tillod navnet `wind`; 14 dele manglede direkte current ved H0, heraf otte regionale fastholdelser uden synligt privat præ-H0-kildebevis.

@@ -1,14 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 offentlig modelrekonstruktion
+# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal H0-audit-hotfix
 
-- **ISSUE-4.0.350-SOURCE/BACKEND – LUKKET:** PR #285 blev exact-head-valideret og merged som `f6e725ec`; backend `34720600286` anvendte migration 12 og bestod readback.
-- **ISSUE-4.0.350-CACHE/WEATHER – LUKKET:** Cache-only `34720789985` hentede intet providervejr og bevarede current 79.414/79.414, WAM, freshness og 673/673 current selection. En ny oneoff er ikke nødvendig.
-- **ISSUE-MODE-RECONSTRUCTION-MISMATCH – LOKALT RETTET / CI ÅBEN P0:** Audit og producent deler nu publicerbar H0-current-/holdsemantik og `currentDirectInputAvailable`.
-- **ISSUE-LAST-MILE-METADATA-MISMATCH – LOKALT RETTET / CI ÅBEN P0:** Last-mile-readiness, status, reference og faktorer udledes nu fra samme publicerede vejr og kompakte wave-approach-state; audit skelner exact calm, aktiv bølge uden retning og manglende fysik.
-- **ISSUE-PUBLIC-PROFILE-NOT-READY – LOKALT RETTET / CI ÅBEN P0:** Lokal coveragefejl nulstiller ikke længere selvstændigt gyldig memory/migration.
+- **ISSUE-4.0.351-SOURCE/BACKEND – LUKKET FOR MERGET HEAD:** PR #286-head `b6f06310` bestod sourcegate `34726624728`, blev merged byteidentisk som `6d4adbb2`, og backend `34727884447` anvendte/readback-verificerede migration 13.
+- **ISSUE-4.0.351-CACHE/WEATHER – LUKKET:** Cache-only `34728026044` hentede intet providervejr og bestod current, WAM, freshness og 210/673-modelbygning. En ny oneoff er ikke nødvendig.
+- **ISSUE-H0-UNAVAILABLE-AUDIT-RECONSTRUCTION – LOKALT RETTET / NY CI ÅBEN P0:** Et ægte manglende direkte H0-current giver korrekt `null` current-bounds og lokal `UNAVAILABLE`. Auditten krævede fejlagtigt endelige bounds og kastede før evaluation-state var rekonstrueret. Den spejler nu producentens `CURRENT_DIRECT_INPUT_MISSING`-tilstand og opfinder intet input.
+- **ISSUE-MODE-RECONSTRUCTION-MISMATCH – LOKALT LUKKET / NY CI ÅBEN P0:** Mode-fejlen var en følge af den fejlede H0-history-rekonstruktion. En ægte H0-missing-fixture og hele 210/673-auditten er grøn.
+- **ISSUE-LAST-MILE-METADATA-MISMATCH – LOKALT LUKKET / NY CI ÅBEN P0:** Koden var misvisende: historikrekonstruktionen kastede inde i en samlet evaluation/last-mile-blok. Wave/last-mile-state er fortsat endeligt og eksakt valideret.
+- **ISSUE-PUBLIC-PROFILE-NOT-READY – LOKALT LUKKET / NY CI ÅBEN P0:** Coverage, rå memory og migration udledes uafhængigt; offentlig scorekvalitet må ikke omskrive de to sidste fakta.
 - **ISSUE-STARTUP-WINNER-SET-EMPTY – LOKALT RETTET / CI ÅBEN P0:** En utilgængelig mode uden vinder medtager en deterministisk eksisterende part-identitet, højst to pr. zone og uden scoreopfindelse.
-- **ISSUE-4.0.351-BACKEND-BINDING – LOKALT RETTET / LIVE ÅBEN P0:** Migration 13 er append-only og binding-only; den anvendte migration 12 er byteuændret ved SHA-256 `24a7450a…`.
+- **ISSUE-4.0.351-BACKEND-BINDING – PRODUKTIONSBEVIST LUKKET:** Migration 13 er append-only/binding-only og centralt anvendt/readback-verificeret; migration 12 er byteuændret ved SHA-256 `24a7450a…`.
 - **ISSUE-4.0.351-CURRENT-HISTORY-AUDIT-RECONSTRUCTION – LOKALT LUKKET / NY CI ÅBEN P0:** PR-head `d30faf93`/run `34724378629` bestod hele releasegaten, men den nye current-historikfixture viste, at auditten fejlagtigt brugte continuationens memory-ready-dækning i stedet for scoreviewets kanoniske 47/48-timers bounds. Fixturet fører nu direct-input-faktum igennem; auditten genbruger producentens evidence→bounds-funktion, kontrollerer lower/upper eksakt og accepterer ikke rå, opdigtet eller urekonstruerbar historik. Fuld lokal 210/673-regression er grøn; modellen og migrationen er uændrede.
-- **ISSUE-4.0.351-RELEASE-AND-LAUNCH – ÅBEN P0:** Én exact-head-CI, merge, migration-13 readback, cache-only preflight, cutover og offentlig 210/673-verifikation mangler. Candidate G er stadig offentlig indtil faktisk cutover.
+- **ISSUE-4.0.351-RELEASE-AND-LAUNCH – ÅBEN P0:** Audit-hotfixen kræver én exact-head-CI, merge, backend-readback, cache-only preflight, cutover og offentlig 210/673-verifikation. Candidate G er stadig offentlig indtil faktisk cutover.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige weather-runs skal bevise fuld registerplan, vedvarende rotation, cacheprogression/-bevarelse, providerbidrag og tidsoverskud. Oneoff-closure lukker ikke dette punkt.
 
 DEC-0133 og `CHANGELOG-4.0.351.md` er aktuelle. Ingen ny provider-oneoff er planlagt.
 

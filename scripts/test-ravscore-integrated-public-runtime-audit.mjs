@@ -31,7 +31,10 @@ import {
   buildFeggesundWaveCoverageProof,
   buildFeggesundWaveInputProofEntry,
 } from './lib/feggesund-wave-proxy.mjs';
-import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
+import {
+  compactIntegratedRavScoreMode,
+  integratedInputCalibrationEligible,
+} from './lib/ravscore-integrated-runtime.mjs';
 import { buildIntegratedZoneHourlyProjection } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
@@ -162,6 +165,24 @@ const currentHistoryIncompleteBaseRow = currentHistoryIncompleteBaseSeries.rows.
 assert.equal(currentHistoryIncompleteBaseRow.currentMemoryReady, false);
 assert.equal(currentHistoryIncompleteBaseRow.currentDirectInputAvailable, true);
 assert.equal(currentHistoryIncompleteBaseRow.historyScoreView.quality, 'HISTORY_INCOMPLETE');
+const currentDirectMissingBaseSeries = buildIntegratedRavScoreStateSeries(
+  baseSamples.map(sample => sample.time === REFERENCE_AT
+    ? {
+      ...sample,
+      currentSpeedMps: null,
+      currentAlignment: null,
+      currentVerified: false,
+    }
+    : sample),
+  {
+    samplingContextKey: `sha256:${'0'.repeat(64)}`,
+    onshoreDirectionDeg: 90,
+  },
+);
+const currentDirectMissingBaseRow = currentDirectMissingBaseSeries.rows.at(-1);
+assert.equal(currentDirectMissingBaseRow.currentMemoryReady, false);
+assert.equal(currentDirectMissingBaseRow.currentDirectInputAvailable, false);
+assert.equal(currentDirectMissingBaseRow.historyScoreView.quality, 'UNAVAILABLE');
 
 function readyState(part, transition, series = baseSeries) {
   const state = {
@@ -206,7 +227,7 @@ function scoreState(state, row = baseRow) {
   return {
     ...state,
     historyScoreView: structuredClone(row.historyScoreView),
-    currentVerified: true,
+    currentVerified: row.currentVerified === true,
     currentDirectInputAvailable: row.currentDirectInputAvailable,
     currentTransition: row.currentTransition,
     currentCoastNormalSpeedMps: row.currentCoastNormalSpeedMps,
@@ -260,7 +281,9 @@ function partRuntime(part, transition, {
       mode,
       weather: scoreWeather,
       zone: { onshoreDirectionDeg: part.onshoreDirectionDeg },
-    }, { state: evaluationState })),
+    }, { state: evaluationState }), {
+      inputCalibrationEligible: integratedInputCalibrationEligible(scoreWeather),
+    }),
   ]));
   const publicModes = Object.fromEntries(['waders', 'beach'].map(mode => [
     mode,
@@ -359,22 +382,27 @@ function syntheticFull({
   transition = 'continuation',
   historyIncomplete = false,
   currentHistoryIncomplete = false,
+  currentDirectMissing = false,
   directMissing = false,
   includeFeggesund = false,
 }) {
   assert.equal(partCounts.length, zoneCount);
   if (includeFeggesund) assert.equal(partCounts.at(-1), 3);
-  const runtimeSeries = currentHistoryIncomplete
+  const runtimeSeries = currentDirectMissing
+    ? currentDirectMissingBaseSeries
+    : currentHistoryIncomplete
     ? currentHistoryIncompleteBaseSeries
     : historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
-  const selectedSeries = transition === 'cold' ? coldBaseSeries : runtimeSeries;
   const runtimeRow = transition === 'cold' ? coldBaseRow
-    : currentHistoryIncomplete ? currentHistoryIncompleteBaseRow
+    : currentDirectMissing ? currentDirectMissingBaseRow
+      : currentHistoryIncomplete ? currentHistoryIncompleteBaseRow
       : historyIncomplete ? historyIncompleteBaseRow : baseRow;
   const scoreProfile = resolvePublicRavScoreProfile({
-    modelCoverageReady: !directMissing,
-    modelMemoryReady: !historyIncomplete && !currentHistoryIncomplete && transition !== 'cold',
-    modelMigrationReady: true,
+    modelCoverageReady: !directMissing && !currentDirectMissing,
+    modelMemoryReady: runtimeRow.currentMemoryReady === true
+      && runtimeRow.waveMemoryReady === true
+      && runtimeRow.lastMileMemoryReady === true,
+    modelMigrationReady: transition !== 'cold',
   });
   const zones = {};
   const coastalZones = {};
@@ -382,7 +410,22 @@ function syntheticFull({
   let partNumber = 0;
   for (let zoneNumber = 0; zoneNumber < zoneCount; zoneNumber += 1) {
     const zoneDirectMissing = directMissing && zoneNumber === 0;
-    const scoreWeather = zoneDirectMissing
+    const zoneUnavailable = zoneNumber === 0 && (directMissing || currentDirectMissing);
+    const zoneRuntimeSeries = currentDirectMissing && zoneNumber > 0 ? baseSeries : runtimeSeries;
+    const zoneSelectedSeries = transition === 'cold' ? coldBaseSeries : zoneRuntimeSeries;
+    const zoneRuntimeRow = transition === 'cold' ? coldBaseRow
+      : currentDirectMissing && zoneNumber > 0 ? baseRow : runtimeRow;
+    const scoreWeather = currentDirectMissing && zoneNumber === 0
+      ? {
+        ...weather,
+        currentSpeedMps: null,
+        currentDirectionDeg: null,
+        currentProvenance: {
+          status: 'unverified',
+          reason: 'no-time-specific-verified-water-column',
+        },
+      }
+      : zoneDirectMissing
       ? { ...weather, windSpeedMps: null }
       : weather;
     const zoneId = includeFeggesund && zoneNumber === zoneCount - 1
@@ -414,8 +457,8 @@ function syntheticFull({
         },
       };
       const runtime = partRuntime(part, transition, {
-        series:selectedSeries,
-        row:runtimeRow,
+        series: zoneSelectedSeries,
+        row: zoneRuntimeRow,
         scoreProfile,
         scoreWeather,
       });
@@ -439,7 +482,7 @@ function syntheticFull({
         ravScoreModel: runtime.model,
       };
     }
-    const hourly = zoneDirectMissing
+    const hourly = zoneUnavailable
       ? publicForecastOffsets.map(offsetHours => buildIntegratedZoneHourlyProjection({
         rows: partIds.map(partId => ({
           partId,
@@ -908,7 +951,8 @@ for (const mode of ['waders', 'beach']) {
   assert.ok(historyIncompleteCurrent[mode].historyReasonCodes
     .includes('LAST_MILE_HISTORY_INCOMPLETE'));
 }
-assert.equal(historyIncompleteSmall.coastalParts.scoreProfile.modelMemoryReady, false);
+assert.equal(historyIncompleteSmall.coastalParts.scoreProfile.modelMemoryReady, true,
+  'historical score bounds and the point-memory readiness flag are independent facts');
 assert.equal(historyIncompleteSmall.coastalParts.scoreAvailability.historyIncompleteModeCount, 2);
 const historyIncompletePackage = publicPackage(historyIncompleteSmall);
 const historyIncompleteReport = audit(
@@ -963,6 +1007,28 @@ assert.deepEqual(
   ['synthetic-part-1'],
 );
 
+const currentDirectMissingSmall = syntheticFull({
+  zoneCount: 2,
+  partCounts: [1, 1],
+  currentDirectMissing: true,
+});
+const currentDirectMissingPackage = publicPackage(currentDirectMissingSmall);
+const currentDirectMissingReport = audit(
+  currentDirectMissingSmall,
+  currentDirectMissingPackage,
+  2,
+  2,
+);
+assert.deepEqual(currentDirectMissingReport.errors, [],
+  'Et ægte manglende H0-current skal være lokalt UNAVAILABLE uden falsk auditstop.');
+assert.equal(currentDirectMissingReport.history.currentUnavailableModeCount, 2);
+assert.equal(currentDirectMissingSmall.coastalParts.scoreProfile.modelCoverageReady, false);
+assert.equal(currentDirectMissingSmall.coastalParts.scoreProfile.modelMemoryReady, false);
+assert.deepEqual(currentDirectMissingSmall.coastalParts.scoreProfile.advisories, [
+  'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+  'LOCAL_MODEL_MEMORY_INCOMPLETE',
+]);
+
 const currentHistoryIncompleteSmall = syntheticFull({
   zoneCount: 1,
   partCounts: [1],
@@ -986,15 +1052,17 @@ assert.ok(audit(
 'a declared history summary must match every reconstructed current mode');
 
 const falseFullHistoryProfile = structuredClone(historyIncompleteSmall);
-falseFullHistoryProfile.coastalParts.scoreProfile.modelMemoryReady = true;
-falseFullHistoryProfile.coastalParts.scoreProfile.advisories = [];
+falseFullHistoryProfile.coastalParts.scoreProfile.modelMemoryReady = false;
+falseFullHistoryProfile.coastalParts.scoreProfile.advisories = [
+  'LOCAL_MODEL_MEMORY_INCOMPLETE',
+];
 assert.ok(audit(
   falseFullHistoryProfile,
   historyIncompletePackage,
   1,
   1,
 ).errors.includes('PUBLIC_PROFILE_NOT_READY'),
-'modelMemoryReady=true must not hide a non-empty HISTORY_INCOMPLETE summary');
+'modelMemoryReady=false must not contradict independently READY point memory');
 
 for (const [label, mutate] of [
   ['numeric-string score', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.score = '68'; }],
@@ -1122,8 +1190,12 @@ const coldReplay = syntheticFull({
 });
 const coldReplayPackage = publicPackage(coldReplay);
 const coldReplayReport = audit(coldReplay, coldReplayPackage, 1, 1);
-assert.deepEqual(coldReplayReport.errors, []);
-assert.equal(coldReplayReport.status, 'passed');
+assert.deepEqual(coldReplayReport.errors, ['PUBLIC_PROFILE_NOT_READY'],
+  'Gyldig cold replay må rekonstrueres, men kan ikke alene bevise first-cutover-migration.');
+assert.equal(coldReplayReport.status, 'failed');
+assert.equal(coldReplay.coastalParts.scoreProfile.modelMigrationReady, false);
+assert.deepEqual(coldReplay.coastalParts.scoreProfile.advisories,
+  ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED']);
 assert.equal(coldReplayReport.continuation.coldReplayStateCount, 1);
 assert.equal(coldReplayReport.continuation.continuedStateCount, 0);
 

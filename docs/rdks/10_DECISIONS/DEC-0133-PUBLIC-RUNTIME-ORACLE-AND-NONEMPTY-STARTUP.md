@@ -1,7 +1,7 @@
 # DEC-0133 – offentlig modelkontrol skal rekonstruere producenten, og startpakken må ikke blive tom
 
 - **Dato:** 2026-09-13
-- **Status:** AKTIV, lokalt implementeret og måltestet; exact-head-, backend-, cutover- og offentligt bevis afventer
+- **Status:** AKTIV; 4.0.351 main/backend er bevist, den sidste auditkant er lokalt rettet og måltestet; ny exact-head, cache-only preflight, cutover og offentligt bevis afventer
 - **Ejergrundlag:** Ejeren vil have den integrerede model online nu uden en ny oneoff og uden at gentage allerede gennemførte kontroller
 - **Præciserer:** DEC-0110, DEC-0112, DEC-0114, DEC-0122, DEC-0130 og DEC-0132
 - **Bevarer:** 79.414/79.414 currentclosure, 210/673-struktur, ingen opdigtede scores, Candidate G som privat rollback-orakel, privacy, append-only backend og alle fem post-data-kontroller
@@ -30,3 +30,11 @@ Fejlene lå i samlingen og genkontrollen af den offentlige modelpakke. Lokal `UN
 Integrated bundle er `79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8`, Candidate G-rollbackbundle er `84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c`, og continuationhash er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`.
 
 Korte syntaks-, model-, bundle-, binding-, migrations-, readiness-, engangsundtagelses- og releasekontraktkontroller er grønne. Den brede lokale workflowtest nåede de relevante statiske kontroller, men stoppede på den kendte Windows Python Store-aliasfejl; den gentages ikke lokalt. Den lange nationale audit gentages heller ikke lokalt. Én GitHub-sourcegate på den eksakte slut-head er næste samlede bevis. Derefter mangler migration-13 apply/readback, grøn cache-only preflight, faktisk cutover og offentlig 210/673-verifikation.
+
+## Produktionsopfølgning 2026-09-13
+
+PR #286's endelige head `b6f06310b59ce6c074361735ec9175da435d0e21` bestod exact-head-sourcegate `34726624728` og blev merged byteidentisk som main `6d4adbb2afddfd103566cf0a80c0a57408be1ca4`. Backendrun `34727884447` anvendte/readback-verificerede migration 13. Den efterfølgende låste cache-only-preflight `34728026044` hentede intet providervejr og bestod igen current, WAM, freshness og 210/673-modelbygningen, men stoppede før writes med tre koder: `MODE_RECONSTRUCTION_MISMATCH`, `PART_LAST_MILE_STATE_METADATA_MISMATCH` og `PUBLIC_PROFILE_NOT_READY`.
+
+En ægte H0-current-mangel er nu reproduceret lokalt. Producentens direct-input-gate danner med vilje en ren `UNAVAILABLE`-historikvisning med `null` current-bounds. Auditten krævede før denne situation endelige bounds, kastede inde i den samlede evaluation/last-mile-blok og fortsatte derefter med en afledt mode-sammenligning. Det var ikke en last-mile-, model-, fysik- eller vejrdatafejl.
+
+Audittens oracle følger nu producentens eksakte direct-input-faktum: uden direkte H0-current rekonstrueres `CURRENT_DIRECT_INPUT_MISSING`, `available=false`, nul coverage og `null` current-bounds, mens wave/last-mile-bounds fortsat skal være endelige og eksakte. Profilens coverage, memory og migration kontrolleres fortsat uafhængigt mod rå modelstate; first-cutover kræver fortsat migration/continuation på alle dele. En fuld målrettet 210/673-audit med datasikre negative fixtures er grøn. Modelbundle, migration 13 og vejrcachen er uændrede.

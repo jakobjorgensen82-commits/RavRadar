@@ -1,6 +1,18 @@
-# AI Roadmap – RavRadar lokal 4.0.343-kandidat; Candidate G er offentlig – opdateret 2026-09-11
+# AI Roadmap – RavRadar 4.0.351 main; audit-hotfix, cutover og normal drift – opdateret 2026-09-13
 
-## Nyeste releasehale – 4.0.343 fair providerclosure
+## Aktuel releasehale – 4.0.351 model-online
+
+1. [x] Bestå PR #286/sourcegate `34726624728`, merge byteidentisk som `6d4adbb2`, anvend/readback-verificér migration 13 og genbrug den komplette cache uden providerkald.
+2. [x] Afgræns preflight `34728026044` til tre auditfejl efter grøn current/WAM/freshness/210/673-modelbygning; intet blev deployet.
+3. [x] Reproducér ægte H0-current-missing, ret auditens lovlige `null`/`UNAVAILABLE`-rekonstruktion og adskil coverage, memory og migration. Målrettet 210/673-suite er grøn.
+4. [ ] Kør én exact-head-sourcegate, merge hotfixen, readback-verificér backend og gentag samme cache-only-preflight.
+5. [ ] Ved grøn preflight: udfør cutover, verificér levende integrated 210/673 og gennemgå hele siden meningsfuldt på desktop/mobil og DA/DE/EN.
+6. [ ] Genaktivér almindelig weather og bevis med normale kørsler, at hele registret planlægges, rotationen flytter sig, cachen vedligeholdes, fallback kun fylder reelle rester og tidsbudgettet er bæredygtigt.
+7. [ ] Revider post-cutover-roadmap mod faktisk live evidens. Luk historiske eller dublerede punkter; prioriter kun beviste problemer og de varige arkitekturpunkter om cachetransport, kildeovergange, retention og driftsrobusthed.
+
+Ingen ny provider-oneoff indgår i dette spor. Candidate G er offentlig indtil den faktiske cutover.
+
+## Historisk releasehale – 4.0.343 fair providerclosure
 
 1. [x] Afgræns 4.0.342-mainrun: cache bevaret; DMI-family-, Copernicus-product- og WAM-owner-starvation dokumenteret.
 2. [x] Implementér fælles normal/oneoff-plan med bounded fair DMI-service, separate roterede Copernicus-køer og fælles eksakt WAM-owner.

@@ -1,11 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 offentlig modelkontrol før cutover
+# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal H0-audit-hotfix
 
-- PR #285 blev merged som main `f6e725ec`; backend `34720600286` anvendte migration 12 og bestod readback.
-- Cache-only `34720789985` hentede intet providervejr og beholdt 79.414/79.414 current. Bygningen nåede 210 zoner, 673 dele og 1.346 aktuelle modes.
-- Runnet stoppede før handoff/cutover/deploy på fire forskelle mellem producentens offentlige pakke og auditens rekonstruktion.
-- 4.0.351 adskiller coverage fra memory/migration, bruger samme publicerede current-/last-mile-grundlag på begge sider og bevarer en eksisterende part-identitet ved lokal `UNAVAILABLE`.
-- Migration 12 forbliver byteuændret; append-only migration 13 fører kun nye bindinger/readback frem.
-- Korte kontroller er grønne. Næste er én exact-head-CI, merge, migration-13 readback, cache-only preflight, faktisk cutover og offentlig 210/673-verifikation. Ingen ny oneoff.
+- PR #286-head `b6f06310` bestod sourcegate `34726624728`, blev merged byteidentisk som main `6d4adbb2`, og backend `34727884447` anvendte/readback-verificerede migration 13.
+- Cache-only `34728026044` hentede intet providervejr og bestod current, WAM, freshness og 210/673-modelbygning, men stoppede før handoff/cutover/deploy på tre auditkoder.
+- Et ægte manglende direkte H0-current reproducerede stoppet: producentens lovlige `null` current-bounds blev fejlagtigt krævet endelige af auditten; kastet blev misnavngivet last-mile og gav en afledt mode-fejl.
+- Den lokale hotfix spejler producentens rene `CURRENT_DIRECT_INPUT_MISSING`/`UNAVAILABLE`, bevarer streng wave/last-mile-validering og kontrollerer coverage, memory og migration uafhængigt.
+- Den målrettede fulde 210/673-audit med negative fixtures er grøn. Model, fysik, bundle, migration og cache er uændrede.
+- Næste er én exact-head-CI, merge, backend-readback, cache-only preflight, faktisk cutover og offentlig verifikation; derefter normal weather og rotations-/cachebevis. Ingen ny oneoff.
 
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.350 lokale inputfejl og samlet cutover
 
