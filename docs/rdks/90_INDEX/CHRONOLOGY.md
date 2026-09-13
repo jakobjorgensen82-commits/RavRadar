@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter første real-skala flerobjektpakning
+
+- PR #291-head `ef9b7480` bestod sourcegate `34757328149`, blev merged som main `78c083e8`, og filtræerne er identiske.
+- Cachefortsættelse `34758328372` gendannede fire cacher og genbyggede runtime uden provider, oneoff eller ny 210/673-audit.
+- Schema-2-pakningen passerede alle rå- og objektgrænser. Runnet stoppede først bagefter, fordi den samme store `conditions.json` blev genlæst gennem en særskilt 16-MiB-evidensgrænse.
+- Lokal 4.0.355 kontrollerer measured-warmup-felterne i første, allerede nødvendige parse og fører kun en boolean videre. En 17-MiB-regressionstest er grøn; ingen grænse hæves.
+- Exact-head, ny cachefortsættelse, rapport, handoff, cutover og offentlig kontrol afventer. Se DEC-0137.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 flerobjekttransport
 
 - PR #290-head `d0748d9e` bestod sourcegate `34754075158` og blev merged som main `6305dd82` med identisk filtræ.

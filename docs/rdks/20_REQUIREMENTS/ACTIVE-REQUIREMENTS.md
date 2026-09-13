@@ -1,5 +1,16 @@
 # Aktive krav – samlet register
 
+# 4.0.355 – measured-warmup-attestering fra den allerede validerede runtime
+
+- **REQ-4.0.355-SINGLE-PARSE-001 – BINDENDE P0 / LOKALT TESTET:** Når checkpointet korrekt er N/A under første measured warmup, skal de syv krævede statusfelter kontrolleres under den samme `conditions.json`-parse, som bygger private create-spec og validerer 210/673/modelbinding. Filen må ikke bagefter genlæses gennem auditfilens 16-MiB-grænse.
+- **REQ-4.0.355-EXACT-SOURCE-001 – BINDENDE P0 / LOKALT TESTET:** Conditions-attestering må kun komme fra den eksakte `data/live/conditions.json`, der indgår i samme private runtimebygning. Et alternativt path eller en falsk attestering afvises.
+- **REQ-4.0.355-BOUNDED-HANDOFF-001 – BINDENDE:** Kun den afledte boolean må føres videre internt. Den serialiserede create-spec forbliver metadata+filliste; runtimepayload, dele og rå felter må ikke logges eller uploades som diagnostik.
+- **REQ-4.0.355-NO-BOUND-LIFT-001 – BINDENDE:** Den lille auditfils 16-MiB-grænse og alle 768-MiB/2-GiB/50-MB/350-MB/8-objektgrænser består uændret. Vejr, sourceorder, RavScore, modelstate, migrationer, geometri og offentlig 210/673/118 er uændrede.
+- **REQ-4.0.355-RESUME/CUTOVER-001 – BINDENDE P0:** Samme exact `34738698219` og fire cacher genbruges uden provider/oneoff/ny 210/673-audit. Ny exact-head, samlet kapacitetsrapport, handoff og separat fuldt gated cutover er obligatoriske.
+- **REQ-4.0.355-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, real-skala rapport/handoff, cutover og offentlig 210/673/118-verifikation mangler.
+
+Run `34758328372` er positivt real-skala-bevis for schema-2-pakningen og negativt bevis for den redundante 16-MiB-genlæsning. DEC-0137 er bindende.
+
 # 4.0.354 – hashbundet flerobjekttransport for privat runtime
 
 - **REQ-4.0.354-PART-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Hver immutable Storage-del må højst være 50.000.000 byte og dermed ligge under bucketens tekniske 50-MiB-loft.

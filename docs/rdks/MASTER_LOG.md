@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.355 fjerner redundant 16-MiB-genlæsning
+
+4.0.354-head `ef9b74805fff5165ff1784329407498d0892b43f` bestod den eneste exact-head-sourcegate `34757328149` og blev merged gennem PR #291 som main `78c083e8fee76beb82c2a0d14fb9a2001d795ec2` med identisk filtræ.
+
+Handoff-fortsættelse `34758328372` genbrugte dette kildebevis, gendannede de fire eksakte cacher og genbyggede runtime uden provider, oneoff eller ny 210/673-audit. Flerobjektarkivet blev bygget inden for alle nye grænser. Først derefter fejlede målingen: `conditions.json` var allerede parset og modelkontrolleret under create-spec, men blev læst igen gennem en 16-MiB evidensgrænse for syv små measured-warmup-felter.
+
+Lokal 4.0.355 beregner den samme strenge attestering under første parse og fører kun en intern boolean videre. Den filbaserede create-spec-kontrakt forbliver kun metadata og filliste. Den lille auditrute beholder sin 16-MiB-grænse; ingen produktionsdata- eller Storage-grænse ændres. En 17-MiB-regressionstest består.
+
+Næste trin er én exact-head-gate, merge og samme korte cachefortsættelse til samlet rapport og handoff; derefter fuldt gated cutover. Ingen oneoff. Se DEC-0137.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.354 flerobjekttransport
 
 4.0.353-head `d0748d9e495c0b69cb9c7dcb490ccac27635182c` bestod exact-head-sourcegate `34754075158`, blev merged gennem PR #290 som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1` og har identisk filtræ. Cachefortsættelse `34755365967` genbrugte beviset, gendannede fire eksakte cacher og genbyggede runtime uden provider eller ny 210/673-audit.

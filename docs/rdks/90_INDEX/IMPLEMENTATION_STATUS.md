@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.355 uden dobbelt indlæsning af stor runtime
+
+- [x] Bestå 4.0.354 exact-head-sourcegate `34757328149`, merge PR #291 som main `78c083e8` og bevis identisk filtræ.
+- [x] Kør `34758328372` fra de fire eksakte cacher uden provider/oneoff/ny 210/673-audit og genbyg runtime på exact main.
+- [x] Bevis at schema-2-arkivet passerer real-skala rå-, del-, antal- og samlet arkivgrænse.
+- [x] Afgræns det næste stop til en redundant genlæsning af den store `conditions.json` gennem en 16-MiB-grænse efter vellykket pakning.
+- [x] Genbrug kun den bounded measured-warmup-bool fra den allerede nødvendige og modelkontrollerede parse; bevar create-spec-filens form.
+- [x] Bestå måltest med en conditions-fil over 16 MiB, syntaks og diffkontrol uden at hæve nogen grænse.
+- [ ] Bestå én exact-head 4.0.355-sourcegate og merge byteidentisk.
+- [ ] Kør samme cachefortsættelse uden oneoff; kræv samlet kapacitetsrapport og grønt handoff.
+- [ ] Gennemfør samlet cutover, offentlig/sitekontrol og derefter normal weather-cache-/rotationsbevis.
+
+DEC-0137 er aktiv. Vejrdata, RavScore, modelhashes, migration 13, geometri og offentlig datakontrakt er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.354 flerobjekttransport
 
 - [x] Bestå 4.0.353 exact-head-sourcegate `34754075158`, merge PR #290 som main `6305dd82` og bevis identisk filtræ.
@@ -7,8 +21,8 @@
 - [x] Implementér schema 2 med højst otte hashbundne dele à 50.000.000 byte, højst 350.000.000 byte samlet, samlet readback før CAS og komplet rollback-/cleanup-/legacyunderstøttelse.
 - [x] Bevar sekventiel filudpakning og atomisk destination; bestå målrettede storage/restore/rollback/anonymitets- og kapacitetstests.
 - [x] Løft alle aktive releasefelter og launchpolicies til 4.0.354; geodata ændres kun i topversionsfeltet.
-- [ ] Bestå én exact-head 4.0.354-sourcegate og merge byteidentisk.
-- [ ] Kør samme cachebaserede fortsættelse uden oneoff; kræv grøn måling og runbundet handoff.
+- [x] Bestå exact-head 4.0.354-sourcegate `34757328149`, merge PR #291 som main `78c083e8` og bevis identisk filtræ.
+- [x] Kør `34758328372` fra samme cacher uden oneoff; schema-2-pakning passerede, hvorefter den redundante 16-MiB-genlæsning stoppede før rapport/handoff.
 - [ ] Gennemfør samlet cutover, offentlig/sitekontrol og derefter bevis for normal weather-cachevedligeholdelse og rotation.
 
 DEC-0136 er aktiv. Vejrdata, RavScore, modelhashes, migration 13, geometri og offentlig datakontrakt er uændrede.

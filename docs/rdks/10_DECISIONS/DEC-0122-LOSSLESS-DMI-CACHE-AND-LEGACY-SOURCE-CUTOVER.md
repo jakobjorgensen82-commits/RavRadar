@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.354. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen. De tidligere versionsoverførsler nedenfor er historik. 4.0.354 er lokal kandidat; exact-head-CI, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.355. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen. De tidligere versionsoverførsler nedenfor er historik. 4.0.355 er lokal kandidat; exact-head-CI, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
 
 ### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
 
@@ -164,6 +164,12 @@ Efter særskilt oplysning om indstilling og påvirkningsområde godkendte ejeren
 4.0.353 bestod exact-head-sourcegate `34754075158` og blev merged som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1`. Cachefortsættelse `34755365967` passerede 2-GiB-rågrænsen, men det samlede komprimerede arkiv oversteg den uændrede 50-MiB-grænse for ét Supabase Storage-objekt.
 
 DEC-0136 ændrer derfor transporten, ikke indholdet: højst otte objekter à 50.000.000 byte, højst 350.000.000 byte pr. generation og højst 700.000.000 byte for current+previous. Alle dele og hele arkivet hashbindes og læses tilbage før pointer-CAS. Under ejerens stående launchautorisation flyttes first-cutover-undtagelsen alene til exact-release `4.0.354` med disse nye flerobjektgrænser. Normal tilbagevendende fuld transport er fortsat ikke godkendt, og et ældre handoff ommærkes ikke.
+
+### Versionsoverførsel 2026-09-13 – exact-release 4.0.355
+
+4.0.354 bestod exact-head-sourcegate `34757328149` og blev merged som main `78c083e8fee76beb82c2a0d14fb9a2001d795ec2`. Cachefortsættelse `34758328372` beviste schema-2-pakningen inden for alle grænser, men stoppede bagefter på den redundante anden læsning af den allerede validerede store `conditions.json` gennem en 16-MiB-evidensgrænse.
+
+DEC-0137 genbruger alene den strenge measured-warmup-boolean fra samme create-spec-parse. Den serialiserede spec, alle grænser og alle øvrige gates er uændrede. Under ejerens stående launchautorisation flyttes first-cutover-undtagelsen alene til exact-release `4.0.355`; samme gamle handoff ommærkes ikke, og normal tilbagevendende fuld transport godkendes ikke.
 
 ## Konsekvenser
 

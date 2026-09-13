@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter redundant 16-MiB-evidenslæsning
+
+- **ISSUE-4.0.354-PR291/SOURCE – LUKKET:** Head `ef9b7480` bestod sourcegate `34757328149` og blev merged som main `78c083e8` med identisk filtræ.
+- **ISSUE-CONTINUATION-34758328372-CACHE/RUNTIME – LUKKET:** Fire eksakte cacher blev gendannet og runtime genbygget uden provider, oneoff eller ny 210/673-audit.
+- **ISSUE-PRIVATE-RUNTIME-MULTIOBJECT-BOUNDS – REAL-SKALA PAKNING GRØN / RAPPORT ÅBEN:** Schema-2-pakningen passerede rå-, del-, antal- og samlet arkivgrænse. Runnet nåede ikke den ufølsomme slutrapport eller handoffet.
+- **ISSUE-MEASURED-WARMUP-SECOND-READ-16M – LOKALT RETTET / CI ÅBEN P0:** Kapacitetsmåleren genlæste efter vellykket pakning den allerede validerede store `conditions.json` gennem en 16-MiB-grænse. 4.0.355 genbruger kun den strenge boolean fra første parse; ingen grænse hæves.
+- **ISSUE-4.0.355-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, samlet kapacitetsrapport, handoff, fuldt gated cutover og offentlig 210/673/118-verifikation mangler.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal bevise fuld registerplan, vedvarende rotation, cachebevarelse, fallbackbidrag og tidsoverskud.
+
+DEC-0137 og `CHANGELOG-4.0.355.md` er aktuelle. Ingen provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 efter 50-MiB-enkeltobjektstop
 
 - **ISSUE-4.0.353-PR290/SOURCE – LUKKET:** Head `d0748d9e` bestod sourcegate `34754075158` og blev merged som main `6305dd82` med identisk filtræ.

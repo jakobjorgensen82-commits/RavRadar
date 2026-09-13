@@ -1,3 +1,13 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.355 genbruger den allerede kontrollerede runtimeindlæsning
+
+4.0.354-head `ef9b74805fff5165ff1784329407498d0892b43f` bestod den eneste exact-head-sourcegate `34757328149` på 20m17s. PR #291 blev merged som main `78c083e8fee76beb82c2a0d14fb9a2001d795ec2`, og main har samme filtræ som den validerede head.
+
+Cachefortsættelse `34758328372` kørte på denne main, genbrugte det grønne kildebevis, gendannede alle fire eksakte cacher og genbyggede runtime uden provider, oneoff eller ny 210/673-audit. Schema-2-pakningen kom i real-skala gennem rå-, del-, antal- og samlet arkivgrænse. Runnet stoppede først bagefter, fordi kapacitetsmåleren forsøgte at genlæse den samme store `data/live/conditions.json` gennem en særskilt 16-MiB-grænse for kun at kontrollere syv measured-warmup-felter.
+
+Lokal 4.0.355 kontrollerer de syv felter under `buildPrivateRuntimeCreateSpec`'s allerede nødvendige fulde parse, som også validerer 210 zoner, 673 dele og modelbindingen. Kun et internt ja/nej-resultat føres videre; create-spec-filen udvides ikke. En conditions-fil over 16 MiB består den nye regressionstest. Ingen payload-, Storage-, vejr-, model-, score-, database-, geometri- eller offentlig kontraktgrænse hæves eller springes over.
+
+Åbent er én exact-head-4.0.355-gate, merge, samme cachefortsættelse, samlet kapacitetsrapport, handoff, fuldt gated cutover og offentlig/site-/normaldriftskontrol. Ingen ny oneoff. Se DEC-0137.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.354 efter målt 50-MiB-enkeltfilstop
 
 4.0.353-head `d0748d9e495c0b69cb9c7dcb490ccac27635182c` bestod exact-head-sourcegate `34754075158` og blev merged gennem PR #290 som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1`; filtræerne er identiske.

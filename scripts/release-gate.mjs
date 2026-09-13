@@ -1003,6 +1003,8 @@ for(const marker of ['expectedPartCount: 673','bundleContentSha256','modelBindin
 for(const marker of [
   'Date.parse(target) - 72 * 3_600_000',
   'Restored private runtime must remain outside the repository tree',
+  'measuredWarmupCheckpointAbsenceAttested',
+  'Measured-warmup conditions must be the exact runtime source',
   'privateDataLogged: false',
 ]){
   ok(privateRuntimeWorkflow.includes(marker),`Private runtime-workflowkontrakten mangler ${marker}`);
