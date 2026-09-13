@@ -1,3 +1,17 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.356 fra GitHub-startfejl til model-online
+
+- [x] Bestå 4.0.355-sourcegate `34759300669`, merge PR #292 som main `5bcd5fb2` og bevis identisk filtræ.
+- [x] Bestå cache-handoff `34760554781` uden provider/oneoff/ny 210/673-audit.
+- [x] Afgræns `34761090699` til en startup-fejl før jobs og ret caller/callee-tilladelsen read-only.
+- [ ] Kør én exact-head 4.0.356-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Genskab kun SHA-bindingen fra samme cacher og start samlet cutover; ingen ny vejrhentning.
+- [ ] Verificér 4.0.356 offentligt på 210 zoner, 673 dele, begge modes og 118 timer.
+- [ ] Gennemgå levende side på desktop/mobil og DA/DE/EN.
+- [ ] Bevis almindelig cachevedligeholdelse, fuld registerrotation, fallback og tidsoverskud; ingen oneoff.
+- [ ] Revurdér resten af post-cutover-roadmappet mod live evidens.
+
+Ingen model-, data-, privacy- eller Storage-grænse ændres. DEC-0138 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.355 fra redundant runtimegenlæsning til model-online
 
 - [x] Bestå 4.0.354-sourcegate `34757328149`, merge PR #291 som main `78c083e8` og bevis identisk filtræ.

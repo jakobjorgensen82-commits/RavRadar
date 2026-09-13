@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 efter startup-fejl uden jobs
+
+- **ISSUE-4.0.355-PR292/SOURCE – LUKKET:** Head `69a05164` bestod sourcegate `34759300669` og blev merged som main `5bcd5fb2` med identisk filtræ.
+- **ISSUE-CONTINUATION-34760554781 – LUKKET:** Fire cacher, real-skala-kapacitet og handoff blev grønne uden provider, oneoff eller ny 210/673-audit.
+- **ISSUE-CUTOVER-34761090699-STARTUP – LOKALT RETTET / CI ÅBEN P0:** GitHub oprettede ingen jobs, fordi build-callerens permissions var smallere end det genbrugte workflows krav. 4.0.356 giver kun den manglende read-only adgang videre.
+- **ISSUE-4.0.356-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, nyt SHA-bundet handoff, samlet cutover og offentlig 210/673/118-verifikation mangler.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal bevise fuld registerplan, rotation, cachebevarelse, fallback og tidsoverskud.
+
+DEC-0138 og `CHANGELOG-4.0.356.md` er aktuelle. Ingen provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter redundant 16-MiB-evidenslæsning
 
 - **ISSUE-4.0.354-PR291/SOURCE – LUKKET:** Head `ef9b7480` bestod sourcegate `34757328149` og blev merged som main `78c083e8` med identisk filtræ.

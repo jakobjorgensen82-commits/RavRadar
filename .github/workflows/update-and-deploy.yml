@@ -1393,6 +1393,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
       production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}

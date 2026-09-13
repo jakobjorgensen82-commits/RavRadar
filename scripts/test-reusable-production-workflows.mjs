@@ -180,6 +180,14 @@ const buildCaller = jobBlock(orchestrator, 'build-and-prepare');
 assert.equal(buildCaller.includes('uses: ./.github/workflows/reusable-weather-build.yml'), true, 'build call path');
 assert.equal(buildCaller.includes('runs-on:'), false, 'build caller has no runner');
 assert.equal(buildCaller.includes('steps:'), false, 'build caller has no steps');
+assertExactKeys(
+  directKeys(indentedBody(buildCaller, '    permissions:'), 6),
+  ['contents', 'actions', 'pull-requests'],
+  'build caller forwards every reusable build permission',
+);
+assert.equal(buildCaller.includes('contents: write'), false, 'build caller contents remain read-only');
+assert.equal(buildCaller.includes('actions: write'), false, 'build caller actions remain read-only');
+assert.equal(buildCaller.includes('pull-requests: write'), false, 'build caller pull requests remain read-only');
 assert.equal(
   buildCaller.includes('needs: [validate-dispatch, current-hour-readiness, trip-storage-readiness]'),
   true,
@@ -219,6 +227,11 @@ assert.equal(deployCaller.includes('uses: ./.github/workflows/reusable-pages-dep
 assert.equal(deployCaller.includes('runs-on:'), false, 'deploy caller has no runner');
 assert.equal(deployCaller.includes('steps:'), false, 'deploy caller has no steps');
 assert.equal(deployCaller.includes('environment:'), false, 'deploy environment is callee-owned');
+assertExactKeys(
+  directKeys(indentedBody(deployCaller, '    permissions:'), 6),
+  ['contents', 'actions', 'pages', 'id-token'],
+  'deploy caller forwards every reusable deploy permission',
+);
 assertExactKeys(directKeys(indentedBody(deployCaller, '    with:'), 6), deployContract.inputs, 'deploy caller inputs');
 assertExactKeys(directKeys(indentedBody(deployCaller, '    secrets:'), 6), deployContract.secrets, 'deploy caller secrets');
 for (const input of deployContract.inputs) {

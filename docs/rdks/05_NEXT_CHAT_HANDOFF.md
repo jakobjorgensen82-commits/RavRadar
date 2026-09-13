@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 retter startup før jobs
+
+- **Aktuel base:** Main `5bcd5fb2` efter PR #292/sourcegate `34759300669`; lokal branch `codex/4.0.356-reusable-workflow-permissions`.
+- **Grønt bevis:** `34760554781` gendannede fire cacher, målte kapaciteten og forseglede handoff uden provider, oneoff eller ny 210/673-audit.
+- **Stop:** Cutover `34761090699` fik `startup_failure` før jobs, fordi build-callerens smallere permissions ikke gav `pull-requests: read` videre til callee.
+- **Rettelse:** Tilføj kun read-only-adgangen og lås exact permissionsparitet for build/deploy. Ingen produktdata eller grænser ændres.
+- **Næste rækkefølge:** måltest/version/RDKS → commit/push/PR → én exact-head-sourcegate → merge → kun SHA-bundet handoff fra samme cacher → samlet cutover → offentlig/sitekontrol → normal weather/rotation.
+- **Bevar:** brugerens to lokale linjeskiftændringer og fire untracked `.tmp-run-*-safe-inspect`-mapper.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter redundant 16-MiB-genlæsning
 
 - **Aktuel base:** Main er `78c083e8fee76beb82c2a0d14fb9a2001d795ec2` efter PR #291 og grøn exact-head-sourcegate `34757328149`; filtræet matcher head `ef9b7480`. Arbejdsgrenen har lokal 4.0.355. Candidate G er stadig offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper samt brugerens to lokale linjeskiftændringer bevares.

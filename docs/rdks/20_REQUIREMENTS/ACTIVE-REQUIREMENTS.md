@@ -1,5 +1,15 @@
 # Aktive krav – samlet register
 
+# 4.0.356 – gyldig caller/callee-kontrakt før cutover
+
+- **REQ-4.0.356-BUILD-PERMISSION-001 – BINDENDE P0 / LOKALT RETTET:** `build-and-prepare`-caller skal give præcis `contents: read`, `actions: read` og `pull-requests: read` videre til det genbrugte buildworkflow.
+- **REQ-4.0.356-NO-WRITE-001 – BINDENDE P0:** Rettelsen må ikke tilføje nogen write-tilladelse.
+- **REQ-4.0.356-PARITY-001 – BINDENDE / LOKALT TESTET:** Den eksisterende kontrakttest skal kræve exact caller/callee-permissionsparitet for både build og deploy.
+- **REQ-4.0.356-RESUME-001 – BINDENDE P0:** Samme grønne vejrcacher genbruges. Kun det nye SHA-bundne handoff må genskabes før cutover; ingen provider, oneoff eller ny 210/673-audit.
+- **REQ-4.0.356-LIVE-PROOF-001 – ÅBEN P0:** Exact-head, merge, nyt SHA-bundet handoff, samlet cutover og offentlig kontrol mangler.
+
+Run `34761090699` er negativt bevis for workflow-startkontrakten; DEC-0138 er bindende.
+
 # 4.0.355 – measured-warmup-attestering fra den allerede validerede runtime
 
 - **REQ-4.0.355-SINGLE-PARSE-001 – BINDENDE P0 / LOKALT TESTET:** Når checkpointet korrekt er N/A under første measured warmup, skal de syv krævede statusfelter kontrolleres under den samme `conditions.json`-parse, som bygger private create-spec og validerer 210/673/modelbinding. Filen må ikke bagefter genlæses gennem auditfilens 16-MiB-grænse.
