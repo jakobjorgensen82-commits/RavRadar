@@ -1,5 +1,20 @@
 # Aktive krav – samlet register
 
+# 4.0.359 – kontrolorakler følger gældende produktkontrakter
+
+- **REQ-4.0.359-COMPLETE-EVIDENCE-001 – BEVIST:** Cutover `34781869394` gennemførte alle 272 bladkommandoer og alle fem hovedkontroller; fejlrapporten er derfor komplet for det gennemløb.
+- **REQ-4.0.359-CACHE-CONTEXT-001 – BINDENDE P0 / LOKALT TESTET:** Collectorens rumlige audit skal bruge samme friskbyggede DMI-candidate-cache som normal fuld validering. Den må ikke sammenligne mod den bevarede legacyfallback.
+- **REQ-4.0.359-ROTATION-ORACLE-001 – BINDENDE / LOKALT TESTET:** Workflowtestene følger den aktive 6-collections first-cutover/3-collections normaldrift-kontrakt.
+- **REQ-4.0.359-AVAILABILITY-ORACLE-001 – BINDENDE / LOKALT TESTET:** Availability-fixtures følger schema 2 med `evaluatedAt` og den eksisterende deterministiske partliste, også når currentdata er fraværende.
+- **REQ-4.0.359-PROVENANCE-ORACLE-001 – BINDENDE / LOKALT TESTET:** Uden gyldig provenance må en fixture kun forvente native tretimersprøver; mellemtimer må ikke opfindes.
+- **REQ-4.0.359-SEMANTIC-ISOLATION-001 – BINDENDE / LOKALT TESTET:** De tre legitime local-part-forbrugere accepteres statisk, mens 673/673 semantisk retning og isolation fortsat skal bestå.
+- **REQ-4.0.359-NO-BLANKET-BYPASS-001 – BINDENDE P0:** De seks konkrete kontrolfejl rettes; fuld validering og alle fem hovedgates forbliver bindende. Ukendte eller materielle fejl må ikke omklassificeres generelt.
+- **REQ-4.0.359-NO-PRODUCT-CHANGE-001 – BINDENDE:** Scoreformel, modelstate, vejrværdier/sourceorder, geometri, punkter, migrationer og privacy ændres ikke.
+- **REQ-4.0.359-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-sourcegate, byteidentisk merge, cachebaseret SHA-handoff, cutover og offentlig/siteverifikation mangler. Ingen oneoff eller almindelig weather før modellen er online.
+- **REQ-4.0.359-POST-LAUNCH-001 – BINDENDE:** Efter offentlig verifikation genaktiveres normal weather kontrolleret og skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+
+DEC-0141 er bindende.
+
 # 4.0.358 – fuld underfejlopsamling og samlet cutoverrettelse
 
 - **REQ-4.0.358-COMPLETE-PLAN-001 – BINDENDE P0 / LOKALT TESTET:** Alle deklarerede selvstændige leaf-kommandoer i fuld validering forsøges. Fejl i én child-proces må ikke skjule senere plantrin.

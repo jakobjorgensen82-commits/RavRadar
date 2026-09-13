@@ -1,3 +1,26 @@
+# Aktuel implementeringsstatus – lokal 4.0.359 samlet kontrolorakelrettelse
+
+- [x] Merge 4.0.358 som main `2a1c73d2` efter grøn exact-head-sourcegate `34777480545`.
+- [x] Forsegl cache-handoff `34781396538` uden provider/oneoff med 79.414/79.414 currentpar og missing 0.
+- [x] Gennemfør cutover `34781869394` gennem 272/272 bladkommandoer og alle fem hovedkontroller; ingen deploy ved samlet fejl.
+- [x] Afgræns alle seks røde underkontroller til test/kontekst og ikke score-, vejr- eller datatab.
+- [x] Lås DMI-rotationsoraklerne til den gældende 6/3-kontrakt.
+- [x] Opdatér availability-fixturen til schema 2, `evaluatedAt` og den deterministiske eksisterende del uden currentdata.
+- [x] Giv collectorens rumlige audit samme DMI-candidate-cachepath som normal fuld validering.
+- [x] Lås no-provenance-fixturen til native tretimersværdier uden opfundne mellemtimer.
+- [x] Opdatér lokal-del-isolationens kaldetælling til de tre legitime forbrugere, herunder Feggesund-readiness.
+- [x] Bevar alle fem gates og fuld validation som bindende; ingen generel fejlundtagelse.
+- [x] Bestå de direkte seks regressionskontroller samt workflowrækkefølge og releasegate lokalt.
+- [x] Afgræns PR #296/run `34786784374` til en usynkroniseret statisk håndbogskopi efter grøn releasegate og 30 unikke sourcekontroller; synkronisér kopien og bestå den direkte test.
+- [x] Gennemfør de 90 endnu ikke nåede sourcekommandoer samlet; alle kodeled grønne, og 26 lokale Python-aliasfejl genkørt 26/26 grønne med bundet runtime.
+- [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
+- [ ] Genskab kun SHA-handoffet fra samme cacher; ingen provider, oneoff eller almindelig weather.
+- [ ] Kør cutover, verificér offentlig 210/673/118 og hjemmesiden, og genaktivér derefter almindelig weather kontrolleret.
+- [ ] Bevis normal cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- [ ] Slet de to gamle jobløse workflowposter `34613079069` og `34228112413`, når GitHub gør dem sletbare.
+
+DEC-0141 er aktiv. Ingen model-, vejr-, geometri-, migrations- eller privacyændring indgår.
+
 # Aktuel implementeringsstatus – lokal 4.0.358 samlet cutoverrettelse
 
 - [x] Ret forældet strømfixture og dens gamle tekstmatch.

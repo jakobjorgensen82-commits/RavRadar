@@ -7,8 +7,8 @@ import { calculateRavScore } from '../js/core/score-engine.js?v=4.0.233';
 const updateWeatherSource = await fs.readFile('scripts/update-weather.mjs', 'utf8');
 assert.equal(
   (updateWeatherSource.match(/localPartRuntimeProperties\(parent\.properties, part,/g) ?? []).length,
-  2,
-  'Både delens vejfeature og scorezone skal bygges med den isolerede lokale retning'
+  3,
+  'Feggesunds bølgekontrol, delens vejfeature og scorezone skal alle bygges med den isolerede lokale retning'
 );
 
 const parent = {

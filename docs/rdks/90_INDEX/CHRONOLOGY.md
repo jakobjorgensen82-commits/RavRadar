@@ -1,3 +1,11 @@
+# 2026-09-14 – 4.0.359 retter seks kontrolorakler fra den komplette cutoverrapport
+
+4.0.358 blev exact-head-valideret og merged som main `2a1c73d2`. Handoff `34781396538` genbrugte de fire cacher uden provider/oneoff og lukkede 79.414/79.414 currentpar. Cutover `34781869394` gennemførte 272/272 bladkommandoer og alle fem hovedkontroller, hvorefter seks fejl i fuld validering stoppede før deploy.
+
+De seks var to gamle DMI-rotationsforventninger, en gammel availability-fixture, forkert DMI-cachekontekst i collectoren, gammel interpolation uden provenance og en skrøbelig kaldetælling. 4.0.359 retter dem samlet og bevarer hele den bindende barriere. Ingen produkt-, score- eller vejrfejl blev vist af gennemløbet; ingen generel fejlundtagelse indføres. Se DEC-0141.
+
+PR #296/run `34786784374` bestod releasegaten og 30 sourceled, før den fandt en glemt synkronisering af webhåndbogen til Supabase-installationskopien. Syncen og den direkte test er rettet. De 90 efterfølgende sourcekommandoer er kørt samlet lokalt; alle er grønne efter brug af den bundne Python-runtime, og ingen ny kodefejl blev fundet.
+
 # 2026-09-13 – 4.0.358 samler alle deklarerede underfejl og retter næste cutoverkanter
 
 Efter grøn 4.0.357-sourcegate/main/handoff stoppede cutover `34769550035` før deploy i en forældet forecastfixture. Den femleddede barriere havde kørt alle hovedkontroller, men den fulde validering skjulte resten af sine leaf-kommandoer bag første fejl. Astra-reviewet fandt yderligere en gammel public-runtime-orakeltest, tre typed-false shellstop og en Pages-fejlslutning mellem lokal availability og rå memory. 4.0.358 retter dem samlet, deklarerer oneoff-fill-testen selvstændigt og fører alle 272 leaf-kontroller til ende med løbende planbundet rapport. Alle fem gates forbliver bindende; writes følger kun en grøn samlet blok. First-cutover får 180 minutter, normal/providerbudgetter er uændrede. Ingen score-, vejr- eller oneoffændring. Se DEC-0140.

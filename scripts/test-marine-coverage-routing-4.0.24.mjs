@@ -16,7 +16,11 @@ assert.match(bulk, /VALID_POINT_TOO_FAR/);
 assert.match(bulk, /freshMarineZones/);
 assert.match(bulk, /preservedMarineZones/);
 assert.match(bulk, /missingZones/);
-assert.match(buildWorkflow, /DMI_BULK_COLLECTIONS_PER_RUN: 2/);
+assert.match(
+  buildWorkflow,
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
+  'Første cutover skal kunne nå seks DMI-collections, mens normal rotation betjener tre pr. kørsel.'
+);
 assert.match(buildWorkflow, /DMI_BULK_MAX_RUNTIME_SECONDS:.*3000.*900/);
 assert.match(buildWorkflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS:.*180.*120/);
 console.log('Marine overlap, grid candidate and coverage diagnostics test passed.');

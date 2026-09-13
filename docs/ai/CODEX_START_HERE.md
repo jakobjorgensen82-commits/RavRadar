@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 retter hele den samlede kontrolliste
+
+Main er 4.0.358/`2a1c73d2`; exact-head-sourcegate `34777480545` og cache-handoff `34781396538` er grønne. Handoffet bevarede target `2026-09-12T08:00:00Z`, hentede intet providervejr og lukkede alle 79.414 par: DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116, missing 0.
+
+Cutover `34781869394` gennemførte alle 272 bladkommandoer og alle fem hovedkontroller. Runtime/modelaudit, referencezoner, releasegate og datavalidering var grønne; fuld validering samlede seks fejl. De seks er nu hver reproduceret som en forældet testforventning eller forkert testkontekst: to gamle DMI-rotationsværdier, en gammel availability-fixture, forkert DMI-cachepath i collectorjobbet, en fixture der krævede opfundne mellemtimer uden provenance, og en skrøbelig kaldetælling. Ingen af dem viser scorefejl, vejrhul eller datatab.
+
+Lokal 4.0.359 retter alle seks samlet og binder collectorens rumlige audit til samme friskbyggede DMI-candidate-cache som den normale fulde validering. DEC-0140 består: fremtidige ukendte eller produktkritiske fejl stopper stadig før writes. Kontrolfejl skal rettes konkret, ikke skjules bag en generel undtagelse. Ingen score-, vejr-, model-, geometri-, migrations- eller privacyændring indgår.
+
+PR #296's første head `b0f43474` nåede releasegate og de første 30 unikke sourcekontroller grønt i run `34786784374`, men stoppede på, at 4.0.359-afsnittet i webhåndbogen ikke var kopieret ind i Supabase-installationsfilen efter den sidste dokumentændring. Projektets synkroniseringsværktøj har nu rettet kopien, og den direkte test er grøn. De 90 sourcekontroller efter stoppet er kørt samlet til ende lokalt: alle Node-led var grønne; 26 Python/Node→Python-led var alene røde uden Windows-alias og er derefter 26/26 grønne med projektets bundne Python-runtime. Ingen yderligere kodefejl blev fundet.
+
+Næste rækkefølge er målrettet slutkontrol, én exact-head GitHub-sourcegate, merge, kort cachebaseret SHA-handoff uden provider/oneoff og ny cutover. Normal weather forbliver deaktiveret indtil offentlig model- og siteverifikation. Derefter bevises almindelig cachevedligeholdelse og fuld DMI-rotation. De to gamle jobløse workflowposter `34613079069` og `34228112413` slettes, når GitHub tillader det. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet cutoverrettelse implementeret
 
 På `codex/4.0.358-cutover-error-collection`, baseret eksakt på main `2c243d9e`, er Astra-reviewets samlede rettelse nu implementeret. Cutoverens fem topkontroller fortsætter alle til ende og afgør først derefter samlet, om installationen må skrive eksternt. Den fulde validering er desuden udvidet til sin komplette deklarerede plan på 272 bladkommandoer: hver uafhængig kontrol fortsætter efter fejl, og en atomisk rapport gemmes før, under og efter forløbet. Første cutover har 180 minutter; normalvejret beholder 90 minutter. Ingen provider-oneoff er tilføjet.

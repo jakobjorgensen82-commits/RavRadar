@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.358";
+import { t } from "../i18n.js?v=4.0.359";
 
 const STYLE_ID = 'ravradar-trip-evidence-dialog-style';
 
