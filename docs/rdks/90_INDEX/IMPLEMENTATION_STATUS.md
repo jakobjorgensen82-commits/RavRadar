@@ -1,4 +1,35 @@
-# Aktuel implementeringsstatus – lokal 4.0.357 kanonisk retningsafrunding
+# Aktuel implementeringsstatus – lokal 4.0.358 samlet cutoverrettelse
+
+- [x] Ret forældet strømfixture og dens gamle tekstmatch.
+- [x] Erstat public-runtime-testens historiske scoremotor med kontrol af de materialiserede integrerede scorefelter.
+- [x] Bevar gyldige boolske `false`-værdier i alle tre første-cutover-udtræk uden shellstop.
+- [x] Adskil Pages-verifikation af lokal `UNAVAILABLE` fra modelhukommelsens uafhængige komplethed.
+- [x] Fold hele `npm run validate` rekursivt ud til 272 deklarerede bladkommandoer, fortsæt efter hvert udfald og skriv en atomisk løbende rapport.
+- [x] Bevar fem bindende topkontroller og stop kun én gang efter den samlede blok, før eksterne writes, når en reel fejl findes; fortsæt automatisk til installation ved samlet grønt resultat.
+- [x] Giv kun den første integrerede cutover 180 minutter og bevar normalvejrets 90 minutter.
+- [x] Bestå måltests for collector, strøm, workflow og Pages.
+- [x] Løft og kontrollér alle versions-/RDKS-/håndbogsfelter og bevis geodata-only-versiondiff.
+- [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
+- [ ] Genbrug grønt handoff, gennemfør cutover, verificér offentlig 210/673/118 og hjemmesiden, og bevis derefter normal cachevedligeholdelse og DMI-rotation.
+
+DEC-0140 er aktiv. Ingen provider-oneoff, scoreændring, vejrændring, migration eller geometriændring indgår.
+
+# Historisk implementeringsstatus – 4.0.358-kladde efter Astra-review
+
+- [x] PR #294/sourcegate `34767862281`, tree-identisk main `2c243d9e`/4.0.357 og handoff `34768997271` grønne.
+- [x] Cutover `34769550035`: fire direkte hovedkontroller grønne, forældet strømtest stoppede den femtes underkæde; ingen deploy.
+- [x] Lokal strømfixture/tekstmatch rettet; collectorens syntetiske fortsættelse og de berørte DMI-seams bestået.
+- [x] Astra-review fandt gammel public-runtime-scoretest, tre boolske shellstop, advisory-konflikter og ufuldstændig rapportbevaring.
+- [x] Andet, ejerbestilt modelreview fulgte input/historik → beregning → offentlig brug; ingen ny regnefejl påvist, 61-timers samlet/opdelt syntetik konsistent.
+- [ ] Ny Pages-kontraktfejl rettes i samme release: lokal UNAVAILABLE + ufuldstændig hukommelse må accepteres med korrekt forseglet profil, selv uden tilgængelige HISTORY_INCOMPLETE-scorer.
+- [ ] Efter launch: afstem all-parts-zonereglens skjul af øvrige gyldige dele med DEC-0132. Empirisk fundpræcision og normal cachevedligeholdelse er fortsat åbne beviser.
+- [ ] Saml reviewets afgrænsede rettelser i én release; den lokale blanket advisory-patch må ikke afleveres som færdig.
+- [ ] Versions-/RDKS-/håndbogssynkronisering, målrettet bevis og én GitHub-sourcegate på korrekt branch fra main.
+- [ ] Samme cache/handoff, faktisk cutover, offentlig/sitekontrol og almindelig weather-cache-/rotationsbevis.
+
+Fuld evidens og næste trin: [Astra-review 2026-09-13](../../ai/ASTRA_CUTOVER_REVIEW_2026-09-13.md). Review færdigt; Sol/Ekstra høj er næste model/indsats. Ældre checkpoints nedenfor er historik.
+
+# Historisk implementeringsstatus – lokal 4.0.357 kanonisk retningsafrunding
 
 - [x] Bestå PR #293-sourcegate `34761823518`, merge som main `b75672f7` og bevis identisk filtræ.
 - [x] Bestå handoff `34763228997` uden provider, oneoff eller ny 210/673-audit.

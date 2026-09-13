@@ -1,3 +1,9 @@
+## 4.0.358 – samlet cutoverrettelse og komplet underfejlrapport (2026-09-13, lokal kandidat)
+
+- Alle 272 deklarerede selvstændige fuld-valideringskommandoer forsøges, og en SHA-planbundet payloadfri rapport opdateres løbende. Fem hovedkontroller forbliver bindende og samles før eksterne writes.
+- Forecast- og public-runtime-testene følger nu de faktiske DMI-/integrerede kontrakter. Tre boolske shelludtræk accepterer gyldigt false, og Pages holder lokal tilgængelighed adskilt fra modelhukommelse.
+- First-cutover får 180 minutters samlet loft; normaldrift og providerbudgetter er uændrede. Ingen oneoff. Se `CHANGELOG-4.0.358.md` og DEC-0140.
+
 ## 4.0.357 – kanonisk retningsafrunding efter samlet cutoverkontrol (2026-09-13, lokal kandidat)
 
 - PR #293/sourcegate `34761823518`, main `b75672f7` og cache-handoff `34763228997` er grønne; handoffet brugte ingen provider, oneoff eller ny 210/673-audit.

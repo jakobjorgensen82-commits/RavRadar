@@ -1,4 +1,30 @@
-# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter samlet decimalfejl
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet implementeret, livebevis åbent
+
+- **ISSUE-LEGACY-VALIDATION-FIXTURES – LOKALT LUKKET / CI ÅBEN:** Strømtesten bruger fuld native DMI-identitet og public-runtime-testen kontrollerer de materialiserede integrerede scorefelter i stedet for den historiske scoremotor.
+- **ISSUE-CUTOVER-JQ-VALID-FALSE – LOKALT LUKKET / CI ÅBEN:** Alle tre boolske udtræk typekontrollerer og serialiserer gyldig `false` uden `jq -e`-stop.
+- **ISSUE-CUTOVER-COLLECTOR-COMPLETENESS – LOKALT LUKKET / CI ÅBEN:** Alle 272 deklarerede bladkommandoer gennemføres, hvert udfald gemmes løbende atomisk, og rapporten uploades også ved samlet fejl. De fem topkontroller forbliver bindende.
+- **ISSUE-PAGES-UNAVAILABLE-MEMORY-INDEPENDENCE – LOKALT LUKKET / LIVE ÅBEN:** Lokal `UNAVAILABLE` kan nu sameksistere med ærligt ufuldstændig hukommelse; coverage, migration, profil, advisory og hash kontrolleres fortsat eksakt.
+- **ISSUE-4.0.358-LAUNCH – LOKAL PAKKE GRØN / LIVE ÅBEN:** Version/RDKS, håndbog, geodata-only-diff og måltests er grønne. Exact-head CI, merge, cutover og offentlig kontrol mangler.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Almindelige kørsler skal bevise cachevedligeholdelse, fuld DMI-registerplan/rotation, fallback og tidsoverskud.
+- **ISSUE-ZONE-LOCAL-UNAVAILABLE-AGGREGATION – AFKLARING EFTER LAUNCH:** Eksisterende all-parts-regel ændres ikke skjult i denne rettelse.
+- **ISSUE-PREFLIGHT-CONDITIONS-READ-BOUND – MÅLES VED NATURLIG KØRSEL:** Ingen grænse hæves uden konkret størrelsesbevis.
+
+DEC-0140 er aktiv. Ingen provider-oneoff er planlagt.
+
+# HISTORISK CHECKPOINT – 2026-09-13 – 4.0.357 main, 4.0.358 efter Astra-modelreview
+
+- **ISSUE-4.0.357-PR294/SOURCE – LUKKET:** PR #294/sourcegate `34767862281` og tree-identisk main `2c243d9e` er grønne. Handoff `34768997271` er grønt. Cutover `34769550035` stoppede i gammel strømtest, før deploy.
+- **ISSUE-LEGACY-VALIDATION-FIXTURES – DELVIST LOKALT RETTET:** Den gamle strømfixture/tekstmatch er rettet; public-runtime-testens brug af gammel scoremotor giver reproducerbar falsk 84/74-forskel og skal rettes.
+- **ISSUE-CUTOVER-JQ-VALID-FALSE – ÅBEN:** Tre boolske tildelinger med `jq -e` stopper på gyldigt false i første opstart. Ret typebevarende i samme 4.0.358.
+- **ISSUE-CUTOVER-COLLECTOR-COMPLETENESS – ÅBEN:** Bevar alle selvstændige kommandoudfald, løbende rapport, komplet plan og sammenhængende workflow/release/slutstatus. Den lokale generelle advisory-fritagelse er ikke releaseklar.
+- **ISSUE-PAGES-UNAVAILABLE-MEMORY-INDEPENDENCE – ÅBEN:** `verify-ravscore-operational-pages-deployment.mjs:120–129` kræver fejlagtigt memory=true ved nul HISTORY_INCOMPLETE-scorer. Lokal UNAVAILABLE + ufuldstændig hukommelse er reproduceret som gyldig availability, der afvises efter deploykontrollen. Ret og måltest i samme 4.0.358 efter DEC-0132 pkt4/DEC-0133 pkt1.
+- **ISSUE-ZONE-LOCAL-UNAVAILABLE-AGGREGATION – AFKLARING EFTER LAUNCH:** Én utilgængelig del skjuler hele zone/mode/time, mens øvrige delscorer bevares. Eksisterende test låser adfærden; afstem med DEC-0132's lokale formulering. Ingen blind modelændring eller påvist national launchblokering.
+- **ISSUE-PREFLIGHT-CONDITIONS-READ-BOUND – UBEVIST KAPACITETSKANT:** 256 MiB læseloft mod 768 MiB pakningsloft pr. fil; konkret conditionsstørrelse skal afgøre relevans. Ingen grænseændring alene på denne observation.
+- **ISSUE-4.0.358-LAUNCH / NORMAL-MAINTENANCE-ROTATION – ÅBNE:** Samlet patch/version/CI, cachefortsættelse, faktisk cutover/sitekontrol og derefter almindelig vedligeholdelsesbevis mangler. Ingen provider-oneoff.
+
+[Permanent Astra-review og minimumsplan](../../ai/ASTRA_CUTOVER_REVIEW_2026-09-13.md). Den udvidede modelgennemgang fandt ingen ny konkret regnefejl i de undersøgte forbindelser; empirisk præcision er ikke dermed bevist. Ældre checkpoints nedenfor er historik.
+
+# HISTORISK CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter samlet decimalfejl
 
 - **ISSUE-4.0.356-PR293/SOURCE – LUKKET:** Head `dfce04f1` bestod sourcegate `34761823518` og blev merged som main `b75672f7` med identisk filtræ.
 - **ISSUE-HANDOFF-34763228997 – LUKKET:** Fire cacher og exact handoff blev grønne uden provider, oneoff eller ny 210/673-audit.

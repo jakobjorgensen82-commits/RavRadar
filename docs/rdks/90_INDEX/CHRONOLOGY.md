@@ -1,3 +1,7 @@
+# 2026-09-13 – 4.0.358 samler alle deklarerede underfejl og retter næste cutoverkanter
+
+Efter grøn 4.0.357-sourcegate/main/handoff stoppede cutover `34769550035` før deploy i en forældet forecastfixture. Den femleddede barriere havde kørt alle hovedkontroller, men den fulde validering skjulte resten af sine leaf-kommandoer bag første fejl. Astra-reviewet fandt yderligere en gammel public-runtime-orakeltest, tre typed-false shellstop og en Pages-fejlslutning mellem lokal availability og rå memory. 4.0.358 retter dem samlet, deklarerer oneoff-fill-testen selvstændigt og fører alle 272 leaf-kontroller til ende med løbende planbundet rapport. Alle fem gates forbliver bindende; writes følger kun en grøn samlet blok. First-cutover får 180 minutter, normal/providerbudgetter er uændrede. Ingen score-, vejr- eller oneoffændring. Se DEC-0140.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter samlet cutoverkontrol
 
 - PR #293/sourcegate `34761823518` og main `b75672f7` er grønne og filtræ-identiske.

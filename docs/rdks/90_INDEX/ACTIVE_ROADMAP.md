@@ -1,3 +1,20 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.358 samlet til model-online
+
+- [x] Bevar PR #294/sourcegate `34767862281`, main `2c243d9e` og grønt cache-handoff `34768997271` som eksisterende bevis.
+- [x] Afgræns cutover `34769550035` til gammel forecasttest; ingen deploy blev udført.
+- [x] Gennemgå hele den nye modelkæde og den resterende cutover; ret samlet de påviste test-, shell- og Pages-fejl.
+- [x] Implementer løbende SHA-bundet rapport og gennemførelse af alle 272 deklarerede selvstændige valideringskommandoer.
+- [x] Bevar alle fem hovedkontroller som bindende og first-cutover-only tidsloft 180 minutter.
+- [x] Afslut version/RDKS/håndbog/geodatadiff og målrettet slutkontrol på den korrekte branch fra main.
+- [ ] Kør én exact-head 4.0.358-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Fortsæt fra det grønne handoff uden provider eller oneoff; udfør kun den nødvendige nye commitbinding, hvis cutoverkontrakten kræver den.
+- [ ] Kør cutover. Hvis kontrollerne er grønne, fortsætter installationen automatisk; ellers bruges én samlet fejlliste til næste rettelsesrunde.
+- [ ] Verificér den integrerede model offentligt på 210 zoner/673 dele/begge modes/118 timer og gennemgå siden på desktop, mobil og DA/DE/EN.
+- [ ] Genaktivér almindelig vejrdrift kontrolleret og bevis cachevedligeholdelse, fuld registerrotation, fallback og tidsoverskud.
+- [ ] Afstem efter launch zonens all-parts-regel med lokal-UNAVAILABLE-beslutningen og revurdér resten af post-cutover-roadmappet mod live evidens.
+
+DEC-0140 er aktiv. Ingen ny oneoff.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.357 fra samlet decimalfejl til model-online
 
 - [x] Bestå 4.0.356-sourcegate `34761823518`, merge PR #293 som main `b75672f7` og bevis identisk filtræ.

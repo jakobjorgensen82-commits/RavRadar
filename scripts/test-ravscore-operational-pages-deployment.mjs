@@ -713,6 +713,25 @@ installLocallyUnavailableIntegratedState(locallyUnavailable);
 assert.equal((await verifyIntegratedFixture(locallyUnavailable)).status, 'passed',
   'one exact local direct-input gap must not reject the otherwise sealed deployment');
 
+const unavailableWithIncompleteMemory = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installLocallyUnavailableIntegratedState(unavailableWithIncompleteMemory);
+for (const profile of [
+  unavailableWithIncompleteMemory.startup.coastalParts.scoreProfile,
+  unavailableWithIncompleteMemory.details.coastalParts.scoreProfile,
+  unavailableWithIncompleteMemory.manifest.ravScoreProfile,
+]) {
+  profile.modelMemoryReady = false;
+  profile.advisories = [
+    'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+    'LOCAL_MODEL_MEMORY_INCOMPLETE',
+  ];
+}
+resealPublicDocuments(unavailableWithIncompleteMemory);
+assert.equal((await verifyIntegratedFixture(unavailableWithIncompleteMemory)).status, 'passed',
+  'one local direct-input gap may coexist with honestly incomplete raw model memory');
+
 const combinedButFalseMemoryReady = attachIntegratedImplementation(
   buildFixture(historyImplementation.binding, 'integrated'),
 );

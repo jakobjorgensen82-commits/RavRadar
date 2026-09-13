@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 direkte til offentlig integreret model
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet cutoverrettelse implementeret
+
+På `codex/4.0.358-cutover-error-collection`, baseret eksakt på main `2c243d9e`, er Astra-reviewets samlede rettelse nu implementeret. Cutoverens fem topkontroller fortsætter alle til ende og afgør først derefter samlet, om installationen må skrive eksternt. Den fulde validering er desuden udvidet til sin komplette deklarerede plan på 272 bladkommandoer: hver uafhængig kontrol fortsætter efter fejl, og en atomisk rapport gemmes før, under og efter forløbet. Første cutover har 180 minutter; normalvejret beholder 90 minutter. Ingen provider-oneoff er tilføjet.
+
+De konkrete falske stop er også rettet i samme arbejdsgang: gammel strømfixture, gammel public-runtime-scoremotor, tre gyldige boolske `false`-udtræk og Pages-kontrollens sammenblanding af lokal `UNAVAILABLE` med ufuldstændig historik. Måltests for fejlopsamling, strøm, workflow og Pages er grønne; version/RDKS er konsistent, og geodata har alene ændret topversionsfelt. Resten før release er én exact-head GitHub-sourcegate, merge og fortsættelse fra det allerede grønne handoff. Den fulde produktkontrol kører i selve cutoveren; hvis alle fem topkontroller er grønne, fortsætter installationen automatisk. Den offentliggøres ikke ved en reel produktfejl.
+
+# HISTORISK CHECKPOINT – 2026-09-13 – Astra-cutover- og modelreview afsluttet, 4.0.358 under arbejde
+
+Ejerens udvidede gennemgang af hele modelkæden er nu også afsluttet. Ingen ny konkret regnefejl påvist i de læste forbindelser/små syntetiske prøver. Endnu en faktisk kontrolfejl er fundet: Pages udleder forkert fuld hukommelse af nul tilgængelige HISTORY_INCOMPLETE-scorer og kan derfor afvise lokal UNAVAILABLE kombineret med ufuldstændig historik. Ret dette i samme 4.0.358; reviewets punkt 7 indeholder reproduktion og måltest. Zonens all-parts-regel og et ubevist 256-MiB-læseloft er særskilte åbne opmærksomhedspunkter, ikke nye påviste launchstop. Ingen score-/produktionsændring udført af reviewet. Sol/Ekstra høj er næste arbejde.
+
+Læs først [Astra-reviewet](ASTRA_CUTOVER_REVIEW_2026-09-13.md). Main er 4.0.357/`2c243d9e` efter grøn PR #294. Handoff `34768997271` er grønt; cutover `34769550035` stoppede i en forældet strømtest. Ingen offentliggørelse. Den lokale 4.0.358-kladde er ikke releaseklar: behold fixturefix/fejlopsamling, men ret også den gamle public-runtime-scoretest, tre boolske shelludtræk og den inkonsistente generelle advisory-fritagelse. Løbende/færdig rapport og cutoverbudget skal afstemmes. Reviewet indeholder de konkrete steder, beviser, arbejdsmappeforhold og minimumsplan. Ingen ny oneoff. Skift nu tilbage til **Sol / Ekstra høj** til samlet implementering. Ældre checkpoints nedenfor er historik.
+
+# HISTORISK CHECKPOINT – 2026-09-13 – lokal 4.0.351 direkte til offentlig integreret model
 
 Main er `f6e725ec`/4.0.350 efter grøn PR #285 og backend `34720600286`; migration 12 er anvendt. Cache-only `34720789985` hentede intet providervejr og bestod current 79.414/79.414, WAM, freshness og 673/673 current selection. Modelbygningen nåede 210 zoner/673 dele/1.346 modes, men public-auditen stoppede før handoff/cutover/deploy på fire samlings-/rekonstruktionskoder.
 

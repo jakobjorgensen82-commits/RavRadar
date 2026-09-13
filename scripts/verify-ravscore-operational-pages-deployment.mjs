@@ -125,7 +125,6 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     ...(profile.modelMemoryReady === false ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
   ];
   if (profile.modelCoverageReady !== expectedCoverageReady
-    || (!historyIncomplete && profile.modelMemoryReady !== true)
     || (historyIncomplete && profile.modelMemoryReady !== false)
     || JSON.stringify(profile.advisories) !== JSON.stringify(expectedAdvisories)) {
     throw new Error(`${label} has incompatible integrated history controls`);

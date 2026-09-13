@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet cutoverrettelse
+
+- **Base:** Main `2c243d9e`/4.0.357 efter grøn PR #294/sourcegate `34767862281`; handoff `34768997271` grønt uden provider/oneoff. Arbejdsbranch `codex/4.0.358-cutover-error-collection` fra exact main.
+- **Seneste cutover:** `34769550035` stoppede før deploy i gammel forecasttest. Alle fem hovedkontroller blev forsøgt, men full validate skjulte senere leaf-kommandoer.
+- **Lokal 4.0.358:** 272 deklarerede leaf-kontroller køres alle; løbende payloadfri SHA-planrapport. Fem hovedgates forbliver bindende og stopper samlet før writes ved fejl. First-cutover 180 min, normal 90.
+- **Samlede fixes:** komplet/numerisk forecastfixture, materialiseret integreret public-runtime-test, tre boolske false-udtræk, Pages availability/memory-uafhængighed og selvstændig oneoff-fill-test.
+- **Uændret:** selve scoremodellen, vejr, sourceorder, geometri, punkter, privacy og database. Ingen oneoff.
+- **Lokalt bevis:** måltests, version/RDKS, håndbog og geodata-only-versiondiff er grønne.
+- **Næste:** én exact-head sourcegate → merge identisk → fortsæt fra det grønne handoff uden providerarbejde → cutover → offentlig/sitekontrol → almindelig weather/rotation.
+- **Model/indsats:** GPT-5.6 Sol / Ekstra høj gennem implementering og slutvalidering.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter én samlet cutoverfejl
 
 - **Aktuel base:** Main `b75672f7` efter PR #293/sourcegate `34761823518`; lokal branch `codex/4.0.357-canonical-direction-rounding`.

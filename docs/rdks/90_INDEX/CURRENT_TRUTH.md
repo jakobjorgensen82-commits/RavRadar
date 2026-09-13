@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-09-13 – lokal 4.0.357 efter én samlet cutoverfejl
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.358 samler hele cutoverens fejlforløb
+
+Main er 4.0.357/`2c243d9e`; sourceproof `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` deployede intet, fordi en forældet strømfixture stoppede den fulde validering. Lokal 4.0.358 retter både denne fixture og den øvrige konkrete reviewliste: public-runtime-testens gamle scoremotor, tre gyldige boolske `false`-udtræk samt Pages-verifikatorens falske krav om fuld modelhukommelse ved lokal `UNAVAILABLE`.
+
+Cutoveren gennemfører alle fem topkontroller. Indeni fuld validering gennemfører den nu alle 272 deklarerede bladkommandoer, også når enkelte fejler. Den løbende atomiske rapport beviser plan, fremdrift og hvert udfald og uploades uafhængigt af slutresultatet. En reel fejl stopper kun én gang, efter hele kontrolblokken og før database-, checkpoint-, privat-runtime- og Pages-writes. Er alle kontroller grønne, fortsætter installationen automatisk. Første cutover har 180 minutter; normal vejrkørsel beholder 90. Ingen oneoff eller ændring af vejr-/scoreberegning indgår.
+
+Måltests, version/RDKS, håndbog og geodata-only-versiondiff er grønne. Én exact-head-sourcegate, merge, cutover og offentlig kontrol er åbne. Zonens eksisterende all-parts-regel og den ubeviste 256-MiB-læsekant er efterfølgende produkt-/kapacitetsafklaringer, ikke skjulte ændringer i 4.0.358.
+
+# HISTORISK SANDHED – 2026-09-13 – 4.0.357 main, Astra-review af 4.0.358-kladde
+
+Ejerens anden gennemgang omfattede også den nye model fra input/historik til score/rangering/forklaringer. Ingen ny konkret regnefejl blev påvist i de undersøgte forbindelser; det er ikke empirisk fundbevis. Pages-kontrollen har derimod en reproduceret kontraktfejl: lokal UNAVAILABLE kan skjule en dels ufuldstændige historik fra scoreoptællingen, så kontrolkravet om memory=true er forkert. Ret sammen med de øvrige 4.0.358-fund; se review punkt 7. Den eksisterende all-parts-zoneregel er en særskilt afklaringsopgave efter launch, ikke en stiltiende ændret beslutning. Ingen ny udgivelse/deploy under reviewet.
+
+PR #294/sourcegate `34767862281` er grøn, main er `2c243d9e4c8448b924f3c0ee13ad259679ce2549`/4.0.357 med identisk tree. Handoff `34768997271` bestod uden oneoff; cutover `34769550035` fik grøn runtimeaudit, reference, releasegate og datavalidering, men fuld validate stoppede i en gammel strømfixture. Ingen deploy. Alle fem hovedkontroller kørte; **ikke alle underkontroller**. Den tidligere beskrivelse af komplet fejlopsamling var derfor utilstrækkelig.
+
+Lokal collector/fixturepatch er ikke releaseklar. Astra fandt derudover en gammel public-runtime-test med forkert scoremotor, tre gyldige false-felter der kan stoppe bash, og en blanket advisory-ændring der både kolliderer med releasegate og senere slutstatus. Læs [review og præcis minimumsplan](../../ai/ASTRA_CUTOVER_REVIEW_2026-09-13.md). Saml rettelserne, bevar allerede kendt evidens, og fortsæt på Sol/Ekstra høj. Ingen ny oneoff eller løfte om at alle mulige installationsfejl kan afdækkes før deploy.
+
+# HISTORISK SANDHED – 2026-09-13 – lokal 4.0.357 efter én samlet cutoverfejl
 
 4.0.356-head `dfce04f10ce17e8257edd8a499973a1dd7a866de` bestod exact-head-sourcegate `34761823518` og blev merged som main `b75672f7688ed6ef35cdb90822f47e95a995783e` med identisk filtræ. SHA-handoff `34763228997` bestod fra de fire cacher uden provider, oneoff eller ny 210/673-audit.
 
