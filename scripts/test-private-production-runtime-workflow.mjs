@@ -5,6 +5,7 @@ import path from 'node:path';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   PRIVATE_RUNTIME_CAPACITY_POLICY,
+  PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY,
   PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY,
   PRIVATE_RUNTIME_CONTRACT_FILES,
   PRIVATE_RUNTIME_FILES,
@@ -18,6 +19,7 @@ import {
   materializePrivateRuntimePreflight,
   privateRuntimeContractHashes,
   validatePrivateRuntimePreflightState,
+  verifyPrivateRuntimeCapacityResumeEvidence,
 } from './private-production-runtime-workflow.mjs';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-private-workflow-'));
@@ -27,6 +29,100 @@ const sourceRepository = path.resolve('.');
 const sourceVersion = JSON.parse(
   await fs.readFile(path.join(sourceRepository, 'package.json'), 'utf8'),
 ).version;
+
+const resumeSteps = [
+  ...PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorSuccessfulSteps.map(
+    (name, index) => ({
+      name,
+      number: 60 + index,
+      status: 'completed',
+      conclusion: 'success',
+    }),
+  ),
+  {
+    name: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.failedStep,
+    number: 77,
+    status: 'completed',
+    conclusion: 'failure',
+  },
+  ...PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorUnreachedSteps.map(
+    (name, index) => ({
+      name,
+      number: 78 + index,
+      status: 'completed',
+      conclusion: 'skipped',
+    }),
+  ),
+];
+const resumeRun = {
+  id: Number(PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId),
+  run_attempt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunAttempt,
+  path: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.workflowPath,
+  event: 'workflow_dispatch',
+  head_branch: 'main',
+  head_sha: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorSourceHead,
+  status: 'completed',
+  conclusion: 'failure',
+  repository: { full_name: 'owner/repository' },
+  head_repository: { full_name: 'owner/repository' },
+};
+const resumeJobs = {
+  total_count: 1,
+  jobs: [{
+    name: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.jobName,
+    status: 'completed',
+    conclusion: 'failure',
+    steps: resumeSteps,
+  }],
+};
+const resumeEvidence = verifyPrivateRuntimeCapacityResumeEvidence({
+  run: resumeRun,
+  jobs: resumeJobs,
+  artifacts: { total_count: 0, artifacts: [] },
+  repository: 'owner/repository',
+  currentSourceHead: 'b'.repeat(40),
+  requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
+  targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
+  releaseVersion: sourceVersion,
+});
+assert.equal(resumeEvidence.priorSuccessfulStepCount, 8);
+assert.equal(resumeEvidence.priorHandoffCreated, false);
+assert.equal(resumeEvidence.privatePayloadIncluded, false);
+assert.match(resumeEvidence.stepEvidenceSha256, /^[0-9a-f]{64}$/);
+assert.throws(
+  () => verifyPrivateRuntimeCapacityResumeEvidence({
+    run: resumeRun,
+    jobs: {
+      total_count: 1,
+      jobs: [{
+        ...resumeJobs.jobs[0],
+        steps: resumeSteps.map(step => step.name === PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.failedStep
+          ? { ...step, conclusion: 'success' }
+          : step),
+      }],
+    },
+    artifacts: { total_count: 0, artifacts: [] },
+    repository: 'owner/repository',
+    currentSourceHead: 'b'.repeat(40),
+    requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
+    targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
+    releaseVersion: sourceVersion,
+  }),
+  /did not fail at capacity measurement/,
+);
+assert.throws(
+  () => verifyPrivateRuntimeCapacityResumeEvidence({
+    run: resumeRun,
+    jobs: resumeJobs,
+    artifacts: { total_count: 1, artifacts: [{}] },
+    repository: 'owner/repository',
+    currentSourceHead: 'b'.repeat(40),
+    requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
+    targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
+    releaseVersion: sourceVersion,
+  }),
+  /unexpectedly retained an artifact/,
+);
 
 try {
   await fs.mkdir(repository, { recursive: true });
@@ -504,9 +600,45 @@ try {
       sourceHead: 'a'.repeat(40),
       now: conditions.generatedAt,
     }),
-    /requires the measured-warmup runtime audit/,
+    /requires exactly one measured-warmup runtime evidence file/,
   );
   await assert.rejects(fs.lstat(capacityBundle), error => error?.code === 'ENOENT');
+  const measuredWarmupConditions = {
+    ...conditions,
+    ravScoreCandidateGWarmup: {
+      schemaVersion: '1.0.0',
+      kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+      privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+      status: 'BUILDING_MEASURED_ONLY',
+      syntheticHistoryAllowed: false,
+      automaticActivationAllowed: false,
+      publicDuringNormalOperation: false,
+    },
+  };
+  await fs.writeFile(
+    path.join(repository, 'data/live/conditions.json'),
+    JSON.stringify(measuredWarmupConditions) + '\n',
+  );
+  const resumedMeasuredWarmupCapacity = await buildPrivateRuntimeIncrementalSizeDryRun({
+    privateRoot: capacityRoot,
+    bundlePath: capacityBundle,
+    repositoryRoot: repository,
+    sourceHead: 'a'.repeat(40),
+    now: conditions.generatedAt,
+    runtimeConditionsPath: 'data/live/conditions.json',
+  });
+  assert.equal(
+    resumedMeasuredWarmupCapacity.measurements.checkpointDisposition,
+    'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+  );
+  assert.equal(
+    resumedMeasuredWarmupCapacity.measurements.checkpointAbsenceAttestedByRuntimeAudit,
+    true,
+  );
+  await fs.writeFile(
+    path.join(repository, 'data/live/conditions.json'),
+    JSON.stringify(conditions) + '\n',
+  );
   const capacityRuntimeAudit = path.join(
     repository,
     '.geometry-v2-work',
@@ -836,14 +968,79 @@ try {
     assert.equal(capacityWorkflowSection.includes(forbidden), false,
       `capacity dry-run must not include ${forbidden}`);
   }
+  const resumeJobStart = operationalPreflightWorkflow.indexOf(
+    '  resume-private-capacity-and-seal-handoff:',
+  );
+  assert.equal(resumeJobStart > safeEvidenceStepStart, true);
   const safeArtifactSection = operationalPreflightWorkflow.slice(
     operationalPreflightWorkflow.indexOf('- name: Upload only the privacy-safe preflight evidence'),
+    resumeJobStart,
   );
   assert.equal(
     safeArtifactSection.includes('ravscore-private-runtime-incremental-size-safe.json'),
     false,
     'incremental size metrics must not be uploaded as a GitHub artifact',
   );
+  const resumeSection = operationalPreflightWorkflow.slice(resumeJobStart);
+  for (const required of [
+    "inputs.resume_private_capacity_from_run_id == '34738698219'",
+    "inputs.resume_private_capacity_from_run_id != '34738698219'",
+    'test "${{ steps.source-proof.outputs.required }}" = "false"',
+    'verify-capacity-resume-evidence',
+    '--run-id "$PRIOR_RUN_ID"',
+    '--target-reference "2026-09-12T08:00:00.000Z"',
+    'dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34682428800-1',
+    'current-field-shadow-v1-Linux-118-preflight-34682428800-1',
+    'copernicus-current-progress-v3-118-preflight-ready-34738698219-1',
+    'open-meteo-current-fallback-v2-Linux-oneoff-34738698219-1',
+    'fail-on-cache-miss: true',
+    'Reconstruct only the ephemeral closure and private runtime',
+    'RAVRADAR_WEATHER_CACHE_ONLY: true',
+    'Execute the corrected private capacity measurement',
+    '--runtime-conditions data/live/conditions.json',
+    'Require the full one-time capacity boundary',
+    '.firstCutoverException.eligible == true',
+    '.controls.supabaseRequestAttempted == false',
+    'Seal the exact run-bound verified weather source handoff',
+    'Save the exact continued weather source cache',
+    'Upload only the continued aggregate handoff attestation',
+  ]) {
+    assert.equal(
+      operationalPreflightWorkflow.includes(required),
+      true,
+      `capacity continuation must include ${required}`,
+    );
+  }
+  const resumeReconstruct = resumeSection.indexOf(
+    '- name: Reconstruct only the ephemeral closure and private runtime',
+  );
+  const resumeCapacity = resumeSection.indexOf(
+    '- name: Execute the corrected private capacity measurement',
+  );
+  const resumeHandoff = resumeSection.indexOf(
+    '- name: Seal the exact run-bound verified weather source handoff',
+  );
+  assert.equal(
+    resumeReconstruct > 0 && resumeCapacity > resumeReconstruct && resumeHandoff > resumeCapacity,
+    true,
+    'capacity continuation must reconstruct, measure and only then seal the handoff',
+  );
+  for (const forbidden of [
+    'audit-ravscore-integrated-public-runtime.mjs',
+    'run-dmi-oneoff-fill.py',
+    'run-copernicus-current-pilot-with-retry.py',
+    'fill-open-meteo-current-fallback.py',
+    'update-water-source-registry.mjs',
+    'private-production-runtime-workflow.mjs capacity-dry-run',
+    'actions/deploy-pages',
+    'protected-private-production-runtime.mjs upload',
+  ]) {
+    assert.equal(
+      resumeSection.includes(forbidden),
+      false,
+      `capacity continuation must not repeat acquisition/audits or deploy via ${forbidden}`,
+    );
+  }
   console.log('Private runtime workflow spec, 72-hour expectation and exact allowlisted install pass.');
 } finally {
   await fs.rm(temp, { recursive: true, force: true });

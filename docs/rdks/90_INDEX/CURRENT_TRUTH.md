@@ -10,6 +10,8 @@ Næste kørsel må genskabe den private runtime fra den låste cache, fordi GitH
 
 PR #289's første exact-head-sourcegate `34740223620` gennemførte den samlede releasegate og rapporterede kun én fejl: private-runtime-workflowtesten havde to hardcodede forventninger om `4.0.351`, mens package, policy og workflow korrekt var `4.0.352`. Begge forventninger følger nu package-versionen automatisk, og den direkte fejlede test er grøn. Der er ikke fundet en ny produktionsfejl eller ændret pakningslogik.
 
+Den efterfølgende sourcegate `34741128298` blev bevidst annulleret, fordi ejeren afviste at gentage den allerede beståede cache-/modelkontrol. Lokal 4.0.352 har nu en exact-run-bundet handoff-fortsættelse, som kun kan aktiveres med `34738698219`. Den genbruger live GitHub-trinbeviset, kræver nul gamle artifacts, gendanner fire eksakte cachekeys og har ingen DMI-, Copernicus- eller Open-Meteo-producent og ingen ny 210/673-audit. Den genskaber alene de tabte midlertidige runtimefiler, udfører den rettede kapacitetsmåling og forsegler derefter et nyt handoff. Cutover og deploy findes ikke i dette job; den separate consumer beholder fuld validering, releasegate, database-/privacy-/Pages-kæde. Den målrettede workflow-/pakningstest og YAML-syntaks er grønne.
+
 # NYESTE SANDHED – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness før cutover
 
 PR #287's endelige head `b12c1717043ab744a48ee38356b723f87a6d4942` bestod exact-head-sourcegate `34732348167` og blev merged byteidentisk som main `a6e118d2a035ffbdfefab79b2a13de094dec939c`. Backendrun `34733200143` readback-verificerede de 13 anvendte migrationer. Integrated/rollback/continuation forbliver `79d5118a…` / `84311c92…` / `9d396013…`.

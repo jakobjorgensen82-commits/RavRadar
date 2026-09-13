@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      resume_private_capacity_from_run_id:
+        description: "One-time 4.0.352 handoff-only continuation from failed run 34738698219; never reacquire, cut over or deploy"
+        required: false
+        default: ""
+        type: string
       dmi_oneoff_passes:
         description: "Bounded DMI rounds for 118h preflight; use extra rounds only when native-DMI diagnosis requires them"
         required: false
@@ -526,7 +531,7 @@ jobs:
         run: echo "Optional Copernicus pilot skipped because no private DMI target cache was restored; production weather coverage is unchanged."
 
   operational-118-preflight:
-    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true
+    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id != '34738698219'
     runs-on: ubuntu-latest
     # Up to 160m DMI + 57m Copernicus + 17m runtime + at least 60m for
     # setup, cache restore/save and closure. Every DMI pass and the other
@@ -1642,3 +1647,237 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           path: .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json
+
+  resume-private-capacity-and-seal-handoff:
+    # Exact, handoff-only repair for the ephemeral package lost after run
+    # 34738698219. This job cannot cut over, write protected runtime, build a
+    # deployable artifact or deploy Pages. The separate cutover consumer still
+    # requires its complete validation/release block before any mutation.
+    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id == '34738698219'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RAVRADAR_PRODUCTION_TARGET_HOUR: "2026-09-12T08:00:00Z"
+    steps:
+      - name: Check out current 4.0.352 main for handoff-only continuation
+        uses: actions/checkout@v7
+
+      - name: Require continuation HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(node -p "require('./package.json').version")" = "4.0.352"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dmi.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-capacity-resume
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Reuse exact-content source validation with GitHub
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require the already completed exact-content source proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.source-proof.outputs.required }}" = "false"
+          echo "Reused the exact-content PR source proof; no source gate was run again."
+
+      - name: Verify the exact prior run stopped only at private capacity
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_RUN_ID: ${{ inputs.resume_private_capacity_from_run_id }}
+        run: |
+          set -euo pipefail
+          evidence_root="$RUNNER_TEMP/ravradar-capacity-resume-evidence"
+          mkdir -p "$evidence_root" .geometry-v2-work
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID" > "$evidence_root/run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID/attempts/1/jobs?per_page=100" > "$evidence_root/jobs.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID/artifacts?per_page=100" > "$evidence_root/artifacts.json"
+          node scripts/private-production-runtime-workflow.mjs verify-capacity-resume-evidence +            --repository-root "$GITHUB_WORKSPACE" +            --run "$evidence_root/run.json" +            --jobs "$evidence_root/jobs.json" +            --artifacts "$evidence_root/artifacts.json" +            --repository "$GITHUB_REPOSITORY" +            --source-head "$GITHUB_SHA" +            --run-id "$PRIOR_RUN_ID" +            --target-reference "2026-09-12T08:00:00.000Z" +            --output .geometry-v2-work/private-capacity-resume-evidence-safe.json
+          rm -f "$evidence_root/run.json" "$evidence_root/jobs.json" "$evidence_root/artifacts.json"
+          rmdir "$evidence_root"
+
+      - name: Install only dependencies needed to reconstruct the ephemeral package
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+
+      - name: Reconstruct the same authoritative coastal-part registry
+        run: |
+          python scripts/sync-admin-config.py
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Restore the exact proven DMI candidate
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34682428800-1
+          fail-on-cache-miss: true
+
+      - name: Restore the exact proven regional current evidence
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-Linux-118-preflight-34682428800-1
+          fail-on-cache-miss: true
+
+      - name: Restore the exact proven Copernicus source stage
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-progress-v3-118-preflight-ready-34738698219-1
+          fail-on-cache-miss: true
+
+      - name: Restore the exact proven Open-Meteo residual
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-oneoff-34738698219-1
+          fail-on-cache-miss: true
+
+      - name: Reconstruct only the ephemeral closure and private runtime
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build-copernicus-target-registry.py +            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" +            --dmi .cache/dmi-candidate-progress.json +            --output .cache/copernicus-current-targets.json
+          python scripts/build-current-operational-closure.py +            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" +            --dmi .cache/dmi-candidate-progress.json
+          python scripts/build-live-current-pilot.py +            --dmi .cache/dmi-candidate-progress.json
+          npm run update:weather
+          npm run build:current-provenance
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
+          DMI_MAX_RETRIES: 0
+          DMI_REQUEST_GAP_MS: 12000
+          DMI_REQUEST_CONCURRENCY: 1
+          DMI_LIVE_ZONE_BUDGET: 4
+          DMI_REQUEST_BUDGET: 6
+          DMI_CACHE_REFRESH_BELOW_HOURS: 24
+          DMI_SCHEDULE_INTERVAL_MINUTES: 15
+          DMI_RETRY_JITTER_MIN_MS: 30000
+          DMI_RETRY_JITTER_MAX_MS: 180000
+          DMI_OBSERVATION_INTERVAL_MINUTES: 60
+          WEATHER_REQUEST_TIMEOUT_MS: 25000
+          DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
+          RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
+          RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
+          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
+          RAVRADAR_WEATHER_CACHE_ONLY: true
+          WEATHER_USER_AGENT: "RavRadar/4.0.352 private capacity continuation (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Execute the corrected private capacity measurement
+        shell: bash
+        run: |
+          set -euo pipefail
+          private_root="$RUNNER_TEMP/ravradar-private-capacity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          private_bundle="$private_root/bundle"
+          mkdir -p "$private_root"
+          node scripts/private-production-runtime-workflow.mjs incremental-size-dry-run +            --repository-root "$GITHUB_WORKSPACE" +            --dmi-bulk .cache/dmi-candidate-progress.json +            --private-root "$private_root" +            --bundle "$private_bundle" +            --source-head "$GITHUB_SHA" +            --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json +            --runtime-conditions data/live/conditions.json +            --first-cutover-exception-decision APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION +            --output .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+          rmdir "$private_root"
+
+      - name: Require the full one-time capacity boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.kind == "RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN"
+            and .privacyClass == "AGGREGATE_PRIVATE_RUNTIME_CAPACITY"
+            and .incrementalGate.scope == "INCREMENTAL_PRIVATE_RUNTIME_ONLY"
+            and .firstCutoverException.decisionId == "DEC-0122-OWNER-APPROVAL-2026-09-09"
+            and .firstCutoverException.releaseVersion == "4.0.352"
+            and .firstCutoverException.scope == "ONE_EXACT_VERIFIED_FIRST_CUTOVER"
+            and .firstCutoverException.status == "ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER"
+            and .firstCutoverException.eligible == true
+            and .firstCutoverException.archiveWithinBound == true
+            and .firstCutoverException.retainedStorageWithinBudget == true
+            and .firstCutoverException.checkpointDatabaseWithinBound == true
+            and .firstCutoverException.recurringAutomaticCadenceEligible == false
+            and .firstCutoverException.cacheTransportMigrationRequired == true
+            and .firstCutoverException.existingCacheResetRequired == false
+            and .measurements.checkpointDisposition == "NOT_APPLICABLE_DURING_MEASURED_WARMUP"
+            and .measurements.checkpointAbsenceAttestedByRuntimeAudit == true
+            and .controls.supabaseRequestAttempted == false
+            and .controls.privatePayloadUploaded == false
+            and .controls.privatePayloadArtifactUploaded == false
+            and .controls.archivePersisted == false
+            and .controls.temporaryBundleRemoved == true' +            .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json > /dev/null
+
+      - name: Report only aggregate continuation capacity evidence
+        run: >-
+          jq -c '{kind,privacyClass,measurements,incrementalGate,firstCutoverException,
+          egress:(.egress|{normalWithCheckpointWithinBudget,rollbackWithCheckpointWithinBudget}),
+          storage,database,cutoverGate,controls}'
+          .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+
+      - name: Reconfirm exact main before sealing the continued handoff
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Seal the exact run-bound verified weather source handoff
+        id: weather-source-handoff-seal
+        shell: bash
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs seal
+          --root "$GITHUB_WORKSPACE"
+          --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache"
+          --repository "$GITHUB_REPOSITORY"
+          --producer-workflow ".github/workflows/validate-copernicus-current-pilot.yml"
+          --source-head "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --runner-os "$RUNNER_OS"
+          --closure data/diagnostics/current-operational-closure.json
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Save the exact continued weather source cache
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/verified-weather-source-handoff-cache
+          key: ${{ steps.weather-source-handoff-seal.outputs.cache_key }}
+
+      - name: Upload only the continued aggregate handoff attestation
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-weather-source-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          path: .cache/verified-weather-source-handoff-cache/attestation.json

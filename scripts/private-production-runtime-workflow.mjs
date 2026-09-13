@@ -151,6 +151,40 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   maximumArchiveObjectBytes: 50_000_000,
 });
 
+// One exact failed run may supply evidence only for the steps that were already
+// green. The continuation must still execute the failed capacity measurement
+// and every handoff/cutover prerequisite after it.
+export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
+  schemaVersion: '1.0.0',
+  kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
+  releaseVersion: '4.0.352',
+  priorRunId: '34738698219',
+  priorRunAttempt: 1,
+  priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
+  targetReferenceAt: '2026-09-12T08:00:00.000Z',
+  workflowPath: '.github/workflows/validate-copernicus-current-pilot.yml',
+  jobName: 'operational-118-preflight',
+  failedStep: 'Measure incremental production-equivalent private runtime size without Supabase',
+  priorSuccessfulSteps: Object.freeze([
+    'Require complete Open-Meteo residual before freshness and closure',
+    'Require complete operational WAM after provider progress',
+    'Classify one-off target freshness after the extended supplier chain',
+    'Build exact DMI-first target through target plus 117 current closure',
+    'Build controlled live current selection',
+    'Build the integrated runtime without release or deploy',
+    'Attach exact current provenance and rebuild the public projection',
+    'Prove only 210 zones, 673 parts and all 118 forecast hours',
+  ]),
+  priorUnreachedSteps: Object.freeze([
+    'Require conservative bounds or the approved single first-cutover exception',
+    'Report only aggregate incremental private runtime size evidence',
+    'Reconfirm exact main before sealing verified weather source handoff',
+    'Seal exact run-bound verified weather source handoff',
+    'Save exact run-bound verified weather source cache',
+    'Upload only aggregate verified weather source handoff attestation',
+  ]),
+});
+
 const PREFLIGHT_COLLECTIONS = Object.freeze([
   'dkss_idw',
   'dkss_nsbs',
@@ -214,6 +248,107 @@ function exactCanonicalTime(value, label) {
   const normalized = canonicalTime(value, label);
   if (normalized !== value) throw new Error(`${label} is not canonical UTC`);
   return normalized;
+}
+
+export function verifyPrivateRuntimeCapacityResumeEvidence({
+  run,
+  jobs,
+  artifacts,
+  repository,
+  currentSourceHead,
+  requestedRunId,
+  targetReferenceAt,
+  releaseVersion,
+  policy = PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY,
+} = {}) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(String(repository ?? ''))
+    || !/^[0-9a-f]{40}$/.test(String(currentSourceHead ?? ''))
+    || String(requestedRunId ?? '') !== policy.priorRunId
+    || releaseVersion !== policy.releaseVersion
+    || exactCanonicalTime(targetReferenceAt, 'Private runtime capacity resume target')
+      !== policy.targetReferenceAt) {
+    throw new Error('Private runtime capacity resume request is outside its one-time boundary');
+  }
+  if (!isPlainObject(run)
+    || String(run.id) !== policy.priorRunId
+    || run.run_attempt !== policy.priorRunAttempt
+    || run.path !== policy.workflowPath
+    || run.event !== 'workflow_dispatch'
+    || run.head_branch !== 'main'
+    || run.head_sha !== policy.priorSourceHead
+    || run.status !== 'completed'
+    || run.conclusion !== 'failure'
+    || run.repository?.full_name !== repository
+    || run.head_repository?.full_name !== repository) {
+    throw new Error('Private runtime capacity resume source run is not the approved failed run');
+  }
+  if (!isPlainObject(jobs)
+    || !Number.isSafeInteger(jobs.total_count)
+    || jobs.total_count !== jobs.jobs?.length
+    || jobs.total_count < 1
+    || jobs.total_count > 100) {
+    throw new Error('Private runtime capacity resume job inventory is incomplete');
+  }
+  const matchingJobs = jobs.jobs.filter(job => job?.name === policy.jobName);
+  if (matchingJobs.length !== 1
+    || matchingJobs[0].status !== 'completed'
+    || matchingJobs[0].conclusion !== 'failure'
+    || !Array.isArray(matchingJobs[0].steps)) {
+    throw new Error('Private runtime capacity resume producer job is invalid');
+  }
+  const steps = matchingJobs[0].steps;
+  const stepByName = name => {
+    const matches = steps.filter(step => step?.name === name);
+    if (matches.length !== 1
+      || !Number.isSafeInteger(matches[0].number)
+      || matches[0].status !== 'completed') {
+      throw new Error(`Private runtime capacity resume step evidence is invalid: ${name}`);
+    }
+    return matches[0];
+  };
+  const failed = stepByName(policy.failedStep);
+  if (failed.conclusion !== 'failure') {
+    throw new Error('Private runtime capacity resume source did not fail at capacity measurement');
+  }
+  const successful = policy.priorSuccessfulSteps.map(name => stepByName(name));
+  if (successful.some(step => step.conclusion !== 'success' || step.number >= failed.number)) {
+    throw new Error('Private runtime capacity resume preceding evidence is not green and ordered');
+  }
+  const unreached = policy.priorUnreachedSteps.map(name => stepByName(name));
+  if (unreached.some(step => step.conclusion !== 'skipped' || step.number <= failed.number)) {
+    throw new Error('Private runtime capacity resume source continued beyond its safe failure boundary');
+  }
+  if (!isPlainObject(artifacts)
+    || artifacts.total_count !== 0
+    || !Array.isArray(artifacts.artifacts)
+    || artifacts.artifacts.length !== 0) {
+    throw new Error('Private runtime capacity resume source unexpectedly retained an artifact');
+  }
+  const stepEvidence = [
+    ...successful,
+    failed,
+    ...unreached,
+  ].map(step => ({
+    number: step.number,
+    name: step.name,
+    conclusion: step.conclusion,
+  })).sort((left, right) => left.number - right.number);
+  return {
+    schemaVersion: policy.schemaVersion,
+    kind: policy.kind,
+    releaseVersion: policy.releaseVersion,
+    repository,
+    priorRunId: policy.priorRunId,
+    priorRunAttempt: policy.priorRunAttempt,
+    priorSourceHead: policy.priorSourceHead,
+    currentSourceHead,
+    targetReferenceAt: policy.targetReferenceAt,
+    priorSuccessfulStepCount: successful.length,
+    failedStep: policy.failedStep,
+    priorHandoffCreated: false,
+    stepEvidenceSha256: sha256(canonicalPrivateRuntimeJson(stepEvidence)),
+    privatePayloadIncluded: false,
+  };
 }
 
 function boundedInteger(value, maximum, label) {
@@ -748,19 +883,39 @@ async function optionalCheckpointSerializedBytes(
   return stat.size;
 }
 
-async function attestMeasuredWarmupCheckpointAbsence(repositoryRoot, runtimeAuditPath) {
-  if (typeof runtimeAuditPath !== 'string' || runtimeAuditPath.trim() === '') {
-    throw new Error('Missing checkpoint requires the measured-warmup runtime audit');
+async function attestMeasuredWarmupCheckpointAbsence(
+  repositoryRoot,
+  runtimeAuditPath,
+  runtimeConditionsPath,
+) {
+  const hasAudit = typeof runtimeAuditPath === 'string' && runtimeAuditPath.trim() !== '';
+  const hasConditions = typeof runtimeConditionsPath === 'string'
+    && runtimeConditionsPath.trim() !== '';
+  if (hasAudit === hasConditions) {
+    throw new Error('Missing checkpoint requires exactly one measured-warmup runtime evidence file');
   }
-  const audit = await readJsonFile(
+  const evidence = await readJsonFile(
     path.resolve(repositoryRoot),
-    runtimeAuditPath,
-    'Private runtime capacity measured-warmup audit',
+    hasAudit ? runtimeAuditPath : runtimeConditionsPath,
+    hasAudit
+      ? 'Private runtime capacity measured-warmup audit'
+      : 'Private runtime capacity measured-warmup conditions',
     16 * 1024 * 1024,
   );
-  if (audit?.status !== 'passed'
-    || audit?.rollback?.status !== 'BUILDING_MEASURED_ONLY'
-    || audit?.rollback?.activationReady !== false) {
+  const valid = hasAudit
+    ? evidence?.status === 'passed'
+      && evidence?.rollback?.status === 'BUILDING_MEASURED_ONLY'
+      && evidence?.rollback?.activationReady === false
+    : evidence?.ravScoreCandidateGRollback === undefined
+      && evidence?.ravScoreCandidateGWarmup?.schemaVersion === '1.0.0'
+      && evidence?.ravScoreCandidateGWarmup?.kind
+        === 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME'
+      && evidence?.ravScoreCandidateGWarmup?.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+      && evidence?.ravScoreCandidateGWarmup?.status === 'BUILDING_MEASURED_ONLY'
+      && evidence?.ravScoreCandidateGWarmup?.syntheticHistoryAllowed === false
+      && evidence?.ravScoreCandidateGWarmup?.automaticActivationAllowed === false
+      && evidence?.ravScoreCandidateGWarmup?.publicDuringNormalOperation === false;
+  if (!valid) {
     throw new Error('Missing checkpoint lacks the explicit measured-warmup N/A attestation');
   }
   return 'NOT_APPLICABLE_DURING_MEASURED_WARMUP';
@@ -774,6 +929,7 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
   sourceHead,
   checkpointPath = '.cache/ravscore-continuation-checkpoint/checkpoint.json',
   runtimeAuditPath,
+  runtimeConditionsPath,
   firstCutoverExceptionDecision,
   policy = PRIVATE_RUNTIME_CAPACITY_POLICY,
   now = new Date().toISOString(),
@@ -834,7 +990,11 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
     capacityPolicy.checkpointMaximumSerializedBytes,
   );
   const checkpointDisposition = checkpointSerializedBytes === null
-    ? await attestMeasuredWarmupCheckpointAbsence(root, runtimeAuditPath)
+    ? await attestMeasuredWarmupCheckpointAbsence(
+      root,
+      runtimeAuditPath,
+      runtimeConditionsPath,
+    )
     : 'CHECKPOINT_SIZE_MEASURED';
   const projection = buildPrivateRuntimeIncrementalSizeProjection({
     archiveObjectBytes: archiveMetrics.objectBytes,
@@ -1258,6 +1418,18 @@ function argument(argv, name, required = true) {
   return value;
 }
 
+async function readBoundedJsonInput(file, label) {
+  const stat = await fs.lstat(file).catch(() => null);
+  if (!stat?.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > 4 * 1024 * 1024) {
+    throw new Error(`${label} is unavailable or outside its safe size bound`);
+  }
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {
+    throw new Error(`${label} cannot be parsed`);
+  }
+}
+
 async function main() {
   const [mode, ...argv] = process.argv.slice(2);
   const repositoryRoot = argument(argv, '--repository-root', false)
@@ -1300,6 +1472,32 @@ async function main() {
       outputRoot: argument(argv, '--output-root'),
     });
     console.log(JSON.stringify(result));
+  } else if (mode === 'verify-capacity-resume-evidence') {
+    const output = argument(argv, '--output');
+    const packageDocument = await readBoundedJsonInput(
+      path.resolve(repositoryRoot, 'package.json'),
+      'Release package',
+    );
+    const result = verifyPrivateRuntimeCapacityResumeEvidence({
+      run: await readBoundedJsonInput(argument(argv, '--run'), 'Prior workflow run'),
+      jobs: await readBoundedJsonInput(argument(argv, '--jobs'), 'Prior workflow jobs'),
+      artifacts: await readBoundedJsonInput(
+        argument(argv, '--artifacts'),
+        'Prior workflow artifacts',
+      ),
+      repository: argument(argv, '--repository'),
+      currentSourceHead: argument(argv, '--source-head'),
+      requestedRunId: argument(argv, '--run-id'),
+      targetReferenceAt: argument(argv, '--target-reference'),
+      releaseVersion: packageDocument.version,
+    });
+    await atomicWriteJson(output, result);
+    console.log(JSON.stringify({
+      status: 'capacity-resume-evidence-verified',
+      priorRunId: result.priorRunId,
+      priorSuccessfulStepCount: result.priorSuccessfulStepCount,
+      privatePayloadIncluded: false,
+    }));
   } else if (mode === 'incremental-size-dry-run') {
     const output = argument(argv, '--output');
     const result = await buildPrivateRuntimeIncrementalSizeDryRun({
@@ -1315,6 +1513,7 @@ async function main() {
         false,
       ) ?? '.cache/ravscore-continuation-checkpoint/checkpoint.json',
       runtimeAuditPath: argument(argv, '--runtime-audit', false),
+      runtimeConditionsPath: argument(argv, '--runtime-conditions', false),
       firstCutoverExceptionDecision: argument(
         argv,
         '--first-cutover-exception-decision',
@@ -1334,7 +1533,7 @@ async function main() {
     });
     console.log(JSON.stringify(result));
   } else {
-    throw new Error('Use create-spec, expected, create-preflight, materialize-preflight, incremental-size-dry-run or install');
+    throw new Error('Use create-spec, expected, create-preflight, materialize-preflight, verify-capacity-resume-evidence, incremental-size-dry-run or install');
   }
 }
 

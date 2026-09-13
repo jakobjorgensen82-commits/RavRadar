@@ -10,6 +10,8 @@ Den gamle runner og dens midlertidige private bundle findes ikke længere. Næst
 
 PR #289's første sourcegate `34740223620` blev kørt som én samlet kontrol og fortsatte gennem resten af releasegaten efter fejlen. Den eneste rapporterede fejl var testens hardcodede forventning om `4.0.351` både i resultatassertionen og workflowteksten. Package, policy og workflow var korrekt 4.0.352. Begge testforventninger udledes nu af package-versionen, så samme manuelle versionskant ikke gentages. Den direkte test er grøn; ingen ny bred lokal gate er kørt.
 
+Ejeren afviste derefter endnu en gentagelse af de allerede grønne cache-/modeltrin. Sourcegate `34741128298` blev annulleret som forældet. Lokal 4.0.352 har nu en engangs-handoffproducent, der kun accepterer `34738698219`, live-verificerer de otte grønne sluttrin og nul artifacts, gendanner fire eksakte cacher og udelukker providerproducenter samt den fulde 210/673-audit. Den genskaber kun slettede flygtige runtimefiler, men skal stadig bestå den rettede kapacitetsmåling og forsegle et nyt runbundet handoff. Cutover/deploy kan ikke ske i dette job og beholder den separate fulde gatekæde. Måltest, pakningstest, RDKS og YAML-syntaks er grønne.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Efter cutover skal almindelige weather-runs, ikke oneoff, bevise cachevedligeholdelse og rotation. Hele hjemmesiden skal derefter gennemgås meningsfuldt, og post-cutover-roadmappet skal renses mod faktisk live evidens.

@@ -12,6 +12,8 @@ Den gamle pakker gjorde først store binære data til base64-tekst. Det gør dat
 
 GitHubs afsluttede maskine kan ikke genoptages midt i et trin, så den midlertidige private pakke skal genskabes fra den allerede gemte cache. Der hentes ikke nyt providervejr og startes ingen oneoff. Derefter fortsætter kæden fra størrelsesmålingen til handoff og cutover.
 
+Fortsættelsen accepterer kun den konkrete gamle kørsel `34738698219`. Den kontrollerer hos GitHub, at vejr, bølger, friskhed, model og 210/673/118 allerede var grønne, og at intet handoff blev lavet. Derefter hentes kun de fire konkrete gemte cacher. De store kontroller og leverandørerne køres ikke igen. Det eneste nødvendige gentagne arbejde er at bygge de midlertidige filer, som forsvandt med GitHub-maskinen. Den rettede størrelsesmåling og handoff springes ikke over, og den efterfølgende cutover beholder alle sine fulde kontroller.
+
 Den første GitHub-kontrol af rettelsen fandt kun en gammel versionsforventning i selve testen: testen sagde 4.0.351, mens release, regel og workflow korrekt sagde 4.0.352. De to teststeder følger nu automatisk releaseversionen. Den direkte test er grøn; det ændrer ikke pakningen eller modellen.
 
 ## 88.55 Lokal 4.0.351 – Den offentlige kontrol bruger nu samme modelgrundlag som producenten

@@ -5,8 +5,9 @@
 - [x] Afgræns eneste nye stop til V8-strenggrænsen i privat raw-base64-pakning efter de produktkritiske kontroller.
 - [x] Ret packer/unpacker med deterministisk komprimering før base64, bounded dekomprimering, SHA-256 og legacy-kompatibilitet; bestå de to måltests.
 - [x] Brug hele PR-run `34740223620` som samlet fejlrapport: ret kun de to stale testforventninger til package-styret version og bekræft den direkte test grønt.
+- [x] Erstat gentaget locked preflight med en exact `34738698219`-bundet handoff-fortsættelse. Bevis i måltest, at den hverken henter providerdata eller gentager 210/673-auditen, og at kapacitet/handoff fortsat er obligatoriske.
 - [ ] Kør én exact-head 4.0.352-sourcegate, merge og exact-main readback.
-- [ ] Genskab kun nødvendigt privat runtimearbejde fra locked cache; kør ingen provider-oneoff. Fortsæt derefter fra størrelsesmåling til handoff og cutover.
+- [ ] Kør fortsættelsesjobbet på fire eksakte cacher; genskab kun flygtige runtimefiler, mål den rettede pakke og forsegl handoff. Fortsæt derefter direkte til den separate fuldt gatede cutover.
 - [ ] Verificér offentligt 210 zoner, 673 kystdele, begge modes, 118 timer/fem døgn og release 4.0.352.
 - [ ] Gennemgå levende side på desktop/mobil og DA/DE/EN med fokus på reelle funktioner og sammenhæng.
 - [ ] Genaktivér normal weather og brug almindelige runs til at bevise cachevedligeholdelse, rotation, fallback og tidsoverskud.

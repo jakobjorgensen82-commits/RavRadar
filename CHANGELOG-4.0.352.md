@@ -9,3 +9,5 @@
 - PR #289-sourcegate `34740223620` fortsatte hele releasegaten og rapporterede kun to hardcodede testforventninger om 4.0.351. De udledes nu af package-versionen, og den direkte fejlede test er grøn.
 - Storage-, checkpoint-, privacy-, integritets-, rollback-, CAS-, readback- og offentlighedskrav er uændrede. DEC-0122's engangsundtagelse gælder alene exact 4.0.352.
 - Den målrettede pakke/udpakke/rollback/anonym-adgangstest og private workflowtest er grønne lokalt. Næste GitHub-kørsel genbruger den låste cache og henter ikke nyt providervejr.
+- En one-time fortsættelsesrute er bundet til exact failed run `34738698219` og fire konkrete cacher. Den verificerer de gamle grønne trin hos GitHub, men kører ikke providerproducenter eller 210/673-auditen igen. Kun de tabte midlertidige runtimefiler genskabes; den rettede kapacitetsmåling og handoff køres stadig, og cutoverens fulde gates er uændrede.
+- Den forældede sourcegate `34741128298` blev annulleret før den kunne bruges som bevis. Næste push får én samlet exact-head-kørsel for hele den færdige rettelse.
