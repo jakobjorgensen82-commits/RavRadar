@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
+
+Main er `f6e725ec`/4.0.350, branch `codex/4.0.351-public-runtime-oracle`. PR #285 og backendrun `34720600286` er grønne; migration 12 er anvendt. Cache-only `34720789985` hentede intet providervejr og bestod 79.414/79.414 current, WAM, freshness og 673/673 current selection. Bygningen nåede 210/673/1.346, men den afsluttende audit stoppede før handoff/cutover/deploy på fire forskelle mellem producentens offentlige pakke og auditens rekonstruktion.
+
+4.0.351 adskiller coverage fra memory/migration, normaliserer H0-current/native hold og last-mile ud fra samme publicerede weather/continuation og bevarer en deterministisk part-identitet ved lokal `UNAVAILABLE` uden at opfinde score eller vinder. Migration 13 er append-only; migration 12 er byteuændret. Integrated/rollback/continuation `79d5118a…` / `84311c92…` / `9d396013…`.
+
+Korte relevante kontroller er grønne. Genstart ikke lang lokal national audit. Den brede workflowtest stoppede efter de relevante kontroller på kendt Windows Python Store-alias; GitHub skal levere én exact-head sourcegate. Derefter merge, backend migration-13 readback, samme cache-only preflight, rigtig cutover og offentlig 210/673-kontrol. Ingen ny oneoff. Bevar fire untracked inspectmapper. Sol/Ekstra høj.
+
+PR #286-head `d30faf93`/run `34724378629` bestod den fulde releasegate og stoppede først i den nye current-historikfixture. Auditten brugte fejlagtigt continuationens memory-ready-dækning som det offentlige konservative scoreview. Fixturet fører nu direct-input-faktummet igennem, og auditten genbruger producentens kanoniske evidence→bounds-beregning samt kræver eksakt lower/upper-match. Den ene fulde lokale 210/673-regression er grøn; modelhash/migration er uændret. Push ny head og kør én ny exact-head-CI; genkør ikke den røde head eller andre lokale brede pakker.
+
 # NYESTE CHECKPOINT – 2026-09-12 – 4.0.349 fælles closure-v2-modelseam
 
 Main er `c86cc2a0283e9afda7b4d7677497ecccd0ceafba`/4.0.348; branch `codex/4.0.349-state-only-closure-v2`. PR #282 er grøn/merged. Backendrun `34697586057` genbrugte sourceproof uden dobbelt fuld gate, anvendte kun 4.0.348-migrationen og bestod readback. Normalworkflow disabled; gammel `34613079069` inert `jobs:[]`. Bevar fire untracked private inspectmapper.

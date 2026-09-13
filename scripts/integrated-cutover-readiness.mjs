@@ -104,6 +104,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260912194206_local_unavailable_cutover_binding',
     filename: '20260912194206_local_unavailable_cutover_binding.sql',
   }),
+  Object.freeze({
+    version: '20260913010000',
+    id: '20260913010000_public_runtime_oracle_binding',
+    filename: '20260913010000_public_runtime_oracle_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

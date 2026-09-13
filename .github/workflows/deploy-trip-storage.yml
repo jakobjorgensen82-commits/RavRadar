@@ -160,7 +160,7 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
           supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
 
-      - name: Require only the twelve exact integrated cutover migrations
+      - name: Require only the thirteen exact integrated cutover migrations
         shell: bash
         run: |
           set -euo pipefail
@@ -177,6 +177,7 @@ jobs:
           test -f "$migrations_directory/20260912122607_measured_rollback_warmup_binding.sql"
           test -f "$migrations_directory/20260912141641_state_only_hold_closure_v2_binding.sql"
           test -f "$migrations_directory/20260912194206_local_unavailable_cutover_binding.sql"
+          test -f "$migrations_directory/20260913010000_public_runtime_oracle_binding.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

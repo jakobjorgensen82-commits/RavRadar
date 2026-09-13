@@ -28,7 +28,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql';
+  'supabase/migrations/20260913010000_public_runtime_oracle_binding.sql';
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',

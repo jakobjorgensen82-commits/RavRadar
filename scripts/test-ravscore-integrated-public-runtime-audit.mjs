@@ -144,6 +144,24 @@ assert.equal(historyIncompleteBaseRow.currentDirectInputAvailable, true);
 assert.equal(historyIncompleteBaseRow.historyScoreView.quality, 'HISTORY_INCOMPLETE');
 assert.ok(historyIncompleteBaseRow.historyScoreView.reasonCodes
   .includes('LAST_MILE_HISTORY_INCOMPLETE'));
+const currentHistoryIncompleteBaseSeries = buildIntegratedRavScoreStateSeries(
+  baseSamples.map(sample => sample.time === time(-1)
+    ? {
+      ...sample,
+      currentSpeedMps: null,
+      currentAlignment: null,
+      currentVerified: false,
+    }
+    : sample),
+  {
+    samplingContextKey: `sha256:${'0'.repeat(64)}`,
+    onshoreDirectionDeg: 90,
+  },
+);
+const currentHistoryIncompleteBaseRow = currentHistoryIncompleteBaseSeries.rows.at(-1);
+assert.equal(currentHistoryIncompleteBaseRow.currentMemoryReady, false);
+assert.equal(currentHistoryIncompleteBaseRow.currentDirectInputAvailable, true);
+assert.equal(currentHistoryIncompleteBaseRow.historyScoreView.quality, 'HISTORY_INCOMPLETE');
 
 function readyState(part, transition, series = baseSeries) {
   const state = {
@@ -189,6 +207,7 @@ function scoreState(state, row = baseRow) {
     ...state,
     historyScoreView: structuredClone(row.historyScoreView),
     currentVerified: true,
+    currentDirectInputAvailable: row.currentDirectInputAvailable,
     currentTransition: row.currentTransition,
     currentCoastNormalSpeedMps: row.currentCoastNormalSpeedMps,
     lastMileWaveReferenceAt: state.waveApproachState.waveReferenceAt,
@@ -339,18 +358,22 @@ function syntheticFull({
   partCounts,
   transition = 'continuation',
   historyIncomplete = false,
+  currentHistoryIncomplete = false,
   directMissing = false,
   includeFeggesund = false,
 }) {
   assert.equal(partCounts.length, zoneCount);
   if (includeFeggesund) assert.equal(partCounts.at(-1), 3);
-  const runtimeSeries = historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
+  const runtimeSeries = currentHistoryIncomplete
+    ? currentHistoryIncompleteBaseSeries
+    : historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
   const selectedSeries = transition === 'cold' ? coldBaseSeries : runtimeSeries;
   const runtimeRow = transition === 'cold' ? coldBaseRow
-    : historyIncomplete ? historyIncompleteBaseRow : baseRow;
+    : currentHistoryIncomplete ? currentHistoryIncompleteBaseRow
+      : historyIncomplete ? historyIncompleteBaseRow : baseRow;
   const scoreProfile = resolvePublicRavScoreProfile({
     modelCoverageReady: !directMissing,
-    modelMemoryReady: !historyIncomplete && transition !== 'cold',
+    modelMemoryReady: !historyIncomplete && !currentHistoryIncomplete && transition !== 'cold',
     modelMigrationReady: true,
   });
   const zones = {};
@@ -926,6 +949,31 @@ for (const mode of ['waders', 'beach']) {
 assert.equal(directMissingSmall.coastalParts.scoreProfile.modelCoverageReady, false);
 assert.deepEqual(directMissingSmall.coastalParts.scoreProfile.advisories,
   ['LOCAL_MODEL_COVERAGE_INCOMPLETE']);
+
+const allDirectMissing = syntheticFull({
+  zoneCount: 1,
+  partCounts: [1],
+  directMissing: true,
+});
+const allDirectMissingPackage = publicPackage(allDirectMissing);
+assert.deepEqual(audit(allDirectMissing, allDirectMissingPackage, 1, 1).errors, [],
+  'Et helt lokalt UNAVAILABLE startøjeblik skal bevare en kompakt kystdels-identitet.');
+assert.deepEqual(
+  Object.keys(allDirectMissingPackage.startup.coastalParts.parts),
+  ['synthetic-part-1'],
+);
+
+const currentHistoryIncompleteSmall = syntheticFull({
+  zoneCount: 1,
+  partCounts: [1],
+  currentHistoryIncomplete: true,
+});
+const currentHistoryIncompletePackage = publicPackage(currentHistoryIncompleteSmall);
+assert.deepEqual(
+  audit(currentHistoryIncompleteSmall, currentHistoryIncompletePackage, 1, 1).errors,
+  [],
+  'Aktuel verificeret strøm skal kunne rekonstrueres selv med et ældre historikhul.',
+);
 
 const mismatchedHistorySummary = structuredClone(historyIncompleteSmall);
 mismatchedHistorySummary.coastalParts.scoreAvailability.historyIncompleteModeCount = 1;

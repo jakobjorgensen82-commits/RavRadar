@@ -1,10 +1,10 @@
 {
-  "version": "4.0.350",
-  "releasedAt": "2026-09-12T20:07:32.951Z",
-  "minimumSupportedVersion": "4.0.350",
+  "version": "4.0.351",
+  "releasedAt": "2026-09-12T22:56:51.637Z",
+  "minimumSupportedVersion": "4.0.351",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.350",
+    "releaseVersion": "4.0.351",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "a575f767abf127ec1677268b9f310f5c6f569ea6d822af5ab09e16c187389bd6"
+        "modelBundleSha256": "79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "ca18452294f87451bda4e73c188e18990379f9328ca1107a571459f5ae1d9528"
+        "modelBundleSha256": "84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c"
       }
     },
     "publicManifestAuthority": {
@@ -95,6 +95,14 @@
         {
           "id": "DEC-0131",
           "path": "docs/rdks/10_DECISIONS/DEC-0131-STATE-ONLY-CURRENT-HOLD-CLOSURE-V2-BINDING.md"
+        },
+        {
+          "id": "DEC-0132",
+          "path": "docs/rdks/10_DECISIONS/DEC-0132-LOCAL-UNAVAILABLE-AND-AGGREGATED-CUTOVER.md"
+        },
+        {
+          "id": "DEC-0133",
+          "path": "docs/rdks/10_DECISIONS/DEC-0133-PUBLIC-RUNTIME-ORACLE-AND-NONEMPTY-STARTUP.md"
         }
       ]
     },

@@ -7,6 +7,9 @@ import {
   CANDIDATE_G_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
+import { buildCurrentSupplyScoreBounds }
+  from '../js/core/ravscore-current-supply-memory.js';
+import { waveMobilisationEnergy } from '../js/core/ravscore-mobilisation-memory.js';
 import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { buildIntegratedRavScoreStateSeries }
@@ -314,7 +317,7 @@ function lastMileFactorFromTrack(track) {
   );
 }
 
-function historyScoreViewFromContinuation(state, persisted) {
+function historyScoreViewFromContinuation(state, persisted, currentTransition) {
   const bounds = state?.historyBounds;
   const current = bounds?.current;
   const wave = bounds?.waveMobilisation;
@@ -330,17 +333,23 @@ function historyScoreViewFromContinuation(state, persisted) {
   const waveOpen = wave.lastUnknownAt !== null && wave.conservativeResetAt === null;
   const lastMileOpen = lastMile.lastUnknownAt !== null
     && lastMile.conservativeResetAt === null;
-  const currentReasonCodes = (persisted?.historyReasonCodes ?? [])
-    .filter(code => [
-      'CURRENT_HISTORY_MISSING_EVIDENCE',
-      'CURRENT_HISTORY_BOUNDARY_UNCOVERED',
-      'CURRENT_HISTORY_TIME_GAP',
-      'CURRENT_HISTORY_TAIL_UNCOVERED',
-    ].includes(code));
-  const currentIncomplete = !RAVSCORE_CURRENT_SUPPLY_POLICY.readyStatuses
-    .includes(state.currentMemoryStatus)
-    || state.currentMemoryCoverageHours < RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-    || Math.abs(current.upperPotential - current.lowerPotential) > EPSILON;
+  const currentScoreBounds = buildCurrentSupplyScoreBounds(state?.currentEvidence, {
+    referenceTime: state?.time,
+    nativeHold: currentTransition === 'NATIVE_CADENCE_HOLD',
+    nativeHoldIntervalEnds: state?.currentNativeHoldIntervalEnds,
+  });
+  const currentHistoryAvailable = currentScoreBounds.available === true;
+  if (currentHistoryAvailable
+    && (!close(current.lowerPotential, currentScoreBounds.lowerPotential)
+      || !close(current.upperPotential, currentScoreBounds.upperPotential))) {
+    throw new Error('Schema-6 continuation current bounds do not reconstruct');
+  }
+  const currentReasonCodes = currentHistoryAvailable
+    ? currentScoreBounds.reasonCodes
+    : [];
+  const currentIncomplete = currentHistoryAvailable
+    ? currentScoreBounds.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+    : true;
   const expectedTailReasonCodes = [
     ...(waveOpen ? ['WAVE_MOBILISATION_HISTORY_INCOMPLETE'] : []),
     ...(lastMileOpen ? ['LAST_MILE_HISTORY_INCOMPLETE'] : []),
@@ -365,11 +374,14 @@ function historyScoreViewFromContinuation(state, persisted) {
     || persisted?.conservativeTailResetApplied !== false)) {
     throw new Error('Persisted UNAVAILABLE history envelope is not clean');
   }
+  if (!currentHistoryAvailable && !persistedUnavailable) {
+    throw new Error('Schema-6 continuation current history is unavailable for an available score');
+  }
   if (!persistedUnavailable && (persisted?.scoreQuality !== quality
     || (incomplete
       ? persisted?.calibrationEligible !== false
       : typeof persisted?.calibrationEligible !== 'boolean')
-    || persisted?.historyCoverageHours !== state.currentMemoryCoverageHours
+    || persisted?.historyCoverageHours !== currentScoreBounds.coverageHours
     || persisted?.conservativeTailResetApplied !== conservativeTailResetApplied
     || sameCanonical(
       [...(persisted?.historyReasonCodes ?? [])].sort(),
@@ -382,7 +394,7 @@ function historyScoreViewFromContinuation(state, persisted) {
     available: true,
     quality,
     calibrationEligible: !incomplete,
-    coverageHours: state.currentMemoryCoverageHours,
+    coverageHours: currentScoreBounds.coverageHours,
     requiredHours: RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours,
     reasonCodes: expectedReasonCodes,
     conservativeTailResetApplied,
@@ -401,19 +413,47 @@ function historyScoreViewFromContinuation(state, persisted) {
   };
 }
 
-function integratedEvaluationState(state, model, weather, persisted) {
+function integratedEvaluationState(state, model, weather, persisted, onshoreDirectionDeg) {
   const lastMile = waveApproachDeliveryContext(state?.waveApproachState);
+  const currentAlignment = finite(weather?.currentSpeedMps)
+    && finite(weather?.currentDirectionDeg)
+    && finite(onshoreDirectionDeg)
+    ? Math.cos((Number(weather.currentDirectionDeg) - Number(onshoreDirectionDeg))
+      * Math.PI / 180)
+    : null;
+  const currentVerified = weather?.currentProvenance?.status === 'verified'
+    && model?.currentTransition !== 'NATIVE_CADENCE_HOLD';
+  const currentDirectInputAvailable = currentVerified
+    || model?.currentTransition === 'NATIVE_CADENCE_HOLD';
+  const waveEnergy = waveMobilisationEnergy({
+    waveHeightM: weather?.waveHeightM,
+    wavePeriodS: weather?.wavePeriodS,
+  });
+  const lastMileEvidenceStatus = !waveEnergy.available
+    ? `WAVE_PHYSICS_${waveEnergy.inputStatus}`
+    : waveEnergy.exactCalm
+      ? 'EXACT_CALM_DIRECTION_NEUTRAL'
+      : !finite(weather?.waveDirectionDeg)
+        ? 'ACTIVE_WAVE_DIRECTION_MISSING'
+        : 'DIRECTIONAL_WAVE_EVIDENCE_READY';
   return {
     ...state,
-    historyScoreView: historyScoreViewFromContinuation(state, persisted),
-    currentVerified: weather?.currentProvenance?.status === 'verified',
+    historyScoreView: historyScoreViewFromContinuation(
+      state,
+      persisted,
+      model?.currentTransition,
+    ),
+    currentVerified,
+    currentDirectInputAvailable,
     currentTransition: model?.currentTransition ?? null,
+    currentCoastNormalSpeedMps: currentVerified
+      && finite(weather?.currentSpeedMps) && finite(currentAlignment)
+      ? Number(weather.currentSpeedMps) * currentAlignment
+      : null,
     lastMileWaveReferenceAt: state?.waveApproachState?.waveReferenceAt ?? null,
     lastMileMemoryReady: state?.waveApproachState?.readiness === true,
     lastMileMemoryStatus: state?.waveApproachState?.status ?? null,
-    lastMileEvidenceStatus: lastMile.available
-      ? 'DIRECTIONAL_WAVE_EVIDENCE_READY'
-      : 'WAVE_APPROACH_STATE_NOT_READY',
+    lastMileEvidenceStatus,
     lastMileWaveActivity: lastMile.activity,
     lastMileNormalAlignment: lastMile.normalAlignment,
     lastMileTangentAlignment: lastMile.tangentAlignment,
@@ -1237,6 +1277,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         model,
         part?.current?.weather ?? {},
         model?.modes?.waders,
+        part?.onshoreDirectionDeg,
       );
       collector.add((model?.lastMileMemoryReady === true
           || persistedHistoryIncomplete || persistedUnavailable)
@@ -1298,11 +1339,18 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     }
     collector.add(state?.samplingContextKey === expectedSamplingContextKey,
       'STATE_SAMPLING_CONTEXT_MISMATCH');
+    const boundedCurrentHistoryState = persistedHistoryIncomplete
+      && finite(state?.historyBounds?.current?.lowerPotential)
+      && finite(state?.historyBounds?.current?.upperPotential)
+      && state.historyBounds.current.lowerPotential >= 0
+      && state.historyBounds.current.upperPotential <= 100
+      && state.historyBounds.current.lowerPotential
+        <= state.historyBounds.current.upperPotential;
     collector.add(persistedUnavailable || ((state?.currentMemoryReady === true
-        || persistedHistoryIncomplete)
-      && finite(state?.supplyPotential)
-      && state.supplyPotential >= 0
-      && state.supplyPotential <= 100),
+        && finite(state?.supplyPotential)
+        && state.supplyPotential >= 0
+        && state.supplyPotential <= 100)
+      || boundedCurrentHistoryState),
     'STATE_CURRENT_MEMORY_NOT_READY');
     collector.add(persistedUnavailable || ((state?.waveMemoryReady === true
         || persistedHistoryIncomplete)
