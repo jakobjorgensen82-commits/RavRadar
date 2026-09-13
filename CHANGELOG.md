@@ -5,6 +5,9 @@
 - Den konkrete H0-kant er nu lokalt reproduceret: producenten sætter current-historikgrænser til `null` ved manglende direkte H0-current, mens auditten fejlagtigt krævede endelige tal. Kastet blev misvisende registreret som last-mile-fejl og gav en afledt mode-fejl.
 - Auditten rekonstruerer nu den samme rene lokale `UNAVAILABLE`-historiktilstand som producenten, mens profilets coverage, memory og migration fortsat udledes som tre selvstændige fakta. En ægte H0-current-mangel er dækket eksplicit.
 - Den fulde målrettede 210/673-audit med datasikre negative fixtures er grøn. Modelkode, fysik, inputdata, bundle, migration og den komplette vejrcache er uændrede. Næste bevis er én exact-head-sourcegate og samme cache-only-preflight før cutover.
+- PR #287/sourcegate `34732348167`, merge `a6e118d2` og backend `34733200143` er grønne. Cache-only `34733358422` lukkede H0-/last-mile-koderne og rekonstruerede alle 1.346 modes; kun profilens manglende anerkendelse af den source-attesterede nationale `genuine-cold-start` stod tilbage.
+- Producenten tæller nu kun cold start som state-klar ved eksakt 673-dels cohort, lineage, private measured-only kilde, 48-timersregnskab og target; den uafhængige audit afviser blanding og tamper. Modelbundle, migration 13, cache og vejrdata er uændrede.
+- PR #288's første sourcegate `34736227522` beviste selve release-/modelrettelsen, men fandt derefter en usynkroniseret beskyttet håndbogskopi. Installationskopien og webhåndbogens aktive bindingstal er nu synkroniseret og måltestet samlet.
 - Se `CHANGELOG-4.0.351.md` og DEC-0133.
 
 ## 4.0.350 – lokal utilgængelighed og samlet cutoverkontrol (2026-09-12, lokal kandidat)

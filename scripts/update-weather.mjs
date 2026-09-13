@@ -89,6 +89,9 @@ import {
   selectRavScoreProductionInitialState,
 } from './lib/ravscore-production-part-pipeline.mjs';
 import {
+  exactNationalOperationalColdReplayInitialization,
+} from './lib/ravscore-operational-state-readiness.mjs';
+import {
   RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
@@ -2263,14 +2266,17 @@ function scoreCoastalPartsRuntime(
   }
 
   const referenceReadiness = integratedRavScoreReferenceReadiness(partRows, generatedAt);
-  const {
-    modelCoverageReady,
-    modelMemoryReady,
-    modelMigrationReady,
-  } = integratedRavScoreProfileReadiness(
+  const profileReadiness = integratedRavScoreProfileReadiness(
     referenceReadiness,
     Number(contract?.partCount),
   );
+  const modelCoverageReady = profileReadiness.modelCoverageReady;
+  const modelMemoryReady = profileReadiness.modelMemoryReady;
+  const modelMigrationReady = profileReadiness.modelMigrationReady
+    || exactNationalOperationalColdReplayInitialization(
+      partRows,
+      Number(contract?.partCount),
+    );
   const scoreProfile = resolvePublicRavScoreProfile({
     selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
     evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,

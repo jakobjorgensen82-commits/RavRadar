@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – 4.0.351 main med lokal H0-audit-hotfix
+# Aktuel implementeringsstatus – 4.0.351 main med lokal cold-start-readiness-hotfix
 
 - [x] Bestå PR #286 exact-head-sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.
 - [x] Kør cache-only preflight `34728026044` uden providerhentning og bevis current, WAM, freshness samt 210/673-modelbygning.
@@ -12,6 +12,11 @@
 - [x] Reproducér et ægte manglende direkte H0-current og bevis, at producenten korrekt danner lokal `UNAVAILABLE` med `null` current-bounds.
 - [x] Rekonstruér samme direct-input-missing-historik i auditten, hold wave/last-mile-valideringen streng og udled profilens coverage/memory/migration uafhængigt.
 - [x] Bestå den målrettede fulde 210/673-audit med datasikre negative fixtures. Modelbinding, fysik, migration og vejrcache er uændrede.
+- [x] Bestå PR #287/sourcegate `34732348167`, merge byteidentisk som main `a6e118d2` og readback-verificér exact main i backend `34733200143`.
+- [x] Kør cache-only `34733358422` og bevis alle 1.346 mode-rekonstruktioner uden de tidligere H0-/last-mile-koder.
+- [x] Afgræns `PUBLIC_PROFILE_NOT_READY` til resolverens nationalt ensartede `genuine-cold-start`, som profilen ikke regnede som gyldig initialisering.
+- [x] Kræv eksakt 673-dels cold-replay-cohort, lineage, measured-only kilde, 48-timersregnskab og target i både producent og uafhængig audit; afvis blanding/tamper.
+- [x] Afgræns PR #288/sourcegate `34736227522`: release-, model-, runtime- og migrationsled bestod; kun en manglende identisk Supabase-håndbogskopi stoppede. Synkronisér kopien og opdatér aktive bindingstal; protected merge og 236 kapitler består lokalt.
 - [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
 - [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Gennemfør cutover ved grøn preflight og verificér den integrerede model offentligt på 210/673.
@@ -19,7 +24,7 @@
 - [ ] Gennemgå hele hjemmesidens felter og sammenhæng på desktop/mobil og DA/DE/EN; brug målrettede kontroller efter konkret funktion og risiko.
 - [ ] Revider de resterende roadmap-punkter mod live 4.0.351 og faktisk normal drift; luk eller nedprioritér historiske punkter uden nutidig evidens.
 
-Candidate G er stadig offentlig, men 4.0.351-koden og migration 13 er på main. Kun audit-hotfixen er lokal. Ingen ny provider-oneoff er planlagt. DEC-0133 er aktiv.
+Candidate G er stadig offentlig, og migration 13 er på main/backend. Kun den sidste operationelle cold-start-readiness-hotfix er lokal. Ingen ny provider-oneoff er planlagt. DEC-0133 er aktiv.
 
 # Aktuel implementeringsstatus – lokal 4.0.350 scoreinput og samlet cutoverkontrol
 

@@ -1,5 +1,9 @@
-# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal H0-audit-hotfix
+# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
+- PR #287-head `b12c1717` bestod exact-head-sourcegate `34732348167`, blev merged byteidentisk som main `a6e118d2`, og backend `34733200143` readback-verificerede migration 1–13.
+- Cache-only `34733358422` hentede intet providervejr, bestod current/WAM/freshness/210/673 og rekonstruerede alle 1.346 modes. Kun `PUBLIC_PROFILE_NOT_READY` stod tilbage.
+- Resolveren havde valgt source-attesteret `genuine-cold-start` for alle 673 dele. Producentprofilen anerkendte ikke denne godkendte DEC-0113/0114-initialisering. En lokal driftsrettelse kræver nu ensartet 673-dels cold-replay med eksakt lineage, measured-only kilde, 48-timersregnskab og target; tamper/mix afvises.
+- PR #288-head `debb745f`/sourcegate `34736227522` bestod release-, model-, runtime- og migrationsled, men stoppede senere på den manglende identiske Supabase-installationskopi af webhåndbogen. Kopien og webhåndbogens aktive bindingstal er synkroniseret; begge direkte håndbogstests er grønne.
 - PR #286-head `b6f06310` bestod sourcegate `34726624728`, blev merged byteidentisk som main `6d4adbb2`, og backend `34727884447` anvendte/readback-verificerede migration 13.
 - Cache-only `34728026044` hentede intet providervejr og bestod current, WAM, freshness og 210/673-modelbygning, men stoppede før handoff/cutover/deploy på tre auditkoder.
 - Et ægte manglende direkte H0-current reproducerede stoppet: producentens lovlige `null` current-bounds blev fejlagtigt krævet endelige af auditten; kastet blev misnavngivet last-mile og gav en afledt mode-fejl.

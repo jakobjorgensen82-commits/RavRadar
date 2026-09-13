@@ -1,4 +1,4 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal H0-audit-hotfix
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Efter cutover skal almindelige weather-runs, ikke oneoff, bevise cachevedligeholdelse og rotation. Hele hjemmesiden skal derefter gennemgås meningsfuldt, og post-cutover-roadmappet skal renses mod faktisk live evidens.
 
@@ -8,7 +8,13 @@ Cache-only-preflight `34728026044` hentede intet providervejr og bestod current,
 
 Et ægte manglende direkte H0-current reproducerede de to første koder lokalt. Producenten sætter korrekt current-historikgrænser til `null` og resultatet til lokal `UNAVAILABLE`; auditten krævede fejlagtigt endelige bounds. Kastet skete inde i en samlet evaluation/last-mile-blok, så koden var misvisende, og den efterfølgende mode-sammenligning brugte ufuldstændigt state. Profilfejlen kom af at udlede rå memory-status fra offentlig scorekvalitet.
 
-Audittens oracle følger nu producentens direct-input-gate og rekonstruerer `CURRENT_DIRECT_INPUT_MISSING` uden opdigtede bounds eller scorer. Coverage, memory og migration kontrolleres som tre selvstændige fakta, og first-cutover kræver fortsat migration/continuation på alle 673 dele. Den målrettede fulde 210/673-audit med datasikre negative fixtures er grøn. Model, fysik, bundle, migration 13 og cache er uændrede. Næste rækkefølge: én exact-head-CI → merge → backend-readback → samme cache-only preflight → cutover → offentlig/sitekontrol → normal weather og rotations-/cachebevis. Se DEC-0133.
+Audittens oracle følger nu producentens direct-input-gate og rekonstruerer `CURRENT_DIRECT_INPUT_MISSING` uden opdigtede bounds eller scorer. PR #287-head `b12c1717` bestod sourcegate `34732348167`, blev merged som main `a6e118d2`, og backend `34733200143` readback-verificerede alle 13 migrationer.
+
+Cache-only `34733358422` beviste rettelsen: alle 1.346 modes blev rekonstrueret, og H0-/last-mile-koderne var væk. Kun profilens state-readiness fejlede. Resolverloggen viste source-attesteret `genuine-cold-start` for alle 673 dele, som DEC-0113/0114 kræver, når Candidate G er kanonisk men ikke migrationsklar. Producentprofilen anerkendte fejlagtigt kun migration eller continuation.
+
+Den lokale driftsrettelse sætter state-readiness true for cold start alene ved præcis 673 ensartede dele med eksakt lineage, recovery-id, private measured-only kilde, 48-timers complete/unknown-regnskab, korrekt kildeklasse og ikke-fremtidig target. Den uafhængige public audit rekonstruerer samme faktum; blanding, ekstra felter, forkert kilde, regnskabsafvigelse og fremtidig target har negative tests. Model, fysik, bundles, migration 13, geometri, cache og vejrdata er uændrede. Næste rækkefølge: én exact-head-CI → merge → backend-readback → samme cache-only preflight → cutover → offentlig/sitekontrol → normal weather og rotations-/cachebevis. Se DEC-0133.
+
+PR #288's første head `debb745f` beviste selve release-/modelkæden i sourcegate `34736227522`, men stoppede efter releasegaten på den beskyttede håndbogskontrakt: den opdaterede webhåndbog manglede i Supabase-installationskopien. Projektets syncscript har nu kopieret den identiske payload, og webhåndbogens aktive model- og continuationtal er ajourført til de allerede forseglede 4.0.351-værdier. Protected-merge-testen og hele 236-kapitlers håndbogstest er grønne; næste head får sin egen exact-head-gate.
 
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – lokal 4.0.350 direkte input og samlet cutover
 
