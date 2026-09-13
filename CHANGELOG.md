@@ -7,6 +7,7 @@
 - PR #289's første sourcegate `34740223620` fandt kun to stale `4.0.351`-forventninger i private-runtime-workflowtesten. Begge følger nu package-versionen automatisk; den direkte test er grøn.
 - Næste run genskaber kun den private runtime fra locked cache og fortsætter fra størrelsesmålingen uden provider-oneoff. Se `CHANGELOG-4.0.352.md` og DEC-0134.
 - Fortsættelsen er exact bundet til failed run `34738698219` og fire konkrete cacher. Den genbruger GitHubs grønne trinbevis uden ny provider eller 210/673-audit, men udfører fortsat kapacitetsmåling og handoff; cutoverens fulde gates ændres ikke.
+- Sourcegate `34742976226` gjorde resten af kontrolkæden grøn og fandt alene en forældet tværjob-artifactoptælling. Den og fire ugyldige multiline-markører i fortsættelsesjobbet er rettet samlet og måltestet.
 
 ## 4.0.351 – ens offentlig modelrekonstruktion før cutover (2026-09-13, main med lokal audit-hotfix)
 

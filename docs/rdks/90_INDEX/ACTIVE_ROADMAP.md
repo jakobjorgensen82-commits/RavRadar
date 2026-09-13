@@ -6,6 +6,7 @@
 - [x] Ret packer/unpacker med deterministisk komprimering før base64, bounded dekomprimering, SHA-256 og legacy-kompatibilitet; bestå de to måltests.
 - [x] Brug hele PR-run `34740223620` som samlet fejlrapport: ret kun de to stale testforventninger til package-styret version og bekræft den direkte test grønt.
 - [x] Erstat gentaget locked preflight med en exact `34738698219`-bundet handoff-fortsættelse. Bevis i måltest, at den hverken henter providerdata eller gentager 210/673-auditen, og at kapacitet/handoff fortsat er obligatoriske.
+- [x] Kør `34742976226` helt til slut, behold alle grønne produktkontroller og ret samlet den eneste gamle artifactoptælling samt de manuelt fundne ugyldige multiline-markører.
 - [ ] Kør én exact-head 4.0.352-sourcegate, merge og exact-main readback.
 - [ ] Kør fortsættelsesjobbet på fire eksakte cacher; genskab kun flygtige runtimefiler, mål den rettede pakke og forsegl handoff. Fortsæt derefter direkte til den separate fuldt gatede cutover.
 - [ ] Verificér offentligt 210 zoner, 673 kystdele, begge modes, 118 timer/fem døgn og release 4.0.352.

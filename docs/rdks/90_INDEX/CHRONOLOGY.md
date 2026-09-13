@@ -6,6 +6,7 @@
 - Lokal 4.0.352 komprimerer hver fil før base64 og bevarer bounded bytes/SHA-256, privacy, rollback, CAS og legacylæsning. De to måltests er grønne.
 - PR #289-run `34740223620` fortsatte hele releasegaten og fandt kun to stale `4.0.351`-forventninger i samme workflowtest. De er package-styrede nu, og den direkte test er grøn.
 - Den forældede gentagelse `34741128298` blev annulleret. Lokal 4.0.352 har nu en exact `34738698219`-bundet handoff-fortsættelse med fire faste cacher, ingen providerproducent og ingen ny 210/673-audit; kapacitetsmåling og handoff er fortsat obligatoriske.
+- Sourcegate `34742976226` gennemførte resten af kæden og fejlede alene på en gammel artifactoptælling på tværs af jobs. Den er afgrænset til det oprindelige preflight-job, og fire manuelt fundne bogstavelige patchmarkører i fortsættelseskommandoerne er samtidig rettet og måltestet.
 - Næste er én exact-head-sourcegate, merge, det korte fortsættelsesjob, fuldt gated cutover og offentlig verifikation.
 
 # NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix

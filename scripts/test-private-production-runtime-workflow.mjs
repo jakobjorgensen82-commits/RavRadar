@@ -982,6 +982,11 @@ try {
     'incremental size metrics must not be uploaded as a GitHub artifact',
   );
   const resumeSection = operationalPreflightWorkflow.slice(resumeJobStart);
+  assert.equal(
+    /\+\s+--/.test(resumeSection),
+    false,
+    'capacity continuation commands must use shell continuations, not literal patch markers',
+  );
   for (const required of [
     "inputs.resume_private_capacity_from_run_id == '34738698219'",
     "inputs.resume_private_capacity_from_run_id != '34738698219'",

@@ -1719,7 +1719,16 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID" > "$evidence_root/run.json"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID/attempts/1/jobs?per_page=100" > "$evidence_root/jobs.json"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RUN_ID/artifacts?per_page=100" > "$evidence_root/artifacts.json"
-          node scripts/private-production-runtime-workflow.mjs verify-capacity-resume-evidence +            --repository-root "$GITHUB_WORKSPACE" +            --run "$evidence_root/run.json" +            --jobs "$evidence_root/jobs.json" +            --artifacts "$evidence_root/artifacts.json" +            --repository "$GITHUB_REPOSITORY" +            --source-head "$GITHUB_SHA" +            --run-id "$PRIOR_RUN_ID" +            --target-reference "2026-09-12T08:00:00.000Z" +            --output .geometry-v2-work/private-capacity-resume-evidence-safe.json
+          node scripts/private-production-runtime-workflow.mjs verify-capacity-resume-evidence \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --run "$evidence_root/run.json" \
+            --jobs "$evidence_root/jobs.json" \
+            --artifacts "$evidence_root/artifacts.json" \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-head "$GITHUB_SHA" \
+            --run-id "$PRIOR_RUN_ID" \
+            --target-reference "2026-09-12T08:00:00.000Z" \
+            --output .geometry-v2-work/private-capacity-resume-evidence-safe.json
           rm -f "$evidence_root/run.json" "$evidence_root/jobs.json" "$evidence_root/artifacts.json"
           rmdir "$evidence_root"
 
@@ -1772,9 +1781,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/build-copernicus-target-registry.py +            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" +            --dmi .cache/dmi-candidate-progress.json +            --output .cache/copernicus-current-targets.json
-          python scripts/build-current-operational-closure.py +            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" +            --dmi .cache/dmi-candidate-progress.json
-          python scripts/build-live-current-pilot.py +            --dmi .cache/dmi-candidate-progress.json
+          python scripts/build-copernicus-target-registry.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --output .cache/copernicus-current-targets.json
+          python scripts/build-current-operational-closure.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json
+          python scripts/build-live-current-pilot.py \
+            --dmi .cache/dmi-candidate-progress.json
           npm run update:weather
           npm run build:current-provenance
         env:
@@ -1804,7 +1819,16 @@ jobs:
           private_root="$RUNNER_TEMP/ravradar-private-capacity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           private_bundle="$private_root/bundle"
           mkdir -p "$private_root"
-          node scripts/private-production-runtime-workflow.mjs incremental-size-dry-run +            --repository-root "$GITHUB_WORKSPACE" +            --dmi-bulk .cache/dmi-candidate-progress.json +            --private-root "$private_root" +            --bundle "$private_bundle" +            --source-head "$GITHUB_SHA" +            --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json +            --runtime-conditions data/live/conditions.json +            --first-cutover-exception-decision APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION +            --output .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+          node scripts/private-production-runtime-workflow.mjs incremental-size-dry-run \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --dmi-bulk .cache/dmi-candidate-progress.json \
+            --private-root "$private_root" \
+            --bundle "$private_bundle" \
+            --source-head "$GITHUB_SHA" \
+            --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json \
+            --runtime-conditions data/live/conditions.json \
+            --first-cutover-exception-decision APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION \
+            --output .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
           rmdir "$private_root"
 
       - name: Require the full one-time capacity boundary

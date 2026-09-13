@@ -317,6 +317,13 @@ for (const marker of [
 if (/\b(?:push|pull_request|schedule):/.test(copernicusPilot)) throw new Error('Copernicus-piloten må kun kunne startes manuelt; normal drift ejes af produktionsworkflowet og watchdoggen.');
 const copernicusUploadStart = copernicusPilot.indexOf('- name: Upload private support evidence');
 const operationalPreflightStart = copernicusPilot.indexOf('\n  operational-118-preflight:');
+const capacityResumeStart = copernicusPilot.indexOf(
+  '\n  resume-private-capacity-and-seal-handoff:',
+  operationalPreflightStart,
+);
+if (operationalPreflightStart < 0 || capacityResumeStart <= operationalPreflightStart) {
+  throw new Error('Operational preflight og det separate kapacitets-fortsættelsesjob skal begge findes.');
+}
 const copernicusUpload = copernicusPilot.slice(
   copernicusUploadStart,
   operationalPreflightStart,
@@ -396,7 +403,10 @@ for (const marker of [
     throw new Error(`Den isolerede operational-118-preflight mangler ${marker}`);
   }
 }
-const operationalPreflight = copernicusPilot.slice(operationalPreflightStart);
+const operationalPreflight = copernicusPilot.slice(
+  operationalPreflightStart,
+  capacityResumeStart,
+);
 const scheduledPilot = copernicusPilot.slice(0, operationalPreflightStart);
 assertMarkersOrdered(scheduledPilot, [
   'name: Require exact main before private DMI cache selection',
