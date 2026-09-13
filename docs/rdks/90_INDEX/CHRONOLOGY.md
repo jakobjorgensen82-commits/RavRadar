@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 flerobjekttransport
+
+- PR #290-head `d0748d9e` bestod sourcegate `34754075158` og blev merged som main `6305dd82` med identisk filtræ.
+- Cachefortsættelse `34755365967` hentede intet providervejr, gendannede fire eksakte cacher, genbyggede runtime og passerede 2-GiB-rågrænsen.
+- Det komprimerede arkiv oversteg derefter Supabases 50-MiB-loft for én fil. Intet handoff, cutover eller deploy blev udstedt.
+- Lokal 4.0.354 fordeler arkivet på højst otte dele à 50.000.000 byte og højst 350.000.000 byte samlet, med del-/helhash og fuld readback før pointer-CAS.
+- En endnu ikke nået ugyldig `+`-separator i næste `jq`-gate er rettet i samme version. Målrettede flerobjekt- og kapacitetstests er grønne. Se DEC-0136.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.353 efter real-skala payloadmåling
 
 - PR #289 exact-head `8cb545cd` bestod sourcegate `34744340201` og blev merged som main `ec198c73`.

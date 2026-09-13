@@ -1,3 +1,13 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.354 efter målt 50-MiB-enkeltfilstop
+
+4.0.353-head `d0748d9e495c0b69cb9c7dcb490ccac27635182c` bestod exact-head-sourcegate `34754075158` og blev merged gennem PR #290 som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1`; filtræerne er identiske.
+
+Cachefortsættelse `34755365967` kørte på denne main, genbrugte sourceproofet, gendannede de fire eksakte cacher og genbyggede runtime. Ingen provider, oneoff eller ny 210/673-audit blev kørt. 2-GiB-rågrænsen virkede. Kørselen stoppede bagefter, fordi det færdige komprimerede arkiv var over Supabases 50-MiB-loft for én fil. Det er en transport-/lagringsfejl efter komplet vejr og model, ikke et nyt datahul.
+
+Lokal 4.0.354 deler ét samlet hashbundet arkiv i højst otte immutable Storage-dele på højst 50.000.000 byte hver og højst 350.000.000 byte samlet. To generationer er dermed højst 700.000.000 byte. Alle dele uploades og læses tilbage før pointer-CAS; restore genkontrollerer delhashes, samlet hash og bruger den eksisterende sekventielle atomiske udpakning. Legacy schema 1 kan fortsat læses.
+
+Gennemgangen fandt også et skjult bogstaveligt `+` i den næste `jq`-gate. Det er rettet i samme version. De to målrettede private-runtime-tests er grønne. Exact-head-CI, merge, ny cachefortsættelse, handoff, fuldt gated cutover og offentlig 210/673/118-kontrol er åbne. Se DEC-0136.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.353 efter reel samlet payloadgrænse
 
 4.0.352 blev exact-head-valideret i sourcegate `34744340201`, merged gennem PR #289 og ligger på main `ec198c739d6c45f5f5d8dd3239f8fa01210f6a36`. Main-træet er identisk med PR-head `8cb545cdc5d6487eb7ed5893af469c3f72e05d9e`.

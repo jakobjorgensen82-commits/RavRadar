@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 efter 50-MiB-enkeltobjektstop
+
+- **ISSUE-4.0.353-PR290/SOURCE – LUKKET:** Head `d0748d9e` bestod sourcegate `34754075158` og blev merged som main `6305dd82` med identisk filtræ.
+- **ISSUE-CONTINUATION-34755365967-CACHE/RUNTIME – LUKKET:** Fire eksakte cacher blev gendannet og runtime genbygget uden provider, oneoff eller ny 210/673-audit.
+- **ISSUE-PRIVATE-RUNTIME-RAW-2G – PRODUKTIONSBEVIST LUKKET:** 4.0.353 passerede den tidligere samlede 768-MiB-rågrænse under den nye 2-GiB-grænse.
+- **ISSUE-PRIVATE-RUNTIME-SINGLE-OBJECT-50M – LOKALT RETTET / CI OG LIVE ÅBEN P0:** Det samlede komprimerede arkiv oversteg Supabases enkeltobjektloft. 4.0.354 deler det i højst otte hashbundne dele à 50.000.000 byte og højst 350.000.000 byte samlet med fuld readback før CAS.
+- **ISSUE-CONTINUATION-JQ-LITERAL-PLUS – LOKALT LUKKET / CI ÅBEN:** Næste ikke-kørte gate havde et bogstaveligt `+` før rapportstien. Det er fjernet og workflowgaten kræver nu alle flerobjektbounds.
+- **ISSUE-4.0.354-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, real-skala måling, handoff, fuldt gated cutover og offentlig 210/673/118-verifikation mangler.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal bevise fuld registerplan, vedvarende rotation, cachebevarelse, fallbackbidrag og tidsoverskud. Tilbagevendende fuld privat cachetransport skal gøres bæredygtig.
+
+DEC-0136 og `CHANGELOG-4.0.354.md` er aktuelle. Ingen provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.353 efter samlet privat payloadstop
 
 - **ISSUE-4.0.352-PR289/SOURCE – LUKKET:** Exact-head `8cb545cd` bestod sourcegate `34744340201` og blev merged som main `ec198c73` med identisk tree.

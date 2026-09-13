@@ -145,10 +145,12 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.353',
+  releaseVersion: '4.0.354',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
+  maximumArchiveAggregateBytes: 350_000_000,
+  maximumArchiveObjectCount: 8,
 });
 
 // One exact failed run may supply evidence only for the steps that were already
@@ -157,7 +159,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.353',
+  releaseVersion: '4.0.354',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -594,7 +596,7 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
   const capacityPolicy = validateCapacityPolicy(policy);
   if (!Number.isSafeInteger(archiveObjectBytes)
     || archiveObjectBytes < 1
-    || archiveObjectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) {
+    || archiveObjectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes) {
     throw new Error('Private runtime incremental projection object size is invalid');
   }
   const buildsPerMonth = capacityPolicy.scheduledFullBuildsPerDay
@@ -811,12 +813,21 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
 
 export function buildPrivateRuntimeFirstCutoverException({
   archiveObjectBytes,
+  largestArchiveObjectBytes,
+  archiveObjectCount,
   projection,
   decisionMarker,
 } = {}) {
   const policy = PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY;
   if (!Number.isSafeInteger(archiveObjectBytes) || archiveObjectBytes < 1) {
     throw new Error('First-cutover exception archive size is invalid');
+  }
+  if (!Number.isSafeInteger(largestArchiveObjectBytes)
+    || largestArchiveObjectBytes < 1
+    || largestArchiveObjectBytes > archiveObjectBytes
+    || !Number.isSafeInteger(archiveObjectCount)
+    || archiveObjectCount < 1) {
+    throw new Error('First-cutover exception archive object set is invalid');
   }
   if (!isPlainObject(projection)
     || !isPlainObject(projection.storage)
@@ -826,7 +837,9 @@ export function buildPrivateRuntimeFirstCutoverException({
   }
   const requested = decisionMarker !== undefined;
   const decisionMatches = decisionMarker === policy.invocationMarker;
-  const archiveWithinBound = archiveObjectBytes <= policy.maximumArchiveObjectBytes;
+  const archiveWithinBound = archiveObjectBytes <= policy.maximumArchiveAggregateBytes
+    && largestArchiveObjectBytes <= policy.maximumArchiveObjectBytes
+    && archiveObjectCount <= policy.maximumArchiveObjectCount;
   const retainedStorageWithinBudget = projection.storage.withinBudget === true;
   const checkpointDatabaseWithinBound =
     projection.database.withinIncrementalBound === true;
@@ -846,6 +859,8 @@ export function buildPrivateRuntimeFirstCutoverException({
         : 'BLOCKED_BY_EXCEPTION_BOUNDS',
     eligible,
     maximumArchiveObjectBytes: policy.maximumArchiveObjectBytes,
+    maximumArchiveAggregateBytes: policy.maximumArchiveAggregateBytes,
+    maximumArchiveObjectCount: policy.maximumArchiveObjectCount,
     archiveWithinBound,
     retainedStorageWithinBudget,
     checkpointDatabaseWithinBound,
@@ -978,7 +993,11 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
   }
   if (!archiveMetrics
     || archiveMetrics.objectBytes < 1
-    || archiveMetrics.objectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes
+    || archiveMetrics.objectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes
+    || archiveMetrics.objectCount < 1
+    || archiveMetrics.objectCount > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveObjectCount
+    || archiveMetrics.largestObjectBytes < 1
+    || archiveMetrics.largestObjectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchivePartBytes
     || archiveMetrics.rawPayloadBytes < 1
     || archiveMetrics.envelopeBytes < 1
     || archiveMetrics.envelopeBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumEnvelopeBytes) {
@@ -1003,6 +1022,8 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
   });
   const firstCutoverException = buildPrivateRuntimeFirstCutoverException({
     archiveObjectBytes: archiveMetrics.objectBytes,
+    largestArchiveObjectBytes: archiveMetrics.largestObjectBytes,
+    archiveObjectCount: archiveMetrics.objectCount,
     projection,
     decisionMarker: firstCutoverExceptionDecision,
   });
@@ -1014,6 +1035,8 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
       rawPayloadBytes: archiveMetrics.rawPayloadBytes,
       archiveEnvelopeBytes: archiveMetrics.envelopeBytes,
       archiveObjectBytes: archiveMetrics.objectBytes,
+      archiveObjectCount: archiveMetrics.objectCount,
+      largestArchiveObjectBytes: archiveMetrics.largestObjectBytes,
       compressionBasisPoints: Math.ceil(
         archiveMetrics.objectBytes * 10_000 / archiveMetrics.rawPayloadBytes,
       ),

@@ -25,10 +25,13 @@ const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
-  schemaVersion: '1.0.0',
+  schemaVersion: '2.0.0',
+  legacySchemaVersion: '1.0.0',
+  archiveSchemaVersion: '1.0.0',
   archiveKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_ARCHIVE',
   pointerKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_POINTER',
-  descriptorKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_OBJECT',
+  descriptorKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_OBJECT_SET',
+  legacyDescriptorKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_OBJECT',
   privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass,
   documentKey: 'ravscore-private-production-runtime-pointer',
   bucketId: 'ravradar-private-production-runtime',
@@ -39,17 +42,20 @@ export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   maximumFilePayloadBytes: 768 * 1024 * 1024,
   maximumLegacyRawPayloadBytes: 768 * 1024 * 1024,
   maximumRawPayloadBytes: 2 * 1024 * 1024 * 1024,
-  // Supabase Free projects accept at most one 50 MiB Storage object. Keep the
-  // complete archive only while it fits that real object boundary; larger
-  // generations fail closed before upload rather than relying on a bucket
-  // configuration value that the project plan cannot honour.
+  // Supabase Free projects accept at most one 50 MiB Storage object. One
+  // deterministic archive may therefore be split into immutable parts. The
+  // stricter 50,000,000-byte part size keeps every part below the real object
+  // boundary, while two complete generations remain inside 70% of 1 GB.
   maximumArchiveBytes: 50 * 1024 * 1024,
+  maximumArchivePartBytes: 50_000_000,
+  maximumArchiveAggregateBytes: 350_000_000,
+  maximumArchiveObjectCount: 8,
   maximumEnvelopeBytes: 1_040 * 1024 * 1024,
   maximumFileCount: 33,
 });
 
 const POINTER_KEYS = Object.freeze(['schemaVersion', 'kind', 'current', 'previous']);
-const DESCRIPTOR_KEYS = Object.freeze([
+const LEGACY_DESCRIPTOR_KEYS = Object.freeze([
   'schemaVersion',
   'kind',
   'privacyClass',
@@ -64,6 +70,29 @@ const DESCRIPTOR_KEYS = Object.freeze([
   'sourceHead',
   'modelBinding',
   'contractHashes',
+]);
+const DESCRIPTOR_KEYS = Object.freeze([
+  'schemaVersion',
+  'kind',
+  'privacyClass',
+  'bucketId',
+  'objectSha256',
+  'objectBytes',
+  'objectCount',
+  'objects',
+  'bundleContentSha256',
+  'datasetId',
+  'productionReferenceAt',
+  'generatedAt',
+  'sourceHead',
+  'modelBinding',
+  'contractHashes',
+]);
+const OBJECT_PART_KEYS = Object.freeze([
+  'index',
+  'objectPath',
+  'objectSha256',
+  'objectBytes',
 ]);
 const LEGACY_ARCHIVE_KEYS = Object.freeze([
   'schemaVersion',
@@ -89,6 +118,24 @@ const isPlainObject = value => value !== null
   && typeof value === 'object'
   && !Array.isArray(value)
   && Object.getPrototypeOf(value) === Object.prototype;
+
+function assertObjectSetPolicy(policy) {
+  for (const field of [
+    'maximumArchiveBytes',
+    'maximumArchivePartBytes',
+    'maximumArchiveAggregateBytes',
+    'maximumArchiveObjectCount',
+  ]) {
+    if (!Number.isSafeInteger(policy?.[field]) || policy[field] < 1) {
+      throw new Error('Private runtime object-set policy is invalid');
+    }
+  }
+  if (policy.maximumArchivePartBytes > policy.maximumArchiveBytes
+    || BigInt(policy.maximumArchivePartBytes) * BigInt(policy.maximumArchiveObjectCount)
+      < BigInt(policy.maximumArchiveAggregateBytes)) {
+    throw new Error('Private runtime object-set policy is inconsistent');
+  }
+}
 
 function exactKeys(value, expected, label) {
   if (!isPlainObject(value)) throw new Error(`${label} must be an object`);
@@ -192,6 +239,7 @@ export async function buildProtectedPrivateRuntimeArchive({
   sourceHead,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
+  assertObjectSetPolicy(policy);
   if (!SOURCE_HEAD_PATTERN.test(String(sourceHead ?? ''))) {
     throw new Error('Private runtime archive requires an exact source head');
   }
@@ -240,7 +288,7 @@ export async function buildProtectedPrivateRuntimeArchive({
     });
   }
   const envelope = {
-    schemaVersion: policy.schemaVersion,
+    schemaVersion: policy.archiveSchemaVersion,
     kind: policy.archiveKind,
     privacyClass: policy.privacyClass,
     bundleContentSha256: verified.bundleContentSha256,
@@ -254,18 +302,38 @@ export async function buildProtectedPrivateRuntimeArchive({
     throw new Error('Private runtime archive envelope exceeds its bound');
   }
   const archive = await gzipAsync(envelopeBytes, { level: 9, mtime: 0 });
-  if (archive.length < 1 || archive.length > policy.maximumArchiveBytes) {
-    throw new Error('Private runtime compressed archive exceeds its bound');
+  if (archive.length < 1 || archive.length > policy.maximumArchiveAggregateBytes) {
+    throw new Error('Private runtime compressed archive aggregate exceeds its bound');
   }
   const objectSha256 = sha256(archive);
+  const objects = [];
+  for (let offset = 0, index = 0; offset < archive.length; index += 1) {
+    const end = Math.min(offset + policy.maximumArchivePartBytes, archive.length);
+    const bytes = archive.subarray(offset, end);
+    const partSha256 = sha256(bytes);
+    objects.push({
+      descriptor: {
+        index,
+        objectPath: `bundles/sha256/${objectSha256}/part-${String(index).padStart(3, '0')}-${partSha256}.json.gz.part`,
+        objectSha256: partSha256,
+        objectBytes: bytes.length,
+      },
+      bytes,
+    });
+    offset = end;
+  }
+  if (objects.length < 1 || objects.length > policy.maximumArchiveObjectCount) {
+    throw new Error('Private runtime compressed archive object count exceeds its bound');
+  }
   const descriptor = validateProtectedPrivateRuntimeDescriptor({
     schemaVersion: policy.schemaVersion,
     kind: policy.descriptorKind,
     privacyClass: policy.privacyClass,
     bucketId: policy.bucketId,
-    objectPath: `bundles/sha256/${objectSha256}.json.gz`,
     objectSha256,
     objectBytes: archive.length,
+    objectCount: objects.length,
+    objects: objects.map(object => object.descriptor),
     bundleContentSha256: verified.bundleContentSha256,
     datasetId: verified.datasetId,
     productionReferenceAt: verified.productionReferenceAt,
@@ -276,6 +344,7 @@ export async function buildProtectedPrivateRuntimeArchive({
   }, { policy });
   return {
     archive,
+    objects,
     descriptor,
     verified,
     // Aggregate-only capacity evidence. These counts contain no payload bytes,
@@ -285,6 +354,8 @@ export async function buildProtectedPrivateRuntimeArchive({
       rawPayloadBytes,
       envelopeBytes: envelopeBytes.length,
       objectBytes: archive.length,
+      objectCount: objects.length,
+      largestObjectBytes: Math.max(...objects.map(object => object.bytes.length)),
     }),
   };
 }
@@ -318,19 +389,12 @@ function validateContractHashes(value) {
   return Object.fromEntries(keys.map(key => [key, value[key]]));
 }
 
-export function validateProtectedPrivateRuntimeDescriptor(value, {
-  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
-} = {}) {
-  exactKeys(value, DESCRIPTOR_KEYS, 'Private runtime object descriptor');
-  if (value.schemaVersion !== policy.schemaVersion
-    || value.kind !== policy.descriptorKind
-    || value.privacyClass !== policy.privacyClass
+function validateDescriptorMetadata(value, policy) {
+  if (value.privacyClass !== policy.privacyClass
     || value.bucketId !== policy.bucketId
     || !SHA256_PATTERN.test(String(value.objectSha256 ?? ''))
-    || value.objectPath !== `bundles/sha256/${value.objectSha256}.json.gz`
     || !Number.isSafeInteger(value.objectBytes)
     || value.objectBytes < 1
-    || value.objectBytes > policy.maximumArchiveBytes
     || !SHA256_PATTERN.test(String(value.bundleContentSha256 ?? ''))
     || !DATASET_ID_PATTERN.test(String(value.datasetId ?? ''))
     || !SOURCE_HEAD_PATTERN.test(String(value.sourceHead ?? ''))) {
@@ -348,17 +412,67 @@ export function validateProtectedPrivateRuntimeDescriptor(value, {
   };
 }
 
+export function validateProtectedPrivateRuntimeDescriptor(value, {
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+} = {}) {
+  assertObjectSetPolicy(policy);
+  if (value?.schemaVersion === policy.legacySchemaVersion) {
+    exactKeys(value, LEGACY_DESCRIPTOR_KEYS, 'Private runtime legacy object descriptor');
+    if (value.kind !== policy.legacyDescriptorKind
+      || value.objectPath !== `bundles/sha256/${value.objectSha256}.json.gz`
+      || value.objectBytes > policy.maximumArchiveBytes) {
+      throw new Error('Private runtime legacy object descriptor is invalid');
+    }
+    return validateDescriptorMetadata(value, policy);
+  }
+
+  exactKeys(value, DESCRIPTOR_KEYS, 'Private runtime object-set descriptor');
+  if (value.schemaVersion !== policy.schemaVersion
+    || value.kind !== policy.descriptorKind
+    || value.objectBytes > policy.maximumArchiveAggregateBytes
+    || !Number.isSafeInteger(value.objectCount)
+    || value.objectCount < 1
+    || value.objectCount > policy.maximumArchiveObjectCount
+    || !Array.isArray(value.objects)
+    || value.objects.length !== value.objectCount) {
+    throw new Error('Private runtime object-set descriptor is invalid');
+  }
+  let totalBytes = 0;
+  const objects = value.objects.map((object, index) => {
+    exactKeys(object, OBJECT_PART_KEYS, `Private runtime object part ${index}`);
+    if (object.index !== index
+      || !SHA256_PATTERN.test(String(object.objectSha256 ?? ''))
+      || object.objectPath !== `bundles/sha256/${value.objectSha256}/part-${String(index).padStart(3, '0')}-${object.objectSha256}.json.gz.part`
+      || !Number.isSafeInteger(object.objectBytes)
+      || object.objectBytes < 1
+      || object.objectBytes > policy.maximumArchivePartBytes
+      || object.objectBytes > policy.maximumArchiveBytes) {
+      throw new Error('Private runtime object part descriptor is invalid');
+    }
+    totalBytes += object.objectBytes;
+    return { ...object };
+  });
+  if (totalBytes !== value.objectBytes) {
+    throw new Error('Private runtime object-set byte total is invalid');
+  }
+  return validateDescriptorMetadata({ ...value, objects }, policy);
+}
+
 export function validateProtectedPrivateRuntimePointer(value, {
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   exactKeys(value, POINTER_KEYS, 'Private runtime pointer');
-  if (value.schemaVersion !== policy.schemaVersion || value.kind !== policy.pointerKind) {
+  if (![policy.schemaVersion, policy.legacySchemaVersion].includes(value.schemaVersion)
+    || value.kind !== policy.pointerKind) {
     throw new Error('Private runtime pointer identity is invalid');
   }
   const current = validateProtectedPrivateRuntimeDescriptor(value.current, { policy });
   const previous = value.previous === null
     ? null
     : validateProtectedPrivateRuntimeDescriptor(value.previous, { policy });
+  if (current.schemaVersion !== value.schemaVersion) {
+    throw new Error('Private runtime pointer current generation has another schema');
+  }
   if (previous) {
     const previousMs = Date.parse(previous.productionReferenceAt);
     const currentMs = Date.parse(current.productionReferenceAt);
@@ -380,7 +494,7 @@ async function validateArchiveEnvelope(envelope, descriptor, policy) {
     contentEncoding === undefined ? LEGACY_ARCHIVE_KEYS : ARCHIVE_KEYS,
     'Private runtime archive',
   );
-  if (envelope.schemaVersion !== policy.schemaVersion
+  if (envelope.schemaVersion !== policy.archiveSchemaVersion
     || envelope.kind !== policy.archiveKind
     || envelope.privacyClass !== policy.privacyClass
     || envelope.bundleContentSha256 !== descriptor.bundleContentSha256
@@ -550,10 +664,43 @@ async function verifyStoredObject(storage, descriptor) {
   return bytes;
 }
 
+function descriptorObjects(descriptor) {
+  return descriptor.schemaVersion === PROTECTED_PRIVATE_RUNTIME_POLICY.legacySchemaVersion
+    ? [{
+        index: 0,
+        objectPath: descriptor.objectPath,
+        objectSha256: descriptor.objectSha256,
+        objectBytes: descriptor.objectBytes,
+      }]
+    : descriptor.objects;
+}
+
+function referencedObjectPaths(pointer) {
+  return new Set([pointer?.current, pointer?.previous]
+    .filter(Boolean)
+    .flatMap(descriptor => descriptorObjects(descriptor).map(object => object.objectPath)));
+}
+
+async function verifyStoredArchive(storage, descriptor) {
+  const parts = [];
+  let totalBytes = 0;
+  for (const object of descriptorObjects(descriptor)) {
+    const bytes = await verifyStoredObject(storage, object);
+    parts.push(bytes);
+    totalBytes += bytes.length;
+  }
+  const archive = Buffer.concat(parts, totalBytes);
+  if (archive.length !== descriptor.objectBytes
+    || sha256(archive) !== descriptor.objectSha256) {
+    throw new Error('Protected private runtime object-set readback is invalid');
+  }
+  return archive;
+}
+
 async function removeCreatedRuntimeIfUnreferenced({
   request,
   storage,
-  descriptor,
+  objectPaths,
   policy,
 }) {
   let latest;
@@ -565,13 +712,14 @@ async function removeCreatedRuntimeIfUnreferenced({
     // may already have made current or previous.
     return false;
   }
-  const referencedPaths = new Set([
-    latest?.payload?.current?.objectPath,
-    latest?.payload?.previous?.objectPath,
-  ].filter(Boolean));
-  if (referencedPaths.has(descriptor.objectPath)) return false;
-  await storage.removeExact(descriptor.objectPath);
-  return true;
+  const referencedPaths = referencedObjectPaths(latest?.payload);
+  let removed = 0;
+  for (const objectPath of objectPaths) {
+    if (referencedPaths.has(objectPath)) continue;
+    await storage.removeExact(objectPath);
+    removed += 1;
+  }
+  return removed;
 }
 
 export async function publishProtectedPrivateProductionRuntime({
@@ -596,6 +744,7 @@ export async function publishProtectedPrivateProductionRuntime({
     policy,
   });
   const existing = await readPointerRow(request, { allowMissing: true, policy });
+  let sameReference = false;
   if (existing) {
     const centralMs = Date.parse(existing.payload.current.productionReferenceAt);
     const localMs = Date.parse(built.descriptor.productionReferenceAt);
@@ -606,9 +755,27 @@ export async function publishProtectedPrivateProductionRuntime({
       if (!same(existing.payload.current, built.descriptor)) {
         throw new Error('Private runtime publication conflicts at the same production reference');
       }
-      await storage.ensurePrivateBucket();
-      await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
-      await verifyStoredObject(storage, built.descriptor);
+      sameReference = true;
+    }
+  }
+
+  await storage.ensurePrivateBucket();
+  const createdObjectPaths = [];
+  const uploadAndVerify = async () => {
+    for (const object of built.objects) {
+      const upload = await storage.uploadImmutable(object.descriptor.objectPath, object.bytes);
+      if (upload?.created === true) createdObjectPaths.push(object.descriptor.objectPath);
+    }
+    // Every immutable part is read back byte-exactly before the pointer can
+    // expose the generation. Reassembly also verifies the full archive hash.
+    await verifyStoredArchive(storage, built.descriptor);
+  };
+
+  let expectedVersion;
+  let readback;
+  try {
+    await uploadAndVerify();
+    if (sameReference) {
       return {
         published: false,
         reason: 'protected-private-runtime-already-current',
@@ -616,28 +783,17 @@ export async function publishProtectedPrivateProductionRuntime({
         productionReferenceAt: built.descriptor.productionReferenceAt,
         bundleContentSha256: built.descriptor.bundleContentSha256,
         objectSha256: built.descriptor.objectSha256,
+        objectCount: built.descriptor.objectCount,
         rollbackAvailable: existing.payload.previous !== null,
         privatePayloadLogged: false,
       };
     }
-  }
-
-  await storage.ensurePrivateBucket();
-  const upload = await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
-
-  const pointer = {
-    schemaVersion: policy.schemaVersion,
-    kind: policy.pointerKind,
-    current: built.descriptor,
-    previous: existing?.payload.current ?? null,
-  };
-  let expectedVersion;
-  let readback;
-  try {
-    // One byte-exact readback is required before the pointer can expose the
-    // immutable object. The later pointer CAS/readback proves metadata; a
-    // second full object download would add egress without strengthening it.
-    await verifyStoredObject(storage, built.descriptor);
+    const pointer = {
+      schemaVersion: policy.schemaVersion,
+      kind: policy.pointerKind,
+      current: built.descriptor,
+      previous: existing?.payload.current ?? null,
+    };
     if (!existing) {
       const inserted = await invokeDocumentRequest(
         request,
@@ -676,12 +832,12 @@ export async function publishProtectedPrivateProductionRuntime({
       throw new Error('Private runtime pointer readback does not match the publication');
     }
   } catch (error) {
-    if (upload?.created === true) {
+    if (createdObjectPaths.length > 0) {
       try {
         await removeCreatedRuntimeIfUnreferenced({
           request,
           storage,
-          descriptor: built.descriptor,
+          objectPaths: createdObjectPaths,
           policy,
         });
       } catch {
@@ -693,10 +849,13 @@ export async function publishProtectedPrivateProductionRuntime({
   }
 
   const retired = existing?.payload.previous ?? null;
-  if (retired
-    && retired.objectPath !== readback.payload.current.objectPath
-    && retired.objectPath !== readback.payload.previous?.objectPath) {
-    await storage.removeExact(retired.objectPath);
+  if (retired) {
+    const retainedPaths = referencedObjectPaths(readback.payload);
+    for (const object of descriptorObjects(retired)) {
+      if (!retainedPaths.has(object.objectPath)) {
+        await storage.removeExact(object.objectPath);
+      }
+    }
   }
   return {
     published: true,
@@ -705,7 +864,8 @@ export async function publishProtectedPrivateProductionRuntime({
     productionReferenceAt: built.descriptor.productionReferenceAt,
     bundleContentSha256: built.descriptor.bundleContentSha256,
     objectSha256: built.descriptor.objectSha256,
-    rollbackAvailable: pointer.previous !== null,
+    objectCount: built.descriptor.objectCount,
+    rollbackAvailable: readback.payload.previous !== null,
     privatePayloadLogged: false,
   };
 }
@@ -743,7 +903,10 @@ function assertRestoreTime(descriptor, expected, now, policy) {
     error.code = 'PROTECTED_PRIVATE_RUNTIME_EXPIRED';
     throw error;
   }
-  if (descriptor.objectBytes > policy.maximumArchiveBytes) {
+  const maximumGenerationBytes = descriptor.schemaVersion === policy.legacySchemaVersion
+    ? policy.maximumArchiveBytes
+    : policy.maximumArchiveAggregateBytes;
+  if (descriptor.objectBytes > maximumGenerationBytes) {
     throw new Error('Protected private runtime object exceeds restore bounds');
   }
 }
@@ -795,7 +958,7 @@ export async function restoreProtectedPrivateProductionRuntime({
       );
       temporaryDirectories.push(candidate);
       try {
-        const archive = await verifyStoredObject(storage, descriptor);
+        const archive = await verifyStoredArchive(storage, descriptor);
         await extractArchive({
           archive,
           descriptor,
@@ -852,6 +1015,7 @@ export async function restoreProtectedPrivateProductionRuntime({
       productionReferenceAt: selected.descriptor.productionReferenceAt,
       bundleContentSha256: selected.descriptor.bundleContentSha256,
       objectSha256: selected.descriptor.objectSha256,
+      objectCount: descriptorObjects(selected.descriptor).length,
       rollbackSelected,
       currentGenerationRejected: rollbackSelected,
       rejectedGenerationCount: rejections.length,
@@ -872,13 +1036,18 @@ export async function auditProtectedPrivateRuntimeAnonymousDenial({
 } = {}) {
   assertStorage(storage);
   const row = await readPointerRow(request, { allowMissing: false, policy });
-  const status = await storage.anonymousStatus(row.payload.current.objectPath);
-  if (![401, 403, 404].includes(status)) {
-    throw new Error('Protected private runtime object is anonymously readable');
+  const statuses = [];
+  for (const object of descriptorObjects(row.payload.current)) {
+    const status = await storage.anonymousStatus(object.objectPath);
+    statuses.push(status);
+    if (![401, 403, 404].includes(status)) {
+      throw new Error('Protected private runtime object is anonymously readable');
+    }
   }
   return {
     anonymousReadDenied: true,
-    statusClass: `${Math.floor(status / 100)}xx`,
+    objectCount: statuses.length,
+    statusClasses: [...new Set(statuses.map(status => `${Math.floor(status / 100)}xx`))],
     privatePayloadLogged: false,
   };
 }

@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.354 flerobjekttransport
+
+4.0.353-head `d0748d9e495c0b69cb9c7dcb490ccac27635182c` bestod exact-head-sourcegate `34754075158`, blev merged gennem PR #290 som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1` og har identisk filtræ. Cachefortsættelse `34755365967` genbrugte beviset, gendannede fire eksakte cacher og genbyggede runtime uden provider eller ny 210/673-audit.
+
+2-GiB-rågrænsen virkede. Det nye målte stop var det færdige komprimerede arkiv over Supabases 50-MiB-grænse for én Storage-fil. Gennemgangen fandt desuden et ugyldigt bogstaveligt `+` i næste `jq`-kommando, som ellers ville have stoppet handoffet efter en grøn måling.
+
+Under ejerens stående godkendelse til nødvendige launchrettelser bruger lokal 4.0.354 et schema-2 object set: højst otte dele à 50.000.000 byte og højst 350.000.000 byte samlet. Alle dele og hele arkivet hashbindes. Alle dele uploades og læses tilbage før pointer-CAS; rollback, orphan-cleanup, anonym afvisning, legacy schema-1-læsning og sekventiel atomisk filudpakning er måltestet. To bevarede generationer kan højst bruge 700.000.000 byte og bevarer den eksisterende 30-procentsreserve.
+
+Vejr, model, migrationer, geometri og offentlig 210/673/118-kontrakt er uændrede. Næste trin er én exact-head-gate, merge, samme cachefortsættelse, handoff og fuldt gated cutover; ingen oneoff. Se DEC-0136.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.353 samlet privat runtime
 
 4.0.352 exact-head `8cb545cdc5d6487eb7ed5893af469c3f72e05d9e` bestod sourcegate `34744340201`, blev merged gennem PR #289 og ligger som main `ec198c739d6c45f5f5d8dd3239f8fa01210f6a36` med identisk tree.

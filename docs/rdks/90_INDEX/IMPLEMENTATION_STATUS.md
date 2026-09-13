@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.354 flerobjekttransport
+
+- [x] Bestå 4.0.353 exact-head-sourcegate `34754075158`, merge PR #290 som main `6305dd82` og bevis identisk filtræ.
+- [x] Kør cachefortsættelse `34755365967` uden provider/oneoff/ny 210/673-audit; gendan fire cacher og bevis at 2-GiB-rågrænsen virker.
+- [x] Afgræns stoppet til et samlet komprimeret arkiv over Supabases 50-MiB-enkeltobjektgrænse.
+- [x] Find og ret den endnu ikke nåede ugyldige `+`-separator i næste `jq`-gate.
+- [x] Implementér schema 2 med højst otte hashbundne dele à 50.000.000 byte, højst 350.000.000 byte samlet, samlet readback før CAS og komplet rollback-/cleanup-/legacyunderstøttelse.
+- [x] Bevar sekventiel filudpakning og atomisk destination; bestå målrettede storage/restore/rollback/anonymitets- og kapacitetstests.
+- [x] Løft alle aktive releasefelter og launchpolicies til 4.0.354; geodata ændres kun i topversionsfeltet.
+- [ ] Bestå én exact-head 4.0.354-sourcegate og merge byteidentisk.
+- [ ] Kør samme cachebaserede fortsættelse uden oneoff; kræv grøn måling og runbundet handoff.
+- [ ] Gennemfør samlet cutover, offentlig/sitekontrol og derefter bevis for normal weather-cachevedligeholdelse og rotation.
+
+DEC-0136 er aktiv. Vejrdata, RavScore, modelhashes, migration 13, geometri og offentlig datakontrakt er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.353 samlet privat runtimegrænse
 
 - [x] Merge PR #289 som main `ec198c73` efter grøn exact-head-sourcegate `34744340201`.
