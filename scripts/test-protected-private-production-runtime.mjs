@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   createPrivateProductionRuntimeBundle,
@@ -221,10 +222,22 @@ try {
   });
   assert.equal(archiveOne.descriptor.objectSha256, archiveTwo.descriptor.objectSha256);
   assert.deepEqual(archiveOne.archive, archiveTwo.archive, 'protected archive bytes must be deterministic');
+  const encodedEnvelope = JSON.parse(gunzipSync(archiveOne.archive).toString('utf8'));
+  assert.equal(encodedEnvelope.contentEncoding, 'GZIP_BASE64');
+  assert.equal(
+    encodedEnvelope.files.every(file => {
+      const encoded = Buffer.from(file.contentBase64, 'base64');
+      return encoded[0] === 0x1f && encoded[1] === 0x8b;
+    }),
+    true,
+    'every private file must be compressed before base64 expansion',
+  );
   assert.equal(Object.isFrozen(archiveOne.archiveMetrics), true);
   assert.equal(archiveOne.archiveMetrics.rawPayloadBytes > 0, true);
   assert.equal(
-    archiveOne.archiveMetrics.envelopeBytes >= archiveOne.archiveMetrics.rawPayloadBytes,
+    archiveOne.archiveMetrics.envelopeBytes > 0
+      && archiveOne.archiveMetrics.envelopeBytes
+        <= PROTECTED_PRIVATE_RUNTIME_POLICY.maximumEnvelopeBytes,
     true,
   );
   assert.equal(archiveOne.archiveMetrics.objectBytes, archiveOne.archive.length);

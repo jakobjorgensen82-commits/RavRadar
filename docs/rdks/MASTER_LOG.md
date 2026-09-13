@@ -1,3 +1,19 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.352 privat pakning
+
+Ejeren har præciseret, at cutover skal forsøges og samle fejl, og at bevist ligegyldige fejl ikke skal holde modellen offline. Produktkritiske fejl i vejr, score, datatab, privacy/sikkerhed, databasebinding eller offentlig struktur forbliver stop; dokumentations- og rapporteringsfejl kan først flyttes efter launch, når de konkret er bevist uden produktpåvirkning. Ejeren bad samtidig om at fortsætte præcis fra det fejlede trin og ikke gentage ny oneoff eller brede tests.
+
+PR #288-head `9511c9f4` bestod sourcegate `34737474686` og blev merged med identisk tree som main `099b70a8314864ba85f0fb7ea3858b3f3816d9ed`. Backend `34738543144` bestod uden dobbelt sourcegate. Locked cache-only `34738698219` hentede intet providervejr og bestod current, WAM, freshness, modelbygning og offentlig 210/673/118-kontrol.
+
+Det næste private størrelsestrin fejlede med `Cannot create a string longer than 0x1fffffe8 characters`. Rå private filer blev base64-kodet før gzip og samlet i én V8-streng. 4.0.352 komprimerer hver fil deterministisk før base64; udpakning kræver eksakt encoding, begrænser output til deklareret filstørrelse og genkontrollerer bytes/SHA-256. Legacylæsning og alle storage-, checkpoint-, privacy-, rollback-, CAS- og readbackgrænser består. Model, vejrdata og migrationer er uændrede.
+
+Den gamle runner og dens midlertidige private bundle findes ikke længere. Næste exact-main-run må derfor genskabe bundle fra den låste cache, men må ikke kalde providere eller starte oneoff. Derefter fortsætter den fra den rettede størrelsesmåling til handoff/cutover. Se DEC-0134.
+
+PR #289's første sourcegate `34740223620` blev kørt som én samlet kontrol og fortsatte gennem resten af releasegaten efter fejlen. Den eneste rapporterede fejl var testens hardcodede forventning om `4.0.351` både i resultatassertionen og workflowteksten. Package, policy og workflow var korrekt 4.0.352. Begge testforventninger udledes nu af package-versionen, så samme manuelle versionskant ikke gentages. Den direkte test er grøn; ingen ny bred lokal gate er kørt.
+
+Ejeren afviste derefter endnu en gentagelse af de allerede grønne cache-/modeltrin. Sourcegate `34741128298` blev annulleret som forældet. Lokal 4.0.352 har nu en engangs-handoffproducent, der kun accepterer `34738698219`, live-verificerer de otte grønne sluttrin og nul artifacts, gendanner fire eksakte cacher og udelukker providerproducenter samt den fulde 210/673-audit. Den genskaber kun slettede flygtige runtimefiler, men skal stadig bestå den rettede kapacitetsmåling og forsegle et nyt runbundet handoff. Cutover/deploy kan ikke ske i dette job og beholder den separate fulde gatekæde. Måltest, pakningstest, RDKS og YAML-syntaks er grønne.
+
+PR #289-run `34742976226` fik lov at afslutte hele sin samlede rapport. Alle forudgående release-, model-, runtime-, privacy-, vejr- og migrationskontroller var grønne. Den eneste røde kontrol var en gammel workflowtest, som talte det nye separate fortsættelsesjobs sikre handoff-attestering med i det oprindelige preflight-jobs artifactantal. Jobafgrænsningen er rettet. Manuel gennemlæsning fandt samtidig fire ugyldige bogstavelige patch-`+` i fortsættelsesjobbets multiline-kommandoer; de er erstattet af shell-`\` og en negativ regression forbyder gentagelsen. Den direkte GitHub-fejltest, private-runtime-workflowtesten og YAML-kontrollen er grønne lokalt.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Efter cutover skal almindelige weather-runs, ikke oneoff, bevise cachevedligeholdelse og rotation. Hele hjemmesiden skal derefter gennemgås meningsfuldt, og post-cutover-roadmappet skal renses mod faktisk live evidens.

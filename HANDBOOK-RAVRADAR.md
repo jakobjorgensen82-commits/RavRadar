@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.351
+**Håndbogsversion:** 4.0.352
+
+## 88.56 Lokal 4.0.352 – Den private pakke komprimeres før den gøres til tekst
+
+**Status:** Den hurtige cachekontrol `34738698219` hentede ikke nyt vejr. Den bestod de komplette strømdata, bølger, friskhed, selve modelberegningen og kontrollen af 210 zoner, 673 kystdele og 118 timer. Stoppet kom bagefter, da den private produktionspakke skulle størrelsesmåles.
+
+Den gamle pakker gjorde først store binære data til base64-tekst. Det gør data cirka en tredjedel større. Hele teksten blev samlet på én gang og ramte derfor Nodes faste maksimum, før den til sidst kunne blive komprimeret. Det var ikke et hul i vejrdataene eller en fejl i scoren.
+
+4.0.352 komprimerer nu hver privat fil, før den laves til base64-tekst. Ved udpakning må hver fil højst blive præcis så stor som deklareret, og både byteantal og kontrolsum skal passe før skrivning. Den gamle arkivtype kan fortsat læses. Grænserne for privatliv, storage, rollback og dataintegritet er ikke lempet.
+
+GitHubs afsluttede maskine kan ikke genoptages midt i et trin, så den midlertidige private pakke skal genskabes fra den allerede gemte cache. Der hentes ikke nyt providervejr og startes ingen oneoff. Derefter fortsætter kæden fra størrelsesmålingen til handoff og cutover.
+
+Fortsættelsen accepterer kun den konkrete gamle kørsel `34738698219`. Den kontrollerer hos GitHub, at vejr, bølger, friskhed, model og 210/673/118 allerede var grønne, og at intet handoff blev lavet. Derefter hentes kun de fire konkrete gemte cacher. De store kontroller og leverandørerne køres ikke igen. Det eneste nødvendige gentagne arbejde er at bygge de midlertidige filer, som forsvandt med GitHub-maskinen. Den rettede størrelsesmåling og handoff springes ikke over, og den efterfølgende cutover beholder alle sine fulde kontroller.
+
+Den første GitHub-kontrol af rettelsen fandt kun en gammel versionsforventning i selve testen: testen sagde 4.0.351, mens release, regel og workflow korrekt sagde 4.0.352. De to teststeder følger nu automatisk releaseversionen. Den direkte test er grøn; det ændrer ikke pakningen eller modellen.
 
 ## 88.55 Lokal 4.0.351 – Den offentlige kontrol bruger nu samme modelgrundlag som producenten
 
@@ -411,11 +425,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.351 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.352 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.351, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.352, exact-head og cutover afventer
 
-4.0.351 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
+4.0.352 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

@@ -60,7 +60,7 @@ const DESCRIPTOR_KEYS = Object.freeze([
   'modelBinding',
   'contractHashes',
 ]);
-const ARCHIVE_KEYS = Object.freeze([
+const LEGACY_ARCHIVE_KEYS = Object.freeze([
   'schemaVersion',
   'kind',
   'privacyClass',
@@ -69,7 +69,12 @@ const ARCHIVE_KEYS = Object.freeze([
   'rawPayloadBytes',
   'files',
 ]);
+const ARCHIVE_KEYS = Object.freeze([
+  ...LEGACY_ARCHIVE_KEYS,
+  'contentEncoding',
+]);
 const ARCHIVE_FILE_KEYS = Object.freeze(['path', 'bytes', 'sha256', 'contentBase64']);
+const ARCHIVE_CONTENT_ENCODING = 'GZIP_BASE64';
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const SOURCE_HEAD_PATTERN = /^[0-9a-f]{40}$/;
 const DATASET_ID_PATTERN = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -218,11 +223,15 @@ export async function buildProtectedPrivateRuntimeArchive({
       && (entry.descriptor.bytes !== bytes.length || entry.descriptor.sha256 !== digest)) {
       throw new Error('Private runtime archive source contradicts its verified manifest');
     }
+    const compressed = await gzipAsync(bytes, { level: 9, mtime: 0 });
     files.push({
       path: entry.path,
       bytes: bytes.length,
       sha256: digest,
-      contentBase64: bytes.toString('base64'),
+      // Compress before converting to base64. The previous raw-base64 envelope
+      // could exceed V8's fixed maximum string length even while the final gzip
+      // object remained safely below the storage limit.
+      contentBase64: compressed.toString('base64'),
     });
   }
   const envelope = {
@@ -232,6 +241,7 @@ export async function buildProtectedPrivateRuntimeArchive({
     bundleContentSha256: verified.bundleContentSha256,
     fileCount: files.length,
     rawPayloadBytes,
+    contentEncoding: ARCHIVE_CONTENT_ENCODING,
     files,
   };
   const envelopeBytes = Buffer.from(canonicalPrivateRuntimeJson(envelope), 'utf8');
@@ -355,8 +365,13 @@ export function validateProtectedPrivateRuntimePointer(value, {
   return { schemaVersion: value.schemaVersion, kind: value.kind, current, previous };
 }
 
-function validateArchiveEnvelope(envelope, descriptor, policy) {
-  exactKeys(envelope, ARCHIVE_KEYS, 'Private runtime archive');
+async function validateArchiveEnvelope(envelope, descriptor, policy) {
+  const contentEncoding = envelope?.contentEncoding;
+  exactKeys(
+    envelope,
+    contentEncoding === undefined ? LEGACY_ARCHIVE_KEYS : ARCHIVE_KEYS,
+    'Private runtime archive',
+  );
   if (envelope.schemaVersion !== policy.schemaVersion
     || envelope.kind !== policy.archiveKind
     || envelope.privacyClass !== policy.privacyClass
@@ -367,13 +382,16 @@ function validateArchiveEnvelope(envelope, descriptor, policy) {
     || !Number.isSafeInteger(envelope.rawPayloadBytes)
     || envelope.rawPayloadBytes < 1
     || envelope.rawPayloadBytes > policy.maximumRawPayloadBytes
+    || (contentEncoding !== undefined && contentEncoding !== ARCHIVE_CONTENT_ENCODING)
     || !Array.isArray(envelope.files)
     || envelope.files.length !== envelope.fileCount) {
     throw new Error('Private runtime archive descriptor is invalid');
   }
   let total = 0;
   const paths = new Set();
-  const files = envelope.files.map((file, index) => {
+  const files = [];
+  for (let index = 0; index < envelope.files.length; index += 1) {
+    const file = envelope.files[index];
     exactKeys(file, ARCHIVE_FILE_KEYS, `Private runtime archive file ${index}`);
     const archivePath = safeArchivePath(file.path);
     if (paths.has(archivePath)) throw new Error('Private runtime archive contains duplicate paths');
@@ -384,7 +402,17 @@ function validateArchiveEnvelope(envelope, descriptor, policy) {
       || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.contentBase64)) {
       throw new Error('Private runtime archive file descriptor is invalid');
     }
-    const bytes = Buffer.from(file.contentBase64, 'base64');
+    const encodedBytes = Buffer.from(file.contentBase64, 'base64');
+    let bytes = encodedBytes;
+    if (contentEncoding === ARCHIVE_CONTENT_ENCODING) {
+      try {
+        bytes = await gunzipAsync(encodedBytes, {
+          maxOutputLength: Math.max(1, file.bytes),
+        });
+      } catch {
+        throw new Error('Private runtime archive file cannot be decompressed within its bound');
+      }
+    }
     if (bytes.length !== file.bytes || sha256(bytes) !== file.sha256) {
       throw new Error('Private runtime archive file integrity is invalid');
     }
@@ -392,8 +420,8 @@ function validateArchiveEnvelope(envelope, descriptor, policy) {
     if (total > policy.maximumRawPayloadBytes) {
       throw new Error('Private runtime archive raw payload exceeds its bound');
     }
-    return { path: archivePath, bytes };
-  });
+    files.push({ path: archivePath, bytes });
+  }
   const sorted = [...files].sort((left, right) => compareText(left.path, right.path));
   if (files.some((file, index) => file.path !== sorted[index].path)
     || !paths.has('manifest.json')
@@ -421,7 +449,7 @@ async function decodeArchive(archive, descriptor, policy) {
   } catch {
     throw new Error('Protected private runtime archive cannot be parsed');
   }
-  return validateArchiveEnvelope(envelope, descriptor, policy);
+  return await validateArchiveEnvelope(envelope, descriptor, policy);
 }
 
 async function extractArchive({ archive, descriptor, privateRoot, bundlePath, repositoryRoot, policy }) {

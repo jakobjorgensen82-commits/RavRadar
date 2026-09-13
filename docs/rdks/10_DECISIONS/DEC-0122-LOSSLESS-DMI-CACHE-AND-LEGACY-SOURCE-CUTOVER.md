@@ -147,6 +147,12 @@ Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den
 
 Under ejerens stående autorisation til at føre den nødvendige launchrettelse helt online flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.351`. Ingen gammel preflight eller handoff ommærkes. Samme låste vejrdata må genbruges, men sourceproof, migration-13 readback, full post-data validate/releasegate/data, privacy, artifact, CAS, Pages og offentlig 210/673-verifikation skal være nye og bundet til 4.0.351.
 
+### Versionsoverførsel 2026-09-13 – exact-release 4.0.352
+
+4.0.351 blev exact-head-valideret, merged og backendbundet. Locked cache-only `34738698219` bestod komplet vejr, WAM, freshness, modelbygning og offentlig 210/673/118-struktur, men kunne ikke udstede handoff, fordi raw-base64-arkivkonvolutten ramte Nodes faste strenggrænse ved den efterfølgende størrelsesmåling. DEC-0134 retter alene pakningsrækkefølgen og dekomprimeringsgrænsen.
+
+Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den materielt uændrede first-cutover-undtagelse alene til exact-release `4.0.352`. Intet 4.0.351-handoff findes eller ommærkes. Samme locked cache må genbruges uden providerhentning; storage-, checkpoint-, integritets-, privacy-, readback-, closure-, CAS-, Pages-, offentlig verifikations- og cadencegrænser består.
+
 ## Konsekvenser
 
 - Bevarede data kan genbruges på tværs af target- og leverandørskift uden at være låst til Open-Meteo.

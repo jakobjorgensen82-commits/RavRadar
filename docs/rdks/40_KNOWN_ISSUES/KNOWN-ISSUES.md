@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.352 privat pakkefix
+
+- **ISSUE-PR288/BACKEND – LUKKET:** Head `9511c9f4` bestod sourcegate `34737474686`, blev merged tree-identisk som main `099b70a8`, og backend `34738543144` readback-verificerede alle 13 migrationer.
+- **ISSUE-PREFLIGHT-34738698219-WEATHER/MODEL – LUKKET:** Locked cache-only hentede intet providervejr og bestod current, WAM, freshness, modelbygning og offentlig 210/673/118-struktur. Cold-start-readiness-rettelsen virker i helkæden.
+- **ISSUE-PRIVATE-RUNTIME-V8-STRING-LIMIT – LOKALT RETTET / CI ÅBEN P0:** Rå filer blev base64-kodet før komprimering, så JSON-konvolutten overskred Nodes strenggrænse. Filer komprimeres nu først; encoding, bounded dekomprimering, bytes og SHA-256 kontrolleres, og legacylæsning består.
+- **ISSUE-PR289-STALE-RELEASE-EXPECTATION – LOKALT LUKKET / NY HEAD ÅBEN:** Sourcegate `34740223620` gennemførte hele den samlede releasegate og rapporterede kun private-runtime-workflowtestens to hardcodede `4.0.351`-forventninger. De udledes nu af package-versionen; den direkte test er grøn, og produktionskoden er uændret siden første PR-head.
+- **ISSUE-HANDOFF/CUTOVER – LOKAL FORTSÆTTELSE RETTET / LIVE ÅBEN P0:** Det fejlede størrelsestrin udstedte intet handoff. En exact `34738698219`-bundet handoff-only-rute genbruger de otte grønne sluttrin, kræver fire eksakte cacher og nul gammelt artifact, gentager ingen provider eller 210/673-audit og udfører fortsat kapacitetsmåling samt handoff. Sourcegate `34741128298` blev annulleret som forældet før nyt bevis; exact-head, merge, live fortsættelse og fuldt gated cutover mangler.
+- **ISSUE-NONCRITICAL-GATE-LOOP – KLASSIFICERET:** Kun produktkritiske data-, score-, privacy/sikkerheds-, database- og offentlig-strukturfejl blokerer launch. Bevist ufarlig dokumentation/rapportering registreres til efter launch.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal stadig bevise fuld registerplan, vedvarende rotation, cachebevarelse, providerbidrag og tidsoverskud.
+
+DEC-0134 og `CHANGELOG-4.0.352.md` er aktuelle. Ingen ny provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 - **ISSUE-4.0.351-PR287/BACKEND – LUKKET:** Head `b12c1717` bestod sourcegate `34732348167`, blev merged byteidentisk som main `a6e118d2`, og backend `34733200143` readback-verificerede de 13 anvendte migrationer uden dobbelt sourcegate.
