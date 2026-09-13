@@ -1,3 +1,18 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.357 fra samlet decimalfejl til model-online
+
+- [x] Bestå 4.0.356-sourcegate `34761823518`, merge PR #293 som main `b75672f7` og bevis identisk filtræ.
+- [x] Bestå SHA-handoff `34763228997` uden provider/oneoff/ny 210/673-audit.
+- [x] Kør `34763820124` gennem alle fem cutoverkontroller og afgræns eneste fejl til kanonisk decimalrepræsentation.
+- [x] Ret én-gangs-afrunding med bevaret 360→0 og målrettet regression.
+- [ ] Kør én exact-head 4.0.357-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Genskab kun SHA-bindingen fra samme cacher; ingen ny vejrhentning eller oneoff.
+- [ ] Kør cutover og verificér 4.0.357 offentligt på 210 zoner, 673 dele, begge modes og 118 timer.
+- [ ] Gennemgå levende side på desktop/mobil og DA/DE/EN.
+- [ ] Bevis almindelig cachevedligeholdelse, fuld registerrotation, fallback og tidsoverskud; ingen oneoff.
+- [ ] Revurdér resten af post-cutover-roadmappet mod live evidens.
+
+DEC-0139 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.356 fra GitHub-startfejl til model-online
 
 - [x] Bestå 4.0.355-sourcegate `34759300669`, merge PR #292 som main `5bcd5fb2` og bevis identisk filtræ.

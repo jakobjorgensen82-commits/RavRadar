@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter én samlet cutoverfejl
+
+- **Aktuel base:** Main `b75672f7` efter PR #293/sourcegate `34761823518`; lokal branch `codex/4.0.357-canonical-direction-rounding`.
+- **Grønt handoff:** `34763228997` gendannede fire cacher og forseglede exact handoff uden provider, oneoff eller ny 210/673-audit.
+- **Samlet cutover:** `34763820124` gennemførte alle fem kontroller. Runtime/model, referencezoner, releasegate og vejrdata var grønne; kun fuld validering fejlede.
+- **Rodårsag/rettelse:** En korrekt én-decimal-retning blev modulo-normaliseret igen og kunne blive `126.60000000000002`. 4.0.357 returnerer den afrundede værdi direkte og bevarer kun 360→0.
+- **Næste rækkefølge:** målrettede versions-/RDKS-kontroller → commit/push/PR → én exact-head-sourcegate → byteidentisk merge → kun nyt SHA-bundet handoff fra samme cacher → cutover → offentlig/sitekontrol → normal weather/rotation.
+- **Bevar:** brugerens to lokale linjeskiftændringer og fire untracked `.tmp-run-*-safe-inspect`-mapper.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Astra kun hvis en ny ukendt systemisk rodårsag opstår.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 retter startup før jobs
 
 - **Aktuel base:** Main `5bcd5fb2` efter PR #292/sourcegate `34759300669`; lokal branch `codex/4.0.356-reusable-workflow-permissions`.

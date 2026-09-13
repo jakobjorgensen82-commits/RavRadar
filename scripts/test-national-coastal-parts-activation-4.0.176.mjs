@@ -27,6 +27,7 @@ assert.equal(Object.values(contract.zones).flat().length,673);
 assert.equal(Object.values(contract.zones).flat().filter(part=>part.landPoint&&part.waterPoint).length,673);
 assert.equal(Object.values(contract.zones).flat().every(part=>Number.isFinite(part.onshoreDirectionDeg)&&part.onshoreDirectionDeg>=0&&part.onshoreDirectionDeg<360),true,'Aktive kystdelsretninger skal vaere kanoniske i intervallet [0, 360).');
 assert.equal(canonicalOnshoreBearing([0,0],[-0.00001,1]),0,'En nordlig retning, der afrundes til 360 grader, skal normaliseres til 0.');
+assert.equal(canonicalOnshoreBearing([0,0],[1,-0.75]),126.9,'En retning afrundet til én decimal må ikke få en ny binær decimalhale ved normalisering.');
 assert.equal(contract.zones['DK-B10-16'],undefined,'Fejø/Femø må ikke genopstå i den aktive kystruntime.');
 const registry=JSON.parse(fs.readFileSync('data/zones.geojson','utf8'));
 assert.equal(registry.features.some(feature=>feature.properties?.id==='DK-B10-16'),false,'Fejø/Femø må ikke findes i zoneregisteret.');

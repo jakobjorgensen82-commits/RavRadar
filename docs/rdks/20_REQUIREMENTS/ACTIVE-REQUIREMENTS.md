@@ -1,5 +1,15 @@
 # Aktive krav – samlet register
 
+# 4.0.357 – stabil kanonisk decimalretning efter samlet cutover
+
+- **REQ-4.0.357-ONE-ROUND-001 – BINDENDE P0 / LOKALT RETTET:** Hav→land-retningen normaliseres før én-decimal-afrunding og må ikke modulo-normaliseres igen bagefter.
+- **REQ-4.0.357-WRAP-001 – BINDENDE P0 / LOKALT TESTET:** En afrundet `360` skal fortsat blive kanonisk `0`; alle aktive retningsværdier ligger i `[0, 360)`.
+- **REQ-4.0.357-NO-SEMANTIC-CHANGE-001 – BINDENDE:** Geometri, land-/vandpunkter, fysisk retning, vejr, sourceorder, RavScore, modelstate, database og privacy er uændrede.
+- **REQ-4.0.357-COLLECTED-EVIDENCE-001 – BEVIST:** Cutover `34763820124` gennemførte alle fem kontroller; runtime/model, referencezoner, releasegate og data bestod, mens fuld validering alene fejlede på decimalrepræsentationen.
+- **REQ-4.0.357-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-sourcegate, byteidentisk merge, nyt SHA-bundet handoff, cutover og offentlig 210/673/118-verifikation mangler. Ingen oneoff eller provideropfyldning.
+
+DEC-0139 er bindende.
+
 # 4.0.356 – gyldig caller/callee-kontrakt før cutover
 
 - **REQ-4.0.356-BUILD-PERMISSION-001 – BINDENDE P0 / LOKALT RETTET:** `build-and-prepare`-caller skal give præcis `contents: read`, `actions: read` og `pull-requests: read` videre til det genbrugte buildworkflow.

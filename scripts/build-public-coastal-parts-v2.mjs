@@ -17,7 +17,8 @@ const norm=value=>((Number(value)%360)+360)%360;
 export function canonicalOnshoreBearing(from,to){
   const [lon1,lat1]=from.map(value=>Number(value)*Math.PI/180),[lon2,lat2]=to.map(value=>Number(value)*Math.PI/180);
   const direction=norm(Math.atan2(Math.sin(lon2-lon1)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1))*180/Math.PI);
-  return norm(Number(direction.toFixed(1)));
+  const rounded=Number(direction.toFixed(1));
+  return rounded===360?0:rounded;
 }
 function simplifyLine(points,tolerance=0.000025){
   const line=points.map(cleanPoint);if(line.length<=2)return line;

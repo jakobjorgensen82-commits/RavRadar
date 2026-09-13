@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.357 kanonisk retningsafrunding
+
+- [x] Bestå PR #293-sourcegate `34761823518`, merge som main `b75672f7` og bevis identisk filtræ.
+- [x] Bestå handoff `34763228997` uden provider, oneoff eller ny 210/673-audit.
+- [x] Kør cutover `34763820124` gennem alle fem kontroller og saml præcis én fejl.
+- [x] Bevis at runtime/model, referencezoner, releasegate og vejrdata var grønne; kun fuld validering fejlede på binær decimalhale.
+- [x] Fjern ekstra normalisering efter afrunding, bevar 360→0 og bestå den tidligere fejlede roundtrip samt ny decimalregression.
+- [ ] Bestå én exact-head 4.0.357-sourcegate og merge byteidentisk.
+- [ ] Genskab kun SHA-bundet handoff fra samme cacher; ingen provider, oneoff eller ny stor audit.
+- [ ] Kør cutover, offentlig/sitekontrol og derefter normal weather-cache-/rotationsbevis.
+
+DEC-0139 er aktiv. Ingen score-, geometri-, punkt-, vejr-, database- eller privacysemantik ændres.
+
 # Aktuel implementeringsstatus – lokal 4.0.356 startup-permissions
 
 - [x] Bestå PR #292-sourcegate `34759300669`, merge som main `5bcd5fb2` og bevis identisk filtræ.

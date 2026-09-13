@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.357 efter samlet decimalfejl
+
+- **ISSUE-4.0.356-PR293/SOURCE – LUKKET:** Head `dfce04f1` bestod sourcegate `34761823518` og blev merged som main `b75672f7` med identisk filtræ.
+- **ISSUE-HANDOFF-34763228997 – LUKKET:** Fire cacher og exact handoff blev grønne uden provider, oneoff eller ny 210/673-audit.
+- **ISSUE-CUTOVER-34763820124-AGGREGATE – AFGRÆNSET:** Fire af fem samlede kontroller var grønne. Kun fuld validering fejlede på `126.60000000000002` mod `126.6`; ingen score-, vejr-, 210/673- eller releasefejl blev fundet.
+- **ISSUE-CANONICAL-DIRECTION-DECIMAL – LOKALT RETTET / CI ÅBEN P0:** Den ekstra modulo-normalisering efter afrunding fjernes; 360→0 og `[0,360)` bevares.
+- **ISSUE-4.0.357-LAUNCH – ÅBEN P0:** Exact-head, merge, nyt SHA-handoff, cutover og offentlig/sitekontrol mangler.
+- **ISSUE-NORMAL-MAINTENANCE/ROTATION – ÅBEN EFTER LAUNCH:** Almindelige runs skal bevise fuld registerplan, rotation, cachebevarelse, fallback og tidsoverskud.
+
+DEC-0139 og `CHANGELOG-4.0.357.md` er aktuelle. Ingen provider-oneoff er planlagt.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 efter startup-fejl uden jobs
 
 - **ISSUE-4.0.355-PR292/SOURCE – LUKKET:** Head `69a05164` bestod sourcegate `34759300669` og blev merged som main `5bcd5fb2` med identisk filtræ.
