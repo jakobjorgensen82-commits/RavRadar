@@ -1,3 +1,11 @@
+## 4.0.353 – afgrænset samlet privat runtime og sekventiel udpakning (2026-09-13, lokal kandidat)
+
+- Handoff-fortsættelse `34745557797` gendannede alle fire eksakte cacher uden providerhentning eller ny 210/673-audit og genbyggede runtime. 4.0.352's komprimering passerede den gamle V8-strengfejl.
+- Runnet stoppede først, fordi flere verificerede private filer samlet oversteg det gamle 768 MiB-loft. Det var ikke en vejr-, score- eller køretidsfejl.
+- Ejerens præcise godkendelse hæver alene nye `GZIP_BASE64`-arkivers samlede ukomprimerede loft til 2 GiB. Hver fil og legacyarkiver forbliver højst 768 MiB; første cutover forbliver højst 50.000.000 komprimerede byte inden for det tekniske 50 MiB-objectloft.
+- Restore afkoder, dekomprimerer, hashkontrollerer og skriver én fil ad gangen til et privat stageområde, som først omdøbes atomisk efter fuld succes.
+- Vejr, model, databasebinding, geometri og offentlig 210/673/118-kontrakt er uændrede. Næste trin er én exact-head-sourcegate og cachebaseret fortsættelse uden oneoff. Se `CHANGELOG-4.0.353.md` og DEC-0135.
+
 ## 4.0.352 – privat pakning uden V8-strengstop (2026-09-13, lokal kandidat)
 
 - PR #288/sourcegate `34737474686`, main `099b70a8` og backend `34738543144` er grønne.

@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.353 efter reel samlet payloadgrænse
+
+4.0.352 blev exact-head-valideret i sourcegate `34744340201`, merged gennem PR #289 og ligger på main `ec198c739d6c45f5f5d8dd3239f8fa01210f6a36`. Main-træet er identisk med PR-head `8cb545cdc5d6487eb7ed5893af469c3f72e05d9e`.
+
+Den exact-run-bundne fortsættelse `34745557797` live-verificerede `34738698219`, gendannede alle fire eksakte cacher og genbyggede den private runtime. Den hentede intet providervejr og gentog ikke den allerede grønne 210/673-audit. 4.0.352's komprimering før base64 virkede: den gamle V8-strengfejl kom ikke igen.
+
+Runnet stoppede først på den reelle samlede råpayloadgrænse: de verificerede private filer var tilsammen over 768 MiB. Det siger ikke, at vejret mangler, at scoren fejler eller at der behøves mere køretid.
+
+Ejeren har udtrykkeligt godkendt den præcise 4.0.353-grænse. Kun nye `GZIP_BASE64`-arkiver må nu være højst 2 GiB ukomprimeret samlet. Hver fil er fortsat højst 768 MiB, legacyarkiver fortsat højst 768 MiB samlet, og første cutover fortsat højst 50.000.000 komprimerede byte inden for det tekniske 50 MiB-objectloft. Restore behandler én fil ad gangen i et privat stageområde og gør først bundlen synlig ved atomisk rename efter fuld byte-/SHA-256-kontrol.
+
+Målrettet archive/storage/rollback/anonymous-denial-test, private-runtime-workflowtesten og versionskontrollen er grønne lokalt. Exact-head-CI, merge, ny cachebaseret kapacitetsmåling, handoff, fuldt gated cutover og offentlig 210/673/118-verifikation er åbne. Ingen oneoff eller providerhentning er planlagt. Se DEC-0135.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.352 retter privat pakning efter komplet modelbevis
 
 PR #288's korrigerede head `9511c9f4` bestod exact-head-sourcegate `34737474686` og blev merged med identisk tree som main `099b70a8314864ba85f0fb7ea3858b3f3816d9ed`. Backend `34738543144` genbrugte exact-content-kildebeviset uden dobbelt fuld gate og readback-verificerede alle 13 migrationer.

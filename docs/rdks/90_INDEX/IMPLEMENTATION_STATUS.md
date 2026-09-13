@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.353 samlet privat runtimegrænse
+
+- [x] Merge PR #289 som main `ec198c73` efter grøn exact-head-sourcegate `34744340201`.
+- [x] Kør handoff-fortsættelse `34745557797`: live-verificér `34738698219`, gendan fire eksakte cacher, hent nul providervejr, undlad ny 210/673-audit og genbyg runtime.
+- [x] Bevis at 4.0.352's komprimering passerer V8-strenggrænsen, og afgræns næste stop til samlet råpayload over 768 MiB.
+- [x] Få ejerens præcise godkendelse af højst 2 GiB samlet for nye `GZIP_BASE64`-arkiver, fortsat 768 MiB pr. fil, 768 MiB samlet legacy og uændret 50.000.000-byte cutoverloft inden for det tekniske 50 MiB-objectloft.
+- [x] Implementér formatbetinget samlet loft og sekventiel, bounded, SHA-256-kontrolleret udpakning i atomisk privat stage.
+- [x] Versionér aktive felter til 4.0.353 og bestå målrettet archive-/workflow-/releaseversionkontrol.
+- [ ] Bestå én exact-head 4.0.353-sourcegate og merge byteidentisk.
+- [ ] Kør samme cachebaserede fortsættelse uden oneoff; kræv grøn kapacitetsmåling og runbundet handoff.
+- [ ] Gennemfør den separate fuldt gatede cutover og verificér integreret model offentligt på 210/673/118.
+- [ ] Gennemgå hjemmesiden meningsfuldt og bevis derefter cachevedligeholdelse, rotation, fallback og tidsoverskud i almindelige weather-runs.
+
+DEC-0135 er aktiv. Vejrdata, RavScore, modelhashes, migration 13, geometri og offentlig datakontrakt er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.352 privat pakkefix
 
 - [x] Bestå PR #288 exact-head-sourcegate `34737474686`, merge tree-identisk som main `099b70a8` og readback-verificér backend `34738543144` uden dobbelt sourcegate.

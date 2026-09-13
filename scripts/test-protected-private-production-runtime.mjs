@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
+  canonicalPrivateRuntimeJson,
   createPrivateProductionRuntimeBundle,
   verifyPrivateProductionRuntimeBundle,
 } from './private-production-runtime-bundle.mjs';
@@ -152,6 +154,9 @@ try {
 
   const documents = fakeDocuments();
   const storage = fakeStorage();
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes, 50 * 1024 * 1024);
   let bucketCreatedWith = null;
   let bucketLookupCount = 0;
@@ -247,6 +252,75 @@ try {
     archiveTwo.archiveMetrics,
     'aggregate archive measurements must be deterministic with the production packer',
   );
+
+  const legacyEnvelope = clone(encodedEnvelope);
+  delete legacyEnvelope.contentEncoding;
+  legacyEnvelope.files = legacyEnvelope.files.map(file => ({
+    ...file,
+    contentBase64: gunzipSync(Buffer.from(file.contentBase64, 'base64')).toString('base64'),
+  }));
+  const legacyArchive = gzipSync(
+    Buffer.from(canonicalPrivateRuntimeJson(legacyEnvelope), 'utf8'),
+    { level: 9, mtime: 0 },
+  );
+  const legacyObjectSha256 = crypto.createHash('sha256').update(legacyArchive).digest('hex');
+  const legacyDescriptor = {
+    ...archiveOne.descriptor,
+    objectSha256: legacyObjectSha256,
+    objectPath: `bundles/sha256/${legacyObjectSha256}.json.gz`,
+    objectBytes: legacyArchive.length,
+  };
+  const legacyDocuments = fakeDocuments();
+  await legacyDocuments.request('', {
+    method: 'POST',
+    body: JSON.stringify({
+      document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey,
+      payload: {
+        schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.schemaVersion,
+        kind: PROTECTED_PRIVATE_RUNTIME_POLICY.pointerKind,
+        current: legacyDescriptor,
+        previous: null,
+      },
+    }),
+  });
+  const legacyStorage = fakeStorage();
+  legacyStorage.objects.set(legacyDescriptor.objectPath, legacyArchive);
+  const legacyRestoreBundle = path.join(restoreRoot, 'bundle-legacy');
+  await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: legacyRestoreBundle,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    request: legacyDocuments.request,
+    storage: legacyStorage.client,
+  });
+  await verifyPrivateProductionRuntimeBundle({
+    privateRoot: restoreRoot,
+    bundlePath: legacyRestoreBundle,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+  });
+  const rejectedLegacyBundle = path.join(restoreRoot, 'bundle-legacy-over-aggregate-bound');
+  await assert.rejects(
+    restoreProtectedPrivateProductionRuntime({
+      privateRoot: restoreRoot,
+      bundlePath: rejectedLegacyBundle,
+      repositoryRoot: repository,
+      expected: first.expected,
+      now: '2026-08-29T11:05:00.000Z',
+      request: legacyDocuments.request,
+      storage: legacyStorage.client,
+      policy: {
+        ...PROTECTED_PRIVATE_RUNTIME_POLICY,
+        maximumLegacyRawPayloadBytes: legacyEnvelope.rawPayloadBytes - 1,
+      },
+    }),
+    /No compatible protected private runtime generation/,
+  );
+  assert.equal(await fs.lstat(rejectedLegacyBundle).catch(() => null), null,
+    'a legacy archive over its aggregate bound must not leave a partial destination');
 
   const publishedFirst = await publishProtectedPrivateProductionRuntime({
     privateRoot,
@@ -449,7 +523,19 @@ try {
       sourceHead: SOURCE_HEADS[2],
       policy: { ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumRawPayloadBytes: 32 },
     }),
-    /size limit|raw payload exceeds/,
+    /raw payload exceeds/,
+  );
+  await assert.rejects(
+    buildProtectedPrivateRuntimeArchive({
+      privateRoot,
+      bundlePath: third.bundlePath,
+      repositoryRoot: repository,
+      expected: third.expected,
+      now: '2026-08-29T13:05:00.000Z',
+      sourceHead: SOURCE_HEADS[2],
+      policy: { ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumFilePayloadBytes: 32 },
+    }),
+    /size limit/,
   );
   await assert.rejects(
     buildProtectedPrivateRuntimeArchive({

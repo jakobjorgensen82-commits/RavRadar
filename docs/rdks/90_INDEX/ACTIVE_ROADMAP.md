@@ -1,3 +1,20 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.353 fra samlet payloadstop til model-online
+
+- [x] Merge 4.0.352 som main `ec198c73` efter exact-head-sourcegate `34744340201`.
+- [x] Kør `34745557797` direkte fra den cachebaserede fortsættelse; gendan kun fire eksakte cacher og genbyg runtime uden provider eller ny 210/673-audit.
+- [x] Bevis at komprimeringen virker, og at det nye stop alene er samlet ukomprimeret payload over det gamle 768 MiB-loft.
+- [x] Få præcis ejergodkendelse og implementér 2 GiB samlet for nyt format, 768 MiB pr. fil/legacy, uændret 50.000.000-byte cutoverloft inden for 50 MiB-objectloftet og sekventiel atomisk restore.
+- [x] Versionér 4.0.353 og bestå de tre direkte runtime-/workflow-/versionskontroller.
+- [ ] Kør én exact-head sourcegate, merge byteidentisk og genbrug ikke en rød head.
+- [ ] Kør fortsættelsen igen fra exact `34738698219`; mål real-skala arkiv og forsegl handoff uden oneoff.
+- [ ] Gennemfør den separate cutover til slut; saml fejl pr. kørsel og ret samlet uden at gentage allerede bevist arbejde.
+- [ ] Verificér release 4.0.353 offentligt på 210 zoner, 673 kystdele, begge modes og 118 timer.
+- [ ] Gennemgå levende side på desktop/mobil og DA/DE/EN med fokus på funktion og sammenhæng.
+- [ ] Genaktivér normal weather og bevis cachevedligeholdelse, fuld registerrotation, fallbackbidrag og tidsoverskud i almindelige runs.
+- [ ] Rens post-cutover-roadmap mod live evidens og behold kun aktuelle konkrete problemer.
+
+Produktkritiske integritets-/privacy-/data-/model-/deploymentgates består. Ingen ny oneoff. DEC-0135 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.352 fra fejlet pakketrin til model-online
 
 - [x] Merge 4.0.351 som main `099b70a8` efter grøn exact-head-sourcegate `34737474686`, og bestå backend `34738543144`.

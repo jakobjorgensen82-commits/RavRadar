@@ -33,7 +33,12 @@ export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   documentKey: 'ravscore-private-production-runtime-pointer',
   bucketId: 'ravradar-private-production-runtime',
   mimeType: 'application/gzip',
-  maximumRawPayloadBytes: 768 * 1024 * 1024,
+  // The current file-compressed format may contain more than one large cache,
+  // but no individual file may exceed the original 768 MiB boundary. Legacy
+  // raw-base64 archives retain their original aggregate boundary.
+  maximumFilePayloadBytes: 768 * 1024 * 1024,
+  maximumLegacyRawPayloadBytes: 768 * 1024 * 1024,
+  maximumRawPayloadBytes: 2 * 1024 * 1024 * 1024,
   // Supabase Free projects accept at most one 50 MiB Storage object. Keep the
   // complete archive only while it fits that real object boundary; larger
   // generations fail closed before upload rather than relying on a bucket
@@ -212,7 +217,7 @@ export async function buildProtectedPrivateRuntimeArchive({
   for (const entry of entries) {
     const bytes = await readBundleEntry(
       path.join(verified.bundlePath, ...entry.path.split('/')),
-      policy.maximumRawPayloadBytes,
+      policy.maximumFilePayloadBytes,
     );
     rawPayloadBytes += bytes.length;
     if (rawPayloadBytes > policy.maximumRawPayloadBytes) {
@@ -367,6 +372,9 @@ export function validateProtectedPrivateRuntimePointer(value, {
 
 async function validateArchiveEnvelope(envelope, descriptor, policy) {
   const contentEncoding = envelope?.contentEncoding;
+  const maximumAggregateBytes = contentEncoding === undefined
+    ? policy.maximumLegacyRawPayloadBytes
+    : policy.maximumRawPayloadBytes;
   exactKeys(
     envelope,
     contentEncoding === undefined ? LEGACY_ARCHIVE_KEYS : ARCHIVE_KEYS,
@@ -381,13 +389,13 @@ async function validateArchiveEnvelope(envelope, descriptor, policy) {
     || envelope.fileCount > policy.maximumFileCount
     || !Number.isSafeInteger(envelope.rawPayloadBytes)
     || envelope.rawPayloadBytes < 1
-    || envelope.rawPayloadBytes > policy.maximumRawPayloadBytes
+    || envelope.rawPayloadBytes > maximumAggregateBytes
     || (contentEncoding !== undefined && contentEncoding !== ARCHIVE_CONTENT_ENCODING)
     || !Array.isArray(envelope.files)
     || envelope.files.length !== envelope.fileCount) {
     throw new Error('Private runtime archive descriptor is invalid');
   }
-  let total = 0;
+  let declaredTotal = 0;
   const paths = new Set();
   const files = [];
   for (let index = 0; index < envelope.files.length; index += 1) {
@@ -397,39 +405,31 @@ async function validateArchiveEnvelope(envelope, descriptor, policy) {
     if (paths.has(archivePath)) throw new Error('Private runtime archive contains duplicate paths');
     paths.add(archivePath);
     if (!Number.isSafeInteger(file.bytes) || file.bytes < 0
+      || file.bytes > policy.maximumFilePayloadBytes
       || !SHA256_PATTERN.test(String(file.sha256 ?? ''))
       || typeof file.contentBase64 !== 'string'
       || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.contentBase64)) {
       throw new Error('Private runtime archive file descriptor is invalid');
     }
-    const encodedBytes = Buffer.from(file.contentBase64, 'base64');
-    let bytes = encodedBytes;
-    if (contentEncoding === ARCHIVE_CONTENT_ENCODING) {
-      try {
-        bytes = await gunzipAsync(encodedBytes, {
-          maxOutputLength: Math.max(1, file.bytes),
-        });
-      } catch {
-        throw new Error('Private runtime archive file cannot be decompressed within its bound');
-      }
-    }
-    if (bytes.length !== file.bytes || sha256(bytes) !== file.sha256) {
-      throw new Error('Private runtime archive file integrity is invalid');
-    }
-    total += bytes.length;
-    if (total > policy.maximumRawPayloadBytes) {
+    declaredTotal += file.bytes;
+    if (declaredTotal > maximumAggregateBytes) {
       throw new Error('Private runtime archive raw payload exceeds its bound');
     }
-    files.push({ path: archivePath, bytes });
+    files.push({
+      path: archivePath,
+      bytes: file.bytes,
+      sha256: file.sha256,
+      contentBase64: file.contentBase64,
+    });
   }
   const sorted = [...files].sort((left, right) => compareText(left.path, right.path));
   if (files.some((file, index) => file.path !== sorted[index].path)
     || !paths.has('manifest.json')
     || files.some(file => file.path !== 'manifest.json' && !file.path.startsWith('payload/'))
-    || total !== envelope.rawPayloadBytes) {
+    || declaredTotal !== envelope.rawPayloadBytes) {
     throw new Error('Private runtime archive inventory is invalid');
   }
-  return files;
+  return { contentEncoding, files };
 }
 
 async function decodeArchive(archive, descriptor, policy) {
@@ -461,16 +461,32 @@ async function extractArchive({ archive, descriptor, privateRoot, bundlePath, re
   );
   const existing = await fs.lstat(destination).catch(() => null);
   if (existing) throw new Error('Private runtime bundle destination already exists');
-  const files = await decodeArchive(archive, descriptor, policy);
+  const decoded = await decodeArchive(archive, descriptor, policy);
   const stage = `${destination}.protected-stage-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   assertInside(context.root, stage, 'Private runtime bundle stage');
   try {
     await fs.mkdir(stage, { recursive: true, mode: 0o700 });
-    for (const file of files) {
+    for (const file of decoded.files) {
       const target = path.join(stage, ...file.path.split('/'));
       assertInside(stage, target, 'Private runtime extracted file');
       await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      await fs.writeFile(target, file.bytes, { flag: 'wx', mode: 0o600 });
+      const encodedBytes = Buffer.from(file.contentBase64, 'base64');
+      let bytes = encodedBytes;
+      if (decoded.contentEncoding === ARCHIVE_CONTENT_ENCODING) {
+        try {
+          bytes = await gunzipAsync(encodedBytes, {
+            maxOutputLength: Math.max(1, file.bytes),
+          });
+        } catch {
+          throw new Error('Private runtime archive file cannot be decompressed within its bound');
+        }
+      }
+      if (bytes.length !== file.bytes || sha256(bytes) !== file.sha256) {
+        throw new Error('Private runtime archive file integrity is invalid');
+      }
+      // Decode, verify and write one file at a time. This keeps the archive
+      // atomic without retaining every uncompressed cache in memory together.
+      await fs.writeFile(target, bytes, { flag: 'wx', mode: 0o600 });
     }
     await fs.rename(stage, destination);
   } catch (error) {

@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.353 samlet privat runtime
+
+4.0.352 exact-head `8cb545cdc5d6487eb7ed5893af469c3f72e05d9e` bestod sourcegate `34744340201`, blev merged gennem PR #289 og ligger som main `ec198c739d6c45f5f5d8dd3239f8fa01210f6a36` med identisk tree.
+
+Den exact-run-bundne fortsættelse `34745557797` genbrugte kildebeviset, live-verificerede run `34738698219`, gendannede de fire eksakte cacher og genbyggede den private runtime. Den kaldte ingen provider og gentog ikke 210/673-auditen. Dermed blev 4.0.352's komprimering før base64 afprøvet i real-skala og passerede det gamle V8-strengstop.
+
+Kørslen stoppede først i den korrigerede kapacitetsmåling med `Private runtime archive raw payload exceeds its bound`. De verificerede filer er altså samlet over 768 MiB. Der er ingen ny evidens for vejrhuller, scorefejl eller behov for mere providertid.
+
+Den automatiske sikkerhedskontrol krævede en præcis ejergodkendelse, fordi en vedvarende råpayloadgrænse ændres. Ejeren godkendte udtrykkeligt: højst 2 GiB samlet for nye `GZIP_BASE64`-arkiver, fortsat højst 768 MiB pr. fil, legacyformat fortsat højst 768 MiB samlet, sekventiel atomisk udpakning og uændret 50.000.000-byte cutoverloft inden for det tekniske 50 MiB-objectloft. Over 2 GiB skal stoppe.
+
+4.0.353 håndhæver disse fire separate grænser. Arkivinventar og deklarerede totaler kontrolleres først; derefter afkodes, dekomprimeres, byte-/SHA-256-kontrolleres og skrives én fil ad gangen i et privat stageområde. Destinationen opstår først ved atomisk rename, når alle filer er grønne. Det reducerer samtidig peak-memory uden at gøre en delvis bundle gyldig.
+
+Pakning/storage/rollback/anonymous-denial, private-runtime-workflow og releaseversionskontrol er grønne lokalt. Vejrdata, RavScore, modelhashes, migration 13, geometri og den offentlige struktur er uændrede. Næste rækkefølge er én exact-head sourcegate, byteidentisk merge og samme cachebaserede fortsættelse uden oneoff; derefter fuldt gated cutover, offentlig/sitekontrol og normaldriftsbevis. Se DEC-0135.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.352 privat pakning
 
 Ejeren har præciseret, at cutover skal forsøges og samle fejl, og at bevist ligegyldige fejl ikke skal holde modellen offline. Produktkritiske fejl i vejr, score, datatab, privacy/sikkerhed, databasebinding eller offentlig struktur forbliver stop; dokumentations- og rapporteringsfejl kan først flyttes efter launch, når de konkret er bevist uden produktpåvirkning. Ejeren bad samtidig om at fortsætte præcis fra det fejlede trin og ikke gentage ny oneoff eller brede tests.

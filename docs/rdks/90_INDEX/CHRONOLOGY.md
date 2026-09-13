@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.353 efter real-skala payloadmåling
+
+- PR #289 exact-head `8cb545cd` bestod sourcegate `34744340201` og blev merged som main `ec198c73`.
+- Fortsættelse `34745557797` gendannede fire eksakte cacher og genbyggede privat runtime uden provider eller ny 210/673-audit.
+- 4.0.352's komprimering passerede V8-strengstoppet. Kapacitetsmålingen stoppede først ved samlet råpayload over 768 MiB.
+- Ejeren godkendte præcis højst 2 GiB samlet for nye `GZIP_BASE64`-arkiver, fortsat 768 MiB pr. fil, 768 MiB legacy samlet og uændret 50.000.000-byte cutoverloft inden for det tekniske 50 MiB-objectloft.
+- 4.0.353 implementerer formatbetinget loft og sekventiel, hashkontrolleret udpakning til atomisk stage. Tre målrettede kontroller er grønne; exact-head-CI, merge og live kapacitets-/handoff-/cutoverbevis afventer.
+- DEC-0135 er bindende. Vejr, score, geometri, modelbinding og database er uændrede; ingen oneoff planlægges.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.352 efter privat pakkestop
 
 - PR #288-head `9511c9f4` bestod sourcegate `34737474686`, blev merged tree-identisk som main `099b70a8`, og backend `34738543144` bestod.

@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.352";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.352";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.352";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.352";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.352";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.353";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.353";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.353";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.353";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.353";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.352";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.352";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.352";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.352";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.352";
+} from "../core/ravscore-model-contract.js?v=4.0.353";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.353";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.353";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.353";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.353";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.

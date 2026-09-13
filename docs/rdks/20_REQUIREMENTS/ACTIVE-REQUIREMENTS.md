@@ -1,5 +1,18 @@
 # Aktive krav – samlet register
 
+# 4.0.353 – formatbetinget samlet privat runtimegrænse
+
+- **REQ-4.0.353-NEW-AGGREGATE-BOUND-001 – BINDENDE P0 / EKSPLICIT EJERGODKENDT:** Nye `GZIP_BASE64`-arkiver må højst have 2 GiB deklareret ukomprimeret payload samlet. Overskridelse stopper før publicering.
+- **REQ-4.0.353-FILE-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Ingen enkelt privat runtimefil må overstige 768 MiB; builder og restore håndhæver samme grænse.
+- **REQ-4.0.353-LEGACY-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Legacyarkiver uden encodingmarkør beholder det tidligere samlede loft på 768 MiB og må ikke arve 2 GiB-loftet.
+- **REQ-4.0.353-SEQUENTIAL-ATOMIC-RESTORE-001 – BINDENDE P0 / LOKALT TESTET:** Restore validerer inventar og deklarerede totaler, afkoder/dekomprimerer/hashkontrollerer derefter én fil ad gangen og skriver kun til privat stage. Destinationen må først blive synlig ved atomisk rename efter alle kontroller.
+- **REQ-4.0.353-STORAGE-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Første cutover forbliver højst 50.000.000 komprimerede byte inden for det uændrede tekniske 50 MiB-objectloft. Bucket, pointer, CAS, rollback, readback, privacy og anonym-denial er uændrede.
+- **REQ-4.0.353-NO-WEATHER-MODEL-CHANGE-001 – BINDENDE:** Vejr, sourceorder, RavScore, fysik, modelstate, geometri, databasebinding og offentlig 210/673/118-kontrakt ændres ikke.
+- **REQ-4.0.353-RESUME-AND-CUTOVER-001 – BINDENDE P0:** Kun exact `34738698219` og de fire fastlåste cacher må genbruges uden provider/oneoff eller ny 210/673-audit. Ny kapacitetsmåling, handoff og den separate fulde cutoverkæde er obligatoriske.
+- **REQ-4.0.353-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-CI, byteidentisk merge, grøn real-skala kapacitetsmåling, handoff, cutover og offentlig 210/673/118-verifikation mangler.
+
+Run `34745557797` er positivt bevis for cachegendannelse/runtimebygning og komprimering, men negativt bevis for det gamle samlede 768 MiB-loft. DEC-0135 er bindende.
+
 # 4.0.352 – bounded privat pakning efter komplet cache/modelbevis
 
 - **REQ-4.0.352-COMPRESS-BEFORE-BASE64-001 – BINDENDE P0 / LOKALT TESTET:** Hver verificeret privat runtimefil skal komprimeres deterministisk før base64, så rå payload ikke samles som en overstor V8-streng.

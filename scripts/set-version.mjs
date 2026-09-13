@@ -98,6 +98,7 @@ await synchronizeReleaseContractMetadata({write:true});
  text=text.replace(/(\*\*Håndbogsversion:\*\*\s*)\d+\.\d+\.\d+/,`$1${version}`);
  text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,`$1${version}$2`);
  text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,`$1${version}$2`);
+ text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(, exact-head og cutover afventer)/,`$1${version}$2`);
  text=text.replace(/\d+\.\d+\.\d+( er låst med `modelContractSha256=)/,`${version}$1`);
  await fs.writeFile('HANDBOOK-RAVRADAR.md',text);
 }
