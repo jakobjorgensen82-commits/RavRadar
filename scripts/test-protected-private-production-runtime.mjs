@@ -158,6 +158,9 @@ try {
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes, 50 * 1024 * 1024);
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchivePartBytes, 50_000_000);
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveAggregateBytes, 350_000_000);
+  assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveObjectCount, 8);
   let bucketCreatedWith = null;
   let bucketLookupCount = 0;
   const clientContract = createProtectedPrivateRuntimeClients({
@@ -227,6 +230,11 @@ try {
   });
   assert.equal(archiveOne.descriptor.objectSha256, archiveTwo.descriptor.objectSha256);
   assert.deepEqual(archiveOne.archive, archiveTwo.archive, 'protected archive bytes must be deterministic');
+  assert.deepEqual(
+    archiveOne.objects.map(object => object.descriptor),
+    archiveTwo.objects.map(object => object.descriptor),
+    'protected archive object-set descriptors must be deterministic',
+  );
   const encodedEnvelope = JSON.parse(gunzipSync(archiveOne.archive).toString('utf8'));
   assert.equal(encodedEnvelope.contentEncoding, 'GZIP_BASE64');
   assert.equal(
@@ -247,11 +255,78 @@ try {
   );
   assert.equal(archiveOne.archiveMetrics.objectBytes, archiveOne.archive.length);
   assert.equal(archiveOne.archiveMetrics.objectBytes, archiveOne.descriptor.objectBytes);
+  assert.equal(archiveOne.archiveMetrics.objectCount, archiveOne.objects.length);
+  assert.equal(
+    archiveOne.archiveMetrics.largestObjectBytes,
+    Math.max(...archiveOne.objects.map(object => object.bytes.length)),
+  );
   assert.deepEqual(
     archiveOne.archiveMetrics,
     archiveTwo.archiveMetrics,
     'aggregate archive measurements must be deterministic with the production packer',
   );
+
+  const splitPolicy = {
+    ...PROTECTED_PRIVATE_RUNTIME_POLICY,
+    maximumArchivePartBytes: 1_024,
+    maximumArchiveAggregateBytes: 64 * 1_024,
+    maximumArchiveObjectCount: 64,
+  };
+  const splitArchive = await buildProtectedPrivateRuntimeArchive({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[0],
+    policy: splitPolicy,
+  });
+  assert.equal(splitArchive.objects.length > 1, true,
+    'a generation larger than one object must be split');
+  assert.equal(splitArchive.objects.every(object => object.bytes.length <= 1_024), true);
+  assert.deepEqual(
+    Buffer.concat(splitArchive.objects.map(object => object.bytes)),
+    splitArchive.archive,
+    'ordered immutable parts must reassemble the exact archive',
+  );
+  const splitDocuments = fakeDocuments();
+  const splitStorage = fakeStorage();
+  const splitPublication = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[0],
+    request: splitDocuments.request,
+    storage: splitStorage.client,
+    policy: splitPolicy,
+  });
+  assert.equal(splitPublication.objectCount, splitArchive.objects.length);
+  assert.equal(splitStorage.objects.size, splitArchive.objects.length);
+  assert.equal(splitStorage.downloads(), splitArchive.objects.length,
+    'publication must read back every immutable part before pointer CAS');
+  const splitRestoreBundle = path.join(restoreRoot, 'bundle-split');
+  const splitRestore = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: splitRestoreBundle,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    request: splitDocuments.request,
+    storage: splitStorage.client,
+    policy: splitPolicy,
+  });
+  assert.equal(splitRestore.objectCount, splitArchive.objects.length);
+  assert.equal(splitStorage.downloads(), splitArchive.objects.length * 2,
+    'restore must read the selected generation parts exactly once');
+  await verifyPrivateProductionRuntimeBundle({
+    privateRoot: restoreRoot,
+    bundlePath: splitRestoreBundle,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+  });
 
   const legacyEnvelope = clone(encodedEnvelope);
   delete legacyEnvelope.contentEncoding;
@@ -265,10 +340,20 @@ try {
   );
   const legacyObjectSha256 = crypto.createHash('sha256').update(legacyArchive).digest('hex');
   const legacyDescriptor = {
-    ...archiveOne.descriptor,
+    schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.legacySchemaVersion,
+    kind: PROTECTED_PRIVATE_RUNTIME_POLICY.legacyDescriptorKind,
+    privacyClass: archiveOne.descriptor.privacyClass,
+    bucketId: archiveOne.descriptor.bucketId,
     objectSha256: legacyObjectSha256,
     objectPath: `bundles/sha256/${legacyObjectSha256}.json.gz`,
     objectBytes: legacyArchive.length,
+    bundleContentSha256: archiveOne.descriptor.bundleContentSha256,
+    datasetId: archiveOne.descriptor.datasetId,
+    productionReferenceAt: archiveOne.descriptor.productionReferenceAt,
+    generatedAt: archiveOne.descriptor.generatedAt,
+    sourceHead: archiveOne.descriptor.sourceHead,
+    modelBinding: archiveOne.descriptor.modelBinding,
+    contractHashes: archiveOne.descriptor.contractHashes,
   };
   const legacyDocuments = fakeDocuments();
   await legacyDocuments.request('', {
@@ -276,7 +361,7 @@ try {
     body: JSON.stringify({
       document_key: PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey,
       payload: {
-        schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.schemaVersion,
+        schemaVersion: PROTECTED_PRIVATE_RUNTIME_POLICY.legacySchemaVersion,
         kind: PROTECTED_PRIVATE_RUNTIME_POLICY.pointerKind,
         current: legacyDescriptor,
         previous: null,
@@ -408,7 +493,7 @@ try {
   });
   assert.equal(documents.row().version, 3);
   assert.equal(storage.objects.size, 2, 'only current and rollback objects remain');
-  assert.deepEqual(storage.removed, [archiveOne.descriptor.objectPath]);
+  assert.deepEqual(storage.removed, [archiveOne.descriptor.objects[0].objectPath]);
 
   const expiredBundle = path.join(restoreRoot, 'bundle-expired');
   const expired = await restoreProtectedPrivateProductionRuntime({
@@ -457,7 +542,7 @@ try {
     'a regressive publication must stop before upload/readback egress',
   );
 
-  const currentPath = documents.row().payload.current.objectPath;
+  const currentPath = documents.row().payload.current.objects[0].objectPath;
   const currentBytes = Buffer.from(storage.objects.get(currentPath));
   currentBytes[0] ^= 1;
   storage.objects.set(currentPath, currentBytes);
@@ -482,7 +567,7 @@ try {
     'rollback restore downloads previous only after current fails verification',
   );
 
-  const previousPath = documents.row().payload.previous.objectPath;
+  const previousPath = documents.row().payload.previous.objects[0].objectPath;
   const previousBytes = Buffer.from(storage.objects.get(previousPath));
   previousBytes[0] ^= 1;
   storage.objects.set(previousPath, previousBytes);
@@ -545,9 +630,9 @@ try {
       expected: third.expected,
       now: '2026-08-29T13:05:00.000Z',
       sourceHead: SOURCE_HEADS[2],
-      policy: { ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumArchiveBytes: 32 },
+      policy: { ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumArchiveAggregateBytes: 32 },
     }),
-    /compressed archive exceeds/,
+    /compressed archive aggregate exceeds/,
   );
 
   // A CAS loss must never be interpreted as publication success.
@@ -563,11 +648,13 @@ try {
     now: '2026-08-29T13:05:00.000Z',
     sourceHead: SOURCE_HEADS[2],
   });
-  cleanStorage.objects.set(thirdArchive.descriptor.objectPath, thirdArchive.archive);
+  for (const object of thirdArchive.objects) {
+    cleanStorage.objects.set(object.descriptor.objectPath, Buffer.from(object.bytes));
+  }
   documents.losePatch();
   const referencedBeforeCasLoss = new Set([
-    documents.row().payload.current.objectPath,
-    documents.row().payload.previous.objectPath,
+    ...documents.row().payload.current.objects.map(object => object.objectPath),
+    ...documents.row().payload.previous.objects.map(object => object.objectPath),
   ]);
   await assert.rejects(
     publishProtectedPrivateProductionRuntime({

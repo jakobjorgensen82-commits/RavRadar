@@ -290,6 +290,9 @@ try {
   assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.normalObjectReadsPerFullBuild, 2);
   assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.rollbackObjectReadsPerFullBuild, 3);
   assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.retainedObjectGenerations, 2);
+  assert.equal(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectBytes, 50_000_000);
+  assert.equal(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveAggregateBytes, 350_000_000);
+  assert.equal(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectCount, 8);
   assert.equal(
     PRIVATE_RUNTIME_CAPACITY_POLICY.monthlyUncachedEgressQuotaBytes,
     5_000_000_000,
@@ -336,6 +339,13 @@ try {
   assert.equal(capacity.firstCutoverException.existingCacheResetRequired, false);
   assert.equal(capacity.measurements.rawPayloadBytes > 0, true);
   assert.equal(capacity.measurements.archiveObjectBytes > 0, true);
+  assert.equal(capacity.measurements.archiveObjectCount > 0, true);
+  assert.equal(capacity.measurements.archiveObjectCount <= 8, true);
+  assert.equal(capacity.measurements.largestArchiveObjectBytes > 0, true);
+  assert.equal(
+    capacity.measurements.largestArchiveObjectBytes <= capacity.measurements.archiveObjectBytes,
+    true,
+  );
   assert.equal(capacity.measurements.checkpointAvailable, true);
   assert.equal(
     capacity.measurements.checkpointSerializedBytes,
@@ -437,6 +447,11 @@ try {
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
     50_000_000,
   );
+  assert.equal(
+    approvedCapacity.firstCutoverException.maximumArchiveAggregateBytes,
+    350_000_000,
+  );
+  assert.equal(approvedCapacity.firstCutoverException.maximumArchiveObjectCount, 8);
   assert.equal(approvedCapacity.firstCutoverException.archiveWithinBound, true);
   assert.equal(
     approvedCapacity.firstCutoverException.exactSuccessfulOneoffAndHandoffRequired,
@@ -488,6 +503,8 @@ try {
   const approvedExceptionWithRedMonthlyProjection =
     buildPrivateRuntimeFirstCutoverException({
       archiveObjectBytes,
+      largestArchiveObjectBytes: capacity.measurements.largestArchiveObjectBytes,
+      archiveObjectCount: capacity.measurements.archiveObjectCount,
       projection: normalOneByteOver,
       decisionMarker: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.invocationMarker,
     });
@@ -500,6 +517,31 @@ try {
     approvedExceptionWithRedMonthlyProjection.recurringAutomaticCadenceEligible,
     false,
   );
+  for (const rejectedObjectSet of [
+    {
+      archiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveAggregateBytes + 1,
+      largestArchiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectBytes,
+      archiveObjectCount: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectCount,
+    },
+    {
+      archiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveAggregateBytes,
+      largestArchiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectBytes + 1,
+      archiveObjectCount: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectCount,
+    },
+    {
+      archiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveAggregateBytes,
+      largestArchiveObjectBytes: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectBytes,
+      archiveObjectCount: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.maximumArchiveObjectCount + 1,
+    },
+  ]) {
+    const rejected = buildPrivateRuntimeFirstCutoverException({
+      ...rejectedObjectSet,
+      projection: normalOneByteOver,
+      decisionMarker: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.invocationMarker,
+    });
+    assert.equal(rejected.archiveWithinBound, false);
+    assert.equal(rejected.eligible, false);
+  }
   const rollbackBoundary = projectionWithUsableBudgets({
     egressUsableBytes: rollbackCombinedMonthlyBytes,
     storageUsableBytes: retainedStorageBytes,

@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 flerobjekttransport før ny sourcegate
+
+- **Aktuel base:** Main er `6305dd823775a05425f1c6f3113b85cc2d06f2e1` efter PR #290 og grøn sourcegate `34754075158`. Arbejdsgrenen er den eksisterende launchgren med lokal 4.0.354. Candidate G er stadig offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper samt brugerens to lokale filændringer bevares.
+- **Seneste run:** Cachefortsættelse `34755365967` gendannede fire eksakte cacher og genbyggede runtime uden provider/oneoff/ny 210/673-audit. 2-GiB-rågrænsen virkede; det komprimerede arkiv var derefter over 50 MiB og kunne ikke være én Supabase-fil.
+- **Lokal rettelse:** Schema 2 deler arkivet i højst otte immutable dele à 50.000.000 byte og højst 350.000.000 byte samlet. Del-/helhash, upload/readback før pointer-CAS, rollback, orphan-cleanup, anonym afvisning, legacy schema 1 og sekventiel atomisk restore er måltestet.
+- **Samtidig fejl:** Et bogstaveligt `+` i næste `jq`-gate er fjernet. Begge kapacitetsgates kræver nu total, største del og objektantal.
+- **Uændret:** Vejr, model, migrationer, geometri, punkter og offentlig 210/673/118. Ingen ny oneoff og ingen providerhentning.
+- **Næste rækkefølge:** Målrettede slutkontroller/RDKS/geodatadiff → commit/push/PR → én exact-head sourcegate → merge → samme cachefortsættelse → handoff → samlet cutover → offentlig/sitekontrol → normal weather og rotations-/cachebevis.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 gyldig national cold start før cutover
 
 - **Aktuel base:** `main` er `a6e118d2` efter PR #287; arbejdsgrenen er `codex/4.0.352-cold-start-readiness`, men hotfixet bevarer den faktiske releaseversion 4.0.351. Candidate G er stadig offentlig, og normalworkflowet er fortsat deaktiveret. Bevar de fire untracked `.tmp-run-*-safe-inspect`-mapper.

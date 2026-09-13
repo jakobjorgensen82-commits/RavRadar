@@ -80,6 +80,19 @@ for(const file of [...new Set(versionedWeatherWorkflows)]){
     `$1${version}$2`,
   );
   text=text.replace(/owner-approved \d+\.\d+\.\d+ successor exception/g,`owner-approved ${version} successor exception`);
+  text=text.replace(/One-time \d+\.\d+\.\d+ handoff-only continuation/g,`One-time ${version} handoff-only continuation`);
+  text=text.replace(/Check out current \d+\.\d+\.\d+ main for handoff-only continuation/g,`Check out current ${version} main for handoff-only continuation`);
+  text=text.replace(/(require\('\.\/package\.json'\)\.version\"\)\" = \")\d+\.\d+\.\d+(\")/g,`$1${version}$2`);
+  await fs.writeFile(file,text);
+}
+
+// De aktive private-runtime launchpolicies er exact-release-låse. Når en
+// nødvendig launchrettelse skaber en ny release, skal begge følge samme
+// package-version; de historiske run/head-bindinger ændres ikke.
+{
+  const file='scripts/private-production-runtime-workflow.mjs';
+  let text=await fs.readFile(file,'utf8');
+  text=text.replace(/(releaseVersion:\s*')\d+\.\d+\.\d+(')/g,`$1${version}$2`);
   await fs.writeFile(file,text);
 }
 

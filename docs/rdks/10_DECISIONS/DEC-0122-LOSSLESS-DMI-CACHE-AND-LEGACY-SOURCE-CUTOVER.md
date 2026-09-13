@@ -1,6 +1,6 @@
 # DEC-0122 – tabsfri DMI-cache og direkte cutover fra attesteret legacy-kilde
 
-**Status:** Aktiv for exact-release 4.0.351. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen og uændrede materielle grænser. De tidligere versionsoverførsler nedenfor er historik. 4.0.351 er lokal kandidat; exact-head-CI, append-only backendapply/readback, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
+**Status:** Aktiv for exact-release 4.0.354. Overført under ejerens udtrykkelige forhåndsgodkendelse af nødvendige launchrettelser; én dokumenteret exact-releasebinding ad gangen. De tidligere versionsoverførsler nedenfor er historik. 4.0.354 er lokal kandidat; exact-head-CI, cachebundet same-head-handoff og offentlig cutoverbevis afventer.
 
 ### Versionsoverførsel 2026-09-12 – exact-release 4.0.348
 
@@ -158,6 +158,12 @@ Under ejerens stående autorisation til nødvendige launchsuccessors flyttes den
 4.0.352 blev exact-head-valideret og merged. Handoff-fortsættelse `34745557797` gendannede de fire eksakte cacher og genbyggede runtime uden provider eller ny 210/673-audit. Den kom forbi V8-strengfejlen, men stoppede ved det gamle samlede 768 MiB-råpayloadloft.
 
 Efter særskilt oplysning om indstilling og påvirkningsområde godkendte ejeren udtrykkeligt DEC-0135's 2 GiB-loft alene for nye `GZIP_BASE64`-arkiver. Filgrænsen 768 MiB, legacygrænsen 768 MiB samlet, Storage-objectgrænsen 50 MiB og alle øvrige privacy-, integritets-, handoff-, cutover- og cadencekrav består. Den materielt uændrede first-cutover-undtagelse flyttes alene til exact-release `4.0.353`; intet ældre handoff ommærkes.
+
+### Versionsoverførsel 2026-09-13 – exact-release 4.0.354
+
+4.0.353 bestod exact-head-sourcegate `34754075158` og blev merged som main `6305dd823775a05425f1c6f3113b85cc2d06f2e1`. Cachefortsættelse `34755365967` passerede 2-GiB-rågrænsen, men det samlede komprimerede arkiv oversteg den uændrede 50-MiB-grænse for ét Supabase Storage-objekt.
+
+DEC-0136 ændrer derfor transporten, ikke indholdet: højst otte objekter à 50.000.000 byte, højst 350.000.000 byte pr. generation og højst 700.000.000 byte for current+previous. Alle dele og hele arkivet hashbindes og læses tilbage før pointer-CAS. Under ejerens stående launchautorisation flyttes first-cutover-undtagelsen alene til exact-release `4.0.354` med disse nye flerobjektgrænser. Normal tilbagevendende fuld transport er fortsat ikke godkendt, og et ældre handoff ommærkes ikke.
 
 ## Konsekvenser
 

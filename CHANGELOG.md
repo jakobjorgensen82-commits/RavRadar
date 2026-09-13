@@ -1217,3 +1217,10 @@ Se `CHANGELOG-4.0.330.md`.
 - Begrænser ekspertadministration i RLS, RPC og UI og flytter observationsinsert til en validerende, rate-limited Edge-gateway.
 - Samler fælles CORS/gatewaykode. Begge funktioner er live-verificeret uden private testdata; lokal assistent er standard, fordi fjernsecret ikke er installeret.
 - Overvåger Supabases varsel om mulig begrænsning fra 9. september 2026. Se `CHANGELOG-4.0.284.md` og DEC-0080.
+## 4.0.354 – privat runtime fordelt på hashbundne Storage-filer (2026-09-13, lokal kandidat)
+
+- PR #290/sourcegate `34754075158` og main `6305dd82` er grønne og filtræ-identiske.
+- Cachefortsættelse `34755365967` hentede intet nyt vejr og beviste, at 2-GiB-rågrænsen virker, men det færdige komprimerede arkiv var over 50 MiB og kunne derfor ikke være én Supabase-fil.
+- Arkivet deles nu i højst otte immutable dele à højst 50.000.000 byte og højst 350.000.000 byte samlet. Alle delhashes og hele arkivhashen læses tilbage før atomisk pointer-CAS.
+- Rollback, oprydning, anonym afvisning, legacy schema 1 og sekventiel atomisk filudpakning består. To generationer er begrænset til 700.000.000 byte.
+- Et skjult `+` i den efterfølgende `jq`-gate er rettet samtidig. Vejr, RavScore, migrationer, geometri og 210/673/118 er uændrede. Se `CHANGELOG-4.0.354.md` og DEC-0136.

@@ -1,5 +1,19 @@
 # Aktive krav – samlet register
 
+# 4.0.354 – hashbundet flerobjekttransport for privat runtime
+
+- **REQ-4.0.354-PART-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Hver immutable Storage-del må højst være 50.000.000 byte og dermed ligge under bucketens tekniske 50-MiB-loft.
+- **REQ-4.0.354-AGGREGATE-BOUND-001 – BINDENDE P0 / LOKALT TESTET:** Én generation må højst være 350.000.000 komprimerede byte fordelt på højst otte ordnede dele. To bevarede generationer må derfor højst være 700.000.000 byte og bevare 30 procent af 1-GB-kvoten.
+- **REQ-4.0.354-FULL-HASH-READBACK-001 – BINDENDE P0 / LOKALT TESTET:** Indeks, path, bytes og SHA-256 skal passe for hver del; samlet byteantal og hele arkivets SHA-256 skal passe efter genopbygning. Alle dele læses tilbage før pointer-CAS.
+- **REQ-4.0.354-ATOMIC-PUBLICATION-001 – BINDENDE P0 / LOKALT TESTET:** Delvis upload må aldrig blive current. Tabt CAS må kun rydde dette forsøgs ikke-refererede dele; current/previous og eventuelt delte dele bevares.
+- **REQ-4.0.354-RESTORE/LEGACY-001 – BINDENDE P0 / LOKALT TESTET:** Restore må kun vælge en fuldt valideret current eller previous generation, genkontrollere hele arkivet og derefter bruge sekventiel atomisk filudpakning. Schema 1-enkeltobjekter forbliver læsbare; nye writes bruger schema 2.
+- **REQ-4.0.354-JQ-COMMAND-001 – BINDENDE / LOKALT RETTET:** Fortsættelsens kapacitetsgate må ikke indeholde det fundne bogstavelige `+`; rapportstien skal være jq's input via gyldig shellfortsættelse.
+- **REQ-4.0.354-NO-WEATHER-MODEL-CHANGE-001 – BINDENDE:** Vejr, sourceorder, RavScore, fysik, modelstate, migrationer, geometri og offentlig 210/673/118-kontrakt er uændrede.
+- **REQ-4.0.354-RESUME/CUTOVER-001 – BINDENDE P0:** Samme exact `34738698219` og fire cacher genbruges uden provider/oneoff eller ny 210/673-audit. Ny måling, handoff og separat fuldt gated cutover er obligatoriske.
+- **REQ-4.0.354-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, real-skala objektantal/størrelse, handoff, cutover og offentlig 210/673/118-verifikation mangler.
+
+Run `34755365967` er positivt bevis for raw-bound/cache/runtime og negativt bevis for enkeltobjekttransporten. DEC-0136 er bindende.
+
 # 4.0.353 – formatbetinget samlet privat runtimegrænse
 
 - **REQ-4.0.353-NEW-AGGREGATE-BOUND-001 – BINDENDE P0 / EKSPLICIT EJERGODKENDT:** Nye `GZIP_BASE64`-arkiver må højst have 2 GiB deklareret ukomprimeret payload samlet. Overskridelse stopper før publicering.

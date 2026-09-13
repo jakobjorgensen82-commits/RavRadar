@@ -1,3 +1,21 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.354 fra enkeltobjektstop til model-online
+
+- [x] Bestå 4.0.353-sourcegate `34754075158`, merge PR #290 som main `6305dd82` og bevis identisk filtræ.
+- [x] Kør `34755365967` fra de fire eksakte cacher uden provider/oneoff/ny 210/673-audit; bevis at 2-GiB-rågrænsen virker.
+- [x] Afgræns næste stop til det samlede komprimerede arkiv over Supabases 50-MiB-enkeltfilgrænse.
+- [x] Implementér højst otte immutable dele à 50.000.000 byte, højst 350.000.000 byte samlet, del-/helhash, fuld readback før CAS, rollback/cleanup og schema-1-læsning.
+- [x] Find og ret den skjulte `jq`-separator i næste gate; løft alle aktive felter til 4.0.354.
+- [ ] Kør én exact-head 4.0.354-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Kør samme cachefortsættelse; mål real-skala delantal/størrelse og forsegl handoff uden oneoff.
+- [ ] Gennemfør den separate cutover til slut; saml alle fejl i kørslen og ret dem samlet uden at gentage bevist arbejde.
+- [ ] Verificér release 4.0.354 offentligt på 210 zoner, 673 kystdele, begge modes og 118 timer.
+- [ ] Gennemgå levende side meningsfuldt på desktop/mobil og DA/DE/EN.
+- [ ] Genaktivér normal weather og bevis cachevedligeholdelse, fuld registerrotation, fallbackbidrag og tidsoverskud i almindelige runs.
+- [ ] Omlæg tilbagevendende privat cachetransport efter målt normal drift, så den ikke bruger en fuld generationsdownload ved hver højfrekvent kørsel.
+- [ ] Rens resten af post-cutover-roadmappet mod live evidens og behold kun aktuelle konkrete problemer.
+
+Produktkritiske integritets-, privacy-, data-, model- og deploymentgates består. Ingen ny oneoff. DEC-0136 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.353 fra samlet payloadstop til model-online
 
 - [x] Merge 4.0.352 som main `ec198c73` efter exact-head-sourcegate `34744340201`.
