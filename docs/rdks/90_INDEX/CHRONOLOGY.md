@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.356 efter grøn kapacitet og GitHub-startafvisning
+
+- PR #292/sourcegate `34759300669` og main `5bcd5fb2` er grønne og filtræ-identiske.
+- Cachefortsættelse `34760554781` bestod real-skala-kapacitet og forseglede handoff uden provider, oneoff eller ny 210/673-audit.
+- Cutover `34761090699` blev afvist før første job. Caller-jobbet manglede den read-only `pull-requests`-adgang, som callee kræver.
+- Lokal 4.0.356 retter permissionspariteten og ændrer intet vejr, modeldata eller nogen kapacitetsgrænse. Se DEC-0138.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter første real-skala flerobjektpakning
 
 - PR #291-head `ef9b7480` bestod sourcegate `34757328149`, blev merged som main `78c083e8`, og filtræerne er identiske.

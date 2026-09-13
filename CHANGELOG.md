@@ -1,3 +1,9 @@
+## 4.0.356 – caller/callee-tilladelser for den samlede cutover (2026-09-13, lokal kandidat)
+
+- PR #292/sourcegate `34759300669` blev merged som main `5bcd5fb2`; cachefortsættelse `34760554781` bestod kapacitet og forseglede handoff uden provider, oneoff eller ny 210/673-audit.
+- Cutover `34761090699` blev afvist før første job, fordi caller-jobbet ikke gav den read-only `pull-requests`-tilladelse videre, som det genbrugte buildworkflow kræver.
+- 4.0.356 tilføjer kun den manglende read-only tilladelse og låser exact caller/callee-paritet for både build og deploy. Ingen produktdata, model eller grænse ændres. Se `CHANGELOG-4.0.356.md` og DEC-0138.
+
 ## 4.0.355 – genbrug af allerede valideret measured-warmup-runtime (2026-09-13, lokal kandidat)
 
 - PR #291/sourcegate `34757328149` og main `78c083e8` er grønne og filtræ-identiske.

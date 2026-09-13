@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.356 retter GitHub-startkontrakten
+
+4.0.355-head `69a05164` bestod sourcegate `34759300669`, blev merged gennem PR #292 som main `5bcd5fb2`, og filtræerne er identiske. Cachefortsættelse `34760554781` gendannede fire cacher, bestod real-skala-kapaciteten og forseglede handoff uden provider, oneoff eller ny 210/673-audit.
+
+Cutover `34761090699` blev afvist som `startup_failure`, før GitHub oprettede et job. Det genbrugte buildworkflow krævede `pull-requests: read`, men caller-jobbets smallere permissions-blok gav kun `contents: read` og `actions: read` videre.
+
+Lokal 4.0.356 giver den manglende read-only tilladelse videre og låser exact permissions-paritet for både build- og deploykaldet. Ingen write-adgang, data-, model- eller kapacitetsændring. Næste trin er én exact-head-gate, merge, kun SHA-bundet cache-handoff og derefter samlet cutover. Se DEC-0138.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.355 fjerner redundant 16-MiB-genlæsning
 
 4.0.354-head `ef9b74805fff5165ff1784329407498d0892b43f` bestod den eneste exact-head-sourcegate `34757328149` og blev merged gennem PR #291 som main `78c083e8fee76beb82c2a0d14fb9a2001d795ec2` med identisk filtræ.

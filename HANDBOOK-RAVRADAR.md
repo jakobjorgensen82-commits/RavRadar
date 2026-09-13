@@ -1,6 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.355
+**Håndbogsversion:** 4.0.356
+
+## 88.60 Lokal 4.0.356 – GitHub skal kunne starte hele cutoveren
+
+4.0.355 kom gennem kildekontrollen og blev lagt på `main`. Den korte cachefortsættelse gendannede alle fire cacher, målte den private pakke og forseglede handoffet uden ny vejrhentning eller ny 210/673-kontrol.
+
+Da cutoveren blev startet, afviste GitHub den, før et eneste job blev oprettet. Det indre buildworkflow havde brug for læseadgang til PR-oplysninger for at kontrollere det allerede grønne kildebevis. Det ydre job gav kun læseadgang til kode og Actions videre. Derfor kunne GitHub ikke oprette hele arbejdsgangen.
+
+4.0.356 giver den manglende PR-læseadgang videre. Der gives ingen skriveadgang. Den eksisterende kontrakttest kontrollerer nu, at både build- og deploykald giver præcis de samme tilladelser videre, som deres indre workflows kræver.
+
+Vejr, scoremodel, private data, database og størrelsesgrænser er uændrede. De samme cacher genbruges; kun det SHA-bundne handoff skal genskabes på den nye main, før hele cutoveren kan køre.
 
 ## 88.59 Lokal 4.0.355 – Den store private fil skal ikke læses to gange
 
@@ -459,11 +469,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.355 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.356 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.355, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.356, exact-head og cutover afventer
 
-4.0.355 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
+4.0.356 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

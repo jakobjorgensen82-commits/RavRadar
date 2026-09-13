@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.356 startup-permissions
+
+- [x] Bestå PR #292-sourcegate `34759300669`, merge som main `5bcd5fb2` og bevis identisk filtræ.
+- [x] Bestå cachefortsættelse `34760554781`: fire cacher, real-skala-kapacitet og grønt handoff uden provider/oneoff/ny 210/673-audit.
+- [x] Afgræns cutover `34761090699` til `startup_failure` før første job og find caller/callee-permissionsmismatchen.
+- [x] Giv kun `pull-requests: read` videre og lås exact permissions-paritet for build og deploy.
+- [ ] Bestå én exact-head 4.0.356-sourcegate og merge byteidentisk.
+- [ ] Genskab kun det SHA-bundne handoff fra samme cacher; ingen provider, oneoff eller ny stor audit.
+- [ ] Kør samlet cutover, offentlig/sitekontrol og derefter normal weather-cache-/rotationsbevis.
+
+DEC-0138 er aktiv. Vejr, RavScore, modelhashes, migrationer, geometri og offentlig datakontrakt er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.355 uden dobbelt indlæsning af stor runtime
 
 - [x] Bestå 4.0.354 exact-head-sourcegate `34757328149`, merge PR #291 som main `78c083e8` og bevis identisk filtræ.

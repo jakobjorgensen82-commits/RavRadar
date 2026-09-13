@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.356 efter GitHub afviste workflowgrafen
+
+PR #292-head `69a05164b0e37a5fac44a5896d81448e810d51fc` bestod exact-head-sourcegate `34759300669` og blev merged som main `5bcd5fb2ff3736307a5563a86618b8181d231a26` med identisk filtræ. Cachefortsættelse `34760554781` bestod real-skala-kapacitet og forseglede det låste handoff uden provider, oneoff eller ny 210/673-audit.
+
+Cutover `34761090699` fik `startup_failure` før første job. Det ydre `build-and-prepare`-job gav ikke den read-only `pull-requests`-adgang videre, som det genbrugte buildworkflow kræver til exact-content-kildebeviset. Topniveauets adgang blev overskrevet af caller-jobbets smallere blok.
+
+Lokal 4.0.356 tilføjer kun `pull-requests: read` på caller-jobbet og kræver i den eksisterende kontrakttest eksakt permissions-paritet for både build og deploy. Ingen write-adgang eller ændring af vejr, RavScore, runtimepayload, database, geometri eller offentlig 210/673/118. Efter én exact-head-gate og merge genskabes kun det SHA-bundne handoff fra samme cacher, og cutover fortsætter. Se DEC-0138.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.355 genbruger den allerede kontrollerede runtimeindlæsning
 
 4.0.354-head `ef9b74805fff5165ff1784329407498d0892b43f` bestod den eneste exact-head-sourcegate `34757328149` på 20m17s. PR #291 blev merged som main `78c083e8fee76beb82c2a0d14fb9a2001d795ec2`, og main har samme filtræ som den validerede head.
