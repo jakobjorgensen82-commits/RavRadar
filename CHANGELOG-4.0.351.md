@@ -13,6 +13,9 @@ Dato: 2026-09-13
 - Cache-only-preflight `34728026044` hentede intet providervejr, bevarede den komplette cache og bestod current, WAM, freshness og modelbygning. Slutauditten stoppede før deploy med `MODE_RECONSTRUCTION_MISMATCH`, `PART_LAST_MILE_STATE_METADATA_MISMATCH` og `PUBLIC_PROFILE_NOT_READY`.
 - Den tilbageværende årsag var audit-only: et ægte manglende direkte H0-current har med vilje `null` current-historikgrænser og en ren lokal `UNAVAILABLE`-score. Auditten krævede fejlagtigt endelige grænser, kastede inde i en blok der blev navngivet last-mile og sammenlignede derefter mode med ufuldstændigt rekonstrueret state.
 - Auditten spejler nu producentens direct-input-gate, genskaber `CURRENT_DIRECT_INPUT_MISSING` uden at opfinde bounds og validerer profilets coverage/memory/migration uafhængigt. Den målrettede 210/673-regression med et ægte H0-current-missing tilfælde er grøn.
+- PR #287-head `b12c1717` bestod sourcegate `34732348167`, blev merged byteidentisk som main `a6e118d2`, og backend `34733200143` readback-verificerede de 13 migrationer.
+- Cache-only `34733358422` beviste H0-rettelsen og rekonstruerede alle 1.346 modes. Den eneste rest var profilens manglende anerkendelse af DEC-0113/0114's source-attesterede `genuine-cold-start` for alle 673 dele.
+- Den operationelle producent og den uafhængige audit kræver nu eksakt 673-dels cold-replay-cohort, lineage, measured-only kilde, 48-timersregnskab og target. Blandet, delvis eller manipuleret state afvises fortsat. Scoremodel, bundles, migration 13, cache og vejrdata ændres ikke.
 
 ## Binding og drift
 

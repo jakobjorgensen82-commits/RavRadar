@@ -12,6 +12,8 @@ Hvis en zone aktuelt kun har utilgængelige resultater, indeholder startpakken s
 
 Den landsdækkende slutkontrol er ikke gjort svagere. Den skal fortsat kontrollere 210 zoner, 673 kystdele og 1.346 aktuelle resultater og stopper før database eller offentlig side ved en reel forskel. Næste kørsel genbruger de komplette gemte vejrdata. Der startes ikke en ny tre timers oneoff.
 
+Den næste hurtige kontrol viste, at denne rettelse virkede: alle 1.346 resultater kunne genskabes, og de tidligere strøm-/last-mile-fejl var væk. Det sidste stop skyldtes, at systemet brugte den godkendte første opstart fra målte, gemte data for alle 673 kystdele, men profilens samlede “state klar”-felt kun kendte allerede migreret eller videreført state. Feltet accepterer nu også denne første opstart, men kun når alle 673 dele har samme præcise, målte dokumentation, korrekt 48-timersregnskab og tidspunkt. Blanding eller ændret dokumentation stopper stadig.
+
 ## 88.54 Lokal 4.0.350 – Gyldige områder fortsætter, og cutover samler fejl
 
 **Status:** Den komplette gemte vejrcache er stadig 79.414/79.414. Den seneste hurtige kontrol fandt ikke nye vejrhuller, men to fejl mellem vejrdata og den nye scoremodel: gyldig DMI-vind med navnet `windTail` blev afvist, og otte regionale strømfastholdelser manglede deres private kildebevis ved scoring. Begge er rettet lokalt. Seks andre kystdele skal afgøres i den næste hurtige kørsel.

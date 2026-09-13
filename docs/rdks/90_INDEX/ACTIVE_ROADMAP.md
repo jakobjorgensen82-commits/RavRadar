@@ -1,4 +1,4 @@
-# NYESTE ROADMAP – 2026-09-13 – 4.0.351 audit-hotfix direkte til model-online og normal drift
+# NYESTE ROADMAP – 2026-09-13 – 4.0.351 cold-start-readiness direkte til model-online og normal drift
 
 - [x] Bestå PR #286/sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.
 - [x] Klassificér cache-only `34728026044`: current, WAM, freshness og 210/673-modelbygning bestod uden providerhentning; stoppet lå i tre auditforskelle.
@@ -7,7 +7,10 @@
 - [x] Bestå korte syntaks-, model-, bundle-, binding-, migration-, readiness-, engangsundtagelses- og releasekontraktkontroller. Gentag ikke den lange lokale nationale audit.
 - [x] Reproducér den resterende H0-kant lokalt: auditten krævede endelige current-bounds ved producentens lovlige direct-input-missing `UNAVAILABLE` og registrerede kastet misvisende som last-mile.
 - [x] Spejl producentens H0-gate, bevar uafhængig coverage/memory/migration og bestå den målrettede fulde 210/673-audit med negative fixtures.
-- [ ] Kør én exact-head GitHub-sourcegate og merge kun den eksakte grønne kode.
+- [x] Bestå PR #287/sourcegate `34732348167`, merge byteidentisk som main `a6e118d2` og readback-verificér exact main i backend `34733200143`.
+- [x] Kør cache-only `34733358422`: bevis at de to H0-/last-mile-fejl er væk og alle 1.346 modes rekonstrueres; isolér alene den nationalt ensartede `genuine-cold-start`-readiness.
+- [x] Ret operationel state-readiness uden model-/cacheændring: kræv præcis 673 cold-replay-states, eksakt lineage/kilde/48-timersregnskab/target og afvis blanding eller tamper.
+- [ ] Kør én exact-head GitHub-sourcegate for denne sidste driftsrettelse og merge kun den eksakte grønne kode.
 - [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Ved grøn preflight: gennemfør den rigtige cutover og verificér offentligt 210 zoner/673 kystdele. Ved fejl: brug den samlede rapport til én rettelsesrunde uden ny oneoff.
 - [ ] Genaktivér normal weather kontrolleret. Brug almindelige kørsler til at bevise cachevedligeholdelse, fuld rotationsplan, kildebidrag, huller og tidsoverskud; oneoff er ikke dette bevis.

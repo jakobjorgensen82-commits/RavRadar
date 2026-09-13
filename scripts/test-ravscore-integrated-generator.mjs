@@ -877,6 +877,16 @@ assert.match(
 );
 assert.match(
   updater,
+  /exactNationalOperationalColdReplayInitialization[\s\S]*?from '.\/lib\/ravscore-operational-state-readiness\.mjs'/,
+  'update-weather must import the strict national cold-replay readiness classifier',
+);
+assert.match(
+  updater,
+  /profileReadiness\.modelMigrationReady\s*\|\|\s*exactNationalOperationalColdReplayInitialization\(\s*partRows,\s*Number\(contract\?\.partCount\),\s*\)/,
+  'the public profile may become ready through only the existing transition proof or one exact national cold replay',
+);
+assert.match(
+  updater,
   /candidateGBootstrapMode:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
   'update-weather must pass the effective workflow mode into initial-state selection',
 );
