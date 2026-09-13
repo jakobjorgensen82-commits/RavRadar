@@ -217,6 +217,7 @@ try {
   assert.equal(spec.metadata.partCount, 673);
   assert.deepEqual(spec.metadata.modelBinding, ravScoreModelBinding());
   assert.equal(spec.files.length, PRIVATE_RUNTIME_FILES.length);
+  assert.equal(spec.measuredWarmupCheckpointAbsenceAttested, false);
 
   const expected = await buildPrivateRuntimeExpectation({
     repositoryRoot: repository,
@@ -647,6 +648,10 @@ try {
   await assert.rejects(fs.lstat(capacityBundle), error => error?.code === 'ENOENT');
   const measuredWarmupConditions = {
     ...conditions,
+    // The real private conditions file is far larger than the old 16 MiB
+    // evidence-reader limit. The dry-run must reuse the first validated parse
+    // rather than attempting a second bounded read of the same runtime.
+    measuredWarmupRegressionPadding: 'x'.repeat(17 * 1024 * 1024),
     ravScoreCandidateGWarmup: {
       schemaVersion: '1.0.0',
       kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
@@ -676,6 +681,19 @@ try {
   assert.equal(
     resumedMeasuredWarmupCapacity.measurements.checkpointAbsenceAttestedByRuntimeAudit,
     true,
+  );
+  const copiedWarmupEvidence = path.join(repository, 'data/live/warmup-evidence-copy.json');
+  await fs.copyFile(path.join(repository, 'data/live/conditions.json'), copiedWarmupEvidence);
+  await assert.rejects(
+    buildPrivateRuntimeIncrementalSizeDryRun({
+      privateRoot: capacityRoot,
+      bundlePath: capacityBundle,
+      repositoryRoot: repository,
+      sourceHead: 'a'.repeat(40),
+      now: conditions.generatedAt,
+      runtimeConditionsPath: 'data/live/warmup-evidence-copy.json',
+    }),
+    /must be the exact runtime source/,
   );
   await fs.writeFile(
     path.join(repository, 'data/live/conditions.json'),

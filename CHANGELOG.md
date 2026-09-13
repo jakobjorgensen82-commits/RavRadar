@@ -1,3 +1,19 @@
+## 4.0.355 – genbrug af allerede valideret measured-warmup-runtime (2026-09-13, lokal kandidat)
+
+- PR #291/sourcegate `34757328149` og main `78c083e8` er grønne og filtræ-identiske.
+- Cachefortsættelse `34758328372` gendannede alle fire cacher og genbyggede runtime uden provider, oneoff eller ny 210/673-audit. Flerobjektpakningen passerede alle nye grænser i real-skala.
+- Målingen stoppede bagefter, fordi den allerede parset og modelkontrollerede store `conditions.json` blev læst igen gennem en særskilt 16-MiB-evidensgrænse.
+- Measured-warmup-felterne kontrolleres nu under første nødvendige parse, og kun en intern boolean genbruges. Den serialiserede create-spec forbliver metadata+filliste; auditfilens og Storage-lagets grænser ændres ikke.
+- En conditions-fil over 16 MiB består regressionstesten. Vejr, RavScore, migrationer, geometri og 210/673/118 er uændrede. Se `CHANGELOG-4.0.355.md` og DEC-0137.
+
+## 4.0.354 – privat runtime fordelt på hashbundne Storage-filer (2026-09-13, main)
+
+- PR #290/sourcegate `34754075158` og main `6305dd82` er grønne og filtræ-identiske.
+- Cachefortsættelse `34755365967` hentede intet nyt vejr og beviste, at 2-GiB-rågrænsen virker, men det færdige komprimerede arkiv var over 50 MiB og kunne derfor ikke være én Supabase-fil.
+- Arkivet deles i højst otte immutable dele à højst 50.000.000 byte og højst 350.000.000 byte samlet. Alle delhashes og hele arkivhashen læses tilbage før atomisk pointer-CAS.
+- Rollback, oprydning, anonym afvisning, legacy schema 1 og sekventiel atomisk filudpakning består. To generationer er begrænset til 700.000.000 byte.
+- Et skjult `+` i den efterfølgende `jq`-gate blev rettet samtidig. PR #291/sourcegate `34757328149` mergede 4.0.354 som main `78c083e8`; cachefortsættelse `34758328372` beviste schema-2-pakningen i real-skala og fandt derefter den særskilte 16-MiB-evidensgenlæsning. Se `CHANGELOG-4.0.354.md` og DEC-0136.
+
 ## 4.0.353 – afgrænset samlet privat runtime og sekventiel udpakning (2026-09-13, lokal kandidat)
 
 - Handoff-fortsættelse `34745557797` gendannede alle fire eksakte cacher uden providerhentning eller ny 210/673-audit og genbyggede runtime. 4.0.352's komprimering passerede den gamle V8-strengfejl.
@@ -1217,10 +1233,3 @@ Se `CHANGELOG-4.0.330.md`.
 - Begrænser ekspertadministration i RLS, RPC og UI og flytter observationsinsert til en validerende, rate-limited Edge-gateway.
 - Samler fælles CORS/gatewaykode. Begge funktioner er live-verificeret uden private testdata; lokal assistent er standard, fordi fjernsecret ikke er installeret.
 - Overvåger Supabases varsel om mulig begrænsning fra 9. september 2026. Se `CHANGELOG-4.0.284.md` og DEC-0080.
-## 4.0.354 – privat runtime fordelt på hashbundne Storage-filer (2026-09-13, lokal kandidat)
-
-- PR #290/sourcegate `34754075158` og main `6305dd82` er grønne og filtræ-identiske.
-- Cachefortsættelse `34755365967` hentede intet nyt vejr og beviste, at 2-GiB-rågrænsen virker, men det færdige komprimerede arkiv var over 50 MiB og kunne derfor ikke være én Supabase-fil.
-- Arkivet deles nu i højst otte immutable dele à højst 50.000.000 byte og højst 350.000.000 byte samlet. Alle delhashes og hele arkivhashen læses tilbage før atomisk pointer-CAS.
-- Rollback, oprydning, anonym afvisning, legacy schema 1 og sekventiel atomisk filudpakning består. To generationer er begrænset til 700.000.000 byte.
-- Et skjult `+` i den efterfølgende `jq`-gate er rettet samtidig. Vejr, RavScore, migrationer, geometri og 210/673/118 er uændrede. Se `CHANGELOG-4.0.354.md` og DEC-0136.

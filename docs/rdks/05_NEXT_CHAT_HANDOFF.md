@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.355 efter redundant 16-MiB-genlæsning
+
+- **Aktuel base:** Main er `78c083e8fee76beb82c2a0d14fb9a2001d795ec2` efter PR #291 og grøn exact-head-sourcegate `34757328149`; filtræet matcher head `ef9b7480`. Arbejdsgrenen har lokal 4.0.355. Candidate G er stadig offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper samt brugerens to lokale linjeskiftændringer bevares.
+- **Seneste run:** Cachefortsættelse `34758328372` gendannede fire eksakte cacher og genbyggede runtime uden provider/oneoff/ny 210/673-audit. Schema-2-pakningen passerede alle raw-/del-/antal-/totalgrænser i real-skala.
+- **Eneste stop:** Efter den vellykkede pakning forsøgte kapacitetsmåleren at læse den samme store `data/live/conditions.json` igen gennem auditfilens 16-MiB-grænse for syv measured-warmup-felter. Derfor kom den ufølsomme rapport og handoffet ikke.
+- **Lokal rettelse:** De syv felter kontrolleres nu under create-specs allerede nødvendige fulde parse, som også validerer 210/673 og modelbinding. Kun en intern boolean genbruges; den serialiserede create-spec er uændret. En 17-MiB-regressionstest er grøn, og ingen grænse hæves.
+- **Uændret:** Vejr, model, migrationer, geometri, punkter, Storage-bounds og offentlig 210/673/118. Ingen ny oneoff og ingen providerhentning.
+- **Næste rækkefølge:** Målrettede slutkontroller/RDKS/geodatadiff → commit/push/PR → én exact-head sourcegate → merge → samme cachefortsættelse → rapport/handoff → samlet cutover → offentlig/sitekontrol → normal weather og rotations-/cachebevis.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.354 flerobjekttransport før ny sourcegate
 
 - **Aktuel base:** Main er `6305dd823775a05425f1c6f3113b85cc2d06f2e1` efter PR #290 og grøn sourcegate `34754075158`. Arbejdsgrenen er den eksisterende launchgren med lokal 4.0.354. Candidate G er stadig offentlig, normalworkflowet er deaktiveret, og de fire untracked `.tmp-run-*-safe-inspect`-mapper samt brugerens to lokale filændringer bevares.

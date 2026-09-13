@@ -145,7 +145,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.354',
+  releaseVersion: '4.0.355',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -159,7 +159,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.354',
+  releaseVersion: '4.0.355',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -444,6 +444,18 @@ function assertConditionsMetadata(document) {
   return { datasetId: document.datasetId, productionReferenceAt, generatedAt };
 }
 
+function hasMeasuredWarmupCheckpointAbsenceAttestation(document) {
+  return document?.ravScoreCandidateGRollback === undefined
+    && document?.ravScoreCandidateGWarmup?.schemaVersion === '1.0.0'
+    && document?.ravScoreCandidateGWarmup?.kind
+      === 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME'
+    && document?.ravScoreCandidateGWarmup?.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+    && document?.ravScoreCandidateGWarmup?.status === 'BUILDING_MEASURED_ONLY'
+    && document?.ravScoreCandidateGWarmup?.syntheticHistoryAllowed === false
+    && document?.ravScoreCandidateGWarmup?.automaticActivationAllowed === false
+    && document?.ravScoreCandidateGWarmup?.publicDuringNormalOperation === false;
+}
+
 export async function buildPrivateRuntimeCreateSpec({
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   conditionsPath = 'data/live/conditions.json',
@@ -459,6 +471,8 @@ export async function buildPrivateRuntimeCreateSpec({
     throw new Error('Private runtime conditions source cannot be parsed');
   }
   const metadata = assertConditionsMetadata(conditions);
+  const measuredWarmupCheckpointAbsenceAttested =
+    hasMeasuredWarmupCheckpointAbsenceAttestation(conditions);
   const files = [];
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const selectedPath = descriptor.id === 'dmi-bulk-cache'
@@ -487,6 +501,7 @@ export async function buildPrivateRuntimeCreateSpec({
       privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass,
     },
     files,
+    measuredWarmupCheckpointAbsenceAttested,
   };
 }
 
@@ -902,6 +917,7 @@ async function attestMeasuredWarmupCheckpointAbsence(
   repositoryRoot,
   runtimeAuditPath,
   runtimeConditionsPath,
+  measuredWarmupCheckpointAbsenceAttested,
 ) {
   const hasAudit = typeof runtimeAuditPath === 'string' && runtimeAuditPath.trim() !== '';
   const hasConditions = typeof runtimeConditionsPath === 'string'
@@ -909,27 +925,30 @@ async function attestMeasuredWarmupCheckpointAbsence(
   if (hasAudit === hasConditions) {
     throw new Error('Missing checkpoint requires exactly one measured-warmup runtime evidence file');
   }
-  const evidence = await readJsonFile(
-    path.resolve(repositoryRoot),
-    hasAudit ? runtimeAuditPath : runtimeConditionsPath,
-    hasAudit
-      ? 'Private runtime capacity measured-warmup audit'
-      : 'Private runtime capacity measured-warmup conditions',
-    16 * 1024 * 1024,
-  );
-  const valid = hasAudit
-    ? evidence?.status === 'passed'
+  let valid;
+  if (hasAudit) {
+    const evidence = await readJsonFile(
+      path.resolve(repositoryRoot),
+      runtimeAuditPath,
+      'Private runtime capacity measured-warmup audit',
+      16 * 1024 * 1024,
+    );
+    valid = evidence?.status === 'passed'
       && evidence?.rollback?.status === 'BUILDING_MEASURED_ONLY'
-      && evidence?.rollback?.activationReady === false
-    : evidence?.ravScoreCandidateGRollback === undefined
-      && evidence?.ravScoreCandidateGWarmup?.schemaVersion === '1.0.0'
-      && evidence?.ravScoreCandidateGWarmup?.kind
-        === 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME'
-      && evidence?.ravScoreCandidateGWarmup?.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
-      && evidence?.ravScoreCandidateGWarmup?.status === 'BUILDING_MEASURED_ONLY'
-      && evidence?.ravScoreCandidateGWarmup?.syntheticHistoryAllowed === false
-      && evidence?.ravScoreCandidateGWarmup?.automaticActivationAllowed === false
-      && evidence?.ravScoreCandidateGWarmup?.publicDuringNormalOperation === false;
+      && evidence?.rollback?.activationReady === false;
+  } else {
+    const root = path.resolve(repositoryRoot);
+    const evidencePath = path.resolve(root, runtimeConditionsPath);
+    const productionConditionsPath = path.resolve(root, 'data/live/conditions.json');
+    if (!inside(root, evidencePath) || evidencePath !== productionConditionsPath) {
+      throw new Error('Measured-warmup conditions must be the exact runtime source');
+    }
+    // buildPrivateRuntimeCreateSpec already parsed this exact file to validate
+    // the 210/673 model source and construct the archive inventory. Reuse only
+    // the bounded boolean attestation from that parse instead of reading the
+    // deliberately large private runtime a second time through a 16 MiB gate.
+    valid = measuredWarmupCheckpointAbsenceAttested === true;
+  }
   if (!valid) {
     throw new Error('Missing checkpoint lacks the explicit measured-warmup N/A attestation');
   }
@@ -1013,6 +1032,7 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
       root,
       runtimeAuditPath,
       runtimeConditionsPath,
+      spec.measuredWarmupCheckpointAbsenceAttested,
     )
     : 'CHECKPOINT_SIZE_MEASURED';
   const projection = buildPrivateRuntimeIncrementalSizeProjection({
@@ -1464,7 +1484,7 @@ async function main() {
       dmiBulkPath: argument(argv, '--dmi-bulk', false)
         ?? 'data/live/dmi-bulk-cache.json',
     });
-    await atomicWriteJson(output, spec);
+    await atomicWriteJson(output, { metadata: spec.metadata, files: spec.files });
     console.log(JSON.stringify({ status: 'create-spec-ready', fileCount: spec.files.length }));
   } else if (mode === 'expected') {
     const output = argument(argv, '--output');

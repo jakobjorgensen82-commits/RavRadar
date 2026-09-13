@@ -1,3 +1,20 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.355 fra redundant runtimegenlæsning til model-online
+
+- [x] Bestå 4.0.354-sourcegate `34757328149`, merge PR #291 som main `78c083e8` og bevis identisk filtræ.
+- [x] Kør `34758328372` fra fire eksakte cacher uden provider/oneoff/ny 210/673-audit; bevis schema-2-pakning i real-skala.
+- [x] Afgræns stoppet til den redundante anden læsning af `conditions.json` gennem en 16-MiB evidensgrænse.
+- [x] Genbrug kun den strenge boolean fra første modelkontrollerede parse; bevar filspec og alle størrelses-/privacygrænser.
+- [ ] Kør én exact-head 4.0.355-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Kør samme cachefortsættelse; kræv samlet real-skala rapport og forsegl handoff uden oneoff.
+- [ ] Gennemfør den separate cutover til slut; saml alle fejl i kørslen og ret dem samlet uden at gentage bevist arbejde.
+- [ ] Verificér release 4.0.355 offentligt på 210 zoner, 673 kystdele, begge modes og 118 timer.
+- [ ] Gennemgå levende side meningsfuldt på desktop/mobil og DA/DE/EN.
+- [ ] Bevis cachevedligeholdelse, fuld registerrotation, fallbackbidrag og tidsoverskud i almindelige weather-runs.
+- [ ] Omlæg tilbagevendende privat cachetransport efter målt normal drift, så den ikke kræver fuld generationsdownload ved hver højfrekvent kørsel.
+- [ ] Rens resten af post-cutover-roadmappet mod live evidens og behold kun aktuelle konkrete problemer.
+
+Produktkritiske integritets-, privacy-, data-, model- og deploymentgates består. Ingen ny oneoff. DEC-0137 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.354 fra enkeltobjektstop til model-online
 
 - [x] Bestå 4.0.353-sourcegate `34754075158`, merge PR #290 som main `6305dd82` og bevis identisk filtræ.
