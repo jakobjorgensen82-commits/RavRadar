@@ -2,6 +2,7 @@
 
 # 4.0.351 – ens offentlig rekonstruktion og ikke-tom startpakke
 
+- **REQ-4.0.351-GENUINE-COLD-START-READINESS-001 – BINDENDE P0 / LOKALT MÅLTESTET:** Når den nationale resolver har valgt DEC-0113/0114's source-attesterede `genuine-cold-start`, må profilens state-readiness være true kun hvis alle præcis 673 dele er cold replay med eksakt lineage, recovery-id, private measured-only kilde, 48-timers complete/unknown-regnskab, korrekt kildeklasse og ikke-fremtidig target. Blandet, delvis, ekstra-feltet eller manipuleret cohort stopper fortsat.
 - **REQ-4.0.351-INDEPENDENT-READINESS-001 – BINDENDE P0 / LOKALT TESTET:** Efter eksakt 673-delsstruktur skal coverage, hukommelse og migration bedømmes selvstændigt. Lokal `UNAVAILABLE` må ikke omskrive gyldig hukommelse eller migration til false.
 - **REQ-4.0.351-CURRENT-RECONSTRUCTION-001 – BINDENDE P0 / LOKALT TESTET:** Producent og offentlig audit skal rekonstruere H0-current fra samme publicerede værdi, retning, provenance og transition. `NATIVE_CADENCE_HOLD` er direkte input, men ikke en ny verificeret måling.
 - **REQ-4.0.351-LAST-MILE-RECONSTRUCTION-001 – BINDENDE P0 / LOKALT TESTET:** Last-mile-status og faktorer skal udledes ens fra publiceret bølgevejr og kompakt `waveApproachState`; eksakt calm, aktiv bølge uden retning og manglende fysik må ikke blandes.
@@ -9,7 +10,7 @@
 - **REQ-4.0.351-NO-GATE-WEAKENING-001 – BINDENDE P0:** Slutauditen skal fortsat rekonstruere og kontrollere 210 zoner, 673 dele og 1.346 aktuelle modes. Reel afvigelse stopper før writes.
 - **REQ-4.0.351-APPEND-ONLY-BINDING-001 – BINDENDE P0 / LOKALT TESTET:** Den centralt anvendte migration 12 forbliver byteuændret ved SHA-256 `24a7450a…`. Ny migration `20260913010000_public_runtime_oracle_binding.sql` fører kun tre forseglinger og readbackversion frem.
 - **REQ-4.0.351-NO-NEW-ONEOFF-001 – BINDENDE P0:** Brug den komplette låste vejrpakke. Kun én exact-head-kildegate, backendreadback, cache-only preflight, cutover og offentligt bevis må tilføjes; ingen ny provider-oneoff.
-- **REQ-4.0.351-RUNTIME-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, migration-13 apply/readback, grøn cache-only preflight, faktisk cutover og offentlig 210/673-verifikation mangler.
+- **REQ-4.0.351-RUNTIME-PROOF-001 – ÅBEN P0:** PR #287/sourcegate `34732348167`, merge `a6e118d2` og backend `34733200143` er grønne. Cache-only `34733358422` beviste alle 1.346 rekonstruktioner og isolerede alene cold-start-readiness-kanten. Ny exact-head-CI for denne snævre driftsrettelse, merge, exact-main backendreadback, grøn cache-only preflight, faktisk cutover og offentlig 210/673-verifikation mangler.
 
 Run `34720789985` er positivt vejr-/strukturbevis og negativt public-runtime-orakelbevis. DEC-0133 er bindende.
 

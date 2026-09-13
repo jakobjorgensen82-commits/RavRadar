@@ -24,7 +24,7 @@
     "test:integrated-cutover-readiness": "node scripts/test-integrated-cutover-readiness.mjs",
     "test:ravscore-public-browser-closure": "node scripts/test-ravscore-public-browser-closure.mjs",
     "sync:ravscore-model-binding": "node scripts/sync-ravscore-model-binding.mjs --write",
-    "test:ravscore-integrated-generator": "node scripts/test-ravscore-production-adapters.mjs && node scripts/test-ravscore-integrated-generator.mjs && node scripts/test-ravscore-recovery-replay.mjs && node scripts/test-feggesund-wave-proxy.mjs",
+    "test:ravscore-integrated-generator": "node scripts/test-ravscore-production-adapters.mjs && node scripts/test-ravscore-integrated-generator.mjs && node scripts/test-ravscore-recovery-replay.mjs && node scripts/test-feggesund-wave-proxy.mjs && node scripts/test-ravscore-operational-state-readiness.mjs",
     "test:ravscore-integrated-public": "node scripts/test-ravscore-public-runtime-contract.mjs && node scripts/test-ravscore-public-data-service-binding.mjs && node scripts/test-ravscore-integrated-public-runtime-audit.mjs && node scripts/test-ravscore-integrated-public-consumers.mjs && npm run test:ravscore-public-browser-closure",
     "test:ravscore-integrated-profile": "node scripts/test-ravscore-profile-transition.mjs && python scripts/test_sync_admin_config_activation.py && node scripts/test-admin-active-ravscore-runtime.mjs && node scripts/test-integrated-cutover-install-contract.mjs && node scripts/test-ravscore-checkpoint-case-syntax.mjs && npm run test:integrated-cutover-readiness",
     "test:ravscore-continuation-checkpoint": "node scripts/test-ravscore-continuation-checkpoint.mjs",

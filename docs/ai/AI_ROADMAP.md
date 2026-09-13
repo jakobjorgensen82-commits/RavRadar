@@ -5,10 +5,12 @@
 1. [x] Bestå PR #286/sourcegate `34726624728`, merge byteidentisk som `6d4adbb2`, anvend/readback-verificér migration 13 og genbrug den komplette cache uden providerkald.
 2. [x] Afgræns preflight `34728026044` til tre auditfejl efter grøn current/WAM/freshness/210/673-modelbygning; intet blev deployet.
 3. [x] Reproducér ægte H0-current-missing, ret auditens lovlige `null`/`UNAVAILABLE`-rekonstruktion og adskil coverage, memory og migration. Målrettet 210/673-suite er grøn.
-4. [ ] Kør én exact-head-sourcegate, merge hotfixen, readback-verificér backend og gentag samme cache-only-preflight.
-5. [ ] Ved grøn preflight: udfør cutover, verificér levende integrated 210/673 og gennemgå hele siden meningsfuldt på desktop/mobil og DA/DE/EN.
-6. [ ] Genaktivér almindelig weather og bevis med normale kørsler, at hele registret planlægges, rotationen flytter sig, cachen vedligeholdes, fallback kun fylder reelle rester og tidsbudgettet er bæredygtigt.
-7. [ ] Revider post-cutover-roadmap mod faktisk live evidens. Luk historiske eller dublerede punkter; prioriter kun beviste problemer og de varige arkitekturpunkter om cachetransport, kildeovergange, retention og driftsrobusthed.
+4. [x] Bestå PR #287/sourcegate `34732348167`, merge som `a6e118d2`, bestå backend `34733200143` og kør cache-only `34733358422`; alle 1.346 modes rekonstrueres, og kun genuine-cold-start-readiness afviger.
+5. [x] Ret den operationelle profil til kun at acceptere DEC-0113/0114's nationale cold start ved eksakt 673-dels lineage/kilde/48-timersregnskab/target; afvis blanding og tamper.
+6. [ ] Kør én exact-head-sourcegate, merge hotfixen, readback-verificér backend og gentag samme cache-only-preflight.
+7. [ ] Ved grøn preflight: udfør cutover, verificér levende integrated 210/673 og gennemgå hele siden meningsfuldt på desktop/mobil og DA/DE/EN.
+8. [ ] Genaktivér almindelig weather og bevis med normale kørsler, at hele registret planlægges, rotationen flytter sig, cachen vedligeholdes, fallback kun fylder reelle rester og tidsbudgettet er bæredygtigt.
+9. [ ] Revider post-cutover-roadmap mod faktisk live evidens. Luk historiske eller dublerede punkter; prioriter kun beviste problemer og de varige arkitekturpunkter om cachetransport, kildeovergange, retention og driftsrobusthed.
 
 Ingen ny provider-oneoff indgår i dette spor. Candidate G er offentlig indtil den faktiske cutover.
 

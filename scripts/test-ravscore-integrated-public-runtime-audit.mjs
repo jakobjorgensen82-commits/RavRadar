@@ -402,7 +402,7 @@ function syntheticFull({
     modelMemoryReady: runtimeRow.currentMemoryReady === true
       && runtimeRow.waveMemoryReady === true
       && runtimeRow.lastMileMemoryReady === true,
-    modelMigrationReady: transition !== 'cold',
+    modelMigrationReady: true,
   });
   const zones = {};
   const coastalZones = {};
@@ -1190,12 +1190,11 @@ const coldReplay = syntheticFull({
 });
 const coldReplayPackage = publicPackage(coldReplay);
 const coldReplayReport = audit(coldReplay, coldReplayPackage, 1, 1);
-assert.deepEqual(coldReplayReport.errors, ['PUBLIC_PROFILE_NOT_READY'],
-  'Gyldig cold replay må rekonstrueres, men kan ikke alene bevise first-cutover-migration.');
-assert.equal(coldReplayReport.status, 'failed');
-assert.equal(coldReplay.coastalParts.scoreProfile.modelMigrationReady, false);
-assert.deepEqual(coldReplay.coastalParts.scoreProfile.advisories,
-  ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED']);
+assert.deepEqual(coldReplayReport.errors, [],
+  'Gyldig measured-only cold replay skal kunne bevise first-cutover-initialisering.');
+assert.equal(coldReplayReport.status, 'passed');
+assert.equal(coldReplay.coastalParts.scoreProfile.modelMigrationReady, true);
+assert.deepEqual(coldReplay.coastalParts.scoreProfile.advisories, []);
 assert.equal(coldReplayReport.continuation.coldReplayStateCount, 1);
 assert.equal(coldReplayReport.continuation.continuedStateCount, 0);
 

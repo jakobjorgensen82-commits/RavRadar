@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 gyldig national cold start før cutover
+
+- **Aktuel base:** `main` er `a6e118d2` efter PR #287; arbejdsgrenen er `codex/4.0.352-cold-start-readiness`, men hotfixet bevarer den faktiske releaseversion 4.0.351. Candidate G er stadig offentlig, og normalworkflowet er fortsat deaktiveret. Bevar de fire untracked `.tmp-run-*-safe-inspect`-mapper.
+- **Seneste produktionsbevis:** PR #287-sourcegate `34732348167` og backend `34733200143` er grønne. Den låste cache-only-kørsel `34733358422` hentede intet providervejr og bestod current/WAM/freshness samt hele 210/673/1.346-rekonstruktionen.
+- **Eneste stop:** Slutauditen gav kun `PUBLIC_PROFILE_NOT_READY`. Resolveren havde valgt `genuine-cold-start` for alle 673 dele, fordi Candidate G er canonical, men ikke kunne levere en migrationsklar tilstand.
+- **Rodårsag:** Den operationelle profil godkendte kun migration eller fortsættelse, selv om DEC-0113/0114 tillader en kildeattesteret, målt national cold replay som første initialisering. Data, scoreformel og replay var korrekte; readiness-klassifikationen manglede den tredje tilladte startform.
+- **Lokal rettelse:** Et særskilt driftslag accepterer kun cold start, når samtlige 673 dele har eksakt recovery-id, kilde, 48-timers optælling, overgang, tidsbinding og ingen migrations-/fortsættelsesmarkør. Den uafhængige slutaudit rekonstruerer samme sandhed fra public runtime. Blandede, ufuldstændige og fremtidsdaterede forløb afvises fortsat.
+- **Uændret:** Scorematematik, modelbundle, rollbackbundle, continuationbundle, databasebinding/migration 13, cache og vejrhentning ændres ikke. Bundlehashes er fortsat `79d5118a…` / `84311c92…` / `9d396013…`.
+- **Næste rækkefølge:** Fokuserede tests og RDKS-validering → commit/push/PR → én exact-head sourcegate → byteidentisk merge → backend-readback → ny hurtig cache-only-kontrol → cutover/deploy → offentlig helhedskontrol → genaktivér almindelig vejrhentning og bevis cachevedligeholdelse/rotation med normale kørsler → revurder post-cutover-roadmap mod live evidens.
+- **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny oneoff, ingen dobbelt kildegate og ingen gentagelse af allerede beståede lange kontroller uden konkret fejlevidens.
+- **PR #288 første head:** `debb745f`/sourcegate `34736227522` bestod release-, model-, runtime- og migrationsled, men stoppede senere på manglende identisk Supabase-installationskopi af webhåndbogen. Kopien og aktive bindingstal er synkroniseret; protected merge og hele 236-kapitlers håndbogstest er grønne. Ny head/exact-head-gate kræves.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
 
 - **Base:** Main `f6e725ec`/4.0.350 efter PR #285 og backend `34720600286`; lokal branch `codex/4.0.351-public-runtime-oracle`. Candidate G er stadig offentlig. Bevar fire untracked `.tmp-run-*-safe-inspect`.

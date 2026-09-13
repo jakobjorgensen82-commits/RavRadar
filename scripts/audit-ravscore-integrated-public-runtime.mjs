@@ -233,6 +233,47 @@ const exactRegionalHoldAuthorization = value => sameKeys(value, [
   && value.distanceKm >= 0
   && value.distanceKm <= 15;
 
+const exactColdReplayStateInitialization = model => {
+  const state = model?.currentState;
+  const lineage = state?.lineage;
+  const completeCount = lineage?.completeCausalPositionCount;
+  const unknownCount = lineage?.boundedUnknownPositionCount;
+  const expectedSource = unknownCount === 0
+    ? 'VERIFIED_PRIVATE_48H_COLD_REPLAY'
+    : 'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY';
+  return model?.initialStateAccepted === false
+    && model?.migrationApplied === false
+    && model?.initialStateSource === expectedSource
+    && sameKeys(lineage, [
+      'boundedUnknownPositionCount',
+      'completeCausalPositionCount',
+      'expectedCausalPositionCount',
+      'historyTransition',
+      'recoveryId',
+      'source',
+      'targetReferenceAt',
+    ])
+    && lineage.recoveryId === RAVSCORE_COLD_REPLAY_ID
+    && lineage.source === RAVSCORE_RECOVERY_POLICY.source
+    && lineage.expectedCausalPositionCount === RAVSCORE_RECOVERY_POLICY.coldReplayHours
+    && safeNonNegativeInteger(completeCount)
+    && safeNonNegativeInteger(unknownCount)
+    && completeCount + unknownCount === RAVSCORE_RECOVERY_POLICY.coldReplayHours
+    && lineage.historyTransition === (unknownCount > 0
+      ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+      : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition)
+    && validTime(lineage.targetReferenceAt)
+    && validTime(state?.time)
+    && Date.parse(lineage.targetReferenceAt) <= Date.parse(state.time);
+};
+
+const exactNationalColdReplayStateInitialization = (parts, expectedPartCount) =>
+  parts.length === expectedPartCount
+  && parts.every(([, part]) =>
+    exactColdReplayStateInitialization(part?.ravScoreModel))
+  && new Set(parts.map(([, part]) =>
+    part.ravScoreModel.initialStateSource)).size === 1;
+
 function exactHistoryReasonCodes(value, { required = false } = {}) {
   return Array.isArray(value)
     && (!required || value.length > 0)
@@ -1233,9 +1274,12 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         && RAVSCORE_LAST_MILE_POLICY.readyStatuses
           .includes(model.lastMileMemoryStatus);
     });
-  const expectedModelMigrationReady = parts.length === expectedPartCount
-    && parts.every(([, part]) => part?.ravScoreModel?.initialStateAccepted === true
-      || part?.ravScoreModel?.migrationApplied === true);
+  const expectedTransitionModelMigrationReady = parts.length === expectedPartCount
+    && parts.every(([, part]) =>
+      part?.ravScoreModel?.initialStateAccepted === true
+        || part?.ravScoreModel?.migrationApplied === true);
+  const expectedModelMigrationReady = expectedTransitionModelMigrationReady
+    || exactNationalColdReplayStateInitialization(parts, expectedPartCount);
   const expectedProfileAdvisories = [
     ...(!expectedModelCoverageReady ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
     ...(!expectedModelMemoryReady ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
