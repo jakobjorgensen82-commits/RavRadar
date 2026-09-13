@@ -1,3 +1,13 @@
+# NYESTE SANDHED – 2026-09-13 – lokal 4.0.352 retter privat pakning efter komplet modelbevis
+
+PR #288's korrigerede head `9511c9f4` bestod exact-head-sourcegate `34737474686` og blev merged med identisk tree som main `099b70a8314864ba85f0fb7ea3858b3f3816d9ed`. Backend `34738543144` genbrugte exact-content-kildebeviset uden dobbelt fuld gate og readback-verificerede alle 13 migrationer.
+
+Låst cache-only-preflight `34738698219` hentede intet providervejr. Den bestod exact target, current, WAM, freshness, modelbygning og den offentlige kontrol af 210 zoner, 673 kystdele og alle 118 timer. Cold-start-readiness-rettelsen virkede dermed i helkæden. Der blev ikke dannet handoff eller deploy, fordi det næste private kapacitetstrin stoppede.
+
+Stoppet var `Cannot create a string longer than 0x1fffffe8 characters`. Arkivet base64-kodede rå private filer før komprimering og samlede derfor en tekststreng over Nodes faste grænse, selv om den endelige komprimerede Storage-genstand kan være under det uændrede 50 MiB-loft. Lokal 4.0.352 komprimerer nu hver fil deterministisk før base64, markerer formatet eksakt og begrænser udpakning til deklarerede bytes med SHA-256-readback. Legacylæsning, privacy, rollback, CAS, storage- og checkpointgrænser består.
+
+Næste kørsel må genskabe den private runtime fra den låste cache, fordi GitHubs gamle runner er væk, men den må ikke hente nyt vejr eller starte oneoff. Den fortsætter derefter fra størrelsesmåling til handoff og cutover. Produktkritiske data-/model-/privacy-/database-/public-structure-fejl stopper; bevist ufarlig dokumentations- og rapporteringsoprydning samles til efter launch. Se DEC-0134.
+
 # NYESTE SANDHED – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness før cutover
 
 PR #287's endelige head `b12c1717043ab744a48ee38356b723f87a6d4942` bestod exact-head-sourcegate `34732348167` og blev merged byteidentisk som main `a6e118d2a035ffbdfefab79b2a13de094dec939c`. Backendrun `34733200143` readback-verificerede de 13 anvendte migrationer. Integrated/rollback/continuation forbliver `79d5118a…` / `84311c92…` / `9d396013…`.

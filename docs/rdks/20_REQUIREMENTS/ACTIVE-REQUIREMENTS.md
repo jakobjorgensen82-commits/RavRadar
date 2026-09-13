@@ -1,5 +1,17 @@
 # Aktive krav – samlet register
 
+# 4.0.352 – bounded privat pakning efter komplet cache/modelbevis
+
+- **REQ-4.0.352-COMPRESS-BEFORE-BASE64-001 – BINDENDE P0 / LOKALT TESTET:** Hver verificeret privat runtimefil skal komprimeres deterministisk før base64, så rå payload ikke samles som en overstor V8-streng.
+- **REQ-4.0.352-BOUNDED-DECODE-001 – BINDENDE P0 / LOKALT TESTET:** Ny encoding skal markeres eksakt. Hver fil dekomprimeres højst til deklareret byteantal og accepteres kun ved samme byteantal og SHA-256. Ukendt encoding stopper; legacyarkiv kan læses under de gamle integritetsgrænser.
+- **REQ-4.0.352-NO-MODEL-OR-WEATHER-CHANGE-001 – BINDENDE P0:** Score, fysik, modelstate, kildeprioritet, current/WAM/freshness, geometri og offentlig 210/673/118-kontrakt er uændrede.
+- **REQ-4.0.352-RESUME-BOUNDARY-001 – BINDENDE P0:** Ny runner må genskabe den private runtime fra locked cache, men må ikke hente providerdata eller starte ny oneoff. Efter genskabelse fortsættes fra størrelsesmåling til handoff/cutover.
+- **REQ-4.0.352-LAUNCH-BLOCKER-CLASSIFICATION-001 – BINDENDE:** Vejr-, score-, datatabs-, privacy/sikkerheds-, databasebindings- og offentlig strukturfejl stopper launch. Dokumentations-/rapporteringsfejl må kun flyttes efter launch, når de konkret er bevist uden produktpåvirkning.
+- **REQ-4.0.352-FIRST-CUTOVER-EXCEPTION-001 – BINDENDE P0 / EKSPLICIT EJERRETNING:** DEC-0122's materielt uændrede engangsundtagelse gælder alene exact 4.0.352; ingen gammel preflight eller handoff ommærkes.
+- **REQ-4.0.352-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-CI, merge, exact-main readback, locked cache-genopbygning, størrelses-/storagebevis, handoff, cutover og offentlig 210/673/118-verifikation mangler.
+
+Run `34738698219` er positivt vejr-/model-/public-structure-bevis og negativt pakningsbevis. DEC-0134 er bindende.
+
 # 4.0.351 – ens offentlig rekonstruktion og ikke-tom startpakke
 
 - **REQ-4.0.351-GENUINE-COLD-START-READINESS-001 – BINDENDE P0 / LOKALT MÅLTESTET:** Når den nationale resolver har valgt DEC-0113/0114's source-attesterede `genuine-cold-start`, må profilens state-readiness være true kun hvis alle præcis 673 dele er cold replay med eksakt lineage, recovery-id, private measured-only kilde, 48-timers complete/unknown-regnskab, korrekt kildeklasse og ikke-fremtidig target. Blandet, delvis, ekstra-feltet eller manipuleret cohort stopper fortsat.

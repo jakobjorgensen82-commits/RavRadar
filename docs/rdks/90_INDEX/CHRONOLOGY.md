@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.352 efter privat pakkestop
+
+- PR #288-head `9511c9f4` bestod sourcegate `34737474686`, blev merged tree-identisk som main `099b70a8`, og backend `34738543144` bestod.
+- Locked cache-only `34738698219` hentede intet providervejr og bestod current, WAM, freshness, modelbygning samt offentlig 210/673/118-struktur.
+- Runnet stoppede derefter ved privat størrelsesmåling, fordi raw-base64-konvolutten overskred Nodes faste strenggrænse. Intet handoff eller deploy blev udstedt.
+- Lokal 4.0.352 komprimerer hver fil før base64 og bevarer bounded bytes/SHA-256, privacy, rollback, CAS og legacylæsning. De to måltests er grønne.
+- Næste er én exact-head-sourcegate, merge, locked cache-genopbygning uden provider-oneoff, rettet størrelsesmåling, handoff, cutover og offentlig verifikation.
+
 # NYESTE CHECKPOINT – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 - PR #287-head `b12c1717` bestod exact-head-sourcegate `34732348167`, blev merged byteidentisk som main `a6e118d2`, og backend `34733200143` readback-verificerede migration 1–13.

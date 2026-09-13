@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.352 privat pakning
+
+Ejeren har præciseret, at cutover skal forsøges og samle fejl, og at bevist ligegyldige fejl ikke skal holde modellen offline. Produktkritiske fejl i vejr, score, datatab, privacy/sikkerhed, databasebinding eller offentlig struktur forbliver stop; dokumentations- og rapporteringsfejl kan først flyttes efter launch, når de konkret er bevist uden produktpåvirkning. Ejeren bad samtidig om at fortsætte præcis fra det fejlede trin og ikke gentage ny oneoff eller brede tests.
+
+PR #288-head `9511c9f4` bestod sourcegate `34737474686` og blev merged med identisk tree som main `099b70a8314864ba85f0fb7ea3858b3f3816d9ed`. Backend `34738543144` bestod uden dobbelt sourcegate. Locked cache-only `34738698219` hentede intet providervejr og bestod current, WAM, freshness, modelbygning og offentlig 210/673/118-kontrol.
+
+Det næste private størrelsestrin fejlede med `Cannot create a string longer than 0x1fffffe8 characters`. Rå private filer blev base64-kodet før gzip og samlet i én V8-streng. 4.0.352 komprimerer hver fil deterministisk før base64; udpakning kræver eksakt encoding, begrænser output til deklareret filstørrelse og genkontrollerer bytes/SHA-256. Legacylæsning og alle storage-, checkpoint-, privacy-, rollback-, CAS- og readbackgrænser består. Model, vejrdata og migrationer er uændrede.
+
+Den gamle runner og dens midlertidige private bundle findes ikke længere. Næste exact-main-run må derfor genskabe bundle fra den låste cache, men må ikke kalde providere eller starte oneoff. Derefter fortsætter den fra den rettede størrelsesmåling til handoff/cutover. Se DEC-0134.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – 4.0.351 main og lokal cold-start-readiness-hotfix
 
 Ejeren har bekræftet, at den nye model skal online nu, at allerede gennemførte led ikke skal startes forfra, og at der ikke skal køres en ny tre timers oneoff. Efter cutover skal almindelige weather-runs, ikke oneoff, bevise cachevedligeholdelse og rotation. Hele hjemmesiden skal derefter gennemgås meningsfuldt, og post-cutover-roadmappet skal renses mod faktisk live evidens.

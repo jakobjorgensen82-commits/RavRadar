@@ -1,3 +1,18 @@
+# NYESTE ROADMAP – 2026-09-13 – 4.0.352 fra fejlet pakketrin til model-online
+
+- [x] Merge 4.0.351 som main `099b70a8` efter grøn exact-head-sourcegate `34737474686`, og bestå backend `34738543144`.
+- [x] Brug locked cache-only `34738698219` til at bevise komplette data og 210/673/118-modelstruktur uden providerhentning.
+- [x] Afgræns eneste nye stop til V8-strenggrænsen i privat raw-base64-pakning efter de produktkritiske kontroller.
+- [x] Ret packer/unpacker med deterministisk komprimering før base64, bounded dekomprimering, SHA-256 og legacy-kompatibilitet; bestå de to måltests.
+- [ ] Kør én exact-head 4.0.352-sourcegate, merge og exact-main readback.
+- [ ] Genskab kun nødvendigt privat runtimearbejde fra locked cache; kør ingen provider-oneoff. Fortsæt derefter fra størrelsesmåling til handoff og cutover.
+- [ ] Verificér offentligt 210 zoner, 673 kystdele, begge modes, 118 timer/fem døgn og release 4.0.352.
+- [ ] Gennemgå levende side på desktop/mobil og DA/DE/EN med fokus på reelle funktioner og sammenhæng.
+- [ ] Genaktivér normal weather og brug almindelige runs til at bevise cachevedligeholdelse, rotation, fallback og tidsoverskud.
+- [ ] Rens post-cutover-roadmap mod live evidens; behold kun konkrete aktuelle problemer.
+
+Ufarlig dokumentations-/rapporteringsoprydning må ikke skabe en launchspiral, men produktkritiske gates består. DEC-0134 er aktiv.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.351 cold-start-readiness direkte til model-online og normal drift
 
 - [x] Bestå PR #286/sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.

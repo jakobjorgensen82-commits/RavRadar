@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.352 privat pakkefix
+
+- [x] Bestå PR #288 exact-head-sourcegate `34737474686`, merge tree-identisk som main `099b70a8` og readback-verificér backend `34738543144` uden dobbelt sourcegate.
+- [x] Kør locked cache-only `34738698219` uden providerhentning og bevis current, WAM, freshness, modelbygning samt offentlig 210/673/118-struktur.
+- [x] Afgræns stoppet til rå-base64-konvoluttens V8-strenggrænse efter alle produktdata- og modelkontroller; intet handoff/deploy blev udstedt.
+- [x] Komprimér hver privat fil deterministisk før base64, markér encoding eksakt, bevar legacylæsning og begræns indre dekomprimering til deklarerede bytes med SHA-256-kontrol.
+- [x] Bestå målrettet archive/storage/rollback/anonymous-denial-test og private-runtime-workflowtest.
+- [ ] Bestå én exact-head sourcegate for 4.0.352, merge byteidentisk og readback-verificér exact main.
+- [ ] Genskab kun den nødvendige private runtime fra locked cache, fortsæt gennem størrelsesmåling/handoff og gennemfør cutover uden provider-oneoff.
+- [ ] Verificér den integrerede model offentligt på 210/673/118 og gennemgå derefter hjemmesiden meningsfuldt.
+- [ ] Genaktivér normal weather og bevis cachevedligeholdelse, fuld registerrotation, fallbackbidrag og tidsoverskud i almindelige kørsler.
+
+DEC-0134 er aktiv. Vejrdata, scoremodel, modelhashes og migration 13 er uændrede.
+
 # Aktuel implementeringsstatus – 4.0.351 main med lokal cold-start-readiness-hotfix
 
 - [x] Bestå PR #286 exact-head-sourcegate `34726624728`, merge byteidentisk som main `6d4adbb2` og anvend/readback-verificér migration 13 i backend `34727884447`.
