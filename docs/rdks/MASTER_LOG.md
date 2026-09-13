@@ -14,6 +14,8 @@ Cache-only `34733358422` beviste rettelsen: alle 1.346 modes blev rekonstrueret,
 
 Den lokale driftsrettelse sætter state-readiness true for cold start alene ved præcis 673 ensartede dele med eksakt lineage, recovery-id, private measured-only kilde, 48-timers complete/unknown-regnskab, korrekt kildeklasse og ikke-fremtidig target. Den uafhængige public audit rekonstruerer samme faktum; blanding, ekstra felter, forkert kilde, regnskabsafvigelse og fremtidig target har negative tests. Model, fysik, bundles, migration 13, geometri, cache og vejrdata er uændrede. Næste rækkefølge: én exact-head-CI → merge → backend-readback → samme cache-only preflight → cutover → offentlig/sitekontrol → normal weather og rotations-/cachebevis. Se DEC-0133.
 
+PR #288's første head `debb745f` beviste selve release-/modelkæden i sourcegate `34736227522`, men stoppede efter releasegaten på den beskyttede håndbogskontrakt: den opdaterede webhåndbog manglede i Supabase-installationskopien. Projektets syncscript har nu kopieret den identiske payload, og webhåndbogens aktive model- og continuationtal er ajourført til de allerede forseglede 4.0.351-værdier. Protected-merge-testen og hele 236-kapitlers håndbogstest er grønne; næste head får sin egen exact-head-gate.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-12 – lokal 4.0.350 direkte input og samlet cutover
 
 Ejeren har bekræftet den præcise cutoveradfærd: runtimeaudit, referencezoner, fuld validering, releasegate og datavalidering må alle køre og samle deres fejl; hvis ingen fejler, skal cutover fortsætte automatisk. Samlingen må ikke flytte eller omgå database-, checkpoint-, privacy-, handoff-, CAS-, Pages- eller offentlig-verifikationsgrænser. Almindelige vejrjobs skal ikke ændres af denne cutoveroptimering.

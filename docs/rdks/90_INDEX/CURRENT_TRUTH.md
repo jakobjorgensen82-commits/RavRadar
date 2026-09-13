@@ -8,6 +8,8 @@ Resolveren valgte dokumenteret `genuine-cold-start` for alle 673 dele, fordi den
 
 Den lokale hotfix gør kun en national cold start state-klar, når alle præcis 673 dele har eksakt measured-only lineage, recovery-id, privat kilde, 48-timers complete/unknown-regnskab, korrekt kildeklasse og ikke-fremtidig target. Blandede, delvise eller manipulerede states afvises. Producenten og den uafhængige audit har hver sin kontrol, og positive samt negative måltests er grønne. Modelkode, fysik, bundle, migration og vejrcache er uændrede.
 
+PR #288's første head `debb745f` nåede gennem releasegate og alle relevante model-, runtime- og migrationskontroller i sourcegate `34736227522`. Den stoppede derefter korrekt, fordi webhåndbogen var opdateret uden den identiske beskyttede Supabase-installationskopi. Kopien er synkroniseret med projektets eget script, og de aktive integrated-/rollback-/continuationtal i webhåndbogen er ført til de allerede verificerede 4.0.351-hashe. Begge direkte håndbogstests er grønne; en ny PR-head kræver ny exact-head-gate.
+
 Næste rækkefølge er én exact-head-sourcegate for hotfixen, merge, backend-readback, samme cache-only-preflight, faktisk cutover og offentlig kontrol. Derefter genaktiveres almindelig weather kontrolleret, og vedligeholdelse, rotation og cachekontinuitet bevises i normal drift. Ingen ny oneoff. Candidate G er stadig offentlig indtil faktisk cutover. Se DEC-0133.
 
 # NYESTE SANDHED – 2026-09-12 – lokal 4.0.350 retter scoreinput og samler cutoverfejl

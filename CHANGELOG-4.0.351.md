@@ -16,6 +16,7 @@ Dato: 2026-09-13
 - PR #287-head `b12c1717` bestod sourcegate `34732348167`, blev merged byteidentisk som main `a6e118d2`, og backend `34733200143` readback-verificerede de 13 migrationer.
 - Cache-only `34733358422` beviste H0-rettelsen og rekonstruerede alle 1.346 modes. Den eneste rest var profilens manglende anerkendelse af DEC-0113/0114's source-attesterede `genuine-cold-start` for alle 673 dele.
 - Den operationelle producent og den uafhængige audit kræver nu eksakt 673-dels cold-replay-cohort, lineage, measured-only kilde, 48-timersregnskab og target. Blandet, delvis eller manipuleret state afvises fortsat. Scoremodel, bundles, migration 13, cache og vejrdata ændres ikke.
+- PR #288's første head `debb745f` bestod releasegate, model-, runtime- og migrationskontrollerne i sourcegate `34736227522`, men stoppede senere på en usynkroniseret Supabase-kopi af den opdaterede webhåndbog. Den identiske installationspayload og to forældede aktive bindingstal i håndbogen er synkroniseret; 236-kapitlers håndbogstesten er grøn.
 
 ## Binding og drift
 

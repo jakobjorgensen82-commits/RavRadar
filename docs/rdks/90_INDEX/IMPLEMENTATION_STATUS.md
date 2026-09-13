@@ -16,6 +16,7 @@
 - [x] Kør cache-only `34733358422` og bevis alle 1.346 mode-rekonstruktioner uden de tidligere H0-/last-mile-koder.
 - [x] Afgræns `PUBLIC_PROFILE_NOT_READY` til resolverens nationalt ensartede `genuine-cold-start`, som profilen ikke regnede som gyldig initialisering.
 - [x] Kræv eksakt 673-dels cold-replay-cohort, lineage, measured-only kilde, 48-timersregnskab og target i både producent og uafhængig audit; afvis blanding/tamper.
+- [x] Afgræns PR #288/sourcegate `34736227522`: release-, model-, runtime- og migrationsled bestod; kun en manglende identisk Supabase-håndbogskopi stoppede. Synkronisér kopien og opdatér aktive bindingstal; protected merge og 236 kapitler består lokalt.
 - [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
 - [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Gennemfør cutover ved grøn preflight og verificér den integrerede model offentligt på 210/673.

@@ -8,6 +8,7 @@
 - **Uændret:** Scorematematik, modelbundle, rollbackbundle, continuationbundle, databasebinding/migration 13, cache og vejrhentning ændres ikke. Bundlehashes er fortsat `79d5118a…` / `84311c92…` / `9d396013…`.
 - **Næste rækkefølge:** Fokuserede tests og RDKS-validering → commit/push/PR → én exact-head sourcegate → byteidentisk merge → backend-readback → ny hurtig cache-only-kontrol → cutover/deploy → offentlig helhedskontrol → genaktivér almindelig vejrhentning og bevis cachevedligeholdelse/rotation med normale kørsler → revurder post-cutover-roadmap mod live evidens.
 - **Model/indsats:** GPT-5.6 Sol, Ekstra høj. Ingen ny oneoff, ingen dobbelt kildegate og ingen gentagelse af allerede beståede lange kontroller uden konkret fejlevidens.
+- **PR #288 første head:** `debb745f`/sourcegate `34736227522` bestod release-, model-, runtime- og migrationsled, men stoppede senere på manglende identisk Supabase-installationskopi af webhåndbogen. Kopien og aktive bindingstal er synkroniseret; protected merge og hele 236-kapitlers håndbogstest er grønne. Ny head/exact-head-gate kræves.
 
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.351 public-runtime-orakel
 

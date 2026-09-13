@@ -10,6 +10,7 @@
 - [x] Bestå PR #287/sourcegate `34732348167`, merge byteidentisk som main `a6e118d2` og readback-verificér exact main i backend `34733200143`.
 - [x] Kør cache-only `34733358422`: bevis at de to H0-/last-mile-fejl er væk og alle 1.346 modes rekonstrueres; isolér alene den nationalt ensartede `genuine-cold-start`-readiness.
 - [x] Ret operationel state-readiness uden model-/cacheændring: kræv præcis 673 cold-replay-states, eksakt lineage/kilde/48-timersregnskab/target og afvis blanding eller tamper.
+- [x] Brug PR #288's første sourcegate `34736227522` som negativt bevis: selve release-/modelkæden bestod, men den beskyttede håndbogsinstallationskopi var ikke synkroniseret. Synkronisér payload og aktive bindingstal, og bestå begge håndbogstests lokalt.
 - [ ] Kør én exact-head GitHub-sourcegate for denne sidste driftsrettelse og merge kun den eksakte grønne kode.
 - [ ] Readback-verificér exact main i backend og kør samme cache-only preflight uden providerhentning.
 - [ ] Ved grøn preflight: gennemfør den rigtige cutover og verificér offentligt 210 zoner/673 kystdele. Ved fejl: brug den samlede rapport til én rettelsesrunde uden ny oneoff.
