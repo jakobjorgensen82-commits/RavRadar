@@ -29,7 +29,8 @@ const haversineKm=()=>0;
 const result=applyWaterSourceRouting({features:[feature],output,forecastStore,sources:aware,index,routing,haversineKm,generatedAt});
 assert.equal(result.audit.applied,1);
 assert.equal(output.zones.Z.waterLevel.interpolation.mode,'admin-override');
-assert.deepEqual(output.zones.Z.forecast.hourly.slice(0,8).map(x=>x.waterLevelCm),[12,12,13,13,13,14,14,14],'En reel prognose skal bevare variation og må ikke blive en kunstig nulserie.');
+assert.deepEqual(output.zones.Z.forecast.hourly.slice(0,8).map(x=>x.waterLevelCm),[12,13,14,15,16,17,18,19],'En reel prognose uden verificeret interpolationsproveniens skal bevare de native værdier og må ikke blive en kunstig nulserie.');
+assert.deepEqual(output.zones.Z.forecast.hourly.slice(0,3).map(x=>x.time),times.slice(0,3),'En fixture uden verificeret interpolationsproveniens må ikke opfinde mellemliggende timer.');
 
 const admin=await fs.readFile('js/ui/admin-dashboard.js','utf8');
 assert.match(admin,/state\.waterRouting\.zones\?\?=\{\};const route=state\.waterRouting\.zones\[zoneId\]\?\?=/,'En ny zones administratorvalg skal oprettes direkte i det persistente routingdokument.');

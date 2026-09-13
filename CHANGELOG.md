@@ -1,3 +1,11 @@
+## 4.0.359 – kontrolorakler rettet efter komplet cutoverrapport (2026-09-14, lokal kandidat)
+
+- Main 4.0.358/`2a1c73d2`, sourcegate `34777480545` og cache-handoff `34781396538` er grønne; handoffet brugte ingen provider/oneoff og havde 79.414/79.414 currentpar, missing 0.
+- Cutover `34781869394` gennemførte 272/272 underkontroller og alle fem hovedkontroller. Fire hovedkontroller var grønne; fuld validering samlede seks test-/kontekstfejl og stoppede samlet før deploy.
+- DMI-rotationstests følger nu 6/3-kontrakten, availability-fixturen følger schema 2, collectoren bruger frisk DMI-candidate-cache, no-provenance forventer kun native tretimersdata, og kaldetællingen inkluderer Feggesund-readiness.
+- PR #296/run `34786784374` fandt én manglende synkronisering af den ændrede webhåndbog til Supabase-installationskopien efter grøn releasegate og 30 sourceled. Kopien og direkte test er rettet; alle 90 efterfølgende sourcekommandoer er gennemført uden kodefejl ved korrekt Python-runtime.
+- Alle seks fejl er rettet, ikke ignoreret. Ukendte eller materielle fejl forbliver blokerende. Score, vejr, modelstate, geometri, migrationer og privacy er uændrede. Ingen oneoff. Se `CHANGELOG-4.0.359.md` og DEC-0141.
+
 ## 4.0.358 – samlet cutoverrettelse og komplet underfejlrapport (2026-09-13, lokal kandidat)
 
 - Alle 272 deklarerede selvstændige fuld-valideringskommandoer forsøges, og en SHA-planbundet payloadfri rapport opdateres løbende. Fem hovedkontroller forbliver bindende og samles før eksterne writes.

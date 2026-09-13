@@ -1,3 +1,21 @@
+# NYESTE ROADMAP – 2026-09-14 – 4.0.359 fra komplet fejlliste til model-online
+
+- [x] Bevar main 4.0.358/`2a1c73d2`, sourcegate `34777480545` og cache-handoff `34781396538` som eksisterende bevis.
+- [x] Gennemfør cutover `34781869394` helt til slut gennem 272/272 underkontroller; bevar det negative resultat uden deploy.
+- [x] Ret de seks samlede kontrolfejl i én release og bevar ukendte/materiale fejl som blokerende.
+- [x] Brug PR #296/run `34786784374` som samlet negativ evidens: kun den statiske håndbogskopi manglede efter grøn releasegate og 30 sourceled; ret kopien.
+- [x] Kør alene de 90 ikke-nåede sourceled samlet lokalt og bevis alle grønne efter korrekt Python-runtime, før næste exact-head-forsøg.
+- [x] Bestå kun de målrettede regressionskontroller, workflowkontrakten og releasegaten lokalt.
+- [ ] Kør én exact-head 4.0.359-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Genskab det commitbundne handoff fra de samme cacher uden provider, oneoff eller ny national audit.
+- [ ] Kør cutover. Ved grøn samlet blok fortsætter installationen automatisk; ved fejl bruges hele rapporten til én samlet rettelsesrunde.
+- [ ] Verificér den integrerede model offentligt på 210 zoner/673 dele/begge modes/118 timer og gennemgå siden på desktop, mobil og DA/DE/EN.
+- [ ] Genaktivér almindelig weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- [ ] Afstem efter launch all-parts-zonereglen og den målte private conditions-størrelse; behold kun roadmap-punkter med aktuel evidens.
+- [ ] Slet `34613079069` og `34228112413`, så snart GitHub tillader sletning; de er jobløse og kan ikke startes.
+
+DEC-0141 er aktiv. Ingen ny oneoff.
+
 # NYESTE ROADMAP – 2026-09-13 – 4.0.358 samlet til model-online
 
 - [x] Bevar PR #294/sourcegate `34767862281`, main `2c243d9e` og grønt cache-handoff `34768997271` som eksisterende bevis.

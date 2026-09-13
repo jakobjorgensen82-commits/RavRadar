@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 efter komplet cutoverrapport
+
+- **ISSUE-CUTOVER-34781869394-CONTROL-ORACLES – LOKALT LUKKET / CI ÅBEN:** Alle seks fejl fra 272/272-planen er rettet ved gældende testkontekst eller forventning; ingen generel fritagelse er indført.
+- **ISSUE-COLLECTOR-DMI-CACHE-CONTEXT – LOKALT LUKKET / CI ÅBEN:** Collectorjobbet peger nu den rumlige audit på frisk `.cache/dmi-candidate-progress.json` i stedet for den med vilje bevarede legacyfallback.
+- **ISSUE-ROTATION-ORACLE-6/3 – LOKALT LUKKET / CI ÅBEN:** To gamle tests følger first-cutover 6 collections og normaldrift 3; de kræver ikke længere historisk 2.
+- **ISSUE-AVAILABILITY-FIXTURE-V2 – LOKALT LUKKET / CI ÅBEN:** Fixturen har schema 2, `evaluatedAt` og én deterministisk eksisterende del uden currentdata.
+- **ISSUE-NO-PROVENANCE-NATIVE-CADENCE – LOKALT LUKKET / CI ÅBEN:** Manglende provenance giver kun native tretimersværdier; testen kræver ikke syntetiske mellemtimer.
+- **ISSUE-LOCAL-PART-CALL-COUNT – LOKALT LUKKET / CI ÅBEN:** Den statiske oracle accepterer de tre legitime kaldesteder, inklusive Feggesund-readiness; 673/673 semantisk isolation består.
+- **ISSUE-HANDBOOK-INSTALL-COPY-4.0.359 – LOKALT LUKKET / CI ÅBEN:** PR #296/run `34786784374` fandt, at sidste webhåndbogsændring ikke var ført til Supabase-installationskopien. Eksisterende synkroniseringsværktøj har rettet kopien; direkte test og alle efterfølgende 90 sourceled er grønne ved korrekt runtime.
+- **ISSUE-4.0.359-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, cachebaseret nyt SHA-handoff, cutover og offentlig/siteverifikation mangler. Ingen provider-oneoff.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Almindelige kørsler skal bevise cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- **ISSUE-GHOST-RUN-CLEANUP – TIDSBUNDET:** `34613079069` og `34228112413` har `jobs:[]` og kan ikke starte. GitHub afviser endnu cancel/force-cancel/delete; sletning gentages, når aldersreglen tillader det.
+- **ISSUE-ZONE-LOCAL-UNAVAILABLE-AGGREGATION – AFKLARING EFTER LAUNCH:** Eksisterende all-parts-regel revurderes mod live evidens efter modellen er online.
+- **ISSUE-PREFLIGHT-CONDITIONS-READ-BOUND – MÅLES VED NATURLIG KØRSEL:** Ingen grænse hæves uden konkret størrelsesbevis.
+
+DEC-0141 er aktiv. Ingen score-, vejr-, migrations- eller geometriændring.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet implementeret, livebevis åbent
 
 - **ISSUE-LEGACY-VALIDATION-FIXTURES – LOKALT LUKKET / CI ÅBEN:** Strømtesten bruger fuld native DMI-identitet og public-runtime-testen kontrollerer de materialiserede integrerede scorefelter i stedet for den historiske scoremotor.

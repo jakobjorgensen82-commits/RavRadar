@@ -1543,6 +1543,7 @@ const runtimeAuditSection=buildWorkflow.slice(workflowPositions.runtimeAudit,wor
 for(const marker of [
   'id: ravscore-integrated-runtime-audit',
   "if: steps.preflight.outputs.should_run == 'true'",
+  'DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json',
   'audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
   'if test "${{ steps.operational-action.outputs.action }}" = "integrated-cutover"; then',
   'run_validation runtime_audit_outcome "Integrated public runtime audit"',

@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.359 retter komplet kontrolrapport
+
+4.0.358-head `47c75b09` bestod exact-head-sourcegate `34777480545` og blev merged gennem PR #295 som main `2a1c73d2`. Cachefortsættelse `34781396538` hentede intet providervejr og forseglede 79.414/79.414 currentpar, missing 0.
+
+Cutover `34781869394` gennemførte alle 272 deklarerede bladkommandoer og alle fem hovedkontroller. Fire hovedkontroller var grønne. Fuld validering samlede seks røde resultater og stoppede samlet før database-/runtime-/Pages-writes. Det beviser, at 4.0.358's komplette fejlopsamling virker.
+
+Alle seks fund er afgrænset og rettet samlet i lokal 4.0.359: to tests krævede den gamle DMI-værdi 2 frem for 6/3, availability-fixturen brugte gammel schema/partforventning, collectorjobbet manglede DMI-candidate-cachepath, en no-provenance-fixture krævede interpolerede mellemtimer, og én statisk test talte to kald efter tilføjelsen af et legitimt tredje Feggesund-kald. De målrettede kontroller samt workflow- og releasegatekontrakten er grønne.
+
+PR #296's første head `b0f43474` kørte i `34786784374`. Releasegaten og de første 30 unikke sourcekontroller var grønne; den næste test fandt kun, at sidste webhåndbogsændring ikke var synkroniseret til Supabase-installationskopien. Projektets eksisterende syncværktøj rettede kopien, og den direkte test bestod. En samlet lokal fortsættelse kørte alle 90 resterende sourcekommandoer: Node-leddene var grønne, og de 26 udfald som skyldtes manglende Windows-Python-alias blev 26/26 grønne med den bundne Python-runtime. Ingen anden kodefejl blev fundet.
+
+Ingen af de seks viste en fejl i scoreberegning, vejrdækning eller modeldata. De ignoreres ikke: deres orakler/kontekst er rettet. DEC-0140's blanket-forbud består, og fremtidige ukendte eller materielle fejl blokerer stadig. Ingen score-, vejr-, model-, geometri-, migration- eller privacyændring; ingen oneoff. Se DEC-0141 og `CHANGELOG-4.0.359.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-13 – lokal 4.0.358 samler alle underfejl
 
 Main 4.0.357/`2c243d9e`, sourcegate `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` stoppede før deploy i en forældet forecasttest. Fire øvrige hovedkontroller var grønne, men `npm run validate` havde skjult senere leaf-kontroller efter den første fejl.

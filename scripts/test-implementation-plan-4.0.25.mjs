@@ -6,7 +6,11 @@ const buildWorkflow=await readProductionWorkflowSource('build');
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 const audit=fs.readFileSync('scripts/audit-implementation-plan-4.0.25.mjs','utf8');
 for(const token of ['oceanDiagnostics','cacheAudit','implementationAudit','freshMarine','preservedMarine','missingReasons','hourlyProviderSwitches']) assert.match(admin,new RegExp(token));
-assert.match(buildWorkflow,/DMI_BULK_COLLECTIONS_PER_RUN:\s*2/);
+assert.match(
+  buildWorkflow,
+  /DMI_BULK_COLLECTIONS_PER_RUN:\s*\$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
+  'Implementeringsplanen skal følge den gældende seks/tre-collection-rotation.'
+);
 assert.match(buildWorkflow,/audit:implementation-plan/);
 for(const token of ['GRID_CANDIDATE_TARGET','MARINE_MODEL_PENALTY_KM','VALID_POINT_TOO_FAR']) assert.match(bulk,new RegExp(token));
 for(const token of ['schemaVersion:4','ALS_ODDE_PLACEMENT_REGRESSION','FORECAST_HORIZON_BELOW_ACCEPTED_MINIMUM','providerSwitchDetails','componentIntervalCoverage','COMPONENT_INTERVAL_INCOMPLETE','DMI_HOURLY_PROVENANCE_INCOMPLETE','waterTemperature','leadTimeHours','forecastAgeHours','temporalResolution','nativeValidTimes','RAVRADAR_AUDIT_STRICT']) assert.match(audit,new RegExp(token));

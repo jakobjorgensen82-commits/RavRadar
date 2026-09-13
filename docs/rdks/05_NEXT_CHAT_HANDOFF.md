@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 efter komplet 272-kontrol
+
+- **Base:** Main `2a1c73d2`/4.0.358 efter PR #295 og exact-head-sourcegate `34777480545`; lokal branch `codex/4.0.359-cutover-control-oracles`.
+- **Cache:** `34781396538` hentede intet providervejr og forseglede current 79.414/79.414, missing 0, fra fire eksisterende cacher.
+- **Cutover:** `34781869394` kørte 272/272 underkontroller og alle fem hovedkontroller. Runtime/model, referencezoner, releasegate og data var grønne; full validate samlede seks kontrolfejl. Ingen deploy.
+- **Lokal rettelse:** DMI-orakler 6/3, availability v2-fixture, collectorens candidate-cachepath, native no-provenance-kadence og tre legitime local-part-kald er rettet samlet.
+- **Sikkerhed:** De seks rettes, ikke ignoreres. DEC-0140's fem bindende gates og komplet fejlliste består; ukendt eller reel produktfejl stopper før writes.
+- **PR #296 første head:** `b0f43474`/run `34786784374` bestod releasegaten og 30 sourceled, men manglede sidste håndbogsændring i Supabase-installationskopien. Kopien og direkte test er rettet.
+- **Restplan:** De 90 ikke-nåede sourcekommandoer blev kørt samlet. Alle Node-led var grønne; 26 Python/Node→Python-led blev genkørt 26/26 grønne med den bundne runtime. Ingen yderligere kodefejl.
+- **Uændret:** Score, modelstate, vejr, sourceorder, geometri, punkter, migrationer, database og privacy. Ingen oneoff.
+- **Næste:** målrettet slutkontrol → exact-head-sourcegate → merge → kort cachebaseret nyt SHA-handoff → cutover → offentlig/sitekontrol → almindelig weather/rotation.
+- **Gamle poster:** `34613079069` og `34228112413` er jobløse/inaktive; GitHub afviser endnu sletning. Gentag sletning, når alder tillader det.
+- **Model/indsats:** GPT-5.6 Sol / Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 samlet cutoverrettelse
 
 - **Base:** Main `2c243d9e`/4.0.357 efter grøn PR #294/sourcegate `34767862281`; handoff `34768997271` grønt uden provider/oneoff. Arbejdsbranch `codex/4.0.358-cutover-error-collection` fra exact main.

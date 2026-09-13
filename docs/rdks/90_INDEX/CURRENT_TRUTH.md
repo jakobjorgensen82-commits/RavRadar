@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.359 efter komplet 272-kontrol
+
+Main er 4.0.358/`2a1c73d2` efter PR #295 og grøn exact-head-sourcegate `34777480545`. Cachefortsættelse `34781396538` hentede intet providervejr og forseglede et exact-main-handoff med 79.414/79.414 currentpar, missing 0.
+
+Cutover `34781869394` brugte dette handoff og gennemførte hele den deklarerede plan: 272/272 bladkommandoer og alle fem hovedkontroller. Fire hovedkontroller var grønne. Fuld validering samlede seks røde underkontroller, og ingen deploy blev udført. Hver af de seks er afgrænset til kontrolsystemet: gamle DMI-rotationsforventninger på 2 i stedet for den besluttede 6/3-kontrakt, gammel availability-schema/part-fixture, manglende candidate-cachepath i collectorjobbet, gammel interpolation uden provenance og skrøbelig tekstlig kaldetælling.
+
+Lokal 4.0.359 retter de seks i én arbejdsgang. Collectorjobbet bruger nu `.cache/dmi-candidate-progress.json`, og testoraklerne følger de gældende rotation-, availability-, provenance- og kaldesteds-kontrakter. Ingen fejl ignoreres, og blanket-advisory er fortsat forkastet. Fremtidige ukendte eller materielle fejl i score, data, deploy, hjemmeside, privacy eller sikkerhed stopper stadig cutoveren efter den samlede kontrolblok.
+
+PR #296's første exact-head-run `34786784374` bestod den fulde releasegate og de første 30 unikke sourcekontroller, men fandt derefter en usynkroniseret statisk Supabase-kopi af den netop ændrede webhåndbog. Kopien er synkroniseret med repositoryets eksisterende værktøj, og den direkte test er grøn. Alle 90 efterfølgende sourcekommandoer er kørt samlet; eneste lokale røde udfald var manglende Windows-Python-alias, og samtlige 26 berørte led er grønne med den bundne Python-runtime. Ingen anden kodefejl blev fundet.
+
+Scoreformel, modelstate, vejrdata, sourceorder, geometri, land-/vandpunkter, migrationer og privacy er uændrede. Exact-head-CI, merge, kort cachebaseret SHA-handoff, cutover og offentlig/siteverifikation er åbne. Ingen oneoff eller almindelig weather før modellen er online. Se DEC-0141.
+
 # NYESTE SANDHED – 2026-09-13 – lokal 4.0.358 samler hele cutoverens fejlforløb
 
 Main er 4.0.357/`2c243d9e`; sourceproof `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` deployede intet, fordi en forældet strømfixture stoppede den fulde validering. Lokal 4.0.358 retter både denne fixture og den øvrige konkrete reviewliste: public-runtime-testens gamle scoremotor, tre gyldige boolske `false`-udtræk samt Pages-verifikatorens falske krav om fuld modelhukommelse ved lokal `UNAVAILABLE`.
