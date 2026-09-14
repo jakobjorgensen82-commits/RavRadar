@@ -1960,7 +1960,7 @@ jobs:
         id: handoff-resolve
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           HANDOFF_RUN_ID: ${{ inputs.current_input_diagnostic_handoff_run_id }}
           DIAGNOSTIC_CONFIRMATION: ${{ inputs.current_input_diagnostic_confirmation }}
         run: |
