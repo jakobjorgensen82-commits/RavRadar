@@ -1,3 +1,11 @@
+## 4.0.361 – strøm-audit følger den integrerede produktionsruntime (2026-09-14, lokal kandidat)
+
+- 4.0.360 bestod sourcegate `34795741830`, blev merged som main `cbb56fcb`, og cache-handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider eller oneoff.
+- Cutover `34798027472` gennemførte alle fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne; kun den rumlige audit fejlede med 654/673 genkendte dele. Ingen writes eller deploy.
+- Produktbygningen selv havde 673/673 scoreklare dele og bestod den særskilte integrerede 210/673/1.346-kontrol. De 19 auditudfald var fem DMI-visninger beregnet fra rå værdier før produktionsafrunding og fjorten gyldige `NATIVE_CADENCE_HOLD`, som en gammel Candidate G-gren ikke kunne læse.
+- Auditten bruger nu de eksakte femdecimalers U/V-værdier fra produktionsprojektionen og læser den aktive holdtilstand under `ravScoreModel`; ukendte dele rapporteres enkeltvis.
+- Modelbundles/hashes, score, vejr, rotation, cache, geometri, migrationer og privacy er uændrede. Alle fem gates og 272 kontroller består. Ingen oneoff. Se `CHANGELOG-4.0.361.md` og DEC-0143.
+
 ## 4.0.360 – den rumlige DMI-kontrol bruger produktionsprojektionen (2026-09-14, lokal kandidat)
 
 - 4.0.359 blev merged som main `8ec6b8be` efter grøn exact-head-sourcegate `34788388836`. Cache-handoff `34789764309` genbrugte de eksisterende cacher uden provider/oneoff og forseglede 79.414/79.414 currentpar, missing 0.

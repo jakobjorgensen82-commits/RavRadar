@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 integreret strømaudit
+
+Main er 4.0.360/`cbb56fcb00b9ce654b51768b3df23d7add2e8904` efter PR #297/sourcegate `34795741830`. Cache-handoff `34797345624` er grønt uden provider/oneoff og har 79.414/79.414 currentpar over 118 timer. Candidate G er offentlig; normalworkflowet er deaktiveret.
+
+Cutover `34798027472` gennemførte alle fem topkontroller og 272/272 leaf-kontroller. Kun spatial current audit fejlede 654/673; ingen writes/deploy. Samme build havde 673/673 scoreklare dele og grøn integreret 210/673/1.346-runtime.
+
+Lokal branch `codex/4.0.361-current-audit-production-projection` retter auditlaget: brug produktionsprojektionens femdecimalers U/V for fem DMI-grænsetilfælde; læs fjorten gyldige integrerede holds fra `ravScoreModel`; bevar Candidate G rollback; rapportér individuel årsag. DMI- og hold-regressioner samt uændrede modelbundles/bindinger er grønne.
+
+Fortsæt: version/RDKS/håndbog og korte slutchecks → commit/push → én exact-head-sourcegate → merge → kort SHA-handoff fra cacher → fuld cutover → offentlig/sitekontrol → normal weather/cache-/rotationsbevis. Ingen oneoff eller almindelig weather før launch. Slet de to jobløse ghost-runs, når GitHub tillader det. Sol/Ekstra høj.
+
+Ældre checkpoints nedenfor er historiske.
+
 # NYESTE CHECKPOINT – 2026-09-13 – lokal 4.0.358 klar til samlet slutkontrol
 
 Main er 4.0.357/`2c243d9e`; PR #294/sourcegate `34767862281` og handoff `34768997271` er grønne. Cutover `34769550035` stoppede før deploy i en forældet strømtest. På `codex/4.0.358-cutover-error-collection` er den gamle strømfixture, den gamle public-runtime-scoretest, tre boolske `jq -e`-udtræk og Pages-kontrollens memory/UNAVAILABLE-sammenblanding rettet samlet.

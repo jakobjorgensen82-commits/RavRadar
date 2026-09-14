@@ -1,5 +1,17 @@
 # Aktive krav – samlet register
 
+# 4.0.361 – strømaudit følger produktionsvektor og integreret hold
+
+- **REQ-4.0.361-PROJECTED-VECTOR-001 – BINDENDE P0 / LOKALT TESTET:** DMI-visning reproduceres fra de eksakte femdecimalers U/V-værdier fra den allerede verificerede produktionsprojektion, ikke den tidligere rå højpræcision.
+- **REQ-4.0.361-INTEGRATED-HOLD-001 – BINDENDE P0 / LOKALT TESTET:** `NATIVE_CADENCE_HOLD` læses først fra aktiv `ravScoreModel` og kræver eksakt transition, current-reference, tilladt memory-status, 0–3 timers alder og verificeret closurehistorik.
+- **REQ-4.0.361-HISTORICAL-ROLLBACK-001 – BINDENDE:** Candidate G-felter accepteres kun for den bevarede historiske rollbackform; de må ikke være orakel for integreret produktion.
+- **REQ-4.0.361-PER-PART-REPORT-001 – BINDENDE:** Hver ikke-genkendt kystdel får en konkret årsag i rapporten; samlet antal må ikke skjule ukendte fejl.
+- **REQ-4.0.361-NO-PRODUCT-CHANGE-001 – BINDENDE:** Score, modelstate, modelbundles/hashes, vejrværdier, sourceorder, rotation, cache, geometri, migrationer, database og privacy ændres ikke.
+- **REQ-4.0.361-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-sourcegate, merge, cachebaseret SHA-handoff, cutover og offentlig/siteverifikation mangler. Ingen oneoff eller almindelig weather før modellen er online.
+- **REQ-4.0.361-POST-LAUNCH-001 – BINDENDE:** Efter offentlig verifikation genaktiveres normal weather kontrolleret og skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+
+DEC-0143 er bindende.
+
 # 4.0.360 – native DMI bevises og projekteres før runtime-sammenligning
 
 - **REQ-4.0.360-NATIVE-VERIFY-001 – BINDENDE P0 / LOKALT TESTET:** Kun en native bulkrække, som består eksisterende exact DMI-identitet, må projekteres til runtimeformen.

@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.360
+**Håndbogsversion:** 4.0.361
+
+## 88.65 Lokal 4.0.361 – Kontrollen skal læse præcis de strømdata, produktionen bruger
+
+4.0.360 kom gennem GitHubs kildekontrol og blev lagt på main. Det korte handoff genbrugte den komplette cache uden at hente vejr og havde alle 79.414 strømpar. Cutover `34798027472` gennemførte alle fem hovedkontroller og samtlige 272 underkontroller. Fire hovedkontroller var grønne. Kun én underkontrol i den fulde validering fejlede, og derfor blev hjemmesiden og databasen ikke ændret.
+
+Produktionsbygningen havde faktisk gyldigt strømgrundlag til alle 673 kystdele. 621 brugte DMI, 44 brugte Copernicus, og 8 fulgte den godkendte regionale DMI-vej. Den særskilte kontrol af den integrerede score bestod alle 210 zoner, alle 673 kystdele og begge søgemåder. Fejltallet 654/673 betød derfor ikke, at 19 dele manglede data.
+
+Fem DMI-dele lå på en meget lille afrundingsgrænse. Produktionen afrunder U og V til fem decimaler, før den beregner den viste hastighed og retning. Kontrollen brugte de rå tal fra før denne afrunding. Begge beregninger beskrev samme strøm, men de kunne lande på hver sin side af den sidste viste grad.
+
+De øvrige fjorten dele var midlertidigt mellem to målepunkter i den godkendte rotation. Her viser RavRadar med vilje ingen opdigtet strømpil, men modellen må holde den allerede verificerede tilstand i højst tre timer. Den integrerede model gemmer beviset under `ravScoreModel`. Kontrollen ledte stadig efter den gamle Candidate G-placering og overså derfor de gyldige tilstande.
+
+4.0.361 bruger nu de samme femdecimalers U/V-værdier som produktionen. Den læser desuden den aktive integrerede holdtilstand og kontrollerer fortsat eksakt kildetid, hukommelsesstatus, tretimersgrænse og den verificerede historikrække. Hvis en del stadig ikke kan forklares, skrives den konkrete grund for netop den del i rapporten.
+
+Selve scoremodellen ændres ikke. Dens modelhash, beregning, input, rotation, vejrdata, cache, geometri, database og privatlivsregler er uændrede. Alle fem hovedkontroller og alle 272 underkontroller er stadig bindende. Der køres ingen oneoff eller almindelig vejrdrift, før modellen er online og kontrolleret offentligt.
+
+Næste trin er én kildekontrol på den eksakte rettelse, et kort cachebaseret handoff og cutover. Hvis hele blokken er grøn, fortsætter installationen automatisk til offentlig kontrol.
 
 ## 88.64 Lokal 4.0.360 – DMI-kontrollen skal sammenligne samme form som hjemmesiden bruger
 
@@ -517,11 +533,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.360 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.361 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.360, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.361, exact-head og cutover afventer
 
-4.0.360 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
+4.0.361 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

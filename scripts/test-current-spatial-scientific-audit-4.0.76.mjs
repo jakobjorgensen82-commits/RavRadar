@@ -3,17 +3,17 @@ import crypto from 'node:crypto';
 import {directionFromComponents,arrowDirection} from '../js/core/current-direction-audit.js';
 import {
   flattenCoastalPartsWithParentZoneId,
-  verifiedNativeCadenceReferenceForPart,
 } from './lib/live-current-pilot.mjs';
 import {
   buildOperationalCurrentEntryIndex,
   verifyCoastalPartCurrentProjection,
+  verifyCoastalPartNativeCadenceHold,
 } from './lib/current-spatial-runtime-proof.mjs';
 import {
   dmiExpectedIdentityForPart,
   verifiedBulkCurrent,
 } from './lib/ravscore-production-adapters.mjs';
-import { projectExactDmiNativeCurrentSourceToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
+import { projectExactDmiNativeCurrentToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 
 const bulkPath=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
@@ -120,25 +120,13 @@ for(const part of expectedParts){
   const publicPart=publicDetails.coastalParts?.parts?.[part.partId];
   const currentWeather=runtimePart?.current?.weather;
   if(!finite(currentWeather?.currentSpeedMps)||!finite(currentWeather?.currentDirectionDeg)){
-    const candidate=runtimePart?.candidateG;
-    const currentAt=Date.parse(runtimePart?.current?.time);
-    const transportAt=Date.parse(candidate?.transportReferenceAt);
-    const ageHours=(currentAt-transportAt)/3_600_000;
-    const safeHeldState=controlledLive
-      && candidate?.currentTransition==='NATIVE_CADENCE_HOLD'
-      && ((candidate?.transportMemoryReady===true&&candidate?.transportMemoryStatus==='READY')
-        || (candidate?.transportMemoryReady===false&&candidate?.transportMemoryStatus==='WINDOW_INCOMPLETE'))
-      && Number.isFinite(currentAt)
-      && Number.isFinite(transportAt)
-      && ageHours>0&&ageHours<=3
-      && verifiedNativeCadenceReferenceForPart(part,pilotHistory,candidate.transportReferenceAt)
-      && !finite(currentWeather?.currentSpeedMps)
-      && !finite(currentWeather?.currentDirectionDeg);
-    if(safeHeldState){
+    const holdProof=controlledLive?verifyCoastalPartNativeCadenceHold({part,runtimePart,pilotHistory}):null;
+    if(holdProof?.ok){
       verifiedNativeCadenceHeldParts++;
       verifiedPartsBySource['dmi-regional-proxy']++;
       continue;
     }
+    failures.push(`${bulkId}: ${holdProof?.reason??'den viste lokale strøm mangler afledt hastighed eller retning'}`);
     continue;
   }
   const expectedDmiIdentity=dmiExpectedIdentityForPart(part,bulkId);
@@ -148,9 +136,7 @@ for(const part of expectedParts){
       const nativeSource=row?.sources?.current;
       return verifiedBulkCurrent(
         bulk,bulkZone,samplingPoint,nativeSource,row?.time,expectedDmiIdentity,
-      )?projectExactDmiNativeCurrentSourceToForecast(
-        nativeSource,row.time,conditions.productionReferenceAt,
-      ):null;
+      )?projectExactDmiNativeCurrentToForecast(row,conditions.productionReferenceAt):null;
     },
   });
   if(!projectionProof.ok){failures.push(`${bulkId}: ${projectionProof.reason}`);continue;}

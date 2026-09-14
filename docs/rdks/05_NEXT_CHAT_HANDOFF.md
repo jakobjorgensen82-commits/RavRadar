@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret strømauditmismatch
+
+- **Base:** Main `cbb56fcb`/4.0.360 efter PR #297 og exact-head-sourcegate `34795741830`; lokal branch `codex/4.0.361-current-audit-production-projection`.
+- **Cache:** Handoff `34797345624` brugte ingen provider/oneoff og forseglede 79.414/79.414 currentpar over 118 timer, missing 0.
+- **Cutover:** `34798027472` kørte alle fem hovedkontroller og 272/272 underkontroller. Kun spatial current audit fejlede 654/673; ingen writes/deploy.
+- **Positiv helhed:** Samme build dokumenterede 673/673 scoreklare dele; integreret public runtime bestod 210/673/1.346.
+- **Rodårsager:** Fem DMI-rækker brugte rå præcision før produktionsafrunding. Fjorten gyldige holds blev kun søgt under pensioneret `candidateG`, ikke aktiv `ravScoreModel`.
+- **Lokal rettelse:** Brug femdecimalers U/V fra produktionsprojektionen; verificér integreret transition/reference/memory/alder/closurehistorik; giv individuel fejlårsag.
+- **Lokalt bevis:** DMI-precision- og integreret hold-regressioner grønne; integrated/rollback bundles og otte bindinger byteuændrede.
+- **Uændret:** Score, modelstate, vejr, rotation, cache, geometri, migrationer, database og privacy. Ingen oneoff eller almindelig weather.
+- **Næste:** samlet version/docs-check → exact-head-sourcegate → merge → kort same-head-handoff → cutover → offentlig/sitekontrol → normal weather/rotation.
+- **Gamle poster:** `34613079069` og `34228112413` er jobløse/inaktive; slet når GitHub tillader det.
+- **Model/indsats:** GPT-5.6 Sol / Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.360 efter fuldt cutovergennemløb
 
 - **Base:** Main `8ec6b8be`/4.0.359 efter PR #296 og exact-head-sourcegate `34788388836`; lokal branch `codex/4.0.360-spatial-audit-runtime-proof`.

@@ -7,7 +7,7 @@ import {
 } from './lib/current-spatial-runtime-proof.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
-import { projectExactDmiNativeCurrentSourceToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
+import { projectExactDmiNativeCurrentToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
@@ -149,6 +149,8 @@ const waveSourceWithoutDirection = time => {
   };
 };
 const sourceTime = '2026-08-29T12:00:00.000Z';
+const rawCurrentU = -0.01;
+const rawCurrentV = -0.0091643;
 const fixtureSource = currentSourceFor(sourceTime);
 const {
   temporalResolution: _discardedTemporalResolution,
@@ -156,20 +158,24 @@ const {
   nativeSteps: _discardedNativeSteps,
   ...nativeSource
 } = fixtureSource;
-const source = projectExactDmiNativeCurrentSourceToForecast(
-  nativeSource,
-  sourceTime,
-  sourceTime,
-);
-assert.ok(source, 'a verified native DMI row must project through the production provenance adapter');
+const nativeRow = {
+  time: sourceTime,
+  'current-u': rawCurrentU,
+  'current-v': rawCurrentV,
+  sources: { current: nativeSource },
+};
+const nativeProjection = projectExactDmiNativeCurrentToForecast(nativeRow, sourceTime);
+assert.ok(nativeProjection, 'a verified native DMI row must project through the production adapter');
+const source = nativeProjection.source;
 assert.equal(Object.hasOwn(nativeSource, 'nativeValidTimes'), false,
   'the regression fixture must preserve the real native bulk-row shape');
-const laterBuildProjection = projectExactDmiNativeCurrentSourceToForecast(
-  nativeSource,
-  sourceTime,
+assert.deepEqual([nativeProjection.currentUMps, nativeProjection.currentVMps], [-0.01, -0.00916],
+  'the audit must retain the exact five-decimal U/V projection consumed by production');
+const laterBuildProjection = projectExactDmiNativeCurrentToForecast(
+  nativeRow,
   '2026-08-30T00:00:00.000Z',
 );
-assert.notEqual(laterBuildProjection.forecastAgeHours, source.forecastAgeHours,
+assert.notEqual(laterBuildProjection.source.forecastAgeHours, source.forecastAgeHours,
   'a later wall-clock build time must not be confused with the locked production reference');
 assert.equal(source.forecastAgeHours, 12,
   'the native forecast age must be bound to the production reference used by the runtime builder');
@@ -215,17 +221,17 @@ assert.equal(verifiedBulkCurrent(
 const verified = verifiedIntegratedPartHourly({
   hourly: [{
     time: '2026-08-29T12:00:00.000Z',
-    currentUMps: 0.08,
-    currentVMps: -0.02,
-    currentSpeedMps: 0.082,
-    currentDirectionDeg: 104,
+    currentUMps: nativeProjection.currentUMps,
+    currentVMps: nativeProjection.currentVMps,
+    currentSpeedMps: 0.02,
+    currentDirectionDeg: 227,
     sources: { current: source },
   }],
 }, bulkCache, bulkId, partContext);
 assert.equal(verified[0].currentProvenance.status, 'verified');
-assert.equal(verified[0].currentSpeedMps, 0.08);
-assert.equal(verified[0].currentDirectionDeg, 104);
-assert.ok(Math.abs(verified[0].currentCoastNormalSpeedMps - 0.08) < 1e-12,
+assert.equal(verified[0].currentSpeedMps, 0.01);
+assert.equal(verified[0].currentDirectionDeg, 228);
+assert.ok(Math.abs(verified[0].currentCoastNormalSpeedMps - rawCurrentU) < 1e-12,
   'state input must retain the exact verified coast-normal U/V projection');
 const dmiScore = buildIntegratedPartScoreSeries({
   part: partContext,
@@ -278,12 +284,7 @@ const dmiPublicPart = {
 const dmiAuditBulkZone = {
   ...bulkCache.zones[bulkId],
   hourly: {
-    [sourceTime]: {
-      time: sourceTime,
-      'current-u': 0.08,
-      'current-v': -0.02,
-      sources: { current: nativeSource },
-    },
+    [sourceTime]: nativeRow,
   },
 };
 const dmiSpatialProof = verifyCoastalPartCurrentProjection({
@@ -299,18 +300,14 @@ const dmiSpatialProof = verifyCoastalPartCurrentProjection({
     row.sources.current,
     row.time,
     expectedDmiIdentity,
-  ) ? projectExactDmiNativeCurrentSourceToForecast(
-      row.sources.current,
-      row.time,
-      sourceTime,
-    ) : null,
+  ) ? projectExactDmiNativeCurrentToForecast(row, sourceTime) : null,
 });
 assert.deepEqual(dmiSpatialProof, {
   ok: true,
   sourceClass: 'dmi-local',
   expectedArrowSource: 'dmi-marine-grid',
-  expectedSpeedMps: 0.08,
-  expectedDirectionDeg: 104,
+  expectedSpeedMps: 0.01,
+  expectedDirectionDeg: 228,
 });
 
 const justAboveDeadband = verifiedIntegratedPartHourly({

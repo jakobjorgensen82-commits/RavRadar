@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.361 efter integreret strømauditmismatch
+
+4.0.360 bestod exact-head-sourcegate `34795741830`, blev merged gennem PR #297 som main `cbb56fcb00b9ce654b51768b3df23d7add2e8904`, og handoff `34797345624` forseglede 79.414/79.414 currentpar over 118 timer uden provider eller oneoff.
+
+Cutover `34798027472` gennemførte alle fem hovedkontroller og 272/272 underkontroller. Runtime/model, referencezoner, releasegate og vejrdata var grønne. Kun underkontrol 221 i fuld validering fejlede med 654/673 genkendte kystdele. Ingen database-, checkpoint-, privat-runtime- eller Pages-write blev udført.
+
+Produktionsbygningen selv dokumenterede 673/673 scoreklare dele, og den særskilte integrerede public-runtime-audit bestod 210/210 zoner, 673/673 dele og 1.346 aktuelle modes. De 19 udfald var fem DMI-visninger, som auditten genberegnede fra rå U/V før produktionsafrunding, samt fjorten gyldige `NATIVE_CADENCE_HOLD`, som auditten kun ledte efter i den pensionerede Candidate G-form.
+
+Lokal 4.0.361 bruger de eksakte femdecimalers U/V fra produktionsprojektionen, læser aktiv holdtilstand fra `ravScoreModel`, bevarer Candidate G alene som rollbackform og rapporterer en konkret grund for hver ikke-genkendt del. De to direkte regressioner og modelbundle-/bindingskontrollerne er grønne.
+
+Integrated `79d5118a…` og rollback `84311c92…` er byteuændrede. Ingen score-, modelstate-, vejr-, rotations-, cache-, geometri-, migrations-, database- eller privacyændring. Exact-head-CI, merge, same-head-handoff, cutover og offentlig/siteverifikation er åbne. Ingen oneoff eller almindelig weather før modellen er online. Se DEC-0143.
+
+Ældre "nyeste sandhed"-afsnit nedenfor er historiske checkpoints.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.360 efter én samlet DMI-kontrolfejl
 
 4.0.359 bestod exact-head-sourcegate `34788388836` og blev merged gennem PR #296 som main `8ec6b8be`. Cache-handoff `34789764309` genbrugte de komplette cacher uden provider eller oneoff og forseglede 79.414/79.414 currentpar over 118 timer, missing 0.
