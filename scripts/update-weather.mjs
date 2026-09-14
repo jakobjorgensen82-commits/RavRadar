@@ -163,6 +163,14 @@ const RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED =
   process.env.RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED === 'true';
 const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =
   process.env.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true';
+const RAVSCORE_CURRENT_TRACE_PATH =
+  process.env.RAVSCORE_CURRENT_TRACE_PATH?.trim() || null;
+const RAVSCORE_CURRENT_TRACE_PART_IDS = new Set(
+  (process.env.RAVSCORE_CURRENT_TRACE_PART_IDS ?? '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean),
+);
 const RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE =
   RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
     ? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery
@@ -1986,6 +1994,7 @@ function scoreCoastalPartsRuntime(
   const expectedByZone = new Map();
   const partRows = [];
   const sourceAgeRows = [];
+  const currentInputTraceRows = [];
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
   const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
     parentForecastStore,
@@ -2114,6 +2123,31 @@ function scoreCoastalPartsRuntime(
       });
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
       const sourceAgeHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
+      const traced = RAVSCORE_CURRENT_TRACE_PART_IDS.has(part.partId);
+      const rawBulkRows = Array.isArray(bulkCache?.zones?.[bulkId]?.hourly)
+        ? bulkCache.zones[bulkId].hourly
+        : Object.values(bulkCache?.zones?.[bulkId]?.hourly ?? {});
+      const rawBulkHour = traced
+        ? rawBulkRows.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
+      const rawBulkCurrentSource = rawBulkHour?.sources?.current ?? null;
+      const rawBulkCurrentAccepted = traced && ravScoreNumber(rawBulkHour?.['current-u']) !== null
+        && ravScoreNumber(rawBulkHour?.['current-v']) !== null
+        && Boolean(verifiedBulkCurrent(
+          bulkCache,
+          bulkCache?.zones?.[bulkId],
+          part.waterPoint,
+          rawBulkCurrentSource,
+          partForecastStartAt,
+          partDmiIdentity,
+        ));
+      const declaredSupplementalEntry = traced
+        ? (liveCurrentPilot?.entries ?? []).find(entry =>
+          entry?.partId === part.partId && entry?.validTime === partForecastStartAt) ?? null
+        : null;
+      const recordTraceHour = traced
+        ? record?.hourly?.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
         feggesundWaveProofEntries.push(...feggesundWaveProofEntriesForPart(
           hourly,
@@ -2238,6 +2272,57 @@ function scoreCoastalPartsRuntime(
             { projection: 'candidate-g-legacy-quantized' },
           ),
       });
+      if (traced) {
+        const sanitizedTraceHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
+        const scoreTraceHour = scores.find(score => score?.time === partForecastStartAt) ?? null;
+        const recordCurrentSource = recordTraceHour?.currentProvenance
+          ?? recordTraceHour?.sources?.current
+          ?? null;
+        const sanitizedCurrentSource = sanitizedTraceHour?.currentProvenance ?? null;
+        const publicContext = scoreTraceHour?.ravScoreModel?.publicContext ?? null;
+        currentInputTraceRows.push({
+          partId: part.partId,
+          declaredSource: {
+            classification: declaredSupplementalEntry?.classification
+              ?? (rawBulkCurrentAccepted ? 'DMI_VERIFIED' : null),
+            provider: declaredSupplementalEntry?.provider
+              ?? (rawBulkCurrentAccepted ? 'dmi' : null),
+            interpolation: declaredSupplementalEntry?.interpolation
+              ?? (rawBulkCurrentAccepted ? false : null),
+            stateOnly: declaredSupplementalEntry?.stateOnly === true,
+          },
+          rawDmi: {
+            vectorTuplePresent: ravScoreNumber(rawBulkHour?.['current-u']) !== null
+              && ravScoreNumber(rawBulkHour?.['current-v']) !== null,
+            accepted: rawBulkCurrentAccepted,
+            temporalResolution: rawBulkCurrentSource?.temporalResolution ?? null,
+          },
+          mergedRecord: {
+            vectorTuplePresent: ravScoreNumber(recordTraceHour?.currentUMps) !== null
+              && ravScoreNumber(recordTraceHour?.currentVMps) !== null,
+            stateOnlyHoldPresent: recordTraceHour?.currentStateOnlyHold != null,
+            provenanceStatus: recordCurrentSource?.status ?? null,
+            classification: recordCurrentSource?.classification ?? null,
+            provider: recordCurrentSource?.provider ?? null,
+            temporalResolution: recordCurrentSource?.temporalResolution ?? null,
+          },
+          sanitized: {
+            vectorProjectionPresent: ravScoreNumber(sanitizedTraceHour?.currentSpeedMps) !== null
+              && ravScoreNumber(sanitizedTraceHour?.currentDirectionDeg) !== null,
+            stateOnlyHoldPresent: sanitizedTraceHour?.currentStateOnlyHold != null,
+            provenanceStatus: sanitizedCurrentSource?.status ?? null,
+            reason: sanitizedCurrentSource?.reason ?? null,
+          },
+          model: {
+            currentTransition: publicContext?.currentTransition ?? null,
+            currentVerified: publicContext?.currentVerified === true,
+            wadersAvailable: scoreTraceHour?.ravScoreModel?.modes?.waders?.available === true,
+            wadersReason: scoreTraceHour?.ravScoreModel?.modes?.waders?.reason ?? null,
+            beachAvailable: scoreTraceHour?.ravScoreModel?.modes?.beach?.available === true,
+            beachReason: scoreTraceHour?.ravScoreModel?.modes?.beach?.reason ?? null,
+          },
+        });
+      }
       if (scores.length) {
         if (!sourceAgeHour) {
           throw new Error('Integrated RavScore source-age proof lacks the exact selected H0 row');
@@ -2377,6 +2462,16 @@ function scoreCoastalPartsRuntime(
   return {
     integratedRuntime,
     weatherSourceAge,
+    currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
+      schemaVersion: 1,
+      kind: 'RAVSCORE_CURRENT_INPUT_STAGE_TRACE',
+      productionReferenceAt: partForecastStartAt,
+      requestedPartCount: RAVSCORE_CURRENT_TRACE_PART_IDS.size,
+      tracedPartCount: currentInputTraceRows.length,
+      rawVectorsIncluded: false,
+      coordinatesIncluded: false,
+      rows: currentInputTraceRows,
+    } : null,
     candidateGRollbackRuntime: rollbackReady ? candidateGRollbackRuntime : null,
     candidateGWarmupRuntime: rollbackReady
       ? null
@@ -3716,6 +3811,17 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     ravScoreCheckpoint.loaded ? ravScoreCheckpoint.candidateGRollbackStates : {},
   )
   : null;
+if (RAVSCORE_CURRENT_TRACE_PATH) {
+  if (!coastalPartScoreBuild?.currentInputTrace
+    || coastalPartScoreBuild.currentInputTrace.tracedPartCount
+      !== coastalPartScoreBuild.currentInputTrace.requestedPartCount) {
+    throw new Error('RavScore current input trace did not cover every requested part');
+  }
+  await fs.writeFile(
+    RAVSCORE_CURRENT_TRACE_PATH,
+    `${JSON.stringify(coastalPartScoreBuild.currentInputTrace, null, 2)}\n`,
+  );
+}
 output.coastalParts = coastalPartScoreBuild?.integratedRuntime
   ?? { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 if (!coastalPartScoreBuild?.weatherSourceAge) {

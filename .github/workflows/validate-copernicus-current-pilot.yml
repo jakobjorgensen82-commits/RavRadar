@@ -36,6 +36,16 @@ on:
           - "1"
           - "2"
           - "3"
+      current_input_diagnostic_handoff_run_id:
+        description: "Kort cache-only sporing af strømleddet; ingen provider, scorekontrol eller deploy"
+        required: false
+        default: ""
+        type: string
+      current_input_diagnostic_confirmation:
+        description: "Kun sporing: skriv DIAGNOSE-RAVSCORE-CURRENT-INPUT"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -49,7 +59,7 @@ concurrency:
 
 jobs:
   validate:
-    if: inputs.operational_118_preflight != true
+    if: inputs.operational_118_preflight != true && inputs.current_input_diagnostic_handoff_run_id == ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -531,7 +541,7 @@ jobs:
         run: echo "Optional Copernicus pilot skipped because no private DMI target cache was restored; production weather coverage is unchanged."
 
   operational-118-preflight:
-    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id != '34738698219'
+    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id != '34738698219' && inputs.current_input_diagnostic_handoff_run_id == ''
     runs-on: ubuntu-latest
     # Up to 160m DMI + 57m Copernicus + 17m runtime + at least 60m for
     # setup, cache restore/save and closure. Every DMI pass and the other
@@ -1660,7 +1670,7 @@ jobs:
     # 34738698219. This job cannot cut over, write protected runtime, build a
     # deployable artifact or deploy Pages. The separate cutover consumer still
     # requires its complete validation/release block before any mutation.
-    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id == '34738698219'
+    if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true && inputs.resume_private_capacity_from_run_id == '34738698219' && inputs.current_input_diagnostic_handoff_run_id == ''
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -1921,3 +1931,175 @@ jobs:
           retention-days: 7
           include-hidden-files: true
           path: .cache/verified-weather-source-handoff-cache/attestation.json
+
+
+  current-input-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.current_input_diagnostic_handoff_run_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read
+    env:
+      HANDOFF_ROOT: /tmp/ravradar-current-input-diagnostic-handoff
+      TRACE_PATH: data/diagnostics/ravscore-current-input-stage-trace.json
+      TRACE_PART_IDS: dk-b04-07-national-part-02,dk-b04-07-national-part-05,dk-b05-12-national-part-01,dk-b05-17-national-part-03,dk-b05-17-national-part-02,dk-b05-17-national-part-04,dk-b05-18-national-part-02,dk-b05-18-national-part-03,dk-b05-18-national-part-05,dk-b05-20-owner-approved-01,dk-b09-06-national-part-06,dk-b10-23-national-part-01,dk-b12-03-national-part-05,dk-b12-06-national-part-02
+    steps:
+      - name: Check out diagnostic branch
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Validate and resolve exact source handoff
+        id: handoff-resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HANDOFF_RUN_ID: ${{ inputs.current_input_diagnostic_handoff_run_id }}
+          DIAGNOSTIC_CONFIRMATION: ${{ inputs.current_input_diagnostic_confirmation }}
+        run: |
+          set -euo pipefail
+          [[ "$HANDOFF_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          test "$DIAGNOSTIC_CONFIRMATION" = "DIAGNOSE-RAVSCORE-CURRENT-INPUT"
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$HANDOFF_RUN_ID")"
+          expected_head="$(jq -er '.head_sha | select(type == "string" and test("^[0-9a-f]{40}$"))' <<< "$run_json")"
+          jq -e --arg repository "$GITHUB_REPOSITORY" --arg runId "$HANDOFF_RUN_ID" '
+            (.id | tostring) == $runId
+            and .repository.full_name == $repository
+            and .head_repository.full_name == $repository
+            and .event == "workflow_dispatch"
+            and .head_branch == "main"
+            and .status == "completed"
+            and .conclusion == "success"
+            and .path == ".github/workflows/validate-copernicus-current-pilot.yml"
+          ' <<< "$run_json" >/dev/null
+          node scripts/verified-weather-source-handoff.mjs resolve-run \
+            --repository "$GITHUB_REPOSITORY" \
+            --expected-head "$expected_head" \
+            --run-id "$HANDOFF_RUN_ID" \
+            --runner-os "$RUNNER_OS" \
+            --first-cutover true \
+            --confirmation EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE \
+            --output-dir "$HANDOFF_ROOT" \
+            --github-output "$GITHUB_OUTPUT"
+          echo "source_head=$expected_head" >> "$GITHUB_OUTPUT"
+
+      - name: Validate aggregate attestation artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -Z1 "$HANDOFF_ROOT/producer-artifact.zip" > "$HANDOFF_ROOT/artifact-inventory.txt"
+          node scripts/verified-weather-source-handoff.mjs validate-artifact-inventory \
+            --entries-file "$HANDOFF_ROOT/artifact-inventory.txt"
+          mkdir -p "$HANDOFF_ROOT/artifact"
+          unzip -qq "$HANDOFF_ROOT/producer-artifact.zip" -d "$HANDOFF_ROOT/artifact"
+          test -f "$HANDOFF_ROOT/artifact/attestation.json"
+
+      - name: Restore exact run-bound source cache
+        id: handoff-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/verified-weather-source-handoff-cache
+          key: ${{ steps.handoff-resolve.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Install exact handoff sources without provider acquisition
+        shell: bash
+        env:
+          HANDOFF_RUN_ID: ${{ inputs.current_input_diagnostic_handoff_run_id }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.handoff-cache.outputs.cache-matched-key }}" = "${{ steps.handoff-resolve.outputs.cache_key }}"
+          node scripts/verified-weather-source-handoff.mjs install \
+            --root "$GITHUB_WORKSPACE" \
+            --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache" \
+            --artifact-attestation "$HANDOFF_ROOT/artifact/attestation.json" \
+            --resolved "$HANDOFF_ROOT/resolved.json" \
+            --repository "$GITHUB_REPOSITORY" \
+            --expected-head "${{ steps.handoff-resolve.outputs.source_head }}" \
+            --run-id "$HANDOFF_RUN_ID" \
+            --runner-os "$RUNNER_OS" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Hydrate exact central geometry and current closure
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "requests>=2.32,<3" "shapely>=2.0,<3" "pyproj>=3.6,<4"
+          python scripts/refine-coastlines-constrained-4.0.48.py
+          python scripts/sync-admin-config.py
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+          python scripts/build-copernicus-target-registry.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json \
+            --output .cache/copernicus-current-targets.json
+          python scripts/build-current-operational-closure.py \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --dmi .cache/dmi-candidate-progress.json
+          node scripts/verified-weather-source-handoff.mjs verify-closure \
+            --attestation "$HANDOFF_ROOT/artifact/attestation.json" \
+            --closure data/diagnostics/current-operational-closure.json
+          python scripts/build-live-current-pilot.py \
+            --dmi .cache/dmi-candidate-progress.json
+
+      - name: Import and resolve the exact existing Candidate G bootstrap
+        id: bootstrap
+        env:
+          RAVRADAR_DEPLOYED_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
+          WEATHER_USER_AGENT: RavRadar-current-input-diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap
+          node scripts/resolve-candidate-g-wave-bootstrap-target.mjs \
+            --conditions data/live/conditions.json \
+            --source-registry .cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json \
+            --registry data/live/coastal-parts-v2.json \
+            --production-target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+
+      - name: Trace the fourteen current inputs through the actual score build
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
+          RAVRADAR_WEATHER_CACHE_ONLY: true
+          RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.bootstrap.outputs.mode }}
+          RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.bootstrap.outputs.source_validated }}
+          RAVSCORE_CURRENT_TRACE_PATH: ${{ env.TRACE_PATH }}
+          RAVSCORE_CURRENT_TRACE_PART_IDS: ${{ env.TRACE_PART_IDS }}
+          DMI_MAX_RETRIES: 0
+          DMI_REQUEST_BUDGET: 1
+          DMI_LIVE_ZONE_BUDGET: 1
+          WEATHER_USER_AGENT: RavRadar-current-input-diagnostic
+        run: npm run update:weather
+
+      - name: Verify payload-free diagnostic result
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '
+            .kind == "RAVSCORE_CURRENT_INPUT_STAGE_TRACE"
+            and .requestedPartCount == 14
+            and .tracedPartCount == 14
+            and .rawVectorsIncluded == false
+            and .coordinatesIncluded == false
+            and (.rows | length) == 14
+          ' "$TRACE_PATH" >/dev/null
+          jq '{productionReferenceAt, requestedPartCount, tracedPartCount, rows}' "$TRACE_PATH"
+
+      - name: Upload only the payload-free current input trace
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-current-input-stage-trace-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ env.TRACE_PATH }}
