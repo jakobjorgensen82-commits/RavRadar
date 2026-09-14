@@ -1840,6 +1840,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   return {
     schemaVersion: 1,
     status: result.errors.length ? 'failed' : 'passed',
+    datasetId: full.datasetId,
     productionReferenceAt: full.productionReferenceAt,
     model: {
       modelId: RAVSCORE_MODEL_ID,

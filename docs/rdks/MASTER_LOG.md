@@ -1,3 +1,9 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.365 checkpointbinding
+
+4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; forsøg 2 fortsatte og gav grøn runtimeaudit med 0 fejl. H0-rettelsen er bevist i produktionskæden.
+
+Installationen stoppede derefter, fordi checkpoint-leddet krævede auditrapportens `datasetId`, mens auditproducenten ikke returnerede feltet. 4.0.365 tilføjer alene det allerede validerede `full.datasetId`. Ingen model-, score-, vejr-, rotations-, cache-, migrations- eller privacyændring. Næste er én exact-head sourcegate, merge, kort providerfrit handoff, cutover og offentlig kontrol. Ingen oneoff/weather. Se DEC-0147 og `CHANGELOG-4.0.365.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.364 H0-auditrekonstruktion
 
 4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.

@@ -1,6 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.364
+**Håndbogsversion:** 4.0.365
+
+## 88.69 Lokal 4.0.365 – Installationen forventede et felt, den aldrig selv lavede
+
+4.0.364 kom gennem GitHubs ene kildekontrol, blev lagt på main og fik et kort handoff uden ny vejrhentning. Første cutoverforsøg ramte en midlertidig Supabase-fejl og blev blot prøvet igen. Andet forsøg byggede den integrerede runtime, og scorekontrollen bestod med nul fejl. Det beviser, at de tidligere H0-fejl er rettet.
+
+Installationen stoppede først bagefter. Checkpoint-leddet ville kontrollere, at auditrapport og manifest tilhørte samme datasæt. Det ledte derfor efter et `datasetId` i auditrapporten. Producenten havde allerede kontrolleret id'et i inputdataene, men glemte at skrive det i den færdige rapport. Kontrollen kunne derfor aldrig finde feltet.
+
+4.0.365 kopierer det allerede validerede dataset-id ind i rapporten. Der ændres ikke score, vejrdata, rotation, cache, modelbundle, migration eller databasekontrakt. De fire brede first-cutover-testpakker forbliver sprunget over. Efter én kildekontrol på den eksakte rettelse, merge og et kort cache-handoff fortsætter cutoveren uden oneoff eller almindelig weather før modellen er online.
 
 ## 88.68 Lokal 4.0.364 – Kontrollen skal bruge den samme kildetid som modellen
 
@@ -565,11 +573,11 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.364 first-cutover-kandidat
+### Aktuel status – RavScore 4.0.365 first-cutover-kandidat
 
-### Status for det aktuelle modelarbejde – lokal 4.0.364, exact-head og cutover afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.365, exact-head og cutover afventer
 
-4.0.364 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
+4.0.365 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollback er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c` over 57 transitive filer. Continuationbindingen er `9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6`. Append-only migration 13 `20260913010000_public_runtime_oracle_binding.sql` er installeret og readback-verificeret; tidligere migrationer er byteuændrede. Cache-only `34733358422` genskabte alle 1.346 aktuelle resultater og isolerede kun den manglende anerkendelse af den gyldige nationale cold start. Candidate G er stadig offentlig rent teknisk, mens den snævre driftsrettelse afventer exact-head, cutover og offentlig 210/673-kontrol.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

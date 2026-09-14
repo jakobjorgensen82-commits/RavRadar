@@ -1,3 +1,12 @@
+# 4.0.365 – auditens datasetbinding
+
+- **REQ-4.0.365-AUDIT-DATASET-001 – BINDENDE P0 / IMPLEMENTERET:** Den integrerede runtimeaudit skal returnere inputtets allerede validerede `datasetId` på topniveau.
+- **REQ-4.0.365-HANDOFF-BINDING-001 – BINDENDE P0:** Audit, manifest, checkpoint-disposition og deploy-handoff skal bindes til samme dataset-id uden alternativ fallback.
+- **REQ-4.0.365-NO-MODEL-CHANGE-001 – BINDENDE:** Modelbundles, migration 15, score, vejr, rotation og cache er uændrede.
+- **REQ-4.0.365-LAUNCH-001 – ÅBEN P0:** Én exact-head sourcegate, merge, providerfrit handoff, cutover og offentlig kontrol mangler. Ingen oneoff eller normal weather før launch.
+
+DEC-0147 supplerer DEC-0146 og DEC-0144.
+
 # 4.0.364 – H0-auditrekonstruktion
 
 - **REQ-4.0.364-NATIVE-REFERENCE-001 – BINDENDE P0 / TESTET:** Runtimeauditen skal ved verificeret `NATIVE_CADENCE_HOLD` bruge continuation states virkelige `currentReferenceAt` som `nativeHoldReferenceTime`.
