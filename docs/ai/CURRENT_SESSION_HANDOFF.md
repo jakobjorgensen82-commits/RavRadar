@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-14 – 4.0.363 H0-state snapshot
+
+- **Base:** Main `8f5d818f` efter PR #299. Branch `codex/4.0.363-cutover-nonblocking-audit`.
+- **Produktion:** Handoff `34830877368` grønt uden provider. Cutover `34832259268` byggede 210/673, men stoppede før writes/deploy på otte ensartede H0-states.
+- **Rodårsag:** En delt mutable `currentNativeHoldIntervalEnds` lod næste forecasttime ændre H0-state. Candidate G-auditen krævede fejlagtigt targetreference ved et gyldigt hold.
+- **Rettet:** Snapshotkopi pr. time; Candidate G-lag accepteres kun ved integreret `NATIVE_CADENCE_HOLD`, samme reference, eksakt regional auth og 0–3 timer.
+- **Bevis:** Replayregression, syntetisk 210/673-audit, bundle/binding, migration, install- og workflowkontrakt grønne. Integrated `327b989b…`; Candidate G `1ccbb10e…`; migration 15.
+- **Næste:** Exact-head sourcegate én gang, merge, kort same-head handoff, cutover, offentlig kontrol og derefter normal weather. Ingen oneoff.
+
+DEC-0145 og `CHANGELOG-4.0.363.md` er aktuelle. Ældre checkpoints nedenfor er historiske.
+
 # NYESTE CHECKPOINT – 2026-09-14 – 4.0.362 klar til GitHub
 
 - **Base:** Main `6337fa09` efter PR #298; arbejdsbranch `codex/4.0.362-cutover-validation-resume`.

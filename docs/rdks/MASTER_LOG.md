@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.363 H0-state snapshot
+
+4.0.362 blev merged via PR #299 og fik grønt providerfrit handoff `34830877368`. Cutover `34832259268` byggede 210/673, men stoppede før writes/deploy på otte ensartede H0-holds.
+
+4.0.363 retter en virkelig bagudmutation: næste forecasttime delte og ændrede H0's holdintervalliste. Hver row får nu et uforanderligt snapshot. Candidate G-auditen følger den virkelige ældre reference kun ved eksakt integreret hold, samme kilde, regional auth og højst tre timer. Runtimeauditen omgås ikke.
+
+Direkte replay, syntetisk 210/673-audit, migrationskæde, install/workflow og bundle/binding er grønne. Bundles `327b989b…`/`1ccbb10e…`; migration 15. Næste er exact-head, merge, kort handoff, cutover, live-sitekontrol og normal weather. Ingen oneoff. Se DEC-0145 og `CHANGELOG-4.0.363.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.362 online-først
 
 Ejeren kræver, at den integrerede model kommer online efter rettelse af de kendte H0-inputfejl, også hvis enkelte eller alle scorer først står ærligt utilgængelige. Videre fejlsøgning skal ske på det kørende offentlige system, ikke gennem endnu en bred testslynge.

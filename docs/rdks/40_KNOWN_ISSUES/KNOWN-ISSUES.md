@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.363 H0-state rettet
+
+- **ISSUE-4.0.362-H0-STATE – RETTET LOKALT:** Otte H0-states blev bagudmuteret af næste forecasttime gennem en delt intervalliste. Snapshotkopi og replayregression er grønne.
+- **ISSUE-4.0.362-CANDIDATE-AUDIT – RETTET LOKALT:** Candidate G's gyldige ældre holdreference blev fejlagtigt krævet lig target. Ny regel kræver integreret transition, samme reference, regional auth og højst tre timer.
+- **ISSUE-4.0.363-LAUNCH – ÅBEN P0:** Exact-head sourcegate, merge, kort same-head-handoff, cutover og offentlig kontrol mangler. Ingen provider, oneoff eller normal weather før modellen er online.
+- De seks tidligere kendte lokale H0-currentmangler kan stadig give ærlig lokal `UNAVAILABLE`; de må ikke fyldes med opdigtede tal. DEC-0145.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.362 online-først
 
 - **ISSUE-DKSS-H0-MODELRUN-SEAM – LOKALT LUKKET / LIVE ÅBEN:** Globalt vindbracket krydsede modelruns og blev korrekt afvist, selv om samme DKSS-run havde et sikkert lokalt bracket. Rettet kun for `windTail`.

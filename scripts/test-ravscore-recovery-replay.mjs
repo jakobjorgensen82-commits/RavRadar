@@ -5,6 +5,7 @@ import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import {
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+  buildIntegratedRavScoreStateSeries,
   reconstructCandidateGRollbackState,
 } from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -2042,6 +2043,28 @@ for (const nativePhase of [0, 1, 2]) {
       'NATIVE_CADENCE_HOLD');
     assert.equal(productionTargetBound.candidateGState.rows[48].currentTransition,
       'NATIVE_CADENCE_HOLD');
+    const integratedTargetState = productionTargetBound.scores[0]
+      .ravScoreModel.continuationState;
+    assert.deepEqual(integratedTargetState.currentNativeHoldIntervalEnds, [],
+      'a later forecast row must not mutate the earlier H0 continuation snapshot');
+    const integratedTargetReplay = buildIntegratedRavScoreStateSeries([], {
+      initialState: integratedTargetState,
+      samplingContextKey: ravScoreSamplingContextKey(part),
+    });
+    assert.equal(integratedTargetReplay.initialStateAccepted, true);
+    assert.equal(integratedTargetReplay.continuationState, integratedTargetState,
+      'the exact H0 hold continuation must remain replayable byte-for-byte');
+    const candidateTargetState = productionTargetBound.candidateGRollbackScores[0]
+      .candidateG.continuationState;
+    assert.equal(candidateTargetState.time, time(nativeTargetHour));
+    assert.equal(candidateTargetState.transportReferenceAt, time(nativeTargetHour - 2));
+    const candidateTargetReplay = buildCandidateGDerivedStateSeries([], {
+      stateKey: candidateGStateKey(part),
+      initialState: candidateTargetState,
+    });
+    assert.equal(candidateTargetReplay.initialStateAccepted, true);
+    assert.equal(candidateTargetReplay.continuationState, candidateTargetState,
+      'Candidate G must accept the exact bounded H0 hold without inventing a target vector');
   } else {
     assert.equal(phaseBuild.ravScoreState.rows[47].currentTransition, 'VERIFIED_REPLAY',
       'the direct native source immediately before target must remain verified');

@@ -1,3 +1,14 @@
+# 4.0.363 – H0-state snapshot og korrekt Candidate G-holdaudit
+
+- **REQ-4.0.363-SNAPSHOT-001 – BINDENDE P0 / TESTET:** Hver integreret scoretime ejer en uforanderlig kopi af holdintervaller; senere forecasttimer må ikke mutere tidligere continuation state.
+- **REQ-4.0.363-REPLAY-001 – BINDENDE P0 / TESTET:** En eksakt H0-state-only holdtilstand skal kunne genåbnes byte-for-byte uden nye samples.
+- **REQ-4.0.363-CANDIDATE-HOLD-001 – BINDENDE P0 / TESTET:** Candidate G's ældre reference accepteres kun ved aktiv integreret `NATIVE_CADENCE_HOLD`, identisk kildetid, kanonisk regional auth og alder 0–3 timer.
+- **REQ-4.0.363-NO-BYPASS-001 – BINDENDE:** Runtimeauditen forbliver launchgate. Den virkelige statefejl og stale auditkant rettes; ukendt, ubundet eller for gammel state forbliver rødt.
+- **REQ-4.0.363-BINDING-001 – BINDENDE:** Begge bundles og continuation-hash føres frem i append-only migration 15; migration 1–14 ændres og genkøres ikke.
+- **REQ-4.0.363-LAUNCH-001 – ÅBEN P0:** Exact-head, merge, same-head-handoff, cutover og offentlig kontrol mangler. Ingen oneoff eller normal weather før launch.
+
+DEC-0145 supplerer DEC-0144; online-først og ærligt `UNAVAILABLE` består.
+
 # 4.0.362 – H0-inputrettelse og online-først-cutover
 
 - **REQ-4.0.362-DKSS-SAME-RUN-001 – BINDENDE P0 / LOKALT TESTET:** Kun DKSS-`windTail` må vælge et sikkert bracket inden for samme native modelserie ved et globalt modelrunskifte. Primær HARMONIE-vind forbliver strict.

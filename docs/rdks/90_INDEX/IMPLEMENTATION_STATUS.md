@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.363 H0-state snapshot
+
+- [x] Bevar 4.0.362 exact-head, PR #299/main `8f5d818f` og providerfri handoff `34830877368` som historisk bevis.
+- [x] Klassificér cutover `34832259268`: 210/673 bygget, ingen writes/deploy, samme otte H0-holds bag 48 fejludslag.
+- [x] Ret fremtidig mutation af H0-state med egen intervalliste pr. scoretime og byteidentisk replay.
+- [x] Ret Candidate G-holdaudit med integreret transition/reference/auth og tre-timersgrænse; behold negative gates.
+- [x] Synkronisér bundles `327b989b…`/`1ccbb10e…`, continuation-hash og append-only migration 15.
+- [x] Bestå direkte replay, syntetisk 210/673-audit, migration, install-, workflow-, bundle- og bindingstests.
+- [ ] Kør én exact-head sourcegate, merge byteidentisk og genskab kun same-head-handoff.
+- [ ] Kør cutover til offentlig deploy og gennemgå live-siden; derefter normal weather/rotation. Ingen oneoff.
+
+DEC-0145 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.362 online-først
 
 - [x] Afgræns 79.414/79.414 som komplet udfaldsregnskab og dokumentér det faktiske H0-inputbillede fra diagnose `34820407527`.
