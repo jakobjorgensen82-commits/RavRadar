@@ -1842,7 +1842,7 @@ jobs:
   copernicus-post-build-refresh:
     name: Maintain private Copernicus cache after sealed weather build
     needs: build-and-prepare
-    if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.preflight_should_run == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.preflight_should_run == 'true' && github.ref == 'refs/heads/main' && !(inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
