@@ -1331,6 +1331,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     referenceTime: time,
     nativeHold,
     nativeHoldIntervalEnds: initialState.currentNativeHoldIntervalEnds,
+    nativeHoldReferenceTime: nativeHold ? currentReferenceAt : null,
   });
   const rebuiltPotentialMatches = rebuilt.supplyPotential === null
     ? initialState.supplyPotential === null
@@ -1353,6 +1354,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     referenceTime: time,
     nativeHold,
     nativeHoldIntervalEnds: rebuilt.nativeHoldIntervalEnds,
+    nativeHoldReferenceTime: nativeHold ? currentReferenceAt : null,
   });
   const expectedCurrentLower = currentScoreBounds.available
     ? currentScoreBounds.lowerPotential
@@ -1552,6 +1554,8 @@ export function buildIntegratedRavScoreStateSeries(
     candidateGWaveApproachBootstrap = null,
     nativeCadenceHoldHours = 0,
     nativeCadenceReferenceSample = null,
+    scoreTargetNativeCadenceReferenceSample = null,
+    scoreTargetNativeCadenceHoldAt = null,
     coldReplayBootstrap = null,
   } = {},
 ) {
@@ -1787,6 +1791,48 @@ export function buildIntegratedRavScoreStateSeries(
     throw new Error('Lagged Candidate G current migration requires exact regional boundary proof');
   }
 
+  const hasScoreTargetReference = scoreTargetNativeCadenceReferenceSample !== null
+    && scoreTargetNativeCadenceReferenceSample !== undefined;
+  const hasScoreTargetHoldAt = scoreTargetNativeCadenceHoldAt !== null
+    && scoreTargetNativeCadenceHoldAt !== undefined;
+  if (hasScoreTargetReference !== hasScoreTargetHoldAt) {
+    throw new Error('Integrated RavScore score-target cadence reference is incomplete');
+  }
+  let scoreTargetNativeCadenceReference = null;
+  if (hasScoreTargetReference) {
+    const holdAt = canonicalTime(scoreTargetNativeCadenceHoldAt);
+    const targetSample = holdAt
+      ? ordered.find(sample => sample.time === holdAt) ?? null
+      : null;
+    const marker = targetSample?.currentStateOnlyHold ?? null;
+    const referenceEvidence = deriveCurrentSupplyEvidence(
+      scoreTargetNativeCadenceReferenceSample,
+      {
+        getTime: value => value?.time,
+        getNormalSpeed: currentCoastNormalSpeed,
+        isVerified: value => value?.currentVerified === true,
+      },
+    );
+    const authorization = nativeHoldAuthorizationFromProvenance(
+      scoreTargetNativeCadenceReferenceSample?.currentProvenance,
+    );
+    if (!holdAt || !targetSample || marker === null
+      || !referenceEvidence || !finite(referenceEvidence.strength)
+      || authorization === null
+      || marker.sourceValidTime !== referenceEvidence.time
+      || marker.holdAgeHours > Number(nativeCadenceHoldHours)
+      || marker.sourceClass !== authorization.sourceClass
+      || marker.source !== authorization.source
+      || marker.collection !== authorization.collection) {
+      throw new Error('Integrated RavScore score-target cadence reference is invalid');
+    }
+    scoreTargetNativeCadenceReference = {
+      holdAt,
+      referenceEvidence,
+      authorization,
+    };
+  }
+
   const currentRows = ordered.map(sample => {
     const evidence = deriveCurrentSupplyEvidence(sample, {
       getTime: value => value.time,
@@ -1810,6 +1856,27 @@ export function buildIntegratedRavScoreStateSeries(
     const sampleNativeHoldAuthorization = verifiedEvidence
       ? nativeHoldAuthorizationFromProvenance(sample.currentProvenance)
       : null;
+    if (scoreTargetNativeCadenceReference?.holdAt === sample.time) {
+      const { referenceEvidence, authorization } = scoreTargetNativeCadenceReference;
+      const referenceIndex = currentEvidence.findIndex(item => item.time === referenceEvidence.time);
+      const persistedReference = referenceIndex >= 0 ? currentEvidence[referenceIndex] : null;
+      const laterVerifiedEvidence = referenceIndex >= 0
+        && currentEvidence.slice(referenceIndex + 1).some(item => finite(item?.strength));
+      if (!persistedReference || !finite(persistedReference.strength)
+        || !close(persistedReference.strength, referenceEvidence.strength)
+        || laterVerifiedEvidence) {
+        throw new Error('Integrated RavScore score-target cadence reference is not exact causal evidence');
+      }
+      if (currentNativeHoldAuthorization !== null
+        && !sameNativeHoldAuthorization(currentNativeHoldAuthorization, authorization)) {
+        throw new Error('Integrated RavScore score-target cadence reference conflicts with persisted proof');
+      }
+      // The exact H0 marker may restore only its own independently verified
+      // source authorization. Unknown intervening hours remain in the bounded
+      // evidence window; no vector is reconstructed and no evidence is added.
+      currentNativeHoldAuthorization = authorization;
+      currentNativeHoldCoveredThroughAt = referenceEvidence.time;
+    }
     const lastVerified = [...currentEvidence]
       .reverse()
       .find(item => finite(item?.strength)) ?? null;
@@ -1905,6 +1972,7 @@ export function buildIntegratedRavScoreStateSeries(
       referenceTime: sample.time,
       nativeHold,
       nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
+      nativeHoldReferenceTime: nativeHold ? explicitStateOnlyHold.sourceValidTime : null,
     });
     if (memory.evidence.length) currentEvidence = memory.evidence.map(item => ({ ...item }));
     currentNativeHoldIntervalEnds = [...memory.nativeHoldIntervalEnds];
@@ -1915,6 +1983,7 @@ export function buildIntegratedRavScoreStateSeries(
         referenceTime: sample.time,
         nativeHold,
         nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
+        nativeHoldReferenceTime: nativeHold ? explicitStateOnlyHold.sourceValidTime : null,
       })
       : {
         available: false,

@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.362 online først
+
+1. **P0:** Én exact-head sourcegate på den færdige 4.0.362-head og merge uden en ny bred lokal kontrolrunde.
+2. **P0:** Opret kun det nødvendige same-head cache-handoff fra de eksisterende cacher; ingen provider og ingen oneoff.
+3. **P0:** Kør første integrerede cutover gennem databasebinding, beskyttede writes, privacy, artifact og offentlig deployment. De fire brede kontrolsuiter gentages ikke.
+4. **P0 efter launch:** Kontroller den offentlige model, begge søgemåder og hele hjemmesidens felter og sammenhæng. Saml faktiske fejl fra live-systemet og ret dem samlet.
+5. **P0 efter launch:** Genaktivér almindelig weather og bevis cachevedligeholdelse, DMI-rotation, fallback og køretid uden oneoff.
+6. **P1:** Revurdér zoneaggregation ved lokale `UNAVAILABLE` og øvrige roadmap-punkter mod live-evidens; behold kun punkter, der stadig giver produktværdi.
+
+DEC-0144 erstatter tidligere launchplaner, som krævede den brede kontrolblok gentaget før deploy.
+
 # NYESTE ROADMAP – 2026-09-14 – 4.0.361 fra auditmismatch til model-online
 
 - [x] Bevar 4.0.360 sourcegate `34795741830`, main `cbb56fcb` og cache-handoff `34797345624` som eksisterende bevis.

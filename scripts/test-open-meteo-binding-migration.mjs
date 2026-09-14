@@ -18,6 +18,7 @@ const MEASURED_WARMUP_MIGRATION = '20260912122607_measured_rollback_warmup_bindi
 const STATE_ONLY_HOLD_V2_MIGRATION = '20260912141641_state_only_hold_closure_v2_binding';
 const LOCAL_UNAVAILABLE_CUTOVER_MIGRATION = '20260912194206_local_unavailable_cutover_binding';
 const PUBLIC_RUNTIME_ORACLE_MIGRATION = '20260913010000_public_runtime_oracle_binding';
+const H0_REFERENCE_RECOVERY_MIGRATION = '20260914010000_h0_reference_recovery_binding';
 const HORIZON_VALID_SHA256 = 'f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d';
 const HORIZON_INTEGRATED_SHA256 = '155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9';
 const HORIZON_ROLLBACK_SHA256 = '4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8';
@@ -38,6 +39,10 @@ const LOCAL_UNAVAILABLE_CUTOVER_MIGRATION_SHA256 = '24a7450ae913ceef37375e6df200
 const LOCAL_UNAVAILABLE_CUTOVER_INTEGRATED_SHA256 = 'a575f767abf127ec1677268b9f310f5c6f569ea6d822af5ab09e16c187389bd6';
 const LOCAL_UNAVAILABLE_CUTOVER_ROLLBACK_SHA256 = 'ca18452294f87451bda4e73c188e18990379f9328ca1107a571459f5ae1d9528';
 const LOCAL_UNAVAILABLE_CUTOVER_CONTINUATION_SHA256 = 'dce13d51ab2cdbf80effb17634c451f7318a88efee021d542f0e7656a689ea5f';
+const PUBLIC_RUNTIME_ORACLE_MIGRATION_SHA256 = '0e855c718611360ffaa633c6dd890632b791c82faed03bd4699c0a9f20a0ecd5';
+const PUBLIC_RUNTIME_ORACLE_INTEGRATED_SHA256 = '79d5118a1b37b542532721ebe1b943df00b646e1625b991d5a9ad597d36d0ae8';
+const PUBLIC_RUNTIME_ORACLE_ROLLBACK_SHA256 = '84311c920b3f2697f31fe32ebef4d7932f59f5fe784b2b7d1dbf679d9007a28c';
+const PUBLIC_RUNTIME_ORACLE_CONTINUATION_SHA256 = '9d3960137054a1ab40ec10e4514425c436f979fac18ce3f92137512e47b629e6';
 // 4.0.339 recovery: this migration was still pending after migration 4 rolled back.
 // Pin the corrected bytes AND prove below that only the two CASE parentheses changed.
 const PER_PAIR_MIGRATION_SHA256 = '8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2';
@@ -185,14 +190,32 @@ assert.equal(
 );
 let publicRuntimeOracleExpected = body(immutableLocalUnavailableCutover);
 for (const [before, after, count] of [
-  [LOCAL_UNAVAILABLE_CUTOVER_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
-  [LOCAL_UNAVAILABLE_CUTOVER_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
-  [LOCAL_UNAVAILABLE_CUTOVER_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  [LOCAL_UNAVAILABLE_CUTOVER_INTEGRATED_SHA256, PUBLIC_RUNTIME_ORACLE_INTEGRATED_SHA256, 3],
+  [LOCAL_UNAVAILABLE_CUTOVER_ROLLBACK_SHA256, PUBLIC_RUNTIME_ORACLE_ROLLBACK_SHA256, 2],
+  [LOCAL_UNAVAILABLE_CUTOVER_CONTINUATION_SHA256, PUBLIC_RUNTIME_ORACLE_CONTINUATION_SHA256, 1],
   ['20260912194206', '20260913010000', 2],
 ]) {
   assert.equal(publicRuntimeOracleExpected.split(before).length - 1, count);
   publicRuntimeOracleExpected = publicRuntimeOracleExpected.replaceAll(before, after);
 }
-assert.equal(body(await read(PUBLIC_RUNTIME_ORACLE_MIGRATION)), publicRuntimeOracleExpected,
+const immutablePublicRuntimeOracle = await read(PUBLIC_RUNTIME_ORACLE_MIGRATION);
+assert.equal(body(immutablePublicRuntimeOracle), publicRuntimeOracleExpected,
   'Public-runtime oracle migration must change only exact seals/readback version, never SQL behaviour or row data');
-console.log('Open-Meteo through public-runtime oracle append-only migrations: immutable history and exact binding-only forward copies verified.');
+assert.equal(
+  crypto.createHash('sha256').update(immutablePublicRuntimeOracle).digest('hex'),
+  PUBLIC_RUNTIME_ORACLE_MIGRATION_SHA256,
+  'Applied public-runtime oracle migration must remain byte-identical after LF normalization',
+);
+let h0ReferenceRecoveryExpected = body(immutablePublicRuntimeOracle);
+for (const [before, after, count] of [
+  [PUBLIC_RUNTIME_ORACLE_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
+  [PUBLIC_RUNTIME_ORACLE_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
+  [PUBLIC_RUNTIME_ORACLE_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  ['20260913010000', '20260914010000', 2],
+]) {
+  assert.equal(h0ReferenceRecoveryExpected.split(before).length - 1, count);
+  h0ReferenceRecoveryExpected = h0ReferenceRecoveryExpected.replaceAll(before, after);
+}
+assert.equal(body(await read(H0_REFERENCE_RECOVERY_MIGRATION)), h0ReferenceRecoveryExpected,
+  'H0 reference-recovery migration must change only exact seals/readback version, never SQL behaviour or row data');
+console.log('Open-Meteo through H0 reference-recovery append-only migrations: immutable history and exact binding-only forward copies verified.');

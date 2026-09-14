@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-14 – 4.0.362 online-først
+
+- Main/base: `6337fa09`/4.0.361 efter PR #298. Branch: `codex/4.0.362-cutover-validation-resume`.
+- Handoff `34804412079`: 79.414/79.414 klassificerede currentpar uden provider; ikke alle numeriske.
+- Cutover `34805083829`: 673 bygget, 272 kørt, 271 grønne, ingen writes.
+- Diagnose `34820407527`: H0 vind 669, bølge 673, direct current 659, holds 8, current missing 6, water level 669; score null pga vind-modelrunskant.
+- Rettet: DKSS same-run `windTail`; eksakt H0-currentreference for state-only-hold i integrated/rollback; append-only migration 14; bundles `b144ebcd…`/`b4b258f2…`.
+- Ejerordre: launch også ved ærligt `UNAVAILABLE`; fire brede cutoverkontroller gentages ikke. Ingen oneoff.
+- Næste: commit/push → én exact-head sourcegate → merge → kort cache-handoff → cutover/deploy → live-sitekontrol → normal weather/rotation.
+- Sol/Ekstra høj. Se DEC-0144.
+
+Ældre checkpoints nedenfor er historiske.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret strømauditmismatch
 
 - **Base:** Main `cbb56fcb`/4.0.360 efter PR #297 og exact-head-sourcegate `34795741830`; lokal branch `codex/4.0.361-current-audit-production-projection`.

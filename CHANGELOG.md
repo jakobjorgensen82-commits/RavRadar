@@ -1,3 +1,11 @@
+## 4.0.362 – rettet H0-input og online-først (2026-09-14, lokal kandidat)
+
+- Handoffets 79.414/79.414 er præciseret som komplet udfaldsregnskab, ikke komplet numerisk current.
+- DKSS-`windTail` vælger sikkert samme-run-bracket ved modelrunskifte; HARMONIE er fortsat strict.
+- Regional state-only-current bruger eksakt højst tre timer gammel H0-kildereference i både integrated og rollback uden opdigtet bevægelse.
+- Bundles `b144ebcd…`/`b4b258f2…` føres frem gennem append-only migration 14.
+- Første cutover gentager ikke fire brede kontrolsuiter; ærligt `UNAVAILABLE` må komme online. Ingen oneoff før launch. Se `CHANGELOG-4.0.362.md` og DEC-0144.
+
 ## 4.0.361 – strøm-audit følger den integrerede produktionsruntime (2026-09-14, lokal kandidat)
 
 - 4.0.360 bestod sourcegate `34795741830`, blev merged som main `cbb56fcb`, og cache-handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider eller oneoff.

@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.362 rettet og klar til online-først
+
+4.0.361 bestod exact-head-sourcegate, blev merged gennem PR #298 som main `6337fa09065b38bc578dad1a81a83ddd505bbd0d`, og handoff `34804412079` registrerede 79.414/79.414 currentpar uden provider. Det var komplet udfaldsregnskab, ikke komplet taldækning.
+
+Cutover `34805083829` byggede alle 673 dele og kørte 272/272 underkontroller; 271 var grønne, og én rumlig audit stoppede før writes. Read-only diagnose `34820407527` viste ved H0: DKSS-vind 669, bølger 673, direkte current 659, otte gyldige holds, seks currentmangler og vandstand 669. Alle scorer var null på grund af vindbracket på tværs af modelruns.
+
+4.0.362 vælger samme-run-bracket kun for DKSS-`windTail` og fører den eksakte private H0-currentreference gennem integreret og rollback. Hold er højst tre timer, bliver `HISTORY_INCOMPLETE` og opfinder ingen bevægelse. Bundles er `b144ebcd…` og `b4b258f2…`; append-only migration 14 fører bindingerne frem.
+
+Efter ejerbeslutning springer første cutover de fire brede gentagelser over. Én exact-head sourcegate, de faktiske build-/write-/privacy-/deploytrin og efterfølgende livekontrol består. En ærligt utilgængelig score stopper ikke launch. Ingen oneoff før launch; normal weather og rotation bevises bagefter. Se DEC-0144.
+
+Ældre afsnit nedenfor er historiske checkpoints.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.361 efter integreret strømauditmismatch
 
 4.0.360 bestod exact-head-sourcegate `34795741830`, blev merged gennem PR #297 som main `cbb56fcb00b9ce654b51768b3df23d7add2e8904`, og handoff `34797345624` forseglede 79.414/79.414 currentpar over 118 timer uden provider eller oneoff.

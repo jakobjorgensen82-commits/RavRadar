@@ -1,3 +1,11 @@
+## 2026-09-14 lokal 4.0.362 – H0 reference-recovery og online-først
+
+- `dmi-forecast-store.mjs` grupperer DKSS-`windTail` efter eksakt native modelserie og vælger kun samme-run interpolation/edge inden for gældende tidsloft. Primær HARMONIE forbliver globalt strict.
+- Produktionspart-pipelinen finder eksakt privat currentreference ved score-H0 og sender den til både integreret pipeline og Candidate G-rollback.
+- `buildCurrentSupplyMemory` og score bounds kan autorisere et kanonisk højst tre timer gammelt hold, men afviser nyere endelig evidens og bevarer senere null som ukendt historik.
+- Bundlelukningerne er versioneret gennem append-only migration `20260914010000_h0_reference_recovery_binding.sql`.
+- Første `integrated-cutover` registrerer fire brede suites som `skipped`; de tekniske build-/write-/privacy-/deployled fortsætter. DEC-0144.
+
 ## 2026-09-14 lokal 4.0.361 – rumlig strømaudit følger integreret produktion
 
 - `projectExactDmiNativeCurrentToForecast` kalder `buildDmiForecastHourly` efter positiv native DMI-verifikation og returnerer både runtimeproveniens og de femdecimalers `currentUMps/currentVMps`, som produktionen bruger.

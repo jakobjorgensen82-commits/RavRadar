@@ -426,6 +426,62 @@ function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {})
   return best?.bracket ?? null;
 }
 
+function safeWindSeriesBracket(items, targetMs, component, options = {}) {
+  if (component !== 'windTail') return null;
+  const groups = new Map();
+  for (const item of items ?? []) {
+    const source = provenanceAt(item, component);
+    if (!source) continue;
+    const key = JSON.stringify([
+      source.collection,
+      source.modelRun,
+      source.entityId,
+      source.parentZoneId,
+      source.samplingContext,
+      source.gridDefinitionSha256,
+      source.gridPoint,
+    ]);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  let best = null;
+  for (const group of groups.values()) {
+    const bracket = timeBracket(group, targetMs, options);
+    if (!bracket || !sameNativeSeries(bracket, component)) continue;
+    const source = provenanceAt(bracket.before, component);
+    const beforeTime = Date.parse(bracket.before.step ?? bracket.before.time);
+    const afterTime = Date.parse(bracket.after.step ?? bracket.after.time);
+    const modePriority = bracket.mode === 'exact' ? 0
+      : bracket.mode === 'interpolated' ? 1 : 2;
+    const spanOrDistance = bracket.mode === 'interpolated'
+      ? afterTime - beforeTime
+      : Math.abs(beforeTime - targetMs);
+    const runMs = Date.parse(source.modelRun);
+    const stableIdentity = [
+      source.collection,
+      source.gridDefinitionSha256,
+      ...source.gridPoint,
+    ].join('|');
+    const score = [
+      modePriority,
+      spanOrDistance,
+      -runMs,
+      -beforeTime,
+      afterTime,
+      stableIdentity,
+    ];
+    const better = !best || (() => {
+      for (let index = 0; index < score.length; index += 1) {
+        if (score[index] === best.score[index]) continue;
+        return score[index] < best.score[index];
+      }
+      return false;
+    })();
+    if (better) best = { score, bracket };
+  }
+  return best?.bracket ?? null;
+}
+
 function componentBracket(items, targetMs, component, options) {
   const componentOptions = component === 'wave'
     ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
@@ -441,7 +497,9 @@ function componentBracket(items, targetMs, component, options) {
   }
   return component === 'wave'
     ? safeWaveSeriesBracket(items, targetMs, componentOptions)
-    : null;
+    : component === 'windTail'
+      ? safeWindSeriesBracket(items, targetMs, component, componentOptions)
+      : null;
 }
 
 function componentSource(bracket, component, targetMs, generatedAt) {

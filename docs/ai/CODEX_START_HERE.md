@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.362 skal online
+
+Main er `6337fa09065b38bc578dad1a81a83ddd505bbd0d` efter PR #298. Handoff `34804412079` har 79.414/79.414 klassificerede currentpar, men tallet er ikke numerisk komplethed. Cutover `34805083829` byggede 673 dele og kørte 272 kontroller; én rumlig audit stoppede deploy. Diagnose `34820407527` viste 669 vind, 673 bølger, 659 direkte current + 8 holds, 6 lokale currentmangler og 669 vandstand ved H0.
+
+På branch `codex/4.0.362-cutover-validation-resume` er DKSS same-run `windTail` og eksakt H0-currenthold rettet. Bundles `b144ebcd…`/`b4b258f2…` og append-only migration `20260914010000` er synkroniseret. Første cutover gentager ikke reference/full validate/release/data. En ærligt utilgængelig score må komme online.
+
+Fortsæt uden oneoff og uden bred lokal testrunde: RDKS/version → commit/push → én exact-head sourcegate → merge → kort same-head cache-handoff → cutover/deploy → offentlig sitekontrol → normal weather/rotation. Sol/Ekstra høj. DEC-0144.
+
+Ældre checkpoints nedenfor er historik.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret auditmismatch
 
 Main er 4.0.360/`cbb56fcb00b9ce654b51768b3df23d7add2e8904` efter PR #297 og sourcegate `34795741830`. Handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider/oneoff. Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.

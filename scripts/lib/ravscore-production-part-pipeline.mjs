@@ -12,10 +12,10 @@ import {
   selectRavScoreInitialState,
 } from './ravscore-recovery-replay.mjs';
 
-function exactReplayStartStateOnlyHold(publicHourly, replayStartAt, part) {
+function exactPublicStateOnlyHoldAt(publicHourly, exactAt, part) {
   const replayRows = publicHourly.filter(row => {
     const parsed = Date.parse(row?.time ?? '');
-    return Number.isFinite(parsed) && parsed === Date.parse(replayStartAt);
+    return Number.isFinite(parsed) && parsed === Date.parse(exactAt);
   });
   if (replayRows.length > 1) {
     throw new Error('RavScore production has duplicate rows at the replay boundary');
@@ -24,7 +24,7 @@ function exactReplayStartStateOnlyHold(publicHourly, replayStartAt, part) {
   const rawMarker = replayRows[0].currentStateOnlyHold;
   const marker = canonicalRavScoreStateOnlyCurrentHold(
     rawMarker,
-    replayStartAt,
+    exactAt,
   );
   if (rawMarker !== null && rawMarker !== undefined && marker === null) {
     throw new Error('RavScore production replay-boundary hold marker is invalid');
@@ -141,7 +141,7 @@ export function buildRavScoreProductionPartSeries({
     initialSelection.state,
     targetReferenceAt,
   );
-  const replayStartHold = exactReplayStartStateOnlyHold(
+  const replayStartHold = exactPublicStateOnlyHoldAt(
     publicHourly,
     replayStartAt,
     part,
@@ -162,6 +162,39 @@ export function buildRavScoreProductionPartSeries({
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample: resolvedNativeCadenceReferenceSample,
   });
+  const targetHold = exactPublicStateOnlyHoldAt(
+    publicHourly,
+    recovery.scoreStartAt,
+    part,
+  );
+  const resolvedScoreTargetNativeCadenceReferenceSample = targetHold?.validTime
+    === replayStartHold?.validTime
+    ? null
+    : exactReplayBoundaryReference({
+      marker: targetHold,
+      resolver: resolveNativeCadenceReferenceSample,
+      provided: null,
+      replayStartAt,
+      label: 'RavScore score-target native-cadence reference',
+    });
+  const resolvedCandidateGNativeCadenceReferenceSample =
+    exactReplayBoundaryReference({
+      marker: replayStartHold,
+      resolver: resolveCandidateGNativeCadenceReferenceSample,
+      provided: candidateGNativeCadenceReferenceSample,
+      replayStartAt,
+      label: 'Candidate G native-cadence reference',
+    });
+  const resolvedCandidateGScoreTargetNativeCadenceReferenceSample = targetHold?.validTime
+    === replayStartHold?.validTime
+    ? null
+    : exactReplayBoundaryReference({
+      marker: targetHold,
+      resolver: resolveCandidateGNativeCadenceReferenceSample,
+      provided: null,
+      replayStartAt,
+      label: 'Candidate G score-target native-cadence reference',
+    });
   const {
     ravScoreState,
     scores,
@@ -174,17 +207,11 @@ export function buildRavScoreProductionPartSeries({
     candidateGWaveApproachBootstrap: recovery.candidateGWaveApproachBootstrap,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample: resolvedNativeCadenceReferenceSample,
+    scoreTargetNativeCadenceReferenceSample:
+      resolvedScoreTargetNativeCadenceReferenceSample,
     coldReplayBootstrap: recovery.coldStartHistoryLineage,
     scoreStartAt: recovery.scoreStartAt,
   });
-  const resolvedCandidateGNativeCadenceReferenceSample =
-    exactReplayBoundaryReference({
-      marker: replayStartHold,
-      resolver: resolveCandidateGNativeCadenceReferenceSample,
-      provided: candidateGNativeCadenceReferenceSample,
-      replayStartAt,
-      label: 'Candidate G native-cadence reference',
-    });
   const {
     candidateGState,
     scores: candidateGRollbackScores,
@@ -198,6 +225,8 @@ export function buildRavScoreProductionPartSeries({
     measuredWarmupContinuation: candidateGRollbackMeasuredWarmupContinuation,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample: resolvedCandidateGNativeCadenceReferenceSample,
+    scoreTargetNativeCadenceReferenceSample:
+      resolvedCandidateGScoreTargetNativeCadenceReferenceSample,
     scoreStartAt: recovery.scoreStartAt,
   });
   if (scores.length !== candidateGRollbackScores.length

@@ -163,6 +163,14 @@ const RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED =
   process.env.RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED === 'true';
 const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =
   process.env.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true';
+const RAVSCORE_CURRENT_TRACE_PATH =
+  process.env.RAVSCORE_CURRENT_TRACE_PATH?.trim() || null;
+const RAVSCORE_CURRENT_TRACE_PART_IDS = new Set(
+  (process.env.RAVSCORE_CURRENT_TRACE_PART_IDS ?? '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean),
+);
 const RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE =
   RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
     ? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery
@@ -1986,6 +1994,55 @@ function scoreCoastalPartsRuntime(
   const expectedByZone = new Map();
   const partRows = [];
   const sourceAgeRows = [];
+  const currentInputTraceRows = [];
+  const componentStageSummary = {
+    partCount: 0,
+    rawDmi: {
+      targetPrimaryWindTupleCount: 0,
+      targetPrimaryWindAcceptedCount: 0,
+      targetTailWindTupleCount: 0,
+      targetTailWindAcceptedCount: 0,
+      nearTargetPrimaryWindAcceptedPartCount: 0,
+      nearTargetTailWindAcceptedPartCount: 0,
+      forecastPrimaryWindAcceptedPartCount: 0,
+      forecastTailWindAcceptedPartCount: 0,
+    },
+    record: {
+      windTupleCount: 0,
+      waveHeightPeriodCount: 0,
+      waveDirectionCount: 0,
+      currentVectorCount: 0,
+      currentStateOnlyHoldCount: 0,
+      waterLevelCount: 0,
+    },
+    sanitized: {
+      windTupleCount: 0,
+      waveHeightPeriodCount: 0,
+      waveDirectionCount: 0,
+      currentVectorCount: 0,
+      currentStateOnlyHoldCount: 0,
+      waterLevelCount: 0,
+      waterLevelTrendCount: 0,
+    },
+    model: {
+      currentVerifiedCount: 0,
+      currentStateOnlyHoldCount: 0,
+      currentDirectInputReadyCount: 0,
+      stateOnlyHoldReferenceResolvableCount: 0,
+      stateOnlyHoldReferenceInRecoveryCount: 0,
+      stateOnlyHoldUnknownGapBeforeTargetCount: 0,
+      wadersAvailableCount: 0,
+      beachAvailableCount: 0,
+      wadersReasons: {},
+      beachReasons: {},
+    },
+  };
+  const addSafeReason = (target, reason) => {
+    const safeReason = typeof reason === 'string' && /^[A-Z][A-Z0-9_]{0,127}$/.test(reason)
+      ? reason
+      : 'NONE_OR_SANITIZED_UNKNOWN';
+    target[safeReason] = (target[safeReason] ?? 0) + 1;
+  };
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
   const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
     parentForecastStore,
@@ -2114,6 +2171,65 @@ function scoreCoastalPartsRuntime(
       });
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
       const sourceAgeHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
+      const traced = RAVSCORE_CURRENT_TRACE_PART_IDS.has(part.partId);
+      const rawBulkRows = Array.isArray(bulkCache?.zones?.[bulkId]?.hourly)
+        ? bulkCache.zones[bulkId].hourly
+        : Object.values(bulkCache?.zones?.[bulkId]?.hourly ?? {});
+      const rawBulkHour = RAVSCORE_CURRENT_TRACE_PATH
+        ? rawBulkRows.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
+      const rawWindTuple = (row, component = 'wind') => {
+        const speedKey = component === 'windTail'
+          ? 'wind-tail-speed-10m'
+          : 'wind-speed-10m';
+        const directionKey = component === 'windTail'
+          ? 'wind-tail-dir-10m'
+          : 'wind-dir-10m';
+        return ravScoreNumber(row?.[speedKey]) !== null
+          && ravScoreNumber(row?.[directionKey]) !== null;
+      };
+      const rawWindAccepted = (row, component) => rawWindTuple(
+        row,
+        component,
+      ) && Boolean(verifiedDmiNativeComponentSource(
+        row?.sources?.[component],
+        row?.time,
+        component,
+        partDmiIdentity,
+      ));
+      const targetMs = Date.parse(partForecastStartAt);
+      const nearTargetRows = RAVSCORE_CURRENT_TRACE_PATH
+        ? rawBulkRows.filter(row => {
+          const rowMs = Date.parse(row?.time ?? '');
+          return Number.isFinite(rowMs) && Math.abs(rowMs - targetMs) <= 4 * 3600000;
+        })
+        : [];
+      const forecastRows = RAVSCORE_CURRENT_TRACE_PATH
+        ? rawBulkRows.filter(row => {
+          const rowMs = Date.parse(row?.time ?? '');
+          return Number.isFinite(rowMs)
+            && rowMs >= targetMs
+            && rowMs < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3600000;
+        })
+        : [];
+      const rawBulkCurrentSource = rawBulkHour?.sources?.current ?? null;
+      const rawBulkCurrentAccepted = traced && ravScoreNumber(rawBulkHour?.['current-u']) !== null
+        && ravScoreNumber(rawBulkHour?.['current-v']) !== null
+        && Boolean(verifiedBulkCurrent(
+          bulkCache,
+          bulkCache?.zones?.[bulkId],
+          part.waterPoint,
+          rawBulkCurrentSource,
+          partForecastStartAt,
+          partDmiIdentity,
+        ));
+      const declaredSupplementalEntry = traced
+        ? (liveCurrentPilot?.entries ?? []).find(entry =>
+          entry?.partId === part.partId && entry?.validTime === partForecastStartAt) ?? null
+        : null;
+      const recordTraceHour = traced || RAVSCORE_CURRENT_TRACE_PATH
+        ? record?.hourly?.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
         feggesundWaveProofEntries.push(...feggesundWaveProofEntriesForPart(
           hourly,
@@ -2208,6 +2324,7 @@ function scoreCoastalPartsRuntime(
         });
       }
       const {
+        recovery,
         ravScoreState,
         scores,
         candidateGState,
@@ -2238,6 +2355,176 @@ function scoreCoastalPartsRuntime(
             { projection: 'candidate-g-legacy-quantized' },
           ),
       });
+      const sanitizedTraceHour = RAVSCORE_CURRENT_TRACE_PATH
+        ? hourly.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
+      const scoreTraceHour = RAVSCORE_CURRENT_TRACE_PATH
+        ? scores.find(score => score?.time === partForecastStartAt) ?? null
+        : null;
+      if (RAVSCORE_CURRENT_TRACE_PATH) {
+        const publicContext = scoreTraceHour?.ravScoreModel?.publicContext ?? null;
+        const waders = scoreTraceHour?.ravScoreModel?.modes?.waders ?? null;
+        const beach = scoreTraceHour?.ravScoreModel?.modes?.beach ?? null;
+        const stateOnlyHold = sanitizedTraceHour?.currentStateOnlyHold ?? null;
+        const stateOnlyHoldReference = stateOnlyHold
+          ? latestVerifiedNativeCadenceSampleForPart(
+            { ...part, zoneId },
+            liveCurrentPilot,
+            stateOnlyHold.sourceValidTime,
+          )
+          : null;
+        const stateOnlyHoldReferenceInRecovery = stateOnlyHoldReference !== null
+          && recovery.hourly.some(hour => hour?.time === stateOnlyHold.sourceValidTime
+            && hour?.currentProvenance?.status === 'verified');
+        const stateOnlyHoldUnknownGapBeforeTarget = stateOnlyHoldReference !== null
+          && recovery.hourly.some(hour => {
+            const hourMs = Date.parse(hour?.time ?? '');
+            return Number.isFinite(hourMs)
+              && hourMs > Date.parse(stateOnlyHold.sourceValidTime)
+              && hourMs < targetMs
+              && hour?.currentProvenance?.status !== 'verified';
+          });
+        componentStageSummary.partCount += 1;
+        componentStageSummary.rawDmi.targetPrimaryWindTupleCount += Number(
+          rawWindTuple(rawBulkHour),
+        );
+        componentStageSummary.rawDmi.targetPrimaryWindAcceptedCount += Number(
+          rawWindAccepted(rawBulkHour, 'wind'),
+        );
+        componentStageSummary.rawDmi.targetTailWindTupleCount += Number(
+          rawWindTuple(rawBulkHour, 'windTail'),
+        );
+        componentStageSummary.rawDmi.targetTailWindAcceptedCount += Number(
+          rawWindAccepted(rawBulkHour, 'windTail'),
+        );
+        componentStageSummary.rawDmi.nearTargetPrimaryWindAcceptedPartCount += Number(
+          nearTargetRows.some(row => rawWindAccepted(row, 'wind')),
+        );
+        componentStageSummary.rawDmi.nearTargetTailWindAcceptedPartCount += Number(
+          nearTargetRows.some(row => rawWindAccepted(row, 'windTail')),
+        );
+        componentStageSummary.rawDmi.forecastPrimaryWindAcceptedPartCount += Number(
+          forecastRows.some(row => rawWindAccepted(row, 'wind')),
+        );
+        componentStageSummary.rawDmi.forecastTailWindAcceptedPartCount += Number(
+          forecastRows.some(row => rawWindAccepted(row, 'windTail')),
+        );
+        componentStageSummary.record.windTupleCount += Number(
+          ravScoreNumber(recordTraceHour?.windSpeedMps) !== null
+          && ravScoreNumber(recordTraceHour?.windDirectionDeg) !== null,
+        );
+        componentStageSummary.record.waveHeightPeriodCount += Number(
+          ravScoreNumber(recordTraceHour?.waveHeightM) !== null
+          && ravScoreNumber(recordTraceHour?.wavePeriodS) !== null,
+        );
+        componentStageSummary.record.waveDirectionCount += Number(
+          ravScoreNumber(recordTraceHour?.waveDirectionDeg) !== null,
+        );
+        componentStageSummary.record.currentVectorCount += Number(
+          ravScoreNumber(recordTraceHour?.currentUMps) !== null
+          && ravScoreNumber(recordTraceHour?.currentVMps) !== null,
+        );
+        componentStageSummary.record.currentStateOnlyHoldCount += Number(
+          recordTraceHour?.currentStateOnlyHold != null,
+        );
+        componentStageSummary.record.waterLevelCount += Number(
+          ravScoreNumber(recordTraceHour?.waterLevelCm) !== null,
+        );
+        componentStageSummary.sanitized.windTupleCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.windSpeedMps) !== null
+          && ravScoreNumber(sanitizedTraceHour?.windDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.waveHeightPeriodCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waveHeightM) !== null
+          && ravScoreNumber(sanitizedTraceHour?.wavePeriodS) !== null,
+        );
+        componentStageSummary.sanitized.waveDirectionCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waveDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.currentVectorCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.currentSpeedMps) !== null
+          && ravScoreNumber(sanitizedTraceHour?.currentDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.currentStateOnlyHoldCount += Number(
+          sanitizedTraceHour?.currentStateOnlyHold != null,
+        );
+        componentStageSummary.sanitized.waterLevelCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waterLevelCm) !== null,
+        );
+        componentStageSummary.sanitized.waterLevelTrendCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waterLevelTrendCm3h) !== null,
+        );
+        componentStageSummary.model.currentVerifiedCount += Number(publicContext?.currentVerified === true);
+        componentStageSummary.model.currentStateOnlyHoldCount += Number(
+          publicContext?.currentTransition === 'NATIVE_CADENCE_HOLD',
+        );
+        componentStageSummary.model.currentDirectInputReadyCount += Number(
+          publicContext?.currentVerified === true
+          || publicContext?.currentTransition === 'NATIVE_CADENCE_HOLD',
+        );
+        componentStageSummary.model.stateOnlyHoldReferenceResolvableCount += Number(
+          stateOnlyHoldReference !== null,
+        );
+        componentStageSummary.model.stateOnlyHoldReferenceInRecoveryCount += Number(
+          stateOnlyHoldReferenceInRecovery,
+        );
+        componentStageSummary.model.stateOnlyHoldUnknownGapBeforeTargetCount += Number(
+          stateOnlyHoldUnknownGapBeforeTarget,
+        );
+        componentStageSummary.model.wadersAvailableCount += Number(waders?.available === true);
+        componentStageSummary.model.beachAvailableCount += Number(beach?.available === true);
+        addSafeReason(componentStageSummary.model.wadersReasons, waders?.reason);
+        addSafeReason(componentStageSummary.model.beachReasons, beach?.reason);
+      }
+      if (traced) {
+        const recordCurrentSource = recordTraceHour?.currentProvenance
+          ?? recordTraceHour?.sources?.current
+          ?? null;
+        const sanitizedCurrentSource = sanitizedTraceHour?.currentProvenance ?? null;
+        const publicContext = scoreTraceHour?.ravScoreModel?.publicContext ?? null;
+        currentInputTraceRows.push({
+          partId: part.partId,
+          declaredSource: {
+            classification: declaredSupplementalEntry?.classification
+              ?? (rawBulkCurrentAccepted ? 'DMI_VERIFIED' : null),
+            provider: declaredSupplementalEntry?.provider
+              ?? (rawBulkCurrentAccepted ? 'dmi' : null),
+            interpolation: declaredSupplementalEntry?.interpolation
+              ?? (rawBulkCurrentAccepted ? false : null),
+            stateOnly: declaredSupplementalEntry?.stateOnly === true,
+          },
+          rawDmi: {
+            vectorTuplePresent: ravScoreNumber(rawBulkHour?.['current-u']) !== null
+              && ravScoreNumber(rawBulkHour?.['current-v']) !== null,
+            accepted: rawBulkCurrentAccepted,
+            temporalResolution: rawBulkCurrentSource?.temporalResolution ?? null,
+          },
+          mergedRecord: {
+            vectorTuplePresent: ravScoreNumber(recordTraceHour?.currentUMps) !== null
+              && ravScoreNumber(recordTraceHour?.currentVMps) !== null,
+            stateOnlyHoldPresent: recordTraceHour?.currentStateOnlyHold != null,
+            provenanceStatus: recordCurrentSource?.status ?? null,
+            classification: recordCurrentSource?.classification ?? null,
+            provider: recordCurrentSource?.provider ?? null,
+            temporalResolution: recordCurrentSource?.temporalResolution ?? null,
+          },
+          sanitized: {
+            vectorProjectionPresent: ravScoreNumber(sanitizedTraceHour?.currentSpeedMps) !== null
+              && ravScoreNumber(sanitizedTraceHour?.currentDirectionDeg) !== null,
+            stateOnlyHoldPresent: sanitizedTraceHour?.currentStateOnlyHold != null,
+            provenanceStatus: sanitizedCurrentSource?.status ?? null,
+            reason: sanitizedCurrentSource?.reason ?? null,
+          },
+          model: {
+            currentTransition: publicContext?.currentTransition ?? null,
+            currentVerified: publicContext?.currentVerified === true,
+            wadersAvailable: scoreTraceHour?.ravScoreModel?.modes?.waders?.available === true,
+            wadersReason: scoreTraceHour?.ravScoreModel?.modes?.waders?.reason ?? null,
+            beachAvailable: scoreTraceHour?.ravScoreModel?.modes?.beach?.available === true,
+            beachReason: scoreTraceHour?.ravScoreModel?.modes?.beach?.reason ?? null,
+          },
+        });
+      }
       if (scores.length) {
         if (!sourceAgeHour) {
           throw new Error('Integrated RavScore source-age proof lacks the exact selected H0 row');
@@ -2377,6 +2664,17 @@ function scoreCoastalPartsRuntime(
   return {
     integratedRuntime,
     weatherSourceAge,
+    currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
+      schemaVersion: 1,
+      kind: 'RAVSCORE_CURRENT_INPUT_STAGE_TRACE',
+      productionReferenceAt: partForecastStartAt,
+      requestedPartCount: RAVSCORE_CURRENT_TRACE_PART_IDS.size,
+      tracedPartCount: currentInputTraceRows.length,
+      rawVectorsIncluded: false,
+      coordinatesIncluded: false,
+      componentStageSummary,
+      rows: currentInputTraceRows,
+    } : null,
     candidateGRollbackRuntime: rollbackReady ? candidateGRollbackRuntime : null,
     candidateGWarmupRuntime: rollbackReady
       ? null
@@ -3716,6 +4014,17 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     ravScoreCheckpoint.loaded ? ravScoreCheckpoint.candidateGRollbackStates : {},
   )
   : null;
+if (RAVSCORE_CURRENT_TRACE_PATH) {
+  if (!coastalPartScoreBuild?.currentInputTrace
+    || coastalPartScoreBuild.currentInputTrace.tracedPartCount
+      !== coastalPartScoreBuild.currentInputTrace.requestedPartCount) {
+    throw new Error('RavScore current input trace did not cover every requested part');
+  }
+  await fs.writeFile(
+    RAVSCORE_CURRENT_TRACE_PATH,
+    `${JSON.stringify(coastalPartScoreBuild.currentInputTrace, null, 2)}\n`,
+  );
+}
 output.coastalParts = coastalPartScoreBuild?.integratedRuntime
   ?? { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 if (!coastalPartScoreBuild?.weatherSourceAge) {

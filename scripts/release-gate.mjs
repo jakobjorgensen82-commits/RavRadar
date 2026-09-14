@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260913010000_public_runtime_oracle_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260914010000_h0_reference_recovery_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -604,7 +604,7 @@ ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-v
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs && node scripts/build-public-runtime-oracle-binding-migration.mjs',
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs && node scripts/build-public-runtime-oracle-binding-migration.mjs && node scripts/build-h0-reference-recovery-binding-migration.mjs',
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
@@ -1141,9 +1141,10 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the thirteen exact integrated cutover migrations',
+  'Require only the fourteen exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
+  '20260914010000_h0_reference_recovery_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
@@ -1547,28 +1548,21 @@ for(const marker of [
   'audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
   'if test "${{ steps.operational-action.outputs.action }}" = "integrated-cutover"; then',
   'run_validation runtime_audit_outcome "Integrated public runtime audit"',
-  'run_validation state_reference_outcome "Strict production reference zones"',
-  'run_validation full_validation_outcome "Full hydrated project validation"',
-  'run_validation release_gate_outcome "Release governance gate"',
-  'run_validation data_validation_outcome "Updated weather data validation"',
-  'full_validation_report_path=.geometry-v2-work/ravscore-integrated-full-validation-report.json',
+  'state_reference_outcome="skipped"',
+  'full_validation_outcome="skipped"',
+  'release_gate_outcome="skipped"',
+  'data_validation_outcome="skipped"',
+  'Owner-authorized first cutover',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
-  'node scripts/generate-state-reference-report-4.0.113.mjs --strict',
-  'node scripts/run-validation-collection.mjs',
-  '--script validate',
-  '--output "$full_validation_report_path"',
-  'npm run release:gate',
-  'npm run validate:data',
   'node scripts/cutover-validation-report.mjs build',
   '--step "runtime-audit|true|$runtime_audit_outcome"',
-  '--step "state-reference|true|$state_reference_outcome"',
-  '--step "full-validation|true|$full_validation_outcome"',
-  '--step "release-gate|true|$release_gate_outcome"',
-  '--step "data-validation|true|$data_validation_outcome"',
-  'if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then',
-  'exit 1',
+  '--step "state-reference|false|$state_reference_outcome"',
+  '--step "full-validation|false|$full_validation_outcome"',
+  '--step "release-gate|false|$release_gate_outcome"',
+  '--step "data-validation|false|$data_validation_outcome"',
+  'node scripts/cutover-validation-report.mjs check --input "$report_path"',
   '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
   '.rollback.activationReady | select(type == "boolean") | tostring',
   '.history.allCurrentScoresFullHistory | select(type == "boolean") | tostring',
@@ -1588,6 +1582,12 @@ for(const marker of [
   'path: .geometry-v2-work/ravscore-integrated-full-validation-report.json',
 ])ok(buildWorkflow.includes(marker),`Cutoverens uafhængige fejlrapport mangler ${marker}`);
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
+for(const forbidden of [
+  'run_validation state_reference_outcome',
+  'run_validation full_validation_outcome',
+  'run_validation release_gate_outcome',
+  'run_validation data_validation_outcome',
+])ok(!runtimeAuditSection.includes(forbidden),`First-cutover må ikke gentage den brede kontrol: ${forbidden}`);
 for(const section of [
   buildWorkflow.slice(workflowPositions.reference,workflowPositions.validate),
   buildWorkflow.slice(workflowPositions.validate,workflowPositions.releaseGate),
