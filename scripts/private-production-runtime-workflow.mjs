@@ -1087,7 +1087,12 @@ export async function buildPrivateRuntimePreflightState({
     throw new Error('Private runtime preflight DMI bulk path escapes repository');
   }
   const [conditions, bulk, oceanDiagnostics, runtime, contractHashes] = await Promise.all([
-    readJsonFile(root, 'data/live/conditions.json', 'Private runtime preflight conditions'),
+    readJsonFile(
+      root,
+      'data/live/conditions.json',
+      'Private runtime preflight conditions',
+      PRIVATE_RUNTIME_CAPACITY_POLICY.maxSingleFileBytes,
+    ),
     readDmiBulkDocument(dmiBulkAbsolute),
     readJsonFile(root, 'data/diagnostics/dmi-ocean-diagnostics.json', 'Private runtime preflight ocean diagnostics', 4 * 1024 * 1024),
     readJsonFile(root, 'data/live/ravradar-runtime-diagnostics.json', 'Private runtime preflight diagnostics'),
