@@ -1,3 +1,11 @@
+## 2026-09-14 lokal 4.0.360 – native DMI-kilde og afledt runtimeproveniens
+
+- `update-dmi-bulk.py` producerer den verificerede native DMI-kilderække; den skal bestå exact item/asset/modelrun/collection/grid/gridpunkt/tid-identitet før brug.
+- `buildDmiForecastHourly` bruger internt `componentSource` til at tilføje runtimefelter som native tids-/trinlister, opløsning, forecastalder og fallback.
+- Audit-only `projectExactDmiNativeCurrentSourceToForecast` kalder den offentlige `buildDmiForecastHourly` med én eksakt currentrække. Den rumlige audit må kun kalde den efter positiv `verifiedBulkCurrent` og binder tiden til `conditions.productionReferenceAt`.
+- `verifyCoastalPartCurrentProjection` udfører fortsat den strenge runtime/public/bulk-sammenligning. Der er ingen tolerance eller feltudeladelse.
+- Dette ændrer kun auditlaget. Modelkernen, begge modelbundles/hashes, migrationskæden, data- og scorevejen er byteuændrede. DEC-0142 er bindende.
+
 ## 2026-09-07 4.0.333 exact-residual execution
 
 - Open-Meteo arbejder som en bounded FIFO/BFS-kø over disjunkte `(partId, validTime)`-mængder. Accepterede par fjernes og checkpointes; uløste mængder splittes højst i to, først parts og derefter timer, til singleton.

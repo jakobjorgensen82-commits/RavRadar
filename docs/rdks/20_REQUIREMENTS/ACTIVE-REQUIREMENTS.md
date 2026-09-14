@@ -1,5 +1,18 @@
 # Aktive krav – samlet register
 
+# 4.0.360 – native DMI bevises og projekteres før runtime-sammenligning
+
+- **REQ-4.0.360-NATIVE-VERIFY-001 – BINDENDE P0 / LOKALT TESTET:** Kun en native bulkrække, som består eksisterende exact DMI-identitet, må projekteres til runtimeformen.
+- **REQ-4.0.360-SHARED-PROJECTION-001 – BINDENDE P0 / LOKALT TESTET:** En audit-only adapter skal bruge den offentlige forecastbuilder; auditten må ikke sammenligne rå og afledt form direkte eller kopiere transformationen lokalt.
+- **REQ-4.0.360-PRODUCTION-REFERENCE-001 – BINDENDE P0 / LOKALT TESTET:** Forecastalderen i auditprojektionen bindes til `conditions.productionReferenceAt`, ikke senere wall-clock `generatedAt`.
+- **REQ-4.0.360-REAL-NATIVE-FIXTURE-001 – BINDENDE / LOKALT TESTET:** Regressionen skal mangle runtime-only-felter i sin bulkrække og bevise forskellen mellem fastlåst produktionsreference og senere byggetid.
+- **REQ-4.0.360-NO-BYPASS-001 – BINDENDE P0:** Ingen feltudeladelse, tolerance eller generel fejlundtagelse; alle fem hovedgates og 272 underkontroller forbliver bindende.
+- **REQ-4.0.360-NO-PRODUCT-CHANGE-001 – BINDENDE:** Vejrværdier, sourceorder, rotation, scoreformel, modelbundle/hash, modelstate, geometri, migrationer, database og privacy ændres ikke.
+- **REQ-4.0.360-LIVE-PROOF-001 – ÅBEN P0:** Exact-head-sourcegate, byteidentisk merge, cachebaseret SHA-handoff, cutover og offentlig/siteverifikation mangler. Ingen oneoff eller almindelig weather før modellen er online.
+- **REQ-4.0.360-POST-LAUNCH-001 – BINDENDE:** Efter offentlig verifikation genaktiveres normal weather kontrolleret og skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+
+DEC-0142 er bindende.
+
 # 4.0.359 – kontrolorakler følger gældende produktkontrakter
 
 - **REQ-4.0.359-COMPLETE-EVIDENCE-001 – BEVIST:** Cutover `34781869394` gennemførte alle 272 bladkommandoer og alle fem hovedkontroller; fejlrapporten er derfor komplet for det gennemløb.

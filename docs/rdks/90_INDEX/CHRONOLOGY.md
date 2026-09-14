@@ -1,3 +1,11 @@
+# 2026-09-14 – 4.0.360 deler DMI's native→runtime-projektion med den rumlige audit
+
+4.0.359 bestod sourcegate `34788388836`, blev merged som main `8ec6b8be`, og handoff `34789764309` forseglede 79.414/79.414 currentpar uden provider/oneoff. Cutover `34790416354` gennemførte fem hovedkontroller og 272/272 underkontroller; fire var grønne, og kun den rumlige audit fejlede for 617 DMI-dele. Ingen writes/deploy.
+
+Fejlen var rå native kilderække sammenlignet direkte med runtimebuilderens deterministisk udvidede form. 4.0.360 genbruger samme produktionsprojektion i auditten efter uændret native verifikation og bruger fastlåst `productionReferenceAt` frem for senere wall-clock-byggetid. Realistisk fixture og relevante DMI-/runtime-/workflowtests er grønne.
+
+Ingen produktdata, score, rotation eller gate ændres. Exact-head, merge, same-head-handoff, cutover og offentlig kontrol er åbne. Se DEC-0142.
+
 # 2026-09-14 – 4.0.359 retter seks kontrolorakler fra den komplette cutoverrapport
 
 4.0.358 blev exact-head-valideret og merged som main `2a1c73d2`. Handoff `34781396538` genbrugte de fire cacher uden provider/oneoff og lukkede 79.414/79.414 currentpar. Cutover `34781869394` gennemførte 272/272 bladkommandoer og alle fem hovedkontroller, hvorefter seks fejl i fuld validering stoppede før deploy.

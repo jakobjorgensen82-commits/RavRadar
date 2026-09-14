@@ -1,5 +1,16 @@
 # AI Knowledge Base – RavRadar
 
+# Nyeste sandhed 2026-09-14 – lokal 4.0.360 DMI native→runtime audit
+
+- Main er 4.0.359/`8ec6b8be` efter grøn exact-head-sourcegate `34788388836`; Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.
+- Handoff `34789764309` genbrugte de komplette cacher uden provider/oneoff og havde current 79.414/79.414 over 118 timer, missing 0.
+- Cutover `34790416354` gennemførte fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne. Kun den rumlige audit fejlede: 617 ægte DMI-dele blev sammenlignet som rå native kilde mod runtimebuilderens deterministisk udvidede kildeform. Ingen writes/deploy.
+- Lokal 4.0.360 bruger en audit-only adapter til at føre den verificerede række gennem den eksisterende offentlige forecastbuilder og bruger fastlåst `conditions.productionReferenceAt`. Realistisk native-fixture og relevante tests er grønne.
+- Ingen vejrværdi, score, rotation, modelbundle/hash, modelstate, geometri, migration, database eller privacy ændres. Alle fem gates og 272 kontroller består som bindende.
+- Exact-head, merge, same-head-handoff, cutover, offentlig 210/673/118/sitekontrol og derefter normal weather/rotationsbevis er åbne. Ingen oneoff. DEC-0142 er bindende.
+
+Ældre "nyeste sandhed"-afsnit nedenfor er historiske checkpoints.
+
 # Nyeste sandhed 2026-09-11 – lokal 4.0.343 fair providerclosure
 
 - `origin/main` er 4.0.342/`6a3133fe`; oneoff `34565347360` bevarede cacherne, men sluttede med 1.555 currentrester og WAM-fejl uden cutover.

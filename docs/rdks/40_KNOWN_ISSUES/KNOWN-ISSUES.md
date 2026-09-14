@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.360 efter DMI native/runtime-mismatch
+
+- **ISSUE-CUTOVER-34790416354-SPATIAL-DMI – LOKALT LUKKET / CI ÅBEN:** Den rumlige audit projicerer nu en verificeret native DMI-række gennem samme produktionsfunktion som runtime før streng sammenligning. De 617 udfald var ikke huller.
+- **ISSUE-DMI-PRODUCTION-REFERENCE – LOKALT LUKKET / CI ÅBEN:** Auditprojektionen bruger den fastlåste `conditions.productionReferenceAt`; en senere wall-clock-byggetid må ikke ændre forecastalderen.
+- **ISSUE-4.0.360-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, cachebaseret same-head-handoff, cutover og offentlig/siteverifikation mangler. Ingen provider-oneoff.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Almindelige kørsler skal bevise cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- **ISSUE-GHOST-RUN-CLEANUP – TIDSBUNDET:** `34613079069` og `34228112413` har `jobs:[]` og kan ikke starte. GitHub afviser endnu sletning; de fjernes, når aldersreglen tillader det.
+- **ISSUE-ZONE-LOCAL-UNAVAILABLE-AGGREGATION – AFKLARING EFTER LAUNCH:** Eksisterende all-parts-regel revurderes mod live evidens efter modellen er online.
+- **ISSUE-PREFLIGHT-CONDITIONS-READ-BOUND – MÅLES VED NATURLIG KØRSEL:** Ingen grænse hæves uden konkret størrelsesbevis.
+
+DEC-0142 er aktiv. Ingen score-, vejr-, rotations-, migrations- eller geometriændring.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 efter komplet cutoverrapport
 
 - **ISSUE-CUTOVER-34781869394-CONTROL-ORACLES – LOKALT LUKKET / CI ÅBEN:** Alle seks fejl fra 272/272-planen er rettet ved gældende testkontekst eller forventning; ingen generel fritagelse er indført.
