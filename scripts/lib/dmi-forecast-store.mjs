@@ -7,6 +7,10 @@ export const DMI_FORECAST_SCHEMA_VERSION = 1;
 const finite = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 export const normalizeDegrees = value => ((value % 360) + 360) % 360;
+const roundedDegrees = value => {
+  const numeric = finite(value);
+  return numeric === null ? null : normalizeDegrees(round(numeric, 0));
+};
 export function uvToTowardDirectionDeg(uValue, vValue) {
   const u = finite(uValue);
   const v = finite(vValue);
@@ -690,9 +694,9 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
     hourly.push({
       time: new Date(validMs).toISOString(),
       windSpeedMps: round(selectedWind.speed, 1),
-      windDirectionDeg: round(selectedWind.direction, 0),
+      windDirectionDeg: roundedDegrees(selectedWind.direction),
       waveHeightM: round(waveHeight, 2),
-      waveDirectionDeg: round(waveDirection, 0),
+      waveDirectionDeg: roundedDegrees(waveDirection),
       wavePeriodS: round(wavePeriod, 1),
       waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelModelCm: sea === null ? null : round(sea * 100, 0),
@@ -702,7 +706,7 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
       currentUMps: round(u, 5),
       currentVMps: round(v, 5),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
-      currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
+      currentDirectionDeg: roundedDegrees(uvToTowardDirectionDeg(u, v)),
       waterTemperatureC: round(interpolateScalar(waterTemperatureBracket, 'water-temperature'), 1),
       temporalResolution: currentBracket?.mode ?? waterLevelBracket?.mode ?? (primaryWindAvailable ? windBracket?.mode : windTailBracket?.mode) ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',

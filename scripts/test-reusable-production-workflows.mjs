@@ -77,7 +77,7 @@ for (const [role, sourceText] of Object.entries({ build, deploy })) {
 }
 assertExactKeys(
   directKeys(indentedBody(orchestrator, 'on:'), 2),
-  ['schedule', 'workflow_dispatch', 'push'],
+  ['schedule', 'workflow_dispatch'],
   'orchestrator trigger',
 );
 assert.equal(orchestrator.includes('\nconcurrency:'), true, 'orchestrator remains sole concurrency owner');
@@ -234,13 +234,26 @@ assertExactKeys(
 );
 assertExactKeys(directKeys(indentedBody(deployCaller, '    with:'), 6), deployContract.inputs, 'deploy caller inputs');
 assertExactKeys(directKeys(indentedBody(deployCaller, '    secrets:'), 6), deployContract.secrets, 'deploy caller secrets');
-for (const input of deployContract.inputs) {
+for (const input of [
+  'active_deployment_id',
+  'central_version',
+  'integrated_implementation_closure_sha256',
+]) {
   assert.equal(
     deployCaller.includes(input + ': ' + gh('needs.build-and-prepare.outputs.' + input)),
     true,
     'deploy caller input mapping: ' + input,
   );
 }
+for (const input of ['deployment_model', 'legacy_source_required', 'operational_action']) {
+  assert.equal(
+    deployCaller.includes(input + ': ${{ needs.build-and-prepare.outputs.' + input + ' || '),
+    true,
+    'deploy fallback remains explicitly bound to build output: ' + input,
+  );
+}
+assert.equal(deployCaller.includes('code_only_repair: false'), true,
+  'ordinary weather deploy explicitly remains non-code-only');
 
 const dispatchOutputs = [
   'force',
@@ -332,7 +345,7 @@ for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != ''",
   'GITHUB_TOKEN: ' + gh('github.token'),
   'verified-weather-source-handoff.mjs resolve-run',
-  '--expected-head "$GITHUB_SHA"',
+  '--expected-head "$RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD"',
   '--first-cutover ' + '"' + gh('inputs.ravscore_integrated_first_cutover') + '"',
   '--confirmation ' + '"' + gh('inputs.ravscore_integrated_first_cutover_confirmation') + '"',
 ]) assert.equal(handoffResolve.includes(marker), true, 'verified handoff resolve: ' + marker);

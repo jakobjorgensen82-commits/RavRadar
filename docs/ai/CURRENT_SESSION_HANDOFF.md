@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.366 lokal kandidat færdiggjort
+
+Siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.366-post-cutover-repair`, indeholder de samlede post-cutoverrettelser og den godkendte manuelle kode-only-udrulning. Kode-only kræver exact main og `DEPLOY-CODE-ONLY-REPAIR`, genbruger eksakt eksisterende runtime og kontakter ingen vejrleverandør. Migration 15 er urørt; migration 16 er nyt binding-only-led. Integrated/rollback/continuation er `65148b4a…`/`7fe45de7…`/`81045427…`.
+
+Målrettede tests er grønne. Fortsæt uden oneoff eller provider: slutdiff/RDKS, commit/push, én exact-head PR-gate, merge, kode-only-deploy og livekontrol. Kør derefter normal weather separat og tidsbegrænset for at bevise numeriske scorer, rotation og cache. Sol/Ekstra høj.
+
+# NYESTE CHECKPOINT – 2026-09-14 – offentlig cutover lykkedes; samlet post-cutoverrettelse mangler
+
+Den aktuelle fortsættelsesplan og evidens findes i `ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`. Main `fa418f43`, PR #306, cutover `34877443841`, Pages `6443326182`: integreret model er online, privat runtime er gemt, men alle49.560zone/time/mode-scorer er utilgængelige. Modellen skal ikke installeres fra bunden igen.
+
+Astra har bekræftet tab af DKSS-vind ved merge, 360-graders retninger afvist efter afrunding og et falsk holdinterval hen over ukendt strømhistorik. Også UI-null→0, fremtid mærket nu og forkert dækning er fundet. De967direkte currentmangler er ikke sikkert årsagsfordelt; supportpakken indeholder ikke private mellemdata. Normal rotation findes i kode, men er endnu ikke bevist i ordinær drift.
+
+Ingen provider, kildegate, testsuite eller produktionskodeændring i reviewet. Kun dette dokumentationscheckpoint er lokalt ændret; ikke committed/pushet. Rettelserne, versionsløft og den eksakte private model-/historikovergang mangler. Brug den eksisterende gemte runtime, ikke antaget checkpoint. Undgå gamle first-cutover-inputs; næste rigtige kørsel er normalt force=true-vejr efter samlet rettelse og nødvendig backendbinding. Ejerens nej til sourcegate/testspiraler gælder fortsat. Arbejdsmappe og pinned forgænger er detaljeret i reviewet. Planlagt næste model: Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
 
 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; retry i forsøg 2 fortsatte og gav grøn integreret runtimeaudit med 0 fejl. H0-rettelsen er dermed bevist.
 

@@ -22,6 +22,7 @@ import { recommendWaterStationBracket } from '../js/core/water-station-routing.j
 import {
   DMI_FORECAST_HOURS,
   buildDmiForecastHourly,
+  canonicalForecastHour,
   createDmiForecastRecord,
   dmiForecastCoverage,
   normalizeForecastHourly,
@@ -185,7 +186,9 @@ if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
 }
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+const num = value => value === null || value === undefined || value === '' || typeof value === 'boolean'
+  ? null
+  : (Number.isFinite(Number(value)) ? Number(value) : null);
 // RavScore's private trust boundary is deliberately stricter than legacy UI
 // normalisation: coercible strings/booleans/arrays are not physical evidence.
 const ravScoreNumber = value => typeof value === 'number' && Number.isFinite(value)
@@ -2725,6 +2728,7 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   // vandstand og overfladetemperatur. Vind og bølger hentes først, når zonerne har en
   // gyldig marin DMI-cache. Det holder DMI-forbruget nede under opvarmningen.
   let ocean = [];
+  let oceanFailure = null;
   try {
     // ForecastEDR's position response does not document the exact shared U/V
     // water column and vertical layer required by the current contract. It may
@@ -2747,14 +2751,18 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
     if (!ocean.length && lastOceanError) throw lastOceanError;
   } catch (error) {
     componentErrors.push({ component: 'ocean', collection: collections.ocean, message: error instanceof Error ? error.message : String(error) });
-    throw error;
+    oceanFailure = error;
+    ocean = [];
   }
   const oceanHasWaterLevel = ocean.some(item => num(item['sea-mean-deviation']) !== null);
   const oceanHasTemperature = ocean.some(item => num(item['water-temperature']) !== null);
   if (!oceanHasWaterLevel && !oceanHasTemperature) {
     const error = new Error('DMI-havdata gav ingen brugbare marine komponenter');
     error.code = 'DMI_NO_USABLE_COMPONENTS';
-    throw error;
+    if (oceanFailure === null) {
+      oceanFailure = error;
+      componentErrors.push({ component: 'ocean', collection: collections.ocean, message: error.message });
+    }
   }
 
   let wind = [];
@@ -2774,6 +2782,18 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
     }
   }
 
+  const windHasValues = wind.some(item => num(item['wind-speed-10m']) !== null
+    && num(item['wind-dir-10m']) !== null);
+  const waveHasValues = waves.some(item => num(item['significant-wave-height']) !== null
+    && num(item['dominant-wave-period']) !== null);
+  if (!oceanHasWaterLevel && !oceanHasTemperature
+    && !windHasValues && !waveHasValues) {
+    throw oceanFailure ?? Object.assign(
+      new Error('DMI-reparation gav ingen brugbare komponenter'),
+      { code: 'DMI_NO_USABLE_COMPONENTS' },
+    );
+  }
+
   const stationWaterLevel = null;
   const w = nearest(wind, now);
   const wa = nearest(waves, now);
@@ -2782,9 +2802,9 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   const completeness = {
     phase: includeAtmosphere ? 'full-dmi' : 'marine-first',
-    wind: wind.some(item => num(item['wind-speed-10m']) !== null),
-    wave: !collections.wave || waves.some(item => num(item['significant-wave-height']) !== null),
-    ocean: ocean.some(item => num(item['sea-mean-deviation']) !== null),
+    wind: windHasValues,
+    wave: !collections.wave || waveHasValues,
+    ocean: oceanHasWaterLevel,
     current: ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null),
     componentErrors
   };
@@ -2895,11 +2915,15 @@ function mergeHourlyPreferDmi(
           || ravScoreNumber(row?.currentVMps) === null)) {
         return null;
       }
+      const declaredComponent = component === 'wind'
+        && row?.sources?.wind?.component === 'windTail'
+        ? 'windTail'
+        : component;
       return expectedIdentity
         ? verifiedDmiForecastComponentSource(
           row?.sources?.[component],
           time,
-          component,
+          declaredComponent,
           expectedIdentity,
         )
         : row?.sources?.[component] ?? (retained
@@ -3069,27 +3093,46 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
 }
 
 function componentForecastHorizonHours(record, generatedAt, keys) {
-  const start = Date.parse(generatedAt);
-  if (!Number.isFinite(start)) return 0;
-  const validTimes = normalizeForecastHourly(record?.hourly ?? [], { limit: Number.MAX_SAFE_INTEGER })
-    .filter(row => keys.every(key => row?.[key] !== null && row?.[key] !== undefined))
-    .map(row => Date.parse(row.time))
-    .filter(time => Number.isFinite(time) && time >= start - 65 * 60000);
-  return validTimes.length ? Math.max(0, (Math.max(...validTimes) - start) / 3600000) : 0;
+  const coverage = componentForecastGridCoverage(
+    record,
+    generatedAt,
+    DMI_FORECAST_HOURS,
+    row => keys.every(key => ravScoreNumber(row?.[key]) !== null),
+  );
+  return Math.max(0, coverage.contiguousHours - 1);
 }
 
 function atomicComponentForecastHorizonHours(record, generatedAt, component) {
-  const start = Date.parse(generatedAt);
-  if (!Number.isFinite(start)) return 0;
-  const validTimes = normalizeForecastHourly(record?.hourly ?? [], {
+  const coverage = componentForecastGridCoverage(
+    record,
+    generatedAt,
+    DMI_FORECAST_HOURS,
+    row => componentRowHasValue(row, component),
+  );
+  return Math.max(0, coverage.contiguousHours - 1);
+}
+
+function componentForecastGridCoverage(record, generatedAt, hours, predicate) {
+  const startAt = canonicalForecastHour(generatedAt, { ceil: true });
+  const startMs = Date.parse(startAt);
+  const expectedHours = Math.max(0, Math.floor(Number(hours) || 0));
+  if (!Number.isFinite(startMs) || expectedHours === 0) {
+    return { expectedHours, validHours: 0, contiguousHours: 0 };
+  }
+  const rowsByTime = new Map(normalizeForecastHourly(record?.hourly ?? [], {
     limit: Number.MAX_SAFE_INTEGER,
-  })
-    .filter(row => componentRowHasValue(row, component))
-    .map(row => Date.parse(row.time))
-    .filter(time => Number.isFinite(time) && time >= start - 65 * 60000);
-  return validTimes.length
-    ? Math.max(0, (Math.max(...validTimes) - start) / 3600000)
-    : 0;
+  }).map(row => [row.time, row]));
+  let validHours = 0;
+  let contiguousHours = 0;
+  let contiguous = true;
+  for (let index = 0; index < expectedHours; index += 1) {
+    const time = new Date(startMs + index * 3_600_000).toISOString();
+    const valid = predicate(rowsByTime.get(time));
+    if (valid) validHours += 1;
+    if (contiguous && valid) contiguousHours += 1;
+    else contiguous = false;
+  }
+  return { expectedHours, validHours, contiguousHours };
 }
 
 function recordHasMarine(record, generatedAt) {
@@ -3097,6 +3140,12 @@ function recordHasMarine(record, generatedAt) {
   const completeness = record?.model?.completeness ?? {};
   return coverage.available && completeness.ocean === true
     && componentForecastHorizonHours(record, generatedAt, ['waterLevelCm','currentSpeedMps','currentDirectionDeg']) >= 24;
+}
+
+function recordNeedsEdrMarineRepair(record, generatedAt) {
+  const coverage = dmiForecastCoverage(record, generatedAt);
+  return !coverage.available
+    || componentForecastHorizonHours(record, generatedAt, ['waterLevelCm']) < 24;
 }
 
 function recordHasAtmosphere(record, generatedAt) {
@@ -3659,7 +3708,7 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
   }
 });
 
-const marineCacheCompleteAtStart = activeZoneIds.every(zoneId => recordHasMarine(nextDmiForecastStore.zones?.[zoneId], generatedAt));
+const marineCacheCompleteAtStart = activeZoneIds.every(zoneId => !recordNeedsEdrMarineRepair(nextDmiForecastStore.zones?.[zoneId], generatedAt));
 const atmosphereCacheCompleteAtStart = activeZoneIds.every(zoneId => recordHasAtmosphere(nextDmiForecastStore.zones?.[zoneId], generatedAt));
 const acquisitionPhase = !atmosphereCacheCompleteAtStart ? 'dmi-atmosphere-repair' : !marineCacheCompleteAtStart ? 'dmi-marine-repair' : 'dmi-component-refresh';
 const cursorStart = Math.max(0, Number(dmiPersistentRuntime.nextZoneCursor) || 0) % Math.max(1, stableFeatures.length);
@@ -3675,7 +3724,7 @@ const eligibleFeatures = rotatedStable.filter(feature => {
 const targetFeatures = eligibleFeatures
   .filter(feature => {
     const record = nextDmiForecastStore.zones?.[feature.properties?.id];
-    return !recordHasAtmosphere(record, generatedAt) || !recordHasMarine(record, generatedAt);
+    return !recordHasAtmosphere(record, generatedAt) || recordNeedsEdrMarineRepair(record, generatedAt);
   })
   .sort((a, b) => {
     const aMissingWind = !recordHasAtmosphere(nextDmiForecastStore.zones?.[a.properties?.id], generatedAt);
@@ -3797,27 +3846,30 @@ function buildRuntimeDiagnostics(output, health) {
     componentCoverage,
     forecastCompleteness: (() => {
       const horizons = [6, 24, 48, ACCEPTED_FORECAST_HOURS];
-      const componentKeys = { wind: ['windSpeedMps','windDirectionDeg'], wave: ['waveHeightM'], current: ['currentSpeedMps','currentDirectionDeg'], waterLevel: ['waterLevelCm'] };
       const rows = Object.fromEntries(horizons.map(hours => {
         let completeZones = 0, completeHours = 0, totalHours = 0;
         for (const [, zone] of zones) {
-          const hourly = normalizeForecastHourly(zone.forecast?.hourly ?? []).slice(0, hours);
-          let zoneComplete = hourly.length > 0;
-          for (const row of hourly) {
-            totalHours += 1;
-            const complete = Object.values(componentKeys).every(keys => keys.every(key => row[key] !== null && row[key] !== undefined));
-            if (complete) completeHours += 1; else zoneComplete = false;
-          }
-          if (zoneComplete && hourly.length >= hours) completeZones += 1;
+          const coverage = componentForecastGridCoverage(
+            zone.forecast,
+            output.generatedAt,
+            hours,
+            row => componentRowHasValue(row, 'wind')
+              && componentRowHasValue(row, 'wave')
+              && componentRowHasValue(row, 'current')
+              && ravScoreNumber(row?.waterLevelCm) !== null,
+          );
+          completeHours += coverage.validHours;
+          totalHours += coverage.expectedHours;
+          if (coverage.validHours === coverage.expectedHours) completeZones += 1;
         }
         return [String(hours), { completeZones, totalZones: zones.length, completeHours, totalHours, completeHoursPercent: totalHours ? round(completeHours / totalHours * 100, 1) : 0 }];
       }));
       return rows;
     })(),
     componentHorizonCoverage: Object.fromEntries(components.map(component => {
-      const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'wave' ? ['waveHeightM'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
+      const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
       const horizons=[6,24,48,ACCEPTED_FORECAST_HOURS]; const summary={};
-      for(const hours of horizons){let zonesComplete=0,validHours=0,totalHours=0;for(const [,zone] of zones){const hourly=normalizeForecastHourly(zone.forecast?.hourly??[]).slice(0,hours);const valid=hourly.filter(row=>keys.every(k=>row[k]!=null)).length;validHours+=valid;const expected=Math.min(hours,hourly.length);totalHours+=expected;if(expected>0&&valid===expected)zonesComplete++;}summary[hours]={zonesComplete,totalZones:zones.length,validHours,totalHours,percent:totalHours?round(validHours/totalHours*100,1):0};}
+      for(const hours of horizons){let zonesComplete=0,validHours=0,totalHours=0;for(const [,zone] of zones){const coverage=componentForecastGridCoverage(zone.forecast,output.generatedAt,hours,row=>component==='wave'?componentRowHasValue(row,'wave'):keys.every(key=>ravScoreNumber(row?.[key])!==null));validHours+=coverage.validHours;totalHours+=coverage.expectedHours;if(coverage.validHours===coverage.expectedHours)zonesComplete++;}summary[hours]={zonesComplete,totalZones:zones.length,validHours,totalHours,percent:totalHours?round(validHours/totalHours*100,1):0};}
       return [component,summary];
     })),
     freshness: {

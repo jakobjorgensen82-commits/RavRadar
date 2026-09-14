@@ -1931,6 +1931,7 @@ export function buildIntegratedRavScoreStateSeries(
     const nativeCadenceIntervalAttested = !sameTimeHold
       && verifiedEvidence
       && lastVerified !== null
+      && currentEvidence.at(-1) === lastVerified
       && ageHours > CURRENT_SUPPLY_MEMORY_POLICY.expectedEvidenceIntervalHours + EPSILON
       && ageHours <= CURRENT_SUPPLY_MEMORY_POLICY.maximumGapHours + EPSILON
       && sameNativeHoldAuthorization(

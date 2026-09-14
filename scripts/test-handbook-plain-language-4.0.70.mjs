@@ -105,7 +105,7 @@ forbidMarkers('Den historiske 4.0.318-driftsevidens', operational318?.body || ''
 const activeBinding = byId('ravscore-final-bindings-4-0-320');
 requireMarkers(`Den aktive ${pkg.version}-binding`, `${activeBinding?.title || ''}\n${activeBinding?.body || ''}`, [
   `RavScore ${pkg.version}`,
-  'Candidate G er fortsat offentlig',
+  'Den integrerede model er offentlig',
   `<code>modelContractSha256=${integratedReleaseBinding.modelContractSha256}</code>`,
   `<code>modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}</code>`,
   `over ${integratedBundleFileCount} kanonisk normaliserede transitive implementeringsfiler`,
@@ -119,7 +119,7 @@ requireMarkers(`Den aktive ${pkg.version}-binding`, `${activeBinding?.title || '
 const checkpointMetadataCas = byId('ravscore-checkpoint-metadata-cas-4-0-321');
 requireMarkers('Det aktive metadata-CAS-kapitel',
   `${checkpointMetadataCas?.title || ''}\n${checkpointMetadataCas?.body || ''}`, [
-    'Candidate G er fortsat den eneste offentlige model',
+    'Den integrerede model er den offentlige model',
     'højst 4 KiB metadata',
     'højst 16 MiB',
     'kun ved reel restore',
@@ -566,8 +566,8 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'VERIFIED_ONLY',
   'syntheticSampleCount=0',
   '0 aktive zoner og 210 `UNAVAILABLE`',
-  `Aktuel status – RavScore ${pkg.version} first-cutover-kandidat`,
-  `Status for det aktuelle modelarbejde – lokal ${pkg.version}, exact-head og cutover afventer`,
+  `Aktuel status – RavScore ${pkg.version} kode-only-rettelse`,
+  `Status for det aktuelle modelarbejde – lokal ${pkg.version}, exact-head og rettelsesdeploy afventer`,
   'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
   'state `6.0.0`',
   'DEC-0110/DEC-0112',

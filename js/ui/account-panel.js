@@ -1,14 +1,20 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.365";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.365";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.365";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.365";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.365";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.365";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.365";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.366";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.366";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.366";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.366";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.366";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.366";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.366";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
 }
+
+export const hasNumber = value => value !== null
+  && value !== undefined
+  && value !== ''
+  && typeof value !== 'boolean'
+  && Number.isFinite(Number(value));
 
 function rowKey(row = {}) {
   return String(row.client_observation_id || row.id || row.trip_id || '');
@@ -64,7 +70,7 @@ function renderHistoryRows(rows, context) {
     const zoneId = row.actual_zone_id || row.zone_id;
     const zone = displayName(zoneId, zoneNames, row.zone_name || t('account.areaMissing'));
     const part = displayName(row.actual_coastal_part_id, partNames, t('account.coastMissing'));
-    const grams = found && Number.isFinite(Number(row.grams)) ? `<span>${escapeHtml(formatNumber(row.grams, { maximumFractionDigits:1 }))} g</span>` : '';
+    const grams = found && hasNumber(row.grams) ? `<span>${escapeHtml(formatNumber(row.grams, { maximumFractionDigits:1 }))} g</span>` : '';
     const pending = row._source === 'device' && row.sync_status !== 'synced' ? `<span class="trip-log-pending">${t('account.pending')}</span>` : '';
     const manual = row.data_quality_flags?.includes('account-manual') ? `<span>${t('account.manual')}</span>` : '';
     const bindingStatus = accountTripBindingStatus(row, ravScoreModelBinding(), {

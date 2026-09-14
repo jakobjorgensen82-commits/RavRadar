@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-09-14 – lokal 4.0.365 audit-datasetbinding
+# NYESTE SANDHED – 2026-09-15 – 4.0.366 klar til exact-head-PR
+
+Ejeren har besluttet en permanent todeling: almindelige kode-/UI-/workflowrettelser deployes som kode-only med eksakt genbrug af senest gyldige data og uden kontakt til DMI, Copernicus eller Open-Meteo. En normal, tidsbegrænset vejrkørsel startes bagefter særskilt. Dens udfald kan ikke ugyldiggøre det allerede publicerede rettelsesdeploy; ved fejl bevares sidste gyldige datasæt. Modelændringer kræver en snæver, verificeret bindingsovergang af den gemte private runtime. Frisk data, geometri eller databaseændring er kun en konkret undtagelse. DEC-0148.
+
+4.0.366 implementerer denne kode-only vej sammen med post-cutover-rettelserne og den lille produktkritiske sourcegate. Det nye workflow kan kun startes manuelt på eksakt `main` med den præcise bekræftelse `DEPLOY-CODE-ONLY-REPAIR`; det genbruger en grøn exact-head PR-kontrol og kontakter ingen vejrleverandører. Installeret migration `20260914020000` er urørt; nyt append-only led er `20260914234500`. Under deployovergangen accepterer det kun den eksakte offentlige forgænger og den nye binding, mens central `activeModelBinding` fortsat afgør skriveadgangen og automatisk lukker forgængeren efter aktivering.
+
+Integrated bundle er `65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa`, Candidate G rollback `7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b`, og continuation `81045427e86a26b7c853a1f8832aece9f73afc2a4092c5292ec9e6730154b8a2`. Målrettede lokale kontroller er grønne. PR-gate, merge, kode-only-deploy og offentlig kontrol mangler; numeriske scorer, normal rotation og cachevedligeholdelse er først bevist efter den separate normale vejrkørsel.
+
+# HISTORISK SANDHED – 2026-09-14 – integreret model er online, numeriske scorer mangler
+
+PR #306 er admin-merget efter specifik ejergodkendelse som main `fa418f43bbd070c446ed19b6587541b93af89599`. Cutover `34877443841` publicerede privat runtime og Pages og afsluttede Supabase-overgangen. Sourcegate, providerhentning og brede valideringer blev sprunget over. Dette er onlinebevis, ikke bevis for fuldt numerisk fungerende produkt.
+
+Dataset `rr-20260914180039-210`: 210 zoner/673dele/118timer; integreret model1.1.0/schema6. Alle49.560zone/time/mode-resultater er utilgængelige. `complete:true` er kun strukturel komplethed. Privat runtime er gemt; checkpointbyg/save/publish blev sprunget over. Normalworkflowet er disabled, og ingen ny vejrkørsel er startet under Astra-reviewet.
+
+Ejeren krævede grundig samlet fejlsøgning før normalt vejr, fortsat uden oneoff/testspiraler. Bekræftede data-/UI-/rapportfejl og nødvendige normale opgraderingsændringer blev dokumenteret i `../../ai/ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md` og er nu implementeret i den lokale 4.0.366-kandidat. Ældre offline-/launchoplysninger og modstridende gatekrav nedenfor er historiske.
+
+# HISTORISK SANDHED – 2026-09-14 – lokal 4.0.365 audit-datasetbinding
 
 4.0.364 bestod sourcegate `34846130189`, blev merged som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 2 fortsatte efter en midlertidig Supabase 502. Den integrerede runtimeaudit bestod med 0 fejl, så de tidligere H0-fejl er reelt væk.
 

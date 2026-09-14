@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.366 adskiller rettelsesdeploy fra vejrhentning
+
+Efter den første offentlige integrerede cutover blev de konkrete livefejl samlet gennemgået. 4.0.366 retter tabt DKSS-vind, retning 360, falsk strømhold hen over null, forkert tidsdækning, afhængig EDR-reparation og UI-værdier, der gjorde manglende data til nul. Om-siden får iPhone-/Android-installationsvejledning og Facebookfællesskab.
+
+DEC-0148 gør den permanente leveringsvej kode-only: eksakt genbrug af senest gyldige data, ingen provider eller oneoff under rettelsesdeploy og separat tidsbegrænset normal weather bagefter. Det nye workflow er manuelt, exact-main- og bekræftelseslåst. Installeret migration 15 er urørt; migration 16 fører kun den nye modelbinding frem. Lokale produktkritiske kontroller er grønne; PR, deploy og driftsbevis mangler.
+
 # 2026-09-14 – 4.0.365 fører dataset-id gennem auditrapporten
 
 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og handoff `34848494028` genbrugte cachen uden provider. Cutover `34849662988` forsøg 2 fortsatte efter retry af en midlertidig Supabase 502 og gav grøn runtimeaudit med 0 fejl.
@@ -959,3 +965,6 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 3. Alle 673 tidligere tilstande blev accepteret, og ingen blev nulstillet. Referencetiden gik fra 00:00Z til 03:00Z, så dokumenteret yngste og ældste naturlige state-alder er 3/3 timer.
 4. Candidate G er fortsat diagnostic-only; offentlig `25/40/35` og aktiveringsforbuddet er uændret. 48-timersslutshadow udestår.
 
+# 2026-09-14 – rettelsesdeploy skilles permanent fra vejrhentning
+
+Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Providerkæden kører separat bagefter og kan ikke ugyldiggøre rettelsen. Modelbinding må kun føres frem gennem en eksplicit, verificeret migration. Se DEC-0148.

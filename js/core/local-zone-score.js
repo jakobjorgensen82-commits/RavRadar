@@ -1,11 +1,11 @@
-import { scoreRating } from './score-presentation.js?v=4.0.365';
+import { scoreRating } from './score-presentation.js?v=4.0.366';
 import {
   RAVSCORE_BEST_TIME_POLICY,
   compareRavScoreBestTimeCandidates,
   ravScoreBestTimeSelectionReason,
-} from './best-time-policy.js?v=4.0.365';
-import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.365';
-import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.365';
+} from './best-time-policy.js?v=4.0.366';
+import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.366';
+import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.366';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const safeCount = value => Number.isSafeInteger(value) && value >= 0;
@@ -13,6 +13,20 @@ const scoreNumber = value => finite(value) && value >= 0 && value <= 100;
 const plain = value => value && typeof value === 'object' && !Array.isArray(value);
 const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
 const HISTORY_COVERAGE_HOURS = 48;
+const HOUR_MS = 3_600_000;
+
+export function isCurrentForecastHour(value, now = Date.now()) {
+  const timeMs = value instanceof Date ? value.getTime() : Date.parse(value);
+  const nowMs = now instanceof Date
+    ? now.getTime()
+    : typeof now === 'number'
+      ? now
+      : Date.parse(now);
+  return finite(timeMs)
+    && finite(nowMs)
+    && timeMs <= nowMs
+    && Math.floor(timeMs / HOUR_MS) === Math.floor(nowMs / HOUR_MS);
+}
 const SCORE_BOUND_FIELDS = Object.freeze([
   'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
 ]);
@@ -324,7 +338,7 @@ export function selectLocalBestForDay({coastalParts,zoneId,mode,date,now=Date.no
     result:best.result,
     recommended:true,
     selectionReason:ravScoreBestTimeSelectionReason(candidates,mode),
-    isNow:Math.abs(Date.parse(best.row.time)-nowMs)<3600000,
+    isNow:isCurrentForecastHour(best.row.time,nowMs),
     source:'local-coastal-part',
     displayScope:'local',
     candidates:candidates.map(item=>({
@@ -343,7 +357,7 @@ export function selectLocalBestForDay({coastalParts,zoneId,mode,date,now=Date.no
         ...part,scoreBounds:{...part.scoreBounds},
       })),
       source:'local-coastal-part',
-      isNow:Math.abs(Date.parse(item.row.time)-nowMs)<3600000,
+      isNow:isCurrentForecastHour(item.row.time,nowMs),
     }))
   };
 }

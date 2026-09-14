@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { ravScoreModelBinding as rollbackBinding } from './rollback-assets/ravscore-model-contract.js';
-import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
 
 const canonicalLf = source => {
   const canonical = source.replaceAll('\r\n', '\n');
@@ -49,6 +46,9 @@ const H0_REFERENCE_RECOVERY_INTEGRATED_SHA256 = 'b144ebcd465ef783a7edd1cdb4c4fc0
 const H0_REFERENCE_RECOVERY_ROLLBACK_SHA256 = 'b4b258f21d645ec33d89c8bb7b41c879e7545b1dfb0b0a5d7c79217d401c16b9';
 const H0_REFERENCE_RECOVERY_CONTINUATION_SHA256 = '4894bfd82367e8de4bb37705c94c4a3a4b2db6327e4e0b79a0854e3cc6b1df7e';
 const H0_STATE_SNAPSHOT_MIGRATION_SHA256 = 'f664d2a36f9a9bde668a542ac74b2312eab56c1c0ef9087cc26ef71f4f3b491c';
+const H0_STATE_SNAPSHOT_INTEGRATED_SHA256 = '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01';
+const H0_STATE_SNAPSHOT_ROLLBACK_SHA256 = '1ccbb10ed3e89f9c8336539a2c566d7ab6efd099bf3e9d1598dbb31e84d5c3a1';
+const H0_STATE_SNAPSHOT_CONTINUATION_SHA256 = 'e272bd48de768e593904a362df92f40b5e5ab2c3dac0263216518d04b8bf4ea1';
 // 4.0.339 recovery: this migration was still pending after migration 4 rolled back.
 // Pin the corrected bytes AND prove below that only the two CASE parentheses changed.
 const PER_PAIR_MIGRATION_SHA256 = '8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2';
@@ -232,9 +232,9 @@ assert.equal(
 );
 let h0StateSnapshotExpected = body(immutableH0ReferenceRecovery);
 for (const [before, after, count] of [
-  [H0_REFERENCE_RECOVERY_INTEGRATED_SHA256, ravScoreModelBinding().modelBundleSha256, 3],
-  [H0_REFERENCE_RECOVERY_ROLLBACK_SHA256, rollbackBinding().modelBundleSha256, 2],
-  [H0_REFERENCE_RECOVERY_CONTINUATION_SHA256, await ravScoreContinuationImplementationSha256(), 1],
+  [H0_REFERENCE_RECOVERY_INTEGRATED_SHA256, H0_STATE_SNAPSHOT_INTEGRATED_SHA256, 3],
+  [H0_REFERENCE_RECOVERY_ROLLBACK_SHA256, H0_STATE_SNAPSHOT_ROLLBACK_SHA256, 2],
+  [H0_REFERENCE_RECOVERY_CONTINUATION_SHA256, H0_STATE_SNAPSHOT_CONTINUATION_SHA256, 1],
   ['20260914010000', '20260914020000', 2],
 ]) {
   assert.equal(h0StateSnapshotExpected.split(before).length - 1, count);
@@ -249,8 +249,8 @@ assert.equal(
   'H0 state-snapshot migration must remain byte-identical after LF normalization',
 );
 assert.equal(
-  rollbackBinding().modelBundleSha256,
+  H0_STATE_SNAPSHOT_ROLLBACK_SHA256,
   '1ccbb10ed3e89f9c8336539a2c566d7ab6efd099bf3e9d1598dbb31e84d5c3a1',
-  'The shared H0 state-snapshot implementation must have the exact successor Candidate G bundle',
+  'The immutable H0 state-snapshot migration must retain its exact Candidate G bundle',
 );
 console.log('Open-Meteo through H0 state-snapshot append-only migrations: immutable history and exact binding-only forward copies verified.');

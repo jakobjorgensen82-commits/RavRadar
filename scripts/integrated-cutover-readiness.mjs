@@ -119,6 +119,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260914020000_h0_state_snapshot_binding',
     filename: '20260914020000_h0_state_snapshot_binding.sql',
   }),
+  Object.freeze({
+    version: '20260914234500',
+    id: '20260914234500_post_cutover_current_hold_binding',
+    filename: '20260914234500_post_cutover_current_hold_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

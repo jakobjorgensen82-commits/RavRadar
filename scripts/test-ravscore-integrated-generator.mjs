@@ -638,8 +638,15 @@ for (const marker of [
 const supabasePersistenceStep = workflowStep('Test Supabase persistence roundtrip');
 assert.match(
   supabasePersistenceStep.block,
-  /if: github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'/,
-  'an explicit integrated first cutover must retain the production Supabase persistence roundtrip',
+  /if: \$\{\{ \(github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'\) && env\.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' \}\}/,
+  'ordinary runs and non-historical integrated cutovers must retain the production Supabase persistence roundtrip',
+);
+assert.equal(
+  supabasePersistenceStep.block.includes(
+    "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}",
+  ),
+  true,
+  'only the exact sealed historical first-cutover path may bypass the persistence roundtrip',
 );
 
 const legacySourceImportStep = workflowStep(
@@ -970,8 +977,10 @@ assert.ok(
     && wamFinalGateStep.block.includes('WAM_CODE: ${{ steps.wam-bootstrap-readiness.outputs.code }}')
     && wamFinalGateStep.block.includes('test "$WAM_OUTCOME" = "success"')
     && wamFinalGateStep.block.includes('test "$WAM_CODE" = "NONE"')
-    && !wamFinalGateStep.block.includes('continue-on-error'),
-  'the final WAM gate must fail closed only after downstream provider progress is saved',
+    && wamFinalGateStep.block.includes(
+      "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}",
+    ),
+  'the final WAM gate must fail closed after downstream progress except for the exact sealed historical first-cutover path',
 );
 
 const activeDmiRestoreStep = workflowStep(

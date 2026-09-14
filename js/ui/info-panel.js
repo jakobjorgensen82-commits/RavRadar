@@ -1,10 +1,10 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.365";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.365";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.365";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.365";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.365";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.366";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.366";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.366";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.366";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.366";
 
-const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
+export const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
 const compass = value => {
   if (!hasNumber(value)) return "–";
@@ -321,7 +321,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
     const days = JSON.parse(tideSection.querySelector(".tide-payload").textContent), table = tideSection.querySelector("[data-tide-table]");
     const render = index => {
       tideSection.querySelectorAll(".tide-day-tab").forEach((button,i)=>{button.classList.toggle("active",i===index);button.setAttribute("aria-selected",String(i===index));});
-      const valid = days[index].hours.filter(h=>Number.isFinite(Number(h.waterLevelCm)));
+      const valid = days[index].hours.filter(h=>hasNumber(h.waterLevelCm));
       const levels = valid.map(h=>Number(h.waterLevelCm)); const min=Math.min(...levels), max=Math.max(...levels);
       table.innerHTML = valid.length ? `<div class="tide-extremes"><span>${t('weather.lowest')} <b>${Math.round(min)} cm</b></span><span>${t('weather.highest')} <b>${Math.round(max)} cm</b></span></div><div class="tide-table-wrap"><table class="tide-table"><thead><tr><th>${t('weather.time')}</th><th>${t('weather.waterLevel')}</th></tr></thead><tbody>${valid.map(h=>`<tr class="${Number(h.waterLevelCm)===min?"low":Number(h.waterLevelCm)===max?"high":""}"><td>${hourLabel(h.time)}</td><td>${Math.round(h.waterLevelCm)>0?"+":""}${Math.round(h.waterLevelCm)} cm</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">${t('weather.noWater')}</p>`;
     };

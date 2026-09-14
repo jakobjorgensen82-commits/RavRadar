@@ -73,7 +73,8 @@ assert.equal(pkg.scripts['test:candidate-g-gap-workflow'], undefined);
 assert.equal(pkg.scripts['test:candidate-g-gap-contract'], undefined);
 assert.match(pkg.scripts['test:workflow-action-contracts'] ?? '', /test:candidate-g-gap-retirement/);
 assert.equal(pkg.scripts['validate:source'], 'node scripts/validate-source-once.mjs');
-assert.match(pkg.scripts['validate:source:checks'] ?? '', /test:workflow-action-contracts/);
+assert.doesNotMatch(pkg.scripts['validate:source:checks'] ?? '', /test:candidate-g-gap-retirement|test:workflow-action-contracts/,
+  'Den afsluttede Candidate G-engangsovergang hører til i fuld validering, ikke i den faste kildegate.');
 assert.match(releaseGate, /test:candidate-g-gap-retirement/);
 
 // Historical read/quality compatibility remains intentionally available. It

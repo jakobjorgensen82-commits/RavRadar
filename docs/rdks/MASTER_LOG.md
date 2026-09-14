@@ -1,4 +1,18 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.365 checkpointbinding
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – offentlig model og Astra-review
+
+Ejeren godkendte udtrykkeligt admin-merge af PR #306 uden PR-gate og direkte cutover trods risiko for ufuldstændigt artifact. Main `fa418f43`, run `34877443841`: privat runtime, Pages og Supabase-overgang lykkedes uden kildegate/providerhentning. Modellen er nu online, men offentligt dataset `rr-20260914180039-210` har endnu0tilgængelige scorer. Tidligere fuldt-datasæt-formuleringer må ikke gentages:210/673/118/complete viser struktur, ikke numerisk komplethed.
+
+Ejeren skiftede til Astra Ultra og bad derefter om grundig analyse før vejrkørslen med rettelsen. Reviewet bekræftede vindtab ved senere merge, ugyldig360-graders afrunding, falsk strømholdinterval hen over null og flere konkrete UI-/dækningsfejl. En normal opgradering skal desuden bevare gammel privat H0-state gennem ny modelbinding og undgå kendte source-/testgentagelser. Normal vejrrotation er gennemgået i kode, men ikke bevist i drift. Ingen ny providerkørsel, testsuite eller produktionskodeændring i reviewet.
+
+Den varige tekniske fortsættelse er `../ai/ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`. Dette checkpoint er dokumentation, ikke release4.0.366. Sol/Ekstra høj er planlagt til den samlede implementering. Ældre offline- og gateforløb nedenfor er historik.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – lokal 4.0.366 kode-only reparation
+
+Ejeren godkendte den persistente, manuelt aktiverede produktionsvej med Pages/OIDC og Supabase-write. Workflowet kræver eksakt main og `DEPLOY-CODE-ONLY-REPAIR`, genbruger grøn exact-head PR-kildeevidens og kontakter ingen vejrleverandør. Almindelige rettelser og normal vejrhentning er permanent separate efter DEC-0148.
+
+Den samlede 4.0.366-rettelse omfatter DKSS-windTail-merge, post-rounding retning, strengt numerisk input, komplet UTC-raster, uafhængig DMI-atmosfærereparation, EDR-reparerbare komponenter, nullbarriere i currenthold, korrekt nu-time, UI-nullbevarelse, nødtekst samt Om-side med appvejledning og Facebookgruppe. Installeret migration 15 er byteidentisk; nyt append-only led er `20260914234500`. Integrated/rollback/continuation er `65148b4a…`/`7fe45de7…`/`81045427…`. Målrettede kontroller er grønne; ingen oneoff eller providerhentning er kørt. PR, deploy, offentlig verifikation, normal weather og rotations-/cachebevis mangler.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.365 checkpointbinding
 
 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; forsøg 2 fortsatte og gav grøn runtimeaudit med 0 fejl. H0-rettelsen er bevist i produktionskæden.
 
@@ -3308,3 +3322,6 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Den lokale rettelse journalfører hver komplet shard hashbundet som privat IN_PROGRESS, skriver shadow før journal, genoptager kun eksakte same-reference product/pair-attempts og lader kun READY lukke source-stage/release.
 - Writerne deler nu én produktionskø og én kanonisk to-fils cachefamilie. Keepalive og current-hour-gate følger samme paths. Kun isoleret 118-preflight får 2.700 sekunder; normal produktion er fortsat 1.200.
 - Måltests og begge modelbundlekontroller er grønne; score, modelbinding, geometri, punkter og public runtime er uændrede. Exact-head og frisk 673 × 118/Feggesund mangler.
+# 2026-09-14 – permanent kode-only rettelsesdeploy adskilt fra normal vejrhentning
+
+Ejeren besluttede, at almindelige rettelser fremover skal deployes uden DMI/Copernicus/Open-Meteo og med eksakt genbrug af senest gyldige data. Den normale vejrhentning kører bagefter som et særskilt, tidsbegrænset forløb, så providerfejl ikke kan forsinke eller ugyldiggøre et gyldigt rettelsesdeploy. Modelændringer kræver en snæver verificeret migration af den gemte private runtime; privacy, artifactidentitet og reel dataintegritet består. Se DEC-0148.

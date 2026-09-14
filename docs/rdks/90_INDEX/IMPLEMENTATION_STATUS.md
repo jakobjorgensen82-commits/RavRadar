@@ -1,4 +1,32 @@
-# Aktuel implementeringsstatus – lokal 4.0.365 audit-datasetbinding
+# Aktuel implementeringsstatus – 2026-09-15 – 4.0.366 kode-only reparation
+
+- [x] Beslut permanent at adskille rettelsesdeploy fra normal vejrhentning; DEC-0148 er aktiv.
+- [x] Implementér de kendte lokale rettelser i vindretning, nulhåndtering, aktuel time, DMI-komponentdækning, strømhold og UI.
+- [x] Implementér eksakt 4.0.365→4.0.366 migration af den gemte private runtime, hvor kun modelbundlebindinger må ændres.
+- [x] Reducér sourcegaten fra cirka 167 brede/historiske kommandoer til 24 korte produktkritiske kontrakter med samlet fejlrapport.
+- [x] Færdiggør den manuelt aktiverede kode-only workflowvej, så providertrin springes over og offentlig runtime genbygges alene fra eksakt gemt tilstand.
+- [x] Bevar installeret migration 15 byteidentisk og tilføj migration 16 som reproducerbart append-only bindingsled.
+- [x] Bevar den eksakte offentlige forgænger under deployovergangen og lad central aktiv binding lukke den automatisk ved fuldført aktivering.
+- [x] Synkronisér version, bundles, RDKS, changelog og begge håndbøger; målrettede vejr-, RavScore-, deploy-, migration- og privacykontroller er grønne lokalt.
+- [ ] Commit, push, PR, merge og kode-only deploy; verificér exact main/artifact og den offentlige hjemmeside.
+- [ ] Start derefter normal, tidsbegrænset vejrhentning separat og bevis numeriske input, scorer, rotation og cachevedligeholdelse.
+
+DEC-0148 er aktiv. Ældre status nedenfor er historisk.
+
+# Historisk implementeringsstatus – 2026-09-14 – online; post-cutoverreview
+
+- [x] Admin-merge PR #306 på ejerens specifikke godkendelse, main `fa418f43`.
+- [x] Publicér integreret model/private runtime via cutover `34877443841`, uden sourcegate eller providerhentning.
+- [x] Læs offentligt dataset210/673/118; konstater0tilgængelige scorer og adskil struktur fra numerisk komplethed.
+- [x] Dokumentér konkrete vind-/retning-/strømholdfejl samt visnings-/dækningsfejl i `../../ai/ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`.
+- [ ] Implementér rettelserne samlet inklusive eksakt genbrug af privat H0-historik, ny binding og den normale vej uden kildegate/testgentagelser.
+- [ ] Versionsløft reelt alle steder og synkronisér releasehukommelse/håndbøger; geodata kun topversion med særskilt diff.
+- [ ] Kør almindeligt vejr efter rettelsen; mål faktiske accepterede tal, scorer, lokale afvisningsårsager og hel DMI-rotation. Ingen oneoff eller ny cutover.
+- [ ] Gennemgå live-UI, roadmap og gamle jobløse runs. Browseradfærd og ordinær cachevedligeholdelse er ikke bevist endnu.
+
+Kun lokalt dokumentationscheckpoint i dette review; ingen implementeret ny release. Ældre launchstatus nedenfor er historisk.
+
+# Historisk implementeringsstatus – lokal 4.0.365 audit-datasetbinding
 
 - [x] Bestå 4.0.364 sourcegate `34846130189`, merge PR #301 som main `273cb052` og forsegl providerfrit handoff `34848494028`.
 - [x] Retry midlertidig Supabase 502 i cutover `34849662988` og nå grøn integreret runtimeaudit med 0 fejl.

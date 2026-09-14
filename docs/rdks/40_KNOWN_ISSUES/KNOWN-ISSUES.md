@@ -1,4 +1,34 @@
-# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 checkpointfelt rettet
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.366 rettelser implementeret lokalt
+
+- **ISSUE-4.0.366-DEPLOY – ÅBEN P0:** Målrettede lokale kontroller er grønne; PR-gate, merge, manuel kode-only-deploy og offentlig verifikation mangler.
+- **ISSUE-POST-CUTOVER-WIND-MERGE – RETTET LOKALT:** Gyldig DKSS-`windTail` bevares atomisk som vind gennem merge.
+- **ISSUE-POST-CUTOVER-ROUND-360 – RETTET LOKALT:** Vind-, bølge- og strømretning normaliseres efter afrunding; null og boolske værdier bliver ikke til nul.
+- **ISSUE-POST-CUTOVER-H1-NULL-HOLD – RETTET LOKALT:** Sidste currentevidence skal være den sidste verificerede måling, før et nyt native holdinterval må attesteres.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – DELVIST RETTET / DRIFTSBEVIS MANGLER:** Fuldt forventet UTC-raster og atomiske komponenter kræves. De tidligere 967 direkte strømmangler er stadig ikke sikkert årsagsfordelt; ny normal kørsel skal måle den reelle rest.
+- **ISSUE-POST-CUTOVER-EDR-REPAIR – RETTET LOKALT:** Atmosfære forsøges uafhængigt af havfejl, og EDR-triggeren kræver ikke strøm, som EDR ikke kan hente.
+- **ISSUE-POST-CUTOVER-UI-MISSING-ZERO – RETTET LOKALT:** Manglende vandstand, fundvægt og score forbliver manglende; fremtidig time mærkes ikke som nu; nødtekst lover kun senest gemte data.
+- **ISSUE-POST-CUTOVER-STATE-UPGRADE – RETTET LOKALT:** Eksakt ni-fils privat runtimeovergang ændrer kun gennemgåede bindinger; nyt append-only migrationsled er reproducerbart.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN DRIFTSBEVIS:** Rotation og cachelogik er rettet/kontrolleret i kode, men skal stadig bevises af særskilt normal weather efter deploy.
+- **ISSUE-FORECAST-DUPLICATE-SOURCE-PAIRING – LATENT/ÅBEN:** Den reproducerede helperrisiko er ikke ændret i 4.0.366; ingen aktiv producentvej er bevist. Revurder efter normal drift uden at gøre den til deployblokering.
+- **ISSUE-OLD-JOBLESS-RUNS – ÅBEN EKSTERN:** Runs `34613079069`/`34228112413` gav fortsat 409/403 ved tidligere oprydning; ingen ny identisk retry uden ændret ekstern evidens.
+
+# HISTORISK CHECKPOINT – 2026-09-14 – online med konstaterede inputfejl
+
+- **ISSUE-4.0.365-LAUNCH – LUKKET SOM INSTALLATION:** PR #306/main `fa418f43`, cutover `34877443841`, Pages og privat runtime er publiceret. Ikke det samme som fungerende numeriske scorer.
+- **ISSUE-POST-CUTOVER-WIND-MERGE – ÅBEN P0:** Gyldig DKSS-windTail afvises som wind i efterfølgende merge; alle offentlige dele mangler accepteret vind ved H0.
+- **ISSUE-POST-CUTOVER-ROUND-360 – ÅBEN:** Afrundede vind/bølge/strømretninger kan blive360 og derefter afvises som hele komponenter.
+- **ISSUE-POST-CUTOVER-H1-NULL-HOLD – ÅBEN:**8dele vedH1 får falsk intervalattestation hen over eksplicit ukendt strømtrin; validatorafvisning og tabt serialiseret evidence.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN:** Endpoint-/kort nævner kan maskere huller; strukturcomplete må ikke kaldes fulde numeriske data.967direkte strømmangler er endnu ikke sikkert årsagsfordelt.
+- **ISSUE-POST-CUTOVER-EDR-REPAIR – ÅBEN:** Endepunktsdækning kan springe reelle vind/bølge/vandstandshuller over. Fejlet havkald afbryder vind/bølger, og strøm indgår i repair-trigger trods EDR ikke kan reparere strøm. Afgrænset fra Python-strømrotation.
+- **ISSUE-POST-CUTOVER-UI-MISSING-ZERO – ÅBEN:** Manglende vandstand/fundvægt kan vises som 0; fremtid kan mærkes nu; nødtekst lover komplethed uden bevis.
+- **ISSUE-POST-CUTOVER-STATE-UPGRADE – ÅBEN IMPLEMENTERING:** Nye model-/runtimehashes kræver afgrænset forgængerovergang; aktuelt gemt privat runtime findes, nyt separat checkpoint er ikke bekræftet.
+- **ISSUE-FORECAST-DUPLICATE-SOURCE-PAIRING – LATENT/ÅBEN:** Normalizer kan blande første rækkes tal med anden rækkes kilde; reproduceret, men ingen aktiv producentvej med sådanne dubletter bevist. Må ikke kaldes årsag til de aktuelle strømhuller.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN:** Rotation findes i kode; normal produktionsvedligeholdelse er ikke bevist. Workflowet er fortsat disabled indtil samlet rettelse.
+- **ISSUE-OLD-JOBLESS-RUNS – ÅBEN EKSTERN:**34613079069/34228112413 er ikke slettet; cancel409/delete403. Gentag ikke fejlagtigt, at de er fjernet.
+
+Evidens, små reproduktioner, afviste hypoteser og rettelsesplan: `../../ai/ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`. Ingen af de nye rettelser er implementeret i dette analysecheckpoint.
+
+# HISTORISK CHECKPOINT – 2026-09-14 – lokal 4.0.365 checkpointfelt rettet
 
 - **ISSUE-CUTOVER-34849662988-AUDIT-DATASET-ID – RETTET LOKALT:** Checkpoint-leddet krævede `.datasetId`, men runtimeauditproducenten udelod feltet fra rapporten. 4.0.365 returnerer det allerede validerede id.
 - **ISSUE-CUTOVER-34849662988-RUNTIME-AUDIT – LUKKET:** Forsøg 2 havde 0 auditfejl; 4.0.364's H0-rettelse virker.
