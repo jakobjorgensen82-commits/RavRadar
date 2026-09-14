@@ -1,3 +1,9 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.365 audit-datasetbinding
+
+4.0.364 bestod sourcegate `34846130189`, blev merged som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 2 fortsatte efter en midlertidig Supabase 502. Den integrerede runtimeaudit bestod med 0 fejl, så de tidligere H0-fejl er reelt væk.
+
+Cutoveren stoppede bagefter, fordi checkpoint-leddet krævede `.datasetId` i auditrapporten, mens auditproducenten ikke skrev feltet. 4.0.365 tilføjer alene det allerede validerede `full.datasetId`. Bundles `327b989b…`/`1ccbb10e…`, migration 15, score, vejr, rotation og cache er uændrede. Exact-head, merge, handoff, cutover og offentlig kontrol mangler. Ingen oneoff/weather. DEC-0147.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.364 H0-auditrekonstruktion
 
 4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.

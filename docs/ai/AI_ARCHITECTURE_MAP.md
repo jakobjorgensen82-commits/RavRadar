@@ -1,3 +1,9 @@
+## 2026-09-14 lokal 4.0.365 – datasetbinding fra runtimeaudit til deploy-handoff
+
+- `audit-ravscore-integrated-public-runtime.mjs` kontrollerer fortsat det private fulde input og returnerer nu samme `full.datasetId` i den payloadfri auditrapport.
+- Checkpoint-disposition og Pages-handoff binder rapportens kanoniske hash og dataset-id til samme offentlige manifest.
+- Ingen alternativ id-kilde, modelændring, migration eller vejrhentning indføres. DEC-0147.
+
 ## 2026-09-14 lokal 4.0.364 – H0-auditen bruger producentens reference
 
 - Runtimeaudittens rekonstruktion kalder den fælles current-bound-builder med `nativeHoldReferenceTime = state.currentReferenceAt` alene ved `NATIVE_CADENCE_HOLD`.

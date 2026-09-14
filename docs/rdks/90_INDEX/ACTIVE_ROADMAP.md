@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.365 fra kontraktrettelse til online
+
+1. **P0:** Kør én exact-head sourcegate på den færdige 4.0.365-head og merge byteidentisk.
+2. **P0:** Genskab kun same-head-handoff fra de eksisterende forseglede cacher; ingen provider og ingen oneoff.
+3. **P0:** Kør cutover videre gennem checkpoint, beskyttede writes, privat runtime, artifact og Pages-deploy.
+4. **P0 efter launch:** Kontroller den offentlige model, begge søgemåder og hjemmesidens felter; saml konkrete livefejl og ret dem samlet.
+5. **P0 efter launch:** Genaktivér normal weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-rotation, fallback og køretid uden oneoff.
+6. **P1:** Revurdér resten af roadmap mod live-evidens.
+
+Ingen ny model-, vejr-, rotations- eller migrationsændring indgår i 4.0.365.
+
 # Aktiv roadmap – 4.0.364 fra rettet audit til online
 
 1. **P0:** Kør én exact-head sourcegate på den færdige 4.0.364-head og merge byteidentisk.

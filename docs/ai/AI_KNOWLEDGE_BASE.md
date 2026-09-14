@@ -1,3 +1,10 @@
+# 2026-09-14 – 4.0.365 auditens datasetbinding
+
+- 4.0.364 sourcegate `34846130189`, main `273cb052` og providerfrit handoff `34848494028` er grønne.
+- Cutover `34849662988` forsøg 2 fortsatte efter en midlertidig Supabase 502. Integreret runtimeaudit bestod med 0 fejl; de 8 H0-last-mile- og 16 følgefejl er væk.
+- Checkpointet stoppede, fordi auditrapporten manglede det `datasetId`, som workflowet krævede. Producenten kontrollerede allerede id'et, men returnerede det ikke.
+- 4.0.365 returnerer `datasetId: full.datasetId`. Ingen model-, score-, vejr-, rotations-, cache-, migrations- eller privacyændring. Ingen oneoff/weather før launch. DEC-0147.
+
 # 2026-09-14 – 4.0.363 uforanderlig H0-state
 
 - Run `34832259268` byggede 210/673 men deployede ikke. De samme otte holds gav 8 replay-, 8 last-mile-, 8 Candidate-state-, 8 oracle- og 16 afledte modefejl.

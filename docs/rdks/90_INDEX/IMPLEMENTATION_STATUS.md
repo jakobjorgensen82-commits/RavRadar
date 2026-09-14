@@ -1,3 +1,14 @@
+# Aktuel implementeringsstatus – lokal 4.0.365 audit-datasetbinding
+
+- [x] Bestå 4.0.364 sourcegate `34846130189`, merge PR #301 som main `273cb052` og forsegl providerfrit handoff `34848494028`.
+- [x] Retry midlertidig Supabase 502 i cutover `34849662988` og nå grøn integreret runtimeaudit med 0 fejl.
+- [x] Afgræns checkpointstoppet til auditproducentens manglende topniveau-`datasetId`.
+- [x] Returnér det allerede validerede `full.datasetId` uden ændring af model, score, vejr, cache eller migration.
+- [ ] Kør én exact-head sourcegate, merge byteidentisk og genskab kun same-head-handoff.
+- [ ] Kør cutover til offentlig deploy og gennemgå live-siden; derefter normal weather/rotation. Ingen oneoff.
+
+DEC-0147 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.364 H0-auditrekonstruktion
 
 - [x] Bestå 4.0.363 sourcegate `34838663036`, merge PR #300 som main `b4024371` og forsegl providerfrit handoff `34840938570`.

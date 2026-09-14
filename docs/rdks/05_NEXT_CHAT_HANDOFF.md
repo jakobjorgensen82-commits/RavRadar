@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
+
+4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; retry i forsøg 2 fortsatte og gav grøn integreret runtimeaudit med 0 fejl. H0-rettelsen er dermed bevist.
+
+Stoppet kom bagefter: checkpoint-leddet krævede auditrapportens `datasetId`, men producenten skrev ikke feltet. 4.0.365 tilføjer alene det allerede validerede `full.datasetId` til rapporten. Modelbundles, migration 15, score, vejr, rotation, cache, geometri og privacy er uændrede.
+
+Fortsæt uden oneoff eller weather: én exact-head sourcegate → merge → kort providerfrit same-head-handoff → cutover → offentlig kontrol → normal weather/rotation. Sol/Ekstra høj. DEC-0147.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.364 efter anden online-først-cutover
 
 4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.

@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 checkpointfelt rettet
+
+- **ISSUE-CUTOVER-34849662988-AUDIT-DATASET-ID – RETTET LOKALT:** Checkpoint-leddet krævede `.datasetId`, men runtimeauditproducenten udelod feltet fra rapporten. 4.0.365 returnerer det allerede validerede id.
+- **ISSUE-CUTOVER-34849662988-RUNTIME-AUDIT – LUKKET:** Forsøg 2 havde 0 auditfejl; 4.0.364's H0-rettelse virker.
+- **ISSUE-SUPABASE-TRANSIENT-502 – DRIFT/RETRY:** Forsøg 1 stoppede på midlertidig 502 og fortsatte korrekt ved retry; ingen kodeændring begrundes af den alene.
+- **ISSUE-4.0.365-LAUNCH – ÅBEN P0:** Exact-head, merge, kort handoff, cutover og offentlig kontrol mangler. Ingen provider, oneoff eller normal weather før modellen er online.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Første almindelige weather-run skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+
+DEC-0147 er aktiv.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.364 H0-auditparameter rettet
 
 - **ISSUE-CUTOVER-34842010506-H0-AUDIT-REFERENCE – RETTET LOKALT:** De resterende 8 last-mile- og 16 modeudslag kom fra audittens manglende `nativeHoldReferenceTime`, ikke fra 24 uafhængige model- eller datafejl.
