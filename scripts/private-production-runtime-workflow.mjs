@@ -444,6 +444,36 @@ function assertConditionsMetadata(document) {
   return { datasetId: document.datasetId, productionReferenceAt, generatedAt };
 }
 
+function assertPublicManifestMetadata(document) {
+  if (!isPlainObject(document)
+    || typeof document.datasetId !== 'string'
+    || !/^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(document.datasetId)) {
+    throw new Error('Private runtime preflight manifest lacks a safe dataset identity');
+  }
+  const productionReferenceAt = canonicalTime(
+    document.productionReferenceAt,
+    'Private runtime preflight production reference',
+  );
+  const generatedAt = canonicalTime(
+    document.generatedAt,
+    'Private runtime preflight generation time',
+  );
+  if (document.complete !== true
+    || document.zoneCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount
+    || document.coastalPartCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount) {
+    throw new Error('Private runtime preflight manifest is not complete for 210 zones and 673 coastal parts');
+  }
+  assertRavScoreModelBinding(
+    document.ravScoreModelBinding,
+    'Private runtime preflight manifest model binding',
+  );
+  if (canonicalPrivateRuntimeJson(document.ravScoreModelBinding)
+      !== canonicalPrivateRuntimeJson(ravScoreModelBinding())) {
+    throw new Error('Private runtime preflight manifest belongs to another RavScore model');
+  }
+  return { datasetId: document.datasetId, productionReferenceAt, generatedAt };
+}
+
 function hasMeasuredWarmupCheckpointAbsenceAttestation(document) {
   return document?.ravScoreCandidateGRollback === undefined
     && document?.ravScoreCandidateGWarmup?.schemaVersion === '1.0.0'
@@ -1086,19 +1116,21 @@ export async function buildPrivateRuntimePreflightState({
   if (!inside(root, dmiBulkAbsolute)) {
     throw new Error('Private runtime preflight DMI bulk path escapes repository');
   }
-  const [conditions, bulk, oceanDiagnostics, runtime, contractHashes] = await Promise.all([
+  const [publicManifest, bulk, oceanDiagnostics, runtime, contractHashes] = await Promise.all([
     readJsonFile(
       root,
-      'data/live/conditions.json',
-      'Private runtime preflight conditions',
-      PRIVATE_RUNTIME_CAPACITY_POLICY.maxSingleFileBytes,
+      'data/live/manifest.json',
+      'Private runtime preflight public manifest',
+      4 * 1024 * 1024,
     ),
     readDmiBulkDocument(dmiBulkAbsolute),
     readJsonFile(root, 'data/diagnostics/dmi-ocean-diagnostics.json', 'Private runtime preflight ocean diagnostics', 4 * 1024 * 1024),
     readJsonFile(root, 'data/live/ravradar-runtime-diagnostics.json', 'Private runtime preflight diagnostics'),
     privateRuntimeContractHashes({ repositoryRoot: root }),
   ]);
-  const metadata = assertConditionsMetadata(conditions);
+  // This state contains metadata only. Read it from the small public manifest
+  // instead of reparsing the deliberately large private conditions payload.
+  const metadata = assertPublicManifestMetadata(publicManifest);
   const dmiRuns = {};
   for (const collection of PREFLIGHT_COLLECTIONS) {
     const referenceTime = bulk?.runs?.[collection]?.referenceTime;
