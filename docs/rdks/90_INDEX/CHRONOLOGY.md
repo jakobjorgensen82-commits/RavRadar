@@ -1,3 +1,9 @@
+# 2026-09-14 – 4.0.364 retter auditens sidste kendte H0-parameter
+
+4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.
+
+Ingen database- eller modelbinding ændres. Exact-head, merge, kort providerfrit handoff, cutover og offentlig kontrol er åbne. Se DEC-0146.
+
 # 2026-09-14 – 4.0.363 retter det første online-først-runtime-stop
 
 4.0.362 bestod sourcegate, blev merged via PR #299 som main `8f5d818f`, og handoff `34830877368` blev grønt uden provider. Cutover `34832259268` gendannede cachen og byggede 210/673, men ændrede ikke database eller hjemmeside.

@@ -13,7 +13,14 @@ import {
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
 } from '../js/core/ravscore-regime-memory.js';
 import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
-import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import {
+  buildIntegratedPartScoreSeries,
+  compactIntegratedRavScoreMode,
+  integratedInputCalibrationEligible,
+} from './lib/ravscore-integrated-runtime.mjs';
+import {
+  reconstructIntegratedEvaluationState,
+} from './audit-ravscore-integrated-public-runtime.mjs';
 import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { buildRavScoreProductionPartSeries } from './lib/ravscore-production-part-pipeline.mjs';
 import {
@@ -2054,6 +2061,35 @@ for (const nativePhase of [0, 1, 2]) {
     assert.equal(integratedTargetReplay.initialStateAccepted, true);
     assert.equal(integratedTargetReplay.continuationState, integratedTargetState,
       'the exact H0 hold continuation must remain replayable byte-for-byte');
+    const integratedTargetScore = productionTargetBound.scores[0];
+    const auditModel = {
+      ...integratedTargetScore.ravScoreModel,
+      currentTransition: integratedTargetScore.ravScoreModel.publicContext.currentTransition,
+    };
+    const reconstructedEvaluationState = reconstructIntegratedEvaluationState(
+      integratedTargetState,
+      auditModel,
+      integratedTargetScore.weather,
+      integratedTargetScore.ravScoreModel.modes.waders,
+      part.onshoreDirectionDeg,
+    );
+    for (const mode of ['waders', 'beach']) {
+      const reconstructedMode = compactIntegratedRavScoreMode(evaluateRavScoreIntegrated({
+        mode,
+        weather: integratedTargetScore.weather,
+        zone: { onshoreDirectionDeg: part.onshoreDirectionDeg },
+      }, { state: reconstructedEvaluationState }), {
+        inputCalibrationEligible: integratedInputCalibrationEligible(
+          integratedTargetScore.weather,
+        ),
+      });
+      assert.deepEqual(
+        reconstructedMode,
+        integratedTargetScore.ravScoreModel.modes[mode],
+        'the audit must reconstruct the exact ' + mode
+          + ' H0 hold mode from its real source time',
+      );
+    }
     const candidateTargetState = productionTargetBound.candidateGRollbackScores[0]
       .candidateG.continuationState;
     assert.equal(candidateTargetState.time, time(nativeTargetHour));

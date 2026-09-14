@@ -1,3 +1,9 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.364 H0-auditrekonstruktion
+
+4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.
+
+Den direkte regression er grøn for begge modes. Ingen ny migration, oneoff eller weather. Næste er én exact-head sourcegate, merge, kort handoff, cutover, live-sitekontrol og normal weather. Se DEC-0146 og `CHANGELOG-4.0.364.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.363 H0-state snapshot
 
 4.0.362 blev merged via PR #299 og fik grønt providerfrit handoff `34830877368`. Cutover `34832259268` byggede 210/673, men stoppede før writes/deploy på otte ensartede H0-holds.

@@ -1,3 +1,12 @@
+# 4.0.364 – H0-auditrekonstruktion
+
+- **REQ-4.0.364-NATIVE-REFERENCE-001 – BINDENDE P0 / TESTET:** Runtimeauditen skal ved verificeret `NATIVE_CADENCE_HOLD` bruge continuation states virkelige `currentReferenceAt` som `nativeHoldReferenceTime`.
+- **REQ-4.0.364-DIRECT-RECONSTRUCTION-001 – BINDENDE P0 / TESTET:** En virkelig syntetisk H0-holdtilstand skal rekonstruere præcis producentens persisterede resultat for både vaders og strand.
+- **REQ-4.0.364-NO-MODEL-CHANGE-001 – BINDENDE:** Modelbundles, continuation-hash, migration 15, scorematematik, vejr, rotation og cache forbliver uændrede.
+- **REQ-4.0.364-LAUNCH-001 – ÅBEN P0:** Én exact-head sourcegate, merge, same-head-handoff, cutover og offentlig kontrol mangler. Ingen oneoff eller normal weather før launch.
+
+DEC-0146 supplerer DEC-0145 og DEC-0144.
+
 # 4.0.363 – H0-state snapshot og korrekt Candidate G-holdaudit
 
 - **REQ-4.0.363-SNAPSHOT-001 – BINDENDE P0 / TESTET:** Hver integreret scoretime ejer en uforanderlig kopi af holdintervaller; senere forecasttimer må ikke mutere tidligere continuation state.

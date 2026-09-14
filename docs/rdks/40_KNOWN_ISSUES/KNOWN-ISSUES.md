@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.364 H0-auditparameter rettet
+
+- **ISSUE-CUTOVER-34842010506-H0-AUDIT-REFERENCE – RETTET LOKALT:** De resterende 8 last-mile- og 16 modeudslag kom fra audittens manglende `nativeHoldReferenceTime`, ikke fra 24 uafhængige model- eller datafejl.
+- **ISSUE-MISLEADING-LAST-MILE-CATCH – AFKLARET:** Last-mile-koden var catch-kategorien omkring rekonstruktionskaldet; last-mile-state kræver ingen produktændring.
+- **ISSUE-4.0.364-LAUNCH – ÅBEN P0:** Exact-head, merge, kort same-head-handoff, cutover og offentlig kontrol mangler. Ingen provider, oneoff eller normal weather før modellen er online.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Første almindelige weather-run skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+
+DEC-0146 er aktiv.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.363 H0-state rettet
 
 - **ISSUE-4.0.362-H0-STATE – RETTET LOKALT:** Otte H0-states blev bagudmuteret af næste forecasttime gennem en delt intervalliste. Snapshotkopi og replayregression er grønne.

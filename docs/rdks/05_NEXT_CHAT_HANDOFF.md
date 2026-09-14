@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.364 efter anden online-først-cutover
+
+4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.
+
+Næste: versions-/RDKS-slutkontrol → commit/push → én exact-head sourcegate → merge → kort providerfrit handoff → cutover → offentlig kontrol → normal weather. Ingen oneoff. Sol/Ekstra høj. DEC-0146.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.363 efter første online-først-cutover
 
 - Main `8f5d818f`/4.0.362, PR #299 og exact-head sourcegate er færdige. Handoff `34830877368` blev grønt uden provider.
