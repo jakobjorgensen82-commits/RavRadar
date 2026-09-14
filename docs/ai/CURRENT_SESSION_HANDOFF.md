@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-14 – 4.0.364 H0-auditrekonstruktion
+
+- **Base:** 4.0.363 er main `b4024371` efter PR #300 og sourcegate `34838663036`.
+- **Handoff/cutover:** `34840938570` var providerfrit grønt; `34842010506` byggede 210/673/1.346 og stoppede før writes.
+- **Fremgang:** 32/48 tidligere fejl er væk. Kun 8 last-mile- og 16 afledte modefejl stod tilbage.
+- **Rodårsag:** Auditten gav ikke producentens `currentReferenceAt` videre ved H0-hold; senere null overskyggede derfor den virkelige kilde.
+- **Rettet:** `nativeHoldReferenceTime` bindes kun ved verificeret `NATIVE_CADENCE_HOLD`; direkte producent-mod-audit-regression er grøn for begge modes.
+- **Uændret:** Bundles `327b989b…`/`1ccbb10e…`, migration 15, score, vejr, rotation og cache.
+- **Næste:** Én exact-head sourcegate, merge, kort handoff, cutover, offentlig kontrol og normal weather. Ingen oneoff. DEC-0146.
+
 # NYESTE CHECKPOINT – 2026-09-14 – 4.0.363 H0-state snapshot
 
 - **Base:** Main `8f5d818f` efter PR #299. Branch `codex/4.0.363-cutover-nonblocking-audit`.

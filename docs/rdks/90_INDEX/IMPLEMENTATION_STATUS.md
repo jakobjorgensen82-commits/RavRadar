@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.364 H0-auditrekonstruktion
+
+- [x] Bestå 4.0.363 sourcegate `34838663036`, merge PR #300 som main `b4024371` og forsegl providerfrit handoff `34840938570`.
+- [x] Kør cutover `34842010506`: 210/673/1.346 bygget, ingen writes; 32/48 tidligere fejl væk.
+- [x] Afgræns de resterende 8 last-mile- og 16 modeudslag til én manglende H0-kildetid i audittens rekonstruktion.
+- [x] Send `currentReferenceAt` som `nativeHoldReferenceTime` alene ved verificeret hold og bestå direkte regression for begge modes.
+- [x] Bevis uændrede modelbundles og uændret migrationsbinding.
+- [ ] Kør én exact-head sourcegate, merge byteidentisk og genskab kun same-head-handoff.
+- [ ] Kør cutover til offentlig deploy og gennemgå live-siden; derefter normal weather/rotation. Ingen oneoff.
+
+DEC-0146 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.363 H0-state snapshot
 
 - [x] Bevar 4.0.362 exact-head, PR #299/main `8f5d818f` og providerfri handoff `34830877368` som historisk bevis.

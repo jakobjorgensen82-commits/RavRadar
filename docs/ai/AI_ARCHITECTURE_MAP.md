@@ -1,3 +1,9 @@
+## 2026-09-14 lokal 4.0.364 – H0-auditen bruger producentens reference
+
+- Runtimeaudittens rekonstruktion kalder den fælles current-bound-builder med `nativeHoldReferenceTime = state.currentReferenceAt` alene ved `NATIVE_CADENCE_HOLD`.
+- Den direkte recovery-regression sammenligner rekonstrueret og persisteret integreret mode for både vaders og strand.
+- Modelbundles, continuation-hash, migration 15, scoreproducent og vejrvej er uændrede. DEC-0146.
+
 ## 2026-09-14 lokal 4.0.363 – H0-state snapshot og auditbinding
 
 - `ravscore-integrated-state-pipeline.js` kopierer `currentNativeHoldIntervalEnds` ind i hver row; senere rows kan ikke mutere tidligere continuation state.

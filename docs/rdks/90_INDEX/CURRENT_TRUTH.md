@@ -1,3 +1,9 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.364 H0-auditrekonstruktion
+
+4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.
+
+Dette er audit-only. Bundles `327b989b…`/`1ccbb10e…`, migration 15, score, vejr, rotation og cache er uændrede. Exact-head, merge, handoff, cutover og offentlig kontrol mangler. Ingen oneoff/weather. DEC-0146.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.363 efter H0-runtimefejl
 
 4.0.362 er main `8f5d818f` efter PR #299 og grøn exact-head-sourcegate. Handoff `34830877368` genbrugte cachen uden provider. Cutover `34832259268` byggede 210 zoner og 673 dele, men stoppede sikkert før database og deploy.

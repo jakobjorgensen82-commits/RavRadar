@@ -386,6 +386,9 @@ function historyScoreViewFromContinuation(
       referenceTime: state?.time,
       nativeHold: currentTransition === 'NATIVE_CADENCE_HOLD',
       nativeHoldIntervalEnds: state?.currentNativeHoldIntervalEnds,
+      nativeHoldReferenceTime: currentTransition === 'NATIVE_CADENCE_HOLD'
+        ? state?.currentReferenceAt
+        : null,
     })
     : {
       available: false,
@@ -476,7 +479,13 @@ function historyScoreViewFromContinuation(
   };
 }
 
-function integratedEvaluationState(state, model, weather, persisted, onshoreDirectionDeg) {
+export function reconstructIntegratedEvaluationState(
+  state,
+  model,
+  weather,
+  persisted,
+  onshoreDirectionDeg,
+) {
   const lastMile = waveApproachDeliveryContext(state?.waveApproachState);
   const currentAlignment = finite(weather?.currentSpeedMps)
     && finite(weather?.currentDirectionDeg)
@@ -1379,7 +1388,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     'PART_WAVE_STATE_METADATA_MISMATCH');
     let evaluationState = null;
     try {
-      evaluationState = integratedEvaluationState(
+      evaluationState = reconstructIntegratedEvaluationState(
         state,
         model,
         part?.current?.weather ?? {},

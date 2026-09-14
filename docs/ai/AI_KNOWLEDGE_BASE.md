@@ -16,6 +16,11 @@
 
 # AI Knowledge Base – RavRadar
 
+# Nyeste sandhed 2026-09-14 – lokal 4.0.364 H0-auditrekonstruktion
+
+- 4.0.363 bestod sourcegate `34838663036`, blev merged som main `b4024371`, og det providerfri handoff `34840938570` blev grønt. Cutover `34842010506` byggede 210 zoner, 673 dele og 1.346 modes, men stoppede før writes. 4.0.363 fjernede 32/48 tidligere fejl; de resterende 8 last-mile- og 16 modeudslag kom fra samme auditfejl: H0-rekonstruktionen udelod den virkelige ældre `currentReferenceAt`, så senere null-svar overskyggede målingen. 4.0.364 sender denne tid videre som `nativeHoldReferenceTime` kun ved verificeret `NATIVE_CADENCE_HOLD`. Direkte regression for begge modes er grøn; modelbundles, migration 15, score, vejr og cache er uændrede.
+- Der kræves ingen ny databasebinding. Exact-head, merge, handoff, cutover, offentlig kontrol og normal weather er åbne. Ingen oneoff. DEC-0146.
+
 # Nyeste sandhed 2026-09-14 – lokal 4.0.361 integreret strømaudit
 
 - Main er 4.0.360/`cbb56fcb` efter PR #297 og grøn sourcegate `34795741830`; Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.
