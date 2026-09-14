@@ -1,3 +1,13 @@
+# 2026-09-14 – 4.0.361 binder rumlig audit til produktionsvektor og integreret hold
+
+4.0.360 bestod sourcegate `34795741830`, blev merged som main `cbb56fcb`, og handoff `34797345624` havde 79.414/79.414 currentpar uden provider/oneoff. Cutover `34798027472` gennemførte fem hovedkontroller og 272/272 underkontroller. Fire var grønne; kun den rumlige audit genkendte 654/673. Ingen writes/deploy.
+
+Samme build havde 673/673 scoreklare dele og bestod integreret 210/673/1.346. Fem DMI-dele blev i auditten beregnet fra rå U/V før produktionens femdecimalers afrunding. Fjorten gyldige `NATIVE_CADENCE_HOLD` blev ikke genkendt, fordi auditten læste den pensionerede Candidate G-form i stedet for `ravScoreModel`.
+
+4.0.361 bruger produktionsprojektionens eksakte U/V, læser den aktive integrerede holdform og rapporterer individuelle årsager. Modelbundle, score, vejr, rotation, cache og alle gates er uændrede. Exact-head, merge, handoff, cutover og offentlig kontrol er åbne. Se DEC-0143.
+
+Ældre kronologiafsnit nedenfor er historiske checkpoints.
+
 # 2026-09-14 – 4.0.360 deler DMI's native→runtime-projektion med den rumlige audit
 
 4.0.359 bestod sourcegate `34788388836`, blev merged som main `8ec6b8be`, og handoff `34789764309` forseglede 79.414/79.414 currentpar uden provider/oneoff. Cutover `34790416354` gennemførte fem hovedkontroller og 272/272 underkontroller; fire var grønne, og kun den rumlige audit fejlede for 617 DMI-dele. Ingen writes/deploy.

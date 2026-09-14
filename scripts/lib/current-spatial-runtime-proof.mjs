@@ -2,6 +2,7 @@ import { directionFromComponents } from '../../js/core/current-direction-audit.j
 import {
   controlledLiveCurrentEnabled,
   verifiedLivePilotSource,
+  verifiedNativeCadenceReferenceForPart,
 } from './live-current-pilot.mjs';
 
 const INTERNAL_CURRENT_PROVENANCE_FIELDS = Object.freeze([
@@ -114,6 +115,47 @@ const pairKey = (partId, validTime) => {
 const fail = reason => ({ ok: false, reason });
 
 /**
+ * Prove that a vector-free current score is the integrated model's bounded
+ * native-cadence hold. Candidate G field names remain accepted only for the
+ * historical rollback runtime; integrated production uses ravScoreModel.
+ */
+export function verifyCoastalPartNativeCadenceHold({
+  part,
+  runtimePart,
+  pilotHistory,
+} = {}) {
+  const weather = runtimePart?.current?.weather;
+  if (finite(weather?.currentSpeedMps) || finite(weather?.currentDirectionDeg)) {
+    return fail('native-cadence-tilstanden indeholder en delvis eller fuld strømprojektion');
+  }
+  const state = runtimePart?.ravScoreModel ?? runtimePart?.candidateG;
+  if (state?.currentTransition !== 'NATIVE_CADENCE_HOLD') {
+    return fail('den vektorfri scoretime er ikke markeret som native-cadence-fastholdelse');
+  }
+  const memoryReady = state?.currentMemoryReady ?? state?.transportMemoryReady;
+  const memoryStatus = state?.currentMemoryStatus ?? state?.transportMemoryStatus;
+  if (!((memoryReady === true && memoryStatus === 'READY')
+    || (memoryReady === false && memoryStatus === 'WINDOW_INCOMPLETE'))) {
+    return fail('native-cadence-fastholdelsen mangler en tilladt hukommelsestilstand');
+  }
+  const currentAt = canonicalTime(runtimePart?.current?.time);
+  const referenceAt = canonicalTime(
+    state?.currentReferenceAt ?? state?.transportReferenceAt,
+  );
+  if (!currentAt || !referenceAt) {
+    return fail('native-cadence-fastholdelsen mangler gyldig score- eller referencetid');
+  }
+  const ageHours = (Date.parse(currentAt) - Date.parse(referenceAt)) / 3_600_000;
+  if (!(ageHours > 0 && ageHours <= 3)) {
+    return fail('native-cadence-fastholdelsen ligger uden for den tilladte tretimersgrænse');
+  }
+  if (!verifiedNativeCadenceReferenceForPart(part, pilotHistory, referenceAt)) {
+    return fail('native-cadence-fastholdelsen mangler sin eksakte verificerede kilderække');
+  }
+  return { ok: true, referenceAt, ageHours };
+}
+
+/**
  * Validate the complete closure once and index only its operational entries.
  * Consumers can then prove 673 displayed parts without repeatedly hashing the
  * full 79,414-pair document.
@@ -224,18 +266,23 @@ export function verifyCoastalPartCurrentProjection({
     }
     const matches = Object.values(bulkZone.hourly ?? {}).flatMap(row => {
       if (canonicalTime(row?.time) !== selectedTime) return [];
-      const verifiedSource = verifyBulkRow(bulkZone, part?.waterPoint, row);
-      if (!verifiedSource) return [];
+      const projected = verifyBulkRow(bulkZone, part?.waterPoint, row);
+      const verifiedSource = projected?.source;
+      if (!verifiedSource || !finite(projected?.currentUMps)
+        || !finite(projected?.currentVMps)) return [];
       const expected = internalCurrentProvenance({
         ...verifiedSource,
         status: 'verified',
         sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
       });
-      return sameValue(currentProof, expected) ? [{ row, source: {
-        ...verifiedSource,
-        status: 'verified',
-        sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
-      } }] : [];
+      return sameValue(currentProof, expected) ? [{
+        row: projected,
+        source: {
+          ...verifiedSource,
+          status: 'verified',
+          sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
+        },
+      }] : [];
     });
     if (matches.length !== 1) {
       return fail('den viste DMI-strøm matcher ikke præcis én verificeret privat bulk-række');
@@ -276,8 +323,12 @@ export function verifyCoastalPartCurrentProjection({
     }
   }
 
-  const uMps = Number(rawRow?.uMps ?? rawRow?.['current-u']);
-  const vMps = Number(rawRow?.vMps ?? rawRow?.['current-v']);
+  const uMps = Number(
+    rawRow?.currentUMps ?? rawRow?.uMps ?? rawRow?.['current-u'],
+  );
+  const vMps = Number(
+    rawRow?.currentVMps ?? rawRow?.vMps ?? rawRow?.['current-v'],
+  );
   if (!finite(uMps) || !finite(vMps)) {
     return fail('den private kilderække mangler et eksakt U/V-par');
   }

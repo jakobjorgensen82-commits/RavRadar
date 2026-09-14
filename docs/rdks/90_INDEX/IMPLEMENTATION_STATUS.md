@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – lokal 4.0.361 produktionsvektor og integreret hold
+
+- [x] Bestå 4.0.360 exact-head-sourcegate `34795741830`, merge PR #297 som main `cbb56fcb` med samme filtræ og forsegl handoff `34797345624` uden provider/oneoff med 79.414/79.414 currentpar.
+- [x] Kør cutover `34798027472` gennem alle fem hovedkontroller og 272/272 underkontroller; bevar stop før eksterne writes ved den ene røde rumlige audit.
+- [x] Bevis i samme build, at producenten havde 673/673 scoreklare dele, og at integreret public runtime bestod 210/673/1.346.
+- [x] Afgræns 654/673 til fem DMI-precisionforskelle og fjorten integrerede native-cadence-holds læst fra pensionerede felter; ingen vejrhuller.
+- [x] Returnér produktionsprojektionens eksakte femdecimalers U/V, og brug dem i den rumlige rekonstruktion efter uændret native DMI-verifikation.
+- [x] Læs integreret hold fra `ravScoreModel`, bevar Candidate G som historisk rollbackform, og kræv eksakt transition/reference/memory/alder/closurehistorik.
+- [x] Rapportér ikke-genkendte dele enkeltvis med årsag.
+- [x] Bestå direkte DMI-precision- og integreret hold-regression samt uændrede integrated-/rollback-bundle- og bindingschecks.
+- [x] Færdiggør version/RDKS/håndbog/geodata-only-diff og målrettet slutkontrol samlet.
+- [ ] Bestå én exact-head 4.0.361-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Genskab commitbundet handoff fra samme cacher uden provider/oneoff, og gennemfør cutover.
+- [ ] Verificér offentlig 210/673/118, begge modes og hele hjemmesiden; genaktivér derefter normal weather og bevis cachevedligeholdelse/rotation.
+
+DEC-0143 er aktiv. Ingen produktionsmodel-, vejr-, rotations-, cache-, geometri-, migrations- eller privacyændring indgår.
+
 # Aktuel implementeringsstatus – lokal 4.0.360 native→runtime DMI-bevis
 
 - [x] Bestå 4.0.359 exact-head-sourcegate `34788388836`, merge PR #296 som main `8ec6b8be` og bevis identisk filtræ.

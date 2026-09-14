@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret auditmismatch
+
+Main er 4.0.360/`cbb56fcb00b9ce654b51768b3df23d7add2e8904` efter PR #297 og sourcegate `34795741830`. Handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider/oneoff. Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.
+
+Cutover `34798027472` kørte alle fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne. Kun den rumlige audit fejlede med 654/673; ingen writes/deploy. Producenten havde samtidig 673/673 scoreklare dele, og integreret public runtime bestod 210/673/1.346.
+
+Lokal 4.0.361 retter alene audittens to stale kanter: fem DMI-dele reproduceres fra produktionsprojektionens femdecimalers U/V, og fjorten native-cadence-holds læses fra aktiv `ravScoreModel` frem for kun historisk `candidateG`. Ikke-genkendte dele får nu individuel årsag. Direkte regressioner og uændrede modelbundle-/bindingschecks er grønne.
+
+Fortsæt uden oneoff eller almindelig weather: version/RDKS/håndbog → målrettet slutkontrol → én exact-head GitHub-sourcegate → merge exact green → kort same-head cache-handoff → fuld cutover → offentlig 210/673/118/sitekontrol → normal weather/rotation. Bevar alle brugerændringer og eksisterende private artefakter. Sol/Ekstra høj.
+
+De jobløse poster `34613079069` og `34228112413` kan ikke starte og slettes, når GitHub gør dem sletbare.
+
+Se DEC-0143 og `CHANGELOG-4.0.361.md`. Ældre checkpoints nedenfor er historik.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 retter hele den samlede kontrolliste
 
 Main er 4.0.358/`2a1c73d2`; exact-head-sourcegate `34777480545` og cache-handoff `34781396538` er grønne. Handoffet bevarede target `2026-09-12T08:00:00Z`, hentede intet providervejr og lukkede alle 79.414 par: DMI 67.686, Copernicus 8.668, regional 944 og Open-Meteo 2.116, missing 0.

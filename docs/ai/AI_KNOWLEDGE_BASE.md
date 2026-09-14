@@ -1,5 +1,17 @@
 # AI Knowledge Base – RavRadar
 
+# Nyeste sandhed 2026-09-14 – lokal 4.0.361 integreret strømaudit
+
+- Main er 4.0.360/`cbb56fcb` efter PR #297 og grøn sourcegate `34795741830`; Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.
+- Handoff `34797345624` brugte ingen provider/oneoff og forseglede 79.414/79.414 currentpar over 118 timer, missing 0.
+- Cutover `34798027472` gennemførte fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne. Kun rumlig audit havde 654/673; ingen writes/deploy.
+- Producenten havde 673/673 scoreklare dele, og integreret public runtime bestod 210/673/1.346. Fem DMI-udfald kom fra rå præcision før produktionsafrunding; fjorten holds blev læst fra gammel Candidate G-form.
+- Lokal 4.0.361 bruger produktionsprojektionens femdecimalers U/V, læser `ravScoreModel`-hold og rapporterer individuelle årsager. Direkte regressioner og uændrede bundle-/bindingschecks er grønne.
+- Ingen score-, modelstate-, vejr-, rotations-, cache-, geometri-, migrations-, database- eller privacyændring. Ingen oneoff eller almindelig weather før offentlig modelverifikation.
+- Exact-head, merge, same-head-handoff, cutover, offentlig 210/673/118/sitekontrol og normal weather/rotationsbevis er åbne. DEC-0143 er bindende.
+
+Ældre "nyeste sandhed"-afsnit nedenfor er historiske checkpoints.
+
 # Nyeste sandhed 2026-09-14 – lokal 4.0.360 DMI native→runtime audit
 
 - Main er 4.0.359/`8ec6b8be` efter grøn exact-head-sourcegate `34788388836`; Candidate G er stadig offentlig, og normalworkflowet er deaktiveret.

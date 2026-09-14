@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {
   buildOperationalCurrentEntryIndex,
   verifyCoastalPartCurrentProjection,
+  verifyCoastalPartNativeCadenceHold,
 } from './lib/current-spatial-runtime-proof.mjs';
 import {
   controlledLiveCurrentEnabled,
@@ -539,6 +540,24 @@ assert.equal(coldHoldState.ravScoreState.rows.at(-1).time, new Date(REFERENCE).t
 assert.equal(coldHoldState.ravScoreState.rows.at(-1).currentTransition, 'NATIVE_CADENCE_HOLD');
 assert.equal(coldHoldState.ravScoreState.rows.at(-1).currentDirectInputAvailable, true,
   'a cold production replay must accept H0 hold only after seeing its exact private source row');
+const coldHoldScore = coldHoldState.scores[0];
+const integratedHoldProof = verifyCoastalPartNativeCadenceHold({
+  part: regionalPart,
+  runtimePart: {
+    current: { time: coldHoldScore.time, weather: coldHoldScore.weather },
+    ravScoreModel: {
+      currentTransition: coldHoldScore.ravScoreModel.publicContext.currentTransition,
+      currentReferenceAt: coldHoldScore.ravScoreModel.currentReferenceAt,
+      currentMemoryReady: coldHoldScore.ravScoreModel.currentMemoryReady,
+      currentMemoryStatus: coldHoldScore.ravScoreModel.currentMemoryStatus,
+    },
+  },
+  pilotHistory: liveWithRegionalReference,
+});
+assert.equal(integratedHoldProof.ok, true,
+  'the spatial audit must read an integrated native hold from ravScoreModel, not the retired Candidate G field');
+assert.equal(integratedHoldProof.referenceAt, new Date(SOURCE_TIME).toISOString());
+assert.equal(integratedHoldProof.ageHours, 1);
 assert.equal(sanitizedRegional[0].currentProvenance.status, 'unverified');
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.validTime, REFERENCE);
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.sourceValidTime, SOURCE_TIME);

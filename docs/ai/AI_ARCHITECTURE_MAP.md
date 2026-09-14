@@ -1,3 +1,11 @@
+## 2026-09-14 lokal 4.0.361 – rumlig strømaudit følger integreret produktion
+
+- `projectExactDmiNativeCurrentToForecast` kalder `buildDmiForecastHourly` efter positiv native DMI-verifikation og returnerer både runtimeproveniens og de femdecimalers `currentUMps/currentVMps`, som produktionen bruger.
+- `verifyCoastalPartCurrentProjection` reproducerer offentlig hastighed/retning fra denne produktionsvektor; rå præcision før forecastprojektion er ikke runtimebevis.
+- `verifyCoastalPartNativeCadenceHold` foretrækker `runtimePart.ravScoreModel`, kræver transition/reference/memory/alder/eksakt historik og bevarer `candidateG` alene som historisk rollbackform.
+- Den rumlige audit giver en konkret fejlårsag pr. ikke-genkendt del. Den samlede 673/673-gate er uændret.
+- Modelbundles/hashes, scorevej, vejrproducenter, rotation og cache er uændrede. DEC-0143 er bindende.
+
 ## 2026-09-14 lokal 4.0.360 – native DMI-kilde og afledt runtimeproveniens
 
 - `update-dmi-bulk.py` producerer den verificerede native DMI-kilderække; den skal bestå exact item/asset/modelrun/collection/grid/gridpunkt/tid-identitet før brug.

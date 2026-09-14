@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret auditmismatch
+
+- **ISSUE-CUTOVER-34798027472-SPATIAL-CURRENT – LOKALT LUKKET / CI ÅBEN:** Den ene af 272 underkontroller genkendte 654/673 dele, mens producenten og den særskilte integrerede audit havde 673/673. Ingen writes/deploy.
+- **ISSUE-DMI-PROJECTED-VECTOR-PRECISION – LOKALT LUKKET / CI ÅBEN:** Fem DMI-dele reproduceres nu fra produktionens femdecimalers U/V i stedet for rå højpræcision.
+- **ISSUE-INTEGRATED-NATIVE-HOLD-FIELDS – LOKALT LUKKET / CI ÅBEN:** Fjorten gyldige holds læses nu fra `ravScoreModel`; historisk `candidateG` er kun rollbackkompatibilitet.
+- **ISSUE-SPATIAL-AUDIT-INDIVIDUAL-REASONS – LOKALT LUKKET / CI ÅBEN:** Ikke-genkendte dele rapporteres nu enkeltvis med årsag.
+- **ISSUE-4.0.361-LAUNCH – ÅBEN P0:** Exact-head-CI, merge, same-head-handoff, cutover og offentlig/siteverifikation mangler. Ingen provider-oneoff.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Almindelige kørsler skal bevise cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- **ISSUE-GHOST-RUN-CLEANUP – TIDSBUNDET:** `34613079069` og `34228112413` har `jobs:[]` og kan ikke starte. De slettes, når GitHub gør dem sletbare.
+- **ISSUE-ZONE-LOCAL-UNAVAILABLE-AGGREGATION – AFKLARING EFTER LAUNCH:** Eksisterende all-parts-regel revurderes mod live evidens efter modellen er online.
+
+DEC-0143 er aktiv. Ingen score-, vejr-, rotations-, cache-, migrations- eller geometriændring.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.360 efter DMI native/runtime-mismatch
 
 - **ISSUE-CUTOVER-34790416354-SPATIAL-DMI – LOKALT LUKKET / CI ÅBEN:** Den rumlige audit projicerer nu en verificeret native DMI-række gennem samme produktionsfunktion som runtime før streng sammenligning. De 617 udfald var ikke huller.

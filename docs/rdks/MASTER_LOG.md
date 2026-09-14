@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.361 integreret strømaudit
+
+4.0.360 bestod exact-head-sourcegate `34795741830`, blev merged som main `cbb56fcb`, og cache-handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider/oneoff. Cutover `34798027472` gennemførte fem hovedkontroller og 272/272 underkontroller; fire hovedkontroller var grønne, og den eneste fejl var 654/673 i den rumlige audit. Ingen eksterne writes/deploy.
+
+Samme build dokumenterede 673/673 scoreklare dele, og den integrerede public-runtime-audit bestod 210/673/1.346. Fem DMI-rækker blev genberegnet fra rå værdier før produktionens femdecimalers afrunding. Fjorten gyldige integrerede holds blev overset, fordi auditten kun læste `candidateG` og ikke `ravScoreModel`.
+
+Lokal 4.0.361 returnerer den produktionsdannede U/V-vektor fra audit-adapteren, læser aktiv integreret holdtilstand og giver individuelle fejlårsager. Direkte regressioner og byteuændrede modelbundle-/bindingschecks er grønne. Ingen score-, vejr-, rotations-, cache-, geometri-, migrations- eller privacyændring; ingen oneoff. Se DEC-0143 og `CHANGELOG-4.0.361.md`.
+
+Næste: samlet version/RDKS/håndbog → målrettet slutkontrol → én exact-head-sourcegate → merge → kort cachebaseret same-head-handoff → cutover → offentlig/sitekontrol → normal weather/rotation.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.360 fælles DMI-projektion
 
 4.0.359 bestod sourcegate `34788388836`, blev merged som main `8ec6b8be` og forseglede cache-handoff `34789764309` uden provider/oneoff med 79.414/79.414 currentpar, missing 0.
