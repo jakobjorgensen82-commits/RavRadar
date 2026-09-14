@@ -1995,6 +1995,41 @@ function scoreCoastalPartsRuntime(
   const partRows = [];
   const sourceAgeRows = [];
   const currentInputTraceRows = [];
+  const componentStageSummary = {
+    partCount: 0,
+    record: {
+      windTupleCount: 0,
+      waveHeightPeriodCount: 0,
+      waveDirectionCount: 0,
+      currentVectorCount: 0,
+      currentStateOnlyHoldCount: 0,
+      waterLevelCount: 0,
+    },
+    sanitized: {
+      windTupleCount: 0,
+      waveHeightPeriodCount: 0,
+      waveDirectionCount: 0,
+      currentVectorCount: 0,
+      currentStateOnlyHoldCount: 0,
+      waterLevelCount: 0,
+      waterLevelTrendCount: 0,
+    },
+    model: {
+      currentVerifiedCount: 0,
+      currentStateOnlyHoldCount: 0,
+      currentDirectInputReadyCount: 0,
+      wadersAvailableCount: 0,
+      beachAvailableCount: 0,
+      wadersReasons: {},
+      beachReasons: {},
+    },
+  };
+  const addSafeReason = (target, reason) => {
+    const safeReason = typeof reason === 'string' && /^[A-Z][A-Z0-9_]{0,127}$/.test(reason)
+      ? reason
+      : 'NONE_OR_SANITIZED_UNKNOWN';
+    target[safeReason] = (target[safeReason] ?? 0) + 1;
+  };
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
   const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
     parentForecastStore,
@@ -2145,7 +2180,7 @@ function scoreCoastalPartsRuntime(
         ? (liveCurrentPilot?.entries ?? []).find(entry =>
           entry?.partId === part.partId && entry?.validTime === partForecastStartAt) ?? null
         : null;
-      const recordTraceHour = traced
+      const recordTraceHour = traced || RAVSCORE_CURRENT_TRACE_PATH
         ? record?.hourly?.find(hour => hour?.time === partForecastStartAt) ?? null
         : null;
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
@@ -2272,9 +2307,76 @@ function scoreCoastalPartsRuntime(
             { projection: 'candidate-g-legacy-quantized' },
           ),
       });
+      const sanitizedTraceHour = RAVSCORE_CURRENT_TRACE_PATH
+        ? hourly.find(hour => hour?.time === partForecastStartAt) ?? null
+        : null;
+      const scoreTraceHour = RAVSCORE_CURRENT_TRACE_PATH
+        ? scores.find(score => score?.time === partForecastStartAt) ?? null
+        : null;
+      if (RAVSCORE_CURRENT_TRACE_PATH) {
+        const publicContext = scoreTraceHour?.ravScoreModel?.publicContext ?? null;
+        const waders = scoreTraceHour?.ravScoreModel?.modes?.waders ?? null;
+        const beach = scoreTraceHour?.ravScoreModel?.modes?.beach ?? null;
+        componentStageSummary.partCount += 1;
+        componentStageSummary.record.windTupleCount += Number(
+          ravScoreNumber(recordTraceHour?.windSpeedMps) !== null
+          && ravScoreNumber(recordTraceHour?.windDirectionDeg) !== null,
+        );
+        componentStageSummary.record.waveHeightPeriodCount += Number(
+          ravScoreNumber(recordTraceHour?.waveHeightM) !== null
+          && ravScoreNumber(recordTraceHour?.wavePeriodS) !== null,
+        );
+        componentStageSummary.record.waveDirectionCount += Number(
+          ravScoreNumber(recordTraceHour?.waveDirectionDeg) !== null,
+        );
+        componentStageSummary.record.currentVectorCount += Number(
+          ravScoreNumber(recordTraceHour?.currentUMps) !== null
+          && ravScoreNumber(recordTraceHour?.currentVMps) !== null,
+        );
+        componentStageSummary.record.currentStateOnlyHoldCount += Number(
+          recordTraceHour?.currentStateOnlyHold != null,
+        );
+        componentStageSummary.record.waterLevelCount += Number(
+          ravScoreNumber(recordTraceHour?.waterLevelCm) !== null,
+        );
+        componentStageSummary.sanitized.windTupleCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.windSpeedMps) !== null
+          && ravScoreNumber(sanitizedTraceHour?.windDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.waveHeightPeriodCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waveHeightM) !== null
+          && ravScoreNumber(sanitizedTraceHour?.wavePeriodS) !== null,
+        );
+        componentStageSummary.sanitized.waveDirectionCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waveDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.currentVectorCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.currentSpeedMps) !== null
+          && ravScoreNumber(sanitizedTraceHour?.currentDirectionDeg) !== null,
+        );
+        componentStageSummary.sanitized.currentStateOnlyHoldCount += Number(
+          sanitizedTraceHour?.currentStateOnlyHold != null,
+        );
+        componentStageSummary.sanitized.waterLevelCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waterLevelCm) !== null,
+        );
+        componentStageSummary.sanitized.waterLevelTrendCount += Number(
+          ravScoreNumber(sanitizedTraceHour?.waterLevelTrendCm3h) !== null,
+        );
+        componentStageSummary.model.currentVerifiedCount += Number(publicContext?.currentVerified === true);
+        componentStageSummary.model.currentStateOnlyHoldCount += Number(
+          publicContext?.currentTransition === 'NATIVE_CADENCE_HOLD',
+        );
+        componentStageSummary.model.currentDirectInputReadyCount += Number(
+          publicContext?.currentVerified === true
+          || publicContext?.currentTransition === 'NATIVE_CADENCE_HOLD',
+        );
+        componentStageSummary.model.wadersAvailableCount += Number(waders?.available === true);
+        componentStageSummary.model.beachAvailableCount += Number(beach?.available === true);
+        addSafeReason(componentStageSummary.model.wadersReasons, waders?.reason);
+        addSafeReason(componentStageSummary.model.beachReasons, beach?.reason);
+      }
       if (traced) {
-        const sanitizedTraceHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
-        const scoreTraceHour = scores.find(score => score?.time === partForecastStartAt) ?? null;
         const recordCurrentSource = recordTraceHour?.currentProvenance
           ?? recordTraceHour?.sources?.current
           ?? null;
@@ -2470,6 +2572,7 @@ function scoreCoastalPartsRuntime(
       tracedPartCount: currentInputTraceRows.length,
       rawVectorsIncluded: false,
       coordinatesIncluded: false,
+      componentStageSummary,
       rows: currentInputTraceRows,
     } : null,
     candidateGRollbackRuntime: rollbackReady ? candidateGRollbackRuntime : null,

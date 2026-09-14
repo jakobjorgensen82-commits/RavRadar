@@ -2068,7 +2068,7 @@ jobs:
             --registry data/live/coastal-parts-v2.json \
             --production-target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
-      - name: Trace the fourteen current inputs through the actual score build
+      - name: Trace the fourteen current inputs and aggregate every score input stage
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           RAVRADAR_WEATHER_CACHE_ONLY: true
@@ -2093,10 +2093,11 @@ jobs:
             and .rawVectorsIncluded == false
             and .coordinatesIncluded == false
             and (.rows | length) == 14
+            and .componentStageSummary.partCount == 673
           ' "$TRACE_PATH" >/dev/null
-          jq '{productionReferenceAt, requestedPartCount, tracedPartCount, rows}' "$TRACE_PATH"
+          jq '{productionReferenceAt, requestedPartCount, tracedPartCount, componentStageSummary, rows}' "$TRACE_PATH"
 
-      - name: Upload only the payload-free current input trace
+      - name: Upload only the payload-free input-stage trace
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-current-input-stage-trace-${{ github.run_id }}-${{ github.run_attempt }}
