@@ -111,7 +111,7 @@ jobs:
           }
           fetch_public data/live/manifest.json manifest.json 1048576
           fetch_public data/live/public-conditions.json public-conditions.json 33554432
-          fetch_public data/live/public-condition-details.json public-condition-details.json 67108864
+          fetch_public data/live/public-condition-details.json public-condition-details.json 134217728
           fetch_public data/live/coastal-parts-v2.json coastal-parts-v2.json 16777216
           fetch_public data/zones.geojson zones.geojson 33554432
           fetch_public data/water-level-station-routing.json water-level-station-routing.json 4194304

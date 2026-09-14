@@ -15,6 +15,7 @@
 
 - DEC-0148 gør kode-only til standard for almindelige rettelser: genbrug senest gyldige data eksakt, deploy kode først, og kør normal tidsbegrænset vejrhentning separat bagefter.
 - Det nye `Deploy RavRadar code-only repair` kan kun startes manuelt på eksakt `main` med bekræftelsen `DEPLOY-CODE-ONLY-REPAIR`. Det kontakter ingen vejrleverandør og genbruger en grøn exact-head PR-kildekontrol.
+- Downloadloftet for `public-condition-details.json` er 128 MiB: over den målte livefil på 117.820.378 bytes, men fortsat fast og afgrænset.
 - Den offentlige runtime gendannes fra de seks eksakte livefiler. Den private runtime bevarer alle ni tilladte filer; kun de gennemgåede modelbindinger må ændres.
 - Den allerede installerede migration `20260914020000` er urørt. Den nye append-only migration er `20260914234500_post_cutover_current_hold_binding.sql`.
 - Migrationen bevarer den eksakte offentlige forgængerbinding under selve deployovergangen. Den centrale `activeModelBinding` afgør fortsat enerådende, hvilken binding der må skrive, så forgængeren afvises automatisk efter fuldført aktivering.
