@@ -1997,6 +1997,16 @@ function scoreCoastalPartsRuntime(
   const currentInputTraceRows = [];
   const componentStageSummary = {
     partCount: 0,
+    rawDmi: {
+      targetPrimaryWindTupleCount: 0,
+      targetPrimaryWindAcceptedCount: 0,
+      targetTailWindTupleCount: 0,
+      targetTailWindAcceptedCount: 0,
+      nearTargetPrimaryWindAcceptedPartCount: 0,
+      nearTargetTailWindAcceptedPartCount: 0,
+      forecastPrimaryWindAcceptedPartCount: 0,
+      forecastTailWindAcceptedPartCount: 0,
+    },
     record: {
       windTupleCount: 0,
       waveHeightPeriodCount: 0,
@@ -2018,6 +2028,9 @@ function scoreCoastalPartsRuntime(
       currentVerifiedCount: 0,
       currentStateOnlyHoldCount: 0,
       currentDirectInputReadyCount: 0,
+      stateOnlyHoldReferenceResolvableCount: 0,
+      stateOnlyHoldReferenceInRecoveryCount: 0,
+      stateOnlyHoldUnknownGapBeforeTargetCount: 0,
       wadersAvailableCount: 0,
       beachAvailableCount: 0,
       wadersReasons: {},
@@ -2162,9 +2175,43 @@ function scoreCoastalPartsRuntime(
       const rawBulkRows = Array.isArray(bulkCache?.zones?.[bulkId]?.hourly)
         ? bulkCache.zones[bulkId].hourly
         : Object.values(bulkCache?.zones?.[bulkId]?.hourly ?? {});
-      const rawBulkHour = traced
+      const rawBulkHour = RAVSCORE_CURRENT_TRACE_PATH
         ? rawBulkRows.find(hour => hour?.time === partForecastStartAt) ?? null
         : null;
+      const rawWindTuple = (row, component = 'wind') => {
+        const speedKey = component === 'windTail'
+          ? 'wind-tail-speed-10m'
+          : 'wind-speed-10m';
+        const directionKey = component === 'windTail'
+          ? 'wind-tail-dir-10m'
+          : 'wind-dir-10m';
+        return ravScoreNumber(row?.[speedKey]) !== null
+          && ravScoreNumber(row?.[directionKey]) !== null;
+      };
+      const rawWindAccepted = (row, component) => rawWindTuple(
+        row,
+        component,
+      ) && Boolean(verifiedDmiNativeComponentSource(
+        row?.sources?.[component],
+        row?.time,
+        component,
+        partDmiIdentity,
+      ));
+      const targetMs = Date.parse(partForecastStartAt);
+      const nearTargetRows = RAVSCORE_CURRENT_TRACE_PATH
+        ? rawBulkRows.filter(row => {
+          const rowMs = Date.parse(row?.time ?? '');
+          return Number.isFinite(rowMs) && Math.abs(rowMs - targetMs) <= 4 * 3600000;
+        })
+        : [];
+      const forecastRows = RAVSCORE_CURRENT_TRACE_PATH
+        ? rawBulkRows.filter(row => {
+          const rowMs = Date.parse(row?.time ?? '');
+          return Number.isFinite(rowMs)
+            && rowMs >= targetMs
+            && rowMs < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3600000;
+        })
+        : [];
       const rawBulkCurrentSource = rawBulkHour?.sources?.current ?? null;
       const rawBulkCurrentAccepted = traced && ravScoreNumber(rawBulkHour?.['current-u']) !== null
         && ravScoreNumber(rawBulkHour?.['current-v']) !== null
@@ -2277,6 +2324,7 @@ function scoreCoastalPartsRuntime(
         });
       }
       const {
+        recovery,
         ravScoreState,
         scores,
         candidateGState,
@@ -2317,7 +2365,50 @@ function scoreCoastalPartsRuntime(
         const publicContext = scoreTraceHour?.ravScoreModel?.publicContext ?? null;
         const waders = scoreTraceHour?.ravScoreModel?.modes?.waders ?? null;
         const beach = scoreTraceHour?.ravScoreModel?.modes?.beach ?? null;
+        const stateOnlyHold = sanitizedTraceHour?.currentStateOnlyHold ?? null;
+        const stateOnlyHoldReference = stateOnlyHold
+          ? latestVerifiedNativeCadenceSampleForPart(
+            { ...part, zoneId },
+            liveCurrentPilot,
+            stateOnlyHold.sourceValidTime,
+          )
+          : null;
+        const stateOnlyHoldReferenceInRecovery = stateOnlyHoldReference !== null
+          && recovery.hourly.some(hour => hour?.time === stateOnlyHold.sourceValidTime
+            && hour?.currentProvenance?.status === 'verified');
+        const stateOnlyHoldUnknownGapBeforeTarget = stateOnlyHoldReference !== null
+          && recovery.hourly.some(hour => {
+            const hourMs = Date.parse(hour?.time ?? '');
+            return Number.isFinite(hourMs)
+              && hourMs > Date.parse(stateOnlyHold.sourceValidTime)
+              && hourMs < targetMs
+              && hour?.currentProvenance?.status !== 'verified';
+          });
         componentStageSummary.partCount += 1;
+        componentStageSummary.rawDmi.targetPrimaryWindTupleCount += Number(
+          rawWindTuple(rawBulkHour),
+        );
+        componentStageSummary.rawDmi.targetPrimaryWindAcceptedCount += Number(
+          rawWindAccepted(rawBulkHour, 'wind'),
+        );
+        componentStageSummary.rawDmi.targetTailWindTupleCount += Number(
+          rawWindTuple(rawBulkHour, 'windTail'),
+        );
+        componentStageSummary.rawDmi.targetTailWindAcceptedCount += Number(
+          rawWindAccepted(rawBulkHour, 'windTail'),
+        );
+        componentStageSummary.rawDmi.nearTargetPrimaryWindAcceptedPartCount += Number(
+          nearTargetRows.some(row => rawWindAccepted(row, 'wind')),
+        );
+        componentStageSummary.rawDmi.nearTargetTailWindAcceptedPartCount += Number(
+          nearTargetRows.some(row => rawWindAccepted(row, 'windTail')),
+        );
+        componentStageSummary.rawDmi.forecastPrimaryWindAcceptedPartCount += Number(
+          forecastRows.some(row => rawWindAccepted(row, 'wind')),
+        );
+        componentStageSummary.rawDmi.forecastTailWindAcceptedPartCount += Number(
+          forecastRows.some(row => rawWindAccepted(row, 'windTail')),
+        );
         componentStageSummary.record.windTupleCount += Number(
           ravScoreNumber(recordTraceHour?.windSpeedMps) !== null
           && ravScoreNumber(recordTraceHour?.windDirectionDeg) !== null,
@@ -2370,6 +2461,15 @@ function scoreCoastalPartsRuntime(
         componentStageSummary.model.currentDirectInputReadyCount += Number(
           publicContext?.currentVerified === true
           || publicContext?.currentTransition === 'NATIVE_CADENCE_HOLD',
+        );
+        componentStageSummary.model.stateOnlyHoldReferenceResolvableCount += Number(
+          stateOnlyHoldReference !== null,
+        );
+        componentStageSummary.model.stateOnlyHoldReferenceInRecoveryCount += Number(
+          stateOnlyHoldReferenceInRecovery,
+        );
+        componentStageSummary.model.stateOnlyHoldUnknownGapBeforeTargetCount += Number(
+          stateOnlyHoldUnknownGapBeforeTarget,
         );
         componentStageSummary.model.wadersAvailableCount += Number(waders?.available === true);
         componentStageSummary.model.beachAvailableCount += Number(beach?.available === true);
