@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.366 klar til PR og kode-only-deploy
+
+Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.366-post-cutover-repair`; den beskidte oprindelige worktree må ikke røres. Den samlede post-cutoverrettelse, version 4.0.366, append-only migration 16, manuel kode-only-vej, changelog, RDKS og begge håndbøger er implementeret lokalt. Målrettede vejr-, RavScore-, deploy-, migration-, runtimegenbrugs- og privacykontroller er grønne. Ingen oneoff eller providerhentning er kørt.
+
+Næste rækkefølge: diff-/RDKS-slutkontrol → commit/push → exact-head sourcegate én gang på PR → merge samme head → manuel `Deploy RavRadar code-only repair` med `DEPLOY-CODE-ONLY-REPAIR` → offentlig kontrol. Først derefter startes normal tidsbegrænset weather særskilt for at bevise numeriske scorer, cache og fuld rotation. Integrated/rollback/continuation: `65148b4a…`/`7fe45de7…`/`81045427…`. Ingen ny cutover eller oneoff. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
 
 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; retry i forsøg 2 fortsatte og gav grøn integreret runtimeaudit med 0 fejl. H0-rettelsen er dermed bevist.

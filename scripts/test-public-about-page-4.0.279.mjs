@@ -71,6 +71,17 @@ for (const expected of [
   'Add to Home Screen',
 ]) assert.ok(aboutI18n.includes(expected), `Om-sidens oversatte installationsvejledning mangler: ${expected}`);
 const allAboutSources = `${about}\n${aboutI18n}`;
+const facebookGroupUrl = 'https://www.facebook.com/groups/1849354103138911/';
+assert.ok(about.includes('data-i18n-html="about.community"'), 'Facebook-fællesskabet skal bruge Om-sidens sprogskifte');
+assert.equal((allAboutSources.match(new RegExp(facebookGroupUrl.replaceAll('/', '\\/'), 'g')) || []).length, 3,
+  'DA/DE/EN skal bruge det samme præcise Facebook-gruppelink');
+for (const expected of [
+  'RavRadar, ravjagt og fællesskabet omkring det hele',
+  'RavRadar-Community auf Facebook besuchen',
+  'Visit the RavRadar community on Facebook',
+  'target="_blank"',
+  'rel="noopener noreferrer"',
+]) assert.ok(allAboutSources.includes(expected), 'Om-sidens Facebook-afsnit mangler: ' + expected);
 assert.equal((allAboutSources.match(/mailto:RavRadar@outlook\.dk/g) || []).length, 3, 'DA/DE/EN skal bruge RavRadars fælles mailadresse');
 for (const removed of ['jakob.jorgensen82@gmail.com', 'Skriv til Jakob', 'Jakob schreiben', 'Write to Jakob']) {
   assert.equal(allAboutSources.includes(removed), false, `Den tidligere kontaktværdi må ikke findes: ${removed}`);

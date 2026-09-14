@@ -40,9 +40,9 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 15,
-  'The active cutover must preserve fourteen predecessor migrations and append one binding migration');
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260914020000');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 16,
+  'The active backend must preserve fifteen predecessor migrations and append one post-cutover binding migration');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.at(-1).version, '20260914234500');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -85,7 +85,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260914020000_h0_state_snapshot_binding.sql',
+  'supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -111,7 +111,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260914020000'",
+  "'20260914234500'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -241,6 +241,7 @@ const unicodeList = `
  20260913010000    │                  │ 2026-09-13 01:00:00
  20260914010000    │                  │ 2026-09-14 01:00:00
  20260914020000    │                  │ 2026-09-14 02:00:00
+ 20260914234500    │                  │ 2026-09-14 23:45:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -259,6 +260,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260913010000', remote: null },
   { local: '20260914010000', remote: null },
   { local: '20260914020000', remote: null },
+  { local: '20260914234500', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -276,7 +278,7 @@ const capturedFirstEightInstallList = `
 `;
 assert.deepEqual(parseSupabaseMigrationList(capturedFirstEightInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.slice(0, 8).map(item => ({ local: item.version, remote: null })));
-// Append all seven later binding rows while preserving the captured eight-row CLI fixture.
+// Append all eight later binding rows while preserving the captured eight-row CLI fixture.
 const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260909194000\` | \` \`    | \`2026-09-09 19:40:00\`
    \`20260912122607\` | \` \`    | \`2026-09-12 12:26:07\`
@@ -285,6 +287,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260913010000\` | \` \`    | \`2026-09-13 01:00:00\`
    \`20260914010000\` | \` \`    | \`2026-09-14 01:00:00\`
    \`20260914020000\` | \` \`    | \`2026-09-14 02:00:00\`
+   \`20260914234500\` | \` \`    | \`2026-09-14 23:45:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -347,7 +350,7 @@ Finished supabase db push.
 `,
 });
 assert.deepEqual(plan.pendingVersions,
-  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343', '20260909194000', '20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000']);
+  ['20260903010000', '20260904140000', '20260905090000', '20260906162332', '20260907084343', '20260909194000', '20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000', '20260914234500']);
 assert.deepEqual(plan.alreadyAppliedVersions,
   ['20260829010000', '20260829020000', '20260901010000']);
 
@@ -388,6 +391,7 @@ await assert.rejects(
        20260913010000 | | pending
        20260914010000 | | pending
        20260914020000 | | pending
+       20260914234500 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -412,6 +416,7 @@ const appliedList = `
  20260913010000 | 20260913010000 | now
  20260914010000 | 20260914010000 | now
  20260914020000 | 20260914020000 | now
+ 20260914234500 | 20260914234500 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -426,7 +431,7 @@ assert.deepEqual(assertSupabaseMigrationsApplied(currentAppliedList).appliedVers
 assert.throws(() => assertSupabaseMigrationsApplied(unicodeList), /was not recorded remotely/);
 
 // Every applied prefix must resume at its exact suffix, and a retry after all
-// fifteen required migrations must be a no-op.
+// sixteen required migrations must be a no-op.
 for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; appliedCount += 1) {
   const appliedPrefix = REQUIRED_CUTOVER_MIGRATIONS.slice(0, appliedCount);
   const pendingSuffix = REQUIRED_CUTOVER_MIGRATIONS.slice(appliedCount);
@@ -445,39 +450,43 @@ for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; a
     `prefix ${appliedCount}: only the exact remaining suffix may be applied`);
   if (appliedCount === 8) {
     assert.deepEqual(prefixPlan.pendingVersions,
-      ['20260909194000', '20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000'],
-      'the eight-migration historical prefix needs all seven later binding migrations');
+      ['20260909194000', '20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000', '20260914234500'],
+      'the eight-migration historical prefix needs all eight later binding migrations');
   }
   if (appliedCount === 9) {
     assert.deepEqual(prefixPlan.pendingVersions,
-      ['20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000'],
-      'the nine-migration prefix needs all six later binding migrations');
+      ['20260912122607', '20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000', '20260914234500'],
+      'the nine-migration prefix needs all seven later binding migrations');
   }
   if (appliedCount === 10) {
     assert.deepEqual(prefixPlan.pendingVersions,
-      ['20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000'],
-      'the ten-migration prefix needs all five later binding migrations');
+      ['20260912141641', '20260912194206', '20260913010000', '20260914010000', '20260914020000', '20260914234500'],
+      'the ten-migration prefix needs all six later binding migrations');
   }
   if (appliedCount === 11) {
-    assert.deepEqual(prefixPlan.pendingVersions, ['20260912194206', '20260913010000', '20260914010000', '20260914020000'],
-      'the eleven-migration prefix needs all four later binding migrations');
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260912194206', '20260913010000', '20260914010000', '20260914020000', '20260914234500'],
+      'the eleven-migration prefix needs all five later binding migrations');
   }
   if (appliedCount === 12) {
-    assert.deepEqual(prefixPlan.pendingVersions, ['20260913010000', '20260914010000', '20260914020000'],
-      'the twelve-migration prefix needs the three newest binding migrations');
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260913010000', '20260914010000', '20260914020000', '20260914234500'],
+      'the twelve-migration prefix needs the four newest binding migrations');
   }
   if (appliedCount === 13) {
-    assert.deepEqual(prefixPlan.pendingVersions, ['20260914010000', '20260914020000'],
-      'the thirteen-migration prefix needs the two H0 binding migrations');
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260914010000', '20260914020000', '20260914234500'],
+      'the thirteen-migration prefix needs the two H0 migrations and the post-cutover successor');
   }
   if (appliedCount === 14) {
-    assert.deepEqual(prefixPlan.pendingVersions, ['20260914020000'],
-      'the fourteen-migration prefix needs only the H0 state-snapshot binding migration');
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260914020000', '20260914234500'],
+      'the fourteen-migration prefix needs H0 state-snapshot and the post-cutover successor');
     await assert.rejects(assertSupabaseMigrationPlan({
       migrationListText: prefixList,
       dryRunText: currentFirstInstallDryRun,
     }), /did not propose exactly the pending required migrations/,
-    'the fifteen-file first-install plan must not replay fourteen already-applied migrations');
+    'the sixteen-file first-install plan must not replay fourteen already-applied migrations');
+  }
+  if (appliedCount === 15) {
+    assert.deepEqual(prefixPlan.pendingVersions, ['20260914234500'],
+      'the fifteen-migration prefix needs only the post-cutover successor');
   }
 }
 
@@ -534,6 +543,7 @@ try {
  20260913010000 │ │ pending
  20260914010000 │ │ pending
  20260914020000 │ │ pending
+ 20260914234500 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -560,8 +570,9 @@ try {
   20260912141641 │ │ pending
   20260912194206 │ │ pending
   20260913010000 │ │ pending
-  20260914010000 │ │ pending
+ 20260914010000 │ │ pending
  20260914020000 │ │ pending
+ 20260914234500 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {

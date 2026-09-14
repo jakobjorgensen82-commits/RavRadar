@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260914020000_h0_state_snapshot_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -523,7 +523,7 @@ for(const marker of [
 for(const [scriptName,required] of [
   ['test:score',['test:ravscore-integrated','test:ravscore-rollback-oracle']],
   ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
-  ['validate:source:checks',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
+  ['validate:source:checks',['test:ravscore-source-critical','test:weather-source-critical','test:deploy-source-critical','test:privacy-source-critical','source:critical-gate']],
 ]){
   const chain=packageScripts[scriptName]??'';
   for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
@@ -616,9 +616,18 @@ for(const retiredScript of [
 ok((packageScripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
 'DEC-0109 skal være beskyttet af den negative pensionsgate');
 ok(packageScripts['validate:source']==='node scripts/validate-source-once.mjs',
-'Kildekontrollen skal bruge den fælles plan, som altid kører fuld releasegate først');
-ok((packageScripts['validate:source:checks']??'').includes('test:workflow-action-contracts'),
-'Kildegaten skal nå DEC-0109-pensionsgaten gennem workflowkontrakten');
+'Kildekontrollen skal bruge den fælles, afgrænsede kritiske plan');
+const criticalSourceChain=packageScripts['validate:source:checks']??'';
+for(const removed of [
+  'validate:rdks',
+  'test:rav-assistant',
+  'test:feedback-learning',
+  'test:ravscore-rollback-oracle',
+  'test:legacy-bootstrap-hydration',
+  'test:workflow-action-contracts',
+  'release:gate',
+])ok(!criticalSourceChain.includes(removed),
+`Den faste kildegate må ikke igen optage den brede/udtjente kontrol ${removed}`);
 const tripEvidenceChain=packageScripts['test:trip-evidence-contract']??'';
 ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')
   && tripEvidenceChain.includes('test-candidate-g-trip-quality-storage-4.0.311.mjs'),
@@ -1141,11 +1150,12 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the fifteen exact integrated cutover migrations',
+  'Require only the sixteen exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
   '20260914010000_h0_reference_recovery_binding.sql',
   '20260914020000_h0_state_snapshot_binding.sql',
+  '20260914234500_post_cutover_current_hold_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
@@ -1909,7 +1919,7 @@ ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance
 const rules=await read('docs/rdks/01_AI_OPERATING_RULES.md');
 ok(rules.includes('Bindende release-gate'),'AI operating rules mangler bindende release-gate');
 const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i,/DATAFORDELER_API_KEY\s*[:=]\s*["'][^$]/i];
-for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
+for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'.github/workflows/deploy-code-only-repair.yml','scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}

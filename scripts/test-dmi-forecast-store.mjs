@@ -90,6 +90,28 @@ assert.equal(built.observationDifferenceCm, 15);
 assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forblive autoritativ');
 assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
+const wrappedDirections = buildDmiForecastHourly({
+  wind: [{
+    step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 359.6,
+    provenance: native('wind', 'harmonie_dini_sf', generatedAt),
+  }],
+  waves: [{
+    step: generatedAt, 'significant-wave-height': 1, 'mean-wave-dir': 359.6, 'dominant-wave-period': 6,
+    provenance: native('wave', 'wam_dw', generatedAt),
+  }],
+  ocean: [{
+    step: generatedAt, 'current-u': -0.00698126, 'current-v': 0.99997563,
+    provenance: native('current', 'dkss_idw', generatedAt),
+  }],
+  generatedAt,
+  hours: 1,
+});
+assert.equal(wrappedDirections.hourly[0].windDirectionDeg, 0,
+  'Afrunding over 359,5 grader skal normaliseres til 0 og aldrig levere 360.');
+assert.equal(wrappedDirections.hourly[0].waveDirectionDeg, 0,
+  'Bølgeretning skal bruge samme kanoniske interval [0, 360).');
+assert.equal(wrappedDirections.hourly[0].currentDirectionDeg, 0,
+  'Strømretning skal bruge samme kanoniske interval [0, 360).');
 
 // RavScore's private DMI boundary must not turn JSON-coercible values into
 // physical evidence. Every non-number below would otherwise become finite via

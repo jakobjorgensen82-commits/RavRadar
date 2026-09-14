@@ -124,6 +124,8 @@ Public startup skal forblive let. Historik/state og andre tunge beregninger udf�
 ## 8. Release og stabilitet
 En kodepakke er ikke stabil bare fordi `npm run validate` er grøn lokalt. For ændringer der afhænger af DMI/Supabase/pipeline kræves frisk CI/produktionsverifikation. Ved release dokumenteres præcist hvad der er lokalt grønt, CI-grønt og produktionsverificeret.
 
+Almindelige rettelser leveres som udgangspunkt uden vejrhentning: genbrug den eksakte senest gyldige offentlige eller private runtime, kør de produktkritiske kode-/asset-/privacy-/artifactkontroller og deploy rettelsen. Start først derefter en separat, tidsbegrænset normal vejrkørsel. En providerfejl må ikke ugyldiggøre den allerede publicerede rettelse. Se DEC-0148.
+
 ## 9. Dokumentationspligt
 Ingen væsentlig arkitektur-, data-, score-, admin- eller driftsændring afsluttes uden at opdatere RDKS og relevante håndbogsafsnit. Historiske chats bevares, men nye sandheder skrives ind i de autoritative dokumenter.
 
@@ -132,6 +134,8 @@ Arbejd i det lokale Git-repository. Vis/inspektér diff før commit. Lav små, f
 
 ## 11. Deployment-gates må aldrig være falsk grønne
 Et GitHub Actions-run er ikke releasebevis, hvis `npm run validate` eller `npm run release:gate` er `skipped`. Codex skal kontrollere **step status**, ikke kun runets grønne topstatus. Et workflow må ikke kunne bygge og deploye et nyt produktionsartifact efter frisk dataopbygning, mens de bindende releasegates springes over. Den kendte 4.0.117-overgangsfejl skal være første Codex-rettelse.
+
+Denne regel skelner mellem frisk dataproduktion og kode-only deploy. Kode-only må ikke hente eller ændre vejrværdier; den skal i stedet bevise eksakt genbrug, kompatibilitet, privacy og artifactidentitet. Fuld data-/releasevalidering forbliver obligatorisk, når en kørsel bygger frisk produktionsdata.
 
 ## 12. Modelvalg, kvalitet og kvote
 Codex vælger ikke automatisk den stærkeste model til alt. Før hvert væsentligt arbejdsafsnit vurderes ræsonneringsdybde, nødvendig forståelse af kodebasen, fejlkonsekvens og om arbejdet berører RavScore, fysik/faglig model, DMI/fallback, dataintegritet, arkitektur eller produktion.

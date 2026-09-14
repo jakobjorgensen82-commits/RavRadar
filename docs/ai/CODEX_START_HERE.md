@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.366 klar til exact-head-PR
+
+Den samlede post-cutoverrettelse og DEC-0148's permanente kode-only leveringsvej er implementeret i siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.366-post-cutover-repair`. Version, bundles, append-only migration 16, RDKS, changelog og begge håndbøger er synkroniseret. Målrettede produktkritiske kontroller er grønne; der er ikke kørt oneoff, providerhentning eller fuld lokal sourcegate. Den beskidte `cb79/RavRadar`-worktree må ikke røres.
+
+Fortsæt: slutdiff/RDKS → commit/push → én exact-head PR-sourcegate → merge → manuelt kode-only-deploy med `DEPLOY-CODE-ONLY-REPAIR` → offentlig kontrol → separat tidsbegrænset normal weather og bevis af numeriske scorer, rotation og cache. Ingen ny first cutover. Sol/Ekstra høj.
+
+# NYESTE CHECKPOINT – 2026-09-14 – integreret model online; Astra-review før normalt vejr
+
+Læs først `ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`. PR #306 er admin-merget som main `fa418f43`; cutover `34877443841` har faktisk publiceret den integrerede model og privat runtime. Dataset `rr-20260914180039-210` har 210 zoner/673 dele/118 timer, men endnu ingen tilgængelige scorer. Strukturkomplethed er ikke numerisk komplethed. Gentag ikke cutover.
+
+Normalworkflowet er stadig deaktiveret. Ejeren ønsker grundig analyse før den næste normale vejrkørsel, ingen sourcegate, oneoff eller brede testgentagelser. Bekræftede rettelser omfatter vindtab i merge, 360-graders afrunding, ugyldigt strømholdinterval samt misvisende UI-/dækningstal. Samlet implementering skal også bevare den gemte private historik gennem ny modelbinding og undgå kendte gentagelser i den normale opgraderingsvej. Gemt runtime findes; nyt separat checkpoint er ikke bekræftet.
+
+Aktiv arbejdsmappe er siblingvisualiseringens `RavRadar-4.0.366`, ikke den beskidte `cb79/RavRadar`. Appversionen er stadig4.0.365. Dette er kun analyse-/dokumentationscheckpoint; rettelserne er ikke implementeret. Se reviewet for præcise paths, hashes, evidens og resterende arbejde. Sol/Ekstra høj er den planlagte implementeringsindsats efter Astra-gennemgangen. Ældre launch- og gateinstruktioner nedenfor er historik, hvor de modsiges af dette checkpoint.
+
+# HISTORISK CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
 
 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 1 ramte midlertidig Supabase 502; retry i forsøg 2 fortsatte og gav grøn integreret runtimeaudit med 0 fejl. H0-rettelsen er dermed bevist.
 

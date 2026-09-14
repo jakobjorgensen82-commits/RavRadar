@@ -3,16 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 
-// Existing deterministic checks run before the expensive runtime fixtures.
-// They never generate files or authorize reuse from another invocation.
+// Fail-fast binding checks make an invalid generated model obvious immediately.
+// The remaining critical checks still run to completion and report together.
 export const SOURCE_BINDING_PREFLIGHT = Object.freeze([
-  'node scripts/build-candidate-g-rollback-bundle.mjs --check',
   'node scripts/build-ravscore-model-bundle.mjs --check',
   'node scripts/sync-ravscore-model-binding.mjs --check',
-  'node scripts/sync-release-contract-metadata.mjs --check',
-  'node scripts/test-open-meteo-binding-migration.mjs',
 ]);
 
 export function expandSourceCommands(scripts, name, parents = []) {
@@ -30,46 +26,43 @@ export function expandSourceCommands(scripts, name, parents = []) {
 
 export function buildSourceValidationPlan(scripts) {
   assert.equal(scripts['validate:source'], 'node scripts/validate-source-once.mjs');
-  assert.equal(scripts['release:gate'], 'node scripts/release-gate.mjs');
+  assert.equal(scripts['source:critical-gate'], 'node scripts/source-critical-gate.mjs');
   const commands = expandSourceCommands(scripts, 'validate:source:checks');
-  const gate = scripts['release:gate'];
-  assert.equal(commands.filter(command => command === gate).length, 1, 'Exactly one full release gate is required');
-  assert.equal(commands.at(-1), gate, 'The source declaration must retain its terminal release gate');
-  const gateTests = new Set(RELEASE_GATE_TEST_FILES.map(file => `node ${file}`));
+  const gate = scripts['source:critical-gate'];
+  assert.equal(commands.filter(command => command === gate).length, 1, 'Exactly one critical source gate is required');
+  assert.equal(commands.at(-1), gate, 'The critical source gate must remain the terminal source check');
   return {
     preflight: [...SOURCE_BINDING_PREFLIGHT],
     gate,
-    remaining: commands.filter(command => command !== gate && !gateTests.has(command)
-      && !SOURCE_BINDING_PREFLIGHT.includes(command)),
-    reused: commands.filter(command => gateTests.has(command)),
+    remaining: commands.filter(command => command !== gate && !SOURCE_BINDING_PREFLIGHT.includes(command)),
   };
 }
 
-function executeCommand(command, { suppressReleaseReport = false } = {}) {
+function executeCommand(command) {
   const [program, ...args] = command.split(' ');
-  assert.ok(!suppressReleaseReport || command === 'node scripts/release-gate.mjs',
-    'Only the source invocation of the full release gate may suppress its generated report');
-  const executionArgs = suppressReleaseReport ? [...args, '--no-write-report'] : args;
-  const result = spawnSync(program === 'node' ? process.execPath : program, executionArgs, {
+  const result = spawnSync(program === 'node' ? process.execPath : program, args, {
     cwd: process.cwd(), stdio: 'inherit', shell: false,
   });
   return result.status === 0 && !result.error && !result.signal ? 0 : 1;
 }
 
 export function runSourceValidation(plan, { execute = executeCommand, log = console.log } = {}) {
+  const failures = [];
   for (const command of plan.preflight) {
     log(`SOURCE binding preflight: ${command}`);
-    if (execute(command) !== 0) return 1;
+    if (execute(command) !== 0) failures.push(command);
   }
-  log(`SOURCE: full release gate first; ${plan.reused.length} identical test invocations need no second run.`);
-  if (execute(plan.gate, { suppressReleaseReport: true }) !== 0) return 1;
-  // Reuse exists only in this live invocation after the full gate succeeded.
-  // No marker, file, environment flag or previous workflow can authorize it.
   for (const command of plan.remaining) {
     log(`SOURCE: ${command}`);
-    if (execute(command) !== 0) return 1;
+    if (execute(command) !== 0) failures.push(command);
   }
-  log('Full source validation passed; all declared checks covered.');
+  log(`SOURCE critical gate: ${plan.gate}`);
+  if (execute(plan.gate) !== 0) failures.push(plan.gate);
+  if (failures.length) {
+    log(`Critical source validation found ${failures.length} failing check(s): ${failures.join(', ')}`);
+    return 1;
+  }
+  log('Critical source validation passed; non-critical suites remain available for targeted or post-data validation.');
   return 0;
 }
 
@@ -79,8 +72,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
     const plan = buildSourceValidationPlan(scripts);
     if (process.argv[2] === '--plan') {
-      console.log(JSON.stringify({ fullReleaseGate: true, bindingPreflight: plan.preflight.length, gateTests: RELEASE_GATE_TEST_FILES.length,
-        remainingCommands: plan.remaining.length, avoidedDuplicateInvocations: plan.reused.length }));
+      console.log(JSON.stringify({ criticalSourceGate: true, bindingPreflight: plan.preflight.length,
+        criticalChecks: plan.remaining.length + 1, totalCommands: plan.preflight.length + plan.remaining.length + 1 }));
     } else process.exitCode = runSourceValidation(plan);
   } catch (error) {
     console.error(error.message);

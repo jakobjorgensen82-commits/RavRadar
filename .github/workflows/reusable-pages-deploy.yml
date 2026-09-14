@@ -9,6 +9,9 @@ on:
       central_version:
         required: true
         type: string
+      code_only_repair:
+        required: true
+        type: boolean
       deployment_model:
         required: true
         type: string
@@ -99,8 +102,15 @@ jobs:
           test "$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.central_version }}"
           test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.legacy_source_required }}"
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
+          test "$(jq -r '.codeOnlyRepair // false' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.code_only_repair }}"
+          if [ "${{ inputs.code_only_repair }}" = "true" ]; then
+            test -f "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json"
+            test "$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" | awk '{print $1}')" = "$(jq -er '.codeOnlyReuseReportSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")"
+            jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" >/dev/null
+          fi
 
       - name: Require horizon-valid weather before any Pages begin CAS
+        if: inputs.code_only_repair != true
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         run: |
@@ -422,6 +432,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Require horizon-valid weather immediately before Pages deployment
+        if: inputs.code_only_repair != true
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         run: |

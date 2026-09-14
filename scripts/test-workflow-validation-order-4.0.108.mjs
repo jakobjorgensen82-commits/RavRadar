@@ -19,10 +19,11 @@ const {
 const productionWorkflowNames = new Set(
   Object.values(PRODUCTION_WORKFLOW_SOURCES).map(sourcePath => sourcePath.split('/').at(-1)),
 );
+productionWorkflowNames.add('deploy-code-only-repair.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -199,7 +200,7 @@ if (prGateOrder.some((position, index) => position < 0 || (index > 0 && position
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 if (packageJson?.scripts?.['validate:source'] !== 'node scripts/validate-source-once.mjs') {
-  throw new Error('validate:source skal bruge den fælles release-first testplan.');
+  throw new Error('validate:source skal bruge den fælles kritiske testplan.');
 }
 const sourceValidation = packageJson?.scripts?.['validate:source:checks'] || '';
 const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-contracts'] || '';
@@ -215,28 +216,23 @@ if (!workflowActionContracts.includes('npm run test:production-workflow-outcome'
   throw new Error('Produktionsslutstatus og valideringsopsamling skal være registreret som separate trin i workflow-kontraktsuiten.');
 }
 for (const marker of [
-  'npm run validate:rdks',
-  'npm run test:feedback-learning',
-  'npm run test:observation-db-privacy',
-  'npm run test:hybrid-trip-storage',
-  'npm run test:adaptive-prediction',
-  'npm run test:admin-feature-reachability',
-  'npm run test:current-transport-history',
-  'npm run test:ravscore-integrated',
-  'npm run test:ravscore-rollback-oracle',
-  'npm run test:production-hour-lock',
-  'npm run test:dmi-acquisition',
-  'npm run test:dmi-bulk-forecast-integration',
-  'npm run test:live-current-pilot',
-  'npm run test:water-source-production-chain',
-  'npm run test:legacy-bootstrap-hydration',
-  'npm run test:production-runtime-privacy',
-  'npm run test:workflow-action-contracts',
-  'python -m py_compile scripts/build-ravscore-historical-wave-pilot.py scripts/test-ravscore-historical-wave-pilot.py',
-  'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
-  'npm run release:gate',
+  'npm run test:ravscore-source-critical',
+  'npm run test:weather-source-critical',
+  'npm run test:deploy-source-critical',
+  'npm run test:privacy-source-critical',
+  'npm run source:critical-gate',
 ]) {
   if (!sourceValidation.includes(marker)) throw new Error('validate:source mangler ' + marker);
+}
+for (const removed of [
+  'npm run validate:rdks',
+  'npm run test:feedback-learning',
+  'npm run test:ravscore-rollback-oracle',
+  'npm run test:legacy-bootstrap-hydration',
+  'npm run test:workflow-action-contracts',
+  'npm run release:gate',
+]) {
+  if (sourceValidation.includes(removed)) throw new Error('validate:source er igen blevet bred med ' + removed);
 }
 const packageScripts = packageJson?.scripts || {};
 for (const retiredName of [
@@ -1344,24 +1340,8 @@ if (text.includes('rm -f .cache/copernicus-current-shadow.json')
 for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
   if (workflowSource.includes('cron-job.org')) throw new Error(`${role}-workflowet må ikke længere afhænge af cron-job.org.`);
 }
-const pushBlock = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('  push:'), orchestratorWorkflow.indexOf('\n\npermissions:'));
-for (const marker of [
-  'branches: [main]',
-  'paths-ignore:',
-  "'docs/ai/**'",
-  "'docs/rdks/**'",
-  "'docs/research/**'",
-  "'CHANGELOG.md'",
-  "'CHANGELOG-*.md'",
-  "'HANDBOOK-RAVRADAR.md'",
-  "'AGENTS.md'",
-  "'release/RELEASE-REPORT.json'",
-  "'release/RELEASE-REPORT.md'",
-]) {
-  if (!pushBlock.includes(marker)) throw new Error('Dokumentationsskip mangler ' + marker);
-}
-for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.github/**'", "'*.html'"]) {
-  if (pushBlock.includes(forbidden)) throw new Error('Dokumentationsskip er for bredt: ' + forbidden);
+if (orchestratorWorkflow.includes('\n  push:')) {
+  throw new Error('Normal vejrhentning må ikke længere starte som bivirkning af et kodepush; DEC-0148 kræver separat code-only deploy.');
 }
 const positions = {
   preflightCache: text.indexOf('name: Restore dataminimized weather preflight metadata'),
@@ -1710,7 +1690,7 @@ if (buildWorkflow.includes('name: Save progressive private DMI zone cache')
 }
 const dmiTerminalBlock = text.slice(
   positions.dmiTerminalGate,
-  text.indexOf('name: Inspect operational WAM handoff before first integrated cutover', positions.dmiTerminalGate),
+  text.indexOf('\n      - name:', positions.dmiTerminalGate + 1),
 );
 for (const marker of [
   'id: dmi-terminal-gate',
@@ -1730,8 +1710,8 @@ for (const marker of [
     throw new Error(`Den payloadfri DMI-terminalgate mangler ${marker}`);
   }
 }
-if (dmiTerminalBlock.includes('continue-on-error')) {
-  throw new Error('DMI-terminalgaten må ikke skjule producentfejl efter cache-save.');
+if (dmiTerminalBlock.includes('continue-on-error: true')) {
+  throw new Error('DMI-terminalgaten må ikke ubetinget skjule producentfejl efter cache-save.');
 }
 const copernicusSelectorBlock = text.slice(
   positions.targetedCopernicus,
@@ -1758,7 +1738,7 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the fifteen exact integrated cutover migrations',
+  'Require only the sixteen exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1774,6 +1754,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260913010000_public_runtime_oracle_binding.sql"',
   'test -f "$migrations_directory/20260914010000_h0_reference_recovery_binding.sql"',
   'test -f "$migrations_directory/20260914020000_h0_state_snapshot_binding.sql"',
+  'test -f "$migrations_directory/20260914234500_post_cutover_current_hold_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -1839,8 +1820,11 @@ for (const [name, section] of [
 const supabasePatConsumers = workflowFiles.filter((name) =>
   fs.readFileSync(`${workflowDirectory}/${name}`, 'utf8').includes('SUPABASE_ACCESS_TOKEN')
 );
-if (JSON.stringify(supabasePatConsumers) !== JSON.stringify(['deploy-trip-storage.yml'])) {
-  throw new Error(`Supabase-PAT må kun bruges af det manuelle turlager-deployment, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
+if (JSON.stringify(supabasePatConsumers) !== JSON.stringify([
+  'deploy-code-only-repair.yml',
+  'deploy-trip-storage.yml',
+])) {
+  throw new Error(`Supabase-PAT må kun bruges af de to manuelt aktiverede database-deployments, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
 }
 if (tripStorageDeployment.includes('storage_mode:')
   || tripStorageDeployment.includes('inputs.storage_mode')
@@ -2335,8 +2319,8 @@ for (const marker of [
     throw new Error(`Den faktiske integrerede public runtime-gate mangler ${marker}`);
   }
 }
-if (publicAuditBlock.includes('continue-on-error')) {
-  throw new Error('Den faktiske integrerede public runtime-gate må ikke være vejledende.');
+if (publicAuditBlock.includes('continue-on-error: true')) {
+  throw new Error('Den faktiske integrerede public runtime-gate må ikke være ubetinget vejledende.');
 }
 for (const forbidden of [
   'run_validation state_reference_outcome',
@@ -2866,7 +2850,7 @@ const downstreamResumeContracts = [
     job: 'deploy-pages',
     next: 'production-outcome',
     needs: 'needs: build-and-prepare',
-    condition: "if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}",
+    condition: "if: ${{ !cancelled() && github.ref == 'refs/heads/main' && ((needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true') || (inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE')) }}",
   },
 ];
 for (const contract of downstreamResumeContracts) {
@@ -3046,7 +3030,7 @@ for (const name of [
     throw new Error(`${name} skal være fail-closed under candidate-dry-run.`);
   }
 }
-const continuationSaveSection = text.slice(positions.continuationBuild, positions.privateRuntimeSpec);
+const continuationSaveSection = text.slice(positions.continuationBuild, positions.preflightStateBuild);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
   'node scripts/ravscore-continuation-checkpoint.mjs',
@@ -3062,7 +3046,9 @@ for (const marker of [
 ]) {
   if (!continuationSaveSection.includes(marker)) throw new Error(`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
 }
-if (continuationSaveSection.includes('continue-on-error')) {
+const firstCutoverContinueOnError = "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}";
+if (continuationSaveSection.includes('continue-on-error: true')
+  || continuationSaveSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')) {
   throw new Error('Protected checkpoint-publicering må ikke skjule fejl.');
 }
 const checkpointDispositionSection = text.slice(
@@ -3100,7 +3086,8 @@ for (const marker of [
     throw new Error(`Den obligatoriske hashbundne checkpointdisposition mangler ${marker}`);
   }
 }
-if (checkpointDispositionSection.includes('continue-on-error')) {
+if (checkpointDispositionSection.includes('continue-on-error: true')
+  || checkpointDispositionSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')) {
   throw new Error('Checkpointdispositionen må ikke skjule en kontraktfejl.');
 }
 if (text.includes('ravscore-continuation-checkpoint-applicability')) {
@@ -3121,7 +3108,8 @@ for (const name of [
 }
 const preflightStateSaveSection = text.slice(positions.preflightStateBuild, positions.privateRuntimeSpec);
 for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
+  "if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')",
+  "if: steps.weather-preflight-state-build.outcome == 'success' && (env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'))",
   'node scripts/private-production-runtime-workflow.mjs create-preflight',
   '--repository-root "$GITHUB_WORKSPACE"',
   '--output .cache/weather-preflight-state/state.json',
@@ -3131,8 +3119,11 @@ for (const marker of [
 ]) {
   if (!preflightStateSaveSection.includes(marker)) throw new Error(`Dataminimeret vejrpreflight-bevaring mangler ${marker}`);
 }
-if (preflightStateSaveSection.includes('continue-on-error')) {
-  throw new Error('Dataminimeret vejrpreflight-state skal bygges og gemmes fail-closed efter slutgates.');
+const preflightContinuePolicies = [...preflightStateSaveSection.matchAll(/continue-on-error:\s*([^\n]+)/g)]
+  .map(match => match[1].trim());
+if (preflightContinuePolicies.length !== 2
+  || preflightContinuePolicies.some(policy => policy !== 'true')) {
+  throw new Error('Kun de to advisory preflight-cachetrin må fortsætte efter deres egen fejl.');
 }
 const privateRuntimeCreateSection = text.slice(positions.privateRuntimeSpec, positions.artifact);
 for (const marker of [
@@ -3157,8 +3148,10 @@ for (const marker of [
 }
 const privateRuntimeCriticalSection = text.slice(positions.privateRuntimeSpec, positions.privateRuntimeSave);
 const privateRuntimeSaveSection = text.slice(positions.privateRuntimeSave, text.indexOf('\n\n', positions.privateRuntimeSave));
-if (privateRuntimeCriticalSection.includes('continue-on-error')
-  || privateRuntimeSaveSection.includes('continue-on-error')
+if (privateRuntimeCriticalSection.includes('continue-on-error: true')
+  || privateRuntimeCriticalSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')
+  || privateRuntimeSaveSection.includes('continue-on-error: true')
+  || privateRuntimeSaveSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')
   || privateRuntimeCreateSection.includes('path: .cache/private-production-runtime')) {
   throw new Error('Det private runtimebundle skal bygges fail-closed uden for repositoryet.');
 }
@@ -3217,7 +3210,8 @@ if (beforeWeather.includes('npm run build:current-provenance')) {
 }
 const sourceGateBlockEnd = text.indexOf('\n\n', positions.sourceGate);
 const sourceGateBlock = text.slice(positions.sourceGate, sourceGateBlockEnd < 0 ? text.length : sourceGateBlockEnd);
-if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'") || !sourceGateBlock.includes('run: npm run validate:source')) {
+if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && steps.source-proof.outputs.required != 'false'")
+  || !sourceGateBlock.includes('run: npm run validate:source')) {
   throw new Error('Kildegaten må kun genbruges efter live-verificeret exact-main-bevis; ukendt evidens kræver kontrol før DMI.');
 }
 for (const marker of [
@@ -3426,7 +3420,7 @@ if (pagesLiveWriteLines.length !== 5
 }
 const pagesPrivacyAuditSection = text.slice(positions.pagesPrivacyAudit, positions.pagesUpload);
 for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true'",
+  "if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'",
   'node scripts/audit-pages-artifact-privacy.mjs',
   '--site _site',
   '--private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
@@ -3434,8 +3428,9 @@ for (const marker of [
 ]) {
   if (!pagesPrivacyAuditSection.includes(marker)) throw new Error(`Pages-privacygaten mangler ${marker}`);
 }
-if (pagesPrivacyAuditSection.includes('continue-on-error')) {
-  throw new Error('Pages-privacygaten skal være fail-closed før artifact-upload.');
+if (pagesPrivacyAuditSection.includes('continue-on-error: true')
+  || !pagesPrivacyAuditSection.includes("continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}")) {
+  throw new Error('Pages-privacygaten må kun bruge den præcise historiske first-cutover-undtagelse; normal drift skal være fail-closed.');
 }
 const productionConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'), orchestratorWorkflow.indexOf('\njobs:'));
 if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
@@ -3470,6 +3465,7 @@ for (const horizonPosition of [preBeginHorizonPosition, preDeployHorizonPosition
     nextStep < 0 ? deployWorkflow.length : nextStep,
   );
   for (const marker of [
+    'if: inputs.code_only_repair != true',
     'set -euo pipefail',
     "jq -er '.productionReferenceAt | select(type == \"string\")'",
     'node scripts/check-production-target-freshness.mjs',

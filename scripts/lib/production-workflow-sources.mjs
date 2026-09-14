@@ -72,6 +72,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
     inputs: freezeList([
       'active_deployment_id',
       'central_version',
+      'code_only_repair',
       'deployment_model',
       'integrated_implementation_closure_sha256',
       'legacy_source_required',

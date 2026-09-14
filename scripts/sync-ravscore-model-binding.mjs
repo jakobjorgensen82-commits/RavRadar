@@ -28,7 +28,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/20260914020000_h0_state_snapshot_binding.sql';
+  'supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql';
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -201,48 +201,25 @@ function assertMutableSqlBindingPath(relative) {
   }
 }
 
-function expectedMigrationBindingBlock(source, binding, marker, labelPrefix) {
-  const startMarker = `-- ${marker}_BEGIN`;
-  const endMarker = `-- ${marker}_END`;
-  const start = source.indexOf(startMarker);
-  const end = source.indexOf(endMarker);
-  if (start < 0 || end < 0 || end <= start || source.indexOf(startMarker, start + 1) >= 0
-    || source.indexOf(endMarker, end + 1) >= 0) {
-    throw new Error(`${labelPrefix}: exact generated binding markers are missing or duplicated`);
-  }
-  const sectionEnd = end + endMarker.length;
-  const section = source.slice(start, sectionEnd);
-  const fields = [
-    [/model_version\s*=\s*'[^']*'/, `model_version = '${binding.modelId}'`, 'modelVersion'],
-    [/calibration_features\s*->>\s*'modelStateVersion'\s*=\s*'[^']*'/, `calibration_features ->> 'modelStateVersion' = '${binding.stateSchemaVersion}'`, 'stateSchemaVersion'],
-    [/calibration_features\s*->>\s*'modelVariantId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelVariantId' = '${binding.variantId}'`, 'variantId'],
-    [/calibration_features\s*->>\s*'modelProfileId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelProfileId' = '${binding.profileId}'`, 'profileId'],
-    [/calibration_features\s*->>\s*'modelComponentSchemaId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelComponentSchemaId' = '${binding.componentSchemaId}'`, 'componentSchemaId'],
-    [/calibration_features\s*->>\s*'modelExplanationSchemaId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelExplanationSchemaId' = '${binding.explanationSchemaId}'`, 'explanationSchemaId'],
-    [/calibration_features\s*->>\s*'modelRankingPolicyId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelRankingPolicyId' = '${binding.rankingPolicyId}'`, 'rankingPolicyId'],
-    [/calibration_features\s*->>\s*'modelBestTimePolicyId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelBestTimePolicyId' = '${binding.bestTimePolicyId}'`, 'bestTimePolicyId'],
-    [/calibration_features\s*->>\s*'modelPresentationPolicyId'\s*=\s*'[^']*'/, `calibration_features ->> 'modelPresentationPolicyId' = '${binding.presentationPolicyId}'`, 'presentationPolicyId'],
-    [/calibration_features\s*->>\s*'modelContractSha256'\s*=\s*'[^']*'/, `calibration_features ->> 'modelContractSha256' = '${binding.modelContractSha256}'`, 'modelContractSha256'],
-    [/calibration_features\s*->>\s*'modelBundleSha256'\s*=\s*'[^']*'/, `calibration_features ->> 'modelBundleSha256' = '${binding.modelBundleSha256}'`, 'modelBundleSha256'],
-  ];
-  const expectedSection = fields.reduce((text, [pattern, replacement, label]) =>
-    replaceExactlyOnce(text, pattern, replacement, `${labelPrefix} ${label}`), section);
-  return `${source.slice(0, start)}${expectedSection}${source.slice(sectionEnd)}`;
-}
-
-function expectedMigration(source, binding, candidateBinding) {
-  const integrated = expectedMigrationBindingBlock(
-    source,
-    binding,
+function expectedMigration(source, canonicalMigration) {
+  let synchronized = source;
+  for (const marker of [
     'RAVSCORE_INTEGRATED_BINDING',
-    'trip migration integrated binding',
-  );
-  return expectedMigrationBindingBlock(
-    integrated,
-    candidateBinding,
     'RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING',
-    'trip migration Candidate G rollback binding',
-  );
+  ]) {
+    const canonical = exactGeneratedBlock(
+      canonicalMigration,
+      marker,
+      `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} ${marker}`,
+    );
+    synchronized = replaceGeneratedBlock(
+      synchronized,
+      marker,
+      canonical.text,
+      `${marker} mutable SQL consumer`,
+    );
+  }
+  return synchronized;
 }
 
 export async function synchronizeRavScoreModelBinding({ write = false, root = ROOT } = {}) {
@@ -269,7 +246,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
     assertMutableSqlBindingPath(relative);
     const sqlPath = path.join(root, relative);
     const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
-    const expectedTripBindings = expectedMigration(sql, binding, candidateBinding);
+    const expectedTripBindings = expectedMigration(sql, checkpointMigration);
     const expectedSql = replaceGeneratedBlock(
       expectedTripBindings,
       CHECKPOINT_METADATA_CAS_MARKER,

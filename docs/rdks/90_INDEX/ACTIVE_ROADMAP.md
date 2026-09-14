@@ -1,4 +1,15 @@
-# Aktiv roadmap – 4.0.365 fra kontraktrettelse til online
+# Aktiv roadmap – 4.0.366 kode-only til normal drift
+
+1. **P0:** Commit og push den færdige 4.0.366-kandidat; kør den lille sourcegate én gang på PR'ens eksakte head og merge samme head.
+2. **P0:** Start det manuelle kode-only-workflow med den præcise bekræftelse. Genbrug eksisterende offentlig og privat runtime; ingen DMI, Copernicus, Open-Meteo eller oneoff.
+3. **P0:** Verificér migration 16, privat runtime, Pages-artifact, live-version, modelbinding, begge søgemåder og de berørte felter på hjemmesiden.
+4. **P0 efter deploy:** Start normal, tidsbegrænset weather særskilt. Bevis faktisk accepterede vind-, bølge-, vandstands- og strømværdier, numeriske scorer, cachefremgang og DMI-rotation. Bevar ærlige lokale mangler.
+5. **P0/P1:** Gennemgå hele den levende hjemmeside og de resterende roadmap-punkter mod faktisk produktværdi. Den latente dublet/kilde-parringsrisiko forbliver åben, indtil den er afgrænset eller rettet.
+6. **Ekstern oprydning:** Genundersøg kun de gamle jobløse runs, hvis GitHub-tilstand eller adgang har ændret sig; gentag ikke kendt 409/403 uden ny evidens.
+
+DEC-0148 er aktiv. Ingen ny oneoff indgår.
+
+# Historisk roadmap – 4.0.365 fra kontraktrettelse til online
 
 1. **P0:** Kør én exact-head sourcegate på den færdige 4.0.365-head og merge byteidentisk.
 2. **P0:** Genskab kun same-head-handoff fra de eksisterende forseglede cacher; ingen provider og ingen oneoff.
@@ -7,7 +18,7 @@
 5. **P0 efter launch:** Genaktivér normal weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-rotation, fallback og køretid uden oneoff.
 6. **P1:** Revurdér resten af roadmap mod live-evidens.
 
-Ingen ny model-, vejr-, rotations- eller migrationsændring indgår i 4.0.365.
+Ingen ny model-, vejr-, rotations- eller migrationsændring indgik i 4.0.365.
 
 # Aktiv roadmap – 4.0.364 fra rettet audit til online
 

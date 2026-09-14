@@ -1,9 +1,25 @@
-# 4.0.365 – auditens datasetbinding
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.366 kode-only rettelse
+
+- **REQ-4.0.366-CODE-ONLY-001 – IMPLEMENTERET LOKALT / PRODUKTIONSBEVIS MANGLER:** Den manuelle kode-only-vej må kun køre på eksakt main med præcis bekræftelse, må ikke kontakte vejrleverandører og skal genbruge eksakt offentlig/privat runtime med hash- og privacybevis.
+- **REQ-4.0.366-APPEND-ONLY-001 – IMPLEMENTERET LOKALT:** Allerede installerede migrationer er immutable. 4.0.366 bruger alene nyt migrationsled `20260914234500` til den ændrede modelbinding.
+- **REQ-4.0.366-WEATHER-AFTER-DEPLOY-001 – ÅBEN P0:** Normal weather startes først efter kode-only-deploy og skal være tidsbegrænset samt bevise numeriske input, scorer, rotation og cachevedligeholdelse uden oneoff.
+
+- **REQ-POST-CUTOVER-CONTINUE – AKTIV:** Den integrerede model er online. Gentag ikke installation/cutover; fortsæt med samlet fejlrettelse og normalt vejr.
+- **REQ-POST-CUTOVER-REVIEW – IMPLEMENTERET LOKALT:** Helkædeanalysens bekræftede vind-, retning-, hold-, dækning-, EDR- og UI-fejl er samlet rettet i 4.0.366. Se `../../ai/ASTRA_POST_CUTOVER_REVIEW_2026-09-14.md`.
+- **REQ-POST-CUTOVER-NO-REPEAT – AKTIV EJERBESLUTNING:** Ingen sourcegate, brede testsuiter, ny oneoff eller gentagelse af færdige cutovertrin i den aktuelle reparation. Bevar synlige resultater og samlet fejlrapportering; opfind ikke grøn kontrol eller vellykket write.
+- **REQ-CODE-ONLY-REPAIR-DEPLOY – AKTIV PERMANENT EJERBESLUTNING:** Almindelige rettelser deployes uden ekstern vejrhentning ved eksakt genbrug af senest gyldige data. Normal, tidsbegrænset vejrhentning kører bagefter særskilt og kan ikke ugyldiggøre det allerede publicerede rettelsesdeploy. Se DEC-0148.
+- **REQ-POST-CUTOVER-CACHE – AKTIV:** Genbrug gemte private data og målte states med eksplicit modelovergang. Ingen blanket accept af ukendt binding, nuludfyldning eller opfundet historik.
+- **REQ-POST-CUTOVER-HONEST-COVERAGE – AKTIV:** Skeln struktur, numerisk direkte input, dokumenterede holds, lokale mangler og faktisk score.967currentmangler må ikke kaldes upstreamfravær uden inputbevis.
+- **REQ-POST-CUTOVER-VERSION – IMPLEMENTERET LOKALT:** 4.0.366 er synkroniseret i relevante felter/assets, RDKS og begge håndbøger. Separat diff viser kun topversionsændring i `kystdata.json` og `zones.geojson`.
+
+DEC-0148 er den permanente standard for fremtidige rettelsesreleases. Disse aktuelle ejerbeslutninger erstatter modstridende historiske launch-/gatekrav nedenfor. PR #306's admin-merge var specifikt godkendt og er udført.
+
+# Historisk 4.0.365 – auditens datasetbinding
 
 - **REQ-4.0.365-AUDIT-DATASET-001 – BINDENDE P0 / IMPLEMENTERET:** Den integrerede runtimeaudit skal returnere inputtets allerede validerede `datasetId` på topniveau.
 - **REQ-4.0.365-HANDOFF-BINDING-001 – BINDENDE P0:** Audit, manifest, checkpoint-disposition og deploy-handoff skal bindes til samme dataset-id uden alternativ fallback.
 - **REQ-4.0.365-NO-MODEL-CHANGE-001 – BINDENDE:** Modelbundles, migration 15, score, vejr, rotation og cache er uændrede.
-- **REQ-4.0.365-LAUNCH-001 – ÅBEN P0:** Én exact-head sourcegate, merge, providerfrit handoff, cutover og offentlig kontrol mangler. Ingen oneoff eller normal weather før launch.
+- **REQ-4.0.365-LAUNCH-001 – HISTORISK/LUKKET:** 4.0.365 blev publiceret gennem PR #306 og cutover `34877443841`; efterfølgende funktionsfejl håndteres af 4.0.366.
 
 DEC-0147 supplerer DEC-0146 og DEC-0144.
 

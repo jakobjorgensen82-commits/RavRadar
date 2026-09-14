@@ -71,19 +71,6 @@ on:
         required: false
         default: ""
         type: string
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/ai/**'
-      - 'docs/rdks/**'
-      - 'docs/research/**'
-      - 'CHANGELOG.md'
-      - 'CHANGELOG-*.md'
-      - 'HANDBOOK-RAVRADAR.md'
-      - 'AGENTS.md'
-      - 'release/RELEASE-REPORT.json'
-      - 'release/RELEASE-REPORT.md'
-
 permissions:
   contents: read
   actions: read
@@ -2183,6 +2170,7 @@ jobs:
     with:
       active_deployment_id: ${{ needs.build-and-prepare.outputs.active_deployment_id }}
       central_version: ${{ needs.build-and-prepare.outputs.central_version }}
+      code_only_repair: false
       deployment_model: ${{ needs.build-and-prepare.outputs.deployment_model || 'integrated' }}
       integrated_implementation_closure_sha256: ${{ needs.build-and-prepare.outputs.integrated_implementation_closure_sha256 }}
       legacy_source_required: ${{ needs.build-and-prepare.outputs.legacy_source_required || 'true' }}

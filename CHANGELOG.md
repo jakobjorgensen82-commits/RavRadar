@@ -1,3 +1,11 @@
+## 4.0.366 – kode-only deploy og samlet post-cutover-reparation (2026-09-15, lokal kandidat)
+
+- DMI-vindmerge, retning 360, atomisk tidsdækning, uafhængig EDR-reparation og strømhold hen over null er rettet. UI bevarer manglende værdier som manglende, og kun den aktuelle UTC-time mærkes som nu.
+- Om RavRadar har nu iPhone-/Android-installationsvejledning og link til Facebookfællesskabet.
+- Almindelige rettelser leveres fremover kode-only med eksakt genbrug af senest gyldige data. Vejrhentning kører separat og tidsbegrænset bagefter; ingen provider eller oneoff indgår i rettelsesdeployet.
+- Ny manuel exact-main deployvej og append-only migration `20260914234500`; installeret migration 15 er urørt. Under overgangen accepterer migrationsleddet den eksakte offentlige forgænger, men central `activeModelBinding` afviser den automatisk efter aktivering. Integrated bundle `65148b4a…`, rollback `7fe45de7…`, continuation `81045427…`.
+- Målrettede produktkontrakter er grønne lokalt. PR-gate, merge, kode-only-deploy, offentlig kontrol og efterfølgende normal weather mangler. Se `CHANGELOG-4.0.366.md` og DEC-0148.
+
 ## 4.0.365 – auditrapportens manglende dataset-id (2026-09-14, lokal kandidat)
 
 - 4.0.364 bestod sourcegate `34846130189`, blev merged gennem PR #301 som main `273cb052`, og providerfrit handoff `34848494028` blev grønt. Cutover `34849662988` forsøg 2 fortsatte efter en midlertidig Supabase 502.

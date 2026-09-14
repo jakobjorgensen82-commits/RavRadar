@@ -1,0 +1,683 @@
+name: Deploy RavRadar code-only repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv DEPLOY-CODE-ONLY-REPAIR"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  pages: write
+  id-token: write
+
+# Code-only-rettelser og normal vejrhentning deler produktionslåsen, men
+# deler aldrig providertrin eller providercredentials.
+concurrency:
+  group: ravradar-weather-production
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  build-code-only:
+    name: Reuse exact runtime and build code-only artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      active_deployment_id: ${{ steps.operational-model.outputs.deployment_id }}
+      central_version: ${{ steps.operational-model.outputs.central_version }}
+      integrated_implementation_closure_sha256: ${{ steps.integrated-implementation.outputs.closure_sha256 }}
+      operational_action: ${{ steps.operational-action.outputs.action }}
+    env:
+      RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
+      RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle
+      RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored
+      RAVRADAR_PREDECESSOR_SOURCE_ROOT: /tmp/ravradar-private-production-runtime/source-fa418f43
+      RAVRADAR_PREDECESSOR_PRIVATE_ROOT: /tmp/ravradar-private-production-runtime/predecessor
+      RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE: /tmp/ravradar-private-production-runtime/predecessor/bundle
+      RAVRADAR_PREDECESSOR_PRIVATE_RESTORE: /tmp/ravradar-private-production-runtime/predecessor/restored
+      RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/migrated
+      RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT: /tmp/ravradar-code-only-public-snapshot
+      RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-model
+      RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
+      RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate exact manual code-only authority and main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Seal exact integrated implementation identity
+        id: integrated-implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_OPERATIONAL_WORK"
+          node scripts/seal-ravscore-public-browser-closure.mjs \
+            --root . \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" \
+            --model integrated \
+            --identity-output "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+          closure_sha256="$(jq -er '.implementationClosureSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json")"
+          echo "closure_sha256=$closure_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Reuse exact successful pull-request source proof
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Refuse duplicate or missing source validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.source-proof.outputs.required }}" = "false"
+          echo "Exact source tree already passed the PR source gate; it is not run again."
+
+      - name: Download exact currently public code-only source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT"
+          mkdir -p "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" .cache .geometry-v2-work "$RAVRADAR_OPERATIONAL_WORK"
+          fetch_public() {
+            local remote_path="$1" local_name="$2" maximum_bytes="$3"
+            curl --fail --silent --show-error --location --retry 3 \
+              --connect-timeout 10 --max-time 60 --max-filesize "$maximum_bytes" \
+              --header 'Cache-Control: no-cache' \
+              "$RAVRADAR_PUBLIC_BASE_URL/$remote_path?code-only=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+              --output "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/$local_name"
+          }
+          fetch_public data/live/manifest.json manifest.json 1048576
+          fetch_public data/live/public-conditions.json public-conditions.json 33554432
+          fetch_public data/live/public-condition-details.json public-condition-details.json 67108864
+          fetch_public data/live/coastal-parts-v2.json coastal-parts-v2.json 16777216
+          fetch_public data/zones.geojson zones.geojson 33554432
+          fetch_public data/water-level-station-routing.json water-level-station-routing.json 4194304
+          target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json")"
+          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
+
+      - name: Read exact centrally active operational RavScore
+        id: operational-model
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
+          for field in model status bindingCurrent centralVersion initialCutoverRequired legacySourceRequired sourceHead activeImplementationClosureSha256 deploymentId; do
+            output_name="$(printf '%s' "$field" | sed -E 's/([A-Z])/_\L\1/g')"
+            echo "$output_name=$(jq -r --arg field "$field" '.[$field] // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+          done
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Resolve only post-cutover integrated maintenance
+        id: operational-action
+        shell: bash
+        env:
+          ACTIVE_MODEL: ${{ steps.operational-model.outputs.model }}
+          ACTIVE_STATUS: ${{ steps.operational-model.outputs.status }}
+          BINDING_CURRENT: ${{ steps.operational-model.outputs.binding_current }}
+          INITIAL_CUTOVER_REQUIRED: ${{ steps.operational-model.outputs.initial_cutover_required }}
+          LEGACY_SOURCE_REQUIRED: ${{ steps.operational-model.outputs.legacy_source_required }}
+          ACTIVE_SOURCE_HEAD: ${{ steps.operational-model.outputs.source_head }}
+        run: |
+          set -euo pipefail
+          test "$ACTIVE_MODEL" = "integrated"
+          test "$ACTIVE_STATUS" = "INTEGRATED_ACTIVE"
+          test "$INITIAL_CUTOVER_REQUIRED" = "false"
+          test "$LEGACY_SOURCE_REQUIRED" = "false"
+          case "$BINDING_CURRENT" in
+            true) action=integrated ;;
+            false)
+              test "$ACTIVE_SOURCE_HEAD" = "fa418f43bbd070c446ed19b6587541b93af89599"
+              action=integrated-historical-maintenance
+              ;;
+            *) echo "Unknown integrated binding state." >&2; exit 1 ;;
+          esac
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        with:
+          version: 2.117.0
+
+      - name: Prepare isolated post-cutover migration view
+        id: migration-view
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          migration_workdir="$(mktemp -d)"
+          echo "workdir=$migration_workdir" >> "$GITHUB_OUTPUT"
+          node scripts/integrated-cutover-readiness.mjs assert-source \
+            --public-implementation-closure-sha256 \
+            "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir \
+            --output "$migration_workdir"
+
+      - name: Read linked migration history without changing Supabase
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-before.txt"
+
+      - name: Hydrate only already-applied migration identities
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs hydrate-history
+          --workdir "${{ steps.migration-view.outputs.workdir }}"
+          --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
+
+      - name: Dry-run and require only the one post-cutover successor
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-plan.txt"
+          supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/code-only-migrations-dry-run.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/verify-code-only-migration-plan.mjs \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-plan.txt" \
+            --dry-run "$RUNNER_TEMP/code-only-migrations-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+
+      - name: Reconfirm current main before the database binding write
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Apply exact dry-run-verified post-cutover binding
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase db push --linked --skip-vault
+
+      - name: Read back migration and database binding
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-applied.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/integrated-cutover-readiness.mjs applied \
+            --migration-list "$RUNNER_TEMP/code-only-migrations-applied.txt"
+          node scripts/integrated-cutover-readiness.mjs verify-db
+
+      - name: Build current private-runtime restore expectation
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs expected
+          --repository-root "$GITHUB_WORKSPACE"
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output .cache/private-production-runtime-expected.json
+
+      - name: Try newest current-compatible private runtime
+        id: current-private-protected-restore
+        continue-on-error: true
+        run: >-
+          node scripts/protected-private-production-runtime.mjs --restore
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --repository-root "$GITHUB_WORKSPACE"
+          --expected .cache/private-production-runtime-expected.json
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Try verifying current-compatible private runtime
+        id: current-private-bundle-restore
+        if: steps.current-private-protected-restore.outcome == 'success'
+        continue-on-error: true
+        run: >-
+          node scripts/private-production-runtime-bundle.mjs restore
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --expected .cache/private-production-runtime-expected.json
+          --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+
+      - name: Try installing current-compatible private runtime
+        id: current-private-install
+        if: steps.current-private-bundle-restore.outcome == 'success'
+        continue-on-error: true
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs install
+          --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+          --repository-root "$GITHUB_WORKSPACE"
+
+      - name: Prepare exact predecessor source for bounded binding migration
+        if: steps.current-private-install.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          predecessor=fa418f43bbd070c446ed19b6587541b93af89599
+          test "${{ steps.operational-action.outputs.action }}" = "integrated-historical-maintenance"
+          git fetch --no-tags --depth=1 origin "$predecessor"
+          test "$(git rev-parse FETCH_HEAD^{commit})" = "$predecessor"
+          test ! -e "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+          mkdir -p "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+          git archive "$predecessor" | tar -x -C "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+
+      - name: Build exact predecessor private-runtime expectation
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-workflow.mjs" expected
+          --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+
+      - name: Restore exact predecessor private runtime
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore
+          --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
+          --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
+          --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+          --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Verify and unpack exact predecessor private runtime
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs" restore
+          --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
+          --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
+          --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+          --output "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
+
+      - name: Migrate only saved model-binding hashes to current source
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node scripts/migrate-post-cutover-private-runtime.mjs
+          --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
+          --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
+          --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
+          --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+          --repository-root "$GITHUB_WORKSPACE"
+          --expected-source-head fa418f43bbd070c446ed19b6587541b93af89599
+          --report .geometry-v2-work/post-cutover-private-runtime-migration.json
+
+      - name: Install migrated saved private runtime atomically
+        id: migrated-private-install
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs install
+          --restored "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
+          --repository-root "$GITHUB_WORKSPACE"
+
+      - name: Require one exact saved private runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.current-private-install.outcome }}" = "success"; then
+            echo "Current-compatible private runtime restored."
+          else
+            test "${{ steps.migrated-private-install.outcome }}" = "success"
+            echo "Exact predecessor runtime migrated and installed."
+          fi
+
+      - name: Rebuild public runtime from saved state without provider acquisition
+        run: >-
+          node scripts/prepare-code-only-public-runtime.mjs
+          --repository-root "$GITHUB_WORKSPACE"
+          --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT"
+          --report .geometry-v2-work/code-only-public-runtime-reuse.json
+
+      - name: Require exact code-only reuse invariants
+        run: >-
+          jq -e
+          '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673'
+          .geometry-v2-work/code-only-public-runtime-reuse.json
+
+      - name: Audit regenerated integrated public runtime
+        id: runtime-audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          node scripts/audit-ravscore-integrated-public-runtime.mjs \
+            --input data/live/conditions.json \
+            --output "$audit_path"
+          rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
+          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"
+          case "$rollback_status:$rollback_activation_ready" in
+            READY:true|BUILDING_MEASURED_ONLY:false) ;;
+            *) echo "Invalid rollback state." >&2; exit 1 ;;
+          esac
+          echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"
+          echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"
+
+      - name: Create one hash-bound checkpoint disposition
+        id: checkpoint-disposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json
+          base_path="$disposition_path.base"
+          rollback_status="${{ steps.runtime-audit.outputs.rollback_status }}"
+          rollback_activation_ready="${{ steps.runtime-audit.outputs.rollback_activation_ready }}"
+          case "$rollback_status:$rollback_activation_ready" in
+            READY:true) disposition=READY_PUBLISHED; checkpoint_required=true ;;
+            BUILDING_MEASURED_ONLY:false) disposition=NOT_APPLICABLE_DURING_MEASURED_WARMUP; checkpoint_required=false ;;
+            *) exit 1 ;;
+          esac
+          dataset_id="$(jq -er '.datasetId | select(type == "string" and length > 0)' data/live/manifest.json)"
+          test "$(jq -er '.datasetId' "$audit_path")" = "$dataset_id"
+          runtime_audit_sha256="$(AUDIT_PATH="$audit_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.AUDIT_PATH, 'utf8'))));")"
+          jq -n \
+            --arg disposition "$disposition" \
+            --arg sourceHead "$GITHUB_SHA" \
+            --arg datasetId "$dataset_id" \
+            --arg runtimeAuditSha256 "$runtime_audit_sha256" \
+            --arg rollbackStatus "$rollback_status" \
+            --argjson rollbackActivationReady "$rollback_activation_ready" \
+            --argjson checkpointRequired "$checkpoint_required" \
+            '{schemaVersion:"ravscore-continuation-checkpoint-disposition-v1",disposition:$disposition,sourceHead:$sourceHead,datasetId:$datasetId,runtimeAuditSha256:$runtimeAuditSha256,rollbackStatus:$rollbackStatus,rollbackActivationReady:$rollbackActivationReady,checkpointRequired:$checkpointRequired,privatePayloadIncluded:false}' \
+            > "$base_path"
+          disposition_sha256="$(DISPOSITION_PATH="$base_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.DISPOSITION_PATH, 'utf8'))));")"
+          jq --arg bindingSha256 "$disposition_sha256" '. + {bindingSha256:$bindingSha256}' "$base_path" > "$disposition_path"
+          rm "$base_path"
+          echo "disposition=$disposition" >> "$GITHUB_OUTPUT"
+          echo "disposition_sha256=$disposition_sha256" >> "$GITHUB_OUTPUT"
+          echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"
+          echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Build continuation checkpoint only when already applicable
+        id: checkpoint-build
+        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        run: >-
+          node scripts/ravscore-continuation-checkpoint.mjs
+          --save
+          --source data/live/conditions.json
+          --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
+
+      - name: Save continuation checkpoint only when already applicable
+        id: checkpoint-save
+        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/ravscore-continuation-checkpoint
+          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}-code-only
+
+      - name: Publish continuation checkpoint only when already applicable
+        id: checkpoint-publish
+        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --publish
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Build current private production runtime specification
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs create-spec
+          --repository-root "$GITHUB_WORKSPACE"
+          --dmi-bulk .cache/dmi-candidate-progress.json
+          --output .cache/private-production-runtime-create-spec.json
+
+      - name: Create current private runtime bundle atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          if test -d "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"; then
+            mv "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          fi
+          node scripts/private-production-runtime-bundle.mjs create \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+            --spec .cache/private-production-runtime-create-spec.json
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+
+      - name: Reconfirm current main before protected writes
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Publish current bounded private runtime
+        run: >-
+          node scripts/protected-private-production-runtime.mjs --publish
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --repository-root "$GITHUB_WORKSPACE"
+          --expected .cache/private-production-runtime-expected.json
+          --source-head "$GITHUB_SHA"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Prove private runtime is not anonymously readable
+        run: node scripts/protected-private-production-runtime.mjs --audit-anon
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Publish exact integrated backend and Edge readiness for this source
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs publish
+          --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
+
+      - name: Seal historical-to-current integrated maintenance plan when required
+        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
+          --manifest data/live/manifest.json
+          --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          --source-implementation-closure-sha256 "${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
+          --requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Build lean GitHub Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' --exclude '.github/' --exclude '_site*/' --exclude '_support/' \
+            --exclude '.cache/' --exclude 'node_modules/' --exclude 'scripts/' --exclude 'docs/' \
+            --exclude 'data/diagnostics/' --exclude 'data/geometry-v2/' --exclude 'data/admin/' --exclude 'data/live/' \
+            --exclude 'handbook.html' --exclude 'handbook.css' --exclude 'documentation.html' \
+            --exclude 'js/ui/handbook.js' --exclude 'js/ui/admin-app.js' \
+            --exclude 'js/core/rule-engine.js' --exclude 'js/core/score-engine.js' \
+            --exclude 'js/core/adaptive-model.js' --exclude 'js/core/prediction-engine.js' \
+            --exclude 'js/services/rule-service.js' --exclude 'js/services/trip-service.js' \
+            --exclude 'js/services/trip-evidence-legacy-bridge.js' --exclude 'rules/' --exclude 'schemas/' \
+            --exclude 'supabase/' --exclude 'requirements-*.txt' --exclude '.geometry-v2-work/' \
+            --exclude 'package.json' --exclude 'package-lock.json' --exclude 'CHANGELOG*.md' \
+            --exclude 'DELIVERY*.md' --exclude 'INSTALLATION-GUIDE*.md' --exclude 'B02-PLACEMENT-AUDIT.md'
+          mkdir -p _site/data/live
+          install -m 0644 data/live/manifest.json _site/data/live/manifest.json
+          install -m 0644 data/live/public-conditions.json _site/data/live/public-conditions.json
+          install -m 0644 data/live/public-condition-details.json _site/data/live/public-condition-details.json
+          install -m 0644 data/live/coastal-parts-v2.json _site/data/live/coastal-parts-v2.json
+
+      - name: Audit complete Pages artifact for private runtime material
+        run: >-
+          node scripts/audit-pages-artifact-privacy.mjs
+          --site _site
+          --private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"
+          --require-private-manifest
+
+      - name: Seal privacy-safe code-only operational handoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RAVRADAR_OPERATIONAL_HANDOFF"
+          mkdir -p "$RAVRADAR_OPERATIONAL_HANDOFF"
+          cp _site/data/live/manifest.json "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+          cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"
+          cp .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"
+          cp .geometry-v2-work/code-only-public-runtime-reuse.json "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json"
+          cp js/core/ravscore-model-contract.js "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+          cp js/core/ravscore-model-bundle.generated.js "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+          cp "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+          cp "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
+          jq '.modelBinding' "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json" > "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          if test -f "$RAVRADAR_OPERATIONAL_WORK/plan.json"; then
+            cp "$RAVRADAR_OPERATIONAL_WORK/plan.json" "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          fi
+          code_only_sha256="$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" | awk '{print $1}')"
+          jq -n \
+            --arg action "${{ steps.operational-action.outputs.action }}" \
+            --arg sourceHead "$GITHUB_SHA" \
+            --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" \
+            --arg checkpointDisposition "${{ steps.checkpoint-disposition.outputs.disposition }}" \
+            --arg checkpointDispositionSha256 "${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}" \
+            --arg checkpointDatasetId "${{ steps.checkpoint-disposition.outputs.dataset_id }}" \
+            --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
+            --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
+            --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
+            --arg checkpointPublishOutcome "${{ steps.checkpoint-publish.outcome }}" \
+            --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
+            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:false,checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,codeOnlyRepair:true,codeOnlyReuseReportSha256:$codeOnlyReuseReportSha256,privatePayloadIncluded:false}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
+          if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
+            echo "Operational handoff contains forbidden private fields." >&2
+            exit 1
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload GitHub Pages artifact
+        id: pages-upload
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+          retention-days: 14
+
+      - name: Resolve and seal exact uploaded Pages artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          artifact_id="${{ steps.pages-upload.outputs.artifact_id }}"
+          [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"
+          jq -e --argjson artifactId "$artifact_id" --argjson runId "$GITHUB_RUN_ID" --arg headSha "$GITHUB_SHA" \
+            '.id == $artifactId and .name == "github-pages" and .expired == false and .workflow_run.id == $runId and .workflow_run.head_sha == $headSha' \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json" >/dev/null
+          artifact_digest="$(jq -er '.digest' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")"
+          normalized_digest="$(ARTIFACT_DIGEST="$artifact_digest" node --input-type=module -e "import { normalizeArtifactDigestSha256 } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(normalizeArtifactDigestSha256(process.env.ARTIFACT_DIGEST));")"
+          artifact_size="$(jq -er '.size_in_bytes | select(type == "number" and . > 0 and floor == .)' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")"
+          created_at="$(ARTIFACT_CREATED_AT="$(jq -er '.created_at' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json")" node -e "process.stdout.write(new Date(process.env.ARTIFACT_CREATED_AT).toISOString())")"
+          target_manifest_sha256="$(TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.TARGET_MANIFEST, 'utf8'))));")"
+          target_closure_sha256="$(jq -er '.implementationClosureSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json")"
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --argjson runId "$GITHUB_RUN_ID" \
+            --argjson runAttempt "$GITHUB_RUN_ATTEMPT" \
+            --arg headSha "$GITHUB_SHA" \
+            --arg ref "$GITHUB_REF" \
+            --arg attemptId "pages-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --argjson artifactId "$artifact_id" \
+            --arg artifactDigestSha256 "$normalized_digest" \
+            --argjson artifactSizeBytes "$artifact_size" \
+            --arg targetPublicManifestSha256 "$target_manifest_sha256" \
+            --arg targetImplementationClosureSha256 "$target_closure_sha256" \
+            --slurpfile targetModelBinding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json" \
+            --arg createdAt "$created_at" \
+            '{schemaVersion:"ravscore-operational-pages-artifact-seal-v1",repository:$repository,runId:$runId,runAttempt:$runAttempt,headSha:$headSha,ref:$ref,attemptId:$attemptId,artifactId:$artifactId,artifactName:"github-pages",artifactDigestSha256:$artifactDigestSha256,artifactSizeBytes:$artifactSizeBytes,targetPublicManifestSha256:$targetPublicManifestSha256,targetImplementationClosureSha256:$targetImplementationClosureSha256,targetModelBinding:$targetModelBinding[0],createdAt:$createdAt,privatePayloadIncluded:false}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json"
+          rm "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"
+
+      - name: Upload privacy-safe operational handoff
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-operational-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
+          retention-days: 14
+          if-no-files-found: error
+
+  deploy-pages:
+    name: Deploy verified code-only artifact
+    needs: build-code-only
+    if: ${{ !cancelled() && needs.build-code-only.result == 'success' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/reusable-pages-deploy.yml
+    with:
+      active_deployment_id: ${{ needs.build-code-only.outputs.active_deployment_id }}
+      central_version: ${{ needs.build-code-only.outputs.central_version }}
+      code_only_repair: true
+      deployment_model: integrated
+      integrated_implementation_closure_sha256: ${{ needs.build-code-only.outputs.integrated_implementation_closure_sha256 }}
+      legacy_source_required: 'false'
+      operational_action: ${{ needs.build-code-only.outputs.operational_action }}
+    secrets:
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

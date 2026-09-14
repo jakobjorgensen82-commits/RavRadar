@@ -27,8 +27,9 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 ## Omkostningsbevidst testmatrix
 - Under udvikling køres kun målrettede tests for den berørte kontrakt samt nødvendige versions- og RDKS-kontroller.
 - Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
+- Almindelige rettelser deployes efter DEC-0148 som kode-only med eksakt genbrug af senest gyldige data og uden ekstern vejrhentning. Normal vejrhentning følger som et særskilt, tidsbegrænset forløb.
 - Den tidlige kildekodegate køres på ny eller uverificeret main-kode. Vejropdateringer, også cron-/watchdog-dispatch og manuelle genkørsler, må genbruge et live-verificeret grønt source-step på præcis samme main-commit. Senere fejl, ændret run-attempt eller ukendt evidens kræver ny kontrol; en cachemarkør alene er aldrig bevis. Se DEC-0045's tillæg 2026-09-04.
-- Hvert nyt produktionsartifact skal fortsat bestå fuld validering og releasegate efter central hydrering og frisk vejr/proveniens.
+- Hvert artifact med frisk produktionsdata skal fortsat bestå fuld validering og releasegate efter central hydrering og frisk vejr/proveniens. Et kode-only artifact skal i stedet bestå den produktkritiske sourcegate samt eksakt genbrugs-, kompatibilitets-, privacy-, artifact- og deploykontrol og må ikke kontakte vejrleverandører.
 - Fuld 210/673-browserkontrol køres ugentligt eller efter relevante ændringer i UI, score eller offentlig datakontrakt. Små afgrænsede ændringer får målrettet kontrol.
 - Ingen kontrol må springes over ved en kendt fejl, væsentlig usikkerhed eller konkret modstridende evidens. Se DEC-0045.
 
@@ -64,6 +65,6 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 
 ## Lokal Codex-klargøring og kildekontrol
 - På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
-- Før en kilde-PR køres scripts/validate-source.ps1. Den svarer til GitHubs kildegate og kræver ikke central adminhydrering eller frisk produktionsdata.
-- validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før deploy.
+- Før en kilde-PR køres den lille produktkritiske sourcegate målrettet. Den kræver ikke central adminhydrering eller frisk produktionsdata.
+- Sourcegaten erstatter aldrig den fulde `npm run validate` og `npm run release:gate`, når der bygges frisk produktionsdata. Kode-only rettelsesdeploy følger DEC-0148 og beviser i stedet eksakt genbrug og artifactintegritet.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.

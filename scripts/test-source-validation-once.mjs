@@ -1,59 +1,67 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { buildSourceValidationPlan, expandSourceCommands, runSourceValidation, SOURCE_BINDING_PREFLIGHT } from './validate-source-once.mjs';
-import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
+import {
+  buildSourceValidationPlan,
+  expandSourceCommands,
+  runSourceValidation,
+  SOURCE_BINDING_PREFLIGHT,
+} from './validate-source-once.mjs';
 
 const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
 const plan = buildSourceValidationPlan(scripts);
 const declared = expandSourceCommands(scripts, 'validate:source:checks');
-const gateTests = RELEASE_GATE_TEST_FILES.map(file => `node ${file}`);
-assert.equal(new Set(RELEASE_GATE_TEST_FILES).size, RELEASE_GATE_TEST_FILES.length);
-for (const command of declared) assert.ok(command === plan.gate || plan.preflight.includes(command) || plan.remaining.includes(command) || gateTests.includes(command), `Lost source check: ${command}`);
+
 assert.deepEqual(plan.preflight, [...SOURCE_BINDING_PREFLIGHT]);
-assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate && !gateTests.includes(command) && !plan.preflight.includes(command)));
-assert.ok(plan.reused.length >= 29, 'Expected measured duplicate coverage');
-assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'), 'Generated implementation must be checked before slow fixtures');
-assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'), 'All binding consumers must agree before slow fixtures');
+assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gate
+  && !plan.preflight.includes(command)));
+assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
+assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
+assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
+assert.ok(declared.length <= 24, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
 
 for (const changes of [
   { 'validate:source': 'node other.mjs' },
-  { 'release:gate': 'node other.mjs' },
+  { 'source:critical-gate': 'node other.mjs' },
   { 'validate:source:checks': 'node scripts/test-score-engine.mjs' },
-  { 'validate:source:checks': 'npm run release:gate && npm run release:gate' },
-  { 'validate:source:checks': 'npm run release:gate && node scripts/test-score-engine.mjs' },
+  { 'validate:source:checks': 'npm run source:critical-gate && npm run source:critical-gate' },
+  { 'validate:source:checks': 'npm run source:critical-gate && node scripts/test-score-engine.mjs' },
   { 'validate:source:checks': 'npm run missing' },
   { 'validate:source:checks': 'npm run validate:source:checks' },
-  { 'validate:source:checks': 'echo ok || true && npm run release:gate' },
+  { 'validate:source:checks': 'echo ok || true && npm run source:critical-gate' },
 ]) assert.throws(() => buildSourceValidationPlan({ ...scripts, ...changes }));
 
 const calls = [];
-const executionOptions = [];
-assert.equal(runSourceValidation(plan, { execute: (command, options) => {
-  calls.push(command);
-  executionOptions.push(options);
-  return 0;
-}, log() {} }), 0);
-assert.deepEqual(calls, [...plan.preflight, plan.gate, ...plan.remaining]);
-assert.equal(calls.filter(command => command === plan.gate).length, 1);
-assert.deepEqual(executionOptions[plan.preflight.length], { suppressReleaseReport: true },
-  'The PR source invocation must run the full gate without mutating tracked release reports.');
-assert.ok(executionOptions.every((options, index) => index === plan.preflight.length
-  || options === undefined), 'Only the full source release-gate invocation may suppress its report.');
-for (const failureIndex of [...plan.preflight.keys(), plan.preflight.length, plan.preflight.length + 1, calls.length - 1]) {
+assert.equal(runSourceValidation(plan, { execute(command) { calls.push(command); return 0; }, log() {} }), 0);
+assert.deepEqual(calls, [...plan.preflight, ...plan.remaining, plan.gate]);
+
+for (const failureIndex of calls.keys()) {
   let executed = 0;
-  assert.equal(runSourceValidation(plan, { execute() { return executed++ === failureIndex ? 1 : 0; }, log() {} }), 1);
-  assert.equal(executed, failureIndex + 1, 'A failed gate/test cannot produce success or authorize later work');
+  assert.equal(runSourceValidation(plan, {
+    execute() { return executed++ === failureIndex ? 1 : 0; },
+    log() {},
+  }), 1);
+  assert.equal(executed, calls.length, 'Alle uafhængige kritiske kontroller skal køres og rapporteres samlet.');
 }
-// Standalone production releasegate must execute the same complete inventory.
-const gate = fs.readFileSync('scripts/release-gate.mjs', 'utf8');
-const sourceRunner = fs.readFileSync('scripts/validate-source-once.mjs', 'utf8');
-assert.match(gate, /for\(const rel of RELEASE_GATE_TEST_FILES\)\{\s*const result=spawnSync\(process.execPath,\[rel\]/);
-assert.match(gate, /ok\(result.status===0/);
-assert.match(gate, /releaseGateArguments\[0\]==='--no-write-report'/);
-assert.match(gate, /if\(!suppressReleaseReport\)\{\s*await fs\.mkdir\('release'/,
-  'Only report emission, never release validation, may be suppressed by the PR source invocation.');
-assert.match(sourceRunner,
-  /const executionArgs = suppressReleaseReport \? \[\.\.\.args, '--no-write-report'\] : args;/,
-  'The real source executor must translate only the release-gate option into report suppression.');
-assert.ok(gateTests.includes('node scripts/test-harmonie-binding-migration.mjs'));
-console.log(`Source validation: complete coverage, full gate first, ${plan.reused.length} duplicate invocations removed, all failures remain blocking.`);
+
+const sourceDeclaration = scripts['validate:source:checks'];
+for (const required of [
+  'test:ravscore-source-critical',
+  'test:weather-source-critical',
+  'test:deploy-source-critical',
+  'test:privacy-source-critical',
+  'source:critical-gate',
+]) assert.ok(sourceDeclaration.includes(required), `Den kritiske kildegate mangler ${required}.`);
+for (const removed of [
+  'validate:rdks',
+  'test:rav-assistant',
+  'test:feedback-learning',
+  'test:hybrid-trip-storage',
+  'test:adaptive-prediction',
+  'test:admin-feature-reachability',
+  'test:ravscore-rollback-oracle',
+  'test:legacy-bootstrap-hydration',
+  'test:workflow-action-contracts',
+  'release:gate',
+]) assert.ok(!sourceDeclaration.includes(removed), `${removed} hører ikke længere til i den faste kildegate.`);
+
+console.log(`Source validation: ${calls.length} direkte produktionskritiske kommandoer, samlet fejlrapport og ingen bred release-/historiksuite.`);
