@@ -78,6 +78,12 @@ for (const marker of [
   'code_only_repair: true',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
 ]) assert.ok(codeOnlyWorkflow.includes(marker), `Code-only-workflowet mangler ${marker}.`);
+assert.ok(
+  codeOnlyWorkflow.includes(
+    'fetch_public data/live/public-condition-details.json public-condition-details.json 134217728',
+  ),
+  'Code-only-workflowets faste grænse skal rumme den verificerede 117.820.378-byte livefil.',
+);
 for (const forbidden of [
   'DMI_API_KEY',
   'COPERNICUSMARINE_SERVICE_USERNAME',
