@@ -1261,6 +1261,8 @@ async function runCli() {
       serviceRoleKey,
       publishableKey,
     });
+    const output = optionalArgumentValue('--output');
+    if (output) await fs.writeFile(output, `${JSON.stringify(payload)}\n`, { mode: 0o600 });
     console.log(`Protected integrated cutover readiness published for ${payload.sourceHead}; bundle ${payload.modelBundleSha256}.`);
     return;
   }

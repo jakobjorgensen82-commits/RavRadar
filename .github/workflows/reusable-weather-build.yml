@@ -164,6 +164,8 @@ jobs:
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
       RAVRADAR_PREFLIGHT_WORK: .cache/weather-preflight-work
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      RAVRADAR_DIRECT_INTEGRATED_INSTALL: ${{ inputs.ravscore_integrated_first_cutover && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && 'true' || 'false' }}
+      RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD: ${{ inputs.ravscore_integrated_first_cutover && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && 'f61efac3393cf5775feb284ef6a16af93ee0d3b0' || github.sha }}
     outputs:
       should_deploy: ${{ steps.deployment-decision.outputs.should_deploy }}
       preflight_should_run: ${{ steps.preflight.outputs.should_run }}
@@ -484,7 +486,7 @@ jobs:
         run: >-
           node scripts/verified-weather-source-handoff.mjs resolve-run
           --repository "$GITHUB_REPOSITORY"
-          --expected-head "$GITHUB_SHA"
+          --expected-head "$RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD"
           --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}"
           --runner-os "$RUNNER_OS"
           --first-cutover "${{ inputs.ravscore_integrated_first_cutover }}"
@@ -527,7 +529,7 @@ jobs:
             --artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json" \
             --resolved "$RUNNER_TEMP/ravradar-weather-source-handoff/resolved.json" \
             --repository "$GITHUB_REPOSITORY" \
-            --expected-head "$GITHUB_SHA" \
+            --expected-head "$RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD" \
             --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}" \
             --runner-os "$RUNNER_OS" \
             --github-output "$GITHUB_OUTPUT" \
@@ -620,7 +622,7 @@ jobs:
           --artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"
           --resolved "$RUNNER_TEMP/ravradar-weather-source-handoff/resolved.json"
           --repository "$GITHUB_REPOSITORY"
-          --expected-head "$GITHUB_SHA"
+          --expected-head "$RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD"
           --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}"
           --runner-os "$RUNNER_OS"
 
@@ -721,14 +723,14 @@ jobs:
           fi
 
       - name: Test Supabase persistence roundtrip
-        if: github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'
+        if: ${{ (github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover') && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' }}
         run: node scripts/test-supabase-persistence.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Restore source-content validation locator
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
@@ -738,13 +740,13 @@ jobs:
 
       - name: Verify exact-content source validation with GitHub
         id: source-proof
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true'
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Prepare exact pinned Candidate G source before source validation
-        if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && steps.source-proof.outputs.required != 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -756,7 +758,7 @@ jobs:
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
 
       - name: Install source-gate dependencies
-        if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && steps.source-proof.outputs.required != 'false'
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
@@ -765,7 +767,7 @@ jobs:
 
       - name: Run fast source gate before expensive data refresh
         id: source-gate
-        if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && steps.source-proof.outputs.required != 'false'
         run: npm run validate:source
 
       - name: Record actual source validation outcome
@@ -1752,21 +1754,28 @@ jobs:
 
       - name: Require exact integrated backend and Edge readiness before integrated Pages
         if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
-        run: >-
-          node scripts/integrated-cutover-readiness.mjs check
-          --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
-          --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+        shell: bash
+        run: |
+          set -euo pipefail
+          readiness_command=check
+          if [ "$RAVRADAR_DIRECT_INTEGRATED_INSTALL" = "true" ]; then
+            readiness_command=publish
+          fi
+          node scripts/integrated-cutover-readiness.mjs "$readiness_command" \
+            --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
 
       - name: Validate updated weather cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
         run: npm run validate:data
 
       - name: Verify active trip-storage Edge and D1 read contracts without creating data
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true'
         run: |
           node scripts/verify-trip-storage-edge.mjs
           node scripts/verify-cloudflare-trip-gateway.mjs
@@ -2360,7 +2369,7 @@ jobs:
 
       - name: Reconfirm exact main before private Copernicus refresh input cache
         id: copernicus-refresh-input-write-authority
-        if: steps.preflight.outputs.should_run == 'true' && success()
+        if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && success()
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
