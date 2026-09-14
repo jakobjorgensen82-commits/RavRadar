@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.363 efter første online-først-cutover
+
+- Main `8f5d818f`/4.0.362, PR #299 og exact-head sourcegate er færdige. Handoff `34830877368` blev grønt uden provider.
+- Cutover `34832259268` byggede 210/673, men stoppede før DB/deploy på otte ensartede H0-holds.
+- 4.0.363 retter den delte mutable intervalliste og den stale Candidate G-targetreferencekontrol; ingen audit omgås.
+- Direkte replay og 210/673-runtimeaudit er grønne. Bundles `327b989b…`/`1ccbb10e…`, migration `20260914020000`.
+- Næste: exact-head sourcegate, merge, kort same-head handoff, cutover, offentlig kontrol, derefter normal weather. Ingen oneoff.
+- Sol/Ekstra høj. Se DEC-0145.
+
 # NYESTE CHECKPOINT – 2026-09-14 – 4.0.362 online-først
 
 - Main/base: `6337fa09`/4.0.361 efter PR #298. Branch: `codex/4.0.362-cutover-validation-resume`.

@@ -2003,7 +2003,9 @@ export function buildIntegratedRavScoreStateSeries(
       ...memory,
       scoreBounds,
       currentNativeHoldAuthorization,
-      nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
+      // Each row is an immutable causal snapshot. A later native source must
+      // never append its interval proof into an earlier score-hour state.
+      nativeHoldIntervalEnds: [...currentNativeHoldIntervalEnds],
       transition: sameTimeHold ? 'SAME_TIME_HOLD'
         : nativeHold ? 'NATIVE_CADENCE_HOLD'
         : sample.currentVerified === true ? 'VERIFIED_REPLAY'

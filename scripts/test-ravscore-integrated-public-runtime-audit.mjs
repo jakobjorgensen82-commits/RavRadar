@@ -25,7 +25,10 @@ import {
 import {
   buildIntegratedPublicScoreAvailability,
 } from '../js/core/ravscore-public-runtime-contract.js';
-import { auditIntegratedRavScorePublicRuntime } from './audit-ravscore-integrated-public-runtime.mjs';
+import {
+  auditIntegratedRavScorePublicRuntime,
+  candidateGReferenceMatchesProduction,
+} from './audit-ravscore-integrated-public-runtime.mjs';
 import {
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
   buildFeggesundWaveCoverageProof,
@@ -84,6 +87,52 @@ const weather = Object.freeze({
     collection: 'synthetic-current-grid',
   },
 });
+
+const nativeHoldReference = time(-2);
+const exactNativeHoldAuthorization = {
+  sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy',
+  collection: 'dkss_lf',
+  distanceKm: 6,
+};
+assert.equal(candidateGReferenceMatchesProduction({
+  candidateState: { time: REFERENCE_AT, transportReferenceAt: REFERENCE_AT },
+  productionReferenceAt: REFERENCE_AT,
+}), true, 'a direct Candidate G target reference must remain valid');
+const exactNativeHoldReference = {
+  candidateState: { time: REFERENCE_AT, transportReferenceAt: nativeHoldReference },
+  integratedState: {
+    time: REFERENCE_AT,
+    currentReferenceAt: nativeHoldReference,
+    currentNativeHoldAuthorization: exactNativeHoldAuthorization,
+  },
+  integratedModel: {
+    currentTransition: 'NATIVE_CADENCE_HOLD',
+    currentReferenceAt: nativeHoldReference,
+  },
+  productionReferenceAt: REFERENCE_AT,
+};
+assert.equal(candidateGReferenceMatchesProduction(exactNativeHoldReference), true,
+  'an exact bounded H0 hold may retain its real source reference');
+assert.equal(candidateGReferenceMatchesProduction({
+  ...exactNativeHoldReference,
+  integratedState: {
+    ...exactNativeHoldReference.integratedState,
+    currentNativeHoldAuthorization: null,
+  },
+}), false, 'an H0 hold without the integrated regional proof must fail');
+assert.equal(candidateGReferenceMatchesProduction({
+  ...exactNativeHoldReference,
+  candidateState: { time: REFERENCE_AT, transportReferenceAt: time(-4) },
+  integratedState: {
+    ...exactNativeHoldReference.integratedState,
+    currentReferenceAt: time(-4),
+  },
+  integratedModel: {
+    ...exactNativeHoldReference.integratedModel,
+    currentReferenceAt: time(-4),
+  },
+}), false, 'a Candidate G reference outside the bounded hold must fail');
 
 const baseSamples = Array.from({ length: 290 }, (_, index) => ({
     time: time(index - 289),

@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.363 efter H0-runtimefejl
+
+4.0.362 er main `8f5d818f` efter PR #299 og grøn exact-head-sourcegate. Handoff `34830877368` genbrugte cachen uden provider. Cutover `34832259268` byggede 210 zoner og 673 dele, men stoppede sikkert før database og deploy.
+
+De samme otte H0-holds fejlede. Årsagen var en delt mutable holdintervalliste, som næste forecasttime skrev ind i den tidligere H0-state. Candidate G-staten var oracle-gyldig med virkelig reference to timer tidligere; auditens lig-target-krav var forkert.
+
+Lokal 4.0.363 laver et uforanderligt snapshot pr. time og accepterer kun Candidate G-lag ved integreret `NATIVE_CADENCE_HOLD`, samme kildetid, eksakt regional auth og højst tre timer. 210/673-auditen og negative fixtures er grønne. Bundles `327b989b…`/`1ccbb10e…`; migration 15. Exact-head, merge, handoff og launch mangler. Ingen oneoff/weather. DEC-0145.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.362 rettet og klar til online-først
 
 4.0.361 bestod exact-head-sourcegate, blev merged gennem PR #298 som main `6337fa09065b38bc578dad1a81a83ddd505bbd0d`, og handoff `34804412079` registrerede 79.414/79.414 currentpar uden provider. Det var komplet udfaldsregnskab, ikke komplet taldækning.

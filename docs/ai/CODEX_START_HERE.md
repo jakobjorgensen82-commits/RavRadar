@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.363 retter det faktiske H0-runtime-stop
+
+4.0.362 bestod sourcegate, blev merged som main `8f5d818f`, og cache-handoff `34830877368` blev grønt uden provider. Cutover `34832259268` byggede 210/673, men skrev eller deployede ikke, fordi runtimeauditen fandt de samme otte H0-holds.
+
+4.0.363 retter en delt mutable holdintervalliste, så næste forecasttime ikke kan ændre H0-state. Candidate G-auditen følger den virkelige ældre reference kun ved eksakt integreret holdbevis og højst tre timer. Direkte replay og syntetisk 210/673-audit er grønne. Bundles `327b989b…`/`1ccbb10e…`; migration `20260914020000`.
+
+Fortsæt uden oneoff eller weather: RDKS/version → commit/push → én exact-head sourcegate → merge → kort same-head cache-handoff → cutover → offentlig kontrol → normal weather. Sol/Ekstra høj. DEC-0145.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.362 skal online
 
 Main er `6337fa09065b38bc578dad1a81a83ddd505bbd0d` efter PR #298. Handoff `34804412079` har 79.414/79.414 klassificerede currentpar, men tallet er ikke numerisk komplethed. Cutover `34805083829` byggede 673 dele og kørte 272 kontroller; én rumlig audit stoppede deploy. Diagnose `34820407527` viste 669 vind, 673 bølger, 659 direkte current + 8 holds, 6 lokale currentmangler og 669 vandstand ved H0.

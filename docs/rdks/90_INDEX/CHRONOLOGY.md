@@ -1,3 +1,11 @@
+# 2026-09-14 – 4.0.363 retter det første online-først-runtime-stop
+
+4.0.362 bestod sourcegate, blev merged via PR #299 som main `8f5d818f`, og handoff `34830877368` blev grønt uden provider. Cutover `34832259268` gendannede cachen og byggede 210/673, men ændrede ikke database eller hjemmeside.
+
+Runtimeauditen samlede fejl om de samme otte H0-holds. En delt mutable intervalliste lod næste forecasttime ændre mål-timens state. Candidate G var oracle-gyldig, men auditen krævede fejlagtigt targetreference frem for den virkelige kildetid.
+
+4.0.363 kopierer state pr. time og binder den ældre Candidate G-reference til eksakt integreret holdbevis og tre-timersgrænsen. Replay og syntetisk 210/673-audit er grønne; migration 15 fremfører begge bundles. Ingen oneoff/weather før launch. Se DEC-0145.
+
 # 2026-09-14 – 4.0.362 retter H0-input og går online før videre fejlsøgning
 
 4.0.361 blev merged som main `6337fa09`. Handoff `34804412079` havde alle 79.414 currentudfald klassificeret, men ikke alle numerisk udfyldt. Cutover `34805083829` byggede 673 dele og kørte 272 kontroller; 271 bestod, én rumlig audit stoppede deploy.

@@ -1,3 +1,10 @@
+## 4.0.363 – rene H0-snapshots og korrekt holdaudit (2026-09-14, lokal kandidat)
+
+- 4.0.362 bestod sourcegate og blev merged gennem PR #299. Cache-handoff `34830877368` blev grønt uden provider; cutover `34832259268` byggede 210/673, men stoppede før writes og deploy på samme otte H0-holds.
+- En delt mutable intervalliste lod næste forecasttime ændre den tidligere H0-state. Hver time får nu sit eget snapshot, som kan genåbnes byte-for-byte.
+- Candidate G-auditen tillader den virkelige ældre reference kun ved eksakt integreret `NATIVE_CADENCE_HOLD`, samme kildetid, regionalt bevis og højst tre timer. Negative cases forbliver røde.
+- Bundles `327b989b…`/`1ccbb10e…` og append-only migration 15 er synkroniseret. Ingen oneoff eller weather før launch. Se `CHANGELOG-4.0.363.md` og DEC-0145.
+
 ## 4.0.362 – rettet H0-input og online-først (2026-09-14, lokal kandidat)
 
 - Handoffets 79.414/79.414 er præciseret som komplet udfaldsregnskab, ikke komplet numerisk current.

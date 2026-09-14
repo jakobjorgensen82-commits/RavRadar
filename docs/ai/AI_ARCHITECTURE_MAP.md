@@ -1,3 +1,9 @@
+## 2026-09-14 lokal 4.0.363 – H0-state snapshot og auditbinding
+
+- `ravscore-integrated-state-pipeline.js` kopierer `currentNativeHoldIntervalEnds` ind i hver row; senere rows kan ikke mutere tidligere continuation state.
+- Runtimeauditen accepterer Candidate G's ældre transportreference alene gennem aktiv integreret holdtransition, identisk kildetid, kanonisk regional auth og tre-timersloft.
+- Begge transitive bundles fremføres gennem migration `20260914020000_h0_state_snapshot_binding.sql`. De 14 forgængere er immutable. DEC-0145.
+
 ## 2026-09-14 lokal 4.0.362 – H0 reference-recovery og online-først
 
 - `dmi-forecast-store.mjs` grupperer DKSS-`windTail` efter eksakt native modelserie og vælger kun samme-run interpolation/edge inden for gældende tidsloft. Primær HARMONIE forbliver globalt strict.

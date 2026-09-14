@@ -559,6 +559,29 @@ function assertCanonicalBinding(binding) {
   return true;
 }
 
+export function candidateGReferenceMatchesProduction({
+  candidateState,
+  integratedState,
+  integratedModel,
+  productionReferenceAt,
+} = {}) {
+  if (!validTime(productionReferenceAt)
+    || candidateState?.time !== productionReferenceAt
+    || !validTime(candidateState?.transportReferenceAt)) {
+    return false;
+  }
+  if (candidateState.transportReferenceAt === productionReferenceAt) return true;
+  const holdAgeHours = (Date.parse(productionReferenceAt)
+    - Date.parse(candidateState.transportReferenceAt)) / 3_600_000;
+  return Boolean(integratedModel?.currentTransition === 'NATIVE_CADENCE_HOLD'
+    && integratedState?.time === productionReferenceAt
+    && integratedState?.currentReferenceAt === candidateState.transportReferenceAt
+    && integratedModel?.currentReferenceAt === integratedState.currentReferenceAt
+    && exactRegionalHoldAuthorization(integratedState.currentNativeHoldAuthorization)
+    && holdAgeHours > 0
+    && holdAgeHours <= RAVSCORE_CURRENT_SUPPLY_POLICY.maximumGapHours);
+}
+
 function candidateGTransportReplayMatches(state) {
   try {
     const replay = buildBoundedCurrentTransportMemory(state.transportEvidence, {
@@ -1550,8 +1573,12 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     }
     const candidateCommonShapeValid = candidateEvidenceCompatible
       && sameKeys(candidateState, CANDIDATE_G_CONTINUATION_FIELDS)
-      && candidateState?.time === full?.productionReferenceAt
-      && candidateState?.transportReferenceAt === full?.productionReferenceAt
+      && candidateGReferenceMatchesProduction({
+        candidateState,
+        integratedState: state,
+        integratedModel: model,
+        productionReferenceAt: full?.productionReferenceAt,
+      })
       && !containsForbiddenStateMaterial(candidateState);
     const candidateReadyShapeValid = candidateCommonShapeValid
       && candidateState?.transportMemoryReady === true

@@ -1,3 +1,10 @@
+# 2026-09-14 – 4.0.363 uforanderlig H0-state
+
+- Run `34832259268` byggede 210/673 men deployede ikke. De samme otte holds gav 8 replay-, 8 last-mile-, 8 Candidate-state-, 8 oracle- og 16 afledte modefejl.
+- H0-row delte sin holdintervalliste med senere forecastrows. Kopi pr. row fjerner fremtidig mutation og gør state replaybar.
+- Candidate G targetstate må ved eksakt hold have ældre reference. Audit kræver samme integrerede reference, `NATIVE_CADENCE_HOLD`, regional auth og højst tre timer.
+- Bundles `327b989b…`/`1ccbb10e…`; append-only migration 15. Ingen oneoff/weather før launch. DEC-0145.
+
 # 2026-09-14 – 4.0.362 H0-input og online-først
 
 - Et komplet 673×118-regnskab betyder, at hvert pair er klassificeret; negative/null/upstream-fravær er ikke numeriske målinger.

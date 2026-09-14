@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.363 fra rettet H0-state til online
+
+1. **P0:** Kør én exact-head sourcegate på den færdige 4.0.363-head og merge byteidentisk.
+2. **P0:** Genskab kun same-head-handoff fra de eksisterende forseglede cacher; ingen provider og ingen oneoff.
+3. **P0:** Kør cutover gennem runtimeaudit, migration 15, beskyttede writes, privacy, artifact og deploy. Genstart ikke gennemførte forgængermigrationer.
+4. **P0 efter launch:** Kontroller offentlig model, begge søgemåder og hjemmesidens felter. Saml konkrete livefejl og ret dem samlet.
+5. **P0 efter launch:** Genaktivér normal weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-rotation, fallback og køretid uden oneoff.
+6. **P1:** Revurdér resterende roadmap mod live-evidens og behold kun opgaver med reel produktværdi.
+
+DEC-0145 retter runtime-stoppet uden at omgå auditen; DEC-0144's online-først-retning består.
+
 # Aktiv roadmap – 4.0.362 online først
 
 1. **P0:** Én exact-head sourcegate på den færdige 4.0.362-head og merge uden en ny bred lokal kontrolrunde.
