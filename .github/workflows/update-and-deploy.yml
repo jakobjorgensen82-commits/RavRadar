@@ -122,6 +122,7 @@ jobs:
       ravscore_integrated_return_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_return_confirmation }}
     steps:
       - name: Publish safe non-manual dispatch defaults
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: dispatch-defaults
         shell: bash
         run: |
@@ -139,14 +140,17 @@ jobs:
           echo "ravscore_integrated_return_confirmation=" >> "$GITHUB_OUTPUT"
 
       - name: Checkout manual dispatch contract
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v7
       - name: Set up Node for manual dispatch contract
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: github.event_name == 'workflow_dispatch'
         uses: actions/setup-node@v7
         with:
           node-version: '24'
       - name: Reject ambiguous or insufficiently authorized dispatch
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
@@ -227,6 +231,7 @@ jobs:
           fi
 
       - name: Publish validated manual dispatch values
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: validated-dispatch
         if: success() && github.event_name == 'workflow_dispatch'
         shell: bash
@@ -281,12 +286,15 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           node-version: 22
 
       - name: Bind reconciliation runner to newest exact main
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         run: |
           git fetch --no-tags origin main
@@ -294,6 +302,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
       - name: Read, prove and classify the exact historical Pages attempt
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: reconcile
         shell: bash
         env:
@@ -688,6 +697,7 @@ jobs:
           echo "recovery_action=$recovery_action" >> "$GITHUB_OUTPUT"
 
       - name: Upload only helper-proven exact-target recovery material
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.reconcile.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'
         uses: actions/upload-artifact@v7
         with:
@@ -715,18 +725,22 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           node-version: 22
 
       - name: Download the helper-proven exact-target recovery bundle
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.reconcile-operational-pending.outputs.recovery_bundle_name }}
           path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/bundle
 
       - name: Revalidate immutable target bytes and current public endpoint before Pages write
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: prepare-recovery
         shell: bash
         env:
@@ -858,10 +872,12 @@ jobs:
           echo "action=$recovery_action" >> "$GITHUB_OUTPUT"
 
       - name: Configure GitHub Pages for exact-target recovery
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY'
         uses: actions/configure-pages@v6
 
       - name: Upload the revalidated exact site under a unique recovery name
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: recovery-pages-upload
         if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY'
         uses: actions/upload-pages-artifact@v5
@@ -871,6 +887,7 @@ jobs:
           retention-days: 14
 
       - name: Redeploy the exact sealed Pages target
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: recovery-deployment
         if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY'
         uses: actions/deploy-pages@v5
@@ -878,6 +895,7 @@ jobs:
           artifact_name: github-pages-recovery-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Verify the stable exact target and seal recovery lineage
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY' || steps.prepare-recovery.outputs.action == 'TARGET_RECONCILE'
         shell: bash
         run: |
@@ -1000,6 +1018,7 @@ jobs:
             > "$RAVRADAR_OPERATIONAL_WORK/recovery-handoff/recovery-handoff.json"
 
       - name: Upload bounded recovery handoff for future exact source restore
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY' || steps.prepare-recovery.outputs.action == 'TARGET_RECONCILE'
         uses: actions/upload-artifact@v7
         with:
@@ -1024,24 +1043,29 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           node-version: 22
 
       - name: Download sealed original recovery evidence
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.reconcile-operational-pending.outputs.recovery_bundle_name }}
           path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/bundle
 
       - name: Download recovered source lineage handoff
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/download-artifact@v8
         with:
           name: ravscore-operational-recovery-handoff-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/recovery-handoff
 
       - name: Reobserve exact target and complete central CAS
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -1229,6 +1253,7 @@ jobs:
       contents: read
     steps:
       - name: Prove reconciliation or exact-target redeploy completed
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           RECONCILE_RESULT: ${{ needs.reconcile-operational-pending.result }}
@@ -1271,8 +1296,10 @@ jobs:
       target_hour: ${{ steps.cache-state.outputs.target_hour }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - name: Require checked-out HEAD to equal current origin/main
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1283,6 +1310,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Restore private Copernicus current cache for timed gate
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         uses: actions/cache/restore@v6
         with:
@@ -1296,11 +1324,13 @@ jobs:
             copernicus-current-range-v2-
 
       - name: Inspect timed UTC hour without exposing raw vectors
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
 
       - name: Decide whether production may start
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: readiness
         shell: bash
         env:
@@ -1326,8 +1356,10 @@ jobs:
       ready: ${{ steps.readiness.outputs.ready }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - name: Require checked-out HEAD to equal current origin/main
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1338,6 +1370,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Determine exact-head D1 trip-storage readiness without failing the run
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: readiness
         shell: bash
         env:
@@ -1426,90 +1459,115 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - name: Set up Python for private national geometry acquisition
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install free GeoDanmark geometry dependencies
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python -m pip install --disable-pip-version-check -r requirements-geometry.txt
 
       - name: Install DMI native-grid reader
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
       - name: Snapshot repository zones before central hydration
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: |
           mkdir -p .geometry-v2-work
           cp data/zones.geojson .geometry-v2-work/repository-zone-baseline.geojson
 
       - name: Sync centrally saved admin configuration for national input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/sync-admin-config.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Apply centrally approved geometry and tombstones to national input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/apply-central-zone-reviews.py
 
       - name: Build national read-only work plan
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/build-national-geometry-v2-plan.py
           --baseline-zones .geometry-v2-work/repository-zone-baseline.geojson
 
       - name: Fetch and deduplicate private national official source layers
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/fetch-geodanmark-national.py
         env:
           DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
 
       - name: Validate private national source completeness and safety
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-geodanmark-national-source.py
         env:
           DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
 
       - name: Analyze indexed national source against all effective zones
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/analyze-geodanmark-national.py
 
       - name: Fetch official national fjord and nor exclusions
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/fetch-national-water-exclusions.py
 
       - name: Analyze national coastal topology and exclusion evidence
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/analyze-national-coastal-topology.py
 
       - name: Validate national topology audit completeness and isolation
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-topology-audit.py
 
       - name: Audit precise public-coast coverage under stable main zones
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-national-public-coast-coverage.py
 
       - name: Build private national coastal part review proposals
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-coastal-parts.py
 
       - name: Validate private national coastal parts and no invented links
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-coastal-parts.py
 
       - name: Fetch official place-name candidates for actual national coastal parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-national-coastal-part-names.py
 
       - name: Validate official place-name candidates without automatic naming
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-coastal-part-names.py
 
       - name: Build private locality partitions for flagged national coastal parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-locality-partitions.py
 
       - name: Validate locality partitions remain on source geometry
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-locality-partitions.py
 
       - name: Build private official name suggestions for final local coastal parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-local-part-names.py
 
       - name: Validate final local part names remain review-only and evidence-backed
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-local-part-names.py
 
       - name: Build private land and water point pairs from opposite-side evidence
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-local-part-points.py
 
       - name: Apply independent 10 m land and water side evidence
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/apply-national-land-water-corrections.py
           --require-exact-evidence
@@ -1518,63 +1576,81 @@ jobs:
           --output .geometry-v2-work/national-local-part-point-pairs.json
 
       - name: Validate ambiguous point pairs remain fail-closed
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-local-part-points.py
 
       - name: Validate all private water candidates on native DMI grids
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-dmi-grid.py
 
       - name: Build isolated private weather identities for validated coastal parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-weather-shadow-contract.py
 
       - name: Validate isolated private national multi-step weather series
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
         run: python scripts/validate-national-multi-step-series.py
 
       - name: Validate isolated private national state and history
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-national-state-history.mjs
 
       - name: Validate isolated private native wind series for coastal parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-wind-series.py
 
       - name: Validate private national local-part shadow score and coverage
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-national-shadow-score.mjs
 
       - name: Build private national score-neutral owner review
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/build-national-score-neutral-owner-review.mjs --work .geometry-v2-work --output-dir .owner-review/national-coastal-zone-review
 
       - name: Fetch all official water areas for private inner-water follow-up
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/fetch-national-official-waters.py --output .geometry-v2-work/national-official-waters.geojson
 
       - name: Audit national inner-water candidates against owner decisions
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-national-inner-water-candidates.py --work .geometry-v2-work --owner-review data/geometry-v2/national-owner-coastal-review-2026-08-11.json
 
       - name: Audit physical duplicates of owner-reviewed parts
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-national-owner-review-duplicates.py --work .geometry-v2-work --output .geometry-v2-work/national-owner-review-duplicate-audit.json
 
       - name: Verify exact official fjord and nor overlap
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-national-official-inner-water-overlap.py --work .geometry-v2-work --output .owner-review/national-official-inner-water-overlap-audit.json
 
       - name: Build private owner correction proposal
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/apply-national-owner-coastal-review.py --work .geometry-v2-work --duplicate-audit .geometry-v2-work/national-owner-review-duplicate-audit.json --output-dir .owner-review/national-owner-corrections
 
       - name: Build private visual control of owner corrections
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/build-national-owner-correction-review.mjs --proposal .owner-review/national-owner-corrections/owner-correction-proposal.geojson --output .owner-review/national-owner-corrections/index.html
 
       - name: Build targeted private inner-water follow-up review
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/build-national-inner-water-owner-review.mjs --work .geometry-v2-work --output-dir .owner-review/national-inner-water-follow-up
 
       - name: Assemble reviewed coast exactly once across neighboring zones
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/assemble-national-owner-final-coast.py --work .geometry-v2-work --corrections .owner-review/national-owner-corrections --zones data/zones.geojson --output-dir .owner-review/national-owner-final
 
       - name: Rebuild final land and water points after owner corrections and deduplication
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-local-part-points.py --work-dir .geometry-v2-work --zones data/zones.geojson --final-coast .owner-review/national-owner-final/national-owner-final-coast.geojson --final-names .owner-review/national-owner-final/national-owner-final-part-names.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
 
       - name: Apply independent 10 m land and water side evidence to final points
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/apply-national-land-water-corrections.py
           --require-exact-evidence
@@ -1583,39 +1659,48 @@ jobs:
           --output .owner-review/national-owner-final/national-local-part-point-pairs.json
 
       - name: Validate final land and water point contract
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-national-local-part-points.py --work-dir .owner-review/national-owner-final
 
       - name: Validate final water points on native DMI grids
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-dmi-grid.py --input .owner-review/national-owner-final/national-local-part-point-pairs.json --report .owner-review/national-owner-final/national-local-part-dmi-grid.json
 
       - name: Build final isolated weather identities
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-national-weather-shadow-contract.py --points .owner-review/national-owner-final/national-local-part-point-pairs.json --grid .owner-review/national-owner-final/national-local-part-dmi-grid.json --output .owner-review/national-owner-final/national-weather-shadow-contract.json
 
       - name: Validate final native marine series
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
         run: python scripts/validate-national-multi-step-series.py --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --report .owner-review/national-owner-final/national-multi-step-series-validation.json --state-input .cache/national-final-state-replay-input.json --score-input .cache/national-final-shadow-score-marine-input.json
 
       - name: Validate final state and history isolation
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-national-state-history.mjs --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --series .owner-review/national-owner-final/national-multi-step-series-validation.json --input .cache/national-final-state-replay-input.json --output .owner-review/national-owner-final/national-state-history-validation.json
 
       - name: Validate final native wind series
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-wind-series.py --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --report .owner-review/national-owner-final/national-local-part-wind-series.json --marine-input .cache/national-final-shadow-score-marine-input.json --wind-input .cache/national-final-shadow-score-wind-input.json
 
       - name: Validate final score-neutral shadow score
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-national-shadow-score.mjs --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --multi .owner-review/national-owner-final/national-multi-step-series-validation.json --state .owner-review/national-owner-final/national-state-history-validation.json --wind .owner-review/national-owner-final/national-local-part-wind-series.json --marine-input .cache/national-final-shadow-score-marine-input.json --wind-input .cache/national-final-shadow-score-wind-input.json --output .owner-review/national-owner-final/national-shadow-score-validation.json
 
       - name: Validate private national central admin roundtrip and rollback
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-national-admin-roundtrip.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Build private fallback-zone recovery from the fetched official coast
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/build-fallback-zone-recovery-review.py
           --official .geometry-v2-work/national-source/national-Kyst.geojson
@@ -1625,6 +1710,7 @@ jobs:
           --report .geometry-v2-work/fallback-zone-recovery-report.json
 
       - name: Build private fallback-zone land and water points
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/build-approved-public-coast-points.py
           --candidate .geometry-v2-work/fallback-zone-recovery-candidate.json
@@ -1633,6 +1719,7 @@ jobs:
           --candidate-output .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
 
       - name: Apply exact independent land and water evidence to fallback points
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/apply-national-land-water-corrections.py
           --require-exact-evidence
@@ -1643,9 +1730,11 @@ jobs:
           --candidate-output .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
 
       - name: Validate fallback geometry ownership, point pairs and zero overlap
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-fallback-zone-recovery.py
 
       - name: Validate fallback water points on native DMI grids
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: >-
@@ -1654,6 +1743,7 @@ jobs:
           --report .geometry-v2-work/fallback-zone-recovery-dmi-grid.json
 
       - name: Upload compact national geometry-v2 QA artifact
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -1711,6 +1801,7 @@ jobs:
           include-hidden-files: true
 
       - name: Upload private national geometry-v2 source artifact
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -1730,63 +1821,79 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - name: Set up Python for private geometry pilot
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install free GeoDanmark pilot dependencies
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python -m pip install --disable-pip-version-check -r requirements-geometry.txt
 
       - name: Install DMI GRIB reader for private grid validation
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
       - name: Snapshot repository zone baseline before central hydration
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: |
           mkdir -p .geometry-v2-work
           cp data/zones.geojson .geometry-v2-work/repository-zone-baseline.geojson
 
       - name: Sync centrally saved admin configuration for pilot input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/sync-admin-config.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Apply centrally approved zone geometry and tombstones for pilot input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/apply-central-zone-reviews.py
 
       - name: Build national geometry-v2 work plan from effective zones
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: >-
           python scripts/build-national-geometry-v2-plan.py
           --baseline-zones .geometry-v2-work/repository-zone-baseline.geojson
 
       - name: Run GeoDanmark geometry-v2 pilot
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/fetch-geodanmark-pilot.py
         env:
           DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
 
       - name: Analyze GeoDanmark source against centrally hydrated pilot zones
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/analyze-geodanmark-pilot.py
 
       - name: Audit official place names and migration classes
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/audit-pilot-place-names.py
 
       - name: Fetch official private fjord and nor exclusion polygons
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/fetch-official-water-exclusions.py
 
       - name: Assemble conservative private coastal-part proposals
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/assemble-geodanmark-coastal-parts.py
 
       - name: Build private Blåvand detail proposal
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-blaavand-detail-proposal.py
 
       - name: Build private official orthophoto review overlays
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-blaavand-ortho-review.py
         env:
           DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
 
       - name: Validate private Blåvand water points on native DMI grids
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-blaavand-dmi-grid.py
         env:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
@@ -1798,9 +1905,11 @@ jobs:
           DMI_BULK_RAW_DIR: .cache/dmi-grid-validation
 
       - name: Build private score-neutral Blåvand weather shadow contract
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/build-blaavand-weather-shadow-contract.py
 
       - name: Validate private isolated Blåvand multi-step weather series
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/validate-blaavand-multi-step-series.py
         env:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
@@ -1813,21 +1922,26 @@ jobs:
           DMI_BULK_RAW_DIR: .cache/dmi-grid-validation
 
       - name: Validate private isolated Blåvand state and history replay
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-blaavand-state-history.mjs
 
       - name: Build private score-neutral Blåvand UI review
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/build-blaavand-score-neutral-ui-review.mjs
 
       - name: Validate private Blåvand central admin roundtrip and rollback
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: node scripts/validate-blaavand-admin-roundtrip.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Render private GeoDanmark source review maps
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python scripts/render-geodanmark-pilot-maps.py
 
       - name: Upload private GeoDanmark pilot artifact
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -1851,8 +1965,10 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - name: Require refresh HEAD to equal GITHUB_SHA and current origin/main
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -1864,16 +1980,19 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           node-version: 22
 
       - uses: actions/setup-python@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements-copernicus.txt
 
       - name: Restore exact private Copernicus post-build refresh input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: copernicus-refresh-input
         uses: actions/cache/restore@v6
         with:
@@ -1888,6 +2007,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Verify exact private Copernicus post-build refresh input
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: verified-copernicus-refresh-input
         shell: bash
         env:
@@ -1912,6 +2032,7 @@ jobs:
           echo "target_hour=$target_hour" >> "$GITHUB_OUTPUT"
 
       - name: Restore shared private Copernicus donor bank for post-build maintenance
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         uses: actions/cache/restore@v6
         with:
           path: |
@@ -1926,18 +2047,21 @@ jobs:
             copernicus-current-donor-bank-v1-${{ runner.os }}-
 
       - name: Revalidate packaged exact-content source proof before maintenance acquisition
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: copernicus-refresh-source-proof
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Require reusable exact-content source proof for advisory maintenance
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         shell: bash
         env:
           SOURCE_GATE_REQUIRED: ${{ steps.copernicus-refresh-source-proof.outputs.required }}
         run: test "$SOURCE_GATE_REQUIRED" = "false"
 
       - name: Install private Copernicus maintenance dependency
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Refresh only the next-run private Copernicus cache
@@ -1961,6 +2085,7 @@ jobs:
           --authoritative-targets .cache/copernicus-post-build-authoritative-targets.json
 
       - name: Reconfirm exact main before post-build donor bank cache save
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: copernicus-refresh-bank-write-authority
         if: always() && steps.copernicus-refresh.outcome != 'cancelled' && steps.copernicus-refresh.outcome != 'skipped' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         shell: bash
@@ -1974,6 +2099,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save post-build Copernicus donor bank before projection validation
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always() && steps.copernicus-refresh-bank-write-authority.outcome == 'success' && (steps.copernicus-refresh.outputs.donor_bank_written == 'true' || hashFiles('.cache/copernicus-current-segment-journal.json') != '' || hashFiles('.cache/copernicus-current-donor-bank.json.invalid-*') != '')
         uses: actions/cache/save@v6
         with:
@@ -1987,6 +2113,7 @@ jobs:
           key: copernicus-current-donor-bank-v1-${{ runner.os }}-post-build-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Validate refreshed private Copernicus package without changing artifact outcome
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true'
         shell: bash
         run: |
@@ -2020,6 +2147,7 @@ jobs:
           PY
 
       - name: Reconfirm exact main immediately before refreshed Copernicus cache save
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: copernicus-refresh-write-authority
         if: steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true' && success()
         shell: bash
@@ -2033,6 +2161,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save successful post-build Copernicus maintenance under shared progress prefix
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: steps.copernicus-refresh-write-authority.outcome == 'success' && steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true'
         uses: actions/cache/save@v6
         with:
@@ -2044,7 +2173,7 @@ jobs:
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow
     needs: build-and-prepare
-    if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && ((needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true') || (inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE')) }}
     permissions:
       contents: read
       actions: read
@@ -2054,10 +2183,10 @@ jobs:
     with:
       active_deployment_id: ${{ needs.build-and-prepare.outputs.active_deployment_id }}
       central_version: ${{ needs.build-and-prepare.outputs.central_version }}
-      deployment_model: ${{ needs.build-and-prepare.outputs.deployment_model }}
+      deployment_model: ${{ needs.build-and-prepare.outputs.deployment_model || 'integrated' }}
       integrated_implementation_closure_sha256: ${{ needs.build-and-prepare.outputs.integrated_implementation_closure_sha256 }}
-      legacy_source_required: ${{ needs.build-and-prepare.outputs.legacy_source_required }}
-      operational_action: ${{ needs.build-and-prepare.outputs.operational_action }}
+      legacy_source_required: ${{ needs.build-and-prepare.outputs.legacy_source_required || 'true' }}
+      operational_action: ${{ needs.build-and-prepare.outputs.operational_action || 'integrated-cutover' }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -2086,12 +2215,15 @@ jobs:
       reason_code: ${{ steps.classify.outputs.reason_code }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         with:
           node-version: 22
 
       - name: Classify one privacy-safe machine-readable terminal outcome
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         id: classify
         env:
           RAVRADAR_OUTCOME_SOURCE_HEAD: ${{ github.sha }}
@@ -2144,6 +2276,7 @@ jobs:
           --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the payload-free terminal outcome
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -2153,9 +2286,9 @@ jobs:
           if-no-files-found: error
 
       - name: Preserve failed production as a red workflow
+        continue-on-error: ${{ inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' }}
         if: always() && steps.classify.outputs.status == 'FAILED'
         shell: bash
         run: |
           echo "The exact production outcome is FAILED; see the payload-free outcome artifact." >&2
           exit 1
-
