@@ -1156,7 +1156,7 @@ export async function buildPrivateRuntimePreflightState({
     contractHashes,
     dmiRuns,
     dmiBulkRefreshStatus: safeStatus(bulk?.refreshStatus, 'Private runtime DMI bulk status'),
-    oceanDiagnosticsGeneratedAt: exactCanonicalTime(
+    oceanDiagnosticsGeneratedAt: canonicalTime(
       oceanDiagnostics?.generatedAt,
       'Private runtime ocean diagnostics generation',
     ),

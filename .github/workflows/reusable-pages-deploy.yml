@@ -65,12 +65,15 @@ jobs:
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
 
       - uses: actions/setup-node@v7
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         with:
           node-version: 22
 
       - name: Fetch exact public Candidate G source commit for first cutover verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.legacy_source_required == 'true' && (inputs.operational_action == 'integrated-cutover' || inputs.operational_action == 'candidate-legacy-maintenance')
         shell: bash
         run: |
@@ -80,12 +83,14 @@ jobs:
           test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"
 
       - name: Download sealed operational handoff
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         uses: actions/download-artifact@v8
         with:
           name: ravscore-operational-handoff-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
 
       - name: Verify exact privacy-safe handoff identity
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         run: |
           test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "ravscore-operational-deploy-handoff-v2"
@@ -96,6 +101,7 @@ jobs:
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
 
       - name: Require horizon-valid weather before any Pages begin CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -105,6 +111,7 @@ jobs:
             --maximum-age-minutes 240
 
       - name: Validate checkpoint disposition before any Pages begin CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: checkpoint-disposition-begin
         shell: bash
         env:
@@ -161,6 +168,7 @@ jobs:
           NODE
 
       - name: Reconfirm prepared SHA before any activation CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -170,6 +178,7 @@ jobs:
           test "$GITHUB_SHA" = "$current_main"
 
       - name: Observe and seal the currently public source manifest
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
@@ -188,6 +197,7 @@ jobs:
             > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
 
       - name: Restore the exact sealed active source implementation
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || (inputs.operational_action == 'integrated-cutover' && inputs.legacy_source_required != 'true')
         shell: bash
         env:
@@ -214,6 +224,7 @@ jobs:
             --dir "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal"
 
       - name: Verify the complete currently public source model before begin CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
@@ -259,6 +270,7 @@ jobs:
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
 
       - name: Upload privacy-safe source evidence before any activation CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         uses: actions/upload-artifact@v7
         with:
@@ -268,6 +280,7 @@ jobs:
           if-no-files-found: error
 
       - name: Begin manual Candidate G rollback with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: candidate-begin
         if: inputs.operational_action == 'candidate-execute'
         run: >-
@@ -285,6 +298,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Begin scheduled Candidate G refresh with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: candidate-refresh-begin
         if: inputs.operational_action == 'candidate-maintenance'
         run: >-
@@ -302,6 +316,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Begin historical-to-current Candidate G maintenance with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: candidate-historical-refresh-begin
         if: inputs.operational_action == 'candidate-historical-maintenance'
         run: >-
@@ -319,6 +334,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Begin legacy-to-current Candidate G refresh with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: candidate-legacy-refresh-begin
         if: inputs.operational_action == 'candidate-legacy-maintenance'
         run: >-
@@ -337,6 +353,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Begin integrated return or first cutover with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: integrated-transition-begin
         if: inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
@@ -365,6 +382,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Begin historical-to-current integrated maintenance with exact central CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: integrated-historical-maintenance-begin
         if: inputs.operational_action == 'integrated-historical-maintenance'
         run: >-
@@ -383,6 +401,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Reconfirm exact main immediately before Pages deployment
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -392,6 +411,7 @@ jobs:
           test "$GITHUB_SHA" = "$current_main"
 
       - name: Require checked-out HEAD to equal current origin/main
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -402,6 +422,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Require horizon-valid weather immediately before Pages deployment
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -411,10 +432,12 @@ jobs:
             --maximum-age-minutes 240
 
       - name: Deploy to GitHub Pages
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: deployment
         uses: actions/deploy-pages@v5
 
       - name: Verify deployed exact model, implementation and 210/673 artifact
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: public-verification
         run: >-
           node scripts/verify-ravscore-operational-pages-deployment.mjs
@@ -430,6 +453,7 @@ jobs:
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
 
       - name: Reconfirm exact main before activation completion
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -438,6 +462,7 @@ jobs:
           test "$GITHUB_SHA" = "$current_main"
 
       - name: Revalidate checkpoint disposition before Pages completion CAS
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: checkpoint-disposition-complete
         shell: bash
         env:
@@ -494,6 +519,7 @@ jobs:
           NODE
 
       - name: Complete Candidate G rollback only after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-execute'
         shell: bash
         run: |
@@ -509,6 +535,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Refresh already active Candidate G central evidence after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-maintenance'
         shell: bash
         run: |
@@ -524,6 +551,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Complete historical-to-current Candidate G maintenance only after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-historical-maintenance'
         shell: bash
         run: |
@@ -540,6 +568,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Complete legacy-to-current Candidate G refresh only after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'candidate-legacy-maintenance'
         shell: bash
         run: |
@@ -556,6 +585,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Complete integrated return or first cutover only after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: integrated-transition-complete
         if: inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
@@ -573,6 +604,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Complete historical-to-current integrated maintenance only after public verification
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'integrated-historical-maintenance'
         shell: bash
         run: |
@@ -591,6 +623,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Reseal ordinary integrated production without changing model identity
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         if: inputs.operational_action == 'integrated'
         run: >-
           node scripts/ravscore-operational-activation.mjs integrated-maintenance
@@ -606,7 +639,8 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Reconcile an ambiguous failed transition from observed public identity
-        if: failure() && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        if: (failure() || (inputs.operational_action == 'integrated-cutover' && (steps.deployment.outcome != 'success' || steps.public-verification.outcome != 'success' || steps.integrated-transition-complete.outcome != 'success'))) && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
         shell: bash
         run: |
           set -euo pipefail
@@ -778,6 +812,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Seal exact verified deployment terminal
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: deployment-terminal
         if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'
         shell: bash
