@@ -302,6 +302,15 @@ expectStatus(withPatch(base(), {
 }), 'FAILED', 'INCOMPLETE_BUILD_GATES');
 
 expectStatus(withPatch(base(), {
+  eventName: 'workflow_dispatch',
+  proof: {
+    operationalAction: 'integrated-cutover',
+    fullValidationOutcome: 'skipped',
+    releaseGateOutcome: 'skipped',
+  },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+
+expectStatus(withPatch(base(), {
   jobs: { deployPages: 'skipped' },
   proof: {
     preflightShouldRun: false,

@@ -31,6 +31,8 @@ const LOCAL_UNAVAILABLE_CUTOVER_BINDING_CHECK =
   'node scripts/build-local-unavailable-cutover-binding-migration.mjs';
 const PUBLIC_RUNTIME_ORACLE_BINDING_CHECK =
   'node scripts/build-public-runtime-oracle-binding-migration.mjs';
+const H0_REFERENCE_RECOVERY_BINDING_CHECK =
+  'node scripts/build-h0-reference-recovery-binding-migration.mjs';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -39,9 +41,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   STATE_ONLY_HOLD_CLOSURE_V2_BINDING_CHECK,
   LOCAL_UNAVAILABLE_CUTOVER_BINDING_CHECK,
   PUBLIC_RUNTIME_ORACLE_BINDING_CHECK,
+  H0_REFERENCE_RECOVERY_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260913010000_public_runtime_oracle_binding.sql';
+  'supabase/migrations/20260914010000_h0_reference_recovery_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -68,6 +71,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql',
   'supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql',
   'supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql',
+  'supabase/migrations/20260913010000_public_runtime_oracle_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 
@@ -104,6 +108,13 @@ assert.equal(
   ).length,
   1,
   'Release gate must run the public-runtime oracle binding check exactly once',
+);
+assert.equal(
+  RELEASE_GATE_TEST_FILES.filter(
+    file => file === 'scripts/build-h0-reference-recovery-binding-migration.mjs',
+  ).length,
+  1,
+  'Release gate must run the H0 reference-recovery binding check exactly once',
 );
 
 function checkpointOuterBlock(source, label) {

@@ -416,15 +416,21 @@ function classifyNormalized(evidence) {
   if (proof.preflightShouldRun !== true) {
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
   }
+  const ownerAuthorizedFirstCutoverSkip = proof.operationalAction === 'integrated-cutover'
+    && proof.fullValidationOutcome === 'skipped'
+    && proof.releaseGateOutcome === 'skipped';
   for (const key of [
     'weatherOutcome',
-    'fullValidationOutcome',
-    'releaseGateOutcome',
     'pagesBuildOutcome',
     'pagesPrivacyOutcome',
     'handoffUploadOutcome',
   ]) {
     if (proof[key] !== 'success') return result('FAILED', 'INCOMPLETE_BUILD_GATES');
+  }
+  if (!ownerAuthorizedFirstCutoverSkip
+    && (proof.fullValidationOutcome !== 'success'
+      || proof.releaseGateOutcome !== 'success')) {
+    return result('FAILED', 'INCOMPLETE_BUILD_GATES');
   }
   if (proof.artifactBuilt !== true || proof.operationalAction == null) {
     return result('FAILED', 'INCOMPLETE_BUILD_GATES');

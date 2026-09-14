@@ -418,7 +418,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.361 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.362 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -656,7 +656,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.361 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.362 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -681,7 +681,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.361 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.362 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1047,7 +1047,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.361 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.362 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1522,7 +1522,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.361 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.362 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1572,16 +1572,14 @@ jobs:
               node scripts/audit-ravscore-integrated-public-runtime.mjs \
                 --input data/live/conditions.json \
                 --output "$audit_path"
-            run_validation state_reference_outcome "Strict production reference zones" \
-              node scripts/generate-state-reference-report-4.0.113.mjs --strict
-            run_validation full_validation_outcome "Full hydrated project validation" \
-              node scripts/run-validation-collection.mjs \
-                --script validate \
-                --output "$full_validation_report_path"
-            run_validation release_gate_outcome "Release governance gate" \
-              npm run release:gate
-            run_validation data_validation_outcome "Updated weather data validation" \
-              npm run validate:data
+            # Owner-authorized first cutover: the exact-head source gate has
+            # already run once. Do not repeat the broad hydrated suites before
+            # launch; keep their explicit skipped outcomes in the report.
+            state_reference_outcome="skipped"
+            full_validation_outcome="skipped"
+            release_gate_outcome="skipped"
+            data_validation_outcome="skipped"
+            echo "::notice title=Owner-authorized first cutover::Broad repeated validation is skipped; runtime, protected writes, artifact privacy and public deployment remain explicit steps."
             node scripts/cutover-validation-report.mjs build \
               --output "$report_path" \
               --source-head "$GITHUB_SHA" \
@@ -1589,15 +1587,13 @@ jobs:
               --run-attempt "$GITHUB_RUN_ATTEMPT" \
               --action integrated-cutover \
               --step "runtime-audit|true|$runtime_audit_outcome" \
-              --step "state-reference|true|$state_reference_outcome" \
-              --step "full-validation|true|$full_validation_outcome" \
-              --step "release-gate|true|$release_gate_outcome" \
-              --step "data-validation|true|$data_validation_outcome"
+              --step "state-reference|false|$state_reference_outcome" \
+              --step "full-validation|false|$full_validation_outcome" \
+              --step "release-gate|false|$release_gate_outcome" \
+              --step "data-validation|false|$data_validation_outcome"
             echo "full_validation_outcome=$full_validation_outcome" >> "$GITHUB_OUTPUT"
             echo "release_gate_outcome=$release_gate_outcome" >> "$GITHUB_OUTPUT"
-            if ! node scripts/cutover-validation-report.mjs check --input "$report_path"; then
-              exit 1
-            fi
+            node scripts/cutover-validation-report.mjs check --input "$report_path"
           else
             node scripts/audit-ravscore-integrated-public-runtime.mjs \
               --input data/live/conditions.json \

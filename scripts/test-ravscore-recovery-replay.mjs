@@ -1978,10 +1978,70 @@ for (const nativePhase of [0, 1, 2]) {
     assert.equal(phaseBuild.ravScoreState.rows[47].currentTransition, 'UNVERIFIED_MISSING',
       'an unmarked neighbouring missing hour must remain bounded unknown');
     assert.equal(phaseBuild.ravScoreState.rows[48].currentTransition, 'UNVERIFIED_MISSING',
-      'a later hold marker must not revive authorization across an unmarked neighbour');
+      'a hold without its independent target reference must remain unavailable');
     assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.available, false);
     assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
       'UNAVAILABLE');
+
+    const targetReference = nativeBoundaryReference(regionalWeather(nativeTargetHour - 2));
+    const targetBoundBuild = buildIntegratedPartScoreSeries({
+      part,
+      zone,
+      hourly: phaseRecovery.hourly,
+      initialState: null,
+      nativeCadenceHoldHours: 3,
+      scoreTargetNativeCadenceReferenceSample: targetReference,
+      scoreStartAt: phaseRecovery.scoreStartAt,
+      coldReplayBootstrap: phaseRecovery.coldStartHistoryLineage,
+    });
+    assert.equal(targetBoundBuild.ravScoreState.rows[47].currentTransition,
+      'UNVERIFIED_MISSING',
+    'the independently bound H0 hold must not rewrite the intervening unknown hour');
+    assert.equal(targetBoundBuild.ravScoreState.rows[48].currentTransition,
+      'NATIVE_CADENCE_HOLD',
+    'the exact private reference must bind only the closure-marked H0 hold');
+    assert.equal(targetBoundBuild.scores[0].ravScoreModel.modes.waders.available, true);
+    assert.equal(targetBoundBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+      'HISTORY_INCOMPLETE');
+
+    const integratedResolverCalls = [];
+    const candidateResolverCalls = [];
+    const productionTargetBound = buildRavScoreProductionPartSeries({
+      part,
+      zone,
+      initialSelection: {
+        state: null,
+        source: 'COLD_START',
+        rejectedSources: [],
+        candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+      },
+      targetReferenceAt: time(nativeTargetHour),
+      recoverySources: [{
+        source: 'measured-native-cadence-target-reference',
+        record: record(privateRows),
+      }],
+      publicHourly: publicCadenceRows,
+      candidateGRollbackMeasuredColdStart: true,
+      nativeCadenceHoldHours: 3,
+      resolveNativeCadenceReferenceSample: (sourceValidTime, context) => {
+        integratedResolverCalls.push({ sourceValidTime, context });
+        return targetReference;
+      },
+      resolveCandidateGNativeCadenceReferenceSample: (sourceValidTime, context) => {
+        candidateResolverCalls.push({ sourceValidTime, context });
+        return targetReference;
+      },
+    });
+    assert.equal(integratedResolverCalls.length, 1,
+      'the integrated producer must resolve the exact H0 source once');
+    assert.equal(candidateResolverCalls.length, 1,
+      'the Candidate G producer must resolve the exact H0 source once');
+    assert.equal(integratedResolverCalls[0].sourceValidTime, time(nativeTargetHour - 2));
+    assert.equal(candidateResolverCalls[0].sourceValidTime, time(nativeTargetHour - 2));
+    assert.equal(productionTargetBound.ravScoreState.rows[48].currentTransition,
+      'NATIVE_CADENCE_HOLD');
+    assert.equal(productionTargetBound.candidateGState.rows[48].currentTransition,
+      'NATIVE_CADENCE_HOLD');
   } else {
     assert.equal(phaseBuild.ravScoreState.rows[47].currentTransition, 'VERIFIED_REPLAY',
       'the direct native source immediately before target must remain verified');

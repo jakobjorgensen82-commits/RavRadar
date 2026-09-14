@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.362 online-først
+
+- **ISSUE-DKSS-H0-MODELRUN-SEAM – LOKALT LUKKET / LIVE ÅBEN:** Globalt vindbracket krydsede modelruns og blev korrekt afvist, selv om samme DKSS-run havde et sikkert lokalt bracket. Rettet kun for `windTail`.
+- **ISSUE-H0-STATE-ONLY-REFERENCE – LOKALT LUKKET / LIVE ÅBEN:** Otte regionale holds havde gyldig ældre source, men runtime førte ikke den eksakte scoretime-reference gennem begge modelveje. Rettet med højst tre timer og ingen nyere endelig current.
+- **ISSUE-SIX-LOCAL-H0-CURRENT – LIVE ÅBEN:** Seks dele manglede en direkte eller godkendt hold-current ved diagnosen. De må stå ærligt `UNAVAILABLE`; live-resultatet afgør den videre rettelse.
+- **ISSUE-4.0.362-LAUNCH – ÅBEN P0:** Exact-head sourcegate, merge, kort same-head cache-handoff, cutover og offentlig kontrol mangler. Den brede 272-kontrol gentages ikke i cutoveren.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN EFTER LAUNCH:** Første almindelige weather-run skal bevise cachevedligeholdelse, fuld DMI-rotation, fallback og tidsoverskud.
+- **ISSUE-SITE-ACCEPTANCE – ÅBEN EFTER LAUNCH:** Hele hjemmesiden og begge søgemåder gennemgås på den faktiske offentlige runtime.
+
+79.414/79.414 i handoffet betyder komplet klassifikationsregnskab, ikke 79.414 numeriske strømværdier. DEC-0144 er aktiv.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 efter integreret auditmismatch
 
 - **ISSUE-CUTOVER-34798027472-SPATIAL-CURRENT – LOKALT LUKKET / CI ÅBEN:** Den ene af 272 underkontroller genkendte 654/673 dele, mens producenten og den særskilte integrerede audit havde 673/673. Ingen writes/deploy.

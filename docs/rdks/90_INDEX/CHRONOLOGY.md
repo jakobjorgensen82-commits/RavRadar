@@ -1,3 +1,13 @@
+# 2026-09-14 – 4.0.362 retter H0-input og går online før videre fejlsøgning
+
+4.0.361 blev merged som main `6337fa09`. Handoff `34804412079` havde alle 79.414 currentudfald klassificeret, men ikke alle numerisk udfyldt. Cutover `34805083829` byggede 673 dele og kørte 272 kontroller; 271 bestod, én rumlig audit stoppede deploy.
+
+Read-only diagnose `34820407527` viste, at et modelrunskryds i DKSS-vind gjorde alle scorer null, mens otte regionale currentholds manglede deres eksakte H0-kildereference og seks dele reelt manglede current ved H0. 4.0.362 retter begge kendte kodefejl, genbygger de bundne modeller og fører dem frem i append-only migration 14.
+
+Ejeren besluttede online-først: første cutover gentager ikke fire brede kontrolsuiter, og ærligt `UNAVAILABLE` blokerer ikke launch. Den levende hjemmeside bruges til næste fejlsøgning; derefter bevises normal weather og rotation. Se DEC-0144.
+
+Ældre kronologiafsnit nedenfor er historiske checkpoints.
+
 # 2026-09-14 – 4.0.361 binder rumlig audit til produktionsvektor og integreret hold
 
 4.0.360 bestod sourcegate `34795741830`, blev merged som main `cbb56fcb`, og handoff `34797345624` havde 79.414/79.414 currentpar uden provider/oneoff. Cutover `34798027472` gennemførte fem hovedkontroller og 272/272 underkontroller. Fire var grønne; kun den rumlige audit genkendte 654/673. Ingen writes/deploy.

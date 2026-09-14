@@ -286,6 +286,7 @@ export function buildIntegratedPartScoreSeries({
   candidateGWaveApproachBootstrap = null,
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
+  scoreTargetNativeCadenceReferenceSample = null,
   coldReplayBootstrap = null,
   scoreStartAt = null,
 } = {}) {
@@ -318,6 +319,11 @@ export function buildIntegratedPartScoreSeries({
     candidateGWaveApproachBootstrap,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample,
+    scoreTargetNativeCadenceReferenceSample,
+    scoreTargetNativeCadenceHoldAt: scoreTargetNativeCadenceReferenceSample === null
+      || scoreTargetNativeCadenceReferenceSample === undefined
+      ? null
+      : scoreStartAt,
     coldReplayBootstrap,
   });
   const stateByTime = new Map(ravScoreState.rows.map(row => [row.time, row]));

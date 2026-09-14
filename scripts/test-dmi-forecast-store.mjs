@@ -187,6 +187,57 @@ assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windS
 assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 
 {
+  const at = hour => new Date(Date.parse(generatedAt) + hour * 3600000).toISOString();
+  const tailRow = (hour, runHour, speed) => ({
+    step: at(hour),
+    'wind-speed-10m': speed,
+    'wind-dir-10m': 90,
+    provenance: { wind: native('windTail', 'dkss_idw', at(hour), at(runHour)).windTail },
+  });
+  const seam = [
+    tailRow(-2, -3, 6),
+    tailRow(1, 0, 9),
+    tailRow(4, 0, 12),
+  ];
+  const resolved = buildDmiForecastHourly({
+    windTail: seam,
+    generatedAt,
+    hours: 2,
+    sourceCadenceMinutes: 180,
+  });
+  assert.equal(resolved.hourly[0].windSpeedMps, 9,
+    'en modelkørselssøm må bruge den nærmeste gyldige kant i én DKSS-serie');
+  assert.equal(resolved.hourly[0].sources.wind.temporalResolution, 'nearest-edge');
+  assert.equal(resolved.hourly[0].sources.wind.modelRun, at(0));
+  assert.deepEqual(resolved.hourly[0].sources.wind.nativeValidTimes, [at(1)]);
+  assert.ok(verifiedDmiForecastSource(
+    resolved.hourly[0].sources.wind,
+    'windTail',
+    generatedAt,
+    {
+      entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+      samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+    },
+  ), 'den valgte DKSS-kant skal fortsat genvalideres mod sit native STAC-bevis');
+  const reversed = buildDmiForecastHourly({
+    windTail: [...seam].reverse(),
+    generatedAt,
+    hours: 2,
+    sourceCadenceMinutes: 180,
+  });
+  assert.deepEqual(reversed.hourly, resolved.hourly,
+    'vindserie-valget må ikke afhænge af inputrækkefølgen');
+  const outsideEdgeTolerance = buildDmiForecastHourly({
+    windTail: [tailRow(-2, -3, 6), tailRow(2, 0, 10)],
+    generatedAt,
+    hours: 1,
+    sourceCadenceMinutes: 180,
+  });
+  assert.equal(outsideEdgeTolerance.hourly[0].windSpeedMps, null,
+    'en same-run kant må ikke udvide den eksisterende tidsgrænse');
+}
+
+{
   const oldRun = new Date(Date.parse(generatedAt) - 6 * 3600000).toISOString();
   const plus1 = new Date(Date.parse(generatedAt) + 1 * 3600000).toISOString();
   const plus3 = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();

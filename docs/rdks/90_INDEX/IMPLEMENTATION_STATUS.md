@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.362 online-først
+
+- [x] Afgræns 79.414/79.414 som komplet udfaldsregnskab og dokumentér det faktiske H0-inputbillede fra diagnose `34820407527`.
+- [x] Ret DKSS-`windTail` til sikkert samme-run-bracket uden at lempe primær HARMONIE.
+- [x] Ret eksakt H0-state-only-currentreference i integreret og rollback uden opdigtet vektor/evidens.
+- [x] Fjern de fire brede gentagelser fra første cutover og bevar eksplicitte skipped-udfald.
+- [x] Genbyg begge modelbundles og tilføj append-only migrationsbinding 14; historiske migrationer er urørte.
+- [x] Bestå de direkte vind-, hold-, bundle-, binding-, migrations-, readiness- og cutoverstyringskontroller.
+- [ ] Kør én exact-head 4.0.362-sourcegate, merge den eksakte head og genskab kun same-head cache-handoff.
+- [ ] Kør cutover til offentlig deployment også ved ærligt score-`UNAVAILABLE`.
+- [ ] Gennemgå den levende hjemmeside; genaktivér normal weather og bevis cachevedligeholdelse/rotation.
+
+DEC-0144 er aktiv. Ingen oneoff før launch.
+
 # Aktuel implementeringsstatus – lokal 4.0.361 produktionsvektor og integreret hold
 
 - [x] Bestå 4.0.360 exact-head-sourcegate `34795741830`, merge PR #297 som main `cbb56fcb` med samme filtræ og forsegl handoff `34797345624` uden provider/oneoff med 79.414/79.414 currentpar.

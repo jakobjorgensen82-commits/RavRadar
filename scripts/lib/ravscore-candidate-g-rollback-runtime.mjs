@@ -343,7 +343,9 @@ function exactRegionalReferenceEnvelope(value) {
     && exactRegionalHoldProvenance(value.currentProvenance);
 }
 
-function assertRegionalReferenceMatchesContinuation(reference, continuation, part) {
+function assertRegionalReferenceMatchesContinuation(reference, continuation, part, {
+  allowTrailingUnknownEvidence = false,
+} = {}) {
   if (!continuation || !exactRegionalReferenceEnvelope(reference)) {
     throw new Error('Candidate G native-cadence reference lacks exact regional source authorization');
   }
@@ -351,7 +353,6 @@ function assertRegionalReferenceMatchesContinuation(reference, continuation, par
     || !legacyWholeDegreeAlignment(reference.currentAlignment, part)) {
     throw new Error('Candidate G native-cadence reference is not the legacy-quantized projection');
   }
-  const lastEvidence = continuation.transportEvidence?.at(-1) ?? null;
   const derived = deriveCurrentTransportEvidence(reference, {
     ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
     getTime: value => value.time,
@@ -359,11 +360,22 @@ function assertRegionalReferenceMatchesContinuation(reference, continuation, par
     getAlignment: value => value.currentAlignment,
     isVerified: value => value.currentVerified === true,
   });
-  if (!lastEvidence
-    || reference.time !== continuation.transportReferenceAt
-    || lastEvidence.time !== continuation.transportReferenceAt
-    || derived?.time !== lastEvidence.time
-    || derived.strength !== lastEvidence.strength) {
+  const referenceIndex = continuation.transportEvidence
+    ?.findIndex(evidence => evidence.time === reference.time) ?? -1;
+  const persistedReference = referenceIndex >= 0
+    ? continuation.transportEvidence[referenceIndex]
+    : null;
+  const trailingEvidence = referenceIndex >= 0
+    ? continuation.transportEvidence.slice(referenceIndex + 1)
+    : [];
+  const exactBoundary = reference.time === continuation.transportReferenceAt
+    && persistedReference === continuation.transportEvidence.at(-1);
+  const exactTargetHistory = allowTrailingUnknownEvidence
+    && trailingEvidence.every(evidence => evidence.strength === null);
+  if (!persistedReference
+    || derived?.time !== persistedReference.time
+    || derived.strength !== persistedReference.strength
+    || (!exactBoundary && !exactTargetHistory)) {
     throw new Error('Candidate G native-cadence reference is not the exact continuation evidence');
   }
 }
@@ -374,6 +386,8 @@ function buildSourceBoundCandidateGStateSeries(samples, {
   initialState,
   nativeCadenceHoldHours,
   nativeCadenceReferenceSample,
+  scoreTargetNativeCadenceReferenceSample,
+  scoreTargetNativeCadenceHoldAt,
 } = {}) {
   if (!samples.length) {
     return buildCandidateGDerivedStateSeries([], { stateKey, initialState });
@@ -388,6 +402,16 @@ function buildSourceBoundCandidateGStateSeries(samples, {
     );
   }
   let holdAuthorized = Boolean(nativeCadenceReferenceSample);
+  const hasScoreTargetReference = scoreTargetNativeCadenceReferenceSample !== null
+    && scoreTargetNativeCadenceReferenceSample !== undefined;
+  const scoreTargetHoldAt = hasScoreTargetReference
+    && canonicalTime(scoreTargetNativeCadenceHoldAt)
+    ? new Date(scoreTargetNativeCadenceHoldAt).toISOString()
+    : null;
+  if (hasScoreTargetReference !== (scoreTargetHoldAt !== null)) {
+    throw new Error('Candidate G score-target cadence reference is incomplete');
+  }
+  let scoreTargetReferenceConsumed = false;
   const rows = [];
   let initialStateAccepted = null;
   let initialStateResetReason = null;
@@ -401,11 +425,32 @@ function buildSourceBoundCandidateGStateSeries(samples, {
     if (sample.currentVerified === true && explicitStateOnlyHold !== null) {
       throw new Error('Candidate G current cannot be both verified and state-only held');
     }
+    const scoreTargetReference = sample.time === scoreTargetHoldAt
+      ? scoreTargetNativeCadenceReferenceSample
+      : null;
+    if (scoreTargetReference !== null) {
+      if (explicitStateOnlyHold === null
+        || scoreTargetReference.time !== explicitStateOnlyHold.sourceValidTime
+        || explicitStateOnlyHold.holdAgeHours > nativeCadenceHoldHours) {
+        throw new Error('Candidate G score-target cadence reference is not bound to the exact hold');
+      }
+      assertRegionalReferenceMatchesContinuation(
+        scoreTargetReference,
+        continuation,
+        part,
+        { allowTrailingUnknownEvidence: true },
+      );
+      holdAuthorized = true;
+      scoreTargetReferenceConsumed = true;
+    }
+    const authorizedReferenceAt = scoreTargetReference?.time
+      ?? continuation?.transportReferenceAt
+      ?? null;
     const exactHoldAuthorized = sample.currentVerified !== true
       && explicitStateOnlyHold !== null
       && holdAuthorized
       && continuation
-      && Date.parse(continuation.transportReferenceAt)
+      && Date.parse(authorizedReferenceAt)
         === Date.parse(explicitStateOnlyHold.sourceValidTime)
       && explicitStateOnlyHold.holdAgeHours <= nativeCadenceHoldHours;
     const holdHours = exactHoldAuthorized ? explicitStateOnlyHold.holdAgeHours : 0;
@@ -413,8 +458,10 @@ function buildSourceBoundCandidateGStateSeries(samples, {
       stateKey,
       initialState: continuation,
       nativeCadenceHoldHours: holdHours,
-      nativeCadenceReferenceSample: index === 0 && exactHoldAuthorized
-        ? nativeCadenceReferenceSample : null,
+      nativeCadenceReferenceSample: exactHoldAuthorized
+        ? scoreTargetReference
+          ?? (index === 0 ? nativeCadenceReferenceSample : null)
+        : null,
     });
     if (index === 0) {
       initialStateAccepted = result.initialStateAccepted;
@@ -438,6 +485,9 @@ function buildSourceBoundCandidateGStateSeries(samples, {
     } else if (row.currentTransition !== 'NATIVE_CADENCE_HOLD') {
       holdAuthorized = false;
     }
+  }
+  if (hasScoreTargetReference && !scoreTargetReferenceConsumed) {
+    throw new Error('Candidate G score-target cadence reference did not reach its exact hold');
   }
   return {
     schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
@@ -652,6 +702,7 @@ export function buildCandidateGRollbackPartScoreSeries({
   measuredWarmupContinuation = false,
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
+  scoreTargetNativeCadenceReferenceSample = null,
   scoreStartAt = null,
 } = {}) {
   if (!part || typeof part !== 'object' || !Array.isArray(hourly)) {
@@ -701,6 +752,11 @@ export function buildCandidateGRollbackPartScoreSeries({
     initialState: rollbackInitialState.state,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample,
+    scoreTargetNativeCadenceReferenceSample,
+    scoreTargetNativeCadenceHoldAt: scoreTargetNativeCadenceReferenceSample === null
+      || scoreTargetNativeCadenceReferenceSample === undefined
+      ? null
+      : scoreStartAt,
   });
   candidateGState.initialStateSource = rollbackInitialState.source;
   const stateByTime = new Map(candidateGState.rows.map(row => [row.time, row]));

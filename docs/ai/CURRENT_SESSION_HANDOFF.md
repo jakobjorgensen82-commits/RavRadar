@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-14 – 4.0.362 klar til GitHub
+
+- **Base:** Main `6337fa09` efter PR #298; arbejdsbranch `codex/4.0.362-cutover-validation-resume`.
+- **Bevis:** Handoff `34804412079` klassificerede 79.414/79.414; cutover `34805083829` byggede 673 og fik 271/272; diagnose `34820407527` fandt H0-inputfejlene uden provider, test eller deploy.
+- **Rettelser:** DKSS-`windTail` samme-run-bracket; eksakt højst tre timer gammel H0-currentkilde for state-only-hold i integreret og rollback; ingen opdigtet vektor.
+- **Launchpolitik:** Første cutover springer fire brede gentagelser over. Ærligt `UNAVAILABLE` må deployes. Build, migration, protected writes, privacy, artifact og Pages gennemføres.
+- **Binding:** Integrated `b144ebcd…`, rollback `b4b258f2…`, append-only migration 14.
+- **Næste:** docs/slutdiff → commit/push → én exact-head sourcegate → merge → kort handoff → cutover → live-site → normal weather. Ingen oneoff.
+- **Model/indsats:** GPT-5.6 Sol / Ekstra høj.
+
+DEC-0144 og `CHANGELOG-4.0.362.md` er aktuelle. Ældre checkpoints nedenfor er historiske.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.361 integreret strømaudit
 
 Main er 4.0.360/`cbb56fcb00b9ce654b51768b3df23d7add2e8904` efter PR #297/sourcegate `34795741830`. Cache-handoff `34797345624` er grønt uden provider/oneoff og har 79.414/79.414 currentpar over 118 timer. Candidate G er offentlig; normalworkflowet er deaktiveret.

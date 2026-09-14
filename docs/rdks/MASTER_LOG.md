@@ -1,3 +1,11 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.362 online-først
+
+Ejeren kræver, at den integrerede model kommer online efter rettelse af de kendte H0-inputfejl, også hvis enkelte eller alle scorer først står ærligt utilgængelige. Videre fejlsøgning skal ske på det kørende offentlige system, ikke gennem endnu en bred testslynge.
+
+Diagnose `34820407527` afgrænsede to konkrete kodefejl: DKSS-`windTail` fandt globalt et interval på tværs af modelruns i stedet for et sikkert interval inden for samme run, og regional state-only-current førte ikke den eksakte ældre H0-kildereference gennem begge modelveje. Begge er rettet uden at opfinde data. Seks lokale H0-currentmangler forbliver ærligt mulige.
+
+4.0.362 springer fire brede gentagelser over i første cutover, men bevarer sourcegate én gang, bundle/migrationsbinding, beskyttede writes, privacy, artifact og deploy. Append-only migration 14 og modelbundles `b144ebcd…`/`b4b258f2…` er lokalt bundet og målrettet kontrolleret. Næste er exact-head, merge, kort handoff, launch, live-sitekontrol og normal weather. Se DEC-0144 og `CHANGELOG-4.0.362.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.361 integreret strømaudit
 
 4.0.360 bestod exact-head-sourcegate `34795741830`, blev merged som main `cbb56fcb`, og cache-handoff `34797345624` forseglede 79.414/79.414 currentpar uden provider/oneoff. Cutover `34798027472` gennemførte fem hovedkontroller og 272/272 underkontroller; fire hovedkontroller var grønne, og den eneste fejl var 654/673 i den rumlige audit. Ingen eksterne writes/deploy.

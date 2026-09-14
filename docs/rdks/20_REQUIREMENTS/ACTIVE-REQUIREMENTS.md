@@ -1,3 +1,14 @@
+# 4.0.362 – H0-inputrettelse og online-først-cutover
+
+- **REQ-4.0.362-DKSS-SAME-RUN-001 – BINDENDE P0 / LOKALT TESTET:** Kun DKSS-`windTail` må vælge et sikkert bracket inden for samme native modelserie ved et globalt modelrunskifte. Primær HARMONIE-vind forbliver strict.
+- **REQ-4.0.362-H0-HOLD-001 – BINDENDE P0 / LOKALT TESTET:** Et state-only-currenthold ved H0 kræver eksakt privat kildereference, kanonisk markør/source/provenance, højst tre timer og ingen nyere endelig currentværdi. Senere null er ukendt historik, ikke bevægelse.
+- **REQ-4.0.362-NO-INVENTION-001 – BINDENDE:** Hold giver `HISTORY_INCOMPLETE`; den virkelige ældre reference bevares, og ingen vektor eller evidens opfindes.
+- **REQ-4.0.362-ONLINE-FIRST-001 – EJERBESLUTTET P0:** Første integrerede cutover gentager ikke referencezoner, fuld validate, releasegate eller datavalidering. Exact-head sourcegate køres én gang før merge. Runtime, append-only binding, beskyttede writes, privacy, artifact og deploy forbliver tekniske trin.
+- **REQ-4.0.362-UNAVAILABLE-ONLINE-001 – EJERBESLUTTET:** Ærligt markeret lokal eller samlet score-`UNAVAILABLE` er ikke i sig selv et launchstop. Fejlsøgning fortsætter på det kørende offentlige system.
+- **REQ-4.0.362-NO-ONEOFF-001 – BINDENDE:** Ingen oneoff før launch. Efter offentlig kontrol genaktiveres normal weather og skal bevise cachevedligeholdelse, DMI-rotation og fallback.
+
+DEC-0144 erstatter DEC-0143 punkt 8 for første launch.
+
 # Aktive krav – samlet register
 
 # 4.0.361 – strømaudit følger produktionsvektor og integreret hold

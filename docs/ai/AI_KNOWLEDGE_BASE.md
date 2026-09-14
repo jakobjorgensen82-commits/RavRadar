@@ -1,3 +1,12 @@
+# 2026-09-14 – 4.0.362 H0-input og online-først
+
+- Et komplet 673×118-regnskab betyder, at hvert pair er klassificeret; negative/null/upstream-fravær er ikke numeriske målinger.
+- DKSS-`windTail` må vælge et sikkert bracket inden for én native modelserie ved modelrunskifte. Den bredere HARMONIE-`wind`-vej må ikke bruge denne fallback.
+- Et H0-state-only-currenthold bevarer sin virkelige ældre `referenceTime`, bruger scoretimen som ukendt historikgrænse og bliver `HISTORY_INCOMPLETE`. Senere null er ikke en måling; nyere endelig current afviser holdet.
+- Første 4.0.362-cutover springer referencezoner, fuld validate, releasegate og datavalidering over efter én exact-head sourcegate. Live-runtime er næste fejlgrundlag; `UNAVAILABLE` er en ærlig public state.
+- Modelbindinger: integrated `b144ebcd465ef783a7edd1cdb4c4fc07ee64d88185e70b783efeda1459655e04`; rollback `b4b258f21d645ec33d89c8bb7b41c879e7545b1dfb0b0a5d7c79217d401c16b9`; continuation `4894bfd82367e8de4bb37705c94c4a3a4b2db6327e4e0b79a0854e3cc6b1df7e`.
+- DEC-0144 er den aktive launchbeslutning.
+
 # AI Knowledge Base – RavRadar
 
 # Nyeste sandhed 2026-09-14 – lokal 4.0.361 integreret strømaudit

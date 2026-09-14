@@ -218,6 +218,37 @@ function normalizeEvidence(evidence) {
   };
 }
 
+function resolveExplicitNativeHoldReference(
+  evidence,
+  { requestedReference, nativeHold, nativeHoldReferenceTime, policy },
+) {
+  if (nativeHoldReferenceTime === null || nativeHoldReferenceTime === undefined) return null;
+  if (nativeHold !== true) {
+    throw new Error('Current-supply native-hold reference requires nativeHold');
+  }
+  const referenceTime = canonicalTime(nativeHoldReferenceTime);
+  if (!referenceTime || referenceTime !== nativeHoldReferenceTime) {
+    throw new Error('Current-supply native-hold reference time is not canonical');
+  }
+  const requestedMs = Date.parse(requestedReference);
+  const referenceMs = Date.parse(referenceTime);
+  const referenceAgeHours = (requestedMs - referenceMs) / HOURS_TO_MILLISECONDS;
+  const referenceEvidence = evidence.find(item => item.time === referenceTime) ?? null;
+  const laterEvidence = evidence.filter(item => Date.parse(item.time) > referenceMs);
+  if (!(referenceAgeHours > NUMBER_EPSILON)
+    || referenceAgeHours > policy.maximumGapHours + NUMBER_EPSILON
+    || !finiteNumber(referenceEvidence?.strength)
+    || laterEvidence.some(item => finiteNumber(item.strength))) {
+    throw new Error('Current-supply native-hold reference contradicts signed evidence');
+  }
+  return {
+    evidence: referenceEvidence,
+    hasLaterEvidence: laterEvidence.length > 0,
+    referenceAgeHours,
+    referenceTime,
+  };
+}
+
 /**
  * Replays already-derived evidence chronologically from the fixed zero
  * boundary. The strength at the newer native sample describes the preceding
@@ -334,6 +365,7 @@ export function buildCurrentSupplyScoreBounds(
     referenceTime,
     nativeHold = false,
     nativeHoldIntervalEnds = [],
+    nativeHoldReferenceTime = null,
     ...policyOverrides
   } = {},
 ) {
@@ -376,7 +408,18 @@ export function buildCurrentSupplyScoreBounds(
   if (normalized.evidence.some(item => Date.parse(item.time) > requestedReferenceMs)) {
     return baseUnavailable('CURRENT_EVIDENCE_AFTER_REFERENCE');
   }
-  const latest = normalized.evidence.at(-1) ?? null;
+  const explicitNativeHoldReference = resolveExplicitNativeHoldReference(
+    normalized.evidence,
+    {
+      requestedReference,
+      nativeHold,
+      nativeHoldReferenceTime,
+      policy,
+    },
+  );
+  const latest = explicitNativeHoldReference?.evidence
+    ?? normalized.evidence.at(-1)
+    ?? null;
   if (!latest || !finiteNumber(latest.strength)) {
     return baseUnavailable('CURRENT_DIRECT_INPUT_MISSING');
   }
@@ -393,7 +436,10 @@ export function buildCurrentSupplyScoreBounds(
   // The authorised native hold evaluates the exact native reference. It adds
   // neither movement nor kernel ageing between that reference and score time.
   const reference = latestAgeHours > NUMBER_EPSILON ? latest.time : requestedReference;
-  const referenceMs = Date.parse(reference);
+  const historyReference = explicitNativeHoldReference?.hasLaterEvidence === true
+    ? requestedReference
+    : reference;
+  const referenceMs = Date.parse(historyReference);
   const boundaryMs = referenceMs - policy.windowHours * HOURS_TO_MILLISECONDS;
   const boundaryTime = new Date(boundaryMs).toISOString();
   const causal = normalized.evidence
@@ -428,7 +474,7 @@ export function buildCurrentSupplyScoreBounds(
     const weightedDurationHours = currentSupplyWeightedDuration({
       intervalStart,
       intervalEnd,
-      referenceTime: reference,
+      referenceTime: historyReference,
     }, policyOverrides);
     const lowerBefore = lowerPotential;
     const upperBefore = upperPotential;
@@ -540,12 +586,12 @@ export function buildCurrentSupplyScoreBounds(
   // carrying the last strength to the score time.
   if (cursorMs < referenceMs) {
     const intervalStart = new Date(cursorMs).toISOString();
-    const intervalEnd = reference;
+    const intervalEnd = historyReference;
     const durationHours = (referenceMs - cursorMs) / HOURS_TO_MILLISECONDS;
     const weightedDurationHours = currentSupplyWeightedDuration({
       intervalStart,
       intervalEnd,
-      referenceTime: reference,
+      referenceTime: historyReference,
     }, policyOverrides);
     const lowerBefore = lowerPotential;
     const upperBefore = upperPotential;
@@ -639,6 +685,7 @@ export function buildCurrentSupplyMemory(
     referenceTime,
     nativeHold = false,
     nativeHoldIntervalEnds = [],
+    nativeHoldReferenceTime = null,
     ...policyOverrides
   } = {},
 ) {
@@ -672,7 +719,18 @@ export function buildCurrentSupplyMemory(
   if (normalized.evidence.some(item => Date.parse(item.time) > requestedReferenceMs)) {
     return earlyFail({ status: 'EVIDENCE_AFTER_REFERENCE' });
   }
-  const latestRequestedEvidence = normalized.evidence.at(-1) ?? null;
+  const explicitNativeHoldReference = resolveExplicitNativeHoldReference(
+    normalized.evidence,
+    {
+      requestedReference,
+      nativeHold,
+      nativeHoldReferenceTime,
+      policy,
+    },
+  );
+  const latestRequestedEvidence = explicitNativeHoldReference?.evidence
+    ?? normalized.evidence.at(-1)
+    ?? null;
   if (!latestRequestedEvidence) return earlyFail({ status: 'WINDOW_INCOMPLETE' });
   const requestedEvidenceAgeHours = (requestedReferenceMs
     - Date.parse(latestRequestedEvidence.time)) / HOURS_TO_MILLISECONDS;
@@ -696,8 +754,12 @@ export function buildCurrentSupplyMemory(
   // score time may advance, but neither a movement interval nor kernel ageing
   // is invented between the native sample and the requested time.
   const reference = usesNativeHold ? latestRequestedEvidence.time : requestedReference;
+  const historyReference = explicitNativeHoldReference?.hasLaterEvidence === true
+    ? requestedReference
+    : reference;
   const referenceMs = Date.parse(reference);
-  const boundaryMs = referenceMs - policy.windowHours * HOURS_TO_MILLISECONDS;
+  const historyReferenceMs = Date.parse(historyReference);
+  const boundaryMs = historyReferenceMs - policy.windowHours * HOURS_TO_MILLISECONDS;
   const boundaryTime = new Date(boundaryMs).toISOString();
   const fail = fields => unavailableResult({
     reference,
@@ -713,7 +775,7 @@ export function buildCurrentSupplyMemory(
   const boundaryBridge = beforeBoundary.at(-1) ?? null;
   const windowEvidence = normalized.evidence
     .filter(item => Date.parse(item.time) >= boundaryMs
-      && Date.parse(item.time) <= referenceMs);
+      && Date.parse(item.time) <= historyReferenceMs);
   const first = windowEvidence[0] ?? null;
   const firstMs = Date.parse(first?.time ?? '');
   const startsAtBoundary = Number.isFinite(firstMs)
@@ -799,7 +861,7 @@ export function buildCurrentSupplyMemory(
     });
   }
 
-  const latest = windowEvidence.at(-1);
+  const latest = explicitNativeHoldReference?.evidence ?? windowEvidence.at(-1);
   const latestMs = Date.parse(latest.time);
   if (Math.abs(referenceMs - latestMs) > TIME_EPSILON_MILLISECONDS) {
     return fail({
