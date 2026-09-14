@@ -1,3 +1,11 @@
+## 4.0.360 – den rumlige DMI-kontrol bruger produktionsprojektionen (2026-09-14, lokal kandidat)
+
+- 4.0.359 blev merged som main `8ec6b8be` efter grøn exact-head-sourcegate `34788388836`. Cache-handoff `34789764309` genbrugte de eksisterende cacher uden provider/oneoff og forseglede 79.414/79.414 currentpar, missing 0.
+- Cutover `34790416354` gennemførte alle fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne; kun den rumlige videnskabelige audit fejlede for 617 ægte DMI-dele. Ingen eksterne writes eller deploy blev udført.
+- DMI-bulklageret indeholder den native kilderække. Runtimebuilderen udvider den deterministisk med blandt andet native tidsliste, trinliste, opløsning og forecastalder. Auditten sammenlignede fejlagtigt runtimeformen direkte med den rå række.
+- En audit-only adapter fører nu den verificerede native række gennem den allerede eksisterende offentlige forecastbuilder. Auditten bruger samme fastlåste produktionsreference; en regression beviser både den virkelige rå rækkeform og forskellen på produktionsreference og senere wall-clock-byggetid.
+- Ingen vejrværdier, scorematematik, modelbundle/hash, modelstate, rotation, geometri, database eller privacy ændres. Alle fem gates og alle 272 kontroller forbliver bindende. Ingen oneoff. Se `CHANGELOG-4.0.360.md` og DEC-0142.
+
 ## 4.0.359 – kontrolorakler rettet efter komplet cutoverrapport (2026-09-14, lokal kandidat)
 
 - Main 4.0.358/`2a1c73d2`, sourcegate `34777480545` og cache-handoff `34781396538` er grønne; handoffet brugte ingen provider/oneoff og havde 79.414/79.414 currentpar, missing 0.

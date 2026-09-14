@@ -1,3 +1,22 @@
+# Aktuel implementeringsstatus – lokal 4.0.360 native→runtime DMI-bevis
+
+- [x] Bestå 4.0.359 exact-head-sourcegate `34788388836`, merge PR #296 som main `8ec6b8be` og bevis identisk filtræ.
+- [x] Forsegl handoff `34789764309` uden provider/oneoff med 79.414/79.414 currentpar, missing 0.
+- [x] Gennemfør cutover `34790416354` gennem alle fem hovedkontroller og 272/272 underkontroller; ingen writes ved samlet fejl.
+- [x] Afgræns eneste fejl til rå native DMI-kilde sammenlignet direkte med deterministisk udvidet runtimekilde for 617 dele.
+- [x] Genbrug den eksisterende offentlige forecastbuilder fra et audit-only modul efter uændret native DMI-verifikation; bevar modelbundle/hash byteuændret.
+- [x] Bind auditprojektionen til den fastlåste `productionReferenceAt`, ikke senere wall-clock `generatedAt`.
+- [x] Gør regressionen realistisk ved at fjerne runtimefelter fra bulkkilden og bevise tidsreferenceforskellen.
+- [x] Bestå målrettet adapter-, DMI bulk→forecast-, DMI modeldownload-, integreret generator-, currentruntime-, U/V- og workflowkontrol.
+- [ ] Bestå én exact-head GitHub-sourcegate og merge byteidentisk.
+- [ ] Genskab kun SHA-handoffet fra samme cacher; ingen provider, oneoff eller almindelig weather.
+- [ ] Kør cutover; ved fem grønne hovedkontroller fortsætter installationen automatisk.
+- [ ] Verificér offentlig 210/673/118 og siden på desktop, mobil og DA/DE/EN.
+- [ ] Genaktivér almindelig weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- [ ] Slet `34613079069` og `34228112413`, når GitHub gør de jobløse poster sletbare.
+
+DEC-0142 er aktiv. Ingen model-, vejr-, rotations-, geometri-, migrations- eller privacyændring indgår.
+
 # Aktuel implementeringsstatus – lokal 4.0.359 samlet kontrolorakelrettelse
 
 - [x] Merge 4.0.358 som main `2a1c73d2` efter grøn exact-head-sourcegate `34777480545`.

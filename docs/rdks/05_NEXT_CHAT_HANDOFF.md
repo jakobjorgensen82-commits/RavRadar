@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.360 efter fuldt cutovergennemløb
+
+- **Base:** Main `8ec6b8be`/4.0.359 efter PR #296 og exact-head-sourcegate `34788388836`; lokal branch `codex/4.0.360-spatial-audit-runtime-proof`.
+- **Cache:** Handoff `34789764309` brugte ingen provider/oneoff og forseglede 79.414/79.414 currentpar over 118 timer, missing 0.
+- **Cutover:** `34790416354` kørte alle fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne; fuld validering havde alene 617 ens DMI-native/runtime-mismatch. Ingen writes/deploy.
+- **Rodårsag:** Den rumlige audit gav en rå, verificeret DMI-bulkkilde direkte til sammenligning mod runtimebuilderens deterministisk udvidede kildeform.
+- **Lokal rettelse:** Del eksisterende `componentSource`-projektion gennem en eksakt helper; behold native verifikation; brug `conditions.productionReferenceAt`; realistisk fixture uden runtime-only-felter.
+- **Lokalt bevis:** Adapter, DMI bulk→forecast, modeldownload, integreret generator, operationel current, U/V-proveniens og workflowrækkefølge er grønne med bundet Python-runtime.
+- **Uændret:** Vejr, score, modelstate, rotation, geometri, migrationer, database og privacy. Ingen oneoff eller almindelig weather.
+- **Næste:** version/RDKS/håndbog → én exact-head-sourcegate → merge → kort cachebaseret same-head-handoff → samlet cutover → offentlig/sitekontrol → normal weather/rotation.
+- **Gamle poster:** `34613079069` og `34228112413` er jobløse/inaktive; GitHub tillader endnu ikke sletning.
+- **Model/indsats:** GPT-5.6 Sol / Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.359 efter komplet 272-kontrol
 
 - **Base:** Main `2a1c73d2`/4.0.358 efter PR #295 og exact-head-sourcegate `34777480545`; lokal branch `codex/4.0.359-cutover-control-oracles`.

@@ -1,3 +1,15 @@
+# NYESTE SANDHED – 2026-09-14 – lokal 4.0.360 efter én samlet DMI-kontrolfejl
+
+4.0.359 bestod exact-head-sourcegate `34788388836` og blev merged gennem PR #296 som main `8ec6b8be`. Cache-handoff `34789764309` genbrugte de komplette cacher uden provider eller oneoff og forseglede 79.414/79.414 currentpar over 118 timer, missing 0.
+
+Cutover `34790416354` gennemførte alle fem hovedkontroller og 272/272 underkontroller. Runtime/modelaudit, referencezoner, releasegate og data var grønne. Fuld validering havde præcis én fejl: 617 ægte DMI-dele blev afvist af den rumlige audit. Alle senere kontroller bestod. Der blev ikke skrevet til database, privat runtime eller Pages.
+
+Rodårsagen er en direkte sammenligning mellem DMI-bulkens verificerede native kilderække og den færdige runtimekilde. Runtimebuilderen tilføjer deterministiske felter som native tider/trin, opløsning og forecastalder. Auditten brugte rå række direkte, mens en urealistisk testfixture allerede havde runtimefelterne.
+
+Lokal 4.0.360 genbruger samme eksisterende produktionsprojektion i auditten efter den uændrede native verifikation og binder forecastalderen til `conditions.productionReferenceAt`. Realistisk native-fixture og relevante DMI-/runtime-/workflowtests er grønne.
+
+Ingen data, score, rotation, modelstate, geometri, migration, database eller privacy ændres. Exact-head-CI, merge, nyt same-head-handoff, cutover og offentlig/siteverifikation er åbne. Ingen oneoff eller almindelig weather før modellen er online. Se DEC-0142.
+
 # NYESTE SANDHED – 2026-09-14 – lokal 4.0.359 efter komplet 272-kontrol
 
 Main er 4.0.358/`2a1c73d2` efter PR #295 og grøn exact-head-sourcegate `34777480545`. Cachefortsættelse `34781396538` hentede intet providervejr og forseglede et exact-main-handoff med 79.414/79.414 currentpar, missing 0.

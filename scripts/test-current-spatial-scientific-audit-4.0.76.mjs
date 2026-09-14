@@ -13,6 +13,7 @@ import {
   dmiExpectedIdentityForPart,
   verifiedBulkCurrent,
 } from './lib/ravscore-production-adapters.mjs';
+import { projectExactDmiNativeCurrentSourceToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 
 const bulkPath=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
@@ -143,9 +144,14 @@ for(const part of expectedParts){
   const expectedDmiIdentity=dmiExpectedIdentityForPart(part,bulkId);
   const projectionProof=verifyCoastalPartCurrentProjection({
     part,runtimePart,publicPart,bulkZone:bz,operationalEntryIndex,
-    verifyBulkRow:(bulkZone,samplingPoint,row)=>verifiedBulkCurrent(
-      bulk,bulkZone,samplingPoint,row?.sources?.current,row?.time,expectedDmiIdentity,
-    )?row.sources.current:null,
+    verifyBulkRow:(bulkZone,samplingPoint,row)=>{
+      const nativeSource=row?.sources?.current;
+      return verifiedBulkCurrent(
+        bulk,bulkZone,samplingPoint,nativeSource,row?.time,expectedDmiIdentity,
+      )?projectExactDmiNativeCurrentSourceToForecast(
+        nativeSource,row.time,conditions.productionReferenceAt,
+      ):null;
+    },
   });
   if(!projectionProof.ok){failures.push(`${bulkId}: ${projectionProof.reason}`);continue;}
   if(dmiOnlyRollback&&projectionProof.sourceClass!=='dmi-local'){failures.push(`${bulkId}: rollbacktilstanden viser stadig supplerende strøm`);continue;}

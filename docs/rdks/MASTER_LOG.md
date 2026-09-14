@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.360 fælles DMI-projektion
+
+4.0.359 bestod sourcegate `34788388836`, blev merged som main `8ec6b8be` og forseglede cache-handoff `34789764309` uden provider/oneoff med 79.414/79.414 currentpar, missing 0.
+
+Cutover `34790416354` gennemførte alle fem hovedkontroller og 272/272 underkontroller. Fire hovedkontroller var grønne. Fuld validering havde én fejl: 617 DMI-lokaldele blev sammenlignet som færdig runtime mod rå native kilderække. Alle efterfølgende kontroller bestod, og ingen eksterne writes blev udført.
+
+Lokal 4.0.360 lader en audit-only adapter kalde den eksisterende offentlige forecastbuilder med én verificeret native currentrække. Native bulkrække skal stadig bestå fuld DMI-identitet, hvorefter samme produktionskode danner runtimefelterne. Auditten bruger den fastlåste `productionReferenceAt`; realistisk native-fixture beviser, at senere wall-clock-tid ikke er samme reference.
+
+Alle direkte relevante tests er grønne med bundet Python-runtime. Ingen vejrværdi, score, modelbundle/hash, modelstate, rotation, geometri, migration, database eller privacy ændres; ingen bypass og ingen oneoff. Se DEC-0142 og `CHANGELOG-4.0.360.md`.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – lokal 4.0.359 retter komplet kontrolrapport
 
 4.0.358-head `47c75b09` bestod exact-head-sourcegate `34777480545` og blev merged gennem PR #295 som main `2a1c73d2`. Cachefortsættelse `34781396538` hentede intet providervejr og forseglede 79.414/79.414 currentpar, missing 0.

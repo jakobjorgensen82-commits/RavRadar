@@ -1,3 +1,20 @@
+# NYESTE ROADMAP – 2026-09-14 – 4.0.360 fra native/runtime-kontrolfejl til model-online
+
+- [x] Bevar 4.0.359 sourcegate `34788388836`, main `8ec6b8be` og det komplette cache-handoff `34789764309` som eksisterende bevis.
+- [x] Kør cutover `34790416354` helt til slut gennem fem hovedkontroller og 272/272 underkontroller; bevar stop før writes.
+- [x] Afgræns eneste fejl til den rumlige audits sammenligning af rå native DMI-kilde mod færdig runtimeform; 617 er ikke manglende vejrdækning.
+- [x] Lad auditlaget genbruge den eksisterende offentlige forecastbuilder og brug fastlåst `productionReferenceAt`; modelbundle/hash forbliver uændret.
+- [x] Bestå kun de direkte relevante regressioner og bind en realistisk native fixture.
+- [ ] Kør én exact-head 4.0.360-sourcegate og merge kun den eksakte grønne kode.
+- [ ] Genskab det commitbundne handoff fra samme cacher uden provider, oneoff eller ny national audit.
+- [ ] Kør cutover. Ved grøn samlet blok fortsætter installationen automatisk; ved fejl bruges hele rapporten til én samlet rettelsesrunde.
+- [ ] Verificér den integrerede model offentligt på 210 zoner/673 dele/begge modes/118 timer og gennemgå siden på desktop, mobil og DA/DE/EN.
+- [ ] Genaktivér almindelig weather kontrolleret og bevis cachevedligeholdelse, fuld DMI-registerrotation, fallback og tidsoverskud.
+- [ ] Afstem efter launch all-parts-zonereglen og den målte private conditions-størrelse; behold kun roadmap-punkter med aktuel evidens.
+- [ ] Slet `34613079069` og `34228112413`, så snart GitHub tillader sletning; de er jobløse og kan ikke startes.
+
+DEC-0142 er aktiv. Ingen ny oneoff.
+
 # NYESTE ROADMAP – 2026-09-14 – 4.0.359 fra komplet fejlliste til model-online
 
 - [x] Bevar main 4.0.358/`2a1c73d2`, sourcegate `34777480545` og cache-handoff `34781396538` som eksisterende bevis.

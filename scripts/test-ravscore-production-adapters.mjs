@@ -7,6 +7,7 @@ import {
 } from './lib/current-spatial-runtime-proof.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
+import { projectExactDmiNativeCurrentSourceToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
@@ -148,7 +149,30 @@ const waveSourceWithoutDirection = time => {
   };
 };
 const sourceTime = '2026-08-29T12:00:00.000Z';
-const source = currentSourceFor(sourceTime);
+const fixtureSource = currentSourceFor(sourceTime);
+const {
+  temporalResolution: _discardedTemporalResolution,
+  nativeValidTimes: _discardedNativeValidTimes,
+  nativeSteps: _discardedNativeSteps,
+  ...nativeSource
+} = fixtureSource;
+const source = projectExactDmiNativeCurrentSourceToForecast(
+  nativeSource,
+  sourceTime,
+  sourceTime,
+);
+assert.ok(source, 'a verified native DMI row must project through the production provenance adapter');
+assert.equal(Object.hasOwn(nativeSource, 'nativeValidTimes'), false,
+  'the regression fixture must preserve the real native bulk-row shape');
+const laterBuildProjection = projectExactDmiNativeCurrentSourceToForecast(
+  nativeSource,
+  sourceTime,
+  '2026-08-30T00:00:00.000Z',
+);
+assert.notEqual(laterBuildProjection.forecastAgeHours, source.forecastAgeHours,
+  'a later wall-clock build time must not be confused with the locked production reference');
+assert.equal(source.forecastAgeHours, 12,
+  'the native forecast age must be bound to the production reference used by the runtime builder');
 const expectedDmiIdentity = dmiExpectedIdentityForPart(partContext, bulkId);
 assert.equal(dmiExpectedIdentityForPart({
   ...partContext,
@@ -258,7 +282,7 @@ const dmiAuditBulkZone = {
       time: sourceTime,
       'current-u': 0.08,
       'current-v': -0.02,
-      sources: { current: source },
+      sources: { current: nativeSource },
     },
   },
 };
@@ -275,7 +299,11 @@ const dmiSpatialProof = verifyCoastalPartCurrentProjection({
     row.sources.current,
     row.time,
     expectedDmiIdentity,
-  ) ? row.sources.current : null,
+  ) ? projectExactDmiNativeCurrentSourceToForecast(
+      row.sources.current,
+      row.time,
+      sourceTime,
+    ) : null,
 });
 assert.deepEqual(dmiSpatialProof, {
   ok: true,
