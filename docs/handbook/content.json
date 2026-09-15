@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.368",
+  "handbookVersion": "4.0.369",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-15",
   "sections": [
+    {
+      "id": "protected-private-runtime-recovery-4-0-369",
+      "chapter": "88.73",
+      "title": "4.0.369 – Den private runtime lukkes og gendannelsen genprøves",
+      "summary": "Den private runtimebucket lukkes for klienter, og den historiske gendannelse får tre korte, sikre forsøg uden ny vejrhentning.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.368 installerede migration 16, men den gemte private runtime kunne ikke gendannes. Samtidig viste den oprindelige publicering, at arkivet kunne hentes uden login.</div><div class=\"handbook-stack\"><p>4.0.369 tilføjer et afgrænset sikkerhedsled, der lukker netop den private runtimebucket for anonyme og almindeligt indloggede klienter. Service-role bevares. Andre buckets, objekter og pointere ændres ikke.</p><p>Den historiske forventning bygges fortsat mod den urørte eksakte gamle kilde. Gendannelsen prøves højst tre gange ved kortvarige Supabase-fejl, og en endelig fejl viser kun en fast årsagskategori uden private data.</p><p>Migration 16 køres ikke igen; kun sikkerhedsled 17 må anvendes. Kørselen er kode-only og bruger ingen DMI-, Copernicus- eller Open-Meteo-provider og ingen oneoff.</p></div>"
+    },
     {
       "id": "code-only-preserve-false-4-0-368",
       "chapter": "88.72",
@@ -399,7 +406,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.368 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.369 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Det historiske integrerede artifact er offentligt, men den centrale aktivering mangler. RavScore 4.0.367 er lokalt klar til den eksakte recovery og efterfølgende code-only-opdatering.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står fortsat uden operationel række på legacy Candidate G, mens Pages viser den historiske integrerede binding. 4.0.367 registrerer kun dette eksakte, frisk verificerede target og fører derefter bindingen frem til den aktuelle modelpakke.</p><p><strong>Backend:</strong> Installeret migration 15 er byteuændret; migration 16 <code>20260914234500_post_cutover_current_hold_binding.sql</code> er det nye append-only bindingsled. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><p><strong>Rollback:</strong> Candidate G er kildeidentitet for den manglende første overgang og privat rollback efter fuldført integreret aktivering. Den er ikke samtidig offentlig fallback.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede kontroller er grønne. Exact-head PR-gate, code-only-deploy, central readback og offentlig mobil-/desktopkontrol mangler.</div></div>"
     },

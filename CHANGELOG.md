@@ -1,3 +1,10 @@
+## 4.0.369 – sikker og genprøvbar privat runtime-recovery (2026-09-15, lokal kandidat)
+
+- 4.0.368 bestod sourcegate `34915216698`, blev merged som `c4610636`, og run `34915725308` installerede/læste migration 16 tilbage, men stoppede før runtime/Pages på forgænger-restore.
+- Den oprindelige runtimepublicering havde samtidig vist anonym HTTP 200. Nyt append-only sikkerhedsled lukker netop den private bucket for `anon`/`authenticated` uden at ændre objekter, pointer eller andre buckets.
+- Migration 16 forbliver model-/checkpointautoriteten; næste code-only-run må kun anvende sikkerhedsmigration 17.
+- Restore genprøves højst tre gange og udskriver kun faste payload-frie afvisningskategorier. Ingen provider eller oneoff. Se `CHANGELOG-4.0.369.md` og DEC-0150.
+
 ## 4.0.368 – bevar boolske false-værdier i code-only-fortsættelsen (2026-09-15, lokal kandidat)
 
 - PR #309/sourcegate `34914010157` blev merged som `d25dfe8e`, og run `34914399119` genskabte den historiske integrerede tilstand som central `INTEGRATED_ACTIVE` version 1 uden provider.

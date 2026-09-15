@@ -911,6 +911,28 @@ function assertRestoreTime(descriptor, expected, now, policy) {
   }
 }
 
+function safeRestoreRejectionCode(error, stage) {
+  const message = String(error?.message ?? '');
+  if (error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED') return 'EXPIRED';
+  if (/download|storage readback|object integrity|object-set readback/i.test(message)) {
+    return 'STORAGE_OR_OBJECT_INTEGRITY';
+  }
+  if (/decompress|archive|payload integrity/i.test(message)) {
+    return 'ARCHIVE_OR_PAYLOAD_INTEGRITY';
+  }
+  if (/model binding|RavScore model/i.test(message)) return 'MODEL_BINDING';
+  if (/contract hash/i.test(message)) return 'CONTRACT_HASHES';
+  if (/dataset/i.test(message)) return 'DATASET_IDENTITY';
+  if (/production reference|generation time|future|restore bounds/i.test(message)) {
+    return 'TIME_BOUNDS';
+  }
+  if (/descriptor contradicts/i.test(message)) return 'DESCRIPTOR_BUNDLE_MISMATCH';
+  if (/inventory|manifest|file count|file descriptor|bundle content/i.test(message)) {
+    return 'BUNDLE_STRUCTURE_OR_CONTENT';
+  }
+  return `UNKNOWN_${String(stage).toUpperCase().replace(/[^A-Z0-9]+/g, '_')}`;
+}
+
 export async function restoreProtectedPrivateProductionRuntime({
   privateRoot,
   bundlePath,
@@ -957,8 +979,10 @@ export async function restoreProtectedPrivateProductionRuntime({
         `.protected-runtime-candidate-${process.pid}-${index}-${crypto.randomBytes(5).toString('hex')}`,
       );
       temporaryDirectories.push(candidate);
+      let rejectionStage = 'stored-object';
       try {
         const archive = await verifyStoredArchive(storage, descriptor);
+        rejectionStage = 'archive-extraction';
         await extractArchive({
           archive,
           descriptor,
@@ -967,6 +991,7 @@ export async function restoreProtectedPrivateProductionRuntime({
           repositoryRoot: context.repository,
           policy,
         });
+        rejectionStage = 'bundle-verification';
         const verified = await verifyPrivateProductionRuntimeBundle({
           privateRoot: context.root,
           bundlePath: candidate,
@@ -974,10 +999,12 @@ export async function restoreProtectedPrivateProductionRuntime({
           expected,
           now,
         });
+        rejectionStage = 'descriptor-readback';
         assertDescriptorMatchesBundle(descriptor, verified);
         // Expiry is non-blocking only after the archived generation has
         // passed the same full manifest, contract, inventory and byte-hash
         // validation as a generation that could actually be restored.
+        rejectionStage = 'time-bounds';
         assertRestoreTime(descriptor, expected, now, policy);
         selected = { descriptor, candidate, verified };
         // Pointer validation already proves current >= previous and rejects
@@ -985,13 +1012,13 @@ export async function restoreProtectedPrivateProductionRuntime({
         // current once; previous is downloaded only for genuine rollback.
         break;
       } catch (error) {
-        rejections.push(error);
+        rejections.push({ error, code: safeRestoreRejectionCode(error, rejectionStage) });
         await fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
       }
     }
     if (!selected) {
       if (rejections.length === descriptors.length
-        && rejections.every(error => error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED')) {
+        && rejections.every(item => item.error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED')) {
         return {
           restored: false,
           reason: 'protected-private-runtime-expired',
@@ -999,7 +1026,10 @@ export async function restoreProtectedPrivateProductionRuntime({
           privatePayloadLogged: false,
         };
       }
-      throw new Error('No compatible protected private runtime generation is available');
+      const error = new Error('No compatible protected private runtime generation is available');
+      error.code = 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION';
+      error.rejectionCodes = Object.freeze(rejections.map(item => item.code));
+      throw error;
     }
     await fs.rename(selected.candidate, finalBundle);
     const selectedIndex = temporaryDirectories.indexOf(selected.candidate);
@@ -1040,7 +1070,7 @@ export async function auditProtectedPrivateRuntimeAnonymousDenial({
   for (const object of descriptorObjects(row.payload.current)) {
     const status = await storage.anonymousStatus(object.objectPath);
     statuses.push(status);
-    if (![401, 403, 404].includes(status)) {
+    if (![400, 401, 403, 404].includes(status)) {
       throw new Error('Protected private runtime object is anonymously readable');
     }
   }
@@ -1268,7 +1298,10 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => {
-    console.error(`Protected private production runtime failed closed: ${error.message}`);
+    const rejectionSuffix = Array.isArray(error?.rejectionCodes)
+      ? ` [rejection-codes: ${error.rejectionCodes.join(',')}]`
+      : '';
+    console.error(`Protected private production runtime failed closed: ${error.message}${rejectionSuffix}`);
     process.exitCode = 1;
   });
 }

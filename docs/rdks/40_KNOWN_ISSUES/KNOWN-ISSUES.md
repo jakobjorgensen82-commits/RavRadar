@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.369 privat restore og adgang
+
+- **ISSUE-4.0.368-PRIVATE-RESTORE – RETTET LOKALT / LIVEBEVIS MANGLER:** Run `34915725308` installerede migration 16, men den eksakte forgænger-restore endte i en samlet, uoplysende afvisning. 4.0.369 genprøver tre gange og giver kun payload-frie årsagskoder.
+- **ISSUE-PRIVATE-RUNTIME-ANON-READ – P0 RETTET LOKALT / LIVEBEVIS MANGLER:** Run `34877443841` fik HTTP 200 uden credentials. Restriktiv policy på kun runtimebucketen skal give 400/401/403/404 på både direkte og historisk runtimevej, før offentlig runtime og Pages fortsætter.
+- **ISSUE-4.0.369-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler. Central version 1 og migration 16 er allerede produktionstilstand og må ikke gentages.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Ingen ny weather før modellen er centralt/offentligt online; derefter måles faktiske inputs og scorer i normal tidsbegrænset drift.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 fortsætter fra genskabt central version 1
 
 - **ISSUE-CUTOVER-34877443841-FALSE-GREEN – CENTRAL DEL LUKKET / DEPLOY ÅBEN:** Run `34914399119` gennemførte den hash-låste recovery. Supabase er nu `INTEGRATED_ACTIVE` version 1. Aktuel binding, migration, privat runtime og Pages mangler fortsat.

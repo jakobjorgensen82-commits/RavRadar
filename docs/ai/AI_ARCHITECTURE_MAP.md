@@ -1,3 +1,9 @@
+## 2026-09-15 lokal 4.0.369 – service-role-only privat runtime
+
+- Migration 16 er fortsat kilden til RavScore-/checkpointfunktionerne. Migration 17 er et separat driftssikkerhedsled og må ikke bruges som modelbindingskilde.
+- `storage.objects` har en restriktiv klientpolicy for bucket `ravradar-private-production-runtime`; service-role restore bevares.
+- Code-only bygger først predecessor-forventning fra urørt `fa418f43`, tilfører derefter den aktuelle payload-frie fejlklassifikation, auditerer anonym denial og prøver restore højst tre gange.
+
 ## 2026-09-15 lokal 4.0.368 – workflowoutput bevarer boolsk false
 
 - Central recovery er fuldført som operationel version 1; code-only-fortsættelsen starter derfor fra den forseglede historiske integrerede tilstand.

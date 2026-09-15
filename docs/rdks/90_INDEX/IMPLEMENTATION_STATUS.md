@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.369 privat runtime-recovery
+
+- [x] Bestå 4.0.368 sourcegate `34915216698`, merge PR #310 som main `c4610636` og fortsæt fra central `INTEGRATED_ACTIVE` version 1 uden provider.
+- [x] Installer og læs migration 16 tilbage i run `34915725308`; den er nu eksisterende produktionstilstand og må ikke gentages.
+- [x] Afgræns stoppet til den eksakte forgænger-restore før runtime-, Pages- og completionwrites.
+- [x] Registrér anonym HTTP 200 fra oprindelig private-runtime-audit som reel privacyrisiko.
+- [x] Tilføj append-only migration 17 med restriktiv bucketpolicy; adskil seneste modelbinding fra seneste driftsmigration.
+- [x] Tilføj højst tre restoreforsøg, ægte anon-audit før restore og payload-frie årsagskategorier.
+- [x] Bestå målrettede runtime-, migration-, code-only-, workflow- og sourcekritiske kontrakter; geodata ændrer kun topversion.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only; bevis anon-afvisning, restore, runtime, Pages og central/offentlig 4.0.369.
+- [ ] Kør normal tidsbegrænset weather separat og bevis numeriske scorer, rotation og cache. Ingen oneoff.
+
+DEC-0150 er aktiv. Central recovery og migration 16 genbruges; de køres ikke igen.
+
 # Aktuel implementeringsstatus – 2026-09-15 – 4.0.368 fortsætter fra central version 1
 
 - [x] Beslut permanent at adskille rettelsesdeploy fra normal vejrhentning; DEC-0148 er aktiv.

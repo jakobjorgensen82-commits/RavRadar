@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ravScoreModelBinding as integratedModelBinding } from '../js/core/ravscore-model-contract.js';
-import { REQUIRED_CUTOVER_MIGRATIONS } from './integrated-cutover-readiness.mjs';
+import { LATEST_RAVSCORE_BINDING_MIGRATION } from './integrated-cutover-readiness.mjs';
 import {
   expectedCalibrationEligibility,
   projectTripLogDto,
@@ -707,7 +707,7 @@ try {
     fs.readFile('supabase/functions/submit-observation/index.ts', 'utf8'),
     fs.readFile('supabase/functions/_shared/trip-store.ts', 'utf8'),
     fs.readFile('js/services/observation-service.js', 'utf8'),
-    fs.readFile(path.join('supabase/migrations', REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename),
+    fs.readFile(path.join('supabase/migrations', LATEST_RAVSCORE_BINDING_MIGRATION.filename),
       'utf8'),
     fs.readFile('supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
       'utf8'),

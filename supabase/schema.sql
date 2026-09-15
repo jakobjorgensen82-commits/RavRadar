@@ -3251,3 +3251,11 @@ is 'Service-role-only fixed-key RavScore checkpoint CAS. It returns bounded meta
 comment on function public.ravradar_ravscore_checkpoint_predecessor_payload_valid(jsonb,timestamptz,text)
 is 'Internal exact transition validator for the 4.0.320 continuation hash from source head 7198b685f4bc9d86bd6432b049380f4279ab797c; it is not a general fallback.';
 -- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_END
+
+-- The private runtime bucket is service-role-only, even when another legacy
+-- storage.objects policy grants clients access to unrelated buckets.
+drop policy if exists ravradar_private_runtime_deny_client_read
+  on storage.objects;
+create policy ravradar_private_runtime_deny_client_read
+on storage.objects as restrictive for select to anon, authenticated
+using (bucket_id <> 'ravradar-private-production-runtime');

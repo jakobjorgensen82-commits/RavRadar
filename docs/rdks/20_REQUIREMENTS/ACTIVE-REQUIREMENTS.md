@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.369 privat runtime og fortsættelse
+
+- **REQ-4.0.369-STORAGE-DENY-001 – IMPLEMENTERET LOKALT / LIVEBEVIS MANGLER:** `ravradar-private-production-runtime` skal være ulæselig for både `anon` og `authenticated`, også ved ældre brede Storage-policies. Kun `service_role` må gendanne runtime.
+- **REQ-4.0.369-APPEND-ONLY-001 – BINDENDE:** Installeret migration 16 er immutable. Kun nyt sikkerhedsled `20260915020000` må være pending i næste code-only-run.
+- **REQ-4.0.369-RESTORE-RETRY-001 – IMPLEMENTERET LOKALT:** Eksakt forgænger-restore må forsøges højst tre gange med kort pause; forventningen skal forsegles før den aktuelle wrapper kopieres ind i forgængertræet.
+- **REQ-4.0.369-PRIVATE-DIAGNOSTIC-001 – IMPLEMENTERET LOKALT:** Restorefejl må kun logges som faste ufølsomme kategorier; ingen payload, paths, koordinater eller rå fejlindhold.
+- **REQ-4.0.369-NO-REPEAT-001 – AKTIV:** Central version 1 og migration 16 genbruges. Ingen gammel recovery, migration 16, provider, oneoff eller allerede gennemført cutovertrin gentages.
+
+DEC-0150 supplerer DEC-0148 og DEC-0149.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.367 central recovery og kode-only rettelse
 
 - **REQ-4.0.367-CENTRAL-RECOVERY-001 – IMPLEMENTERET LOKALT / PRODUKTIONSBEVIS MANGLER:** Den manglende operationelle række må kun genskabes fra den eksakte legacyprofil, den eksakte offentlige targethash fra run `34877443841`, alle fastlåste evidenshashes og en frisk offentlig verification.

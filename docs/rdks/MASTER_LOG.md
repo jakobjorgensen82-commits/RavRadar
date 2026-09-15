@@ -1,3 +1,9 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.369 privat runtime
+
+PR #310/sourcegate `34915216698` blev merged som main `c4610636`. Code-only `34915725308` sprang recovery over, læste central version 1 og installerede migration 16, men stoppede før runtime/Pages ved forgænger-restore. Migration 16 og central recovery gentages ikke.
+
+Den oprindelige private-runtime-audit havde anonym HTTP 200. 4.0.369 tilføjer en afgrænset restriktiv bucketpolicy som migration 17, reel anon-audit før restore, højst tre restoreforsøg og kun payload-frie afvisningskoder. Ingen provider, oneoff, model- eller geometriændring. DEC-0150.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – central version 1 og 4.0.368
 
 PR #309 bestod exact-head sourcegate `34914010157` og blev merged som main `d25dfe8e`. Code-only-run `34914399119` gennemførte den eksakte recovery; Supabase er nu `INTEGRATED_ACTIVE` version 1. Runnet kontaktede ingen provider og stoppede derefter før migration, privat runtime og Pages.

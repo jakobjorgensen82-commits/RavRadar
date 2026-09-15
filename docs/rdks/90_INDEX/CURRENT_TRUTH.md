@@ -1,3 +1,13 @@
+# NYESTE SANDHED – 2026-09-15 – migration 16 er installeret; privat restore og privacy resterer
+
+4.0.368 bestod sourcegate `34915216698` og blev merged som main `c461063690ff148604cb6c2f87053105fe96771b`. Code-only-run `34915725308` læste central `INTEGRATED_ACTIVE` version 1, sprang engangsrecoveryen over og installerede/læste migration `20260914234500` tilbage. Den centrale recovery og migration 16 må ikke gentages.
+
+Runnet stoppede før runtimeændring, Pages og central completion. Den aktuelle kode afviste som forventet den historiske private modelbinding; den eksakte `fa418f43`-restore downloadede derefter generationen, men endte i den for brede fejl “ingen kompatibel generation”. Den oprindelige publicering `34877443841` havde samtidig fået HTTP 200 uden credentials ved downloadkontrollen. Det behandles som reel privacyrisiko, indtil en ny liveaudit viser afvisning.
+
+Lokal 4.0.369 tilføjer alene append-only Storage-policy `20260915020000`, som restriktivt afviser `anon` og `authenticated` på den private runtimebucket. Ingen objekter/pointere eller andre buckets ændres. Migrationskoden fastholder migration 16 som RavScore-/checkpointautoritet og tillader næste code-only-run kun det nye sikkerhedsled. Den historiske restore genprøves højst tre gange; loggen får kun faste payload-frie kategorier. Ingen provider, oneoff eller gammel cutover. DEC-0150.
+
+Næste bevis er én exact-head PR-gate, merge og providerfri code-only fra den allerede bevarede centrale version 1 og installerede migration 16. Efter central/offentlig 4.0.369-verifikation køres normal weather separat og tidsbegrænset for scorer, rotation og cache.
+
 # NYESTE SANDHED – 2026-09-15 – central version 1 er genskabt; 4.0.368 fortsætter
 
 PR #309 bestod exact-head sourcegate `34914010157` på `6caa6ea8` og blev merged som main `d25dfe8e0879870e70c7c7a96ffbde53abb2cbda`. Code-only-run `34914399119` genbrugte dette bevis, hentede ingen vejrdata, verificerede det historiske Pages-target frisk og gennemførte den atomiske engangsrecovery. Supabase læser nu `INTEGRATED_ACTIVE` central version 1 med source head `fa418f43`. Den gamle rowless legacytilstand er dermed lukket og må ikke genskabes igen.
