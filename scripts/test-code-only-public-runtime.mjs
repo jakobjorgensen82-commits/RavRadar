@@ -19,16 +19,16 @@ assert.throws(
 
 const liveZones = {
   type: 'FeatureCollection',
-  version: '4.0.365',
+  version: '4.0.366',
   features: [{ type: 'Feature', properties: { id: 'z-1' }, geometry: null }],
 };
-const nextZones = { ...structuredClone(liveZones), version: '4.0.366' };
-assertZoneRegistryVersionOnly(liveZones, nextZones, '4.0.366');
+const nextZones = { ...structuredClone(liveZones), version: '4.0.367' };
+assertZoneRegistryVersionOnly(liveZones, nextZones, '4.0.367');
 assert.throws(
   () => assertZoneRegistryVersionOnly(liveZones, {
     ...nextZones,
     features: [{ type: 'Feature', properties: { id: 'z-2' }, geometry: null }],
-  }, '4.0.366'),
+  }, '4.0.367'),
   /changes more than its top-level version/,
 );
 
@@ -76,6 +76,10 @@ for (const marker of [
   'test "${{ steps.source-proof.outputs.required }}" = "false"',
   'prepare-code-only-public-runtime.mjs',
   'migrate-post-cutover-private-runtime.mjs',
+  'recover-missed-initial-cutover',
+  'ravscore-operational-recovery-34877443841-1',
+  'Freshly verify the exact historical integrated artifact is still public',
+  'Atomically record the exact already-public historical cutover',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
 for (const forbidden of [
@@ -94,6 +98,25 @@ for (const marker of [
   '.weatherValuesChanged == false',
   '.scoresChanged == false',
   '.geometryChanged == false',
+  'id: integrated-historical-maintenance-complete',
+  'id: failure-reconciliation',
+  'if: always() && !cancelled()',
+  'steps.integrated-historical-maintenance-complete.outcome',
+  'steps.failure-reconciliation.outcome',
 ]) assert.ok(pagesWorkflow.includes(marker), `Pages code-only-kontrakt mangler ${marker}`);
+const deploymentTerminalStart = pagesWorkflow.indexOf(
+  '- name: Seal exact verified deployment terminal',
+);
+assert.ok(deploymentTerminalStart >= 0, 'Pages-workflowet mangler terminalgaten');
+const deploymentTerminal = pagesWorkflow.slice(deploymentTerminalStart);
+assert.doesNotMatch(deploymentTerminal, /continue-on-error/,
+  'Pages-terminalgaten må aldrig skjule en ufuldstændig central aktivering');
+for (const marker of [
+  'test "${{ steps.deployment.outcome }}" = "success"',
+  'test "${{ steps.public-verification.outcome }}" = "success"',
+  'test "${{ steps.checkpoint-disposition-complete.outcome }}" = "success"',
+  'Unsupported operational action cannot be marked deployed.',
+]) assert.ok(deploymentTerminal.includes(marker),
+  `Pages-terminalgaten mangler ${marker}`);
 
 console.log('Code-only public runtime reuse contract passed.');

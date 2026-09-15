@@ -531,6 +531,7 @@ jobs:
 
       - name: Complete Candidate G rollback only after public verification
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: candidate-complete
         if: inputs.operational_action == 'candidate-execute'
         shell: bash
         run: |
@@ -547,6 +548,7 @@ jobs:
 
       - name: Refresh already active Candidate G central evidence after public verification
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: candidate-refresh-complete
         if: inputs.operational_action == 'candidate-maintenance'
         shell: bash
         run: |
@@ -563,6 +565,7 @@ jobs:
 
       - name: Complete historical-to-current Candidate G maintenance only after public verification
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: candidate-historical-refresh-complete
         if: inputs.operational_action == 'candidate-historical-maintenance'
         shell: bash
         run: |
@@ -580,6 +583,7 @@ jobs:
 
       - name: Complete legacy-to-current Candidate G refresh only after public verification
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: candidate-legacy-refresh-complete
         if: inputs.operational_action == 'candidate-legacy-maintenance'
         shell: bash
         run: |
@@ -616,6 +620,7 @@ jobs:
 
       - name: Complete historical-to-current integrated maintenance only after public verification
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: integrated-historical-maintenance-complete
         if: inputs.operational_action == 'integrated-historical-maintenance'
         shell: bash
         run: |
@@ -635,6 +640,7 @@ jobs:
 
       - name: Reseal ordinary integrated production without changing model identity
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: integrated-maintenance-complete
         if: inputs.operational_action == 'integrated'
         run: >-
           node scripts/ravscore-operational-activation.mjs integrated-maintenance
@@ -651,6 +657,7 @@ jobs:
 
       - name: Reconcile an ambiguous failed transition from observed public identity
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        id: failure-reconciliation
         if: (failure() || (inputs.operational_action == 'integrated-cutover' && (steps.deployment.outcome != 'success' || steps.public-verification.outcome != 'success' || steps.integrated-transition-complete.outcome != 'success'))) && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
         shell: bash
         run: |
@@ -823,8 +830,51 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Seal exact verified deployment terminal
-        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: deployment-terminal
-        if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'
+        if: always() && !cancelled()
         shell: bash
-        run: echo "deployed_verified=true" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          test "${{ steps.deployment.outcome }}" = "success"
+          test "${{ steps.public-verification.outcome }}" = "success"
+          test "${{ steps.checkpoint-disposition-complete.outcome }}" = "success"
+          case "${{ inputs.operational_action }}" in
+            candidate-execute)
+              test "${{ steps.candidate-begin.outcome }}" = "success"
+              test "${{ steps.candidate-complete.outcome }}" = "success"
+              ;;
+            candidate-maintenance)
+              test "${{ steps.candidate-refresh-begin.outcome }}" = "success"
+              test "${{ steps.candidate-refresh-complete.outcome }}" = "success"
+              ;;
+            candidate-historical-maintenance)
+              test "${{ steps.candidate-historical-refresh-begin.outcome }}" = "success"
+              test "${{ steps.candidate-historical-refresh-complete.outcome }}" = "success"
+              ;;
+            candidate-legacy-maintenance)
+              test "${{ steps.candidate-legacy-refresh-begin.outcome }}" = "success"
+              test "${{ steps.candidate-legacy-refresh-complete.outcome }}" = "success"
+              ;;
+            integrated-return)
+              test "${{ steps.integrated-transition-begin.outcome }}" = "success"
+              test "${{ steps.integrated-transition-complete.outcome }}" = "success"
+              ;;
+            integrated-cutover)
+              test "${{ steps.integrated-transition-begin.outcome }}" = "success"
+              if test "${{ steps.integrated-transition-complete.outcome }}" != "success"; then
+                test "${{ steps.failure-reconciliation.outcome }}" = "success"
+              fi
+              ;;
+            integrated-historical-maintenance)
+              test "${{ steps.integrated-historical-maintenance-begin.outcome }}" = "success"
+              test "${{ steps.integrated-historical-maintenance-complete.outcome }}" = "success"
+              ;;
+            integrated)
+              test "${{ steps.integrated-maintenance-complete.outcome }}" = "success"
+              ;;
+            *)
+              echo "Unsupported operational action cannot be marked deployed." >&2
+              exit 1
+              ;;
+          esac
+          echo "deployed_verified=true" >> "$GITHUB_OUTPUT"

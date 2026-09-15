@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.367 retter falsk grøn cutover og manglende central aktivering
+
+Efter PR #307/#308 viste code-only-readbacken, at Pages havde det integrerede target fra `34877443841`, mens Supabase stadig stod uden operationelt dokument på legacy Candidate G. Gennemgang af hele runnet viste en fejlet privacyaudit, manglende plan og ufuldstændigt handoff; central begin/complete kørte aldrig. Pages-terminalen blev falsk grøn, fordi den alene krævede deploy og offentlig verification.
+
+4.0.367 tilføjer en engangsrecovery låst til den præcise centrale starttilstand, oprindelige run/artifact og samtlige kanoniske evidenshashes. Den kræver en frisk offentlig verification og exact-main umiddelbart før atomisk central write og fortsætter derefter samme code-only-run gennem eksisterende historisk vedligeholdelse. Terminalen kræver nu handlingens faktiske completion eller gyldig reconciliation. Ingen provider, oneoff eller gammel cutover gentages. DEC-0149.
+
 # 2026-09-15 – 4.0.366 adskiller rettelsesdeploy fra vejrhentning
 
 Efter den første offentlige integrerede cutover blev de konkrete livefejl samlet gennemgået. 4.0.366 retter tabt DKSS-vind, retning 360, falsk strømhold hen over null, forkert tidsdækning, afhængig EDR-reparation og UI-værdier, der gjorde manglende data til nul. Om-siden får iPhone-/Android-installationsvejledning og Facebookfællesskab.

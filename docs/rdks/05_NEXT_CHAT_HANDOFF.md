@@ -1,8 +1,8 @@
-# NYESTE CHECKPOINT – 2026-09-15 – 4.0.366 klar til PR og kode-only-deploy
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.367 genskaber central tilstand før code-only
 
-Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.366-post-cutover-repair`; den beskidte oprindelige worktree må ikke røres. Den samlede post-cutoverrettelse, version 4.0.366, append-only migration 16, manuel kode-only-vej, changelog, RDKS og begge håndbøger er implementeret lokalt. Målrettede vejr-, RavScore-, deploy-, migration-, runtimegenbrugs- og privacykontroller er grønne. Ingen oneoff eller providerhentning er kørt.
+Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.367-cutover-state-recovery`. Main er `62fe62ee`. Den offentlige integrerede binding fra `34877443841` findes, men den centrale operation mangler, fordi det oprindelige handoff/plan og CAS fejlede trods falsk grøn terminal. 4.0.367 accepterer kun dette eksakte run, artifact og alle fastlåste evidenshashes samt en frisk offentlig verification. Den skriver central version 1 og fortsætter derefter i samme code-only-run til aktuel binding. Ingen gammel cutover, provider eller oneoff gentages.
 
-Næste rækkefølge: diff-/RDKS-slutkontrol → commit/push → exact-head sourcegate én gang på PR → merge samme head → manuel `Deploy RavRadar code-only repair` med `DEPLOY-CODE-ONLY-REPAIR` → offentlig kontrol. Først derefter startes normal tidsbegrænset weather særskilt for at bevise numeriske scorer, cache og fuld rotation. Integrated/rollback/continuation: `65148b4a…`/`7fe45de7…`/`81045427…`. Ingen ny cutover eller oneoff. Sol/Ekstra høj.
+State-machine, code-only-kontrakt, historisk evidens og YAML-parse er grønne. Næste rækkefølge: bundles/version/RDKS → commit/push → én exact-head sourcegate på PR → merge → manuel `Deploy RavRadar code-only repair` med `DEPLOY-CODE-ONLY-REPAIR` → central/offentlig kontrol → separat tidsbegrænset normal weather med score-, cache- og rotationsbevis. DEC-0149. Sol/Ekstra høj.
 
 # NYESTE CHECKPOINT – 2026-09-14 – lokal 4.0.365 retter checkpointets manglende dataset-id
 

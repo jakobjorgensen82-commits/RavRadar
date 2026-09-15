@@ -1,8 +1,8 @@
-# NYESTE CHECKPOINT – 2026-09-15 – 4.0.366 lokal kandidat færdiggjort
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.367 central recovery implementeret lokalt
 
-Siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.366-post-cutover-repair`, indeholder de samlede post-cutoverrettelser og den godkendte manuelle kode-only-udrulning. Kode-only kræver exact main og `DEPLOY-CODE-ONLY-REPAIR`, genbruger eksakt eksisterende runtime og kontakter ingen vejrleverandør. Migration 15 er urørt; migration 16 er nyt binding-only-led. Integrated/rollback/continuation er `65148b4a…`/`7fe45de7…`/`81045427…`.
+Siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.367-cutover-state-recovery`, indeholder den samlede 4.0.366-reparation plus 4.0.367's løsning på den falsk grønne cutover. Pages-targetet fra `34877443841` er offentligt, men central operation findes ikke. Recoveryen er låst til de eksakte historiske hashes og kræver frisk liveverification før atomisk central 0→1. Derefter fortsætter samme code-only-run gennem den eksisterende bindingsmigration. Terminalen kan ikke længere blive grøn uden handlingens egentlige completion eller en gyldig reconciliation.
 
-Målrettede tests er grønne. Fortsæt uden oneoff eller provider: slutdiff/RDKS, commit/push, én exact-head PR-gate, merge, kode-only-deploy og livekontrol. Kør derefter normal weather separat og tidsbegrænset for at bevise numeriske scorer, rotation og cache. Sol/Ekstra høj.
+Målrettede tests og de virkelige historiske recoverybeviser er grønne. Fortsæt uden oneoff eller provider: bundles/RDKS-slutkontrol, commit/push, én exact-head PR-gate, merge, code-only-deploy og central/offentlig kontrol. Kør derefter normal weather separat og tidsbegrænset for at bevise numeriske scorer, rotation og cache. DEC-0149. Sol/Ekstra høj.
 
 # NYESTE CHECKPOINT – 2026-09-14 – offentlig cutover lykkedes; samlet post-cutoverrettelse mangler
 

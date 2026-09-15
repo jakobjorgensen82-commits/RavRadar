@@ -1,3 +1,11 @@
+# 2026-09-15 – 4.0.367 genskaber manglende central aktivering
+
+- Cutover `34877443841` publicerede Pages, men aldrig central begin/complete. Den tidligere succesbeskrivelse var forkert.
+- Central står stadig på legacy Candidate G uden operationel række, mens Pages viser det historiske integrerede target `4254bdb2…`. Struktur 210/673 er ikke numeriske scorer.
+- 4.0.367's engangsrecovery kræver eksakt legacytilstand, alle fastlåste run-/artifact-/evidenshashes og frisk offentlig verification. Derefter fortsætter code-only gennem normal historisk bindingsvedligeholdelse.
+- Pages-terminalen kræver nu handlingens konkrete completion eller en gyldig reconciliation; fejlsamling kan ikke længere skabe falsk grøn status. DEC-0149.
+- Ingen provider eller oneoff før code-only er centralt og offentligt verificeret. Normal weather følger separat efter DEC-0148.
+
 # 2026-09-15 – 4.0.366 kode-only og post-cutoverrettelser
 
 - Almindelige rettelser deployes uden vejrhentning ved eksakt genbrug af senest gyldige runtime. Normal weather følger separat og tidsbegrænset. DEC-0148.
