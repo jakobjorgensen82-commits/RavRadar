@@ -1,3 +1,38 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.383 er publiceret; central genoptagelse mangler
+
+PR #326 er merged som main `11f101f8f4c304253e55d5c850d4274e626db2a2`
+efter grøn exact-head sourcegate `35034134953`. Providerfri code-only-run
+`35034589754` genbrugte sourcebevis og vejrdata, anvendte databasebindingen,
+gendannede/migrerede den private runtime, publicerede Edge/backend og deployede
+Pages. Den levende side svarer som 4.0.383; den nye
+`protected-runtime-envelope.js` svarer 200, den fjernede
+`runtime-diagnostics-archive.js` svarer 404, og den offentlige 210/673-kontrol
+bestod. Ingen providerkald, ny oneoff eller almindelig vejrkørsel blev kørt.
+
+Runnet står rødt alene i den centrale afslutning. Det første reelle fejltrin
+var planforseglingen: workflowet sendte den kendte ældre offentlige
+implementationslukning `0b2fb58f...bf29282`, mens den centrale version 1 har
+sin egen nyere historiske identitet. `prepare-integrated-historical-maintenance`
+afviste derfor planen; `continue-on-error` lod resten af build/deploy køre og
+samle næste følger: handoffen manglede `plan.json`, central begin lavede ingen
+write, completion manglede `begin.json`, og terminalen fejlede. Centralen er
+derfor fortsat sikkert ACTIVE version 1; den blev aldrig efterladt PENDING.
+
+Aktiv fortsættelsesbranch er `codex/4.0.383-central-resume` fra eksakt nuværende
+main. Næste trin er en afgrænset genoptagelse, som genbruger recovery-artifact
+`ravscore-operational-recovery-35034589754-1` og den allerede verificerede
+levende 4.0.383-side. Den skal læse den centrale aktive lukning som sandhed,
+forsegle planen, kontrollere live-target igen og kun udføre central begin og
+complete. Den må ikke køre sourcegate, vejr, privat runtimebygning eller et nyt
+Pages-deploy. Ret samtidig workflowet, så en krævet manglende plan ikke kan
+fremstå som en gyldig handoff, og dokumentér udfaldet samlet. Først efter
+central completion må normal tidsbegrænset weather genstartes; ingen oneoff.
+
+Codex/Windows-browserforbindelsen er fortsat upålidelig. HTTP-/artifactkontrol
+virker og er brugt ovenfor, men den fulde visuelle browsergennemgang udestår.
+Ejeren kan opdatere/genstarte Codex efter dette checkpoint; fortsæt herfra med
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.383 eksakt public-source-reparation
 
 4.0.382 er merged som main `a7f0fcba` efter sourcegate `35024395809`/PR
