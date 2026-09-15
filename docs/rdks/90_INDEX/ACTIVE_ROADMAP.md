@@ -1,7 +1,7 @@
-# Aktiv roadmap – 4.0.367 fra central recovery til normal drift
+# Aktiv roadmap – 4.0.368 fra central version 1 til normal drift
 
-1. **P0:** Commit og push den færdige 4.0.367-kandidat; kør den lille sourcegate én gang på PR'ens eksakte head og merge samme head.
-2. **P0:** Start det manuelle code-only-workflow. Genskab først den eksakte allerede offentlige 4.0.365-binding centralt fra fastlåst run-evidens og frisk liveverification; fortsæt derefter direkte gennem den eksisterende historisk-til-aktuel vedligeholdelse. Ingen provider eller oneoff.
+1. **P0:** Commit og push den afgrænsede 4.0.368-rettelse; kør den lille sourcegate én gang på PR'ens eksakte head og merge samme head.
+2. **P0:** Start det manuelle code-only-workflow fra den allerede genskabte centrale version 1. Recoveryen skal springes over, og `integrated-historical-maintenance` skal fortsætte direkte. Ingen provider eller oneoff.
 3. **P0:** Verificér central version/profil, migration 16, privat runtime, Pages-artifact, live-version, aktuel modelbinding, begge søgemåder og de berørte felter på hjemmesiden.
 4. **P0 efter deploy:** Start normal, tidsbegrænset weather særskilt. Bevis faktisk accepterede vind-, bølge-, vandstands- og strømværdier, numeriske scorer, cachefremgang og DMI-rotation. Bevar ærlige lokale mangler.
 5. **P0/P1:** Gennemgå hele den levende hjemmeside og de resterende roadmap-punkter mod faktisk produktværdi. Den latente dublet/kilde-parringsrisiko forbliver åben, indtil den er afgrænset eller rettet.

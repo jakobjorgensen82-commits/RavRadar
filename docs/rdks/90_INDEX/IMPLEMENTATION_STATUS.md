@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – 2026-09-15 – 4.0.367 central recovery og code-only reparation
+# Aktuel implementeringsstatus – 2026-09-15 – 4.0.368 fortsætter fra central version 1
 
 - [x] Beslut permanent at adskille rettelsesdeploy fra normal vejrhentning; DEC-0148 er aktiv.
 - [x] Implementér de kendte lokale rettelser i vindretning, nulhåndtering, aktuel time, DMI-komponentdækning, strømhold og UI.
@@ -11,8 +11,11 @@
 - [x] Implementér en engangsrecovery, der kun accepterer de fastlåste hashes fra run `34877443841` plus en frisk offentlig verification, før central version 0→1 skrives atomisk.
 - [x] Gør Pages-terminalen handlingsspecifik, så fortsat fejlsamling aldrig igen kan blive grøn uden det nødvendige centrale completion- eller reconciliation-led.
 - [x] Begræns versionsgeneratorens håndbogsopdatering til aktive felter og gendan historiske 4.0.321/4.0.334-navne, som den brede regel ellers omskrev.
-- [x] Løft kandidaten til 4.0.367 og opdatér RDKS, changelog og begge håndbøger. De målrettede recovery-, state-machine- og code-only-kontrakter er grønne lokalt.
-- [ ] Commit, push, PR, én exact-head sourcegate, merge og kode-only deploy; verificér central version, exact main/artifact og den offentlige hjemmeside.
+- [x] Løft 4.0.367, bestå exact-head sourcegate `34914010157` og merge PR #309 som main `d25dfe8e`.
+- [x] Gennemfør engangsrecovery i run `34914399119`: central readback er `INTEGRATED_ACTIVE` version 1; ingen provider, migration eller Pages blev kørt efterfølgende.
+- [x] Ret 4.0.368-outputfejlen, så eksisterende boolske `false`-felter bevares fremfor at blive tom tekst; lås mønsteret i code-only-kontrakten.
+- [ ] Commit, push, PR, én exact-head sourcegate og merge 4.0.368.
+- [ ] Genkør code-only fra central version 1; recovery skal springes over, og historisk-til-aktuel vedligeholdelse skal fuldføre migration, privat runtime, Pages og central/offentlig verifikation.
 - [ ] Start derefter normal, tidsbegrænset vejrhentning separat og bevis numeriske input, scorer, rotation og cachevedligeholdelse.
 
 DEC-0148 og DEC-0149 er aktive. Ældre status nedenfor er historisk.

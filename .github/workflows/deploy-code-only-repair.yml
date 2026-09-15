@@ -194,7 +194,7 @@ jobs:
           node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
           for field in model status bindingCurrent centralVersion initialCutoverRequired legacySourceRequired sourceHead activeImplementationClosureSha256 deploymentId; do
             output_name="$(printf '%s' "$field" | sed -E 's/([A-Z])/_\L\1/g')"
-            echo "$output_name=$(jq -r --arg field "$field" '.[$field] // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+            echo "$output_name=$(jq -r --arg field "$field" 'if has($field) then .[$field] else "" end' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           done
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

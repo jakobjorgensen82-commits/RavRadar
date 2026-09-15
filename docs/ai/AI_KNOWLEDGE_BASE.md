@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.368 bevarer false efter gennemført recovery
+
+- PR #309/sourcegate `34914010157` er merged som `d25dfe8e`; run `34914399119` skrev central `INTEGRATED_ACTIVE` version 1.
+- jq `.[$field] // ""` gjorde tre rigtige `false`-outputs tomme og stoppede før migration/runtime/Pages.
+- 4.0.368 bruger eksplicit felttilstedeværelse. Recoveryen springes over i næste code-only-run; ingen provider eller oneoff.
+
 # 2026-09-15 – 4.0.367 genskaber manglende central aktivering
 
 - Cutover `34877443841` publicerede Pages, men aldrig central begin/complete. Den tidligere succesbeskrivelse var forkert.

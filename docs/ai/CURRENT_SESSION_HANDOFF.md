@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 efter vellykket central recovery
+
+PR #309/sourcegate `34914010157` er merged som main `d25dfe8e`. Run `34914399119` verificerede det offentlige historiske target og skrev central `INTEGRATED_ACTIVE` version 1 uden provider eller private payloads. Det efterfølgende trin mistede tre ægte `false`-værdier gennem jq `// ""` og stoppede før migration/runtime/Pages.
+
+Branch `codex/4.0.368-preserve-false-outputs` bevarer nu eksisterende false-felter med `has($field)` og låser kontrakten. Næste code-only-run skal springe recovery over og fortsætte som `integrated-historical-maintenance`. Ingen oneoff eller provider før model/code-only er centralt og offentligt verificeret.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.367 central recovery implementeret lokalt
 
 Siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.367-cutover-state-recovery`, indeholder den samlede 4.0.366-reparation plus 4.0.367's løsning på den falsk grønne cutover. Pages-targetet fra `34877443841` er offentligt, men central operation findes ikke. Recoveryen er låst til de eksakte historiske hashes og kræver frisk liveverification før atomisk central 0→1. Derefter fortsætter samme code-only-run gennem den eksisterende bindingsmigration. Terminalen kan ikke længere blive grøn uden handlingens egentlige completion eller en gyldig reconciliation.

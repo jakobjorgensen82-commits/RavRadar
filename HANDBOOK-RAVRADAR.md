@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.367
+**Håndbogsversion:** 4.0.368
+
+## 88.72 4.0.368 – En rigtig false-værdi må ikke blive til et tomt felt
+
+Den eksakte recovery fra 4.0.367 er nu gennemført i produktion. Supabase har
+den historiske integrerede model som aktiv central version 1. Kørsel
+`34914399119` stoppede først i det næste trin og nåede derfor ikke migration,
+privat runtime eller nyt Pages-artifact.
+
+Årsagen var enkel: workflowet brugte en jq-standard, som behandlede både
+“feltet mangler” og den rigtige værdi `false` som tom tekst. Tre korrekte
+nej-værdier for aktuel binding og gammel cutoverstatus forsvandt derfor på
+vejen mellem to trin.
+
+4.0.368 spørger nu først, om feltet findes. Findes det, bevares værdien præcis –
+også når den er `false`. Næste code-only-kørsel genkender derfor den allerede
+aktive historiske binding og fortsætter direkte til den aktuelle version. Den
+centrale recovery gentages ikke, og der hentes fortsat ingen vejrdata.
 
 ## 88.71 4.0.367 – Den offentlige model og den centrale status bringes sammen
 

@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.368 efter central recovery
+
+- PR #309/sourcegate `34914010157` blev merged som main `d25dfe8e`.
+- Code-only-run `34914399119` gennemførte central recovery til `INTEGRATED_ACTIVE` version 1 uden provider.
+- Fortsættelsen stoppede på jq false→tom-output; 4.0.368 bevarer boolske værdier eksplicit og fortsætter fra version 1.
+
 # 2026-09-15 – 4.0.367 retter falsk grøn cutover og manglende central aktivering
 
 Efter PR #307/#308 viste code-only-readbacken, at Pages havde det integrerede target fra `34877443841`, mens Supabase stadig stod uden operationelt dokument på legacy Candidate G. Gennemgang af hele runnet viste en fejlet privacyaudit, manglende plan og ufuldstændigt handoff; central begin/complete kørte aldrig. Pages-terminalen blev falsk grøn, fordi den alene krævede deploy og offentlig verification.

@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 fortsætter fra central version 1
+
+Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.368-preserve-false-outputs`. PR #309 bestod sourcegate `34914010157` og blev merged som main `d25dfe8e`. Code-only-run `34914399119` gennemførte engangsrecoveryen; Supabase er nu `INTEGRATED_ACTIVE` version 1. Gentag ikke recoveryen.
+
+Runnet stoppede bagefter, fordi jq `.[$field] // ""` gjorde ægte boolske `false`-felter tomme. 4.0.368 bruger eksplicit `has($field)` og har ingen anden forekomst af det gamle mønster. Fortsæt: målrettede kontroller → commit/push → én exact-head PR-gate → merge → providerfri code-only fra central version 1 → central/offentlig kontrol → separat tidsbegrænset normal weather. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.367 retter manglende central cutover
 
 Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.367-cutover-state-recovery`; mappenavnet er historisk, mens `package.json` er autoriteten. Main er 4.0.366/`62fe62ee`. Code-only-forsøg 2 viste, at Pages har den historiske integrerede binding, men central operation mangler og profilen fortsat er legacy Candidate G. Run `34877443841` var falsk grøn: Pages blev publiceret, mens plan/handoff og central begin/complete fejlede. Gentag ikke påstanden om en fuldført Supabase-cutover.

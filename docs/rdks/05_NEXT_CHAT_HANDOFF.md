@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – central version 1; 4.0.368 outputrettelse
+
+PR #309 er merged som `d25dfe8e` efter grøn sourcegate `34914010157`. Code-only-run `34914399119` gennemførte recoveryen og læste central `INTEGRATED_ACTIVE` version 1. Recoveryen skal aldrig gentages.
+
+Fortsættelsen stoppede før migration/runtime/Pages, fordi jq `.[$field] // ""` gjorde boolsk `false` til tom tekst. 4.0.368 bruger `has($field)`, og den målrettede kontrakt afviser det gamle mønster. Næste: exact-head PR/merge → providerfri code-only, som springer recovery over → central/offentlig kontrol → normal tidsbegrænset weather. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.367 genskaber central tilstand før code-only
 
 Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.367-cutover-state-recovery`. Main er `62fe62ee`. Den offentlige integrerede binding fra `34877443841` findes, men den centrale operation mangler, fordi det oprindelige handoff/plan og CAS fejlede trods falsk grøn terminal. 4.0.367 accepterer kun dette eksakte run, artifact og alle fastlåste evidenshashes samt en frisk offentlig verification. Den skriver central version 1 og fortsætter derefter i samme code-only-run til aktuel binding. Ingen gammel cutover, provider eller oneoff gentages.
