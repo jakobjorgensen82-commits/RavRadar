@@ -1,3 +1,18 @@
+# 2026-09-15 – samme model med ny kodekontrakt er genbrug, ikke en fejl
+
+- `35016734197` beviste, at pointerens actual current kan have samme
+  RavScore-modelbinding som ny kode, mens full-runtime-kontrakten ændres af
+  leverings- eller sikkerhedsscripts.
+- Dette kræver ikke omskrivning af modelmetadata. Alle ni private filer skal
+  kopieres byte-for-byte og bestå aktuel validering; kun kontraktidentiteten
+  må flyttes frem.
+- Same-reference-bevis skal skelne modelmigration fra contract-only og afvise
+  enhver blanding, ukendt filændring eller privat payload.
+- For kode-only er central historisk status bookkeeping efter et hårdt
+  Pages-deploy og offentlig verification. En statusfejl kan stå rødt efter
+  siden er online; artifact, privacy, model/source og latest-main må stadig
+  blokere før deploy. DEC-0163.
+
 # 2026-09-15 – fire auditfelter og faktisk current-forgænger
 
 - `34959875107` beviste 4.0.379 Pages-privacy, privat publicering,

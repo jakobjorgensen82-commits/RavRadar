@@ -613,7 +613,8 @@ try {
   const successorConditions = successorManifest.files.find(file => file.id === 'full-conditions');
   const migrationReport = {
     schemaVersion: 1,
-    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION',
+    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
+    transitionKind: 'MODEL_BINDING_MIGRATION',
     predecessorSourceHead: predecessorDescriptor.sourceHead,
     datasetId: predecessorDescriptor.datasetId,
     sourceBundleContentSha256: predecessorDescriptor.bundleContentSha256,
@@ -647,6 +648,52 @@ try {
     successorManifest,
     migrationReport: { ...migrationReport, measurementsChanged: true },
   }), /successor evidence is invalid/);
+  const contractOnlyPredecessorManifest = clone(successorManifest);
+  contractOnlyPredecessorManifest.contractHashes = Object.fromEntries(
+    Object.keys(successorManifest.contractHashes).map((key, index) => [
+      key,
+      String(index + 6).repeat(64),
+    ]),
+  );
+  contractOnlyPredecessorManifest.bundleContentSha256 = privateRuntimeBundleContentSha256(
+    contractOnlyPredecessorManifest,
+  );
+  const contractOnlyPredecessorDescriptor = {
+    ...successorDescriptor,
+    sourceHead: SOURCE_HEADS[2],
+    contractHashes: contractOnlyPredecessorManifest.contractHashes,
+    bundleContentSha256: contractOnlyPredecessorManifest.bundleContentSha256,
+  };
+  const contractOnlySuccessorDescriptor = {
+    ...successorDescriptor,
+    sourceHead: SOURCE_HEADS[3],
+  };
+  const contractOnlyReport = {
+    ...migrationReport,
+    transitionKind: 'CONTRACT_ONLY_REBIND',
+    predecessorSourceHead: contractOnlyPredecessorDescriptor.sourceHead,
+    sourceBundleContentSha256: contractOnlyPredecessorManifest.bundleContentSha256,
+    previousIntegratedBundleSha256: successorManifest.modelBinding.modelBundleSha256,
+    currentIntegratedBundleSha256: successorManifest.modelBinding.modelBundleSha256,
+    previousCandidateBundleSha256: '7'.repeat(64),
+    currentCandidateBundleSha256: '7'.repeat(64),
+    previousContractHashes: contractOnlyPredecessorManifest.contractHashes,
+    changedBindingFieldCount: 0,
+  };
+  assert.equal(validateSameReferencePrivateRuntimeSuccessor({
+    existingDescriptor: contractOnlyPredecessorDescriptor,
+    successorDescriptor: contractOnlySuccessorDescriptor,
+    predecessorManifest: contractOnlyPredecessorManifest,
+    successorManifest,
+    migrationReport: contractOnlyReport,
+  }), true, 'unchanged private files may be rebound to changed code contracts');
+  assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({
+    existingDescriptor: contractOnlyPredecessorDescriptor,
+    successorDescriptor: contractOnlySuccessorDescriptor,
+    predecessorManifest: contractOnlyPredecessorManifest,
+    successorManifest,
+    migrationReport: { ...contractOnlyReport, changedBindingFieldCount: 1 },
+  }), /contract-only rebind evidence is invalid/);
   const historicalRow = documents.row();
   historicalRow.payload.current = predecessorDescriptor;
   historicalRow.payload.previous = null;

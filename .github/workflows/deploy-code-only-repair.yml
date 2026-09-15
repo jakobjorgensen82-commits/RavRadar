@@ -474,7 +474,7 @@ jobs:
           --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
 
-      - name: Migrate only saved model-binding hashes to current source
+      - name: Rebind saved private runtime to current source without changing measurements
         if: steps.current-private-install.outcome != 'success'
         run: >-
           node scripts/migrate-post-cutover-private-runtime.mjs
@@ -751,6 +751,7 @@ jobs:
 
       - name: Seal historical-to-current integrated maintenance plan when required
         if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        continue-on-error: true
         run: >-
           node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
           --manifest data/live/manifest.json

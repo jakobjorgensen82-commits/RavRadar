@@ -1,3 +1,14 @@
+# 2026-09-15 – 4.0.381 accepterer uændret model og sætter Pages før central status
+
+- 4.0.380 sourcegate `35015984953` og PR #322 gav main `de8ae966`.
+- Providerfri `35016734197` beviste actual-current-restore, men stoppede på
+  fejlagtig antagelse om, at enhver ny kodeversion også ændrer modelhashen.
+- 4.0.381 understøtter byteidentisk contract-only-genbrug og beholder den
+  snævre modelmigration til reelle modelændringer.
+- Kode-only opdaterer central historisk status efter hårdt verificeret Pages,
+  så en senere bookkeepingfejl ikke forhindrer den sikre side i at gå online.
+  DEC-0163.
+
 # 2026-09-15 – 4.0.380 retter audit og gentagen current-migration
 
 - 4.0.379 sourcegate `34959283992` og PR #321 gav main `0cc4a867`.

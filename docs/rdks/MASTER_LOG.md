@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.381 contract-only og Pages først
+
+4.0.380 sourcegate `35015984953`, PR #322 og main `de8ae966` er grønne.
+Providerfri `35016734197` gendannede actual private current, men afviste
+uændret modelbinding mod et nyt kodekontraktstempel.
+
+4.0.381 tillader enten eksakt modelhashmigration eller byteidentisk ni-fils
+contract-only-genbrug. Same-reference-publiceringen kontrollerer begge former
+separat. For kode-only flyttes central historisk begin efter hårdt bestået
+Pages-deploy og offentlig verification, så bookkeepingfejl registreres efter
+en sikker side er online. Målrettede tests grønne; exact-head og produktion
+afventer. DEC-0163.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.380 audit/current
 
 4.0.379 sourcegate `34959283992`, PR #321 og main `0cc4a867` er grønne.

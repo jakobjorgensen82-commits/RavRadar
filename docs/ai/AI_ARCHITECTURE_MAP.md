@@ -1,3 +1,18 @@
+## 2026-09-15 lokal 4.0.381 – contract-only private-runtime-efterfølger og Pages først
+
+- Actual-current kan følge to eksakte veje: modelbundlehashmigration eller
+  byte-for-byte kopi af alle ni private runtimefiler, når modelbindingen er
+  identisk og kun aktuelle kodekontrakter er nye.
+- `migrate-post-cutover-private-runtime.mjs` validerer begge kilder med den
+  arkiverede source og den aktuelle kode. Contract-only skriver ikke
+  `conditions.json` om og rapporterer nul metadataændringer.
+- `protected-private-production-runtime.mjs` kræver særskilt same-reference-
+  evidens for de to overgangstyper; fil-, datasæt-, tids-, model- og
+  kontraktbinding skal fortsat være eksakt.
+- Kode-only historisk central begin ligger efter Pages-deploy og offentlig
+  verification. Artifact/privacy/model/source/latest-main ligger fortsat før
+  deploy og er hårde. DEC-0163.
+
 ## 2026-09-15 lokal 4.0.380 – audit og sekventiel private-runtime-efterfølger
 
 - Integrated public audit har fire currenthistorikfelter. Shared consumeren

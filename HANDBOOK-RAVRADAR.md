@@ -1,6 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.380
+**Håndbogsversion:** 4.0.381
+
+## 88.85 4.0.381 – Uændret model genbruges, og sikker kode går online først
+
+### Aktuel status – RavScore 4.0.381 kode-only-rettelse
+
+**Status for det aktuelle modelarbejde – lokal 4.0.381 samlet, exact-head og deploy afventer**
+
+4.0.380 kom forbi den tidligere auditfejl og fandt den private pakke, der
+faktisk er aktiv. Den blev gendannet og kontrolleret korrekt. Kørselen stoppede
+alligevel, fordi værktøjet forventede, at en ny kodeversion altid havde en ny
+model. I dette tilfælde var modellen allerede den samme; kun nogle kode- og
+sikkerhedsscripts havde fået et nyt digitalt fingeraftryk.
+
+4.0.381 skelner derfor mellem to situationer. Hvis selve modellen er ændret,
+må kun de kendte model-fingeraftryk opdateres. Hvis modellen allerede er den
+samme, kopieres alle ni private runtimefiler helt uændret, og de kontrolleres
+med både den gamle og den nye kode. Vejr, målinger, scorer og gemte
+modeltilstande må ikke ændres i nogen af vejene.
+
+Kode-only-rækkefølgen er også gjort mere praktisk. Hjemmesidepakken skal stadig
+bestå de hårde kontroller for indhold, privatliv, model, kilde og nyeste main.
+Når de er bestået, lægges Pages online og kontrolleres offentligt, før den
+centrale status opdateres. Hvis den efterfølgende statusopdatering fejler, står
+kørslen rødt og fejlen kan rettes, men den sikre hjemmeside er allerede
+forsøgt leveret.
+
+Der hentes stadig intet vejr i denne levering. Først efter den offentlige
+4.0.381 er verificeret, køres en almindelig tidsbegrænset vejrkørsel for at
+bevise faktiske tal, scorer, DMI-rotation og cachevedligeholdelse. Der køres
+ingen oneoff.
 
 ## 88.84 4.0.380 – Audit og kodeopgradering fortsætter fra det rigtige sted
 
@@ -3297,7 +3327,7 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 Den offentlige 4.0.365-runtime blev bygget som én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Den integrerede model er offentlig; 4.0.375 skal føre den gemte private runtime frem uden ny providerhentning, før numeriske scorer og efterfølgende normal vejrhentning kan verificeres.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.380 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.381 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 

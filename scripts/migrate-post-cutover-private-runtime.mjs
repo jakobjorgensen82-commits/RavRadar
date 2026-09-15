@@ -210,7 +210,9 @@ export function migrateExactModelBindingMetadata(
   currentBinding,
   { label = 'Saved runtime model metadata' } = {},
 ) {
-  assertBindingUpgrade(previousBinding, currentBinding, label);
+  assertBindingUpgrade(previousBinding, currentBinding, label, { requireChange: false });
+  const bindingChanged = previousBinding.modelBundleSha256
+    !== currentBinding.modelBundleSha256;
   const changedPaths = [];
   function visit(value, prefix = '') {
     if (Array.isArray(value)) {
@@ -223,8 +225,10 @@ export function migrateExactModelBindingMetadata(
       if (!exactMetadataCarrier(value, previousBinding)) {
         throw new Error(`${label} has an unrecognized or conflicting old bundle hash at ${prefix}`);
       }
-      value.modelBundleSha256 = currentBinding.modelBundleSha256;
-      changedPaths.push(joinedPath(prefix, 'modelBundleSha256'));
+      if (bindingChanged) {
+        value.modelBundleSha256 = currentBinding.modelBundleSha256;
+        changedPaths.push(joinedPath(prefix, 'modelBundleSha256'));
+      }
     }
     for (const [key, child] of Object.entries(value)) {
       if (PRIVATE_STATE_KEYS.has(key)) continue;
@@ -386,7 +390,7 @@ function validateAndMigrateConditions({
     'Predecessor coastal-parts binding');
   assertRavScoreModelBinding(currentIntegratedBinding, 'Current integrated model binding');
   assertBindingUpgrade(source.coastalParts.modelBinding, currentIntegratedBinding,
-    'Integrated model binding');
+    'Integrated model binding', { requireChange: false });
   oldCandidateBinding.assertRavScoreModelBinding(oldCandidateBinding.ravScoreModelBinding(),
     'Predecessor Candidate G binding');
   assertCandidateBinding(currentCandidateBinding, 'Current Candidate G binding');
@@ -446,10 +450,13 @@ function validateAndMigrateConditions({
           !== predecessor.modelBinding.modelBundleSha256) {
         throw new Error('continuation does not carry the predecessor bundle hash');
       }
-      migratedWrapper.currentState.modelBundleSha256 = currentIntegratedBinding.modelBundleSha256;
-      exactAllowedPaths.add(
-        `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
-      );
+      if (predecessorIntegratedBinding.modelBundleSha256
+          !== currentIntegratedBinding.modelBundleSha256) {
+        migratedWrapper.currentState.modelBundleSha256 = currentIntegratedBinding.modelBundleSha256;
+        exactAllowedPaths.add(
+          `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
+        );
+      }
       assertIntegratedCoastalPointContinuation(migratedWrapper.currentState, {
         samplingContextKey: currentIdentity.samplingContextKey,
         label: `Part ${partId} migrated continuation`,
@@ -511,25 +518,37 @@ function validateAndMigrateConditions({
   }
   const [candidateRootName, candidateBindingName] = candidateRoots[0];
   const requiredMetadataPaths = [
-    'coastalParts.modelBinding.modelBundleSha256',
-    'coastalParts.scoreProfile.modelBundleSha256',
-    ...partIds.map(partId =>
-      `coastalParts.parts.${partId}.ravScoreModel.modelBundleSha256`),
-    `${candidateRootName}.sourceModelBinding.modelBundleSha256`,
-    `${candidateRootName}.${candidateBindingName}.modelBundleSha256`,
-    `${candidateRootName}.runtime.modelBinding.modelBundleSha256`,
-    ...(source[candidateRootName]?.runtime?.scoreProfile
-      ? [`${candidateRootName}.runtime.scoreProfile.modelBundleSha256`] : []),
+    ...(predecessorIntegratedBinding.modelBundleSha256
+        !== currentIntegratedBinding.modelBundleSha256 ? [
+          'coastalParts.modelBinding.modelBundleSha256',
+          'coastalParts.scoreProfile.modelBundleSha256',
+          ...partIds.map(partId =>
+            `coastalParts.parts.${partId}.ravScoreModel.modelBundleSha256`),
+        ] : []),
+    ...(predecessorCandidateBinding.modelBundleSha256
+        !== currentCandidateBinding.modelBundleSha256 ? [
+          `${candidateRootName}.sourceModelBinding.modelBundleSha256`,
+          `${candidateRootName}.${candidateBindingName}.modelBundleSha256`,
+          `${candidateRootName}.runtime.modelBinding.modelBundleSha256`,
+          ...(source[candidateRootName]?.runtime?.scoreProfile
+            ? [`${candidateRootName}.runtime.scoreProfile.modelBundleSha256`] : []),
+        ] : []),
   ];
   const missingRequiredMetadata = requiredMetadataPaths
     .filter(pathValue => !exactAllowedPaths.has(pathValue));
   if (missingRequiredMetadata.length) {
     throw new Error(`Private runtime migration missed required model metadata: ${missingRequiredMetadata.join(', ')}`);
   }
-  const staleBundlePaths = collectBundleHashPaths(migrated, new Set([
-    predecessorIntegratedBinding.modelBundleSha256,
-    predecessorCandidateBinding.modelBundleSha256,
-  ]));
+  const staleBundleHashes = new Set();
+  if (predecessorIntegratedBinding.modelBundleSha256
+      !== currentIntegratedBinding.modelBundleSha256) {
+    staleBundleHashes.add(predecessorIntegratedBinding.modelBundleSha256);
+  }
+  if (predecessorCandidateBinding.modelBundleSha256
+      !== currentCandidateBinding.modelBundleSha256) {
+    staleBundleHashes.add(predecessorCandidateBinding.modelBundleSha256);
+  }
+  const staleBundlePaths = collectBundleHashPaths(migrated, staleBundleHashes);
   if (staleBundlePaths.length) {
     throw new Error(`Private runtime migration left old bundle hashes at: ${staleBundlePaths.join(', ')}`);
   }
@@ -545,7 +564,15 @@ function validateAndMigrateConditions({
   if (missingChanges.length || changedPathSet.size !== exactAllowedPaths.size) {
     throw new Error(`Private runtime migration did not change its exact metadata allowlist: ${missingChanges.join(', ')}`);
   }
-  return { migrated, changedPaths, candidateRoot: candidateRootName, partCount: partIds.length };
+  return {
+    migrated,
+    changedPaths,
+    candidateRoot: candidateRootName,
+    partCount: partIds.length,
+    transitionKind: changedPaths.length > 0
+      ? 'MODEL_BINDING_MIGRATION'
+      : 'CONTRACT_ONLY_REBIND',
+  };
 }
 
 export async function migratePostCutoverPrivateRuntime({
@@ -616,10 +643,20 @@ export async function migratePostCutoverPrivateRuntime({
       await fs.mkdir(path.dirname(to), { recursive: true });
       await fs.copyFile(from, to, fs.constants.COPYFILE_EXCL);
     }
-    migratedConditionsDigest = await atomicWriteJson(
-      path.join(temporary, 'data/live/conditions.json'),
-      result.migrated,
-    );
+    if (result.transitionKind === 'MODEL_BINDING_MIGRATION') {
+      migratedConditionsDigest = await atomicWriteJson(
+        path.join(temporary, 'data/live/conditions.json'),
+        result.migrated,
+      );
+    } else {
+      const unchangedConditions = await fs.readFile(
+        path.join(temporary, 'data/live/conditions.json'),
+      );
+      migratedConditionsDigest = {
+        bytes: unchangedConditions.length,
+        sha256: crypto.createHash('sha256').update(unchangedConditions).digest('hex'),
+      };
+    }
     for (const descriptor of PRIVATE_RUNTIME_FILES.filter(item => item.id !== 'full-conditions')) {
       const [before, after] = await Promise.all([
         fs.readFile(path.join(source, descriptor.relativePath)),
@@ -636,7 +673,8 @@ export async function migratePostCutoverPrivateRuntime({
 
   const report = {
     schemaVersion: 1,
-    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION',
+    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
+    transitionKind: result.transitionKind,
     predecessorSourceHead: predecessorIdentity.sourceHead,
     datasetId: predecessorIdentity.datasetId,
     sourceBundleContentSha256: predecessorIdentity.bundleContentSha256,

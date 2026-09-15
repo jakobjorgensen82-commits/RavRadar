@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-15 – 4.0.381 genbruger uændret model og sætter Pages først
+
+4.0.380 bestod sourcegate `35015984953`, blev merged gennem PR #322 som main
+`de8ae966`, og providerfri code-only `35016734197` genbrugte den grønne
+kildekontrol, central tilstand og det allerede anvendte databaseled. Den
+beskrev pointerens faktiske current, gendannede dens private bundle og
+verificerede de ni filer. Ingen vejrprovider kørte.
+
+Stoppet skyldtes, at current og 4.0.380 allerede havde samme modelbinding,
+mens kontraktstemplet var ændret af kode-/sikkerhedsrettelser. Migratoren
+accepterede kun en ændret modelhash og gjorde derfor det korrekte "intet at
+ændre i modellen" til en fejl. 4.0.381 tillader enten den eksisterende snævre
+modelmigration eller byte-for-byte genbrug af alle ni private filer med kun et
+nyt, verificeret kontraktstempel.
+
+Kode-only beholder hårde artifact-, privacy-, model-, kilde- og latest-main-
+krav. Når de er bestået, deployes og verificeres Pages før central historisk
+status opdateres. En efterfølgende statusfejl kan derfor rapporteres rødt uden
+at have forhindret den sikre side i at komme online. Målrettede tests er
+grønne; exact-head, merge og providerfri 4.0.381 mangler. Ingen normal weather
+eller oneoff før offentlig verifikation. DEC-0163.
+
 # NYESTE SANDHED – 2026-09-15 – 4.0.380 retter audit og genoptagelse
 
 4.0.379 bestod sourcegate `34959283992`, blev merged gennem PR #321 som main

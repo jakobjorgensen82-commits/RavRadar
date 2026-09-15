@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.381 contract-only-genbrug og Pages først
+
+- **REQ-4.0.381-PRIVATE-TWO-PATHS-001 – BINDENDE:** Actual-current må enten få kun kendte modelbundlehashfelter migreret eller, ved identisk modelbinding, genbruges med alle ni private filer byte-for-byte.
+- **REQ-4.0.381-CONTRACT-REBIND-001 – BINDENDE:** Contract-only kræver exact current-descriptor, ancestor, manifests, ni-filsinventar, uændrede filer og succesfuld læsning under aktuel kode.
+- **REQ-4.0.381-NO-DATA-CHANGE-001 – BINDENDE:** Contract-only må ikke ændre vejr, målinger, scorer, Candidate G-state eller integreret continuation-state.
+- **REQ-4.0.381-PAGES-FIRST-001 – BINDENDE:** Efter hårdt artifact-, privacy-, model-, source- og latest-main-bevis skal kode-only deploye og verificere Pages før central historisk statusopdatering.
+- **REQ-4.0.381-HONEST-TERMINAL-001 – BINDENDE:** Central statusfejl efter Pages samles og giver rød slutstatus, men må ikke omskrive et sikkert verificeret Pages-deploy som ikke udført.
+- **REQ-4.0.381-NO-REPEAT-001 – AKTIV:** Ingen provider, normal weather eller oneoff før offentlig modelverifikation.
+
+DEC-0163 supplerer DEC-0162.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.380 audit og faktisk current
 
 - **REQ-4.0.380-AUDIT-HISTORY-001 – BINDENDE:** Auditforbrugeren skal kræve fuld, ufuldstændig og utilgængelig currenthistorik; antallene skal tilsammen være præcis 420 og stemme med boolfeltet.

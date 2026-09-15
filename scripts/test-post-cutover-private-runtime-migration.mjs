@@ -35,6 +35,19 @@ assert.doesNotThrow(() => assertBindingUpgrade(previous, current, 'fixture'));
 assert.throws(() => assertBindingUpgrade(previous, { ...current, modelId: 'changed' }, 'fixture'),
   /more than the implementation bundle hash/);
 assert.throws(() => assertBindingUpgrade(previous, previous, 'fixture'), /does not require migration/);
+const unchangedBindingCarrier = { modelBinding: { ...current } };
+const unchangedBindingCarrierBefore = structuredClone(unchangedBindingCarrier);
+assert.deepEqual(
+  migrateExactModelBindingMetadata(
+    unchangedBindingCarrier,
+    current,
+    current,
+    { label: 'Unchanged current binding fixture' },
+  ),
+  [],
+  'An unchanged model binding must be a valid contract-only rebind with no metadata edits',
+);
+assert.deepEqual(unchangedBindingCarrier, unchangedBindingCarrierBefore);
 
 const protectedManifest = {
   datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
@@ -235,6 +248,8 @@ for (const marker of [
   'measurementsChanged: false',
   'candidateStatesChanged: false',
   'privatePayloadIncluded: false',
+  "transitionKind: result.transitionKind",
+  "'CONTRACT_ONLY_REBIND'",
   'migratedConditionsBytes:',
   'migratedConditionsSha256:',
   'Private runtime inventory is not the exact nine-file allowlist',
@@ -244,4 +259,4 @@ for (const marker of [
 
 assert.doesNotMatch(source, /Archived-source contract hashes mismatch/);
 
-console.log('Post-cutover private runtime migration: exact current predecessor, binding-only changes, nine-file allowlist and payload-free report.');
+console.log('Post-cutover private runtime rebind: exact current predecessor, model migration or byte-exact contract-only reuse, nine-file allowlist and payload-free report.');

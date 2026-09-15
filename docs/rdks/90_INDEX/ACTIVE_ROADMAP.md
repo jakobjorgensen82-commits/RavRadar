@@ -1,3 +1,17 @@
+# Aktiv roadmap – 4.0.381 fra contract-only-stop til offentlig model
+
+1. [x] Bevar 4.0.380's grønne exact-head, central-/databaseled og dynamiske actual-current-restore.
+2. [x] Afgræns stoppet til uændret modelbinding mod ændret runtimekontrakt.
+3. [x] Implementér og måltest byteidentisk contract-only-genbrug samt fortsat snæver modelmigration.
+4. [x] Flyt kode-only central bookkeeping efter hårdt bestået Pages-deploy og offentlig verification.
+5. [x] Synkronisér docs/håndbog og bevis, at geodata kun ændrer topversion.
+6. [ ] Commit/push og bestå én exact-head sourcegate.
+7. [ ] Merge og kør providerfri code-only til levende, verificeret 4.0.381; afslut eller registrér central statusfejl bagefter.
+8. [ ] Verificér modelbinding, 210/673/118, begge søgemåder, Om RavRadar og privacy.
+9. [ ] Først derefter normal tidsbegrænset weather: numeriske input/scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0163 er aktiv.
+
 # Aktiv roadmap – 4.0.380 fra planstop til offentlig model
 
 1. [x] Bevar de grønne 4.0.379-led og afgræns planstoppet til shared auditforbruger.

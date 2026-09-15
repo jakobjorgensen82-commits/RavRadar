@@ -105,6 +105,7 @@ for (const marker of [
   'test "${{ steps.source-proof.outputs.required }}" = "false"',
   'prepare-code-only-public-runtime.mjs',
   'migrate-post-cutover-private-runtime.mjs',
+  'Rebind saved private runtime to current source without changing measurements',
   'recover-missed-initial-cutover',
   'ravscore-operational-recovery-34877443841-1',
   'Freshly verify the exact historical integrated artifact is still public',
@@ -217,7 +218,19 @@ for (const marker of [
   'if: always() && !cancelled()',
   'steps.integrated-historical-maintenance-complete.outcome',
   'steps.failure-reconciliation.outcome',
+  'Begin code-only integrated maintenance after verified Pages deployment',
+  "inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance' && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
 ]) assert.ok(pagesWorkflow.includes(marker), `Pages code-only-kontrakt mangler ${marker}`);
+const preDeployHistoricalBegin = pagesWorkflow.indexOf(
+  '- name: Begin historical-to-current integrated maintenance with exact central CAS',
+);
+const pagesDeploy = pagesWorkflow.indexOf('- name: Deploy to GitHub Pages');
+const codeOnlyHistoricalBegin = pagesWorkflow.indexOf(
+  '- name: Begin code-only integrated maintenance after verified Pages deployment',
+);
+assert.ok(preDeployHistoricalBegin >= 0 && preDeployHistoricalBegin < pagesDeploy);
+assert.ok(codeOnlyHistoricalBegin > pagesDeploy,
+  'Code-only central bookkeeping must start only after the safe Pages attempt');
 const deploymentTerminalStart = pagesWorkflow.indexOf(
   '- name: Seal exact verified deployment terminal',
 );
