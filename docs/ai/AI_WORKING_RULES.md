@@ -1,5 +1,18 @@
 # AI Working Rules – RavRadar
 
+## Aktuel 4.0.383 public-source-reparationsregel
+
+- Skeln altid den allerede offentlige kilde fra det nye deploymål. En kendt
+  defekt source kan kun bruges gennem en versionsstyret politik med alle
+  eksakte identiteter, hashes og præcis dokumenteret mangel.
+- Kald aldrig en reparationskilde `passed`; status er `repairable-source`.
+  Enhver ekstra 404, ændret hash, ukendt deployment eller privat læsning
+  stopper.
+- Send aldrig source-repair-flag til targetverification. Nyt target skal
+  bestå hele den normale closure, privacy, model, source og latest-main.
+- Brug den faktisk observerede offentlige deployment som source gennem plan,
+  handoff og maintenance; central historik må ikke opfinde en anden kilde.
+
 ## Aktuel 4.0.382 Pages-closure-regel
 
 - En fil må ikke kaldes offentlig ubrugt, før alle HTML-entrypoints og deres

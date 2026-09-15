@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.382 byggede 79/79, men central source var ikke den offentlige
+
+- 4.0.382 sourcegate `35024395809` og PR #324 gav main `a7f0fcba`.
+- Providerfri `35025121452`, forsøg 3, byggede og privacy-godkendte 79/79, men nåede ikke Pages-deploy.
+- Central pointer pegede på `pages-34877443841-1`; live var 4.0.381 fra `pages-35020915350-1` med den kendte ene 404.
+- 4.0.383 tilføjer en eksakt source-reparation for kun denne tilstand. Nyt target forbliver strengt 79/79. DEC-0165.
+
 # 2026-09-15 – 4.0.381 går online; 4.0.382 retter én admin-404
 
 - 4.0.381 sourcegate `35019932207` og PR #323 gav main `d84773a7`.

@@ -1,4 +1,24 @@
-# NYESTE CHECKPOINT – 2026-09-15 – 4.0.382 retter levende adminclosure
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.383 eksakt public-source-reparation
+
+4.0.382 er merged som main `a7f0fcba` efter sourcegate `35024395809`/PR
+#324. Providerfri `35025121452`, forsøg 3, byggede et grønt 79/79-artifact,
+men deployede ikke. Central pointer står på `pages-34877443841-1`; levende
+4.0.381 er `pages-35020915350-1` og har den kendte ene admin-404.
+
+Branch `codex/4.0.383-public-source-repair` genkender kun denne eksakte
+78/79-kilde som `repairable-source` og fører dens faktiske deployment-id
+gennem handoff/maintenance. Ukendt drift stopper; 4.0.383-målet skal fortsat
+bestå 79/79 uden reparationsflag. Måltests og live sourceproof er grønne.
+Fortsæt docs/geodatabevis, slutkontrol, commit/push, én exact-head, merge og
+providerfri code-only. Derefter normal tidsbegrænset weather. Ingen oneoff.
+DEC-0165. Sol/Ekstra høj.
+
+Første PR-run `35032447763` bestod produktkontrollerne, men metatesten
+afviste 25 direkte sourcekommandoer. Resolverregressionen er nu flyttet ind i
+den eksisterende code-only-test; både den og gateplanens 24-kommando-loft er
+grønne. Commit/push og ny exact-head mangler.
+
+# HISTORISK CHECKPOINT – 2026-09-15 – 4.0.382 retter levende adminclosure
 
 4.0.381 er deployet fra main `d84773a7` i providerfri `35020915350` efter
 sourcegate `35019932207`/PR #323. Private contract-only, Edge og Pages bestod.

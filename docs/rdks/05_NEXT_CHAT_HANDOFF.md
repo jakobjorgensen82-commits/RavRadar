@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.382 efter levende admin-404
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.383 eksakt public-source-reparation
+
+4.0.382 bestod sourcegate `35024395809`, PR #324 og main `a7f0fcba`.
+Providerfri `35025121452`, forsøg 3, byggede et komplet og privacy-godkendt
+79/79-targetartifact, men deployede det ikke. Central pointer peger på
+`pages-34877443841-1`, mens faktisk offentlig 4.0.381 er
+`pages-35020915350-1` med den kendte ene admin-404.
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.383-public-source-repair`. Den eneste repairable source er
+fastlåst til alle kendte run-, head-, artifact-, manifest-, binding- og
+closureidentiteter. Den skal give 78/79 med præcis den ene kendte 404. Ukendt
+drift stopper. Nyt 4.0.383-target skal bestå normal 79/79 uden repairflag.
+Fortsæt måltest/geodatabevis, commit/push, én exact-head, merge og providerfri
+code-only. Derefter normal tidsbegrænset weather. Ingen oneoff. DEC-0165.
+Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-15 – lokal 4.0.382 efter levende admin-404
 
 4.0.381 bestod sourcegate `35019932207`, PR #323 og main `d84773a7`.
 Providerfri `35020915350` bestod contract-only-genbinding, privat publicering,

@@ -1,6 +1,6 @@
 # DEC-0164 – Den færdige Pages-pakke skal indeholde hele browserclosure
 
-**Status:** Aktiv; implementeret lokalt i 4.0.382, livebevis afventer
+**Status:** Aktiv; implementeret og bygget 79/79 i 4.0.382, offentlig levering fortsætter i 4.0.383
 **Dato:** 2026-09-15
 
 ## Evidens
@@ -39,3 +39,11 @@ men adminclosure er defekt, central maintenance-completion blev ikke kørt, og
 alle 210 zoner er fortsat lokalt utilgængelige for score. 4.0.382 leveres
 providerfrit først. Derefter følger én normal tidsbegrænset weather-kørsel for
 numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+## Efterfølgende evidens
+
+4.0.382 bestod sourcegate, merge, providerfri build, privacy og 79/79 i
+`35025121452`, forsøg 3. Pakken blev ikke deployet, fordi central pointer og
+den faktiske offentlige source var forskellige. DEC-0165 fortsætter
+leveringen gennem en eksakt source-reparation; dette ændrer ikke DEC-0164's
+strenge 79/79-krav til det nye mål.

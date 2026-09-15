@@ -1,4 +1,17 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.382 lukker adminclosure
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.383 reparerer den faktiske public source
+
+4.0.382 er main `a7f0fcba` efter sourcegate `35024395809` og PR #324.
+Providerfri `35025121452`, forsøg 3, gennemførte build, privacy og komplet
+79/79-targetartifact. Det stoppede før Pages, fordi central pointer stadig
+beskriver en ældre deployment end den faktiske offentlige 4.0.381.
+
+4.0.383 låser den eneste kendte reparationskilde til samtlige relevante
+identiteter og hashes. Den kræver 78 korrekte filer og netop den kendte 404,
+bruger faktisk offentlig source-id gennem maintenance og afviser al anden
+drift. Målpakken skal fortsat bestå normal 79/79 før og efter deploy. Ingen
+provider eller oneoff indgår. DEC-0165.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.382 lukker adminclosure
 
 4.0.381 sourcegate `35019932207`, PR #323 og main `d84773a7` er grønne.
 Providerfri `35020915350` bestod contract-only-genbinding, private/Edge-led og

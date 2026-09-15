@@ -77,6 +77,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'integrated_implementation_closure_sha256',
       'legacy_source_required',
       'operational_action',
+      'source_repair_id',
     ]),
     secrets: freezeList([
       'SUPABASE_SERVICE_ROLE_KEY',

@@ -2175,6 +2175,7 @@ jobs:
       integrated_implementation_closure_sha256: ${{ needs.build-and-prepare.outputs.integrated_implementation_closure_sha256 }}
       legacy_source_required: ${{ needs.build-and-prepare.outputs.legacy_source_required || 'true' }}
       operational_action: ${{ needs.build-and-prepare.outputs.operational_action || 'integrated-cutover' }}
+      source_repair_id: ''
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

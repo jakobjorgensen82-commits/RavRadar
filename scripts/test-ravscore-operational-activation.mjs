@@ -779,6 +779,44 @@ const historicalWarmupBegin = operationalIntegratedHistoricalMaintenanceTransiti
   sourceVerification: historicalIntegratedSourceVerification,
   deploymentId: 'run-historical-integrated-h1-warmup',
 });
+const observedAheadSource = manifest(oldIntegratedBinding,
+  'rr-20260829124000-210', '2026-08-29T12:40:00.000Z');
+const observedAheadVerification = verification(
+  'integrated',
+  oldIntegratedBinding,
+  observedAheadSource,
+);
+const publicAheadBegin = operationalIntegratedHistoricalMaintenanceTransition({
+  action: 'integrated-historical-maintenance-begin',
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 40,
+  plan: historicalIntegratedWarmupPlan,
+  readiness,
+  publicManifest: integratedH3,
+  publicAudit: integratedWarmupAudit,
+  sourceManifest: observedAheadSource,
+  sourceVerification: observedAheadVerification,
+  observedSourceDeploymentId: 'pages-456-1',
+  deploymentId: 'pages-789-1',
+});
+assert.equal(publicAheadBegin.document.sourceDeploymentId, 'pages-456-1',
+  'a fully verified same-binding public source ahead of central must remain recoverable');
+assert.equal(publicAheadBegin.document.sourcePublicManifestSha256,
+  sha256(observedAheadSource));
+assert.throws(() => operationalIntegratedHistoricalMaintenanceTransition({
+  action: 'integrated-historical-maintenance-begin',
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 40,
+  plan: historicalIntegratedWarmupPlan,
+  readiness,
+  publicManifest: integratedH3,
+  publicAudit: integratedWarmupAudit,
+  sourceManifest: observedAheadSource,
+  sourceVerification: observedAheadVerification,
+  deploymentId: 'pages-789-1',
+}), /lacks the observed public source deployment/);
 const historicalWarmupComplete = operationalIntegratedHistoricalMaintenanceTransition({
   action: 'integrated-historical-maintenance-complete',
   currentRow: Object.freeze({ version: 41, payload: historicalWarmupBegin.document }),

@@ -24,6 +24,9 @@ on:
       operational_action:
         required: true
         type: string
+      source_repair_id:
+        required: true
+        type: string
     secrets:
       SUPABASE_SERVICE_ROLE_KEY:
         required: true
@@ -103,6 +106,11 @@ jobs:
           test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.legacy_source_required }}"
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
           test "$(jq -r '.codeOnlyRepair // false' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.code_only_repair }}"
+          test "$(jq -r '.sourceRepairId // ""' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.source_repair_id }}"
+          if [ -n "${{ inputs.source_repair_id }}" ]; then
+            test "${{ inputs.code_only_repair }}" = "true"
+            test "${{ inputs.operational_action }}" = "integrated-historical-maintenance"
+          fi
           if [ "${{ inputs.code_only_repair }}" = "true" ]; then
             test -f "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json"
             test "$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" | awk '{print $1}')" = "$(jq -er '.codeOnlyReuseReportSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")"
@@ -203,8 +211,13 @@ jobs:
           test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "$expected_schema"
           test "$(jq -r '.complete' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "true"
           source_digest="$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" | cut -d' ' -f1)"
-          printf 'public-source-%s\n' "${source_digest:0:24}" \
-            > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+          if [ -n "${{ inputs.source_repair_id }}" ]; then
+            printf '%s\n' "${{ inputs.active_deployment_id }}" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+          else
+            printf 'public-source-%s\n' "${source_digest:0:24}" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+          fi
 
       - name: Restore the exact sealed active source implementation
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
@@ -267,6 +280,32 @@ jobs:
               ;;
             *) exit 1 ;;
           esac
+          repair_args=()
+          if [ -n "${{ inputs.source_repair_id }}" ]; then
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as policy } from './scripts/lib/ravscore-known-public-source-repair.mjs';
+          const root = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const seal = JSON.parse(fs.readFileSync(`${root}/source-seal/pages-artifact-seal.json`, 'utf8'));
+          if (process.env.SOURCE_REPAIR_ID !== policy.id
+            || process.env.ACTIVE_DEPLOYMENT_ID !== policy.sourceDeploymentId
+            || sha256CanonicalJson(seal) !== policy.sourceArtifactSealSha256
+            || seal.runId !== policy.sourceRunId
+            || seal.runAttempt !== policy.sourceRunAttempt
+            || seal.headSha !== policy.sourceHead
+            || seal.attemptId !== policy.sourceDeploymentId
+            || seal.artifactId !== policy.sourceArtifactId
+            || seal.artifactDigestSha256 !== policy.sourceArtifactDigestSha256
+            || seal.targetPublicManifestSha256 !== policy.sourcePublicManifestSha256
+            || seal.targetImplementationClosureSha256
+              !== policy.sourceImplementationClosureSha256
+            || seal.privatePayloadIncluded !== false) {
+            throw new Error('Known public source repair artifact seal is not exact');
+          }
+          NODE
+            repair_args=(--known-source-repair-id "${{ inputs.source_repair_id }}")
+          fi
           node scripts/verify-ravscore-operational-pages-deployment.mjs \
             --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
             --source-head "$GITHUB_SHA" \
@@ -277,7 +316,11 @@ jobs:
             --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-bundle.generated.js" \
             --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-public-closure.json" \
             --observation-nonce "source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            "${repair_args[@]}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+        env:
+          SOURCE_REPAIR_ID: ${{ inputs.source_repair_id }}
+          ACTIVE_DEPLOYMENT_ID: ${{ inputs.active_deployment_id }}
 
       - name: Upload privacy-safe source evidence before any activation CAS
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
@@ -475,6 +518,7 @@ jobs:
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
           --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
           --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:

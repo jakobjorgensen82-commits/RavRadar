@@ -27,9 +27,13 @@ import {
   computeRavScorePublicBrowserClosure,
   ravScorePublicEntrypointDescriptor,
 } from './lib/ravscore-public-browser-closure.mjs';
+import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
+  './lib/ravscore-known-public-source-repair.mjs';
 
 export const RAVSCORE_OPERATIONAL_PAGES_VERIFICATION_SCHEMA =
   'ravscore-operational-pages-verification-v1';
+export const RAVSCORE_OPERATIONAL_SOURCE_REPAIR_VERIFICATION_SCHEMA =
+  'ravscore-operational-source-repair-verification-v1';
 export const RAVSCORE_SEALED_PUBLIC_IMPLEMENTATION_SCHEMA =
   'ravscore-sealed-public-implementation-v1';
 
@@ -301,6 +305,7 @@ async function verifyPublicImplementationClosure({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  knownSourceRepair = null,
 }) {
   const sealedIdentity = computeSealedPublicImplementationClosureIdentity({
     expectedModel,
@@ -332,18 +337,45 @@ async function verifyPublicImplementationClosure({
       throw new Error(`Deployed public HTML entrypoint differs from the sealed browser closure: ${expectedHtml.path}`);
     }
   }
+  const missingPublicFiles = [];
   for (const item of expectedPublicClosure.files) {
-    const bytes = await fetchBytes(fetchImpl,
-      withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path);
+    let bytes;
+    try {
+      bytes = await fetchBytes(fetchImpl,
+        withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path);
+    } catch (error) {
+      const allowed = knownSourceRepair?.knownMissingPublicFile;
+      if (!allowed || item.path !== allowed.path || item.sha256 !== allowed.sha256
+        || error?.message !== `${item.path} returned HTTP ${allowed.expectedHttpStatus}`) {
+        throw error;
+      }
+      missingPublicFiles.push(Object.freeze({
+        path: item.path,
+        sha256: item.sha256,
+        httpStatus: allowed.expectedHttpStatus,
+      }));
+      continue;
+    }
     if (sha256(normalizedBundleSource(bytes.toString('utf8'))) !== item.sha256) {
       throw new Error(`Deployed public browser implementation closure drifted: ${item.path}`);
     }
+  }
+  if (knownSourceRepair !== null
+    && (expectedPublicClosure.files.length !== knownSourceRepair.expectedPublicFileCount
+      || missingPublicFiles.length !== 1
+      || missingPublicFiles[0].path !== knownSourceRepair.knownMissingPublicFile.path)) {
+    throw new Error('Known public source repair does not have its one exact missing browser file');
   }
   if (sha256(contractBytes) !== sealedIdentity.contractFileSha256
     || sha256(bundleBytes) !== sealedIdentity.generatedBundleFileSha256) {
     throw new Error('Deployed public implementation byte identity differs from the sealed target');
   }
-  return sealedIdentity.implementationClosureSha256;
+  return Object.freeze({
+    implementationClosureSha256: sealedIdentity.implementationClosureSha256,
+    missingPublicFiles: Object.freeze(missingPublicFiles),
+    verifiedPublicFileCount: expectedPublicClosure.files.length - missingPublicFiles.length,
+    expectedPublicFileCount: expectedPublicClosure.files.length,
+  });
 }
 
 function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneRegistry }, mode,
@@ -439,6 +471,7 @@ async function verifyOnce({
   expectedPublicClosure,
   observationNonce,
   fetchImpl,
+  knownSourceRepair = null,
 } = {}) {
   const manifestBytes = await fetchBytes(fetchImpl,
     withCacheBuster(baseUrl, 'data/live/manifest.json', sourceHead, observationNonce),
@@ -482,7 +515,7 @@ async function verifyOnce({
     zoneRegistry: parsed['data/zones.geojson'],
   }, expectedModel, expectedBinding);
 
-  const implementationClosureSha256 = await verifyPublicImplementationClosure({
+  const closureVerification = await verifyPublicImplementationClosure({
     baseUrl,
     sourceHead,
     expectedModel,
@@ -492,7 +525,35 @@ async function verifyOnce({
     expectedPublicClosure,
     observationNonce,
     fetchImpl,
+    knownSourceRepair,
   });
+  const implementationClosureSha256 = closureVerification.implementationClosureSha256;
+  if (knownSourceRepair !== null) {
+    if (implementationClosureSha256
+      !== knownSourceRepair.sourceImplementationClosureSha256) {
+      throw new Error('Known public source repair implementation closure is not exact');
+    }
+    return Object.freeze({
+      schemaVersion: RAVSCORE_OPERATIONAL_SOURCE_REPAIR_VERIFICATION_SCHEMA,
+      status: 'repairable-source',
+      sourceHead,
+      sourceDeploymentHead: knownSourceRepair.sourceHead,
+      sourceDeploymentId: knownSourceRepair.sourceDeploymentId,
+      repairId: knownSourceRepair.id,
+      datasetId: manifest.datasetId,
+      productionReferenceAt: manifest.productionReferenceAt,
+      model: expectedModel,
+      modelBinding: structuredClone(expectedBinding),
+      implementationClosureSha256,
+      publicManifestSha256: sha256(JSON.stringify(canonical(manifest))),
+      missingPublicFiles: closureVerification.missingPublicFiles,
+      verifiedPublicFileCount: closureVerification.verifiedPublicFileCount,
+      expectedPublicFileCount: closureVerification.expectedPublicFileCount,
+      zoneCount: manifest.zoneCount,
+      coastalPartCount: manifest.coastalPartCount,
+      privatePayloadRead: false,
+    });
+  }
   return Object.freeze({
     schemaVersion: RAVSCORE_OPERATIONAL_PAGES_VERIFICATION_SCHEMA,
     status: 'passed',
@@ -522,6 +583,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
   fetchImpl = globalThis.fetch,
   attempts = 12,
   retryDelayMs = 5_000,
+  knownSourceRepairId = null,
 } = {}) {
   const sealedBinding = expectedBinding ?? MODEL_MODES[expectedModel]?.binding();
   if (!MODEL_MODES[expectedModel]
@@ -540,6 +602,19 @@ export async function verifyRavScoreOperationalPagesDeployment({
     'Operational Pages expected sealed model binding');
   const sealedPublicClosure = expectedPublicClosure
     ?? (await computeRavScorePublicBrowserClosure()).manifest;
+  const knownSourceRepair = knownSourceRepairId === null
+    ? null
+    : knownSourceRepairId === SOURCE_REPAIR.id ? SOURCE_REPAIR : undefined;
+  if (knownSourceRepairId !== null && (!knownSourceRepair
+    || expectedModel !== 'integrated'
+    || sha256(JSON.stringify(canonical(expectedManifest)))
+      !== knownSourceRepair.sourcePublicManifestSha256
+    || sha256(JSON.stringify(canonical(sealedBinding)))
+      !== knownSourceRepair.sourceModelBindingSha256
+    || sha256(JSON.stringify(canonical(sealedPublicClosure)))
+      !== knownSourceRepair.sourcePublicClosureSha256)) {
+    throw new Error('Operational Pages source repair does not match its exact pinned source');
+  }
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -554,6 +629,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
         expectedPublicClosure: sealedPublicClosure,
         observationNonce: `${observationNonce}-${attempt}`,
         fetchImpl,
+        knownSourceRepair,
       });
     } catch (error) {
       lastError = error;
@@ -618,6 +694,8 @@ async function main() {
     expectedBundleText,
     expectedPublicClosure,
     observationNonce: argumentValue(argv, '--observation-nonce'),
+    knownSourceRepairId: argv.includes('--known-source-repair-id')
+      ? argumentValue(argv, '--known-source-repair-id') : null,
   });
   await atomicWriteJson(argumentValue(argv, '--output'), result);
   console.log(`Operational Pages verified: ${result.model}, ${result.zoneCount}/${result.coastalPartCount}, private payload read: false.`);
