@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import {buildSupabaseAdminHeaders,createSupabaseAdminRequester,isRetryableStatementTimeout,isRetryableTranslatedSecretAuthError} from './lib/supabase-admin-rest.mjs';
+import {buildSupabaseAdminHeaders,createSupabaseAdminRequester,isRetryableStatementTimeout,isRetryableTransientRead,isRetryableTranslatedSecretAuthError} from './lib/supabase-admin-rest.mjs';
 
 const secret='sb_secret_test-value';
 const secretHeaders=buildSupabaseAdminHeaders(secret);
@@ -13,6 +13,8 @@ assert.equal(isRetryableTranslatedSecretAuthError({key:secret,status:401,body:JS
 assert.equal(isRetryableStatementTimeout({status:500,body:JSON.stringify({code:'57014'})}),true);
 assert.equal(isRetryableStatementTimeout({status:500,body:JSON.stringify({code:'42P01'})}),false);
 assert.equal(isRetryableStatementTimeout({status:503,body:JSON.stringify({code:'57014'})}),false);
+assert.equal(isRetryableTransientRead({method:'GET',status:502}),true);
+assert.equal(isRetryableTransientRead({method:'POST',status:502}),false);
 
 let calls=0;
 const recoveredRequest=createSupabaseAdminRequester({
@@ -39,6 +41,30 @@ const recoveredTimeoutRequest=createSupabaseAdminRequester({
 assert.equal(await recoveredTimeoutRequest('?on_conflict=document_key',{method:'POST'},'skriv runtime-diagnostics'),null);
 assert.equal(timeoutCalls,2,'57014 skal genprøves præcis én gang');
 assert.match(timeoutLogs[0],/statement-timeout 57014.*genprøver én gang/);
+
+let transientReadCalls=0;
+const transientReadRequest=createSupabaseAdminRequester({
+  endpoint:'https://example.invalid/rest/v1/admin_documents',key:secret,retryDelayMs:0,delayImpl:async()=>{},logger:()=>{},
+  fetchImpl:async()=>{
+    transientReadCalls+=1;
+    if(transientReadCalls===1)return new Response('',{status:502});
+    return new Response(JSON.stringify([{document_key:'ravscore-operational-activation'}]),{status:200});
+  }
+});
+assert.equal((await transientReadRequest('',{},'læs operation')).length,1);
+assert.equal(transientReadCalls,2,'midlertidig 502 på en læsning skal genprøves én gang');
+
+let networkReadCalls=0;
+const networkReadRequest=createSupabaseAdminRequester({
+  endpoint:'https://example.invalid/rest/v1/admin_documents',key:secret,retryDelayMs:0,delayImpl:async()=>{},logger:()=>{},
+  fetchImpl:async()=>{
+    networkReadCalls+=1;
+    if(networkReadCalls===1)throw new Error('temporary connection reset');
+    return new Response('[]',{status:200});
+  }
+});
+assert.deepEqual(await networkReadRequest('',{},'læs operation'),[]);
+assert.equal(networkReadCalls,2,'midlertidig netværksfejl på en læsning skal genprøves én gang');
 
 let rejectedCalls=0;
 const rejectedRequest=createSupabaseAdminRequester({

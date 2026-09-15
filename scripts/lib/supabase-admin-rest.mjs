@@ -27,6 +27,11 @@ export function isRetryableStatementTimeout({status,body}){
   return status===500&&parseJson(body)?.code==='57014';
 }
 
+export function isRetryableTransientRead({method,status}){
+  return ['GET','HEAD'].includes(String(method||'GET').toUpperCase())
+    && [429,502,503,504].includes(Number(status));
+}
+
 export function createSupabaseAdminRequester({
   endpoint,
   key,
@@ -46,6 +51,11 @@ export function createSupabaseAdminRequester({
       try{
         response=await fetchImpl(endpoint+suffix,{...options,headers:{...baseHeaders,...options.headers}});
       }catch(error){
+        if(attempt===1&&['GET','HEAD'].includes(String(method).toUpperCase())){
+          logger(`Supabase ${operation} (${method}) fik en midlertidig netværksfejl; genprøver én gang efter ${retryDelayMs} ms`);
+          await delayImpl(retryDelayMs);
+          continue;
+        }
         throw new Error(`Supabase ${operation} (${method}) kunne ikke nås: ${compact(error?.message||error)}`);
       }
       const body=await response.text();
@@ -60,9 +70,10 @@ export function createSupabaseAdminRequester({
       const code=parsed?.code||null;
       const translatedSecretAuth=isRetryableTranslatedSecretAuthError({key,status:response.status,body});
       const statementTimeout=isRetryableStatementTimeout({status:response.status,body});
-      const retryable=attempt===1&&(translatedSecretAuth||statementTimeout);
+      const transientRead=isRetryableTransientRead({method,status:response.status});
+      const retryable=attempt===1&&(translatedSecretAuth||statementTimeout||transientRead);
       if(retryable){
-        const reason=translatedSecretAuth?'PGRST303':'statement-timeout 57014';
+        const reason=translatedSecretAuth?'PGRST303':statementTimeout?'statement-timeout 57014':`HTTP ${response.status}`;
         logger(`Supabase ${operation} (${method}) fik ${reason}; genprøver én gang efter ${retryDelayMs} ms`);
         await delayImpl(retryDelayMs);
         continue;

@@ -1,3 +1,27 @@
+# Aktiv roadmap – 4.0.378 fra samlet rettelse til levende model
+
+1. [x] Afslut Astra-review og implementér A–G samlet på Sol/Ekstra høj.
+2. [x] Bestå den målrettede samlede lokale kontrol uden fuld lokal sourcegate.
+3. [ ] Synkronisér dokumentation/geodatabevis, commit/push og bestå én exact-head GitHub-sourcegate.
+4. [ ] Merge samme head og kør providerfri code-only med eksakt assistent, privat runtime, Pages og central completion.
+5. [ ] Verificér levende 4.0.378, 210/673/118, modelbinding, begge søgemåder, Om RavRadar og privacy.
+6. [ ] Kør først derefter normal tidsbegrænset weather; bevis numeriske input/scorer, fuld DMI-rotation og cachevedligeholdelse uden oneoff.
+7. [ ] Gennemgå siden og revurdér resterende roadmap. Prioritér fælles PENDING-recovery og holdbart kildebevis som afgrænsede robusthedsopgaver.
+
+DEC-0159 og DEC-0160 er aktive. Ingen provider eller oneoff før code-only er
+offentligt verificeret.
+
+# Aktiv roadmap – 4.0.378 fra historisk binding til fuld offentlig model
+
+1. **P0:** Færdiggør 4.0.378, én exact-head PR-sourcegate og merge samme head.
+2. **P0:** Kør providerfri code-only og genbrug central version 1, migration 16/17, forgængerruntime og kanonisk DMI-cache.
+3. **P0:** Publicér eksakt attesteret samme-tids-efterfølger med historisk rollback, Pages og central completion.
+4. **P0:** Verificér central binding/version, live 4.0.378, 210/673/118, begge søgemåder og Om RavRadar.
+5. **P0 efter deploy:** Normal tidsbegrænset weather; bevis numeriske input/scorer, fuld DMI-rotation og cachevedligeholdelse uden oneoff.
+6. **P1:** Helhedsreview af live-site og resterende roadmap i samlede, meningsfulde batches.
+
+DEC-0148–0159 er aktive.
+
 # Aktiv roadmap – 4.0.377 fra installeret cache til fuld offentlig model
 
 1. **P0:** Færdiggør 4.0.377, én exact-head PR-sourcegate og merge samme head.

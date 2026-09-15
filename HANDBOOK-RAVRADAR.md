@@ -1,6 +1,49 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.377
+**Håndbogsversion:** 4.0.378
+
+## 88.82 4.0.378 – Robust kodelevering og historisk rollback
+
+**Status efter samlet gennemgang 15. september:** Rettelserne er samlet
+implementeret lokalt, men endnu ikke leveret. Ingen ny installation,
+vejrkørsel eller oneoff er startet. En fuld liste over zoner er fortsat ikke
+bevis for komplette vejrdata eller fungerende scorer. Se
+`docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`.
+
+4.0.377 fandt den gemte DMI-cache og byggede både hjemmesidens data og den
+private bundle. Publiceringen stoppede dog, fordi den gamle gemte runtime blev
+krævet at have den nye models digitale fingeraftryk, før overgangen måtte
+kontrolleres. En forgænger har naturligvis det gamle fingeraftryk.
+
+4.0.378 skelner derfor mellem rollerne. Normalt skal den aktive private runtime
+matche den aktuelle model præcist. Under den ene dokumenterede overgang må den
+gamle aktive runtime kun accepteres, når den passer præcist med det forseglede
+forgængermanifest. Efter publiceringen bliver den nye runtime aktiv, mens den
+gamle bevares som historisk rollback.
+
+Rollbackens binding kontrolleres fortsat for præcis form og gyldige hashes, og
+dens filer må først bruges efter kontrol mod den konkrete forventning og den
+lagrede bundle. Samme vejrtid er tilladt mellem de to, fordi vejret er uændret;
+den strenge migrationskontrol skal stadig bevise, at kun modelmetadata er
+ændret. En ældre vejrtid må fortsat ikke blive ny current.
+
+Den direkte kodelevering installerer nu kun den eksakte RavRadar-assistent og
+kontrollerer den før offentlig readiness. Privat specifikation, privat bundle,
+Pages-pakke og privacy køres alle før nogen produktionwrite og rapporteres
+samlet. Fejl kan dermed ses i samme gennemløb, uden at et halvt artifact bliver
+publiceret.
+
+Rene versionsnumre gør ikke længere en uændret privat vejr-cache inkompatibel,
+og en ny kodecommit omskriver ikke pointeren, når alle data, kontrakter, model
+og tider er identiske. Hvis et Supabase-svar forsvinder efter gemt write, læses
+den præcise version og indholdshash tilbage; writet gentages ikke blindt.
+Kortvarige sikre fejl prøves én gang mere. Et gammelt, udløbet current kan føre
+til en ærlig målt koldstart, selv om tidligere modelhistorik er uegnet; udløbet
+state bliver aldrig kaldt frisk, og korruption stopper fortsat.
+
+Historisk gendannelse er nu afprøvet med to forskellige, selvkonsistente
+arkiver, ikke en kunstig descriptor over samme fil. Den offentlige detaljefil
+bruger desuden manifestets præcise størrelse under det fælles 192 MiB-loft.
 
 ## 88.81 4.0.377 – Code-only bruger den installerede cache
 
@@ -772,9 +815,9 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.377 kode-only-rettelse
+### Aktuel status – RavScore 4.0.378 kode-only-rettelse
 
-### Status for det aktuelle modelarbejde – lokal 4.0.377, exact-head og rettelsesdeploy afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.378 samlet, exact-head og deploy afventer
 
 Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer
 endnu ingen numeriske scorer. Supabase står på `INTEGRATED_ACTIVE` version 1,
@@ -787,9 +830,15 @@ beviste bagefter, at ingen gammel hash var tilbage. 4.0.376 beviste derefter
 offentlig genopbygning og 210/673-audit, men den private specifikation brugte
 en midlertidig DMI-sti. 4.0.377 bruger den installerede kanoniske cache og
 binder en efterfølger på samme vejrtid til det eksakte migrationsbevis.
-4.0.377 er låst med
+4.0.378 er låst med
 `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den tilhørende `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere skal matche runtime og releasegate.
+
+Efter Astra-gennemgangen installerer den providerfri code-only-vej den eksakte
+assistent, samler alle fire uafhængige prewrite-kontroller og håndterer
+identisk privat indhold, historisk restore, mistede Supabase-svar, sikre
+transienter, udløbet state og offentlig detailstørrelse uden de fundne falske
+stop. Målrettede lokale kontroller er grønne; dette er endnu ikke et livebevis.
 
 Den private Candidate G-rollbackbinding er
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
@@ -3193,7 +3242,7 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 Den offentlige 4.0.365-runtime blev bygget som én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Den integrerede model er offentlig; 4.0.375 skal føre den gemte private runtime frem uden ny providerhentning, før numeriske scorer og efterfølgende normal vejrhentning kan verificeres.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.377 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.378 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 

@@ -1,5 +1,9 @@
 # RavRadar 4.0.377
 
+**Produktionsudfald:** DMI-stien virkede i `34947169348`; pointerens
+forgængerbinding stoppede publiceringen før writes og er afløst af
+4.0.378/DEC-0159.
+
 ## Rettet
 
 - 4.0.376 bestod exact-head-kontrollen `34941640752`, blev merged gennem PR

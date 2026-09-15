@@ -1,3 +1,33 @@
+# NYESTE CHECKPOINT – 2026-09-15 – samlet 4.0.378-implementation færdig lokalt
+
+Astra-rapportens A–G er implementeret samlet på Sol/Ekstra høj i den
+eksisterende branch. Code-only får eksakt assistentdeploy og samlet prewrite-
+kontrol; privat cachegenbrug er stabilt over rene versioner; mistede write-svar
+afgøres med eksakt readback; sikre transienter genprøves; historisk restore er
+bevist med to forskellige arkiver; udløbet current kan føre til ærlig
+koldstart; detailfilens download følger manifestet. DEC-0159/0160.
+
+Main er fortsat `ec26f8e4`, seneste produktionsforsøg `34947169348`, og Pages
+er senest observeret som 4.0.365. Ingen ny sourcegate, deploy, provider,
+weather eller oneoff er startet. Næste: docs/geodatabevis, commit/push, én
+exact-head GitHub-sourcegate, merge og providerfri code-only; derefter
+central/private/Edge/Pages-livekontrol og først så normal weather. Fysisk
+runnerdød efter PENDING samt 14-dages kildebevis er senere robusthedsarbejde.
+
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.378 historisk private binding
+
+Main er `ec26f8e4` efter PR #319/sourcegate `34946601576`. Run `34947169348`
+beviste den kanoniske DMI-cache, privat spec/bundle, offentlig runtime og
+210/673 uden provider. Private writes, Pages og completion skete ikke:
+pointerlæseren krævede den nye modelhash på den gamle current-forgænger.
+
+4.0.378 tillader kun denne current, når den matcher det eksakte
+forgængermanifest under samme-reference-migrationen. Efter write er current
+aktuel, previous historisk og fortsat stramt valideret. Publicering, readback,
+rollback, anonym-afvisning, retention og CAS-cleanup er regressionstestet.
+Næste: docs/version, commit/push, én exact-head gate, merge og providerfri
+code-only; derefter livekontrol og normal weather. Ingen oneoff. DEC-0159.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.377 kanonisk DMI-cache
 
 Main er `3144c557` efter PR #318/sourcegate `34941640752`. Providerfri

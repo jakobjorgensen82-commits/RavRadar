@@ -1,3 +1,24 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.378 samlet providerfri leverance
+
+- **REQ-4.0.378-EDGE-001 – BINDENDE:** Den direkte levering skal deploye præcis `ravradar-assistant` fra samme eksakte main før readiness; ingen andre Edge-funktioner eller providers.
+- **REQ-4.0.378-COLLECT-001 – BINDENDE:** Uafhængig spec, bundle, Pages-pakke og privacy skal alle køres og samles før writes. En af deres fejl må ikke kunne publicere et delvist artifact.
+- **REQ-4.0.378-READBACK-001 – BINDENDE:** Usikre CAS-/pointerudfald må kun accepteres ved eksakt forventet version og payloadhash; writet må ikke gentages blindt.
+- **REQ-4.0.378-REUSE-001 – BINDENDE:** Kun releaseversion/cachebuster normaliseres i privat kontrakt. Identiske data må genbruges uden at omskrive oprindelig producent; enhver reel kontraktændring skal fortsat afvises.
+- **REQ-4.0.378-WEATHER-REENTRY-001 – BINDENDE:** Udløbet state må ikke kaldes frisk. Uegnet historik må ikke blokere ærlig koldstart, mens korruption fortsat stopper.
+- **REQ-4.0.378-NO-REPEAT-001 – AKTIV:** Ingen provider, oneoff eller normal weather før offentlig modelverifikation.
+
+DEC-0160 supplerer DEC-0159.
+
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.378 historisk private binding
+
+- **REQ-4.0.378-CURRENT-ROLE-001 – BINDENDE:** Normal current skal matche aktiv model; under samme-reference-overgangen må kun den eksakte binding fra forgængermanifestet accepteres.
+- **REQ-4.0.378-PREVIOUS-ROLE-001 – BINDENDE:** Previous må bevare en ældre binding i eksakt 11-feltsform med gyldige identiteter/hashes og må kun bruges efter konkret restoreforventning og bundleverifikation.
+- **REQ-4.0.378-SAME-TIME-001 – BINDENDE:** Pointerformatet må repræsentere current/previous på samme vejrtid; publicering kræver fortsat DEC-0158’s fulde migrationsbevis, og tidsregression er forbudt.
+- **REQ-4.0.378-LIFECYCLE-001 – IMPLEMENTERET LOKALT:** Readback, anonym-audit, efterfølgende generation, retention og CAS-cleanup skal fungere med historisk previous.
+- **REQ-4.0.378-NO-REPEAT-001 – AKTIV:** Ingen provider, oneoff eller normal weather før offentlig modelverifikation.
+
+DEC-0159 supplerer DEC-0158.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.377 kanonisk cache og privat efterfølger
 
 - **REQ-4.0.377-CANONICAL-DMI-001 – IMPLEMENTERET LOKALT:** Code-only-specifikationen skal læse den installerede `data/live/dmi-bulk-cache.json`, aldrig acquisitionens midlertidige kandidatfil.

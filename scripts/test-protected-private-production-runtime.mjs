@@ -16,6 +16,7 @@ import {
   PRIVATE_RUNTIME_FILES,
   buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation,
+  privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
 import {
   PROTECTED_PRIVATE_RUNTIME_POLICY,
@@ -25,6 +26,7 @@ import {
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
   validateSameReferencePrivateRuntimeSuccessor,
+  validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -33,7 +35,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-protected-private
 const repository = path.join(temp, 'repository');
 const privateRoot = path.join(temp, 'private');
 const restoreRoot = path.join(temp, 'restore-private');
-const SOURCE_HEADS = ['a', 'b', 'c', 'd', 'e'].map(letter => letter.repeat(40));
+const SOURCE_HEADS = ['a', 'b', 'c', 'd', 'e', 'f'].map(letter => letter.repeat(40));
 
 const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
 
@@ -84,6 +86,7 @@ async function createGeneration(index, { largeStreamPayload = false } = {}) {
 function fakeDocuments() {
   let row = null;
   let loseNextPatch = false;
+  let commitThenLoseNextPatch = false;
   return {
     request: async (suffix, options = {}) => {
       const method = options.method ?? 'GET';
@@ -102,6 +105,10 @@ function fakeDocuments() {
         const expectedVersion = Number(/version=eq\.(\d+)/.exec(suffix)?.[1]);
         if (!row || row.version !== expectedVersion) return [];
         row = { ...row, payload: JSON.parse(options.body).payload, version: row.version + 1 };
+        if (commitThenLoseNextPatch) {
+          commitThenLoseNextPatch = false;
+          throw new Error('synthetic response lost after committed patch');
+        }
         return [clone(row)];
       }
       throw new Error(`unexpected document method ${method}`);
@@ -109,6 +116,7 @@ function fakeDocuments() {
     row: () => clone(row),
     setRow: value => { row = clone(value); },
     losePatch: () => { loseNextPatch = true; },
+    commitThenLosePatch: () => { commitThenLoseNextPatch = true; },
   };
 }
 
@@ -156,6 +164,29 @@ try {
     await fs.copyFile(source, destination);
   }
 
+  const baselineContracts = await privateRuntimeContractHashes({ repositoryRoot: repository });
+  const workflowContractPath = path.join(repository, 'scripts/private-production-runtime-workflow.mjs');
+  const scoreContractPath = path.join(repository, 'js/core/local-zone-score.js');
+  const workflowContractSource = await fs.readFile(workflowContractPath, 'utf8');
+  const scoreContractSource = await fs.readFile(scoreContractPath, 'utf8');
+  await fs.writeFile(workflowContractPath,
+    workflowContractSource.replaceAll('4.0.378', '9.9.999'));
+  await fs.writeFile(scoreContractPath,
+    scoreContractSource.replaceAll('?v=4.0.378', '?v=9.9.999'));
+  assert.deepEqual(
+    await privateRuntimeContractHashes({ repositoryRoot: repository }),
+    baselineContracts,
+    'mechanical release numbers must not invalidate private weather contracts',
+  );
+  await fs.writeFile(workflowContractPath, `${workflowContractSource}\n// semantic-contract-change\n`);
+  assert.notEqual(
+    (await privateRuntimeContractHashes({ repositoryRoot: repository })).fullRuntimeContractSha256,
+    baselineContracts.fullRuntimeContractSha256,
+    'a substantive contract source change must remain hash-visible',
+  );
+  await fs.writeFile(workflowContractPath, workflowContractSource);
+  await fs.writeFile(scoreContractPath, scoreContractSource);
+
   const documents = fakeDocuments();
   const storage = fakeStorage();
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
@@ -193,6 +224,28 @@ try {
   assert.equal(bucketCreatedWith.file_size_limit, 50 * 1024 * 1024,
     'new protected buckets must use the actual Free-plan object boundary');
   assert.equal(bucketCreatedWith.public, false);
+
+  let transientBucketCalls = 0;
+  const transientClient = createProtectedPrivateRuntimeClients({
+    supabaseUrl: 'https://synthetic-project.supabase.co',
+    serviceRoleKey: 'synthetic-service-role-key',
+    retryDelayMs: 0,
+    delayImpl: async () => {},
+    fetchImpl: async () => {
+      transientBucketCalls += 1;
+      if (transientBucketCalls === 1) return new Response('', { status: 502 });
+      return new Response(JSON.stringify({
+        id: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
+        name: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
+        public: false,
+        file_size_limit: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+        allowed_mime_types: [PROTECTED_PRIVATE_RUNTIME_POLICY.mimeType],
+      }), { status: 200 });
+    },
+  });
+  await transientClient.storage.ensurePrivateBucket();
+  assert.equal(transientBucketCalls, 2,
+    'a transient protected storage 502 must be retried once');
 
   let oversizedBodyRead = false;
   const oversizedClient = createProtectedPrivateRuntimeClients({
@@ -478,51 +531,85 @@ try {
   assert.equal(documents.row().version, 1);
   assert.equal(storage.downloads(), 2, 'idempotent publication verifies the one referenced object once');
 
-  await assert.rejects(
-    publishProtectedPrivateProductionRuntime({
-      privateRoot,
-      bundlePath: first.bundlePath,
-      repositoryRoot: repository,
-      expected: first.expected,
-      now: '2026-08-29T11:05:00.000Z',
-      sourceHead: SOURCE_HEADS[1],
-      request: documents.request,
-      storage: storage.client,
-    }),
-    /conflicts at the same production reference/,
-    'A same-reference change must remain rejected without exact migration evidence',
+  const sameContentNewDeploy = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[1],
+    request: documents.request,
+    storage: storage.client,
+  });
+  assert.equal(sameContentNewDeploy.published, false);
+  assert.equal(
+    sameContentNewDeploy.reason,
+    'protected-private-runtime-content-already-current',
   );
+  assert.equal(documents.row().payload.current.sourceHead, SOURCE_HEADS[0],
+    'code-only reuse must preserve the immutable generation producer');
+  assert.equal(documents.row().version, 1,
+    'code-only reuse must not create a new private pointer version');
 
-  const predecessorManifest = JSON.parse(await fs.readFile(
+  const ambiguousDocuments = fakeDocuments();
+  const ambiguousStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[0],
+    request: ambiguousDocuments.request,
+    storage: ambiguousStorage.client,
+  });
+  const committedGeneration = await createGeneration(5);
+  ambiguousDocuments.commitThenLosePatch();
+  const recoveredCommittedPublication = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: committedGeneration.bundlePath,
+    repositoryRoot: repository,
+    expected: committedGeneration.expected,
+    now: '2026-08-29T16:05:00.000Z',
+    sourceHead: SOURCE_HEADS[5],
+    request: ambiguousDocuments.request,
+    storage: ambiguousStorage.client,
+  });
+  assert.equal(recoveredCommittedPublication.published, true);
+  assert.equal(ambiguousDocuments.row().version, 2);
+  assert.equal(ambiguousStorage.objects.size, 2,
+    'a committed pointer with a lost response must retain current and rollback');
+
+  const successorManifest = JSON.parse(await fs.readFile(
     path.join(first.bundlePath, 'manifest.json'),
     'utf8',
   ));
-  const successorBinding = {
-    ...predecessorManifest.modelBinding,
-    modelBundleSha256: 'f'.repeat(64),
+  const predecessorManifest = clone(successorManifest);
+  predecessorManifest.modelBinding = {
+    ...successorManifest.modelBinding,
+    modelBundleSha256: 'e'.repeat(64),
   };
-  const successorContractHashes = Object.fromEntries(
-    Object.keys(predecessorManifest.contractHashes).map((key, index) => [
+  predecessorManifest.contractHashes = Object.fromEntries(
+    Object.keys(successorManifest.contractHashes).map((key, index) => [
       key,
       String(index + 4).repeat(64),
     ]),
   );
-  const successorManifest = clone(predecessorManifest);
-  successorManifest.modelBinding = successorBinding;
-  successorManifest.contractHashes = successorContractHashes;
-  const successorConditions = successorManifest.files.find(file => file.id === 'full-conditions');
-  successorConditions.bytes += 128;
-  successorConditions.sha256 = '9'.repeat(64);
-  successorManifest.bundleContentSha256 = privateRuntimeBundleContentSha256(successorManifest);
-  const predecessorDescriptor = documents.row().payload.current;
-  const successorDescriptor = {
-    ...predecessorDescriptor,
-    sourceHead: SOURCE_HEADS[1],
-    modelBinding: successorBinding,
-    contractHashes: successorContractHashes,
-    bundleContentSha256: successorManifest.bundleContentSha256,
-    objectSha256: '8'.repeat(64),
+  const predecessorConditions = predecessorManifest.files.find(file => file.id === 'full-conditions');
+  predecessorConditions.sha256 = '9'.repeat(64);
+  predecessorManifest.bundleContentSha256 = privateRuntimeBundleContentSha256(predecessorManifest);
+  const publishedDescriptor = documents.row().payload.current;
+  const predecessorDescriptor = {
+    ...publishedDescriptor,
+    modelBinding: predecessorManifest.modelBinding,
+    contractHashes: predecessorManifest.contractHashes,
+    bundleContentSha256: predecessorManifest.bundleContentSha256,
   };
+  const successorDescriptor = {
+    ...publishedDescriptor,
+    sourceHead: SOURCE_HEADS[1],
+  };
+  const successorConditions = successorManifest.files.find(file => file.id === 'full-conditions');
   const migrationReport = {
     schemaVersion: 1,
     kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION',
@@ -530,11 +617,11 @@ try {
     datasetId: predecessorDescriptor.datasetId,
     sourceBundleContentSha256: predecessorDescriptor.bundleContentSha256,
     previousIntegratedBundleSha256: predecessorManifest.modelBinding.modelBundleSha256,
-    currentIntegratedBundleSha256: successorBinding.modelBundleSha256,
+    currentIntegratedBundleSha256: successorManifest.modelBinding.modelBundleSha256,
     previousCandidateBundleSha256: '6'.repeat(64),
     currentCandidateBundleSha256: '7'.repeat(64),
     previousContractHashes: predecessorManifest.contractHashes,
-    currentContractHashes: successorContractHashes,
+    currentContractHashes: successorManifest.contractHashes,
     candidateRuntimeKind: 'ravScoreCandidateGWarmup',
     migratedPartCount: 673,
     changedBindingFieldCount: 680,
@@ -559,6 +646,34 @@ try {
     successorManifest,
     migrationReport: { ...migrationReport, measurementsChanged: true },
   }), /successor evidence is invalid/);
+  const historicalRow = documents.row();
+  historicalRow.payload.current = predecessorDescriptor;
+  historicalRow.payload.previous = null;
+  documents.setRow(historicalRow);
+  assert.throws(
+    () => validateProtectedPrivateRuntimePointer(historicalRow.payload),
+    /incompatible modelBundleSha256/,
+    'A historical current descriptor must not be accepted without exact transition evidence',
+  );
+  assert.doesNotThrow(() => validateProtectedPrivateRuntimePointer(historicalRow.payload, {
+    allowedCurrentModelBindings: [predecessorManifest.modelBinding],
+  }));
+  const migratedPublication = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[1],
+    sameReferenceSuccessorEvidence: { predecessorManifest, migrationReport },
+    request: documents.request,
+    storage: storage.client,
+  });
+  assert.equal(migratedPublication.published, true);
+  assert.equal(migratedPublication.reason, 'protected-private-runtime-same-reference-successor');
+  assert.equal(documents.row().payload.previous.modelBinding.modelBundleSha256, 'e'.repeat(64));
+  assert.doesNotThrow(() => validateProtectedPrivateRuntimePointer(documents.row().payload),
+    'The published pointer must retain a validated historical rollback binding');
 
   const restoreBundle = path.join(restoreRoot, 'bundle-first');
   const downloadsBeforeCurrentRestore = storage.downloads();
@@ -599,9 +714,60 @@ try {
     request: documents.request,
     storage: storage.client,
   });
-  assert.equal(documents.row().version, 2);
+  assert.equal(documents.row().version, 3);
   assert.equal(documents.row().payload.previous.objectSha256, archiveOne.descriptor.objectSha256);
   assert.equal(storage.objects.size, 2);
+
+  const realPreviousBundle = path.join(restoreRoot, 'bundle-real-previous');
+  const downloadsBeforeRealPrevious = storage.downloads();
+  const realPrevious = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: realPreviousBundle,
+    repositoryRoot: repository,
+    expected: {
+      ...first.expected,
+      datasetId: first.conditions.datasetId,
+      targetReferenceAt: '2026-08-29T12:00:00.000Z',
+      now: '2026-08-29T12:05:00.000Z',
+    },
+    now: '2026-08-29T12:05:00.000Z',
+    request: documents.request,
+    storage: storage.client,
+  });
+  assert.equal(realPrevious.rollbackSelected, true);
+  assert.equal(realPrevious.productionReferenceAt, first.conditions.productionReferenceAt);
+  assert.equal(storage.downloads() - downloadsBeforeRealPrevious, 2,
+    'two real different archives must select previous only after current is incompatible');
+
+  const currentAndHistoricalPrevious = documents.row();
+  currentAndHistoricalPrevious.payload.previous.modelBinding = {
+    ...currentAndHistoricalPrevious.payload.previous.modelBinding,
+    modelBundleSha256: 'e'.repeat(64),
+  };
+  documents.setRow(currentAndHistoricalPrevious);
+  const mixedExpired = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'bundle-mixed-expired'),
+    repositoryRoot: repository,
+    expected: {
+      ...second.expected,
+      targetReferenceAt: '2026-09-01T12:00:00.000Z',
+      minimumReferenceAt: '2026-08-29T12:00:00.000Z',
+      minimumGeneratedAt: '2026-08-29T12:00:00.000Z',
+      now: '2026-09-01T12:05:00.000Z',
+    },
+    now: '2026-09-01T12:05:00.000Z',
+    request: documents.request,
+    storage: storage.client,
+  });
+  assert.equal(mixedExpired.reason, 'protected-private-runtime-expired');
+  documents.setRow({
+    ...currentAndHistoricalPrevious,
+    payload: {
+      ...currentAndHistoricalPrevious.payload,
+      previous: archiveOne.descriptor,
+    },
+  });
 
   const third = await createGeneration(2);
   await publishProtectedPrivateProductionRuntime({
@@ -614,7 +780,7 @@ try {
     request: documents.request,
     storage: storage.client,
   });
-  assert.equal(documents.row().version, 3);
+  assert.equal(documents.row().version, 4);
   assert.equal(storage.objects.size, 2, 'only current and rollback objects remain');
   assert.deepEqual(storage.removed, [archiveOne.descriptor.objects[0].objectPath]);
 
@@ -804,7 +970,7 @@ try {
     }),
     /compare-and-swap lost a concurrent write/,
   );
-  assert.equal(documents.row().version, 3);
+  assert.equal(documents.row().version, 4);
   assert.equal(cleanStorage.objects.size, 2,
     'a lost CAS must remove only the newly-created unreferenced object');
   assert.deepEqual(new Set(cleanStorage.objects.keys()), referencedBeforeCasLoss,

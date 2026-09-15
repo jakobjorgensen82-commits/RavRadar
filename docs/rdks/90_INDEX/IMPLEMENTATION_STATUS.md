@@ -1,3 +1,32 @@
+# Aktuel implementeringsstatus – 4.0.378 samlet leveringsrobusthed
+
+- [x] Afslut Astra-helkædeanalyse og skift tilbage til Sol/Ekstra høj.
+- [x] Implementér fund A–G samlet: eksakt assistentdeploy, samlet prewrite-
+  kontrol, versionsstabil cachebinding, samme-indhold-genbrug, write-readback,
+  sikre retries, normal-weather-reentry og én detailfilgrænse.
+- [x] Bevis reelt historisk restore med to forskellige, selvkonsistente arkiver.
+- [x] Bestå målrettede runtime-, CAS-, REST-, workflow-, readiness- og YAML-kontroller.
+- [ ] Synkronisér dokumentation/geodatabevis og commit/push samme samlede head.
+- [ ] Bestå én exact-head GitHub-sourcegate, merge og kør providerfri code-only.
+- [ ] Verificér privat pointer, central completion, assistent, Pages og offentlig model.
+- [ ] Først derefter: normal weather, numerisk dækning, rotation/cache og sitekontrol.
+
+Ingen ny installation, vejrkørsel eller oneoff er startet under analyse og
+lokal implementation. Fysisk runnerdød efter `PENDING` og holdbart kildebevis
+efter 14 dage er senere robusthedsarbejde. DEC-0159 og DEC-0160.
+
+# Aktuel implementeringsstatus – lokal 4.0.378 historisk private binding
+
+- [x] Bestå 4.0.377 sourcegate `34946601576` og merge PR #319 som main `ec26f8e4`.
+- [x] Livebevis i `34947169348` for kanonisk DMI-cache, spec/bundle, offentlig genopbygning og 210/673-audit uden provider.
+- [x] Afgræns stoppet til pointerlæserens for tidlige krav om aktuel binding på forgænger-current; ingen private writes/Pages/completion.
+- [x] Tillad kun eksakt manifestbundet forgænger-current under overgangen, og bevar previous som stramt valideret historisk rollback.
+- [x] Test publicering, readback, rollback, anonym-afvisning, senere generationer, retention og CAS-cleanup.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.378.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0159 er aktiv. Gentag ikke provider, oneoff eller allerede beståede cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.377 kanonisk DMI-cache
 
 - [x] Bestå 4.0.376 sourcegate `34941640752` og merge PR #318 som main `3144c557`.

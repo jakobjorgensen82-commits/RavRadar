@@ -116,8 +116,28 @@ for (const marker of [
   'for attempt in 1 2 3; do',
   'if node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore',
   'Protected predecessor restore attempt $attempt of 3 failed.',
+  'Prebuild lean GitHub Pages artifact before production writes',
+  'Decide all independent prewrite checks together',
+  'supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"',
+  'RavRadar assistant deployment attempt $attempt of 3 failed; retrying.',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+const independentPrewriteDecision = workflow.indexOf(
+  '- name: Decide all independent prewrite checks together',
+);
+const privateWrite = workflow.indexOf('- name: Publish current bounded private runtime');
+const assistantWrite = workflow.indexOf('- name: Deploy only the exact RavRadar assistant Edge function');
+assert.ok(independentPrewriteDecision >= 0
+  && independentPrewriteDecision < privateWrite
+  && privateWrite < assistantWrite,
+'Uafhængige artifact/privacyfejl skal samles før private og Edge writes');
+assert.equal(
+  (workflow.match(/supabase functions deploy ravradar-assistant/g) || []).length,
+  1,
+  'Code-only må kun have ét afgrænset assistentdeploy med interne retries',
+);
+assert.doesNotMatch(workflow, /supabase functions deploy --project-ref/,
+  'Code-only må ikke geninstallere alle Edge-funktioner');
 const privateRuntimeSpecStart = workflow.indexOf(
   '- name: Build current private production runtime specification',
 );

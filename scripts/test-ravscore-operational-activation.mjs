@@ -40,9 +40,12 @@ import {
   recoverMissedInitialIntegratedCutover,
   RAVSCORE_INTEGRATED_RETURN_POLICY,
   RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY,
+  RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
   RAVSCORE_OPERATIONAL_STATUSES,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS,
+  RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
   resolveOperationalRavScoreModel,
+  writeCentralCas,
 } from './ravscore-operational-activation.mjs';
 
 const canonical = value => Array.isArray(value)
@@ -2867,6 +2870,42 @@ const missedCutoverSourceVerification = Object.freeze({
     RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY
       .sourceImplementationClosureSha256,
 });
+let ambiguousCasWriteCalls = 0;
+let ambiguousCasReadCalls = 0;
+const recoveredAmbiguousBegin = await writeCentralCas(
+  async () => {
+    ambiguousCasWriteCalls += 1;
+    throw new Error('synthetic response lost after commit');
+  },
+  async () => {
+    ambiguousCasReadCalls += 1;
+    return [
+      {
+        document_key: RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
+        version: 41,
+        payload: historicalIntegratedBegin.document,
+      },
+      {
+        document_key: RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
+        version: historicalIntegratedSourceProfileRow.version,
+        payload: historicalIntegratedSourceProfileRow.payload,
+      },
+    ];
+  },
+  {
+    operationalRow: historicalIntegratedSourceRow,
+    profileRow: historicalIntegratedSourceProfileRow,
+  },
+  historicalIntegratedBegin,
+  integratedProfile,
+);
+assert.equal(recoveredAmbiguousBegin.operational.version, 41);
+assert.equal(recoveredAmbiguousBegin.operational.payload.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integratedPending);
+assert.equal(ambiguousCasWriteCalls, 1,
+  'an ambiguous CAS must never be blindly written twice');
+assert.equal(ambiguousCasReadCalls, 1,
+  'an ambiguous CAS must use one exact operation/profile readback');
 const missedCutoverAudit = Object.freeze({
   ...historicalAudit,
   datasetId: historicalManifest.datasetId,

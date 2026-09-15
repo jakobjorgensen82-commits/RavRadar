@@ -1,3 +1,26 @@
+# 2026-09-15 – kodelevering og vejrfornyelse er adskilte, men hashbundne
+
+- Rene releaseversioner/cachebusterqueries er ikke private datakontrakter;
+  reelle kildeændringer er fortsat hashfølsomme.
+- En ny kodecommit må genbruge byteidentisk, model-/kontraktidentisk privat
+  runtime uden at omskrive dens oprindelige producentidentitet.
+- Uafhængige prewrite-kontroller kan samles, men produktionswrites må kun
+  fortsætte efter grøn samlet beslutning.
+- Et tabt serversvar er en ukendt observation, ikke automatisk en fejlet write:
+  præcis version/payload læses tilbage, og writet gentages ikke blindt.
+- Udløbet state er ikke frisk. Er øvrig historik blot uegnet, må normal drift
+  starte målt koldstart; korruption forbliver fatal. DEC-0160.
+
+# 2026-09-15 – current og previous har forskellige bindingsroller
+
+- En aktiv privat pointer skal matche den aktuelle model. En historisk previous
+  er rollback og kan legitimt bære den gamle modelhash.
+- Før en samme-reference-migration er current stadig forgængeren. Den må kun
+  læses som overgangskandidat, når dens binding matcher det eksakte medsendte
+  forgængermanifest; generel accept af gamle current-bindinger er forbudt.
+- Lige vejrtid er ikke i sig selv datakonflikt, når mutationstilladelsen
+  særskilt beviser uændrede data/states og kun modelmetadataændring. DEC-0159.
+
 # 2026-09-15 – code-only skal bruge installerede kanoniske cachefiler
 
 - En midlertidig acquisitionfil er ikke en runtimeautoritet. Efter beskyttet

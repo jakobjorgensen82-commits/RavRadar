@@ -1,3 +1,25 @@
+## 2026-09-15 lokal 4.0.378 – robust providerfri leveringskæde
+
+- Code-only bygger privat spec/bundle og Pages/privacy som uafhængige
+  prewrite-beviser og beslutter samlet før første produktionwrite.
+- Kun `ravradar-assistant` deployes fra exact main før Edge-readiness.
+- CAS og privat pointer bruger eksakt readback ved mistet svar; identisk privat
+  indhold genbruger producentpointeren uden blindt nyt write.
+- Strukturel pointerlæsning adskilles fra generationens konkrete model-/
+  kontrakt-/bundleegnethed. Udløbet state går til målt koldstart, ikke falsk
+  friskhed. DEC-0160.
+
+## 2026-09-15 lokal 4.0.378 – rollebaseret privat pointerbinding
+
+- Normal pointerlæsning kræver aktuel RavScore-binding på `current`.
+- Samme-reference-publicering kan midlertidigt acceptere den eksakte binding
+  fra det hashvaliderede forgængermanifest; DEC-0158 kontrollerer derefter hele
+  migrationen før write.
+- `previous` er historisk rollback: dens 11-feltsform og hashes valideres, mens
+  restore først bruger den efter eksakt forventnings- og bundlekontrol.
+- Samme vejrtid mellem current/previous er repræsenterbar; faldende tid er
+  fortsat ugyldig.
+
 ## 2026-09-15 lokal 4.0.377 – kanonisk code-only-cache og samme-tids-efterfølger
 
 - Code-only-restore installerer DMI i `data/live/dmi-bulk-cache.json`; den

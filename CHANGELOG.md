@@ -1,3 +1,9 @@
+## 4.0.378 – samlet robust providerfri leveringskæde (2026-09-15, lokal kandidat)
+
+- PR #319/sourcegate `34946601576` gav main `ec26f8e4`; code-only `34947169348` beviste den kanoniske DMI-sti, men privat publicering stoppede før writes, fordi pointerlæseren afviste forgængerens nødvendige gamle modelhash.
+- 4.0.378 tillader gammel current kun ved eksakt forgængermanifest, beviser historisk previous med et reelt selvstændigt arkiv og kan vælge ærlig koldstart efter udløb uden at kalde gammel state frisk.
+- Code-only deployer kun den eksakte assistent, samler fire prewrite-kontroller, genbruger private data over rene versioner, bruger eksakt readback ved mistede svar, genprøver sikre transienter og følger manifestets detailgrænse. Se `CHANGELOG-4.0.378.md`, DEC-0159 og DEC-0160.
+
 ## 4.0.377 – kanonisk DMI-cache og eksakt runtimeefterfølger (2026-09-15, lokal kandidat)
 
 - PR #318/sourcegate `34941640752` gav main `3144c557`; providerfri code-only `34942127741` gennemførte restore, komplet migration, offentlig genopbygning og 210/673-audit.

@@ -1,6 +1,6 @@
 # DEC-0158 – kanonisk DMI-cache og eksakt efterfølger på samme vejrtid
 
-**Status:** Aktiv og implementeret lokalt i 4.0.377
+**Status:** DMI-sti aktiv; pointerrolle afløst af DEC-0159 i 4.0.378
 **Dato:** 2026-09-15
 
 ## Problem
