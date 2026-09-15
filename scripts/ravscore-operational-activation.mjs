@@ -40,6 +40,8 @@ import {
   assertLegacyCandidateGAttestation,
   assertLegacyCandidateGVerification,
 } from './verify-legacy-candidate-g-source.mjs';
+import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
+  './lib/ravscore-known-public-source-repair.mjs';
 import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import {
   REQUIRED_CUTOVER_MIGRATIONS,
@@ -621,6 +623,26 @@ const OPERATIONAL_PAGES_VERIFICATION_FIELDS = Object.freeze([
   'coastalPartCount',
   'privatePayloadRead',
 ]);
+const OPERATIONAL_SOURCE_REPAIR_VERIFICATION_FIELDS = Object.freeze([
+  'schemaVersion',
+  'status',
+  'sourceHead',
+  'sourceDeploymentHead',
+  'sourceDeploymentId',
+  'repairId',
+  'datasetId',
+  'productionReferenceAt',
+  'model',
+  'modelBinding',
+  'implementationClosureSha256',
+  'publicManifestSha256',
+  'missingPublicFiles',
+  'verifiedPublicFileCount',
+  'expectedPublicFileCount',
+  'zoneCount',
+  'coastalPartCount',
+  'privatePayloadRead',
+]);
 const OPERATIONAL_TERMINAL_EVIDENCE_FIELDS = Object.freeze([
   'schemaVersion',
   'transitionSourceHead',
@@ -691,6 +713,71 @@ function assertOperationalPagesVerification(verification, {
   return true;
 }
 
+function assertOperationalSourceVerification(verification, {
+  model,
+  binding,
+  sourceHead,
+  publicManifest,
+  expectedImplementationClosureSha256 = null,
+  assertBinding: assertExpectedBinding = null,
+} = {}) {
+  if (verification?.schemaVersion === 'ravscore-operational-pages-verification-v1') {
+    assertOperationalPagesVerification(verification, {
+      model,
+      binding,
+      sourceHead,
+      publicManifest,
+      expectedImplementationClosureSha256,
+      assertBinding: assertExpectedBinding,
+    });
+    return Object.freeze({ repair: false, sourceDeploymentId: null });
+  }
+  const expectedMissing = SOURCE_REPAIR.knownMissingPublicFile;
+  if (!exactKeys(verification, OPERATIONAL_SOURCE_REPAIR_VERIFICATION_FIELDS)
+    || verification.schemaVersion !== 'ravscore-operational-source-repair-verification-v1'
+    || verification.status !== 'repairable-source'
+    || verification.repairId !== SOURCE_REPAIR.id
+    || verification.sourceHead !== sourceHead
+    || verification.sourceDeploymentHead !== SOURCE_REPAIR.sourceHead
+    || verification.sourceDeploymentId !== SOURCE_REPAIR.sourceDeploymentId
+    || verification.datasetId !== publicManifest?.datasetId
+    || verification.productionReferenceAt !== publicManifest?.productionReferenceAt
+    || verification.model !== model
+    || verification.model !== 'integrated'
+    || verification.implementationClosureSha256
+      !== SOURCE_REPAIR.sourceImplementationClosureSha256
+    || verification.implementationClosureSha256 !== expectedImplementationClosureSha256
+    || verification.publicManifestSha256 !== SOURCE_REPAIR.sourcePublicManifestSha256
+    || verification.publicManifestSha256 !== sha256(publicManifest)
+    || !Array.isArray(verification.missingPublicFiles)
+    || verification.missingPublicFiles.length !== 1
+    || !exactKeys(verification.missingPublicFiles[0], ['path', 'sha256', 'httpStatus'])
+    || verification.missingPublicFiles[0].path !== expectedMissing.path
+    || verification.missingPublicFiles[0].sha256 !== expectedMissing.sha256
+    || verification.missingPublicFiles[0].httpStatus !== expectedMissing.expectedHttpStatus
+    || verification.expectedPublicFileCount !== SOURCE_REPAIR.expectedPublicFileCount
+    || verification.verifiedPublicFileCount !== SOURCE_REPAIR.expectedPublicFileCount - 1
+    || verification.zoneCount !== 210
+    || verification.coastalPartCount !== 673
+    || verification.privatePayloadRead !== false) {
+    throw new Error('Operational source repair lacks the exact pinned 4.0.381 evidence');
+  }
+  if (assertExpectedBinding) {
+    assertBinding(verification.modelBinding, binding, assertExpectedBinding,
+      'Operational source repair binding');
+  } else {
+    assertSameSealedBinding(verification.modelBinding, binding,
+      'Operational source repair binding');
+  }
+  if (sha256(verification.modelBinding) !== SOURCE_REPAIR.sourceModelBindingSha256) {
+    throw new Error('Operational source repair model binding drifted from its pinned source');
+  }
+  return Object.freeze({
+    repair: true,
+    sourceDeploymentId: SOURCE_REPAIR.sourceDeploymentId,
+  });
+}
+
 function assertOperationalPublicManifest(manifest, {
   binding = null,
   assertBinding: assertExpectedBinding = null,
@@ -731,6 +818,7 @@ function assertOperationalSourceSeal({
   requestedManifest = null,
   expectedImplementationClosureSha256 = null,
   allowSameBindingRefresh = false,
+  sourceDeploymentId = null,
   label = 'Operational transition source',
 } = {}) {
   const candidate = model === 'candidate-g';
@@ -751,7 +839,7 @@ function assertOperationalSourceSeal({
     assertBinding: assertExpected,
     label,
   });
-  assertOperationalPagesVerification(sourceVerification, {
+  const sourceEvidence = assertOperationalSourceVerification(sourceVerification, {
     model,
     binding,
     sourceHead,
@@ -773,7 +861,13 @@ function assertOperationalSourceSeal({
       || !SAFE_ID_PATTERN.test(String(currentRow.payload.deploymentId ?? ''))) {
       throw new Error(`${label} drifted from the exact centrally ACTIVE public deployment`);
     }
-    return sameStoredPublicIdentity ? currentRow.payload.deploymentId : null;
+    if (sameStoredPublicIdentity) return currentRow.payload.deploymentId;
+    const observedSourceDeploymentId =
+      sourceEvidence.sourceDeploymentId ?? sourceDeploymentId;
+    if (!SAFE_ID_PATTERN.test(String(observedSourceDeploymentId ?? ''))) {
+      throw new Error(`${label} lacks the observed public source deployment`);
+    }
+    return observedSourceDeploymentId;
   }
   return null;
 }
@@ -3204,6 +3298,7 @@ export function operationalIntegratedHistoricalMaintenanceTransition({
   publicVerification = null,
   sourceManifest = null,
   sourceVerification = null,
+  observedSourceDeploymentId = null,
   deploymentId = null,
   failureCode = null,
   terminalEvidence = null,
@@ -3239,6 +3334,8 @@ export function operationalIntegratedHistoricalMaintenanceTransition({
       sourceHead: plan.sourceHead,
       requestedManifest: publicManifest,
       expectedImplementationClosureSha256: plan.sourceImplementationClosureSha256,
+      allowSameBindingRefresh: true,
+      sourceDeploymentId: observedSourceDeploymentId,
       label: 'Historical integrated maintenance source',
     });
     if (!SAFE_ID_PATTERN.test(String(sourceDeploymentId ?? ''))
@@ -4451,6 +4548,7 @@ async function main() {
         publicVerification,
         sourceManifest,
         sourceVerification,
+        observedSourceDeploymentId: options['source-deployment-id'] ?? null,
         deploymentId: options['deployment-id'] ?? null,
         failureCode: options['failure-code'] ?? null,
         terminalEvidence:

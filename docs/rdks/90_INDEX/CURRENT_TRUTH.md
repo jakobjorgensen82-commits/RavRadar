@@ -1,4 +1,27 @@
-# NYESTE SANDHED – 2026-09-15 – 4.0.381 er online, 4.0.382 retter adminclosure
+# NYESTE SANDHED – 2026-09-16 – 4.0.382 blev bygget, men ikke deployet
+
+4.0.382 bestod exact-head `35024395809`, PR #324 og merge til main
+`a7f0fcbac844d6c0e0919015162d2409703cb44d`. Providerfri code-only
+`35025121452`, forsøg 3, bestod den fulde build og skabte en komplet,
+privacy-godkendt 79/79-Pages-pakke. Ingen vejrprovider kørte, og pakken blev
+ikke deployet.
+
+Stoppet skyldtes reel forskel mellem central og offentlig kilde. Central
+status peger på `pages-34877443841-1`, mens den offentlige side er 4.0.381 fra
+`pages-35020915350-1`. Den har 78/79 filer og præcis den kendte decoder-404.
+Det er følgen af, at 4.0.381 deployede Pages før efterkontrol og central
+maintenance. 4.0.383 genkender kun denne eksakte tilstand som
+`repairable-source`; målpakken skal stadig bestå 79/79 strengt før og efter
+deploy. Ingen generel gate er svækket. Efter providerfri levering følger én
+normal tidsbegrænset weather-kørsel. Ingen oneoff. DEC-0165.
+
+PR #325's første exact-head-run `35032447763` bestod de faktiske
+produktkontroller og fejlede kun, fordi en separat resolverkommando løftede
+sourcegaten fra 24 til 25 kommandoer. Regressionen er nu samlet i den
+eksisterende code-only-test, og det bindende loft er igen 24. En ny
+exact-head-kørsel mangler.
+
+# HISTORISK SANDHED – 2026-09-15 – 4.0.381 er online, 4.0.382 retter adminclosure
 
 4.0.381 bestod exact-head `35019932207`, PR #323 og merge til main
 `d84773a7`. Providerfri `35020915350` bestod actual-current-restore,

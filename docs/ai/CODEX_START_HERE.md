@@ -1,4 +1,24 @@
-# NYESTE CHECKPOINT – 2026-09-15 – levende 4.0.381, lokal 4.0.382 adminclosure
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.383 reparerer central/offentlig drift
+
+4.0.382 bestod sourcegate `35024395809`, PR #324 og main `a7f0fcba`.
+Providerfri `35025121452`, forsøg 3, byggede en grøn 79/79-Pages-pakke, men
+deployede den ikke. Central pointer peger stadig på `pages-34877443841-1`,
+mens den faktiske offentlige 4.0.381 er `pages-35020915350-1` med den kendte
+ene admin-404. Derfor afviste kildebeviset korrekt den modstridende identitet.
+
+Branch `codex/4.0.383-public-source-repair` har én eksakt, fastlåst
+source-reparation for netop denne 4.0.381-tilstand. Den kræver 78 korrekte
+filer og præcis den kendte 404; enhver anden drift stopper. Nyt 4.0.383-mål
+skal fortsat bestå normal 79/79 før og efter deploy. Fortsæt med docs,
+geodatabevis, måltests, én exact-head, merge og providerfri code-only. Først
+derefter normal tidsbegrænset weather. Ingen oneoff. DEC-0165. Sol/Ekstra høj.
+
+Første exact-head `35032447763` bestod alle produktkontroller, men
+metakontrollen fandt 25 direkte kommandoer mod loftet 24. Den nye
+resolverregression er derfor samlet i den eksisterende code-only-test;
+produktdækningen bevares, og gateplanen er igen 24. Ny exact-head kræves.
+
+# HISTORISK CHECKPOINT – 2026-09-15 – levende 4.0.381, lokal 4.0.382 adminclosure
 
 4.0.381 er offentlig efter sourcegate `35019932207`, PR #323, main
 `d84773a7` og providerfri `35020915350`. Contract-only-genbinding, privat

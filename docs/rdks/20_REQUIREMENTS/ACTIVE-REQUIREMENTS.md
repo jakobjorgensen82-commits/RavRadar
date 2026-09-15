@@ -1,4 +1,15 @@
-# Aktuelt ejerdelta – 2026-09-15 – 4.0.382 offentlig browserclosure
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.383 eksakt source-reparation
+
+- **REQ-4.0.383-NORMAL-SOURCE-001 – BINDENDE:** Normal code-only-source kræver fortsat eksakt central/offentlig manifestoverensstemmelse.
+- **REQ-4.0.383-KNOWN-REPAIR-001 – BINDENDE:** Kun den versionsstyrede 4.0.381-politik med alle eksakte identiteter og hashes må give `repairable-source`.
+- **REQ-4.0.383-ONE-MISSING-001 – BINDENDE:** Reparationskilden skal have præcis 78 korrekte af 79 filer; kun den fastlåste gamle decodersti må være 404.
+- **REQ-4.0.383-ACTUAL-SOURCE-001 – BINDENDE:** Plan, handoff og central same-binding maintenance skal bruge den faktisk observerede offentlige deployment som source-id.
+- **REQ-4.0.383-STRICT-TARGET-001 – BINDENDE:** Reparationsflaget er forbudt ved målverifikation; 4.0.383 skal have 79/79 samt normal privacy, model, source og latest-main før/efter deploy.
+- **REQ-4.0.383-PROVIDER-FREE-001 – AKTIV:** Code-only må ikke hente vejr. Normal tidsbegrænset weather følger først efter offentlig og central verifikation; ingen oneoff.
+
+DEC-0165 supplerer DEC-0164 uden at lempe dens targetkrav.
+
+# Historisk ejerdelta – 2026-09-15 – 4.0.382 offentlig browserclosure
 
 - **REQ-4.0.382-ADMIN-CLOSURE-001 – BINDENDE:** `admin.html` og alle dets statiske modulimporter skal findes i det færdige Pages-artifact med de forseglede hashes.
 - **REQ-4.0.382-DECODER-001 – BINDENDE:** Den payloadfrie decoder må publiceres som `js/services/protected-runtime-envelope.js`; den gamle diagnostics-sti og alle private payloads forbliver fraværende.

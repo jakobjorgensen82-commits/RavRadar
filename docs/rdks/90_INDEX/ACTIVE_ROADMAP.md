@@ -1,4 +1,17 @@
-# Aktiv roadmap – 4.0.382 fra levende model til hel offentlig closure
+# Aktiv roadmap – 4.0.383 fra kendt kildedrift til hel offentlig closure
+
+1. [x] Bestå 4.0.382 sourcegate/PR/merge og bygge en komplet 79/79-Pages-pakke uden provider.
+2. [x] Afgræns stoppet til gammel central sourcepointer mod faktisk offentlig 4.0.381-deployment.
+3. [x] Implementér en eksakt identitetslåst source-reparation og bevis live 78/79 med kun kendt 404.
+4. [x] Bevar normal 79/79-, privacy-, model-, source- og latest-main-kontrol for det nye mål.
+5. [ ] Færdiggør docs/geodatabevis, måltests, commit/push og én exact-head sourcegate.
+6. [ ] Merge og kør providerfri 4.0.383 til offentlig 79/79 og central completion.
+7. [ ] Kontrollér admin, hovedkort, Om RavRadar, modelbinding og privacy meningsfuldt.
+8. [ ] Kør én normal tidsbegrænset weather og bevis numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0165 er aktiv.
+
+# Historisk roadmap – 4.0.382 fra levende model til hel offentlig closure
 
 1. [x] Bestå 4.0.381 sourcegate/PR/merge og providerfri contract-only-genbinding.
 2. [x] Deploy 4.0.381 Pages og afgræns efterkontrollen til præcis én reel admin-404.

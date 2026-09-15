@@ -1,4 +1,13 @@
-# Nyeste prioritering – 4.0.382 offentlig adminclosure 2026-09-15
+# Nyeste prioritering – 4.0.383 eksakt source-reparation 2026-09-16
+
+4.0.382 er merged som main `a7f0fcba`. Providerfri `35025121452`, forsøg 3,
+byggede 79/79, men stoppede før Pages på den dokumenterede forskel mellem
+central pointer og faktisk offentlig 4.0.381. 4.0.383 retter dette uden en
+generel bypass: kendt gammel source må have præcis én fastlåst 404; nyt target
+skal være 79/79. Næste er docs/slutkontrol, én exact-head, merge og providerfri
+code-only. Derefter normal tidsbegrænset weather; ingen oneoff. DEC-0165.
+
+# Historisk prioritering – 4.0.382 offentlig adminclosure 2026-09-15
 
 4.0.381 er offentligt deployet fra main `d84773a7`; contract-only, privat
 runtime og assistent bestod. Offentlig verification fandt én reel admin-404,

@@ -1,3 +1,15 @@
+## 2026-09-16 4.0.383 – faktisk offentlig source og strengt nyt target
+
+- `resolve-code-only-public-source.mjs` sammenholder central pointer med den
+  faktisk offentlige manifestidentitet før code-only-planen.
+- Normal vej kræver eksakt match. Kun den immutable 4.0.381-repairpolicy må
+  returnere `repairable-source`, og den binder run/head/deployment/artifact,
+  manifest, modelbinding og closure.
+- Sourceverification tillader da kun den dokumenterede ene 404. Target-
+  verification modtager aldrig repairflag og kræver fortsat 79/79.
+- Den observerede offentlige source-deployment følger plan, handoff og central
+  same-binding maintenance. DEC-0165.
+
 ## 2026-09-15 4.0.382 – artifactets browserclosure er en deploykontrakt
 
 - Repositoryclosure og færdig Pages-closure er to forskellige beviser.

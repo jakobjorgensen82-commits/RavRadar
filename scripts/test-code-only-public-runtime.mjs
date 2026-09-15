@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
   assertCodeOnlyModelBinding,
@@ -12,6 +13,7 @@ import {
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { resolveCodeOnlyPublicSource } from './resolve-code-only-public-source.mjs';
 
 assert.equal(
   CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
@@ -110,6 +112,11 @@ for (const marker of [
   'ravscore-operational-recovery-34877443841-1',
   'Freshly verify the exact historical integrated artifact is still public',
   'Atomically record the exact already-public historical cutover',
+  'Resolve the actual currently public source',
+  'resolve-code-only-public-source.mjs',
+  'steps.public-source.outputs.deployment_id',
+  'steps.public-source.outputs.implementation_closure_sha256',
+  'sourceRepairId:',
   'if has($field) then .[$field] else "" end',
   'Prove the current-compatible runtime is no longer client-readable',
   'Describe exact current private runtime source for bounded migration',
@@ -223,7 +230,18 @@ for (const marker of [
   'steps.failure-reconciliation.outcome',
   'Begin code-only integrated maintenance after verified Pages deployment',
   "inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance' && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
+  'source_repair_id:',
+  '--known-source-repair-id',
+  'Known public source repair artifact seal is not exact',
+  '--source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"',
 ]) assert.ok(pagesWorkflow.includes(marker), `Pages code-only-kontrakt mangler ${marker}`);
+const targetVerificationStart = pagesWorkflow.indexOf(
+  '- name: Verify deployed exact model, implementation and 210/673 artifact',
+);
+const targetVerificationEnd = pagesWorkflow.indexOf('\n      - name:', targetVerificationStart + 1);
+const targetVerification = pagesWorkflow.slice(targetVerificationStart, targetVerificationEnd);
+assert.doesNotMatch(targetVerification, /known-source-repair-id/,
+  'Den nye målpakke må aldrig bruge den gamle kildes reparationsundtagelse');
 const preDeployHistoricalBegin = pagesWorkflow.indexOf(
   '- name: Begin historical-to-current integrated maintenance with exact central CAS',
 );
@@ -248,5 +266,54 @@ for (const marker of [
   'Unsupported operational action cannot be marked deployed.',
 ]) assert.ok(deploymentTerminal.includes(marker),
   `Pages-terminalgaten mangler ${marker}`);
+
+const canonical = value => Array.isArray(value)
+  ? value.map(canonical)
+  : value && typeof value === 'object'
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]))
+    : value;
+const canonicalSha256 = value => crypto.createHash('sha256')
+  .update(JSON.stringify(canonical(value))).digest('hex');
+const sourceBinding = Object.freeze({
+  modelId: 'integrated-test',
+  modelBundleSha256: 'a'.repeat(64),
+});
+const sourceManifest = Object.freeze({
+  schemaVersion: 4,
+  complete: true,
+  zoneCount: 210,
+  coastalPartCount: 673,
+  datasetId: 'rr-test-210',
+  productionReferenceAt: '2026-09-16T00:00:00.000Z',
+  ravScoreModelBinding: sourceBinding,
+});
+const centralSource = Object.freeze({
+  model: 'integrated',
+  status: 'INTEGRATED_ACTIVE',
+  pending: false,
+  centralVersion: 7,
+  sourceHead: 'b'.repeat(40),
+  modelBinding: sourceBinding,
+  publicManifestSha256: canonicalSha256(sourceManifest),
+  activeImplementationClosureSha256: 'c'.repeat(64),
+  deploymentId: 'pages-123-1',
+});
+const matchedSource = resolveCodeOnlyPublicSource({
+  current: centralSource,
+  publicManifest: sourceManifest,
+});
+assert.equal(matchedSource.status, 'CENTRAL_AND_PUBLIC_MATCH');
+assert.equal(matchedSource.deploymentId, centralSource.deploymentId);
+assert.equal(matchedSource.implementationClosureSha256,
+  centralSource.activeImplementationClosureSha256);
+assert.equal(matchedSource.repairId, null);
+assert.throws(() => resolveCodeOnlyPublicSource({
+  current: centralSource,
+  publicManifest: Object.freeze({ ...sourceManifest, datasetId: 'unknown-drift' }),
+}), /ahead of central state without an exact repair policy/);
+assert.throws(() => resolveCodeOnlyPublicSource({
+  current: { ...centralSource, status: 'INTEGRATED_PENDING' },
+  publicManifest: sourceManifest,
+}), /not an exact active integrated deployment/);
 
 console.log('Code-only public runtime reuse contract passed.');

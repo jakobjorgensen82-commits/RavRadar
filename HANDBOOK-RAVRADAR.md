@@ -1,6 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.382
+**Håndbogsversion:** 4.0.383
+
+## 88.87 4.0.383 – Den kendte defekte kilde repareres uden at svække den nye side
+
+### Aktuel status – RavScore 4.0.383 kode-only-rettelse
+
+**Status for det aktuelle modelarbejde – lokal 4.0.383 samlet, exact-head og deploy afventer**
+
+**Kort fortalt:** 4.0.382 byggede faktisk den rigtige komplette hjemmesidepakke
+med alle 79 browserfiler. Den kom ikke online, fordi den centrale historik
+stadig pegede på en ældre Pages-udgave end den side, der reelt er offentlig.
+
+Den offentlige side er 4.0.381 og mangler den ene kendte decoderfil. Den
+centrale pointer peger på en endnu ældre deployment. Den normale kontrol
+afviste derfor med rette at fortsætte, fordi de to kilder ikke var ens.
+
+4.0.383 har en enkelt, meget snæver reparationsvej. Den genkender 4.0.381 på
+dens præcise run, commit, deployment, artifact og digitale fingeraftryk. Den
+kontrollerer stadig alle 79 forventede filer: 78 skal være korrekte, og kun
+den allerede dokumenterede decoder må svare 404. Alt andet stopper.
+
+Det er kun den gamle kilde, der får denne behandling. Den nye 4.0.383-side
+skal stadig have alle 79 filer og bestå de normale kontroller før upload og
+igen efter deploy. Dermed kan den kendte defekte side repareres uden at gøre
+fremtidige leveringer mindre sikre.
+
+Leveringen henter intet vejr. Når 4.0.383 er verificeret offentligt og
+centralt, følger én almindelig tidsbegrænset vejrkørsel for at bevise
+numeriske scorer, DMI-rotation og cachevedligeholdelse. Der køres ingen
+oneoff.
 
 ## 88.86 4.0.382 – Hele hjemmesidens browserkode kontrolleres før deploy
 
@@ -3355,7 +3384,7 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 Den offentlige 4.0.365-runtime blev bygget som én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Den integrerede model er offentlig; 4.0.375 skal føre den gemte private runtime frem uden ny providerhentning, før numeriske scorer og efterfølgende normal vejrhentning kan verificeres.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.382 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.383 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 

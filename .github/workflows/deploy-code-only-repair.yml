@@ -28,10 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      active_deployment_id: ${{ steps.operational-model.outputs.deployment_id }}
+      active_deployment_id: ${{ steps.public-source.outputs.deployment_id }}
       central_version: ${{ steps.operational-model.outputs.central_version }}
       integrated_implementation_closure_sha256: ${{ steps.integrated-implementation.outputs.closure_sha256 }}
       operational_action: ${{ steps.operational-action.outputs.action }}
+      source_repair_id: ${{ steps.public-source.outputs.repair_id }}
     env:
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
       RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle
@@ -201,6 +202,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Resolve the actual currently public source
+        id: public-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/resolve-code-only-public-source.mjs \
+            --current "$RAVRADAR_OPERATIONAL_WORK/current.json" \
+            --manifest "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/public-source.json"
+          for field in deploymentId implementationClosureSha256 repairId sourceHead publicManifestSha256; do
+            output_name="$(printf '%s' "$field" | sed -E 's/([A-Z])/_\L\1/g')"
+            echo "$output_name=$(jq -r --arg field "$field" 'if has($field) and .[$field] != null then .[$field] else "" end' "$RAVRADAR_OPERATIONAL_WORK/public-source.json")" >> "$GITHUB_OUTPUT"
+          done
+
       - name: Resolve only post-cutover integrated maintenance
         id: operational-action
         shell: bash
@@ -211,6 +226,8 @@ jobs:
           INITIAL_CUTOVER_REQUIRED: ${{ steps.operational-model.outputs.initial_cutover_required }}
           LEGACY_SOURCE_REQUIRED: ${{ steps.operational-model.outputs.legacy_source_required }}
           ACTIVE_SOURCE_HEAD: ${{ steps.operational-model.outputs.source_head }}
+          PUBLIC_SOURCE_DEPLOYMENT_ID: ${{ steps.public-source.outputs.deployment_id }}
+          PUBLIC_SOURCE_CLOSURE_SHA256: ${{ steps.public-source.outputs.implementation_closure_sha256 }}
         run: |
           set -euo pipefail
           test "$ACTIVE_MODEL" = "integrated"
@@ -220,7 +237,9 @@ jobs:
           case "$BINDING_CURRENT" in
             true) action=integrated ;;
             false)
-              test "$ACTIVE_SOURCE_HEAD" = "fa418f43bbd070c446ed19b6587541b93af89599"
+              [[ "$ACTIVE_SOURCE_HEAD" =~ ^[a-f0-9]{40}$ ]]
+              [[ "$PUBLIC_SOURCE_DEPLOYMENT_ID" =~ ^pages-[1-9][0-9]*-[1-9][0-9]*$ ]]
+              [[ "$PUBLIC_SOURCE_CLOSURE_SHA256" =~ ^[a-f0-9]{64}$ ]]
               action=integrated-historical-maintenance
               ;;
             *) echo "Unknown integrated binding state." >&2; exit 1 ;;
@@ -775,7 +794,7 @@ jobs:
           node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
           --manifest data/live/manifest.json
           --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
-          --source-implementation-closure-sha256 "${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
+          --source-implementation-closure-sha256 "${{ steps.public-source.outputs.implementation_closure_sha256 }}"
           --requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
           --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
         env:
@@ -815,7 +834,8 @@ jobs:
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
             --arg checkpointPublishOutcome "${{ steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
-            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:false,checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,codeOnlyRepair:true,codeOnlyReuseReportSha256:$codeOnlyReuseReportSha256,privatePayloadIncluded:false}' \
+            --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
+            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:false,checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,codeOnlyRepair:true,codeOnlyReuseReportSha256:$codeOnlyReuseReportSha256,sourceRepairId:(if $sourceRepairId == "" then null else $sourceRepairId end),privatePayloadIncluded:false}' \
             > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
           if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
             echo "Operational handoff contains forbidden private fields." >&2
@@ -889,6 +909,7 @@ jobs:
       integrated_implementation_closure_sha256: ${{ needs.build-code-only.outputs.integrated_implementation_closure_sha256 }}
       legacy_source_required: 'false'
       operational_action: ${{ needs.build-code-only.outputs.operational_action }}
+      source_repair_id: ${{ needs.build-code-only.outputs.source_repair_id }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
