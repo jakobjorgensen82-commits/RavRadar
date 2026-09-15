@@ -4,12 +4,22 @@ import fs from 'node:fs';
 import {
   assertCodeOnlyModelBinding,
   assertZoneRegistryVersionOnly,
+  CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
   CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES,
   CODE_ONLY_SNAPSHOT_FILES,
   manifestBoundedPublicDetailsBytes,
   normalizeCodeOnlyProjection,
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+
+assert.equal(
+  CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
+  PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes,
+  'Code-only-genopbygningen skal bruge cachetransportens allerede validerede filgrænse',
+);
+assert.ok(CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES > 256 * 1024 * 1024,
+  'Den forældede 256 MiB-grænse må ikke afvise den komplette private runtime');
 
 const current = ravScoreModelBinding();
 assertCodeOnlyModelBinding(current, current);

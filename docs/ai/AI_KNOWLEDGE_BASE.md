@@ -1,3 +1,9 @@
+# 2026-09-15 – genbrug den autoritative grænse efter beskyttet restore
+
+- En fil, som den beskyttede cachetransport allerede har verificeret mod et forseglet manifest, må ikke bagefter afvises af et mindre, uafhængigt loft i samme fortsættelse.
+- Code-only-læsning af privat `conditions.json` bruger samme 768 MiB per-fil-loft som restoretransporten; eksakt manifeststørrelse og SHA-256 kontrolleres fortsat før installation.
+- Separate mindre grænser er fortsat rigtige for små offentlige filer; den store offentlige detailfil bruger sit eksakte manifestantal under 192 MiB.
+
 # 2026-09-15 – store offentlige runtimefiler bindes til manifestet
 
 - Den komplette 210/673-detailruntime kan være over 64 MiB; observeret live er `117.820.378` ukomprimerede bytes.

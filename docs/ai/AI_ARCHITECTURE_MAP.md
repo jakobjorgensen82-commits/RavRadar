@@ -1,3 +1,9 @@
+## 2026-09-15 lokal 4.0.374 – én filgrænse for beskyttet privat runtime
+
+- `prepare-code-only-public-runtime.mjs` genbruger nu `PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes` i stedet for et selvstændigt 256 MiB-loft.
+- Restore har allerede verificeret eksakt filstørrelse og SHA-256 mod bundlemanifestet før atomisk installation; code-only bevarer JSON-, model-, datasæt-, 210/673- og projektionskontrol.
+- Alle andre læsegrænser i trinnet er gennemgået; den private `conditions.json` var den eneste store runtime med en forældet uafhængig grænse.
+
 ## 2026-09-15 lokal 4.0.373 – manifestbundet offentlig detailruntime
 
 - `prepare-code-only-public-runtime.mjs` læser schema-4-manifestet før detailfilen og kræver 210/673.

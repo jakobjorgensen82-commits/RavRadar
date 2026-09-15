@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-15 – offentlig detailfil passerer; privat storfilgrænse rettet lokalt
+
+4.0.373 bestod sourcegate `34924287616`, blev merged gennem PR #315 som main
+`bf61970ab92585fd4c004994cc52d4ea20ce73a8`, og providerfri code-only
+`34924664012` passerede den manifestbundne detailfil på `117.820.378` bytes.
+Forgængercachen blev verificeret, migreret og installeret atomisk uden
+provider. Dermed er 4.0.373’s offentlige storfilrettelse livebevist.
+
+Næste læsning stoppede før offentlig runtime, Pages og central completion,
+fordi den private `conditions.json` oversteg et gammelt 256 MiB-loft. Lokal
+4.0.374 genbruger cachetransportens eksisterende 768 MiB per-fil-loft.
+Restoretrinnets eksakte manifeststørrelse/hash og alle efterfølgende model-,
+datasæt-, 210/673-, projektions- og privacykontroller bevares. Ingen provider,
+vejrdata, score, state eller migration. DEC-0155.
+
 # NYESTE SANDHED – 2026-09-15 – privat runtime er migreret; offentlig storfilgrænse rettet lokalt
 
 4.0.372 bestod sourcegate `34923460101`, blev merged gennem PR #314 som main
