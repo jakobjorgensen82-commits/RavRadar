@@ -1,5 +1,21 @@
 # Astra – samlet gennemgang af leveringskæden, 2026-09-15
 
+## Første produktionsforsøg efter gennemgangen
+
+4.0.378 bestod exact-head-kildekontrol, blev merged som `348d4a28` og blev
+kørt providerfrit i `34957362872`. Kørselen bestod central binding, privat
+restore og migration, offentlig genopbygning, 210/673-strukturkontrol, privat
+specifikation og bundle samt Pages-prebuild. Den samlede prewrite-afgørelse
+stoppede derefter korrekt før nye produktionswrites, fordi Pages-pakken tog tre
+interne, offentligt ubrugte filer med. Ingen DMI-, Copernicus- eller
+Open-Meteo-provider blev kaldt.
+
+4.0.379 udelader `data/kystdata.json`, `data/zone-plan.json` og
+`js/services/runtime-diagnostics-archive.js` fra både code-only- og
+normal-weather-Pages-pakken. Privacyreglerne og den aktive offentlige
+`data/zones.geojson` bevares uændret. Det er én fælles pakkefejl og ikke evidens
+for en fejl i RavScore, vejrdata eller den centrale modelbinding.
+
 ## Status og afgrænsning
 
 Gennemgangen og den efterfølgende samlede implementation er afsluttet lokalt

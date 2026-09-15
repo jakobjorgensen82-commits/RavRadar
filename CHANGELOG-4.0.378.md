@@ -1,5 +1,13 @@
 # RavRadar 4.0.378
 
+## Produktionsresultat
+
+Sourcegate `34956693177` bestod, og PR #320 blev merged som main `348d4a28`.
+Providerfri code-only `34957362872` bestod alle tunge led frem til den samlede
+prewrite-afgørelse. Privacy fandt tre ubrugte interne filer i Pages-pakken, så
+efterfølgende private, Edge- og Pages-writes blev ikke udført. Rettelsen
+fortsætter som 4.0.379; ingen provider eller oneoff kørte.
+
 ## Lokal samlet releasekandidat efter Astra-gennemgang
 
 Ikke leveret endnu. Fund A–G i

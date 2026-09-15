@@ -1,3 +1,11 @@
+## 2026-09-15 lokal 4.0.379 – offentlig Pages-scope
+
+- Aktiv offentlig geometri kommer fra `data/zones.geojson` og den
+  manifestbundne `data/live/coastal-parts-v2.json`.
+- Gammel `data/kystdata.json`, intern `data/zone-plan.json` og adminens
+  diagnostikdecoder er ikke runtimeafhængigheder og udelades i begge builders.
+- Privacy-auditen scanner fortsat hele det færdige artifact. DEC-0161.
+
 ## 2026-09-15 lokal 4.0.378 – robust providerfri leveringskæde
 
 - Code-only bygger privat spec/bundle og Pages/privacy som uafhængige

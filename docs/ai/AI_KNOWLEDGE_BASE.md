@@ -1,3 +1,13 @@
+# 2026-09-15 – repositoryfil er ikke automatisk offentlig runtimefil
+
+- Pages-builderen må kun kopiere det, den offentlige app bruger.
+- Aktiv zoneautoritet er `data/zones.geojson`; gammel kystdata og den interne
+  zoneplan er ikke nødvendige offentlige inputs.
+- En admin-only diagnostikdecoder skal ikke publiceres, når dens eneste
+  forbruger også er udeladt.
+- Eksklusioner skal være ens i code-only og normal weather, og privacy-auditen
+  skal fortsat kontrollere det færdige artifact. DEC-0161.
+
 # 2026-09-15 – kodelevering og vejrfornyelse er adskilte, men hashbundne
 
 - Rene releaseversioner/cachebusterqueries er ikke private datakontrakter;

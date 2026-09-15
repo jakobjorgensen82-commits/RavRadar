@@ -613,11 +613,13 @@ jobs:
             --exclude '.git/' --exclude '.github/' --exclude '_site*/' --exclude '_support/' \
             --exclude '.cache/' --exclude 'node_modules/' --exclude 'scripts/' --exclude 'docs/' \
             --exclude 'data/diagnostics/' --exclude 'data/geometry-v2/' --exclude 'data/admin/' --exclude 'data/live/' \
+            --exclude 'data/kystdata.json' --exclude 'data/zone-plan.json' \
             --exclude 'handbook.html' --exclude 'handbook.css' --exclude 'documentation.html' \
             --exclude 'js/ui/handbook.js' --exclude 'js/ui/admin-app.js' \
             --exclude 'js/core/rule-engine.js' --exclude 'js/core/score-engine.js' \
             --exclude 'js/core/adaptive-model.js' --exclude 'js/core/prediction-engine.js' \
             --exclude 'js/services/rule-service.js' --exclude 'js/services/trip-service.js' \
+            --exclude 'js/services/runtime-diagnostics-archive.js' \
             --exclude 'js/services/trip-evidence-legacy-bridge.js' --exclude 'rules/' --exclude 'schemas/' \
             --exclude 'supabase/' --exclude 'requirements-*.txt' --exclude '.geometry-v2-work/' \
             --exclude 'package.json' --exclude 'package-lock.json' --exclude 'CHANGELOG*.md' \

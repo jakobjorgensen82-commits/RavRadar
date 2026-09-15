@@ -1,4 +1,10 @@
-## 4.0.378 – samlet robust providerfri leveringskæde (2026-09-15, lokal kandidat)
+## 4.0.379 – ubrugte interne filer ud af Pages (2026-09-15, lokal kandidat)
+
+- 4.0.378 sourcegate `34956693177` og PR #320 gav main `348d4a28`; providerfri `34957362872` bestod hele den tunge kæde til samlet prewrite.
+- Privacy fandt gammel kystdata, intern zoneplan og admin-diagnostikdecoder i Pages. 4.0.379 udelader dem i både code-only og normal weather uden at lempe audit eller fjerne aktiv `zones.geojson`.
+- Ingen geometri, punkter, vejrdata, score eller state ændres. Se `CHANGELOG-4.0.379.md` og DEC-0161.
+
+## 4.0.378 – samlet robust providerfri leveringskæde (2026-09-15, merged; code-only stoppet før writes)
 
 - PR #319/sourcegate `34946601576` gav main `ec26f8e4`; code-only `34947169348` beviste den kanoniske DMI-sti, men privat publicering stoppede før writes, fordi pointerlæseren afviste forgængerens nødvendige gamle modelhash.
 - 4.0.378 tillader gammel current kun ved eksakt forgængermanifest, beviser historisk previous med et reelt selvstændigt arkiv og kan vælge ærlig koldstart efter udløb uden at kalde gammel state frisk.

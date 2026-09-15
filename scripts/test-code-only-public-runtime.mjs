@@ -120,6 +120,9 @@ for (const marker of [
   'Decide all independent prewrite checks together',
   'supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"',
   'RavRadar assistant deployment attempt $attempt of 3 failed; retrying.',
+  "--exclude 'data/kystdata.json'",
+  "--exclude 'data/zone-plan.json'",
+  "--exclude 'js/services/runtime-diagnostics-archive.js'",
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
 const independentPrewriteDecision = workflow.indexOf(

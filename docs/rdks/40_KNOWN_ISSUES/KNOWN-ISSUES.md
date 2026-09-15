@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.379 Pages-pakkescope
+
+- **ISSUE-4.0.378-PAGES-INTERNAL-FILES – RETTET LOKALT / LIVEBEVIS MANGLER:** Code-only `34957362872` fandt tre ubrugte interne filer i Pages-pakken; 4.0.379 udelader dem i begge produktionsbuilders uden privacy-lempelse.
+- **ISSUE-4.0.379-DEPLOY – ÅBEN P0:** Målkontrol, exact-head, merge og providerfri code-only mangler.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN:** Normal weather skal efter modeldeploy bevise faktiske tal, scorer, rotation og cache.
+
+Runnet beviste alle tidligere tunge code-only-led frem til den samlede
+prewrite-afgørelse. Der kom ingen efterfølgende private, Edge- eller Pages-
+writes og ingen provider. DEC-0161.
+
 # NYESTE CHECKPOINT – 2026-09-15 – Astra-fund samlet rettet lokalt
 
 Detaljer og evidens findes i

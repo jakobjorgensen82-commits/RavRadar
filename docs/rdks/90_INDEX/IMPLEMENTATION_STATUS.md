@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.379 Pages-privacy-scope
+
+- [x] Bestå 4.0.378 exact-head sourcegate `34956693177` og merge PR #320 som main `348d4a28`.
+- [x] Kør providerfri code-only `34957362872` gennem alle tunge restore-/genbygnings-/audit-/bundle-/Pages-prewrite-led.
+- [x] Afgræns stoppet til tre ubrugte interne filer i den ellers grønne Pages-pakke; ingen efterfølgende private/Edge/Pages-writes.
+- [x] Udelad filerne på både code-only og normal Pages-vej uden at lempe privacy-auditen.
+- [ ] Målrettet kontrol, docs/geodatabevis, commit/push og én exact-head sourcegate.
+- [ ] Merge, providerfri code-only, central/private/Edge/Pages-liveverifikation.
+- [ ] Først derefter normal weather, numeriske scorer, rotation/cache og sitekontrol.
+
+Ingen provider, normal weather eller oneoff. DEC-0161.
+
 # Aktuel implementeringsstatus – 4.0.378 samlet leveringsrobusthed
 
 - [x] Afslut Astra-helkædeanalyse og skift tilbage til Sol/Ekstra høj.

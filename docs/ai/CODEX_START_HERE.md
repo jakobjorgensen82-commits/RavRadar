@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.379 efter Pages-privacyfund
+
+Main er `348d4a28` efter PR #320/sourcegate `34956693177`. Providerfri
+code-only `34957362872` bestod hele den tunge kæde til og med privat bundle,
+210/673, Pages-prebuild og samlet prewrite. Privacy fandt tre ubrugte interne
+filer i Pages-pakken, så ingen efterfølgende private/Edge/Pages-writes skete.
+
+Branch `codex/4.0.379-pages-privacy-scope` udelader filerne i både code-only-
+og normal Pages-builder uden at lempe audit eller fjerne `zones.geojson`.
+Fortsæt: målrettet kontrol, docs/geodatabevis, commit/push, én exact-head,
+merge og providerfri code-only. Ingen provider, weather eller oneoff.
+DEC-0161. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.378 samlet og klar til exact-head
 
 Læs først `docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`, DEC-0159 og

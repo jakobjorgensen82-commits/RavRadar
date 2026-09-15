@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.379 direkte fra privacyfund til levende model
+
+1. [x] Bevar alle grønne resultater fra providerfri `34957362872`; afgræns én Pages-pakkeårsag.
+2. [x] Fjern de tre ubrugte interne filer fra begge Pages-buildere; auditreglerne er uændrede.
+3. [ ] Målrettet kontrol, docs/geodatabevis, commit/push og én exact-head sourcegate.
+4. [ ] Merge og kør providerfri code-only til privat runtime, assistent, Pages og central completion.
+5. [ ] Verificér levende 4.0.379, modelbinding, 210/673/118, begge søgemåder, Om RavRadar og privacy.
+6. [ ] Først derefter normal tidsbegrænset weather: numeriske input/scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0161 er aktiv.
+
 # Aktiv roadmap – 4.0.378 fra samlet rettelse til levende model
 
 1. [x] Afslut Astra-review og implementér A–G samlet på Sol/Ekstra høj.
