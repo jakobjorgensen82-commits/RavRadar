@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.374 privat runtimegrænse
+
+PR #315/sourcegate `34924287616` blev merged som main `bf61970a`.
+Code-only `34924664012` passerede 118 MB-detailfilen og genbrugte hele den
+providerfri cachemigration/-installation. Næste læsning af privat
+`conditions.json` stoppede før publicering på et gammelt 256 MiB-loft.
+
+4.0.374 genbruger cachetransportens autoritative 768 MiB per-fil-loft. Restore
+kontrollerer fortsat eksakt manifeststørrelse/hash før installation, og
+code-only bevarer model-, datasæt-, inventar-, projektions- og privacybeviser.
+DEC-0155.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.373 detailruntime
 
 PR #314/sourcegate `34923460101` blev merged som main `b2d401a1`.

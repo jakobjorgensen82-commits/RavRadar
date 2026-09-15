@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.374 genbruger cachetransportens private filgrænse
+
+- PR #315/sourcegate `34924287616` gav main `bf61970a`; `34924664012` passerede offentlig storfil og genbrugte cachemigration/-installation uden provider.
+- Offentlig genopbygning stoppede før writes, fordi privat `conditions.json` oversteg et gammelt uafhængigt 256 MiB-loft.
+- 4.0.374 bruger den beskyttede cachetransports eksisterende 768 MiB per-fil-loft og bevarer eksakt bundle- og runtimeintegritet. DEC-0155.
+
 # 2026-09-15 – 4.0.373 accepterer den komplette manifestbundne detailruntime
 
 - PR #314/sourcegate `34923460101` gav main `b2d401a1`; `34923801295` migrerede og installerede den private runtime uden provider.

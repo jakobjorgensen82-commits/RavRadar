@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – privat conditions over gammelt loft
+
+- **ISSUE-4.0.372-PUBLIC-DETAIL-SIZE – LUKKET:** Run `34924664012` passerede den manifestbundne detailfil på `117.820.378` bytes.
+- **ISSUE-4.0.373-PRIVATE-CONDITIONS-SIZE – RETTET LOKALT / LIVEBEVIS MANGLER:** Den allerede bundleverificerede private runtime blev afvist af et mindre 256 MiB-loft. Code-only genbruger nu cachetransportens 768 MiB per-fil-loft.
+- **ISSUE-4.0.374-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen migration/provider gentages.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather først efter modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – offentlig detailruntime over gammelt loft
 
 - **ISSUE-4.0.372-CACHE-MIGRATION – LUKKET:** Run `34923801295` migrerede og installerede den private runtime atomisk med aktuel modelbinding.

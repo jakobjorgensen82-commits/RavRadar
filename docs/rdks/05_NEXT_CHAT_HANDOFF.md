@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.374 privat runtimegrænse
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.374-authoritative-private-size`; remote main er `bf61970a`.
+Run `34924664012` passerede den rettede offentlige storfil og installerede den
+migrerede cache uden provider, men stoppede før publicering på privat
+`conditions.json` mod et gammelt 256 MiB-loft. Code-only genbruger nu den
+beskyttede cachetransports autoritative 768 MiB per-fil-loft; eksakt
+manifeststørrelse/hash og alle øvrige beviser bevares. Næste: checks,
+commit/push, én exact-head gate, merge, code-only og offentlig kontrol;
+derefter normal weather. Ingen oneoff. DEC-0155. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.373 offentlig detailruntime
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

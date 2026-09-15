@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.373
+**Håndbogsversion:** 4.0.374
+
+## 88.78 4.0.374 – Den private cache skal ikke afvises to gange med forskellige grænser
+
+4.0.373 fik den cirka 118 MB store offentlige detaljefil igennem. Den private
+cache blev også kontrolleret, migreret og installeret korrekt. Alligevel
+stoppede næste trin, fordi det brugte sin egen gamle grænse på 256 MiB, som var
+mindre end grænsen i den cachetransport, der allerede havde godkendt filen.
+
+4.0.374 bruger samme 768 MiB-filgrænse som den beskyttede cachetransport.
+Transporten kontrollerer fortsat filens præcise størrelse og digitale
+fingeraftryk mod det forseglede manifest, før filen installeres. Bagefter
+kontrolleres fortsat JSON, model, datasæt, alle 210 zoner/673 kystdele,
+offentlig visning og privatliv. Der åbnes ikke for ubegrænsede filer, og der
+hentes ingen nye vejrdata.
 
 ## 88.77 4.0.373 – Den komplette detaljefil er større end den gamle grænse
 

@@ -1,3 +1,11 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.374 privat runtimegrænse
+
+- **REQ-4.0.374-AUTHORITATIVE-BOUND-001 – IMPLEMENTERET LOKALT:** Code-only-læsning af privat `conditions.json` skal bruge cachetransportens eksisterende 768 MiB per-fil-loft, ikke et mindre uafhængigt 256 MiB-loft.
+- **REQ-4.0.374-INTEGRITY-001 – BINDENDE:** Eksakt manifeststørrelse og SHA-256 skal fortsat verificeres før atomisk installation; JSON, model, datasæt, 210/673-inventar, projektion og privacy må ikke lempes.
+- **REQ-4.0.374-NO-REPEAT-001 – AKTIV:** Genbrug central version 1, migration 16/17, privacy og den livebeviste cachemigration. Ingen provider/oneoff.
+
+DEC-0155 supplerer DEC-0148–0154.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.373 offentlig detailruntime
 
 - **REQ-4.0.373-MANIFEST-SIZE-001 – IMPLEMENTERET LOKALT:** Offentlig detailruntime læses med manifestets eksakte attesterede byteantal, ikke et forældet 64 MiB-loft.

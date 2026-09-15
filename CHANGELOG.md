@@ -1,3 +1,9 @@
+## 4.0.374 – autoritativ privat runtimegrænse (2026-09-15, lokal kandidat)
+
+- PR #315/sourcegate `34924287616` gav main `bf61970a`; code-only `34924664012` passerede 118 MB-detailfilen og installerede den migrerede private runtime uden provider.
+- Offentlig genopbygning stoppede derefter på et gammelt 256 MiB-loft for den allerede bundleverificerede private `conditions.json`.
+- 4.0.374 genbruger cachetransportens eksisterende 768 MiB per-fil-loft og bevarer eksakt bundlehash/-størrelse samt alle efterfølgende model-, datasæt-, inventar-, projektions- og privacybeviser. Se `CHANGELOG-4.0.374.md` og DEC-0155.
+
 ## 4.0.373 – manifestbundet offentlig detailruntime (2026-09-15, lokal kandidat)
 
 - PR #314/sourcegate `34923460101` gav main `b2d401a1`; code-only `34923801295` gennemførte den private cachemigration og atomiske installation uden provider.

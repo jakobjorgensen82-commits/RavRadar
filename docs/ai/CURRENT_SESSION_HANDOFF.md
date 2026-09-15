@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.374 privat runtimegrænse
+
+Main er `bf61970a` efter PR #315/sourcegate `34924287616`. Providerfri
+code-only `34924664012` passerede den offentlige detailfil, migrerede og
+installerede forgængercachen atomisk, men stoppede før offentlig genopbygning
+på et gammelt 256 MiB-loft for privat `conditions.json`.
+
+Branch `codex/4.0.374-authoritative-private-size` bruger nu cachetransportens
+allerede gældende 768 MiB per-fil-loft. Eksakt størrelse/hash er allerede
+bundleverificeret; øvrige integritetskontroller bevares. Næste: målrettet
+slutkontrol, commit/push, én exact-head sourcegate, merge og providerfri
+code-only; derefter livekontrol og normal tidsbegrænset weather. Ingen oneoff.
+DEC-0155. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.373 manifestbundet detailruntime
 
 Main er `b2d401a1` efter PR #314/sourcegate `34923460101`. Providerfri

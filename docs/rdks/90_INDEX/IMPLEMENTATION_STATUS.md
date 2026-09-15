@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.374 autoritativ privat filgrænse
+
+- [x] Bestå 4.0.373 sourcegate `34924287616` og merge PR #315 som main `bf61970a`.
+- [x] Livebevis providerfri restore, migration, atomisk installation og passage af offentlig detailfil i `34924664012`.
+- [x] Afgræns næste stop til privat `conditions.json` mod gammelt 256 MiB-loft; ingen offentlig runtime-, Pages- eller completionwrite efter stoppet.
+- [x] Genbrug cachetransportens 768 MiB per-fil-loft og bevar bundle-, model-, datasæt-, inventar-, projektions- og privacykontroller.
+- [x] Gennemgå de øvrige læsegrænser i samme trin; kun den private runtime havde et forældet uafhængigt storfil-loft.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.374.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0155 er aktiv. Gentag ikke provider, migration eller tidligere cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.373 manifestbundet detailruntime
 
 - [x] Bestå 4.0.372 sourcegate `34923460101` og merge PR #314 som main `b2d401a1`.

@@ -13,6 +13,7 @@ import {
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
 import { assertBindingUpgrade } from './migrate-post-cutover-private-runtime.mjs';
+import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 
 export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
   manifest: 'manifest.json',
@@ -24,6 +25,12 @@ export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
 });
 
 export const CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES = 192 * 1024 * 1024;
+// The protected restore has already verified the exact file bytes and SHA-256
+// from its sealed bundle manifest before the runtime is installed atomically.
+// Reuse the same per-file safety policy when that installed runtime is parsed;
+// a smaller independent limit can reject a valid, already-verified cache.
+export const CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES =
+  PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes;
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const DERIVED_HASH_KEYS = new Set([
@@ -192,7 +199,11 @@ export async function prepareCodeOnlyPublicRuntime({
     readJson(paths.coastalParts, 'Live public coastal-part registry', 16 * 1024 * 1024),
     readJson(paths.zoneRegistry, 'Live public zone registry', 32 * 1024 * 1024),
     readJson(paths.waterLevelRouting, 'Live public water-level routing', 4 * 1024 * 1024),
-    readJson(path.join(repository, 'data/live/conditions.json'), 'Restored private conditions', 256 * 1024 * 1024),
+    readJson(
+      path.join(repository, 'data/live/conditions.json'),
+      'Restored private conditions',
+      CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
+    ),
     readJson(path.join(repository, 'version.json'), 'Release version', 16 * 1024),
   ]);
   assertDigest(publicSource.text, manifest.publicConditionsSha256, 'Live public startup runtime');
