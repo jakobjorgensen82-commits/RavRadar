@@ -118,6 +118,7 @@ const ARCHIVE_CONTENT_ENCODING = 'GZIP_BASE64';
 const SAME_REFERENCE_MIGRATION_REPORT_KEYS = Object.freeze([
   'schemaVersion',
   'kind',
+  'transitionKind',
   'predecessorSourceHead',
   'datasetId',
   'sourceBundleContentSha256',
@@ -957,10 +958,12 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   const changedBindingFields = predecessorBindingKeys.filter(
     key => predecessorManifest.modelBinding[key] !== successorManifest.modelBinding[key],
   );
+  const bindingMigration = migrationReport.transitionKind === 'MODEL_BINDING_MIGRATION';
+  const contractOnlyRebind = migrationReport.transitionKind === 'CONTRACT_ONLY_REBIND';
   if (!isPlainObject(existingDescriptor)
     || !isPlainObject(successorDescriptor)
     || migrationReport.schemaVersion !== 1
-    || migrationReport.kind !== 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION'
+    || migrationReport.kind !== 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND'
     || migrationReport.predecessorSourceHead !== existingDescriptor.sourceHead
     || migrationReport.sourceBundleContentSha256 !== existingDescriptor.bundleContentSha256
     || predecessorManifest.bundleContentSha256 !== existingDescriptor.bundleContentSha256
@@ -985,21 +988,37 @@ export function validateSameReferencePrivateRuntimeSuccessor({
     || migrationReport.currentIntegratedBundleSha256
       !== successorManifest.modelBinding.modelBundleSha256
     || JSON.stringify(predecessorBindingKeys) !== JSON.stringify(successorBindingKeys)
-    || JSON.stringify(changedBindingFields) !== JSON.stringify(['modelBundleSha256'])
     || !SHA256_PATTERN.test(String(migrationReport.previousCandidateBundleSha256 ?? ''))
     || !SHA256_PATTERN.test(String(migrationReport.currentCandidateBundleSha256 ?? ''))
-    || migrationReport.previousCandidateBundleSha256 === migrationReport.currentCandidateBundleSha256
     || !['ravScoreCandidateGRollback', 'ravScoreCandidateGWarmup']
       .includes(migrationReport.candidateRuntimeKind)
     || migrationReport.migratedPartCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
     || !Number.isSafeInteger(migrationReport.changedBindingFieldCount)
-    || migrationReport.changedBindingFieldCount < PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
     || migrationReport.copiedPrivateFileCount !== predecessorFiles.size
     || migrationReport.copiedPrivateFileCount !== successorFiles.size
     || migrationReport.measurementsChanged !== false
     || migrationReport.candidateStatesChanged !== false
     || migrationReport.privatePayloadIncluded !== false) {
     throw new Error('Same-reference private runtime successor evidence is invalid');
+  }
+  if (bindingMigration) {
+    if (JSON.stringify(changedBindingFields) !== JSON.stringify(['modelBundleSha256'])
+      || migrationReport.previousCandidateBundleSha256
+        === migrationReport.currentCandidateBundleSha256
+      || migrationReport.changedBindingFieldCount
+        < PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount) {
+      throw new Error('Same-reference model-binding migration evidence is invalid');
+    }
+  } else if (contractOnlyRebind) {
+    if (changedBindingFields.length !== 0
+      || migrationReport.previousCandidateBundleSha256
+        !== migrationReport.currentCandidateBundleSha256
+      || migrationReport.changedBindingFieldCount !== 0
+      || same(migrationReport.previousContractHashes, migrationReport.currentContractHashes)) {
+      throw new Error('Same-reference contract-only rebind evidence is invalid');
+    }
+  } else {
+    throw new Error('Same-reference private runtime transition kind is invalid');
   }
   if (predecessorFiles.size !== successorFiles.size
     || [...predecessorFiles.keys()].some(id => !successorFiles.has(id))) {
@@ -1010,11 +1029,16 @@ export function validateSameReferencePrivateRuntimeSuccessor({
     if (id === 'full-conditions') {
       if (successorFile.bytes !== migrationReport.migratedConditionsBytes
         || successorFile.sha256 !== migrationReport.migratedConditionsSha256
-        || predecessorFile.sha256 === successorFile.sha256
         || !Number.isSafeInteger(migrationReport.migratedConditionsBytes)
         || migrationReport.migratedConditionsBytes < 2
         || !SHA256_PATTERN.test(String(migrationReport.migratedConditionsSha256 ?? ''))) {
         throw new Error('Same-reference migrated conditions evidence is invalid');
+      }
+      if (bindingMigration && predecessorFile.sha256 === successorFile.sha256) {
+        throw new Error('Same-reference binding migration did not change conditions metadata');
+      }
+      if (contractOnlyRebind && !same(predecessorFile, successorFile)) {
+        throw new Error('Same-reference contract-only rebind changed private conditions');
       }
     } else if (!same(predecessorFile, successorFile)) {
       throw new Error('Same-reference migration changed a non-conditions private file');

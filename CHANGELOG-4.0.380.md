@@ -31,3 +31,11 @@
 Én exact-head sourcegate, merge og providerfri code-only skal gennemføre Pages
 og central completion. Først derefter køres normal tidsbegrænset weather for at
 bevise numeriske scorer, DMI-rotation og cache. Ingen oneoff.
+
+## Faktisk produktionsresultat
+
+Exact-head sourcegate `35015984953`, PR #322 og main `de8ae966` lykkedes.
+Providerfri code-only `35016734197` nåede dynamisk current-source og eksakt
+forgængerrestore, men stoppede før privat publicering og Pages, fordi den
+aktive private modelbinding allerede var identisk med 4.0.380. Migratoren
+afviste fejlagtigt dette gyldige no-op-udfald. Det rettes i 4.0.381/DEC-0163.

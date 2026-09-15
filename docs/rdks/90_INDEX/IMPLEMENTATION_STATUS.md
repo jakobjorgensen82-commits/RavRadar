@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.381 contract-only-genbrug og Pages først
+
+- [x] Bestå 4.0.380 exact-head `35015984953`, merge PR #322 som main `de8ae966`.
+- [x] Kør providerfri `35016734197` til actual-current restore og afgræns stoppet til uændret modelbinding.
+- [x] Tillad to eksakte private efterfølgere: binding-only migration eller byteidentisk contract-only-genbrug.
+- [x] Bevar ni-filsinventar, vejr, målinger, scorer og states uændret i contract-only-vejen.
+- [x] Flyt kode-only central historisk begin efter bestået Pages-deploy og offentlig verification.
+- [x] Bevar hårde artifact-, privacy-, model-, source- og latest-main-grænser.
+- [x] Bestå målrettet migration-, protected-runtime-, code-only-, reusable-workflow-, YAML- og diffkontrol.
+- [x] Synkronisér docs/håndbog og bevis, at begge geodatafiler kun ændrer topversion.
+- [ ] Commit/push og én exact-head sourcegate.
+- [ ] Merge, providerfri code-only, offentlig 4.0.381 og central slutstatus.
+- [ ] Først derefter normal weather for numeriske scorer, rotation og cache. Ingen oneoff.
+
+DEC-0163 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.380 audit/current-genoptagelse
 
 - [x] Bestå 4.0.379 exact-head `34959283992`, merge PR #321 som main `0cc4a867`.

@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-15 – uændret model og kode-only Pages-rækkefølge
+
+- **ISSUE-4.0.380-AUDIT-HISTORY-SHAPE – LUKKET:** `35016734197` kom forbi den rettede fire-felts auditforbruger.
+- **ISSUE-4.0.380-STALE-PRIVATE-PREDECESSOR – LUKKET:** Samme run brugte pointerens faktiske current og gendannede dens eksakte bundle.
+- **ISSUE-4.0.380-CONTRACT-ONLY-REBIND – RETTET LOKALT / LIVEBEVIS MANGLER:** Uændret model blev fejlagtigt afvist, når kun kodekontraktstemplet var nyt. 4.0.381 kopierer alle ni private filer byte-for-byte og publicerer kun efter eksakt bevis.
+- **ISSUE-4.0.380-CENTRAL-BEFORE-PAGES – RETTET LOKALT / LIVEBEVIS MANGLER:** Kode-only udfører nu hårdt verificeret Pages-deploy før central historisk status, så ren bookkeeping ikke spærrer siden.
+- **ISSUE-4.0.381-DEPLOY – ÅBEN P0:** Exact-head, merge, Pages og offentlig verifikation mangler.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN:** Normal weather skal bagefter bevise tal, scorer, rotation og cache.
+
+Ingen provider eller oneoff. DEC-0163.
+
 # NYESTE CHECKPOINT – 2026-09-15 – auditfelt og gentagen private efterfølger
 
 - **ISSUE-4.0.379-PAGES-INTERNAL-FILES – LUKKET:** `34959875107` bestod den fulde Pages-privacy efter eksklusionerne.

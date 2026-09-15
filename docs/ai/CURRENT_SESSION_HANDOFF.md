@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.381 contract-only/current samlet
+
+4.0.380 er main `de8ae966` efter PR #322/sourcegate `35015984953`.
+Providerfri `35016734197` bestod auditrettelsen og actual-current-restore, men
+stoppede på `Integrated model binding does not require migration`: modellen
+var korrekt allerede den samme, mens kun runtimekontraktstemplet var nyt.
+
+Lokal 4.0.381 accepterer denne contract-only-vej alene med byteidentiske ni
+private filer og aktuelle validatorer; reel modelændring forbliver
+hashbegrænset. Kode-only sætter Pages-deploy/verification før central
+historisk begin, så central bookkeeping kan fejle efter en sikker offentlig
+levering og samles i slutstatus. Hårde privacy-/artifact-/source-/mainkrav er
+uændrede. Måltests og geodatabevis grønne. Næste: commit/push, exact-head,
+merge, providerfri code-only. Ingen weather/oneoff. DEC-0163.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.380 audit/current samlet
 
 4.0.379 er main `0cc4a867` efter PR #321 og sourcegate `34959283992`.

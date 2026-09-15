@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.381 contract-only-genoptagelse
+
+4.0.380 bestod sourcegate `35015984953`, PR #322 og main `de8ae966`.
+Providerfri `35016734197` kom forbi auditrettelsen og brugte dynamisk actual
+current, men stoppede efter eksakt privat restore, fordi current og ny kode
+allerede havde samme modelbinding. Kun runtimekontraktstemplet var ændret.
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.381-contract-rebind-deploy-continuation`. Contract-only-vejen
+kopierer nu alle ni private filer byte-for-byte og opdaterer kun den
+verificerede kontraktidentitet. Reel modelændring bruger fortsat den snævre
+hashmigration. Kode-only deployer/verificerer Pages før central historisk
+status; artifact, privacy, model/source og latest-main forbliver hårde.
+Målrettede tests og geodatadiff er grønne. Næste: commit/push, én exact-head,
+merge og providerfri code-only. Ingen weather eller oneoff før offentlig
+verifikation. DEC-0163. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.380 audit/current-genoptagelse
 
 Main `0cc4a867`, PR #321 og sourcegate `34959283992`. Providerfri

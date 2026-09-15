@@ -1,3 +1,14 @@
+# Nyeste prioritering – 4.0.381 contract-only-genbrug til Pages 2026-09-15
+
+4.0.380 er main efter sourcegate `35015984953`/PR #322. Providerfri
+`35016734197` beviste actual-current-restore, men afviste den gyldige
+situation, at modellen allerede var identisk og kun kontraktstemplet nyt.
+4.0.381 har to eksakte veje: snæver modelhashmigration eller byteidentisk
+ni-fils contract-only-genbrug. Kode-only deployer/verificerer Pages før central
+historisk status. Målmatrix grøn. Næste er én exact-head, merge og providerfri
+code-only. Først derefter normal weather for tal, scorer, rotation og cache.
+Ingen oneoff. DEC-0163.
+
 # Nyeste prioritering – 4.0.380 fra planstop til Pages 2026-09-15
 
 4.0.379 er main og har allerede publiceret privat runtime, assistent og

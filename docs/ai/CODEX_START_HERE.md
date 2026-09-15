@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.381 contract-only og Pages først
+
+Main `de8ae966`, PR #322 og sourcegate `35015984953`. Providerfri code-only
+`35016734197` kom forbi fire-felts auditten, læste actual private current og
+gendannede dens eksakte bundle. Den stoppede, fordi modelbindingen allerede
+var identisk, mens kun kodekontraktstemplet var nyt.
+
+Branch `codex/4.0.381-contract-rebind-deploy-continuation` tillader nu både
+snæver modelhashmigration og byteidentisk ni-fils contract-only-genbrug.
+Same-reference-beviset skelner eksplicit. Kode-only lægger først central
+historisk status efter hårdt bestået Pages-deploy og offentlig verification;
+artifact, privacy, model/source og latest-main forbliver hårde. Målrettet
+matrix og geodatadiff grøn. Næste er commit/push, én exact-head, merge og
+providerfri code-only. Ingen weather/oneoff. DEC-0163. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.380 audit og actual current
 
 Main `0cc4a867`, sourcegate `34959283992`, PR #321. Providerfri code-only

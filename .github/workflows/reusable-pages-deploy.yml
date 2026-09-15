@@ -394,7 +394,7 @@ jobs:
       - name: Begin historical-to-current integrated maintenance with exact central CAS
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
         id: integrated-historical-maintenance-begin
-        if: inputs.operational_action == 'integrated-historical-maintenance'
+        if: inputs.operational_action == 'integrated-historical-maintenance' && inputs.code_only_repair != true
         run: >-
           node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
           --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
@@ -462,6 +462,25 @@ jobs:
           --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
           --observation-nonce "target-${{ github.run_id }}-${{ github.run_attempt }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
+
+      - name: Begin code-only integrated maintenance after verified Pages deployment
+        continue-on-error: true
+        id: code-only-integrated-historical-maintenance-begin
+        if: inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance' && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Reconfirm exact main before activation completion
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
@@ -658,7 +677,7 @@ jobs:
       - name: Reconcile an ambiguous failed transition from observed public identity
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' || inputs.operational_action == 'integrated-historical-maintenance' }}
         id: failure-reconciliation
-        if: (failure() || (inputs.operational_action == 'integrated-cutover' && (steps.deployment.outcome != 'success' || steps.public-verification.outcome != 'success' || steps.integrated-transition-complete.outcome != 'success'))) && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
+        if: (failure() || (inputs.operational_action == 'integrated-cutover' && (steps.deployment.outcome != 'success' || steps.public-verification.outcome != 'success' || steps.integrated-transition-complete.outcome != 'success')) || (inputs.code_only_repair == true && steps.code-only-integrated-historical-maintenance-begin.outcome == 'success' && steps.integrated-historical-maintenance-complete.outcome != 'success')) && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success' || steps.code-only-integrated-historical-maintenance-begin.outcome == 'success')
         shell: bash
         run: |
           set -euo pipefail
@@ -866,7 +885,11 @@ jobs:
               fi
               ;;
             integrated-historical-maintenance)
-              test "${{ steps.integrated-historical-maintenance-begin.outcome }}" = "success"
+              if test "${{ inputs.code_only_repair }}" = "true"; then
+                test "${{ steps.code-only-integrated-historical-maintenance-begin.outcome }}" = "success"
+              else
+                test "${{ steps.integrated-historical-maintenance-begin.outcome }}" = "success"
+              fi
               if test "${{ steps.integrated-historical-maintenance-complete.outcome }}" != "success"; then
                 test "${{ steps.failure-reconciliation.outcome }}" = "success"
               fi
