@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.373 accepterer den komplette manifestbundne detailruntime
+
+- PR #314/sourcegate `34923460101` gav main `b2d401a1`; `34923801295` migrerede og installerede den private runtime uden provider.
+- Offentlig genopbygning stoppede før writes, fordi `117.820.378` bytes oversteg et gammelt 64 MiB-loft.
+- 4.0.373 bruger manifestets eksakte størrelse under 192 MiB og bevarer alle efterfølgende integritetsbeviser. DEC-0154.
+
 # 2026-09-15 – 4.0.372 adskiller hydreret cachebevis fra rå source
 
 - PR #313/sourcegate `34921912516` gav main `36ea9374`; `34922303619` genbrugte hele den allerede beviste providerfri kæde og passerede 11-feltsbindingen.

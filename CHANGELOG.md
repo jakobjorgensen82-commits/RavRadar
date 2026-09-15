@@ -1,3 +1,9 @@
+## 4.0.373 – manifestbundet offentlig detailruntime (2026-09-15, lokal kandidat)
+
+- PR #314/sourcegate `34923460101` gav main `b2d401a1`; code-only `34923801295` gennemførte den private cachemigration og atomiske installation uden provider.
+- Offentlig genopbygning stoppede på et gammelt 64 MiB-loft, mens live-manifestet attesterer en komplet detailfil på `117.820.378` bytes.
+- 4.0.373 bruger manifestets eksakte byteantal inden for et 192 MiB loft og bevarer alle efterfølgende hash-, model-, datasæt-, projektions- og privacybeviser. Se `CHANGELOG-4.0.373.md` og DEC-0154.
+
 ## 4.0.372 – korrekt hydreret runtimeattestation (2026-09-15, lokal kandidat)
 
 - PR #313/sourcegate `34921912516` gav main `36ea9374`; code-only `34922303619` nåede forbi den rettede 11-feltsbinding og genbrugte central/migration/privacy/restore uden provider.

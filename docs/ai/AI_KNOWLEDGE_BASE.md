@@ -1,3 +1,9 @@
+# 2026-09-15 – store offentlige runtimefiler bindes til manifestet
+
+- Den komplette 210/673-detailruntime kan være over 64 MiB; observeret live er `117.820.378` ukomprimerede bytes.
+- Læs og valider manifestet først, brug dets eksakte byteantal som filgrænse under et selvstændigt fast loft, og kontrollér derefter både byteantal og hash.
+- Et fast gammelt loft er ikke et integritetsbevis; manifestbinding plus maksimal kapacitet er den relevante kontrakt.
+
 # 2026-09-15 – hydrerede runtimehashes er ikke raw-source-hashes
 
 - En privat runtimebundle forsegles efter central hydrering og generering; dens kontrakthashes attesterer derfor det færdige byggeworkspace.

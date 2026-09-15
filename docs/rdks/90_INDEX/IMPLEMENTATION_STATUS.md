@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.373 manifestbundet detailruntime
+
+- [x] Bestå 4.0.372 sourcegate `34923460101` og merge PR #314 som main `b2d401a1`.
+- [x] Livebevis providerfri restore, udpakning, migration og atomisk installation af den private runtime i `34923801295`.
+- [x] Afgræns næste stop til offentlig detailfil `117.820.378` bytes mod gammelt 64 MiB-loft; ingen publiceringswrites efter stoppet.
+- [x] Brug manifestets eksakte byteantal inden for 192 MiB sikkerhedsloft og bevar efterfølgende integritetskontroller.
+- [x] Målrettet code-only-regression og syntakskontrol er grøn.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.373.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0154 er aktiv. Gentag ikke provider, migration eller tidligere cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.372 hydreret runtimeattestation
 
 - [x] Bestå 4.0.371 sourcegate `34921912516` og merge PR #313 som main `36ea9374`.

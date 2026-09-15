@@ -1,3 +1,11 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.373 offentlig detailruntime
+
+- **REQ-4.0.373-MANIFEST-SIZE-001 – IMPLEMENTERET LOKALT:** Offentlig detailruntime læses med manifestets eksakte attesterede byteantal, ikke et forældet 64 MiB-loft.
+- **REQ-4.0.373-SAFE-CAP-001 – BINDENDE:** Manifeststørrelsen skal være et sikkert heltal og højst 192 MiB; byte- og hashkontrol efter læsning er fortsat obligatorisk.
+- **REQ-4.0.373-NO-REPEAT-001 – AKTIV:** Genbrug central version 1, migration 16/17, privacy og den livebeviste cachemigration. Ingen provider/oneoff.
+
+DEC-0154 supplerer DEC-0148–0153.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.372 hydreret runtimeattestation
 
 - **REQ-4.0.372-HYDRATED-HASH-001 – IMPLEMENTERET LOKALT:** Den beskyttede caches forseglede kontrakthashes attesterer det hydrerede byggeworkspace og må ikke kræves lig hashes fra en rå Git-udpakning.

@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.373 offentlig detailruntime
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.373-manifest-bound-public-details`; remote main er `b2d401a1`.
+Run `34923801295` gennemførte providerfri cachemigration/installation, men
+stoppede før publicering på detailfil `117.820.378` bytes mod gammelt 64 MiB.
+Manifestets eksakte størrelse bruges nu under 192 MiB loft med alle hashes og
+andre beviser bevaret. Næste: checks, commit/push, én exact-head gate, merge,
+code-only og offentlig kontrol; derefter normal weather. Ingen oneoff.
+DEC-0154. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.372 runtimeattestation
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch
