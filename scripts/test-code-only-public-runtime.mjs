@@ -80,8 +80,11 @@ for (const marker of [
   'ravscore-operational-recovery-34877443841-1',
   'Freshly verify the exact historical integrated artifact is still public',
   'Atomically record the exact already-public historical cutover',
+  'if has($field) then .[$field] else "" end',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+assert.ok(!workflow.includes('.[$field] // ""'),
+  'Code-only-workflowet må ikke gøre en ægte false-værdi til tom tekst');
 for (const forbidden of [
   'DMI_API_KEY',
   'COPERNICUSMARINE_SERVICE_USERNAME',

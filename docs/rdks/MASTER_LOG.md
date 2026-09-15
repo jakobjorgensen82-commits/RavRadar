@@ -1,3 +1,9 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – central version 1 og 4.0.368
+
+PR #309 bestod exact-head sourcegate `34914010157` og blev merged som main `d25dfe8e`. Code-only-run `34914399119` gennemførte den eksakte recovery; Supabase er nu `INTEGRATED_ACTIVE` version 1. Runnet kontaktede ingen provider og stoppede derefter før migration, privat runtime og Pages.
+
+Stoppet skyldtes, at jq `.[$field] // ""` behandler boolsk `false` som tom standard. 4.0.368 bruger eksplicit felttilstedeværelse, låser rettelsen i code-only-kontrakten og fortsætter næste run fra central version 1. Recovery, gammel cutover og oneoff gentages ikke.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.367 central recovery
 
 Den faktiske gennemgang af cutover `34877443841` korrigerer den tidligere hukommelse: Pages og privat runtime blev publiceret, men plan/handoff og central begin/complete fejlede. Supabase-overgangen lykkedes derfor ikke, og den grønne terminal var falsk. Central står fortsat uden operationel række på legacy Candidate G, mens Pages viser den historiske integrerede binding.

@@ -1,7 +1,8 @@
-# NYESTE CHECKPOINT – 2026-09-15 – 4.0.367 retter manglende central cutover
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 fortsætter fra genskabt central version 1
 
-- **ISSUE-CUTOVER-34877443841-FALSE-GREEN – RETTET LOKALT / LIVE ÅBEN P0:** Pages blev publiceret, men plan/handoff og central CAS manglede. En hash-låst engangsrecovery med frisk liveverification og en handlingsspecifik terminal er implementeret. PR-gate, merge og produktionsbevis mangler.
-- **ISSUE-4.0.367-DEPLOY – ÅBEN P0:** Målrettede lokale kontroller er grønne; én exact-head PR-gate, merge, manuel code-only-deploy, central readback og offentlig verifikation mangler.
+- **ISSUE-CUTOVER-34877443841-FALSE-GREEN – CENTRAL DEL LUKKET / DEPLOY ÅBEN:** Run `34914399119` gennemførte den hash-låste recovery. Supabase er nu `INTEGRATED_ACTIVE` version 1. Aktuel binding, migration, privat runtime og Pages mangler fortsat.
+- **ISSUE-4.0.367-FALSE-OUTPUT – RETTET LOKALT I 4.0.368:** jq-standarden `// ""` gjorde ægte boolsk `false` til tom tekst og stoppede klassifikationen efter den vellykkede recovery. Eksplicit `has($field)` bevarer nu værdien.
+- **ISSUE-4.0.368-DEPLOY – ÅBEN P0:** Målrettet code-only-, workflow-, versions-, modelbindings-, YAML- og RDKS-kontrol er grøn. Exact-head PR-gate, merge, code-only-fortsættelse og central/offentlig verifikation mangler.
 - **ISSUE-POST-CUTOVER-WIND-MERGE – RETTET LOKALT:** Gyldig DKSS-`windTail` bevares atomisk som vind gennem merge.
 - **ISSUE-POST-CUTOVER-ROUND-360 – RETTET LOKALT:** Vind-, bølge- og strømretning normaliseres efter afrunding; null og boolske værdier bliver ikke til nul.
 - **ISSUE-POST-CUTOVER-H1-NULL-HOLD – RETTET LOKALT:** Sidste currentevidence skal være den sidste verificerede måling, før et nyt native holdinterval må attesteres.
@@ -10,7 +11,7 @@
 - **ISSUE-POST-CUTOVER-UI-MISSING-ZERO – RETTET LOKALT:** Manglende vandstand, fundvægt og score forbliver manglende; fremtidig time mærkes ikke som nu; nødtekst lover kun senest gemte data.
 - **ISSUE-POST-CUTOVER-STATE-UPGRADE – RETTET LOKALT:** Eksakt ni-fils privat runtimeovergang ændrer kun gennemgåede bindinger; nyt append-only migrationsled er reproducerbart.
 - **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN DRIFTSBEVIS:** Rotation og cachelogik er rettet/kontrolleret i kode, men skal stadig bevises af særskilt normal weather efter deploy.
-- **ISSUE-FORECAST-DUPLICATE-SOURCE-PAIRING – LATENT/ÅBEN:** Den reproducerede helperrisiko er ikke ændret i 4.0.367; ingen aktiv producentvej er bevist. Revurder efter normal drift uden at gøre den til deployblokering.
+- **ISSUE-FORECAST-DUPLICATE-SOURCE-PAIRING – LATENT/ÅBEN:** Den reproducerede helperrisiko er ikke ændret i 4.0.368; ingen aktiv producentvej er bevist. Revurder efter normal drift uden at gøre den til deployblokering.
 - **ISSUE-OLD-JOBLESS-RUNS – ÅBEN EKSTERN:** Runs `34613079069`/`34228112413` gav fortsat 409/403 ved tidligere oprydning; ingen ny identisk retry uden ændret ekstern evidens.
 
 # HISTORISK CHECKPOINT – 2026-09-14 – online med konstaterede inputfejl

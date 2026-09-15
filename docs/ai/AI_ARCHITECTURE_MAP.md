@@ -1,3 +1,9 @@
+## 2026-09-15 lokal 4.0.368 – workflowoutput bevarer boolsk false
+
+- Central recovery er fuldført som operationel version 1; code-only-fortsættelsen starter derfor fra den forseglede historiske integrerede tilstand.
+- Outputbroen bruger `if has($field) then .[$field] else "" end`, så manglende felter og boolsk `false` ikke sammenblandes.
+- Næste action er `integrated-historical-maintenance`; recovery/provider/oneoff er ikke del af fortsættelsen.
+
 ## 2026-09-15 lokal 4.0.367 – historisk Pages-target til sand central tilstand
 
 - `deploy-code-only-repair.yml` læser først central og offentlig identitet. Kun kombinationen manglende operationel række + eksakt legacyprofil + offentlig targetmanifesthash fra `34877443841` åbner engangsrecoveryen.

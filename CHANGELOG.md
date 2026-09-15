@@ -1,3 +1,10 @@
+## 4.0.368 – bevar boolske false-værdier i code-only-fortsættelsen (2026-09-15, lokal kandidat)
+
+- PR #309/sourcegate `34914010157` blev merged som `d25dfe8e`, og run `34914399119` genskabte den historiske integrerede tilstand som central `INTEGRATED_ACTIVE` version 1 uden provider.
+- Runnet stoppede derefter, fordi jq-standarden `// ""` gjorde tre ægte `false`-felter til tom tekst.
+- Outputlæsningen bruger nu eksplicit felttilstedeværelse; næste code-only-run springer recovery over og fortsætter direkte gennem historisk-til-aktuel vedligeholdelse.
+- Målrettet kontrakt, versionskontrol, RDKS, modelbinding og YAML er grønne; én exact-head PR-gate mangler. Se `CHANGELOG-4.0.368.md`.
+
 ## 4.0.367 – central cutover-recovery og sand deployterminal (2026-09-15, lokal kandidat)
 
 - Retter den faktiske splittelse efter run `34877443841`: integreret Pages-target er offentligt, men den centrale operation/profilovergang blev aldrig fuldført.
