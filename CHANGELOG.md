@@ -1,3 +1,9 @@
+## 4.0.375 – komplet migration af gemt modelmetadata (2026-09-15, lokal kandidat)
+
+- 4.0.374 bestod sourcegate `34933609573`, blev merged gennem PR #316 som main `dd59bc51`, og code-only `34934257354` genbrugte central tilstand, migrationer, privacy og gemt runtime uden provider.
+- Runnet stoppede før publicering, fordi den gamle bundlehash stadig lå i scoreprofilen; samme hash findes i indlejrede resultater, forklaringer, zone-timer og Candidate G-backup.
+- 4.0.375 migrerer alle eksakt genkendte modelmetadatafelter i én rekursiv gennemgang. Kun `modelBundleSha256` må ændres; faktisk leaf-diff skal matche en dynamisk allowlist, og ingen gammel hash må være tilbage. Scores, vejr, målinger og stateindhold bevares. Se `CHANGELOG-4.0.375.md` og DEC-0156.
+
 ## 4.0.374 – autoritativ privat runtimegrænse (2026-09-15, lokal kandidat)
 
 - PR #315/sourcegate `34924287616` gav main `bf61970a`; code-only `34924664012` passerede 118 MB-detailfilen og installerede den migrerede private runtime uden provider.

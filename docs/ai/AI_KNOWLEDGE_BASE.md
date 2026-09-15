@@ -1,3 +1,16 @@
+# 2026-09-15 – en modelbinding findes flere steder end rooten
+
+- En gemt produktionsruntime kan bære samme modelidentitet i rootbinding,
+  scoreprofil, wrapper, kompakt resultatsammendrag, indlejret binding,
+  forklaring, zone-time og rollbackruntime.
+- En modelhashmigration må derfor følge hele den faktiske runtimeflade, ikke en
+  manuelt antaget kort liste. Hver forekomst skal stadig bevises som eksakt
+  kendt metadata, og kun hashfeltet må ændres.
+- En dynamisk liste over præcis genkendte leaf-paths kan sammenholdes 1:1 med
+  den faktiske diff. Kontroller bagefter, at ingen gammel hash er tilbage.
+- Afledt continuation state kræver sin egen gamle og nye validator; andet
+  stateindhold må ikke ændres. DEC-0156.
+
 # 2026-09-15 – genbrug den autoritative grænse efter beskyttet restore
 
 - En fil, som den beskyttede cachetransport allerede har verificeret mod et forseglet manifest, må ikke bagefter afvises af et mindre, uafhængigt loft i samme fortsættelse.

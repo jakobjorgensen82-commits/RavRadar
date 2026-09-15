@@ -154,6 +154,16 @@ try {
     zones,
     coastalParts: { modelBinding: ravScoreModelBinding(), parts },
   };
+  const publicManifest = {
+    schemaVersion: 4,
+    complete: true,
+    datasetId: conditions.datasetId,
+    generatedAt: conditions.generatedAt,
+    productionReferenceAt: conditions.productionReferenceAt,
+    zoneCount: 210,
+    coastalPartCount: 673,
+    ravScoreModelBinding: ravScoreModelBinding(),
+  };
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(repository, descriptor.relativePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });
@@ -179,6 +189,10 @@ try {
     })}\n`;
     await fs.writeFile(destination, value);
   }
+  await fs.writeFile(
+    path.join(repository, 'data', 'live', 'manifest.json'),
+    `${JSON.stringify(publicManifest)}\n`,
+  );
   await fs.mkdir(path.join(repository, 'data', 'diagnostics'), { recursive: true });
   await fs.writeFile(
     path.join(repository, 'data', 'diagnostics', 'dmi-ocean-diagnostics.json'),
@@ -785,16 +799,6 @@ try {
       `capacity evidence must omit ${forbidden}`);
   }
 
-  const publicManifest = {
-    schemaVersion: 4,
-    complete: true,
-    datasetId: conditions.datasetId,
-    generatedAt: conditions.generatedAt,
-    productionReferenceAt: conditions.productionReferenceAt,
-    zoneCount: 210,
-    coastalPartCount: 673,
-    ravScoreModelBinding: ravScoreModelBinding(),
-  };
   await validatePrivateRuntimePreflightState(preflightState, {
     repositoryRoot: repository,
     publicManifest,

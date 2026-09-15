@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.375 komplet runtime-metadataoverførsel
+
+- [x] Bestå 4.0.374 sourcegate `34933609573` og merge PR #316 som main `dd59bc51`.
+- [x] Livebevis providerfri central læsning, migrationhistorik, privacy, restore, udpakning, bindingsmigration og atomisk installation i `34934257354`.
+- [x] Afgræns stoppet til gammel bundlehash i scoreprofilen og kortlæg samme hash i delresultater, forklaringer, zone-timer og Candidate G-runtime.
+- [x] Migrér alle eksakt genkendte metadataobjekter rekursivt, bevar state særskilt og kræv leaf-diff lig dynamisk allowlist plus nul gamle hashes.
+- [x] Ret den private preflight-testfixture til at indeholde det manifest, som produktionskoden faktisk kræver.
+- [x] Målrettede migration-, code-only- og private-runtime-tests er grønne.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.375.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0156 er aktiv. Gentag ikke provider, migration 16/17 eller tidligere cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.374 autoritativ privat filgrænse
 
 - [x] Bestå 4.0.373 sourcegate `34924287616` og merge PR #315 som main `bf61970a`.

@@ -4,11 +4,19 @@ import {
   POST_CUTOVER_PREDECESSOR,
   allowedChange,
   assertBindingUpgrade,
+  migrateExactModelBindingMetadata,
   migratePostCutoverPrivateRuntime,
   validatePredecessorManifest,
 } from './migrate-post-cutover-private-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import {
+  ravScoreModelBinding as candidateModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
+import {
+  candidateGRollbackScoreProfile,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 assert.equal(POST_CUTOVER_PREDECESSOR.sourceHead, 'fa418f43bbd070c446ed19b6587541b93af89599');
 assert.equal(POST_CUTOVER_PREDECESSOR.datasetId, 'rr-20260914180039-210');
@@ -47,19 +55,139 @@ assert.throws(
   /Protected bundle contract hashes mismatch/,
 );
 
-for (const pathValue of [
+const exactAllowedPaths = new Set([
   'coastalParts.modelBinding.modelBundleSha256',
   'coastalParts.parts.part-1.ravScoreModel.modelBundleSha256',
   'coastalParts.parts.part-1.ravScoreModel.currentState.modelBundleSha256',
   'ravScoreCandidateGRollback.sourceModelBinding.modelBundleSha256',
   'ravScoreCandidateGWarmup.runtime.modelBinding.modelBundleSha256',
-]) assert.equal(allowedChange(pathValue), true, `Tilladt modelbinding blev afvist: ${pathValue}`);
+]);
+for (const pathValue of exactAllowedPaths) {
+  assert.equal(allowedChange(pathValue, exactAllowedPaths), true,
+    `Tilladt modelbinding blev afvist: ${pathValue}`);
+}
 for (const pathValue of [
   'zones.zone-1.weather.currentSpeedMps',
   'coastalParts.parts.part-1.ravScoreModel.currentState.transportEvidence',
   'ravScoreCandidateGRollback.runtime.parts.part-1',
   'datasetId',
-]) assert.equal(allowedChange(pathValue), false, `Privat måle-/statefelt blev tilladt: ${pathValue}`);
+]) assert.equal(allowedChange(pathValue, exactAllowedPaths), false,
+  `Privat måle-/statefelt blev tilladt: ${pathValue}`);
+
+const integratedProfile = resolvePublicRavScoreProfile({
+  modelCoverageReady: false,
+  modelMemoryReady: false,
+  modelMigrationReady: true,
+});
+const candidateCurrent = candidateModelBinding();
+const candidatePrevious = {
+  ...candidateCurrent,
+  modelBundleSha256: POST_CUTOVER_PREDECESSOR.candidateBundleSha256,
+};
+const candidateProfile = candidateGRollbackScoreProfile({
+  modelCoverageReady: true,
+  modelMemoryReady: true,
+  modelMigrationReady: true,
+});
+const compactResult = (binding, score) => ({
+  available: true,
+  score,
+  modelId: binding.modelId,
+  modelVersion: binding.modelId,
+  modelContractSha256: binding.modelContractSha256,
+  modelBundleSha256: binding.modelBundleSha256,
+  modelBinding: { ...binding },
+  explanation: { ...binding, rawScore: score },
+});
+const metadataFixture = {
+  coastalParts: {
+    modelBinding: { ...previous },
+    scoreProfile: { ...integratedProfile, modelBundleSha256: previous.modelBundleSha256 },
+    parts: [{
+      current: { waders: compactResult(previous, 41) },
+      ravScoreModel: {
+        ...previous,
+        currentState: {
+          modelId: previous.modelId,
+          modelBundleSha256: previous.modelBundleSha256,
+          preservedEvidence: [1, 2, 3],
+        },
+      },
+    }],
+    zones: {
+      zone1: {
+        hourly: [{ beach: { modelBinding: { ...previous }, score: 37 } }],
+      },
+    },
+  },
+  ravScoreCandidateGRollback: {
+    rollbackModelBinding: { ...candidatePrevious },
+    runtime: {
+      modelBinding: { ...candidatePrevious },
+      scoreProfile: {
+        ...candidateProfile,
+        modelBundleSha256: candidatePrevious.modelBundleSha256,
+      },
+      parts: [{ current: { beach: compactResult(candidatePrevious, 52) } }],
+    },
+  },
+  unrelatedWeatherMetadata: {
+    modelId: 'WEATHER-SOURCE-1',
+    modelBundleSha256: 'f'.repeat(64),
+  },
+};
+const integratedMetadataPaths = migrateExactModelBindingMetadata(
+  metadataFixture,
+  previous,
+  current,
+  { label: 'Integrated fixture metadata' },
+);
+assert.ok(integratedMetadataPaths.includes('coastalParts.scoreProfile.modelBundleSha256'));
+assert.ok(integratedMetadataPaths.includes(
+  'coastalParts.parts.0.current.waders.modelBundleSha256',
+));
+assert.ok(integratedMetadataPaths.includes(
+  'coastalParts.parts.0.current.waders.modelBinding.modelBundleSha256',
+));
+assert.ok(integratedMetadataPaths.includes(
+  'coastalParts.parts.0.current.waders.explanation.modelBundleSha256',
+));
+assert.ok(integratedMetadataPaths.includes(
+  'coastalParts.zones.zone1.hourly.0.beach.modelBinding.modelBundleSha256',
+));
+assert.equal(
+  metadataFixture.coastalParts.parts[0].ravScoreModel.currentState.modelBundleSha256,
+  previous.modelBundleSha256,
+  'The generic metadata pass must not mutate preserved continuation state',
+);
+assert.deepEqual(
+  metadataFixture.coastalParts.parts[0].ravScoreModel.currentState.preservedEvidence,
+  [1, 2, 3],
+);
+assert.equal(metadataFixture.coastalParts.parts[0].current.waders.score, 41);
+
+const candidateMetadataPaths = migrateExactModelBindingMetadata(
+  metadataFixture,
+  candidatePrevious,
+  candidateCurrent,
+  { label: 'Candidate G fixture metadata' },
+);
+assert.ok(candidateMetadataPaths.includes(
+  'ravScoreCandidateGRollback.runtime.scoreProfile.modelBundleSha256',
+));
+assert.ok(candidateMetadataPaths.includes(
+  'ravScoreCandidateGRollback.runtime.parts.0.current.beach.modelBinding.modelBundleSha256',
+));
+assert.equal(metadataFixture.ravScoreCandidateGRollback.runtime.parts[0].current.beach.score, 52);
+assert.equal(
+  metadataFixture.unrelatedWeatherMetadata.modelBundleSha256,
+  'f'.repeat(64),
+  'Unrelated weather metadata must remain byte-equivalent',
+);
+
+assert.throws(() => migrateExactModelBindingMetadata({
+  result: { ...previous, profileId: 'conflicting-profile' },
+}, previous, current, { label: 'Tampered fixture metadata' }), /unrecognized or conflicting/);
 
 await assert.rejects(
   migratePostCutoverPrivateRuntime({ expectedSourceHead: '0'.repeat(40) }),

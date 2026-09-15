@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.375 komplet modelmetadata
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.375-migrate-runtime-metadata`; remote main er `dd59bc51` efter PR
+#316/sourcegate `34933609573`. Code-only `34934257354` genbrugte central
+version 1, migration 16/17, privacy og den gemte private runtime uden provider.
+Det stoppede før publicering på scoreprofilens gamle bundlehash.
+
+4.0.375 migrerer nu alle eksakt genkendte bindinger, profiler, resultater og
+forklaringer i hele `conditions.json`. Kun bundlehashen ændres; 673 integrerede
+states valideres særskilt, Candidate G-state bevares, leaf-diff skal matche den
+dynamiske allowlist, og nul gamle hashes må være tilbage. Måltests er grønne.
+Næste: slutkontrol, commit/push, én exact-head gate, merge, providerfri
+code-only og offentlig kontrol; derefter normal weather. Ingen oneoff.
+DEC-0156. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.374 privat runtimegrænse
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

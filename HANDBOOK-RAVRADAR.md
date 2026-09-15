@@ -1,6 +1,25 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.374
+**Håndbogsversion:** 4.0.375
+
+## 88.79 4.0.375 – Hele den gemte modelidentitet skal flyttes samlet
+
+4.0.374 kom forbi både den offentlige og private filgrænse. Den gemte runtime
+blev gendannet og installeret korrekt uden ny vejrhentning. Genopbygningen af
+hjemmesidens data stoppede dog, fordi scoreprofilen stadig havde den gamle
+models digitale fingeraftryk.
+
+Det samme fingeraftryk ligger flere steder: i scoreprofilen, delresultater,
+timeprognoser, forklaringer og backupmodellen. 4.0.375 gennemgår derfor hele
+den gemte runtime i én omgang. Den ændrer kun det ene fingeraftryksfelt og kun,
+når resten af modelidentiteten passer præcist. En ukendt eller modstridende
+placering stopper processen.
+
+Efter ændringen sammenlignes hver enkelt ændret placering med den godkendte
+liste, og der må ikke være gamle fingeraftryk tilbage. Scorer, vejrdata,
+målinger og historik ændres ikke. Den integrerede modeltilstand kontrolleres
+særskilt før og efter for alle 673 kystdele, mens backupmodellens tilstand
+forbliver helt uændret. Der hentes ingen nye data og køres ingen oneoff.
 
 ## 88.78 4.0.374 – Den private cache skal ikke afvises to gange med forskellige grænser
 
@@ -719,19 +738,29 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.367 central recovery
+### Aktuel status – RavScore 4.0.375 kode-only-rettelse
 
-### Status for det aktuelle modelarbejde – lokal 4.0.367, exact-head og rettelsesdeploy afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.375, exact-head og rettelsesdeploy afventer
 
-Det historiske integrerede artifact er offentligt, men den centrale aktivering
-mangler stadig. 4.0.367 er lokalt låst til den eksakte recovery og fører
-derefter modelbindingen frem gennem migration 16
-`20260914234500_post_cutover_current_hold_binding.sql`. Den maskinlæsbare
-bindingautoritet er `version.json.releaseContract.modelBindings`. Candidate G
-er kun kildeidentitet for den manglende første overgang og privat rollback efter
-en fuldført integreret aktivering; den er ikke samtidig offentlig fallback.
-Exact-head PR-gate, code-only-deploy, central readback og offentlig
-mobil-/desktopkontrol mangler.
+Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer
+endnu ingen numeriske scorer. Supabase står på `INTEGRATED_ACTIVE` version 1,
+og de to efterfølgende migrationsled er installeret. 4.0.374 gendannede,
+kontrollerede og installerede den gemte private runtime, men den offentlige
+genopbygning stoppede på gamle bundlehashes inde i resultatmetadata.
+
+RavScore 4.0.375 ændrer kun eksakt genkendte `modelBundleSha256`-felter og
+kræver bagefter, at ingen gammel hash er tilbage. 4.0.375 er låst med
+`modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den tilhørende `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere skal matche runtime og releasegate.
+
+Den private Candidate G-rollbackbinding er
+`modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og
+`modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b`
+over 57 transitive filer. Candidate G er ikke samtidig offentlig fallback. Den
+maskinlæsbare autoritet er `version.json.releaseContract.modelBindings`.
+Commit, én exact-head PR-gate, merge, providerfri code-only-deploy,
+central/offentlig readback og mobil-/desktopkontrol mangler.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 
@@ -3124,9 +3153,9 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 ## 55. Sådan holdes den hurtige brugerfil og den fulde diagnosefil sammen
 
-Den lokale 4.0.320-cutoverkandidat bygger én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Candidate G forbliver offentlig, indtil hele cutoverkæden er bevist.
+Den offentlige 4.0.365-runtime blev bygget som én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Den integrerede model er offentlig; 4.0.375 skal føre den gemte private runtime frem uden ny providerhentning, før numeriske scorer og efterfølgende normal vejrhentning kan verificeres.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.321's korrigerede slutbinding er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer og otte deklarerede forbrugere og skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige 78-modulers public-browserlukning matche den faktiske deploykilde.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.375 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 
