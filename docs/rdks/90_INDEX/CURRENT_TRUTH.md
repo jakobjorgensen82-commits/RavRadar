@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-15 – privat runtime er migreret; offentlig storfilgrænse rettet lokalt
+
+4.0.372 bestod sourcegate `34923460101`, blev merged gennem PR #314 som main
+`b2d401a15606c1e8c43ad31cfbfb10083a2faee6`, og providerfri code-only
+`34923801295` genbrugte central version 1, migration 16/17 og privacy. Den
+gendannede cache blev udpakket, migreret og installeret atomisk med den aktuelle
+modelbinding. Dermed er 4.0.372’s cacheattestation livebevist.
+
+Næste trin stoppede før publicering på et gammelt 64 MiB-loft. Det offentlige
+manifest attesterer `117.820.378` bytes for den komplette detailruntime.
+Lokal 4.0.373 læser manifestet først og bruger det eksakte byteantal under et
+192 MiB loft; alle eksisterende hash-, model-, datasæt-, projektions- og
+privacykontroller består. Ingen provider, vejrdata, score, state eller
+migration. DEC-0154.
+
 # NYESTE SANDHED – 2026-09-15 – cachebevis og rå source er to forskellige tilstande
 
 4.0.371 bestod exact-head sourcegate `34921912516`, blev merged gennem PR #313

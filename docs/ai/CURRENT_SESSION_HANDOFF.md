@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.373 manifestbundet detailruntime
+
+Main er `b2d401a1` efter PR #314/sourcegate `34923460101`. Providerfri
+code-only `34923801295` migrerede og installerede den private runtime atomisk.
+Næste trin stoppede før publicering på live-detailfilens `117.820.378` bytes
+mod et gammelt 64 MiB-loft.
+
+Branch `codex/4.0.373-manifest-bound-public-details` læser manifestet først og
+bruger dets eksakte størrelse under et 192 MiB loft. Alle efterfølgende
+integritetsbeviser består. Næste: målrettet slutkontrol, commit/push, én
+exact-head sourcegate, merge og providerfri code-only; derefter normal weather.
+Ingen oneoff. DEC-0154. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.372 hydreret runtimeattestation
 
 Main er `36ea9374` efter PR #313/sourcegate `34921912516`. Code-only

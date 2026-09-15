@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import {
   assertCodeOnlyModelBinding,
   assertZoneRegistryVersionOnly,
+  CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES,
   CODE_ONLY_SNAPSHOT_FILES,
+  manifestBoundedPublicDetailsBytes,
   normalizeCodeOnlyProjection,
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -48,6 +50,23 @@ after.ravScoreRuntime.startup.fileSha256 = 'e'.repeat(64);
 assert.deepEqual(normalizeCodeOnlyProjection(before), normalizeCodeOnlyProjection(after));
 after.zones.z1.forecast[0].waveHeightM = 0.8;
 assert.notDeepEqual(normalizeCodeOnlyProjection(before), normalizeCodeOnlyProjection(after));
+
+const observedProductionDetailsBytes = 117_820_378;
+assert.equal(
+  manifestBoundedPublicDetailsBytes(observedProductionDetailsBytes),
+  observedProductionDetailsBytes,
+  'Den observerede komplette 210/673-detailruntime skal være inden for code-only-loftet',
+);
+assert.equal(
+  manifestBoundedPublicDetailsBytes(CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES),
+  CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES,
+);
+for (const invalidSize of [0, 1, 1.5, CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES + 1]) {
+  assert.throws(
+    () => manifestBoundedPublicDetailsBytes(invalidSize),
+    /manifest size is outside its safe bound/,
+  );
+}
 
 assert.deepEqual(Object.values(CODE_ONLY_SNAPSHOT_FILES).sort(), [
   'coastal-parts-v2.json',

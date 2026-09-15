@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.372
+**Håndbogsversion:** 4.0.373
+
+## 88.77 4.0.373 – Den komplette detaljefil er større end den gamle grænse
+
+4.0.372 fik den private cache migreret og installeret korrekt. Næste trin
+stoppede, fordi den komplette offentlige detaljefil fylder cirka 118 MB, mens
+læseren stadig havde en gammel fast grænse på 64 MiB.
+
+4.0.373 læser først det lille manifest. Manifestet siger præcis, hvor stor
+detailfilen skal være, og den størrelse bruges som grænse under et fast loft på
+192 MiB. Efter læsning skal filens størrelse og hash stadig passe præcist, og
+model, datasæt, projektion og privatliv kontrolleres som før. Der åbnes altså
+ikke for vilkårligt store filer, og ingen vejrdata hentes.
 
 ## 88.76 4.0.372 – Den gemte cache og rå kode er ikke samme byggetrin
 

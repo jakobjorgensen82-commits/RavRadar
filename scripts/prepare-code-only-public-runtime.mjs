@@ -23,6 +23,8 @@ export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
   waterLevelRouting: 'water-level-station-routing.json',
 });
 
+export const CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES = 192 * 1024 * 1024;
+
 const SHA256 = /^[a-f0-9]{64}$/;
 const DERIVED_HASH_KEYS = new Set([
   'coastalPartsSha256',
@@ -78,6 +80,15 @@ export function assertCodeOnlyModelBinding(liveBinding, currentBinding) {
   assertBindingUpgrade(liveBinding, currentBinding, 'Code-only model binding', {
     requireChange: false,
   });
+}
+
+export function manifestBoundedPublicDetailsBytes(value) {
+  if (!Number.isSafeInteger(value)
+      || value < 2
+      || value > CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES) {
+    throw new Error('Live public detail runtime manifest size is outside its safe bound');
+  }
+  return value;
 }
 
 function assertSame(left, right, label) {
@@ -157,8 +168,17 @@ export async function prepareCodeOnlyPublicRuntime({
   const { repository, snapshot } = await assertSeparateRegularDirectory(repositoryRoot, snapshotRoot);
   const paths = Object.fromEntries(Object.entries(CODE_ONLY_SNAPSHOT_FILES)
     .map(([key, filename]) => [key, path.join(snapshot, filename)]));
+  const manifestSource = await readJson(paths.manifest, 'Live public manifest', 1024 * 1024);
+  const manifest = manifestSource.value;
+  if (manifest.schemaVersion !== 4 || manifest.complete !== true
+      || manifest.zoneCount !== 210 || manifest.coastalPartCount !== 673) {
+    throw new Error('Live code-only source is not a complete 210/673 schema-4 artifact');
+  }
+  const publicDetailsMaximumBytes = manifestBoundedPublicDetailsBytes(
+    manifest.publicConditionDetailsBytes,
+  );
+
   const [
-    manifestSource,
     publicSource,
     detailsSource,
     coastalPartsSource,
@@ -167,21 +187,14 @@ export async function prepareCodeOnlyPublicRuntime({
     fullSource,
     versionSource,
   ] = await Promise.all([
-    readJson(paths.manifest, 'Live public manifest', 1024 * 1024),
     readJson(paths.publicConditions, 'Live public startup runtime', 32 * 1024 * 1024),
-    readJson(paths.publicConditionDetails, 'Live public detail runtime', 64 * 1024 * 1024),
+    readJson(paths.publicConditionDetails, 'Live public detail runtime', publicDetailsMaximumBytes),
     readJson(paths.coastalParts, 'Live public coastal-part registry', 16 * 1024 * 1024),
     readJson(paths.zoneRegistry, 'Live public zone registry', 32 * 1024 * 1024),
     readJson(paths.waterLevelRouting, 'Live public water-level routing', 4 * 1024 * 1024),
     readJson(path.join(repository, 'data/live/conditions.json'), 'Restored private conditions', 256 * 1024 * 1024),
     readJson(path.join(repository, 'version.json'), 'Release version', 16 * 1024),
   ]);
-
-  const manifest = manifestSource.value;
-  if (manifest.schemaVersion !== 4 || manifest.complete !== true
-      || manifest.zoneCount !== 210 || manifest.coastalPartCount !== 673) {
-    throw new Error('Live code-only source is not a complete 210/673 schema-4 artifact');
-  }
   assertDigest(publicSource.text, manifest.publicConditionsSha256, 'Live public startup runtime');
   assertByteCount(publicSource.text, manifest.publicConditionsBytes, 'Live public startup runtime');
   assertDigest(detailsSource.text, manifest.publicConditionDetailsSha256, 'Live public detail runtime');

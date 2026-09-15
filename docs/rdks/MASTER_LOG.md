@@ -1,3 +1,14 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.373 detailruntime
+
+PR #314/sourcegate `34923460101` blev merged som main `b2d401a1`.
+Code-only `34923801295` gennemførte den private migration og atomiske
+installation uden provider. Offentlig genopbygning stoppede før writes, fordi
+livefilens `117.820.378` bytes oversteg et gammelt 64 MiB-loft.
+
+4.0.373 læser manifestet først og bruger dets eksakte størrelse inden for et
+192 MiB sikkerhedsloft. Hash-, byte-, model-, datasæt-, projektion- og
+privacykontroller bevares. DEC-0154.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.372 runtimeattestation
 
 PR #313/sourcegate `34921912516` blev merged som main `36ea9374`.

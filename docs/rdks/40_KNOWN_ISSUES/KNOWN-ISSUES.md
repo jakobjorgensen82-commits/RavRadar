@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – offentlig detailruntime over gammelt loft
+
+- **ISSUE-4.0.372-CACHE-MIGRATION – LUKKET:** Run `34923801295` migrerede og installerede den private runtime atomisk med aktuel modelbinding.
+- **ISSUE-4.0.372-PUBLIC-DETAIL-SIZE – RETTET LOKALT / LIVEBEVIS MANGLER:** Komplet detailruntime er `117.820.378` bytes og blev afvist af et gammelt 64 MiB-loft. Manifestbundet læsning under 192 MiB bevarer eksakt integritet.
+- **ISSUE-4.0.373-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen migration/provider gentages.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather først efter modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – hydreret cache kontra rå source
 
 - **ISSUE-4.0.371-EXACT-BINDING – LUKKET:** Run `34922303619` nåede forbi den korrekte 11-feltsbinding.
