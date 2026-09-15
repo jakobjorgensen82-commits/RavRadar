@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.380 audit/current-genoptagelse
+
+Main `0cc4a867`, PR #321 og sourcegate `34959283992`. Providerfri
+`34959875107` nåede gennem privat publicering, assistent og readiness, men
+stoppede før Pages-begin på stale tre-felts historikvalidering. Pages-source
+fra `34877443841` findes og er ikke udløbet.
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.380-audit-current-resume`. Auditforbrugeren kræver nu fire felter og
+præcis 420 modes. Helikopterfundet om hardkodet privat forgænger er også rettet:
+den faktiske current-source beskrives payloadfrit, ancestorbevises og bruges
+som eksakt restore-/migrationskilde. Målmatrix grøn. Næste: docs/geodatadiff,
+commit/push, én exact-head, merge og providerfri code-only. Ingen weather eller
+oneoff før offentlig verifikation. DEC-0162. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.379 Pages-privacy-scope
 
 Main `348d4a28`; sourcegate `34956693177`; PR #320. Providerfri code-only

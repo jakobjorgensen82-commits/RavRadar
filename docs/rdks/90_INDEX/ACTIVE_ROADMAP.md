@@ -1,3 +1,15 @@
+# Aktiv roadmap – 4.0.380 fra planstop til offentlig model
+
+1. [x] Bevar de grønne 4.0.379-led og afgræns planstoppet til shared auditforbruger.
+2. [x] Ret fire-felts historikformen og bevis measured-only med 420 utilgængelige modes.
+3. [x] Tag målrettet helikoptertur og ret gentagen privat efterfølger til faktisk current-source.
+4. [ ] Synkronisér docs/geodatabevis, commit/push og bestå én exact-head sourcegate.
+5. [ ] Merge og kør providerfri code-only direkte til Pages og central completion.
+6. [ ] Verificér levende 4.0.380, modelbinding, 210/673/118, begge søgemåder, Om RavRadar og privacy.
+7. [ ] Først derefter normal tidsbegrænset weather: numeriske input/scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0162 er aktiv.
+
 # Aktiv roadmap – 4.0.379 direkte fra privacyfund til levende model
 
 1. [x] Bevar alle grønne resultater fra providerfri `34957362872`; afgræns én Pages-pakkeårsag.

@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.380 audit og actual current
+
+Main `0cc4a867`, sourcegate `34959283992`, PR #321. Providerfri code-only
+`34959875107` bestod Pages-privacy, privat publicering, anonym-afvisning,
+assistent og readiness; ingen provider. Den stoppede før Pages-begin, fordi
+shared auditconsumeren manglede producentens fjerde historikfelt med 420
+utilgængelige modes.
+
+Branch `codex/4.0.380-audit-current-resume` retter fire-felts 420-summen og
+bevarer calibration false. Helikopterreview fandt også, at en ny privat
+efterfølger ellers ville bruge den oprindelige forgænger trods 4.0.379 som
+current. Den faktiske current-source beskrives nu uden payload, kræves som
+ancestor og bindes til restore, manifest, migration og publish. Sourceartifact
+`34877443841` findes. Målmatrix grøn. Næste: docs/geodatabevis, commit/push, én
+exact-head, merge og providerfri code-only. Ingen weather/oneoff. DEC-0162.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.379 efter Pages-privacyfund
 
 Main er `348d4a28` efter PR #320/sourcegate `34956693177`. Providerfri

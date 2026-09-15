@@ -21,3 +21,14 @@
 - Målrettet lokal kontrol, exact-head, merge og ny providerfri code-only
   dokumenteres efter udførelse. Ingen normal weather eller oneoff før modellen
   er offentligt verificeret.
+
+## Produktionsresultat
+
+- Exact-head sourcegate `34959283992` bestod, og PR #321 gav main
+  `0cc4a867`.
+- Providerfri code-only `34959875107` beviste eksklusionerne med grøn
+  Pages-privacy og nåede videre gennem privat publicering, anonym-afvisning,
+  assistentdeploy og readiness.
+- Kørselen stoppede før Pages-begin på auditforbrugerens forældede tre-felts
+  historikform. 4.0.380 retter denne og den efterfølgende current-genoptagelse;
+  se DEC-0162. Ingen weather-provider kørte.

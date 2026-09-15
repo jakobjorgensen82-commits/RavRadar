@@ -111,11 +111,18 @@ for (const marker of [
   'Atomically record the exact already-public historical cutover',
   'if has($field) then .[$field] else "" end',
   'Prove the current-compatible runtime is no longer client-readable',
+  'Describe exact current private runtime source for bounded migration',
+  '--describe-current',
+  'current-private-runtime-source.json',
+  'compare/$predecessor...$GITHUB_SHA',
   'Add payload-free rejection codes to the exact predecessor restore',
   'Prove the saved predecessor runtime is no longer client-readable',
   'for attempt in 1 2 3; do',
+  'Protected current restore attempt $attempt of 3 failed.',
   'if node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore',
   'Protected predecessor restore attempt $attempt of 3 failed.',
+  '--predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"',
+  '--expected-source-head "$(jq -er \'\.sourceHead\' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"',
   'Prebuild lean GitHub Pages artifact before production writes',
   'Decide all independent prewrite checks together',
   'supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"',
@@ -179,6 +186,14 @@ assert.match(workflow,
 assert.ok(workflow.indexOf('Build exact predecessor private-runtime expectation')
   < workflow.indexOf('Add payload-free rejection codes to the exact predecessor restore'),
   'Predecessorforventningen skal forsegles mod den urørte historiske kilde før diagnostic wrapper-copy');
+const predecessorPreparationStart = workflow.indexOf(
+  '- name: Prepare exact predecessor source for bounded binding migration',
+);
+const predecessorPreparationEnd = workflow.indexOf('\n      - name:', predecessorPreparationStart + 1);
+const predecessorPreparation = workflow.slice(predecessorPreparationStart, predecessorPreparationEnd);
+assert.ok(predecessorPreparation.includes('current-private-runtime-source.json'));
+assert.ok(!predecessorPreparation.includes('predecessor=fa418f43'),
+  'Efterfølgende kode-only-rettelser må ikke falde tilbage til den oprindelige forgænger');
 assert.ok(!workflow.includes('.[$field] // ""'),
   'Code-only-workflowet må ikke gøre en ægte false-værdi til tom tekst');
 for (const forbidden of [

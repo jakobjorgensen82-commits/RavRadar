@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.380 audit/current-genoptagelse
+
+- [x] Bestå 4.0.379 exact-head `34959283992`, merge PR #321 som main `0cc4a867`.
+- [x] Bevis Pages-privacy, privat publicering, anonym-afvisning, assistent og readiness i providerfri `34959875107`.
+- [x] Afgræns stoppet før Pages-begin til auditforbrugerens manglende `currentUnavailableModeCount`.
+- [x] Ret fire-felts historiksum til præcis 420 og bevar utilgængelig som ikke-kalibreringsegnet.
+- [x] Erstat hardkodet privat forgænger med pointerens faktiske current, ancestorbevis og eksakt manifest-/bundlebinding.
+- [x] Bestå målrettet 210/673-audit-, activation-, runtime-, migration-, workflow-, outcome- og readinessmatrix.
+- [ ] Docs/geodatabevis, commit/push og én exact-head sourcegate.
+- [ ] Merge, providerfri code-only, Pages, central completion og offentlig verifikation.
+- [ ] Først derefter normal weather for numeriske scorer, rotation og cache. Ingen oneoff.
+
+DEC-0162 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.379 Pages-privacy-scope
 
 - [x] Bestå 4.0.378 exact-head sourcegate `34956693177` og merge PR #320 som main `348d4a28`.

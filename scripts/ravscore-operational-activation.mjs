@@ -1070,18 +1070,22 @@ function integratedPublicAuditCalibrationEligible(publicAudit) {
   const history = publicAudit?.history;
   const fullCount = Number(history?.currentFullHistoryModeCount);
   const incompleteCount = Number(history?.currentHistoryIncompleteModeCount);
+  const unavailableCount = Number(history?.currentUnavailableModeCount);
   if (!exactKeys(history, [
     'allCurrentScoresFullHistory',
     'currentFullHistoryModeCount',
     'currentHistoryIncompleteModeCount',
+    'currentUnavailableModeCount',
   ])
     || typeof history.allCurrentScoresFullHistory !== 'boolean'
-    || !Number.isSafeInteger(fullCount)
-    || !Number.isSafeInteger(incompleteCount)
-    || fullCount < 0
-    || incompleteCount < 0
-    || fullCount + incompleteCount !== RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
-    || history.allCurrentScoresFullHistory !== (incompleteCount === 0)) {
+    || ![fullCount, incompleteCount, unavailableCount]
+      .every(value => Number.isSafeInteger(value) && value >= 0)
+    || fullCount + incompleteCount + unavailableCount
+      !== RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
+    || history.allCurrentScoresFullHistory
+      !== (fullCount === RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
+        && incompleteCount === 0
+        && unavailableCount === 0)) {
     throw new Error('Integrated public audit lacks an exact current-history summary');
   }
   return history.allCurrentScoresFullHistory;

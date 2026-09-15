@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-15 – 4.0.380 retter audit og genoptagelse
+
+4.0.379 bestod sourcegate `34959283992`, blev merged gennem PR #321 som main
+`0cc4a867`, og providerfri code-only `34959875107` bestod den rettede
+Pages-privacy, privat runtimepublicering, anonym-afvisning, assistentdeploy og
+readiness. Ingen vejrprovider kørte. Pages og central completion blev ikke
+kørt, fordi planforbrugeren afviste auditproducentens korrekte fjerde
+historikfelt: 420 aktuelle utilgængelige modes.
+
+Lokal 4.0.380 kræver alle fire historikfelter og bevarer
+`calibrationEligible=false`; manglende scorer kaldes ikke komplette. En
+målrettet helikoptergennemgang fandt også, at næste private migration ellers
+ville bruge den oprindelige hardkodede forgænger trods 4.0.379 som current.
+Genoptagelsen beskriver nu den beskyttede pointers faktiske current, kræver den
+som forfader til ny main og bevarer den eksakte binding-only-allowlist.
+
+Den forseglede Pages-kilde fra `34877443841` findes og er ikke udløbet. Den
+målrettede leveringsmatrix er grøn. Exact-head, merge og providerfri code-only
+mangler; først derefter normal weather. Ingen oneoff. DEC-0162.
+
 # NYESTE SANDHED – 2026-09-15 – 4.0.379 fjerner interne filer fra Pages
 
 4.0.378 bestod sourcegate `34956693177`, blev merged gennem PR #320 som main

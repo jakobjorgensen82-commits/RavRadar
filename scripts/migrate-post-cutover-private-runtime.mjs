@@ -51,9 +51,25 @@ export const POST_CUTOVER_PREDECESSOR = Object.freeze({
   expectedPartCount: 673,
 });
 
-const INTEGRATED_BINDING_KEYS = Object.freeze(Object.keys(POST_CUTOVER_PREDECESSOR.modelBinding));
+const INTEGRATED_BINDING_KEYS = Object.freeze(Object.keys(ravScoreModelBinding()));
 const PRIVATE_STATE_KEYS = new Set(['currentState', 'continuationState']);
 const SHA256 = /^[a-f0-9]{64}$/;
+const SOURCE_HEAD = /^[a-f0-9]{40}$/;
+const DATASET_ID = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const PREDECESSOR_IDENTITY_KEYS = Object.freeze([
+  'schemaVersion',
+  'kind',
+  'sourceHead',
+  'datasetId',
+  'bundleContentSha256',
+  'productionReferenceAt',
+  'generatedAt',
+  'modelBinding',
+  'contractHashes',
+  'expectedZoneCount',
+  'expectedPartCount',
+  'privatePayloadIncluded',
+]);
 
 function isPlainObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -75,6 +91,39 @@ function same(left, right) {
 
 function assertSame(left, right, label) {
   if (!same(left, right)) throw new Error(`${label} mismatch`);
+}
+
+function exactKeys(value, expected, label) {
+  if (!isPlainObject(value)
+      || !same(Object.keys(value).sort(), [...expected].sort())) {
+    throw new Error(`${label} has an incompatible field set`);
+  }
+}
+
+export function validatePredecessorIdentity(value, expectedSourceHead) {
+  exactKeys(value, PREDECESSOR_IDENTITY_KEYS, 'Current private runtime source identity');
+  exactKeys(value.modelBinding, INTEGRATED_BINDING_KEYS,
+    'Current private runtime source model binding');
+  const contractKeys = Object.keys(value.contractHashes ?? {});
+  if (value.schemaVersion !== '1.0.0'
+      || value.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE'
+      || !SOURCE_HEAD.test(String(expectedSourceHead ?? ''))
+      || value.sourceHead !== expectedSourceHead
+      || !DATASET_ID.test(String(value.datasetId ?? ''))
+      || !SHA256.test(String(value.bundleContentSha256 ?? ''))
+      || !Number.isFinite(Date.parse(value.productionReferenceAt))
+      || !Number.isFinite(Date.parse(value.generatedAt))
+      || !isPlainObject(value.contractHashes)
+      || value.expectedZoneCount !== 210
+      || value.expectedPartCount !== 673
+      || value.privatePayloadIncluded !== false
+      || contractKeys.length < 3
+      || contractKeys.length > 16
+      || contractKeys.some(key => !/^[a-z][A-Za-z0-9]{0,63}Sha256$/.test(key)
+        || !SHA256.test(String(value.contractHashes[key] ?? '')))) {
+    throw new Error('Current private runtime source identity is invalid');
+  }
+  return structuredClone(value);
 }
 
 export function assertBindingUpgrade(previous, current, label, { requireChange = true } = {}) {
@@ -255,7 +304,7 @@ async function atomicWriteJson(file, value) {
   }
 }
 
-async function importPredecessorModules(predecessorRoot) {
+async function importPredecessorModules(predecessorRoot, sourceHead) {
   const stagingUrl = pathToFileURL(path.join(
     predecessorRoot,
     'scripts/lib/coastal-point-staging-contract.mjs',
@@ -268,7 +317,7 @@ async function importPredecessorModules(predecessorRoot) {
     predecessorRoot,
     'scripts/rollback-assets/ravscore-model-contract.js',
   ));
-  const query = `?predecessor=${POST_CUTOVER_PREDECESSOR.sourceHead}`;
+  const query = `?predecessor=${sourceHead}`;
   const [staging, integrated, candidate] = await Promise.all([
     import(`${stagingUrl.href}${query}`),
     import(`${integratedUrl.href}${query}`),
@@ -295,21 +344,28 @@ async function assertExactRuntimeInventory(sourceRoot) {
   if (!same(actual.sort(), expected)) throw new Error('Private runtime inventory is not the exact nine-file allowlist');
 }
 
-export function validatePredecessorManifest(manifest, oldIntegratedBinding) {
+export function validatePredecessorManifest(
+  manifest,
+  oldIntegratedBinding,
+  predecessor = POST_CUTOVER_PREDECESSOR,
+) {
   if (!isPlainObject(manifest)
-      || manifest.datasetId !== POST_CUTOVER_PREDECESSOR.datasetId
-      || manifest.bundleContentSha256 !== POST_CUTOVER_PREDECESSOR.bundleContentSha256
-      || manifest.zoneCount !== POST_CUTOVER_PREDECESSOR.expectedZoneCount
-      || manifest.partCount !== POST_CUTOVER_PREDECESSOR.expectedPartCount) {
+      || manifest.datasetId !== predecessor.datasetId
+      || manifest.bundleContentSha256 !== predecessor.bundleContentSha256
+      || manifest.productionReferenceAt !== predecessor.productionReferenceAt
+      || manifest.generatedAt !== predecessor.generatedAt
+      || manifest.zoneCount !== predecessor.expectedZoneCount
+      || manifest.partCount !== predecessor.expectedPartCount) {
     throw new Error('Protected predecessor bundle identity is not exact');
   }
-  assertSame(manifest.modelBinding, POST_CUTOVER_PREDECESSOR.modelBinding, 'Protected bundle model binding');
+  assertSame(manifest.modelBinding, predecessor.modelBinding, 'Protected bundle model binding');
   assertSame(manifest.modelBinding, oldIntegratedBinding, 'Archived-source model binding');
-  assertSame(manifest.contractHashes, POST_CUTOVER_PREDECESSOR.contractHashes, 'Protected bundle contract hashes');
+  assertSame(manifest.contractHashes, predecessor.contractHashes, 'Protected bundle contract hashes');
 }
 
 function validateAndMigrateConditions({
   source,
+  predecessor,
   oldStaging,
   oldIntegratedBinding,
   oldCandidateBinding,
@@ -317,16 +373,16 @@ function validateAndMigrateConditions({
   currentCandidateBinding,
 }) {
   if (!isPlainObject(source)
-      || source.datasetId !== POST_CUTOVER_PREDECESSOR.datasetId
-      || Object.keys(source.zones ?? {}).length !== POST_CUTOVER_PREDECESSOR.expectedZoneCount
-      || Object.keys(source.coastalParts?.parts ?? {}).length !== POST_CUTOVER_PREDECESSOR.expectedPartCount) {
+      || source.datasetId !== predecessor.datasetId
+      || Object.keys(source.zones ?? {}).length !== predecessor.expectedZoneCount
+      || Object.keys(source.coastalParts?.parts ?? {}).length !== predecessor.expectedPartCount) {
     throw new Error('Predecessor conditions do not contain the exact expected dataset');
   }
   oldIntegratedBinding.assertRavScoreModelBinding(
     source.coastalParts.modelBinding,
     'Predecessor coastal-parts binding',
   );
-  assertSame(source.coastalParts.modelBinding, POST_CUTOVER_PREDECESSOR.modelBinding,
+  assertSame(source.coastalParts.modelBinding, predecessor.modelBinding,
     'Predecessor coastal-parts binding');
   assertRavScoreModelBinding(currentIntegratedBinding, 'Current integrated model binding');
   assertBindingUpgrade(source.coastalParts.modelBinding, currentIntegratedBinding,
@@ -387,7 +443,7 @@ function validateAndMigrateConditions({
         `Part ${partId} migrated wrapper binding`,
       );
       if (migratedWrapper.currentState?.modelBundleSha256
-          !== POST_CUTOVER_PREDECESSOR.modelBinding.modelBundleSha256) {
+          !== predecessor.modelBinding.modelBundleSha256) {
         throw new Error('continuation does not carry the predecessor bundle hash');
       }
       migratedWrapper.currentState.modelBundleSha256 = currentIntegratedBinding.modelBundleSha256;
@@ -496,14 +552,19 @@ export async function migratePostCutoverPrivateRuntime({
   sourceRoot,
   outputRoot,
   bundleManifestPath,
+  predecessorDescriptorPath,
   predecessorRoot,
   repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   expectedSourceHead,
   reportPath,
 } = {}) {
-  if (expectedSourceHead !== POST_CUTOVER_PREDECESSOR.sourceHead) {
-    throw new Error('Post-cutover migration is authorized only for the exact predecessor source head');
+  if (!SOURCE_HEAD.test(String(expectedSourceHead ?? ''))) {
+    throw new Error('Post-cutover migration requires an exact predecessor source head');
   }
+  const predecessorIdentity = validatePredecessorIdentity(
+    await readJson(predecessorDescriptorPath, 'Current private runtime source identity'),
+    expectedSourceHead,
+  );
   const repository = await fs.realpath(path.resolve(repositoryRoot));
   const source = await assertDirectoryOutside(repository, sourceRoot, 'Predecessor restored runtime');
   const predecessor = await assertDirectoryOutside(repository, predecessorRoot, 'Archived predecessor source');
@@ -514,13 +575,10 @@ export async function migratePostCutoverPrivateRuntime({
   }
   if (await fs.lstat(output).catch(() => null)) throw new Error('Migrated runtime output already exists');
   await assertExactRuntimeInventory(source);
-  const modules = await importPredecessorModules(predecessor);
+  const modules = await importPredecessorModules(predecessor, expectedSourceHead);
   const oldIntegrated = modules.integrated.ravScoreModelBinding();
   const oldCandidate = modules.candidate.ravScoreModelBinding();
-  assertSame(oldIntegrated, POST_CUTOVER_PREDECESSOR.modelBinding, 'Archived predecessor integrated binding');
-  if (oldCandidate.modelBundleSha256 !== POST_CUTOVER_PREDECESSOR.candidateBundleSha256) {
-    throw new Error('Archived predecessor Candidate G bundle is not exact');
-  }
+  assertSame(oldIntegrated, predecessorIdentity.modelBinding, 'Archived predecessor integrated binding');
   const manifest = await readJson(bundleManifestPath, 'Protected predecessor bundle manifest');
   // The protected manifest was sealed from the hydrated production workspace
   // after central configuration and generated runtime files were installed.
@@ -528,7 +586,7 @@ export async function migratePostCutoverPrivateRuntime({
   // workspace whose contract hashes the bundle records. Keep the exact sealed
   // hashes, content hash and source-model identity as independent checks, while
   // using the exact archived source only for its unchanged validators.
-  validatePredecessorManifest(manifest, oldIntegrated);
+  validatePredecessorManifest(manifest, oldIntegrated, predecessorIdentity);
   const currentContractHashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
@@ -540,6 +598,7 @@ export async function migratePostCutoverPrivateRuntime({
   }
   const result = validateAndMigrateConditions({
     source: conditions,
+    predecessor: predecessorIdentity,
     oldStaging: modules.staging,
     oldIntegratedBinding: modules.integrated,
     oldCandidateBinding: modules.candidate,
@@ -578,14 +637,14 @@ export async function migratePostCutoverPrivateRuntime({
   const report = {
     schemaVersion: 1,
     kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION',
-    predecessorSourceHead: POST_CUTOVER_PREDECESSOR.sourceHead,
-    datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
-    sourceBundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,
+    predecessorSourceHead: predecessorIdentity.sourceHead,
+    datasetId: predecessorIdentity.datasetId,
+    sourceBundleContentSha256: predecessorIdentity.bundleContentSha256,
     previousIntegratedBundleSha256: oldIntegrated.modelBundleSha256,
     currentIntegratedBundleSha256: currentIntegrated.modelBundleSha256,
     previousCandidateBundleSha256: oldCandidate.modelBundleSha256,
     currentCandidateBundleSha256: currentCandidate.modelBundleSha256,
-    previousContractHashes: POST_CUTOVER_PREDECESSOR.contractHashes,
+    previousContractHashes: predecessorIdentity.contractHashes,
     currentContractHashes,
     candidateRuntimeKind: result.candidateRoot,
     migratedPartCount: result.partCount,
@@ -613,6 +672,7 @@ async function main() {
     sourceRoot: argument(argv, '--source'),
     outputRoot: argument(argv, '--output'),
     bundleManifestPath: argument(argv, '--bundle-manifest'),
+    predecessorDescriptorPath: argument(argv, '--predecessor-descriptor'),
     predecessorRoot: argument(argv, '--predecessor-root'),
     repositoryRoot: argument(argv, '--repository-root'),
     expectedSourceHead: argument(argv, '--expected-source-head'),

@@ -1,6 +1,6 @@
 # DEC-0161 – Pages indeholder kun nødvendig offentlig geodata
 
-**Status:** Aktiv; implementeret lokalt i 4.0.379, produktionsbevis afventer
+**Status:** Aktiv; 4.0.379 artifact- og privacybevist, live Pages afventer 4.0.380
 **Dato:** 2026-09-15
 
 ## Evidens
@@ -33,6 +33,8 @@ admin-dashboard, og filnavnet er med rette diagnostikklassificeret.
 
 ## Drift
 
-Næste code-only genbruger den samme gemte private runtime og den allerede
-installerede centrale binding. Ingen provider, normal weather eller oneoff må
-starte før offentlig 4.0.379-verifikation.
+Exact-head `34959283992`, PR #321 og providerfri `34959875107` beviste begge
+eksklusioner i det færdige production-shaped artifact og bestod hele
+Pages-privacy-auditen. Kørselen stoppede senere før Pages-begin på en anden
+auditconsumerfejl. Næste code-only følger DEC-0162. Ingen provider, normal
+weather eller oneoff må starte før offentlig 4.0.380-verifikation.

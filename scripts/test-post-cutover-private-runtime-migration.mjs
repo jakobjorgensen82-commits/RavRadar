@@ -6,6 +6,7 @@ import {
   assertBindingUpgrade,
   migrateExactModelBindingMetadata,
   migratePostCutoverPrivateRuntime,
+  validatePredecessorIdentity,
   validatePredecessorManifest,
 } from './migrate-post-cutover-private-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
@@ -54,6 +55,41 @@ assert.throws(
   }, previous),
   /Protected bundle contract hashes mismatch/,
 );
+
+const dynamicPredecessorIdentity = {
+  schemaVersion: '1.0.0',
+  kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+  sourceHead: POST_CUTOVER_PREDECESSOR.sourceHead,
+  datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
+  bundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,
+  productionReferenceAt: '2026-09-14T18:00:00.000Z',
+  generatedAt: '2026-09-14T18:10:00.000Z',
+  modelBinding: POST_CUTOVER_PREDECESSOR.modelBinding,
+  contractHashes: POST_CUTOVER_PREDECESSOR.contractHashes,
+  expectedZoneCount: 210,
+  expectedPartCount: 673,
+  privatePayloadIncluded: false,
+};
+assert.deepEqual(
+  validatePredecessorIdentity(
+    dynamicPredecessorIdentity,
+    POST_CUTOVER_PREDECESSOR.sourceHead,
+  ),
+  dynamicPredecessorIdentity,
+);
+assert.throws(() => validatePredecessorIdentity({
+  ...dynamicPredecessorIdentity,
+  privatePayloadIncluded: true,
+}, POST_CUTOVER_PREDECESSOR.sourceHead), /source identity is invalid/);
+assert.throws(() => validatePredecessorIdentity(
+  dynamicPredecessorIdentity,
+  '1'.repeat(40),
+), /source identity is invalid/);
+assert.doesNotThrow(() => validatePredecessorManifest({
+  ...protectedManifest,
+  productionReferenceAt: dynamicPredecessorIdentity.productionReferenceAt,
+  generatedAt: dynamicPredecessorIdentity.generatedAt,
+}, previous, dynamicPredecessorIdentity));
 
 const exactAllowedPaths = new Set([
   'coastalParts.modelBinding.modelBundleSha256',
@@ -190,8 +226,8 @@ assert.throws(() => migrateExactModelBindingMetadata({
 }, previous, current, { label: 'Tampered fixture metadata' }), /unrecognized or conflicting/);
 
 await assert.rejects(
-  migratePostCutoverPrivateRuntime({ expectedSourceHead: '0'.repeat(40) }),
-  /authorized only for the exact predecessor source head/,
+  migratePostCutoverPrivateRuntime({ expectedSourceHead: 'not-a-source-head' }),
+  /requires an exact predecessor source head/,
 );
 
 const source = fs.readFileSync('scripts/migrate-post-cutover-private-runtime.mjs', 'utf8');
@@ -208,4 +244,4 @@ for (const marker of [
 
 assert.doesNotMatch(source, /Archived-source contract hashes mismatch/);
 
-console.log('Post-cutover private runtime migration: exact predecessor, binding-only changes, nine-file allowlist and payload-free report.');
+console.log('Post-cutover private runtime migration: exact current predecessor, binding-only changes, nine-file allowlist and payload-free report.');
