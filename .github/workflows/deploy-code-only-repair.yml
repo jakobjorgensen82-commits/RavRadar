@@ -423,13 +423,15 @@ jobs:
           status=1
           for attempt in 1 2 3; do
             rm -rf "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
-            node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore \
-              --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT" \
-              --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE" \
-              --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT" \
-              --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
-            status=$?
-            if test "$status" -eq 0; then exit 0; fi
+            if node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore \
+                --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT" \
+                --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE" \
+                --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT" \
+                --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"; then
+              exit 0
+            else
+              status=$?
+            fi
             echo "Protected predecessor restore attempt $attempt of 3 failed."
             if test "$attempt" -lt 3; then sleep 5; fi
           done

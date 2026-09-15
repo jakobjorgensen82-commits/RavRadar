@@ -1,3 +1,10 @@
+## 2026-09-15 lokal 4.0.370 – stor runtime restore
+
+- `protected-private-production-runtime.mjs` validerer base64 lineært og streamer decode → gunzip → størrelses/hash-transform → privat stagefil i 4 MiB inputbidder.
+- Stagebiblioteket omdøbes kun efter alle ni filer og bundlekontrakten er verificeret; faste fase-/filsystemkoder må ikke indeholde paths eller payload.
+- Code-only predecessor-restore indkapsler nodekommandoen i shell-if, så GitHub-errexit ikke afbryder bounded retry.
+- Migration 17 er allerede live; næste code-only har nul pending migrationer og går direkte mod runtime/Pages.
+
 ## 2026-09-15 lokal 4.0.369 – service-role-only privat runtime
 
 - Migration 16 er fortsat kilden til RavScore-/checkpointfunktionerne. Migration 17 er et separat driftssikkerhedsled og må ikke bruges som modelbindingskilde.

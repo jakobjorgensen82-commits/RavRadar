@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.370 stor privat restore
+
+- [x] Bestå 4.0.369 sourcegate `34918950377`, merge PR #311 som main `329ce119` og genbrug beviset i code-only `34919375457`.
+- [x] Installer/læs migration 17 tilbage og bevis anonym afvisning; central version 1 og migration 16/17 er nu genbrugelig produktionstilstand.
+- [x] Afgræns stop til arkivudpakning før runtime-, Pages- og completionwrites.
+- [x] Reproducér store base64-inputs lokalt og erstat regex-stack med lineær kontrol samt strømmet størrelse/hash.
+- [x] Ret shell-errexit, så den afgrænsede løkke faktisk kan tage alle tre forsøg.
+- [ ] Bestå målrettede slutkontroller, commit/push, én exact-head sourcegate og merge 4.0.370.
+- [ ] Kør providerfri code-only med nul pending migrationer; verificér restore, privat runtime, Pages og central/offentlig 4.0.370.
+- [ ] Kør derefter normal tidsbegrænset weather og bevis numeriske scorer, rotation og cache. Ingen oneoff.
+
+DEC-0151 er aktiv. Gentag ikke migration 16/17, central recovery, gammel cutover eller vejranskaffelse.
+
 # Aktuel implementeringsstatus – lokal 4.0.369 privat runtime-recovery
 
 - [x] Bestå 4.0.368 sourcegate `34915216698`, merge PR #310 som main `c4610636` og fortsæt fra central `INTEGRATED_ACTIVE` version 1 uden provider.

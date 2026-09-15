@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-15 – stor private-runtime-restore
+
+- **ISSUE-PRIVATE-RUNTIME-ANON-READ – LUKKET:** Run `34919375457` installerede migration 17 og beviste, at den konkrete gemte generation ikke længere kan hentes anonymt.
+- **ISSUE-4.0.369-ARCHIVE-REGEX-STACK – RETTET LOKALT / LIVEBEVIS MANGLER:** En stor gyldig base64-streng vælter den gamle helstrengsregex. En 5 MiB regression reproducerer fasen og består efter lineær validering og strømmet restore.
+- **ISSUE-4.0.369-RETRY-ERREXIT – RETTET LOKALT:** GitHub-shellen stoppede efter første nodefejl. Kommandoen ligger nu i `if`, så højst tre forsøg faktisk kan køre.
+- **ISSUE-4.0.370-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler. Migration 16/17 og central version 1 genbruges; ingen provider.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Først efter modeldeploy køres normal tidsbegrænset weather for numeriske input/scorer, rotation og cache.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.369 privat restore og adgang
 
 - **ISSUE-4.0.368-PRIVATE-RESTORE – RETTET LOKALT / LIVEBEVIS MANGLER:** Run `34915725308` installerede migration 16, men den eksakte forgænger-restore endte i en samlet, uoplysende afvisning. 4.0.369 genprøver tre gange og giver kun payload-frie årsagskoder.

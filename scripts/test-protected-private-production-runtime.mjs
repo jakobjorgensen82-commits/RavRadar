@@ -31,7 +31,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-protected-private
 const repository = path.join(temp, 'repository');
 const privateRoot = path.join(temp, 'private');
 const restoreRoot = path.join(temp, 'restore-private');
-const SOURCE_HEADS = ['a', 'b', 'c', 'd'].map(letter => letter.repeat(40));
+const SOURCE_HEADS = ['a', 'b', 'c', 'd', 'e'].map(letter => letter.repeat(40));
 
 const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
 
@@ -49,7 +49,7 @@ function syntheticConditions(index) {
   };
 }
 
-async function createGeneration(index) {
+async function createGeneration(index, { largeStreamPayload = false } = {}) {
   const conditions = syntheticConditions(index);
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(repository, descriptor.relativePath);
@@ -58,6 +58,8 @@ async function createGeneration(index) {
       destination,
       descriptor.id === 'full-conditions'
         ? `${JSON.stringify(conditions)}\n`
+        : largeStreamPayload && descriptor.id === 'dmi-bulk-cache'
+          ? crypto.randomBytes((5 * 1024 * 1024) + 3)
         : `synthetic-generation-${index}-${descriptor.id}\n`,
     );
   }
@@ -328,6 +330,37 @@ try {
     now: '2026-08-29T11:05:00.000Z',
   });
 
+  const large = await createGeneration(4, { largeStreamPayload: true });
+  const largeDocuments = fakeDocuments();
+  const largeStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: large.bundlePath,
+    repositoryRoot: repository,
+    expected: large.expected,
+    now: '2026-08-29T15:05:00.000Z',
+    sourceHead: SOURCE_HEADS[4],
+    request: largeDocuments.request,
+    storage: largeStorage.client,
+  });
+  const largeRestoreBundle = path.join(restoreRoot, 'bundle-large-stream');
+  await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: largeRestoreBundle,
+    repositoryRoot: repository,
+    expected: large.expected,
+    now: '2026-08-29T15:05:00.000Z',
+    request: largeDocuments.request,
+    storage: largeStorage.client,
+  });
+  await verifyPrivateProductionRuntimeBundle({
+    privateRoot: restoreRoot,
+    bundlePath: largeRestoreBundle,
+    repositoryRoot: repository,
+    expected: large.expected,
+    now: '2026-08-29T15:05:00.000Z',
+  });
+
   const legacyEnvelope = clone(encodedEnvelope);
   delete legacyEnvelope.contentEncoding;
   legacyEnvelope.files = legacyEnvelope.files.map(file => ({
@@ -404,7 +437,7 @@ try {
     }),
     error => {
       assert.match(error.message, /No compatible protected private runtime generation/);
-      assert.deepEqual(error.rejectionCodes, ['ARCHIVE_OR_PAYLOAD_INTEGRITY']);
+      assert.deepEqual(error.rejectionCodes, ['ARCHIVE_ENVELOPE_DECODE']);
       assert.equal(error.message.includes('payload'), false,
         'terminal restore error must not include private rejection details');
       return true;
@@ -705,6 +738,12 @@ try {
     'private runtime publication must preserve all existing admin-document history');
   assert.equal(implementation.includes('version cleanup'), false,
     'private runtime publication must not retain a hidden history-deletion path');
+  assert.equal(implementation.includes('isSyntacticallyValidBase64'), true,
+    'large base64 envelopes must use bounded linear syntax validation');
+  assert.equal(implementation.includes("Buffer.from(file.contentBase64, 'base64')"), false,
+    'restore must not allocate one decoded Buffer for an entire large cache file');
+  assert.equal(implementation.includes('Readable.from(decodeBase64Chunks'), true,
+    'restore must decode large cache files as bounded chunks');
 
   console.log('Protected private runtime storage, retention, rollback and anonymous-denial contract passes.');
 } finally {

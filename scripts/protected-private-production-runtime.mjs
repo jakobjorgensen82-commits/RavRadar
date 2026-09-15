@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
+import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
-import { gzip, gunzip } from 'node:zlib';
+import { createGunzip, gzip, gunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
@@ -114,6 +117,18 @@ const SOURCE_HEAD_PATTERN = /^[0-9a-f]{40}$/;
 const DATASET_ID_PATTERN = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+const BASE64_STREAM_CHUNK_CHARACTERS = 4 * 1024 * 1024;
+const SAFE_EXTRACTION_STAGES = new Set([
+  'ARCHIVE_ENVELOPE_DECODE',
+  'ARCHIVE_STAGE_CREATE',
+  'ARCHIVE_FILE_PATH',
+  'ARCHIVE_FILE_PARENT',
+  'ARCHIVE_FILE_BASE64_DECODE',
+  'ARCHIVE_FILE_DECOMPRESSION',
+  'ARCHIVE_FILE_INTEGRITY',
+  'ARCHIVE_FILE_WRITE',
+  'ARCHIVE_STAGE_COMMIT',
+]);
 const isPlainObject = value => value !== null
   && typeof value === 'object'
   && !Array.isArray(value)
@@ -172,6 +187,97 @@ function safeArchivePath(value) {
     throw new Error('Private runtime archive contains an unsafe path');
   }
   return value;
+}
+
+function isSyntacticallyValidBase64(value) {
+  if (typeof value !== 'string' || value.length % 4 !== 0) return false;
+  if (value.length === 0) return true;
+  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0;
+  const alphabetEnd = value.length - padding;
+  if (padding > 0 && value.length < 4) return false;
+  for (let index = 0; index < alphabetEnd; index += 1) {
+    const code = value.charCodeAt(index);
+    const valid = (code >= 48 && code <= 57)
+      || (code >= 65 && code <= 90)
+      || (code >= 97 && code <= 122)
+      || code === 43
+      || code === 47;
+    if (!valid) return false;
+  }
+  for (let index = alphabetEnd; index < value.length; index += 1) {
+    if (value.charCodeAt(index) !== 61) return false;
+  }
+  return true;
+}
+
+function tagProtectedRestoreStage(error, stage) {
+  if (!error || !SAFE_EXTRACTION_STAGES.has(stage)) return error;
+  try {
+    if (!SAFE_EXTRACTION_STAGES.has(error.protectedPrivateRuntimeStage)) {
+      Object.defineProperty(error, 'protectedPrivateRuntimeStage', {
+        value: stage,
+        configurable: false,
+        enumerable: false,
+        writable: false,
+      });
+    }
+  } catch {
+    // The fixed stage is diagnostic only; never replace the real failure.
+  }
+  return error;
+}
+
+async function* decodeBase64Chunks(contentBase64) {
+  for (let offset = 0; offset < contentBase64.length;
+    offset += BASE64_STREAM_CHUNK_CHARACTERS) {
+    const end = Math.min(offset + BASE64_STREAM_CHUNK_CHARACTERS, contentBase64.length);
+    try {
+      yield Buffer.from(contentBase64.slice(offset, end), 'base64');
+    } catch (error) {
+      throw tagProtectedRestoreStage(error, 'ARCHIVE_FILE_BASE64_DECODE');
+    }
+  }
+}
+
+async function writeDecodedArchiveFile({ file, target, contentEncoding }) {
+  let byteCount = 0;
+  const digest = crypto.createHash('sha256');
+  const integrity = new Transform({
+    transform(chunk, encoding, callback) {
+      byteCount += chunk.length;
+      if (byteCount > file.bytes) {
+        callback(tagProtectedRestoreStage(
+          new Error('Private runtime archive file exceeds its declared bound'),
+          'ARCHIVE_FILE_INTEGRITY',
+        ));
+        return;
+      }
+      digest.update(chunk);
+      callback(null, chunk);
+    },
+  });
+  const destination = createWriteStream(target, { flags: 'wx', mode: 0o600 });
+  destination.on('error', error => tagProtectedRestoreStage(error, 'ARCHIVE_FILE_WRITE'));
+  const source = Readable.from(decodeBase64Chunks(file.contentBase64));
+  try {
+    if (contentEncoding === ARCHIVE_CONTENT_ENCODING) {
+      const decompressor = createGunzip();
+      decompressor.on('error', error => {
+        tagProtectedRestoreStage(error, 'ARCHIVE_FILE_DECOMPRESSION');
+      });
+      await pipeline(source, decompressor, integrity, destination);
+    } else {
+      await pipeline(source, integrity, destination);
+    }
+  } catch (error) {
+    throw tagProtectedRestoreStage(error, 'ARCHIVE_FILE_WRITE');
+  }
+  if (byteCount !== file.bytes || digest.digest('hex') !== file.sha256) {
+    throw tagProtectedRestoreStage(
+      new Error('Private runtime archive file integrity is invalid'),
+      'ARCHIVE_FILE_INTEGRITY',
+    );
+  }
 }
 
 function assertInside(parent, child, label, { strict = true } = {}) {
@@ -521,8 +627,7 @@ async function validateArchiveEnvelope(envelope, descriptor, policy) {
     if (!Number.isSafeInteger(file.bytes) || file.bytes < 0
       || file.bytes > policy.maximumFilePayloadBytes
       || !SHA256_PATTERN.test(String(file.sha256 ?? ''))
-      || typeof file.contentBase64 !== 'string'
-      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.contentBase64)) {
+      || !isSyntacticallyValidBase64(file.contentBase64)) {
       throw new Error('Private runtime archive file descriptor is invalid');
     }
     declaredTotal += file.bytes;
@@ -575,37 +680,34 @@ async function extractArchive({ archive, descriptor, privateRoot, bundlePath, re
   );
   const existing = await fs.lstat(destination).catch(() => null);
   if (existing) throw new Error('Private runtime bundle destination already exists');
-  const decoded = await decodeArchive(archive, descriptor, policy);
   const stage = `${destination}.protected-stage-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   assertInside(context.root, stage, 'Private runtime bundle stage');
+  let extractionStage = 'ARCHIVE_ENVELOPE_DECODE';
   try {
+    const decoded = await decodeArchive(archive, descriptor, policy);
+    extractionStage = 'ARCHIVE_STAGE_CREATE';
     await fs.mkdir(stage, { recursive: true, mode: 0o700 });
     for (const file of decoded.files) {
+      extractionStage = 'ARCHIVE_FILE_PATH';
       const target = path.join(stage, ...file.path.split('/'));
       assertInside(stage, target, 'Private runtime extracted file');
+      extractionStage = 'ARCHIVE_FILE_PARENT';
       await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      const encodedBytes = Buffer.from(file.contentBase64, 'base64');
-      let bytes = encodedBytes;
-      if (decoded.contentEncoding === ARCHIVE_CONTENT_ENCODING) {
-        try {
-          bytes = await gunzipAsync(encodedBytes, {
-            maxOutputLength: Math.max(1, file.bytes),
-          });
-        } catch {
-          throw new Error('Private runtime archive file cannot be decompressed within its bound');
-        }
-      }
-      if (bytes.length !== file.bytes || sha256(bytes) !== file.sha256) {
-        throw new Error('Private runtime archive file integrity is invalid');
-      }
-      // Decode, verify and write one file at a time. This keeps the archive
-      // atomic without retaining every uncompressed cache in memory together.
-      await fs.writeFile(target, bytes, { flag: 'wx', mode: 0o600 });
+      extractionStage = 'ARCHIVE_FILE_WRITE';
+      // Decode, decompress, hash and write in bounded chunks. A production
+      // cache may be hundreds of MiB and must never require one equally large
+      // decoded Buffer before it can be restored atomically.
+      await writeDecodedArchiveFile({
+        file,
+        target,
+        contentEncoding: decoded.contentEncoding,
+      });
     }
+    extractionStage = 'ARCHIVE_STAGE_COMMIT';
     await fs.rename(stage, destination);
   } catch (error) {
     await fs.rm(stage, { recursive: true, force: true }).catch(() => {});
-    throw error;
+    throw tagProtectedRestoreStage(error, extractionStage);
   }
 }
 
@@ -914,6 +1016,13 @@ function assertRestoreTime(descriptor, expected, now, policy) {
 function safeRestoreRejectionCode(error, stage) {
   const message = String(error?.message ?? '');
   if (error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED') return 'EXPIRED';
+  if (error?.code === 'ENOSPC') return 'FILESYSTEM_CAPACITY';
+  if (error?.code === 'EACCES' || error?.code === 'EPERM') return 'FILESYSTEM_PERMISSION';
+  if (error?.code === 'EROFS') return 'FILESYSTEM_READ_ONLY';
+  if (error?.code === 'EMFILE' || error?.code === 'ENFILE') return 'FILESYSTEM_RESOURCE_LIMIT';
+  if (SAFE_EXTRACTION_STAGES.has(error?.protectedPrivateRuntimeStage)) {
+    return error.protectedPrivateRuntimeStage;
+  }
   if (/download|storage readback|object integrity|object-set readback/i.test(message)) {
     return 'STORAGE_OR_OBJECT_INTEGRITY';
   }

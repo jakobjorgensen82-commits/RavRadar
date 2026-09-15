@@ -1,7 +1,7 @@
 # RavRadar 4.0.369 – sikker og genprøvbar privat runtime-recovery
 
 **Dato:** 2026-09-15  
-**Status:** Lokal releasekandidat; exact-head PR-gate, merge og providerfri code-only-fortsættelse mangler.
+**Status:** Merged som `329ce119`; migration 17 og privacybevis gennemført. Stor restore afløst af 4.0.370/DEC-0151.
 
 ## Produktionsresultat før rettelsen
 

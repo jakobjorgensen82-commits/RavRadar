@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.370 stor restore
+
+PR #311/sourcegate `34918950377` blev merged som main `329ce119`. Code-only
+`34919375457` genbrugte bevis/central version 1, installerede migration 17 og
+beviste anonym afvisning uden provider. Restore stoppede før runtime/Pages;
+GitHub-errexit gav kun ét forsøg.
+
+En 5 MiB cache reproducerede fejlfasen som base64-regex-stack. 4.0.370 bruger
+lineær base64-kontrol, strømmet decode/dekomprimering med størrelse/hash og en
+shell-if omkring hvert af højst tre forsøg. Migration 16/17 gentages ikke.
+DEC-0151.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.369 privat runtime
 
 PR #310/sourcegate `34915216698` blev merged som main `c4610636`. Code-only `34915725308` sprang recovery over, læste central version 1 og installerede migration 16, men stoppede før runtime/Pages ved forgænger-restore. Migration 16 og central recovery gentages ikke.

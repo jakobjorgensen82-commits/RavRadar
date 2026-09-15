@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.370 strømmet predecessor-restore
+
+Main `329ce119`/PR #311/sourcegate `34918950377`. Code-only `34919375457`
+genbrugte beviset, central version 1 og installerede migration 17; anonym
+runtimeadgang er nu afvist. Forgængerrestore stoppede før runtime/Pages, og
+shell-errexit lod kun første forsøg køre.
+
+En stor syntetisk cache reproducerede stackstop i base64-regexen. Lokal
+`codex/4.0.370-stream-private-runtime` bruger lineær validering og strømmet
+decode/dekomprimering med størrelse/hash plus reel tre-forsøgs-if. Ingen
+provider/oneoff. Næste er én exact-head PR-gate, merge og code-only med nul
+pending migrationer. DEC-0151. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.369 sikker predecessor-restore
 
 4.0.368 er main `c4610636`; code-only `34915725308` har allerede anvendt migration 16 og genbrugt central version 1. Stoppet var forgænger-restore før runtime/Pages. Den oprindelige generation gav anonym HTTP 200 i auditten.

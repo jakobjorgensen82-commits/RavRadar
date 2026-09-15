@@ -37,3 +37,10 @@ ustabilitet og give en sikker årsagskategori, hvis fejlen er deterministisk.
 
 Ingen providerhentning, oneoff, vejrdata, scoreformel, modelbundle, geometri,
 central operational version eller eksisterende runtimepointer nulstilles.
+
+## Resultat og tillæg 2026-09-15
+
+Migration 17 og den anonyme afvisning blev livebevist i run `34919375457`.
+Samme run viste, at GitHub-errexit afbrød retry efter første forsøg, og at den
+store arkivudpakning fejlede. Retrymekanik og stor-fil-restore er derfor
+erstattet af den skarpere DEC-0151; privacybeslutningen her forbliver aktiv.
