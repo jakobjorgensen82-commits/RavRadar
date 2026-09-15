@@ -1,3 +1,12 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.379 offentlig pakkescope
+
+- **REQ-4.0.379-PAGES-SCOPE-001 – BINDENDE:** `data/kystdata.json`, `data/zone-plan.json` og `js/services/runtime-diagnostics-archive.js` må ikke indgå i Pages-artifactet.
+- **REQ-4.0.379-PUBLIC-AUTHORITY-001 – BINDENDE:** `data/zones.geojson` og de fire manifestbundne livefiler skal fortsat indgå og bestå fuld privacy-/atomaritetskontrol.
+- **REQ-4.0.379-BOTH-BUILDERS-001 – BINDENDE:** Eksklusionen gælder både code-only og normal weather; en senere vejropdatering må ikke genindføre filerne.
+- **REQ-4.0.379-NO-REPEAT-001 – AKTIV:** Ingen provider, normal weather eller oneoff før offentlig modelverifikation.
+
+DEC-0161 supplerer DEC-0160.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.378 samlet providerfri leverance
 
 - **REQ-4.0.378-EDGE-001 – BINDENDE:** Den direkte levering skal deploye præcis `ravradar-assistant` fra samme eksakte main før readiness; ingen andre Edge-funktioner eller providers.

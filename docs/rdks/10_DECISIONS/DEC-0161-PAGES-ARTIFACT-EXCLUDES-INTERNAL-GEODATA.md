@@ -1,0 +1,38 @@
+# DEC-0161 – Pages indeholder kun nødvendig offentlig geodata
+
+**Status:** Aktiv; implementeret lokalt i 4.0.379, produktionsbevis afventer
+**Dato:** 2026-09-15
+
+## Evidens
+
+4.0.378 bestod exact-head sourcegate `34956693177`, blev merged gennem PR #320
+som main `348d4a28`, og providerfri code-only `34957362872` kom gennem central
+binding, privat restore/migration/installation, offentlig genopbygning,
+210/673-audit, privat spec/bundle og Pages-pakken. Den samlede prewrite-
+beslutning stoppede før de efterfølgende private, Edge- og Pages-writes, fordi
+privacy-auditen fandt fire udslag med én årsag.
+
+Pages-pakken kopierede tre repositoryfiler, som den offentlige hjemmeside ikke
+bruger: `data/kystdata.json`, `data/zone-plan.json` og
+`js/services/runtime-diagnostics-archive.js`. De to JSON-filer indeholder
+interne/ældre koordinatfelter. Decoderfilen er kun importeret af det udeladte
+admin-dashboard, og filnavnet er med rette diagnostikklassificeret.
+
+## Beslutning
+
+- De tre filer udelades eksplicit fra både code-only- og normal-weather-
+  pakkebygningen.
+- Den aktive offentlige zoneautoritet `data/zones.geojson`, alle nødvendige
+  browserfiler og de fire eksakt manifestbundne `data/live`-filer bevares.
+- Privacy-auditens koordinat-, diagnostik-, private fingerprint- og
+  runtimekontroller lempes ikke.
+- Kildegaten kræver de tre eksklusioner på begge produktionsveje, og den
+  målrettede code-only-test kræver dem på den direkte leveringsvej.
+- Ingen geometri, koordinat, land-/vandpunkt, vejrdata, score eller modelstate
+  ændres. Geodatafilerne får alene topversionsløft til 4.0.379.
+
+## Drift
+
+Næste code-only genbruger den samme gemte private runtime og den allerede
+installerede centrale binding. Ingen provider, normal weather eller oneoff må
+starte før offentlig 4.0.379-verifikation.

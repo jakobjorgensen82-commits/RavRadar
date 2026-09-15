@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.379 fjerner tre ubrugte interne Pages-filer
+
+- 4.0.378 sourcegate `34956693177` og PR #320 gav main `348d4a28`.
+- Providerfri `34957362872` bestod central binding, restore/migration/installation, 210/673, privat bundle og Pages-prebuild, men privacy fandt tre ubrugte interne filer.
+- 4.0.379 udelader gammel kystdata, intern zoneplan og admin-diagnostikdecoder i begge Pages-buildere. Auditregler, aktiv `zones.geojson`, vejr og score er uændrede. DEC-0161.
+
 # 2026-09-15 – 4.0.378 samler Astra-fundene i én leveringsrettelse
 
 - Code-only installerer den eksakte assistent, samler fire uafhængige prewrite-kontroller og foretager ingen produktionswrite, hvis en af dem fejler.

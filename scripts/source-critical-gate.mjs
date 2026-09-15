@@ -63,6 +63,16 @@ const codeOnlyTrigger = codeOnlyWorkflow.slice(
 );
 assert.doesNotMatch(codeOnlyTrigger, /\n  (?:push|schedule|workflow_run|pull_request):/,
   'Code-only deploy må kun kunne startes manuelt.');
+for (const publicWorkflow of [buildWorkflow, codeOnlyWorkflow]) {
+  for (const excluded of [
+    "--exclude 'data/kystdata.json'",
+    "--exclude 'data/zone-plan.json'",
+    "--exclude 'js/services/runtime-diagnostics-archive.js'",
+  ]) {
+    assert.ok(publicWorkflow.includes(excluded),
+      `Pages-pakken mangler privacy-eksklusionen ${excluded}.`);
+  }
+}
 for (const marker of [
   'workflow_dispatch:',
   'DEPLOY-CODE-ONLY-REPAIR',

@@ -1,3 +1,11 @@
+# Nyeste prioritering – 4.0.379 Pages-privacy-scope 2026-09-15
+
+Providerfri 4.0.378 nåede alle tunge prewrite-led, men fandt tre ubrugte
+interne filer i Pages-pakken. 4.0.379 udelader dem i begge buildere uden at
+lempe audit. Næste er måltest, én exact-head, merge og providerfri code-only.
+Først efter live modelverifikation må normal weather bevise tal, scorer,
+rotation og cache. Ingen oneoff. DEC-0161.
+
 # Nyeste prioritering – Astra-fund implementeret samlet 2026-09-15
 
 `docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md` er implementeret lokalt

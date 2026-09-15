@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.379 afgrænset Pages-privacyrettelse
+
+4.0.378 er main `348d4a28` efter grøn sourcegate `34956693177` og PR #320.
+Providerfri `34957362872` beviste central binding, privat restore/migration/
+installation, offentlig genopbygning, 210/673, spec/bundle og Pages-prebuild.
+Samlet prewrite stoppede på tre ubrugte interne filer i Pages-pakken, før
+efterfølgende produktionswrites.
+
+4.0.379 udelader præcis disse filer i begge Pages-buildere; privacy-audit,
+aktiv zoneautoritet, vejr og score er uændret. Næste: måltest, docs/
+geodatabevis, commit/push, én exact-head, merge og providerfri code-only.
+Ingen provider, normal weather eller oneoff. DEC-0161.
+
 # NYESTE CHECKPOINT – 2026-09-15 – samlet 4.0.378-implementation færdig lokalt
 
 Astra-rapportens A–G er implementeret samlet på Sol/Ekstra høj i den

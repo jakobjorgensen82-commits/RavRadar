@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-15 – 4.0.379 fjerner interne filer fra Pages
+
+4.0.378 bestod sourcegate `34956693177`, blev merged gennem PR #320 som main
+`348d4a288c47438c5f7a2eced6452c60456cc641`, og providerfri code-only
+`34957362872` beviste central binding, privat restore/migration/installation,
+offentlig genopbygning, 210/673-audit, privat spec/bundle og Pages-prebuild.
+Ingen vejrprovider kørte.
+
+Den samlede prewrite-beslutning stoppede korrekt før efterfølgende private,
+Edge- og Pages-writes. Privacy-auditen fandt tre ubrugte repositoryfiler i den
+offentlige pakke: gammel `data/kystdata.json`, intern `data/zone-plan.json` og
+adminens `runtime-diagnostics-archive.js`. De er ikke refereret af den
+offentlige app. Lokal 4.0.379 udelader dem på både code-only- og normal-weather-
+Pages-vejen uden at lempe auditregler eller fjerne aktiv `zones.geojson`.
+
+Målrettet kontrol, dokumentation, exact-head, merge og ny providerfri
+code-only mangler. Numeriske scorer er stadig ikke livebevist. Ingen normal
+weather eller oneoff før offentlig 4.0.379-verifikation. DEC-0161.
+
 # NYESTE SANDHED – 2026-09-15 – 4.0.378 samler helkæderettelserne
 
 Astra-gennemgangens fund A–G er nu samlet implementeret lokalt på

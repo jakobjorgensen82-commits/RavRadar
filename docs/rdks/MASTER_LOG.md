@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.379 Pages-scope
+
+4.0.378 bestod exact-head og blev merged. Providerfri code-only
+`34957362872` beviste de tidligere tunge trin frem til den samlede prewrite-
+afgørelse. Den fandt én ny reel pakkefejl: tre ubrugte interne filer med
+koordinat-/diagnostikindhold blev kopieret til Pages.
+
+4.0.379 udelader filerne i både code-only- og normal-weather-builderen og
+fastholder aktiv `zones.geojson`, livefiler og hele privacy-auditen. Stoppet
+skete før efterfølgende private, Edge- og Pages-writes. Ingen provider,
+weather eller oneoff. Exact-head, merge og ny code-only afventer. DEC-0161.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – samlet 4.0.378-rettelse
 
 Ejeren bad om helikopteranalyse for at rette flere fejl i samme arbejdsgang.

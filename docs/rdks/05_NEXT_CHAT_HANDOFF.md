@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.379 Pages-privacy-scope
+
+Main `348d4a28`; sourcegate `34956693177`; PR #320. Providerfri code-only
+`34957362872` bestod alle tunge led til samlet prewrite, som korrekt stoppede
+på tre ubrugte interne filer i Pages-pakken. Branch
+`codex/4.0.379-pages-privacy-scope` udelader dem på begge Pages-veje uden
+audit-lempelse. Fortsæt med måltest, docs/geodatabevis, commit/push, én
+exact-head, merge og code-only. Ingen provider/weather/oneoff. DEC-0161.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.378 samlet og måltestet
 
 Læs `docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`, DEC-0159 og DEC-0160.
