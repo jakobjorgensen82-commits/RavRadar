@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.376 kanonisk privacy-rod
+
+- [x] Bestå 4.0.375 sourcegate `34939186051` og merge PR #317 som main `e95339e5`.
+- [x] Livebevis i `34939798892`, at komplet metadataoverførsel, privat restore og atomisk installation består uden provider.
+- [x] Afgræns næste stop til wrapperens forkerte privacy-rodsti; den godkendte offentlige koordinat og den fælles generator er korrekte.
+- [x] Brug `startup`, `details` og `manifest` i alle tre wrapperkald og lås dem i code-only-regressionen.
+- [x] Bestå code-only-, 210/673-public-runtime- og Pages-privacykontrol.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.376.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0157 er aktiv. Gentag ikke provider, migration 16/17 eller tidligere cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.375 komplet runtime-metadataoverførsel
 
 - [x] Bestå 4.0.374 sourcegate `34933609573` og merge PR #316 som main `dd59bc51`.

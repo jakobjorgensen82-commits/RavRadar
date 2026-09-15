@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.376 privacy-rod
+
+PR #317/sourcegate `34939186051` blev merged som main `e95339e5`.
+Code-only `34939798892` beviste, at hele 4.0.375-metadataoverførslen og den
+atomiske private installation virker uden provider. Den offentlige
+genopbygning stoppede før writes, fordi wrapperen sendte en menneskelig label
+som teknisk privacy-rod og derfor ikke genkendte et godkendt
+`flowPoints.current`.
+
+4.0.376 bruger de samme kanoniske `startup`, `details` og `manifest`-rødder som
+den fælles generator. Allowlisten og afvisningen af ukendte koordinater, U/V og
+private statefelter er uændret. DEC-0157.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.375 komplet metadataoverførsel
 
 PR #316/sourcegate `34933609573` blev merged som main `dd59bc51`.

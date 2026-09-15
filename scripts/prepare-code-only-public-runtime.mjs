@@ -266,9 +266,9 @@ export async function prepareCodeOnlyPublicRuntime({
     coastalPartsPath: path.join(repository, 'data/live/coastal-parts-v2.json'),
     zoneRegistryPath: path.join(repository, 'data/zones.geojson'),
   });
-  assertPublicRuntimePrivacy(generated.publicDocument, 'Code-only startup runtime');
-  assertPublicRuntimePrivacy(generated.detailsDocument, 'Code-only detail runtime');
-  assertPublicRuntimePrivacy(generated.manifest, 'Code-only public manifest');
+  assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
+  assertPublicRuntimePrivacy(generated.detailsDocument, 'details');
+  assertPublicRuntimePrivacy(generated.manifest, 'manifest');
   assertProjectionEquivalent(publicSource.value, generated.publicDocument,
     'Code-only startup projection');
   assertProjectionEquivalent(detailsSource.value, generated.detailsDocument,

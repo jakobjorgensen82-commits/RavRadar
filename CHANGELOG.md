@@ -1,3 +1,9 @@
+## 4.0.376 – korrekt privacy-rod i code-only-genopbygningen (2026-09-15, lokal kandidat)
+
+- PR #317/sourcegate `34939186051` gav main `e95339e5`; code-only `34939798892` beviste hele 4.0.375-migrationen og installationen af den gemte private runtime uden provider.
+- Genopbygningen stoppede derefter fejlagtigt på et godkendt `flowPoints.current`, fordi wrapperen brugte en beskrivelse som teknisk privacy-rodsti.
+- 4.0.376 bruger de samme kanoniske `startup`/`details`/`manifest`-rødder som generatoren. Privacyallowlisten lempes ikke. Se `CHANGELOG-4.0.376.md` og DEC-0157.
+
 ## 4.0.375 – komplet migration af gemt modelmetadata (2026-09-15, lokal kandidat)
 
 - 4.0.374 bestod sourcegate `34933609573`, blev merged gennem PR #316 som main `dd59bc51`, og code-only `34934257354` genbrugte central tilstand, migrationer, privacy og gemt runtime uden provider.

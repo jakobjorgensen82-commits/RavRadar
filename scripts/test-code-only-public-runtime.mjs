@@ -118,6 +118,19 @@ for (const marker of [
   'Protected predecessor restore attempt $attempt of 3 failed.',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+
+const preparationSource = fs.readFileSync(
+  'scripts/prepare-code-only-public-runtime.mjs',
+  'utf8',
+);
+for (const marker of [
+  "assertPublicRuntimePrivacy(generated.publicDocument, 'startup')",
+  "assertPublicRuntimePrivacy(generated.detailsDocument, 'details')",
+  "assertPublicRuntimePrivacy(generated.manifest, 'manifest')",
+]) assert.ok(preparationSource.includes(marker),
+  `Code-only privacykontrollen mangler sin kanoniske rodsti: ${marker}`);
+assert.ok(!preparationSource.includes("assertPublicRuntimePrivacy(generated.publicDocument, 'Code-only"),
+  'En menneskelig label må ikke bruges som teknisk privacy-rodsti');
 assert.match(workflow,
   /Prove the current-compatible runtime is no longer client-readable[\s\S]{0,180}if: steps\.current-private-install\.outcome == 'success'[\s\S]{0,220}--audit-anon/,
   'Den direkte current-runtimevej skal bevise privacy før den må fortsætte');

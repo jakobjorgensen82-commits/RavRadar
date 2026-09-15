@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.376 privacy-rod
+
+Main er `e95339e5` efter PR #317/sourcegate `34939186051`. Providerfri
+code-only `34939798892` beviste hele metadataoverførslen og atomisk installation
+af den gemte private runtime. Offentlig genopbygning stoppede før writes, fordi
+wrapperen kaldte privacyvalidatoren med labelen `Code-only startup runtime`
+fremfor den kanoniske sti `startup`.
+
+Branch `codex/4.0.376-code-only-privacy-path` retter alle tre kald til
+`startup`, `details` og `manifest` og låser dem i regressionen. Allowlisten er
+uændret; code-only-, 210/673-public-runtime- og Pages-privacykontroller er
+grønne. Næste: versions-/RDKS-diff, commit/push, én exact-head gate, merge og
+providerfri code-only; derefter livekontrol og normal weather. Ingen oneoff.
+DEC-0157. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.375 komplet modelmetadata
 
 Main er `dd59bc51` efter PR #316/sourcegate `34933609573`. Code-only

@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.376 retter privacy-rod
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.376-code-only-privacy-path`; remote main er `e95339e5` efter PR
+#317/sourcegate `34939186051`. Providerfri code-only `34939798892` beviste hele
+metadataoverførslen og atomisk installation af den gemte private runtime.
+
+Runnet stoppede før publicering, fordi wrapperens ekstra privacykontrol brugte
+`Code-only startup runtime` som JSON-rod og derfor ikke genkendte det godkendte
+`flowPoints.current`. 4.0.376 bruger nu `startup`, `details` og `manifest`.
+Code-only-, fuld 210/673-runtime- og Pages-privacykontrol er grønne. Næste:
+version/RDKS-diff, commit/push, én exact-head gate, merge og providerfri
+code-only; derefter livekontrol og normal weather. Ingen oneoff. DEC-0157.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.375 komplet modelmetadata
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

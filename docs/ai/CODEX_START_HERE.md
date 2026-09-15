@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.376 kanonisk privacy-rod
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.376-code-only-privacy-path`; remote main er `e95339e5` efter PR
+#317/sourcegate `34939186051`. Providerfri code-only `34939798892` beviste den
+komplette 4.0.375-metadataoverførsel og atomiske private installation.
+
+Offentlig genopbygning stoppede før writes på et godkendt
+`flowPoints.current`, fordi wrapperens ekstra privacykald brugte en fri label
+som teknisk JSON-rod. 4.0.376 bruger præcis `startup`, `details` og `manifest`;
+allowlisten lempes ikke. De tre relevante privacy/runtimekontroller er grønne.
+Fortsæt: slutdiff → commit/push → én exact-head sourcegate → merge → providerfri
+code-only → central/offentlig kontrol → separat normal weather. Ingen oneoff.
+DEC-0157. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.375 migrerer hele modelmetadatafladen
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch
