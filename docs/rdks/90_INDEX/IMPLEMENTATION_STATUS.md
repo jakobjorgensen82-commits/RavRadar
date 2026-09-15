@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.382 offentlig adminclosure
+
+- [x] Bestå 4.0.381 exact-head `35019932207`, merge PR #323 som main `d84773a7`.
+- [x] Gennemfør providerfri `35020915350` til og med contract-only-genbinding, private/Edge-led og Pages-deploy.
+- [x] Bekræft levende 4.0.381, integreret model, 210/673 og præcis én manglende closurefil.
+- [x] Ret admin til den publicerbare payloadfrie decodersti og fjern den gamle fil.
+- [x] Kontrollér færdig `_site` mod forseglet closure i begge Pages-buildere før upload.
+- [x] Bestå målrettede decoder-, closure-, kode-only- og YAML-kontroller.
+- [ ] Synkronisér resterende docs/geodatabevis, commit/push og én exact-head sourcegate.
+- [ ] Merge, providerfri 4.0.382, offentlig 79/79-verifikation og central maintenance-completion.
+- [ ] Derefter én normal tidsbegrænset weather for tal, scorer, DMI-rotation og cache. Ingen oneoff.
+
+DEC-0164 er aktiv.
+
 # Aktuel implementeringsstatus – lokal 4.0.381 contract-only-genbrug og Pages først
 
 - [x] Bestå 4.0.380 exact-head `35015984953`, merge PR #322 som main `de8ae966`.

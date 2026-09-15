@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.382 retter levende adminclosure
+
+4.0.381 er deployet fra main `d84773a7` i providerfri `35020915350` efter
+sourcegate `35019932207`/PR #323. Private contract-only, Edge og Pages bestod.
+Efterkontrollen stoppede på den eneste manglende closurefil:
+`runtime-diagnostics-archive.js`, som 4.0.379 fejlagtigt udelod trods en statisk
+import fra det offentlige admin-dashboard. 78 øvrige moduler svarer 200.
+
+Lokal branch `codex/4.0.382-public-admin-closure` flytter samme payloadfrie
+decoder til `protected-runtime-envelope.js`, fjerner gammel sti og kræver
+færdig `_site` identisk med den forseglede browserclosure i begge builders.
+Måltests grønne. Afslut docs/geodatabevis, commit/push, én exact-head, merge og
+providerfri deploy. Derefter normal weather for 0/210 aktive scorezoner,
+rotation og cache. Ingen oneoff. DEC-0164.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.381 contract-only/current samlet
 
 4.0.380 er main `de8ae966` efter PR #322/sourcegate `35015984953`.

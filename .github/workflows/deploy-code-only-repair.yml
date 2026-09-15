@@ -659,11 +659,30 @@ jobs:
       - name: Preflight complete Pages artifact for private runtime material
         id: pages-preflight-privacy
         continue-on-error: true
-        run: >-
-          node scripts/audit-pages-artifact-privacy.mjs
-          --site _site
-          --private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"
-          --require-private-manifest
+        shell: bash
+        run: |
+          set +e
+          node scripts/seal-ravscore-public-browser-closure.mjs \
+            --root _site \
+            --output "$RAVRADAR_OPERATIONAL_WORK/pages-public-closure.json"
+          closure_status=$?
+          if test "$closure_status" -eq 0; then
+            cmp -s \
+              "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" \
+              "$RAVRADAR_OPERATIONAL_WORK/pages-public-closure.json"
+            closure_status=$?
+          fi
+          node scripts/audit-pages-artifact-privacy.mjs \
+            --site _site \
+            --private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --require-private-manifest
+          privacy_status=$?
+          set -e
+          if test "$closure_status" -ne 0; then
+            echo "Pages artifact differs from its sealed public browser closure." >&2
+          fi
+          test "$closure_status" -eq 0
+          test "$privacy_status" -eq 0
 
       - name: Decide all independent prewrite checks together
         if: always() && !cancelled()

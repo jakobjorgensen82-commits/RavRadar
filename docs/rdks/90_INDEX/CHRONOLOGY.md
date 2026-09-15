@@ -1,3 +1,10 @@
+# 2026-09-15 – 4.0.381 går online; 4.0.382 retter én admin-404
+
+- 4.0.381 sourcegate `35019932207` og PR #323 gav main `d84773a7`.
+- Providerfri `35020915350` bestod private genbrug/publicering, Edge-readiness og Pages-deploy.
+- Levende Pages viser integreret 4.0.381 og 210/673, men alle 210 zoner er fortsat score-utilgængelige.
+- Offentlig closurekontrol fandt præcis én 404: den fejlagtigt udeladte admin-decoder. 4.0.382 flytter den og preflight-beviser hele artifactclosure. DEC-0164.
+
 # 2026-09-15 – 4.0.381 accepterer uændret model og sætter Pages før central status
 
 - 4.0.380 sourcegate `35015984953` og PR #322 gav main `de8ae966`.

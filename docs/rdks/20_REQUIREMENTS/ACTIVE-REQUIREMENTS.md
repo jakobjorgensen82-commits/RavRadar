@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.382 offentlig browserclosure
+
+- **REQ-4.0.382-ADMIN-CLOSURE-001 – BINDENDE:** `admin.html` og alle dets statiske modulimporter skal findes i det færdige Pages-artifact med de forseglede hashes.
+- **REQ-4.0.382-DECODER-001 – BINDENDE:** Den payloadfrie decoder må publiceres som `js/services/protected-runtime-envelope.js`; den gamle diagnostics-sti og alle private payloads forbliver fraværende.
+- **REQ-4.0.382-ARTIFACT-CLOSURE-001 – BINDENDE:** Både code-only og normal weather skal beregne closure fra færdig `_site` og kræve identitet med målclosure før upload.
+- **REQ-4.0.382-COLLECT-001 – BINDENDE:** Closure- og privacykontrollen skal begge køre, før deres fælles udfald kan blokere et defekt artifact.
+- **REQ-4.0.382-HARD-DEPLOY-001 – BINDENDE:** Reel manglende browserkode, privacy, forkert model/source eller ikke-nyeste main må fortsat blokere; uvæsentlig bookkeeping må ikke flyttes tilbage foran et ellers sikkert deploy.
+- **REQ-4.0.382-HONEST-SCORE-001 – BINDENDE:** Offentlig 210/673-struktur må ikke kaldes fungerende scorer, når `activeZoneCount=0` og `unavailableZoneCount=210`.
+
+DEC-0164 retter decoder-delen af DEC-0161; geodataafgrænsningen består.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.381 contract-only-genbrug og Pages først
 
 - **REQ-4.0.381-PRIVATE-TWO-PATHS-001 – BINDENDE:** Actual-current må enten få kun kendte modelbundlehashfelter migreret eller, ved identisk modelbinding, genbruges med alle ni private filer byte-for-byte.

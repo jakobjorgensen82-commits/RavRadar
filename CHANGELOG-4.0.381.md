@@ -33,3 +33,11 @@
 Én exact-head sourcegate, merge og providerfri kode-only skal publicere og
 verificere Pages. Først derefter køres normal tidsbegrænset weather for tal,
 scorer, DMI-rotation og cache. Ingen oneoff.
+
+## Faktisk produktionsresultat
+
+Exact-head `35019932207`, PR #323 og main `d84773a7` blev grønne.
+Providerfri `35020915350` bestod contract-only-genbindingen og deployede Pages.
+4.0.381 og den integrerede model er offentlige, men efterkontrollen fandt en
+reel HTTP 404 i admin-dashboardets browserclosure. Central maintenance blev
+derfor ikke afsluttet. Rettelsen fortsætter i 4.0.382/DEC-0164.

@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.382 efter levende admin-404
+
+4.0.381 bestod sourcegate `35019932207`, PR #323 og main `d84773a7`.
+Providerfri `35020915350` bestod contract-only-genbinding, privat publicering,
+anonym-afvisning, assistent-readiness og Pages-deploy. Levende Pages er
+4.0.381 med integreret model og 210/673, men offentlig verification fandt
+HTTP 404 på adminens statisk importerede decoder. Central maintenance blev
+ikke afsluttet. Ingen provider kørte.
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.382-public-admin-closure`. Den payloadfrie decoder er flyttet til
+`protected-runtime-envelope.js`; den gamle diagnostics-sti er fjernet.
+Begge Pages-buildere genberegner nu closure fra `_site` og sammenligner med
+det forseglede mål samtidig med privacykontrollen. Måltests er grønne. Næste:
+docs/geodatabevis, commit/push, én exact-head, merge og providerfri code-only.
+Derefter normal tidsbegrænset weather; aktuel scorestatus er 0 aktive og 210
+utilgængelige zoner. Ingen oneoff. DEC-0164. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.381 contract-only-genoptagelse
 
 4.0.380 bestod sourcegate `35015984953`, PR #322 og main `de8ae966`.

@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-15 – levende integreret model med defekt adminclosure
+
+- **ISSUE-4.0.380-CONTRACT-ONLY-REBIND – LUKKET:** `35020915350` bestod byteidentisk genbinding og privat publicering.
+- **ISSUE-4.0.381-PAGES-DEPLOY – LUKKET:** Pages accepterede og publicerede 4.0.381 på main `d84773a7`.
+- **ISSUE-4.0.381-ADMIN-CLOSURE-404 – RETTET LOKALT / LIVEBEVIS MANGLER:** Den offentlige admin importerede den eneste af 79 closurefiler, som artifactbyggeren udelod. 4.0.382 bruger en publicerbar decodersti og preflight-beviser hele `_site`.
+- **ISSUE-4.0.381-CENTRAL-MAINTENANCE – ÅBEN P0:** Offentlig verification stoppede efter Pages; central maintenance-completion skal afsluttes af den providerfri 4.0.382-levering.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Integreret model er online, men 0/210 zoner er aktive og 210/210 utilgængelige. Normal weather skal bevise tal, score, rotation og cache efter 4.0.382.
+
+Ingen oneoff. DEC-0164.
+
 # NYESTE CHECKPOINT – 2026-09-15 – uændret model og kode-only Pages-rækkefølge
 
 - **ISSUE-4.0.380-AUDIT-HISTORY-SHAPE – LUKKET:** `35016734197` kom forbi den rettede fire-felts auditforbruger.

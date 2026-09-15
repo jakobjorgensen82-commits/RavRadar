@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-15 – 4.0.381 er online, 4.0.382 retter adminclosure
+
+4.0.381 bestod exact-head `35019932207`, PR #323 og merge til main
+`d84773a7`. Providerfri `35020915350` bestod actual-current-restore,
+byteidentisk contract-only-genbinding, offentlig runtimeaudit, privat
+publicering og anonym-afvisning, assistent-readiness samt Pages-deploy. Ingen
+vejrprovider kørte.
+
+Den offentlige side viser nu 4.0.381 og den integrerede model med 210 zoner og
+673 kystdele. Efterkontrollen fandt derefter en reel HTTP 404:
+`admin.html` loader det offentlige `admin-dashboard.js`, som importerede den
+decoder, 4.0.379 fejlagtigt havde udeladt. Hele closurekortet gav 78/79 HTTP
+200 og kun denne ene 404. Central maintenance-completion blev derfor sprunget
+over.
+
+4.0.382 flytter den payloadfrie decoder til en publicerbar sti og beviser den
+færdige `_site` mod den forseglede browserclosure før upload i både kode-only
+og normal weather. Privacy og offentlig verification svækkes ikke. Den nye
+model er online, men alle 210 zoner er fortsat score-utilgængelige; 210/673 er
+struktur, ikke numerisk komplethed. Efter providerfri 4.0.382 følger én normal
+tidsbegrænset weather-kørsel. Ingen oneoff. DEC-0164.
+
 # NYESTE SANDHED – 2026-09-15 – 4.0.381 genbruger uændret model og sætter Pages først
 
 4.0.380 bestod sourcegate `35015984953`, blev merged gennem PR #322 som main
@@ -49,11 +71,12 @@ offentlig genopbygning, 210/673-audit, privat spec/bundle og Pages-prebuild.
 Ingen vejrprovider kørte.
 
 Den samlede prewrite-beslutning stoppede korrekt før efterfølgende private,
-Edge- og Pages-writes. Privacy-auditen fandt tre ubrugte repositoryfiler i den
+Edge- og Pages-writes. Privacy-auditen fandt tre repositoryfiler i den
 offentlige pakke: gammel `data/kystdata.json`, intern `data/zone-plan.json` og
-adminens `runtime-diagnostics-archive.js`. De er ikke refereret af den
-offentlige app. Lokal 4.0.379 udelader dem på både code-only- og normal-weather-
-Pages-vejen uden at lempe auditregler eller fjerne aktiv `zones.geojson`.
+adminens `runtime-diagnostics-archive.js`. Den daværende vurdering af
+decoderfilen som ubrugt viste sig forkert; 4.0.381 beviste dens offentlige
+import med én 404, og 4.0.382/DEC-0164 erstatter denne del.
+Geodataafgrænsningen består.
 
 Målrettet kontrol, dokumentation, exact-head, merge og ny providerfri
 code-only mangler. Numeriske scorer er stadig ikke livebevist. Ingen normal

@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-15 – levende 4.0.381, lokal 4.0.382 adminclosure
+
+4.0.381 er offentlig efter sourcegate `35019932207`, PR #323, main
+`d84773a7` og providerfri `35020915350`. Contract-only-genbinding, privat
+runtime, assistent og Pages bestod. Offentlig verification fandt bagefter én
+reel 404 i admin-dashboardets closure; central maintenance blev derfor ikke
+afsluttet. Hele closurekortet gav 78/79 HTTP 200.
+
+Branch `codex/4.0.382-public-admin-closure` flytter den payloadfrie decoder til
+en publicerbar sti og kræver `_site` = forseglet browserclosure før upload på
+begge produktionsveje. Måltests grønne. 210/673 er live, men 0/210 zoner har
+aktiv score; normal weather følger først efter providerfri 4.0.382. Ingen
+oneoff. DEC-0164. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.381 contract-only og Pages først
 
 Main `de8ae966`, PR #322 og sourcegate `35015984953`. Providerfri code-only

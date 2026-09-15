@@ -1,3 +1,12 @@
+# Nyeste prioritering – 4.0.382 offentlig adminclosure 2026-09-15
+
+4.0.381 er offentligt deployet fra main `d84773a7`; contract-only, privat
+runtime og assistent bestod. Offentlig verification fandt én reel admin-404,
+mens de øvrige 78 closuremoduler svarer 200. 4.0.382 flytter decoderen og
+preflight-beviser `_site` på begge produktionsveje. Næste er én exact-head,
+merge og providerfri kodelevering, derefter normal tidsbegrænset weather for
+0/210 aktive scorezoner, DMI-rotation og cache. Ingen oneoff. DEC-0164.
+
 # Nyeste prioritering – 4.0.381 contract-only-genbrug til Pages 2026-09-15
 
 4.0.380 er main efter sourcegate `35015984953`/PR #322. Providerfri

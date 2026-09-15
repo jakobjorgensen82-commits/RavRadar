@@ -131,6 +131,9 @@ for (const marker of [
   "--exclude 'data/kystdata.json'",
   "--exclude 'data/zone-plan.json'",
   "--exclude 'js/services/runtime-diagnostics-archive.js'",
+  '--root _site',
+  'pages-public-closure.json',
+  'cmp -s',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
 const independentPrewriteDecision = workflow.indexOf(

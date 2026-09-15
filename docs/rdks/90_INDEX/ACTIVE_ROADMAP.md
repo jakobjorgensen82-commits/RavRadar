@@ -1,3 +1,16 @@
+# Aktiv roadmap – 4.0.382 fra levende model til hel offentlig closure
+
+1. [x] Bestå 4.0.381 sourcegate/PR/merge og providerfri contract-only-genbinding.
+2. [x] Deploy 4.0.381 Pages og afgræns efterkontrollen til præcis én reel admin-404.
+3. [x] Kortlæg alle 79 browsermoduler; bevis 78 HTTP 200 og én udeladt decoder.
+4. [x] Flyt decoder til publicerbar sti og læg closure+privacy-preflight i begge builders.
+5. [ ] Færdiggør docs/geodatabevis, commit/push og én exact-head sourcegate.
+6. [ ] Merge og kør providerfri 4.0.382 til offentlig 79/79-verifikation og central completion.
+7. [ ] Kontrollér admin, hovedkort, Om RavRadar, modelbinding og privacy meningsfuldt.
+8. [ ] Kør én normal tidsbegrænset weather og bevis numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0164 er aktiv.
+
 # Aktiv roadmap – 4.0.381 fra contract-only-stop til offentlig model
 
 1. [x] Bevar 4.0.380's grønne exact-head, central-/databaseled og dynamiske actual-current-restore.
