@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-15 – cachebevis og rå source er to forskellige tilstande
+
+4.0.371 bestod exact-head sourcegate `34921912516`, blev merged gennem PR #313
+som main `36ea93740a8ee70faf706ed73a1b5cfa45c793cd`, og code-only-run
+`34922303619` genbrugte central version 1, migration 16/17, privacy samt den
+store restore og udpakning uden provider. Den korrigerede 11-feltsbinding
+bestod. Ingen runtime-, Pages- eller completionwrite blev udført efter stoppet.
+
+Stoppet var en falsk kontrol: cachemanifestets tre forseglede kontrakthashes er
+fra det hydrerede produktionsworkspace, mens kontrollen genberegnede dem fra den
+rå `fa418f43`-commit før central hydrering og runtimegenerering. Lokal 4.0.372
+bevarer eksakt manifest-, indholds-, model- og 210/673-kontrol, men bruger den
+rå commit alene til de uændrede validatorer. Kun modelbundlehashfelter må
+ændres. Ingen provider, vejrdata, score, state eller migration. DEC-0153.
+
 # NYESTE SANDHED – 2026-09-15 – stor restore virker; forgængerbinding rettet lokalt
 
 4.0.370 bestod sourcegate `34920862401` og blev merged gennem PR #312 som main

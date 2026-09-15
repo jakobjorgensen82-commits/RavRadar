@@ -5,6 +5,7 @@ import {
   allowedChange,
   assertBindingUpgrade,
   migratePostCutoverPrivateRuntime,
+  validatePredecessorManifest,
 } from './migrate-post-cutover-private-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -25,6 +26,26 @@ assert.doesNotThrow(() => assertBindingUpgrade(previous, current, 'fixture'));
 assert.throws(() => assertBindingUpgrade(previous, { ...current, modelId: 'changed' }, 'fixture'),
   /more than the implementation bundle hash/);
 assert.throws(() => assertBindingUpgrade(previous, previous, 'fixture'), /does not require migration/);
+
+const protectedManifest = {
+  datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
+  bundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,
+  zoneCount: POST_CUTOVER_PREDECESSOR.expectedZoneCount,
+  partCount: POST_CUTOVER_PREDECESSOR.expectedPartCount,
+  modelBinding: POST_CUTOVER_PREDECESSOR.modelBinding,
+  contractHashes: POST_CUTOVER_PREDECESSOR.contractHashes,
+};
+assert.doesNotThrow(() => validatePredecessorManifest(protectedManifest, previous));
+assert.throws(
+  () => validatePredecessorManifest({
+    ...protectedManifest,
+    contractHashes: {
+      ...protectedManifest.contractHashes,
+      fullRuntimeContractSha256: '0'.repeat(64),
+    },
+  }, previous),
+  /Protected bundle contract hashes mismatch/,
+);
 
 for (const pathValue of [
   'coastalParts.modelBinding.modelBundleSha256',
@@ -52,6 +73,9 @@ for (const marker of [
   'privatePayloadIncluded: false',
   'Private runtime inventory is not the exact nine-file allowlist',
   'Private runtime migration changed forbidden paths',
+  'raw Git archive is therefore not a byte-identical reconstruction',
 ]) assert.match(source, new RegExp(marker.replace(/[.*+?^$()|[\]\\]/g, '\\$&')));
+
+assert.doesNotMatch(source, /Archived-source contract hashes mismatch/);
 
 console.log('Post-cutover private runtime migration: exact predecessor, binding-only changes, nine-file allowlist and payload-free report.');

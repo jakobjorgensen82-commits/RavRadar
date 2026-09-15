@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.372 adskiller hydreret cachebevis fra rå source
+
+- PR #313/sourcegate `34921912516` gav main `36ea9374`; `34922303619` genbrugte hele den allerede beviste providerfri kæde og passerede 11-feltsbindingen.
+- Runnet stoppede før writes på en ugyldig raw-source-mod-hydrated-runtime-hashsammenligning.
+- 4.0.372 bevarer de eksakte manifest-, bundle-, model- og inventarbeviser og fjerner alene den falske krydssammenligning. DEC-0153.
+
 # 2026-09-15 – 4.0.371 låser den faktiske forgængerbinding
 
 - PR #312/sourcegate `34920862401` gav main `9b5c82a8`; run `34921173187` beviste stor restore/udpakning uden provider.

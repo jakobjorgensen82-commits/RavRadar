@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.372 hydreret runtimeattestation
+
+Main er `36ea9374` efter PR #313/sourcegate `34921912516`. Code-only
+`34922303619` genbrugte central version 1, migration 16/17, privacy, restore og
+udpakning uden provider og passerede den rettede 11-feltsbinding. Det stoppede
+før writes på en falsk sammenligning mellem det hydrerede cachemanifest og den
+rå `fa418f43`-source.
+
+Branch `codex/4.0.372-runtime-contract-attestation` bevarer alle eksakte
+cachebeviser og bruger fortsat den rå commit til validatorerne, men fjerner den
+ugyldige byte-lighed. Næste: målrettet slutkontrol, commit/push, én exact-head
+sourcegate, merge og providerfri code-only. Derefter offentlig kontrol og
+normal tidsbegrænset weather. Ingen oneoff. DEC-0153. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.371 rigtig forgængerbinding
 
 Main `9b5c82a8`/PR #312/sourcegate `34920862401`. Code-only `34921173187`

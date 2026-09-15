@@ -1,3 +1,12 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.372 hydreret runtimeattestation
+
+- **REQ-4.0.372-HYDRATED-HASH-001 – IMPLEMENTERET LOKALT:** Den beskyttede caches forseglede kontrakthashes attesterer det hydrerede byggeworkspace og må ikke kræves lig hashes fra en rå Git-udpakning.
+- **REQ-4.0.372-EXACT-CACHE-001 – BINDENDE:** Datasæt-id, indholdshash, alle tre manifest-hashes, 11-feltsbinding og 210/673-inventar skal fortsat matche eksakt.
+- **REQ-4.0.372-VALIDATOR-SOURCE-001 – BINDENDE:** Den eksakte historiske commit leverer de uændrede validatorer; migreringen må fortsat kun ændre modelbundlehashfelter.
+- **REQ-4.0.372-NO-REPEAT-001 – AKTIV:** Ingen provider, oneoff, migration eller allerede bestået cutovertrin gentages.
+
+DEC-0153 supplerer DEC-0148–0152.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.371 eksakt forgængerbinding
 
 - **REQ-4.0.371-EXACT-BINDING-001 – IMPLEMENTERET LOKALT:** Alle 11 forgængerfelter skal matche `fa418f43` og liveartifactet; forenklede fixtureværdier er forbudt.

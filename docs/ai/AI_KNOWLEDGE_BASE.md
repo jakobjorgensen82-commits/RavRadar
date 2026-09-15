@@ -1,3 +1,9 @@
+# 2026-09-15 – hydrerede runtimehashes er ikke raw-source-hashes
+
+- En privat runtimebundle forsegles efter central hydrering og generering; dens kontrakthashes attesterer derfor det færdige byggeworkspace.
+- En rå Git-commit kan være den eksakte validatorsource uden at være byteidentisk med den hydrerede runtime.
+- Bevar uafhængige eksakte beviser for source-head, manifest-hashes, bundleindhold, modelbinding og inventar; sammenlign ikke to forskellige byggetilstande som om de var ens.
+
 # 2026-09-15 – historisk binding skal bevises uafhængigt
 
 - `34921173187` livebeviser, at stor privat restore/udpakning virker; næste stop var migratorens fixture, ikke data eller Storage.
