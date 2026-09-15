@@ -1,6 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.366
+**Håndbogsversion:** 4.0.367
+
+## 88.71 4.0.367 – Den offentlige model og den centrale status bringes sammen
+
+Den første offentlige cutover så grøn ud, men var ikke færdig. Hjemmesiden fik
+det integrerede modelartifact, mens den centrale Supabase-status blev stående på
+den gamle Candidate G-profil uden en operationel række. Årsagen var, at
+workflowet fortsatte efter en fejlet privacyaudit og en manglende plan. Den
+centrale begin/complete-overgang kunne derfor ikke køre, selv om Pages senere
+blev publiceret.
+
+4.0.367 retter kun denne kendte splittelse. Den accepterer den eksakte gamle
+centrale profil og det eksakte offentlige artifact fra run `34877443841`.
+Repository, run, commit, artifact, størrelse og alle kilde- og targethashes er
+fastlåst. Desuden kontrolleres den levende hjemmeside igen mod det historiske
+modelcontract og bundle umiddelbart før den atomiske centrale skrivning. Hvis
+bare én værdi afviger, ændres central tilstand ikke.
+
+Når den allerede offentlige historiske binding er registreret centralt,
+fortsætter samme kode-only-kørsel gennem den almindelige, eksisterende
+historisk-til-aktuel vedligeholdelse og lægger 4.0.367 ud. Der hentes ikke nyt
+vejr, køres ikke oneoff, og det gamle cutover gentages ikke.
+
+En anden rettelse lukker den falske grønne slutstatus. Workflowet må stadig
+samle flere cutoverfejl i samme gennemløb, men en kørsel bliver kun grøn, når
+Pages, den offentlige kontrol, checkpointet og den konkrete centrale
+fuldførelse er lykkedes. En udtrykkelig reconciliation kan bruges, hvis den
+beviser det samme slutpunkt.
+
+Efter code-only-deployet skal central status og den levende hjemmeside
+kontrolleres. Først derefter køres normal weather separat og tidsbegrænset for
+at bevise faktiske tal, scorer, rotation og cache. Struktur 210/673 er ikke i
+sig selv bevis for numeriske vejrdata eller scorer.
 
 ## 88.70 4.0.366 – Rettelser og vejr leveres hver for sig
 
@@ -587,11 +619,19 @@ RavRadar behandler nu vejrcachen som en vedvarende base. En ny leverandørfil m�
 
 Status: 4.0.337 er lokalt måltestet. GitHubs exact-head-kildegate, main-oneoff, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu.
 
-### Aktuel status – RavScore 4.0.366 kode-only-rettelse
+### Aktuel status – RavScore 4.0.367 central recovery
 
-### Status for det aktuelle modelarbejde – lokal 4.0.366, exact-head og rettelsesdeploy afventer
+### Status for det aktuelle modelarbejde – lokal 4.0.367, exact-head og rettelsesdeploy afventer
 
-Den integrerede model er offentlig. RavScore 4.0.366 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G ligger kun som privat rollback og er særskilt låst med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b` over 57 transitive filer. Continuationbindingen er `81045427e86a26b7c853a1f8832aece9f73afc2a4092c5292ec9e6730154b8a2`. Den maskinlæsbare autoritet er `version.json.releaseContract.modelBindings`. Installeret migration 15 er byteuændret; migration 16 `20260914234500_post_cutover_current_hold_binding.sql` er det nye append-only bindingsled. Exact-head PR-gate, kode-only-deploy og offentlig kontrol mangler.
+Det historiske integrerede artifact er offentligt, men den centrale aktivering
+mangler stadig. 4.0.367 er lokalt låst til den eksakte recovery og fører
+derefter modelbindingen frem gennem migration 16
+`20260914234500_post_cutover_current_hold_binding.sql`. Den maskinlæsbare
+bindingautoritet er `version.json.releaseContract.modelBindings`. Candidate G
+er kun kildeidentitet for den manglende første overgang og privat rollback efter
+en fuldført integreret aktivering; den er ikke samtidig offentlig fallback.
+Exact-head PR-gate, code-only-deploy, central readback og offentlig
+mobil-/desktopkontrol mangler.
 
 ## 88.36 4.0.334 – robust WAM-readiness uden at kassere cacheprogression
 

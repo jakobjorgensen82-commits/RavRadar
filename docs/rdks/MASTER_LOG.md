@@ -1,6 +1,12 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – offentlig model og Astra-review
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.367 central recovery
 
-Ejeren godkendte udtrykkeligt admin-merge af PR #306 uden PR-gate og direkte cutover trods risiko for ufuldstændigt artifact. Main `fa418f43`, run `34877443841`: privat runtime, Pages og Supabase-overgang lykkedes uden kildegate/providerhentning. Modellen er nu online, men offentligt dataset `rr-20260914180039-210` har endnu0tilgængelige scorer. Tidligere fuldt-datasæt-formuleringer må ikke gentages:210/673/118/complete viser struktur, ikke numerisk komplethed.
+Den faktiske gennemgang af cutover `34877443841` korrigerer den tidligere hukommelse: Pages og privat runtime blev publiceret, men plan/handoff og central begin/complete fejlede. Supabase-overgangen lykkedes derfor ikke, og den grønne terminal var falsk. Central står fortsat uden operationel række på legacy Candidate G, mens Pages viser den historiske integrerede binding.
+
+4.0.367 implementerer en engangs-, run-, artifact- og hash-låst recovery med frisk offentlig verification og exact-main før atomisk central 0→1. Samme code-only-run fortsætter bagefter gennem eksisterende historisk bindingsvedligeholdelse. Den genbrugelige Pages-terminal kræver nu handlingens konkrete completion eller en gyldig reconciliation. Ingen provider, oneoff eller gentagelse af den gamle cutover. DEC-0149.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-14 – offentlig artifact og Astra-review
+
+Ejeren godkendte udtrykkeligt admin-merge af PR #306 uden PR-gate og direkte cutover trods risiko for ufuldstændigt artifact. Main `fa418f43`, run `34877443841` publicerede privat runtime og Pages uden kildegate/providerhentning, men den senere gennemgang beviste, at Supabase-overgangen ikke blev fuldført. Offentligt dataset `rr-20260914180039-210` har endnu 0 tilgængelige scorer. Tidligere fuldt-datasæt-formuleringer må ikke gentages: 210/673/118/complete viser struktur, ikke numerisk komplethed.
 
 Ejeren skiftede til Astra Ultra og bad derefter om grundig analyse før vejrkørslen med rettelsen. Reviewet bekræftede vindtab ved senere merge, ugyldig360-graders afrunding, falsk strømholdinterval hen over null og flere konkrete UI-/dækningsfejl. En normal opgradering skal desuden bevare gammel privat H0-state gennem ny modelbinding og undgå kendte source-/testgentagelser. Normal vejrrotation er gennemgået i kode, men ikke bevist i drift. Ingen ny providerkørsel, testsuite eller produktionskodeændring i reviewet.
 

@@ -42,6 +42,7 @@ jobs:
       RAVRADAR_PREDECESSOR_PRIVATE_RESTORE: /tmp/ravradar-private-production-runtime/predecessor/restored
       RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/migrated
       RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT: /tmp/ravradar-code-only-public-snapshot
+      RAVRADAR_MISSED_CUTOVER_RECOVERY: /tmp/ravradar-missed-cutover-recovery
       RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-model
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -117,6 +118,73 @@ jobs:
           fetch_public data/water-level-station-routing.json water-level-station-routing.json 4194304
           target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json")"
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
+
+      - name: Detect only the exact missed initial cutover state
+        id: missed-cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/before-missed-cutover-recovery.json"
+          current="$RAVRADAR_OPERATIONAL_WORK/before-missed-cutover-recovery.json"
+          public_manifest="$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json"
+          if test "$(jq -r '.model' "$current")" = "legacy-candidate-g" && test "$(jq -r '.status' "$current")" = "CANDIDATE_G_ACTIVE" && test "$(jq -r '.centralVersion' "$current")" = "0" && test "$(jq -r '.initialCutoverRequired' "$current")" = "true" && test "$(jq -r '.legacySourceRequired' "$current")" = "true"; then
+            manifest_sha256="$(TARGET_MANIFEST="$public_manifest" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.TARGET_MANIFEST, 'utf8'))));")"
+            test "$manifest_sha256" = "4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e"
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            test "$(jq -r '.model' "$current")" = "integrated"
+            test "$(jq -r '.status' "$current")" = "INTEGRATED_ACTIVE"
+            test "$(jq -r '.initialCutoverRequired' "$current")" = "false"
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Download exact privacy-safe evidence from the missed cutover
+        if: steps.missed-cutover.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ravscore-operational-recovery-34877443841-1
+          path: ${{ env.RAVRADAR_MISSED_CUTOVER_RECOVERY }}
+          run-id: 34877443841
+          github-token: ${{ github.token }}
+
+      - name: Freshly verify the exact historical integrated artifact is still public
+        if: steps.missed-cutover.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for evidence in source-manifest.json source-verification.json legacy-source-attestation.json public-audit.json integrated-readiness.json target-binding.json target-contract.js target-bundle.generated.js target-public-closure.json pages-artifact-seal.json; do
+            test -f "$RAVRADAR_MISSED_CUTOVER_RECOVERY/$evidence"
+          done
+          node scripts/verify-ravscore-operational-pages-deployment.mjs --base-url "$RAVRADAR_PUBLIC_BASE_URL" --source-head fa418f43bbd070c446ed19b6587541b93af89599 --model integrated --manifest "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json" --binding "$RAVRADAR_MISSED_CUTOVER_RECOVERY/target-binding.json" --contract "$RAVRADAR_MISSED_CUTOVER_RECOVERY/target-contract.js" --bundle "$RAVRADAR_MISSED_CUTOVER_RECOVERY/target-bundle.generated.js" --public-closure "$RAVRADAR_MISSED_CUTOVER_RECOVERY/target-public-closure.json" --observation-nonce "missed-cutover-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --output "$RAVRADAR_OPERATIONAL_WORK/missed-cutover-public-verification.json"
+
+      - name: Reconfirm current main immediately before missed-cutover recovery
+        if: steps.missed-cutover.outputs.required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$current_main" = "$EXPECTED_HEAD_SHA"
+
+      - name: Atomically record the exact already-public historical cutover
+        if: steps.missed-cutover.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ravscore-operational-activation.mjs recover-missed-initial-cutover --source-manifest "$RAVRADAR_MISSED_CUTOVER_RECOVERY/source-manifest.json" --source-attestation "$RAVRADAR_MISSED_CUTOVER_RECOVERY/legacy-source-attestation.json" --source-verification "$RAVRADAR_MISSED_CUTOVER_RECOVERY/source-verification.json" --manifest "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json" --audit "$RAVRADAR_MISSED_CUTOVER_RECOVERY/public-audit.json" --readiness "$RAVRADAR_MISSED_CUTOVER_RECOVERY/integrated-readiness.json" --binding "$RAVRADAR_MISSED_CUTOVER_RECOVERY/target-binding.json" --verification "$RAVRADAR_OPERATIONAL_WORK/missed-cutover-public-verification.json" --pages-artifact-seal "$RAVRADAR_MISSED_CUTOVER_RECOVERY/pages-artifact-seal.json" --output "$RAVRADAR_OPERATIONAL_WORK/missed-cutover-recovered.json"
+        env:
+          RAVRADAR_MISSED_INITIAL_CUTOVER_RECOVERY_CONFIRMATION: RECOVER-MISSED-INTEGRATED-CUTOVER-34877443841
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Read exact centrally active operational RavScore
         id: operational-model

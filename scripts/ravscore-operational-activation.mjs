@@ -31,6 +31,7 @@ import {
 import {
   assertLegacyCandidateGCentralProfile,
   assertLegacyCandidateGManifest,
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
   LEGACY_CANDIDATE_G_RELEASE_VERSION,
   legacyCandidateGControllerBinding,
   legacyCandidateGSourceIdentity,
@@ -72,6 +73,30 @@ export const RAVSCORE_INTEGRATED_RETURN_POLICY = Object.freeze({
   mainRef: 'refs/heads/main',
   expectedZoneCount: 210,
   expectedPartCount: 673,
+});
+export const RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY = Object.freeze({
+  confirmation: 'RECOVER-MISSED-INTEGRATED-CUTOVER-34877443841',
+  repository: 'jakobjorgensen82-commits/RavRadar',
+  runId: 34877443841,
+  runAttempt: 1,
+  failedCutoverHead: 'fa418f43bbd070c446ed19b6587541b93af89599',
+  deploymentId: 'pages-34877443841-1',
+  artifactId: 10362017512,
+  artifactDigestSha256: '475bf345eeb37803a3fab7b1963bbea22e0c9eaf50db401a207dfb58fec2cedd',
+  artifactSizeBytes: 4362045,
+  sourceDeploymentId: 'public-source-212d1562c0aed2dcf65a17fc',
+  sourceImplementationClosureSha256:
+    'a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606',
+  targetImplementationClosureSha256:
+    'b050755ec8b904cff60838bb3c9f1ec5a5bdb9f0fd24d14b0ed957eaa32fce4d',
+  sourceManifestSha256: 'd3a740f131a53ef57907be3a66aa7985bceff67c3dfa5cf174ae4488e8fa070b',
+  sourceAttestationSha256: '707ed3280cdd9e79698fbf23def5fb6f8457adce90551893581cdfceb2262687',
+  sourceVerificationSha256: '0e40125dec27c1bfacbd71b6a441da7fca297ce2dd1bb6c60872df9981e777ed',
+  targetManifestSha256: '4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e',
+  targetAuditSha256: 'b61e54f6691b23f42df05eca565c43fc0a5ac4a9c534b1eec797c41ecf199d93',
+  targetReadinessSha256: '062d8d143af8bcd113059a45215e9e10561272d9685f4a5c1413d4802a85df28',
+  targetBindingSha256: '70f45b3d485f6424d94e80483a98ce1492a9bf8bbb9d8e207f7483317988336f',
+  pagesArtifactSealSha256: 'aa9d3e95a99182d8e11bf8f20b48ee856819ea35bb6b6e5ef3166d42e062d4e7',
 });
 const RAVSCORE_PUBLIC_CURRENT_MODE_COUNT =
   RAVSCORE_INTEGRATED_RETURN_POLICY.expectedZoneCount * 2;
@@ -1142,6 +1167,332 @@ function assertIntegratedPublicEvidence(publicManifest, publicAudit, {
     throw new Error('Integrated return requires a READY Candidate G rollback companion');
   }
   return true;
+}
+
+const MISSED_INITIAL_CUTOVER_ARTIFACT_SEAL_FIELDS = Object.freeze([
+  'schemaVersion', 'repository', 'runId', 'runAttempt', 'headSha', 'ref',
+  'attemptId', 'artifactId', 'artifactName', 'artifactDigestSha256',
+  'artifactSizeBytes', 'targetPublicManifestSha256',
+  'targetImplementationClosureSha256', 'targetModelBinding', 'createdAt',
+  'privatePayloadIncluded',
+]);
+
+function assertMissedInitialCutoverReadiness(readiness, {
+  policy,
+  targetBinding,
+  pagesArtifactSeal,
+} = {}) {
+  if (!exactKeys(readiness, [
+    'schemaVersion', 'sourceHead', 'modelContractSha256', 'modelBundleSha256',
+    'publicImplementationClosureSha256', 'migrationIds', 'tripSchemaVersion',
+    'tripBindingPolicyId', 'tripBindingPolicySha256',
+    'tripActiveAdmissionPolicyId', 'tripActiveAdmissionPolicySha256',
+    'modelBinding', 'candidateModelBinding', 'centralProfile', 'assistantBinding',
+  ])
+    || readiness.schemaVersion !== 'ravscore-integrated-cutover-readiness-v1'
+    || readiness.sourceHead !== policy.failedCutoverHead
+    || readiness.modelContractSha256 !== targetBinding.modelContractSha256
+    || readiness.modelBundleSha256 !== targetBinding.modelBundleSha256
+    || readiness.publicImplementationClosureSha256
+      !== pagesArtifactSeal.targetImplementationClosureSha256
+    || !Array.isArray(readiness.migrationIds)
+    || readiness.migrationIds.length < 1
+    || new Set(readiness.migrationIds).size !== readiness.migrationIds.length
+    || readiness.migrationIds.some(id => !SAFE_ID_PATTERN.test(String(id ?? '')))
+    || Number(readiness.tripSchemaVersion) !== 3
+    || !SAFE_ID_PATTERN.test(String(readiness.tripBindingPolicyId ?? ''))
+    || !SHA256_PATTERN.test(String(readiness.tripBindingPolicySha256 ?? ''))
+    || !SAFE_ID_PATTERN.test(String(readiness.tripActiveAdmissionPolicyId ?? ''))
+    || !SHA256_PATTERN.test(String(readiness.tripActiveAdmissionPolicySha256 ?? ''))
+    || !exactKeys(readiness.assistantBinding, [
+      'modelId', 'stateSchemaVersion', 'modelContractSha256', 'modelBundleSha256',
+      'knowledgeSchema', 'knowledgeSha256',
+    ])
+    || readiness.assistantBinding.modelId !== targetBinding.modelId
+    || readiness.assistantBinding.stateSchemaVersion !== targetBinding.stateSchemaVersion
+    || readiness.assistantBinding.modelContractSha256 !== targetBinding.modelContractSha256
+    || readiness.assistantBinding.modelBundleSha256 !== targetBinding.modelBundleSha256
+    || readiness.assistantBinding.knowledgeSchema !== 'rav-assistant-public-knowledge-v1'
+    || !SHA256_PATTERN.test(String(readiness.assistantBinding.knowledgeSha256 ?? ''))
+    || sha256(readiness) !== policy.targetReadinessSha256) {
+    throw new Error('Missed initial cutover readiness differs from the pinned historical evidence');
+  }
+  assertSameSealedBinding(readiness.modelBinding, targetBinding,
+    'Missed initial cutover readiness target binding');
+  assertSealedModelBinding(readiness.candidateModelBinding,
+    'Missed initial cutover readiness Candidate binding');
+  if (sealedBindingKind(readiness.candidateModelBinding) !== 'candidate-g') {
+    throw new Error('Missed initial cutover readiness Candidate binding is incompatible');
+  }
+  assertProfileRowForSealedBinding({ version: 1, payload: readiness.centralProfile },
+    targetBinding);
+  return true;
+}
+
+function missedInitialCutoverCalibrationEligible(publicAudit, {
+  policy,
+  targetBinding,
+  targetManifest,
+} = {}) {
+  if (!exactKeys(publicAudit, [
+    'schemaVersion', 'status', 'datasetId', 'productionReferenceAt', 'model',
+    'coverage', 'continuation', 'history', 'rollback', 'payload', 'errors',
+    'errorCounts',
+  ])
+    || publicAudit.schemaVersion !== 1
+    || publicAudit.status !== 'passed'
+    || publicAudit.datasetId !== targetManifest.datasetId
+    || publicAudit.productionReferenceAt !== targetManifest.productionReferenceAt
+    || publicAudit.model?.modelId !== targetBinding.modelId
+    || publicAudit.model?.stateSchemaVersion !== targetBinding.stateSchemaVersion
+    || publicAudit.model?.modelContractSha256 !== targetBinding.modelContractSha256
+    || publicAudit.model?.modelBundleSha256 !== targetBinding.modelBundleSha256
+    || Number(publicAudit.coverage?.expectedZoneCount) !== 210
+    || Number(publicAudit.coverage?.zoneCount) !== 210
+    || Number(publicAudit.coverage?.expectedPartCount) !== 673
+    || Number(publicAudit.coverage?.partCount) !== 673
+    || publicAudit.payload?.privacyContractPassed !== true
+    || publicAudit.payload?.publicStateOrEvidenceIncluded !== false
+    || publicAudit.payload?.publicRawVectorIncluded !== false
+    || publicAudit.payload?.publicUnapprovedCoordinateIncluded !== false
+    || publicAudit.payload?.publicShadowIncluded !== false
+    || !Array.isArray(publicAudit.errors)
+    || publicAudit.errors.length !== 0
+    || sha256(publicAudit) !== policy.targetAuditSha256) {
+    throw new Error('Missed initial cutover public audit differs from the pinned historical evidence');
+  }
+  integratedPublicAuditRollbackStatus(publicAudit);
+  const history = publicAudit.history;
+  const fullCount = Number(history?.currentFullHistoryModeCount);
+  const incompleteCount = Number(history?.currentHistoryIncompleteModeCount);
+  const unavailableCount = Number(history?.currentUnavailableModeCount);
+  if (!exactKeys(history, [
+    'allCurrentScoresFullHistory', 'currentFullHistoryModeCount',
+    'currentHistoryIncompleteModeCount', 'currentUnavailableModeCount',
+  ])
+    || typeof history.allCurrentScoresFullHistory !== 'boolean'
+    || ![fullCount, incompleteCount, unavailableCount]
+      .every(value => Number.isSafeInteger(value) && value >= 0)
+    || fullCount + incompleteCount + unavailableCount !== RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
+    || history.allCurrentScoresFullHistory
+      !== (fullCount === RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
+        && incompleteCount === 0 && unavailableCount === 0)) {
+    throw new Error('Missed initial cutover public audit lacks an exact historical score summary');
+  }
+  return history.allCurrentScoresFullHistory;
+}
+
+function assertMissedInitialCutoverArtifactSeal(pagesArtifactSeal, {
+  policy,
+  targetBinding,
+  targetManifest,
+} = {}) {
+  if (!exactKeys(pagesArtifactSeal, MISSED_INITIAL_CUTOVER_ARTIFACT_SEAL_FIELDS)
+    || pagesArtifactSeal.schemaVersion !== 'ravscore-operational-pages-artifact-seal-v1'
+    || pagesArtifactSeal.repository !== policy.repository
+    || Number(pagesArtifactSeal.runId) !== Number(policy.runId)
+    || Number(pagesArtifactSeal.runAttempt) !== Number(policy.runAttempt)
+    || pagesArtifactSeal.headSha !== policy.failedCutoverHead
+    || pagesArtifactSeal.ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef
+    || pagesArtifactSeal.attemptId !== policy.deploymentId
+    || Number(pagesArtifactSeal.artifactId) !== Number(policy.artifactId)
+    || pagesArtifactSeal.artifactName !== 'github-pages'
+    || pagesArtifactSeal.artifactDigestSha256 !== policy.artifactDigestSha256
+    || Number(pagesArtifactSeal.artifactSizeBytes) !== Number(policy.artifactSizeBytes)
+    || pagesArtifactSeal.targetPublicManifestSha256 !== policy.targetManifestSha256
+    || pagesArtifactSeal.targetPublicManifestSha256 !== sha256(targetManifest)
+    || pagesArtifactSeal.targetImplementationClosureSha256
+      !== policy.targetImplementationClosureSha256
+    || !canonicalTime(pagesArtifactSeal.createdAt)
+    || pagesArtifactSeal.privatePayloadIncluded !== false
+    || sha256(pagesArtifactSeal) !== policy.pagesArtifactSealSha256) {
+    throw new Error('Missed initial cutover Pages artifact seal differs from the pinned deployment');
+  }
+  assertSameSealedBinding(pagesArtifactSeal.targetModelBinding, targetBinding,
+    'Missed initial cutover Pages artifact binding');
+  return true;
+}
+
+export function recoverMissedInitialIntegratedCutover({
+  currentRow,
+  currentProfileRow,
+  sourceManifest,
+  sourceAttestation,
+  sourceVerification,
+  targetManifest,
+  targetAudit,
+  targetReadiness,
+  targetBinding,
+  publicVerification,
+  pagesArtifactSeal,
+  eventName,
+  ref,
+  githubSha,
+  repository,
+  confirmation,
+  now = new Date().toISOString(),
+  policy = RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY,
+} = {}) {
+  if (currentRow !== null && currentRow !== undefined) {
+    throw new Error('Missed initial cutover recovery requires the operational row to be absent');
+  }
+  if (!currentProfileRow || Number(currentProfileRow.version) < 1) {
+    throw new Error('Missed initial cutover recovery requires the exact central profile row');
+  }
+  assertLegacyCandidateGCentralProfile(currentProfileRow.payload,
+    'Missed initial cutover central legacy profile');
+  const resolved = resolveOperationalRavScoreModel(null, { profileRow: currentProfileRow });
+  if (resolved.model !== 'legacy-candidate-g'
+    || resolved.status !== RAVSCORE_OPERATIONAL_STATUSES.candidateActive
+    || resolved.centralVersion !== 0
+    || resolved.initialCutoverRequired !== true
+    || resolved.legacySourceRequired !== true
+    || eventName !== RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName
+    || ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef
+    || !HEAD_PATTERN.test(String(githubSha ?? ''))
+    || repository !== policy.repository
+    || confirmation !== policy.confirmation) {
+    throw new Error('Missed initial cutover recovery lacks its exact one-time authority or source state');
+  }
+  for (const [evidence, expectedSha256, label] of [
+    [sourceManifest, policy.sourceManifestSha256, 'legacy source manifest'],
+    [sourceAttestation, policy.sourceAttestationSha256, 'legacy source attestation'],
+    [sourceVerification, policy.sourceVerificationSha256, 'legacy source verification'],
+    [targetManifest, policy.targetManifestSha256, 'integrated target manifest'],
+    [targetAudit, policy.targetAuditSha256, 'integrated target audit'],
+    [targetReadiness, policy.targetReadinessSha256, 'integrated target readiness'],
+    [targetBinding, policy.targetBindingSha256, 'integrated target binding'],
+    [pagesArtifactSeal, policy.pagesArtifactSealSha256, 'Pages artifact seal'],
+  ]) {
+    if (!SHA256_PATTERN.test(String(expectedSha256 ?? ''))
+      || sha256(evidence) !== expectedSha256) {
+      throw new Error(`Missed initial cutover ${label} is not the pinned historical evidence`);
+    }
+  }
+  if (policy.sourceImplementationClosureSha256
+      !== LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256
+    || !SAFE_ID_PATTERN.test(String(policy.sourceDeploymentId ?? ''))
+    || !SHA256_PATTERN.test(String(policy.targetImplementationClosureSha256 ?? ''))) {
+    throw new Error('Missed initial cutover recovery policy has drifted from the sealed source');
+  }
+  assertLegacyOperationalSourceSeal({
+    currentRow: null,
+    sourceManifest,
+    sourceAttestation,
+    sourceVerification,
+    sourceHead: policy.failedCutoverHead,
+    requestedManifest: targetManifest,
+    expectedImplementationClosureSha256: policy.sourceImplementationClosureSha256,
+    label: 'Missed initial cutover legacy Candidate G source',
+  });
+  assertSealedModelBinding(targetBinding, 'Missed initial cutover target binding');
+  if (sealedBindingKind(targetBinding) !== 'integrated') {
+    throw new Error('Missed initial cutover target binding is not integrated');
+  }
+  assertOperationalPublicManifest(targetManifest, {
+    binding: targetBinding,
+    label: 'Missed initial cutover target manifest',
+  });
+  assertMissedInitialCutoverArtifactSeal(pagesArtifactSeal, {
+    policy,
+    targetBinding,
+    targetManifest,
+  });
+  assertMissedInitialCutoverReadiness(targetReadiness, {
+    policy,
+    targetBinding,
+    pagesArtifactSeal,
+  });
+  const calibrationEligible = missedInitialCutoverCalibrationEligible(targetAudit, {
+    policy,
+    targetBinding,
+    targetManifest,
+  });
+  assertOperationalPagesVerification(publicVerification, {
+    model: 'integrated',
+    binding: targetBinding,
+    sourceHead: policy.failedCutoverHead,
+    publicManifest: targetManifest,
+    expectedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+  });
+  const unsealedPlan = {
+    schemaVersion: RAVSCORE_INTEGRATED_RETURN_POLICY.schemaVersion,
+    kind: RAVSCORE_INTEGRATED_RETURN_POLICY.kind,
+    mode: RAVSCORE_INTEGRATED_RETURN_POLICY.mode,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+    sourceHead: policy.failedCutoverHead,
+    datasetId: targetManifest.datasetId,
+    productionReferenceAt: targetManifest.productionReferenceAt,
+    centralExpectedVersion: 0,
+    sourceModelBinding: legacyCandidateGControllerBinding(),
+    activeModelBinding: structuredClone(targetBinding),
+    legacySourceRequired: true,
+    sourceImplementationClosureSha256: policy.sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+    candidateActivationDocumentSha256: sha256(currentProfileRow.payload),
+    integratedReadinessSha256: policy.targetReadinessSha256,
+    integratedPublicAuditSha256: policy.targetAuditSha256,
+    integratedManifestSha256: policy.targetManifestSha256,
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligibleAfterVerifiedActivation: calibrationEligible,
+    privatePayloadLogged: false,
+  };
+  const plan = Object.freeze({
+    ...unsealedPlan,
+    planSha256: sha256(unsealedPlan),
+  });
+  assertIntegratedReturnPlan(plan, {
+    expectedSourceHead: policy.failedCutoverHead,
+    expectedCentralVersion: 0,
+    currentProfileRow,
+    allowSealedHistoricalTarget: true,
+  });
+  const document = Object.freeze({
+    schemaVersion: RAVSCORE_OPERATIONAL_ACTIVATION_SCHEMA,
+    status: RAVSCORE_OPERATIONAL_STATUSES.integrated,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+    sourceHead: policy.failedCutoverHead,
+    datasetId: targetManifest.datasetId,
+    productionReferenceAt: targetManifest.productionReferenceAt,
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    activeModelBinding: structuredClone(targetBinding),
+    requestedModelBinding: structuredClone(targetBinding),
+    sourceModelBinding: legacyCandidateGControllerBinding(),
+    candidatePlanSha256: null,
+    candidateFullSha256: null,
+    privateBundleContentSha256: null,
+    publicManifestSha256: policy.targetManifestSha256,
+    sourcePublicManifestSha256: policy.sourceManifestSha256,
+    requestedPublicManifestSha256: policy.targetManifestSha256,
+    sourceImplementationClosureSha256: policy.sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+    sourceDeploymentId: policy.sourceDeploymentId,
+    deploymentId: policy.deploymentId,
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligible,
+    requestedAt: pagesArtifactSeal.createdAt,
+    activatedAt: new Date(now).toISOString(),
+    failureCode: null,
+    returnPlanSha256: plan.planSha256,
+    integratedReadinessSha256: policy.targetReadinessSha256,
+    integratedPublicAuditSha256: policy.targetAuditSha256,
+    integratedManifestSha256: policy.targetManifestSha256,
+  });
+  assertOperationalActivationDocument(document, {
+    allowSealedHistoricalBindings: true,
+  });
+  return Object.freeze({
+    document,
+    nextVersion: 1,
+    centralTargetProfile: Object.freeze(structuredClone(targetReadiness.centralProfile)),
+    reconciliation: Object.freeze({
+      action: 'complete',
+      model: 'integrated',
+      observedSha256: policy.targetManifestSha256,
+    }),
+  });
 }
 
 export function assertIntegratedReturnPlan(plan, {
@@ -3758,6 +4109,79 @@ async function main() {
     || !allowedEvents.includes(process.env.GITHUB_EVENT_NAME)
     || !HEAD_PATTERN.test(String(process.env.GITHUB_SHA ?? ''))) {
     throw new Error('Only exact-main production workflows may mutate operational RavScore activation');
+  }
+  if (options.command === 'recover-missed-initial-cutover') {
+    const [
+      sourceManifest,
+      sourceAttestation,
+      sourceVerification,
+      targetManifest,
+      targetAudit,
+      targetReadiness,
+      targetBinding,
+      publicVerification,
+      pagesArtifactSeal,
+    ] = await Promise.all([
+      readJsonOption(options, 'source-manifest',
+        'Missed cutover legacy source manifest'),
+      readJsonOption(options, 'source-attestation',
+        'Missed cutover legacy source attestation'),
+      readJsonOption(options, 'source-verification',
+        'Missed cutover legacy source verification'),
+      readJsonOption(options, 'manifest',
+        'Missed cutover integrated target manifest'),
+      readJsonOption(options, 'audit',
+        'Missed cutover integrated target audit'),
+      readJsonOption(options, 'readiness',
+        'Missed cutover integrated target readiness'),
+      readJsonOption(options, 'binding',
+        'Missed cutover integrated target binding'),
+      readJsonOption(options, 'verification',
+        'Missed cutover current public verification'),
+      readJsonOption(options, 'pages-artifact-seal',
+        'Missed cutover Pages artifact seal'),
+    ]);
+    const recovery = recoverMissedInitialIntegratedCutover({
+      currentRow,
+      currentProfileRow,
+      sourceManifest,
+      sourceAttestation,
+      sourceVerification,
+      targetManifest,
+      targetAudit,
+      targetReadiness,
+      targetBinding,
+      publicVerification,
+      pagesArtifactSeal,
+      eventName: process.env.GITHUB_EVENT_NAME,
+      ref: process.env.GITHUB_REF,
+      githubSha: process.env.GITHUB_SHA,
+      repository: process.env.GITHUB_REPOSITORY,
+      confirmation:
+        process.env.RAVRADAR_MISSED_INITIAL_CUTOVER_RECOVERY_CONFIRMATION,
+    });
+    const integratedProfile = JSON.parse(await fs.readFile(
+      new URL('../data/admin/ravscore-profile-selection.json', import.meta.url),
+      'utf8',
+    ));
+    const written = await writeCentralCas(
+      request.atomicCas,
+      currentRows,
+      recovery,
+      integratedProfile,
+    );
+    if (options.output) await atomicWriteJson(options.output, {
+      status: written.operational.payload.status,
+      centralVersion: written.operational.version,
+      profileVersion: written.profile.version,
+      transitionKind: written.operational.payload.transitionKind,
+      sourceHead: written.operational.payload.sourceHead,
+      publicManifestSha256: written.operational.payload.publicManifestSha256,
+      deploymentId: written.operational.payload.deploymentId,
+      activatedAt: written.operational.payload.activatedAt,
+    });
+    console.log(`Missed initial integrated cutover recovered as central version ${written.operational.version}; private payload logged: false.`);
+    return;
   }
   if (options.command === 'prepare-integrated-historical-maintenance') {
     const [publicManifest, publicAudit, readiness] = await Promise.all([

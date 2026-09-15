@@ -37,7 +37,9 @@ import {
   operationalResolvedBindingCurrent,
   prepareIntegratedHistoricalMaintenance,
   prepareIntegratedOperationalReturn,
+  recoverMissedInitialIntegratedCutover,
   RAVSCORE_INTEGRATED_RETURN_POLICY,
+  RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY,
   RAVSCORE_OPERATIONAL_STATUSES,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS,
   resolveOperationalRavScoreModel,
@@ -2856,6 +2858,122 @@ assert.equal(historicalTransition.document.sourceHead, sourceHead);
 assert.notEqual(historicalTransition.document.sourceHead, laterHead,
   'main B must not rewrite the sealed transition source head A');
 
+// The exact historical Pages target may be recorded once when the original
+// cutover deployed it but failed before creating any operational row. The
+// recovery accepts only pinned immutable evidence plus a fresh public readback.
+const missedCutoverSourceVerification = Object.freeze({
+  ...legacyVerification,
+  implementationClosureSha256:
+    RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY
+      .sourceImplementationClosureSha256,
+});
+const missedCutoverAudit = Object.freeze({
+  ...historicalAudit,
+  datasetId: historicalManifest.datasetId,
+  productionReferenceAt: historicalManifest.productionReferenceAt,
+  continuation: Object.freeze({
+    migratedStateCount: 0,
+    continuedStateCount: 0,
+    coldReplayStateCount: 673,
+    uniqueSamplingContextCount: 673,
+  }),
+  history: Object.freeze({
+    allCurrentScoresFullHistory: false,
+    currentFullHistoryModeCount: 0,
+    currentHistoryIncompleteModeCount: 0,
+    currentUnavailableModeCount: 420,
+  }),
+});
+const missedCutoverPolicyBase = Object.freeze({
+  ...RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY,
+  failedCutoverHead: sourceHead,
+  deploymentId: 'pages-1234-1',
+  runId: 1234,
+  runAttempt: 1,
+  artifactId: 5678,
+  artifactDigestSha256: '1'.repeat(64),
+  artifactSizeBytes: 789,
+  sourceManifestSha256: sha256(legacyManifest),
+  sourceAttestationSha256: sha256(legacyAttestation),
+  sourceVerificationSha256: sha256(missedCutoverSourceVerification),
+  targetManifestSha256: sha256(historicalManifest),
+  targetAuditSha256: sha256(missedCutoverAudit),
+  targetReadinessSha256: sha256(historicalReadiness),
+  targetBindingSha256: sha256(historicalBinding),
+  targetImplementationClosureSha256: defaultImplementationClosureSha256,
+});
+const missedCutoverArtifactSeal = Object.freeze({
+  schemaVersion: 'ravscore-operational-pages-artifact-seal-v1',
+  repository: missedCutoverPolicyBase.repository,
+  runId: missedCutoverPolicyBase.runId,
+  runAttempt: missedCutoverPolicyBase.runAttempt,
+  headSha: sourceHead,
+  ref: 'refs/heads/main',
+  attemptId: missedCutoverPolicyBase.deploymentId,
+  artifactId: missedCutoverPolicyBase.artifactId,
+  artifactName: 'github-pages',
+  artifactDigestSha256: missedCutoverPolicyBase.artifactDigestSha256,
+  artifactSizeBytes: missedCutoverPolicyBase.artifactSizeBytes,
+  targetPublicManifestSha256: sha256(historicalManifest),
+  targetImplementationClosureSha256: defaultImplementationClosureSha256,
+  targetModelBinding: historicalBinding,
+  createdAt: '2026-08-29T12:45:00.000Z',
+  privatePayloadIncluded: false,
+});
+const missedCutoverPolicy = Object.freeze({
+  ...missedCutoverPolicyBase,
+  pagesArtifactSealSha256: sha256(missedCutoverArtifactSeal),
+});
+const missedCutoverInput = Object.freeze({
+  currentRow: null,
+  currentProfileRow: legacyProfileRow,
+  sourceManifest: legacyManifest,
+  sourceAttestation: legacyAttestation,
+  sourceVerification: missedCutoverSourceVerification,
+  targetManifest: historicalManifest,
+  targetAudit: missedCutoverAudit,
+  targetReadiness: historicalReadiness,
+  targetBinding: historicalBinding,
+  publicVerification: verification(
+    'integrated', historicalBinding, historicalManifest, sourceHead,
+  ),
+  pagesArtifactSeal: missedCutoverArtifactSeal,
+  eventName: 'workflow_dispatch',
+  ref: 'refs/heads/main',
+  githubSha: laterHead,
+  repository: missedCutoverPolicy.repository,
+  confirmation: missedCutoverPolicy.confirmation,
+  now: '2026-08-29T13:05:00.000Z',
+  policy: missedCutoverPolicy,
+});
+const missedCutoverRecovery = recoverMissedInitialIntegratedCutover(
+  missedCutoverInput,
+);
+assert.equal(missedCutoverRecovery.nextVersion, 1);
+assert.equal(missedCutoverRecovery.document.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integrated);
+assert.equal(missedCutoverRecovery.document.sourceHead, sourceHead);
+assert.equal(missedCutoverRecovery.document.deploymentId,
+  missedCutoverPolicy.deploymentId);
+assert.equal(missedCutoverRecovery.document.calibrationEligible, false);
+assert.deepEqual(missedCutoverRecovery.centralTargetProfile, historicalProfile);
+assert.deepEqual(operationalCentralProfileForTransition({
+  transition: missedCutoverRecovery,
+  currentProfile: legacyProfile,
+  integratedProfile,
+}), historicalProfile);
+assert.throws(() => recoverMissedInitialIntegratedCutover({
+  ...missedCutoverInput,
+  confirmation: 'wrong',
+}), /exact one-time authority/);
+assert.throws(() => recoverMissedInitialIntegratedCutover({
+  ...missedCutoverInput,
+  pagesArtifactSeal: {
+    ...missedCutoverArtifactSeal,
+    artifactId: 9999,
+  },
+}), /not the pinned historical evidence/);
+
 const historicalCandidateBinding = Object.freeze({
   ...candidateModelBinding(),
   modelContractSha256: 'd'.repeat(64),
@@ -2971,6 +3089,7 @@ const serialized = JSON.stringify([
   modernInitialBegin.document,
   modernInitialAbort.document,
   historicalTransition.document,
+  missedCutoverRecovery.document,
 ]);
 assert.doesNotMatch(serialized, /coordinates|waterPoint|landPoint|rawVector|currentU|currentV/i);
 

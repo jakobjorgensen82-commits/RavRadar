@@ -1,8 +1,10 @@
-# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.366 klar til exact-head-PR
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.367 retter manglende central cutover
 
-Den samlede post-cutoverrettelse og DEC-0148's permanente kode-only leveringsvej er implementeret i siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.366-post-cutover-repair`. Version, bundles, append-only migration 16, RDKS, changelog og begge håndbøger er synkroniseret. Målrettede produktkritiske kontroller er grønne; der er ikke kørt oneoff, providerhentning eller fuld lokal sourcegate. Den beskidte `cb79/RavRadar`-worktree må ikke røres.
+Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.367-cutover-state-recovery`; mappenavnet er historisk, mens `package.json` er autoriteten. Main er 4.0.366/`62fe62ee`. Code-only-forsøg 2 viste, at Pages har den historiske integrerede binding, men central operation mangler og profilen fortsat er legacy Candidate G. Run `34877443841` var falsk grøn: Pages blev publiceret, mens plan/handoff og central begin/complete fejlede. Gentag ikke påstanden om en fuldført Supabase-cutover.
 
-Fortsæt: slutdiff/RDKS → commit/push → én exact-head PR-sourcegate → merge → manuelt kode-only-deploy med `DEPLOY-CODE-ONLY-REPAIR` → offentlig kontrol → separat tidsbegrænset normal weather og bevis af numeriske scorer, rotation og cache. Ingen ny first cutover. Sol/Ekstra høj.
+4.0.367 har en engangs-, hash- og runlåst recovery, der kræver den eksakte manglende centrale tilstand og en frisk verification af det offentlige historiske target. Samme code-only-run fortsætter derefter gennem den eksisterende historisk-til-aktuel vedligeholdelse. Pages-terminalen kræver nu handlingsspecifikt completion eller gyldig reconciliation. Målrettet state-machine, code-only-kontrakt, YAML-parse og de faktiske historiske beviser er grønne. Ingen provider eller oneoff.
+
+Fortsæt: forsegl bundles/version/RDKS → målrettet slutdiff → commit/push → én exact-head PR-sourcegate → merge → manuelt code-only-deploy med `DEPLOY-CODE-ONLY-REPAIR` → central og offentlig kontrol → separat tidsbegrænset normal weather med score-, rotations- og cachebevis. DEC-0149. Sol/Ekstra høj.
 
 # NYESTE CHECKPOINT – 2026-09-14 – integreret model online; Astra-review før normalt vejr
 

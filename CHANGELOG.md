@@ -1,3 +1,12 @@
+## 4.0.367 – central cutover-recovery og sand deployterminal (2026-09-15, lokal kandidat)
+
+- Retter den faktiske splittelse efter run `34877443841`: integreret Pages-target er offentligt, men den centrale operation/profilovergang blev aldrig fuldført.
+- En engangsrecovery accepterer kun den eksakte legacy-starttilstand, fastlåst run-/artifact-/evidensidentitet og frisk offentlig implementation-verification, før central version 0→1 skrives atomisk.
+- Samme code-only-run fortsætter gennem den eksisterende historisk-til-aktuel bindingsvedligeholdelse uden provider, oneoff eller gentagelse af den gamle cutover.
+- Pages-terminalen kræver nu det handlingsspecifikke centrale completion- eller reconciliation-led og kan ikke længere blive falsk grøn efter `continue-on-error`.
+- Versionsgeneratoren løfter kun aktive håndbogsfelter og omskriver ikke længere historiske RavScore-versioner.
+- Målrettede state-machine- og workflowkontrakter samt de virkelige historiske recoverybeviser er grønne lokalt. Exact-head PR-gate, merge, code-only-deploy, central/offentlig kontrol og normal weather mangler. Se `CHANGELOG-4.0.367.md` og DEC-0149.
+
 ## 4.0.366 – kode-only deploy og samlet post-cutover-reparation (2026-09-15, lokal kandidat)
 
 - DMI-vindmerge, retning 360, atomisk tidsdækning, uafhængig EDR-reparation og strømhold hen over null er rettet. UI bevarer manglende værdier som manglende, og kun den aktuelle UTC-time mærkes som nu.

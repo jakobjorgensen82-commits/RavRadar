@@ -112,7 +112,6 @@ await synchronizeReleaseContractMetadata({write:true});
  text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,`$1${version}$2`);
  text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,`$1${version}$2`);
  text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(, exact-head og cutover afventer)/,`$1${version}$2`);
- text=text.replace(/\d+\.\d+\.\d+( er låst med `modelContractSha256=)/,`${version}$1`);
  await fs.writeFile('HANDBOOK-RAVRADAR.md',text);
 }
 {
@@ -120,9 +119,13 @@ await synchronizeReleaseContractMetadata({write:true});
  const doc=JSON.parse(await fs.readFile(file,'utf8'));
  doc.handbookVersion=version;
  for(const section of doc.sections||[]){
-   if(typeof section.title==='string')section.title=section.title.replace(/RavScore \d+\.\d+\.\d+/g,`RavScore ${version}`);
-   if(section.id==='ravscore-final-bindings-4-0-320' && typeof section.body==='string'){
-     section.body=section.body.replace(/Den lokale \d+\.\d+\.\d+-kandidat/,`Den lokale ${version}-kandidat`);
+   if(section.id==='ravscore-final-bindings-4-0-320'){
+     if(typeof section.title==='string'){
+       section.title=section.title.replace(/RavScore \d+\.\d+\.\d+/,`RavScore ${version}`);
+     }
+     if(typeof section.body==='string'){
+       section.body=section.body.replace(/Den lokale \d+\.\d+\.\d+-kandidat/,`Den lokale ${version}-kandidat`);
+     }
    }
  }
  await fs.writeFile(file,JSON.stringify(doc,null,2)+'\n');

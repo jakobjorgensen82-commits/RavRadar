@@ -3501,10 +3501,19 @@ for (const beginId of [
 const deploymentTerminalSection = deployWorkflow.slice(deploymentTerminalPosition);
 for (const marker of [
   'id: deployment-terminal',
-  "if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
+  'if: always() && !cancelled()',
+  'test "${{ steps.deployment.outcome }}" = "success"',
+  'test "${{ steps.public-verification.outcome }}" = "success"',
+  'test "${{ steps.checkpoint-disposition-complete.outcome }}" = "success"',
+  'steps.integrated-historical-maintenance-complete.outcome',
+  'steps.failure-reconciliation.outcome',
+  'Unsupported operational action cannot be marked deployed.',
   'echo "deployed_verified=true" >> "$GITHUB_OUTPUT"',
 ]) {
   if (!deploymentTerminalSection.includes(marker)) throw new Error(`Deployment-terminalen mangler ${marker}`);
+}
+if (deploymentTerminalSection.includes('continue-on-error')) {
+  throw new Error('Deployment-terminalen må ikke skjule en ufuldstændig central aktivering.');
 }
 
 for (const marker of [

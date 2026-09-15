@@ -1,3 +1,10 @@
+## 2026-09-15 lokal 4.0.367 – historisk Pages-target til sand central tilstand
+
+- `deploy-code-only-repair.yml` læser først central og offentlig identitet. Kun kombinationen manglende operationel række + eksakt legacyprofil + offentlig targetmanifesthash fra `34877443841` åbner engangsrecoveryen.
+- Recoveryartifactets kilde, attestation, verification, targetmanifest, audit, readiness, binding og Pages-seal er kanonisk hash-låst. Den levende Pages-implementation verificeres frisk, og main genkontrolleres umiddelbart før atomisk 0→1-CAS.
+- Efter recovery læses central igen. Den eksisterende `integrated-historical-maintenance` fører privat runtime, databasebinding og Pages fra den forseglede historiske binding til aktuel 4.0.367.
+- `reusable-pages-deploy.yml` samler fortsat first-cutoverfejl, men terminalen kræver deploy, offentlig verification, checkpoint og handlingens completion eller eksplicit reconciliation. DEC-0149.
+
 ## 2026-09-15 lokal 4.0.366 – kode-only artifact og append-only modelbinding
 
 - `.github/workflows/deploy-code-only-repair.yml` er en manuel exact-main-vej. Den downloader de seks aktuelle offentlige runtimefiler, gendanner de ni tilladte private filer, udfører kun den gennemgåede bindingsovergang, bygger et nyt privacy-kontrolleret Pages-artifact og kalder den eksisterende Pages-deployer med `code_only_repair:true`.

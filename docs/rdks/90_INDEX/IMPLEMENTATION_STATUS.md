@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – 2026-09-15 – 4.0.366 kode-only reparation
+# Aktuel implementeringsstatus – 2026-09-15 – 4.0.367 central recovery og code-only reparation
 
 - [x] Beslut permanent at adskille rettelsesdeploy fra normal vejrhentning; DEC-0148 er aktiv.
 - [x] Implementér de kendte lokale rettelser i vindretning, nulhåndtering, aktuel time, DMI-komponentdækning, strømhold og UI.
@@ -7,11 +7,15 @@
 - [x] Færdiggør den manuelt aktiverede kode-only workflowvej, så providertrin springes over og offentlig runtime genbygges alene fra eksakt gemt tilstand.
 - [x] Bevar installeret migration 15 byteidentisk og tilføj migration 16 som reproducerbart append-only bindingsled.
 - [x] Bevar den eksakte offentlige forgænger under deployovergangen og lad central aktiv binding lukke den automatisk ved fuldført aktivering.
-- [x] Synkronisér version, bundles, RDKS, changelog og begge håndbøger; målrettede vejr-, RavScore-, deploy-, migration- og privacykontroller er grønne lokalt.
-- [ ] Commit, push, PR, merge og kode-only deploy; verificér exact main/artifact og den offentlige hjemmeside.
+- [x] Bevis, at cutover `34877443841` publicerede Pages, men aldrig skrev central begin/complete, og ret den tidligere forkerte succesbeskrivelse.
+- [x] Implementér en engangsrecovery, der kun accepterer de fastlåste hashes fra run `34877443841` plus en frisk offentlig verification, før central version 0→1 skrives atomisk.
+- [x] Gør Pages-terminalen handlingsspecifik, så fortsat fejlsamling aldrig igen kan blive grøn uden det nødvendige centrale completion- eller reconciliation-led.
+- [x] Begræns versionsgeneratorens håndbogsopdatering til aktive felter og gendan historiske 4.0.321/4.0.334-navne, som den brede regel ellers omskrev.
+- [x] Løft kandidaten til 4.0.367 og opdatér RDKS, changelog og begge håndbøger. De målrettede recovery-, state-machine- og code-only-kontrakter er grønne lokalt.
+- [ ] Commit, push, PR, én exact-head sourcegate, merge og kode-only deploy; verificér central version, exact main/artifact og den offentlige hjemmeside.
 - [ ] Start derefter normal, tidsbegrænset vejrhentning separat og bevis numeriske input, scorer, rotation og cachevedligeholdelse.
 
-DEC-0148 er aktiv. Ældre status nedenfor er historisk.
+DEC-0148 og DEC-0149 er aktive. Ældre status nedenfor er historisk.
 
 # Historisk implementeringsstatus – 2026-09-14 – online; post-cutoverreview
 

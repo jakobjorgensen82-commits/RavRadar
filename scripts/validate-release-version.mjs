@@ -35,6 +35,26 @@ const versionSetter=await fs.readFile('scripts/set-version.mjs','utf8');
 if(/text\s*=\s*text\.replace\(\/4\\\.0\\\.\\d\+\/g/.test(versionSetter)){
   throw new Error('Versionsværktøjet må ikke bredt omskrive historiske 4.0.x-henvisninger i aktive kodefiler.');
 }
+if(versionSetter.includes("section.title.replace(/RavScore \\d+\\.\\d+\\.\\d+/g")){
+  throw new Error('Versionsværktøjet må ikke omskrive alle historiske RavScore-titler.');
+}
+const handbook=await fs.readFile('HANDBOOK-RAVRADAR.md','utf8');
+if(!handbook.includes('4.0.334 er låst med `modelContractSha256=')){
+  throw new Error('Markdown-håndbogens historiske 4.0.334-modelbinding er blevet omskrevet.');
+}
+const webHandbook=JSON.parse(await fs.readFile('docs/handbook/content.json','utf8'));
+const historicalHandbookTitles=new Map([
+  ['integrated-cutover-data-and-calibration-closure-4-0-318',
+    'RavScore 4.0.321: nyeste status for currentseal, data-preflight og kalibreringslås'],
+  ['integrated-ravscore-first-cutover-4-0-318',
+    'RavScore 4.0.321: integrated-first med verificeret historikopbygning'],
+]);
+for(const [id,title] of historicalHandbookTitles){
+  const section=webHandbook.sections?.find(entry=>entry.id===id);
+  if(section?.title!==title){
+    throw new Error(`Webhåndbogens historiske titel ${id} er blevet omskrevet.`);
+  }
+}
 const adminDashboard=await fs.readFile('js/ui/admin-dashboard.js','utf8');
 if(!adminDashboard.includes('databasemigreringen til 4.0.310')){
   throw new Error('Adminens historiske besøgsstatistik-migrationsgrænse er ikke længere bundet til 4.0.310.');
