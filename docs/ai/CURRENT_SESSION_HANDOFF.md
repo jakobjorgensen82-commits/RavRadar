@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.369 sikker predecessor-restore
+
+4.0.368 er main `c4610636`; code-only `34915725308` har allerede anvendt migration 16 og genbrugt central version 1. Stoppet var forgænger-restore før runtime/Pages. Den oprindelige generation gav anonym HTTP 200 i auditten.
+
+Lokal `codex/4.0.369-private-runtime-recovery` lægger et nyt append-only restrictive Storage-led efter den fortsat autoritative bindingsmigration 16. Den beviser anonym afvisning før restore, prøver højst tre gange og logger kun faste kategorier. Ingen provider/oneoff. Næste: én PR-gate, merge, providerfri code-only, livekontrol og først derefter normal tidsbegrænset weather. DEC-0150. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 efter vellykket central recovery
 
 PR #309/sourcegate `34914010157` er merged som main `d25dfe8e`. Run `34914399119` verificerede det offentlige historiske target og skrev central `INTEGRATED_ACTIVE` version 1 uden provider eller private payloads. Det efterfølgende trin mistede tre ægte `false`-værdier gennem jq `// ""` og stoppede før migration/runtime/Pages.

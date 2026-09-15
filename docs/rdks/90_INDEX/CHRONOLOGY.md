@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.369 lukker privat adgang og gør restore oplysende
+
+- 4.0.368 blev merged som `c4610636`; code-only `34915725308` genbrugte central version 1 og installerede migration 16.
+- Forgænger-runtime kunne ikke gendannes, og oprindelig audit havde vist anonym HTTP 200. Ingen runtime-/Pages-/completionwrite skete.
+- 4.0.369 tilføjer restriktiv Storage-policy som migration 17, anon-bevis før restore, tre korte forsøg og payload-frie årsagskoder. Migration 16 køres ikke igen. DEC-0150.
+
 # 2026-09-15 – 4.0.368 efter central recovery
 
 - PR #309/sourcegate `34914010157` blev merged som main `d25dfe8e`.

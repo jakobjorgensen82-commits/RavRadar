@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.369 privat runtime-recovery
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.369-private-runtime-recovery`. Remote main er `c4610636`. Code-only `34915725308` har allerede installeret migration 16 og central er fortsat `INTEGRATED_ACTIVE` version 1; gentag ingen af delene. Runnet stoppede ved eksakt `fa418f43`-restore før runtime, Pages og completion.
+
+4.0.369 tilføjer migration 17, som restriktivt lukker den private runtimebucket for klientroller, tre korte restoreforsøg og payload-frie årsagskoder. Den historiske forventning bygges før den aktuelle wrapper kopieres ind. Målrettede Node-/migrations-/workflow-/sourcekritiske tests og YAML-parse er grønne. Fortsæt: docs/version/slutdiff → commit/push → én exact-head sourcegate → merge → providerfri code-only → central/offentlig kontrol → normal tidsbegrænset weather. Sol/Ekstra høj. DEC-0150.
+
 # NYESTE CHECKPOINT – 2026-09-15 – central version 1; 4.0.368 outputrettelse
 
 PR #309 er merged som `d25dfe8e` efter grøn sourcegate `34914010157`. Code-only-run `34914399119` gennemførte recoveryen og læste central `INTEGRATED_ACTIVE` version 1. Recoveryen skal aldrig gentages.

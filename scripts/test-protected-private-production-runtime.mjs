@@ -402,7 +402,13 @@ try {
         maximumLegacyRawPayloadBytes: legacyEnvelope.rawPayloadBytes - 1,
       },
     }),
-    /No compatible protected private runtime generation/,
+    error => {
+      assert.match(error.message, /No compatible protected private runtime generation/);
+      assert.deepEqual(error.rejectionCodes, ['ARCHIVE_OR_PAYLOAD_INTEGRITY']);
+      assert.equal(error.message.includes('payload'), false,
+        'terminal restore error must not include private rejection details');
+      return true;
+    },
   );
   assert.equal(await fs.lstat(rejectedLegacyBundle).catch(() => null), null,
     'a legacy archive over its aggregate bound must not leave a partial destination');
@@ -581,10 +587,22 @@ try {
       request: documents.request,
       storage: storage.client,
     }),
-    /No compatible protected private runtime generation/,
+    error => {
+      assert.match(error.message, /No compatible protected private runtime generation/);
+      assert.deepEqual(error.rejectionCodes, [
+        'STORAGE_OR_OBJECT_INTEGRITY',
+        'STORAGE_OR_OBJECT_INTEGRITY',
+      ]);
+      return true;
+    },
   );
 
   storage.setAnonymousStatus(403);
+  assert.equal((await auditProtectedPrivateRuntimeAnonymousDenial({
+    request: documents.request,
+    storage: storage.client,
+  })).anonymousReadDenied, true);
+  storage.setAnonymousStatus(400);
   assert.equal((await auditProtectedPrivateRuntimeAnonymousDenial({
     request: documents.request,
     storage: storage.client,

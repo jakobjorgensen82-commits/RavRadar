@@ -1,3 +1,10 @@
+# 2026-09-15 – 4.0.369 privat Storage-recovery
+
+- Central `INTEGRATED_ACTIVE` version 1 og migration 16 er allerede installeret; de er genbrugelig produktionstilstand, ikke trin der skal gentages.
+- En privat Storage-bucket er ikke tilstrækkeligt beskyttet, hvis en permissiv `storage.objects`-policy stadig giver klientrollen SELECT. En bucket-afgrænset restriktiv policy kan lukke netop runtimebucketen uden at give adgang til andre buckets.
+- Historisk runtimeforventning skal bygges mod urørt historisk source før en aktuel diagnostic wrapper bruges. Logs må kun vise faste årsagskategorier.
+- Kortvarige Supabase downloadfejl må genprøves bounded; tre deterministisk ens afvisninger er fejlbevis, ikke grund til endeløs retry.
+
 # 2026-09-15 – 4.0.368 bevarer false efter gennemført recovery
 
 - PR #309/sourcegate `34914010157` er merged som `d25dfe8e`; run `34914399119` skrev central `INTEGRATED_ACTIVE` version 1.

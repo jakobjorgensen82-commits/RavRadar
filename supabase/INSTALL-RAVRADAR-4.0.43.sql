@@ -400,6 +400,14 @@ grant execute on function public.save_ravradar_permissions(uuid,jsonb) to authen
 revoke all on function public.save_ravradar_admin_document(text,jsonb) from public,anon;
 revoke all on function public.save_ravradar_permissions(uuid,jsonb) from public,anon;
 
+-- Beskyttet RavScore-runtime må kun læses med service_role. Den restriktive
+-- policy vinder også over ældre brede SELECT-policies for andre buckets.
+drop policy if exists ravradar_private_runtime_deny_client_read
+  on storage.objects;
+create policy ravradar_private_runtime_deny_client_read
+on storage.objects as restrictive for select to anon, authenticated
+using (bucket_id <> 'ravradar-private-production-runtime');
+
 -- PostgREST skal genindlæse database-skemaet.
 notify pgrst,'reload schema';
 

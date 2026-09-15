@@ -365,6 +365,14 @@ jobs:
           --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           --repository-root "$GITHUB_WORKSPACE"
 
+      - name: Prove the current-compatible runtime is no longer client-readable
+        if: steps.current-private-install.outcome == 'success'
+        run: >-
+          node scripts/protected-private-production-runtime.mjs --audit-anon
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Prepare exact predecessor source for bounded binding migration
         if: steps.current-private-install.outcome != 'success'
         shell: bash
@@ -386,14 +394,46 @@ jobs:
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --output "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
 
-      - name: Restore exact predecessor private runtime
+      - name: Add payload-free rejection codes to the exact predecessor restore
+        if: steps.current-private-install.outcome != 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The expectation above is deliberately sealed against the untouched
+          # predecessor source first. Only then is the current, source-gated
+          # restore wrapper copied into that source tree, where its relative
+          # imports still resolve the exact predecessor model and contracts.
+          install -m 0644 scripts/protected-private-production-runtime.mjs \
+            "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
+
+      - name: Prove the saved predecessor runtime is no longer client-readable
         if: steps.current-private-install.outcome != 'success'
         run: >-
-          node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore
-          --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
-          --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
-          --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
-          --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+          node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
+          --audit-anon
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Restore exact predecessor private runtime
+        if: steps.current-private-install.outcome != 'success'
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=1
+          for attempt in 1 2 3; do
+            rm -rf "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
+            node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore \
+              --private-root "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT" \
+              --bundle "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE" \
+              --repository-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT" \
+              --expected "$RAVRADAR_PREDECESSOR_PRIVATE_ROOT/expected.json"
+            status=$?
+            if test "$status" -eq 0; then exit 0; fi
+            echo "Protected predecessor restore attempt $attempt of 3 failed."
+            if test "$attempt" -lt 3; then sleep 5; fi
+          done
+          exit "$status"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -81,8 +81,19 @@ for (const marker of [
   'Freshly verify the exact historical integrated artifact is still public',
   'Atomically record the exact already-public historical cutover',
   'if has($field) then .[$field] else "" end',
+  'Prove the current-compatible runtime is no longer client-readable',
+  'Add payload-free rejection codes to the exact predecessor restore',
+  'Prove the saved predecessor runtime is no longer client-readable',
+  'for attempt in 1 2 3; do',
+  'Protected predecessor restore attempt $attempt of 3 failed.',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+assert.match(workflow,
+  /Prove the current-compatible runtime is no longer client-readable[\s\S]{0,180}if: steps\.current-private-install\.outcome == 'success'[\s\S]{0,220}--audit-anon/,
+  'Den direkte current-runtimevej skal bevise privacy før den må fortsætte');
+assert.ok(workflow.indexOf('Build exact predecessor private-runtime expectation')
+  < workflow.indexOf('Add payload-free rejection codes to the exact predecessor restore'),
+  'Predecessorforventningen skal forsegles mod den urørte historiske kilde før diagnostic wrapper-copy');
 assert.ok(!workflow.includes('.[$field] // ""'),
   'Code-only-workflowet må ikke gøre en ægte false-værdi til tom tekst');
 for (const forbidden of [

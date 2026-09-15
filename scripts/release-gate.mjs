@@ -223,6 +223,7 @@ const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const checkpointMetadataCasMigration=await read('supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql');
+const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -1045,6 +1046,16 @@ for(const marker of [
 ]){
   ok(protectedPrivateRuntime.includes(marker),`Protected private runtime mangler ${marker}`);
 }
+for(const marker of [
+  'create policy ravradar_private_runtime_deny_client_read',
+  'on storage.objects as restrictive for select to anon, authenticated',
+  "using (bucket_id <> 'ravradar-private-production-runtime')",
+]){
+  ok(privateRuntimeStorageMigration.includes(marker),`Private runtime Storage-migration mangler ${marker}`);
+  ok(sql.includes(marker),`Supabase-sikkerhedsinstalleren mangler ${marker}`);
+}
+ok(!/\b(?:insert|update|delete|truncate)\b/i.test(privateRuntimeStorageMigration),
+  'Private runtime Storage-migrationen må ikke ændre runtimeobjekter eller pointerrækker');
 for(const marker of ['TRACKED_PUBLIC_LIVE_ALLOWLIST','git','ls-files','Private runtime files are tracked']){
   ok(trackedRuntimePrivacy.includes(marker),`Tracked runtime-privacygaten mangler ${marker}`);
 }
@@ -1150,12 +1161,13 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the sixteen exact integrated cutover migrations',
+  'Require only the seventeen exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
   '20260914010000_h0_reference_recovery_binding.sql',
   '20260914020000_h0_state_snapshot_binding.sql',
   '20260914234500_post_cutover_current_hold_binding.sql',
+  '20260915020000_private_runtime_storage_deny.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

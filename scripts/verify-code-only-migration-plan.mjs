@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  LATEST_REQUIRED_CUTOVER_MIGRATION,
   REQUIRED_CUTOVER_MIGRATIONS,
   assertSupabaseMigrationPlan,
 } from './integrated-cutover-readiness.mjs';
@@ -14,9 +15,9 @@ function argument(name) {
   return process.argv[index + 1];
 }
 
-const latest = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
-assert.equal(latest.version, '20260914234500');
-assert.equal(latest.filename, '20260914234500_post_cutover_current_hold_binding.sql');
+const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
+assert.equal(latest.version, '20260915020000');
+assert.equal(latest.filename, '20260915020000_private_runtime_storage_deny.sql');
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
@@ -25,10 +26,10 @@ const plan = await assertSupabaseMigrationPlan({
 assert.ok(
   plan.pendingVersions.length === 0
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
-  'Code-only deployment may apply only the latest post-cutover binding migration',
+  'Code-only deployment may apply only the latest private-runtime security migration',
 );
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : 'Code-only migration dry-run contains exactly the one expected successor.',
+    : 'Code-only migration dry-run contains exactly the one expected security successor.',
 );

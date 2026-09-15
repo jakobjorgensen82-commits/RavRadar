@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.368
+**Håndbogsversion:** 4.0.369
+
+## 88.73 4.0.369 – Den private runtime lukkes og gendannelsen genprøves
+
+4.0.368 kom videre: central version 1 blev genbrugt, og migration 16 blev
+installeret. Derefter kunne den gemte private runtime ikke gendannes, så der
+blev ikke ændret runtime, Pages eller central completion.
+
+Den oprindelige publicering viste også, at et download uden login fik svar 200.
+Fordi arkivet indeholder private vejrdata, lukker 4.0.369 netop denne
+Storage-bucket for anonyme og almindeligt indloggede klienter. Service-role
+bevares; andre buckets og de gemte objekter og pointere ændres ikke.
+
+Den historiske forventning bygges stadig mod den urørte eksakte gamle kilde.
+Gendannelsen prøves op til tre gange ved kortvarige Supabase-fejl. Hvis alle
+forsøg fejler, vises kun en sikker årsagskategori uden private data. Migration
+16 køres ikke igen; kun det nye sikkerhedsled 17 må anvendes. Ingen
+vejrprovider eller oneoff indgår.
 
 ## 88.72 4.0.368 – En rigtig false-værdi må ikke blive til et tomt felt
 

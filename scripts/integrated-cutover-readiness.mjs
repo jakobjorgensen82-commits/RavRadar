@@ -124,7 +124,16 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260914234500_post_cutover_current_hold_binding',
     filename: '20260914234500_post_cutover_current_hold_binding.sql',
   }),
+  Object.freeze({
+    version: '20260915020000',
+    id: '20260915020000_private_runtime_storage_deny',
+    filename: '20260915020000_private_runtime_storage_deny.sql',
+  }),
 ]);
+
+export const LATEST_RAVSCORE_BINDING_MIGRATION =
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260914234500');
+export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: 'x-ravradar-model-id',
@@ -146,7 +155,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
+    LATEST_RAVSCORE_BINDING_MIGRATION.filename,
   ), 'utf8');
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
@@ -182,7 +191,7 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
+    LATEST_RAVSCORE_BINDING_MIGRATION.filename,
   ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
@@ -213,7 +222,7 @@ export async function expectedCheckpointCasContract({
 export async function expectedTripActiveAdmissionPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
+    LATEST_RAVSCORE_BINDING_MIGRATION.filename,
   ), 'utf8');
   const triggerMigration = await fs.readFile(path.join(
     migrationsDirectory,
@@ -711,7 +720,7 @@ function assertCheckpointDatabaseReadback(value, expectedCheckpointContract) {
     'schemaVersion', 'appliedMigrationVersion', 'checkpointContract', 'checks',
   ], 'checkpoint database readback');
   assert.equal(value.schemaVersion, CHECKPOINT_DATABASE_READBACK_SCHEMA);
-  assert.equal(value.appliedMigrationVersion, REQUIRED_CUTOVER_MIGRATIONS.at(-1).version,
+  assert.equal(value.appliedMigrationVersion, LATEST_RAVSCORE_BINDING_MIGRATION.version,
     'checkpoint database readback is missing its applied migration');
   assertExactKeys(value.checkpointContract, ['id', 'definition'],
     'database checkpoint CAS contract readback');

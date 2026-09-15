@@ -102,7 +102,7 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260914234500_post_cutover_current_hold_binding.sql'),
+    .includes('20260915020000_private_runtime_storage_deny.sql'),
   'Code-only migrationsplanen er ikke bundet til den præcise successor.',
 );
 
