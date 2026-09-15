@@ -3,6 +3,7 @@
 - **ISSUE-4.0.381-ADMIN-CLOSURE-404 – RETTET I MÅLPAKKE / LIVEBEVIS MANGLER:** 4.0.382-artifactet havde 79/79, men blev ikke deployet.
 - **ISSUE-4.0.382-CENTRAL-PUBLIC-SOURCE-DRIFT – RETTET LOKALT / LIVEBEVIS MANGLER:** Central pointer beskriver en ældre Pages-deployment end den faktiske 4.0.381. 4.0.383 genkender kun den eksakte kendte tilstand og bruger den observerede offentlige source.
 - **ISSUE-4.0.383-SOURCE-GATE-WIDTH – LUKKET LOKALT:** `35032447763` bestod produktkontrollerne, men metatesten fandt 25 kommandoer. Resolvertesten er samlet i eksisterende code-only-test; gateplanen er igen 24 uden tab af dækning.
+- **ISSUE-4.0.383-CENTRAL-PUBLIC-BINDING – RETTET LOKALT / LIVEBEVIS MANGLER:** `35033489693` stoppede før writes, fordi normal same-binding blev krævet før repairpolicy. Gammel central og nyere offentlig binding er nu hver eksakt hashbundet; faktisk artifactkombination består.
 - **ISSUE-4.0.383-DEPLOY – ÅBEN P0:** Docs/geodatabevis, måltest, exact-head, merge, providerfri deploy, offentlig 79/79 og central completion mangler.
 - **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** 0/210 aktive scorezoner er endnu ikke rettet eller livebevist; normal tidsbegrænset weather følger efter 4.0.383.
 - **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN DRIFTSBEVIS:** Almindelig weather skal bevise hele rotations- og cachevedligeholdelsen. Ingen oneoff.

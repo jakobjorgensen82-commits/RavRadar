@@ -18,6 +18,13 @@ metakontrollen fandt 25 direkte kommandoer mod loftet 24. Den nye
 resolverregression er derfor samlet i den eksisterende code-only-test;
 produktdækningen bevares, og gateplanen er igen 24. Ny exact-head kræves.
 
+PR #325 blev merged som main `ee3de32b`. Providerfri `35033489693`
+stoppede efter 18 sekunder før alle writes: resolveren krævede fejlagtigt, at
+gammel central binding allerede var lig nyere offentlig 4.0.381-binding. Den
+rettede branch `codex/4.0.383-central-public-binding` låser begge hashes
+særskilt; normal match kræver fortsat lighed. Faktisk offline central/public-
+bevis og 24-kommando-plan er grønne. Ny kort PR/exact-head kræves.
+
 # HISTORISK CHECKPOINT – 2026-09-15 – levende 4.0.381, lokal 4.0.382 adminclosure
 
 4.0.381 er offentlig efter sourcegate `35019932207`, PR #323, main

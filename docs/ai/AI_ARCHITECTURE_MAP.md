@@ -5,6 +5,8 @@
 - Normal vej kræver eksakt match. Kun den immutable 4.0.381-repairpolicy må
   returnere `repairable-source`, og den binder run/head/deployment/artifact,
   manifest, modelbinding og closure.
+- Central binding og offentlig sourcebinding verificeres særskilt i repair-
+  vejen. Den normale vej kræver fortsat, at manifest og central binding er ens.
 - Sourceverification tillader da kun den dokumenterede ene 404. Target-
   verification modtager aldrig repairflag og kræver fortsat 79/79.
 - Den observerede offentlige source-deployment følger plan, handoff og central

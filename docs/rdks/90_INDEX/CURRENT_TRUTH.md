@@ -21,6 +21,13 @@ sourcegaten fra 24 til 25 kommandoer. Regressionen er nu samlet i den
 eksisterende code-only-test, og det bindende loft er igen 24. En ny
 exact-head-kørsel mangler.
 
+PR #325 er merged som main `ee3de32b`. Første providerfri run
+`35033489693` stoppede før migration, private writes, artifact og Pages.
+Årsagen var, at reparationsresolveren anvendte normalreglen om samme binding,
+før den vurderede den kendte drift. Central binding `70f45b3d...336f` og
+offentlig 4.0.381-binding `398b1132...aaf` er nu fastlåst separat; kun denne
+policy må acceptere forskellen. Faktisk artifactbevis består lokalt.
+
 # HISTORISK SANDHED – 2026-09-15 – 4.0.381 er online, 4.0.382 retter adminclosure
 
 4.0.381 bestod exact-head `35019932207`, PR #323 og merge til main

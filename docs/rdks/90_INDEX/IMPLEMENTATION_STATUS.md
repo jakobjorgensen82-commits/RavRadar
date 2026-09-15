@@ -8,6 +8,8 @@
 - [x] Før faktisk offentlig source-id gennem plan, handoff og same-binding maintenance.
 - [x] Bevar streng 79/79 targetverification uden reparationsflag.
 - [x] Saml resolverregressionen i eksisterende code-only-test efter `35032447763`; gateplanen er igen 24 kommandoer.
+- [x] Afgræns `35033489693` til for tidlig same-binding-regel; ingen migration, writes, artifact eller Pages skete.
+- [x] Lås central `70f45b3d...336f` og offentlig `398b1132...aaf` separat og bevis den faktiske artifactkombination.
 - [ ] Synkronisér docs/geodatabevis, afslut måltests, commit/push og én exact-head sourcegate.
 - [ ] Merge og kør providerfri 4.0.383 til offentlig 79/79 samt central completion.
 - [ ] Derefter én normal tidsbegrænset weather for tal, scorer, rotation og cache. Ingen oneoff.

@@ -2,6 +2,7 @@
 
 - **REQ-4.0.383-NORMAL-SOURCE-001 – BINDENDE:** Normal code-only-source kræver fortsat eksakt central/offentlig manifestoverensstemmelse.
 - **REQ-4.0.383-KNOWN-REPAIR-001 – BINDENDE:** Kun den versionsstyrede 4.0.381-politik med alle eksakte identiteter og hashes må give `repairable-source`.
+- **REQ-4.0.383-SPLIT-BINDING-001 – BINDENDE:** Repairpolicy skal verificere gammel central og nyere offentlig modelbinding mod hvert sit fastlåste hash; normal source kræver fortsat identiske bindinger.
 - **REQ-4.0.383-ONE-MISSING-001 – BINDENDE:** Reparationskilden skal have præcis 78 korrekte af 79 filer; kun den fastlåste gamle decodersti må være 404.
 - **REQ-4.0.383-ACTUAL-SOURCE-001 – BINDENDE:** Plan, handoff og central same-binding maintenance skal bruge den faktisk observerede offentlige deployment som source-id.
 - **REQ-4.0.383-STRICT-TARGET-001 – BINDENDE:** Reparationsflaget er forbudt ved målverifikation; 4.0.383 skal have 79/79 samt normal privacy, model, source og latest-main før/efter deploy.

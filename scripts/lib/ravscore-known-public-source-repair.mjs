@@ -8,6 +8,8 @@ export const RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY = Object.freeze({
     '4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e',
   centralImplementationClosureSha256:
     'b050755ec8b904cff60838bb3c9f1ec5a5bdb9f0fd24d14b0ed957eaa32fce4d',
+  centralModelBindingSha256:
+    '70f45b3d485f6424d94e80483a98ce1492a9bf8bbb9d8e207f7483317988336f',
   sourceRunId: 35020915350,
   sourceRunAttempt: 1,
   sourceHead: 'd84773a759407615539414554b9bc8994e09837d',
@@ -32,4 +34,3 @@ export const RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY = Object.freeze({
     expectedHttpStatus: 404,
   }),
 });
-

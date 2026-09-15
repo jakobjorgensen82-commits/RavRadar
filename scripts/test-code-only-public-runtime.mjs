@@ -308,6 +308,13 @@ assert.equal(matchedSource.implementationClosureSha256,
   centralSource.activeImplementationClosureSha256);
 assert.equal(matchedSource.repairId, null);
 assert.throws(() => resolveCodeOnlyPublicSource({
+  current: {
+    ...centralSource,
+    modelBinding: { ...sourceBinding, modelBundleSha256: 'd'.repeat(64) },
+  },
+  publicManifest: sourceManifest,
+}), /conflicting model binding/);
+assert.throws(() => resolveCodeOnlyPublicSource({
   current: centralSource,
   publicManifest: Object.freeze({ ...sourceManifest, datasetId: 'unknown-drift' }),
 }), /ahead of central state without an exact repair policy/);

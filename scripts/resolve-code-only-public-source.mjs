@@ -29,7 +29,7 @@ function assertCommonCentralSource(current, publicManifest) {
     || publicManifest.complete !== true
     || publicManifest.zoneCount !== 210
     || publicManifest.coastalPartCount !== 673
-    || !same(publicManifest.ravScoreModelBinding, current.modelBinding)) {
+    || !publicManifest.ravScoreModelBinding) {
     throw new Error('Code-only public source is not an exact active integrated deployment');
   }
 }
@@ -38,6 +38,9 @@ export function resolveCodeOnlyPublicSource({ current, publicManifest } = {}) {
   assertCommonCentralSource(current, publicManifest);
   const observedManifestSha256 = sha256(publicManifest);
   if (observedManifestSha256 === current.publicManifestSha256) {
+    if (!same(publicManifest.ravScoreModelBinding, current.modelBinding)) {
+      throw new Error('Matching central/public manifest has a conflicting model binding');
+    }
     return Object.freeze({
       schemaVersion: 'ravscore-code-only-public-source-v1',
       status: 'CENTRAL_AND_PUBLIC_MATCH',
@@ -55,8 +58,10 @@ export function resolveCodeOnlyPublicSource({ current, publicManifest } = {}) {
     || current.publicManifestSha256 !== REPAIR.centralPublicManifestSha256
     || current.activeImplementationClosureSha256
       !== REPAIR.centralImplementationClosureSha256
+    || sha256(current.modelBinding) !== REPAIR.centralModelBindingSha256
     || observedManifestSha256 !== REPAIR.sourcePublicManifestSha256
-    || sha256(current.modelBinding) !== REPAIR.sourceModelBindingSha256) {
+    || sha256(publicManifest.ravScoreModelBinding)
+      !== REPAIR.sourceModelBindingSha256) {
     throw new Error('Public RavScore source is ahead of central state without an exact repair policy');
   }
   return Object.freeze({
@@ -109,4 +114,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 1;
   });
 }
-
