@@ -1,3 +1,19 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.380 audit/current
+
+4.0.379 sourcegate `34959283992`, PR #321 og main `0cc4a867` er grønne.
+Providerfri code-only `34959875107` bestod Pages-privacy og gennemførte privat
+publicering, anonym-afvisning, assistentdeploy og readiness uden provider.
+Planen stoppede før Pages-begin, fordi en shared consumer krævede tre
+historikfelter, mens producenten korrekt skrev fire inklusive 420
+utilgængelige modes.
+
+Lokal 4.0.380 retter den eksakte 420-sum og bevarer calibration false. En ny
+helikoptertur fandt samme arbejdsgang en senere blokering: private pointeren er
+nu 4.0.379-current, men fallbackmigratoren var låst til `fa418f43`. Workflowet
+beskriver nu actual current uden payload, kræver GitHub-ancestor, gendanner
+netop dens bundle og binder migration/publicering til samme descriptor.
+Målmatrix grøn; exact-head og produktion afventer. DEC-0162.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.379 Pages-scope
 
 4.0.378 bestod exact-head og blev merged. Providerfri code-only

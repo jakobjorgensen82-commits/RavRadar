@@ -115,8 +115,13 @@ function observations(...manifests) {
 function integratedAudit(binding = integratedModelBinding(), {
   rollbackStatus = 'READY',
   allCurrentScoresFullHistory = true,
+  currentUnavailableModeCount = 0,
 } = {}) {
   const rollbackActivationReady = rollbackStatus === 'READY';
+  const currentFullHistoryModeCount = allCurrentScoresFullHistory ? 420 : 0;
+  const currentHistoryIncompleteModeCount = allCurrentScoresFullHistory
+    ? 0
+    : 420 - currentUnavailableModeCount;
   return Object.freeze({
     schemaVersion: 1,
     status: 'passed',
@@ -134,8 +139,9 @@ function integratedAudit(binding = integratedModelBinding(), {
     }),
     history: Object.freeze({
       allCurrentScoresFullHistory,
-      currentFullHistoryModeCount: allCurrentScoresFullHistory ? 420 : 0,
-      currentHistoryIncompleteModeCount: allCurrentScoresFullHistory ? 0 : 420,
+      currentFullHistoryModeCount,
+      currentHistoryIncompleteModeCount,
+      currentUnavailableModeCount,
     }),
     rollback: Object.freeze({
       status: rollbackStatus,
@@ -521,6 +527,7 @@ const integratedH1Audit = integratedAudit();
 const integratedWarmupAudit = integratedAudit(integratedModelBinding(), {
   rollbackStatus: 'BUILDING_MEASURED_ONLY',
   allCurrentScoresFullHistory: false,
+  currentUnavailableModeCount: 420,
 });
 const integratedH1Verification = verification('integrated', integratedModelBinding(), integratedH1);
 const returnPlan = prepareIntegratedOperationalReturn({

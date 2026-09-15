@@ -23,6 +23,7 @@ import {
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
   createProtectedPrivateRuntimeClients,
+  describeCurrentProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
   validateSameReferencePrivateRuntimeSuccessor,
@@ -674,6 +675,28 @@ try {
   assert.equal(documents.row().payload.previous.modelBinding.modelBundleSha256, 'e'.repeat(64));
   assert.doesNotThrow(() => validateProtectedPrivateRuntimePointer(documents.row().payload),
     'The published pointer must retain a validated historical rollback binding');
+  const currentDescription = await describeCurrentProtectedPrivateProductionRuntime({
+    request: documents.request,
+  });
+  assert.deepEqual(Object.keys(currentDescription).sort(), [
+    'bundleContentSha256',
+    'contractHashes',
+    'datasetId',
+    'expectedPartCount',
+    'expectedZoneCount',
+    'generatedAt',
+    'kind',
+    'modelBinding',
+    'privatePayloadIncluded',
+    'productionReferenceAt',
+    'schemaVersion',
+    'sourceHead',
+  ].sort());
+  assert.equal(currentDescription.sourceHead, SOURCE_HEADS[1]);
+  assert.equal(currentDescription.bundleContentSha256,
+    documents.row().payload.current.bundleContentSha256);
+  assert.equal(currentDescription.privatePayloadIncluded, false);
+  assert.doesNotMatch(JSON.stringify(currentDescription), /objectPath|objects|privacyClass|bucketId/);
 
   const restoreBundle = path.join(restoreRoot, 'bundle-first');
   const downloadsBeforeCurrentRestore = storage.downloads();

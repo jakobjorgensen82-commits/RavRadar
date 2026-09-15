@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.380 audit og faktisk current
+
+- **REQ-4.0.380-AUDIT-HISTORY-001 – BINDENDE:** Auditforbrugeren skal kræve fuld, ufuldstændig og utilgængelig currenthistorik; antallene skal tilsammen være præcis 420 og stemme med boolfeltet.
+- **REQ-4.0.380-UNAVAILABLE-001 – BINDENDE:** Utilgængelige scorer giver `calibrationEligible=false`; de må hverken opfindes eller tælles som numerisk komplethed.
+- **REQ-4.0.380-CURRENT-SOURCE-001 – BINDENDE:** En efterfølgende code-only-migration skal starte fra den beskyttede pointers faktiske current-source og manifest, ikke en historisk hardkodet forgænger.
+- **REQ-4.0.380-ANCESTOR-001 – BINDENDE:** Current-source skal være en eksakt forfader til ny main; descriptor, kilde, manifest, runtime og migrationsrapport skal matche.
+- **REQ-4.0.380-NO-DATA-CHANGE-001 – BINDENDE:** Kun kendte modelbundlehashfelter må ændres. Vejr, målinger, scorer, states og øvrige private filer bevares.
+- **REQ-4.0.380-NO-REPEAT-001 – AKTIV:** Ingen provider, normal weather eller oneoff før offentlig modelverifikation.
+
+DEC-0162 supplerer DEC-0161.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.379 offentlig pakkescope
 
 - **REQ-4.0.379-PAGES-SCOPE-001 – BINDENDE:** `data/kystdata.json`, `data/zone-plan.json` og `js/services/runtime-diagnostics-archive.js` må ikke indgå i Pages-artifactet.

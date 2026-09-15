@@ -1,3 +1,12 @@
+# Nyeste prioritering – 4.0.380 fra planstop til Pages 2026-09-15
+
+4.0.379 er main og har allerede publiceret privat runtime, assistent og
+readiness uden provider. 4.0.380 retter auditens fire-felts currenthistorik og
+den næste private efterfølgers stale forgænger i samme batch. Målmatrix grøn.
+Næste er én exact-head, merge og providerfri code-only til Pages/central
+completion. Først derefter normal weather for tal, scorer, rotation og cache.
+Ingen oneoff. DEC-0162.
+
 # Nyeste prioritering – 4.0.379 Pages-privacy-scope 2026-09-15
 
 Providerfri 4.0.378 nåede alle tunge prewrite-led, men fandt tre ubrugte

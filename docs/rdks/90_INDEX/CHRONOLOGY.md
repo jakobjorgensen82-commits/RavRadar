@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.380 retter audit og gentagen current-migration
+
+- 4.0.379 sourcegate `34959283992` og PR #321 gav main `0cc4a867`.
+- Providerfri `34959875107` bestod privacy, privat publicering, anonym-afvisning, assistent og readiness, men stoppede før Pages-begin på en tre-felts auditforbruger mod producentens fire felter.
+- 4.0.380 accepterer kun en eksakt 420-sum, holder utilgængelige scorer ikke-kalibreringsegnede og migrerer næste private binding fra pointerens faktiske current-forfader. DEC-0162.
+
 # 2026-09-15 – 4.0.379 fjerner tre ubrugte interne Pages-filer
 
 - 4.0.378 sourcegate `34956693177` og PR #320 gav main `348d4a28`.

@@ -335,12 +335,25 @@ jobs:
       - name: Try newest current-compatible private runtime
         id: current-private-protected-restore
         continue-on-error: true
-        run: >-
-          node scripts/protected-private-production-runtime.mjs --restore
-          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-          --repository-root "$GITHUB_WORKSPACE"
-          --expected .cache/private-production-runtime-expected.json
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=1
+          for attempt in 1 2 3; do
+            rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+            if node scripts/protected-private-production-runtime.mjs --restore \
+                --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+                --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+                --repository-root "$GITHUB_WORKSPACE" \
+                --expected .cache/private-production-runtime-expected.json; then
+              exit 0
+            else
+              status=$?
+            fi
+            echo "Protected current restore attempt $attempt of 3 failed."
+            if test "$attempt" -lt 3; then sleep 5; fi
+          done
+          exit "$status"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -373,18 +386,30 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Describe exact current private runtime source for bounded migration
+        if: steps.current-private-install.outcome != 'success'
+        run: >-
+          node scripts/protected-private-production-runtime.mjs --describe-current
+          --output "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Prepare exact predecessor source for bounded binding migration
         if: steps.current-private-install.outcome != 'success'
         shell: bash
         run: |
           set -euo pipefail
-          predecessor=fa418f43bbd070c446ed19b6587541b93af89599
+          predecessor="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"
           test "${{ steps.operational-action.outputs.action }}" = "integrated-historical-maintenance"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/compare/$predecessor...$GITHUB_SHA" --jq '.status')" = "ahead"
           git fetch --no-tags --depth=1 origin "$predecessor"
           test "$(git rev-parse FETCH_HEAD^{commit})" = "$predecessor"
           test ! -e "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
           mkdir -p "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
           git archive "$predecessor" | tar -x -C "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Build exact predecessor private-runtime expectation
         if: steps.current-private-install.outcome != 'success'
@@ -456,9 +481,10 @@ jobs:
           --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
           --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
           --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
+          --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
           --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
           --repository-root "$GITHUB_WORKSPACE"
-          --expected-source-head fa418f43bbd070c446ed19b6587541b93af89599
+          --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"
           --report .geometry-v2-work/post-cutover-private-runtime-migration.json
 
       - name: Install migrated saved private runtime atomically

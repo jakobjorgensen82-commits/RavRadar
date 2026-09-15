@@ -1,3 +1,18 @@
+# 2026-09-15 – fire auditfelter og faktisk current-forgænger
+
+- `34959875107` beviste 4.0.379 Pages-privacy, privat publicering,
+  anonym-afvisning, assistent og readiness uden provider, men stoppede før
+  Pages-begin på shared auditconsumerens tre-felts allowlist.
+- Producentens fire felter er korrekte: fuld, ufuldstændig, utilgængelig og
+  boolsk total. 420 utilgængelige modes er et gyldigt measured-only-resultat
+  med `calibrationEligible=false`, ikke numerisk komplethed.
+- Efter en delvis code-only-succes er private pointer-current ikke længere den
+  oprindelige `fa418f43`. En ny successor skal beskrive og gendanne actual
+  current, bevise den som ancestor og bruge samme descriptor gennem migration
+  og publish. Hardkodet forgænger stopper med rette.
+- Artifactpakken fra `34877443841` findes fortsat og er ikke udløbet. Ingen
+  oneoff; normal weather først efter offentlig code-only. DEC-0162.
+
 # 2026-09-15 – repositoryfil er ikke automatisk offentlig runtimefil
 
 - Pages-builderen må kun kopiere det, den offentlige app bruger.

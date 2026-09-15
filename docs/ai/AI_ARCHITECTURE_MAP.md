@@ -1,3 +1,17 @@
+## 2026-09-15 lokal 4.0.380 – audit og sekventiel private-runtime-efterfølger
+
+- Integrated public audit har fire currenthistorikfelter. Shared consumeren
+  kræver fuld + ufuldstændig + utilgængelig = 420 og binder boolfeltet til
+  420/0/0; utilgængelig giver calibration false.
+- Protected private runtime kan udlevere en snæver current-source-beskrivelse
+  med commit, datasæt-, bundle-, tids-, model- og kontraktidentitet, men uden
+  Storage-stier, objekter eller payload.
+- Code-only kræver GitHub-ancestor mellem denne current og ny main, arkiverer
+  netop committen, bygger dens forventning og binder restore, migration og
+  same-reference-publicering til samme descriptor og manifest.
+- Kun kendte integrerede/Candidate G-modelbundlehashfelter må ændres. Alle
+  målinger, states og øvrige private filer bevares. DEC-0162.
+
 ## 2026-09-15 lokal 4.0.379 – offentlig Pages-scope
 
 - Aktiv offentlig geometri kommer fra `data/zones.geojson` og den

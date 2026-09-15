@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-15 – auditfelt og gentagen private efterfølger
+
+- **ISSUE-4.0.379-PAGES-INTERNAL-FILES – LUKKET:** `34959875107` bestod den fulde Pages-privacy efter eksklusionerne.
+- **ISSUE-4.0.379-AUDIT-HISTORY-SHAPE – RETTET LOKALT / LIVEBEVIS MANGLER:** Producenten skrev fire korrekte historikfelter; shared consumer forventede tre og afviste 420 ærligt utilgængelige modes før Pages-begin.
+- **ISSUE-4.0.379-STALE-PRIVATE-PREDECESSOR – RETTET LOKALT / LIVEBEVIS MANGLER:** Efter privat 4.0.379-publicering ville næste release stadig bevise migration mod `fa418f43`. 4.0.380 bruger pointerens faktiske current og ancestorbevis.
+- **ISSUE-4.0.380-DEPLOY – ÅBEN P0:** Exact-head, merge, Pages, central completion og offentlig verifikation mangler.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN:** Normal weather skal bagefter bevise tal, scorer, rotation og cache.
+
+Ingen provider eller oneoff. DEC-0162.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.379 Pages-pakkescope
 
 - **ISSUE-4.0.378-PAGES-INTERNAL-FILES – RETTET LOKALT / LIVEBEVIS MANGLER:** Code-only `34957362872` fandt tre ubrugte interne filer i Pages-pakken; 4.0.379 udelader dem i begge produktionsbuilders uden privacy-lempelse.

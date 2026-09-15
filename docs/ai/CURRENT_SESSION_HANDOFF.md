@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.380 audit/current samlet
+
+4.0.379 er main `0cc4a867` efter PR #321 og sourcegate `34959283992`.
+Providerfri `34959875107` nåede privat publicering, assistent og readiness, men
+ikke Pages-begin/completion. Årsagen var eksakt afgrænset til en shared
+tre-felts auditconsumer mod producentens fire felter; det reelle resultat havde
+420 aktuelle utilgængelige modes og skal være calibration false.
+
+Lokal 4.0.380 retter dette. Helikopterturen fandt og rettede også den næste
+genoptagelsesfejl: fallbacken brugte `fa418f43`, selv om pointer-current nu er
+4.0.379. Workflowet bruger nu actual current descriptor/source, ancestorbevis,
+eksakt restore og binding-only migration. Alle måltests grønne. Sourceartifact
+`34877443841` er tilgængeligt. Næste er docs/geodatadiff, commit/push, én
+exact-head, merge, code-only og livekontrol. Ingen weather/oneoff. DEC-0162.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.379 afgrænset Pages-privacyrettelse
 
 4.0.378 er main `348d4a28` efter grøn sourcegate `34956693177` og PR #320.

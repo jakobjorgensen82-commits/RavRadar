@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.379",
+  "handbookVersion": "4.0.380",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-15",
   "sections": [
+    {
+      "id": "audit-current-private-runtime-resume-4-0-380",
+      "chapter": "88.84",
+      "title": "4.0.380 – Audit og kodeopgradering fortsætter fra det rigtige sted",
+      "summary": "Auditten tæller også utilgængelige scores, og næste kodeopgradering starter fra den private pakke, der faktisk er aktiv.",
+      "body": "<p><strong>Status 15. september:</strong> Lokal 4.0.380 er samlet og målrettet kontrolleret. Exact-head og providerfri kodelevering afventer.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.379 bestod Pages-privacy og nåede at gemme privat runtime, lukke anonym adgang samt installere assistent og readiness. Den stoppede før Pages-skiftet, fordi rapporten havde fire korrekte historikfelter, mens kontrollen forventede tre.</div><div class=\"handbook-stack\"><p>4.0.380 kræver antal fulde, ufuldstændige og utilgængelige aktuelle scores samt det samlede ja/nej-felt. De tre antal skal tilsammen være præcis 420. Utilgængelige scores bliver ikke opfundet og må ikke bruges til kalibrering.</p><p>En ny privat kodeopgradering starter fra pointerens faktiske current-pakke. Dens commit skal være en forfader til ny main, og samme descriptor, manifest og bundle bindes gennem gendannelse, migration og publicering. Den snævre beskrivelse indeholder ingen private data eller Storage-stier.</p><p>Kun kendte modelbundlefingeraftryk må ændres. Vejr, målinger, scorer, states og øvrige private filer bevares. Den forseglede Pages-kilde findes stadig. Næste trin er én exact-head-kontrol og en providerfri kodelevering; normal weather følger bagefter, og der køres ingen oneoff.</p></div>"
+    },
     {
       "id": "pages-artifact-internal-file-exclusions-4-0-379",
       "chapter": "88.83",
@@ -476,7 +483,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.379 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.380 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },
