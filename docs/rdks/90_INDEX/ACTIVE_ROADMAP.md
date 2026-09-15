@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.375 fra gemt runtime til fuld offentlig model
+
+1. **P0:** Færdiggør 4.0.375, målrettede kontroller, én exact-head PR-sourcegate og merge samme head.
+2. **P0:** Kør providerfri code-only; genbrug central version 1, migration 16/17, privacy og den eksakte gemte runtime.
+3. **P0:** Migrér alle integrerede og Candidate G-bundlehashplaceringer, genbyg offentlig runtime, publicér privat runtime og Pages og fuldfør central maintenance.
+4. **P0:** Verificér central binding/version, live 4.0.375, 210/673/118, begge søgemåder og Om RavRadar-indholdet.
+5. **P0 efter deploy:** Normal tidsbegrænset weather; bevis numeriske input/scorer, fuld DMI-rotation og cachevedligeholdelse uden oneoff.
+6. **P1:** Helhedsreview af live-site og resterende roadmap i samlede, meningsfulde batches.
+
+DEC-0148–0156 er aktive.
+
 # Aktiv roadmap – 4.0.374 fra privat storfil til model online
 
 1. **P0:** Færdiggør 4.0.374, én exact-head PR-sourcegate og merge samme head.

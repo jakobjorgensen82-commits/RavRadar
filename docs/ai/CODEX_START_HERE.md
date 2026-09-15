@@ -1,3 +1,22 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.375 migrerer hele modelmetadatafladen
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.375-migrate-runtime-metadata`; remote main er `dd59bc51` efter PR
+#316/sourcegate `34933609573`. Providerfri code-only `34934257354` genbrugte
+central version 1, migration 16/17, privacy og den gemte private runtime. Det
+stoppede før publicering, fordi scoreprofilen stadig bar forgængerens
+bundlehash. Samme gamle hash findes i indlejrede resultater, forklaringer,
+zone-timer og Candidate G-runtime.
+
+4.0.375 gennemgår hele `conditions.json` rekursivt og ændrer kun bundlehashen
+i eksakt genkendte 11-feltsbindinger, scoreprofiler og kompakte resultater.
+Continuation state valideres særskilt før/efter for 673 dele; Candidate G-state
+og de øvrige otte filer bevares. Faktisk leaf-diff skal være identisk med den
+dynamiske allowlist, og ingen gammel hash må være tilbage. Måltests er grønne.
+Fortsæt: slutkontrol → commit/push → én exact-head sourcegate → merge →
+providerfri code-only → central/offentlig kontrol → separat normal weather.
+Ingen oneoff. DEC-0156. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.368 fortsætter fra central version 1
 
 Arbejd i siblingworktree `RavRadar-4.0.366` på branch `codex/4.0.368-preserve-false-outputs`. PR #309 bestod sourcegate `34914010157` og blev merged som main `d25dfe8e`. Code-only-run `34914399119` gennemførte engangsrecoveryen; Supabase er nu `INTEGRATED_ACTIVE` version 1. Gentag ikke recoveryen.

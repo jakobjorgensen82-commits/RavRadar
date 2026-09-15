@@ -1,3 +1,17 @@
+## 2026-09-15 lokal 4.0.375 – systemisk metadataoverførsel i gemt runtime
+
+- `migrate-post-cutover-private-runtime.mjs` går rekursivt gennem objekter og
+  arrays og genkender fulde bindinger, eksakte profiler og kompakte resultater
+  med eksakt indlejret binding.
+- Hver genkendt gammel integreret eller Candidate G-bundlehash udskiftes med
+  den aktuelle. Ukendte forekomster afvises; efter migration må ingen gammel
+  hash være tilbage.
+- `currentState`/`continuationState` holdes ude af den generelle traversal.
+  De 673 integrerede current states migreres og valideres særskilt;
+  Candidate G-state skal være byteidentisk.
+- Den faktiske rekursive leaf-diff skal svare præcist til migrationens dynamiske
+  allowlist. Alle øvrige private runtimefiler kopieres byteidentisk.
+
 ## 2026-09-15 lokal 4.0.374 – én filgrænse for beskyttet privat runtime
 
 - `prepare-code-only-public-runtime.mjs` genbruger nu `PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes` i stedet for et selvstændigt 256 MiB-loft.

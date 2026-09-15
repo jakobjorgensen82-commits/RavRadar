@@ -1,4 +1,21 @@
-# AI Roadmap – RavRadar 4.0.351 main; audit-hotfix, cutover og normal drift – opdateret 2026-09-13
+# AI Roadmap – RavRadar 4.0.375 code-only og normal drift – opdateret 2026-09-15
+
+## Aktuel releasehale – 4.0.375 komplet metadataoverførsel
+
+1. [x] Merge 4.0.374 via PR #316 efter sourcegate `34933609573` og genbrug exact-head-beviset i code-only `34934257354`.
+2. [x] Livebevis central læsning, migration 16/17, privacy, restore, udpakning, migration og atomisk installation uden provider.
+3. [x] Afgræns næste stop til scoreprofilens gamle bundlehash og kortlæg samme hash i delresultater, forklaringer, zone-timer og Candidate G-runtime.
+4. [x] Implementér én streng rekursiv metadataoverførsel med stateadskillelse, eksakt leaf-allowlist og nul gammel hash.
+5. [x] Bestå målrettede migration-, code-only- og private-runtime-tests; ret den stale manifestfixture.
+6. [ ] Forsegl docs/version/geodatadiff, commit/push og bestå én exact-head sourcegate.
+7. [ ] Merge samme head og kør providerfri code-only til privat runtime, Pages og central completion.
+8. [ ] Verificér levende 4.0.375, 210/673/118, begge søgemåder, Om RavRadar og nul private lækager.
+9. [ ] Genaktivér normal weather kontrolleret og bevis numeriske input/scorer, DMI-rotation og cachevedligeholdelse uden oneoff.
+10. [ ] Gennemgå hele siden og revurder resten af roadmap mod faktisk produktion.
+
+Ingen provider eller oneoff indgår før det offentlige code-only-deploy er verificeret.
+
+# Historisk roadmap – RavRadar 4.0.351 main; audit-hotfix, cutover og normal drift – opdateret 2026-09-13
 
 ## Aktuel releasehale – 4.0.351 model-online
 

@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.375 komplet metadataoverførsel
+
+PR #316/sourcegate `34933609573` blev merged som main `dd59bc51`.
+Code-only `34934257354` genbrugte central tilstand, migrationer, privacy og den
+gemte private runtime uden provider. Offentlig genopbygning stoppede før
+publicering på scoreprofilens gamle bundlehash.
+
+4.0.375 migrerer alle eksakt genkendte modelbindinger, profiler, kompakte
+resultater og forklaringer gennem hele runtime-træet. Kun bundlehashfeltet må
+ændres; statebeviset valideres særskilt, faktisk diff skal matche den dynamiske
+allowlist, og ingen gammel integreret eller Candidate G-hash må være tilbage.
+DEC-0156.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.374 privat runtimegrænse
 
 PR #315/sourcegate `34924287616` blev merged som main `bf61970a`.

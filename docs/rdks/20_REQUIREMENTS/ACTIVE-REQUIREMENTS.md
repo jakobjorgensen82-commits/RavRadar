@@ -1,3 +1,12 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.375 komplet modelmetadataoverførsel
+
+- **REQ-4.0.375-ALL-METADATA-001 – IMPLEMENTERET LOKALT:** Alle gamle integrerede og Candidate G-bundlehashplaceringer i `conditions.json` skal migreres i samme gennemløb; kun eksakt genkendte bindinger, profiler og kompakte resultater accepteres.
+- **REQ-4.0.375-EXACT-DIFF-001 – BINDENDE:** Kun `modelBundleSha256` må ændres. Faktisk leaf-diff skal svare præcist til den dynamiske allowlist, og ingen gammel hash må være tilbage.
+- **REQ-4.0.375-STATE-PRESERVATION-001 – BINDENDE:** Integreret continuation state må kun få sin bundlehash opdateret efter gammel validator og skal bestå aktuel validator; Candidate G-state, scorer, målinger, vejr, proveniens og øvrige private filer bevares.
+- **REQ-4.0.375-NO-REPEAT-001 – AKTIV:** Genbrug sourcebevis, central version 1, migration 16/17, privacy og den eksakte gemte runtime. Ingen provider, oneoff eller tidligere cutovertrin.
+
+DEC-0156 supplerer DEC-0148–0155.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.374 privat runtimegrænse
 
 - **REQ-4.0.374-AUTHORITATIVE-BOUND-001 – IMPLEMENTERET LOKALT:** Code-only-læsning af privat `conditions.json` skal bruge cachetransportens eksisterende 768 MiB per-fil-loft, ikke et mindre uafhængigt 256 MiB-loft.

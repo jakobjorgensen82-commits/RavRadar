@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.375 migrerer alle eksakte modelmetadataforekomster
+
+- PR #316/sourcegate `34933609573` gav main `dd59bc51`; code-only `34934257354` gendannede og installerede runtime uden provider.
+- Offentlig genopbygning stoppede før writes på scoreprofilens gamle bundlehash; samme gamle identitet ligger i flere indlejrede runtimeformer.
+- 4.0.375 gennemgår hele `conditions.json`, ændrer kun eksakt genkendte `modelBundleSha256`-felter, kræver en identisk leaf-allowlist og efterlader nul gamle hashes. DEC-0156.
+
 # 2026-09-15 – 4.0.374 genbruger cachetransportens private filgrænse
 
 - PR #315/sourcegate `34924287616` gav main `bf61970a`; `34924664012` passerede offentlig storfil og genbrugte cachemigration/-installation uden provider.

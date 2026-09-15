@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – gamle modelhashes ligger flere steder i runtime
+
+- **ISSUE-4.0.373-PRIVATE-CONDITIONS-SIZE – LUKKET:** Run `34934257354` passerede den autoritative private filgrænse og installerede den migrerede runtime.
+- **ISSUE-4.0.374-PARTIAL-METADATA-MIGRATION – RETTET LOKALT / LIVEBEVIS MANGLER:** Den gamle migration opdaterede kun ydre bindinger og state; scoreprofil, indlejrede resultater, forklaringer, zone-timer og Candidate G bar fortsat gammel bundlehash. 4.0.375 migrerer hele den eksakt genkendte metadataflade og kræver nul gamle hashes.
+- **ISSUE-4.0.375-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen provider eller oneoff.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather køres først efter offentlig modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – privat conditions over gammelt loft
 
 - **ISSUE-4.0.372-PUBLIC-DETAIL-SIZE – LUKKET:** Run `34924664012` passerede den manifestbundne detailfil på `117.820.378` bytes.

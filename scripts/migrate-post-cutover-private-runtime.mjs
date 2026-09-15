@@ -17,6 +17,9 @@ import {
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
 import {
+  assertExactPublicRavScoreProfile,
+} from '../js/core/ravscore-public-profile-contract.js';
+import {
   assertRavScoreModelBinding as assertCandidateBinding,
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
@@ -49,6 +52,7 @@ export const POST_CUTOVER_PREDECESSOR = Object.freeze({
 });
 
 const INTEGRATED_BINDING_KEYS = Object.freeze(Object.keys(POST_CUTOVER_PREDECESSOR.modelBinding));
+const PRIVATE_STATE_KEYS = new Set(['currentState', 'continuationState']);
 const SHA256 = /^[a-f0-9]{64}$/;
 
 function isPlainObject(value) {
@@ -95,28 +99,115 @@ function bindingFromWrapper(wrapper, label) {
   return Object.fromEntries(INTEGRATED_BINDING_KEYS.map(key => [key, wrapper[key]]));
 }
 
-function replaceBindingFields(wrapper, binding, label) {
-  const actual = bindingFromWrapper(wrapper, label);
-  assertSame(actual, POST_CUTOVER_PREDECESSOR.modelBinding, `${label} predecessor binding`);
-  for (const key of INTEGRATED_BINDING_KEYS) wrapper[key] = binding[key];
+function joinedPath(prefix, key) {
+  return prefix ? `${prefix}.${key}` : String(key);
 }
 
 function collectChangedPaths(before, after, prefix = '') {
-  if (same(before, after)) return [];
-  if (Array.isArray(before) || Array.isArray(after)
-      || !isPlainObject(before) || !isPlainObject(after)) return [prefix];
+  if (Object.is(before, after)) return [];
+  if (Array.isArray(before) || Array.isArray(after)) {
+    if (!Array.isArray(before) || !Array.isArray(after) || before.length !== after.length) {
+      return [prefix];
+    }
+    return before.flatMap((value, index) => collectChangedPaths(
+      value,
+      after[index],
+      joinedPath(prefix, index),
+    ));
+  }
+  if (!isPlainObject(before) || !isPlainObject(after)) return [prefix];
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
   return keys.flatMap(key => collectChangedPaths(
     before[key],
     after[key],
-    prefix ? `${prefix}.${key}` : key,
+    joinedPath(prefix, key),
   ));
 }
 
-export function allowedChange(pathValue) {
-  return pathValue === 'coastalParts.modelBinding.modelBundleSha256'
-    || /^coastalParts\.parts\.[^.]+\.ravScoreModel\.(?:currentState\.)?modelBundleSha256$/.test(pathValue)
-    || /^ravScoreCandidateG(?:Rollback|Warmup)\.(?:sourceModelBinding|rollbackModelBinding|candidateModelBinding|runtime\.modelBinding)\.modelBundleSha256$/.test(pathValue);
+function exactBindingCarrier(value, previousBinding) {
+  return INTEGRATED_BINDING_KEYS.every(key => value[key] === previousBinding[key]);
+}
+
+function exactProfileCarrier(value, previousBinding) {
+  if (!Object.hasOwn(value, 'requestedProfileId')
+      || !Object.hasOwn(value, 'activeProfileId')) return false;
+  try {
+    assertExactPublicRavScoreProfile(value, previousBinding, 'Saved runtime score profile');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function exactCompactResultCarrier(value, previousBinding) {
+  if (value.modelId !== previousBinding.modelId
+      || value.modelVersion !== previousBinding.modelId
+      || value.modelContractSha256 !== previousBinding.modelContractSha256
+      || value.modelBundleSha256 !== previousBinding.modelBundleSha256
+      || !isPlainObject(value.modelBinding)) return false;
+  return exactBindingCarrier(value.modelBinding, previousBinding);
+}
+
+function exactMetadataCarrier(value, previousBinding) {
+  if (!isPlainObject(value)) return false;
+  return exactBindingCarrier(value, previousBinding)
+    || exactProfileCarrier(value, previousBinding)
+    || exactCompactResultCarrier(value, previousBinding);
+}
+
+export function migrateExactModelBindingMetadata(
+  root,
+  previousBinding,
+  currentBinding,
+  { label = 'Saved runtime model metadata' } = {},
+) {
+  assertBindingUpgrade(previousBinding, currentBinding, label);
+  const changedPaths = [];
+  function visit(value, prefix = '') {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, joinedPath(prefix, index)));
+      return;
+    }
+    if (!isPlainObject(value)) return;
+    if (Object.hasOwn(value, 'modelBundleSha256')
+        && value.modelBundleSha256 === previousBinding.modelBundleSha256) {
+      if (!exactMetadataCarrier(value, previousBinding)) {
+        throw new Error(`${label} has an unrecognized or conflicting old bundle hash at ${prefix}`);
+      }
+      value.modelBundleSha256 = currentBinding.modelBundleSha256;
+      changedPaths.push(joinedPath(prefix, 'modelBundleSha256'));
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (PRIVATE_STATE_KEYS.has(key)) continue;
+      visit(child, joinedPath(prefix, key));
+    }
+  }
+  visit(root);
+  return changedPaths;
+}
+
+function collectBundleHashPaths(root, hashes) {
+  const paths = [];
+  function visit(value, prefix = '') {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, joinedPath(prefix, index)));
+      return;
+    }
+    if (!isPlainObject(value)) return;
+    for (const [key, child] of Object.entries(value)) {
+      const childPath = joinedPath(prefix, key);
+      if (key === 'modelBundleSha256' && hashes.has(child)) paths.push(childPath);
+      visit(child, childPath);
+    }
+  }
+  visit(root);
+  return paths;
+}
+
+export function allowedChange(pathValue, exactAllowedPaths = []) {
+  const allowed = exactAllowedPaths instanceof Set
+    ? exactAllowedPaths : new Set(exactAllowedPaths);
+  return allowed.has(pathValue);
 }
 
 async function assertDirectoryOutside(repositoryRoot, requested, label) {
@@ -241,8 +332,25 @@ function validateAndMigrateConditions({
   assertBindingUpgrade(oldCandidateBinding.ravScoreModelBinding(), currentCandidateBinding,
     'Candidate G model binding', { requireChange: false });
 
+  const predecessorIntegratedBinding = oldIntegratedBinding.ravScoreModelBinding();
+  const predecessorCandidateBinding = oldCandidateBinding.ravScoreModelBinding();
   const migrated = structuredClone(source);
-  migrated.coastalParts.modelBinding = structuredClone(currentIntegratedBinding);
+  const integratedMetadataPaths = migrateExactModelBindingMetadata(
+    migrated,
+    predecessorIntegratedBinding,
+    currentIntegratedBinding,
+    { label: 'Integrated saved runtime metadata' },
+  );
+  const candidateMetadataPaths = migrateExactModelBindingMetadata(
+    migrated,
+    predecessorCandidateBinding,
+    currentCandidateBinding,
+    { label: 'Candidate G saved runtime metadata' },
+  );
+  const exactAllowedPaths = new Set([
+    ...integratedMetadataPaths,
+    ...candidateMetadataPaths,
+  ]);
   const errors = [];
   const partIds = Object.keys(source.coastalParts.parts).sort();
   for (const partId of partIds) {
@@ -269,12 +377,18 @@ function validateAndMigrateConditions({
         samplingContextKey: oldIdentity.samplingContextKey,
         label: `Part ${partId} predecessor continuation`,
       });
-      replaceBindingFields(migratedWrapper, currentIntegratedBinding, `Part ${partId} wrapper`);
+      assertRavScoreModelBinding(
+        bindingFromWrapper(migratedWrapper, `Part ${partId} migrated wrapper`),
+        `Part ${partId} migrated wrapper binding`,
+      );
       if (migratedWrapper.currentState?.modelBundleSha256
           !== POST_CUTOVER_PREDECESSOR.modelBinding.modelBundleSha256) {
         throw new Error('continuation does not carry the predecessor bundle hash');
       }
       migratedWrapper.currentState.modelBundleSha256 = currentIntegratedBinding.modelBundleSha256;
+      exactAllowedPaths.add(
+        `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
+      );
       assertIntegratedCoastalPointContinuation(migratedWrapper.currentState, {
         samplingContextKey: currentIdentity.samplingContextKey,
         label: `Part ${partId} migrated continuation`,
@@ -300,9 +414,12 @@ function validateAndMigrateConditions({
         `${rootName} predecessor Candidate G binding`);
       assertSame(originalDescriptor.runtime?.modelBinding, oldCandidateBinding.ravScoreModelBinding(),
         `${rootName} predecessor runtime binding`);
-      migratedDescriptor.sourceModelBinding = structuredClone(currentIntegratedBinding);
-      migratedDescriptor[bindingName] = structuredClone(currentCandidateBinding);
-      migratedDescriptor.runtime.modelBinding = structuredClone(currentCandidateBinding);
+      assertSame(migratedDescriptor.sourceModelBinding, currentIntegratedBinding,
+        `${rootName} migrated source binding`);
+      assertSame(migratedDescriptor[bindingName], currentCandidateBinding,
+        `${rootName} migrated Candidate G binding`);
+      assertSame(migratedDescriptor.runtime?.modelBinding, currentCandidateBinding,
+        `${rootName} migrated runtime binding`);
       const candidatePartIds = Object.keys(originalDescriptor.runtime?.parts ?? {}).sort();
       if (!same(candidatePartIds, partIds)) throw new Error('Candidate G runtime part inventory differs');
       for (const partId of candidatePartIds) {
@@ -331,18 +448,43 @@ function validateAndMigrateConditions({
   if (errors.length) {
     throw new Error(`Private runtime migration rejected ${errors.length} independent error(s): ${errors.join(' | ')}`);
   }
+  const [candidateRootName, candidateBindingName] = candidateRoots[0];
+  const requiredMetadataPaths = [
+    'coastalParts.modelBinding.modelBundleSha256',
+    'coastalParts.scoreProfile.modelBundleSha256',
+    ...partIds.map(partId =>
+      `coastalParts.parts.${partId}.ravScoreModel.modelBundleSha256`),
+    `${candidateRootName}.sourceModelBinding.modelBundleSha256`,
+    `${candidateRootName}.${candidateBindingName}.modelBundleSha256`,
+    `${candidateRootName}.runtime.modelBinding.modelBundleSha256`,
+    ...(source[candidateRootName]?.runtime?.scoreProfile
+      ? [`${candidateRootName}.runtime.scoreProfile.modelBundleSha256`] : []),
+  ];
+  const missingRequiredMetadata = requiredMetadataPaths
+    .filter(pathValue => !exactAllowedPaths.has(pathValue));
+  if (missingRequiredMetadata.length) {
+    throw new Error(`Private runtime migration missed required model metadata: ${missingRequiredMetadata.join(', ')}`);
+  }
+  const staleBundlePaths = collectBundleHashPaths(migrated, new Set([
+    predecessorIntegratedBinding.modelBundleSha256,
+    predecessorCandidateBinding.modelBundleSha256,
+  ]));
+  if (staleBundlePaths.length) {
+    throw new Error(`Private runtime migration left old bundle hashes at: ${staleBundlePaths.join(', ')}`);
+  }
   const changedPaths = collectChangedPaths(source, migrated);
-  const forbiddenChanges = changedPaths.filter(change => !allowedChange(change));
+  const forbiddenChanges = changedPaths
+    .filter(change => !allowedChange(change, exactAllowedPaths));
   if (forbiddenChanges.length) {
     throw new Error(`Private runtime migration changed forbidden paths: ${forbiddenChanges.join(', ')}`);
   }
-  const candidateBindingChanged = oldCandidateBinding.ravScoreModelBinding().modelBundleSha256
-    !== currentCandidateBinding.modelBundleSha256;
-  const expectedChangeCount = 1 + (partIds.length * 2) + (candidateBindingChanged ? 3 : 0);
-  if (changedPaths.length !== expectedChangeCount) {
-    throw new Error(`Private runtime migration changed ${changedPaths.length} fields; expected ${expectedChangeCount}`);
+  const changedPathSet = new Set(changedPaths);
+  const missingChanges = [...exactAllowedPaths]
+    .filter(pathValue => !changedPathSet.has(pathValue));
+  if (missingChanges.length || changedPathSet.size !== exactAllowedPaths.size) {
+    throw new Error(`Private runtime migration did not change its exact metadata allowlist: ${missingChanges.join(', ')}`);
   }
-  return { migrated, changedPaths, candidateRoot: candidateRoots[0][0], partCount: partIds.length };
+  return { migrated, changedPaths, candidateRoot: candidateRootName, partCount: partIds.length };
 }
 
 export async function migratePostCutoverPrivateRuntime({

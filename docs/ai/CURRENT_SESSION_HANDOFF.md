@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.375 komplet modelmetadata
+
+Main er `dd59bc51` efter PR #316/sourcegate `34933609573`. Code-only
+`34934257354` passerede størrelsesrettelsen, genbrugte central version 1 og
+migration 16/17 og gendannede/migrerede/installerede den private runtime uden
+provider. Offentlig genopbygning stoppede før writes på scoreprofilens gamle
+bundlehash.
+
+Branch `codex/4.0.375-migrate-runtime-metadata` migrerer alle eksakt genkendte
+bindings-, profil-, resultat- og forklaringshashes i hele runtime-træet. Kun
+`modelBundleSha256` må ændres. Den integrerede state valideres særskilt for 673
+dele; Candidate G-state og de øvrige otte private filer er uændrede. Faktisk
+leaf-diff skal matche den dynamiske allowlist, og nul gamle hashes må være
+tilbage. Måltests er grønne. Næste: slutkontrol, commit/push, én exact-head
+gate, merge og providerfri code-only; derefter livekontrol og normal
+tidsbegrænset weather. Ingen oneoff. DEC-0156. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.374 privat runtimegrænse
 
 Main er `bf61970a` efter PR #315/sourcegate `34924287616`. Providerfri

@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.374",
+  "handbookVersion": "4.0.375",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-15",
   "sections": [
+    {
+      "id": "exact-private-runtime-metadata-migration-4-0-375",
+      "chapter": "88.79",
+      "title": "4.0.375 – Hele den gemte modelidentitet flyttes samlet",
+      "summary": "Alle eksakt genkendte modelhashes overføres i én streng gennemgang uden at ændre score, vejr eller historik.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den private runtime blev gendannet og installeret uden ny vejrhentning. Offentlig genopbygning stoppede, fordi scoreprofilen stadig bar den gamle models digitale fingeraftryk.</div><div class=\"handbook-stack\"><p>Det samme fingeraftryk ligger i scoreprofil, delresultater, timeprognoser, forklaringer og backupmodel. 4.0.375 gennemgår hele den gemte runtime og ændrer kun <code>modelBundleSha256</code>, når resten af modelidentiteten passer eksakt.</p><p>Den faktiske liste over ændrede felter skal svare præcist til den godkendte liste, og ingen gammel integreret eller Candidate G-hash må være tilbage. Ukendt eller modstridende metadata afvises.</p><p>Scorer, vejrdata, målinger og historik ændres ikke. De 673 integrerede modeltilstande valideres særskilt før og efter; Candidate G-state og de øvrige private filer bevares. Ingen provider eller oneoff indgår.</p></div>"
+    },
     {
       "id": "authoritative-private-runtime-bound-4-0-374",
       "chapter": "88.78",
@@ -441,9 +448,9 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.374 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.375 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Det historiske integrerede artifact er offentligt, men den centrale aktivering mangler. RavScore 4.0.367 er lokalt klar til den eksakte recovery og efterfølgende code-only-opdatering.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står fortsat uden operationel række på legacy Candidate G, mens Pages viser den historiske integrerede binding. 4.0.367 registrerer kun dette eksakte, frisk verificerede target og fører derefter bindingen frem til den aktuelle modelpakke.</p><p><strong>Backend:</strong> Installeret migration 15 er byteuændret; migration 16 <code>20260914234500_post_cutover_current_hold_binding.sql</code> er det nye append-only bindingsled. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><p><strong>Rollback:</strong> Candidate G er kildeidentitet for den manglende første overgang og privat rollback efter fuldført integreret aktivering. Den er ikke samtidig offentlig fallback.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede kontroller er grønne. Exact-head PR-gate, code-only-deploy, central readback og offentlig mobil-/desktopkontrol mangler.</div></div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.375 er den lokale, providerfri reparation, som overfører den gemte private runtime til den aktuelle modelpakke uden en ny oneoff.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og de to efterfølgende migrationsled er installeret. 4.0.374 gendannede, kontrollerede og installerede den gemte private runtime, men den offentlige genopbygning stoppede på gamle bundlehashes inde i resultatmetadata. 4.0.375 ændrer kun eksakt genkendte <code>modelBundleSha256</code>-felter og kræver bagefter, at ingen gammel hash er tilbage.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },
     {
       "id": "dmi-copernicus-regional-source-priority-closure-4-0-320",

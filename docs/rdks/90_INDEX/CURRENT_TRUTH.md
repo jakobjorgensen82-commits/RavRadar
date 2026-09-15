@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-15 – runtime gendannet; alle gamle modelhashplaceringer migreres
+
+4.0.374 bestod sourcegate `34933609573`, blev merged gennem PR #316 som main
+`dd59bc511a2a98a8236d129aab113e91779c84bf`, og providerfri code-only
+`34934257354` genbrugte det grønne sourcebevis, central version 1, migration
+16/17 og privacy. Den eksakte forgænger-runtime blev gendannet, migreret og
+installeret atomisk. Ingen provider, oneoff eller normal weather kørte.
+
+Offentlig genopbygning stoppede før publicering på scoreprofilens gamle
+bundlehash. Live- og kodegennemgang viser samme gamle hash i indlejrede
+resultatbindinger, forklaringer, zone-timer og Candidate G-backup. Lokal
+4.0.375 migrerer hele runtime-træet, men accepterer kun eksakt genkendte
+modelmetadataobjekter og ændrer alene `modelBundleSha256`. Continuation state
+valideres særskilt for alle 673 dele; Candidate G-state og de øvrige otte filer
+forbliver byteidentiske. Faktisk leaf-diff skal være præcis den dynamiske
+allowlist, og ingen gammel hash må være tilbage. DEC-0156.
+
+Næste: målrettet slutkontrol, commit/push, én exact-head sourcegate, merge og
+providerfri code-only. Derefter central/offentlig 4.0.375-verifikation og først
+så normal tidsbegrænset weather for numeriske scorer, rotation og cache.
+
 # NYESTE SANDHED – 2026-09-15 – offentlig detailfil passerer; privat storfilgrænse rettet lokalt
 
 4.0.373 bestod sourcegate `34924287616`, blev merged gennem PR #315 som main
