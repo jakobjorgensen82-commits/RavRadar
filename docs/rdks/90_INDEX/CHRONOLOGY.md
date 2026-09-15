@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.376 retter wrapperens privacy-rod
+
+- PR #317/sourcegate `34939186051` gav main `e95339e5`; code-only `34939798892` beviste komplet metadataoverførsel og atomisk installation uden provider.
+- Offentlig genopbygning stoppede før writes, fordi et ekstra privacykald brugte en label fremfor roden `startup` og derfor afviste det godkendte `flowPoints.current`.
+- 4.0.376 bruger `startup`, `details` og `manifest`; allowlisten og privacygrænserne er uændrede. DEC-0157.
+
 # 2026-09-15 – 4.0.375 migrerer alle eksakte modelmetadataforekomster
 
 - PR #316/sourcegate `34933609573` gav main `dd59bc51`; code-only `34934257354` gendannede og installerede runtime uden provider.

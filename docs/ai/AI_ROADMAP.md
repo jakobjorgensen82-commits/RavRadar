@@ -1,4 +1,18 @@
-# AI Roadmap – RavRadar 4.0.375 code-only og normal drift – opdateret 2026-09-15
+# AI Roadmap – RavRadar 4.0.376 code-only og normal drift – opdateret 2026-09-15
+
+## Aktuel releasehale – 4.0.376 kanonisk privacy-rod
+
+1. [x] Merge 4.0.375 via PR #317 efter sourcegate `34939186051`.
+2. [x] Livebevis i `34939798892`, at komplet metadataoverførsel og atomisk privat installation består uden provider.
+3. [x] Afgræns stoppet til wrapperens forkerte tekniske rodsti og bekræft, at den godkendte pilkoordinat og generatorens privacykontrol er korrekte.
+4. [x] Ret alle tre rødder og bestå code-only-, 210/673-runtime- og Pages-privacykontrol.
+5. [ ] Forsegl docs/version/geodatadiff, commit/push og bestå én exact-head sourcegate.
+6. [ ] Merge samme head og kør providerfri code-only til privat runtime, Pages og central completion.
+7. [ ] Verificér levende 4.0.376, 210/673/118, begge søgemåder, Om RavRadar og nul private lækager.
+8. [ ] Genaktivér normal weather kontrolleret og bevis numeriske input/scorer, DMI-rotation og cachevedligeholdelse uden oneoff.
+9. [ ] Gennemgå hele siden og revurder resten af roadmap mod faktisk produktion.
+
+Ingen provider eller oneoff indgår før det offentlige code-only-deploy er verificeret.
 
 ## Aktuel releasehale – 4.0.375 komplet metadataoverførsel
 

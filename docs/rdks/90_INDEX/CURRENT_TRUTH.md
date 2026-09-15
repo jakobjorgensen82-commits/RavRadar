@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-15 – metadataoverførsel virker; forkert privacy-rod rettet
+
+4.0.375 bestod exact-head sourcegate `34939186051`, blev merged gennem PR #317
+som main `e95339e5862e19675a36603e810b9094f6acf25b`, og providerfri code-only
+`34939798892` genbrugte central version 1, migration 16/17 og den gemte runtime.
+Hele den rekursive metadataoverførsel, atomiske installation og 210/673-inventar
+bestod. Ingen provider, oneoff eller normal weather kørte.
+
+Den offentlige genopbygning stoppede før publicering på et godkendt
+`flowPoints.current`. Den fælles generator havde allerede valideret dokumentet
+korrekt med roden `startup`; wrapperens ekstra kontrol brugte fejlagtigt den
+menneskelige label `Code-only startup runtime` som JSON-rod og kunne derfor
+ikke matche den eksisterende allowlist. Lokal 4.0.376 bruger kanoniske
+`startup`, `details` og `manifest` uden at lempe privacyreglerne. DEC-0157.
+
+Næste: målrettet slutkontrol, commit/push, én exact-head sourcegate, merge og
+providerfri code-only. Derefter central/offentlig verifikation og først så
+normal tidsbegrænset weather for numeriske scorer, rotation og cache.
+
 # NYESTE SANDHED – 2026-09-15 – runtime gendannet; alle gamle modelhashplaceringer migreres
 
 4.0.374 bestod sourcegate `34933609573`, blev merged gennem PR #316 som main

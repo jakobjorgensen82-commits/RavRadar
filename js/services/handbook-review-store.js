@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.375';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.375';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.376';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.376';
 
 const KEY='ravradar-handbook-review-drafts-v1';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);

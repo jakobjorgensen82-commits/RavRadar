@@ -1,3 +1,11 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.376 kanonisk privacy-rod
+
+- **REQ-4.0.376-PRIVACY-ROOT-001 – IMPLEMENTERET LOKALT:** Code-only-wrapperens privacykald skal bruge de maskinlæsbare rødder `startup`, `details` og `manifest`, ikke frie beskrivelser.
+- **REQ-4.0.376-NO-WEAKENING-001 – BINDENDE:** Den eksisterende coordinate-allowlist må ikke udvides; ukendte koordinater, rå U/V og private state-/payloadfelter skal fortsat afvises.
+- **REQ-4.0.376-NO-REPEAT-001 – AKTIV:** Genbrug 4.0.375's livebeviste metadataoverførsel, central version 1 og migration 16/17. Ingen provider, oneoff eller tidligere cutovertrin.
+
+DEC-0157 supplerer DEC-0148–0156.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.375 komplet modelmetadataoverførsel
 
 - **REQ-4.0.375-ALL-METADATA-001 – IMPLEMENTERET LOKALT:** Alle gamle integrerede og Candidate G-bundlehashplaceringer i `conditions.json` skal migreres i samme gennemløb; kun eksakt genkendte bindinger, profiler og kompakte resultater accepteres.

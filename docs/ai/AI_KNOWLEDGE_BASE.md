@@ -1,3 +1,14 @@
+# 2026-09-15 – privacyvalidatorens label er en maskinlæsbar sti
+
+- `assertPublicRuntimePrivacy(value, path)` fortolker `path` som første del af
+  JSON-stien. Den må derfor ikke få en fri menneskelig beskrivelse.
+- De offentlige dokumentrødder er `startup`, `details` og `manifest`.
+  `flowPoints.current` og `flowPoints.wind` er kun godkendt under de to
+  offentlige runtimeprojektioner; andre koordinatpar afvises.
+- Den fælles generator validerer allerede alle tre dokumenter. Et ekstra
+  wrapperkald skal bruge præcis samme rødder og må ikke skabe en strengere,
+  utilsigtet navnevariant. DEC-0157.
+
 # 2026-09-15 – en modelbinding findes flere steder end rooten
 
 - En gemt produktionsruntime kan bære samme modelidentitet i rootbinding,

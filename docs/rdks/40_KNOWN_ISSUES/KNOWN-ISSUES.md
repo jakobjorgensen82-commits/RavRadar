@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – forkert privacy-rod afviser godkendt pilkoordinat
+
+- **ISSUE-4.0.374-PARTIAL-METADATA-MIGRATION – LUKKET:** Run `34939798892` beviste komplet rekursiv metadataoverførsel og atomisk privat installation.
+- **ISSUE-4.0.375-CODE-ONLY-PRIVACY-ROOT – RETTET LOKALT / LIVEBEVIS MANGLER:** Wrapperen brugte en menneskelig label som maskinlæsbar rod og afviste derfor godkendt `flowPoints.current`. 4.0.376 bruger `startup`, `details` og `manifest`; allowlisten er uændret.
+- **ISSUE-4.0.376-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen provider eller oneoff.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather køres først efter offentlig modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – gamle modelhashes ligger flere steder i runtime
 
 - **ISSUE-4.0.373-PRIVATE-CONDITIONS-SIZE – LUKKET:** Run `34934257354` passerede den autoritative private filgrænse og installerede den migrerede runtime.

@@ -1,3 +1,12 @@
+## 2026-09-15 lokal 4.0.376 – privacy-stier i code-only-projektionen
+
+- `public-conditions-lib.mjs` ejer den fælles offentlige coordinate-allowlist
+  og validerer dokumenterne under rødderne `startup`, `details` og `manifest`.
+- `prepare-code-only-public-runtime.mjs` genbruger nu præcis de samme rødder i
+  sine ekstra kontroller. Fri labeltekst er ikke en del af kontrakten.
+- `flowPoints.current`/`wind` til verificerede kortpile bevares; ukendte
+  koordinater, rå U/V og private state-/payloadfelter forbliver forbudt.
+
 ## 2026-09-15 lokal 4.0.375 – systemisk metadataoverførsel i gemt runtime
 
 - `migrate-post-cutover-private-runtime.mjs` går rekursivt gennem objekter og
