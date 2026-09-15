@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.371 låser den faktiske forgængerbinding
+
+- PR #312/sourcegate `34920862401` gav main `9b5c82a8`; run `34921173187` beviste stor restore/udpakning uden provider.
+- Migratorens næste kontrol havde tre forenklede fixturefelter og stoppede før runtime/Pages.
+- 4.0.371 matcher alle 11 faktiske `fa418f43`/livefelter og tester mod current plus gammel bundlehash. DEC-0152.
+
 # 2026-09-15 – 4.0.370 retter stor arkivudpakning og reel retry
 
 - PR #311/sourcegate `34918950377` gav main `329ce119`; code-only `34919375457` installerede migration 17 og lukkede anonym adgang uden provider.

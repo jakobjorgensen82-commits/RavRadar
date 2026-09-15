@@ -1,3 +1,9 @@
+## 2026-09-15 lokal 4.0.371 – eksakt binding-only migration
+
+- `migrate-post-cutover-private-runtime.mjs` forsegler forgængerens faktiske 11 felter; de ti kontraktfelter matcher current, mens kun `modelBundleSha256` går fra `327b…` til `6514…`.
+- `test-post-cutover-private-runtime-migration.mjs` sammenligner med den virkelige current-binding og ikke med en afledt kopi af predecessor-fixturen.
+- Stor restore, migration 16/17 og privacy er allerede livebevist/genbruges; næste run starter providerfrit gennem samme code-only-vej.
+
 ## 2026-09-15 lokal 4.0.370 – stor runtime restore
 
 - `protected-private-production-runtime.mjs` validerer base64 lineært og streamer decode → gunzip → størrelses/hash-transform → privat stagefil i 4 MiB inputbidder.

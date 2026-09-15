@@ -1,3 +1,11 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.371 eksakt forgængerbinding
+
+- **REQ-4.0.371-EXACT-BINDING-001 – IMPLEMENTERET LOKALT:** Alle 11 forgængerfelter skal matche `fa418f43` og liveartifactet; forenklede fixtureværdier er forbudt.
+- **REQ-4.0.371-INDEPENDENT-TEST-001 – IMPLEMENTERET LOKALT:** Testen binder forgængeren til den virkelige aktuelle kontrakt og tillader kun den dokumenterede gamle bundlehash; ingen selv-sammenligning.
+- **REQ-4.0.371-NO-REPEAT-001 – AKTIV:** Genbrug central version 1, migration 16/17, privacy og den livebeviste restore. Ingen provider/oneoff eller gentagelse af gammel cutover.
+
+DEC-0152 supplerer DEC-0148–0151.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.370 stor runtimegendannelse
 
 - **REQ-4.0.370-LINEAR-BASE64-001 – IMPLEMENTERET LOKALT:** Lange base64-felter valideres lineært uden regex-stack.

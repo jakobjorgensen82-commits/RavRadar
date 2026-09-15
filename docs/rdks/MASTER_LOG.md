@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.371 eksakt binding
+
+PR #312/sourcegate `34920862401` blev merged som main `9b5c82a8`.
+Code-only `34921173187` genbrugte central/migration/privacy og livebeviste stor
+restore/udpakning uden provider. Næste trin stoppede før writes på tre
+forenklede fixturefelter i forgængerbindingen.
+
+4.0.371 bruger den eksakte `fa418f43`/live 11-feltsbinding og tester den mod den
+virkelige aktuelle kontrakt med alene gammel bundlehash. DEC-0152.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.370 stor restore
 
 PR #311/sourcegate `34918950377` blev merged som main `329ce119`. Code-only

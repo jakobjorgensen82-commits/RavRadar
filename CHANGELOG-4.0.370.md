@@ -1,7 +1,7 @@
 # RavRadar 4.0.370 – stor privat runtime gendannes uden regex-stack
 
 **Dato:** 2026-09-15  
-**Status:** Lokal releasekandidat; exact-head PR-gate, merge og providerfri code-only mangler.
+**Status:** Merged som `9b5c82a8`; stor restore/udpakning livebevist. Efterfølgende bindingfixture afløst af 4.0.371/DEC-0152.
 
 ## Produktionsbevis før rettelsen
 

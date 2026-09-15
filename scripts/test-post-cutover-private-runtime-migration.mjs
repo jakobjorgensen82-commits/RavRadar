@@ -7,6 +7,7 @@ import {
   migratePostCutoverPrivateRuntime,
 } from './migrate-post-cutover-private-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 assert.equal(POST_CUTOVER_PREDECESSOR.sourceHead, 'fa418f43bbd070c446ed19b6587541b93af89599');
 assert.equal(POST_CUTOVER_PREDECESSOR.datasetId, 'rr-20260914180039-210');
@@ -15,7 +16,11 @@ assert.equal(POST_CUTOVER_PREDECESSOR.expectedPartCount, 673);
 assert.equal(PRIVATE_RUNTIME_FILES.length, 9);
 
 const previous = POST_CUTOVER_PREDECESSOR.modelBinding;
-const current = { ...previous, modelBundleSha256: 'f'.repeat(64) };
+const current = ravScoreModelBinding();
+assert.deepEqual(previous, {
+  ...current,
+  modelBundleSha256: '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01',
+}, 'The sealed predecessor must equal the real current 11-field contract except its old bundle hash');
 assert.doesNotThrow(() => assertBindingUpgrade(previous, current, 'fixture'));
 assert.throws(() => assertBindingUpgrade(previous, { ...current, modelId: 'changed' }, 'fixture'),
   /more than the implementation bundle hash/);

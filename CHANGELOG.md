@@ -1,9 +1,16 @@
-## 4.0.370 – strømmet restore af store private caches (2026-09-15, lokal kandidat)
+## 4.0.371 – eksakt forgængerbinding (2026-09-15, lokal kandidat)
+
+- PR #312/sourcegate `34920862401` gav main `9b5c82a8`; code-only `34921173187` beviste, at stor restore og udpakning nu virker uden provider.
+- Næste trin fandt tre forenklede fixturefelter i migratorens gamle 11-feltsbinding. De matchede hverken `fa418f43` eller liveartifactet.
+- Felterne er rettet, og testen sammenligner nu med den virkelige aktuelle kontrakt plus den kendte gamle bundlehash. Se `CHANGELOG-4.0.371.md` og DEC-0152.
+
+## 4.0.370 – strømmet restore af store private caches (2026-09-15, merged; restore livebevist)
 
 - PR #311/sourcegate `34918950377` gav main `329ce119`; code-only `34919375457` genbrugte beviset, installerede migration 17 og beviste anonym afvisning uden provider.
 - Runnet stoppede ved udpakning, og GitHub-errexit afbrød den tiltænkte retry efter første forsøg.
 - En 5 MiB regression reproducerede base64-regexens stackfejl. 4.0.370 bruger lineær syntakskontrol og strømmet decode/dekomprimering med størrelse/hash samt en reel tre-forsøgs-shell-løkke.
 - Migration 17 genbruges; næste code-only må have nul pending migrationer. Se `CHANGELOG-4.0.370.md` og DEC-0151.
+- PR #312/sourcegate `34920862401` gav main `9b5c82a8`; run `34921173187` beviste restore og udpakning. Den efterfølgende fixturebinding er afløst af 4.0.371/DEC-0152.
 
 ## 4.0.369 – sikker privat runtime-recovery (2026-09-15, merged; restore afløst af 4.0.370)
 

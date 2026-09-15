@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.371 eksakt forgængerbinding
+
+- [x] Bestå 4.0.370 sourcegate `34920862401`, merge PR #312 som main `9b5c82a8` og genbrug bevis/central/migration/privacy i `34921173187`.
+- [x] Livebevis stor private-runtime restore og udpakning uden provider.
+- [x] Afgræns næste stop til tre forkerte fixturefelter før runtime-, Pages- og completionwrites.
+- [x] Ret alle tre mod `fa418f43` og liveartifactets eksakte 11-feltsbinding; erstat selvbekræftende test med current-plus-old-bundle-bevis.
+- [ ] Målrettede slutkontroller, commit/push, én exact-head sourcegate og merge 4.0.371.
+- [ ] Providerfri code-only fra den beviste restore; publicér runtime/Pages og fuldfør central maintenance.
+- [ ] Derefter normal tidsbegrænset weather og numeriske score/rotation/cachebeviser. Ingen oneoff.
+
+DEC-0152 er aktiv. Migration 16/17 og alle allerede beståede trin genbruges.
+
 # Aktuel implementeringsstatus – lokal 4.0.370 stor privat restore
 
 - [x] Bestå 4.0.369 sourcegate `34918950377`, merge PR #311 som main `329ce119` og genbrug beviset i code-only `34919375457`.

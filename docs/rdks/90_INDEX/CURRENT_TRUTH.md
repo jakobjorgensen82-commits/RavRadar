@@ -1,3 +1,21 @@
+# NYESTE SANDHED – 2026-09-15 – stor restore virker; forgængerbinding rettet lokalt
+
+4.0.370 bestod sourcegate `34920862401` og blev merged gennem PR #312 som main
+`9b5c82a837198a1a5f7d6e11d2620cdd5ea77d4f`. Code-only-run `34921173187`
+genbrugte kildebeviset, central version 1, migration 16/17 og privacybeviset.
+Den store gemte private runtime blev gendannet og pakket ud korrekt uden
+provider. Dermed er 4.0.370-rodrettelsen livebevist.
+
+Runnet stoppede i næste trin før runtime/Pages, fordi
+`migrate-post-cutover-private-runtime.mjs` havde tre forenklede, opdigtede
+fixturefelter i den forseglede forgængerbinding. Den eksakte `fa418f43`-kilde
+og liveartifactet har de samme ti kontraktfelter som den aktuelle model; kun
+bundlehash `327b…`→`6514…` ændres.
+
+Lokal 4.0.371 retter de tre felter og binder testen til den virkelige aktuelle
+11-feltskontrakt med alene den gamle bundlehash udskiftet. Ingen migration,
+vejrdata, score eller provider. DEC-0152.
+
 # NYESTE SANDHED – 2026-09-15 – privacy er lukket; stor restore er rettet lokalt
 
 4.0.369 bestod exact-head sourcegate `34918950377` og blev merged gennem PR
