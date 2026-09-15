@@ -7,6 +7,8 @@
 - Den kendte 4.0.381-kilde kan repareres gennem en eksakt hash-, run-, artifact-
   og deploymentlåst politik. Kun den dokumenterede ene 404 accepteres som
   defekt kilde.
+- Gammel central binding og nyere offentlig 4.0.381-binding verificeres som to
+  separate fastlåste identiteter; normal drift kræver fortsat, at de er ens.
 - Central same-binding maintenance får det observerede offentlige source-id,
   så historikken igen kan følge den virkelige Pages-rækkefølge.
 - Resolverregressionen er samlet i den eksisterende code-only-kontrol, så

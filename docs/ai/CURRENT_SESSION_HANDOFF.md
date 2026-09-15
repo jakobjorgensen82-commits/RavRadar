@@ -18,6 +18,13 @@ afviste 25 direkte sourcekommandoer. Resolverregressionen er nu flyttet ind i
 den eksisterende code-only-test; både den og gateplanens 24-kommando-loft er
 grønne. Commit/push og ny exact-head mangler.
 
+PR #325/main `ee3de32b` er merged. Code-only `35033489693` stoppede tidligt
+og uden writes, fordi resolveren krævede central/offentlig same-binding før
+repairpolicy. Branch `codex/4.0.383-central-public-binding` låser nu central
+`70f45b3d...336f` og offentlig `398b1132...aaf` separat. Faktisk
+artifactkombination og gateplan er grønne; docs, commit/push og ny exact-head
+mangler.
+
 # HISTORISK CHECKPOINT – 2026-09-15 – 4.0.382 retter levende adminclosure
 
 4.0.381 er deployet fra main `d84773a7` i providerfri `35020915350` efter

@@ -25,6 +25,9 @@ registrere det offentlige skift. Den faktiske kilde har 78/79 filer; kun
   repository, run, attempt, commit, deployment-id, artifact-id/digest,
   artifact-seal, manifest, binding, implementation-closure og offentlig
   closure.
+- Den gamle centrale binding og den nyere offentlige 4.0.381-binding har hver
+  sit fastlåste fingeraftryk. De må kun være forskellige i denne eksakte
+  repairpolicy; normal source kræver fortsat samme binding.
 - Den kendte kilde skal stadig verificere alle 79 forventede filer. Kun den
   fastlåste gamle decodersti må være HTTP 404; de øvrige 78 skal være korrekte,
   og kontrollen må ikke læse private payloads.
@@ -45,3 +48,8 @@ offentlig 79/79-verifikation og central completion køres én almindelig,
 tidsbegrænset weather-kørsel for at bevise numeriske scorer, rotation og
 cachevedligeholdelse. Struktur 210/673 alene er stadig ikke datakomplethed.
 
+Første 4.0.383-forsøg `35033489693` stoppede før migration, private writes,
+artifact og Pages, fordi den første resolver fejlagtigt krævede samme binding
+før reparationspolitikken blev vurderet. Den centrale binding er
+`70f45b3d...336f`, mens offentlig 4.0.381 er `398b1132...aaf`. Den
+rettede resolver kræver nu begge eksakte identiteter særskilt.
