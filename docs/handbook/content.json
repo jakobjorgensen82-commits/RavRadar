@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.381",
+  "handbookVersion": "4.0.382",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-15",
   "sections": [
+    {
+      "id": "public-admin-browser-closure-4-0-382",
+      "chapter": "88.86",
+      "title": "4.0.382 – Hele hjemmesidens browserkode kontrolleres før deploy",
+      "summary": "Den integrerede model er online; 4.0.382 gendanner adminens ene manglende modul og kontrollerer færdig Pages-closure før upload.",
+      "body": "<p><strong>Status 15. september:</strong> 4.0.381 er offentlig med den integrerede model og 210/673-struktur. Administrationen mangler én decoderfil, og alle 210 zoner står endnu som score-utilgængelige.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.379 kaldte fejlagtigt decoderen ubrugt, selv om den offentlige adminside importerer den. Hele closurekortet gav 78 HTTP 200 og præcis én 404.</div><div class=\"handbook-stack\"><p>4.0.382 flytter den payloadfrie decoder til <code>js/services/protected-runtime-envelope.js</code>. Private runtimepayloads og komplette diagnostikdokumenter forbliver i beskyttet lager.</p><p>Både code-only og normal weather beregner nu browserclosure fra den færdige <code>_site</code> og kræver samme fingeraftryk som det forseglede mål. Closure- og privacykontrollen kører begge før deres fælles afgørelse. Den offentlige efterkontrol svækkes ikke.</p><p>4.0.382 leveres uden vejrprovider. Derefter køres én normal tidsbegrænset weather for numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.</p></div>"
+    },
     {
       "id": "contract-only-private-runtime-pages-first-4-0-381",
       "chapter": "88.85",
@@ -21,9 +28,9 @@
     {
       "id": "pages-artifact-internal-file-exclusions-4-0-379",
       "chapter": "88.83",
-      "title": "4.0.379 – Kun nødvendige filer i Pages",
-      "summary": "Tre interne, ubrugte filer udelades fra begge Pages-byggere uden at lempe privacykontrollen eller ændre vejrdata og score.",
-      "body": "<p><strong>Status 15. september:</strong> Lokal 4.0.379 er samlet. Exact-head og ny providerfri kodelevering afventer.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.378 bestod central modelbinding, privat restore og migration, offentlig genopbygning, 210/673-strukturkontrol samt privat specifikation og bundle. Før nye produktionswrites stoppede privacykontrollen på tre interne filer i Pages-pakken.</div><div class=\"handbook-stack\"><p><code>data/kystdata.json</code>, <code>data/zone-plan.json</code> og <code>js/services/runtime-diagnostics-archive.js</code> bruges ikke af den offentlige hjemmeside. De udelades nu fra både code-only- og normal-weather-byggeren. De slettes ikke fra repositoryet.</p><p>Den aktive <code>data/zones.geojson</code> og de nødvendige livefiler bevares. Privacyreglerne lempes ikke; de køres mod den mindre, korrekte Pages-pakke.</p><p>Ingen geometri, vejrdata, score, modeltilstand eller central runtime ændres af rettelsen. Næste bevis er én exact-head-kildekontrol og en ny providerfri kodelevering. Normal weather venter, til modellen er offentligt verificeret.</p></div>"
+      "title": "4.0.379 – Kun nødvendige filer i Pages (historisk, delvist rettet)",
+      "summary": "Geodataafgrænsningen var rigtig, men antagelsen om den offentligt importerede decoder blev rettet i 4.0.382.",
+      "body": "<p><strong>Historisk rettelse 15. september:</strong> 4.0.379 afgrænsede gammel kystdata og den interne zoneplan korrekt, men tog fejl af diagnostikdecoderen.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> Adminsiden importerede faktisk decoderen. Udeladelsen gav senere én offentlig 404, mens de øvrige 78 closurefiler svarede 200.</div><div class=\"handbook-stack\"><p>I 4.0.382 er den lille payloadfrie decoder flyttet til <code>js/services/protected-runtime-envelope.js</code>, og den gamle diagnostiksti er fjernet. Private payloads og komplette diagnostikdokumenter forbliver beskyttet.</p><p><code>data/kystdata.json</code> og <code>data/zone-plan.json</code> udelades fortsat. Den aktive <code>data/zones.geojson</code> og alle nødvendige livefiler bevares.</p><p>Privacyreglerne er ikke lempet. Hele browserclosure kontrolleres nu i den færdige Pages-pakke før upload og igen offentligt efter deploy.</p></div>"
     },
     {
       "id": "historical-private-runtime-binding-role-4-0-378",
@@ -490,7 +497,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.381 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.382 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },

@@ -1,6 +1,33 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.381
+**Håndbogsversion:** 4.0.382
+
+## 88.86 4.0.382 – Hele hjemmesidens browserkode kontrolleres før deploy
+
+### Aktuel status – RavScore 4.0.382 kode-only-rettelse
+
+**Status for det aktuelle modelarbejde – lokal 4.0.382 samlet, exact-head og deploy afventer**
+
+**Kort fortalt:** 4.0.381 kom online med den nye integrerede model. Hovedsiden
+og 78 browsermoduler findes, men administrationen mangler én decoderfil. Alle
+210 zoner står desuden endnu som score-utilgængelige, så 210 zoner og 673
+kystdele er ikke det samme som 210 fungerende scorer.
+
+Fejlen kom fra en forkert antagelse i 4.0.379: decoderfilen blev kaldt ubrugt,
+selv om den offentlige `admin.html` faktisk importerer den gennem
+admin-dashboardet. 4.0.382 flytter den lille payloadfrie decoder til en
+publicerbar sti. Private runtimefiler og komplette diagnostikdokumenter bliver
+fortsat i det beskyttede lager.
+
+Begge produktionsveje kontrollerer nu den færdige hjemmesidepakke, ikke kun
+repositorykoden. Alle forventede browsermoduler skal findes med de rigtige
+fingeraftryk, og privacykontrollen køres også, før pakken kan uploades. Det er
+en hurtig og relevant kontrol af, om hjemmesiden faktisk kan åbne; den hårde
+offentlige efterkontrol bevares.
+
+4.0.382 leveres uden vejrprovider. Når adminclosure og central status er
+verificeret, køres én almindelig tidsbegrænset vejrkørsel for at få og bevise
+numeriske input, scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
 
 ## 88.85 4.0.381 – Uændret model genbruges, og sikker kode går online først
 
@@ -63,7 +90,7 @@ modeltilstande og de øvrige private filer skal være uændrede. Den gamle
 forseglede Pages-kilde findes stadig, så næste trin er en kort providerfri
 kodelevering. Normal weather køres først bagefter; der køres ingen oneoff.
 
-## 88.83 4.0.379 – Kun nødvendige filer i Pages
+## 88.83 4.0.379 – Kun nødvendige filer i Pages (historisk, delvist rettet)
 
 ### Status for 4.0.379
 
@@ -75,11 +102,12 @@ gendannelse af den private cache, modelmigration, offentlig genopbygning,
 den samlede kontrol før nye produktionswrites, fordi Pages-pakken indeholdt tre
 interne filer, som den offentlige hjemmeside ikke bruger.
 
-De tre filer er gammel kystdata, den interne zoneplan og adminværktøjets
-diagnostikdecoder. De bliver nu udeladt fra Pages-pakken i både den direkte
-kodelevering og den normale vejrhentning. Filerne slettes ikke fra repositoryet,
-og den aktive offentlige zonefil `data/zones.geojson` samt de nødvendige
-livefiler bliver fortsat leveret.
+Den daværende konklusion var rigtig for gammel kystdata og den interne
+zoneplan, men forkert for diagnostikdecoderen. Adminsiden importerede faktisk
+decoderen, og udeladelsen gav senere én offentlig 404. I 4.0.382 er den lille
+payloadfrie decoder flyttet til `protected-runtime-envelope.js`, mens den gamle
+diagnostiksti er fjernet. Den aktive offentlige zonefil `data/zones.geojson`
+og de øvrige nødvendige livefiler bliver fortsat leveret.
 
 Privacykontrollen er ikke gjort mildere. Den kontrollerer den mindre, korrekte
 Pages-pakke med de samme regler som før. Rettelsen ændrer ingen geometri,
@@ -3327,7 +3355,7 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 Den offentlige 4.0.365-runtime blev bygget som én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Den integrerede model er offentlig; 4.0.375 skal føre den gemte private runtime frem uden ny providerhentning, før numeriske scorer og efterfølgende normal vejrhentning kan verificeres.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.381 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.382 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Begge skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 

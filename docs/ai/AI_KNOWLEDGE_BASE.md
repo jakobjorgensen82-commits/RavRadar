@@ -1,3 +1,17 @@
+# 2026-09-15 – privacyfilnavn må ikke forveksles med ubrugt browserkode
+
+- `admin.html` er et offentligt entrypoint, og hele dets statiske importclosure
+  skal findes i den færdige Pages-pakke.
+- En payloadfri decoder kan være nødvendig offentlig kode, selv om den læser
+  et beskyttet dokument efter login. Det gør ikke det beskyttede dokument
+  offentligt.
+- Beregn closure fra den færdige `_site`, ikke kun repositoryroden, og
+  sammenlign med den forseglede målclosure før upload.
+- Kør closure- og privacykontrol begge to og afgør dem samlet. 4.0.381's hårde
+  efterkontrol fangede en reel defekt adminside og skal ikke svækkes.
+- Offentlig integreret modelbinding og 210/673-inventar kan eksistere med
+  `activeZoneCount=0`; det må ikke beskrives som fungerende scorer. DEC-0164.
+
 # 2026-09-15 – samme model med ny kodekontrakt er genbrug, ikke en fejl
 
 - `35016734197` beviste, at pointerens actual current kan have samme

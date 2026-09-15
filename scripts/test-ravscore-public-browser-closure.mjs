@@ -11,6 +11,10 @@ import {
 
 const baseline = await computeRavScorePublicBrowserClosure();
 assertRavScorePublicBrowserClosure(baseline.manifest);
+assert.ok(baseline.manifest.files.some(item => item.path === 'js/services/protected-runtime-envelope.js'),
+  'the public admin closure must include its protected runtime envelope decoder');
+assert.ok(!baseline.manifest.files.some(item => item.path === 'js/services/runtime-diagnostics-archive.js'),
+  'the retired diagnostics-named path must not remain in the public browser closure');
 const [integratedContractText, integratedBundleText] = await Promise.all([
   fs.readFile('js/core/ravscore-model-contract.js', 'utf8'),
   fs.readFile('js/core/ravscore-model-bundle.generated.js', 'utf8'),

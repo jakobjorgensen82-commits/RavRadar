@@ -1,3 +1,13 @@
+## 2026-09-15 4.0.382 – artifactets browserclosure er en deploykontrakt
+
+- Repositoryclosure og færdig Pages-closure er to forskellige beviser.
+- Code-only og normal weather genberegner closure fra `_site` og kræver samme
+  manifest som målclosure før upload.
+- `admin.html` er en eksplicit offentlig executable entrypoint. Dets decoder er
+  payloadfri browserkode; private runtimepayloads forbliver i beskyttet lager.
+- Offentlig efterkontrol forbliver hård og central kode-only-maintenance ligger
+  fortsat efter verificeret Pages. DEC-0164.
+
 ## 2026-09-15 lokal 4.0.381 – contract-only private-runtime-efterfølger og Pages først
 
 - Actual-current kan følge to eksakte veje: modelbundlehashmigration eller

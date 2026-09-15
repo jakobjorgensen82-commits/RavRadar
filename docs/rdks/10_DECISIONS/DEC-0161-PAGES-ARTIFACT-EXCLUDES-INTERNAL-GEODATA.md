@@ -1,6 +1,6 @@
 # DEC-0161 – Pages indeholder kun nødvendig offentlig geodata
 
-**Status:** Aktiv; 4.0.379 artifact- og privacybevist, live Pages afventer 4.0.380
+**Status:** Delvist erstattet af DEC-0164. Geodataafgrænsningen består; decoderkonklusionen var forkert.
 **Dato:** 2026-09-15
 
 ## Evidens
@@ -12,11 +12,13 @@ binding, privat restore/migration/installation, offentlig genopbygning,
 beslutning stoppede før de efterfølgende private, Edge- og Pages-writes, fordi
 privacy-auditen fandt fire udslag med én årsag.
 
-Pages-pakken kopierede tre repositoryfiler, som den offentlige hjemmeside ikke
-bruger: `data/kystdata.json`, `data/zone-plan.json` og
+Pages-pakken kopierede tre repositoryfiler, som privacykontrollen afviste:
+`data/kystdata.json`, `data/zone-plan.json` og
 `js/services/runtime-diagnostics-archive.js`. De to JSON-filer indeholder
-interne/ældre koordinatfelter. Decoderfilen er kun importeret af det udeladte
-admin-dashboard, og filnavnet er med rette diagnostikklassificeret.
+interne/ældre koordinatfelter. Den daværende konklusion om decoderfilen var
+forkert: admin-dashboardet er et offentligt entrypoint og importerede filen.
+4.0.381's live-404 og DEC-0164 retter denne del uden at gøre private payloads
+offentlige.
 
 ## Beslutning
 

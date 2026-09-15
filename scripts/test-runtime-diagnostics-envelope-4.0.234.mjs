@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildRuntimeDiagnosticsEnvelope } from './lib/runtime-diagnostics-envelope.mjs';
-import { decodeRuntimeDiagnosticsEnvelope, hasProtectedRuntimeArchive } from '../js/services/runtime-diagnostics-archive.js';
+import { decodeRuntimeDiagnosticsEnvelope, hasProtectedRuntimeArchive } from '../js/services/protected-runtime-envelope.js';
 
 const fixture = {
   schemaVersion: 7,

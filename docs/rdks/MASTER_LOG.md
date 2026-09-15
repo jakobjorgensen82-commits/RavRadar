@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.382 lukker adminclosure
+
+4.0.381 sourcegate `35019932207`, PR #323 og main `d84773a7` er grønne.
+Providerfri `35020915350` bestod contract-only-genbinding, private/Edge-led og
+Pages-deploy. Den offentlige side viser integreret 4.0.381, men efterkontrollen
+fandt den eneste manglende fil i 79-modulers browserclosure: adminens decoder.
+
+4.0.382 flytter kun den payloadfrie decoder til en publicerbar sti og
+preflight-beviser den færdige `_site` mod den forseglede closure på begge
+produktionsveje. Privacy og hard public verification bevares. 0/210 aktive
+scorezoner er fortsat et ærligt driftsproblem til normal weather efter den
+providerfri rettelse. DEC-0164.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.381 contract-only og Pages først
 
 4.0.380 sourcegate `35015984953`, PR #322 og main `de8ae966` er grønne.

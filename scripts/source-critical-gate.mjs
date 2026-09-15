@@ -72,7 +72,16 @@ for (const publicWorkflow of [buildWorkflow, codeOnlyWorkflow]) {
     assert.ok(publicWorkflow.includes(excluded),
       `Pages-pakken mangler privacy-eksklusionen ${excluded}.`);
   }
+  assert.ok(publicWorkflow.includes('--root _site')
+    && publicWorkflow.includes('pages-public-closure.json')
+    && publicWorkflow.includes('cmp -s'),
+  'Pages-pakken skal bevises komplet mod sin forseglede browserclosure før upload.');
 }
+const adminDashboard = read('js/ui/admin-dashboard.js');
+assert.ok(adminDashboard.includes(`../services/protected-runtime-envelope.js?v=${version}`),
+  'Det offentlige admin-dashboard mangler den publicerbare runtime-envelope-decoder.');
+assert.ok(!adminDashboard.includes('runtime-diagnostics-archive.js'),
+  'Det offentlige admin-dashboard må ikke importere den udeladte diagnostics-sti.');
 for (const marker of [
   'workflow_dispatch:',
   'DEPLOY-CODE-ONLY-REPAIR',

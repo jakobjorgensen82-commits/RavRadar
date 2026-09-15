@@ -1,5 +1,15 @@
 # AI Working Rules – RavRadar
 
+## Aktuel 4.0.382 Pages-closure-regel
+
+- En fil må ikke kaldes offentlig ubrugt, før alle HTML-entrypoints og deres
+  transitive statiske imports er kortlagt.
+- Før Pages-upload skal den færdige `_site` have samme closuremanifest som det
+  forseglede mål. Kør closure og privacy begge; en reel 404 eller privacyfejl
+  må blokere, men efterfølgende bookkeeping må ikke flyttes foran sikker Pages.
+- Skeln model online fra score klar: 210/673 struktur med 0/210 aktive zoner er
+  ikke fungerende numeriske scorer.
+
 ## Aktuel lokal 4.0.343 scheduler-/ownerregel
 
 - Behandl hele unionens reelle mangler, ikke kun en providers egne huller. Alle uløste kritiske DMI-familier og begge Copernicus-produkter skal kunne bevise en bounded startmulighed.
