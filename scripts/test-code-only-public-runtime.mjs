@@ -118,6 +118,25 @@ for (const marker of [
   'Protected predecessor restore attempt $attempt of 3 failed.',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+const privateRuntimeSpecStart = workflow.indexOf(
+  '- name: Build current private production runtime specification',
+);
+const privateRuntimeSpecEnd = workflow.indexOf('\n      - name:', privateRuntimeSpecStart + 1);
+const privateRuntimeSpec = workflow.slice(privateRuntimeSpecStart, privateRuntimeSpecEnd);
+assert.ok(privateRuntimeSpec.includes('--dmi-bulk data/live/dmi-bulk-cache.json'),
+  'Code-only skal genpakke den installerede kanoniske DMI-cache');
+assert.ok(!privateRuntimeSpec.includes('.cache/dmi-candidate-progress.json'),
+  'Code-only må ikke kræve en midlertidig DMI-kandidat fra en vejrhentning');
+const privateRuntimePublishStart = workflow.indexOf('- name: Publish current bounded private runtime');
+const privateRuntimePublishEnd = workflow.indexOf('\n      - name:', privateRuntimePublishStart + 1);
+const privateRuntimePublish = workflow.slice(privateRuntimePublishStart, privateRuntimePublishEnd);
+for (const marker of [
+  'steps.current-private-install.outcome',
+  'steps.migrated-private-install.outcome',
+  '--same-reference-migration-report .geometry-v2-work/post-cutover-private-runtime-migration.json',
+  '--same-reference-predecessor-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"',
+]) assert.ok(privateRuntimePublish.includes(marker),
+  `Code-only-private-runtimepublicering mangler ${marker}`);
 
 const preparationSource = fs.readFileSync(
   'scripts/prepare-code-only-public-runtime.mjs',

@@ -241,9 +241,14 @@ async function atomicWriteJson(file, value) {
   const target = path.resolve(file);
   await fs.mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
+  const text = `${JSON.stringify(value, null, 2)}\n`;
   try {
-    await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
+    await fs.writeFile(temporary, text, { flag: 'wx' });
     await fs.rename(temporary, target);
+    return {
+      bytes: Buffer.byteLength(text),
+      sha256: crypto.createHash('sha256').update(text).digest('hex'),
+    };
   } catch (error) {
     await fs.rm(temporary, { force: true }).catch(() => {});
     throw error;
@@ -543,6 +548,7 @@ export async function migratePostCutoverPrivateRuntime({
   });
 
   const temporary = `${output}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
+  let migratedConditionsDigest;
   try {
     await fs.mkdir(temporary, { recursive: false });
     for (const descriptor of PRIVATE_RUNTIME_FILES) {
@@ -551,7 +557,10 @@ export async function migratePostCutoverPrivateRuntime({
       await fs.mkdir(path.dirname(to), { recursive: true });
       await fs.copyFile(from, to, fs.constants.COPYFILE_EXCL);
     }
-    await atomicWriteJson(path.join(temporary, 'data/live/conditions.json'), result.migrated);
+    migratedConditionsDigest = await atomicWriteJson(
+      path.join(temporary, 'data/live/conditions.json'),
+      result.migrated,
+    );
     for (const descriptor of PRIVATE_RUNTIME_FILES.filter(item => item.id !== 'full-conditions')) {
       const [before, after] = await Promise.all([
         fs.readFile(path.join(source, descriptor.relativePath)),
@@ -582,6 +591,8 @@ export async function migratePostCutoverPrivateRuntime({
     migratedPartCount: result.partCount,
     changedBindingFieldCount: result.changedPaths.length,
     copiedPrivateFileCount: PRIVATE_RUNTIME_FILES.length,
+    migratedConditionsBytes: migratedConditionsDigest.bytes,
+    migratedConditionsSha256: migratedConditionsDigest.sha256,
     measurementsChanged: false,
     candidateStatesChanged: false,
     privatePayloadIncluded: false,

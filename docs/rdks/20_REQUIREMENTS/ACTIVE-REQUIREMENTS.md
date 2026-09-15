@@ -1,3 +1,12 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.377 kanonisk cache og privat efterfølger
+
+- **REQ-4.0.377-CANONICAL-DMI-001 – IMPLEMENTERET LOKALT:** Code-only-specifikationen skal læse den installerede `data/live/dmi-bulk-cache.json`, aldrig acquisitionens midlertidige kandidatfil.
+- **REQ-4.0.377-SAME-REFERENCE-001 – BINDENDE:** En ny privat bundle på samme `productionReferenceAt` må kun publiceres over den eksakte current-forgænger med fuldt migrations-, manifest-, fil-, state- og målingsbevis.
+- **REQ-4.0.377-NO-DATA-CHANGE-001 – BINDENDE:** De otte øvrige private filer skal være byteidentiske; målinger og Candidate G-states må ikke ændres; `conditions.json` skal matche rapporteret byteantal/hash.
+- **REQ-4.0.377-NO-REPEAT-001 – AKTIV:** Genbrug central version 1, migration 16/17 og eksisterende runtime. Ingen provider, oneoff eller almindelig weather før offentlig modelverifikation.
+
+DEC-0158 supplerer DEC-0148–0157.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.376 kanonisk privacy-rod
 
 - **REQ-4.0.376-PRIVACY-ROOT-001 – IMPLEMENTERET LOKALT:** Code-only-wrapperens privacykald skal bruge de maskinlæsbare rødder `startup`, `details` og `manifest`, ikke frie beskrivelser.

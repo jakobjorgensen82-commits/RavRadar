@@ -8,6 +8,7 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   canonicalPrivateRuntimeJson,
   createPrivateProductionRuntimeBundle,
+  privateRuntimeBundleContentSha256,
   verifyPrivateProductionRuntimeBundle,
 } from './private-production-runtime-bundle.mjs';
 import {
@@ -23,6 +24,7 @@ import {
   createProtectedPrivateRuntimeClients,
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
+  validateSameReferencePrivateRuntimeSuccessor,
 } from './protected-private-production-runtime.mjs';
 
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -475,6 +477,88 @@ try {
   assert.equal(equivalent.published, false);
   assert.equal(documents.row().version, 1);
   assert.equal(storage.downloads(), 2, 'idempotent publication verifies the one referenced object once');
+
+  await assert.rejects(
+    publishProtectedPrivateProductionRuntime({
+      privateRoot,
+      bundlePath: first.bundlePath,
+      repositoryRoot: repository,
+      expected: first.expected,
+      now: '2026-08-29T11:05:00.000Z',
+      sourceHead: SOURCE_HEADS[1],
+      request: documents.request,
+      storage: storage.client,
+    }),
+    /conflicts at the same production reference/,
+    'A same-reference change must remain rejected without exact migration evidence',
+  );
+
+  const predecessorManifest = JSON.parse(await fs.readFile(
+    path.join(first.bundlePath, 'manifest.json'),
+    'utf8',
+  ));
+  const successorBinding = {
+    ...predecessorManifest.modelBinding,
+    modelBundleSha256: 'f'.repeat(64),
+  };
+  const successorContractHashes = Object.fromEntries(
+    Object.keys(predecessorManifest.contractHashes).map((key, index) => [
+      key,
+      String(index + 4).repeat(64),
+    ]),
+  );
+  const successorManifest = clone(predecessorManifest);
+  successorManifest.modelBinding = successorBinding;
+  successorManifest.contractHashes = successorContractHashes;
+  const successorConditions = successorManifest.files.find(file => file.id === 'full-conditions');
+  successorConditions.bytes += 128;
+  successorConditions.sha256 = '9'.repeat(64);
+  successorManifest.bundleContentSha256 = privateRuntimeBundleContentSha256(successorManifest);
+  const predecessorDescriptor = documents.row().payload.current;
+  const successorDescriptor = {
+    ...predecessorDescriptor,
+    sourceHead: SOURCE_HEADS[1],
+    modelBinding: successorBinding,
+    contractHashes: successorContractHashes,
+    bundleContentSha256: successorManifest.bundleContentSha256,
+    objectSha256: '8'.repeat(64),
+  };
+  const migrationReport = {
+    schemaVersion: 1,
+    kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION',
+    predecessorSourceHead: predecessorDescriptor.sourceHead,
+    datasetId: predecessorDescriptor.datasetId,
+    sourceBundleContentSha256: predecessorDescriptor.bundleContentSha256,
+    previousIntegratedBundleSha256: predecessorManifest.modelBinding.modelBundleSha256,
+    currentIntegratedBundleSha256: successorBinding.modelBundleSha256,
+    previousCandidateBundleSha256: '6'.repeat(64),
+    currentCandidateBundleSha256: '7'.repeat(64),
+    previousContractHashes: predecessorManifest.contractHashes,
+    currentContractHashes: successorContractHashes,
+    candidateRuntimeKind: 'ravScoreCandidateGWarmup',
+    migratedPartCount: 673,
+    changedBindingFieldCount: 680,
+    copiedPrivateFileCount: 9,
+    migratedConditionsBytes: successorConditions.bytes,
+    migratedConditionsSha256: successorConditions.sha256,
+    measurementsChanged: false,
+    candidateStatesChanged: false,
+    privatePayloadIncluded: false,
+  };
+  assert.equal(validateSameReferencePrivateRuntimeSuccessor({
+    existingDescriptor: predecessorDescriptor,
+    successorDescriptor,
+    predecessorManifest,
+    successorManifest,
+    migrationReport,
+  }), true);
+  assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({
+    existingDescriptor: predecessorDescriptor,
+    successorDescriptor,
+    predecessorManifest,
+    successorManifest,
+    migrationReport: { ...migrationReport, measurementsChanged: true },
+  }), /successor evidence is invalid/);
 
   const restoreBundle = path.join(restoreRoot, 'bundle-first');
   const downloadsBeforeCurrentRestore = storage.downloads();

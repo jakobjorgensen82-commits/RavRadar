@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.377 kanonisk DMI-cache
+
+Main er `3144c557` efter PR #318/sourcegate `34941640752`. Providerfri
+code-only `34942127741` kom gennem privat restore/migration/installation,
+offentlig genopbygning og 210/673-audit. Den stoppede før privat publicering og
+Pages, fordi specifikationen pegede på en midlertidig DMI-kandidatfil. Den
+komplette cache lå korrekt i `data/live/dmi-bulk-cache.json`.
+
+Branch `codex/4.0.377-code-only-installed-dmi-cache` bruger den installerede
+kanoniske cache. Samme-reference-private-publicering får kun lov med det eksakte
+migrationsbevis, samme ni-fils inventar, byteidentiske øvrige filer og
+uændrede målinger/states. Måltests er grønne. Næste: docs/geodatadiff,
+commit/push, én exact-head sourcegate, merge og providerfri code-only; derefter
+livekontrol og normal tidsbegrænset weather. Ingen oneoff. DEC-0158.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.376 privacy-rod
 
 Main er `e95339e5` efter PR #317/sourcegate `34939186051`. Providerfri

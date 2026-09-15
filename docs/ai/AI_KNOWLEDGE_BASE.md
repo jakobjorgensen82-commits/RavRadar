@@ -1,3 +1,15 @@
+# 2026-09-15 – code-only skal bruge installerede kanoniske cachefiler
+
+- En midlertidig acquisitionfil er ikke en runtimeautoritet. Efter beskyttet
+  restore og atomisk installation skal efterfølgende code-only-trin læse den
+  kanoniske fil under `data/live`.
+- `34942127741` beviste offentlig genopbygning og 210/673 uden provider; DMI var
+  ikke manglende, men blev slået op på det forkerte midlertidige filnavn.
+- To private bundles med samme vejrtid er fortsat en konflikt som standard. En
+  modelmetadataefterfølger kræver eksakt forgængerpointer, ni-fils manifest,
+  byteidentiske øvrige filer, uændrede målinger/states og hashbundet migreret
+  `conditions.json`. DEC-0158.
+
 # 2026-09-15 – privacyvalidatorens label er en maskinlæsbar sti
 
 - `assertPublicRuntimePrivacy(value, path)` fortolker `path` som første del af

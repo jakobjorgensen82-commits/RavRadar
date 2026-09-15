@@ -1,3 +1,13 @@
+## 2026-09-15 lokal 4.0.377 – kanonisk code-only-cache og samme-tids-efterfølger
+
+- Code-only-restore installerer DMI i `data/live/dmi-bulk-cache.json`; den
+  private runtime-specifikation læser samme kanoniske sti og er uafhængig af
+  acquisitionens midlertidige `.cache`-fil.
+- Migratoren attesterer den skrevne `conditions.json` med bytes og SHA-256.
+- Den beskyttede publicering kan kun erstatte den eksakte current-forgænger ved
+  samme `productionReferenceAt`, når hele migrationsrapporten, forgængermanifestet,
+  ni-fils inventaret og uændrede målinger/states matcher. Ellers fail-closed.
+
 ## 2026-09-15 lokal 4.0.376 – privacy-stier i code-only-projektionen
 
 - `public-conditions-lib.mjs` ejer den fælles offentlige coordinate-allowlist
