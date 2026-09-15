@@ -579,7 +579,7 @@ jobs:
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-spec
           --repository-root "$GITHUB_WORKSPACE"
-          --dmi-bulk .cache/dmi-candidate-progress.json
+          --dmi-bulk data/live/dmi-bulk-cache.json
           --output .cache/private-production-runtime-create-spec.json
 
       - name: Create current private runtime bundle atomically
@@ -608,13 +608,24 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Publish current bounded private runtime
-        run: >-
-          node scripts/protected-private-production-runtime.mjs --publish
-          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-          --repository-root "$GITHUB_WORKSPACE"
-          --expected .cache/private-production-runtime-expected.json
-          --source-head "$GITHUB_SHA"
+        shell: bash
+        run: |
+          set -euo pipefail
+          same_reference_args=()
+          if test "${{ steps.current-private-install.outcome }}" != "success"; then
+            test "${{ steps.migrated-private-install.outcome }}" = "success"
+            same_reference_args=(
+              --same-reference-migration-report .geometry-v2-work/post-cutover-private-runtime-migration.json
+              --same-reference-predecessor-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
+            )
+          fi
+          node scripts/protected-private-production-runtime.mjs --publish \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected .cache/private-production-runtime-expected.json \
+            --source-head "$GITHUB_SHA" \
+            "${same_reference_args[@]}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

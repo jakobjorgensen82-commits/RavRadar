@@ -1,3 +1,9 @@
+## 4.0.377 – kanonisk DMI-cache og eksakt runtimeefterfølger (2026-09-15, lokal kandidat)
+
+- PR #318/sourcegate `34941640752` gav main `3144c557`; providerfri code-only `34942127741` gennemførte restore, komplet migration, offentlig genopbygning og 210/673-audit.
+- Runnet stoppede før privat publicering og Pages, fordi specifikationen læste DMI fra en midlertidig kandidatfil trods en komplet installeret kanonisk cache.
+- 4.0.377 bruger `data/live/dmi-bulk-cache.json` og tillader kun en ny privat bundle på samme vejrtid med eksakt forgænger-, migrations-, fil-, state- og målingsattestation. Se `CHANGELOG-4.0.377.md` og DEC-0158.
+
 ## 4.0.376 – korrekt privacy-rod i code-only-genopbygningen (2026-09-15, lokal kandidat)
 
 - PR #317/sourcegate `34939186051` gav main `e95339e5`; code-only `34939798892` beviste hele 4.0.375-migrationen og installationen af den gemte private runtime uden provider.

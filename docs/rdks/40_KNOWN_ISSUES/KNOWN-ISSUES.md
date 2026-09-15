@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-15 – kanonisk DMI-cache og samme-reference-publicering
+
+- **ISSUE-4.0.375-PRIVACY-ROOT – LUKKET:** Run `34942127741` gennemførte offentlig genopbygning og 210/673-audit med de kanoniske privacyrødder.
+- **ISSUE-4.0.376-CODE-ONLY-DMI-PATH – RETTET LOKALT / LIVEBEVIS MANGLER:** Komplet DMI-cache var installeret, men specifikationen læste den midlertidige acquisitionsti. 4.0.377 bruger `data/live/dmi-bulk-cache.json`.
+- **ISSUE-4.0.376-SAME-REFERENCE-PRIVATE-SUCCESSOR – RETTET LOKALT / LIVEBEVIS MANGLER:** En ændret privat bundle med samme vejrtid afvises fortsat, medmindre eksakt forgænger- og migrationsbevis dokumenterer uændrede data/states og kun godkendt metadataoverførsel.
+- **ISSUE-4.0.377-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen provider eller oneoff.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather køres først efter offentlig modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – forkert privacy-rod afviser godkendt pilkoordinat
 
 - **ISSUE-4.0.374-PARTIAL-METADATA-MIGRATION – LUKKET:** Run `34939798892` beviste komplet rekursiv metadataoverførsel og atomisk privat installation.

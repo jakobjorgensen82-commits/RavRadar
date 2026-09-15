@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.377 kanonisk DMI-cache
+
+- [x] Bestå 4.0.376 sourcegate `34941640752` og merge PR #318 som main `3144c557`.
+- [x] Livebevis i `34942127741` for restore, komplet migration, privat installation, offentlig genopbygning og 210/673-audit uden provider.
+- [x] Afgræns stoppet til specifikationens midlertidige DMI-sti; den installerede kanoniske cache er komplet og blev ikke læst.
+- [x] Brug `data/live/dmi-bulk-cache.json` og bind samme-reference-efterfølgeren til eksakt forgænger-, migrations-, fil-, state- og målingsattestation.
+- [x] Målrettede code-only-, migration- og protected-runtime-tests er grønne.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.377.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0158 er aktiv. Gentag ikke provider, oneoff eller allerede beståede cutovertrin.
+
 # Aktuel implementeringsstatus – lokal 4.0.376 kanonisk privacy-rod
 
 - [x] Bestå 4.0.375 sourcegate `34939186051` og merge PR #317 som main `e95339e5`.

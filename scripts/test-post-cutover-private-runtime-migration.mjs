@@ -199,6 +199,8 @@ for (const marker of [
   'measurementsChanged: false',
   'candidateStatesChanged: false',
   'privatePayloadIncluded: false',
+  'migratedConditionsBytes:',
+  'migratedConditionsSha256:',
   'Private runtime inventory is not the exact nine-file allowlist',
   'Private runtime migration changed forbidden paths',
   'raw Git archive is therefore not a byte-identical reconstruction',

@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-15 – cache var komplet; code-only brugte forkert filsti
+
+4.0.376 bestod exact-head sourcegate `34941640752`, blev merged gennem PR #318
+som main `3144c5571af8008529169e3b2ab87797c805e3f5`, og providerfri code-only
+`34942127741` gennemførte privat restore, komplet metadataoverførsel, atomisk
+installation, offentlig genopbygning og den samlede 210/673-runtimeaudit.
+Ingen provider, oneoff eller normal weather kørte.
+
+Runnet stoppede før ny privat publicering og Pages. DMI-cachen manglede ikke:
+den var installeret i `data/live/dmi-bulk-cache.json`, mens specifikationen
+fejlagtigt læste den midlertidige `.cache/dmi-candidate-progress.json`.
+Lokal 4.0.377 bruger den kanoniske fil. Samtidig tillades en ny privat bundle
+på samme vejrtid kun med eksakt forgænger- og migrationsbevis, uændrede
+målinger/states, byteidentiske øvrige filer og hashbundet `conditions.json`.
+DEC-0158.
+
+Næste: målrettet slutkontrol, commit/push, én exact-head sourcegate, merge og
+providerfri code-only. Derefter central/offentlig verifikation og først så
+normal tidsbegrænset weather for numeriske scorer, rotation og cache. Ingen
+oneoff.
+
 # NYESTE SANDHED – 2026-09-15 – metadataoverførsel virker; forkert privacy-rod rettet
 
 4.0.375 bestod exact-head sourcegate `34939186051`, blev merged gennem PR #317

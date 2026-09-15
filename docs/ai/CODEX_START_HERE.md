@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.377 bruger installeret DMI-cache
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.377-code-only-installed-dmi-cache`; remote main er `3144c557` efter
+PR #318/sourcegate `34941640752`. Providerfri code-only `34942127741` bestod
+restore, komplet metadataoverførsel, privat installation, offentlig
+genopbygning og 210/673-audit. Ingen provider, oneoff eller normal weather
+kørte.
+
+Runnet stoppede før ny privat publicering og Pages, fordi specifikationen søgte
+DMI i den midlertidige `.cache/dmi-candidate-progress.json` fremfor den allerede
+installerede `data/live/dmi-bulk-cache.json`. 4.0.377 bruger den kanoniske fil
+og kræver et eksakt migrationsbevis ved ny privat bundle på samme vejrtid:
+uændrede målinger/states, byteidentiske øvrige filer og kun godkendt
+modelmetadataændring. Fortsæt: målrettet slutkontrol → commit/push → én
+exact-head sourcegate → merge → providerfri code-only → livekontrol → separat
+normal weather. Ingen oneoff. DEC-0158. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.376 kanonisk privacy-rod
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

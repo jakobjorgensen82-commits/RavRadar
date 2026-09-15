@@ -1,4 +1,18 @@
-# AI Roadmap – RavRadar 4.0.376 code-only og normal drift – opdateret 2026-09-15
+# AI Roadmap – RavRadar 4.0.377 code-only og normal drift – opdateret 2026-09-15
+
+## Aktuel releasehale – 4.0.377 installeret DMI-cache
+
+1. [x] Merge 4.0.376 via PR #318 efter sourcegate `34941640752`.
+2. [x] Livebevis i `34942127741` for restore, komplet migration, atomisk installation, offentlig genopbygning og 210/673-audit uden provider.
+3. [x] Afgræns stoppet til forkert midlertidig DMI-sti og gennemgå næste samme-reference-publicering systemisk.
+4. [x] Brug kanonisk DMI-cache og bind samme-tids-efterfølgeren til eksakt migrations-, fil-, state- og målingsbevis.
+5. [ ] Forsegl docs/version/geodatadiff, commit/push og bestå én exact-head sourcegate.
+6. [ ] Merge samme head og kør providerfri code-only til privat runtime, Pages og central completion.
+7. [ ] Verificér levende 4.0.377, 210/673/118, begge søgemåder, Om RavRadar og nul private lækager.
+8. [ ] Genaktivér normal weather kontrolleret og bevis numeriske input/scorer, DMI-rotation og cachevedligeholdelse uden oneoff.
+9. [ ] Gennemgå hele siden og revurder resten af roadmap mod faktisk produktion.
+
+Ingen provider eller oneoff indgår før det offentlige code-only-deploy er verificeret.
 
 ## Aktuel releasehale – 4.0.376 kanonisk privacy-rod
 

@@ -13,6 +13,7 @@ import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   PRIVATE_RUNTIME_REPOSITORY_ROOT,
   canonicalPrivateRuntimeJson,
+  privateRuntimeBundleContentSha256,
   verifyPrivateProductionRuntimeBundle,
 } from './private-production-runtime-bundle.mjs';
 import {
@@ -112,6 +113,28 @@ const ARCHIVE_KEYS = Object.freeze([
 ]);
 const ARCHIVE_FILE_KEYS = Object.freeze(['path', 'bytes', 'sha256', 'contentBase64']);
 const ARCHIVE_CONTENT_ENCODING = 'GZIP_BASE64';
+const SAME_REFERENCE_MIGRATION_REPORT_KEYS = Object.freeze([
+  'schemaVersion',
+  'kind',
+  'predecessorSourceHead',
+  'datasetId',
+  'sourceBundleContentSha256',
+  'previousIntegratedBundleSha256',
+  'currentIntegratedBundleSha256',
+  'previousCandidateBundleSha256',
+  'currentCandidateBundleSha256',
+  'previousContractHashes',
+  'currentContractHashes',
+  'candidateRuntimeKind',
+  'migratedPartCount',
+  'changedBindingFieldCount',
+  'copiedPrivateFileCount',
+  'migratedConditionsBytes',
+  'migratedConditionsSha256',
+  'measurementsChanged',
+  'candidateStatesChanged',
+  'privatePayloadIncluded',
+]);
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const SOURCE_HEAD_PATTERN = /^[0-9a-f]{40}$/;
 const DATASET_ID_PATTERN = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
@@ -824,6 +847,119 @@ async function removeCreatedRuntimeIfUnreferenced({
   return removed;
 }
 
+function exactBundleFileMap(manifest, label) {
+  if (!isPlainObject(manifest)
+    || manifest.schemaVersion !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
+    || manifest.kind !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.kind
+    || manifest.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
+    || !Array.isArray(manifest.files)
+    || manifest.fileCount !== manifest.files.length
+    || manifest.fileCount !== 9
+    || manifest.zoneCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount
+    || manifest.partCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
+    || !SHA256_PATTERN.test(String(manifest.bundleContentSha256 ?? ''))
+    || privateRuntimeBundleContentSha256(manifest) !== manifest.bundleContentSha256) {
+    throw new Error(`${label} is invalid`);
+  }
+  const files = new Map();
+  for (const descriptor of manifest.files) {
+    exactKeys(descriptor, ['id', 'relativePath', 'bytes', 'sha256', 'privacyClass'], `${label} file`);
+    if (typeof descriptor.id !== 'string'
+      || typeof descriptor.relativePath !== 'string'
+      || !Number.isSafeInteger(descriptor.bytes)
+      || descriptor.bytes < 1
+      || !SHA256_PATTERN.test(String(descriptor.sha256 ?? ''))
+      || descriptor.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
+      || files.has(descriptor.id)) {
+      throw new Error(`${label} file inventory is invalid`);
+    }
+    files.set(descriptor.id, descriptor);
+  }
+  return files;
+}
+
+export function validateSameReferencePrivateRuntimeSuccessor({
+  existingDescriptor,
+  successorDescriptor,
+  predecessorManifest,
+  successorManifest,
+  migrationReport,
+} = {}) {
+  exactKeys(migrationReport, SAME_REFERENCE_MIGRATION_REPORT_KEYS,
+    'Same-reference private runtime migration report');
+  const predecessorFiles = exactBundleFileMap(predecessorManifest, 'Predecessor private runtime manifest');
+  const successorFiles = exactBundleFileMap(successorManifest, 'Successor private runtime manifest');
+  const predecessorBindingKeys = Object.keys(predecessorManifest.modelBinding ?? {}).sort(compareText);
+  const successorBindingKeys = Object.keys(successorManifest.modelBinding ?? {}).sort(compareText);
+  const changedBindingFields = predecessorBindingKeys.filter(
+    key => predecessorManifest.modelBinding[key] !== successorManifest.modelBinding[key],
+  );
+  if (!isPlainObject(existingDescriptor)
+    || !isPlainObject(successorDescriptor)
+    || migrationReport.schemaVersion !== 1
+    || migrationReport.kind !== 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_BINDING_MIGRATION'
+    || migrationReport.predecessorSourceHead !== existingDescriptor.sourceHead
+    || migrationReport.sourceBundleContentSha256 !== existingDescriptor.bundleContentSha256
+    || predecessorManifest.bundleContentSha256 !== existingDescriptor.bundleContentSha256
+    || successorManifest.bundleContentSha256 !== successorDescriptor.bundleContentSha256
+    || migrationReport.datasetId !== existingDescriptor.datasetId
+    || migrationReport.datasetId !== successorDescriptor.datasetId
+    || predecessorManifest.datasetId !== migrationReport.datasetId
+    || successorManifest.datasetId !== migrationReport.datasetId
+    || predecessorManifest.productionReferenceAt !== successorManifest.productionReferenceAt
+    || predecessorManifest.productionReferenceAt !== existingDescriptor.productionReferenceAt
+    || successorManifest.productionReferenceAt !== successorDescriptor.productionReferenceAt
+    || predecessorManifest.generatedAt !== successorManifest.generatedAt
+    || predecessorManifest.generationId !== successorManifest.generationId
+    || !same(predecessorManifest.modelBinding, existingDescriptor.modelBinding)
+    || !same(successorManifest.modelBinding, successorDescriptor.modelBinding)
+    || !same(predecessorManifest.contractHashes, existingDescriptor.contractHashes)
+    || !same(successorManifest.contractHashes, successorDescriptor.contractHashes)
+    || !same(migrationReport.previousContractHashes, predecessorManifest.contractHashes)
+    || !same(migrationReport.currentContractHashes, successorManifest.contractHashes)
+    || migrationReport.previousIntegratedBundleSha256
+      !== predecessorManifest.modelBinding.modelBundleSha256
+    || migrationReport.currentIntegratedBundleSha256
+      !== successorManifest.modelBinding.modelBundleSha256
+    || JSON.stringify(predecessorBindingKeys) !== JSON.stringify(successorBindingKeys)
+    || JSON.stringify(changedBindingFields) !== JSON.stringify(['modelBundleSha256'])
+    || !SHA256_PATTERN.test(String(migrationReport.previousCandidateBundleSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(migrationReport.currentCandidateBundleSha256 ?? ''))
+    || migrationReport.previousCandidateBundleSha256 === migrationReport.currentCandidateBundleSha256
+    || !['ravScoreCandidateGRollback', 'ravScoreCandidateGWarmup']
+      .includes(migrationReport.candidateRuntimeKind)
+    || migrationReport.migratedPartCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
+    || !Number.isSafeInteger(migrationReport.changedBindingFieldCount)
+    || migrationReport.changedBindingFieldCount < PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
+    || migrationReport.copiedPrivateFileCount !== predecessorFiles.size
+    || migrationReport.copiedPrivateFileCount !== successorFiles.size
+    || migrationReport.measurementsChanged !== false
+    || migrationReport.candidateStatesChanged !== false
+    || migrationReport.privatePayloadIncluded !== false) {
+    throw new Error('Same-reference private runtime successor evidence is invalid');
+  }
+  if (predecessorFiles.size !== successorFiles.size
+    || [...predecessorFiles.keys()].some(id => !successorFiles.has(id))) {
+    throw new Error('Same-reference private runtime inventories differ');
+  }
+  for (const [id, predecessorFile] of predecessorFiles) {
+    const successorFile = successorFiles.get(id);
+    if (id === 'full-conditions') {
+      if (successorFile.bytes !== migrationReport.migratedConditionsBytes
+        || successorFile.sha256 !== migrationReport.migratedConditionsSha256
+        || predecessorFile.sha256 === successorFile.sha256
+        || !Number.isSafeInteger(migrationReport.migratedConditionsBytes)
+        || migrationReport.migratedConditionsBytes < 2
+        || !SHA256_PATTERN.test(String(migrationReport.migratedConditionsSha256 ?? ''))) {
+        throw new Error('Same-reference migrated conditions evidence is invalid');
+      }
+    } else if (!same(predecessorFile, successorFile)) {
+      throw new Error('Same-reference migration changed a non-conditions private file');
+    }
+  }
+  return true;
+}
+
 export async function publishProtectedPrivateProductionRuntime({
   privateRoot,
   bundlePath,
@@ -831,6 +967,7 @@ export async function publishProtectedPrivateProductionRuntime({
   expected = {},
   now = new Date().toISOString(),
   sourceHead,
+  sameReferenceSuccessorEvidence,
   request,
   storage,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
@@ -847,6 +984,7 @@ export async function publishProtectedPrivateProductionRuntime({
   });
   const existing = await readPointerRow(request, { allowMissing: true, policy });
   let sameReference = false;
+  let sameReferenceSuccessor = false;
   if (existing) {
     const centralMs = Date.parse(existing.payload.current.productionReferenceAt);
     const localMs = Date.parse(built.descriptor.productionReferenceAt);
@@ -854,10 +992,21 @@ export async function publishProtectedPrivateProductionRuntime({
       throw new Error('Private runtime publication would regress central production state');
     }
     if (centralMs === localMs) {
-      if (!same(existing.payload.current, built.descriptor)) {
-        throw new Error('Private runtime publication conflicts at the same production reference');
+      if (same(existing.payload.current, built.descriptor)) {
+        sameReference = true;
+      } else {
+        if (!sameReferenceSuccessorEvidence) {
+          throw new Error('Private runtime publication conflicts at the same production reference');
+        }
+        validateSameReferencePrivateRuntimeSuccessor({
+          existingDescriptor: existing.payload.current,
+          successorDescriptor: built.descriptor,
+          predecessorManifest: sameReferenceSuccessorEvidence.predecessorManifest,
+          successorManifest: built.verified.manifest,
+          migrationReport: sameReferenceSuccessorEvidence.migrationReport,
+        });
+        sameReferenceSuccessor = true;
       }
-      sameReference = true;
     }
   }
 
@@ -961,7 +1110,9 @@ export async function publishProtectedPrivateProductionRuntime({
   }
   return {
     published: true,
-    reason: existing ? 'protected-private-runtime-updated' : 'protected-private-runtime-inserted',
+    reason: sameReferenceSuccessor
+      ? 'protected-private-runtime-same-reference-successor'
+      : existing ? 'protected-private-runtime-updated' : 'protected-private-runtime-inserted',
     centralVersion: expectedVersion,
     productionReferenceAt: built.descriptor.productionReferenceAt,
     bundleContentSha256: built.descriptor.bundleContentSha256,
@@ -1350,6 +1501,11 @@ function parseArguments(argv) {
     else if (argument === '--expected') result.expectedPath = value;
     else if (argument === '--source-head') result.sourceHead = value;
     else if (argument === '--now') result.now = value;
+    else if (argument === '--same-reference-migration-report') {
+      result.sameReferenceMigrationReportPath = value;
+    } else if (argument === '--same-reference-predecessor-manifest') {
+      result.sameReferencePredecessorManifestPath = value;
+    }
     else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!result.mode) throw new Error('Use --publish, --restore or --audit-anon');
@@ -1359,6 +1515,11 @@ function parseArguments(argv) {
   }
   if (result.mode === 'publish' && !result.sourceHead) {
     throw new Error('Protected private runtime publish requires --source-head');
+  }
+  const hasSameReferenceReport = Boolean(result.sameReferenceMigrationReportPath);
+  const hasSameReferenceManifest = Boolean(result.sameReferencePredecessorManifestPath);
+  if (hasSameReferenceReport !== hasSameReferenceManifest || (hasSameReferenceReport && result.mode !== 'publish')) {
+    throw new Error('Same-reference private runtime evidence requires both publish-only inputs');
   }
   return result;
 }
@@ -1388,8 +1549,24 @@ async function main() {
       request: clients.documentRequest,
       storage: clients.storage,
     };
+    const sameReferenceSuccessorEvidence = options.sameReferenceMigrationReportPath
+      ? {
+        migrationReport: await readJson(
+          options.sameReferenceMigrationReportPath,
+          'Same-reference private runtime migration report',
+        ),
+        predecessorManifest: await readJson(
+          options.sameReferencePredecessorManifestPath,
+          'Same-reference predecessor private runtime manifest',
+        ),
+      }
+      : undefined;
     result = options.mode === 'publish'
-      ? await publishProtectedPrivateProductionRuntime({ ...common, sourceHead: options.sourceHead })
+      ? await publishProtectedPrivateProductionRuntime({
+        ...common,
+        sourceHead: options.sourceHead,
+        sameReferenceSuccessorEvidence,
+      })
       : await restoreProtectedPrivateProductionRuntime(common);
   }
   console.log(JSON.stringify({

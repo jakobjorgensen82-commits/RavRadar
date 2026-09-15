@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.377 kanonisk DMI-cache
+
+PR #318/sourcegate `34941640752` blev merged som main `3144c557`.
+Providerfri code-only `34942127741` gennemførte restore, hele
+metadataoverførslen, atomisk installation, offentlig genopbygning og
+210/673-audit. Ingen provider eller oneoff kørte.
+
+Stoppet før privat publicering og Pages skyldtes ikke manglende DMI-data.
+Specifikationen læste en midlertidig acquisitionfil i stedet for den allerede
+installerede kanoniske DMI-cache. 4.0.377 retter stien og tilføjer en snæver,
+fuldt attesteret samme-reference-efterfølger til beskyttet privat publicering;
+ukendt konflikt afvises fortsat. DEC-0158.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.376 privacy-rod
 
 PR #317/sourcegate `34939186051` blev merged som main `e95339e5`.

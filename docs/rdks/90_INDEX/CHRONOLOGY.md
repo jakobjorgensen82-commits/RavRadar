@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.377 bruger kanonisk DMI-cache og eksakt samme-tids-efterfølger
+
+- PR #318/sourcegate `34941640752` gav main `3144c557`; code-only `34942127741` bestod restore, migration, offentlig genopbygning og 210/673-audit uden provider.
+- Privat specifikation stoppede før writes, fordi den læste en midlertidig acquisitionfil trods komplet installeret DMI-cache.
+- 4.0.377 bruger `data/live/dmi-bulk-cache.json` og kræver eksakt migrationsbevis, uændrede målinger/states og byteidentiske øvrige filer ved privat efterfølger med samme vejrtid. DEC-0158.
+
 # 2026-09-15 – 4.0.376 retter wrapperens privacy-rod
 
 - PR #317/sourcegate `34939186051` gav main `e95339e5`; code-only `34939798892` beviste komplet metadataoverførsel og atomisk installation uden provider.

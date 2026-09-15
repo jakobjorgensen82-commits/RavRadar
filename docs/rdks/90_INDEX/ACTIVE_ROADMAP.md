@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.377 fra installeret cache til fuld offentlig model
+
+1. **P0:** Færdiggør 4.0.377, én exact-head PR-sourcegate og merge samme head.
+2. **P0:** Kør providerfri code-only og genbrug central version 1, migration 16/17 samt den allerede migrerede og installerede runtime.
+3. **P0:** Byg fra kanonisk DMI-cache, publicér den eksakt attesterede samme-tids-efterfølger, Pages og central completion.
+4. **P0:** Verificér central binding/version, live 4.0.377, 210/673/118, begge søgemåder og Om RavRadar-indholdet.
+5. **P0 efter deploy:** Normal tidsbegrænset weather; bevis numeriske input/scorer, fuld DMI-rotation og cachevedligeholdelse uden oneoff.
+6. **P1:** Helhedsreview af live-site og resterende roadmap i samlede, meningsfulde batches.
+
+DEC-0148–0158 er aktive.
+
 # Aktiv roadmap – 4.0.376 fra privacy-rod til fuld offentlig model
 
 1. **P0:** Færdiggør 4.0.376, én exact-head PR-sourcegate og merge samme head.
