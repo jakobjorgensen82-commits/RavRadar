@@ -1,3 +1,9 @@
+## 2026-09-15 lokal 4.0.372 – hydreret cacheattestation
+
+- `migrate-post-cutover-private-runtime.mjs` validerer den beskyttede bundles eksakte hydrerede `contractHashes` mod den forseglede kendte identitet.
+- `fa418f43` leverer fortsat model-, Candidate G- og stagingvalidatorerne, men dens rå filhashes sammenlignes ikke med et post-hydration manifest.
+- Migreringsallowlisten er uændret: kun integrerede og eventuelle Candidate G-modelbundlehashfelter kan ændres.
+
 ## 2026-09-15 lokal 4.0.371 – eksakt binding-only migration
 
 - `migrate-post-cutover-private-runtime.mjs` forsegler forgængerens faktiske 11 felter; de ti kontraktfelter matcher current, mens kun `modelBundleSha256` går fra `327b…` til `6514…`.

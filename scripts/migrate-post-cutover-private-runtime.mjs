@@ -172,18 +172,13 @@ async function importPredecessorModules(predecessorRoot) {
     predecessorRoot,
     'scripts/rollback-assets/ravscore-model-contract.js',
   ));
-  const workflowUrl = pathToFileURL(path.join(
-    predecessorRoot,
-    'scripts/private-production-runtime-workflow.mjs',
-  ));
   const query = `?predecessor=${POST_CUTOVER_PREDECESSOR.sourceHead}`;
-  const [staging, integrated, candidate, workflow] = await Promise.all([
+  const [staging, integrated, candidate] = await Promise.all([
     import(`${stagingUrl.href}${query}`),
     import(`${integratedUrl.href}${query}`),
     import(`${candidateUrl.href}${query}`),
-    import(`${workflowUrl.href}${query}`),
   ]);
-  return { staging, integrated, candidate, workflow };
+  return { staging, integrated, candidate };
 }
 
 async function assertExactRuntimeInventory(sourceRoot) {
@@ -204,7 +199,7 @@ async function assertExactRuntimeInventory(sourceRoot) {
   if (!same(actual.sort(), expected)) throw new Error('Private runtime inventory is not the exact nine-file allowlist');
 }
 
-function validateManifest(manifest, oldIntegratedBinding, oldContractHashes) {
+export function validatePredecessorManifest(manifest, oldIntegratedBinding) {
   if (!isPlainObject(manifest)
       || manifest.datasetId !== POST_CUTOVER_PREDECESSOR.datasetId
       || manifest.bundleContentSha256 !== POST_CUTOVER_PREDECESSOR.bundleContentSha256
@@ -215,7 +210,6 @@ function validateManifest(manifest, oldIntegratedBinding, oldContractHashes) {
   assertSame(manifest.modelBinding, POST_CUTOVER_PREDECESSOR.modelBinding, 'Protected bundle model binding');
   assertSame(manifest.modelBinding, oldIntegratedBinding, 'Archived-source model binding');
   assertSame(manifest.contractHashes, POST_CUTOVER_PREDECESSOR.contractHashes, 'Protected bundle contract hashes');
-  assertSame(manifest.contractHashes, oldContractHashes, 'Archived-source contract hashes');
 }
 
 function validateAndMigrateConditions({
@@ -380,11 +374,14 @@ export async function migratePostCutoverPrivateRuntime({
   if (oldCandidate.modelBundleSha256 !== POST_CUTOVER_PREDECESSOR.candidateBundleSha256) {
     throw new Error('Archived predecessor Candidate G bundle is not exact');
   }
-  const oldContractHashes = await modules.workflow.privateRuntimeContractHashes({
-    repositoryRoot: predecessor,
-  });
   const manifest = await readJson(bundleManifestPath, 'Protected predecessor bundle manifest');
-  validateManifest(manifest, oldIntegrated, oldContractHashes);
+  // The protected manifest was sealed from the hydrated production workspace
+  // after central configuration and generated runtime files were installed.
+  // A raw Git archive is therefore not a byte-identical reconstruction of the
+  // workspace whose contract hashes the bundle records. Keep the exact sealed
+  // hashes, content hash and source-model identity as independent checks, while
+  // using the exact archived source only for its unchanged validators.
+  validatePredecessorManifest(manifest, oldIntegrated);
   const currentContractHashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();

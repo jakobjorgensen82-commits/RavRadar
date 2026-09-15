@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – lokal 4.0.372 hydreret runtimeattestation
+
+- [x] Bestå 4.0.371 sourcegate `34921912516` og merge PR #313 som main `36ea9374`.
+- [x] Genbrug central version 1, migration 16/17, privacy, stor restore og udpakning i providerfri `34922303619`.
+- [x] Bevis at den rettede eksakte 11-feltsbinding består.
+- [x] Afgræns næste stop til ugyldig lighed mellem hydrerede cachehashes og rå Git-source; ingen writes efter stoppet.
+- [x] Bevar alle eksakte cachebeviser og fjern kun den ugyldige krydssammenligning; målrettet regression er grøn.
+- [ ] Commit/push, én exact-head sourcegate, merge og providerfri code-only 4.0.372.
+- [ ] Verificér privat runtime, central completion, Pages og offentlig model; kør derefter normal tidsbegrænset weather. Ingen oneoff.
+
+DEC-0153 er aktiv. Allerede beståede trin og providerdata genbruges.
+
 # Aktuel implementeringsstatus – lokal 4.0.371 eksakt forgængerbinding
 
 - [x] Bestå 4.0.370 sourcegate `34920862401`, merge PR #312 som main `9b5c82a8` og genbrug bevis/central/migration/privacy i `34921173187`.

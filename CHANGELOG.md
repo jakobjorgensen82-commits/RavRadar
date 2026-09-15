@@ -1,3 +1,9 @@
+## 4.0.372 – korrekt hydreret runtimeattestation (2026-09-15, lokal kandidat)
+
+- PR #313/sourcegate `34921912516` gav main `36ea9374`; code-only `34922303619` nåede forbi den rettede 11-feltsbinding og genbrugte central/migration/privacy/restore uden provider.
+- Næste stop var en ugyldig sammenligning mellem cachemanifestets hashes fra det hydrerede byggeworkspace og den rå Git-udpakning.
+- 4.0.372 bevarer alle eksakte cache-, indholds-, model- og inventarbeviser, men fjerner kravet om at rå source og hydreret runtime skal være byteidentiske. Se `CHANGELOG-4.0.372.md` og DEC-0153.
+
 ## 4.0.371 – eksakt forgængerbinding (2026-09-15, lokal kandidat)
 
 - PR #312/sourcegate `34920862401` gav main `9b5c82a8`; code-only `34921173187` beviste, at stor restore og udpakning nu virker uden provider.

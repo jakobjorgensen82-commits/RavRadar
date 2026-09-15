@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.371",
+  "handbookVersion": "4.0.372",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-15",
   "sections": [
+    {
+      "id": "hydrated-runtime-attestation-4-0-372",
+      "chapter": "88.76",
+      "title": "4.0.372 – Den gemte cache og rå kode er ikke samme byggetrin",
+      "summary": "Cachemanifestets hashes tilhører det hydrerede produktionsworkspace; den rå historiske commit leverer validatorerne som et separat bevis.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.371 kom forbi den rettede modelbinding. Næste stop var en kontrol, som fejlagtigt krævede, at en færdigbygget cache og den rå Git-kode havde samme hashes.</div><div class=\"handbook-stack\"><p>Cachen forsegles efter central hydrering og generering af runtimefiler. Dens tre hashes kan derfor ikke genberegnes direkte fra den rå commit.</p><p>4.0.372 bevarer eksakt datasæt-id, indholdshash, alle tre cachehashes, modelbinding og 210/673-inventar. Den eksakte historiske commit bruges fortsat til de uændrede validatorer.</p><p>Kun modelbundlehashfelter må ændres. Ingen vejrdata, målinger, scorestate, geometri, migration eller provider ændres.</p></div>"
+    },
     {
       "id": "exact-predecessor-binding-4-0-371",
       "chapter": "88.75",
@@ -420,7 +427,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.371 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.372 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Det historiske integrerede artifact er offentligt, men den centrale aktivering mangler. RavScore 4.0.367 er lokalt klar til den eksakte recovery og efterfølgende code-only-opdatering.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står fortsat uden operationel række på legacy Candidate G, mens Pages viser den historiske integrerede binding. 4.0.367 registrerer kun dette eksakte, frisk verificerede target og fører derefter bindingen frem til den aktuelle modelpakke.</p><p><strong>Backend:</strong> Installeret migration 15 er byteuændret; migration 16 <code>20260914234500_post_cutover_current_hold_binding.sql</code> er det nye append-only bindingsled. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><p><strong>Rollback:</strong> Candidate G er kildeidentitet for den manglende første overgang og privat rollback efter fuldført integreret aktivering. Den er ikke samtidig offentlig fallback.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede kontroller er grønne. Exact-head PR-gate, code-only-deploy, central readback og offentlig mobil-/desktopkontrol mangler.</div></div>"
     },

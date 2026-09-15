@@ -1,3 +1,13 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.372 runtimeattestation
+
+PR #313/sourcegate `34921912516` blev merged som main `36ea9374`.
+Code-only `34922303619` passerede den rettede modelbinding og genbrugte
+central/migration/privacy/restore uden provider, men stoppede før writes på en
+ugyldig sammenligning mellem hydrerede cachehashes og rå Git-source.
+
+4.0.372 bevarer alle eksakte cachebeviser og den historiske validatorsource,
+men kræver ikke at de to forskellige byggetilstande er byteidentiske. DEC-0153.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.371 eksakt binding
 
 PR #312/sourcegate `34920862401` blev merged som main `9b5c82a8`.

@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – hydreret cache kontra rå source
+
+- **ISSUE-4.0.371-EXACT-BINDING – LUKKET:** Run `34922303619` nåede forbi den korrekte 11-feltsbinding.
+- **ISSUE-4.0.371-RAW-HASH-COMPARISON – RETTET LOKALT / LIVEBEVIS MANGLER:** Hydrerede runtimehashes blev fejlagtigt sammenlignet med en rå Git-udpakning. Alle selvstændige eksakte cachebeviser bevares; kun krydssammenligningen fjernes.
+- **ISSUE-4.0.372-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler. Ingen migration eller provider gentages.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather først efter modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – eksakt forgængerbinding
 
 - **ISSUE-4.0.370-LARGE-RESTORE – LUKKET:** Run `34921173187` gendannede og udpakkede den store private runtime korrekt.

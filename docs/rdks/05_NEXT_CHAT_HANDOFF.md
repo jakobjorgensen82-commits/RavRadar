@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.372 runtimeattestation
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.372-runtime-contract-attestation`; remote main er `36ea9374`.
+Code-only `34922303619` passerede 11-feltsbindingen og genbrugte hele den
+providerfri restorekæde, men stoppede før writes på raw-source-mod-hydrated-
+runtime-hashlighed. Den falske krydssammenligning er fjernet, mens cache-,
+bundle-, model-, 210/673- og validatorbeviser består. Næste: målrettede checks,
+commit/push, én exact-head gate, merge, code-only og offentlig kontrol; derefter
+normal tidsbegrænset weather. Ingen oneoff. DEC-0153. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.371 eksakt forgængerbinding
 
 Siblingworktree `RavRadar-4.0.366`, branch

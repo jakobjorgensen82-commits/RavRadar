@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.371
+**Håndbogsversion:** 4.0.372
+
+## 88.76 4.0.372 – Den gemte cache og rå kode er ikke samme byggetrin
+
+4.0.371 kom forbi den tidligere forkerte modelbinding. Installationen stoppede
+derefter, fordi en kontrol krævede, at hashene fra den færdigbyggede cache var
+identiske med hashene fra den rå Git-kode.
+
+Det er de ikke: cachen forsegles først efter, at central opsætning og genererede
+runtimefiler er lagt ind. 4.0.372 bevarer alle de præcise beviser for cache,
+indhold, model og 210/673 dele, men bruger den rå historiske kode til
+validatorerne i stedet for at kræve byte-lighed mellem to forskellige trin.
+Kun modelbundlehashfelterne må ændres. Ingen vejrdata hentes eller omskrives.
 
 ## 88.75 4.0.371 – Den gamle model skal kaldes ved sit rigtige navn
 
