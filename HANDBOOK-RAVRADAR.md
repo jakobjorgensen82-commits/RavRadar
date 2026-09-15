@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.369
+**Håndbogsversion:** 4.0.370
+
+## 88.74 4.0.370 – En stor gemt vejrfil må ikke vælte gendannelsen
+
+4.0.369 lukkede den private Storage-bucket korrekt. Den næste kørsel beviste,
+at data ikke længere kunne hentes uden login. Den stoppede alligevel, da den
+gamle private runtime skulle pakkes ud.
+
+Årsagen var en teknisk størrelsesfejl: et regulært udtryk forsøgte at kontrollere
+hele en meget lang base64-tekst på én gang og løb tør for stack. En lille test
+kunne derfor være grøn, selv om den rigtige store cache fejlede.
+
+4.0.370 kontrollerer teksten lineært og pakker hver stor cache ud i små bidder.
+Størrelse og SHA-256 kontrolleres løbende, og destinationen bliver først synlig,
+når alle filer er godkendt. GitHubs stop-ved-fejl kan heller ikke længere
+afbryde den aftalte tre-forsøgs-løkke efter første forsøg. Migration 17 er
+allerede installeret; ingen vejrprovider eller oneoff indgår.
 
 ## 88.73 4.0.369 – Den private runtime lukkes og gendannelsen genprøves
 

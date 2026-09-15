@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-15 – 4.0.370 stor runtimegendannelse
+
+- **REQ-4.0.370-LINEAR-BASE64-001 – IMPLEMENTERET LOKALT:** Lange base64-felter valideres lineært uden regex-stack.
+- **REQ-4.0.370-STREAM-RESTORE-001 – IMPLEMENTERET LOKALT:** Store private cachefiler dekodes/dekomprimeres i højst 4 MiB bidder med løbende maksimal størrelse og SHA-256 før atomisk flytning.
+- **REQ-4.0.370-REAL-RETRY-001 – IMPLEMENTERET LOKALT:** GitHubs implicitte errexit må ikke stoppe den aftalte tre-forsøgs-løkke efter første fejl.
+- **REQ-4.0.370-NO-MIGRATION-REPEAT-001 – BINDENDE:** Migration 17 er installeret og privacybevist. Næste code-only accepterer nul pending migrationer og må ikke gentage migration 16 eller 17.
+- **REQ-4.0.370-NO-PROVIDER-001 – AKTIV:** Ingen provider, oneoff eller normal weather før modellen er centralt og offentligt online.
+
+DEC-0151 supplerer DEC-0148–0150.
+
 # Aktuelt ejerdelta – 2026-09-15 – 4.0.369 privat runtime og fortsættelse
 
 - **REQ-4.0.369-STORAGE-DENY-001 – IMPLEMENTERET LOKALT / LIVEBEVIS MANGLER:** `ravradar-private-production-runtime` skal være ulæselig for både `anon` og `authenticated`, også ved ældre brede Storage-policies. Kun `service_role` må gendanne runtime.

@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-15 – privacy er lukket; stor restore er rettet lokalt
+
+4.0.369 bestod exact-head sourcegate `34918950377` og blev merged gennem PR
+#311 som main `329ce119dafdaf2ab4434a29601254a84c75fb65`. Code-only-run
+`34919375457` genbrugte sourcebeviset, sprang central recovery over, læste
+central version 1 og installerede/læste migration 17 tilbage. Anonym adgang til
+den gemte private forgængergeneration blev afvist. Ingen provider blev kaldt.
+
+Runnet stoppede derefter ved restore med `UNKNOWN_ARCHIVE_EXTRACTION`; GitHubs
+implicitte errexit afbrød løkken efter første forsøg. Ingen privat runtime,
+Pages eller central completion blev ændret. En 5 MiB produktionslignende cache
+reproducerede samme fase: den samlede base64-regex løb tør for stack.
+
+Lokal 4.0.370 erstatter regexen med lineær kontrol og dekoder/dekomprimerer
+hver cache i 4 MiB bidder med løbende størrelse og SHA-256 før atomisk flytning.
+Retry bruger shell-if og kan derfor gennemføre alle tre forsøg. Migration 17 er
+nu eksisterende produktionstilstand og må ikke genkøres; næste code-only skal
+acceptere nul pending migrationer. DEC-0151.
+
 # NYESTE SANDHED – 2026-09-15 – migration 16 er installeret; privat restore og privacy resterer
 
 4.0.368 bestod sourcegate `34915216698` og blev merged som main `c461063690ff148604cb6c2f87053105fe96771b`. Code-only-run `34915725308` læste central `INTEGRATED_ACTIVE` version 1, sprang engangsrecoveryen over og installerede/læste migration `20260914234500` tilbage. Den centrale recovery og migration 16 må ikke gentages.

@@ -1,9 +1,17 @@
-## 4.0.369 – sikker og genprøvbar privat runtime-recovery (2026-09-15, lokal kandidat)
+## 4.0.370 – strømmet restore af store private caches (2026-09-15, lokal kandidat)
+
+- PR #311/sourcegate `34918950377` gav main `329ce119`; code-only `34919375457` genbrugte beviset, installerede migration 17 og beviste anonym afvisning uden provider.
+- Runnet stoppede ved udpakning, og GitHub-errexit afbrød den tiltænkte retry efter første forsøg.
+- En 5 MiB regression reproducerede base64-regexens stackfejl. 4.0.370 bruger lineær syntakskontrol og strømmet decode/dekomprimering med størrelse/hash samt en reel tre-forsøgs-shell-løkke.
+- Migration 17 genbruges; næste code-only må have nul pending migrationer. Se `CHANGELOG-4.0.370.md` og DEC-0151.
+
+## 4.0.369 – sikker privat runtime-recovery (2026-09-15, merged; restore afløst af 4.0.370)
 
 - 4.0.368 bestod sourcegate `34915216698`, blev merged som `c4610636`, og run `34915725308` installerede/læste migration 16 tilbage, men stoppede før runtime/Pages på forgænger-restore.
 - Den oprindelige runtimepublicering havde samtidig vist anonym HTTP 200. Nyt append-only sikkerhedsled lukker netop den private bucket for `anon`/`authenticated` uden at ændre objekter, pointer eller andre buckets.
 - Migration 16 forbliver model-/checkpointautoriteten; næste code-only-run må kun anvende sikkerhedsmigration 17.
 - Restore genprøves højst tre gange og udskriver kun faste payload-frie afvisningskategorier. Ingen provider eller oneoff. Se `CHANGELOG-4.0.369.md` og DEC-0150.
+- PR #311/sourcegate `34918950377` gav main `329ce119`. Run `34919375457` installerede migration 17 og lukkede anonym adgang; stor restore og reel retry blev efterfølgende overtaget af 4.0.370/DEC-0151.
 
 ## 4.0.368 – bevar boolske false-værdier i code-only-fortsættelsen (2026-09-15, lokal kandidat)
 

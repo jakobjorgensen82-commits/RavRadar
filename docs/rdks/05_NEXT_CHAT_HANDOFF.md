@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.370 stor private-runtime-restore
+
+Arbejd i siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.370-stream-private-runtime`. Remote main er `329ce119`.
+Code-only `34919375457` har allerede installeret migration 17 og bevist anonym
+afvisning; central er fortsat `INTEGRATED_ACTIVE` version 1. Ingen provider,
+runtime-, Pages- eller completionwrite skete efter restorestoppet.
+
+Produktion viste `UNKNOWN_ARCHIVE_EXTRACTION` og kun ét forsøg på grund af
+GitHub-errexit. En 5 MiB regression reproducerede samme fase som regex-stack.
+4.0.370 bruger lineær base64-kontrol, 4 MiB strømning, løbende størrelse/hash og
+shell-if-retry. Næste: målrettede slutkontroller → commit/push → én exact-head
+sourcegate → merge → providerfri code-only med nul pending migrationer →
+central/offentlig kontrol → normal tidsbegrænset weather. Sol/Ekstra høj.
+DEC-0151.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.369 privat runtime-recovery
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch `codex/4.0.369-private-runtime-recovery`. Remote main er `c4610636`. Code-only `34915725308` har allerede installeret migration 16 og central er fortsat `INTEGRATED_ACTIVE` version 1; gentag ingen af delene. Runnet stoppede ved eksakt `fa418f43`-restore før runtime, Pages og completion.

@@ -1,3 +1,9 @@
+# 2026-09-15 – 4.0.370 retter stor arkivudpakning og reel retry
+
+- PR #311/sourcegate `34918950377` gav main `329ce119`; code-only `34919375457` installerede migration 17 og lukkede anonym adgang uden provider.
+- Restore stoppede i arkivudpakning, og GitHub-errexit afbrød løkken efter første forsøg. Ingen runtime/Pages/completion blev skrevet.
+- En 5 MiB regression reproducerede base64-regexens stackfejl. Lineær validering, 4 MiB streambidder, løbende størrelse/hash og shell-if består lokalt. DEC-0151.
+
 # 2026-09-15 – 4.0.369 lukker privat adgang og gør restore oplysende
 
 - 4.0.368 blev merged som `c4610636`; code-only `34915725308` genbrugte central version 1 og installerede migration 16.

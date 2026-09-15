@@ -1,3 +1,10 @@
+# 2026-09-15 – stor privat runtime må ikke bruge helstrengs-base64-regex
+
+- Migration 17 og anonym afvisning er livebevist i `34919375457`; de må ikke gentages i næste code-only.
+- En gentagende base64-regex over flere MiB kan give JavaScript stackfejl før arkivudpakning. Brug lineær alfabet/padding-kontrol.
+- Store runtimefiler dekodes/dekomprimeres i begrænsede bidder med løbende bytegrænse og SHA-256; publicér destinationen atomisk til sidst.
+- GitHub Actions starter bash med errexit. En forventet fejl i en retry-løkke skal være selve betingelsen i `if`, ellers afsluttes trinnet før `$?` kan gemmes.
+
 # 2026-09-15 – 4.0.369 privat Storage-recovery
 
 - Central `INTEGRATED_ACTIVE` version 1 og migration 16 er allerede installeret; de er genbrugelig produktionstilstand, ikke trin der skal gentages.

@@ -85,6 +85,7 @@ for (const marker of [
   'Add payload-free rejection codes to the exact predecessor restore',
   'Prove the saved predecessor runtime is no longer client-readable',
   'for attempt in 1 2 3; do',
+  'if node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore',
   'Protected predecessor restore attempt $attempt of 3 failed.',
   'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
