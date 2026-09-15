@@ -1,3 +1,14 @@
+# Aktiv roadmap – 4.0.371 fra eksakt binding til model online
+
+1. **P0:** Færdiggør 4.0.371, én exact-head PR-sourcegate og merge samme head.
+2. **P0:** Kør providerfri code-only; genbrug central version 1, migration 16/17, privacy og restore uden gentagelse.
+3. **P0:** Migrér kun bundlehashene, installér/publicér privat runtime, Pages og central completion.
+4. **P0:** Verificér central binding/version, live 4.0.371, begge søgemåder og relevante sitefelter.
+5. **P0 efter deploy:** Normal tidsbegrænset weather; bevis numeriske input/scorer, DMI-rotation og cache uden oneoff.
+6. **P1:** Helhedsreview af live-site og resterende roadmap i samlede batches.
+
+DEC-0148–0152 er aktive.
+
 # Aktiv roadmap – 4.0.370 fra stor restore til normal drift
 
 1. **P0:** Færdiggør 4.0.370 målrettet, kør én exact-head PR-sourcegate og merge samme head.

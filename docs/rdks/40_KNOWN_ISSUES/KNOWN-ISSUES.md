@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-15 – eksakt forgængerbinding
+
+- **ISSUE-4.0.370-LARGE-RESTORE – LUKKET:** Run `34921173187` gendannede og udpakkede den store private runtime korrekt.
+- **ISSUE-4.0.370-PREDECESSOR-FIXTURE – RETTET LOKALT / LIVEBEVIS MANGLER:** Tre forenklede modelnavne i migratoren matchede ikke `fa418f43`. Alle 11 felter er nu eksakte, og testen bruger den virkelige aktuelle binding plus gammel bundlehash.
+- **ISSUE-4.0.371-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen migration/provider gentages.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather først efter modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – stor private-runtime-restore
 
 - **ISSUE-PRIVATE-RUNTIME-ANON-READ – LUKKET:** Run `34919375457` installerede migration 17 og beviste, at den konkrete gemte generation ikke længere kan hentes anonymt.

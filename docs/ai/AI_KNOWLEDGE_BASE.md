@@ -1,3 +1,9 @@
+# 2026-09-15 – historisk binding skal bevises uafhængigt
+
+- `34921173187` livebeviser, at stor privat restore/udpakning virker; næste stop var migratorens fixture, ikke data eller Storage.
+- En historisk 11-feltsbinding må ikke bruge forenklede navne eller testes mod en kopi af sig selv.
+- Forgængeren matches mod den virkelige aktuelle kontrakt, når kun den dokumenterede bundlehash må ændres; `fa418f43` og liveartifactet er uafhængigt bevis.
+
 # 2026-09-15 – stor privat runtime må ikke bruge helstrengs-base64-regex
 
 - Migration 17 og anonym afvisning er livebevist i `34919375457`; de må ikke gentages i næste code-only.

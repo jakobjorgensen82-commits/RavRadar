@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.370
+**Håndbogsversion:** 4.0.371
+
+## 88.75 4.0.371 – Den gamle model skal kaldes ved sit rigtige navn
+
+4.0.370 løste den store fil: den gemte private runtime blev gendannet og pakket
+ud korrekt. Det næste trin stoppede, før noget blev publiceret, fordi tre
+felter i migrationskontrollen havde korte, opdigtede navne i stedet for de
+rigtige værdier fra den gamle model.
+
+4.0.371 bruger nu den eksakte variant, profil og komponentbeskrivelse fra
+`fa418f43` og det offentlige artifact. Testen sammenligner med den virkelige
+11-feltskontrakt og tillader kun, at den gamle og nye bundlehash er forskellige.
+Ingen data, scoreformel, migration eller vejrprovider ændres.
 
 ## 88.74 4.0.370 – En stor gemt vejrfil må ikke vælte gendannelsen
 

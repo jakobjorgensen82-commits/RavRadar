@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.371 eksakt forgængerbinding
+
+Siblingworktree `RavRadar-4.0.366`, branch
+`codex/4.0.371-exact-predecessor-binding`, remote main `9b5c82a8`.
+Code-only `34921173187` livebeviste stor predecessor-restore og udpakning, men
+stoppede i migratoren før writes. Migration 16/17, privacy og central version 1
+er allerede genbrugelig produktionstilstand.
+
+Tre forenklede fixturefelter er rettet mod den eksakte `fa418f43`- og
+livebinding. Testen sammenligner nu med den virkelige aktuelle 11-feltsbinding
+og tillader kun gammel bundlehash. Fortsæt: målrettet slutkontrol → commit/push
+→ én exact-head sourcegate → merge → providerfri code-only → central/offentlig
+kontrol → normal tidsbegrænset weather. Ingen oneoff. Sol/Ekstra høj. DEC-0152.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.370 stor private-runtime-restore
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

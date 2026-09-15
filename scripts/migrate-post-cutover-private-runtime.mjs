@@ -28,9 +28,9 @@ export const POST_CUTOVER_PREDECESSOR = Object.freeze({
   modelBinding: Object.freeze({
     modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
     stateSchemaVersion: '6.0.0',
-    variantId: 'integrated-coastal-process-v1-1',
-    profileId: 'ravscore-integrated-calibrated-v1',
-    componentSchemaId: 'ravscore-components-integrated-v5',
+    variantId: 'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2',
+    profileId: 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5',
+    componentSchemaId: 'ravscore-components-huntability-delivery-mobilisation-bounds-v5',
     explanationSchemaId: 'ravscore-explanation-integrated-bounds-v5',
     rankingPolicyId: 'direction-broad-19-history-tie-v2',
     bestTimePolicyId: 'score-history-water-tie-earliest-v3',

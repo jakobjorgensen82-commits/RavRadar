@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.371 rigtig forgængerbinding
+
+Main `9b5c82a8`/PR #312/sourcegate `34920862401`. Code-only `34921173187`
+beviste, at 4.0.370 kan restore/udpakke stor privat runtime uden provider.
+Migratoren stoppede bagefter før writes på tre opdigtede fixturefelter.
+
+Lokal `codex/4.0.371-exact-predecessor-binding` retter alle 11 felter mod
+`fa418f43`/liveartifactet og tester mod virkelig current plus gammel bundlehash.
+Migration 16/17, privacy og central version 1 genbruges. Næste: én sourcegate,
+merge, providerfri code-only. DEC-0152. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – 4.0.370 strømmet predecessor-restore
 
 Main `329ce119`/PR #311/sourcegate `34918950377`. Code-only `34919375457`
