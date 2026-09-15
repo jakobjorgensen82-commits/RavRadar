@@ -1,4 +1,27 @@
-# AI Roadmap – RavRadar 4.0.377 code-only og normal drift – opdateret 2026-09-15
+# Nyeste prioritering – Astra-fund implementeret samlet 2026-09-15
+
+`docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md` er implementeret lokalt
+for A–G efter skift til Sol/Ekstra høj. Historisk restore er bevist med to
+forskellige arkiver; de øvrige målrettede runtime-/workflowkontroller er
+grønne. Næste er én samlet exact-head-levering, ikke flere enkeltfejlversioner.
+Ingen ny oneoff eller almindelig weather før offentlig modeldeploy. Numerisk
+datakomplethed er fortsat ikke bevist.
+
+# AI Roadmap – RavRadar 4.0.378 code-only og normal drift – opdateret 2026-09-15
+
+## Aktuel releasehale – 4.0.378 historisk rollbackbinding
+
+1. [x] Merge 4.0.377 via PR #319 efter sourcegate `34946601576`.
+2. [x] Livebevis i `34947169348` for kanonisk DMI-cache, privat spec/bundle, offentlig genopbygning og 210/673-audit uden provider.
+3. [x] Afgræns stoppet til pointerlæserens sammenblanding af aktiv current og historisk rollbackbinding; ingen private writes eller Pages efter stoppet.
+4. [x] Giv kun eksakt forgænger-current overgangsadgang og bevar previous som valideret historik; test hele publiceringslivscyklussen.
+5. [ ] Forsegl docs/version/geodatadiff, commit/push og bestå én exact-head sourcegate.
+6. [ ] Merge samme head og kør providerfri code-only til privat runtime, Pages og central completion.
+7. [ ] Verificér levende 4.0.378, 210/673/118, begge søgemåder, Om RavRadar og nul private lækager.
+8. [ ] Genaktivér normal weather kontrolleret og bevis numeriske input/scorer, DMI-rotation og cachevedligeholdelse uden oneoff.
+9. [ ] Gennemgå hele siden og revurder resten af roadmap mod faktisk produktion.
+
+Ingen provider eller oneoff indgår før det offentlige code-only-deploy er verificeret.
 
 ## Aktuel releasehale – 4.0.377 installeret DMI-cache
 

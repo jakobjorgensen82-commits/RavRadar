@@ -567,7 +567,7 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'syntheticSampleCount=0',
   '0 aktive zoner og 210 `UNAVAILABLE`',
   `Aktuel status – RavScore ${pkg.version} kode-only-rettelse`,
-  `Status for det aktuelle modelarbejde – lokal ${pkg.version}, exact-head og rettelsesdeploy afventer`,
+  `Status for det aktuelle modelarbejde – lokal ${pkg.version} samlet, exact-head og deploy afventer`,
   'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
   'state `6.0.0`',
   'DEC-0110/DEC-0112',

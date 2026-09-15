@@ -1,3 +1,31 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – samlet 4.0.378-rettelse
+
+Ejeren bad om helikopteranalyse for at rette flere fejl i samme arbejdsgang.
+Astra-rapportens A–G er nu implementeret samlet på Sol/Ekstra høj: eksakt
+assistentdeploy, samlet prewrite-kontrol, versionsstabilt privat genbrug,
+samme-indhold-pointergenbrug, eksakt readback ved mistede svar, begrænsede
+sikre retries, reelt historisk restore, ærlig koldstart og manifestbundet
+detaildownload. Produktionsmutationerne forbliver fail-safe.
+
+Målrettede lokale kontroller er grønne. Main/Pages/produktion er endnu
+uændret, og der er ikke kørt provider, weather eller oneoff. Exact-head,
+merge, providerfri code-only og livebevis mangler. Fysisk runnerdød efter
+`PENDING` og 14-dages kildebevis er senere robusthedsopgaver. Numerisk
+datakomplethed må fortsat ikke udledes af registryantal. DEC-0160.
+
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.378 historisk pointerbinding
+
+PR #319/sourcegate `34946601576` blev merged som main `ec26f8e4`.
+Providerfri code-only `34947169348` beviste kanonisk DMI-cache, privat
+spec/bundle, offentlig genopbygning og 210/673-audit. Private writes, Pages og
+completion skete ikke.
+
+Pointerlæseren afviste den gamle current-binding før migrationsbeviset. 4.0.378
+giver kun den eksakte manifestbundne forgænger overgangsadgang; efter write er
+current aktuel, previous historisk og fortsat valideret/verificeret før brug.
+Lige vejrtid tillades som repræsentation, mens DEC-0158 fortsat kontrollerer
+selve mutationstilladelsen. DEC-0159.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-15 – 4.0.377 kanonisk DMI-cache
 
 PR #318/sourcegate `34941640752` blev merged som main `3144c557`.

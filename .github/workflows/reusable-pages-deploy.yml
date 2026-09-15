@@ -619,7 +619,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Complete historical-to-current integrated maintenance only after public verification
-        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' || inputs.operational_action == 'integrated-historical-maintenance' }}
         id: integrated-historical-maintenance-complete
         if: inputs.operational_action == 'integrated-historical-maintenance'
         shell: bash
@@ -656,7 +656,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Reconcile an ambiguous failed transition from observed public identity
-        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
+        continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' || inputs.operational_action == 'integrated-historical-maintenance' }}
         id: failure-reconciliation
         if: (failure() || (inputs.operational_action == 'integrated-cutover' && (steps.deployment.outcome != 'success' || steps.public-verification.outcome != 'success' || steps.integrated-transition-complete.outcome != 'success'))) && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
         shell: bash
@@ -867,7 +867,9 @@ jobs:
               ;;
             integrated-historical-maintenance)
               test "${{ steps.integrated-historical-maintenance-begin.outcome }}" = "success"
-              test "${{ steps.integrated-historical-maintenance-complete.outcome }}" = "success"
+              if test "${{ steps.integrated-historical-maintenance-complete.outcome }}" != "success"; then
+                test "${{ steps.failure-reconciliation.outcome }}" = "success"
+              fi
               ;;
             integrated)
               test "${{ steps.integrated-maintenance-complete.outcome }}" = "success"

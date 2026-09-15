@@ -4003,7 +4003,29 @@ export function operationalCentralProfileForTransition({
   );
 }
 
-async function writeCentralCas(request, currentRows, transition, integratedProfile) {
+function exactCentralCasResult({
+  result,
+  transition,
+  profilePayload,
+  expectedProfileVersion,
+}) {
+  if (!result || Array.isArray(result)
+    || Number(result.operationalVersion) !== transition.nextVersion
+    || sha256(result.operationalPayload) !== sha256(transition.document)
+    || Number(result.profileVersion) !== expectedProfileVersion
+    || sha256(result.profilePayload) !== sha256(profilePayload)) {
+    return null;
+  }
+  return result;
+}
+
+export async function writeCentralCas(
+  atomicRequest,
+  documentRequest,
+  currentRows,
+  transition,
+  integratedProfile,
+) {
   const currentRow = currentRows.operationalRow;
   const currentProfileRow = currentRows.profileRow;
   const preservesSource = transitionPreservesSourceProfile(transition.document);
@@ -4012,23 +4034,54 @@ async function writeCentralCas(request, currentRows, transition, integratedProfi
     currentProfile: currentProfileRow.payload,
     integratedProfile,
   });
-  const response = await request('', {
-    method:'POST',
-    body:JSON.stringify({
-      p_expected_operational_version:Number(currentRow?.version ?? 0),
-      p_expected_profile_version:Number(currentProfileRow.version),
-      p_operational_payload:transition.document,
-      p_profile_payload:profilePayload,
-    }),
-  }, 'atomisk RavScore operation/profil-CAS');
-  const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
   const profileChanged = sha256(profilePayload) !== sha256(currentProfileRow.payload);
   const expectedProfileVersion = Number(currentProfileRow.version) + (profileChanged ? 1 : 0);
-  if (!result || Array.isArray(result)
-    || Number(result.operationalVersion) !== transition.nextVersion
-    || sha256(result.operationalPayload) !== sha256(transition.document)
-    || Number(result.profileVersion) !== expectedProfileVersion
-    || sha256(result.profilePayload) !== sha256(profilePayload)) {
+  let response;
+  let writeError = null;
+  try {
+    response = await atomicRequest('', {
+      method:'POST',
+      body:JSON.stringify({
+        p_expected_operational_version:Number(currentRow?.version ?? 0),
+        p_expected_profile_version:Number(currentProfileRow.version),
+        p_operational_payload:transition.document,
+        p_profile_payload:profilePayload,
+      }),
+    }, 'atomisk RavScore operation/profil-CAS');
+  } catch (error) {
+    writeError = error;
+  }
+  const responseResult = Array.isArray(response) && response.length === 1 ? response[0] : response;
+  let result = exactCentralCasResult({
+    result: responseResult,
+    transition,
+    profilePayload,
+    expectedProfileVersion,
+  });
+  if (!result) {
+    // A timeout or lost HTTP response is ambiguous: the database transaction
+    // may already be committed. Read both rows back and accept only the exact
+    // versions and payload hashes this transition was meant to write.
+    try {
+      const recovered = await readCentralRows(documentRequest);
+      result = exactCentralCasResult({
+        result: {
+          operationalVersion: recovered.operationalRow?.version,
+          operationalPayload: recovered.operationalRow?.payload,
+          profileVersion: recovered.profileRow?.version,
+          profilePayload: recovered.profileRow?.payload,
+        },
+        transition,
+        profilePayload,
+        expectedProfileVersion,
+      });
+    } catch {
+      // Preserve the original write ambiguity below; a failed readback is not
+      // permission to repeat a potentially committed compare-and-swap.
+    }
+  }
+  if (!result) {
+    if (writeError) throw writeError;
     throw new Error('Atomic RavScore operation/profile compare-and-swap lost a concurrent update');
   }
   if (preservesSource) {
@@ -4166,6 +4219,7 @@ async function main() {
     ));
     const written = await writeCentralCas(
       request.atomicCas,
+      request.documents,
       currentRows,
       recovery,
       integratedProfile,
@@ -4611,6 +4665,7 @@ async function main() {
   ));
   const written = await writeCentralCas(
     request.atomicCas,
+    request.documents,
     currentRows,
     transition,
     integratedProfile,

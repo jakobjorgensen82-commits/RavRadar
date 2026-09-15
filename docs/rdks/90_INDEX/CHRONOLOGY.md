@@ -1,3 +1,16 @@
+# 2026-09-15 – 4.0.378 samler Astra-fundene i én leveringsrettelse
+
+- Code-only installerer den eksakte assistent, samler fire uafhængige prewrite-kontroller og foretager ingen produktionswrite, hvis en af dem fejler.
+- Private kontrakter ignorerer kun mekanisk releaseversion; identisk runtime genbruges uden ny producentpointer, mens reel kildeændring fortsat ændrer hash.
+- Mistede Supabase-svar afgøres med eksakt readback, sikre transienter genprøves, historisk restore er bevist med to reelle arkiver, og normal weather kan vælge ærlig koldstart efter udløb.
+- Detaildownload følger manifestgrænsen. Exact-head, merge, code-only og livebevis afventer. DEC-0160.
+
+# 2026-09-15 – 4.0.378 skelner aktiv current fra historisk previous
+
+- PR #319/sourcegate `34946601576` gav main `ec26f8e4`; code-only `34947169348` beviste kanonisk DMI-cache, privat spec/bundle og 210/673 uden provider.
+- Publicering stoppede før writes, fordi forgænger-current blev krævet at have den nye modelhash, før migrationsbeviset blev nået.
+- 4.0.378 tillader kun den eksakte manifestbundne forgænger under overgangen og bevarer previous som valideret historisk rollback. DEC-0159.
+
 # 2026-09-15 – 4.0.377 bruger kanonisk DMI-cache og eksakt samme-tids-efterfølger
 
 - PR #318/sourcegate `34941640752` gav main `3144c557`; code-only `34942127741` bestod restore, migration, offentlig genopbygning og 210/673-audit uden provider.

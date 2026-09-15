@@ -145,7 +145,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.377',
+  releaseVersion: '4.0.378',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -159,7 +159,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.377',
+  releaseVersion: '4.0.378',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -408,7 +408,15 @@ export async function privateRuntimeContractHashes({
       const absolute = path.resolve(root, relativePath);
       if (!inside(root, absolute)) throw new Error('Private runtime contract path escapes repository');
       const bytes = await fs.readFile(absolute);
-      rows.push([relativePath, sha256(bytes)]);
+      // App-version metadata and browser cache-busting queries do not change
+      // how the private weather payload is interpreted. All other source
+      // changes remain byte-sensitive.
+      const normalized = Buffer.from(bytes.toString('utf8')
+        .replace(/\r\n/g, '\n')
+        .replace(/(releaseVersion\s*:\s*['"])\d+\.\d+\.\d+(['"])/g,
+          '$1<release-version>$2')
+        .replace(/\?v=\d+\.\d+\.\d+(?=['"])/g, '?v=<release-version>'));
+      rows.push([relativePath, sha256(normalized)]);
     }
     result[contract] = sha256(JSON.stringify(rows));
   }

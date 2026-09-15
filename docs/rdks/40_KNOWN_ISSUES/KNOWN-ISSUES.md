@@ -1,3 +1,31 @@
+# NYESTE CHECKPOINT – 2026-09-15 – Astra-fund samlet rettet lokalt
+
+Detaljer og evidens findes i
+`docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`.
+
+- **ISSUE-4.0.378-EDGE-STALE – RETTET LOKALT / LIVEBEVIS MANGLER:** Code-only deployer kun den eksakte assistent før readiness.
+- **ISSUE-4.0.378-FAILURE-COLLECTION – RETTET LOKALT:** Fire uafhængige prewrite-kontroller kører samlet; enhver fejl stopper før writes.
+- **ISSUE-4.0.378-CODE-ONLY-REUSE – RETTET LOKALT:** Rene versionsfelter ændrer ikke privat kontrakt, og byteidentisk runtime genbruges uden pointeromskrivning.
+- **ISSUE-4.0.378-UNCERTAIN-CAS – RETTET LOKALT FOR MISTEDE SVAR:** CAS/pointer accepteres kun ved eksakt readback; historical reconciliation kan være terminal succes.
+- **ISSUE-4.0.378-WEATHER-REENTRY – RETTET LOKALT:** Udløbet kompatibel current plus uegnet historik går til ærlig koldstart; korruption stopper stadig.
+- **ISSUE-4.0.378-HISTORICAL-RESTORE – RETTET LOKALT:** To forskellige ægte arkiver beviser valg af kompatibel previous efter strukturel pointerlæsning.
+- **ISSUE-4.0.378-TRANSIENT-STORAGE – RETTET LOKALT:** Sikre/idempotente kald genprøves begrænset; post-commit-oprydning rapporteres separat.
+- **ISSUE-4.0.378-DOWNLOAD-LIMIT – RETTET LOKALT:** Download bruger manifestets eksakte størrelse under 192 MiB.
+- **ISSUE-4.0.378-RUNNER-DIED-PENDING – P2/SENERE:** En fysisk runnerdød efter write kan kræve eksisterende forseglede recovery; aktuel produktion er ikke PENDING.
+- **ISSUE-4.0.378-SOURCE-SEAL-RETENTION – P2/SENERE:** Aktivt kildebevis er stadig bundet til 14-dages-artifact; det findes nu.
+- **ISSUE-4.0.378-DEPLOY – ÅBEN P0:** Exact-head gate, merge, providerfri code-only og liveverifikation mangler.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN:** 210/673-inventar beviser ikke komplette tal eller brugbare scorer.
+
+Ingen ny produktion, weather eller oneoff under den lokale rettelse. DEC-0160.
+
+# NYESTE CHECKPOINT – 2026-09-15 – forgængerbinding afvist før migrationsbevis
+
+- **ISSUE-4.0.376-CODE-ONLY-DMI-PATH – LUKKET:** Run `34947169348` byggede privat spec/bundle fra den installerede kanoniske DMI-cache.
+- **ISSUE-4.0.377-HISTORICAL-CURRENT-BINDING – RETTET LOKALT / LIVEBEVIS MANGLER:** Pointerlæseren krævede aktiv hash på forgænger-current før migrationsbeviset. 4.0.378 tillader kun den eksakte manifestbundne forgænger under overgangen.
+- **ISSUE-4.0.377-HISTORICAL-PREVIOUS-BINDING – RETTET LOKALT / LIVEBEVIS MANGLER:** Previous bevares nu som stramt valideret historisk rollback og kan læses af readback, audit, retention og senere drift.
+- **ISSUE-4.0.378-DEPLOY – ÅBEN P0:** Exact-head gate, merge og providerfri code-only mangler; ingen provider eller oneoff.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – FORTSAT ÅBEN DRIFTSBEVIS:** Normal weather køres først efter offentlig modeldeploy.
+
 # NYESTE CHECKPOINT – 2026-09-15 – kanonisk DMI-cache og samme-reference-publicering
 
 - **ISSUE-4.0.375-PRIVACY-ROOT – LUKKET:** Run `34942127741` gennemførte offentlig genopbygning og 210/673-audit med de kanoniske privacyrødder.

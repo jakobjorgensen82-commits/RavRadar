@@ -1,3 +1,42 @@
+# NYESTE SANDHED – 2026-09-15 – 4.0.378 samler helkæderettelserne
+
+Astra-gennemgangens fund A–G er nu samlet implementeret lokalt på
+`codex/4.0.378-historical-private-binding`; se
+`docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`, DEC-0159 og DEC-0160.
+Code-only deployer den eksakte assistent-Edge, samler fire uafhængige
+prewrite-kontroller før nogen produktionswrite, genbruger identiske private
+data på tværs af rene kodeversioner, håndterer mistede svar med eksakt
+readback, genprøver sikre midlertidige fejl og kan vælge et rigtigt historisk
+arkiv efter strukturel pointerlæsning. Normal weather må gå til målt koldstart,
+når current kun er udløbet og øvrig historik er uegnet; gammel state kaldes
+ikke frisk. Detailfilens downloadgrænse følger nu manifestet.
+
+Målrettede tests og workflowsyntaks er grønne lokalt. Main er fortsat
+`ec26f8e4`, og senest observerede Pages er fortsat 4.0.365; der er endnu ikke
+udført ny sourcegate, merge, deploy, weather eller oneoff. Et fysisk dræbt job
+med efterladt `PENDING` og det 14-dages kildeartifact er afgrænsede senere
+robusthedsopgaver, ikke aktuelle blokeringer. Numerisk komplette vejrinput og
+fungerende scorer er fortsat ikke bevist af 210/673-strukturen.
+
+# NYESTE SANDHED – 2026-09-15 – DMI-sti virker; historisk binding stoppede før write
+
+4.0.377 bestod sourcegate `34946601576`, blev merged gennem PR #319 som main
+`ec26f8e447c12fa47e6dadec7207cbbb418a663b`, og providerfri code-only
+`34947169348` beviste restore, migration, offentlig genopbygning, 210/673,
+kanonisk DMI-cache samt privat specifikation og bundle. Ingen provider, oneoff
+eller normal weather kørte.
+
+Private writes, Pages og central completion skete ikke. Pointerlæseren afviste
+forgængerens gamle modelbundlehash, før det eksakte migrationsbevis blev nået.
+Lokal 4.0.378 skelner rollerne: current er normalt aktuel; under overgangen må
+den kun matche det eksakte forgængermanifest; previous er stramt valideret
+historisk rollback. Samme vejrtid er repræsenterbar, mens DEC-0158 fortsat er
+den eneste mutationstilladelse. DEC-0159.
+
+Næste: målrettet slutkontrol, commit/push, én exact-head sourcegate, merge og
+providerfri code-only. Derefter liveverifikation og først så normal
+tidsbegrænset weather. Ingen oneoff.
+
 # NYESTE SANDHED – 2026-09-15 – cache var komplet; code-only brugte forkert filsti
 
 4.0.376 bestod exact-head sourcegate `34941640752`, blev merged gennem PR #318

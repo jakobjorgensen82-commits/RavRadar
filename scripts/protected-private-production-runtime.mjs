@@ -489,16 +489,41 @@ export async function buildProtectedPrivateRuntimeArchive({
   };
 }
 
-function validateBinding(value) {
+function canonicalBindingShape(value, label = 'Private runtime descriptor model binding') {
   if (!isPlainObject(value)) throw new Error('Private runtime descriptor model binding is invalid');
   const expected = ravScoreModelBinding();
-  exactKeys(value, Object.keys(expected), 'Private runtime descriptor model binding');
-  assertRavScoreModelBinding(value, 'Private runtime descriptor model binding');
+  exactKeys(value, Object.keys(expected), label);
   if (!SHA256_PATTERN.test(value.modelContractSha256)
     || !SHA256_PATTERN.test(value.modelBundleSha256)) {
     throw new Error('Private runtime descriptor model digests are invalid');
   }
-  return { ...expected };
+  for (const key of Object.keys(expected).filter(key => !key.endsWith('Sha256'))) {
+    if (typeof value[key] !== 'string'
+      || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$/.test(value[key])) {
+      throw new Error(`${label} has invalid ${key}`);
+    }
+  }
+  return Object.fromEntries(Object.keys(expected).map(key => [key, value[key]]));
+}
+
+function validateBinding(value, {
+  allowedBindings,
+  allowHistorical = false,
+} = {}) {
+  const canonical = canonicalBindingShape(value);
+  if (allowHistorical) return canonical;
+  if (Array.isArray(allowedBindings)) {
+    const allowed = allowedBindings.map((binding, index) => canonicalBindingShape(
+      binding,
+      `Allowed private runtime model binding ${index}`,
+    ));
+    if (!allowed.some(binding => same(binding, canonical))) {
+      throw new Error('Private runtime descriptor model binding is not an allowed exact binding');
+    }
+  } else {
+    assertRavScoreModelBinding(canonical, 'Private runtime descriptor model binding');
+  }
+  return canonical;
 }
 
 function validateContractHashes(value) {
@@ -518,7 +543,7 @@ function validateContractHashes(value) {
   return Object.fromEntries(keys.map(key => [key, value[key]]));
 }
 
-function validateDescriptorMetadata(value, policy) {
+function validateDescriptorMetadata(value, policy, bindingOptions = {}) {
   if (value.privacyClass !== policy.privacyClass
     || value.bucketId !== policy.bucketId
     || !SHA256_PATTERN.test(String(value.objectSha256 ?? ''))
@@ -536,13 +561,15 @@ function validateDescriptorMetadata(value, policy) {
       'Private runtime descriptor production reference',
     ),
     generatedAt: canonicalTime(value.generatedAt, 'Private runtime descriptor generation time'),
-    modelBinding: validateBinding(value.modelBinding),
+    modelBinding: validateBinding(value.modelBinding, bindingOptions),
     contractHashes: validateContractHashes(value.contractHashes),
   };
 }
 
 export function validateProtectedPrivateRuntimeDescriptor(value, {
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  allowedModelBindings,
+  allowHistoricalModelBinding = false,
 } = {}) {
   assertObjectSetPolicy(policy);
   if (value?.schemaVersion === policy.legacySchemaVersion) {
@@ -552,7 +579,10 @@ export function validateProtectedPrivateRuntimeDescriptor(value, {
       || value.objectBytes > policy.maximumArchiveBytes) {
       throw new Error('Private runtime legacy object descriptor is invalid');
     }
-    return validateDescriptorMetadata(value, policy);
+    return validateDescriptorMetadata(value, policy, {
+      allowedBindings: allowedModelBindings,
+      allowHistorical: allowHistoricalModelBinding,
+    });
   }
 
   exactKeys(value, DESCRIPTOR_KEYS, 'Private runtime object-set descriptor');
@@ -584,29 +614,40 @@ export function validateProtectedPrivateRuntimeDescriptor(value, {
   if (totalBytes !== value.objectBytes) {
     throw new Error('Private runtime object-set byte total is invalid');
   }
-  return validateDescriptorMetadata({ ...value, objects }, policy);
+  return validateDescriptorMetadata({ ...value, objects }, policy, {
+    allowedBindings: allowedModelBindings,
+    allowHistorical: allowHistoricalModelBinding,
+  });
 }
 
 export function validateProtectedPrivateRuntimePointer(value, {
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  allowedCurrentModelBindings,
+  allowHistoricalCurrentModelBinding = false,
 } = {}) {
   exactKeys(value, POINTER_KEYS, 'Private runtime pointer');
   if (![policy.schemaVersion, policy.legacySchemaVersion].includes(value.schemaVersion)
     || value.kind !== policy.pointerKind) {
     throw new Error('Private runtime pointer identity is invalid');
   }
-  const current = validateProtectedPrivateRuntimeDescriptor(value.current, { policy });
+  const current = validateProtectedPrivateRuntimeDescriptor(value.current, {
+    policy,
+    allowedModelBindings: allowedCurrentModelBindings,
+    allowHistoricalModelBinding: allowHistoricalCurrentModelBinding,
+  });
   const previous = value.previous === null
     ? null
-    : validateProtectedPrivateRuntimeDescriptor(value.previous, { policy });
+    : validateProtectedPrivateRuntimeDescriptor(value.previous, {
+      policy,
+      allowHistoricalModelBinding: true,
+    });
   if (current.schemaVersion !== value.schemaVersion) {
     throw new Error('Private runtime pointer current generation has another schema');
   }
   if (previous) {
     const previousMs = Date.parse(previous.productionReferenceAt);
     const currentMs = Date.parse(current.productionReferenceAt);
-    if (previousMs > currentMs
-      || (previousMs === currentMs && previous.objectSha256 !== current.objectSha256)) {
+    if (previousMs > currentMs) {
       throw new Error('Private runtime pointer generations are not monotonic');
     }
   }
@@ -746,7 +787,12 @@ async function invokeDocumentRequest(request, suffix, options, operation) {
   }
 }
 
-async function readPointerRow(request, { allowMissing, policy }) {
+async function readPointerRow(request, {
+  allowMissing,
+  policy,
+  allowedCurrentModelBindings,
+  allowHistoricalCurrentModelBinding = false,
+}) {
   const key = policy.documentKey;
   const rows = await invokeDocumentRequest(
     request,
@@ -768,7 +814,15 @@ async function readPointerRow(request, { allowMissing, policy }) {
     || Number(row.version) < 1) {
     throw new Error('Private runtime pointer row is invalid');
   }
-  return { ...row, version: Number(row.version), payload: validateProtectedPrivateRuntimePointer(row.payload, { policy }) };
+  return {
+    ...row,
+    version: Number(row.version),
+    payload: validateProtectedPrivateRuntimePointer(row.payload, {
+      policy,
+      allowedCurrentModelBindings,
+      allowHistoricalCurrentModelBinding,
+    }),
+  };
 }
 
 function assertStorage(storage) {
@@ -827,10 +881,15 @@ async function removeCreatedRuntimeIfUnreferenced({
   storage,
   objectPaths,
   policy,
+  allowedCurrentModelBindings,
 }) {
   let latest;
   try {
-    latest = await readPointerRow(request, { allowMissing: true, policy });
+    latest = await readPointerRow(request, {
+      allowMissing: true,
+      policy,
+      allowedCurrentModelBindings,
+    });
   } catch {
     // A failed pointer reread leaves the reference state unknown. Keeping the
     // immutable object is safer than deleting something a concurrent writer
@@ -889,8 +948,10 @@ export function validateSameReferencePrivateRuntimeSuccessor({
     'Same-reference private runtime migration report');
   const predecessorFiles = exactBundleFileMap(predecessorManifest, 'Predecessor private runtime manifest');
   const successorFiles = exactBundleFileMap(successorManifest, 'Successor private runtime manifest');
-  const predecessorBindingKeys = Object.keys(predecessorManifest.modelBinding ?? {}).sort(compareText);
-  const successorBindingKeys = Object.keys(successorManifest.modelBinding ?? {}).sort(compareText);
+  const predecessorBinding = validateBinding(predecessorManifest.modelBinding, { allowHistorical: true });
+  const successorBinding = validateBinding(successorManifest.modelBinding);
+  const predecessorBindingKeys = Object.keys(predecessorBinding).sort(compareText);
+  const successorBindingKeys = Object.keys(successorBinding).sort(compareText);
   const changedBindingFields = predecessorBindingKeys.filter(
     key => predecessorManifest.modelBinding[key] !== successorManifest.modelBinding[key],
   );
@@ -982,8 +1043,22 @@ export async function publishProtectedPrivateProductionRuntime({
     sourceHead,
     policy,
   });
-  const existing = await readPointerRow(request, { allowMissing: true, policy });
+  const predecessorBinding = sameReferenceSuccessorEvidence
+    ? validateBinding(
+      sameReferenceSuccessorEvidence.predecessorManifest?.modelBinding,
+      { allowHistorical: true },
+    )
+    : null;
+  const allowedCurrentModelBindings = predecessorBinding
+    ? [ravScoreModelBinding(), predecessorBinding]
+    : undefined;
+  const existing = await readPointerRow(request, {
+    allowMissing: true,
+    policy,
+    allowedCurrentModelBindings,
+  });
   let sameReference = false;
+  let sameContentDifferentProducer = false;
   let sameReferenceSuccessor = false;
   if (existing) {
     const centralMs = Date.parse(existing.payload.current.productionReferenceAt);
@@ -994,6 +1069,15 @@ export async function publishProtectedPrivateProductionRuntime({
     if (centralMs === localMs) {
       if (same(existing.payload.current, built.descriptor)) {
         sameReference = true;
+      } else if (same(
+        { ...existing.payload.current, sourceHead: '<producer>' },
+        { ...built.descriptor, sourceHead: '<producer>' },
+      )) {
+        // sourceHead identifies the producer of this immutable generation.
+        // A later code-only deploy must not rewrite it when every byte and
+        // every data/model contract is otherwise identical.
+        sameReference = true;
+        sameContentDifferentProducer = true;
       } else {
         if (!sameReferenceSuccessorEvidence) {
           throw new Error('Private runtime publication conflicts at the same production reference');
@@ -1012,6 +1096,12 @@ export async function publishProtectedPrivateProductionRuntime({
 
   await storage.ensurePrivateBucket();
   const createdObjectPaths = [];
+  const pointer = {
+    schemaVersion: policy.schemaVersion,
+    kind: policy.pointerKind,
+    current: built.descriptor,
+    previous: existing?.payload.current ?? null,
+  };
   const uploadAndVerify = async () => {
     for (const object of built.objects) {
       const upload = await storage.uploadImmutable(object.descriptor.objectPath, object.bytes);
@@ -1029,7 +1119,9 @@ export async function publishProtectedPrivateProductionRuntime({
     if (sameReference) {
       return {
         published: false,
-        reason: 'protected-private-runtime-already-current',
+        reason: sameContentDifferentProducer
+          ? 'protected-private-runtime-content-already-current'
+          : 'protected-private-runtime-already-current',
         centralVersion: existing.version,
         productionReferenceAt: built.descriptor.productionReferenceAt,
         bundleContentSha256: built.descriptor.bundleContentSha256,
@@ -1039,12 +1131,6 @@ export async function publishProtectedPrivateProductionRuntime({
         privatePayloadLogged: false,
       };
     }
-    const pointer = {
-      schemaVersion: policy.schemaVersion,
-      kind: policy.pointerKind,
-      current: built.descriptor,
-      previous: existing?.payload.current ?? null,
-    };
     if (!existing) {
       const inserted = await invokeDocumentRequest(
         request,
@@ -1083,28 +1169,57 @@ export async function publishProtectedPrivateProductionRuntime({
       throw new Error('Private runtime pointer readback does not match the publication');
     }
   } catch (error) {
-    if (createdObjectPaths.length > 0) {
-      try {
-        await removeCreatedRuntimeIfUnreferenced({
-          request,
-          storage,
-          objectPaths: createdObjectPaths,
-          policy,
-        });
-      } catch {
-        // Preserve the publication failure. Cleanup is intentionally best
-        // effort and may only target this attempt's newly-created object.
+    let committedDespiteLostResponse = false;
+    try {
+      const recovered = await readPointerRow(request, {
+        allowMissing: false,
+        policy,
+      });
+      const intendedVersion = existing ? existing.version + 1 : 1;
+      if (recovered.version === intendedVersion && same(recovered.payload, pointer)) {
+        expectedVersion = intendedVersion;
+        readback = recovered;
+        committedDespiteLostResponse = true;
       }
+    } catch {
+      // The original publication error remains authoritative unless exact
+      // pointer version and payload can be proved by readback.
     }
-    throw error;
+    if (committedDespiteLostResponse) {
+      // Continue to retention and the normal success result. Never issue a
+      // second write for an ambiguous response.
+    } else {
+      if (createdObjectPaths.length > 0) {
+        try {
+          await removeCreatedRuntimeIfUnreferenced({
+            request,
+            storage,
+            objectPaths: createdObjectPaths,
+            policy,
+            allowedCurrentModelBindings,
+          });
+        } catch {
+          // Preserve the publication failure. Cleanup is intentionally best
+          // effort and may only target this attempt's newly-created object.
+        }
+      }
+      throw error;
+    }
   }
 
   const retired = existing?.payload.previous ?? null;
+  let retentionCleanupFailureCount = 0;
   if (retired) {
     const retainedPaths = referencedObjectPaths(readback.payload);
     for (const object of descriptorObjects(retired)) {
       if (!retainedPaths.has(object.objectPath)) {
-        await storage.removeExact(object.objectPath);
+        try {
+          await storage.removeExact(object.objectPath);
+        } catch {
+          // The pointer has already been committed and verified. Cleanup is
+          // repairable maintenance, not evidence that publication failed.
+          retentionCleanupFailureCount += 1;
+        }
       }
     }
   }
@@ -1119,6 +1234,8 @@ export async function publishProtectedPrivateProductionRuntime({
     objectSha256: built.descriptor.objectSha256,
     objectCount: built.descriptor.objectCount,
     rollbackAvailable: readback.payload.previous !== null,
+    retentionCleanupComplete: retentionCleanupFailureCount === 0,
+    retentionCleanupFailureCount,
     privatePayloadLogged: false,
   };
 }
@@ -1204,7 +1321,14 @@ export async function restoreProtectedPrivateProductionRuntime({
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   assertStorage(storage);
-  const row = await readPointerRow(request, { allowMissing: true, policy });
+  const row = await readPointerRow(request, {
+    allowMissing: true,
+    policy,
+    // Candidate compatibility is established from the archived manifest and
+    // exact bytes below. Pointer shape must not hide a compatible previous
+    // merely because current belongs to another model version.
+    allowHistoricalCurrentModelBinding: true,
+  });
   if (!row) {
     return {
       restored: false,
@@ -1234,6 +1358,17 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
+      if (!same(descriptor.modelBinding, expected.modelBinding)
+        || !same(descriptor.contractHashes, expected.contractHashes)) {
+        const error = new Error('Protected private runtime generation is incompatible with this consumer');
+        error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
+        rejections.push({
+          error,
+          code: 'MODEL_OR_CONTRACT_INELIGIBLE',
+          eligible: false,
+        });
+        continue;
+      }
       const candidate = path.join(
         context.root,
         `.protected-runtime-candidate-${process.pid}-${index}-${crypto.randomBytes(5).toString('hex')}`,
@@ -1272,13 +1407,20 @@ export async function restoreProtectedPrivateProductionRuntime({
         // current once; previous is downloaded only for genuine rollback.
         break;
       } catch (error) {
-        rejections.push({ error, code: safeRestoreRejectionCode(error, rejectionStage) });
+        rejections.push({
+          error,
+          code: safeRestoreRejectionCode(error, rejectionStage),
+          eligible: true,
+        });
         await fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
       }
     }
     if (!selected) {
-      if (rejections.length === descriptors.length
-        && rejections.every(item => item.error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED')) {
+      const eligibleRejections = rejections.filter(item => item.eligible);
+      if (eligibleRejections.length > 0
+        && eligibleRejections.every(
+          item => item.error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED',
+        )) {
         return {
           restored: false,
           reason: 'protected-private-runtime-expired',
@@ -1325,7 +1467,11 @@ export async function auditProtectedPrivateRuntimeAnonymousDenial({
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   assertStorage(storage);
-  const row = await readPointerRow(request, { allowMissing: false, policy });
+  const row = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
+  });
   const statuses = [];
   for (const object of descriptorObjects(row.payload.current)) {
     const status = await storage.anonymousStatus(object.objectPath);
@@ -1362,6 +1508,8 @@ export function createProtectedPrivateRuntimeClients({
   serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
   fetchImpl = globalThis.fetch,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  retryDelayMs = 1_000,
 } = {}) {
   const url = safeSupabaseUrl(supabaseUrl);
   const key = typeof serviceRoleKey === 'string' ? serviceRoleKey.trim() : '';
@@ -1377,6 +1525,28 @@ export function createProtectedPrivateRuntimeClients({
   const bucketEndpoint = `${url}/storage/v1/bucket`;
   const objectEndpoint = `${url}/storage/v1/object`;
 
+  async function retryableFetch(target, options, label) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const response = await fetchImpl(target, options);
+        if (attempt === 1 && [429, 502, 503, 504].includes(response.status)) {
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        return response;
+      } catch (error) {
+        if (attempt === 1) {
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        const wrapped = new Error(`Protected private runtime ${label} could not be reached`);
+        wrapped.cause = error;
+        throw wrapped;
+      }
+    }
+    throw new Error(`Protected private runtime ${label} retry was exhausted`);
+  }
+
   async function responseText(response) {
     const text = await response.text();
     let json = null;
@@ -1384,11 +1554,11 @@ export function createProtectedPrivateRuntimeClients({
     return { text, json };
   }
   async function ensurePrivateBucket() {
-    let response = await fetchImpl(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
+    let response = await retryableFetch(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
       headers,
-    });
+    }, 'bucket read');
     if (response.status === 404) {
-      response = await fetchImpl(bucketEndpoint, {
+      response = await retryableFetch(bucketEndpoint, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -1398,13 +1568,13 @@ export function createProtectedPrivateRuntimeClients({
           file_size_limit: policy.maximumArchiveBytes,
           allowed_mime_types: [policy.mimeType],
         }),
-      });
+      }, 'bucket creation');
       if (!response.ok && response.status !== 409) {
         throw new Error('Protected private runtime bucket creation failed closed');
       }
-      response = await fetchImpl(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
+      response = await retryableFetch(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
         headers,
-      });
+      }, 'bucket readback');
     }
     const parsed = await responseText(response);
     const bucket = parsed.json;
@@ -1422,7 +1592,7 @@ export function createProtectedPrivateRuntimeClients({
     return true;
   }
   async function uploadImmutable(objectPath, bytes) {
-    const response = await fetchImpl(
+    const response = await retryableFetch(
       `${objectEndpoint}/${encodeURIComponent(policy.bucketId)}/${encodeObjectPath(objectPath)}`,
       {
         method: 'POST',
@@ -1433,6 +1603,7 @@ export function createProtectedPrivateRuntimeClients({
         },
         body: bytes,
       },
+      'immutable upload',
     );
     if (response.ok) return { created: true };
     const parsed = await responseText(response);
@@ -1445,9 +1616,10 @@ export function createProtectedPrivateRuntimeClients({
     throw new Error('Protected private runtime immutable upload failed closed');
   }
   async function download(objectPath) {
-    const response = await fetchImpl(
+    const response = await retryableFetch(
       `${objectEndpoint}/authenticated/${encodeURIComponent(policy.bucketId)}/${encodeObjectPath(objectPath)}`,
       { headers },
+      'download',
     );
     const length = Number(response.headers?.get?.('content-length'));
     if (!response.ok
@@ -1461,20 +1633,23 @@ export function createProtectedPrivateRuntimeClients({
     return bytes;
   }
   async function removeExact(objectPath) {
-    const response = await fetchImpl(
+    const response = await retryableFetch(
       `${objectEndpoint}/${encodeURIComponent(policy.bucketId)}`,
       {
         method: 'DELETE',
         headers,
         body: JSON.stringify({ prefixes: [objectPath] }),
       },
+      'retention cleanup',
     );
     if (!response.ok) throw new Error('Protected private runtime retention cleanup failed closed');
     return true;
   }
   async function anonymousStatus(objectPath) {
-    const response = await fetchImpl(
+    const response = await retryableFetch(
       `${objectEndpoint}/authenticated/${encodeURIComponent(policy.bucketId)}/${encodeObjectPath(objectPath)}`,
+      undefined,
+      'anonymous audit',
     );
     return response.status;
   }

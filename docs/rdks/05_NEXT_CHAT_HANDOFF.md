@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.378 samlet og måltestet
+
+Læs `docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`, DEC-0159 og DEC-0160.
+Fund A–G er implementeret samlet i arbejdsbranch
+`codex/4.0.378-historical-private-binding` i `RavRadar-4.0.366`; målrettede
+kontroller er grønne. Main `ec26f8e4` og produktion er uændret. Bevar hele den
+ucommittede 4.0.378-pakke. Næste: synkronisér docs/geodatabevis, commit/push,
+én exact-head sourcegate, merge og providerfri code-only. Ingen provider,
+weather eller oneoff før offentlig modelverifikation.
+
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.378 historisk rollbackbinding
+
+Main er `ec26f8e4` efter PR #319/sourcegate `34946601576`. Providerfri
+`34947169348` beviste 4.0.377’s DMI-sti, privat spec/bundle, offentlig runtime
+og 210/673. Det stoppede før private writes, Pages og completion, fordi
+pointerlæseren krævede ny modelhash på forgænger-current.
+
+Branch `codex/4.0.378-historical-private-binding` accepterer gammel current kun
+ved eksakt forgængermanifest i samme-reference-overgangen. Efter write skal
+current være aktuel; previous er stramt valideret historisk rollback. Hele
+publiceringslivscyklussen er regressionstestet. Næste: slutdiff, commit/push,
+én exact-head gate, merge og providerfri code-only; derefter livekontrol og
+normal weather. Ingen oneoff. DEC-0159. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.377 installeret DMI-cache
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch

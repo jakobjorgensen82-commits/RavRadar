@@ -1,3 +1,34 @@
+# NYESTE CHECKPOINT – 2026-09-15 – 4.0.378 samlet og klar til exact-head
+
+Læs først `docs/ai/ASTRA_DELIVERY_CHAIN_REVIEW_2026-09-15.md`, DEC-0159 og
+DEC-0160. Astra-fund A–G er samlet implementeret på Sol/Ekstra høj i
+`RavRadar-4.0.366`, branch `codex/4.0.378-historical-private-binding`.
+Målrettede runtime-, CAS-, REST-, workflow-, readiness- og YAML-kontroller er
+grønne. Historisk restore bruger nu to reelle arkiver; code-only deployer den
+eksakte assistent og samler fire uafhængige prewrite-kontroller før writes.
+
+Main er stadig `ec26f8e4`; ingen ny gate, deploy, provider, weather eller
+oneoff er startet. Fortsæt med dokumentations-/geodatabevis, commit/push, én
+exact-head sourcegate, merge og providerfri code-only. Verificér derefter
+central/private/Edge/Pages. Først så må normal weather bevise tal, scorer,
+rotation og cache. 210/673 er ikke numerisk komplethed.
+
+# NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.378 bevarer historisk rollbackbinding
+
+Main er `ec26f8e4` efter PR #319/sourcegate `34946601576`. Providerfri
+code-only `34947169348` beviste 4.0.377’s kanoniske DMI-sti, privat spec/bundle,
+offentlig genopbygning og 210/673-audit. Den stoppede før private writes,
+Pages og completion, fordi pointerlæseren afviste forgængerens gamle
+modelbundlehash, før migrationsbeviset blev nået.
+
+Branch `codex/4.0.378-historical-private-binding` accepterer gammel current kun
+ved eksakt forgængermanifest under samme-reference-overgangen. Efter write skal
+current matche aktiv model; previous bevares som stramt formvalideret historisk
+rollback og verificeres fortsat mod konkret forventning og lagret bundle ved
+restore. Direkte publiceringslivscyklus er grøn. Fortsæt: docs/geodatadiff →
+commit/push → én exact-head sourcegate → merge → providerfri code-only →
+livekontrol → normal weather. Ingen oneoff. DEC-0159. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-15 – lokal 4.0.377 bruger installeret DMI-cache
 
 Arbejd i siblingworktree `RavRadar-4.0.366`, branch
