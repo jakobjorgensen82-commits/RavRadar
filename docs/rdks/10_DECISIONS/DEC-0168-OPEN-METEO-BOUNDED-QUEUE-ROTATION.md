@@ -1,6 +1,6 @@
 # DEC-0168 – Tidsbegrænset Open-Meteo roterer retfærdigt gennem restkøen
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.386, exact-head og livebevis afventer
+**Status:** Merged i 4.0.386; provider-livebevis afventer den private contract-only-genbinding i DEC-0169
 **Dato:** 2026-09-16
 
 ## Evidens

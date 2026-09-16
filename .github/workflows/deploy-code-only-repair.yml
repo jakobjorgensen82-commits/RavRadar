@@ -421,7 +421,10 @@ jobs:
         run: |
           set -euo pipefail
           predecessor="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"
-          test "${{ steps.operational-action.outputs.action }}" = "integrated-historical-maintenance"
+          case "${{ steps.operational-action.outputs.action }}" in
+            integrated|integrated-historical-maintenance) ;;
+            *) echo "Private runtime contract rebind requires active integrated maintenance." >&2; exit 1 ;;
+          esac
           test "$(gh api "repos/$GITHUB_REPOSITORY/compare/$predecessor...$GITHUB_SHA" --jq '.status')" = "ahead"
           git fetch --no-tags --depth=1 origin "$predecessor"
           test "$(git rev-parse FETCH_HEAD^{commit})" = "$predecessor"

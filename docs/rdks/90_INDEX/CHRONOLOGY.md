@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.387 genbinder en aktuel integreret model til ny vejrkodekontrakt
+
+- 4.0.386 bestod sourcegate `35050098674`, PR #329 og main `c3833354`.
+- Normalrun `35050697588` stoppede før providers på to forventet inkompatible private runtimegenerationer efter den reelle Open-Meteo-kodeændring.
+- Providerfri code-only `35051090133` valgte korrekt `integrated`, men predecessor-vagten accepterede kun historisk maintenance og stoppede før writes/deploy.
+- 4.0.387 tillader den eksisterende eksakte `CONTRACT_ONLY_REBIND` for same-binding `integrated`, uden at åbne modeltransitioner eller unødvendig databasemigration. DEC-0169.
+
 # 2026-09-16 – 4.0.386 roterer Open-Meteos tidsbegrænsede restkø
 
 - 4.0.385 blev merged som main `879f4644`; normalrun `35043360563` og `35046314979` gendannede de private cacher og gemte providerfremgang.

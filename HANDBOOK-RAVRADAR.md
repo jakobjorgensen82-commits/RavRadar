@@ -1,6 +1,33 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.386
+**Håndbogsversion:** 4.0.387
+
+## 88.91 4.0.387 – Den samme cache følger sikkert med ny vejrkode
+
+### Aktuel status – providerfri kodeovergang
+
+**Status – lokal rettelse klar; GitHub-kontrol og code-only mangler**
+
+**Kort fortalt:** Open-Meteo-rotationen ændrede ikke de gemte vejrdata, men
+den ændrede kode, som læser og vedligeholder dem. Derfor fik den private cache
+et nyt kontraktfingeraftryk. Normal weather gjorde det rigtige og nægtede at
+åbne den gamle pakke direkte.
+
+RavRadar har allerede en providerfri code-only-vej, som kan bevise den gamle
+pakke med dens egen kode og derefter genbinde præcis de samme filer til den nye
+kontrakt. Første forsøg valgte korrekt den aktive integrerede model, men et
+enkelt trin tillod fejlagtigt kun en historisk modelbinding.
+
+4.0.387 tillader den eksakte genbinding for både en allerede aktuel integreret
+model og en historisk integreret vedligeholdelse. Candidate G, modelretur og
+cutover kan ikke bruge ruten. En databasemigration kører fortsat kun, hvis
+modelbindingen virkelig er historisk.
+
+Code-only må ikke hente vejr og skal bevise, at vejr, scorer, geometri,
+målinger og alle private filer er uændrede. Først efter providerfri publish,
+Pages og central opdatering genaktiveres den almindelige vejrkørsel.
+
+4.0.387 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 
 ## 88.90 4.0.386 – Open-Meteo fortsætter et nyt sted i restkøen
 

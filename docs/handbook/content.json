@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.386",
+  "handbookVersion": "4.0.387",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-16",
   "sections": [
+    {
+      "id": "same-binding-code-only-private-runtime-rebind-4-0-387",
+      "chapter": "88.91",
+      "title": "4.0.387 – Den samme cache følger sikkert med ny vejrkode",
+      "summary": "Code-only beviser den gamle private runtime med dens egen kontrakt og genbinder identiske filer til den nye kode uden providerkald.",
+      "body": "<p><strong>Status 16. september:</strong> Open-Meteo-rotationen er merged, men første normale run stoppede før providers, fordi ændret vejrkode korrekt gav den private runtime en ny kontrakthash.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> De gemte data var ikke forkerte. Koden, der læser dem, var ændret. Derfor skulle samme cache først bevises under den gamle kode og genbindes sikkert til den nye.</div><div class=\"handbook-stack\"><p>Den eksisterende providerfrie code-only-vej valgte korrekt den aktive integrerede model. Et enkelt predecessor-trin tillod dog kun historisk modelvedligeholdelse og afviste derfor den aktuelle same-binding-rute før migration og writes.</p><p>4.0.387 tillader den eksakte <code>CONTRACT_ONLY_REBIND</code> for både almindelig integreret og historisk integreret vedligeholdelse. Candidate G, retur og cutover er fortsat afvist. Databasebindingsmigration kører kun, når bindingen virkelig er historisk.</p><p>Code-only henter intet vejr og skal bevise uændrede vejrdata, scorer, geometri, målinger og private filer. Efter providerfri publish, Pages og central closure genaktiveres én normal <code>force=false</code>-weather. Ingen oneoff.</p></div>"
+    },
     {
       "id": "open-meteo-bounded-queue-rotation-4-0-386",
       "chapter": "88.90",
@@ -525,7 +532,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.386 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.387 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },

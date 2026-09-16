@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.387 same-binding private rebind
+
+4.0.386 er main `c3833354` efter grøn exact-head `35050098674` og PR #329.
+Normalrun `35050697588` stoppede før providers, fordi den ændrede Open-Meteo-
+kode gav en ny fuld runtimekontrakt. Code-only `35051090133` valgte action
+`integrated`, men predecessor-steppet var fejlagtigt låst til historisk action
+og stoppede før migration, writes og deploy.
+
+4.0.387 tillader den eksisterende eksakte `CONTRACT_ONLY_REBIND` for både
+`integrated` og `integrated-historical-maintenance`, men ingen modeltransition.
+Databasebindingsmigrationen er stadig kun historisk. Scheduler er pauset.
+Afslut docs/geodatabevis, måltest, én exact-head og merge; kør providerfri
+code-only og derefter én normal `force=false` weather. Ingen oneoff. DEC-0169.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.386 fair Open-Meteo-restkø
 
 4.0.385 er main `879f4644`. Normalrun `35043360563` og `35046314979`
