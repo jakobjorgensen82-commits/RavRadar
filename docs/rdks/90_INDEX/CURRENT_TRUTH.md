@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-16 – normal rotation virker; 4.0.390 samler DMI/Copernicus-tiden
+
+4.0.389 er main `bf8eb739476631ec534df3b2e3ba75e7370a3c29`.
+Normalrun `35069942328` reducerede 6.450 reelle rester før Open-Meteo til
+5.025 efter. Normalrun `35074225256` rykkede target fra 07Z til 08Z,
+øgede DMI fra 14.260 til 14.772 og regional DMI fra 416 til 704, og
+reducerede 5.181 rester før Open-Meteo til 4.565 efter.
+
+Open-Meteo nåede hele sin 14-batch-kø i begge runs. Andet run ramte ikke
+tidsbudgettet; resten var 4.565 provider-negative par i passagen med
+null-/gitterafstandsevidens. Mere Open-Meteo-tid er derfor ikke løsningen.
+Normal DMI/Copernicus-rotation gør reel fremgang, men vil kræve mange runs.
+
+Lokal 4.0.390 tilføjer en eksplicit main-only
+`force + extended_provider_bootstrap` gennem den fungerende normale
+post-cutover-rute. Kun den får DMI 3.600 sekunder/seks samlinger,
+Copernicus 3.300 sekunder og 240-minutters jobloft. DMI har længst providertid. Normaldrift forbliver
+kort. Nul-missing-gaten består. Scheduler er pauset. DEC-0172.
+
 # NYESTE SANDHED – 2026-09-16 – rotation virker; normal Open-Meteo-tid er flaskehalsen
 
 4.0.388 er main `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`.

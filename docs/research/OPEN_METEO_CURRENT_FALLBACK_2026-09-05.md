@@ -1,5 +1,14 @@
 # Open-Meteo som sidste operationelle currentfallback – 2026-09-05
 
+## Driftstillæg 2026-09-16 – to fulde køpassager
+
+Run `35069942328` og `35074225256` nåede begge alle 14 initiale
+Open-Meteo-batches. Andet run udførte 75 batchforsøg inklusive retries og
+ramte ikke tidsbudgettet. 4.565 unikke par forblev provider-negative med
+null-/gitterafstandsevidens. DEC-0172 giver derfor længere tid til DMI og
+Copernicus gennem en eksplicit normalrute-bootstrap, mens Open-Meteo forbliver
+900 sekunder og `--critical-only`.
+
 ## Driftstillæg 2026-09-16
 
 Normalrun `35064588725` beviste kørotation og cachefremgang, men også at

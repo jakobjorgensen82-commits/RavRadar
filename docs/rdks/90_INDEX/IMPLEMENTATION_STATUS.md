@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.390 forlænget providerbootstrap
+
+- [x] Merge 4.0.389 som main `bf8eb739476631ec534df3b2e3ba75e7370a3c29`.
+- [x] Kør normal `35069942328`; mål 6.450 rester før og 5.025 efter Open-Meteo.
+- [x] Kør normal `35074225256`; mål DMI 14.772, regional 704, 5.181 før og 4.565 efter Open-Meteo.
+- [x] Bevis at Open-Meteo nåede hele køen; mere tid dér er ikke hovedløsningen.
+- [x] Implementér eksplicit main-only forlænget DMI/Copernicus-bootstrap gennem normalruten.
+- [x] Bevar korte normalbudgetter, 900 sekunders critical-only Open-Meteo og hård nul-missing-gate.
+- [x] Synkronisér version/RDKS/håndbog/changelog og bestå afgrænsede slutkontroller.
+- [ ] Commit/push, exact-head sourcegate og merge.
+- [ ] Kør forlænget bootstrap, analyser safe-tal og deploy kun ved nul mangler.
+- [ ] Verificér levende scorer, normal kildeovertagelse, scheduler, site og roadmap.
+
+DEC-0172 er aktiv. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.389 kritisk normal restfyldning
 
 - [x] Merge 4.0.388 som main `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47` og gennemfør providerfri genbinding.

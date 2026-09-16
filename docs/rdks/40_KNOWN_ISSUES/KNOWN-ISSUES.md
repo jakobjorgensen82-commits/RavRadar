@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-16 – forlænget DMI/Copernicus-bootstrap bygges på normalruten
+
+- **ISSUE-4.0.389-OPEN-METEO-BUDGET – LUKKET:** Begge 900-sekunderspassager nåede hele køen; andet run ramte ikke tidsbudgettet.
+- **ISSUE-POST-CUTOVER-NEGATIVE-RESIDUAL – ÅBEN P0:** 4.565 unikke par var provider-negative i `35074225256`, primært med null-/gitterafstandsevidens.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – GRØN MED LANGSOM BOOTSTRAP:** DMI og regional DMI voksede på næste target, og slutresten faldt netto 460 trods vinduesrul.
+- **ISSUE-4.0.390-EXTENDED-PROVIDER-BOOTSTRAP – RETTET LOKALT / LIVEBEVIS MANGLER:** Eksplicit main-only force-run giver længere DMI/Copernicus gennem normalruten; almindelige budgetter ændres ikke.
+- **ISSUE-LEGACY-ONEOFF-POST-CUTOVER – FORTSAT AFVIST:** Candidate G-bundet før-cutover-oneoff bruges ikke.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Intet ufuldstændigt artifact er deployet; levende numeriske scorer afventer nul mangler.
+- **ISSUE-SITE-ACCEPTANCE – AFVENTER FRISK DEPLOY:** Fuld sitekontrol følger efter komplet closure.
+
+DEC-0172. Scheduler er pauset.
+
 # NYESTE CHECKPOINT – 2026-09-16 – normal Open-Meteo-restfyldning får nok tid
 
 - **ISSUE-4.0.388-ZERO-OVERLAP-JOURNAL – LUKKET:** Normalrun `35064588725` passerede kontrollen og nåede alle providerled.

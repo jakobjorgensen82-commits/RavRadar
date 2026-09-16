@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      extended_provider_bootstrap:
+        description: "Giv DMI og Copernicus udvidet tid til at lukke reelle post-cutover-huller"
+        required: false
+        default: false
+        type: boolean
       produce_weather_handoff:
         description: "Forsegl denne komplette almindelige vejrkørsel til første integrerede cutover"
         required: false
@@ -96,6 +101,7 @@ jobs:
     timeout-minutes: 2
     outputs:
       force: ${{ steps.validated-dispatch.outputs.force || steps.dispatch-defaults.outputs.force }}
+      extended_provider_bootstrap: ${{ steps.validated-dispatch.outputs.extended_provider_bootstrap || steps.dispatch-defaults.outputs.extended_provider_bootstrap }}
       produce_weather_handoff: ${{ steps.validated-dispatch.outputs.produce_weather_handoff || steps.dispatch-defaults.outputs.produce_weather_handoff }}
       produce_weather_handoff_confirmation: ${{ steps.validated-dispatch.outputs.produce_weather_handoff_confirmation || steps.dispatch-defaults.outputs.produce_weather_handoff_confirmation }}
       geometry_v2_pilot: ${{ steps.validated-dispatch.outputs.geometry_v2_pilot || steps.dispatch-defaults.outputs.geometry_v2_pilot }}
@@ -114,6 +120,7 @@ jobs:
         shell: bash
         run: |
           echo "force=false" >> "$GITHUB_OUTPUT"
+          echo "extended_provider_bootstrap=false" >> "$GITHUB_OUTPUT"
           echo "produce_weather_handoff=false" >> "$GITHUB_OUTPUT"
           echo "produce_weather_handoff_confirmation=" >> "$GITHUB_OUTPUT"
           echo "geometry_v2_pilot=false" >> "$GITHUB_OUTPUT"
@@ -142,6 +149,7 @@ jobs:
         shell: bash
         env:
           FORCE: ${{ inputs.force }}
+          EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
           PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
           PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
           GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
@@ -169,6 +177,14 @@ jobs:
           if [ "$RETURN_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$operation_count" -gt 1 ]; then
             echo "Exactly one force, weather handoff, geometry, rollback, first cutover or return operation may be dispatched." >&2
+            exit 1
+          fi
+          if [ "$EXTENDED_PROVIDER_BOOTSTRAP" = "true" ] && [ "$FORCE" != "true" ]; then
+            echo "Extended provider bootstrap requires an explicit force run." >&2
+            exit 1
+          fi
+          if [ "$EXTENDED_PROVIDER_BOOTSTRAP" = "true" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Extended provider bootstrap is allowed only on main." >&2
             exit 1
           fi
           if { [ "$PRODUCE_WEATHER_HANDOFF" = "true" ] || [ "$ROLLBACK_MODE" != "none" ] || [ "$FIRST_CUTOVER_REQUESTED" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
@@ -224,6 +240,7 @@ jobs:
         shell: bash
         env:
           FORCE: ${{ inputs.force }}
+          EXTENDED_PROVIDER_BOOTSTRAP: ${{ inputs.extended_provider_bootstrap }}
           PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
           PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
           GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
@@ -237,6 +254,7 @@ jobs:
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
           printf '%s\n' "force=$FORCE" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "extended_provider_bootstrap=$EXTENDED_PROVIDER_BOOTSTRAP" >> "$GITHUB_OUTPUT"
           printf '%s\n' "produce_weather_handoff=$PRODUCE_WEATHER_HANDOFF" >> "$GITHUB_OUTPUT"
           printf '%s\n' "produce_weather_handoff_confirmation=$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" >> "$GITHUB_OUTPUT"
           printf '%s\n' "geometry_v2_pilot=$GEOMETRY_PILOT" >> "$GITHUB_OUTPUT"
@@ -1418,6 +1436,7 @@ jobs:
     with:
       production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
+      extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}
       produce_weather_handoff: ${{ needs.validate-dispatch.outputs.produce_weather_handoff == 'true' }}
       produce_weather_handoff_confirmation: ${{ needs.validate-dispatch.outputs.produce_weather_handoff_confirmation }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}

@@ -726,7 +726,12 @@ for(const marker of [
 ]){
   ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
 }
-for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 360','--backoff-seconds 20']){
+for(const marker of [
+  'python scripts/run-copernicus-current-pilot-with-retry.py',
+  '--attempts 1',
+  "--timeout-seconds ${{ inputs.extended_provider_bootstrap == true && '3300' || '360' }}",
+  '--backoff-seconds 20',
+]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
 for(const marker of [
@@ -1384,6 +1389,7 @@ ok(activeIntegratedRecoveryBranch.includes('echo "required=false" >> "$GITHUB_OU
   &&!activeIntegratedRecoveryBranch.includes('required=true'),
 'Kun exact active integrated må vælge measured state-less recovery uden legacy bootstrap');
 const firstCutoverGuard="steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
+const extendedProviderGuard=`(inputs.extended_provider_bootstrap == true || (${firstCutoverGuard}))`;
 const waveResolverStart=buildWorkflow.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target');
 const dmiBulkStart=buildWorkflow.indexOf('name: Update DMI bulk model cache');
 const waveResolverSection=buildWorkflow.slice(waveResolverStart,dmiBulkStart);
@@ -1393,9 +1399,9 @@ ok(waveResolverStart>=0&&dmiBulkStart>waveResolverStart
   && waveResolverSection.includes(`if: ${firstCutoverGuard}`),
 'Candidate G-maintenance må aldrig starte den integrerede WAM-resolver');
 for(const marker of [
-  `DMI_BULK_MAX_DOWNLOAD_MB: \${{ ${firstCutoverGuard} && '4096' || '2048' }}`,
-  `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ ${firstCutoverGuard} && '3000' || '900' }}`,
-  `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${firstCutoverGuard} && '180' || '120' }}`,
+  `DMI_BULK_MAX_DOWNLOAD_MB: \${{ ${extendedProviderGuard} && '4096' || '2048' }}`,
+  `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ inputs.extended_provider_bootstrap == true && '3600' || (${firstCutoverGuard}) && '3000' || '900' }}`,
+  `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${extendedProviderGuard} && '180' || '120' }}`,
   `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
 ]){
   ok(dmiBulkSection.includes(marker),`DMI-producenten mangler actionbundet first-cutover-miljø: ${marker}`);
@@ -1609,8 +1615,8 @@ for(const marker of [
 ]){
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
-ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
-'First-cutover skal have et afgrænset større loft til fuld fejlopsamling uden at ændre normaldriften');
+ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
+'Providerbootstrap og first-cutover skal have hver sit afgrænsede større loft uden at ændre normaldriften');
 ok((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g)||[]).length===2,
 'Begge boolske rollbackudtræk skal bevare gyldigt false som tekst');
 for(const marker of [

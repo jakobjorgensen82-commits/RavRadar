@@ -1152,6 +1152,9 @@ for (const marker of [
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
   "needs.current-hour-readiness.outputs.ready == 'true'",
   'production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}',
+  'extended_provider_bootstrap:',
+  'Extended provider bootstrap requires an explicit force run.',
+  "extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}",
 ]) {
   if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersorkestrator mangler ${marker}`);
 }
@@ -1543,7 +1546,8 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '3' }}",
+  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.extended_provider_bootstrap == true && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '900' }}",
+  "DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}",
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
   if (!dmiProducerBlock.includes(marker)) throw new Error('Normal DMI-vedligeholdelse mangler ' + marker);
@@ -2342,8 +2346,8 @@ for (const forbidden of [
 ]) {
   assert.ok(!publicAuditBlock.includes(forbidden), `First-cutover må ikke gentage den brede kontrol: ${forbidden}`);
 }
-assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
-  'Kun first-cutover skal have tid til at gennemføre hele den udvidede valideringsplan');
+assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
+  'Kun first-cutover eller eksplicit providerbootstrap skal have det udvidede jobloft');
 assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
   'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
 for (const marker of [
@@ -3375,13 +3379,15 @@ const buildSection = buildWorkflow.slice(buildWorkflow.indexOf('\n  build-and-pr
 const deploySection = deployWorkflow.slice(deployWorkflow.indexOf('\n  deploy-pages:'));
 const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
 const buildTimeoutMinutes = buildTimeoutContract
-  === '${{ inputs.ravscore_integrated_first_cutover && 180 || 90 }}' ? 90 : Number(buildTimeoutContract);
+  === '${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}' ? 240 : Number(buildTimeoutContract);
 const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
 const dmiBulkSection = buildWorkflow.slice(
   positions.dmiBulk,
   dmiBulkEnd < 0 ? buildWorkflow.length : dmiBulkEnd,
 );
-const dmiStepTimeoutMinutes = Number(dmiBulkSection.match(/^        timeout-minutes: (\d+)$/m)?.[1]);
+const dmiStepTimeoutContract = dmiBulkSection.match(/^        timeout-minutes: (.+)$/m)?.[1];
+const dmiStepTimeoutMinutes = dmiStepTimeoutContract
+  === '${{ inputs.extended_provider_bootstrap && 70 || 55 }}' ? 70 : Number(dmiStepTimeoutContract);
 const bootstrapRuntimeSeconds = Number(
   dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'900'/)?.[1],
 );

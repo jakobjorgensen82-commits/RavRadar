@@ -1,3 +1,17 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.390 forlænget post-cutover-providerbootstrap
+
+- **REQ-4.0.390-EXPLICIT-001 – BINDENDE:** Udvidede providerbudgetter må kun aktiveres manuelt på main med både `force=true` og `extended_provider_bootstrap=true`.
+- **REQ-4.0.390-DMI-001 – BINDENDE:** Den eksplicitte bootstrap skal give førsteprioriteten DMI længst providertid: højst 3.600 sekunder, seks samlinger, 4.096 MB downloadramme og 180 sekunders slutreserve.
+- **REQ-4.0.390-COPERNICUS-001 – BINDENDE:** Den eksplicitte bootstrap må give Copernicus højst 3.300 sekunder i én bounded wrapperpassage.
+- **REQ-4.0.390-JOB-BUDGET-001 – BINDENDE:** Bootstrap-buildjobbet må have højst 240 minutter, så alle providere, cachegemninger og slutgates kan afslutte; first-cutover forbliver 180 minutter og normal drift 90 minutter.
+- **REQ-4.0.390-NORMAL-UNCHANGED-001 – BINDENDE:** Planlagt og almindelig normaldrift beholder jobloft 90 minutter, DMI 900 sekunder/tre samlinger og Copernicus 360 sekunder.
+- **REQ-4.0.390-OPEN-METEO-001 – BINDENDE:** Open-Meteo forbliver 900 sekunder og `--critical-only`; fuldt gennemløb med negative svar må ikke forlænges blindt.
+- **REQ-4.0.390-SAME-PIPELINE-001 – BINDENDE:** Bootstrap bruger den normale post-cutover-cache-, gate-, write- og deployrute. Den gamle Candidate G-oneoff bruges ikke.
+- **REQ-4.0.390-HARD-CLOSURE-001 – BINDENDE:** Kildeprioritet og nul-missing-gate består; ufuldstændig bootstrap gemmer kun privat fremgang.
+- **REQ-4.0.390-SCHEDULER-001 – BINDENDE:** Scheduler forbliver pauset, indtil komplet closure, levende scorer og efterfølgende normal vedligeholdelse er bevist.
+
+DEC-0172 følger DEC-0171's to livepassager og ændrer kun det eksplicitte manuelle DMI/Copernicus-bootstrapbudget.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.389 kritisk Open-Meteo-restfyldning
 
 - **REQ-4.0.389-NORMAL-BUDGET-001 – BINDENDE:** Den almindelige Open-Meteo-passage må bruge højst 900 sekunder på den eksakte aktuelle restliste.

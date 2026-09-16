@@ -1,6 +1,6 @@
 # DEC-0171 – Normal Open-Meteo bruger tiden på de reelle huller
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.389, exact-head og livebevis afventer
+**Status:** Merged i 4.0.389 og livebevist i normalrun `35069942328` og `35074225256`
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -44,3 +44,11 @@ leverandørprioritet eller offentlig datakontrakt. Når normal closure er grøn,
 får den særskilte Copernicus post-build-refresh igen mulighed for gradvist at
 erstatte Open-Meteo. Den efterfølgende normale drift skal måle denne
 overtagelse, før scheduleren genaktiveres.
+
+## Livebevis og næste beslutning 2026-09-16
+
+Begge 900-sekunders normalpassager nåede hele Open-Meteo-køen. Andet run
+ramte ikke tidsbudgettet og efterlod 4.565 provider-negative par. Den
+critical-only-afgrænsning virker, men mere Open-Meteo-tid er ikke løsningen.
+DEC-0172 flytter bootstrapindsatsen til længere DMI/Copernicus i en eksplicit
+normalrute-dispatch.

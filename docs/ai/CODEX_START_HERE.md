@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.390 samler forlænget providerbootstrap i normalruten
+
+Main er `bf8eb739476631ec534df3b2e3ba75e7370a3c29`. Normalrun
+`35069942328` reducerede 6.450→5.025 reelle rester. Næste
+`35074225256` rykkede target en time, øgede DMI 14.260→14.772 og
+regional DMI 416→704 samt reducerede 5.181→4.565.
+
+Open-Meteo nåede hele køen i begge runs; andet run ramte ikke dens budget.
+Resterne var provider-negative null-/gittertilfælde. Mere Open-Meteo-tid er
+forkert kurs. Den gamle Candidate G-oneoff bruges ikke.
+
+Lokal 4.0.390 tilføjer eksplicit main-only
+`force + extended_provider_bootstrap` til normalruten. Kun den får DMI
+3.600 sekunder/seks samlinger, Copernicus 3.300 sekunder og 240 minutters
+jobloft. Normaldrift forbliver kort. Fortsæt version/RDKS/håndbog/måltests →
+push/exact-head/merge → forlænget bootstrap → nul-missing/deploy/scorer →
+normal takeover/scheduler/site/roadmap. DEC-0172. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.389 lukker resterne gennem normal weather
 
 Main er `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`. Normalrun

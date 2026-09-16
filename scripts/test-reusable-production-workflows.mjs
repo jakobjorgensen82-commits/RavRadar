@@ -204,6 +204,7 @@ for (const secret of buildContract.secrets) {
 }
 for (const input of [
   'force',
+  'extended_provider_bootstrap',
   'produce_weather_handoff',
   'ravscore_integrated_first_cutover',
   'ravscore_integrated_return',
@@ -257,6 +258,7 @@ assert.equal(deployCaller.includes('code_only_repair: false'), true,
 
 const dispatchOutputs = [
   'force',
+  'extended_provider_bootstrap',
   'produce_weather_handoff',
   'produce_weather_handoff_confirmation',
   'geometry_v2_pilot',
@@ -287,6 +289,7 @@ assert.equal(
 );
 for (const literal of [
   'force=false',
+  'extended_provider_bootstrap=false',
   'produce_weather_handoff=false',
   'produce_weather_handoff_confirmation=',
   'geometry_v2_pilot=false',
