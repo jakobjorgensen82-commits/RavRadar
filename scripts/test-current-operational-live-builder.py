@@ -95,25 +95,11 @@ regional_cache = {
     "anchors": {f"REGIONAL_PROXY::{PART_ID}": {"samples": [sample]}},
 }
 closure_proof = {"closureId": HASH_B, "productionReferenceAt": REFERENCE_TEXT}
-old_but_future_sample = {
-    "capturedAt": (REFERENCE - timedelta(hours=200)).isoformat().replace("+00:00", "Z"),
-    "modelRun": (REFERENCE - timedelta(hours=3)).isoformat().replace("+00:00", "Z"),
-    "validTime": (REFERENCE + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
-}
-assert builder.regional_sample_time_valid(old_but_future_sample, REFERENCE)
-assert not builder.regional_sample_time_valid({
-    **old_but_future_sample,
-    "validTime": (REFERENCE + timedelta(hours=118)).isoformat().replace("+00:00", "Z"),
-}, REFERENCE)
-assert not builder.regional_sample_time_valid({
-    **old_but_future_sample,
-    "modelRun": (REFERENCE + timedelta(hours=2)).isoformat().replace("+00:00", "Z"),
-}, REFERENCE)
 regional = builder.regional_entries(
-    regional_cache, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
+    regional_cache, {PART_ID: TARGET}, [assignment], closure_proof,
 )
 regional_references = builder.regional_reference_entries(
-    regional_cache, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
+    regional_cache, {PART_ID: TARGET}, [assignment], closure_proof,
 )
 assert len(regional) == 1
 assert regional[0]["validTime"] == REFERENCE_TEXT
@@ -143,17 +129,89 @@ assert regional_references[0]["authorizedHoldAssignmentSha256s"] == [
     assignment["assignmentSha256"]
 ]
 
+# The closure may retain a valid long-lead forecast. Its capture time is not a
+# second validity contract: the exact source identity and vector commitment are.
+long_lead_model_run = (
+    REFERENCE - timedelta(hours=30)
+).isoformat().replace("+00:00", "Z")
+long_lead_capture = (
+    REFERENCE - timedelta(hours=29)
+).isoformat().replace("+00:00", "Z")
+long_lead_sample = json.loads(json.dumps(sample))
+long_lead_sample.update({
+    "modelRun": long_lead_model_run.replace("Z", "+00:00"),
+    "validTime": SOURCE_TEXT.replace("Z", "+00:00"),
+    "capturedAt": long_lead_capture,
+})
+long_lead_assignment = {
+    **assignment,
+    "sourceModelRun": long_lead_model_run,
+}
+long_lead_assignment["vectorCommitmentSha256"] = canonical_sha256({
+    "schemaVersion": 1,
+    "contractId": VECTOR_COMMITMENT_CONTRACT_ID,
+    "partId": PART_ID,
+    "collection": "dkss_lf",
+    "modelRun": long_lead_model_run,
+    "validTime": SOURCE_TEXT,
+    "sourceAssetSha256": HASH_A,
+    "verticalLayer": "depthbelowsea:5",
+    "verticalLayerRankM": "5.000",
+    "uMps": f"{u_value:.5f}",
+    "vMps": f"{v_value:.5f}",
+})
+long_lead_cache = {
+    **regional_cache,
+    "anchors": {
+        f"REGIONAL_PROXY::{PART_ID}": {"samples": [long_lead_sample]},
+    },
+}
+long_lead_result = builder.regional_entries(
+    long_lead_cache,
+    {PART_ID: TARGET},
+    [long_lead_assignment],
+    closure_proof,
+)
+assert len(long_lead_result) == 1
+assert long_lead_result[0]["modelRun"] == long_lead_model_run
+assert long_lead_result[0]["sourceValidTime"] == SOURCE_TEXT
+
+# Equivalent UTC spellings must not make the adapter reject a sample that the
+# closure has already canonicalized and admitted.
+assert builder.regional_closure_sample(
+    long_lead_cache["anchors"][f"REGIONAL_PROXY::{PART_ID}"],
+    source_valid_time=SOURCE_TEXT,
+    source_model_run=long_lead_model_run,
+    source_asset_sha256=HASH_A,
+) is long_lead_sample
+
+duplicate_cache = json.loads(json.dumps(long_lead_cache))
+duplicate_cache["anchors"][f"REGIONAL_PROXY::{PART_ID}"]["samples"].append(
+    json.loads(json.dumps(long_lead_sample))
+)
+try:
+    builder.regional_entries(
+        duplicate_cache,
+        {PART_ID: TARGET},
+        [long_lead_assignment],
+        closure_proof,
+    )
+except RuntimeError as error:
+    assert str(error) == "REGIONAL_CLOSURE_SAMPLE_INVALID"
+else:
+    raise AssertionError("Ambiguous regional samples must remain fail closed")
+
 poisoned = json.loads(json.dumps(regional_cache))
 poisoned["anchors"][f"REGIONAL_PROXY::{PART_ID}"]["samples"][0]["layers"]["bottom"]["uMps"] += 0.01
 try:
-    builder.regional_entries(poisoned, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE)
+    builder.regional_entries(poisoned, {PART_ID: TARGET}, [assignment], closure_proof)
 except RuntimeError as error:
     assert str(error) == "REGIONAL_CLOSURE_VECTOR_INVALID"
 else:
     raise AssertionError("Regional vector tamper must fail closed")
 try:
     builder.regional_reference_entries(
-        poisoned, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
+        poisoned, {PART_ID: TARGET}, [assignment], closure_proof,
     )
 except RuntimeError as error:
     assert str(error) == "REGIONAL_CLOSURE_VECTOR_INVALID"

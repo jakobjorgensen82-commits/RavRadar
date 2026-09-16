@@ -1,3 +1,23 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.392 mobilopstart og regional adapter
+
+4.0.391 blev leveret providerfrit i `35104320358` som main `3d7fbba9`.
+Normalrun `35105048864` gemte alle providercacher og bestod closure med
+79.147 validerede værdier og 267 lokale `MISSING`. Det stoppede derefter,
+fordi public-history-adapteren anvendte en gammel capture-heuristik på en
+allerede godkendt regional prøve.
+
+Ejeren rapporterede samtidig, at RavRadar ikke åbnede i Safari på iPhone.
+Produktionen hentede cirka 118 MB detaljer under nøddriftsopstart. 4.0.392
+matcher regional DMI ved closureens eksakte kanoniske kildeidentitet og
+holder store detaljepakker ude af browserens kritiske opstart. Gamle værdier
+vises ikke som aktuelle; siden åbner med ærlig lokal utilgængelighed.
+
+Målrettede tests og en rigtig browser mod de faktiske offentlige data er
+grønne; opstarten afsluttede på cirka fem sekunder uden browserfejl.
+Exact-head, merge, providerfri deploy, levende Safari-kontrol og én
+efterfølgende almindelig weather mangler. Scheduler er pauset. DEC-0174 og
+DEC-0175.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.391-leveringsplanen rettes
 
 4.0.391 bestod exact-head `35101396843` og blev merged som main

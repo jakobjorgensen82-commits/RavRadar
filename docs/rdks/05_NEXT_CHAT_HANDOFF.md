@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.392 klar til exact-head
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.392-regional-closure-adapter`, baseret på main
+`3d7fbba98b4f02d4462eb77763e0f786d85fe9da`.
+
+4.0.391 er live efter providerfri `35104320358`. Normal weather
+`35105048864` gemte alle providercacher og bestod closure med 79.147
+værdier plus 267 lokale `MISSING`, men public-history-adapteren stoppede
+bagefter på sin gamle regionale 12-timers capture-heuristik.
+
+4.0.392 bruger closureens eksakte regionale kildeidentitet og bevarer
+vector-/hash-/dubletkontrol. Den akutte iPhone-fejl er også rettet: en cirka
+118 MB detaljepakke hentes ikke længere under stor nøddriftsopstart, og gamle
+værdier skjules som aktuelle. Browser mod produktionsdata bliver færdig på
+cirka fem sekunder uden fejl.
+
+Måltests, version, browsermodullukning og sikkerhed er grønne. Kør
+RDKS-validering efter Master Log-opdateringen, bevis kun versionsfelt i
+geodata, commit/push, én exact-head sourcegate, merge og providerfri
+code-only. Verificér derefter levende Safari/desktop og kør én almindelig
+weather på de gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0174 og
+DEC-0175. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.391 merged; code-only-planhelper rettet
 
 Arbejd i `RavRadar-4.0.366`, branch

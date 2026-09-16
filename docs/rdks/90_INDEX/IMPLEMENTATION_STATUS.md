@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – lokal 4.0.392 mobil opstart og regional closure-adapter
+
+- [x] Lever 4.0.391 providerfrit i `35104320358` som main `3d7fbba9`; privat, Edge, Pages, 210/673 og central closure er grønne.
+- [x] Kør almindelig weather `35105048864`; gem DMI-, Copernicus- og Open-Meteo-cacher.
+- [x] Bevis `READY_WITH_MISSING` for alle 79.414 identiteter: 79.147 værdier og 267 lokale `MISSING`.
+- [x] Afgræns stoppet efter closure til regional adapters gamle 12-timers capture-heuristik.
+- [x] Erstat kun adapterens dobbeltvalidering med closureens eksakte kanoniske kildeidentitet; bevar vector-, hash- og dubletstop.
+- [x] Reproducer den offentlige hængning og afgræns den til cirka 118 MB detaljedownload under nøddriftsopstart.
+- [x] Hold store nøddriftsdetaljer ude af mobilopstarten og skjul stale score-/vejrværdier ærligt.
+- [x] Bestå målrettet data-service-, prognose-, Python- og syntakskontrol.
+- [x] Prøv ny kode mod de faktiske offentlige produktionsdata i browser: cirka fem sekunder, ingen 118 MB-download og ingen browserfejl.
+- [ ] Synkronisér releasehukommelse, geodataversionsbevis og exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only-deploy af 4.0.392.
+- [ ] Verificér levende iPhone/Safari og desktop; kør derefter én almindelig weather på de gemte cacher.
+- [ ] Bevis regional adapter, nye scorer, kildeprioritet og normal cachevedligeholdelse før scheduler.
+
+DEC-0174 og DEC-0175 er aktive. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – 4.0.391 merged; providerfri leveringsrettelse
 
 - [x] Merge 4.0.390 som main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.

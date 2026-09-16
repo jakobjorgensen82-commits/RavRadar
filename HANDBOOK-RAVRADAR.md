@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.391
+**Håndbogsversion:** 4.0.392
+
+## 88.96 4.0.392 – RavRadar åbner også, når nøddata er meget store
+
+### Mobilvenlig og ærlig nøddrift
+
+Den tidligere nøddrift kunne hente en detaljefil på cirka 118 MB, før siden
+blev færdig. Det kunne få Safari på iPhone til at hænge eller lukke siden.
+
+4.0.392 åbner først den lille verificerede startpakke. Hvis nøddriftens
+detaljefil er større end 8 MiB, hentes den ikke under opstart. Kort og
+navigation virker, mens rangliste, prognose og berørte områder tydeligt
+fortæller, at aktuelle data mangler. Gamle scorer, vejr og pile bliver ikke
+vist som aktuelle.
+
+Det er ikke en lempelse af datakontrollen. Manifest, hashes, modelbinding,
+datasæt og privatlivskrav kontrolleres fortsat. Når næste almindelige
+vejropdatering leverer en frisk kompakt startpakke, kommer de gyldige scorer
+tilbage uden denne nødbegrænsning.
+
+Samme version retter den regionale DMI-adapter. En prøve, som closure allerede
+har godkendt, findes nu ved sin eksakte kanoniske kildeidentitet. Ændrede
+vektorer, dubletter og forkert kildehash afvises stadig.
 
 ## 88.95 4.0.391 – Gode gamle vejrdata beholdes før et lokalt hul
 
@@ -17,7 +39,7 @@ RavRadar følger altid denne rækkefølge:
    feltet `MISSING`.
 4. Et lokalt `MISSING` må ikke gøre resten af RavRadar ubrugelig.
 
-4.0.391 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+4.0.392 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=8727feba7227fa546861ec73091879ca9fec07b6375f81b219c752e5d25df733`.
 Det betyder, at releasegaten kontrollerer den samme implementering som denne
 regel beskriver.
