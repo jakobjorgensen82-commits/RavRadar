@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -529,6 +530,37 @@ for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; a
     assert.deepEqual(prefixPlan.pendingVersions, ['20260916120000'],
       'the seventeen-migration prefix needs only the local-missing binding successor');
   }
+}
+
+const codeOnlyHelperDirectory = await fs.mkdtemp(
+  path.join(os.tmpdir(), 'ravradar-code-only-plan-'),
+);
+try {
+  const migrationListPath = path.join(codeOnlyHelperDirectory, 'migration-list.txt');
+  const dryRunPath = path.join(codeOnlyHelperDirectory, 'dry-run.txt');
+  await fs.writeFile(
+    migrationListPath,
+    `Local | Remote | Time (UTC)\n${REQUIRED_CUTOVER_MIGRATIONS.map((item, index) =>
+      `${item.version} | ${index < REQUIRED_CUTOVER_MIGRATIONS.length - 1 ? item.version : ''} | state`).join('\n')}`,
+  );
+  await fs.writeFile(
+    dryRunPath,
+    `DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • ${LATEST_REQUIRED_CUTOVER_MIGRATION.filename}\nFinished supabase db push.`,
+  );
+  const helperRun = spawnSync(process.execPath, [
+    path.resolve('scripts/verify-code-only-migration-plan.mjs'),
+    '--migration-list', migrationListPath,
+    '--dry-run', dryRunPath,
+    '--migrations-directory', path.resolve('supabase/migrations'),
+  ], { encoding: 'utf8' });
+  assert.equal(helperRun.status, 0, helperRun.stderr || helperRun.stdout);
+  assert.match(
+    helperRun.stdout,
+    /exactly the one expected local-missing binding successor/,
+    'the live code-only helper must admit exactly the current binding successor',
+  );
+} finally {
+  await fs.rm(codeOnlyHelperDirectory, { recursive: true, force: true });
 }
 
 const duplicateDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-cutover-migrations-'));

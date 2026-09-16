@@ -1,6 +1,7 @@
-# NYESTE SANDHED – 2026-09-16 – gammel gyldig værdi før lokalt MISSING
+# NYESTE SANDHED – 2026-09-16 – 4.0.391 er merged; providerfri levering fortsættes
 
-4.0.390 er main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
+4.0.391 bestod exact-head `35101396843` og blev merged gennem PR #334 som
+main `d53fb174f3b7ef02c60be25e1fca2727294448a2`.
 Providerbootstrap `35081537023` gennemførte alle providerled og gemte
 fremgang, men den gamle globale nul-missing-gate stoppede buildet efter 84
 provider-negative par. Alle 84 var forsøgt; Open-Meteo ramte ikke sit
@@ -17,14 +18,23 @@ den eneste tilstand, der må kaldes komplet. Lokal missing-tolerance lemper
 ikke kildeprioritet, provenance, fysik, identitet, overlap, privacy eller
 kontraktkontrol. Lokal 4.0.391 har implementeret reglen, og de afgrænsede
 retention-, closure-, state-, handoff-, 210/673-runtime-, workflow-, RDKS-,
-versions- og sikkerhedskontroller er grønne. Exact-head, merge og levende
-normal weather mangler. Scheduler er pauset. DEC-0173.
+versions- og sikkerhedskontroller er grønne. Scheduler er pauset. DEC-0173.
 
 Første exact-head `35100148036` bekræftede model, 210/673, data-service, DMI
 og migrationsbindinger, men stoppede på to statiske metatestforventninger.
 De er rettet uden at fjerne kontrol: normal og gammel oneoff skelnes, og
 begge append-only migrationsgeneratorer verificeres fortsat inden for
 kildegatens loft på 24 topkommandoer.
+
+Første normale 4.0.391-run `35102336423` stoppede før providers,
+cachewrites og deploy, fordi den beskyttede runtime endnu ikke havde den nye
+binding. Providerfri code-only `35102784460` viste derefter korrekt, at kun
+`20260916120000_valid_data_before_local_missing_binding.sql` var pending.
+Den stoppede før databasewrite, fordi den lille planhelper stadig forventede
+forrige migrations-id `20260915020000`. Hjælperen og dens metakontrol er
+rettet lokalt til den eksakte nye migration. Ingen produktionsdata blev
+ændret af de to røde runs. Næste trin er én exact-head, merge, samme
+providerfrie leverance og derefter én normal weather på de gemte cacher.
 
 # NYESTE SANDHED – 2026-09-16 – normal rotation virker; 4.0.390 samler DMI/Copernicus-tiden
 

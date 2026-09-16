@@ -43,3 +43,15 @@ forældede metatestforventninger. Normalruten og den strengere gamle oneoff
 genkendes nu hver for sig. Begge append-only migrationsgeneratorer
 verificeres fortsat, men gennem én samlet kontrol, så kildegaten forbliver på
 24 topkommandoer.
+
+## Leveringsopfølgning
+
+Exact-head `35101396843` var grøn, og PR #334 blev merged som main
+`d53fb174f3b7ef02c60be25e1fca2727294448a2`. Normalrun
+`35102336423` stoppede før providers og writes, fordi den beskyttede
+runtime endnu ikke havde den nye binding. Providerfri code-only
+`35102784460` viste korrekt kun
+`20260916120000_valid_data_before_local_missing_binding.sql` som pending,
+men en forældet helperforventning til `20260915020000` stoppede før
+databasewrite og deploy. Hjælperen og dens metakontrol er rettet til den
+eksakte 4.0.391-migration; releaseversion og modelbinding ændres ikke.

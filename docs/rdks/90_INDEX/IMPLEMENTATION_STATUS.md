@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – lokal 4.0.391 gyldig fastholdelse før missing
+# Aktuel implementeringsstatus – 4.0.391 merged; providerfri leveringsrettelse
 
 - [x] Merge 4.0.390 som main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
 - [x] Gennemfør providerbootstrap `35081537023`; DMI, Copernicus og Open-Meteo gemte fremgang.
@@ -9,7 +9,12 @@
 - [x] Bestå afgrænsede retention-, closure-, state-, handoff-, workflow-, RDKS- og versionskontroller.
 - [x] Afgræns første exact-head `35100148036`: alle produktkontroller frem til workflowlaget var grønne; kun et gammelt trin-navn og 24-kommando-metatesten fejlede.
 - [x] Ret begge metatests uden at fjerne kontrol: normal/oneoff skelnes korrekt, og begge migrationsgeneratorer verificeres samlet inden for de samme 24 kommandoer.
-- [ ] Commit/push, exact-head sourcegate, merge og kør én normal weather på de bevarede cacher.
+- [x] Bestå exact-head `35101396843` og merge PR #334 som main `d53fb174f3b7ef02c60be25e1fca2727294448a2`.
+- [x] Afgræns normalrun `35102336423`: stoppet før providers, cachewrites og deploy, fordi den aktive private runtime endnu ikke har 4.0.391-bindingen.
+- [x] Afgræns code-only `35102784460`: Supabase viste præcis migration `20260916120000` som eneste pending; en forældet hjælpeforventning stoppede før databasewrite og deploy.
+- [x] Ret hjælpeforventningen og dens metakontrol til den eksakte 4.0.391-binding uden versionsløft eller gatelempelse.
+- [ ] Commit/push, én exact-head sourcegate, merge og genkør den providerfrie code-only-leverance.
+- [ ] Kør derefter én normal weather på de bevarede cacher.
 - [ ] Verificér levende numeriske scorer, ærlig lokal missing, kildeovertagelse og normal cachevedligeholdelse før scheduler.
 
 DEC-0173 er aktiv. Scheduler er pauset.
