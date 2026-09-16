@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.392
+**Håndbogsversion:** 4.0.393
+
+## 88.97 4.0.393 – Et ærligt Open-Meteo-hul må fortsætte
+
+### Værdi eller lokalt hul skal følge med samlet
+
+En almindelig vejrkørsel havde fundet 79.075 gyldige værdier og markeret de
+sidste 339 par som lokale huller. Det var et gyldigt og ærligt resultat, men
+næste led kontrollerede kun Open-Meteos positive værdier og krævede samtidig,
+at Open-Meteo slet ikke havde huller. Derfor stoppede kørslen efter at alle
+leverandører var færdige.
+
+4.0.393 fører nu begge dele samlet videre: de gyldige Open-Meteo-værdier og
+de præcise par, som closure har markeret `MISSING`. Kun gyldige records bliver
+til strømdata. Et hul får aldrig en nulværdi eller en opdigtet retning.
+
+Det betyder ikke, at RavRadar ignorerer fejl. Filhash, recordhash,
+targetregister, upstream-beviser og antallet af både værdier og huller skal
+stadig passe præcist. En virkelig datakonflikt stopper fortsat. Et ærligt
+lokalt hul gør derimod kun den berørte kystdel, søgemåde og time utilgængelig,
+mens resten af RavRadar kan få score.
 
 ## 88.96 4.0.392 – RavRadar åbner også, når nøddata er meget store
 

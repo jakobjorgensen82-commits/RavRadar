@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.393 retter Open-Meteo history-adapteren
+
+- **ISSUE-4.0.392-DELIVERY – LUKKET:** Sourcegate `35119195730`, PR #336, main `e84fba55` og providerfri `35120023098` er grønne.
+- **ISSUE-4.0.392-OPEN-METEO-HISTORY-ADAPTER – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun `35120782348` bestod closure med 339 lokale huller, men adapteren krævede bagefter global Open-Meteo-`COMPLETE`. 4.0.393 validerer den eksakte positive+missing-rest.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den offentlige side har endnu ingen frisk scorepakke. Næste normale weather skal fortsætte gennem build og deploy; lokale huller må ikke blokere øvrige scorer.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – ÅBEN VERIFIKATION:** Sidste run havde DMI 37.448, Copernicus 6.465, regional DMI 944 og Open-Meteo 34.218. Normal overtagelse skal fortsat måles over flere targets.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** En komplet normal kørsel og den efterfølgende schedulerpassage mangler endnu.
+- **ISSUE-SITE-ACCEPTANCE – DELVIST GRØN:** 4.0.392-opstart og 210/673 er grønne; levende scorer, prognose og fuld databrug følger frisk weather.
+
+DEC-0176. Scheduler er pauset.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.392 retter ubrugelig mobilnøddrift
 
 - **ISSUE-4.0.391-DELIVERY – LUKKET:** Providerfri `35104320358` leverede main `3d7fbba9` gennem privat runtime, Edge, Pages, 210/673 og central readback.

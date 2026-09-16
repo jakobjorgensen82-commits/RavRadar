@@ -18,8 +18,11 @@ from lib.current_operational_closure import (
     COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
     COPERNICUS_BALTIC,
     CurrentOperationalClosureError,
+    MISSING,
+    OPEN_METEO_COMBINED_CURRENT,
     REGIONAL_DMI_DERIVED_HOLD,
 )
+from lib.open_meteo_current_fallback import build_document, build_record
 from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
 
 
@@ -307,6 +310,119 @@ assert advisory[0]["collectionId"] == cop_closure_proof["closureId"]
 assert advisory[0]["validTime"] == SOURCE_TEXT
 assert advisory[0]["source"] == "copernicus-baltic-nemo"
 assert advisory[0]["interpolation"] is False
+
+# An honest partial Open-Meteo checkpoint is sealed over both its successful
+# records and its exact missing pairs.  The public adapter must validate that
+# full residual while projecting only the successful records.
+open_target = {
+    "partId": "FIXTURE-OPEN-METEO",
+    "parentZoneId": "FIXTURE-OPEN-METEO-ZONE",
+    "name": "Fixture Open-Meteo",
+    "waterPoint": [10.0, 55.0],
+}
+open_missing_time = (REFERENCE + timedelta(hours=1)).strftime(
+    "%Y-%m-%dT%H:00:00Z"
+)
+open_required = [
+    {"partId": open_target["partId"], "validTime": REFERENCE_TEXT},
+    {"partId": open_target["partId"], "validTime": open_missing_time},
+]
+open_stage_sha = canonical_sha256({"fixture": "open-stage"})
+open_regional_sha = canonical_sha256({"fixture": "open-regional"})
+open_record = build_record(
+    part_id=open_target["partId"],
+    valid_time=REFERENCE_TEXT,
+    acquired_at=REFERENCE_TEXT,
+    sampling_point=open_target["waterPoint"],
+    grid_point=open_target["waterPoint"],
+    speed_mps=0.3,
+    toward_direction_deg=90,
+    source_response_sha256=canonical_sha256({"fixture": "open-response"}),
+)
+open_document = build_document(
+    targets=[open_target],
+    required_pairs=open_required,
+    records=[open_record],
+    checkpointed_at=REFERENCE_TEXT,
+    production_reference_at=REFERENCE_TEXT,
+    copernicus_source_stage_status="READY",
+    copernicus_source_stage_sha256=open_stage_sha,
+    copernicus_bounded_progress_accepted=False,
+    regional_evidence_sha256=open_regional_sha,
+)
+open_ref = {
+    "partId": open_target["partId"],
+    "validTime": REFERENCE_TEXT,
+    "recordId": open_record["recordId"],
+    "source": builder.OPEN_METEO_SOURCE,
+}
+open_assignment_identity = {
+    "partId": open_target["partId"],
+    "validTime": REFERENCE_TEXT,
+    "classification": OPEN_METEO_COMBINED_CURRENT,
+    "source": builder.OPEN_METEO_SOURCE,
+    "model": builder.OPEN_METEO_MODEL,
+    "recordId": open_record["recordId"],
+    "acquiredAt": REFERENCE_TEXT,
+    "recordRefSha256": builder.open_meteo_record_ref_sha256(open_ref),
+    "physicalScope": builder.OPEN_METEO_PHYSICAL_SCOPE,
+    "scoreInputPolicyId": builder.OPEN_METEO_SCORE_INPUT_POLICY_ID,
+    "calibrationEligible": False,
+}
+open_assignment = {
+    **open_assignment_identity,
+    "assignmentSha256": canonical_sha256(open_assignment_identity),
+}
+missing_identity = {
+    "partId": open_target["partId"],
+    "validTime": open_missing_time,
+    "classification": MISSING,
+}
+missing_assignment = {
+    **missing_identity,
+    "assignmentSha256": canonical_sha256(missing_identity),
+}
+open_closure = {
+    "closureId": HASH_B,
+    "productionReferenceAt": REFERENCE_TEXT,
+    "copernicusSourceStageStatus": "READY",
+    "copernicusSourceStageSha256": open_stage_sha,
+    "copernicusBoundedProgressAccepted": False,
+    "regionalEvidenceSha256": open_regional_sha,
+    "openMeteoDocumentSha256": canonical_sha256(open_document),
+    "openMeteoRecordRefsSha256": open_document["recordRefsSha256"],
+    "openMeteoRequiredPairCount": 2,
+    "openMeteoPairCount": 1,
+    "missingPairCount": 1,
+    "assignments": [open_assignment, missing_assignment],
+}
+open_entries = builder.open_meteo_entries(
+    open_document,
+    [open_target],
+    {open_target["partId"]: open_target},
+    [open_assignment],
+    open_closure,
+)
+assert len(open_entries) == 1
+assert open_entries[0]["classification"] == OPEN_METEO_COMBINED_CURRENT
+assert open_entries[0]["closureAssignmentSha256"] == open_assignment["assignmentSha256"]
+
+wrong_missing = json.loads(json.dumps(open_closure))
+wrong_missing["assignments"][1]["validTime"] = (
+    REFERENCE + timedelta(hours=2)
+).strftime("%Y-%m-%dT%H:00:00Z")
+try:
+    builder.open_meteo_entries(
+        open_document,
+        [open_target],
+        {open_target["partId"]: open_target},
+        [open_assignment],
+        wrong_missing,
+    )
+except RuntimeError as error:
+    assert str(error) == "OPEN_METEO_CLOSURE_CACHE_INVALID"
+else:
+    raise AssertionError("A different missing residual must remain fail closed")
 
 # Port the still-valid controlled-live CLI coverage from the retired legacy
 # fixture: the entrypoint accepts one synthetic closure bound to the exact DMI

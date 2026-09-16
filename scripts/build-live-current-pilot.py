@@ -33,6 +33,7 @@ from lib.current_operational_closure import (
     COPERNICUS_AMM15,
     COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
     COPERNICUS_BALTIC,
+    MISSING,
     OPEN_METEO_COMBINED_CURRENT,
     REGIONAL_DMI_DERIVED_HOLD,
     REGIONAL_DMI_NATIVE,
@@ -673,11 +674,15 @@ def open_meteo_entries(
     assignments: list[dict[str, Any]],
     closure_proof: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    required_pairs = [
-        {"partId": row["partId"], "validTime": row["validTime"]}
-        for row in assignments
-    ]
     try:
+        missing_assignments = [
+            row for row in closure_proof["assignments"]
+            if row["classification"] == MISSING
+        ]
+        required_pairs = [
+            {"partId": row["partId"], "validTime": row["validTime"]}
+            for row in [*assignments, *missing_assignments]
+        ]
         validated = validate_open_meteo_document(
             document,
             targets=targets_list,
@@ -687,10 +692,23 @@ def open_meteo_entries(
             copernicus_source_stage_sha256=closure_proof["copernicusSourceStageSha256"],
             copernicus_bounded_progress_accepted=closure_proof["copernicusBoundedProgressAccepted"],
             regional_evidence_sha256=closure_proof["regionalEvidenceSha256"],
-            require_complete=True,
+            require_complete=False,
         )
-    except (TypeError, ValueError):
+    except (KeyError, TypeError, ValueError):
         raise RuntimeError("OPEN_METEO_CLOSURE_CACHE_INVALID") from None
+    if (
+        canonical_sha256(validated) != closure_proof["openMeteoDocumentSha256"]
+        or validated["recordRefsSha256"]
+            != closure_proof["openMeteoRecordRefsSha256"]
+        or validated["requiredPairCount"] != len(required_pairs)
+        or validated["requiredPairCount"]
+            != closure_proof["openMeteoRequiredPairCount"]
+        or validated["recordCount"] != len(assignments)
+        or validated["recordCount"] != closure_proof["openMeteoPairCount"]
+        or validated["missingPairCount"] != len(missing_assignments)
+        or validated["missingPairCount"] != closure_proof["missingPairCount"]
+    ):
+        raise RuntimeError("OPEN_METEO_CLOSURE_CACHE_INVALID")
     records = {row["recordId"]: row for row in validated["records"]}
     selected: list[dict[str, Any]] = []
     for assignment in assignments:

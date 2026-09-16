@@ -1,3 +1,9 @@
+# 2026-09-16 – 4.0.393 fører ærlig Open-Meteo-missing gennem historikken
+
+- 4.0.392 blev live som main `e84fba55` gennem sourcegate `35119195730`, PR #336 og providerfri deploy `35120023098`.
+- Normalrun `35120782348` gemte alle providercacher og lukkede 79.075 værdier plus 339 lokale `MISSING`.
+- History-adapteren genindførte fejlagtigt et globalt Open-Meteo-`COMPLETE`-krav efter closure; 4.0.393 validerer den eksakte positive+missing-rest. DEC-0176.
+
 # 2026-09-16 – 4.0.392 gør nøddrift mobil og retter regional dobbeltvalidering
 
 - 4.0.391 blev leveret providerfrit i `35104320358` som main `3d7fbba9`.

@@ -1,3 +1,21 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.393 lokal missing gennem historikken
+
+4.0.392 blev leveret som main `e84fba55` via sourcegate `35119195730`,
+PR #336 og providerfri deploy `35120023098`. Normalrun `35120782348`
+gennemførte providerforløbet og gemte cachefremgang. Closure bestod med
+79.075 værdier og 339 lokale `MISSING`.
+
+Public-history-adapteren stoppede bagefter, fordi den genvaliderede den
+ufuldstændige Open-Meteo-cache mod kun positive assignments og krævede
+global `COMPLETE`. 4.0.393 validerer i stedet closureens eksakte positive
+Open-Meteo-assignments plus de præcise missing-assignments. Alle hashes,
+counts og upstream-bindinger består; kun positive records publiceres.
+
+Helikopterkontrol gennem RavScore, offentlig runtime og deploy fandt ingen
+anden global all-or-nothing-gate for lokale huller. De relevante måltests og
+210/673-runtimeaudit er grønne. Exact-head, merge, providerfri genbinding og
+en ny almindelig weather mangler. Scheduler er pauset. DEC-0176.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.392 mobilopstart og regional adapter
 
 4.0.391 blev leveret providerfrit i `35104320358` som main `3d7fbba9`.
