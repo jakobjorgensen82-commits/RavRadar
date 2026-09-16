@@ -3685,3 +3685,20 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 # 2026-09-14 – permanent kode-only rettelsesdeploy adskilt fra normal vejrhentning
 
 Ejeren besluttede, at almindelige rettelser fremover skal deployes uden DMI/Copernicus/Open-Meteo og med eksakt genbrug af senest gyldige data. Den normale vejrhentning kører bagefter som et særskilt, tidsbegrænset forløb, så providerfejl ikke kan forsinke eller ugyldiggøre et gyldigt rettelsesdeploy. Modelændringer kræver en snæver verificeret migration af den gemte private runtime; privacy, artifactidentitet og reel dataintegritet består. Se DEC-0148.
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.394 kanonisk restorden
+
+4.0.393 blev leveret gennem sourcegate `35130086861`, PR #337, main
+`88ecda1e` og providerfri deploy `35130668700`. Normalrun
+`35131237007` gemte alle providerfremskridt og byggede closure med DMI
+39.309, Copernicus 6.560, regional DMI 944, Open-Meteo 32.463 og 138 lokale
+`MISSING`.
+
+Historikadapteren stoppede fortsat, fordi den samlede først alle positive
+Open-Meteo-par og derefter alle missing-par. Validatoren kræver den samlede
+rest allerede sorteret efter tid og kystdel. 4.0.394 sorterer kun rækkefølgen;
+medlemskab, dokumenthash, recordrefs, targetregister, upstreambindinger og
+counts kontrolleres fortsat.
+
+Regressionstesten indeholder nu et missing-par før en senere positiv record
+og er grøn. Exact-head, merge, providerfri genbinding og en almindelig
+weather på de gemte cacher mangler. Scheduler er pauset. DEC-0177.

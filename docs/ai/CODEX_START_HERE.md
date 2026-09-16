@@ -1067,3 +1067,18 @@ Codex må oprette, opdatere og selv merge datasikre PR'er fra egne RavRadar-bran
 - validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før ethvert deploybart artifact.
 - Fuld browserkontrol er hændelsesstyret: ugentligt eller ved ændret UI, score eller offentlig datakontrakt. Se DEC-0045.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.394 sorterer hele Open-Meteo-resten
+
+4.0.393 bestod sourcegate `35130086861`, PR #337 og providerfri deploy
+`35130668700` som main `88ecda1ecde879123b208da0732ddd16b3be3e7a`.
+Normalrun `35131237007` gemte alle providercacher og byggede
+`READY_WITH_MISSING`: DMI 39.309, Copernicus 6.560, regional DMI 944,
+Open-Meteo 32.463 og 138 lokale `MISSING`.
+
+History-adapteren stoppede igen, fordi 4.0.393 samlede alle positive
+Open-Meteo-par før missing-parrene. Validatoren kræver én samlet allerede
+sorteret rest; virkelige huller ligger mellem positive timer. Lokal 4.0.394
+sorterer hele positive+missing-listen efter validTime/partId. Testen lægger
+bevidst et hul før en senere positiv værdi og er grøn. Scheduler er pauset.
+Næste: docs/version, push, én exact-head, merge, providerfri code-only og én
+almindelig weather på gemte cacher. DEC-0177. Sol/Ekstra høj.

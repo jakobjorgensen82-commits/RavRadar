@@ -320,18 +320,19 @@ open_target = {
     "name": "Fixture Open-Meteo",
     "waterPoint": [10.0, 55.0],
 }
-open_missing_time = (REFERENCE + timedelta(hours=1)).strftime(
+open_record_time = (REFERENCE + timedelta(hours=1)).strftime(
     "%Y-%m-%dT%H:00:00Z"
 )
+open_missing_time = REFERENCE_TEXT
 open_required = [
-    {"partId": open_target["partId"], "validTime": REFERENCE_TEXT},
     {"partId": open_target["partId"], "validTime": open_missing_time},
+    {"partId": open_target["partId"], "validTime": open_record_time},
 ]
 open_stage_sha = canonical_sha256({"fixture": "open-stage"})
 open_regional_sha = canonical_sha256({"fixture": "open-regional"})
 open_record = build_record(
     part_id=open_target["partId"],
-    valid_time=REFERENCE_TEXT,
+    valid_time=open_record_time,
     acquired_at=REFERENCE_TEXT,
     sampling_point=open_target["waterPoint"],
     grid_point=open_target["waterPoint"],
@@ -352,13 +353,13 @@ open_document = build_document(
 )
 open_ref = {
     "partId": open_target["partId"],
-    "validTime": REFERENCE_TEXT,
+    "validTime": open_record_time,
     "recordId": open_record["recordId"],
     "source": builder.OPEN_METEO_SOURCE,
 }
 open_assignment_identity = {
     "partId": open_target["partId"],
-    "validTime": REFERENCE_TEXT,
+    "validTime": open_record_time,
     "classification": OPEN_METEO_COMBINED_CURRENT,
     "source": builder.OPEN_METEO_SOURCE,
     "model": builder.OPEN_METEO_MODEL,

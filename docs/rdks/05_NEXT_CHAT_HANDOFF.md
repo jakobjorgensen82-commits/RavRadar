@@ -1448,3 +1448,20 @@ Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusse
 - De to entrypoints er nu bundet. Aktuel lokal integrated er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer; actual-source closure-test dækker den faktiske 78-modulers public closure. Måltests er grønne. Candidate G-rollback er uændret `7c7f2b…`/56; `3192db…`/44 er supersederet revisionsspor.
 - Remote read-only SQL gav `false/false/false`: migration ledger og begge nye RPC'er findes ikke. Migrations er ikke live. Kør linked migrationsliste og dry-run som definitiv pre-write-stopgate. GitHub-secretet er kun bekræftet ved navn; læs, gæt eller nulstil ikke passwordet. Stop ved authfejl.
 - Fortsæt derefter exact-head → 673 × 118/Feggesund → Supabase før/efter/30 % reserve → Fase B → frisk produktion → offentlig mobil/desktop. Ingen private payloads, koordinater, rå U/V, geometri eller punkter må røres.
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.394 retter restens rækkefølge
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.394-open-meteo-residual-order`, baseret på main
+`88ecda1ecde879123b208da0732ddd16b3be3e7a`.
+
+4.0.393 bestod exact-head `35130086861`, PR #337 og providerfri deploy
+`35130668700`. Normalrun `35131237007` gemte alle providercacher og
+lukkede 79.276 værdier plus 138 lokale `MISSING`, men historikadapteren
+stoppede på `OPEN_METEO_CLOSURE_CACHE_INVALID`.
+
+Rodårsagen er præcis: adapteren lagde 32.463 positive par foran 138
+missing-par, mens validatoren kræver én samlet kronologisk sorteret rest.
+4.0.394 sorterer hele restlisten. Den målrettede test har nu et missing-par
+før en senere positiv record og er grøn. Fortsæt docs/version/geodatabevis,
+commit/push, én exact-head, merge, providerfri code-only og én normal weather
+på gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0177. Sol/Ekstra høj.
