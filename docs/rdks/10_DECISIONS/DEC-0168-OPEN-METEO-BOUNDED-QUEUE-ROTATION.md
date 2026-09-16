@@ -1,6 +1,6 @@
 # DEC-0168 – Tidsbegrænset Open-Meteo roterer retfærdigt gennem restkøen
 
-**Status:** Merged i 4.0.386; provider-livebevis afventer den private contract-only-genbinding i DEC-0169
+**Status:** Merged i 4.0.386 og livebevist i normalrun `35064588725`; DEC-0171 retter den målte normale tidsramme
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -32,3 +32,10 @@ manglende fremgang var en planlægningsfejl i den tidsbegrænsede kø.
 RavScore, DMI- og Copernicus-logik, providerprioritet, cacheformat, geometri,
 offentlig datakontrakt og releasekrav ændres ikke. Scheduler holdes pauset,
 mens den kendte køfejl rettes, og genaktiveres efter sikker merge.
+
+## Livebevis 2026-09-16
+
+Normalrun `35064588725` anvendte rotation slot 11 og gemte 396 nye par.
+Rotationen virker. Runnet viste samtidig, at kun fire requests kunne
+gennemføres inden den delte 240-sekundersramme, uden providerfejl. Den
+separate budgetrettelse ligger i DEC-0171.

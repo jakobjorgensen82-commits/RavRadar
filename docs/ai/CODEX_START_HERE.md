@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.389 lukker resterne gennem normal weather
+
+Main er `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`. Normalrun
+`35064588725` livebeviste DEC-0170, Open-Meteo-rotation og cache-save hos
+DMI, Copernicus og Open-Meteo. Før Open-Meteo var der 6.254 reelle rester;
+fire fejlfri requests udfyldte 396, og 5.858 stod tilbage ved det delte
+240-sekundersstop.
+
+Oneoff `35067958289` nåede ingen provider, fordi den stadig er en Candidate
+G-bundet før-cutover-rute. Brug den ikke igen. Lokal 4.0.389 giver normal
+Open-Meteo 900 sekunder og `--critical-only`. Batch 50, kildeprioritet,
+datavalidering og nul-missing-gate er uændrede.
+
+Fortsæt: måltests/version/RDKS/geodatabevis → push → én exact-head → merge →
+kontrolleret normal weather på gemte cacher → nul-missing/deploy/scorer →
+bevis DMI/Copernicus-overtagelse → scheduler → site og roadmap. DEC-0171.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.388 retter normal Copernicus-journalfortsættelse
 
 4.0.387 er levende efter sourcegate `35051800082`, PR #330, main

@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.388",
+  "handbookVersion": "4.0.389",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-16",
   "sections": [
+    {
+      "id": "open-meteo-critical-fill-budget-4-0-389",
+      "chapter": "88.93",
+      "title": "4.0.389 – Den normale vejropdatering får tid til at lukke de sidste huller",
+      "summary": "Normal Open-Meteo får op til 15 minutter til faktiske huller og stopper, når restlisten er tom.",
+      "body": "<p><strong>Status 16. september:</strong> Den seneste almindelige vejropdatering beviste rotation og cachefremgang hos DMI, Copernicus og Open-Meteo. Fire vellykkede Open-Meteo-requests udfyldte 396 par, men 5.858 stod tilbage, da fire minutter var gået. Der var ingen konkret providerfejl.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> Systemet kunne hente data, men den fælles tidsramme var for kort til både hentning, kontrol og sikker lagring.</div><div class=\"handbook-stack\"><p>4.0.389 giver normal Open-Meteo op til 15 minutter og bruger <code>--critical-only</code>. Når alle reelle huller er lukket, stopper passagen uden proaktiv Open-Meteo-opfriskning.</p><p>Kildeordenen er uændret: DMI, Copernicus Baltic, Copernicus AMM15, regional DMI og til sidst Open-Meteo. Senere gyldige data fra en højere kilde erstatter automatisk Open-Meteo.</p><p>Batchstørrelsen er fortsat højst 50, alle kontroller består, og intet nyt artifact må deployes før præcis 79.414/79.414 med nul mangler. Den gamle før-cutover-oneoff bruges ikke igen; den almindelige weather-rute fortsætter med de gemte cacher.</p></div>"
+    },
     {
       "id": "copernicus-zero-overlap-journal-rebase-4-0-388",
       "chapter": "88.92",
@@ -539,7 +546,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.388 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.389 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },

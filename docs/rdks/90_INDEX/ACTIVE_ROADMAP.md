@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.389 fra bevist rotation til komplet normal drift
+
+1. [x] Livebevis 4.0.388-journalrebase, DMI/Copernicus/Open-Meteo-cachegenbrug og anvendt Open-Meteo-rotation i normalrun `35064588725`.
+2. [x] Afgræns 5.858 rester til en for kort delt 240-sekundersramme; nul HTTP-, netværks-, kontrakt-, null- eller providerfejl.
+3. [x] Afvis den gamle Candidate G-bundne oneoff som post-cutover-rute efter `35067958289`; ingen provider blev kaldt og ingen cachefremgang gik tabt.
+4. [x] Sæt normal Open-Meteo til 900 sekunder og `--critical-only`; bevar batch 50, kildeprioritet og hård nul-missing-gate.
+5. [x] Bestå målrettede workflow-, YAML-, versions-, sikkerheds- og RDKS-kontroller; bevis rent geodataversionsfelt.
+6. [ ] Commit/push, bestå én exact-head sourcegate og merge.
+7. [ ] Kør én kontrolleret normal weather med gemte cacher; kræv nul reelle mangler, artifact, deploy og levende numeriske scorer.
+8. [ ] Følg Copernicus post-build-refresh og næste normale run; mål at DMI og dernæst Copernicus overtager fra Open-Meteo uden nye huller.
+9. [ ] Genaktivér scheduler, når normal vedligeholdelse og kildeprioritet er bevist.
+10. [ ] Gennemgå hele hjemmesiden meningsfuldt og fortsæt de stadig aktuelle roadmap-punkter.
+
+DEC-0171 er aktiv. Scheduler er pauset, og den forældede oneoff bruges ikke igen.
+
 # Aktiv roadmap – 4.0.388 fra levende model til frisk normal drift
 
 1. [x] Lever 4.0.387 providerfrit og verificér integreret model, 210 zoner og 673 kystdele offentligt.

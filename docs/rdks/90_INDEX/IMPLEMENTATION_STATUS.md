@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.389 kritisk normal restfyldning
+
+- [x] Merge 4.0.388 som main `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47` og gennemfør providerfri genbinding.
+- [x] Kør normal `35064588725`; bevis journalrebase, rotationsslot 11, alle tre cache-saves og nul providerfejl.
+- [x] Mål 6.254 rester før Open-Meteo, 396 udfyldte par og 5.858 rester efter fire requests under 240 sekunder.
+- [x] Afprøv én oneoff `35067958289`; klassificér dens Candidate G-bootstrap som en gammel før-cutover-rute, før providers.
+- [x] Ændr normal Open-Meteo til 900 sekunder og `--critical-only`; bevar alle datagates og kildeprioriteten.
+- [x] Synkronisér version, RDKS, håndbog og changelog; bestå måltests og rent geodataversionsbevis.
+- [ ] Commit/push, exact-head sourcegate og merge.
+- [ ] Kør normal weather på gemte cacher til nul mangler; verificér artifact, deploy og levende scorer.
+- [ ] Mål DMI-/Copernicus-overtagelsen, genaktivér scheduler og fortsæt site-/roadmapkontrol.
+
+DEC-0171 er aktiv. DEC-0170 er livebevist. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.388 Copernicus-journalrebase
 
 - [x] Bestå 4.0.387 exact-head `35051800082`, merge PR #330 som main `529f8888`.

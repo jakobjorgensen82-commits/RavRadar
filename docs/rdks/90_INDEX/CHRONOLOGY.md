@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.389 giver den normale kritiske restliste en realistisk ramme
+
+- 4.0.388 blev main `8d0a5ac5`; normalrun `35064588725` livebeviste journalrebase, rotation og cache-save hos alle tre providerled.
+- Før Open-Meteo manglede 6.254 par. Fire fejlfri requests udfyldte 396, hvorefter den delte 240-sekundersramme udløb med 5.858 rester.
+- Oneoff `35067958289` stoppede før providers på en gammel Candidate G-bootstrap og blev afvist som post-cutover-rute.
+- 4.0.389 bruger normal weather, 900 sekunder og `--critical-only`; prioritet, batch 50 og nul-missing-gate ændres ikke. DEC-0171.
+
 # 2026-09-16 – 4.0.388 fjerner nul-overlap fra Copernicus-segmentjournalen
 
 - 4.0.387 bestod sourcegate `35051800082`, PR #330 og code-only `35052231130`; integreret model er online som 4.0.387 med 210/673.

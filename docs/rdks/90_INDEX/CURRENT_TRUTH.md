@@ -1,3 +1,21 @@
+# NYESTE SANDHED – 2026-09-16 – rotation virker; normal Open-Meteo-tid er flaskehalsen
+
+4.0.388 er main `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`.
+Normalrun `35064588725` livebeviste DEC-0170: den gamle Copernicus-journal
+spærrede ikke, og DMI, Copernicus og Open-Meteo gendannede og gemte fremgang.
+
+Ved target `2026-09-16T06:00:00Z` var 6.254 af 79.414 par tilbage før
+Open-Meteo. Rotation slot 11 blev brugt, men 240 sekunder rummede kun fire
+vellykkede requests og 396 par. 5.858 var stadig uløste. Alle registrerede
+HTTP-, netværks-, kontrakt-, null- og providerfejl var nul. Det er derfor
+ikke evidens for manglende data hos leverandøren, men for en for kort delt
+arbejdsramme.
+
+Oneoff `35067958289` stoppede før providers på en gammel Candidate
+G-bootstrap. Den genstartes ikke. Lokal 4.0.389 giver i stedet den almindelige
+Open-Meteo-passage 900 sekunder og `--critical-only`. Kildeordenen og kravet
+om nul mangler er uændrede. Scheduler er pauset. DEC-0171.
+
 # NYESTE SANDHED – 2026-09-16 – modellen er online; Copernicus-journal rettes i 4.0.388
 
 4.0.387 bestod exact-head `35051800082`, blev merged gennem PR #330 som

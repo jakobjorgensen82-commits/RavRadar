@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.389 kritisk Open-Meteo-restfyldning
+
+- **REQ-4.0.389-NORMAL-BUDGET-001 – BINDENDE:** Den almindelige Open-Meteo-passage må bruge højst 900 sekunder på den eksakte aktuelle restliste.
+- **REQ-4.0.389-CRITICAL-ONLY-001 – BINDENDE:** Normal weather må ikke proaktivt genopfriske Open-Meteo, når der ikke længere findes reelle huller.
+- **REQ-4.0.389-BATCH-001 – BINDENDE:** Højst 50 punkter pr. providerrequest; payload-, null-, timeout-, afstands-, fysik- og provenancekontroller lempes ikke.
+- **REQ-4.0.389-PRIORITY-001 – BINDENDE:** DMI → Baltic → AMM15 → regional DMI → Open-Meteo er uændret, og senere valide højere kilder skal fortsat overtage samme par.
+- **REQ-4.0.389-CLOSURE-001 – BINDENDE:** Kun præcis 79.414/79.414 med nul mangler kan bygge, skrive eller deploye et nyt produktionsartifact.
+- **REQ-4.0.389-NORMAL-PATH-001 – BINDENDE:** Gemte cacher fortsættes i almindelig weather. Den gamle Candidate G-bundne oneoff er ikke en post-cutover-driftsrute og genstartes ikke.
+- **REQ-4.0.389-LIVE-PROOF-001 – BINDENDE:** Scheduler forbliver pauset, indtil normal closure, levende scorer og den efterfølgende DMI-/Copernicus-overtagelse er meningsfuldt verificeret.
+
+DEC-0171 supplerer DEC-0115 og DEC-0168. Kun normal Open-Meteo-tid og proaktiv normal refresh ændres.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.388 Copernicus-journalrebase
 
 - **REQ-4.0.388-CURRENT-OVERLAP-001 – BINDENDE:** En gendannet segmentjournalpost må kun indgå i den nye source-stage, hvis mindst ét bestilt `(partId, validTime)` findes i den aktuelle operationelle DMI-hulmatrix.

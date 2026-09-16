@@ -1191,7 +1191,8 @@ for (const marker of [
   'DMI_BULK_DKSS_PRIMARY_MODE: true',
   'Restore shared private Open-Meteo current progress',
   'Fill only the exact remaining current gaps from Open-Meteo',
-  '--runtime-seconds 240',
+  '--runtime-seconds 900',
+  '--critical-only',
   'Reconfirm exact main before shared Open-Meteo progress cache',
   'Save shared private Open-Meteo current progress',
   'Require complete Open-Meteo residual before freshness and closure',
@@ -1242,7 +1243,8 @@ for (const marker of [
 for (const marker of [
   'id: open-meteo-fill',
   'continue-on-error: true',
-  '--runtime-seconds 240',
+  '--runtime-seconds 900',
+  '--critical-only',
 ]) assert.ok(normalOpenMeteoFill.includes(marker), `Normal Open-Meteo fill mangler ${marker}`);
 for (const marker of [
   'if: always()',

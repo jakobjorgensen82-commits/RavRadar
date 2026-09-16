@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.389 kritisk normal restfyldning
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.389-open-meteo-critical-fill`, baseret på main
+`8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`.
+
+Normalrun `35064588725` livebeviste 4.0.388-journalrettelsen, rotation slot
+11 og cache-save hos alle tre providers. Før Open-Meteo manglede 6.254 par.
+Fire vellykkede requests udfyldte 396; 5.858 stod tilbage efter 240 sekunder,
+mens alle konkrete providerfejltællere var nul.
+
+Oneoff `35067958289` stoppede før providers på en pensioneret Candidate
+G-bootstrap og skal ikke genstartes. Lokal 4.0.389 ændrer normal Open-Meteo
+til 900 sekunder og `--critical-only`. Afslut version/RDKS/håndbog og
+måltests, push, exact-head, merge, og kør derefter én kontrolleret normal
+weather på gemte cacher. Kræv nul mangler og deploy; mål derefter
+DMI/Copernicus-overtagelse før scheduler. DEC-0171. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.388 retter Copernicus-journalens nul-overlap
 
 4.0.387 er levende efter sourcegate `35051800082`, PR #330, main

@@ -1,5 +1,24 @@
 # Weather Pipeline 1.0
 
+## 4.0.389 – normal Open-Meteo bruger kun ekstra tid på reelle huller
+
+Normalrun `35064588725` gendannede og gemte DMI-, Copernicus- og
+Open-Meteo-fremgang. Den nye kørotation blev faktisk anvendt. Før Open-Meteo
+var der 6.254 reelle rester; fire vellykkede requests udfyldte 396, og 5.858
+stod tilbage, da den normale 240-sekundersramme udløb. Der var ingen konkret
+HTTP-, netværks-, payload-, null- eller kontraktfejl.
+
+Normal Open-Meteo får derfor højst 900 sekunder og kører med
+`--critical-only`. Når der ikke er reelle huller, stopper passagen i stedet
+for at genopfriske Open-Meteo. Maksimalt 50 punkter pr. request, alle
+valideringer, DMI/Copernicus-prioritet og nul-missing-gaten er uændrede.
+
+Den operationelle oneoff er stadig bundet til en pensioneret Candidate
+G-bootstrap og stoppede i `35067958289` før providers. Post-cutover bruger
+RavRadar den almindelige weather-rute og dens gemte cacher. Efter komplet
+closure udfører den eksisterende Copernicus post-build-refresh og senere
+normale DMI-passager den gradvise kvalitetsovertagelse.
+
 ## 4.0.345 – varige Copernicus-segmenter og ét sourceproof for samme indhold
 
 4.0.344 bestod sin exact-head-PR-gate og blev merged, men main-run `34635781802` og oneoff `34642214559` blev ikke komplette og foretog intet handoff eller cutover. Oneoff sluttede 78.381/79.414. De sidste 1.033 par var alle terminalt provider-negative hos Open-Meteo i netop den kørsel; de var ikke uattempted runtime-rester. Klassifikationen er hverken et permanent DMI-/Copernicus-fraværsbevis eller tilladelse til launch med huller.

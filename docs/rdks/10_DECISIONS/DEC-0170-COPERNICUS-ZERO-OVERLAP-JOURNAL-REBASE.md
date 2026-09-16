@@ -1,6 +1,6 @@
 # DEC-0170 – Copernicus kasserer kun journalforsøg med nul aktuelt overlap
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.388, exact-head og livebevis afventer
+**Status:** Merged i 4.0.388 og livebevist i normalrun `35064588725`
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -31,3 +31,10 @@ aldrig kunne forsegles.
 Rettelsen ændrer ikke providerprioritet, Copernicus-produkter, acquisition-
 eller målidentitet, nulresultatsemantik, cacheformat, DMI, Open-Meteo,
 RavScore, geometri eller komplethedskrav. Scheduler er pauset under leveringen.
+
+## Livebevis 2026-09-16
+
+4.0.388 blev main `8d0a5ac5a488ff493e93e00d8260cc2feaa96f47`.
+Normalrun `35064588725` passerede journalrebasen, byggede den aktuelle
+Copernicus source-stage og fortsatte helt til Open-Meteo. Den tidligere
+nul-overlap-fejl er dermed lukket.
