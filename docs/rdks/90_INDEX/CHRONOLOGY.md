@@ -1,3 +1,10 @@
+# 2026-09-16 – central version 2 er aktiv; 4.0.385 retter normal weatherstart
+
+- 4.0.384 sourcegate 35040475553, PR #327 og main 2628ddef blev fulgt af grøn central recovery 35040799616.
+- Central readback er INTEGRATED_ACTIVE version 2 på deployment pages-35034589754-1; ingen leverance eller weather blev gentaget.
+- Normal standard-weather 35041008201 stoppede før providers, writes og deploy, fordi dens private runtime-rod ikke var oprettet.
+- 4.0.385 opretter roden, bruger bounded retry og forhindrer en Open-Meteo-følgefejl ved upstream-skip uden at lempe nul-missing-gaten. DEC-0167.
+
 # 2026-09-16 – 4.0.383 er live; 4.0.384 afslutter kun central registrering
 
 - PR #326/sourcegate `35034134953` gav main `11f101f8`; providerfri `35034589754` deployede og verificerede 4.0.383 som integreret 210/673.

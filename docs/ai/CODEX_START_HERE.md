@@ -1,3 +1,28 @@
+# NYESTE CHECKPOINT – 2026-09-16 – central version 2 aktiv; 4.0.385 retter normal weatherstart
+
+4.0.384 bestod exact-head sourcegate 35040475553, blev merged gennem PR
+#327 som main 2628ddefa547191c678f88ba9791b2cd867ea3e4, og den korte centrale
+recovery 35040799616 flyttede atomisk driften fra ACTIVE version 1 til
+ACTIVE version 2. Readback viser INTEGRATED_ACTIVE, aktuel binding og
+deployment pages-35034589754-1. Ingen weather, privat build, Edge eller
+Pages blev gentaget.
+
+Den første almindelige standard-weather 35041008201 stoppede efter 29
+sekunder før DMI, øvrige providers, produktionswrites og deploy. Den konkrete
+årsag var, at normalworkflowet ikke oprettede
+/tmp/ravradar-private-production-runtime før protected restore. En senere
+always()-kontrol gav desuden en misvisende Open-Meteo-følgefejl, selv om
+providerforløbet var sprunget over.
+
+Arbejd i RavRadar-4.0.366, branch
+codex/4.0.385-normal-weather-restore. Workflowet opretter nu runtime-roden,
+genprøver kun protected restore højst tre gange og kører Open-Meteo-slutgaten
+kun efter verificeret handoff eller et faktisk startet providerforløb. Den
+normale scheduler er midlertidigt pauset. Målrettede workflow-/YAML-kontroller
+er grønne. Næste: docs/geodatabevis, commit/push, én exact-head sourcegate,
+merge, genaktivér scheduler og kør én normal tidsbegrænset weather. Ingen
+oneoff. DEC-0167. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.383 reparerer central/offentlig drift
 
 4.0.382 bestod sourcegate `35024395809`, PR #324 og main `a7f0fcba`.

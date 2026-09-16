@@ -1,35 +1,64 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.384
+**Håndbogsversion:** 4.0.385
+
+## 88.89 4.0.385 – Den normale vejrkørsel får sin private arbejdsmappe
+
+### Aktuel status – normal vejrvedligeholdelse
+
+**Status – lokal rettelse klar; GitHub-kontrol og ny normal kørsel mangler**
+
+**Kort fortalt:** Den nye model er nu registreret rigtigt som central aktiv
+version 2. Den første almindelige vejrkørsel nåede slet ikke frem til DMI.
+Den stoppede, fordi den bad om at gendanne den beskyttede vejrpakke i en
+arbejdsmappe, som endnu ikke var oprettet.
+
+4.0.385 opretter mappen, før gendannelsen starter. Hvis Supabase svarer
+midlertidigt dårligt, prøver gendannelsen højst tre gange med korte pauser.
+Mellem forsøgene fjernes kun den ufuldstændige lokale kandidat. Ved en
+vedvarende fejl stopper kørslen fortsat, før der hentes vejr eller skrives til
+produktionen.
+
+Det røde run viste også en ekstra Open-Meteo-fejl. Open-Meteo var imidlertid
+aldrig startet; en senere kontrol blev tvunget til at køre og testede derfor
+et tomt resultat. Den kontrol kører nu kun efter et rigtigt providerforløb
+eller efter et verificeret handoff. Hvis vejrforløbet faktisk er kørt, kræves
+fortsat et gemt checkpoint og præcis nul manglende par.
+
+Rettelsen ændrer ikke modellen, providerprioriteten, rotationen, cachen,
+geometrien eller hjemmesidens dataformat. Efter merge køres én almindelig,
+tidsbegrænset vejrkørsel. Der køres ingen oneoff og ingen ny cutover.
+
+4.0.385 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 
 ## 88.88 4.0.384 – Den levende model registreres centralt uden at blive deployet igen
 
-### Aktuel status – RavScore 4.0.384 kode-only-rettelse
+### Afsluttet status – RavScore 4.0.384 central registrering
 
-**Status for det aktuelle modelarbejde – lokal 4.0.384 samlet, exact-head og deploy afventer**
+**Status – gennemført i sourcegate 35040475553, PR #327 og recovery 35040799616**
 
 Her betyder deploy kun den centrale ACTIVE-registrering. Hjemmesiden, Edge og
 den private runtime deployes ikke igen.
 
-**Kort fortalt:** 4.0.383 er allerede online og kontrolleret. Hjemmesiden har
+**Kort fortalt:** 4.0.383 var allerede online og kontrolleret. Hjemmesiden har
 den nye integrerede model, 210 zoner og 673 kystdele, og dens browserfiler er
-komplette. Det eneste manglende trin er, at den centrale status stadig peger
+komplette. Det eneste manglende trin var, at den centrale status stadig pegede
 på den tidligere, også aktive udgave.
 
 Det skete, fordi afslutningen brugte et gammelt digitalt fingeraftryk for
 kilden. Den centrale status blev ikke ændret og sad aldrig fast halvvejs. Den
-er fortsat en hel og aktiv version 1.
+forblev en hel og aktiv version 1, indtil recoveryen blev kørt.
 
 4.0.384 bygger derfor ikke hjemmesiden, databasen eller den private pakke
 igen. En kort engangsgenoptagelse kontrollerer de præcise gamle og nye
 artifacts, deres commits og digitale fingeraftryk. Den læser også den levende
-side igen. Kun hvis alt stadig er nøjagtigt som dokumenteret, registreres den
-allerede levende 4.0.383 som central aktiv version 2 i én samlet skrivning.
+side igen. Alt var nøjagtigt som dokumenteret, og den allerede levende
+4.0.383 blev registreret som central aktiv version 2 i én samlet skrivning.
 
 Denne genoptagelse henter intet vejr og kører hverken sourcegate, oneoff,
-Edge- eller Pages-deploy. Når den centrale readback er grøn, følger én normal
-tidsbegrænset vejrkørsel for at bevise numeriske scorer, rotation og
-cachevedligeholdelse.
+Edge- eller Pages-deploy. Central readback er grøn. Den efterfølgende normale
+vejrkørsel stoppede før providerstart på den lokale arbejdsmappe og fortsættes
+med 4.0.385.
 
 ## 88.87 4.0.383 – Den kendte defekte kilde repareres uden at svække den nye side
 

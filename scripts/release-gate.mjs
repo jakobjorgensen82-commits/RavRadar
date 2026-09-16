@@ -766,6 +766,7 @@ for(const marker of [
 for(const marker of [
   'Fill only the exact remaining current gaps from Open-Meteo',
   '--runtime-seconds 240',
+  "steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'",
   'Classify target freshness after the bounded supplier chain',
   '--maximum-age-minutes 90',
   'Reclassify target freshness before protected writes and Pages artifact',
@@ -1285,6 +1286,9 @@ const privateRuntimeRestoreSection=buildWorkflow.slice(workflowPositions.private
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs expected',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
+  'for attempt in 1 2 3; do',
+  'Protected normal-weather restore attempt $attempt of 3 failed.',
   'node scripts/protected-private-production-runtime.mjs',
   '--restore',
   'node scripts/private-production-runtime-bundle.mjs restore',

@@ -1,4 +1,17 @@
-# Aktiv roadmap – 4.0.384 fra levende 4.0.383 til central sandhed og normal drift
+# Aktiv roadmap – 4.0.385 fra central aktiv model til bevist normal drift
+
+1. [x] Afslut 4.0.384 exact-head, PR #327, merge og central ACTIVE version 2-recovery.
+2. [x] Kør første normale standard-weather og bevis, at den stopper før providers/writes på lokal runtime-root.
+3. [x] Ret runtime-root, bounded restore-retry og den misvisende Open-Meteo-følgegate samlet.
+4. [x] Afslut version/RDKS/geodatabevis og målrettede kontroller.
+5. [ ] Commit/push, én exact-head sourcegate og merge.
+6. [ ] Genaktivér scheduler og kør én normal tidsbegrænset weather; bevis numeriske scorer, DMI-rotation, fallback og cache. Ingen oneoff.
+7. [ ] Gennemgå hovedkort, begge søgemåder, Om RavRadar, admin og privacy på den levende runtime.
+8. [ ] Revurdér resterende roadmap-punkter mod faktisk produktværdi og luk eller afgræns forældede punkter.
+
+DEC-0167 er aktiv. Scheduler er kun pauset, mens den deterministiske restorefejl rettes.
+
+# Historisk roadmap – 4.0.384 fra levende 4.0.383 til central sandhed og normal drift
 
 1. [x] Deploy og friskverificér 4.0.383 offentligt som 210/673 uden private payloadlæsninger.
 2. [x] Afgræns centralstoppet til forkert historisk source-closure; bevis ingen write og ingen PENDING.

@@ -1,4 +1,16 @@
-# Aktuelt ejerdelta – 2026-09-16 – 4.0.384 eksakt central genoptagelse
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.385 normal-weather restore
+
+- **REQ-4.0.385-RUNTIME-ROOT-001 – BINDENDE:** Normal weather skal oprette sin private runtime-rod før protected restore; et friskt GitHub-run må ikke afhænge af en mappe fra et tidligere trin.
+- **REQ-4.0.385-BOUNDED-RETRY-001 – BINDENDE:** Protected restore må genprøves højst tre gange med kort pause og ren bundlemappe; en vedvarende fejl stopper før providers og writes.
+- **REQ-4.0.385-NO-FOLLOW-ON-001 – BINDENDE:** Open-Meteo-residualgaten må kun køre efter verificeret weatherhandoff eller et faktisk startet Open-Meteo-trin. Den må ikke fremstille upstream-skip som et selvstændigt datahul.
+- **REQ-4.0.385-HARD-DATA-GATE-001 – BINDENDE:** Når provider eller handoff faktisk er kørt, kræves fortsat succes, checkpoint og nul manglende par. Rettelsen lemper ingen datakomplethed.
+- **REQ-4.0.385-NORMAL-ONLY-001 – BINDENDE:** Livebeviset skal komme fra én almindelig tidsbegrænset standard-weather. Ingen oneoff eller ny cutover.
+- **REQ-4.0.385-SCHEDULER-001 – BINDENDE:** Scheduler forbliver pauset under den deterministiske rettelse og genaktiveres efter sikker merge.
+
+DEC-0167 følger den gennemførte DEC-0166 og åbner kun den normale
+vedligeholdelsesvej.
+
+# Historisk ejerdelta – 2026-09-16 – 4.0.384 eksakt central genoptagelse
 
 - **REQ-4.0.384-ALREADY-LIVE-001 – BINDENDE:** 4.0.383's verificerede Pages-, Edge- og private leverance må ikke genkøres for at rette den manglende centrale registrering.
 - **REQ-4.0.384-ACTIVE-TO-ACTIVE-001 – BINDENDE:** Recovery må kun skrive den eksakte centrale ACTIVE version 1 direkte til den eksakte ACTIVE version 2 i én atomisk CAS; ingen PENDING.

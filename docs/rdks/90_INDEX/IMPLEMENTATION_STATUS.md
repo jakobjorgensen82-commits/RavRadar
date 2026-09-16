@@ -1,4 +1,21 @@
-# Aktuel implementeringsstatus – lokal 4.0.384 central ACTIVE-genoptagelse
+# Aktuel implementeringsstatus – lokal 4.0.385 normal-weather restore
+
+- [x] Bestå 4.0.384 exact-head 35040475553, merge PR #327 som main 2628ddef.
+- [x] Gennemfør central recovery 35040799616 og læs INTEGRATED_ACTIVE version 2 tilbage.
+- [x] Start én almindelig standard-weather 35041008201; bevis stop før providers, writes og deploy.
+- [x] Afgræns rodårsagen til manglende oprettelse af private-runtime-roden før protected restore.
+- [x] Ret restore med mappeoprettelse og højst tre korte retryforsøg.
+- [x] Fjern kun Open-Meteo-følgefejlen ved upstream-skip; behold komplethedsgaten efter faktisk provider/handoff.
+- [x] Registrér det eksisterende recoveryworkflow i workflowinventarets ikke-deployende sikkerhedskontrol.
+- [x] Bestå målrettet workflowkontrakt, reusable-kontrakt, JavaScript-syntaks og YAML-parse.
+- [x] Synkronisér releasehukommelse og bevis kun versionsfelt i begge geodatafiler.
+- [ ] Commit/push og bestå én exact-head sourcegate; merge derefter.
+- [ ] Genaktivér normal scheduler og kør én standard-weather. Bevis tal, scorer, DMI-rotation, fallback og cache.
+- [ ] Gennemgå den levende hjemmeside og resterende roadmap meningsfuldt. Ingen oneoff.
+
+DEC-0167 er aktiv. DEC-0166 er produktionsgennemført.
+
+# Historisk implementeringsstatus – lokal 4.0.384 central ACTIVE-genoptagelse
 
 - [x] Bestå 4.0.383 exact-head `35034134953`, merge PR #326 som main `11f101f8`.
 - [x] Deploy og verificér levende 4.0.383 i providerfri run `35034589754` som 210/673 uden private payloadlæsninger.

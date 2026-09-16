@@ -1,15 +1,22 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.384",
+  "handbookVersion": "4.0.385",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-16",
   "sections": [
+    {
+      "id": "normal-weather-private-runtime-restore-4-0-385",
+      "chapter": "88.89",
+      "title": "4.0.385 – Den normale vejrkørsel får sin private arbejdsmappe",
+      "summary": "Den normale vejrkørsel opretter sin arbejdsmappe før beskyttet restore og undgår en falsk Open-Meteo-følgefejl.",
+      "body": "<p><strong>Status 16. september:</strong> Den integrerede model er centralt aktiv version 2. Første normale vejrkørsel stoppede før DMI, andre providers, writes og deploy.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den beskyttede vejrpakke skulle gendannes i en midlertidig mappe, men normalworkflowet havde ikke oprettet mappen. Derfor stoppede det korrekt, før noget blev ændret.</div><div class=\"handbook-stack\"><p>4.0.385 opretter mappen før restore. Midlertidige Supabase-fejl får højst tre korte forsøg, og en ufuldstændig lokal kandidat fjernes mellem forsøgene. Ved vedvarende fejl stopper kørslen stadig før providers og writes.</p><p>En senere Open-Meteo-kontrol rapporterede også fejl, selv om Open-Meteo aldrig var startet. Kontrollen kører nu kun efter et rigtigt providerforløb eller et verificeret handoff. Efter faktisk vejrforløb kræves stadig checkpoint og præcis nul manglende par.</p><p>Model, providerprioritet, rotation, cacheformat, geometri og offentlig kontrakt er uændrede. Efter merge køres én almindelig tidsbegrænset weather. Ingen oneoff og ingen ny cutover.</p></div>"
+    },
     {
       "id": "exact-central-active-recovery-4-0-384",
       "chapter": "88.88",
       "title": "4.0.384 – Den levende model registreres centralt uden nyt deploy",
       "summary": "Den allerede verificerede 4.0.383-side registreres atomisk som central aktiv version 2 uden at genkøre build, vejr eller deploy.",
-      "body": "<p><strong>Status 16. september:</strong> 4.0.383 er offentlig og friskverificeret med integreret model, 210 zoner, 673 kystdele og ingen private payloadlæsninger. Kun central maintenance mangler.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> Afslutningen brugte et gammelt digitalt fingeraftryk for kilden. Centralen blev derfor ikke ændret og kom aldrig i en halvfærdig PENDING-tilstand; den er stadig hel og ACTIVE version 1.</div><div class=\"handbook-stack\"><p>4.0.384 genbygger ikke siden eller den private runtime. En kort engangsgenoptagelse kontrollerer de præcise source- og targetartifacts, deres commits, størrelser og digitale fingeraftryk og læser den levende 4.0.383-side igen.</p><p>Kun den eksakte kendte tilstand må skrives direkte fra ACTIVE version 1 til ACTIVE version 2 i én atomisk handling. Den forseglede 4.0.383-profil bevares; en nyere lokal releaseprofil må ikke ændre den historiske targetidentitet.</p><p>Recoveryen kører ingen sourcegate, weather, oneoff, privat build, Edge eller Pages. Efter grøn central readback følger én normal tidsbegrænset weather-kørsel for numeriske scorer, DMI-rotation og cachevedligeholdelse.</p></div>"
+      "body": "<p><strong>Afsluttet 16. september:</strong> 4.0.384 bestod sourcegate 35040475553 og PR #327. Recovery 35040799616 registrerede den allerede levende integrerede model som central ACTIVE version 2.</p><div class=\"reader-guide\"><strong>Kort fortalt:</strong> Afslutningen havde brugt et gammelt digitalt fingeraftryk for kilden. Centralen var derfor blevet stående sikkert i hel ACTIVE version 1. Den afgrænsede recovery kontrollerede de to eksakte artifacts og den levende side igen.</div><div class=\"handbook-stack\"><p>4.0.384 genbyggede hverken siden eller den private runtime. Artifact-id, commits, størrelser og digitale fingeraftryk blev kontrolleret før den atomiske ACTIVE version 1 til 2-skrivning.</p><p>Den forseglede 4.0.383-profil blev bevaret, og readback viste korrekt binding og deployment. Ingen PENDING-mellemtilstand opstod.</p><p>Recoveryen kørte ingen sourcegate, weather, oneoff, privat build, Edge eller Pages. Den efterfølgende normale weatherstart reguleres af 4.0.385.</p></div>"
     },
     {
       "id": "exact-public-source-repair-4-0-383",
@@ -511,7 +518,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.384 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.385 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },
