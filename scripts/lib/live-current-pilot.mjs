@@ -38,8 +38,8 @@ const COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID = 'copernicus-required-part-time-pai
 const COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID = 'copernicus-current-operational118-advisory-history48-seal-v1';
 const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID =
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID;
-const CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID = 'current-operational-673x118-closure-safe-v2';
-const CURRENT_OPERATIONAL_ASSIGNMENT_CONTRACT_ID = 'current-operational-source-assignment-v2';
+const CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID = 'current-operational-673x118-closure-safe-v3';
+const CURRENT_OPERATIONAL_ASSIGNMENT_CONTRACT_ID = 'current-operational-source-assignment-v3';
 const CURRENT_ADVISORY_ASSIGNMENT_CONTRACT_ID = 'current-advisory-past-model-field-source-assignment-v1';
 const CURRENT_ADVISORY_RECORD_REF_CONTRACT_ID = 'current-advisory-copernicus-record-ref-v1';
 const CURRENT_OPERATIONAL_SOURCE_ORDER_CONTRACT_ID = 'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2';
@@ -227,8 +227,8 @@ const CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS = Object.freeze([
   'sourceOrderContractId', 'dmiVerifiedPairCount', 'copernicusBalticPairCount',
   'copernicusAmm15PairCount', 'regionalNativePairCount',
   'regionalDerivedHoldPairCount', 'regionalResidualPairCount',
-  'openMeteoRequiredPairCount', 'openMeteoPairCount',
-  'supplementalAssignmentCount', 'missingPairCount',
+  'openMeteoRequiredPairCount', 'openMeteoPairCount', 'assignedPairCount',
+  'supplementalAssignmentCount', 'missingPairCount', 'missingAssignmentsSha256',
   'copernicusCompleteWithoutSourceStage', 'copernicusSourceStageStatus',
   'copernicusBoundedProgressAccepted', 'targetRegistrySha256',
   'dmiCurrentInputSha256', 'dmiLedgerSha256', 'dmiAttestationSha256',
@@ -819,14 +819,13 @@ function buildOperationalClosureDocumentProof(document) {
   if (!basicControlledLiveDocument(document)) return null;
   const value = document.operationalClosure;
   if (!exactObjectFields(value, CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS)
-    || value.schemaVersion !== 2
+    || value.schemaVersion !== 3
     || value.contractId !== CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID
-    || value.status !== 'READY'
+    || !['READY', 'READY_WITH_MISSING'].includes(value.status)
     || value.targetCount !== CURRENT_OPERATIONAL_TARGET_COUNT
     || value.operationalHourCount !== COPERNICUS_PUBLIC_HOUR_COUNT
     || value.totalPairCount !== CURRENT_OPERATIONAL_TOTAL_PAIR_COUNT
     || value.sourceOrderContractId !== CURRENT_OPERATIONAL_SOURCE_ORDER_CONTRACT_ID
-    || value.missingPairCount !== 0
     || value.coordinatesIncluded !== false
     || value.rawVectorsIncluded !== false
     || value.partIdsIncluded !== false
@@ -845,7 +844,7 @@ function buildOperationalClosureDocumentProof(document) {
     value.dmiVerifiedPairCount, value.copernicusBalticPairCount,
     value.copernicusAmm15PairCount, value.regionalNativePairCount,
     value.regionalDerivedHoldPairCount, value.regionalResidualPairCount,
-    value.openMeteoRequiredPairCount, value.openMeteoPairCount,
+    value.openMeteoRequiredPairCount, value.openMeteoPairCount, value.assignedPairCount,
     value.supplementalAssignmentCount, value.missingPairCount,
     value.advisoryHistoryRequiredPairCount, value.advisoryHistoryAvailablePairCount,
     value.advisoryHistoryMissingPairCount, value.advisoryHistoryAssignmentCount,
@@ -853,12 +852,16 @@ function buildOperationalClosureDocumentProof(document) {
   if (counts.some(count => !Number.isInteger(count) || count < 0)
     || value.regionalResidualPairCount
       !== value.regionalNativePairCount + value.regionalDerivedHoldPairCount
-    || value.openMeteoRequiredPairCount !== value.openMeteoPairCount
+    || value.openMeteoRequiredPairCount
+      !== value.openMeteoPairCount + value.missingPairCount
     || value.supplementalAssignmentCount !== value.copernicusBalticPairCount
       + value.copernicusAmm15PairCount + value.regionalResidualPairCount
       + value.openMeteoPairCount
-    || value.dmiVerifiedPairCount + value.supplementalAssignmentCount
+    || value.assignedPairCount !== value.dmiVerifiedPairCount
+      + value.supplementalAssignmentCount
+    || value.assignedPairCount + value.missingPairCount
       !== CURRENT_OPERATIONAL_TOTAL_PAIR_COUNT
+    || value.status !== (value.missingPairCount === 0 ? 'READY' : 'READY_WITH_MISSING')
     || value.advisoryHistoryAvailablePairCount + value.advisoryHistoryMissingPairCount
       !== value.advisoryHistoryRequiredPairCount
     || value.advisoryHistoryAssignmentCount !== value.advisoryHistoryAvailablePairCount
@@ -867,7 +870,8 @@ function buildOperationalClosureDocumentProof(document) {
     'closureId', 'targetRegistrySha256', 'dmiCurrentInputSha256', 'dmiLedgerSha256',
     'dmiAttestationSha256', 'copernicusRegistrySha256', 'copernicusShadowSha256',
     'copernicusRecordRefsSha256', 'regionalEvidenceSha256', 'regionalPolicySha256',
-    'regionalPairRefsSha256', 'supplementalAssignmentsSha256', 'assignmentsSha256',
+    'regionalPairRefsSha256', 'supplementalAssignmentsSha256',
+    'missingAssignmentsSha256', 'assignmentsSha256',
     'openMeteoDocumentSha256', 'openMeteoRecordRefsSha256',
     'advisoryHistoryRequiredPairsSha256', 'advisoryHistoryRecordRefsSha256',
     'advisoryHistoryAssignmentsSha256',
@@ -882,6 +886,7 @@ function buildOperationalClosureDocumentProof(document) {
       || value.copernicusBoundedProgressAccepted !== false
       || value.regionalResidualPairCount !== 0
       || value.openMeteoPairCount !== 0
+      || value.missingPairCount !== 0
       || value.copernicusBalticPairCount !== 0
       || value.copernicusAmm15PairCount !== 0) return null;
   } else if (value.copernicusCompleteWithoutSourceStage !== false

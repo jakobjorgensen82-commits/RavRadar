@@ -167,7 +167,7 @@
 
 - Almindelige rettelser deployes uden vejrhentning ved eksakt genbrug af senest gyldige runtime. Normal weather følger separat og tidsbegrænset. DEC-0148.
 - Ny manuel workflowvej kræver exact main og `DEPLOY-CODE-ONLY-REPAIR`; ingen DMI, Copernicus, Open-Meteo, oneoff eller lokal bred kildegate.
-- Integrated/rollback/continuation-bindinger er `65148b4a…`/`7fe45de7…`/`81045427…`; migration 16 er append-only, og migration 15 er urørt.
+- Integrated/rollback/continuation-bindinger er `8727feba…`/`65d26045…`/`3b9b0fd5…`; `20260916120000` er det nye append-only led, og alle tidligere migrationer er urørte.
 - Vindmerge, retning 360, null-hold, fuldt tidsraster, EDR-uafhængighed, UI-null/nu-time og Om-side er rettet lokalt. Produktkritiske målrettede kontroller er grønne. Offentlig deploy og efterfølgende normal weather er endnu ikke bevist.
 
 # 2026-09-14 – 4.0.365 auditens datasetbinding

@@ -1818,8 +1818,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     }
 
     # Tied newest acquisitions may deduplicate only exact physical equivalents.
-    # A physical conflict masks this source for the pair, not other providers
-    # or all cache records; older rows of that same source cannot conceal it.
+    # A physical conflict rejects that acquisition instant, but cannot erase an
+    # older unambiguous, still horizon-valid row from the same source.
     baltic_base_record = full_shadow["records"][0]
     baltic_base_acquisition = next(row for row in full_shadow["acquisitions"]
                                   if row["acquisitionId"] == baltic_base_record["acquisitionId"])
@@ -1852,13 +1852,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         untouched_conflict = copy.deepcopy(conflict_records)
         conflict_refs, conflict_missing = select_required_records(
             conflict_required, conflict_acquisitions, conflict_records, REFERENCE)
-        assert conflict_refs == [] and conflict_missing == conflict_required
+        assert conflict_missing == [] and conflict_refs[0]["recordId"] == older_record["recordId"]
         assert conflict_records == untouched_conflict
         fallback_refs, fallback_missing, _ = select_source_order_admissible_records(
             conflict_required, [*conflict_acquisitions, *donor_bank["shadow"]["acquisitions"]],
             [*conflict_records, *donor_bank["shadow"]["records"]], REFERENCE, [TARGET], [],
             **stage_positive_evidence(donor_bank))
-        assert fallback_missing == [] and fallback_refs[0]["source"] == "copernicus-nws-amm15"
+        assert fallback_missing == [] and fallback_refs[0]["recordId"] == older_record["recordId"]
         recovered_refs, recovered_missing = select_required_records(
             conflict_required, [*conflict_acquisitions, newer_good_acquisition],
             [*conflict_records, newer_good_record], REFERENCE)

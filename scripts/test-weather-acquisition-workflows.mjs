@@ -64,9 +64,11 @@ for (const source of [normal, pilotWorkflow, quality]) {
     if (/key: open-meteo-current-donor-bank-v1-/.test(block)) assert.deepEqual(paths(block), omBank);
   }
 }
-for (const [source, dmiName, cpBankRestore] of [
-  [normal, 'Update DMI bulk model cache', 'Restore shared private Copernicus donor bank'],
-  [oneoff, 'Refresh all bounded official DMI collections for the proof', 'Restore shared private Copernicus donor bank before DMI'],
+for (const [source, dmiName, cpBankRestore, openMeteoTerminalName] of [
+  [normal, 'Update DMI bulk model cache', 'Restore shared private Copernicus donor bank',
+    'Require verified Open-Meteo residual checkpoint before closure'],
+  [oneoff, 'Refresh all bounded official DMI collections for the proof', 'Restore shared private Copernicus donor bank before DMI',
+    'Require complete Open-Meteo residual before freshness and closure'],
 ]) {
   const dmi = step(source, dmiName);
   const beforeDmi = step(source, 'Plan global current acquisition before DMI');
@@ -100,7 +102,7 @@ for (const [source, dmiName, cpBankRestore] of [
   const legacySave = step(source, 'Save shared private Open-Meteo current progress');
   assert.match(legacySave, /checkpoint_written == 'true'/);
   assert.ok(source.indexOf(omSave) < source.indexOf(legacySave));
-  const terminal = step(source, 'Require complete Open-Meteo residual before freshness and closure');
+  const terminal = step(source, openMeteoTerminalName);
   assert.match(terminal, /missing_pair_count/);
   assert.match(terminal, /checkpoint_written/);
   const safe = step(source, 'Preserve safe weather acquisition diagnostics before terminal gates');

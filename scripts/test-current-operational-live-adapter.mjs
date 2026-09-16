@@ -42,7 +42,7 @@ const TARGET_REGISTRY_SHA = sha256({ fixture: 'targets' });
 const SOURCE_ASSET_SHA = sha256({ fixture: 'source-asset' });
 const SOURCE_PROOF_SHA = sha256({ fixture: 'source-proof' });
 const MODEL_RUN = '2026-09-02T05:00:00Z';
-const ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v2';
+const ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v3';
 const ADVISORY_ASSIGNMENT_CONTRACT = 'current-advisory-past-model-field-source-assignment-v1';
 
 const fingerprint = part => sha256({
@@ -165,7 +165,7 @@ const copEntry = {
   verticalLayerM: 5, verticalLayerRankM: 5, layerQuality: 'deepest-common-layer',
   sharedLayerCount: 1, componentPair: 'same-time-cell-layer', interpolation: false,
   vectorSemanticsVersion: 4, uMps: 0.3, vMps: -0.4,
-  closureContractId: 'current-operational-673x118-closure-ready-v2',
+  closureContractId: 'current-operational-673x118-closure-v3',
   closureId: CLOSURE_ID, closureAssignmentSha256: assignmentSha(copIdentity),
   classification: copIdentity.classification, recordRefSha256: copIdentity.recordRefSha256,
 };
@@ -195,7 +195,7 @@ const regionalEntry = ({ validTime, sourceValidTime, classification, holdAgeHour
     provider: 'dmi',
     sourceClass: 'owner-approved-regional-proxy', source: 'dmi-dkss-lf-regional-proxy',
     collection: 'dkss_lf', modelRun: MODEL_RUN,
-    closureContractId: 'current-operational-673x118-closure-ready-v2',
+    closureContractId: 'current-operational-673x118-closure-v3',
     closureId: CLOSURE_ID, classification,
     closureAssignmentSha256: assignmentSha(identity), sourceAssetSha256: SOURCE_ASSET_SHA,
     sourceProofSha256: SOURCE_PROOF_SHA, vectorCommitmentSha256,
@@ -226,8 +226,8 @@ const entries = [copEntry, heldEntry, nativeEntry]
   .sort((left, right) => left.validTime.localeCompare(right.validTime)
     || left.partId.localeCompare(right.partId));
 const safeClosure = {
-  schemaVersion: 2,
-  contractId: 'current-operational-673x118-closure-safe-v2',
+  schemaVersion: 3,
+  contractId: 'current-operational-673x118-closure-safe-v3',
   closureId: CLOSURE_ID,
   status: 'READY', productionReferenceAt: REFERENCE, operationalRangeEndAt: END,
   targetCount: 673, operationalHourCount: 118, totalPairCount: 673 * 118,
@@ -236,7 +236,9 @@ const safeClosure = {
   copernicusAmm15PairCount: 0, regionalNativePairCount: 1,
   regionalDerivedHoldPairCount: 1, regionalResidualPairCount: 2,
   openMeteoRequiredPairCount: 0, openMeteoPairCount: 0,
+  assignedPairCount: 673 * 118,
   supplementalAssignmentCount: 3, missingPairCount: 0,
+  missingAssignmentsSha256: sha256([]),
   copernicusCompleteWithoutSourceStage: false,
   copernicusSourceStageStatus: 'READY', copernicusBoundedProgressAccepted: false,
   targetRegistrySha256: TARGET_REGISTRY_SHA, dmiCurrentInputSha256: sha256({ fixture: 'dmi' }),
@@ -306,6 +308,21 @@ const liveWithSourceStageDisposition = (status, boundedProgressAccepted) => {
 
 assert.equal(controlledLiveCurrentEnabled(live), true,
   'missing past model fields must not block operational readiness');
+const liveWithExplicitCurrentGap = structuredClone(live);
+Object.assign(liveWithExplicitCurrentGap.operationalClosure, {
+  status: 'READY_WITH_MISSING',
+  dmiVerifiedPairCount: 673 * 118 - 4,
+  assignedPairCount: 673 * 118 - 1,
+  openMeteoRequiredPairCount: 1,
+  missingPairCount: 1,
+  missingAssignmentsSha256: sha256([sha256({ fixture: 'explicit-missing' })]),
+  assignmentsSha256: sha256({ fixture: 'all-assignments-with-explicit-missing' }),
+});
+delete liveWithExplicitCurrentGap.operationalClosure.safeProjectionSha256;
+liveWithExplicitCurrentGap.operationalClosure.safeProjectionSha256 =
+  sha256(liveWithExplicitCurrentGap.operationalClosure);
+assert.equal(controlledLiveCurrentEnabled(liveWithExplicitCurrentGap), true,
+  'one explicit current gap must keep the controlled document usable');
 assert.equal(controlledLiveCurrentEnabled(liveWithRegionalReference), true,
   'an exact private regional source reference must preserve operational readiness');
 assert.equal(

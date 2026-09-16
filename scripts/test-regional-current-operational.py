@@ -339,6 +339,46 @@ def test_native_hold_missing_offsets_and_privacy() -> None:
         need(f'"{forbidden_key}":' not in private_text, "Private pair refs must not copy points or raw vectors")
 
 
+def test_newer_regional_conflict_keeps_older_valid_exact_pair() -> None:
+    part_id = "SYNTHETIC-PART-00"
+    valid_time = iso(2)
+
+    def validated(model_offset: int, marker: str) -> dict[str, object]:
+        return {
+            "modelRun": iso(model_offset),
+            "modelRunAt": REFERENCE + timedelta(hours=model_offset),
+            "validTime": valid_time,
+            "validTimeAt": REFERENCE + timedelta(hours=2),
+            "authorizationRank": 0,
+            "sourceAssetSha256": "sha256:" + marker * 64,
+            "sourceProofSha256": "sha256:" + ("a" if marker != "a" else "b") * 64,
+            "vectorCommitmentSha256": "sha256:" + ("c" if marker != "c" else "d") * 64,
+        }
+
+    older = validated(0, "1")
+    conflicting_new_a = validated(1, "2")
+    conflicting_new_b = validated(1, "3")
+    rows = evidence._classify_pairs(
+        [{"partId": part_id, "validTime": valid_time}],
+        {part_id: {"validated": [older, conflicting_new_a, conflicting_new_b]}},
+    )
+    need(
+        rows[0]["classification"] == evidence.REGIONAL_DMI_NATIVE
+        and rows[0]["sourceAssetSha256"] == older["sourceAssetSha256"],
+        "A newer regional conflict must retain the older valid exact-pair value",
+    )
+
+    newer = validated(1, "4")
+    rows = evidence._classify_pairs(
+        [{"partId": part_id, "validTime": valid_time}],
+        {part_id: {"validated": [older, newer]}},
+    )
+    need(
+        rows[0]["sourceAssetSha256"] == newer["sourceAssetSha256"],
+        "A newer unambiguous regional value must replace the older value",
+    )
+
+
 def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     wrong_count = fixture()
     wrong_count["policy"]["parts"].pop()
@@ -1121,6 +1161,7 @@ def test_rejected_regional_replacement_preserves_only_valid_previous_leaf() -> N
 
 def main() -> None:
     test_native_hold_missing_offsets_and_privacy()
+    test_newer_regional_conflict_keeps_older_valid_exact_pair()
     test_policy_target_source_and_shadow_tamper_fail_closed()
     test_gap_domain_is_exact_bounded_and_ledger_bound()
     test_future_samples_vector_commitment_and_stored_proof_tamper()

@@ -155,6 +155,7 @@ def build_fixture(
     *,
     pure_copernicus: bool = False,
     pure_dmi: bool = False,
+    open_meteo_missing: bool = False,
     omit_source_stage: bool = False,
     registry_override: dict | None = None,
 ):
@@ -205,7 +206,9 @@ def build_fixture(
             "pairRefs": refs,
         }}
 
-    open_meteo_record = None if (pure_copernicus or pure_dmi) else {
+    open_meteo_record = None if (
+        pure_copernicus or pure_dmi or open_meteo_missing
+    ) else {
         "partId": residual[2]["partId"],
         "validTime": residual[2]["validTime"],
         "recordId": HASH_C,
@@ -220,6 +223,10 @@ def build_fixture(
     }]
     open_meteo_document = {
         "records": open_meteo_records,
+        "missingPairs": (
+            [copy.deepcopy(residual[2])]
+            if open_meteo_missing else []
+        ),
         "recordRefsSha256": canonical_sha256(open_meteo_refs),
         "copernicusBoundedProgressAccepted": (
             stage is not None and stage["status"] == "IN_PROGRESS"
@@ -389,7 +396,9 @@ assert private["regionalNativePairCount"] == 1
 assert private["regionalDerivedHoldPairCount"] == 1
 assert private["openMeteoRequiredPairCount"] == 1
 assert private["openMeteoPairCount"] == 1
+assert private["assignedPairCount"] == 673 * 118
 assert private["missingPairCount"] == 0
+assert private["status"] == "READY"
 assert private["copernicusSourceStageStatus"] == "IN_PROGRESS"
 assert private["copernicusBoundedProgressAccepted"] is True
 assert private["advisoryHistoryRequiredPairCount"] == 2
@@ -422,7 +431,7 @@ assert captured["openMeteoValidation"] == {
             regional_ref(COMPLEMENT[3], REGIONAL_DMI_DERIVED_HOLD),
         ],
     }),
-    "require_complete": True,
+    "require_complete": False,
 }
 assert {row["validTime"] for row in private["assignments"]} == {
     (REFERENCE + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")
@@ -439,6 +448,25 @@ assert not any(token in safe_text for token in (
 ))
 assert safe["advisoryHistoryMissingPairCount"] == 1
 assert not any(isinstance(value, (dict, list)) for value in safe.values())
+
+# A structurally complete matrix may remain deployable with one explicitly
+# classified gap.  It must never be called complete or receive a fake vector.
+partial, partial_capture = build_fixture(open_meteo_missing=True)
+partial_private = partial["privateProof"]
+partial_safe = partial["safeProjection"]
+assert partial_private["status"] == "READY_WITH_MISSING"
+assert partial_private["assignedPairCount"] == 673 * 118 - 1
+assert partial_private["missingPairCount"] == 1
+assert partial_private["openMeteoRequiredPairCount"] == 1
+assert partial_private["openMeteoPairCount"] == 0
+assert len(partial_private["assignments"]) == 673 * 118
+assert sum(
+    row["classification"] == closure.MISSING
+    for row in partial_private["assignments"]
+) == 1
+assert partial_safe["status"] == "READY_WITH_MISSING"
+assert partial_safe["missingPairCount"] == 1
+assert partial_capture["openMeteoValidation"]["require_complete"] is False
 
 # A pure Copernicus-complete complement still carries READY source-stage
 # evidence; COMPLETE is not a shortcut around the Baltic→AMM15 proof.

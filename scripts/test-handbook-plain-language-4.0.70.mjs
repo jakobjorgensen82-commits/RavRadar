@@ -566,7 +566,7 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'VERIFIED_ONLY',
   'syntheticSampleCount=0',
   '0 aktive zoner og 210 `UNAVAILABLE`',
-  `## 88.92 ${pkg.version} – En gammel Copernicus-kvittering spærrer ikke nye huller`,
+  '## 88.92 4.0.388 – En gammel Copernicus-kvittering spærrer ikke nye huller',
   '**Status – modellen er online; afgrænset driftsrettelse klar**',
   'kun når overlap er præcis nul',
   'bevares hele bestillingen uændret',

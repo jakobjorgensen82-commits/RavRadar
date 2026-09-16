@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-16 – gyldige gamle data før lokalt MISSING
+
+- **REQ-4.0.391-NEW-VALID-WINS-001 – BINDENDE:** En ny fuldt valideret værdi erstatter den hidtidige værdi for præcis samme `(partId, validTime)` efter den eksisterende kildeprioritet.
+- **REQ-4.0.391-RETAIN-VALID-002 – BINDENDE:** En ny tom, ugyldig eller indbyrdes modstridende levering må ikke slette eller skygge for en ældre entydig værdi for samme par, når den ældre værdis validTime stadig ligger i det aktive vindue og hele dens bevis fortsat er gyldigt.
+- **REQ-4.0.391-MISSING-LAST-003 – BINDENDE:** `MISSING` må først materialiseres, når ingen ny gyldig værdi findes, og ingen ældre gyldig værdi for det eksakte par kan genbruges.
+- **REQ-4.0.391-LOCAL-AVAILABILITY-004 – BINDENDE:** Et ærligt lokalt `MISSING` gør kun den berørte kystdel, søgemåde og time utilgængelig; øvrige gyldige scorer og funktioner fortsætter.
+- **REQ-4.0.391-HONEST-COMPLETENESS-005 – BINDENDE:** Alle 79.414 identiteter skal være repræsenteret af værdi eller eksplicit `MISSING`. Kun nul `MISSING` må kaldes et komplet vejrdatasæt; systemet skal fortsat arbejde mod fuld dækning.
+- **REQ-4.0.391-INTEGRITY-006 – BINDENDE:** Lokal missing-tolerance må aldrig skjule strukturel korruption, identitets-, overlap-, provenance-, fysik-, privacy- eller kontraktfejl; sådanne fejl forbliver globale stopfejl.
+- **REQ-4.0.391-SOURCE-ORDER-007 – BINDENDE:** DMI → Baltic → AMM15 → regional DMI → Open-Meteo består. Inden for samme kilde vælges nyeste entydige gyldige levering; en tom eller modstridende nyeste levering skal falde tilbage til en ældre gyldig levering før næste kilde og før `MISSING`.
+
+DEC-0173 erstatter den globale nul-missing-deploydel af `REQ-4.0.390-HARD-CLOSURE-001`, `REQ-4.0.389-CLOSURE-001` og tilsvarende ældre strict-closurekrav. Målet om nul missing og alle integritetsgates består.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.390 forlænget post-cutover-providerbootstrap
 
 - **REQ-4.0.390-EXPLICIT-001 – BINDENDE:** Udvidede providerbudgetter må kun aktiveres manuelt på main med både `force=true` og `extended_provider_bootstrap=true`.

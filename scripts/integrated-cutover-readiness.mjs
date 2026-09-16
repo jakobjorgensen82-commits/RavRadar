@@ -129,10 +129,15 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260915020000_private_runtime_storage_deny',
     filename: '20260915020000_private_runtime_storage_deny.sql',
   }),
+  Object.freeze({
+    version: '20260916120000',
+    id: '20260916120000_valid_data_before_local_missing_binding',
+    filename: '20260916120000_valid_data_before_local_missing_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260914234500');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260916120000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

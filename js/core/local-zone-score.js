@@ -1,11 +1,11 @@
-import { scoreRating } from './score-presentation.js?v=4.0.390';
+import { scoreRating } from './score-presentation.js?v=4.0.391';
 import {
   RAVSCORE_BEST_TIME_POLICY,
   compareRavScoreBestTimeCandidates,
   ravScoreBestTimeSelectionReason,
-} from './best-time-policy.js?v=4.0.390';
-import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.390';
-import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.390';
+} from './best-time-policy.js?v=4.0.391';
+import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.391';
+import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.391';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const safeCount = value => Number.isSafeInteger(value) && value >= 0;
@@ -70,8 +70,9 @@ function strictPossibleWinningParts(value) {
   if(new Set(ids).size!==ids.length
     || JSON.stringify(ids)!==JSON.stringify([...ids].sort())
     || !rows.some(row=>row.partId===value.winningPartId&&row.score===value.score)
-    || value.winningPartUncertain !== (value.scoreQuality==='HISTORY_INCOMPLETE'
-      && rows.some(row=>row.partId!==value.winningPartId)))return null;
+    || value.winningPartUncertain !== (value.status==='partial-zone'
+      || (value.scoreQuality==='HISTORY_INCOMPLETE'
+        && rows.some(row=>row.partId!==value.winningPartId))))return null;
   return rows;
 }
 function strictScoreQuality(value, { available } = {}) {
@@ -206,7 +207,11 @@ function safeWeather(value,time){
   return Object.assign(result,waveInputQuality);
 }
 const coverageReason = value => value?.comparisonPartCount <= 1
-  ? 'Der er kun beregnet én kystdel. Derfor kan forskelle inden for zonen endnu ikke sammenlignes.'
+  ? value?.status === 'partial-zone'
+    ? 'Scoren bruger kun den kystdel, der har gyldige data. De øvrige dele er markeret som manglende.'
+    : 'Der er kun beregnet én kystdel. Derfor kan forskelle inden for zonen endnu ikke sammenlignes.'
+  : value?.status === 'partial-zone'
+    ? `Scoren bruger ${value.comparisonPartCount} af ${value.expectedPartCount} kystdele med gyldige data. De øvrige dele er markeret som manglende.`
   : value?.status === 'whole-zone'
   ? 'Kystdelene ligger højst 7 point fra hinanden, så scoren gælder hele zonen.'
   : value?.status === 'only-part'
@@ -216,6 +221,13 @@ const coverageReason = value => value?.comparisonPartCount <= 1
 export function localCoverageSummary(value) {
   if (!value || !scoreNumber(value.score)
     || !safeCount(value.comparisonPartCount) || value.comparisonPartCount < 1) return null;
+  if (value.status === 'partial-zone') return {
+    kind:'partial-zone',
+    title:'Nogle kystdele mangler data',
+    text:`RavScore vises ud fra ${value.validPartCount} af ${value.expectedPartCount} kystdele med gyldige data. De manglende dele er ikke regnet med.`,
+    parts:(value.parts||[]).filter(part=>finite(part.score)),
+    missingPartCount:Math.max(0,(value.expectedPartCount||0)-(value.validPartCount||0)),
+  };
   if (value.comparisonPartCount <= 1) return {
     kind:'single-part',
     title:'Kun én kystdel er beregnet',
@@ -253,6 +265,12 @@ export function buildLocalZoneScore({coastalParts,zoneId,mode,time}) {
   const possibleWinningParts=strictPossibleWinningParts(value);
   if(!scoreNumber(value?.score)
     || !safeCount(comparisonPartCount) || comparisonPartCount<1
+    || (value?.status==='partial-zone'
+      && (!safeCount(value.validPartCount) || value.validPartCount<1
+        || !safeCount(value.expectedPartCount)
+        || value.validPartCount>=value.expectedPartCount
+        || value.validPartCount!==comparisonPartCount
+        || value.winningPartUncertain!==true))
     || !projectedComponents
     || !availableQuality
     || !possibleWinningParts

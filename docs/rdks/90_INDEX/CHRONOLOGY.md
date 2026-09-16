@@ -1,3 +1,9 @@
+# 2026-09-16 – 4.0.391 beholder gyldige gamle værdier før lokal missing
+
+- 4.0.390 blev main `2dcf571a`; bootstrap `35081537023` gennemførte alle providerled og gemte fremgang.
+- Open-Meteo sluttede med 84 forsøgte provider-negative par uden at ramme tidsbudgettet; den gamle globale nul-missing-gate stoppede buildet.
+- Ejerens permanente rækkefølge er ny gyldig → gammel fortsat gyldig for eksakt par → lokalt `MISSING`; øvrige gyldige scorer fortsætter. DEC-0173.
+
 # 2026-09-16 – 4.0.390 samler post-cutover-bootstrap i den normale rute
 
 - 4.0.389 blev main `bf8eb739`; normalrun `35069942328` reducerede 6.450→5.025 reelle rester.

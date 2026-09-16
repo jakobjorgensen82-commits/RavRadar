@@ -139,7 +139,7 @@ def main() -> int:
     atomic_write(args.report, result["safeProjection"])
     safe = result["safeProjection"]
     print(
-        "Current operational closure READY: "
+        f"Current operational closure {safe['status']}: "
         f"pairs={safe['totalPairCount']}; dmi={safe['dmiVerifiedPairCount']}; "
         f"copernicus={safe['copernicusBalticPairCount'] + safe['copernicusAmm15PairCount']}; "
         f"regional={safe['regionalResidualPairCount']}; "

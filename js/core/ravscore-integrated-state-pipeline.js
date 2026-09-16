@@ -82,7 +82,7 @@ const NATIVE_HOLD_AUTHORIZATION_KEYS = Object.freeze([
 export const RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID =
   'regional-dmi-exact-state-only-hold-v1';
 export const RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID =
-  'current-operational-673x118-closure-ready-v2';
+  'current-operational-673x118-closure-v3';
 const STATE_ONLY_CURRENT_HOLD_KEYS = Object.freeze([
   'contractId',
   'status',

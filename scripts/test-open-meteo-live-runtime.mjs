@@ -69,7 +69,7 @@ const assignmentIdentity = {
 };
 const closureAssignmentSha256 = sha256({
   schemaVersion: 1,
-  contractId: 'current-operational-source-assignment-v2',
+  contractId: 'current-operational-source-assignment-v3',
   assignment: assignmentIdentity,
 });
 const entry = {
@@ -103,7 +103,7 @@ const entry = {
   vectorSemanticsVersion: 4,
   uMps: 0.25,
   vMps: 0,
-  closureContractId: 'current-operational-673x118-closure-ready-v2',
+  closureContractId: 'current-operational-673x118-closure-v3',
   closureId,
   closureAssignmentSha256,
   classification: 'OPEN_METEO_COMBINED_CURRENT',
@@ -113,8 +113,8 @@ entry.recordProjectionSha256 = openMeteoLiveRecordProjectionSha256(entry);
 assert.match(entry.recordProjectionSha256, /^sha256:[0-9a-f]{64}$/);
 
 const closure = {
-  schemaVersion: 2,
-  contractId: 'current-operational-673x118-closure-safe-v2',
+  schemaVersion: 3,
+  contractId: 'current-operational-673x118-closure-safe-v3',
   closureId,
   status: 'READY',
   productionReferenceAt: referenceAt,
@@ -131,9 +131,11 @@ const closure = {
   regionalResidualPairCount: 0,
   openMeteoRequiredPairCount: 1,
   openMeteoPairCount: 1,
+  assignedPairCount: 673 * 118,
   supplementalAssignmentCount: 1,
   supplementalAssignmentsSha256: sha256([closureAssignmentSha256]),
   missingPairCount: 0,
+  missingAssignmentsSha256: sha256([]),
   copernicusCompleteWithoutSourceStage: false,
   copernicusSourceStageStatus: 'READY',
   copernicusBoundedProgressAccepted: false,
@@ -193,7 +195,7 @@ const oldButFutureValidEntry = {
   capturedAt: oldButFutureValidAcquiredAt,
   closureAssignmentSha256: sha256({
     schemaVersion: 1,
-    contractId: 'current-operational-source-assignment-v2',
+    contractId: 'current-operational-source-assignment-v3',
     assignment: oldButFutureValidAssignment,
   }),
 };

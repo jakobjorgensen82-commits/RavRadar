@@ -94,13 +94,14 @@ class DonorBankTests(unittest.TestCase):
         bank53, _ = merge(bank52, reference=53)
         self.assertEqual(bank53["entryCount"], 0)
 
-    def test_newest_conflict_remains_unusable_across_empty_projection(self):
+    def test_newest_conflict_preserves_older_valid_value_across_empty_projection(self):
+        older = row(4, 0.4, acquired=at(minutes=5))
         first, second = row(4, 0.5), row(4, 0.6)
-        bank, _ = merge(documents=[document([first]), document([second])])
-        self.assertEqual(bank["entryCount"], 2)
-        self.assertEqual(select(bank, [4]), [])
+        bank, _ = merge(documents=[document([older]), document([first]), document([second])])
+        self.assertEqual(bank["entryCount"], 3)
+        self.assertEqual(select(bank, [4]), [older])
         next_bank, _ = merge(bank, [document([], reference=1)], reference=1)
-        self.assertEqual(select(next_bank, [4], reference=1), [])
+        self.assertEqual(select(next_bank, [4], reference=1), [older])
         newer = row(4, 0.7, acquired=at(1, 10))
         healed, _ = merge(next_bank, [document([newer], reference=1)], reference=1)
         self.assertEqual(select(healed, [4], reference=1), [newer])
@@ -202,18 +203,19 @@ class DonorBankTests(unittest.TestCase):
             self.assertEqual(select(bank, [4, 5], reference=reference), [row(5)])
             self.assertEqual(bank["conflictMasks"][0]["acquiredAt"], original_mask[0]["acquiredAt"])
 
-    def test_only_strictly_newer_valid_unambiguous_acquisition_clears_mask(self):
+    def test_older_valid_value_remains_usable_until_strictly_newer_value_clears_mask(self):
         bank, _ = merge(documents=[document([row(4)]), document([row(4, 0.6)])])
         bank["entries"].pop(0)
         bank, _ = merge(bank)
-        for candidate in (row(4, 0.7, at(minutes=5)), row(4, 0.7)):
+        older = row(4, 0.7, at(minutes=5))
+        for candidate in (older, row(4, 0.7)):
             bank, _ = merge(bank, [document([candidate])])
-            self.assertEqual(select(bank, [4]), [])
+            self.assertEqual(select(bank, [4]), [older])
         # A later acquisition which is itself ambiguous moves the barrier;
         # it does not release the source merely because its timestamp is newer.
         bank, _ = merge(bank, [document([row(4, 0.8, at(1, 10))], reference=1),
                               document([row(4, 0.9, at(1, 10))], reference=1)], reference=1)
-        self.assertEqual(select(bank, [4], reference=1), [])
+        self.assertEqual(select(bank, [4], reference=1), [older])
         self.assertEqual(bank["conflictMasks"][0]["acquiredAt"], at(1, 10))
         invalid = document([row(4, 1.0, at(2, 10))], reference=2)
         invalid["records"][0]["uMps"] = 999
@@ -421,7 +423,9 @@ class BankCheckpointLifecycleTests(unittest.TestCase):
         bank, _ = merge(bank)
         result, error, writes, outputs = self.exercise(bank=bank, fetched=[row(4)])
         self.assertIsNone(error)
-        self.assertEqual(result, 1)
+        # An atomically written, honestly incomplete projection is now a
+        # successful checkpoint. It still reports one explicit missing pair.
+        self.assertEqual(result, 0)
         self.assertEqual(writes["projection.json"]["recordCount"], 0)
         self.assertEqual(writes["projection.json"]["missingPairCount"], 1)
         self.assertEqual(len(writes["bank.json"]["conflictMasks"]), 1)

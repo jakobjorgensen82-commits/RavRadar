@@ -1,3 +1,31 @@
+# NYESTE SANDHED – 2026-09-16 – gammel gyldig værdi før lokalt MISSING
+
+4.0.390 er main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
+Providerbootstrap `35081537023` gennemførte alle providerled og gemte
+fremgang, men den gamle globale nul-missing-gate stoppede buildet efter 84
+provider-negative par. Alle 84 var forsøgt; Open-Meteo ramte ikke sit
+tidsbudget.
+
+Ejerens bindende prioritet er nu: ny gyldig værdi erstatter gammel; et hul
+bevarer den gamle værdi for samme sted og tidspunkt, så længe den stadig er
+gyldig; først derefter bliver parret `MISSING`; og et lokalt `MISSING` må kun
+gøre den berørte kystdel, søgemåde og time utilgængelig. Resten af RavRadar
+fortsætter.
+
+79.414 er fortsat hele identitetsdomænet og nul `MISSING` er fortsat målet og
+den eneste tilstand, der må kaldes komplet. Lokal missing-tolerance lemper
+ikke kildeprioritet, provenance, fysik, identitet, overlap, privacy eller
+kontraktkontrol. Lokal 4.0.391 har implementeret reglen, og de afgrænsede
+retention-, closure-, state-, handoff-, 210/673-runtime-, workflow-, RDKS-,
+versions- og sikkerhedskontroller er grønne. Exact-head, merge og levende
+normal weather mangler. Scheduler er pauset. DEC-0173.
+
+Første exact-head `35100148036` bekræftede model, 210/673, data-service, DMI
+og migrationsbindinger, men stoppede på to statiske metatestforventninger.
+De er rettet uden at fjerne kontrol: normal og gammel oneoff skelnes, og
+begge append-only migrationsgeneratorer verificeres fortsat inden for
+kildegatens loft på 24 topkommandoer.
+
 # NYESTE SANDHED – 2026-09-16 – normal rotation virker; 4.0.390 samler DMI/Copernicus-tiden
 
 4.0.389 er main `bf8eb739476631ec534df3b2e3ba75e7370a3c29`.
