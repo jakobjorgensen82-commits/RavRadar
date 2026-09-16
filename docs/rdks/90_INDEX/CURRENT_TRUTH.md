@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-16 – modellen er online; Copernicus-journal rettes i 4.0.388
+
+4.0.387 bestod exact-head `35051800082`, blev merged gennem PR #330 som
+main `529f8888f7022232709a699ee5289a9dd52fdd99`, og providerfri code-only
+`35052231130` gennemførte privat genbinding, publicering, Edge, Pages,
+offentlig kontrol og central resealing. Den levende side viser integreret
+4.0.387 med 210 zoner og 673 kystdele. Den nye model er online.
+
+Siden viser fortsat nøddrift, fordi vejrreferencen er gammel og kun 1.957 af
+2.692 kildealdre kan sammenlignes. Normal `force=false`-weather
+`35052715440` gennemførte DMI og gemte både DMI- og Copernicus-fremgang.
+Efter DMI var 46.086 af 79.414 par dækket og 33.328 reelle huller tilbage;
+der var nul spatialt utilgængelige og nul upstream-fraværsklassificerede par.
+
+Copernicus stoppede før Open-Meteo, writes og deploy, fordi en gendannet
+segmentjournalpost havde nul overlap med den nye DMI-hulmatrix. Source-stage-
+valideringen afviste korrekt posten; den efterfølgende registryfejl var kun en
+følge. Lokal 4.0.388 fjerner nul-overlap-posten før strict stage, men bevarer
+hele immutable blandede forsøg, når mindst ét par stadig er aktuelt.
+Scheduler er pauset. Ingen oneoff. DEC-0170.
+
 # NYESTE SANDHED – 2026-09-16 – 4.0.386 er main; privat kontraktgenbinding rettes i 4.0.387
 
 4.0.386 bestod exact-head `35050098674`, blev merged gennem PR #329 som main

@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.388 Copernicus-journalrebase
+
+- **REQ-4.0.388-CURRENT-OVERLAP-001 – BINDENDE:** En gendannet segmentjournalpost må kun indgå i den nye source-stage, hvis mindst ét bestilt `(partId, validTime)` findes i den aktuelle operationelle DMI-hulmatrix.
+- **REQ-4.0.388-IMMUTABLE-MIXED-001 – BINDENDE:** Har posten mindst ét aktuelt par, bevares hele dens immutable bestilling; gamle delpar må ikke klippes eller omskrives.
+- **REQ-4.0.388-DONOR-PRESERVATION-001 – BINDENDE:** Fjernelse af et irrelevant procesforsøg må ikke slette uafhængigt validerede positive målinger fra donorbanken.
+- **REQ-4.0.388-STRICT-STAGE-001 – BINDENDE:** Source-stage-valideringen og dens matrix-, produkt-, mål-, acquisition- og tidsbindinger lempes ikke.
+- **REQ-4.0.388-NO-DATA-SYNTHESIS-001 – BINDENDE:** Nul-overlap-filteret må ikke skabe dækning, markere en kilde udtømt eller reducere den ærlige restliste.
+- **REQ-4.0.388-REUSE-001 – BINDENDE:** Livefortsættelsen genbruger gemt DMI-/Copernicus-fremgang i almindelig weather; ingen oneoff.
+- **REQ-4.0.388-ORDER-001 – BINDENDE:** Ny runtimekontrakt genbindes providerfrit før weather, og scheduler forbliver pauset til sikker normal closure.
+
+DEC-0170 følger den gennemførte DEC-0169 og ændrer kun journalens rebase til den aktuelle DMI-hulmatrix.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.387 same-binding code-only rebind
 
 - **REQ-4.0.387-SAME-BINDING-REBIND-001 – BINDENDE:** En aktiv `integrated`-model må bruge den eksakte predecessor- og `CONTRACT_ONLY_REBIND`-vej, når en reel kodekontraktændring gør direkte current-restore inkompatibel.

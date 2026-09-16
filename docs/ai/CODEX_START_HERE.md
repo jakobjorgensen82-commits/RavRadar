@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.388 retter normal Copernicus-journalfortsættelse
+
+4.0.387 er levende efter sourcegate `35051800082`, PR #330, main
+`529f8888f7022232709a699ee5289a9dd52fdd99` og providerfri code-only
+`35052231130`. Integreret model, 210 zoner, 673 kystdele, privat publish,
+Edge, Pages og central closure er grønne. Siden er fortsat i nøddrift, fordi
+weather er gammel.
+
+Normal `force=false` `35052715440` gennemførte DMI og gemte caches, men
+stoppede før Open-Meteo/writes/deploy: en gendannet Copernicus-segmentjournal
+havde nul overlap med den aktuelle DMI-hulmatrix. Strict stage afviste den
+korrekt. Lokal 4.0.388 filtrerer kun nul-overlap før stage og bevarer hele
+immutable blandede forsøg med mindst ét aktuelt par. Direkte måltest og
+Python-syntaks er grønne; lokal fuld fixturetest mangler `h5py`.
+
+Fortsæt: releasehukommelse/geodatabevis → commit/push → én exact-head → merge
+→ providerfri same-binding code-only → almindelig weather med gemte cacher →
+numeriske scorer/sitekontrol → scheduler. Ingen oneoff. DEC-0170.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.387 åbner same-binding code-only-genbinding
 
 4.0.386 bestod sourcegate `35050098674`, PR #329 og main `c3833354`.

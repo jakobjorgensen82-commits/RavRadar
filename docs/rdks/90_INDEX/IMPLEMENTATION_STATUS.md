@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – lokal 4.0.388 Copernicus-journalrebase
+
+- [x] Bestå 4.0.387 exact-head `35051800082`, merge PR #330 som main `529f8888`.
+- [x] Gennemfør providerfri code-only `35052231130` med privat publish, Edge, Pages, 210/673 og central resealing.
+- [x] Verificér levende integreret 4.0.387; afgræns fortsat nøddrift til gamle vejrdata.
+- [x] Kør almindelig `force=false` weather `35052715440`; bevis DMI-fremgang, cache-save og stop før Open-Meteo/writes/deploy.
+- [x] Afgræns primærfejlen til en gendannet segmentjournalpost med nul overlap mod aktuel DMI-hulmatrix.
+- [x] Filtrér kun nul-overlap før strict stage; bevar hele immutable blandede forsøg med mindst ét aktuelt par.
+- [x] Bestå Python-syntaks og direkte måltest for både nul-overlap og blandet overlap.
+- [x] Synkronisér releasehukommelse, geodatabevis, RDKS/version og håndbog.
+- [ ] Commit/push.
+- [ ] Bestå én exact-head sourcegate og merge.
+- [ ] Kør providerfri same-binding code-only for ny runtimekontrakt; ingen provider og ingen intern ny sourcegate.
+- [ ] Kør almindelig weather med gemt fremgang; kræv nul reelle mangler før deploy og verificér numeriske scorer. Ingen oneoff.
+- [ ] Genaktivér scheduler efter grøn normal drift og afslut meningsfuld site-/roadmapkontrol.
+
+DEC-0170 er aktiv. DEC-0169 er produktionsgennemført. DEC-0168 afventer fuld provider-liveclosure.
+
 # Aktuel implementeringsstatus – lokal 4.0.387 same-binding code-only rebind
 
 - [x] Bestå 4.0.386 exact-head `35050098674`, merge PR #329 som main `c3833354`.
@@ -7,12 +25,12 @@
 - [x] Afvis eksplicit Candidate G, return og cutover på rebind-ruten; behold DB-migration kun historisk.
 - [x] Bestå den målrettede code-only-kontrakttest.
 - [x] Synkronisér 4.0.387-releasehukommelse, geodatabevis, RDKS/version og målrettede slutkontroller.
-- [ ] Commit/push og bestå én exact-head sourcegate; merge derefter.
-- [ ] Kør providerfri code-only uden ny sourcegate internt.
-- [ ] Kræv privat publish, Pages og central closure; genaktivér derefter normal weather.
-- [ ] Kør én normal `force=false` weather og bevis Open-Meteo-rotation, nul huller, numeriske scorer og levende side. Ingen oneoff.
+- [x] Commit/push, exact-head `35051800082` og merge PR #330.
+- [x] Kør providerfri code-only `35052231130` uden ny intern sourcegate.
+- [x] Kræv privat publish, Pages og central closure; alle blev grønne.
+- [x] Start normal `force=false` weather `35052715440`; ny journalfejl før Open-Meteo overtages af 4.0.388/DEC-0170.
 
-DEC-0169 er aktiv. DEC-0168 er merged men afventer provider-livebevis.
+DEC-0169 er produktionsgennemført. DEC-0168 er merged men afventer fuld provider-liveclosure.
 
 # Aktuel implementeringsstatus – lokal 4.0.386 Open-Meteo-kørotation
 

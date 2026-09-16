@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.388 fra levende model til frisk normal drift
+
+1. [x] Lever 4.0.387 providerfrit og verificér integreret model, 210 zoner og 673 kystdele offentligt.
+2. [x] Start én almindelig weather og bevis DMI-/cachefremgang uden central write eller deploy ved senere fejl.
+3. [x] Afgræns Copernicus-stoppet til en gammel segmentjournalpost med nul overlap mod aktuel DMI-hulmatrix.
+4. [x] Fjern kun nul-overlap-poster før strict stage; bevar immutable blandede forsøg og alle validerede donorrecords.
+5. [x] Bestå afgrænset syntaks- og funktionskontrol; synkronisér version, RDKS, håndbog og rent geodataversionsfelt.
+6. [ ] Commit/push, bestå én exact-head sourcegate og merge.
+7. [ ] Kør providerfri same-binding code-only for 4.0.388 og genbrug PR''ens sourcebevis.
+8. [ ] Kør én almindelig `force=false` weather med gemte cacher; kræv nul reelle mangler før artifact/deploy. Ingen oneoff.
+9. [ ] Verificér levende version, numeriske scorer, begge søgemåder, hovedkort, Om RavRadar, admin og privacy.
+10. [ ] Genaktivér scheduler og revurdér resterende roadmap-punkter mod faktisk produktværdi.
+
+DEC-0170 er aktiv. Scheduler er pauset, mens den konkrete normale driftsfejl leveres.
+
 # Aktiv roadmap – 4.0.387 fra ny vejrkodekontrakt til bevaret cache
 
 1. [x] Bestå 4.0.386 exact-head `35050098674`, merge PR #329 som main `c3833354` og behold schedulerkontrol.

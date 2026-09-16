@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.387
+**Håndbogsversion:** 4.0.388
+
+## 88.92 4.0.388 – En gammel Copernicus-kvittering spærrer ikke nye huller
+
+### Aktuel status – normal vejrfortsættelse
+
+**Status – modellen er online; afgrænset driftsrettelse klar**
+
+**Kort fortalt:** Den første almindelige vejrkørsel efter modelskiftet hentede
+og gemte DMI-data. Copernicus fandt derefter en gammel arbejdskvittering fra
+en tidligere tidsramme. Ingen af kvitteringens bestillinger var længere blandt
+de aktuelle DMI-huller, og den strenge kontrol stoppede derfor sikkert.
+
+4.0.388 fjerner en sådan kvittering, før den nye Copernicus-status bygges, men
+kun når overlap er præcis nul. Hvis en gammel samlet bestilling stadig
+indeholder bare ét aktuelt hul, bevares hele bestillingen uændret. RavRadar
+skriver altså ikke historikken om for at få kontrollen til at bestå.
+
+Positive, validerede Copernicus-målinger ligger separat i donorbanken og
+bevares. Rettelsen skaber ingen data, kalder ikke et hul udfyldt og ændrer
+ikke kildeordenen eller kravet om nul reelle mangler før deploy.
+
+Den nye model er allerede levende som 4.0.387. Efter den korte providerfrie
+genbinding kører en almindelig tidsbegrænset vejropdatering videre med de
+gemte DMI- og Copernicus-cacher. Ingen oneoff.
+
+4.0.388 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 
 ## 88.91 4.0.387 – Den samme cache følger sikkert med ny vejrkode
 
