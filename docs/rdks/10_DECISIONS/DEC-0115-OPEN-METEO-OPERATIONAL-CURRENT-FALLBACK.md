@@ -8,6 +8,11 @@
 
 > **SUPERSEDERET delkontrakt 2026-09-07:** DEC-0118 ophævede READY-only-kravet og tillader eksakt residualoverdragelse fra en runbundet `IN_PROGRESS` availability-ledger. DEC-0119 ophæver denne beslutnings 90/150/240-minutters aldersgrænser som availability-, promotion- og deploygates. Tidsbudgetterne består; alder udløser advarsel og degraderet tillid, mens egen prognosehorizon og 79.414-integritetslukning fortsat er hårde.
 
+> **SUPERSEDERET driftsramme 2026-09-16:** DEC-0171 erstatter kun den normale
+> Open-Meteo-ramme på 240 sekunder med 900 sekunder og kræver
+> `--critical-only` i normal weather. Oneoffens 900 sekunder og alle
+> kilde-, fysik-, provenance-, batch- og komplethedskrav består.
+
 ## Beslutning
 
 1. Den eksakte operationelle prioritet for hvert `(partId, validTime)` er DMI DKSS, Copernicus Baltic, Copernicus AMM15, den allerede godkendte regionale DMI-vej for dens præcise otte policydele og derefter Open-Meteo for alle resterende operationelle huller.

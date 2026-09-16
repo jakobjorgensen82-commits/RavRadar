@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.388
+**Håndbogsversion:** 4.0.389
+
+## 88.93 4.0.389 – Den normale vejropdatering får tid til at lukke de sidste huller
+
+### Aktuel status – målt restfyldning
+
+**Status – lokal rettelse klar; GitHub-kontrol og levende kørsel mangler**
+
+**Kort fortalt:** Den seneste almindelige vejropdatering viste, at rotationen
+virker, og at DMI, Copernicus og Open-Meteo alle gemmer deres fremgang.
+Open-Meteo nåede bare kun fire forespørgsler, før den fælles tidsramme på fire
+minutter udløb. Den udfyldte 396 par, mens 5.858 stadig manglede. Der var
+ingen konkret fejl hos leverandøren.
+
+4.0.389 giver derfor den almindelige Open-Meteo-passage op til 15 minutter,
+men kun mens der findes faktiske huller. Når alle huller er lukket, stopper
+den straks og bruger ikke ekstra tid på at opfriske Open-Meteo-data.
+
+Kildeordenen ændres ikke. RavRadar prøver fortsat DMI først, derefter de to
+Copernicus-produkter, den afgrænsede regionale DMI-kilde og til sidst
+Open-Meteo. Senere gode DMI- eller Copernicus-data erstatter automatisk
+Open-Meteo. Højst 50 punkter sendes pr. forespørgsel, og alle kontroller
+består. Intet nyt kan komme online, før alle 79.414 par er udfyldt.
+
+Den gamle engangskørsel viste sig at være bundet til modellen fra før
+modelskiftet og nåede slet ikke frem til vejrkilderne. Derfor fortsætter
+RavRadar gennem den almindelige vejropdatering og de allerede gemte cacher.
 
 ## 88.92 4.0.388 – En gammel Copernicus-kvittering spærrer ikke nye huller
 

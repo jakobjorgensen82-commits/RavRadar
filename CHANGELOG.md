@@ -1,3 +1,9 @@
+## 4.0.389 – realistisk normal Open-Meteo-restfyldning (2026-09-16, lokal kandidat)
+
+- Normalrun `35064588725` livebeviste 4.0.388-journalrettelsen, cachegenbrug og alle tre providerled, men 240 sekunder gav kun fire vellykkede Open-Meteo-requests og 396 udfyldte par; 5.858 reelle rester stod tilbage uden providerfejl.
+- Normal Open-Meteo får nu højst 900 sekunder og kører kun, mens eksakte kritiske huller findes. Batchstørrelse, validering, kildeprioritet og nul-missing-gate er uændrede.
+- Den gamle før-cutover-oneoff `35067958289` stoppede før providers på Candidate G-bootstrap og bruges ikke som post-cutover-rute. Se `CHANGELOG-4.0.389.md` og DEC-0171.
+
 ## 4.0.388 – Copernicus-journal følger den aktuelle DMI-hulmatrix (2026-09-16, lokal kandidat)
 
 - 4.0.387 bestod sourcegate `35051800082`, PR #330 og providerfri leverance `35052231130`; den integrerede model er levende som 4.0.387 på 210/673.

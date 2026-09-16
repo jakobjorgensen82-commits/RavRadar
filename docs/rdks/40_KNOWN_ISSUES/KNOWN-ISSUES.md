@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-16 – normal Open-Meteo-restfyldning får nok tid
+
+- **ISSUE-4.0.388-ZERO-OVERLAP-JOURNAL – LUKKET:** Normalrun `35064588725` passerede kontrollen og nåede alle providerled.
+- **ISSUE-4.0.386-OPEN-METEO-ROTATION – LIVEBEVIST:** Slot 11 blev anvendt, og faktiske par blev gemt.
+- **ISSUE-4.0.389-NORMAL-OPEN-METEO-BUDGET – RETTET LOKALT / LIVEBEVIS MANGLER:** 240 sekunder gav kun fire requests og 396 par uden providerfejl. Normalruten får nu 900 sekunder og stopper straks efter nul reelle huller.
+- **ISSUE-LEGACY-ONEOFF-POST-CUTOVER – AFGRÆNSET:** `35067958289` nåede ingen provider, fordi oneoffen fortsat kræver en pensioneret Candidate G-bootstrap. Den bruges ikke til post-cutover-drift.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** 5.858 reelle par manglede ved sidste run; intet ufuldstændigt artifact blev deployet.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – ÅBEN VERIFIKATION:** Efter komplet closure skal normal drift bevise, at DMI og dernæst Copernicus gradvist erstatter Open-Meteo.
+- **ISSUE-SITE-ACCEPTANCE – AFVENTER FRISK DEPLOY:** Fuld meningsfuld sitekontrol udføres efter nul-missing og levende numeriske scorer.
+
+DEC-0171. Scheduler er pauset, og gemte cacher bevares.
+
 # NYESTE CHECKPOINT – 2026-09-16 – modellen er online; normal Copernicus-fortsættelse rettes
 
 - **ISSUE-4.0.387-MODEL-DELIVERY – LUKKET:** Sourcegate `35051800082`, PR #330 og code-only `35052231130` leverede integreret 4.0.387 med 210/673 og central resealing.

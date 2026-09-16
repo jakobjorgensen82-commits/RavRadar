@@ -1,5 +1,15 @@
 # Open-Meteo som sidste operationelle currentfallback – 2026-09-05
 
+## Driftstillæg 2026-09-16
+
+Normalrun `35064588725` beviste kørotation og cachefremgang, men også at
+den delte 240-sekundersramme kun rummede fire vellykkede requests og 396 par.
+5.858 reelle rester stod tilbage uden registrerede providerfejl. DEC-0171
+ændrer derfor normalrammen til 900 sekunder og kræver `--critical-only`.
+Batchstørrelsen 50, den fysiske datakontrakt, afstandskrav, provenance,
+kildeprioritet og nul-missing-gate er uændrede. Den gamle Candidate G-bundne
+oneoff bruges ikke som post-cutover-driftsrute.
+
 ## Formål og afgrænsning
 
 Rapporten dokumenterer den lokalt implementerede 4.0.323-kontrakt. Den ændrer ikke kystgeometri, land-/vandpunkter, kystnormal, scoreformel eller stateversion. Den tilføjer kun en sidste operationel currentkilde efter alle hidtil godkendte kilder.

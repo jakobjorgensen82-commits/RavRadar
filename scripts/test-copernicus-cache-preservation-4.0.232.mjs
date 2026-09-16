@@ -75,7 +75,8 @@ assert.doesNotMatch(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-sour
 assert.doesNotMatch(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-shadow\.json/);
 assert.match(postDmiRefreshBlock, /--require-source-stage-reusable/);
 assert.match(postDmiRefreshBlock, /fill-open-meteo-current-fallback\.py/);
-assert.match(postDmiRefreshBlock, /--runtime-seconds 240/);
+assert.match(postDmiRefreshBlock, /--runtime-seconds 900/);
+assert.match(postDmiRefreshBlock, /--critical-only/);
 assert.match(postDmiRefreshBlock, /--at "\$RAVRADAR_PRODUCTION_TARGET_HOUR"/);
 assert.match(postDmiRefreshBlock, /--targets \.cache\/copernicus-current-targets\.json/);
 assert.match(postDmiRefreshBlock, /--authoritative-targets data\/live\/coastal-parts-v2\.json/);

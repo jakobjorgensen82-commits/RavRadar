@@ -765,7 +765,8 @@ for(const marker of [
 }
 for(const marker of [
   'Fill only the exact remaining current gaps from Open-Meteo',
-  '--runtime-seconds 240',
+  '--runtime-seconds 900',
+  '--critical-only',
   "steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'",
   'Classify target freshness after the bounded supplier chain',
   '--maximum-age-minutes 90',

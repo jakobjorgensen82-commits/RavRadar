@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.389 bruger normalruten til kritisk closure
+
+4.0.388 er main, og normalrun `35064588725` beviste journalrettelsen,
+Open-Meteo-rotationen og cache-save hos DMI, Copernicus og Open-Meteo. Før
+Open-Meteo manglede 6.254 par. Fire vellykkede requests tilføjede 396; 5.858
+stod tilbage, da den delte 240-sekundersramme udløb. Ingen providerfejl blev
+registreret.
+
+Den gamle oneoff nåede ikke providers, fordi den stadig er bundet til en
+pensioneret Candidate G-bootstrap. 4.0.389 ændrer derfor den almindelige
+Open-Meteo-passage til 900 sekunder og `--critical-only`. Den genbruger
+cachen, ændrer ingen kildeprioritet og kræver fortsat nul mangler før deploy.
+Scheduler er pauset. DEC-0171.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.388 rebases Copernicus-journalen ærligt
 
 4.0.387 er online efter grøn exact-head `35051800082`, PR #330 og
