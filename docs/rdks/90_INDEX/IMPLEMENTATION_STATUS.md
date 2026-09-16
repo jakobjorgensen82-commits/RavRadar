@@ -4398,3 +4398,19 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Genaktivér scheduler først efter grøn normal drift; fortsæt derefter site- og roadmapgennemgang.
 
 DEC-0177 er aktiv. Scheduler er pauset.
+
+# Aktuel implementeringsstatus – lokal 4.0.395 Feggesund-lokalisolation
+
+- [x] Lever 4.0.394 via exact-head `35137196497`, PR #338, main `b67459b0` og providerfri deploy `35137798403`.
+- [x] Bevis 4.0.394 i normalrun `35138332481`: current closure og offentlig syvdøgnshistorik er grønne.
+- [x] Afgræns næste stop til Feggesund 336 direct + 0 proxy + 18 missing i tre dele × seks yderste timer.
+- [x] Kræv fortsat eksakt 354-positioners direct/proxy/missing-bogføring, men isolér ærligt missing til den berørte del/time.
+- [x] Opdatér slutaudit og realistisk missing-fixture; målrettet DMI-integration og 210/673-runtimeaudit er grønne.
+- [x] Klassificér DMI-driften ærligt: 39.309 → 38.660 ved to timer nyere target er ikke nettovækst; progressionen er gemt.
+- [ ] Bestå version/RDKS/geodatabevis og én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only-genbinding af 4.0.395.
+- [ ] Kør én almindelig weather på gemte cacher; verificér local MISSING, score, fulde gates, deploy og DMI/Copernicus/Open-Meteo-udvikling.
+- [ ] Genaktivér scheduler først efter grøn normal drift og offentlig kontrol.
+- [ ] Undersøg senere en fagligt valideret supplerende Feggesund-bølgekilde.
+
+DEC-0178 er aktiv. Ingen oneoff.

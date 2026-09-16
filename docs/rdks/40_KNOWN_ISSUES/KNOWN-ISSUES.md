@@ -1886,3 +1886,14 @@ Migrationen `20260821_trip_evidence_contract.sql` blev anvendt og verificeret p�
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Alle cacher blev gemt; en fuldført normal deploy og efterfølgende schedulerpassage mangler.
 
 DEC-0177. Scheduler er pauset.
+
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.395 lokaliserer Feggesund-huller
+
+- **ISSUE-4.0.394-DELIVERY – LUKKET:** Exact-head `35137196497`, PR #338, main `b67459b0` og providerfri deploy `35137798403` er grønne. Offentlig version er 4.0.394.
+- **ISSUE-4.0.394-RESIDUAL-ORDER – LUKKET I NORMAL RUNTIME:** Run `35138332481` bestod både current closure og `Build public seven-day current history and controlled live selection`; den tidligere fejl er dermed levende afkræftet.
+- **ISSUE-FEGGESUND-GLOBAL-MISSING-BLOCK – RETTET LOKALT / LIVEBEVIS MANGLER:** Samme run stoppede i `Update central weather cache`, fordi 336 direct + 0 proxy + 18 missing fejlagtigt blev krævet som 354 positive. 4.0.395 kræver i stedet eksakt 354-positioners bogføring og lokaliserer ærligt missing.
+- **ISSUE-FEGGESUND-TAIL-SOURCE – ÅBEN:** Tre dele mangler bølger i de sidste seks timer. En valideret alternativ bølgekilde skal undersøges senere; ingen syntese eller enkelt-nabo-lån er godkendt.
+- **ISSUE-DMI-NET-GROWTH – ÅBEN HØJ:** DMI faldt 39.309 → 38.660, Copernicus 6.560 → 6.527, Open-Meteo voksede 32.463 → 33.072 og missing voksede 138 → 219. Target rykkede 17:00Z → 19:00Z, så målingen er ikke ren, men DMI viste ingen nettovækst. Cacherne blev gemt; næste normale run skal måles på sammenligneligt grundlag.
+- **ISSUE-4.0.395-LIVE – ÅBEN:** Exact-head, merge, providerfri code-only, én normal weather på gemte cacher, fulde gates, deploy og offentlig scorekontrol mangler.
+
+DEC-0178. Scheduler er fortsat pauset.

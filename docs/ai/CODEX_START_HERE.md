@@ -1082,3 +1082,20 @@ sorterer hele positive+missing-listen efter validTime/partId. Testen lægger
 bevidst et hul før en senere positiv værdi og er grøn. Scheduler er pauset.
 Næste: docs/version, push, én exact-head, merge, providerfri code-only og én
 almindelig weather på gemte cacher. DEC-0177. Sol/Ekstra høj.
+
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.395 Feggesund-lokalisolation
+
+4.0.394 er live som main `b67459b0` efter exact-head `35137196497`, PR #338
+og providerfri deploy `35137798403`. Normalrun `35138332481` beviste både
+current closure og syvdøgnshistorik, men stoppede senere på Feggesund 336
+direct + 0 proxy + 18 missing.
+
+4.0.395 bevarer eksakt 354-positioners direct/proxy/missing-bevis. Et ærligt
+missing bliver lokalt `UNAVAILABLE` i stedet for at stoppe hele landet;
+forkert antal, ukendt disposition, invalid provenance eller tamper stopper.
+De målrettede DMI- og 210/673-runtimeaudits er grønne.
+
+DMI voksede ikke: 39.309 → 38.660 ved to timer nyere target. Cacherne er
+gemt; næste normale kørsel skal måle fortsættelsen uden oneoff. Fortsæt
+docs/version/geodatabevis, én exact-head, merge, providerfri code-only og én
+normal weather. Scheduler forbliver pauset. DEC-0178. Sol/Ekstra høj.

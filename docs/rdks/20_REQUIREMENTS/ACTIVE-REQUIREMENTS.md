@@ -1505,3 +1505,16 @@ Den daværende private nationale shadow-validator beregnede A, B og C på samme 
 
 DEC-0177 præciserer DEC-0176. Scheduler forbliver pauset til historik, score,
 fuld validering og deploy er levende bevist.
+
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.395 lokal Feggesund-isolation
+
+- **REQ-4.0.395-FEGGESUND-ACCOUNTING-001 – BINDENDE P0:** Den almindelige runtime og slutaudit skal bogføre præcis tre aktive Feggesund-dele × 118 timer. Hver position er præcis `DIRECT`, `FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION` eller `MISSING`, og direct + proxy + missing skal være 354.
+- **REQ-4.0.395-LOCAL-UNAVAILABLE-002 – BINDENDE:** Et ærligt, hashbundet `MISSING` gør kun den berørte Feggesund-del og time `UNAVAILABLE`. Resten af RavRadar fortsætter. Ufuldstændig bogføring, overlap, ukendt disposition, ugyldig direct/proxy-lineage eller manipuleret proof stopper fortsat.
+- **REQ-4.0.395-NO-SYNTHESIS-003 – BINDENDE:** Direct-first/two-neighbor-reglen, tupleintegritet, same-time/same-run, energivægtning, calibration-forbud og alle privacykrav består. Ingen enkelt-nabo, tidslån, syntese, geometri- eller punktændring er tilladt.
+- **REQ-4.0.395-STRICT-PROBE-SEPARATION-004 – BINDENDE:** Kravene `direct + proxy = 354` og `missing = 0` i `REQ-4.0.343-UNCHANGED-CLOSURE-001`, `REQ-4.0.342-FINAL-COMPLETENESS-001` og `REQ-FEGGESUND-WAVE-118H-PRIVACY-PROOF-001` er supersederet som global gate for almindelig produktion. En isoleret komplethedsprobe må fortsat måle nul missing som driftsmål, men kan ikke gøre et ærligt lokalt hul til national datakorruption.
+- **REQ-4.0.395-FUTURE-WAVE-SOURCE-005 – ÅBEN:** Undersøg senere en fagligt valideret supplerende bølgekilde til Feggesunds hale. Ingen ny kilde må aktiveres uden egen provenance-, fysik-, privacy-, score- og browservalidering.
+- **REQ-4.0.395-DMI-MAINTENANCE-006 – BINDENDE DRIFTSBEVIS:** Normal DMI-rotation skal måles over sammenlignelige targets. Run `35138332481` faldt 39.309 → 38.660 DMI-par, mens target rykkede to timer og kun dele af fire collections blev opdateret. Dette er ikke bevis for vækst; næste normale kørsel skal genbruge den gemte progression og klassificere nettoudviklingen uden at skjule Open-Meteo-overtagelse.
+
+DEC-0178 supersederer kun den globale nul-missing-blokering for ærligt
+bogførte Feggesund-positioner. Alle øvrige integritets-, source- og
+lokalisolationskrav består.

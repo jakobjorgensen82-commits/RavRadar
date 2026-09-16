@@ -1155,3 +1155,11 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - 4.0.393 bestod sourcegate `35130086861`, PR #337 og providerfri deploy `35130668700` som main `88ecda1e`.
 - Normalrun `35131237007` gemte alle caches og lukkede 79.276 værdier plus 138 lokale `MISSING`.
 - Historikadapteren sammenkædede positive og missing par i to blokke; 4.0.394 sorterer det samlede eksakte sæt kanonisk før validering. DEC-0177.
+
+# 2026-09-16 – 4.0.395 gør Feggesunds sidste huller lokale
+
+- 4.0.394 bestod exact-head `35137196497`, PR #338 og providerfri deploy `35137798403` som main `b67459b0`.
+- Normalrun `35138332481` beviste den nye closure- og historikrækkefølge, men stoppede i central cacheopdatering på Feggesund 336 direct, 0 proxy og 18 missing.
+- De 18 positioner er tre dele × seks yderste timer, hvor hverken direct eller begge naboer var komplette.
+- 4.0.395 bevarer eksakt 354-positioners proof, men et ærligt missing er lokalt `UNAVAILABLE` i stedet for en national stopfejl. DEC-0178.
+- Samme run viste ingen DMI-nettovækst: 39.309 → 38.660 ved et to timer nyere target; gemt progression og næste normale run skal bruges til fortsat driftsbevis.

@@ -1379,11 +1379,11 @@ function preflightFeggesundOperationalWaveReadiness({
   const proxy = proof.counts[FEGGESUND_WAVE_DISPOSITIONS.proxy] ?? 0;
   const missing = proof.counts[FEGGESUND_WAVE_DISPOSITIONS.missing] ?? 0;
   const expected = partIds.length * RAVSCORE_PUBLIC_FORECAST_HOURS;
-  if (direct + proxy !== expected || missing !== 0) {
+  if (direct + proxy + missing !== expected) {
     const error = new Error(
-      `FEGGESUND_WAVE_READINESS_INCOMPLETE expected=${expected} direct=${direct} proxy=${proxy} missing=${missing}`,
+      `FEGGESUND_WAVE_READINESS_ACCOUNTING_INVALID expected=${expected} direct=${direct} proxy=${proxy} missing=${missing}`,
     );
-    error.code = 'FEGGESUND_WAVE_READINESS_INCOMPLETE';
+    error.code = 'FEGGESUND_WAVE_READINESS_ACCOUNTING_INVALID';
     throw error;
   }
   return proof;
