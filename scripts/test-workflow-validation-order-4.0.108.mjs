@@ -23,7 +23,7 @@ productionWorkflowNames.add('deploy-code-only-repair.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -1222,6 +1222,12 @@ const normalOpenMeteoSave = productionStep('Save shared private Open-Meteo curre
 const normalOpenMeteoTerminal = productionStep('Require complete Open-Meteo residual before freshness and closure');
 const normalWamFinal = productionStep('Require complete operational WAM after provider progress for first cutover');
 assert.ok(
+  normalOpenMeteoTerminal.includes(
+    "steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'",
+  ),
+  'Normal Open-Meteo-terminalgaten må ikke skabe en følgefejl, når providerforløbet blev sprunget over før start.',
+);
+assert.ok(
   normalCopernicusDisposition.includes('--require-source-stage-reusable')
     && !normalCopernicusDisposition.includes('--require-source-stage-ready'),
   'Normal/handoff skal acceptere eksakt IN_PROGRESS/partial Copernicus-evidens før Open-Meteo; READY må ikke kræves.',
@@ -2092,6 +2098,9 @@ for (const marker of [
   'node scripts/private-production-runtime-workflow.mjs expected',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   '--output .cache/private-production-runtime-expected.json',
+  'mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
+  'for attempt in 1 2 3; do',
+  'Protected normal-weather restore attempt $attempt of 3 failed.',
   'node scripts/protected-private-production-runtime.mjs',
   '--restore',
   'node scripts/private-production-runtime-bundle.mjs restore',

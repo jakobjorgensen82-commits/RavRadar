@@ -1,6 +1,6 @@
 # DEC-0166 – Eksakt ACTIVE-til-ACTIVE-genoptagelse af allerede levende 4.0.383
 
-**Status:** Aktiv; implementeret lokalt i 4.0.384, exact-head og central write afventer
+**Status:** Gennemført i 4.0.384; sourcegate 35040475553, PR #327 og central recovery 35040799616
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -47,3 +47,11 @@ beviser kontrolleres, og den levende side læses frisk umiddelbart før CAS.
 DEC-0166 fortsætter DEC-0165 efter det vellykkede offentlige 4.0.383-deploy.
 DEC-0165's source-reparation er historisk gennemført; normal weather og
 numerisk score-/rotationsbevis er fortsat åbent efter central aktivering.
+
+## Produktionsudfald
+
+Main 2628ddefa547191c678f88ba9791b2cd867ea3e4 kørte den afgrænsede recovery
+uden sourcegate, weather, privat build, Edge eller Pages. Den atomiske write og
+readback gav INTEGRATED_ACTIVE version 2 med den forventede binding og
+deployment pages-35034589754-1. Den efterfølgende normale weathervej
+reguleres af DEC-0167.

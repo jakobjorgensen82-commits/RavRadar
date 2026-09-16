@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – central aktiv; lokal 4.0.385 normal-weather restore
+
+4.0.384 er afsluttet: exact-head 35040475553, PR #327, main 2628ddef og
+central recovery 35040799616. Central readback er INTEGRATED_ACTIVE
+version 2 med korrekt binding. Ingen weather eller nyt deploy indgik.
+
+Normal standard-weather 35041008201 stoppede sikkert efter 29 sekunder før
+provider, writes og deploy. /tmp/ravradar-private-production-runtime var
+ikke oprettet før protected restore. Open-Meteo-fejlen bagefter var en
+misvisende følgekontrol på et sprunget trin.
+
+Arbejd i RavRadar-4.0.366, branch
+codex/4.0.385-normal-weather-restore. Runtime-roden oprettes nu, protected
+restore har tre korte retries, og residualgaten kører kun efter handoff eller
+et faktisk providerforløb. Scheduler er pauset under rettelsen. Afslut
+docs/geodatabevis og måltests, commit/push, én exact-head, merge, genaktivér og
+kør én normal tidsbegrænset weather. Ingen oneoff. DEC-0167.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.384 central ACTIVE-genoptagelse
 
 Levende 4.0.383 er deployet fra main `11f101f8f4c304253e55d5c850d4274e626db2a2`

@@ -1,4 +1,18 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.384 registrerer allerede levende 4.0.383
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.385 åbner den normale weathervej
+
+4.0.384 bestod exact-head 35040475553, PR #327 og central recovery
+35040799616. Centralen er nu atomisk og frisklæst som INTEGRATED_ACTIVE
+version 2 på den allerede levende deployment. Ingen tidligere leverance blev
+gentaget.
+
+Normal standard-weather 35041008201 nåede ingen provider, write eller
+deploy. Protected restore krævede en runtime-rod, som workflowet ikke havde
+oprettet. 4.0.385 opretter roden, genprøver det eksterne restore begrænset og
+forhindrer en efterfølgende residualgate i at rapportere providerfejl, når
+providerforløbet aldrig startede. Den virkelige komplethedsgate er uændret.
+Scheduler genaktiveres først efter merge. Ingen oneoff. DEC-0167.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.384 registrerer allerede levende 4.0.383
 
 PR #326/sourcegate `35034134953` gav main `11f101f8`. Providerfri
 `35034589754` gennemførte privat runtime, backend og Pages og verificerede

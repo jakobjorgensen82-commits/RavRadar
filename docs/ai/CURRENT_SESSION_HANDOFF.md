@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.385 retter første normale weatherstop
+
+4.0.384 bestod sourcegate 35040475553, PR #327 og merge
+2628ddefa547191c678f88ba9791b2cd867ea3e4. Recovery 35040799616 er grøn:
+centralen er INTEGRATED_ACTIVE version 2 med aktuel binding og den allerede
+levende deployment pages-35034589754-1. Ingen leverancetrin blev gentaget.
+
+Første almindelige standard-run 35041008201 stoppede efter 29 sekunder før
+alle providers, writes og deploy. Protected restore afviste den ikke-oprettede
+private-runtime-rod; den efterfølgende Open-Meteo-fejl var kun en always()-
+følgefejl på et sprunget providertrin.
+
+Branch codex/4.0.385-normal-weather-restore opretter roden før restore,
+bruger tre korte Supabase-forsøg og undertrykker kun den umulige følgekontrol,
+ikke en reel datafejl. Workflowinventarets manglende registrering af det
+eksisterende recoveryworkflow er også rettet. Scheduler er midlertidigt
+pauset. Næste: docs/geodatabevis, målrettet slutkontrol, commit/push, én
+exact-head, merge, genaktivér og kør én normal weather. Bevis derefter
+numeriske scorer, DMI-rotation, fallback og cache. Ingen oneoff. DEC-0167.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.384 central ACTIVE-genoptagelse
 
 Levende 4.0.383 er deployet fra main `11f101f8f4c304253e55d5c850d4274e626db2a2`

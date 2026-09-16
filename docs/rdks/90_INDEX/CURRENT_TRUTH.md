@@ -1,4 +1,24 @@
-# NYESTE SANDHED – 2026-09-16 – 4.0.383 er levende; kun central registrering mangler
+# NYESTE SANDHED – 2026-09-16 – central version 2 er aktiv; normal weatherstart rettes i 4.0.385
+
+4.0.384 bestod exact-head 35040475553, PR #327 og merge
+2628ddefa547191c678f88ba9791b2cd867ea3e4. Den afgrænsede recovery
+35040799616 skrev og læste central INTEGRATED_ACTIVE version 2 med aktuel
+binding og deployment pages-35034589754-1. Ingen Pages-, Edge-, privat- eller
+weatherleverance blev genkørt. DEC-0166 er dermed gennemført.
+
+Første almindelige standard-weather 35041008201 stoppede før alle
+providerkald, writes og deploy. Protected restore krævede den private
+runtime-rod, men normalworkflowet havde ikke oprettet den. Loggen viser
+Private runtime root or repository root is invalid. Open-Meteo-trinnet var
+skipped; dets senere always()-gate skabte kun en følgefejl.
+
+Lokal 4.0.385 opretter roden før restore, bruger højst tre korte forsøg og
+kører residualgaten kun efter verificeret handoff eller et faktisk startet
+Open-Meteo-forløb. Reel manglende data stopper fortsat. Scheduler er pauset,
+indtil exact-head, merge og den rettede normale weather er klar. Ingen oneoff.
+DEC-0167.
+
+# HISTORISK SANDHED – 2026-09-16 – 4.0.383 er levende; kun central registrering mangler
 
 PR #326 bestod exact-head `35034134953` og blev merged som main
 `11f101f8f4c304253e55d5c850d4274e626db2a2`. Providerfri code-only
