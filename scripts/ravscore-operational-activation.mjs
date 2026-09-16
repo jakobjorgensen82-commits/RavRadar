@@ -100,6 +100,53 @@ export const RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY = Object.freeze({
   targetBindingSha256: '70f45b3d485f6424d94e80483a98ce1492a9bf8bbb9d8e207f7483317988336f',
   pagesArtifactSealSha256: 'aa9d3e95a99182d8e11bf8f20b48ee856819ea35bb6b6e5ef3166d42e062d4e7',
 });
+export const RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY = Object.freeze({
+  confirmation: 'RECOVER-MISSED-INTEGRATED-HISTORICAL-MAINTENANCE-35034589754',
+  repository: 'jakobjorgensen82-commits/RavRadar',
+  sourceCentralVersion: 1,
+  sourceHead: 'fa418f43bbd070c446ed19b6587541b93af89599',
+  sourceDeploymentId: 'pages-34877443841-1',
+  sourceImplementationClosureSha256:
+    'b050755ec8b904cff60838bb3c9f1ec5a5bdb9f0fd24d14b0ed957eaa32fce4d',
+  sourceManifestSha256: '4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e',
+  sourceAuditSha256: 'b61e54f6691b23f42df05eca565c43fc0a5ac4a9c534b1eec797c41ecf199d93',
+  sourceReadinessSha256: '062d8d143af8bcd113059a45215e9e10561272d9685f4a5c1413d4802a85df28',
+  sourceBindingSha256: '70f45b3d485f6424d94e80483a98ce1492a9bf8bbb9d8e207f7483317988336f',
+  sourceProfileSha256: 'b3699f35f0f15e2e9cf60d67570779098927053cf79520efac8d4a7b0e1e1078',
+  sourcePagesArtifactSealSha256:
+    'aa9d3e95a99182d8e11bf8f20b48ee856819ea35bb6b6e5ef3166d42e062d4e7',
+  sourcePagesRunId: 34877443841,
+  sourcePagesRunAttempt: 1,
+  sourcePagesArtifactId: 10362017512,
+  sourcePagesArtifactDigestSha256:
+    '475bf345eeb37803a3fab7b1963bbea22e0c9eaf50db401a207dfb58fec2cedd',
+  sourcePagesArtifactSizeBytes: 4362045,
+  sourceRecoveryArtifactId: 10362720209,
+  sourceRecoveryArtifactDigestSha256:
+    '5e82c5cbcb19ae2b1b7445863da00d9033c797048d6e2f41ab2839e4cfb884fb',
+  sourceRecoveryArtifactSizeBytes: 36528,
+  targetHead: '11f101f8f4c304253e55d5c850d4274e626db2a2',
+  targetDeploymentId: 'pages-35034589754-1',
+  targetImplementationClosureSha256:
+    'd99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6',
+  targetManifestSha256: '648a52c70c9dc2e58e75faa67647a4e6fb9e8cad1441cace468496866ae80bf7',
+  targetAuditSha256: '3b6992e958e1eea1169774f97afc3997bf693ef353b3769eb6f4954321172923',
+  targetReadinessSha256: 'bf4414194e1184ccff1d05d23fec0b1fc879b935f6a230247b8288ef11382834',
+  targetBindingSha256: '398b11329fec406505fe0c5bbff48e71a30a7df189478997948322770a2ddaaf',
+  targetProfileSha256: '807f7e0d2bf70ed7d399c2013335f2cbe2bfd9817006bb08b4e0a8d65b99fff4',
+  targetPagesArtifactSealSha256:
+    'd3005f366bf1d0ad53be2b9bbc8f95389b06f11e39cad17345e651977bec326c',
+  targetPagesRunId: 35034589754,
+  targetPagesRunAttempt: 1,
+  targetPagesArtifactId: 10423340321,
+  targetPagesArtifactDigestSha256:
+    '064f09ef9192216253cb2518a371abc83bf29fd31dab49f01d82ddcc3c6a8ba6',
+  targetPagesArtifactSizeBytes: 4359786,
+  targetRecoveryArtifactId: 10423002354,
+  targetRecoveryArtifactDigestSha256:
+    '4ef3cf5926334e92da38d001c8fd37e5b792ce08a40335c0b4e03f9da77e6719',
+  targetRecoveryArtifactSizeBytes: 61979,
+});
 const RAVSCORE_PUBLIC_CURRENT_MODE_COUNT =
   RAVSCORE_INTEGRATED_RETURN_POLICY.expectedZoneCount * 2;
 export const RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY = Object.freeze({
@@ -1584,6 +1631,215 @@ export function recoverMissedInitialIntegratedCutover({
   return Object.freeze({
     document,
     nextVersion: 1,
+    centralTargetProfile: Object.freeze(structuredClone(targetReadiness.centralProfile)),
+    reconciliation: Object.freeze({
+      action: 'complete',
+      model: 'integrated',
+      observedSha256: policy.targetManifestSha256,
+    }),
+  });
+}
+
+function missedHistoricalMaintenanceEvidencePolicy(policy, prefix) {
+  const source = prefix === 'source';
+  return Object.freeze({
+    repository: policy.repository,
+    failedCutoverHead: policy[`${prefix}Head`],
+    deploymentId: policy[`${prefix}DeploymentId`],
+    runId: policy[`${prefix}PagesRunId`],
+    runAttempt: policy[`${prefix}PagesRunAttempt`],
+    artifactId: policy[`${prefix}PagesArtifactId`],
+    artifactDigestSha256: policy[`${prefix}PagesArtifactDigestSha256`],
+    artifactSizeBytes: policy[`${prefix}PagesArtifactSizeBytes`],
+    targetImplementationClosureSha256:
+      policy[`${prefix}ImplementationClosureSha256`],
+    targetManifestSha256: policy[`${prefix}ManifestSha256`],
+    targetAuditSha256: policy[`${prefix}AuditSha256`],
+    targetReadinessSha256: policy[`${prefix}ReadinessSha256`],
+    targetBindingSha256: policy[`${prefix}BindingSha256`],
+    pagesArtifactSealSha256: policy[`${prefix}PagesArtifactSealSha256`],
+    sourceImplementationClosureSha256: source
+      ? policy.sourceImplementationClosureSha256
+      : policy.targetImplementationClosureSha256,
+  });
+}
+
+export function recoverMissedHistoricalIntegratedMaintenance({
+  currentRow,
+  currentProfileRow,
+  sourceManifest,
+  sourceAudit,
+  sourceReadiness,
+  sourceBinding,
+  sourcePagesArtifactSeal,
+  targetManifest,
+  targetAudit,
+  targetReadiness,
+  targetBinding,
+  publicVerification,
+  targetPagesArtifactSeal,
+  eventName,
+  ref,
+  githubSha,
+  repository,
+  confirmation,
+  now = new Date().toISOString(),
+  policy = RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY,
+} = {}) {
+  if (eventName !== RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName
+    || ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef
+    || !HEAD_PATTERN.test(String(githubSha ?? ''))
+    || repository !== policy.repository
+    || confirmation !== policy.confirmation) {
+    throw new Error('Missed historical maintenance recovery lacks its exact one-time authority');
+  }
+  const sourcePolicy = missedHistoricalMaintenanceEvidencePolicy(policy, 'source');
+  const targetPolicy = missedHistoricalMaintenanceEvidencePolicy(policy, 'target');
+  for (const [evidence, expectedSha256, label] of [
+    [sourceManifest, policy.sourceManifestSha256, 'source manifest'],
+    [sourceAudit, policy.sourceAuditSha256, 'source audit'],
+    [sourceReadiness, policy.sourceReadinessSha256, 'source readiness'],
+    [sourceBinding, policy.sourceBindingSha256, 'source binding'],
+    [sourcePagesArtifactSeal, policy.sourcePagesArtifactSealSha256,
+      'source Pages artifact seal'],
+    [targetManifest, policy.targetManifestSha256, 'target manifest'],
+    [targetAudit, policy.targetAuditSha256, 'target audit'],
+    [targetReadiness, policy.targetReadinessSha256, 'target readiness'],
+    [targetBinding, policy.targetBindingSha256, 'target binding'],
+    [targetPagesArtifactSeal, policy.targetPagesArtifactSealSha256,
+      'target Pages artifact seal'],
+  ]) {
+    if (!SHA256_PATTERN.test(String(expectedSha256 ?? ''))
+      || sha256(evidence) !== expectedSha256) {
+      throw new Error(`Missed historical maintenance ${label} is not pinned evidence`);
+    }
+  }
+  assertSealedModelBinding(sourceBinding, 'Missed historical maintenance source binding');
+  if (sealedBindingKind(sourceBinding) !== 'integrated') {
+    throw new Error('Missed historical maintenance source is not integrated');
+  }
+  assertOperationalPublicManifest(sourceManifest, {
+    binding: sourceBinding,
+    label: 'Missed historical maintenance source manifest',
+  });
+  assertMissedInitialCutoverArtifactSeal(sourcePagesArtifactSeal, {
+    policy: sourcePolicy,
+    targetBinding: sourceBinding,
+    targetManifest: sourceManifest,
+  });
+  assertMissedInitialCutoverReadiness(sourceReadiness, {
+    policy: sourcePolicy,
+    targetBinding: sourceBinding,
+    pagesArtifactSeal: sourcePagesArtifactSeal,
+  });
+  const sourceCalibrationEligible = missedInitialCutoverCalibrationEligible(sourceAudit, {
+    policy: sourcePolicy,
+    targetBinding: sourceBinding,
+    targetManifest: sourceManifest,
+  });
+  const current = resolveOperationalRavScoreModel(currentRow, {
+    profileRow: currentProfileRow,
+  });
+  if (current.centralVersion !== Number(policy.sourceCentralVersion)
+    || current.model !== 'integrated'
+    || current.status !== RAVSCORE_OPERATIONAL_STATUSES.integrated
+    || current.pending
+    || current.sourceHead !== policy.sourceHead
+    || current.transitionKind
+      !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+    || current.publicManifestSha256 !== policy.sourceManifestSha256
+    || current.activeImplementationClosureSha256
+      !== policy.sourceImplementationClosureSha256
+    || current.deploymentId !== policy.sourceDeploymentId
+    || currentRow.payload.calibrationEligible !== sourceCalibrationEligible
+    || currentRow.payload.integratedReadinessSha256 !== policy.sourceReadinessSha256
+    || currentRow.payload.integratedPublicAuditSha256 !== policy.sourceAuditSha256
+    || currentRow.payload.integratedManifestSha256 !== policy.sourceManifestSha256
+    || sha256(currentProfileRow?.payload) !== policy.sourceProfileSha256) {
+    throw new Error('Missed historical maintenance central source is not the pinned ACTIVE state');
+  }
+  assertSameSealedBinding(current.modelBinding, sourceBinding,
+    'Missed historical maintenance central source binding');
+
+  assertSameSealedBinding(targetBinding, integratedModelBinding(),
+    'Missed historical maintenance current target binding');
+  assertMissedInitialCutoverArtifactSeal(targetPagesArtifactSeal, {
+    policy: targetPolicy,
+    targetBinding,
+    targetManifest,
+  });
+  assertMissedInitialCutoverReadiness(targetReadiness, {
+    policy: targetPolicy,
+    targetBinding,
+    pagesArtifactSeal: targetPagesArtifactSeal,
+  });
+  const calibrationEligible = missedInitialCutoverCalibrationEligible(targetAudit, {
+    policy: targetPolicy,
+    targetBinding,
+    targetManifest,
+  });
+  assertOperationalPagesVerification(publicVerification, {
+    model: 'integrated',
+    binding: targetBinding,
+    sourceHead: policy.targetHead,
+    publicManifest: targetManifest,
+    expectedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+    assertBinding: assertIntegratedBinding,
+  });
+  if (sha256(targetReadiness.centralProfile) !== policy.targetProfileSha256) {
+    throw new Error('Missed historical maintenance target profile is not pinned evidence');
+  }
+  const plan = prepareIntegratedHistoricalMaintenance({
+    currentRow,
+    currentProfileRow,
+    sourceHead: policy.targetHead,
+    publicManifest: targetManifest,
+    publicAudit: targetAudit,
+    readiness: targetReadiness,
+    sourceImplementationClosureSha256: policy.sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+    eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
+    ref: RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef,
+    githubSha: policy.targetHead,
+  });
+  const document = Object.freeze({
+    schemaVersion: RAVSCORE_OPERATIONAL_ACTIVATION_SCHEMA,
+    status: RAVSCORE_OPERATIONAL_STATUSES.integrated,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+    sourceHead: policy.targetHead,
+    datasetId: targetManifest.datasetId,
+    productionReferenceAt: targetManifest.productionReferenceAt,
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    activeModelBinding: structuredClone(targetBinding),
+    requestedModelBinding: structuredClone(targetBinding),
+    sourceModelBinding: structuredClone(sourceBinding),
+    candidatePlanSha256: null,
+    candidateFullSha256: null,
+    privateBundleContentSha256: null,
+    publicManifestSha256: policy.targetManifestSha256,
+    sourcePublicManifestSha256: policy.sourceManifestSha256,
+    requestedPublicManifestSha256: policy.targetManifestSha256,
+    sourceImplementationClosureSha256: policy.sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+    sourceDeploymentId: policy.sourceDeploymentId,
+    deploymentId: policy.targetDeploymentId,
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligible,
+    requestedAt: targetPagesArtifactSeal.createdAt,
+    activatedAt: new Date(now).toISOString(),
+    failureCode: null,
+    returnPlanSha256: plan.planSha256,
+    integratedReadinessSha256: policy.targetReadinessSha256,
+    integratedPublicAuditSha256: policy.targetAuditSha256,
+    integratedManifestSha256: policy.targetManifestSha256,
+  });
+  assertOperationalActivationDocument(document, {
+    allowSealedHistoricalBindings: true,
+  });
+  return Object.freeze({
+    document,
+    nextVersion: Number(policy.sourceCentralVersion) + 1,
     centralTargetProfile: Object.freeze(structuredClone(targetReadiness.centralProfile)),
     reconciliation: Object.freeze({
       action: 'complete',
@@ -4263,6 +4519,79 @@ async function main() {
     || !allowedEvents.includes(process.env.GITHUB_EVENT_NAME)
     || !HEAD_PATTERN.test(String(process.env.GITHUB_SHA ?? ''))) {
     throw new Error('Only exact-main production workflows may mutate operational RavScore activation');
+  }
+  if (options.command === 'recover-missed-integrated-historical-maintenance') {
+    const [
+      sourceManifest,
+      sourceAudit,
+      sourceReadiness,
+      sourceBinding,
+      sourcePagesArtifactSeal,
+      targetManifest,
+      targetAudit,
+      targetReadiness,
+      targetBinding,
+      publicVerification,
+      targetPagesArtifactSeal,
+    ] = await Promise.all([
+      readJsonOption(options, 'source-manifest', 'Missed maintenance source manifest'),
+      readJsonOption(options, 'source-audit', 'Missed maintenance source audit'),
+      readJsonOption(options, 'source-readiness', 'Missed maintenance source readiness'),
+      readJsonOption(options, 'source-binding', 'Missed maintenance source binding'),
+      readJsonOption(options, 'source-pages-artifact-seal',
+        'Missed maintenance source Pages artifact seal'),
+      readJsonOption(options, 'manifest', 'Missed maintenance target manifest'),
+      readJsonOption(options, 'audit', 'Missed maintenance target audit'),
+      readJsonOption(options, 'readiness', 'Missed maintenance target readiness'),
+      readJsonOption(options, 'binding', 'Missed maintenance target binding'),
+      readJsonOption(options, 'verification', 'Missed maintenance live target verification'),
+      readJsonOption(options, 'pages-artifact-seal',
+        'Missed maintenance target Pages artifact seal'),
+    ]);
+    const recovery = recoverMissedHistoricalIntegratedMaintenance({
+      currentRow,
+      currentProfileRow,
+      sourceManifest,
+      sourceAudit,
+      sourceReadiness,
+      sourceBinding,
+      sourcePagesArtifactSeal,
+      targetManifest,
+      targetAudit,
+      targetReadiness,
+      targetBinding,
+      publicVerification,
+      targetPagesArtifactSeal,
+      eventName: process.env.GITHUB_EVENT_NAME,
+      ref: process.env.GITHUB_REF,
+      githubSha: process.env.GITHUB_SHA,
+      repository: process.env.GITHUB_REPOSITORY,
+      confirmation: process.env
+        .RAVRADAR_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_CONFIRMATION,
+    });
+    const integratedProfile = JSON.parse(await fs.readFile(
+      new URL('../data/admin/ravscore-profile-selection.json', import.meta.url),
+      'utf8',
+    ));
+    const written = await writeCentralCas(
+      request.atomicCas,
+      request.documents,
+      currentRows,
+      recovery,
+      integratedProfile,
+    );
+    if (options.output) await atomicWriteJson(options.output, {
+      status: written.operational.payload.status,
+      centralVersion: written.operational.version,
+      profileVersion: written.profile.version,
+      transitionKind: written.operational.payload.transitionKind,
+      sourceHead: written.operational.payload.sourceHead,
+      publicManifestSha256: written.operational.payload.publicManifestSha256,
+      deploymentId: written.operational.payload.deploymentId,
+      activatedAt: written.operational.payload.activatedAt,
+    });
+    console.log(`Missed integrated historical maintenance recovered as central version ${written.operational.version}; private payload logged: false.`);
+    return;
   }
   if (options.command === 'recover-missed-initial-cutover') {
     const [

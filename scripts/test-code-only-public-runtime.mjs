@@ -214,6 +214,38 @@ for (const forbidden of [
   'update-weather.mjs',
   'update-dmi-bulk.py',
 ]) assert.ok(!workflow.includes(forbidden), `Code-only-workflow indeholder providervej: ${forbidden}`);
+assert.ok(workflow.includes('mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"'),
+  'Code-only skal oprette private-runtime-roden før protected restore');
+assert.match(workflow,
+  /prepare-integrated-historical-maintenance[\s\S]{0,500}--source-implementation-closure-sha256 "\$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}"/,
+  'Historisk maintenance skal bruge centrals aktive closure, ikke den offentlige forgængers');
+
+const centralRecoveryWorkflow = fs.readFileSync(
+  '.github/workflows/recover-live-ravscore-central.yml',
+  'utf8',
+);
+for (const marker of [
+  'RECOVER-LIVE-RAVSCORE-CENTRAL',
+  'recover-missed-integrated-historical-maintenance',
+  'ravscore-operational-recovery-34877443841-1',
+  'ravscore-operational-recovery-35034589754-1',
+  'Freshly verify the exact 4.0.383 target is still public',
+  'Atomically record the exact already-live maintenance target',
+  'Require exact final active central identity',
+  'd99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6',
+  'pages-35034589754-1',
+]) assert.ok(centralRecoveryWorkflow.includes(marker),
+  `Central recovery-workflow mangler ${marker}`);
+for (const forbidden of [
+  'weather-source-gate.mjs',
+  'validate-source',
+  'update-weather.mjs',
+  'update-dmi-bulk.py',
+  'upload-pages-artifact',
+  'deploy-pages',
+  'supabase functions deploy',
+]) assert.ok(!centralRecoveryWorkflow.includes(forbidden),
+  `Central recovery må ikke genkøre kilde, vejr eller deploy: ${forbidden}`);
 
 const pagesWorkflow = fs.readFileSync('.github/workflows/reusable-pages-deploy.yml', 'utf8');
 for (const marker of [

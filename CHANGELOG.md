@@ -1,3 +1,15 @@
+## 4.0.384 – central genoptagelse uden nyt deploy (2026-09-16, lokal kandidat)
+
+- PR #326/sourcegate `35034134953` gav main `11f101f8`; providerfri
+  `35034589754` deployede og verificerede levende 4.0.383 som 210/673 uden
+  private payloadlæsninger. Ingen vejrprovider kørte.
+- Central completion skrev intet, fordi maintenance-planen brugte en ældre
+  offentlig closure i stedet for centralens aktive source-closure. Centralen
+  er fortsat sikkert ACTIVE version 1 og var aldrig PENDING.
+- 4.0.384 retter den normale closurekilde og tilføjer en eksakt, artifactlåst
+  ACTIVE→ACTIVE-engangsrecovery. Den kører ikke sourcegate, weather, private
+  build, Edge eller Pages. Se `CHANGELOG-4.0.384.md` og DEC-0166.
+
 ## 4.0.379 – ubrugte interne filer ud af Pages (2026-09-15, lokal kandidat)
 
 - 4.0.378 sourcegate `34956693177` og PR #320 gav main `348d4a28`; providerfri `34957362872` bestod hele den tunge kæde til samlet prewrite.

@@ -357,6 +357,7 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
           status=1
           for attempt in 1 2 3; do
             rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
@@ -794,7 +795,7 @@ jobs:
           node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
           --manifest data/live/manifest.json
           --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
-          --source-implementation-closure-sha256 "${{ steps.public-source.outputs.implementation_closure_sha256 }}"
+          --source-implementation-closure-sha256 "${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
           --requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
           --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
         env:
