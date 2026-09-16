@@ -1099,3 +1099,16 @@ DMI voksede ikke: 39.309 → 38.660 ved to timer nyere target. Cacherne er
 gemt; næste normale kørsel skal måle fortsættelsen uden oneoff. Fortsæt
 docs/version/geodatabevis, én exact-head, merge, providerfri code-only og én
 normal weather. Scheduler forbliver pauset. DEC-0178. Sol/Ekstra høj.
+
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.396 prognosemetadata
+
+4.0.395 er live som kode efter sourcegate `35146153044`, PR #339, main
+`349a2702` og code-only `35146689278`. Normalrun `35147366418` gennemførte
+providerkæde, closure og historik, men stoppede før deploy på inkonsistent
+winning-part-usikkerhed.
+
+Rodårsagen er tabt `partial-zone`-metadata i `buildLocalZoneScore`, ikke en
+forkert score. 4.0.396 bevarer status, spredning, delantal, manglende dele og
+modelbinding. Den målrettede public-forecast-regression er grøn. Fortsæt med
+versions-/RDKS-bevis, én exact-head, merge, code-only og én normal weather på
+gemte cacher. Ingen oneoff; scheduler pauset. Sol/Ekstra høj.

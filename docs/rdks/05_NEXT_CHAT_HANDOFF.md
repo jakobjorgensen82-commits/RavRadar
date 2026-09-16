@@ -1487,3 +1487,23 @@ Næste: afslut docs/version/geodatabevis → målrettede kontroller → commit/p
 → én exact-head sourcegate → merge → providerfri code-only → én almindelig
 weather på gemte cacher → fulde gates/deploy/offentlig scorekontrol. Mål
 providerudviklingen igen. Ingen oneoff. Scheduler pauset. DEC-0178.
+
+# NYESTE HANDOFF – 2026-09-16 – lokal 4.0.396 offentlig deldækningsmetadata
+
+Arbejd i den rene branch `codex/4.0.396-local-zone-score-metadata`, baseret
+på main `349a27021cd244c10b00ab777ba078edb7c1c312`.
+
+4.0.395 er merged og code-only-deployeret. Normalrun `35147366418`
+gennemførte DMI, Copernicus, Open-Meteo, closure og syvdøgnshistorik, men
+stoppede før deploy, fordi `buildLocalZoneScore` tabte `partial-zone`-status
+og de tilhørende deltællinger før den offentlige prognose.
+
+4.0.396 bevarer status, spredning, `comparisonPartCount`,
+`validPartCount`, `expectedPartCount`, `unavailableParts`, `parts` og
+modelbinding. Den målrettede producenttest fører en rigtig delvis zone
+gennem `buildPublicNationalForecast` og er grøn.
+
+Næste: version/RDKS/geodatabevis → målrettede public/versionskontroller →
+commit/push → én exact-head sourcegate → merge → code-only → én normal
+weather med gemte providercacher → fulde gates/deploy → offentlig kontrol →
+genaktivér scheduler. Ingen oneoff. Sol/Ekstra høj.

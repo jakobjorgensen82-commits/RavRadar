@@ -31,6 +31,7 @@ import {
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
 import { buildLocalZoneScore } from '../js/core/local-zone-score.js';
+import { buildPublicNationalForecast } from './public-conditions-lib.mjs';
 
 const point = [8, 55];
 const bulkId = 'PART::SYNTHETIC-PART';
@@ -1070,13 +1071,18 @@ assert.equal(unavailable[0].waders.expectedPartCount, 3);
 assert.equal(unavailable[0].waders.comparisonPartCount, 2);
 assert.equal(unavailable[0].waders.winningPartUncertain, true);
 assert.deepEqual(unavailable[0].waders.unavailableParts.map(item => item.partId), ['B']);
-const partialLocalScore = buildLocalZoneScore({
-  coastalParts: {
+const partialCoastalParts = {
     enabled: true,
     generatedAt: time,
+    modelBinding: ravScoreModelBinding(),
+    scoreProfile: {
+      ...ravScoreModelBinding(),
+      activeProfileId: RAVSCORE_MODEL_ID,
+    },
     zones: { ZONE: { expectedPartCount: 3, hourly: unavailable } },
     parts: {
       A: {
+        zoneId: 'ZONE',
         name: 'A',
         current: {
           time,
@@ -1085,15 +1091,32 @@ const partialLocalScore = buildLocalZoneScore({
         },
       },
     },
-  },
+};
+const partialLocalScore = buildLocalZoneScore({
+  coastalParts: partialCoastalParts,
   zoneId: 'ZONE',
   mode: 'waders',
   time,
 });
 assert.equal(partialLocalScore.available, true);
+assert.equal(partialLocalScore.status, 'partial-zone');
+assert.equal(partialLocalScore.scoreSpread, 6);
+assert.equal(partialLocalScore.comparisonPartCount, 2);
+assert.equal(partialLocalScore.validPartCount, 2);
+assert.equal(partialLocalScore.expectedPartCount, 3);
+assert.deepEqual(partialLocalScore.unavailableParts.map(item => item.partId), ['B']);
+assert.deepEqual(partialLocalScore.modelBinding, ravScoreModelBinding());
 assert.equal(partialLocalScore.localCoverageSummary.kind, 'partial-zone');
 assert.match(partialLocalScore.localCoverageSummary.text, /2 af 3/,
   'the local UI contract must disclose that the visible score excludes a missing part');
+const partialNationalForecast = buildPublicNationalForecast({
+  coastalParts: partialCoastalParts,
+  zones: {
+    ZONE: { forecast: { hourly: [{ time }] } },
+  },
+});
+assert.equal(partialNationalForecast.modes.waders[0].rows[0].score, 80,
+  'a valid partial-zone score must reach the public forecast without losing coverage metadata');
 
 const missingExpectedPart = buildIntegratedZoneHourlyProjection({
   rows: zoneRows([['A', 80], ['B', 75]]),

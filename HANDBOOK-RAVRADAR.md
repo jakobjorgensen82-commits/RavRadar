@@ -1,6 +1,21 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.395
+**Håndbogsversion:** 4.0.396
+
+## 89.00 4.0.396 – Delvise zoner må stadig få prognoser
+
+### Et lokalt hul må ikke standse hele prognosesiden
+
+Den seneste normale vejrkørsel hentede data hos alle tre leverandører, men
+stoppede bagefter, fordi oplysningerne om en delvist dækket zone ikke fulgte
+med fra den lokale score til den offentlige prognose. Selve scoren og
+markeringen af det lokale hul var korrekte.
+
+RavRadar fører nu zonens status, antal dækkede og forventede kystdele,
+score-spredning, manglende dele og modelbinding samlet videre. En zone med
+mindst én gyldig kystdel kan derfor vise en ærligt markeret delvis score,
+mens områder uden gyldige data fortsat vises som manglende. Ingen værdier
+opfindes, og et lokalt hul gør ikke resten af siden ubrugelig.
 
 ## 88.99 4.0.395 – Et bølgehul ved Feggesund er lokalt
 

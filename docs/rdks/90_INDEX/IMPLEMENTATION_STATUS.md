@@ -4414,3 +4414,18 @@ DEC-0177 er aktiv. Scheduler er pauset.
 - [ ] Undersøg senere en fagligt valideret supplerende Feggesund-bølgekilde.
 
 DEC-0178 er aktiv. Ingen oneoff.
+
+# Aktuel implementeringsstatus – lokal 4.0.396 offentlig deldækningsmetadata
+
+- [x] Lever 4.0.395 via exact-head `35146153044`, PR #339, main `349a2702` og providerfri deploy `35146689278`.
+- [x] Kør normal weather `35147366418`; gennemfør alle tre providerled, closure og syvdøgnshistorik samt gem providerfremskridt.
+- [x] Afgræns stopfejlen til tabte `partial-zone`-metadata mellem lokal score og offentlig prognose.
+- [x] Bevar status, score-spredning, delantal, manglende dele og modelbinding i det lokale resultat.
+- [x] Bevis den præcise `FULL_HISTORY partial-zone` gennem den offentlige nationale prognose med målrettet regression.
+- [x] Ret den forældede lokale visningstest, så den genkender appens eksisterende fail-closed nøddata-gren i stedet for at afvise den som kodefejl.
+- [ ] Bestå version/RDKS/geodatabevis og én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only-genbinding af 4.0.396.
+- [ ] Kør én almindelig weather på gemte cacher; verificér frisk 118-timers prognose, lokale huller, score, fulde gates og deploy.
+- [ ] Verificér offentlig version/datasættid og genaktivér først derefter scheduler; følg næste normale vedligeholdelse.
+
+Ingen oneoff. Den offentlige validator er ikke svækket.

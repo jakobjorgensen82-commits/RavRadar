@@ -1,3 +1,11 @@
+## 4.0.396 – delvis zonedækning når den offentlige prognose (2026-09-16)
+
+- Normalrun `35147366418` hentede hos DMI, Copernicus og Open-Meteo, men udgav ikke datasættet, fordi lokalprojektionen tabte deldækningens metadata før den offentlige prognose blev bygget.
+- Den lokale RavScore bevarer nu status, delantal, score-spredning, manglende dele og modelbinding. En gyldig delvis score kan derfor vises uden at skjule hullerne eller stoppe resten af landet.
+- Regressionen fører den virkelige `partial-zone`-kontrakt helt gennem den offentlige prognoseliste. Ingen vejr-, score-, geometri- eller kildekrav er lempet.
+- En forældet tekstsøgning i den lokale visningstest er synkroniseret med appens eksisterende sikre nøddata-gren, så testen ikke fejlagtigt stopper fuld produktion.
+- Næste normale kørsel genbruger de gemte providercacher. Ingen oneoff. Se `CHANGELOG-4.0.396.md`.
+
 ## 4.0.391 – gyldig fastholdelse før lokalt MISSING (2026-09-16, lokal kandidat)
 
 - Bindende prioritet for alle vejrkilder: ny gyldig værdi → ældre fortsat gyldig værdi for eksakt sted/time → eksplicit lokalt `MISSING`.

@@ -57,7 +57,7 @@ const productionAdapter=fs.readFileSync('scripts/lib/ravscore-production-adapter
 assert.match(productionAdapter,/high - low <= marginPoints\s*\? 'whole-zone'/,'Den fælles zoneprojektion skal bevare 7-point-reglen.');
 assert.match(productionAdapter,/componentReasons: winner\.detail\?\.componentReasons \?\? \{\}/,'Vinderens faglige forklaringer skal følge med til offentlig runtime.');
 assert.match(productionAdapter,/const explanation = winner\.detail\?\.explanation \?\? \{\}/,'Hele den tekniske forklaring skal følge med til offentlig runtime.');
-assert.match(app,/const local=localZoneScore\(zone\);const result=local\|\|\{available:false,score:null/,'Manglende lokal Candidate G-data skal lukke zonen lokalt uden at bruge hovedzonens gamle score.');
+assert.match(app,/const local=state\.conditions\?\.emergencyDetailsDeferred\?null:localZoneScore\(zone\);const result=local\|\|\{available:false,score:null/,'Manglende eller bevidst udsat lokal RavScore-data skal lukke zonen lokalt uden at bruge hovedzonens gamle score.');
 assert.match(app,/return selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\);/,'En lokalt utilgængelig zone må ikke falde tilbage til en gammel femdøgnsscore.');
 assert.doesNotMatch(app,/calculateRavScore|selectBestTimeForDay|scoreFor\(/,'Den offentlige app må ikke indeholde en vej tilbage til den gamle scoremotor.');
 console.log('OK: Lokal zonescore viser korrekt kystdel, 7-point-grænse og lukker lokalt uden gammel fallback.');

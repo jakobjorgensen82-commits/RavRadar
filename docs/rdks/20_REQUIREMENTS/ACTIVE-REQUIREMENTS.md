@@ -1518,3 +1518,10 @@ fuld validering og deploy er levende bevist.
 DEC-0178 supersederer kun den globale nul-missing-blokering for ærligt
 bogførte Feggesund-positioner. Alle øvrige integritets-, source- og
 lokalisolationskrav består.
+
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.396 offentlig deldækningsmetadata
+
+- **REQ-4.0.396-PARTIAL-METADATA-001 – BINDENDE P0:** Et gyldigt lokalt `partial-zone`-resultat skal føre `status`, `scoreSpread`, `comparisonPartCount`, `validPartCount`, `expectedPartCount`, `unavailableParts` og aktiv modelbinding samlet gennem `buildLocalZoneScore` til offentlige prognoseforbrugere.
+- **REQ-4.0.396-HONEST-FORECAST-002 – BINDENDE:** Delvis zonedækning skal fortsat give usikker vinder, kalibreringsforbud og synligt antal dækkede dele. Metadatarettelsen må ikke opfinde vejr eller score og må ikke omklassificere `UNAVAILABLE` til tilgængelig.
+- **REQ-4.0.396-PUBLIC-REGRESSION-003 – BINDENDE:** Den målrettede producenttest skal sende en `FULL_HISTORY partial-zone` med et lokalt hul gennem den offentlige nationale prognose uden metadata- eller usikkerhedskonflikt.
+- **REQ-4.0.396-RESUME-004 – BINDENDE DRIFT:** Næste normale vejrkørsel skal genbruge de gemte DMI-, Copernicus- og Open-Meteo-fremskridt fra `35147366418`. Ingen oneoff; scheduler forbliver pauset til frisk offentlig prognose og fuld kæde er grøn.
