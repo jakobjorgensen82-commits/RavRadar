@@ -20,6 +20,12 @@ retention-, closure-, state-, handoff-, 210/673-runtime-, workflow-, RDKS-,
 versions- og sikkerhedskontroller er grønne. Exact-head, merge og levende
 normal weather mangler. Scheduler er pauset. DEC-0173.
 
+Første exact-head `35100148036` bekræftede model, 210/673, data-service, DMI
+og migrationsbindinger, men stoppede på to statiske metatestforventninger.
+De er rettet uden at fjerne kontrol: normal og gammel oneoff skelnes, og
+begge append-only migrationsgeneratorer verificeres fortsat inden for
+kildegatens loft på 24 topkommandoer.
+
 # NYESTE SANDHED – 2026-09-16 – normal rotation virker; 4.0.390 samler DMI/Copernicus-tiden
 
 4.0.389 er main `bf8eb739476631ec534df3b2e3ba75e7370a3c29`.

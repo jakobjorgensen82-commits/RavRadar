@@ -35,3 +35,11 @@ Model- og continuationbindingerne er ført frem gennem det reproducerbare,
 append-only led `20260916120000_valid_data_before_local_missing_binding.sql`.
 Den integrerede bundle er `8727feba…`, continuation er `3b9b0fd5…`, og den
 private Candidate G-rollbackbundle er `65d26045…`.
+
+## Exact-head-opfølgning
+
+Første exact-head `35100148036` bestod produktkontrollerne, men fandt to
+forældede metatestforventninger. Normalruten og den strengere gamle oneoff
+genkendes nu hver for sig. Begge append-only migrationsgeneratorer
+verificeres fortsat, men gennem én samlet kontrol, så kildegaten forbliver på
+24 topkommandoer.

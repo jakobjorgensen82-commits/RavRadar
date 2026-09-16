@@ -7,6 +7,8 @@
 - [x] Gennemgå og ret alle providercacher, så en ny tom eller modstridende levering ikke skygger for en ældre gyldig eksakt værdi.
 - [x] Materialisér 79.414 identiteter som valideret værdi eller eksplicit `MISSING`; lad kun berørt del/mode/time blive utilgængelig.
 - [x] Bestå afgrænsede retention-, closure-, state-, handoff-, workflow-, RDKS- og versionskontroller.
+- [x] Afgræns første exact-head `35100148036`: alle produktkontroller frem til workflowlaget var grønne; kun et gammelt trin-navn og 24-kommando-metatesten fejlede.
+- [x] Ret begge metatests uden at fjerne kontrol: normal/oneoff skelnes korrekt, og begge migrationsgeneratorer verificeres samlet inden for de samme 24 kommandoer.
 - [ ] Commit/push, exact-head sourcegate, merge og kør én normal weather på de bevarede cacher.
 - [ ] Verificér levende numeriske scorer, ærlig lokal missing, kildeovertagelse og normal cachevedligeholdelse før scheduler.
 

@@ -14,7 +14,10 @@ kildeprioritet og integritetsgates består. DMI-, Copernicus-, regional- og
 Open-Meteo-fastholdelse, lokal delvis score, closure/handoff, modelbinding,
 append-only migration og releasehukommelse er implementeret. Den målrettede
 lokale matrix inkl. 210/673 er grøn. Næste trin er commit/push, én exact-head
-sourcegate, merge og én normal weather. Scheduler pauset. Sol/Ekstra høj.
+sourcegate, merge og én normal weather. Første exact-head `35100148036`
+stoppede kun på to rettede metatests; produktkontrollerne var grønne, begge
+migrationschecks består, og kildegaten er fortsat 24 kommandoer. Scheduler
+pauset. Sol/Ekstra høj.
 
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.390 forlænget post-cutover-bootstrap
 

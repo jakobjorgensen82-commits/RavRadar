@@ -3,6 +3,7 @@
 - **ISSUE-4.0.390-BOOTSTRAP – AFSLUTTET MED BEVARET FREMGANG:** Run `35081537023` gennemførte DMI, Copernicus og Open-Meteo og gemte cacher.
 - **ISSUE-GLOBAL-ZERO-MISSING-STOP – RETTET LOKALT / LIVEBEVIS MANGLER:** Closure og handoff accepterer nu alle 79.414 identiteter som valideret værdi eller eksplicit lokal `MISSING`; kun nul missing kaldes komplet.
 - **ISSUE-NEW-CONFLICT-SHADOWS-OLD-VALID – RETTET LOKALT / LIVEBEVIS MANGLER:** DMI-, Copernicus-, regional- og Open-Meteo-genbrug prøver ældre, entydige og fortsat gyldige leveringer for samme par, før de udsteder lokalt `MISSING`.
+- **ISSUE-4.0.391-EXACT-HEAD-METATEST – RETTET LOKALT:** `35100148036` bestod model, 210/673, data-service, DMI og migrationsbindinger, men fandt ét gammelt Open-Meteo-trin-navn og 25 i stedet for højst 24 topkommandoer. Testen skelner nu normalruten fra den strengere oneoff, og begge migrationschecks er bevaret i én kædekontrol.
 - **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Nul missing er fortsat målet og eneste komplette tilstand. Lokal missing må ikke blokere øvrige gyldige scorer.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Efter merge skal én almindelig weather bevise fastholdelse, ærlig local missing, kildeovertagelse og cachevedligeholdelse.
 - **ISSUE-SITE-ACCEPTANCE – AFVENTER FRISK DEPLOY:** Fuld meningsfuld sitekontrol følger den normale vejrleverance.
