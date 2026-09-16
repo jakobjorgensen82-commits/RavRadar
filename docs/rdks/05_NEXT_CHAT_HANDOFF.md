@@ -1,7 +1,8 @@
-# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.391 gyldig fastholdelse før missing
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.391 merged; code-only-planhelper rettet
 
-Arbejd i `RavRadar-4.0.366`, branch `codex/4.0.391-missing-tolerant`, baseret
-på 4.0.390-main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.391-code-only-migration-plan`, baseret på 4.0.391-main
+`d53fb174f3b7ef02c60be25e1fca2727294448a2`.
 
 Bootstrap `35081537023` gennemførte alle providerled og gemte cacher. Den
 sluttede ved den gamle globale nul-missing-gate med 84 forsøgte
@@ -12,12 +13,16 @@ for eksakt `(partId, validTime)` → lokalt `MISSING`. Lokal missing må kun
 ramme berørt del/mode/time. 79.414 identiteter, ærlig komplethedsstatus,
 kildeprioritet og integritetsgates består. DMI-, Copernicus-, regional- og
 Open-Meteo-fastholdelse, lokal delvis score, closure/handoff, modelbinding,
-append-only migration og releasehukommelse er implementeret. Den målrettede
-lokale matrix inkl. 210/673 er grøn. Næste trin er commit/push, én exact-head
-sourcegate, merge og én normal weather. Første exact-head `35100148036`
-stoppede kun på to rettede metatests; produktkontrollerne var grønne, begge
-migrationschecks består, og kildegaten er fortsat 24 kommandoer. Scheduler
-pauset. Sol/Ekstra høj.
+append-only migration og releasehukommelse er implementeret. Exact-head
+`35101396843` var grøn, og PR #334 er merged.
+
+Normal `35102336423` stoppede før providers/writes, fordi den private
+runtime endnu ikke havde den nye binding. Code-only `35102784460` viste
+præcis den ene korrekte pending migration `20260916120000`, men blev
+stoppet før write af en gammel hårdkodet `20260915020000`-forventning.
+Helperen og dens metakontrol er rettet uden versionsløft. Kør måltests,
+commit/push, én exact-head, merge, code-only og først derefter én normal
+weather. Scheduler pauset. Sol/Ekstra høj.
 
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.390 forlænget post-cutover-bootstrap
 

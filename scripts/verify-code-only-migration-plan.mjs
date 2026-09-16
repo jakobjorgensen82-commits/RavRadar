@@ -16,8 +16,8 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
-assert.equal(latest.version, '20260915020000');
-assert.equal(latest.filename, '20260915020000_private_runtime_storage_deny.sql');
+assert.equal(latest.version, '20260916120000');
+assert.equal(latest.filename, '20260916120000_valid_data_before_local_missing_binding.sql');
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
@@ -26,10 +26,10 @@ const plan = await assertSupabaseMigrationPlan({
 assert.ok(
   plan.pendingVersions.length === 0
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
-  'Code-only deployment may apply only the latest private-runtime security migration',
+  'Code-only deployment may apply only the latest approved local-missing binding migration',
 );
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : 'Code-only migration dry-run contains exactly the one expected security successor.',
+    : 'Code-only migration dry-run contains exactly the one expected local-missing binding successor.',
 );

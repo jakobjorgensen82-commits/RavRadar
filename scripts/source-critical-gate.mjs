@@ -120,8 +120,8 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260915020000_private_runtime_storage_deny.sql'),
-  'Code-only migrationsplanen er ikke bundet til den præcise successor.',
+    .includes('20260916120000_valid_data_before_local_missing_binding.sql'),
+  'Code-only migrationsplanen er ikke bundet til den præcise aktuelle successor.',
 );
 
 for (const file of [...browserSources, 'package.json', '.github/workflows/update-and-deploy.yml',
