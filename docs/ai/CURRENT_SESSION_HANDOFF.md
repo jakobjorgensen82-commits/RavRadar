@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.392 mobil opstart før normal weather
+
+Aktiv branch er `codex/4.0.392-regional-closure-adapter` i
+`RavRadar-4.0.366`, baseret på main `3d7fbba9`.
+
+Providerfri `35104320358` leverede 4.0.391. Normal `35105048864` gemte
+alle provideres cacher og bestod closure med 267 lokale `MISSING`, men
+stoppede bagefter på regional adapters forældede capture-heuristik.
+
+4.0.392 matcher closureens eksakte regionale kildeidentitet. Den retter også
+den levende iPhone-fejl: nøddrift forsøgte at hente cirka 118 MB detaljer
+under opstart. Store detaljer udskydes nu, stale resultater skjules, og
+browserkontrol mod produktionsdata afslutter på cirka fem sekunder uden fejl.
+
+Afslut RDKS/geodatabevis, commit/push, én exact-head, merge og providerfri
+deploy. Verificér levende Safari/desktop og kør derefter én almindelig
+weather på gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0174/0175.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.385 retter første normale weatherstop
 
 4.0.384 bestod sourcegate 35040475553, PR #327 og merge

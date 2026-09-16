@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.392 robust public opstart og regional identitet
+
+- **REQ-4.0.392-REGIONAL-IDENTITY-001 – BINDENDE:** Public-history-adapteren skal vælge præcis den ene regionale prøve, som closure har godkendt, ved kanonisk `modelRun`, `validTime`, collection og sourceAssetSha256.
+- **REQ-4.0.392-NO-SECOND-TIME-GATE-002 – BINDENDE:** Adapteren må ikke genindføre en selvstændig capture-/aldersheuristik efter closure. Vector commitment, entydighed og kildehash kontrolleres fortsat uafhængigt.
+- **REQ-4.0.392-MOBILE-STARTUP-003 – BINDENDE:** En offentlig verificeret startpakke skal kunne åbne RavRadar uden at hente en nøddriftsdetaljepakke over 8 MiB under kritisk browseropstart.
+- **REQ-4.0.392-NO-STALE-AS-CURRENT-004 – BINDENDE:** Når store detaljer udskydes, må gamle score-, vejr-, pile- eller prognoseværdier ikke fremstilles som aktuelle.
+- **REQ-4.0.392-LOCAL-UNAVAILABLE-005 – BINDENDE:** Kort, navigation og øvrige funktioner fortsætter; kun datakrævende resultater markeres utilgængelige og forklares.
+- **REQ-4.0.392-INTEGRITY-006 – BINDENDE:** Mobilværnet må ikke lempe manifest-, filhash-, bodyhash-, model-, datasæt-, privacy- eller evidensbindinger.
+- **REQ-4.0.392-ORDER-007 – BINDENDE:** 4.0.392 leveres providerfrit først; derefter køres én almindelig weather på gemte cacher. Ingen oneoff.
+
+DEC-0174 og DEC-0175 supplerer DEC-0173. Scheduler forbliver pauset til levende opstart og normal cachevedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-16 – gyldige gamle data før lokalt MISSING
 
 - **REQ-4.0.391-NEW-VALID-WINS-001 – BINDENDE:** En ny fuldt valideret værdi erstatter den hidtidige værdi for præcis samme `(partId, validTime)` efter den eksisterende kildeprioritet.

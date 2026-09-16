@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.392 gør nøddrift mobil og retter regional dobbeltvalidering
+
+- 4.0.391 blev leveret providerfrit i `35104320358` som main `3d7fbba9`.
+- Normalrun `35105048864` gemte DMI-, Copernicus- og Open-Meteo-cacher og lukkede hele domænet som 79.147 værdier plus 267 lokale `MISSING`.
+- Runnet stoppede efter closure på regional adapters gamle 12-timers capture-heuristik; 4.0.392 bruger i stedet closureens eksakte kanoniske kildeidentitet. DEC-0174.
+- Safari på iPhone kunne ikke afslutte nøddriftsopstarten, fordi cirka 118 MB detaljer blev hentet. 4.0.392 udskyder store detaljer og viser ærlig utilgængelighed uden stale værdier. DEC-0175.
+
 # 2026-09-16 – 4.0.391 beholder gyldige gamle værdier før lokal missing
 
 - 4.0.390 blev main `2dcf571a`; bootstrap `35081537023` gennemførte alle providerled og gemte fremgang.

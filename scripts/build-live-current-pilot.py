@@ -12,7 +12,7 @@ import argparse
 import json
 import math
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +20,6 @@ from lib.copernicus_current import (
     COPERNICUS_SOURCE_CONTRACTS,
     DMI_VERIFIER_CONTRACT_ID,
     OPERATIONAL_SEAL_CONTRACT_ID,
-    PUBLIC_END_OFFSET_HOURS,
     RECORD_PROJECTION_CONTRACT_ID,
     SELECTION_POLICY_ID,
     canonical_sha256,
@@ -79,7 +78,6 @@ COPERNICUS_MAX_KM = 5.0
 REGIONAL_MAX_KM = 15.0
 COPERNICUS_SOURCES = ("copernicus-baltic-nemo", "copernicus-nws-amm15")
 REGIONAL_PREFIX = "REGIONAL_PROXY::"
-REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS = 12
 REGIONAL_REFERENCE_CONTRACT_ID = "regional-dmi-private-native-cadence-reference-v1"
 
 
@@ -161,40 +159,52 @@ def haversine_km(first: list[float], second: list[float]) -> float:
     return 6371.0088 * 2 * math.atan2(math.sqrt(value), math.sqrt(max(0.0, 1 - value)))
 
 
-def in_capture_window(value: Any, now: datetime) -> bool:
+def regional_closure_sample(
+    anchor: dict[str, Any],
+    *,
+    source_valid_time: Any,
+    source_model_run: Any,
+    source_asset_sha256: Any,
+) -> dict[str, Any]:
+    """Resolve the exact sample already admitted by the validated closure.
+
+    The closure validator immediately before this adapter has already checked
+    native cadence, forecast horizon, retained/durable source authorization,
+    target binding and the vector commitment.  Reapplying the old 12-hour
+    capture-time heuristic here made a valid retained regional value pass the
+    closure and then fail the public-history adapter.  Match the immutable
+    closure identity instead, while retaining the independent vector check
+    below.
+    """
     try:
-        captured = parse_time(value)
+        expected_valid_time = utc_iso(parse_time(source_valid_time))
+        expected_model_run = utc_iso(parse_time(source_model_run))
     except Exception:
-        return False
-    age_hours = (now - captured).total_seconds() / 3600
-    return -1 <= age_hours <= RETENTION_HOURS
-
-
-def capture_matches_valid_time(captured_value: Any, valid_value: Any, maximum_hours: float) -> bool:
-    try:
-        captured = parse_time(captured_value)
-        valid = parse_time(valid_value)
-    except Exception:
-        return False
-    return abs((valid - captured).total_seconds()) <= maximum_hours * 3600
-
-
-def regional_sample_time_valid(sample: dict[str, Any], reference: datetime) -> bool:
-    try:
-        captured = parse_time(sample.get("capturedAt"))
-        valid = parse_time(sample.get("validTime"))
-        model_run = parse_time(sample.get("modelRun"))
-    except Exception:
-        return False
-    if model_run > valid:
-        return False
-    if valid >= reference:
-        return valid <= reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
-    return (
-        in_capture_window(sample.get("capturedAt"), reference)
-        and abs((valid - captured).total_seconds())
-            <= REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS * 3600
-    )
+        raise RuntimeError("REGIONAL_CLOSURE_ASSIGNMENT_INVALID") from None
+    raw_samples = anchor.get("samples")
+    if not isinstance(raw_samples, list):
+        raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+    matches: list[dict[str, Any]] = []
+    for sample in raw_samples:
+        if (
+            not isinstance(sample, dict)
+            or sample.get("collection") != "dkss_lf"
+            or sample.get("sourceAssetSha256") != source_asset_sha256
+        ):
+            continue
+        try:
+            sample_valid_time = utc_iso(parse_time(sample.get("validTime")))
+            sample_model_run = utc_iso(parse_time(sample.get("modelRun")))
+        except Exception:
+            continue
+        if (
+            sample_valid_time == expected_valid_time
+            and sample_model_run == expected_model_run
+        ):
+            matches.append(sample)
+    if len(matches) != 1:
+        raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+    return matches[0]
 
 
 def valid_dmi_parts(document: dict[str, Any], targets: dict[str, dict[str, Any]]) -> tuple[set[str], dict[str, set[str]]]:
@@ -426,7 +436,6 @@ def regional_entries(
     targets: dict[str, dict[str, Any]],
     assignments: list[dict[str, Any]],
     closure_proof: dict[str, Any],
-    now: datetime,
 ) -> list[dict[str, Any]]:
     if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
         raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
@@ -443,17 +452,12 @@ def regional_entries(
         anchor = anchors.get(f"{REGIONAL_PREFIX}{part_id}")
         if target is None or not isinstance(anchor, dict):
             raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
-        matches = [
-            sample for sample in anchor.get("samples") or []
-            if isinstance(sample, dict)
-            and sample.get("collection") == "dkss_lf"
-            and sample.get("validTime") == assignment.get("sourceValidTime")
-            and sample.get("modelRun") == assignment.get("sourceModelRun")
-            and sample.get("sourceAssetSha256") == assignment.get("sourceAssetSha256")
-        ]
-        if len(matches) != 1 or not regional_sample_time_valid(matches[0], now):
-            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
-        sample = matches[0]
+        sample = regional_closure_sample(
+            anchor,
+            source_valid_time=assignment.get("sourceValidTime"),
+            source_model_run=assignment.get("sourceModelRun"),
+            source_asset_sha256=assignment.get("sourceAssetSha256"),
+        )
         grid = canonical_point(sample.get("gridPoint"))
         distance = finite(sample.get("distanceKm"))
         bottom = ((sample.get("layers") or {}).get("bottom") or {})
@@ -536,7 +540,6 @@ def regional_reference_entries(
     targets: dict[str, dict[str, Any]],
     assignments: list[dict[str, Any]],
     closure_proof: dict[str, Any],
-    now: datetime,
 ) -> list[dict[str, Any]]:
     """Build exact private source samples for holds crossing the H0 boundary.
 
@@ -545,7 +548,10 @@ def regional_reference_entries(
     exists only so a cold RavScore replay can see the real regional sample that
     the H0/H1/H2 state-only hold preserves.
     """
-    reference_at = utc_iso(now)
+    try:
+        reference_at = utc_iso(parse_time(closure_proof["productionReferenceAt"]))
+    except (KeyError, TypeError, ValueError):
+        raise RuntimeError("REGIONAL_CLOSURE_ASSIGNMENT_INVALID") from None
     grouped: dict[tuple[str, str, str, str, str, str], list[dict[str, Any]]] = {}
     for assignment in assignments:
         if (
@@ -581,17 +587,12 @@ def regional_reference_entries(
         anchor = anchors.get(f"{REGIONAL_PREFIX}{part_id}")
         if target is None or not isinstance(anchor, dict):
             raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
-        matches = [
-            sample for sample in anchor.get("samples") or []
-            if isinstance(sample, dict)
-            and sample.get("collection") == "dkss_lf"
-            and sample.get("validTime") == source_valid_time
-            and sample.get("modelRun") == source_model_run
-            and sample.get("sourceAssetSha256") == source_asset_sha256
-        ]
-        if len(matches) != 1 or not regional_sample_time_valid(matches[0], now):
-            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
-        sample = matches[0]
+        sample = regional_closure_sample(
+            anchor,
+            source_valid_time=source_valid_time,
+            source_model_run=source_model_run,
+            source_asset_sha256=source_asset_sha256,
+        )
         grid = canonical_point(sample.get("gridPoint"))
         distance = finite(sample.get("distanceKm"))
         bottom = ((sample.get("layers") or {}).get("bottom") or {})
@@ -851,10 +852,10 @@ def main() -> int:
             copernicus_cache, targets, cop_assignments, closure_proof,
         )
         regional = regional_entries(
-            regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
+            regional_cache, targets, regional_assignments, closure_proof,
         )
         regional_references = regional_reference_entries(
-            regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
+            regional_cache, targets, regional_assignments, closure_proof,
         )
         open_meteo = open_meteo_entries(
             open_meteo_cache, targets_list, targets, open_meteo_assignments, closure_proof,

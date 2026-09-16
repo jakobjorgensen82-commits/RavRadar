@@ -588,6 +588,36 @@ assert.deepEqual(new Set(emergencyRequests), new Set([
   zoneUrl(primary.manifest),
 ]), 'Emergency must verify exactly the manifest-bound four-file package.');
 
+// A production-sized details monolith must never block public mobile startup.
+// The compact verified startup remains available, while scores and stale
+// weather are suppressed by app.js until a fresh weather package arrives.
+service.clearDataMemoryCache();
+const oversizedManifest = structuredClone(primary.manifest);
+oversizedManifest.publicConditionDetailsBytes = 117_820_378;
+oversizedManifest.ravScoreRuntime.details.bytes = oversizedManifest.publicConditionDetailsBytes;
+const oversizedRequestStart = requests.length;
+const realDocument = globalThis.document;
+globalThis.document = {};
+const mobileSafeEmergency = await service.loadConditions({
+  manifest: oversizedManifest,
+  now: emergencyNow,
+});
+if (realDocument === undefined) delete globalThis.document;
+else globalThis.document = realDocument;
+assert.equal(mobileSafeEmergency.available, true);
+assert.equal(mobileSafeEmergency.publicRuntimeAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(mobileSafeEmergency.detailsAvailable, false);
+assert.equal(mobileSafeEmergency.emergencyDetailsDeferred, true);
+assert.equal(
+  requests.slice(oversizedRequestStart).some(request => request.url === primaryUrl(oversizedManifest, true)),
+  false,
+  'Oversized emergency details must stay out of the mobile startup path.',
+);
+assert.match(appSource,
+  /emergencyDetailsDeferred[\s\S]{0,240}forecast\.nextUpdate/,
+  'The public view must render an honest lightweight emergency state without starting details.',
+);
+
 const emergencyStart = createTripStartFromPublicState({
   tripId: '44444444-4444-4444-8444-444444444444',
   startedAt: new Date(emergencyNow + 60_000).toISOString(),

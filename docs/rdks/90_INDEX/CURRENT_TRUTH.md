@@ -1,3 +1,28 @@
+# NYESTE SANDHED – 2026-09-16 – 4.0.392 retter iPhone-opstart og regional adapter
+
+4.0.391 blev efter det tidligere checkpoint leveret providerfrit i
+`35104320358` som main `3d7fbba98b4f02d4462eb77763e0f786d85fe9da`.
+Privat runtime, Edge, Pages, 210/673 og central readback var grønne.
+
+Den almindelige vejropdatering `35105048864` kørte derefter alle tre
+providerled og gemte deres cacher. Slutclosure var
+`READY_WITH_MISSING`: DMI 38.193, Copernicus 6.403, regional DMI 936,
+Open-Meteo 33.615 og 267 lokale `MISSING` ud af 79.414. Dermed er
+fastholdelse, lokal missing og hele providerforløbet bevist. Runnet stoppede
+senere på `REGIONAL_CLOSURE_SAMPLE_INVALID`, fordi public-history-adapteren
+genanvendte en gammel 12-timers capture-heuristik på en prøve, som closure
+allerede havde godkendt.
+
+4.0.392 matcher i stedet closureens eksakte kanoniske regionale
+kildeidentitet og bevarer vektor-, dublet- og hashkontrollerne. Separat blev
+en akut offentlig fejl fundet: nøddrift hentede cirka 118 MB detaljer under
+opstart, så Safari på iPhone kunne hænge helt, og desktop stod på
+`Kontrollerer aktuelle data…`. Store nøddriftsdetaljer er nu ude af den
+kritiske opstart. Den lokale browserkontrol mod de faktiske offentlige data
+afslutter på cirka fem sekunder uden fejl og viser manglende scoredata
+ærligt. Exact-head, merge, live Safari-kontrol og derefter én almindelig
+vejrkørsel mangler. Scheduler er pauset. DEC-0174 og DEC-0175.
+
 # NYESTE SANDHED – 2026-09-16 – 4.0.391 er merged; providerfri levering fortsættes
 
 4.0.391 bestod exact-head `35101396843` og blev merged gennem PR #334 som

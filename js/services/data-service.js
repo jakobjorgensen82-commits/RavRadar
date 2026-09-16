@@ -1,10 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.391';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.392';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.391';
+} from '../core/ravscore-model-contract.js?v=4.0.392';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -24,22 +24,26 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.391';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.392';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.391';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.392';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.391';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.392';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.391';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.392';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.391';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.392';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
 const MANIFEST_URL = './data/live/manifest.json';
+// Store detail rows out of the critical mobile startup path. A monolithic
+// emergency payload above this limit can make iOS Safari terminate the page
+// before the verified map shell becomes usable.
+const MAX_EMERGENCY_STARTUP_DETAILS_BYTES = 8 * 1024 * 1024;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 const SCORE_QUALITIES = Object.freeze(['FULL_HISTORY', 'HISTORY_INCOMPLETE', 'UNAVAILABLE']);
 const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
@@ -832,6 +836,34 @@ async function loadManifestBoundStartup(manifest) {
   return data;
 }
 
+function requiresCurrentHourProjection(availability, manifest) {
+  return availability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
+    || availability.selectedReferenceAt !== manifest.productionReferenceAt;
+}
+
+function shouldDeferEmergencyDetails(manifest, availability) {
+  return typeof globalThis.document !== 'undefined'
+    && requiresCurrentHourProjection(availability, manifest)
+    && manifest.publicConditionDetailsBytes > MAX_EMERGENCY_STARTUP_DETAILS_BYTES;
+}
+
+function deferOversizedEmergencyDetails(startup, availability) {
+  const conditions = {
+    ...startup,
+    available: true,
+    detailsAvailable: false,
+    publicRuntimeAvailability: availability,
+  };
+  // Keep this browser-only state outside the signed/canonical payload body.
+  // It prevents stale values from being rendered without weakening the
+  // manifest, body-hash or model-binding verification.
+  Object.defineProperty(conditions, 'emergencyDetailsDeferred', {
+    value: true,
+    enumerable: false,
+  });
+  return conditions;
+}
+
 export async function loadZones({ manifest = null } = {}) {
   assertManifest(manifest);
   const canonicalBinding = ravScoreModelBinding();
@@ -890,9 +922,11 @@ export async function loadConditions({ manifest = null, now = Date.now() } = {})
       now,
       modelBinding: ravScoreModelBinding(),
     });
-    const requiresCurrentHourProjection = publicRuntimeAvailability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
-      || publicRuntimeAvailability.selectedReferenceAt !== manifest.productionReferenceAt;
-    if (requiresCurrentHourProjection) {
+    const requiresProjection = requiresCurrentHourProjection(publicRuntimeAvailability, manifest);
+    if (shouldDeferEmergencyDetails(manifest, publicRuntimeAvailability)) {
+      return deferOversizedEmergencyDetails(data, publicRuntimeAvailability);
+    }
+    if (requiresProjection) {
       // A later current hour is projected only from this manifest's exact
       // four-file package. No second model, partial fallback or past forecast
       // row is exposed as if it were still current.
@@ -960,10 +994,12 @@ export async function reevaluatePublicConditions({
       modelBinding: ravScoreModelBinding(),
     });
     const startup = await loadManifestBoundStartup(manifest);
-    const requiresCurrentHourProjection = availability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
-      || availability.selectedReferenceAt !== manifest.productionReferenceAt;
-    if (!requiresCurrentHourProjection) {
+    const requiresProjection = requiresCurrentHourProjection(availability, manifest);
+    if (!requiresProjection) {
       return { ...startup, available: true, publicRuntimeAvailability: availability };
+    }
+    if (shouldDeferEmergencyDetails(manifest, availability)) {
+      return deferOversizedEmergencyDetails(startup, availability);
     }
     const [_zones, details] = await Promise.all([
       loadZones({ manifest }),

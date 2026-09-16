@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.392 retter ubrugelig mobilnøddrift
+
+- **ISSUE-4.0.391-DELIVERY – LUKKET:** Providerfri `35104320358` leverede main `3d7fbba9` gennem privat runtime, Edge, Pages, 210/673 og central readback.
+- **ISSUE-4.0.391-NORMAL-WEATHER-CLOSURE – LIVEBEVIST:** `35105048864` gemte alle providercacher og lukkede 79.147 værdier plus 267 ærlige lokale `MISSING`.
+- **ISSUE-4.0.392-REGIONAL-ADAPTER – RETTET LOKALT / LIVEBEVIS MANGLER:** Adapterens ekstra 12-timers capture-heuristik afviste en allerede closure-godkendt prøve. Den bruger nu eksakt kanonisk kildeidentitet og bevarer uafhængig vektorkontrol.
+- **ISSUE-4.0.391-IOS-STARTUP – RETTET LOKALT / LIVEBEVIS MANGLER:** Safari på iPhone kunne ikke åbne nøddrift, fordi opstarten hentede cirka 118 MB detaljer. Store detaljer udskydes nu, stale værdier skjules, og siden åbner med ærlig utilgængelighed.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den nuværende offentlige pakke har stadig 0/210 aktive scorezoner. Det er ikke kaldt komplet; ny normal weather skal producere og deploye brugbare scorer.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – ÅBEN VERIFIKATION:** DMI og Copernicus har førsteprioritet, men deres gradvise overtagelse skal måles i efterfølgende normale runs.
+- **ISSUE-SITE-ACCEPTANCE – AKUT OPSTART LOKALT GRØN:** Browser mod produktionsdata er grøn; levende iPhone/Safari og fuld funktionsgennemgang følger efter deploy.
+
+DEC-0174 og DEC-0175. Scheduler er pauset.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.391-leveringen fortsættes uden providergentagelse
 
 - **ISSUE-4.0.390-BOOTSTRAP – AFSLUTTET MED BEVARET FREMGANG:** Run `35081537023` gennemførte DMI, Copernicus og Open-Meteo og gemte cacher.
