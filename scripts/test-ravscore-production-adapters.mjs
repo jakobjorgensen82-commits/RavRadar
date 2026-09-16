@@ -1055,30 +1055,72 @@ const unavailable = buildIntegratedZoneHourlyProjection({
   expectedPartCount: 3,
   selectedMode,
 });
-assert.equal(unavailable[0].waders.available, false);
-assert.equal(unavailable[0].waders.score, null);
-assert.equal(unavailable[0].waders.scoreQuality, 'UNAVAILABLE');
+assert.equal(unavailable[0].waders.available, true,
+  'one local gap must not suppress scores from the other valid coastal parts');
+assert.equal(unavailable[0].waders.status, 'partial-zone');
+assert.equal(unavailable[0].waders.score, 80);
+assert.equal(unavailable[0].waders.scoreQuality, 'FULL_HISTORY');
 assert.equal(unavailable[0].waders.calibrationEligible, false);
-assert.equal(unavailable[0].waders.historyCoverageHours, null);
+assert.equal(unavailable[0].waders.historyCoverageHours, 48);
 assert.deepEqual(unavailable[0].waders.historyReasonCodes, []);
-assert.equal(unavailable[0].waders.parts, undefined,
-  'UNAVAILABLE must not manufacture a secondary score list');
 assert.deepEqual(unavailable[0].waders.modelBinding, ravScoreModelBinding(),
-  'a local unavailable result must remain bound to the one active public model');
+  'a partial local result must remain bound to the one active public model');
+assert.equal(unavailable[0].waders.validPartCount, 2);
+assert.equal(unavailable[0].waders.expectedPartCount, 3);
+assert.equal(unavailable[0].waders.comparisonPartCount, 2);
+assert.equal(unavailable[0].waders.winningPartUncertain, true);
 assert.deepEqual(unavailable[0].waders.unavailableParts.map(item => item.partId), ['B']);
+const partialLocalScore = buildLocalZoneScore({
+  coastalParts: {
+    enabled: true,
+    generatedAt: time,
+    zones: { ZONE: { expectedPartCount: 3, hourly: unavailable } },
+    parts: {
+      A: {
+        name: 'A',
+        current: {
+          time,
+          weather: scoreRow(80).weather,
+          waders: selectedMode(scoreRow(80), 'waders'),
+        },
+      },
+    },
+  },
+  zoneId: 'ZONE',
+  mode: 'waders',
+  time,
+});
+assert.equal(partialLocalScore.available, true);
+assert.equal(partialLocalScore.localCoverageSummary.kind, 'partial-zone');
+assert.match(partialLocalScore.localCoverageSummary.text, /2 af 3/,
+  'the local UI contract must disclose that the visible score excludes a missing part');
 
 const missingExpectedPart = buildIntegratedZoneHourlyProjection({
   rows: zoneRows([['A', 80], ['B', 75]]),
   expectedPartCount: 3,
   selectedMode,
 });
-assert.equal(missingExpectedPart[0].waders.available, false);
-assert.equal(missingExpectedPart[0].waders.unavailability.code,
-  'INTEGRATED_RAVSCORE_PART_COVERAGE_INCOMPLETE');
-assert.equal(missingExpectedPart[0].waders.historyCoverageHours, null);
+assert.equal(missingExpectedPart[0].waders.available, true);
+assert.equal(missingExpectedPart[0].waders.status, 'partial-zone');
+assert.equal(missingExpectedPart[0].waders.score, 80);
+assert.equal(missingExpectedPart[0].waders.validPartCount, 2);
+assert.equal(missingExpectedPart[0].waders.expectedPartCount, 3);
+assert.equal(missingExpectedPart[0].waders.historyCoverageHours, 48);
 assert.deepEqual(missingExpectedPart[0].waders.historyReasonCodes, []);
 assert.match(missingExpectedPart[0].waders.reasons.join(' '), /forventede kystdele mangler/i);
 assert.deepEqual(missingExpectedPart[0].waders.modelBinding, ravScoreModelBinding());
+
+const noValidPart = buildIntegratedZoneHourlyProjection({
+  rows: zoneRows([['A', 80, false], ['B', 75, false], ['C', 74, false]]),
+  expectedPartCount: 3,
+  selectedMode,
+});
+assert.equal(noValidPart[0].waders.available, false,
+  'a zone/hour must remain unavailable when no coastal part has valid data');
+assert.equal(noValidPart[0].waders.score, null);
+assert.equal(noValidPart[0].waders.scoreQuality, 'UNAVAILABLE');
+assert.equal(noValidPart[0].waders.validPartCount, 0);
+assert.equal(noValidPart[0].waders.expectedPartCount, 3);
 
 const tie = buildIntegratedZoneHourlyProjection({
   rows: zoneRows([['B', 80], ['A', 80], ['C', 60]]),

@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -852,7 +852,7 @@ for(const marker of [
 ok(!productionTargetFreshness.includes("throw new Error('PRODUCTION_TARGET_STALE')"),
   'Gyldige vejrrækker må ikke kasseres alene på targetalder');
 for(const marker of [
-  "export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v1'",
+  "export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v2'",
   "export const WEATHER_SOURCE_HANDOFF_CACHE_PATH =",
   'artifactList.total_count !== artifactList.artifacts.length',
   "fail('HANDOFF_ARTIFACT_PAGINATION_INCOMPLETE')",
@@ -1177,13 +1177,14 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the seventeen exact integrated cutover migrations',
+  'Require only the eighteen exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
   '20260914010000_h0_reference_recovery_binding.sql',
   '20260914020000_h0_state_snapshot_binding.sql',
   '20260914234500_post_cutover_current_hold_binding.sql',
   '20260915020000_private_runtime_storage_deny.sql',
+  '20260916120000_valid_data_before_local_missing_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

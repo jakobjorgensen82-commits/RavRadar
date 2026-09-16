@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – gammel gyldig værdi før lokalt MISSING
+
+4.0.390 er main. Providerbootstrap `35081537023` gennemførte alle
+providerled og gemte fremgang, men den gamle globale nul-missing-gate stoppede
+buildet efter 84 forsøgte provider-negative par. Open-Meteo ramte ikke sit
+tidsbudget.
+
+Ejerens permanente rækkefølge er nu: ny gyldig værdi; ellers gammel fortsat
+gyldig værdi for eksakt sted/time; først derefter lokalt `MISSING`. Et lokalt
+hul må ikke slukke resten af RavRadar. 79.414-identitetsdomænet, målet om nul
+missing, kildeprioriteten og alle integritetsgates består. Lokal 4.0.391
+implementerer reglen. Scheduler er pauset. DEC-0173.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.390 forlænger de højere kilder samlet
 
 4.0.389 er main. To almindelige passager viste reel, men for langsom

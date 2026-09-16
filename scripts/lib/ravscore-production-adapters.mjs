@@ -574,8 +574,9 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
 }
 
 /**
- * Collapse all coastal-part results into one public zone/hour result. A zone is
- * unavailable unless every expected part has a score for the exact hour.
+ * Collapse coastal-part results into one public zone/hour result. Missing
+ * parts stay explicit, but they do not suppress valid scores from the other
+ * parts. The zone/hour is unavailable only when no part has a valid score.
  */
 export function buildIntegratedZoneHourlyProjection({
   rows,
@@ -611,25 +612,26 @@ export function buildIntegratedZoneHourlyProjection({
         };
       });
       const available = evaluated.filter(row => row.scoreContractValid);
-      if (available.length !== expectedPartCount) {
-        const missingExpectedPartCount = Math.max(0, expectedPartCount - evaluated.length);
-        const unavailableParts = evaluated.filter(row => !row.scoreContractValid).map(row => ({
-          partId: row.partId,
-          name: row.name,
-          code: row.detail?.available === true
-            ? 'INTEGRATED_RAVSCORE_QUALITY_INVALID'
-            : row.detail?.unavailability?.code ?? 'INTEGRATED_RAVSCORE_MISSING',
-          reason: row.detail?.available === true
-            ? 'RavScore-resultatets kvalitets- eller intervalkontrakt er ugyldig for denne kystdel.'
-            : row.detail?.unavailability?.messageDa
-              ?? 'RavScore-datagrundlaget mangler for denne kystdel.',
-        }));
-        const reasons = [...new Set([
-          ...unavailableParts.map(part => part.reason),
-          ...(missingExpectedPartCount > 0
-            ? ['En eller flere forventede kystdele mangler helt for denne time.']
-            : []),
-        ])];
+      const missingExpectedPartCount = Math.max(0, expectedPartCount - evaluated.length);
+      const unavailableParts = evaluated.filter(row => !row.scoreContractValid).map(row => ({
+        partId: row.partId,
+        name: row.name,
+        code: row.detail?.available === true
+          ? 'INTEGRATED_RAVSCORE_QUALITY_INVALID'
+          : row.detail?.unavailability?.code ?? 'INTEGRATED_RAVSCORE_MISSING',
+        reason: row.detail?.available === true
+          ? 'RavScore-resultatets kvalitets- eller intervalkontrakt er ugyldig for denne kystdel.'
+          : row.detail?.unavailability?.messageDa
+            ?? 'RavScore-datagrundlaget mangler for denne kystdel.',
+      }));
+      const reasons = [...new Set([
+        ...unavailableParts.map(part => part.reason),
+        ...(missingExpectedPartCount > 0
+          ? ['En eller flere forventede kystdele mangler helt for denne time.']
+          : []),
+      ])];
+      const partialCoverage = available.length < expectedPartCount;
+      if (available.length === 0) {
         const unavailabilityCode = missingExpectedPartCount > 0
           ? 'INTEGRATED_RAVSCORE_PART_COVERAGE_INCOMPLETE'
           : 'INTEGRATED_RAVSCORE_LOCAL_DATA_INCOMPLETE';
@@ -692,12 +694,15 @@ export function buildIntegratedZoneHourlyProjection({
           score: row.score,
           scoreBounds: { ...row.detail.scoreBounds },
         }));
-      const winningPartUncertain = historyIncomplete
-        && possibleWinningParts.some(part => part.partId !== winner.partId);
+      const winningPartUncertain = (historyIncomplete
+        && possibleWinningParts.some(part => part.partId !== winner.partId))
+        || partialCoverage;
       const near = available.filter(row => high - row.score <= marginPoints);
-      const status = high - low <= marginPoints
-        ? 'whole-zone'
-        : near.length === 1 ? 'only-part' : 'several-parts';
+      const status = partialCoverage
+        ? 'partial-zone'
+        : high - low <= marginPoints
+          ? 'whole-zone'
+          : near.length === 1 ? 'only-part' : 'several-parts';
       const weather = winner.weather ?? {};
       const proxyWaveInputs = available
         .map(row => row.weather ?? {})
@@ -741,7 +746,7 @@ export function buildIntegratedZoneHourlyProjection({
         scoreSpread: high - low,
         comparisonPartCount: available.length,
         scoreQuality: historyIncomplete ? 'HISTORY_INCOMPLETE' : 'FULL_HISTORY',
-        calibrationEligible: !historyIncomplete && !calibrationInputLocked,
+        calibrationEligible: !partialCoverage && !historyIncomplete && !calibrationInputLocked,
         scoreSemantics: historyIncomplete
           ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
           : conservativeTailResetApplied
@@ -750,6 +755,12 @@ export function buildIntegratedZoneHourlyProjection({
         conservativeTailResetApplied,
         historyCoverageHours,
         historyReasonCodes,
+        ...(partialCoverage ? {
+          validPartCount: available.length,
+          expectedPartCount,
+          unavailableParts,
+          reasons,
+        } : {}),
         components: winner.detail?.components ?? {},
         componentReasons: winner.detail?.componentReasons ?? {},
         explanation: {

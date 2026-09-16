@@ -255,8 +255,9 @@ rejected(lambda: reusable_records(
     checkpointed_at=iso(REFERENCE + timedelta(hours=1, minutes=10)),
 ))
 
-# Newer acquisitions win. Equal-time divergent revisions are ambiguous and
-# leave the exact pair missing; byte-identical duplicates are harmless.
+# Newer acquisitions win. Equal-time divergent revisions are ambiguous, but
+# cannot erase an older valid exact-pair value; byte-identical duplicates are
+# harmless.
 newer_record = build_record(
     part_id="P1",
     valid_time=required[0]["validTime"],
@@ -301,6 +302,10 @@ conflicting_record = build_record(
 )
 selected, conflicts = merge_records([newer_record], [conflicting_record])
 assert selected == [] and conflicts == 1
+selected, conflicts = merge_records(
+    [records[0]], [newer_record], [conflicting_record],
+)
+assert selected == [records[0]] and conflicts == 1
 
 tampered_checkpoint = copy.deepcopy(mixed_document)
 tampered_checkpoint["records"][0]["uMps"] = 999
@@ -1803,7 +1808,7 @@ with patch.dict(cli["main"].__globals__, {
     "export_github_outputs": lambda value: main_outputs.append(copy.deepcopy(value)),
     "print": lambda value: main_prints.append(value),
 }):
-    assert cli["main"]() == 1
+    assert cli["main"]() == 0
 
 assert main_writes["private.json"]["status"] == "INCOMPLETE"
 assert main_writes["private.json"]["recordCount"] == 1
@@ -1820,6 +1825,7 @@ assert main_outputs[-1]["checkpoint_written"] is True
 assert main_outputs[-1]["retained_record_count"] == 0
 assert main_outputs[-1]["fetched_record_count"] == 1
 assert main_outputs[-1]["batch_unresolved_count"] == 2
+assert main_outputs[-1]["coverage_complete"] is False
 assert main_prints == [
     "Open-Meteo current residual: required=3; filled=1; missing=2; "
     "retained=0; fetched=1; refreshed=0; criticalMissing=2; "

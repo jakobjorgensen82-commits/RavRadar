@@ -1729,9 +1729,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       const scores = available.map(row => row.detail.score);
       const maximum = scores.length ? Math.max(...scores) : null;
       const minimum = scores.length ? Math.min(...scores) : null;
+      const partialCoverage = available.length < zoneParts.length;
       const winnerId = current?.[mode]?.winningPartId;
       const winner = coastal?.parts?.[winnerId];
-      collector.add(available.length === zoneParts.length
+      collector.add(available.length > 0
         && Boolean(winner)
         && winnerId === expectedWinner?.partId
         && winner?.zoneId === zoneId
@@ -1739,11 +1740,17 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         && winner?.current?.[mode]?.score === expectedWinner?.detail?.score
         && current?.[mode]?.winningPartName === winner?.name
         && safeNonNegativeInteger(current?.[mode]?.comparisonPartCount)
-        && current[mode].comparisonPartCount === zoneParts.length,
+        && current[mode].comparisonPartCount === available.length
+        && (!partialCoverage || (current?.[mode]?.validPartCount === available.length
+          && current?.[mode]?.expectedPartCount === zoneParts.length
+          && Array.isArray(current?.[mode]?.unavailableParts)
+          && Array.isArray(current?.[mode]?.reasons)
+          && current[mode].reasons.length > 0)),
       'ZONE_CURRENT_WINNER_RECONSTRUCTION_MISMATCH');
       const nearCount = scores.filter(score => maximum - score <= 7).length;
-      const expectedStatus = maximum - minimum <= 7 ? 'whole-zone'
-        : nearCount === 1 ? 'only-part' : 'several-parts';
+      const expectedStatus = partialCoverage ? 'partial-zone'
+        : maximum - minimum <= 7 ? 'whole-zone'
+          : nearCount === 1 ? 'only-part' : 'several-parts';
       collector.add(current?.[mode]?.scoreSpread === maximum - minimum
         && current?.[mode]?.status === expectedStatus,
       'ZONE_CURRENT_COVERAGE_CLASSIFICATION_MISMATCH');
@@ -1778,15 +1785,15 @@ export function auditIntegratedRavScorePublicRuntime(full, {
           score: row.detail.score,
           scoreBounds: { ...row.detail.scoreBounds },
         }));
-      const expectedWinningPartUncertain = historyIncomplete
-        && expectedPossibleWinningParts.some(part =>
-          part.partId !== expectedWinner.partId);
+      const expectedWinningPartUncertain = partialCoverage
+        || (historyIncomplete && expectedPossibleWinningParts.some(part =>
+          part.partId !== expectedWinner.partId));
       collector.add(current?.[mode]?.score === lower
         && sameCanonical(current?.[mode]?.scoreBounds, expectedBounds)
         && current?.[mode]?.scoreQuality === (historyIncomplete
           ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
           : RAVSCORE_SCORE_QUALITY.FULL_HISTORY)
-        && current?.[mode]?.calibrationEligible === (!historyIncomplete
+        && current?.[mode]?.calibrationEligible === (!partialCoverage && !historyIncomplete
           && available.every(row => row.detail.calibrationEligible === true))
         && current?.[mode]?.scoreSemantics === (historyIncomplete
           ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'

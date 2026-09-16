@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const HANDOFF_KIND = 'RAVRADAR_VERIFIED_WEATHER_SOURCE_HANDOFF';
-export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v1';
+export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v2';
 export const PRODUCER_WORKFLOW = '.github/workflows/validate-copernicus-current-pilot.yml';
 export const PRODUCER_WORKFLOWS = Object.freeze([
   PRODUCER_WORKFLOW,
@@ -16,7 +16,7 @@ export const FIRST_CUTOVER_CONFIRMATION =
   'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE';
 export const WEATHER_SOURCE_HANDOFF_CACHE_PATH =
   '.cache/verified-weather-source-handoff-cache';
-const SAFE_CLOSURE_CONTRACT = 'current-operational-673x118-closure-safe-v2';
+const SAFE_CLOSURE_CONTRACT = 'current-operational-673x118-closure-safe-v3';
 const SHA256 = /^sha256:[0-9a-f]{64}$/;
 const HEAD_SHA = /^[0-9a-f]{40}$/;
 const RUN_ID = /^[1-9][0-9]{0,19}$/;
@@ -168,13 +168,12 @@ function sourceCountsFromClosure(closure) {
 
 export function validateSafeClosure(closure) {
   if (!closure || typeof closure !== 'object' || Array.isArray(closure)
-    || closure.schemaVersion !== 2
+    || closure.schemaVersion !== 3
     || closure.contractId !== SAFE_CLOSURE_CONTRACT
-    || closure.status !== 'READY'
+    || !['READY', 'READY_WITH_MISSING'].includes(closure.status)
     || closure.targetCount !== EXACT_TARGET_COUNT
     || closure.operationalHourCount !== EXACT_HOUR_COUNT
     || closure.totalPairCount !== EXACT_PAIR_COUNT
-    || closure.missingPairCount !== 0
     || closure.coordinatesIncluded !== false
     || closure.rawVectorsIncluded !== false
     || closure.partIdsIncluded !== false
@@ -190,8 +189,12 @@ export function validateSafeClosure(closure) {
   );
   if (canonicalSha256(unsigned) !== closure.safeProjectionSha256) fail('HANDOFF_CLOSURE_HASH_INVALID');
   const sourceCounts = sourceCountsFromClosure(closure);
+  const assignedPairCount = Object.values(sourceCounts)
+    .reduce((sum, value) => sum + value, 0);
   if (Object.values(sourceCounts).some(value => !Number.isSafeInteger(value) || value < 0)
-    || Object.values(sourceCounts).reduce((sum, value) => sum + value, 0) !== EXACT_PAIR_COUNT) {
+    || closure.assignedPairCount !== assignedPairCount
+    || assignedPairCount + closure.missingPairCount !== EXACT_PAIR_COUNT
+    || closure.status !== (closure.missingPairCount === 0 ? 'READY' : 'READY_WITH_MISSING')) {
     fail('HANDOFF_CLOSURE_CARDINALITY_INVALID');
   }
   return { reference, end, sourceCounts };
@@ -199,7 +202,7 @@ export function validateSafeClosure(closure) {
 
 function cacheKey({ runnerOs, sourceHeadSha, runId, runAttempt }) {
   if (typeof runnerOs !== 'string' || !/^[A-Za-z0-9._-]{1,32}$/.test(runnerOs)) fail('HANDOFF_RUNNER_OS_INVALID');
-  return `weather-source-handoff-v1-${runnerOs}-${sourceHeadSha}-${runId}-${runAttempt}`;
+  return `weather-source-handoff-v2-${runnerOs}-${sourceHeadSha}-${runId}-${runAttempt}`;
 }
 
 function unsignedAttestation(value) {
@@ -210,7 +213,7 @@ export function validateAttestation(attestation, expected = {}) {
   if (!attestation || typeof attestation !== 'object' || Array.isArray(attestation)
     || Object.keys(attestation).length !== ATTESTATION_FIELDS.size
     || Object.keys(attestation).some(key => !ATTESTATION_FIELDS.has(key))
-    || attestation.schemaVersion !== 1
+    || attestation.schemaVersion !== 2
     || attestation.kind !== HANDOFF_KIND
     || attestation.contractId !== HANDOFF_CONTRACT_ID
     || !PRODUCER_WORKFLOWS.includes(attestation.producerWorkflow)
@@ -218,8 +221,11 @@ export function validateAttestation(attestation, expected = {}) {
     || attestation.producerRef !== 'refs/heads/main'
     || attestation.targetCount !== EXACT_TARGET_COUNT
     || attestation.operationalHourCount !== EXACT_HOUR_COUNT
-    || attestation.assignedPairCount !== EXACT_PAIR_COUNT
-    || attestation.missingPairCount !== 0
+    || !Number.isSafeInteger(attestation.assignedPairCount)
+    || attestation.assignedPairCount < 0
+    || !Number.isSafeInteger(attestation.missingPairCount)
+    || attestation.missingPairCount < 0
+    || attestation.assignedPairCount + attestation.missingPairCount !== EXACT_PAIR_COUNT
     || attestation.overlapPairCount !== 0
     || attestation.coordinatesIncluded !== false
     || attestation.partIdsIncluded !== false
@@ -246,7 +252,8 @@ export function validateAttestation(attestation, expected = {}) {
       'regionalDerivedHold', 'regionalNative',
     ].sort().join(',')
     || Object.values(counts).some(value => !Number.isSafeInteger(value) || value < 0)
-    || Object.values(counts).reduce((sum, value) => sum + value, 0) !== EXACT_PAIR_COUNT) {
+    || Object.values(counts).reduce((sum, value) => sum + value, 0)
+      !== attestation.assignedPairCount) {
     fail('HANDOFF_ATTESTATION_CARDINALITY_INVALID');
   }
   if (!Array.isArray(attestation.inputs) || attestation.inputs.length !== WEATHER_SOURCE_INPUTS.length) {
@@ -316,7 +323,7 @@ export function sealWeatherSourceHandoff({
     });
   });
   const attestation = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: HANDOFF_KIND,
     contractId: HANDOFF_CONTRACT_ID,
     repository,
@@ -334,8 +341,8 @@ export function sealWeatherSourceHandoff({
     operationalRangeEndAt: closure.operationalRangeEndAt,
     targetCount: EXACT_TARGET_COUNT,
     operationalHourCount: EXACT_HOUR_COUNT,
-    assignedPairCount: EXACT_PAIR_COUNT,
-    missingPairCount: 0,
+    assignedPairCount: closure.assignedPairCount,
+    missingPairCount: closure.missingPairCount,
     overlapPairCount: 0,
     sourceCounts,
     closureId: closure.closureId,

@@ -644,7 +644,7 @@ def reusable_records(document: Any, *, targets: list[dict[str, Any]],
 
 
 def merge_records(*groups: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
-    """Choose the newest immutable record per pair without hiding revisions."""
+    """Choose newest unambiguous record; a bad revision cannot erase old valid."""
     by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for group in groups:
         if not isinstance(group, list):
@@ -669,18 +669,19 @@ def merge_records(*groups: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], 
             )
             for row in candidates
         ]
-        newest = max(instant for instant, _row in candidates_with_instants)
-        newest_candidates = [
-            row for instant, row in candidates_with_instants
-            if instant == newest
-        ]
-        by_id = {
-            str(row.get("recordId") or ""): row for row in newest_candidates
-        }
-        if len(by_id) != 1:
-            conflicts += 1
-            continue
-        selected.append(next(iter(by_id.values())))
+        for instant in sorted({instant for instant, _row in candidates_with_instants}, reverse=True):
+            instant_candidates = [
+                row for candidate_instant, row in candidates_with_instants
+                if candidate_instant == instant
+            ]
+            by_id = {
+                str(row.get("recordId") or ""): row for row in instant_candidates
+            }
+            if len(by_id) != 1:
+                conflicts += 1
+                continue
+            selected.append(next(iter(by_id.values())))
+            break
     selected.sort(key=lambda row: (row["validTime"], row["partId"]))
     return selected, conflicts
 
@@ -893,7 +894,7 @@ def _validated_membership(row: Any, bank: dict[str, Any], target_map: dict[str, 
 
 
 def _merge_conflict_masks(*groups: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, str]]:
-    """A mask retains its original membership; acquiredAt is its inclusive barrier."""
+    """Retain the newest rejected acquisition; older valid values may survive it."""
     masks: dict[tuple[str, str], dict[str, str]] = {}
     for group in groups:
         for row in group:
@@ -919,7 +920,7 @@ def _read_bank_entries(bank: Any, *, targets: list[dict[str, Any]],
     if (
         not isinstance(entries, list) or not isinstance(admissions, dict)
         or not isinstance(manifest, list) or not isinstance(masks, list)
-        or len(entries) > 2 * maximum_pairs or len(manifest) > 2 * maximum_pairs
+        or len(entries) > 3 * maximum_pairs or len(manifest) > 3 * maximum_pairs
         or len(masks) > maximum_pairs or len(admissions) > 3 * maximum_pairs
         or not isinstance(bank["entryCount"], int) or isinstance(bank["entryCount"], bool)
         or bank["entryCount"] != len(manifest)
@@ -947,11 +948,23 @@ def _read_bank_entries(bank: Any, *, targets: list[dict[str, Any]],
         by_pair.setdefault((row["partId"], row["validTime"]), []).append(row)
     mask_by_pair = _merge_conflict_masks(masks)
     for key, members in by_pair.items():
-        instants = {_exact_instant(row["acquiredAt"], "OPEN_METEO_DONOR_MANIFEST_INVALID")[1] for row in members}
-        if len(members) > 2 or len(instants) != 1:
+        members_by_instant: dict[datetime, list[dict[str, str]]] = {}
+        for row in members:
+            instant = _exact_instant(row["acquiredAt"], "OPEN_METEO_DONOR_MANIFEST_INVALID")[1]
+            members_by_instant.setdefault(instant, []).append(row)
+        if len(members) > 3 or len(members_by_instant) > 2:
             _fail("OPEN_METEO_DONOR_MANIFEST_INVALID")
-        if len(members) > 1 and (key not in mask_by_pair
-            or _exact_instant(mask_by_pair[key]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1] < next(iter(instants))):
+        mask = mask_by_pair.get(key)
+        mask_instant = (_exact_instant(mask["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1]
+                        if mask else None)
+        if mask_instant is None:
+            if len(members) != 1 or len(members_by_instant) != 1:
+                _fail("OPEN_METEO_DONOR_MASK_INVALID")
+            continue
+        if any(instant > mask_instant for instant in members_by_instant):
+            _fail("OPEN_METEO_DONOR_MASK_INVALID")
+        if any(len(rows) > 1 and instant != mask_instant
+               for instant, rows in members_by_instant.items()):
             _fail("OPEN_METEO_DONOR_MASK_INVALID")
     membership_by_id = {row["entrySha256"]: row for row in manifest}
     payloads_by_id: dict[str, list[Any]] = {}
@@ -1025,21 +1038,44 @@ def _build_validated_donor_bank(*, targets: list[dict[str, Any]], entries: list[
             group[record["recordId"]] = entry
     selected = []
     for key, group in by_pair.items():
-        newest = max(_exact_instant(item["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1] for item in group.values())
-        candidates = [item for item in group.values() if _exact_instant(item["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1] == newest]
-        candidates.sort(key=lambda item: item["record"]["recordId"])
-        if len(candidates) > 1:
-            masks[key] = _merge_conflict_masks(
-                [masks[key]] if key in masks else [],
-                [_entry_membership(candidates[0])],
-            )[key]
-        elif key in masks and newest > _exact_instant(masks[key]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1]:
-            # A complete original admission and one strictly newer record are
-            # required; same-time/older legacy records cannot heal the barrier.
-            del masks[key]
-        selected.extend(candidates[:2])
+        by_instant: dict[datetime, list[dict[str, Any]]] = {}
+        for item in group.values():
+            instant = _exact_instant(item["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1]
+            by_instant.setdefault(instant, []).append(item)
+        retained_conflicts: list[dict[str, Any]] = []
+        fallback: dict[str, Any] | None = None
+        for instant in sorted(by_instant, reverse=True):
+            candidates = sorted(by_instant[instant], key=lambda item: item["record"]["recordId"])
+            mask_instant = (_exact_instant(masks[key]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1]
+                            if key in masks else None)
+            if len(candidates) > 1:
+                if mask_instant is None or instant >= mask_instant:
+                    masks[key] = _merge_conflict_masks(
+                        [masks[key]] if key in masks else [],
+                        [_entry_membership(candidates[0])],
+                    )[key]
+                    retained_conflicts = candidates[:2]
+                continue
+            if mask_instant is not None and instant == mask_instant:
+                # The sibling may be the damaged/missing leaf which created
+                # the mask. Never treat the surviving same-time row as healed.
+                continue
+            if mask_instant is None or instant > mask_instant:
+                # A strictly newer unambiguous record heals the rejected
+                # acquisition and replaces all older values.
+                masks.pop(key, None)
+                retained_conflicts = []
+                fallback = candidates[0]
+                break
+            # The newest usable value is older than the rejected acquisition,
+            # but still valid for this exact part/time.
+            fallback = candidates[0]
+            break
+        selected.extend(retained_conflicts)
+        if fallback is not None:
+            selected.append(fallback)
     selected.sort(key=lambda item: (item["record"]["validTime"], item["record"]["partId"], item["record"]["recordId"]))
-    if len(selected) > 2 * len(targets) * (DONOR_BANK_HISTORY_HOURS + OPERATIONAL_HOUR_COUNT):
+    if len(selected) > 3 * len(targets) * (DONOR_BANK_HISTORY_HOURS + OPERATIONAL_HOUR_COUNT):
         _fail("OPEN_METEO_DONOR_BANK_INVALID")
     manifest = [_entry_membership(item) for item in selected]
     persisted_masks = sorted(masks.values(), key=_membership_order)
@@ -1129,7 +1165,7 @@ def select_donor_records(bank: Any, *, targets: list[dict[str, Any]],
                   if (entry["record"]["partId"], entry["record"]["validTime"]) in required
                   and ((entry["record"]["partId"], entry["record"]["validTime"]) not in masks
                        or _exact_instant(entry["record"]["acquiredAt"], "OPEN_METEO_RECORD_INVALID")[1]
-                       > _exact_instant(masks[(entry["record"]["partId"], entry["record"]["validTime"])]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1])]
+                       != _exact_instant(masks[(entry["record"]["partId"], entry["record"]["validTime"])]["acquiredAt"], "OPEN_METEO_DONOR_MASK_INVALID")[1])]
     for record in candidates:
         _validate_record(record, target_map, required, reference, checkpoint)
     return merge_records(candidates)[0]

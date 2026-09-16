@@ -18,6 +18,7 @@ import {
   sealWeatherSourceHandoff,
   validateArtifactInventoryEntries,
   validateAttestation,
+  validateSafeClosure,
   verifyRebuiltClosure,
 } from './verified-weather-source-handoff.mjs';
 
@@ -272,8 +273,8 @@ function expectCode(callback, code) {
 
 function safeClosure(overrides = {}) {
   const closure = {
-    schemaVersion: 2,
-    contractId: 'current-operational-673x118-closure-safe-v2',
+    schemaVersion: 3,
+    contractId: 'current-operational-673x118-closure-safe-v3',
     closureId: canonicalSha256('closure'),
     status: 'READY',
     productionReferenceAt: reference,
@@ -287,6 +288,7 @@ function safeClosure(overrides = {}) {
     regionalNativePairCount: 1,
     regionalDerivedHoldPairCount: 1,
     openMeteoPairCount: 1,
+    assignedPairCount: 673 * 118,
     missingPairCount: 0,
     targetRegistrySha256: canonicalSha256('targets'),
     coordinatesIncluded: false,
@@ -299,6 +301,15 @@ function safeClosure(overrides = {}) {
   closure.safeProjectionSha256 = canonicalSha256(closure);
   return closure;
 }
+
+const partialClosure = safeClosure({
+  status: 'READY_WITH_MISSING',
+  dmiVerifiedPairCount: (673 * 118) - 6,
+  assignedPairCount: (673 * 118) - 1,
+  missingPairCount: 1,
+});
+assert.equal(validateSafeClosure(partialClosure).sourceCounts.dmi, (673 * 118) - 6,
+  'an explicit local missing pair keeps the safe handoff closure valid');
 
 try {
   fs.mkdirSync(producerRoot, { recursive: true });

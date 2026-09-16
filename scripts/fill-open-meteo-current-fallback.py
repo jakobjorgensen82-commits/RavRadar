@@ -1608,6 +1608,7 @@ def main() -> int:
         "refresh_attempted": int(refresh_diagnostics["batchAttemptCount"]) > 0,
         "filled_pair_count": document["recordCount"],
         "missing_pair_count": document["missingPairCount"],
+        "coverage_complete": document["missingPairCount"] == 0,
         "batch_count": batch_count,
         "batch_attempt_count": batch_attempt_count,
         "batch_completed_count": batch_completed_count,
@@ -1663,7 +1664,10 @@ def main() -> int:
         "cache_dropped_record_count": cache_salvage["droppedRecordCount"],
         "cache_dropped_pair_count": cache_salvage["droppedPairCount"],
     })
-    return 0 if document["status"] == "COMPLETE" and projection_checkpoint_written else 1
+    # A valid atomic checkpoint is a successful provider pass even when the
+    # upstream source has honest residual gaps.  The closure records those
+    # exact gaps as MISSING; malformed or unwritten evidence still fails.
+    return 0 if projection_checkpoint_written else 1
 
 
 if __name__ == "__main__":

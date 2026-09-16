@@ -1198,7 +1198,7 @@ for (const marker of [
   '--critical-only',
   'Reconfirm exact main before shared Open-Meteo progress cache',
   'Save shared private Open-Meteo current progress',
-  'Require complete Open-Meteo residual before freshness and closure',
+  'Require verified Open-Meteo residual checkpoint before closure',
   'Require complete operational WAM after provider progress for first cutover',
   'Classify target freshness after the bounded supplier chain',
   'id: supplier-target-freshness',
@@ -1223,13 +1223,16 @@ const normalOpenMeteoRestore = productionStep('Restore shared private Open-Meteo
 const normalOpenMeteoFill = productionStep('Fill only the exact remaining current gaps from Open-Meteo');
 const normalOpenMeteoAuthority = productionStep('Reconfirm exact main before shared Open-Meteo progress cache');
 const normalOpenMeteoSave = productionStep('Save shared private Open-Meteo current progress');
-const normalOpenMeteoTerminal = productionStep('Require complete Open-Meteo residual before freshness and closure');
+const normalOpenMeteoTerminal = productionStep('Require verified Open-Meteo residual checkpoint before closure');
 const normalWamFinal = productionStep('Require complete operational WAM after provider progress for first cutover');
 assert.ok(
   normalOpenMeteoTerminal.includes(
     "steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'",
-  ),
-  'Normal Open-Meteo-terminalgaten må ikke skabe en følgefejl, når providerforløbet blev sprunget over før start.',
+  )
+    && normalOpenMeteoTerminal.includes('steps.open-meteo-fill.outputs.checkpoint_written')
+    && normalOpenMeteoTerminal.includes('steps.open-meteo-fill.outputs.missing_pair_count')
+    && !normalOpenMeteoTerminal.includes('coverage_complete'),
+  'Normal Open-Meteo-gate skal kræve et atomisk checkpoint og ærligt resttal uden at kræve nul lokale huller.',
 );
 assert.ok(
   normalCopernicusDisposition.includes('--require-source-stage-reusable')
@@ -1269,7 +1272,7 @@ for (const marker of [
   'if: always()',
   'steps.open-meteo-fill.outcome }}" = "success"',
   'steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"',
-  'steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"',
+  'test -n "${{ steps.open-meteo-fill.outputs.missing_pair_count }}"',
 ]) assert.ok(normalOpenMeteoTerminal.includes(marker), `Normal Open-Meteo terminalgate mangler ${marker}`);
 for (const marker of [
   "steps.operational-action.outputs.action == 'integrated-cutover'",
@@ -1399,7 +1402,7 @@ const positions = {
   openMeteoFill: text.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
   openMeteoAuthority: text.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
   openMeteoSave: text.indexOf('name: Save shared private Open-Meteo current progress'),
-  openMeteoTerminal: text.indexOf('name: Require complete Open-Meteo residual before freshness and closure'),
+  openMeteoTerminal: text.indexOf('name: Require verified Open-Meteo residual checkpoint before closure'),
   wamFinal: text.indexOf('name: Require complete operational WAM after provider progress for first cutover'),
   supplierFreshness: text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   currentClosure: text.indexOf('name: Build exact DMI-first current operational closure'),
@@ -1750,7 +1753,7 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the seventeen exact integrated cutover migrations',
+  'Require only the eighteen exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1768,6 +1771,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260914020000_h0_state_snapshot_binding.sql"',
   'test -f "$migrations_directory/20260914234500_post_cutover_current_hold_binding.sql"',
   'test -f "$migrations_directory/20260915020000_private_runtime_storage_deny.sql"',
+  'test -f "$migrations_directory/20260916120000_valid_data_before_local_missing_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

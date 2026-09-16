@@ -746,14 +746,29 @@ for (const [label, mutate] of [
   );
 }
 
-const generatedUnavailableMode = buildIntegratedZoneHourlyProjection({
+const generatedPartialMode = buildIntegratedZoneHourlyProjection({
   rows: [
     {
       partId: 'part-1',
       name: 'Part 1',
       scores: [{
         time: generatedAt,
-        ravScoreModel: { modes: { waders: publicMode(61, 'waders') } },
+        weather: {
+          windSpeedMps: 4,
+          waveHeightM: .8,
+          wavePeriodS: 6,
+          currentSpeedMps: .1,
+          currentDirectionDeg: 90,
+          ...directWaveQuality,
+        },
+        ravScoreModel: { modes: { waders: publicMode(
+          61,
+          'waders',
+          generatedAt,
+          'part-1',
+          'Part 1',
+          { waveInputQuality: directWaveQuality },
+        ) } },
       }],
     },
     {
@@ -773,13 +788,18 @@ const generatedUnavailableMode = buildIntegratedZoneHourlyProjection({
   selectedMode: (row, mode) => row.ravScoreModel.modes[mode],
 })[0].waders;
 const locallyUnavailable = structuredClone(full);
-locallyUnavailable.coastalParts.zones['zone-0'].hourly[0].waders = generatedUnavailableMode;
+locallyUnavailable.coastalParts.zones['zone-0'].hourly[0].waders = generatedPartialMode;
 const locallyUnavailablePublic = buildPublicConditions(locallyUnavailable);
-assert.equal(locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.available, false);
+assert.equal(locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.available, true,
+  'one missing coastal part must retain a public score from the valid part');
+assert.equal(locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.status,
+  'partial-zone');
+assert.equal(locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.validPartCount, 1);
+assert.equal(locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.expectedPartCount, 2);
 assert.deepEqual(
   locallyUnavailablePublic.coastalParts.zones['zone-0'].hourly[0].waders.modelBinding,
   binding,
-  'a generated local data gap must project as unavailable under the exact active binding',
+  'a generated partial score must remain under the exact active binding',
 );
 
 const unavailableWithoutBinding = structuredClone(full);

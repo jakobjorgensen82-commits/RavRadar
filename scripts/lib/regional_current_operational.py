@@ -781,6 +781,29 @@ def _classify_pairs(
     gaps: list[dict[str, str]],
     samples_by_part: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    def newest_unambiguous(
+        candidates: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Prefer new valid evidence without letting a conflict erase old valid."""
+        for model_run in sorted(
+            {row["modelRunAt"] for row in candidates}, reverse=True,
+        ):
+            same_run = [
+                row for row in candidates if row["modelRunAt"] == model_run
+            ]
+            best_authorization = min(
+                row["authorizationRank"] for row in same_run
+            )
+            preferred = [
+                row for row in same_run
+                if row["authorizationRank"] == best_authorization
+            ]
+            if len({row["sourceAssetSha256"] for row in preferred}) == 1:
+                return preferred[0]
+            # The newest model run is ambiguous for this exact pair. Try an
+            # older fully validated run before declaring the pair MISSING.
+        return None
+
     rows: list[dict[str, Any]] = []
     for gap in gaps:
         part_id = gap["partId"]
@@ -789,36 +812,19 @@ def _classify_pairs(
         candidates = part_samples.get("validated") or []
         exact = [sample for sample in candidates if sample["validTime"] == valid_time]
         if exact:
-            newest_run = max(row["modelRunAt"] for row in exact)
-            preferred = [row for row in exact if row["modelRunAt"] == newest_run]
-            best_authorization = min(row["authorizationRank"] for row in preferred)
-            preferred = [
-                row for row in preferred
-                if row["authorizationRank"] == best_authorization
-            ]
-            selected = (
-                preferred[0]
-                if len({row["sourceAssetSha256"] for row in preferred}) == 1
-                else None
-            )
-            if selected is None:
+            selected = newest_unambiguous(exact)
+            if selected is not None:
                 rows.append({
                     "partId": part_id,
                     "validTime": valid_time,
-                    "classification": MISSING,
+                    "classification": REGIONAL_DMI_NATIVE,
+                    "sourceValidTime": selected["validTime"],
+                    "sourceModelRun": selected["modelRun"],
+                    "sourceAssetSha256": selected["sourceAssetSha256"],
+                    "sourceProofSha256": selected["sourceProofSha256"],
+                    "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
                 })
                 continue
-            rows.append({
-                "partId": part_id,
-                "validTime": valid_time,
-                "classification": REGIONAL_DMI_NATIVE,
-                "sourceValidTime": selected["validTime"],
-                "sourceModelRun": selected["modelRun"],
-                "sourceAssetSha256": selected["sourceAssetSha256"],
-                "sourceProofSha256": selected["sourceProofSha256"],
-                "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
-            })
-            continue
         prior: list[tuple[int, dict[str, Any]]] = []
         for sample in candidates:
             age_seconds = (gap_dt - sample["validTimeAt"]).total_seconds()
@@ -828,24 +834,12 @@ def _classify_pairs(
             if 1 <= age_hours <= MAXIMUM_HOLD_HOURS:
                 prior.append((age_hours, sample))
         if prior:
-            youngest_age = min(item[0] for item in prior)
-            preferred = [item for item in prior if item[0] == youngest_age]
-            newest_run = max(item[1]["modelRunAt"] for item in preferred)
-            preferred = [
-                item for item in preferred
-                if item[1]["modelRunAt"] == newest_run
-            ]
-            best_authorization = min(
-                item[1]["authorizationRank"] for item in preferred
-            )
-            preferred = [
-                item for item in preferred
-                if item[1]["authorizationRank"] == best_authorization
-            ]
-            if len({
-                item[1]["sourceAssetSha256"] for item in preferred
-            }) == 1:
-                age_hours, selected = preferred[0]
+            for age_hours in sorted({item[0] for item in prior}):
+                selected = newest_unambiguous([
+                    item[1] for item in prior if item[0] == age_hours
+                ])
+                if selected is None:
+                    continue
                 rows.append({
                     "partId": part_id,
                     "validTime": valid_time,
@@ -857,6 +851,10 @@ def _classify_pairs(
                     "sourceProofSha256": selected["sourceProofSha256"],
                     "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
                 })
+                break
+            else:
+                selected = None
+            if selected is not None:
                 continue
         rows.append({
             "partId": part_id,

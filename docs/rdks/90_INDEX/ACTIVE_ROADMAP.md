@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.391 fra globalt stop til gyldig fastholdelse og lokal missing
+
+1. [x] Merge 4.0.390 og gennemfør providerbootstrap `35081537023` på bevarede cacher.
+2. [x] Afgræns de sidste 84 par som faktisk forsøgte provider-negative svar, ikke manglende køretid.
+3. [x] Fastlæg ejerens permanente rækkefølge: ny gyldig → gammel fortsat gyldig for eksakt par → lokalt `MISSING`.
+4. [x] Ret DMI-, Copernicus-, regional- og Open-Meteo-genbrug, så tomme eller modstridende nye leveringer aldrig skygger for ældre gyldige værdier.
+5. [x] Byg closure/state med alle 79.414 identiteter og eksplicit lokal `MISSING`, uden at kalde datasættet komplet ved en rest.
+6. [x] Bevis målrettet, at globale integritetsfejl fortsat stopper, mens lokal datamangel kun rammer berørt del, mode og time.
+7. [x] Synkronisér 4.0.391-version, RDKS, håndbog og changelog; bestå måltests og rent geodataversionsbevis.
+8. [ ] Commit/push, én exact-head sourcegate og merge.
+9. [ ] Kør én almindelig weather med gemte cacher; verificér levende scorer, ærlig missing og DMI/Copernicus-overtagelse.
+10. [ ] Genaktivér scheduler efter bevist normal vedligeholdelse og fortsæt site-/roadmapgennemgangen.
+
+DEC-0173 er aktiv. Scheduler er pauset.
+
 # Aktiv roadmap – 4.0.390 fra roterende fremgang til samlet providerbootstrap
 
 1. [x] Merge 4.0.389 som main `bf8eb739` og kør to kontrollerede normale passager med scheduler pauset.

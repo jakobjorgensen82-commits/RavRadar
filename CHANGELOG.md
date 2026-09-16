@@ -1,3 +1,11 @@
+## 4.0.391 – gyldig fastholdelse før lokalt MISSING (2026-09-16, lokal kandidat)
+
+- Bindende prioritet for alle vejrkilder: ny gyldig værdi → ældre fortsat gyldig værdi for eksakt sted/time → eksplicit lokalt `MISSING`.
+- Et tomt, ugyldigt eller modstridende nyt svar må ikke skygge for en ældre entydig værdi, som stadig er gyldig i 118-timersvinduet.
+- Alle 79.414 identiteter repræsenteres fortsat. Kun nul `MISSING` kaldes komplet, men et ærligt lokalt hul må kun gøre berørt del/mode/time utilgængelig.
+- En zone med mindst én gyldig kystdel viser en ærligt markeret delvis score med antal medregnede dele; den kalibreres ikke, og vinderen markeres usikker.
+- Providerbootstrap `35081537023` nåede alle providerled og gemte fremgang, men blev globalt stoppet af 84 forsøgte provider-negative par. Se `CHANGELOG-4.0.391.md` og DEC-0173.
+
 ## 4.0.390 – forlænget post-cutover-providerbootstrap (2026-09-16, lokal kandidat)
 
 - To normale 4.0.389-runs reducerede slutresten fra 5.025 til 4.565, mens target rykkede en time. Open-Meteo nåede hele køen; resten var provider-negative null-/gittertilfælde.

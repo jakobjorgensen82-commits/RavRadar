@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.390";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.390";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.390";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.390";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.390";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.391";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.391";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.391";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.391";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.391";
 
 export const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -68,6 +68,11 @@ function localCoveragePanel(result, {showMapButton=true} = {}) {
   const parts=(summary.parts||[]).map(part=>`${part.name} (${secondaryScoreText(part)})`).join(', ');
   const translated=summary.kind==='single-part'
     ? {title:t('score.local.single.title'),text:t('score.local.single.text')}
+    : summary.kind==='partial-zone'
+      ? {title:t('score.local.partial.title'),text:t('score.local.partial.text',{
+          valid:result.localCoverage?.validPartCount??0,
+          expected:result.localCoverage?.expectedPartCount??0,
+        })}
     : summary.kind==='whole-zone'
       ? {title:t('score.local.whole.title'),text:t('score.local.whole.text',{spread:result.localCoverage?.scoreSpread??0})}
       : summary.kind==='only-part'

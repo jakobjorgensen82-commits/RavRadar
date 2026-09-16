@@ -274,6 +274,29 @@ function assertAvailableHistoryScore(result, label) {
     && (result.calibrationEligible !== false || result.historyReasonCodes.length < 1)) {
     throw new Error(`${label} does not explain its incomplete history`);
   }
+  if (result.status === 'partial-zone') {
+    if (!Number.isSafeInteger(result.validPartCount) || result.validPartCount < 1
+      || !Number.isSafeInteger(result.expectedPartCount) || result.expectedPartCount < 2
+      || result.validPartCount >= result.expectedPartCount
+      || result.comparisonPartCount !== result.validPartCount
+      || result.calibrationEligible !== false
+      || result.winningPartUncertain !== true
+      || !Array.isArray(result.reasons) || result.reasons.length < 1
+      || result.reasons.some(reason => typeof reason !== 'string'
+        || reason.length < 1 || reason.length > 1000)
+      || !Array.isArray(result.unavailableParts)
+      || result.unavailableParts.some(part => !exactKeys(part, [
+        'partId', 'name', 'code', 'reason',
+      ]) || typeof part.partId !== 'string' || !PUBLIC_ID_PATTERN.test(part.partId)
+        || typeof part.name !== 'string' || part.name.length < 1 || part.name.length > 500
+        || typeof part.code !== 'string' || !REASON_CODE_PATTERN.test(part.code)
+        || typeof part.reason !== 'string' || part.reason.length < 1
+        || part.reason.length > 1000)
+      || new Set(result.unavailableParts.map(part => part.partId)).size
+        !== result.unavailableParts.length) {
+      throw new Error(`${label} does not carry an exact partial-zone explanation`);
+    }
+  }
 }
 
 export function assertIntegratedPublicScoreResult(result, label = 'integrated public score') {

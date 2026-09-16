@@ -3,9 +3,11 @@
 The source order is fixed and non-negotiable: verified local DMI, Baltic
 Copernicus, AMM15 Copernicus, one of the explicitly evidenced regional DMI
 dispositions when available, and Open-Meteo for the exact final residual.
-This module neither downloads data nor changes
-geometry.  It only validates existing evidence and emits reference-only
-assignments; coordinates and raw U/V never enter the closure document.
+This module neither downloads data nor changes geometry.  It validates the
+whole matrix and emits one reference-only assignment per expected pair.  A
+pair that remains unavailable after the full provider order is represented by
+an explicit MISSING assignment, never by an invented vector.  Coordinates and
+raw U/V never enter the closure document.
 """
 from __future__ import annotations
 
@@ -51,11 +53,11 @@ from .open_meteo_current_fallback import (
 )
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 KIND = "RAVRADAR_PRIVATE_CURRENT_OPERATIONAL_CLOSURE"
-CONTRACT_ID = "current-operational-673x118-closure-ready-v2"
-SAFE_CONTRACT_ID = "current-operational-673x118-closure-safe-v2"
-ASSIGNMENT_CONTRACT_ID = "current-operational-source-assignment-v2"
+CONTRACT_ID = "current-operational-673x118-closure-v3"
+SAFE_CONTRACT_ID = "current-operational-673x118-closure-safe-v3"
+ASSIGNMENT_CONTRACT_ID = "current-operational-source-assignment-v3"
 ADVISORY_ASSIGNMENT_CONTRACT_ID = (
     "current-advisory-past-model-field-source-assignment-v1"
 )
@@ -102,6 +104,9 @@ _OPEN_METEO_FIELDS = {
     "acquiredAt", "recordRefSha256", "physicalScope", "scoreInputPolicyId",
     "calibrationEligible", "assignmentSha256",
 }
+_MISSING_FIELDS = {
+    "partId", "validTime", "classification", "assignmentSha256",
+}
 
 PRIVATE_FIELDS = {
     "schemaVersion", "kind", "contractId", "closureId", "status",
@@ -110,9 +115,10 @@ PRIVATE_FIELDS = {
     "dmiVerifiedPairCount", "copernicusBalticPairCount",
     "copernicusAmm15PairCount", "regionalNativePairCount",
     "regionalDerivedHoldPairCount", "regionalResidualPairCount",
-    "openMeteoRequiredPairCount", "openMeteoPairCount",
+    "openMeteoRequiredPairCount", "openMeteoPairCount", "assignedPairCount",
     "supplementalAssignmentCount", "supplementalAssignmentsSha256",
-    "missingPairCount", "copernicusCompleteWithoutSourceStage",
+    "missingPairCount", "missingAssignmentsSha256",
+    "copernicusCompleteWithoutSourceStage",
     "copernicusSourceStageStatus", "copernicusBoundedProgressAccepted",
     "targetRegistrySha256", "dmiCurrentInputSha256", "dmiLedgerSha256",
     "dmiAttestationSha256", "copernicusRegistrySha256",
@@ -137,9 +143,10 @@ SAFE_FIELDS = {
     "dmiVerifiedPairCount", "copernicusBalticPairCount",
     "copernicusAmm15PairCount", "regionalNativePairCount",
     "regionalDerivedHoldPairCount", "regionalResidualPairCount",
-    "openMeteoRequiredPairCount", "openMeteoPairCount",
+    "openMeteoRequiredPairCount", "openMeteoPairCount", "assignedPairCount",
     "supplementalAssignmentCount", "supplementalAssignmentsSha256",
-    "missingPairCount", "copernicusCompleteWithoutSourceStage",
+    "missingPairCount", "missingAssignmentsSha256",
+    "copernicusCompleteWithoutSourceStage",
     "copernicusSourceStageStatus", "copernicusBoundedProgressAccepted",
     "targetRegistrySha256", "dmiCurrentInputSha256", "dmiLedgerSha256",
     "dmiAttestationSha256", "copernicusRegistrySha256",
@@ -635,6 +642,20 @@ def _open_meteo_assignments(document: dict[str, Any]) -> list[dict[str, Any]]:
     return assignments
 
 
+def _missing_assignments(document: dict[str, Any]) -> list[dict[str, Any]]:
+    pairs = _canonical_pair_rows(
+        document.get("missingPairs"), "OPEN_METEO_EVIDENCE_INVALID"
+    )
+    assignments: list[dict[str, Any]] = []
+    for pair in pairs:
+        identity = {**pair, "classification": MISSING}
+        assignments.append({
+            **identity,
+            "assignmentSha256": _assignment_sha256(identity),
+        })
+    return assignments
+
+
 def _validate_assignment_shape(assignment: Any) -> tuple[str, str]:
     if not isinstance(assignment, dict):
         _fail("ASSIGNMENT_INVALID")
@@ -646,6 +667,7 @@ def _validate_assignment_shape(assignment: Any) -> tuple[str, str]:
         REGIONAL_DMI_NATIVE: _REGIONAL_NATIVE_FIELDS,
         REGIONAL_DMI_DERIVED_HOLD: _REGIONAL_HOLD_FIELDS,
         OPEN_METEO_COMBINED_CURRENT: _OPEN_METEO_FIELDS,
+        MISSING: _MISSING_FIELDS,
     }.get(classification)
     if expected_fields is None or set(assignment) != expected_fields:
         _fail("ASSIGNMENT_INVALID")
@@ -800,12 +822,11 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         value.get("schemaVersion") != SCHEMA_VERSION
         or value.get("kind") != KIND
         or value.get("contractId") != CONTRACT_ID
-        or value.get("status") != "READY"
+        or value.get("status") not in {"READY", "READY_WITH_MISSING"}
         or value.get("targetCount") != EXPECTED_TARGET_COUNT
         or value.get("operationalHourCount") != OPERATIONAL_HOUR_COUNT
         or value.get("totalPairCount") != EXPECTED_TOTAL_PAIR_COUNT
         or value.get("sourceOrderContractId") != SOURCE_ORDER_CONTRACT_ID
-        or value.get("missingPairCount") != 0
         or value.get("coordinatesIncluded") is not False
         or value.get("rawVectorsIncluded") is not False
         or value.get("publicRuntime") is not False
@@ -819,7 +840,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         "dmiVerifiedPairCount", "copernicusBalticPairCount",
         "copernicusAmm15PairCount", "regionalNativePairCount",
         "regionalDerivedHoldPairCount", "regionalResidualPairCount",
-        "openMeteoRequiredPairCount", "openMeteoPairCount",
+        "openMeteoRequiredPairCount", "openMeteoPairCount", "assignedPairCount",
         "supplementalAssignmentCount", "missingPairCount",
         "advisoryHistoryRequiredPairCount", "advisoryHistoryAvailablePairCount",
         "advisoryHistoryMissingPairCount", "advisoryHistoryAssignmentCount",
@@ -834,7 +855,8 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
     if (
         value["regionalResidualPairCount"]
         != value["regionalNativePairCount"] + value["regionalDerivedHoldPairCount"]
-        or value["openMeteoRequiredPairCount"] != value["openMeteoPairCount"]
+        or value["openMeteoRequiredPairCount"]
+            != value["openMeteoPairCount"] + value["missingPairCount"]
         or sum(value[key] for key in (
             "dmiVerifiedPairCount", "copernicusBalticPairCount",
             "copernicusAmm15PairCount", "regionalNativePairCount",
@@ -845,6 +867,16 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
             "regionalNativePairCount", "regionalDerivedHoldPairCount",
             "openMeteoPairCount",
         ))
+        or value["assignedPairCount"]
+            != EXPECTED_TOTAL_PAIR_COUNT - value["missingPairCount"]
+        or value["assignedPairCount"] != sum(value[key] for key in (
+            "dmiVerifiedPairCount", "copernicusBalticPairCount",
+            "copernicusAmm15PairCount", "regionalNativePairCount",
+            "regionalDerivedHoldPairCount", "openMeteoPairCount",
+        ))
+        or value["status"] != (
+            "READY" if value["missingPairCount"] == 0 else "READY_WITH_MISSING"
+        )
         or value["advisoryHistoryAvailablePairCount"]
             + value["advisoryHistoryMissingPairCount"]
             != value["advisoryHistoryRequiredPairCount"]
@@ -859,7 +891,8 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         "copernicusRecordRefsSha256", "regionalEvidenceSha256",
         "regionalPolicySha256", "regionalPairRefsSha256",
         "openMeteoDocumentSha256", "openMeteoRecordRefsSha256",
-        "supplementalAssignmentsSha256", "assignmentsSha256",
+        "supplementalAssignmentsSha256", "missingAssignmentsSha256",
+        "assignmentsSha256",
         "advisoryHistoryRequiredPairsSha256",
         "advisoryHistoryRecordRefsSha256",
         "advisoryHistoryAssignmentsSha256",
@@ -876,6 +909,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
             or value.get("copernicusBoundedProgressAccepted") is not False
             or value["regionalResidualPairCount"] != 0
             or value["openMeteoPairCount"] != 0
+            or value["missingPairCount"] != 0
             or value["copernicusBalticPairCount"] != 0
             or value["copernicusAmm15PairCount"] != 0
         ):
@@ -912,6 +946,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         REGIONAL_DMI_NATIVE: 0,
         REGIONAL_DMI_DERIVED_HOLD: 0,
         OPEN_METEO_COMBINED_CURRENT: 0,
+        MISSING: 0,
     }
     for assignment in assignments:
         part_id, valid_time = _validate_assignment_shape(assignment)
@@ -938,12 +973,20 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         or counts[REGIONAL_DMI_NATIVE] != value["regionalNativePairCount"]
         or counts[REGIONAL_DMI_DERIVED_HOLD] != value["regionalDerivedHoldPairCount"]
         or counts[OPEN_METEO_COMBINED_CURRENT] != value["openMeteoPairCount"]
-        or value["supplementalAssignmentCount"] != len(assignments) - counts[DMI_VERIFIED]
+        or counts[MISSING] != value["missingPairCount"]
+        or value["assignedPairCount"] != len(assignments) - counts[MISSING]
+        or value["supplementalAssignmentCount"]
+            != len(assignments) - counts[DMI_VERIFIED] - counts[MISSING]
         or canonical_sha256([
             row["assignmentSha256"]
             for row in assignments
-            if row["classification"] != DMI_VERIFIED
+            if row["classification"] not in {DMI_VERIFIED, MISSING}
         ]) != value["supplementalAssignmentsSha256"]
+        or canonical_sha256([
+            row["assignmentSha256"]
+            for row in assignments
+            if row["classification"] == MISSING
+        ]) != value["missingAssignmentsSha256"]
         or canonical_sha256(assignments) != value["assignmentsSha256"]
         or reference_text != value["productionReferenceAt"]
         or end_text != value["operationalRangeEndAt"]
@@ -1127,16 +1170,20 @@ def build_current_operational_closure(
             copernicus_source_stage_sha256=source_stage_sha256,
             copernicus_bounded_progress_accepted=bounded_progress_accepted,
             regional_evidence_sha256=canonical_sha256(regional_private),
-            require_complete=True,
+            require_complete=False,
         )
     except (KeyError, TypeError, ValueError, RuntimeError):
         _fail("OPEN_METEO_EVIDENCE_INVALID")
     open_meteo_assignments = _open_meteo_assignments(open_meteo)
+    missing_assignments = _missing_assignments(open_meteo)
 
     cop_keys = {(row["partId"], row["validTime"]) for row in cop_assignments}
     regional_keys = {(row["partId"], row["validTime"]) for row in regional_assignments}
     open_meteo_keys = {
         (row["partId"], row["validTime"]) for row in open_meteo_assignments
+    }
+    missing_keys = {
+        (row["partId"], row["validTime"]) for row in missing_assignments
     }
     open_meteo_required_keys = {
         (row["partId"], row["validTime"]) for row in open_meteo_required
@@ -1154,10 +1201,14 @@ def build_current_operational_closure(
     if (
         cop_keys & regional_keys
         or cop_keys & open_meteo_keys
+        or cop_keys & missing_keys
         or regional_keys & open_meteo_keys
-        or cop_keys | regional_keys | open_meteo_keys != complement_keys
-        or regional_keys | open_meteo_keys != residual_keys
-        or open_meteo_keys != open_meteo_required_keys
+        or regional_keys & missing_keys
+        or open_meteo_keys & missing_keys
+        or cop_keys | regional_keys | open_meteo_keys | missing_keys
+            != complement_keys
+        or regional_keys | open_meteo_keys | missing_keys != residual_keys
+        or open_meteo_keys | missing_keys != open_meteo_required_keys
     ):
         _fail("SUPPLEMENTAL_PARTITION_INVALID")
     if (
@@ -1172,6 +1223,7 @@ def build_current_operational_closure(
             *cop_assignments,
             *regional_assignments,
             *open_meteo_assignments,
+            *missing_assignments,
         ],
         key=lambda row: (row["validTime"], row["partId"]),
     )
@@ -1187,13 +1239,14 @@ def build_current_operational_closure(
             REGIONAL_DMI_NATIVE,
             REGIONAL_DMI_DERIVED_HOLD,
             OPEN_METEO_COMBINED_CURRENT,
+            MISSING,
         )
     }
     proof: dict[str, Any] = {
         "schemaVersion": SCHEMA_VERSION,
         "kind": KIND,
         "contractId": CONTRACT_ID,
-        "status": "READY",
+        "status": "READY" if counts[MISSING] == 0 else "READY_WITH_MISSING",
         "productionReferenceAt": reference_text,
         "operationalRangeEndAt": end_text,
         "targetCount": EXPECTED_TARGET_COUNT,
@@ -1208,11 +1261,15 @@ def build_current_operational_closure(
         "regionalResidualPairCount": len(regional_assignments),
         "openMeteoRequiredPairCount": len(open_meteo_required),
         "openMeteoPairCount": counts[OPEN_METEO_COMBINED_CURRENT],
+        "assignedPairCount": EXPECTED_TOTAL_PAIR_COUNT - counts[MISSING],
         "supplementalAssignmentCount": (
             len(cop_assignments) + len(regional_assignments)
             + len(open_meteo_assignments)
         ),
-        "missingPairCount": 0,
+        "missingPairCount": counts[MISSING],
+        "missingAssignmentsSha256": canonical_sha256([
+            row["assignmentSha256"] for row in missing_assignments
+        ]),
         "copernicusCompleteWithoutSourceStage": complete_without_stage,
         "copernicusSourceStageStatus": source_stage_status,
         "copernicusBoundedProgressAccepted": bounded_progress_accepted,
@@ -1248,7 +1305,7 @@ def build_current_operational_closure(
         "supplementalAssignmentsSha256": canonical_sha256([
             row["assignmentSha256"]
             for row in assignments
-            if row["classification"] != DMI_VERIFIED
+            if row["classification"] not in {DMI_VERIFIED, MISSING}
         ]),
         "assignmentsSha256": canonical_sha256(assignments),
         "assignments": assignments,

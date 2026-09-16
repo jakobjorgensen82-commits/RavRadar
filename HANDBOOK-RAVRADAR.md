@@ -1,6 +1,50 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.390
+**Håndbogsversion:** 4.0.391
+
+## 88.95 4.0.391 – Gode gamle vejrdata beholdes før et lokalt hul
+
+### Den faste regel for alle vejrkilder
+
+**Status – bindende regel; implementering og livebevis er i gang**
+
+RavRadar følger altid denne rækkefølge:
+
+1. Nye gyldige data erstatter gamle data.
+2. Ved et hul beholdes gamle data for præcis samme sted og tidspunkt, så
+   længe de stadig er gyldige.
+3. Først når både nye data mangler og den gamle værdi er udløbet, bliver
+   feltet `MISSING`.
+4. Et lokalt `MISSING` må ikke gøre resten af RavRadar ubrugelig.
+
+4.0.391 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=8727feba7227fa546861ec73091879ca9fec07b6375f81b219c752e5d25df733`.
+Det betyder, at releasegaten kontrollerer den samme implementering som denne
+regel beskriver.
+
+Det betyder, at et tomt eller modstridende nyt svar ikke må viske en god
+værdi væk. Hvis den gamle værdi stadig gælder den samme prognosetime og hele
+dens kildebevis er i orden, bruges den videre. Den bliver ikke for gammel,
+bare fordi den blev hentet i en tidligere RavRadar-kørsel.
+
+Kildeordenen er fortsat DMI, Copernicus Baltic, Copernicus AMM15, regional
+DMI og til sidst Open-Meteo. En ny god værdi fra en bedre kilde overtager.
+RavRadar gætter aldrig en manglende værdi og låner ikke fra en anden
+kystdel.
+
+Alle 673 kystdele og 118 timer skal stadig stå i resultatet. Det giver
+79.414 identiteter, men de kan være enten en valideret værdi eller et ærligt
+`MISSING`. Kun nul `MISSING` må kaldes et komplet vejrdatasæt, og RavRadar
+skal fortsat forsøge at lukke alle huller.
+
+Hvis et ærligt hul alligevel er tilbage, bliver kun den berørte kystdel,
+søgemåde og time utilgængelig. Resten af kortet og de øvrige scorer med
+gyldige data fortsætter. Har zonen mindst én anden gyldig kystdel, vises en
+tydeligt markeret delvis score med antallet af medregnede dele. Den må ikke
+bruges til kalibrering, og vinderen markeres usikker. Først når ingen del i
+den konkrete zone, søgemåde og time kan beregnes, bliver hele den konkrete
+zonescore utilgængelig. Fejl i identitet, kildebevis, fysik, overlap,
+datakontrakt eller sikkerhed er ikke lokale huller og stopper stadig.
 
 ## 88.94 4.0.390 – DMI og Copernicus får én samlet lang indhentning
 
@@ -1168,7 +1212,7 @@ en midlertidig DMI-sti. 4.0.377 bruger den installerede kanoniske cache og
 binder en efterfølger på samme vejrtid til det eksakte migrationsbevis.
 4.0.380 er låst med
 `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
-Den tilhørende `modelBundleSha256=65148b4ae3e0bee78826f82cefe8d002ec5b0adcc17f97a1aca81ef1b2c095fa` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere skal matche runtime og releasegate.
+Den tilhørende `modelBundleSha256=8727feba7227fa546861ec73091879ca9fec07b6375f81b219c752e5d25df733` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere skal matche runtime og releasegate.
 
 Efter Astra-gennemgangen installerer den providerfri code-only-vej den eksakte
 assistent, samler alle fire uafhængige prewrite-kontroller og håndterer
@@ -1179,7 +1223,7 @@ stop. Målrettede lokale kontroller er grønne; dette er endnu ikke et livebevis
 Den private Candidate G-rollbackbinding er
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og
-`modelBundleSha256=7fe45de727963d9cbf0285465b48dbef1e11e4b8ba1f4469c9dea59d8ccfd97b`
+`modelBundleSha256=65d26045e5ecd760f165fe8b7cef1d1e91ec0b2b96310a018be87a1e4c1a2959`
 over 57 transitive filer. Candidate G er ikke samtidig offentlig fallback. Den
 maskinlæsbare autoritet er `version.json.releaseContract.modelBindings`.
 Commit, én exact-head PR-gate, merge, providerfri code-only-deploy,
@@ -1390,7 +1434,7 @@ Dette afsnit beskriver det historiske 4.0.321-checkpoint, hvor Candidate G endnu
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `81045427e86a26b7c853a1f8832aece9f73afc2a4092c5292ec9e6730154b8a2` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `3b9b0fd53b02e18fa2c3b85efe3a2108fb488e9c1ae738b998ec0476e932292c` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

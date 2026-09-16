@@ -1,10 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.390';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.391';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.390';
+} from '../core/ravscore-model-contract.js?v=4.0.391';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -24,18 +24,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.390';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.391';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.390';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.391';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.390';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.391';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.390';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.391';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.390';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.391';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -459,6 +459,15 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
     &&(bounds.lower!==bounds.upper||bounds.rawLower!==bounds.rawUpper)) {
     throw new Error(label + ' har et ikke-sammenfaldende FULL_HISTORY-interval.');
   }
+  if (!ranked && value.status === 'partial-zone'
+    && (!Number.isSafeInteger(value.validPartCount) || value.validPartCount < 1
+      || !Number.isSafeInteger(value.expectedPartCount)
+      || value.validPartCount >= value.expectedPartCount
+      || value.comparisonPartCount !== value.validPartCount
+      || value.calibrationEligible !== false
+      || value.winningPartUncertain !== true)) {
+    throw new Error(label + ' har ugyldige metadata for delvis lokal dækning.');
+  }
   if (!ranked) {
     if (typeof value.winningPartUncertain !== 'boolean'
       || !Number.isSafeInteger(value.possibleWinningPartCount)
@@ -496,8 +505,9 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
       || JSON.stringify(ids)!==JSON.stringify([...ids].sort())
       || !value.possibleWinningParts.some(part=>part.partId===value.winningPartId
         && part.score===value.score)
-      || value.winningPartUncertain !== (value.scoreQuality==='HISTORY_INCOMPLETE'
-        && ids.some(partId=>partId!==value.winningPartId))) {
+      || value.winningPartUncertain !== (value.status==='partial-zone'
+        || (value.scoreQuality==='HISTORY_INCOMPLETE'
+          && ids.some(partId=>partId!==value.winningPartId)))) {
       throw new Error(label + ' har en inkonsistent mulig-vinder-rækkefølge.');
     }
   }

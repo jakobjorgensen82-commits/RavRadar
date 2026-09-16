@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.391 gyldig fastholdelse før missing
+
+Arbejd i `RavRadar-4.0.366`, branch `codex/4.0.391-missing-tolerant`, baseret
+på 4.0.390-main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
+
+Bootstrap `35081537023` gennemførte alle providerled og gemte cacher. Den
+sluttede ved den gamle globale nul-missing-gate med 84 forsøgte
+provider-negative par; Open-Meteo ramte ikke tidsbudgettet.
+
+Bindende DEC-0173-rækkefølge: ny gyldig værdi → gammel fortsat gyldig værdi
+for eksakt `(partId, validTime)` → lokalt `MISSING`. Lokal missing må kun
+ramme berørt del/mode/time. 79.414 identiteter, ærlig komplethedsstatus,
+kildeprioritet og integritetsgates består. DMI-, Copernicus-, regional- og
+Open-Meteo-fastholdelse, lokal delvis score, closure/handoff, modelbinding,
+append-only migration og releasehukommelse er implementeret. Den målrettede
+lokale matrix inkl. 210/673 er grøn. Næste trin er commit/push, én exact-head
+sourcegate, merge og én normal weather. Scheduler pauset. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.390 forlænget post-cutover-bootstrap
 
 Arbejd i `RavRadar-4.0.366`, branch

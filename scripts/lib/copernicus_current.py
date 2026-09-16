@@ -1989,10 +1989,11 @@ def select_required_records(
     recordId/acquisitionId is equal, together with the source/product/dataset,
     request and sampling policies. Request extent/subset identities may differ
     for byte-independent downloads of the same exact physical tuple. Conflicting
-    top tuples make that source ineligible for this pair, including its older
-    rows; another source can win, or the pair stays honestly missing. A strictly
-    newer unambiguous acquisition can subsequently restore that source. Inputs
-    are never removed or changed by this selection.
+    top tuples make only that acquisition instant ineligible. An older,
+    unambiguous and still horizon-valid row from the same source is tried before
+    the next source and before MISSING. A strictly newer unambiguous acquisition
+    subsequently wins as usual. Inputs are never removed or changed by this
+    selection.
     """
     acquisition_by_id = {row["acquisitionId"]: _validate_acquisition(row) for row in acquisitions}
     by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -2015,17 +2016,28 @@ def select_required_records(
         record = None
         for source in sorted(candidates_by_source, key=lambda value: (source_rank.get(value, len(source_rank)), value)):
             candidates = candidates_by_source[source]
-            newest = max(acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] for row in candidates)
-            top = [row for row in candidates if acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] == newest]
-            first_tuple = {key: top[0][key] for key in tuple_fields}
-            first_policy = {key: acquisition_by_id[top[0]["acquisitionId"]][key] for key in policy_fields}
-            if any({key: row[key] for key in tuple_fields} != first_tuple
-                   or {key: acquisition_by_id[row["acquisitionId"]][key] for key in policy_fields} != first_policy
-                   for row in top[1:]):
-                continue
-            # IDs only choose between already-proven physical equivalents.
-            record = min(top, key=lambda row: row["recordId"])
-            break
+            acquisition_times = sorted({
+                acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"]
+                for row in candidates
+            }, reverse=True)
+            for acquisition_time in acquisition_times:
+                top = [
+                    row for row in candidates
+                    if acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] == acquisition_time
+                ]
+                first_tuple = {key: top[0][key] for key in tuple_fields}
+                first_policy = {key: acquisition_by_id[top[0]["acquisitionId"]][key] for key in policy_fields}
+                if any({key: row[key] for key in tuple_fields} != first_tuple
+                       or {key: acquisition_by_id[row["acquisitionId"]][key] for key in policy_fields} != first_policy
+                       for row in top[1:]):
+                    # A bad new revision cannot erase an older valid value for
+                    # the exact pair. Continue within this source first.
+                    continue
+                # IDs only choose between already-proven physical equivalents.
+                record = min(top, key=lambda row: row["recordId"])
+                break
+            if record is not None:
+                break
         if record is None:
             missing.append(normalized)
             continue

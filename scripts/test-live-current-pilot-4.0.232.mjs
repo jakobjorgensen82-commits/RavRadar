@@ -265,8 +265,8 @@ assert.equal(controlledLiveCurrentEnabled({
   },
 }), false, 'tampered advisory-history completeness must fail the whole operation seal closed');
 
-const OPERATIONAL_CLOSURE_CONTRACT = 'current-operational-673x118-closure-ready-v2';
-const OPERATIONAL_ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v2';
+const OPERATIONAL_CLOSURE_CONTRACT = 'current-operational-673x118-closure-v3';
+const OPERATIONAL_ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v3';
 const TOTAL_OPERATIONAL_PAIRS = 673 * 118;
 const REGIONAL_SOURCE_ASSET_SHA = sha256('fixture-regional-source-asset');
 const REGIONAL_SOURCE_PROOF_SHA = sha256('fixture-regional-source-proof');
@@ -373,8 +373,8 @@ const buildOperationalLive = rawEntries => {
       source: entry.source,
     }));
   const operationalClosure = {
-    schemaVersion: 2,
-    contractId: 'current-operational-673x118-closure-safe-v2',
+    schemaVersion: 3,
+    contractId: 'current-operational-673x118-closure-safe-v3',
     closureId,
     status: 'READY',
     productionReferenceAt: REFERENCE_AT,
@@ -392,8 +392,10 @@ const buildOperationalLive = rawEntries => {
     regionalResidualPairCount: regionalNativePairCount,
     openMeteoRequiredPairCount: 0,
     openMeteoPairCount: 0,
+    assignedPairCount: TOTAL_OPERATIONAL_PAIRS,
     supplementalAssignmentCount: entries.length,
     missingPairCount: 0,
+    missingAssignmentsSha256: sha256([]),
     copernicusCompleteWithoutSourceStage: false,
     copernicusSourceStageStatus: 'READY',
     copernicusBoundedProgressAccepted: false,

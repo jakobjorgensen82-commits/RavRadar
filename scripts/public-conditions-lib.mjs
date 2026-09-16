@@ -147,8 +147,9 @@ function projectPossibleWinningParts(value) {
       && part.score === value.score)) {
     throw new Error('Public RavScore possible winners are not deterministic or lack the lower-bound winner');
   }
-  const expectedUncertain = value.scoreQuality === 'HISTORY_INCOMPLETE'
-    && rows.some(part => part.partId !== value.winningPartId);
+  const expectedUncertain = value.status === 'partial-zone'
+    || (value.scoreQuality === 'HISTORY_INCOMPLETE'
+      && rows.some(part => part.partId !== value.winningPartId));
   if (value.winningPartUncertain !== expectedUncertain) {
     throw new Error('Public RavScore winning-part uncertainty flag is inconsistent');
   }
@@ -557,6 +558,17 @@ function assertPublicScoreQuality(value) {
     && (value.scoreSemantics !== 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
       || typeof value.conservativeTailResetApplied !== 'boolean')) {
     throw new Error('Public HISTORY_INCOMPLETE RavScore has invalid enclosing-bound semantics');
+  }
+  if (value.status === 'partial-zone'
+    && (!safeCount(value.validPartCount) || value.validPartCount < 1
+      || !safeCount(value.expectedPartCount)
+      || value.validPartCount >= value.expectedPartCount
+      || value.comparisonPartCount !== value.validPartCount
+      || value.calibrationEligible !== false
+      || value.winningPartUncertain !== true
+      || !Array.isArray(value.reasons) || value.reasons.length < 1
+      || !Array.isArray(value.unavailableParts))) {
+    throw new Error('Public partial-zone RavScore has invalid local coverage metadata');
   }
   assertPublicScoreBounds(value);
   projectPossibleWinningParts(value);

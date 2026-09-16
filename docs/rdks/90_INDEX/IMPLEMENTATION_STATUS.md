@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.391 gyldig fastholdelse før missing
+
+- [x] Merge 4.0.390 som main `2dcf571a00572ddd67a9fe18dd077d8c97336a7f`.
+- [x] Gennemfør providerbootstrap `35081537023`; DMI, Copernicus og Open-Meteo gemte fremgang.
+- [x] Afgræns slutstoppet til den globale nul-missing-gate efter 84 forsøgte provider-negative par; Open-Meteo ramte ikke tidsbudgettet.
+- [x] Fastlæg bindende prioritet: ny gyldig → ældre fortsat gyldig for eksakt par → lokalt `MISSING`.
+- [x] Gennemgå og ret alle providercacher, så en ny tom eller modstridende levering ikke skygger for en ældre gyldig eksakt værdi.
+- [x] Materialisér 79.414 identiteter som valideret værdi eller eksplicit `MISSING`; lad kun berørt del/mode/time blive utilgængelig.
+- [x] Bestå afgrænsede retention-, closure-, state-, handoff-, workflow-, RDKS- og versionskontroller.
+- [ ] Commit/push, exact-head sourcegate, merge og kør én normal weather på de bevarede cacher.
+- [ ] Verificér levende numeriske scorer, ærlig lokal missing, kildeovertagelse og normal cachevedligeholdelse før scheduler.
+
+DEC-0173 er aktiv. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.390 forlænget providerbootstrap
 
 - [x] Merge 4.0.389 som main `bf8eb739476631ec534df3b2e3ba75e7370a3c29`.
