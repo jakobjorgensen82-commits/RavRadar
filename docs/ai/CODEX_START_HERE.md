@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.386 retter Open-Meteos tidsbegrænsede restkø
+
+4.0.385 er merged som main `879f4644d391b41cb52c7f5435551c368fedd1fa`.
+Den private runtime blev gendannet korrekt i de almindelige runs
+`35043360563` og `35046314979`; DMI, Copernicus og Open-Meteo genbrugte og
+gemte cachefremgang. Første run reducerede reelle mangler fra 59.382 til
+33.383. Næste run startede med 33.656, men Open-Meteo hentede kun 244 og
+sluttede med 33.412.
+
+Rodårsagen er den stabile sorterede Open-Meteo-kø: hver tidsbegrænset kørsel
+begyndte ved de samme svære/null-batches, så senere batches kunne sulte.
+Lokal 4.0.386 roterer hele stabile batches efter UTC-time, kvarter og
+GitHub-forsøg. Providerbevis, acceptregler, cacheformat og hård nul-missing-
+gate er uændrede. Måltests er grønne, og geodata ændrer kun versionsfelt.
+Scheduler er pauset. Næste: docs/RDKS-kontrol, commit/push, én exact-head
+sourcegate, merge, genaktivér og kør én normal `force=false` weather. Ingen
+oneoff. DEC-0168. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – central version 2 aktiv; 4.0.385 retter normal weatherstart
 
 4.0.384 bestod exact-head sourcegate 35040475553, blev merged gennem PR

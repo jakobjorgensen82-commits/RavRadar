@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.386 Open-Meteo-kørotation
+
+- [x] Merge 4.0.385 som main `879f4644` og gennemfør to almindelige tidsbegrænsede weather-runs.
+- [x] Bevis live private restore, DMI-rotation og bevaret Open-Meteo-, Copernicus- og DMI-cachefremgang.
+- [x] Afgræns fortsatte 33.412 huller til gentaget start i samme sorterede restkø.
+- [x] Implementér rotation af hele stabile batches efter UTC-time, kvarter og GitHub-forsøg.
+- [x] Undtag proaktiv ældst-først-refresh og hold providerbevis adskilt fra schedulerplanen.
+- [x] Tilføj sikre rotationsdiagnoser, releasegate-markører og måltest for tids-/retryspredning og sandfærdig unresolved-status.
+- [x] Bestå Open-Meteo fallback- og donorbankmåltests samt Python-syntaks.
+- [x] Synkronisér 4.0.386-releasehukommelse og bevis kun versionsfelt i begge geodatafiler.
+- [ ] Bestå RDKS-/versionskontrol, commit/push og én exact-head sourcegate; merge derefter.
+- [ ] Genaktivér scheduler og kør én normal `force=false` weather; kræv nul reelle mangler før deploy.
+- [ ] Verificér levende version, numeriske scorer, hele hjemmesiden og resterende roadmap. Ingen oneoff.
+
+DEC-0168 er aktiv. DEC-0167 er livebevist.
+
 # Aktuel implementeringsstatus – lokal 4.0.385 normal-weather restore
 
 - [x] Bestå 4.0.384 exact-head 35040475553, merge PR #327 som main 2628ddef.

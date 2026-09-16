@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.386 fordeler Open-Meteos restarbejde
+
+4.0.385 er merged som main `879f4644`. To almindelige weather-runs beviste
+restore og cachefremgang, men også en selvstændig køfejl: den stabile
+sorterede Open-Meteo-kø begyndte ved samme batch i hver tidsbegrænset
+kørsel. Tidlige svære/null-batches kunne dermed gentage sig, mens senere
+reelle huller ikke blev besøgt.
+
+4.0.386 roterer hele batches med et UTC-baseret tids- og retry-slot. Den
+ændrer ikke batchindhold, provideraccept, cacheformat eller den hårde
+nul-missing-gate. Scheduler er pauset til merge; livebeviset er én normal
+`force=false`-kørsel med den allerede gemte cache. Ingen oneoff. DEC-0168.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.385 åbner den normale weathervej
 
 4.0.384 bestod exact-head 35040475553, PR #327 og central recovery

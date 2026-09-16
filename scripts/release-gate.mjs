@@ -803,6 +803,15 @@ for(const marker of [
   ok(openMeteoFill.includes(marker),`Open-Meteo-fyldningen mangler eksakt, statusbundet residual: ${marker}`);
 }
 for(const marker of [
+  'def open_meteo_rotation_slot(',
+  'quarter_in_hour * batch_count // 4',
+  'GITHUB_RUN_ATTEMPT',
+  'initial_batch_parts[rotation_slot:]',
+  'stats["rotationSlot"] = rotation_slot',
+]){
+  ok(openMeteoFill.includes(marker),`Open-Meteo-fyldningen mangler retfærdig normalrotation: ${marker}`);
+}
+for(const marker of [
   'validate_current_operational_availability_ledger(',
   'require_complete=True',
   'cop_keys | regional_keys | open_meteo_keys != complement_keys',

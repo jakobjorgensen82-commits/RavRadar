@@ -1,6 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.385
+**Håndbogsversion:** 4.0.386
+
+## 88.90 4.0.386 – Open-Meteo fortsætter et nyt sted i restkøen
+
+### Aktuel status – almindelig vejrvedligeholdelse
+
+**Status – lokal rettelse klar; GitHub-kontrol og én normal kørsel mangler**
+
+**Kort fortalt:** De almindelige vejrkørsler gemte deres fremgang korrekt,
+men Open-Meteo begyndte hver tidsbegrænset passage ved samme sted i listen
+over huller. Hvis de første grupper gav langsomme, tomme eller negative svar,
+kunne køretiden blive brugt dér igen, mens senere grupper aldrig blev prøvet.
+
+4.0.386 deler fortsat listen i de samme stabile grupper, men flytter gruppen,
+der prøves først, efter UTC-time, kvarter og et eventuelt GitHub-retry. Hele
+grupper flyttes samlet. Det betyder, at en svær gruppe ikke kan blokere alle
+andre almindelige kørsler.
+
+De to levende kørsler beviste samtidig, at den private cache ikke blev tabt:
+første kørsel reducerede de reelle mangler fra 59.382 til 33.383, og næste
+kørsel gendannede den fremgang. Problemet var den gentagne rækkefølge, ikke
+manglende lagring.
+
+Rettelsen ændrer ikke, hvilke svar der godkendes, providerprioriteten,
+RavScore, geometrien eller cacheformatet. En kørsel skal stadig ende med
+præcis nul reelle mangler, før den må bygge og deploye. Efter merge køres én
+almindelig `force=false`-kørsel med den gemte cache. Ingen oneoff.
+
+4.0.386 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 
 ## 88.89 4.0.385 – Den normale vejrkørsel får sin private arbejdsmappe
 

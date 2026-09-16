@@ -665,6 +665,46 @@ def split_unresolved_work(
     return []
 
 
+def open_meteo_rotation_slot(
+    acquisition_at: datetime,
+    *,
+    batch_count: int,
+) -> int:
+    """Return a queue-length-aware head for bounded normal acquisition.
+
+    Provider admissions and negative observations have different retention
+    rules and must not double as a scheduler cursor.  Instead, the actual UTC
+    acquisition slot rotates whole, stable batches.  Hourly movement advances
+    one batch, quarter-hour runs spread across the remaining queue, and a
+    GitHub retry advances once more.  Difficult/null batches can therefore not
+    monopolize every bounded run while later real gaps remain unvisited.
+    """
+    if (
+        not isinstance(acquisition_at, datetime)
+        or acquisition_at.utcoffset() is None
+    ):
+        raise ValueError("Open-Meteo scheduler acquisition time is invalid")
+    if (
+        isinstance(batch_count, bool)
+        or not isinstance(batch_count, int)
+        or batch_count < 1
+    ):
+        raise ValueError("Open-Meteo scheduler batch count is invalid")
+    try:
+        github_attempt = int(os.getenv("GITHUB_RUN_ATTEMPT", "1"))
+    except ValueError:
+        raise ValueError("Open-Meteo scheduler attempt metadata is invalid") from None
+    if not 1 <= github_attempt <= 100:
+        raise ValueError("Open-Meteo scheduler attempt metadata is invalid")
+    utc_acquisition = acquisition_at.astimezone(timezone.utc)
+    quarter_in_hour = utc_acquisition.minute // 15
+    return (
+        int(utc_acquisition.timestamp() // 3600)
+        + quarter_in_hour * batch_count // 4
+        + github_attempt - 1
+    ) % batch_count
+
+
 def fetch_records(
     required: list[dict[str, str]],
     targets: dict[str, dict[str, Any]],
@@ -702,6 +742,16 @@ def fetch_records(
         part_ids[start:start + BATCH_SIZE]
         for start in range(0, len(part_ids), BATCH_SIZE)
     ]
+    rotation_slot = 0
+    if initial_batch_parts and acquired_at is None and not preserve_input_order:
+        rotation_slot = open_meteo_rotation_slot(
+            datetime.now(timezone.utc),
+            batch_count=len(initial_batch_parts),
+        )
+        initial_batch_parts = (
+            initial_batch_parts[rotation_slot:]
+            + initial_batch_parts[:rotation_slot]
+        )
     batches = [
         {
             part_id: sorted(required_by_part[part_id])
@@ -711,6 +761,8 @@ def fetch_records(
     ]
     initial_batch_keys = [work_pair_keys(work) for work in batches]
     stats = initial_fetch_diagnostics(len(batches))
+    stats["rotationSlot"] = rotation_slot
+    stats["rotationApplied"] = bool(rotation_slot)
     if diagnostics is not None:
         diagnostics.clear()
         diagnostics.update(stats)
