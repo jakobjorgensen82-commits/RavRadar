@@ -1,8 +1,8 @@
 // Compatibility markers for regression contract: Originalen kunne ikke gendannes; listHandbookReviews
-import { currentSession, requireFreshSession } from './auth-service.js?v=4.0.386';
-import { readAdminDocumentNow, saveAdminDocumentNow } from './admin-document-store.js?v=4.0.386';
-import { listProfiles } from './permissions-service.js?v=4.0.386';
-import { createHandbookReviewProbe } from './handbook-review-store.js?v=4.0.386';
+import { currentSession, requireFreshSession } from './auth-service.js?v=4.0.387';
+import { readAdminDocumentNow, saveAdminDocumentNow } from './admin-document-store.js?v=4.0.387';
+import { listProfiles } from './permissions-service.js?v=4.0.387';
+import { createHandbookReviewProbe } from './handbook-review-store.js?v=4.0.387';
 
 const DOCUMENTS=['water-level-station-routing','direction-reviews','coastline-overrides'];
 const clone=value=>value==null?value:structuredClone(value);

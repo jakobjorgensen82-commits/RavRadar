@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.387 genbinder aktuel model uden vejr
+
+4.0.386 er merged og kildekontrolleret. Det første normale run nåede ingen
+provider, fordi en reel ændring i en fuld-runtime-kontrakt ikke må læse en
+gammel privat pakke direkte. Den rigtige providerfrie code-only-rute blev
+startet, men dens predecessor-vagt accepterede kun historisk modelbinding,
+selv om den aktive integrerede binding allerede var aktuel.
+
+4.0.387 åbner samme eksakte `CONTRACT_ONLY_REBIND` for action `integrated`.
+Alle modeltransitioner forbliver afvist, og en databasemigration kører stadig
+kun ved historisk binding. Først code-only, derefter normal weather. Scheduler
+er pauset og ingen oneoff bruges. DEC-0169.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.386 fordeler Open-Meteos restarbejde
 
 4.0.385 er merged som main `879f4644`. To almindelige weather-runs beviste

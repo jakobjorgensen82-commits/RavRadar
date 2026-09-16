@@ -203,6 +203,19 @@ const predecessorPreparationStart = workflow.indexOf(
 const predecessorPreparationEnd = workflow.indexOf('\n      - name:', predecessorPreparationStart + 1);
 const predecessorPreparation = workflow.slice(predecessorPreparationStart, predecessorPreparationEnd);
 assert.ok(predecessorPreparation.includes('current-private-runtime-source.json'));
+for (const marker of [
+  'case "${{ steps.operational-action.outputs.action }}" in',
+  'integrated|integrated-historical-maintenance) ;;',
+  'Private runtime contract rebind requires active integrated maintenance.',
+]) assert.ok(predecessorPreparation.includes(marker),
+  `Predecessor-rebind mangler same-binding integrated-ruten: ${marker}`);
+assert.ok(!predecessorPreparation.includes(
+  'test "${{ steps.operational-action.outputs.action }}" = "integrated-historical-maintenance"',
+), 'Same-binding integrated kodeændringer må ikke afvises før contract-only rebind');
+for (const forbiddenAction of ['candidate-execute', 'candidate-maintenance', 'integrated-return', 'integrated-cutover']) {
+  assert.ok(!predecessorPreparation.includes(forbiddenAction),
+    `Predecessor-rebind må ikke åbne for en modeltransition: ${forbiddenAction}`);
+}
 assert.ok(!predecessorPreparation.includes('predecessor=fa418f43'),
   'Efterfølgende kode-only-rettelser må ikke falde tilbage til den oprindelige forgænger');
 assert.ok(!workflow.includes('.[$field] // ""'),

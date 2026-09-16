@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-16 – 4.0.386 er main; privat kontraktgenbinding rettes i 4.0.387
+
+4.0.386 bestod exact-head `35050098674`, blev merged gennem PR #329 som main
+`c38333549a4bcabe6884f88b5611ae61300ae44b`. Open-Meteo-rotationen er dermed
+i main, men endnu ikke livebevist hos provideren.
+
+Normalrun `35050697588` fandt de beskyttede runtimegenerationer, men afviste
+begge som `MODEL_OR_CONTRACT_INELIGIBLE`. Det var korrekt: Open-Meteo-filen er
+del af `fullRuntimeContractSha256`, så den gamle pakke må først genbindes
+eksakt til ny kode. Ingen provider, write eller deploy kørte.
+
+Providerfri code-only `35051090133` valgte korrekt same-binding action
+`integrated`. Direkte restore blev afvist som forventet, men predecessor-
+steppet krævede fejlagtigt `integrated-historical-maintenance` og stoppede før
+migration, writes og deploy. Lokal 4.0.387 tillader den eksisterende eksakte
+`CONTRACT_ONLY_REBIND` på begge integrerede maintenance-actions, mens alle
+modeltransitioner og unødvendig databasemigration forbliver afvist. Scheduler
+er pauset. Den offentlige side er fortsat 4.0.383-nøddrift. Ingen oneoff.
+DEC-0169.
+
 # NYESTE SANDHED – 2026-09-16 – 4.0.385 restore virker; 4.0.386 retter kørotation
 
 4.0.385 er merged som main `879f4644d391b41cb52c7f5435551c368fedd1fa`.

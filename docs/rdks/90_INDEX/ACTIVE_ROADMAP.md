@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.387 fra ny vejrkodekontrakt til bevaret cache
+
+1. [x] Bestå 4.0.386 exact-head `35050098674`, merge PR #329 som main `c3833354` og behold schedulerkontrol.
+2. [x] Afgræns normalrun `35050697588` til forventet kontraktafvisning før providers og writes.
+3. [x] Kør eksisterende providerfri code-only og afgræns `35051090133` til for snæver actionvagt før predecessor-migration.
+4. [x] Tillad kun `integrated` og `integrated-historical-maintenance` på eksakt `CONTRACT_ONLY_REBIND`; behold alle modeltransitioner afvist.
+5. [x] Bestå målrettet code-only-kontrakttest.
+6. [x] Synkronisér version/RDKS/håndbog, bevis rent geodataversionsfelt og bestå de afgrænsede slutkontroller.
+7. [ ] Commit/push og bestå én exact-head sourcegate.
+8. [ ] Merge og kør providerfri code-only; kræv byteidentiske vejr-/score-/geometridata, privat publish, Pages og central closure.
+9. [ ] Genaktivér scheduler og kør én normal `force=false` weather; bevis DEC-0168-rotation og nul reelle mangler før deploy. Ingen oneoff.
+10. [ ] Verificér offentlig version, numeriske scorer, hovedkort, begge søgemåder, Om RavRadar, admin og privacy; revurdér resterende roadmap.
+
+DEC-0169 er aktiv. Scheduler er pauset under genbindingen.
+
 # Aktiv roadmap – 4.0.386 fra bevaret cache til fair normal restfyldning
 
 1. [x] Bevis live, at 4.0.385 gendanner private cacher og lader DMI, Copernicus og Open-Meteo gemme fremgang.

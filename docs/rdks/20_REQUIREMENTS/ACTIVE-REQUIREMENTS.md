@@ -1,3 +1,16 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.387 same-binding code-only rebind
+
+- **REQ-4.0.387-SAME-BINDING-REBIND-001 – BINDENDE:** En aktiv `integrated`-model må bruge den eksakte predecessor- og `CONTRACT_ONLY_REBIND`-vej, når en reel kodekontraktændring gør direkte current-restore inkompatibel.
+- **REQ-4.0.387-ACTION-SCOPE-001 – BINDENDE:** Kun `integrated` og `integrated-historical-maintenance` må genbinde den private runtime. Candidate G, retur og cutover er forbudt.
+- **REQ-4.0.387-EXACT-PREDECESSOR-001 – BINDENDE:** Forgængerens source head skal være aktuel descriptors eksakte source og en forfader til ny main; restore sker med forgængerens model-/kontrakthashes før migration.
+- **REQ-4.0.387-BYTE-IDENTITY-001 – BINDENDE:** Contract-only må ikke ændre private payloadfiler, vejr, scorer, geometri eller målinger.
+- **REQ-4.0.387-NO-UNNEEDED-DB-001 – BINDENDE:** Databasebindingsmigration forbliver betinget af virkelig historisk binding og må ikke køre for same-binding `integrated`.
+- **REQ-4.0.387-PROVIDER-FREE-001 – BINDENDE:** Code-only må ikke indeholde eller kalde DMI-, Copernicus- eller Open-Meteo-credentials/providers.
+- **REQ-4.0.387-SOURCE-PROOF-001 – BINDENDE:** Code-only genbruger exact-head-PR-bevis på samme main og må ikke starte en ny sourcegate.
+- **REQ-4.0.387-ORDER-001 – BINDENDE:** Normal weather forbliver pauset til providerfri genbinding, Pages og central closure er afsluttet.
+
+DEC-0169 supplerer DEC-0168 uden at ændre selve Open-Meteo-rotationen.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.386 fair bounded Open-Meteo-kø
 
 - **REQ-4.0.386-STABLE-BATCH-001 – BINDENDE:** Restpar sorteres og opdeles deterministisk i stabile hele batches, før køens startpunkt flyttes.

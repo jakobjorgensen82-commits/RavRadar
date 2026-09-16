@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.387 åbner same-binding code-only-genbinding
+
+4.0.386 bestod sourcegate `35050098674`, PR #329 og main `c3833354`.
+Normalrun `35050697588` stoppede før providers/writes, fordi Open-Meteo-
+kodeændringen korrekt ændrede private runtimes fulde kontrakthash. Code-only
+`35051090133` valgte korrekt action `integrated`, men predecessor-steppet
+accepterede fejlagtigt kun `integrated-historical-maintenance` og stoppede før
+migration, writes og deploy.
+
+Lokal 4.0.387 tillader den eksisterende eksakte `CONTRACT_ONLY_REBIND` for
+både same-binding `integrated` og historisk integreret maintenance. Candidate
+G, retur og cutover er fortsat afvist; databasebindingsmigration forbliver kun
+historisk. Måltest er grøn. Scheduler er pauset. Næste: docs/geodatabevis,
+RDKS/version, commit/push, én exact-head, merge og providerfri code-only.
+Derefter én normal `force=false` weather for DEC-0168. Ingen oneoff. DEC-0169.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.386 retter Open-Meteos tidsbegrænsede restkø
 
 4.0.385 er merged som main `879f4644d391b41cb52c7f5435551c368fedd1fa`.

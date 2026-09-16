@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.387 same-binding code-only rebind
+
+- [x] Bestå 4.0.386 exact-head `35050098674`, merge PR #329 som main `c3833354`.
+- [x] Afgræns `35050697588` til ny fuld runtimekontrakt; ingen provider/write/deploy.
+- [x] Afgræns providerfri `35051090133` til `integrated` mod en for snæver historisk-only predecessor-vagt.
+- [x] Tillad eksakt predecessor- og `CONTRACT_ONLY_REBIND` for `integrated` og `integrated-historical-maintenance`.
+- [x] Afvis eksplicit Candidate G, return og cutover på rebind-ruten; behold DB-migration kun historisk.
+- [x] Bestå den målrettede code-only-kontrakttest.
+- [x] Synkronisér 4.0.387-releasehukommelse, geodatabevis, RDKS/version og målrettede slutkontroller.
+- [ ] Commit/push og bestå én exact-head sourcegate; merge derefter.
+- [ ] Kør providerfri code-only uden ny sourcegate internt.
+- [ ] Kræv privat publish, Pages og central closure; genaktivér derefter normal weather.
+- [ ] Kør én normal `force=false` weather og bevis Open-Meteo-rotation, nul huller, numeriske scorer og levende side. Ingen oneoff.
+
+DEC-0169 er aktiv. DEC-0168 er merged men afventer provider-livebevis.
+
 # Aktuel implementeringsstatus – lokal 4.0.386 Open-Meteo-kørotation
 
 - [x] Merge 4.0.385 som main `879f4644` og gennemfør to almindelige tidsbegrænsede weather-runs.

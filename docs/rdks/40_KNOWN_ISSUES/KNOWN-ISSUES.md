@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.387 retter same-binding contract-only-ruten
+
+- **ISSUE-4.0.386-OPEN-METEO-ROTATION – MERGED / LIVEBEVIS BLOKERET FØR PROVIDER:** Sourcegate, PR og main er grønne; normalrun nåede ikke provider på grund af nødvendig privat kontraktgenbinding.
+- **ISSUE-4.0.386-PRIVATE-CONTRACT-INELIGIBLE – FORVENTET OVERGANG:** Ændret Open-Meteo-producent ændrede fuld runtimekontrakt. Gammel cache må kun fortsætte gennem eksakt `CONTRACT_ONLY_REBIND`.
+- **ISSUE-4.0.386-CODE-ONLY-INTEGRATED-REJECT – RETTET LOKALT / LIVEBEVIS MANGLER:** Same-binding action `integrated` blev afvist af en historisk-only predecessor-vagt før migration. 4.0.387 tillader kun de to integrerede maintenance-actions.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Offentlig runtime er fortsat 4.0.383-nøddrift; code-only-genbinding og derefter komplet normal weather mangler.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – DELVIST GRØN:** DMI/cachegenbrug er bevist; Open-Meteos nye rotation afventer normal providerpassage efter 4.0.387.
+- **ISSUE-SITE-ACCEPTANCE – DELVIST GRØN / FULD GENNEMGANG MANGLER:** PWA/Facebook og søgemådeskift er visuelt grønne; frisk data, scorer og admin følger efter deploy.
+
+DEC-0169. Scheduler er pauset; ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-16 – restore er bevist; Open-Meteos restkø roteres i 4.0.386
 
 - **ISSUE-4.0.385-PRIVATE-RUNTIME-ROOT – LUKKET:** Begge normale runs gendannede de beskyttede cachefiler og nåede providers; ingen gammel runtime-rod var nødvendig.
