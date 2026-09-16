@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.388 retter Copernicus-journalens nul-overlap
+
+4.0.387 er levende efter sourcegate `35051800082`, PR #330, main
+`529f8888f7022232709a699ee5289a9dd52fdd99` og providerfri code-only
+`35052231130`. Offentlig side viser integreret 4.0.387 og 210/673, men gamle
+vejrdata holder den i nøddrift.
+
+Normalrun `35052715440` gennemførte DMI, gemte cachefremgang og stoppede i
+Copernicus før Open-Meteo/writes/deploy. En varigt gemt segmentjournalpost
+havde nul overlap med den aktuelle DMI-hulmatrix og blev korrekt afvist af
+strict source-stage. Lokal 4.0.388 filtrerer kun netop nul-overlap før stage;
+blandede immutable forsøg med mindst ét aktuelt par bevares hele.
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.388-copernicus-journal-rebase`. Direkte funktionsmåltest og
+Python-syntaks er grønne; den fulde lokale fixturetest kunne ikke starte,
+fordi den lokale runtime mangler `h5py`. Afslut docs/RDKS/geodatabevis,
+commit/push, én exact-head, merge, providerfri code-only og derefter almindelig
+weather med de gemte cacher. Ingen oneoff. DEC-0170. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.387 same-binding private rebind
 
 4.0.386 er main `c3833354` efter grøn exact-head `35050098674` og PR #329.

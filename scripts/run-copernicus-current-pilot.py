@@ -1202,17 +1202,25 @@ def journal_for_donor_projection(
     """
     acquisition_ids = {row["acquisitionId"] for row in shadow["acquisitions"]}
     masks = {(row["partId"], row["validTime"], row["source"]): row for row in bank["sourceMasks"]}
-    retained = [row for row in attempts if
-        (row["parsedRecordCount"] == 0 or row["acquisitionId"] in acquisition_ids)
-        and not any((mask := masks.get((pair["partId"], pair["validTime"], row["source"])))
-                    and parse_time(row["acquisitionAt"], "Attempt time") <=
-                        parse_time(mask["blockedThroughAcquisitionAt"], "Mask time")
-                    for pair in row["requestedPairs"])]
+    required = {(row["partId"], row["validTime"]) for row in required_pairs}
+    retained = [
+        row for row in attempts
+        if any(
+            (pair["partId"], pair["validTime"]) in required
+            for pair in row["requestedPairs"]
+        )
+        and (row["parsedRecordCount"] == 0 or row["acquisitionId"] in acquisition_ids)
+        and not any(
+            (mask := masks.get((pair["partId"], pair["validTime"], row["source"])))
+            and parse_time(row["acquisitionAt"], "Attempt time")
+                <= parse_time(mask["blockedThroughAcquisitionAt"], "Mask time")
+            for pair in row["requestedPairs"]
+        )
+    ]
     baltic = next(row for row in PRODUCTS if row["source"] == "copernicus-baltic-nemo")
     baltic_pairs = {(pair["partId"], pair["validTime"], row["productionReferenceAt"])
                    for row in retained if row["source"] == "copernicus-baltic-nemo"
                    for pair in row["requestedPairs"]}
-    required = {(row["partId"], row["validTime"]) for row in required_pairs}
     return [row for row in retained if row["source"] != "copernicus-nws-amm15"
             or all((pair["partId"], pair["validTime"]) not in required
                    or not eligible_target(target_identities[pair["partId"]], baltic)

@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.388 rebases Copernicus-journalen ærligt
+
+4.0.387 er online efter grøn exact-head `35051800082`, PR #330 og
+providerfri leverance `35052231130`. Normalrun `35052715440` gennemførte
+DMI og gemte fremgang, men en gammel Copernicus-segmentjournalpost med nul
+overlap mod aktuel DMI-hulmatrix stoppede strict source-stage før Open-Meteo,
+writes og deploy.
+
+4.0.388 kasserer kun journalforsøg uden et eneste aktuelt par. Et blandet
+immutable forsøg med mindst ét aktuelt par bevares helt, og positive
+donormålinger slettes ikke. Kompletheds- og valideringskrav er uændrede.
+Næste er én exact-head, merge, providerfri runtimegenbinding og en almindelig
+weatherfortsættelse på gemte cacher. Ingen oneoff. DEC-0170.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.387 genbinder aktuel model uden vejr
 
 4.0.386 er merged og kildekontrolleret. Det første normale run nåede ingen

@@ -1340,6 +1340,24 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     )
     assert fast_stage["attempts"] == [no_record_attempt]
 
+    # A durable journal can outlive the production-reference matrix that
+    # created it. Preserve immutable mixed attempts when at least one pair is
+    # still required, but discard an attempt that has no overlap at all before
+    # rebuilding the strictly validated source-stage progress.
+    disjoint_required_pairs = [{
+        "partId": TARGET["partId"],
+        "validTime": (VALID_TIME - timedelta(hours=1)).isoformat().replace(
+            "+00:00", "Z"
+        ),
+    }]
+    assert RUNNER_MODULE.journal_for_donor_projection(
+        [no_record_attempt],
+        bank=fast_state,
+        shadow=reused_projection,
+        required_pairs=disjoint_required_pairs,
+        target_identities={TARGET["partId"]: TARGET},
+    ) == []
+
     # Every completed segment first lands in a small fsynced receipt. The
     # receipt disappears only after the unchanged strict bank -> shadow ->
     # stage transaction succeeds; a failed transaction must leave it replayable.

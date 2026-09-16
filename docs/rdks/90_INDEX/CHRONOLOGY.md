@@ -1,3 +1,9 @@
+# 2026-09-16 – 4.0.388 fjerner nul-overlap fra Copernicus-segmentjournalen
+
+- 4.0.387 bestod sourcegate `35051800082`, PR #330 og code-only `35052231130`; integreret model er online som 4.0.387 med 210/673.
+- Normalrun `35052715440` gennemførte DMI og gemte fremgang, men stoppede før Open-Meteo og writes på en gammel segmentjournalpost uden overlap mod den aktuelle DMI-hulmatrix.
+- 4.0.388 filtrerer kun nul-overlap før strict source-stage. Blandede immutable forsøg med aktuelt overlap og validerede donorrecords bevares. DEC-0170.
+
 # 2026-09-16 – 4.0.387 genbinder en aktuel integreret model til ny vejrkodekontrakt
 
 - 4.0.386 bestod sourcegate `35050098674`, PR #329 og main `c3833354`.

@@ -1,3 +1,9 @@
+## 4.0.388 – Copernicus-journal følger den aktuelle DMI-hulmatrix (2026-09-16, lokal kandidat)
+
+- 4.0.387 bestod sourcegate `35051800082`, PR #330 og providerfri leverance `35052231130`; den integrerede model er levende som 4.0.387 på 210/673.
+- Normalrun `35052715440` gennemførte DMI og gemte fremgang, men stoppede før Open-Meteo og writes, fordi en gammel segmentjournalpost havde nul overlap med den aktuelle DMI-hulmatrix.
+- 4.0.388 fjerner kun nul-overlap-poster før strict source-stage. Blandede immutable poster med mindst ét aktuelt par bevares hele. Ingen data- eller komplethedsgate lempes. Se `CHANGELOG-4.0.388.md` og DEC-0170.
+
 ## 4.0.384 – central genoptagelse uden nyt deploy (2026-09-16, lokal kandidat)
 
 - PR #326/sourcegate `35034134953` gav main `11f101f8`; providerfri

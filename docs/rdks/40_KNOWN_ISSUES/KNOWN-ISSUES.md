@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-16 – modellen er online; normal Copernicus-fortsættelse rettes
+
+- **ISSUE-4.0.387-MODEL-DELIVERY – LUKKET:** Sourcegate `35051800082`, PR #330 og code-only `35052231130` leverede integreret 4.0.387 med 210/673 og central resealing.
+- **ISSUE-4.0.387-EMERGENCY-WEATHER – ÅBEN P0:** Modellen er online, men levende side viser nøddrift på gammel vejrreference og endnu ingen frisk numerisk rangliste.
+- **ISSUE-4.0.388-ZERO-OVERLAP-JOURNAL – RETTET LOKALT / LIVEBEVIS MANGLER:** En gammel segmentjournalpost uden aktuelle DMI-huller nåede strict source-stage og stoppede Copernicus. Den filtreres nu før stage; blandede poster med overlap bevares hele.
+- **ISSUE-4.0.388-FOLLOW-ON-REGISTRY – FØLGEFEJL:** Registry/cache-bindingen blev ugyldig, fordi det primære source-stage-checkpoint ikke kunne skrives. Der er ikke evidens for en selvstændig registryfejl.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – DELVIST GRØN:** DMI roterede og gemte fremgang; Copernicus/Open-Meteo-closure og Open-Meteo-rotation afventer rettet normal fortsættelse.
+- **ISSUE-SITE-ACCEPTANCE – DELVIST GRØN / FRISK DATA MANGLER:** Integreret version og 210/673 er grønne; numeriske scorer, begge modes og fuld dataoplevelse kræver frisk normal weather.
+
+DEC-0170. Scheduler er pauset; ingen oneoff og ingen produktionswrite fra det røde normalrun.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.387 retter same-binding contract-only-ruten
 
 - **ISSUE-4.0.386-OPEN-METEO-ROTATION – MERGED / LIVEBEVIS BLOKERET FØR PROVIDER:** Sourcegate, PR og main er grønne; normalrun nåede ikke provider på grund af nødvendig privat kontraktgenbinding.
