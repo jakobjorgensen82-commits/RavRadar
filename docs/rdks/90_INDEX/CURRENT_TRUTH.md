@@ -3548,3 +3548,31 @@ vedligeholdelsesbevis, ikke dokumenteret DMI-vækst.
 De målrettede tests er grønne. Exact-head, merge, providerfri code-only,
 normal liveproduktion, fulde gates, deploy og offentlig kontrol mangler.
 Scheduler er pauset. DEC-0178.
+
+# NYESTE SANDHED – 2026-09-16 – lokal 4.0.396 fører deldækning til prognosen
+
+4.0.395 er leveret gennem exact-head `35146153044`, PR #339, main
+`349a27021cd244c10b00ab777ba078edb7c1c312` og providerfri deploy
+`35146689278`. Den offentlige kode er 4.0.395, men vejrdataene er fortsat
+det ældre datasæt, fordi normalrun `35147366418` ikke nåede deploy.
+
+Normalrunnet gennemførte DMI, Copernicus, Open-Meteo, samlet closure og
+syvdøgnshistorik. Det stoppede derefter i den offentlige prognosebygning med
+`Public RavScore winning-part uncertainty flag is inconsistent`. Rodårsagen
+er bevist: zoneproducenten havde korrekt `partial-zone`, usikker vinder og
+deltællinger, men `buildLocalZoneScore` tabte disse topniveauoplysninger.
+
+Lokal 4.0.396 bevarer status, spredning, delantal, manglende dele og direkte
+modelbinding. Den strenge offentlige kontrol består og den målrettede
+partial-zone→offentlig-prognose-regression er grøn. Providercacherne fra
+`35147366418` er gemt. Exact-head, merge, code-only, normal genkørsel, fulde
+gates, deploy og offentlig friskheds-/scorekontrol mangler. Ingen oneoff;
+scheduler er pauset.
+
+Første exact-head `35155765121` gennemløb alle kontroller og bestod de øvrige
+runtime-, vejr-, privacy- og deploykritiske led. De eneste fejl var den gamle
+RavScore-bundlehash. 4.0.396 er nu deterministisk genbundet med rollback
+`da27b811…` og derefter integrated `d9ba75ed…`
+via ny append-only migration `20260917001500`; den anvendte forgænger
+`20260916120000` er ikke ændret. En ny exact-head på dette præcise head
+mangler fortsat før merge.

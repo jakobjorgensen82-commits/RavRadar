@@ -1897,3 +1897,15 @@ DEC-0177. Scheduler er pauset.
 - **ISSUE-4.0.395-LIVE – ÅBEN:** Exact-head, merge, providerfri code-only, én normal weather på gemte cacher, fulde gates, deploy og offentlig scorekontrol mangler.
 
 DEC-0178. Scheduler er fortsat pauset.
+
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.396 retter offentlig partial-zone-overførsel
+
+- **ISSUE-4.0.395-DELIVERY – LUKKET:** Exact-head `35146153044`, PR #339, main `349a2702` og providerfri deploy `35146689278` er grønne.
+- **ISSUE-4.0.395-PUBLIC-FORECAST-METADATA – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun `35147366418` gennemførte providerkæden og historikken, men den lokale scoreprojektion tabte `partial-zone`-status og deltællinger. Den offentlige usikkerhedskontrol afviste derfor et ellers korrekt delvist scoreresultat før deploy. 4.0.396 bevarer hele den nødvendige metadataallowliste.
+- **ISSUE-PUBLIC-FORECAST-FRESHNESS – ÅBEN P0:** Siden viser fortsat det ældre datasæt, indtil 4.0.396 er merged og én normal vejrkørsel har bestået fuld build, gates og deploy.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – ÅBEN VERIFIKATION:** Run `35147366418` havde ved 20:00Z-target 38.281 DMI-par før Copernicus og en samlet pre-Copernicus-union på 78.564. Targetændringen gør sammenligningen med ældre runs uren; næste grønne normalrun skal måles igen uden at kalde dette DMI-vækst.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Providerfremskridt er gemt, men frisk offentlig prognose og den efterfølgende planlagte vedligeholdelseskørsel er endnu ikke bevist.
+
+Ingen oneoff. Scheduler er pauset.
+
+- **ISSUE-4.0.396-BUNDLE-BINDING – RETTET LOKALT / EXACT-HEAD MANGLER:** Første exact-head `35155765121` bestod alle øvrige kritiske led, men den gamle bundlehash matchede naturligt ikke den ændrede `local-zone-score.js`. Rollback `da27b811…`, integrated `d9ba75ed…` og append-only migration `20260917001500` er genereret i afhængighedsrækkefølge; forgængeren er urørt.

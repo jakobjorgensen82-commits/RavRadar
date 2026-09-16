@@ -3725,3 +3725,27 @@ timer. Kun dele af fire collections blev opdateret inden for normalbudgettet.
 Progressionen er gemt; den næste normale kørsel skal måle fortsættelsen.
 Exact-head, merge, code-only, normal produktion, deploy og offentlig kontrol
 afventer. Scheduler er pauset. DEC-0178.
+
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.396 prognosemetadata
+
+4.0.395 blev leveret gennem exact-head `35146153044`, PR #339, main
+`349a27021cd244c10b00ab777ba078edb7c1c312` og code-only `35146689278`.
+Normalrun `35147366418` gennemførte alle tre providerled, closure og offentlig
+syvdøgnshistorik, men deployede ikke.
+
+Den konkrete stopfejl var ikke en ny score- eller vejrfejl. Zoneproducenten
+havde korrekt `partial-zone`, men den lokale resultatbygger tabte status,
+spredning, delantal, manglende dele og direkte modelbinding. Den offentlige
+kontrol så derfor en usikker vinder uden forklaringen om delvis dækning og
+stoppede sikkert.
+
+4.0.396 fører hele den validerede metadataallowliste videre. En målrettet
+regression sender samme `FULL_HISTORY partial-zone` gennem den offentlige
+prognose og er grøn. Fortsæt med version/RDKS, én exact-head, merge,
+code-only og én normal weather på de gemte caches. Ingen oneoff. Scheduler
+forbliver pauset til offentlig frisk prognose og fuld kæde er bevist.
+
+Første exact-head `35155765121` gennemførte hele kontrolløbet. Alle andre
+kritiske led bestod; kun den gamle RavScore-bundlehash fejlede. Bundlen er
+genbygget i rækkefølgen rollback `da27b811…` og integrated `d9ba75ed…`, og en ny 19. append-only migration
+`20260917001500` fører bindingen frem uden at ændre den anvendte forgænger.

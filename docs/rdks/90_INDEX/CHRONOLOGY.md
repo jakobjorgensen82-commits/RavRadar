@@ -1163,3 +1163,10 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - De 18 positioner er tre dele × seks yderste timer, hvor hverken direct eller begge naboer var komplette.
 - 4.0.395 bevarer eksakt 354-positioners proof, men et ærligt missing er lokalt `UNAVAILABLE` i stedet for en national stopfejl. DEC-0178.
 - Samme run viste ingen DMI-nettovækst: 39.309 → 38.660 ved et to timer nyere target; gemt progression og næste normale run skal bruges til fortsat driftsbevis.
+
+# 2026-09-16 – 4.0.396 fører deldækning gennem den offentlige prognose
+
+- 4.0.395 blev leveret via sourcegate `35146153044`, PR #339, main `349a2702` og code-only `35146689278`.
+- Normalrun `35147366418` gennemførte providerkæde, closure og historik, men stoppede før deploy, fordi lokalprojektionen tabte `partial-zone`-metadata.
+- 4.0.396 bevarer den validerede metadataallowliste og har en målrettet `partial-zone`→offentlig-prognose-regression. Ingen oneoff; scheduler pauset.
+- Exact-head `35155765121` bestod alle øvrige kritiske kontroller og fandt kun den gamle bundlehash. Rollback `da27b811…`, integrated `d9ba75ed…` og continuation `d20939c1…` føres frem gennem 19. append-only migration `20260917001500`; forgængeren er urørt.
