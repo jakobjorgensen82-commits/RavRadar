@@ -4423,6 +4423,8 @@ DEC-0178 er aktiv. Ingen oneoff.
 - [x] Bevar status, score-spredning, delantal, manglende dele og modelbinding i det lokale resultat.
 - [x] Bevis den præcise `FULL_HISTORY partial-zone` gennem den offentlige nationale prognose med målrettet regression.
 - [x] Ret den forældede lokale visningstest, så den genkender appens eksisterende fail-closed nøddata-gren i stedet for at afvise den som kodefejl.
+- [x] Kør første exact-head `35155765121` helt igennem; alle øvrige kritiske kontroller er grønne, og eneste stop er en forældet bundlehash.
+- [x] Genbyg RavScore-bundlen deterministisk og tilføj 19. append-only bindingmigration uden at omskrive den anvendte forgænger.
 - [ ] Bestå version/RDKS/geodatabevis og én exact-head sourcegate.
 - [ ] Commit/push, PR, merge og providerfri code-only-genbinding af 4.0.396.
 - [ ] Kør én almindelig weather på gemte cacher; verificér frisk 118-timers prognose, lokale huller, score, fulde gates og deploy.

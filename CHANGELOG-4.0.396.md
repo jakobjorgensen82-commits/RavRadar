@@ -31,3 +31,19 @@
   normal vejrkørsel med de allerede gemte providerfremskridt.
 - Ingen oneoff. Scheduler forbliver pauset, indtil frisk offentlig prognose,
   score og fuld produktionskæde er grønne.
+
+## RavScore-binding
+
+- Første exact-head-kørsel `35155765121` fortsatte hele kontrolforløbet og
+  bestod de øvrige runtime-, vejr-, privacy- og deploykritiske kontroller.
+  Den stoppede kun på en forældet RavScore-bundlehash, fordi
+  `local-zone-score.js` indgår i den forseglede modelclosure.
+- Den fælles resultatbygger indgår også i den private Candidate G-rollback.
+  Rollback blev derfor genbygget først til `da27b811…`; den afhængige
+  integrerede modelbundle blev derefter deterministisk genbundet til
+  `d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906`.
+  Continuation-kontrakten følger samme fælles kode og er genbundet til
+  `d20939c1b141a763fb20aa39b39506d79bf150860714bf1ce306f64d5314e7e6`.
+  Den allerede anvendte migration `20260916120000` forbliver urørt; den nye
+  append-only migration `20260917001500_partial_zone_public_metadata_binding`
+  fører bindingen frem som migration nummer 19.

@@ -134,10 +134,15 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260916120000_valid_data_before_local_missing_binding',
     filename: '20260916120000_valid_data_before_local_missing_binding.sql',
   }),
+  Object.freeze({
+    version: '20260917001500',
+    id: '20260917001500_partial_zone_public_metadata_binding',
+    filename: '20260917001500_partial_zone_public_metadata_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260916120000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260917001500');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

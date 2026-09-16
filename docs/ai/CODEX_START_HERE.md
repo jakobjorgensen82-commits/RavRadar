@@ -1112,3 +1112,9 @@ forkert score. 4.0.396 bevarer status, spredning, delantal, manglende dele og
 modelbinding. Den målrettede public-forecast-regression er grøn. Fortsæt med
 versions-/RDKS-bevis, én exact-head, merge, code-only og én normal weather på
 gemte cacher. Ingen oneoff; scheduler pauset. Sol/Ekstra høj.
+
+Exact-head `35155765121` beviste alle øvrige kritiske led og stoppede kun på
+den gamle RavScore-hash. Aktuel lokal closure er genbundet i rækkefølgen
+rollback `da27b811…` og integrated `d9ba75ed…`
+med append-only migration `20260917001500`; anvendt migrationshistorik er
+ikke omskrevet. Fortsæt med målrettet bevis og én ny exact-head.

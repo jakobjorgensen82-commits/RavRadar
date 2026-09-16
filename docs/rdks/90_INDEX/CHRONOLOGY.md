@@ -1169,3 +1169,4 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - 4.0.395 blev leveret via sourcegate `35146153044`, PR #339, main `349a2702` og code-only `35146689278`.
 - Normalrun `35147366418` gennemførte providerkæde, closure og historik, men stoppede før deploy, fordi lokalprojektionen tabte `partial-zone`-metadata.
 - 4.0.396 bevarer den validerede metadataallowliste og har en målrettet `partial-zone`→offentlig-prognose-regression. Ingen oneoff; scheduler pauset.
+- Exact-head `35155765121` bestod alle øvrige kritiske kontroller og fandt kun den gamle bundlehash. Rollback `da27b811…`, integrated `d9ba75ed…` og continuation `d20939c1…` føres frem gennem 19. append-only migration `20260917001500`; forgængeren er urørt.

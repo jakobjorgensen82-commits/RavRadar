@@ -3568,3 +3568,11 @@ partial-zone→offentlig-prognose-regression er grøn. Providercacherne fra
 `35147366418` er gemt. Exact-head, merge, code-only, normal genkørsel, fulde
 gates, deploy og offentlig friskheds-/scorekontrol mangler. Ingen oneoff;
 scheduler er pauset.
+
+Første exact-head `35155765121` gennemløb alle kontroller og bestod de øvrige
+runtime-, vejr-, privacy- og deploykritiske led. De eneste fejl var den gamle
+RavScore-bundlehash. 4.0.396 er nu deterministisk genbundet med rollback
+`da27b811…` og derefter integrated `d9ba75ed…`
+via ny append-only migration `20260917001500`; den anvendte forgænger
+`20260916120000` er ikke ændret. En ny exact-head på dette præcise head
+mangler fortsat før merge.

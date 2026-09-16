@@ -1,3 +1,16 @@
+# 2026-09-17 – metadatarettelse kræver ny append-only modelbinding
+
+- `local-zone-score.js` indgår i RavScore-bundlens transitive closure. Selv en
+  korrekt metadataoverførsel ændrer derfor bundlehash og skal bindes ærligt.
+- Aktuel integreret hash er `d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906`;
+  rollback er `da27b811159b768bc33972e6a20621782179a7b0b1f96232a6dfd946c2cadbc7`,
+  og continuation er `d20939c1b141a763fb20aa39b39506d79bf150860714bf1ce306f64d5314e7e6`.
+- En allerede anvendt Supabase-migration må aldrig omskrives. Migration
+  `20260917001500_partial_zone_public_metadata_binding` er det 19. append-only
+  led efter `20260916120000`.
+- Exact-head `35155765121` kørte hele kontrolsættet og bestod alle øvrige
+  kritiske led. En ændret exact-head kræver én ny GitHub-kildegate.
+
 # 2026-09-15 – privacyfilnavn må ikke forveksles med ubrugt browserkode
 
 - `admin.html` er et offentligt entrypoint, og hele dets statiske importclosure

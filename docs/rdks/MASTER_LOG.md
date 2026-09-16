@@ -3744,3 +3744,8 @@ regression sender samme `FULL_HISTORY partial-zone` gennem den offentlige
 prognose og er grøn. Fortsæt med version/RDKS, én exact-head, merge,
 code-only og én normal weather på de gemte caches. Ingen oneoff. Scheduler
 forbliver pauset til offentlig frisk prognose og fuld kæde er bevist.
+
+Første exact-head `35155765121` gennemførte hele kontrolløbet. Alle andre
+kritiske led bestod; kun den gamle RavScore-bundlehash fejlede. Bundlen er
+genbygget i rækkefølgen rollback `da27b811…` og integrated `d9ba75ed…`, og en ny 19. append-only migration
+`20260917001500` fører bindingen frem uden at ændre den anvendte forgænger.

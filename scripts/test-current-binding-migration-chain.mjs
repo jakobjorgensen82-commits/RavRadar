@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 const generators = [
   'scripts/build-post-cutover-current-hold-binding-migration.mjs',
   'scripts/build-valid-data-before-local-missing-binding-migration.mjs',
+  'scripts/build-partial-zone-public-metadata-binding-migration.mjs',
 ];
 
 for (const generator of generators) {
@@ -21,4 +22,4 @@ for (const generator of generators) {
   );
 }
 
-console.log('Current binding migration chain preserves and verifies both append-only links.');
+console.log('Current binding migration chain preserves and verifies all append-only links.');

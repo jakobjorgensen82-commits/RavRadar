@@ -5,6 +5,7 @@
 - Regressionen fører den virkelige `partial-zone`-kontrakt helt gennem den offentlige prognoseliste. Ingen vejr-, score-, geometri- eller kildekrav er lempet.
 - En forældet tekstsøgning i den lokale visningstest er synkroniseret med appens eksisterende sikre nøddata-gren, så testen ikke fejlagtigt stopper fuld produktion.
 - Næste normale kørsel genbruger de gemte providercacher. Ingen oneoff. Se `CHANGELOG-4.0.396.md`.
+- Første exact-head `35155765121` bestod alle øvrige kritiske led og afslørede kun den forventede modelhashændring. 4.0.396 bruger derfor en ny deterministisk bundlehash og en 19. append-only bindingmigration; den tidligere anvendte migration omskrives ikke.
 
 ## 4.0.391 – gyldig fastholdelse før lokalt MISSING (2026-09-16, lokal kandidat)
 

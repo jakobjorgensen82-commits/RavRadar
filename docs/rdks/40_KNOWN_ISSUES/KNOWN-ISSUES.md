@@ -1907,3 +1907,5 @@ DEC-0178. Scheduler er fortsat pauset.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Providerfremskridt er gemt, men frisk offentlig prognose og den efterfølgende planlagte vedligeholdelseskørsel er endnu ikke bevist.
 
 Ingen oneoff. Scheduler er pauset.
+
+- **ISSUE-4.0.396-BUNDLE-BINDING – RETTET LOKALT / EXACT-HEAD MANGLER:** Første exact-head `35155765121` bestod alle øvrige kritiske led, men den gamle bundlehash matchede naturligt ikke den ændrede `local-zone-score.js`. Rollback `da27b811…`, integrated `d9ba75ed…` og append-only migration `20260917001500` er genereret i afhængighedsrækkefølge; forgængeren er urørt.

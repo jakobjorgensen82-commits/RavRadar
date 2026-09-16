@@ -1507,3 +1507,9 @@ Næste: version/RDKS/geodatabevis → målrettede public/versionskontroller →
 commit/push → én exact-head sourcegate → merge → code-only → én normal
 weather med gemte providercacher → fulde gates/deploy → offentlig kontrol →
 genaktivér scheduler. Ingen oneoff. Sol/Ekstra høj.
+
+Exact-head `35155765121` bestod alle øvrige kritiske kontroller, men fandt
+den forventede gamle bundlehash. Lokal head har nu deterministisk hash
+rollback `da27b811…`, integrated `d9ba75ed…`, ny append-only migration `20260917001500` og 19-migrations
+installationskæde. Kør målrettede binding-/versionskontroller, commit/push og
+præcis én ny exact-head; gentag ikke den brede gate lokalt.
