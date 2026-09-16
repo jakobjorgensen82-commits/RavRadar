@@ -3507,3 +3507,20 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Databasen validerer uafhængigt den eksakte schema-6/Candidate G-envelope, 673 unikke dele, READY-rollbackled, kanoniske tider, modelbindinger, continuation-hash, privacy-forbud og monotont target. JavaScript ejer fortsat de matematiske replay- og generationshashes; SQL genberegner ikke modellen og returnerer aldrig private stateposter, koordinater eller rå U/V.
 - Den tidligere antagelse om én fuld checkpoint-læsning og -skrivning pr. build er forkastet. Kapacitetsgaten bruger nu metadata-only normal publicering og scenarier for reelle restores; live Supabase før/efter-egress, øvrig trafik, database/lager og mindst 30 procent reserve skal stadig bevises før Fase B.
 - De målrettede checkpoint-, protected restore/publish-, private-runtime-, readiness-, installer-, release-metadata- og workflowrækkefølgetests er grønne lokalt. En uafhængig read-only SQL-review fandt ingen P0/P1 og bekræftede de tre identiske blokke, CAS-race/idempotens, RLS/ACL/search path og exact 673+673-validering. Åbent: rigtig Supabase dry-run/apply/readback, 4.0.321 exact-head, 673 × 118, Feggesund 3 × 118, live kapacitetsmåling, sikker merge, frisk fuld produktion, særskilt manuel Fase B og offentlig mobil-/desktopkontrol. Ingen geometri eller land-/vandpunkter er ændret.
+# NYESTE SANDHED – 2026-09-16 – 4.0.394 retter kanonisk Open-Meteo-restorden
+
+4.0.393 er live som main `88ecda1ecde879123b208da0732ddd16b3be3e7a`
+efter sourcegate `35130086861`, PR #337 og providerfri deploy
+`35130668700`.
+
+Normalrun `35131237007` gemte alle providercacher og byggede en gyldig
+`READY_WITH_MISSING`-closure over 79.414 par: DMI 39.309, Copernicus 6.560,
+regional DMI 944, Open-Meteo 32.463 og 138 lokale `MISSING`. Historiktrinnet
+stoppede, fordi adapteren lagde alle positive par foran alle missing-par.
+Open-Meteo-validatoren kræver én samlet allerede sorteret liste.
+
+Lokal 4.0.394 sorterer det uændrede eksakte sæt efter `validTime` og
+`partId`. Testen reproducerer nu et hul før en senere positiv record.
+Counts, hashes, registry, upstreambindinger og publiceringsregler lempes
+ikke. Exact-head, merge, providerfri code-only og normal livebevis mangler.
+Scheduler er pauset. DEC-0177.

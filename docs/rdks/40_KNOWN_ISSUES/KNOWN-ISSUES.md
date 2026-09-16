@@ -1877,3 +1877,12 @@ Migrationen `20260821_trip_evidence_contract.sql` blev anvendt og verificeret p�
 - **ISSUE-REGIONAL-SHADOW-OLD-RUN-HASH-CONFLICT – RETTET LOKALT / AFVENTER EXACT-HEAD OG RUNTIME:** Oneoff `34004697179` nåede DMI READY og Copernicus READY med 1.104 operationelle rester, men Open-Meteo stoppede før netværkskald. Den 168-timers shadow indeholdt med vilje prøver fra tidligere modelruns; validatoren samlede deres validTime som en aktuel asset-hashkonflikt, selv om den strict-validerede ledger havde valgt et andet run. 4.0.326 skelner på ledgerens valgte modelrun: gamle run-prøver er utilgængelige og efterlader missing til Open-Meteo, mens samme-run hashmismatch fortsat er fatal.
 - **ISSUE-OPEN-METEO-RESIDUAL-CAUSE-MASKED – RETTET LOKALT / AFVENTER RUNTIME:** Den dobbelte fail-closed wrapper skjulte den allerede privacy-sikre regionale domænekode. CLI''en kan nu kun videresende et versalt allowlistet suffix; private id''er, koordinater, rå værdier, payloads og fritekst forbliver maskeret.
 - **DRIFTSEVIDENS:** Normalrun `34004873418` gemte DMI-kandidat-/GRIB-/shadowfremgang, men producenten var ikke terminal success og resten af kæden blev korrekt sprunget over. Dette er bevaret progression, ikke komplet vejr- eller releasebevis.
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.394 sorterer closure-resten kanonisk
+
+- **ISSUE-4.0.393-DELIVERY – LUKKET:** Exact-head `35130086861`, PR #337, main `88ecda1e` og providerfri deploy `35130668700` er grønne.
+- **ISSUE-4.0.393-RESIDUAL-ORDER – RETTET LOKALT / LIVEBEVIS MANGLER:** Run `35131237007` byggede gyldig closure med 138 lokale huller, men adapteren sammenkædede positive og missing par i to blokke. 4.0.394 sorterer hele den eksakte rest før validering.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** 4.0.394 skal passere historik, RavScore, fulde produktionsgates og deploy på en almindelig weather.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – FREMGANG / ÅBEN VERIFIKATION:** Seneste closure havde DMI 39.309, Copernicus 6.560, regional DMI 944, Open-Meteo 32.463 og 138 missing; normal overtagelse skal fortsat følges over nye targets.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Alle cacher blev gemt; en fuldført normal deploy og efterfølgende schedulerpassage mangler.
+
+DEC-0177. Scheduler er pauset.

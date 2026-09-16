@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.393",
+  "handbookVersion": "4.0.394",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-16",
   "sections": [
+    {
+      "id": "open-meteo-canonical-residual-order-4-0-394",
+      "chapter": "88.98",
+      "title": "4.0.394 – Værdier og lokale huller sorteres samlet",
+      "summary": "Den eksakte Open-Meteo-rest sorteres samlet efter time og kystdel før genvalidering.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Gyldige værdier og lokale huller var begge med, men stod i to blokke i stedet for deres fælles kronologiske rækkefølge.</div><div class=\"handbook-stack\"><p>4.0.394 sorterer hele det uændrede sæt efter <code>validTime</code> og <code>partId</code>. Ingen værdi eller missing-markering tilføjes, fjernes eller ændres.</p><p>Dokumenthash, recordrefs, targetregister, upstreambindinger og alle counts skal fortsat matche closure præcist.</p><p>Regressionstesten placerer nu bevidst et lokalt hul før en senere positiv record, så den reproducerer den virkelige spredte rest.</p></div>"
+    },
     {
       "id": "open-meteo-local-missing-history-adapter-4-0-393",
       "chapter": "88.97",
@@ -574,7 +581,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.393 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.394 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig, men det nuværende 4.0.365-artifact leverer endnu ingen numeriske scorer. RavScore 4.0.377 er den lokale providerfri reparation, som læser den allerede installerede komplette DMI-cache og bevarer vejrtiden.</div><div class=\"handbook-stack\"><p><strong>Central sandhed:</strong> Supabase står på <code>INTEGRATED_ACTIVE</code> version 1, og migration 16/17 er installeret. Run <code>34942127741</code> gennemførte privat restore, komplet metadataoverførsel, offentlig genopbygning og 210/673-audit. Det stoppede først bagefter, fordi den private specifikation læste en midlertidig DMI-kandidatfil fremfor <code>data/live/dmi-bulk-cache.json</code>.</p><p><strong>4.0.377:</strong> Code-only bruger den installerede kanoniske cache. En privat efterfølger på samme vejrtid accepteres kun med eksakt forgængerpointer, ni-fils manifest, hashbundet migration, byteidentiske øvrige filer og uændrede målinger/states. Ingen provider eller oneoff indgår.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=8727feba7227fa546861ec73091879ca9fec07b6375f81b219c752e5d25df733</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=65d26045e5ecd760f165fe8b7cef1d1e91ec0b2b96310a018be87a1e4c1a2959</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Målrettede lokale runtimekontroller er grønne. Commit, én exact-head PR-gate, merge, providerfri code-only-deploy, central/offentlig readback og mobil-/desktopkontrol mangler.</div></div>"
     },

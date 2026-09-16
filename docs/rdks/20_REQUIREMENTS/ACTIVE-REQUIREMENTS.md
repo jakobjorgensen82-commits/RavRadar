@@ -1496,3 +1496,12 @@ Den daværende private nationale shadow-validator beregnede A, B og C på samme 
 # Samlet sikker engangsopfyldning – ejerbeslutning 2026-09-04
 
 - **REQ-WEATHER-ONE-OFF-FULL-FILL-SAFE-001 – BINDENDE / LOKALT MÅLTESTET:** Hele DMI-/Copernicus-/regional-kæden skal opfyldes og bevise 210/673/118 før opgaven kaldes komplet. Det samlede jobbudget skal rumme alle tunge trin plus mindst 60 minutters øvrig reserve; hver acquisition skal have intern afslutningsreserve under sit hard timeout. DMI-råfiler, behandlede DMI-data og regional evidens skal gemmes før DMI-terminalkontrol; Copernicus-data og journal før samlet closure/vejrbygning. Cachefamilier skal kunne genbruges af normal main-drift. Selve engangskørslen må ikke køre den lange kildegate eller deploye. Efter komplet opfyldning måles normal vedligeholdelse; balance ændres kun ved dokumenteret behov. Ingen synthetic history, lempet kildeorden, datagate eller geometri-/punktændring.
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.394 kanonisk restorden
+
+- **REQ-4.0.394-ORDER-001 – BINDENDE:** Positive Open-Meteo-assignments og præcise `MISSING`-assignments skal samles og sorteres kanonisk efter `validTime` og `partId`, før dokumentet genvalideres.
+- **REQ-4.0.394-EXACT-SET-002 – BINDENDE:** Sorteringen må kun ændre rækkefølge, aldrig medlemskab, counts, hashes, kildeidentitet eller lokale missing-klassifikationer.
+- **REQ-4.0.394-REGRESSION-003 – BINDENDE:** Adaptertesten skal indeholde et missing-par før en senere positiv record, så den virkelige spredte rest ikke igen skjules af et trivielt fixture.
+- **REQ-4.0.394-RESUME-004 – BINDENDE:** Den næste almindelige weather skal genbruge de gemte providerfremskridt fra `35131237007`; ingen oneoff.
+
+DEC-0177 præciserer DEC-0176. Scheduler forbliver pauset til historik, score,
+fuld validering og deploy er levende bevist.

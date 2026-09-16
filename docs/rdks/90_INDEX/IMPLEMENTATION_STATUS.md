@@ -4384,3 +4384,17 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Push og exact-head-kildegate.
 - [ ] Merge og bevis kanonisk cache-hit, monoton restudfyldning, DMI-first 673 × 118 samt Feggesund 3 × 118.
 - [ ] Luk backendrun, Supabase live før/efter-kapacitet, frisk fuld produktion, særskilt Fase B og offentlig desktop-/mobilkontrol.
+# Aktuel implementeringsstatus – lokal 4.0.394 kanonisk Open-Meteo-restorden
+
+- [x] Lever 4.0.393 via sourcegate `35130086861`, PR #337, main `88ecda1e` og code-only `35130668700`.
+- [x] Kør normal weather `35131237007`; gem alle providercacher og bestå closure med 79.276 værdier plus 138 lokale `MISSING`.
+- [x] Afgræns historikstoppet til en usorteret sammenkædning af positive og missing Open-Meteo-par.
+- [x] Sortér hele den eksakte rest kanonisk uden at ændre medlemskab eller integritetsbindinger.
+- [x] Gør regressionstesten realistisk med missing før en senere positiv record; måltesten er grøn.
+- [x] Bestå lokalt version/RDKS/geodatabevis.
+- [ ] Bestå én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only-genbinding af 4.0.394.
+- [ ] Kør én almindelig weather på gemte cacher; verificér historik, scorer, fulde gates og deploy.
+- [ ] Genaktivér scheduler først efter grøn normal drift; fortsæt derefter site- og roadmapgennemgang.
+
+DEC-0177 er aktiv. Scheduler er pauset.

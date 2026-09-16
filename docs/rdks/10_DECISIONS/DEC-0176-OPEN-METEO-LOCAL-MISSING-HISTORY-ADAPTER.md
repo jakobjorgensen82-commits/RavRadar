@@ -1,6 +1,6 @@
 # DEC-0176 – Open-Meteo-adapteren skal bevare lokal missing
 
-**Status:** Aktiv og bindende; implementeret lokalt i 4.0.393, livebevis afventer
+**Status:** Aktiv og bindende; 4.0.393 var ufuldstændig, rækkefølgen præciseres af DEC-0177
 **Dato:** 2026-09-16
 
 ## Baggrund
@@ -39,3 +39,9 @@ Måltests beviser både accept af én præcis ufuldstændig Open-Meteo-rest og
 afvisning af et ændret missing-par. Closure, Open-Meteo, live-adapter,
 public-runtime og den integrerede 210/673-audit er grønne lokalt.
 Exact-head, merge og levende normal weather mangler.
+
+## Tillæg 2026-09-16
+
+4.0.393 blev leveret, men normalrun `35131237007` viste, at det korrekte
+positive+missing-sæt blev sammenkædet i to blokke. DEC-0177 kræver én samlet
+kanonisk sortering før genvalidering. Beslutningen om lokal missing består.

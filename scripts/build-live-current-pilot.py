@@ -679,10 +679,13 @@ def open_meteo_entries(
             row for row in closure_proof["assignments"]
             if row["classification"] == MISSING
         ]
-        required_pairs = [
-            {"partId": row["partId"], "validTime": row["validTime"]}
-            for row in [*assignments, *missing_assignments]
-        ]
+        required_pairs = sorted(
+            [
+                {"partId": row["partId"], "validTime": row["validTime"]}
+                for row in [*assignments, *missing_assignments]
+            ],
+            key=lambda row: (row["validTime"], row["partId"]),
+        )
         validated = validate_open_meteo_document(
             document,
             targets=targets_list,

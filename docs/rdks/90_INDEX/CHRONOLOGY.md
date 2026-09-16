@@ -1150,3 +1150,8 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 # 2026-09-14 – rettelsesdeploy skilles permanent fra vejrhentning
 
 Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Providerkæden kører separat bagefter og kan ikke ugyldiggøre rettelsen. Modelbinding må kun føres frem gennem en eksplicit, verificeret migration. Se DEC-0148.
+# 2026-09-16 – 4.0.394 sorterer hele Open-Meteo-resten
+
+- 4.0.393 bestod sourcegate `35130086861`, PR #337 og providerfri deploy `35130668700` som main `88ecda1e`.
+- Normalrun `35131237007` gemte alle caches og lukkede 79.276 værdier plus 138 lokale `MISSING`.
+- Historikadapteren sammenkædede positive og missing par i to blokke; 4.0.394 sorterer det samlede eksakte sæt kanonisk før validering. DEC-0177.

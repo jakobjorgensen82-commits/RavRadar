@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.393
+**Håndbogsversion:** 4.0.394
+
+## 88.98 4.0.394 – Værdier og lokale huller sorteres samlet
+
+### Samme rest, rigtig rækkefølge
+
+4.0.393 tog både gyldige Open-Meteo-værdier og lokale huller med, men lagde
+først alle værdierne og derefter alle hullerne. I virkeligheden ligger
+hullerne spredt mellem prognosetimerne. Den strenge validator kræver derfor,
+at hele listen allerede står i fælles rækkefølge efter time og kystdel.
+
+4.0.394 sorterer den samlede liste før genvalideringen. Ingen værdi eller
+missing-markering tilføjes, fjernes eller ændres. Hashes, antal, kilder og
+upstream-beviser skal stadig matche closure præcist.
+
+Testen har nu bevidst et hul før en senere gyldig værdi. Dermed beviser den
+den rigtige situation i stedet for den tidligere nemme fixture, hvor hullet
+tilfældigvis allerede lå sidst.
 
 ## 88.97 4.0.393 – Et ærligt Open-Meteo-hul må fortsætte
 
