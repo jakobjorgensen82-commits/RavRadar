@@ -880,13 +880,25 @@ let oneMissingFeggesundHour = {
     },
   },
 };
-assert.ok(audit(
+const oneMissingFeggesundHourReport = audit(
   oneMissingFeggesundHour,
   nationalPackage,
   210,
   673,
-).errors.includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
-'the unchanged final gate must reject even one honestly materialized MISSING Feggesund hour');
+);
+assert.equal(
+  oneMissingFeggesundHourReport.errors.includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
+  false,
+  'an honestly materialized local MISSING Feggesund hour must not block the national runtime',
+);
+assert.deepEqual(
+  {
+    acceptedEntries: oneMissingFeggesundHourReport.coverage.feggesundWave.acceptedEntries,
+    missingEntries: oneMissingFeggesundHourReport.coverage.feggesundWave.missingEntries,
+  },
+  { acceptedEntries: 353, missingEntries: 1 },
+  'the final audit must preserve exact local Feggesund coverage accounting',
+);
 oneMissingFeggesundHour = null;
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);

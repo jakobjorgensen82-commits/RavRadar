@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.394
+**Håndbogsversion:** 4.0.395
+
+## 88.99 4.0.395 – Et bølgehul ved Feggesund er lokalt
+
+### Hele RavRadar skal ikke slukkes af seks manglende timer ét sted
+
+Den seneste almindelige vejrkørsel fandt 336 direkte bølgepositioner ved
+Feggesund og 18 manglende positioner. De manglende værdier lå i de sidste
+seks prognosetimer på områdets tre kystdele. Hverken lokale DMI-bølger eller
+begge godkendte naboområder havde en komplet samtidig værdi dér.
+
+RavRadar kræver stadig, at alle `3 × 118 = 354` positioner er bogført præcist
+som direkte data, den særlige to-nabo-proxy eller `MISSING`. Et ærligt hul
+stopper ikke længere resten af landet. Kun den berørte kystdel og time bliver
+utilgængelig og får ingen score.
+
+Systemet gætter ikke bølger og bruger ikke én enkelt nabo. Forkert antal,
+overlap, ugyldige kilder eller manipuleret bevis stopper fortsat. En bedre
+godkendt kilde til Feggesunds yderste prognosetimer undersøges særskilt.
 
 ## 88.98 4.0.394 – Værdier og lokale huller sorteres samlet
 

@@ -1465,3 +1465,25 @@ missing-par, mens validatoren kræver én samlet kronologisk sorteret rest.
 før en senere positiv record og er grøn. Fortsæt docs/version/geodatabevis,
 commit/push, én exact-head, merge, providerfri code-only og én normal weather
 på gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0177. Sol/Ekstra høj.
+
+# NYESTE HANDOFF – 2026-09-16 – lokal 4.0.395 Feggesund-huller er lokale
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.395-local-feggesund-missing`, baseret på main
+`b67459b0f7cafe85c2bfa1b8482ed7e69b3c8d11`.
+
+4.0.394 bestod exact-head `35137196497`, PR #338 og providerfri deploy
+`35137798403`. Normalrun `35138332481` bestod closure og public
+syvdøgnshistorik, men stoppede i central weather-cache på Feggesund 336
+direct + 0 proxy + 18 missing. Hullerne er de sidste seks timer på tre dele.
+
+4.0.395 kræver præcis 354 bogførte direct/proxy/missing-positioner. Et
+ærligt missing gør kun del/time `UNAVAILABLE`; forkert antal, disposition,
+lineage eller proof stopper fortsat. DMI-integration og 210/673-audit er
+grønne. DMI faldt 39.309 → 38.660 ved to timer nyere target; fremgangen er
+gemt, men vækst er ikke bevist.
+
+Næste: afslut docs/version/geodatabevis → målrettede kontroller → commit/push
+→ én exact-head sourcegate → merge → providerfri code-only → én almindelig
+weather på gemte cacher → fulde gates/deploy/offentlig scorekontrol. Mål
+providerudviklingen igen. Ingen oneoff. Scheduler pauset. DEC-0178.

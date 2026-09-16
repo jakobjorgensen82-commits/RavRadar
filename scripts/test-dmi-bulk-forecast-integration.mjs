@@ -207,6 +207,10 @@ assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 2,
   'missing-horizon materialization is limited to Feggesund preflight and the primary integrated part runtime');
 assert.match(integratedRuntime, /preflightFeggesundOperationalWaveReadiness\([\s\S]*?const nearestIndex/,
   'Feggesund readiness must be checked before the main scoring loop');
+assert.match(source, /direct \+ proxy \+ missing !== expected/,
+  'Feggesund preflight must account for every hour while allowing honest local MISSING');
+assert.doesNotMatch(source, /FEGGESUND_WAVE_READINESS_INCOMPLETE/,
+  'an honest local Feggesund wave gap must not block the complete national runtime');
 assert.ok(
   integratedRuntime.indexOf('preflightFeggesundOperationalWaveReadiness({')
     < integratedRuntime.indexOf('buildRavScoreProductionPartSeries({'),

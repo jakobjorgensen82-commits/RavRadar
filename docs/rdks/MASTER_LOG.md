@@ -3702,3 +3702,26 @@ counts kontrolleres fortsat.
 Regressionstesten indeholder nu et missing-par før en senere positiv record
 og er grøn. Exact-head, merge, providerfri genbinding og en almindelig
 weather på de gemte cacher mangler. Scheduler er pauset. DEC-0177.
+
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.395 Feggesund
+
+4.0.394 blev leveret gennem exact-head `35137196497`, PR #338, main
+`b67459b0f7cafe85c2bfa1b8482ed7e69b3c8d11` og providerfri deploy
+`35137798403`. Normalrun `35138332481` bestod closure og den offentlige
+syvdøgnshistorik, så 4.0.394-rettelsen er bevist i den virkelige kæde.
+
+Kørslen stoppede derefter på Feggesund med 336 direkte, 0 proxy og 18
+`MISSING`. Hullerne er tre kystdele × de seks yderste timer. Ejeren godkendte,
+at ærligt bogført missing skal isoleres lokalt, mens alle 354 positioner og
+deres direct/proxy/missing-disposition fortsat skal bevises eksakt.
+
+4.0.395 retter både preflight og slutaudit til direct + proxy + missing =
+354. Ukendt disposition, forkert antal, overlap, ugyldig provenance eller
+manipuleret proof stopper stadig. De målrettede integrationstests og
+210/673-public-runtimeaudit er grønne.
+
+DMI voksede ikke i runnet: 39.309 → 38.660 ved et target, der rykkede to
+timer. Kun dele af fire collections blev opdateret inden for normalbudgettet.
+Progressionen er gemt; den næste normale kørsel skal måle fortsættelsen.
+Exact-head, merge, code-only, normal produktion, deploy og offentlig kontrol
+afventer. Scheduler er pauset. DEC-0178.

@@ -3524,3 +3524,27 @@ Lokal 4.0.394 sorterer det uændrede eksakte sæt efter `validTime` og
 Counts, hashes, registry, upstreambindinger og publiceringsregler lempes
 ikke. Exact-head, merge, providerfri code-only og normal livebevis mangler.
 Scheduler er pauset. DEC-0177.
+
+# NYESTE SANDHED – 2026-09-16 – lokal 4.0.395 isolerer Feggesund-huller
+
+4.0.394 er live som main `b67459b0f7cafe85c2bfa1b8482ed7e69b3c8d11`
+efter exact-head `35137196497`, PR #338 og providerfri deploy
+`35137798403`. Normalrun `35138332481` bestod både current closure og den
+offentlige syvdøgnshistorik. DEC-0177/4.0.394 er dermed runtimebevist.
+
+Runnet stoppede derefter i `Update central weather cache`: Feggesund havde
+336 `DIRECT`, 0 proxy og 18 ærlige `MISSING`. De 18 er tre kystdele × seks
+yderste prognosetimer, hvor direct og begge naboer ikke var samtidigt
+komplette. Lokal 4.0.395 kræver stadig præcis 354 bogførte positioner, men
+accepterer direct + proxy + missing = 354 og gør kun den berørte del/time
+`UNAVAILABLE`. Forkert proof, antal eller provenance stopper fortsat.
+
+DMI viste ikke nettovækst i samme run: 39.309 → 38.660; Copernicus 6.560 →
+6.527; regional 944 → 936; Open-Meteo 32.463 → 33.072; missing 138 → 219.
+Target rykkede 17:00Z → 19:00Z, og DMI opdaterede kun dele af fire
+collections inden for normalbudgettet. Cacherne er gemt. Dette er et åbent
+vedligeholdelsesbevis, ikke dokumenteret DMI-vækst.
+
+De målrettede tests er grønne. Exact-head, merge, providerfri code-only,
+normal liveproduktion, fulde gates, deploy og offentlig kontrol mangler.
+Scheduler er pauset. DEC-0178.

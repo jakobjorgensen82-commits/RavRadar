@@ -921,8 +921,7 @@ function verifiedFeggesundCoverageSummary(coastal, parts) {
   if (!sameCanonical(rebuilt, declared)
     || !sameCanonical(rebuilt.partIds, actualPartIds)
     || rebuilt.forecastHours !== RAVSCORE_PUBLIC_FORECAST_HOURS
-    || direct + proxy !== expectedEntries
-    || missing !== 0) {
+    || direct + proxy + missing !== expectedEntries) {
     throw new Error('Feggesund wave coverage proof is incomplete');
   }
   return {
