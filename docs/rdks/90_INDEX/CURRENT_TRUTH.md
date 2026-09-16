@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-16 – 4.0.393 retter Open-Meteos history-adapter
+
+4.0.392 er live som main `e84fba55ddfd1aa4585137d4d0d86169c50695a8`
+efter sourcegate `35119195730`, PR #336 og providerfri deploy
+`35120023098`. Offentlig start er grøn uden den gamle store nøddriftsdownload.
+
+Normalrun `35120782348` gemte DMI-, Copernicus- og Open-Meteo-cacher og
+byggede `READY_WITH_MISSING` over alle 79.414 par: DMI 37.448, Copernicus
+6.465, regional DMI 944, Open-Meteo 34.218 og 339 lokale `MISSING`.
+Closureen var gyldig. Runnet stoppede i næste trin på
+`OPEN_METEO_CLOSURE_CACHE_INVALID`, fordi public-history-adapteren krævede
+Open-Meteo `COMPLETE` og validerede mod kun de positive assignments.
+
+Lokal 4.0.393 validerer i stedet den eksakte forsegling af positive records
+plus de 339 præcise missing-par. Den bevarer dokument-, record-, registry-,
+upstream- og countbindinger. RavScore/public/deploy-helikopterkontrollen er
+grøn for lokal utilgængelighed. Exact-head, merge, providerfri code-only og
+en ny almindelig weather mangler. Scheduler er pauset. DEC-0176.
+
 # NYESTE SANDHED – 2026-09-16 – 4.0.392 retter iPhone-opstart og regional adapter
 
 4.0.391 blev efter det tidligere checkpoint leveret providerfrit i

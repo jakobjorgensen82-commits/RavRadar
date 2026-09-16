@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – lokal 4.0.393 Open-Meteo local-missing-adapter
+
+- [x] Lever 4.0.392 via sourcegate `35119195730`, PR #336, main `e84fba55` og code-only `35120023098`.
+- [x] Verificér levende 4.0.392-opstart, 210/673 og ingen browserfejl; frisk scoredata mangler fortsat.
+- [x] Kør almindelig weather `35120782348`; gem alle providercacher og bestå closure med 79.075 værdier plus 339 lokale `MISSING`.
+- [x] Afgræns stoppet til history-adapterens forkerte globale Open-Meteo-`COMPLETE`-krav.
+- [x] Valider positive og missing assignments samlet mod closure; bevar alle hash-, registry-, upstream- og countstop.
+- [x] Gennemgå RavScore, public runtime og deploy for samme all-or-nothing-antagelse; ingen yderligere kodefejl fundet.
+- [x] Bestå målrettede closure-, Open-Meteo-, adapter-, public-runtime- og 210/673-audittests.
+- [x] Bestå lokalt version/RDKS/geodatabevis.
+- [ ] Bestå én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only-genbinding af 4.0.393.
+- [ ] Kør én almindelig weather på gemte cacher; verificér levende scorer, lokale huller og kildeprioritet.
+- [ ] Genaktivér scheduler først efter grøn normal drift; fortsæt derefter site- og roadmapgennemgang.
+
+DEC-0176 er aktiv. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.392 mobil opstart og regional closure-adapter
 
 - [x] Lever 4.0.391 providerfrit i `35104320358` som main `3d7fbba9`; privat, Edge, Pages, 210/673 og central closure er grønne.

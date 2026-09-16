@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.393 klar til slutkontrol
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.393-open-meteo-closure-adapter`, baseret på 4.0.392-main
+`e84fba55ddfd1aa4585137d4d0d86169c50695a8`.
+
+4.0.392 er live efter sourcegate `35119195730`, PR #336 og providerfri
+`35120023098`. Normalrun `35120782348` gemte alle providercacher og bestod
+closure med 79.075 værdier plus 339 lokale `MISSING`, men stoppede bagefter
+på `OPEN_METEO_CLOSURE_CACHE_INVALID`.
+
+Lokal 4.0.393 retter kun history-adapterens kontraktkant: den validerer
+Open-Meteos positive assignments sammen med closureens præcise missing-
+assignments og bevarer alle hashes, counts, registry- og upstreambindinger.
+Helikopterkontrollen fandt ingen tilsvarende global missing-gate i RavScore,
+public runtime eller deploy. Alle relevante måltests inkl. 210/673-audit er
+grønne. Afslut version/RDKS/geodatabevis, push, én exact-head, merge,
+providerfri code-only og én normal weather. Ingen oneoff. Scheduler pauset.
+DEC-0176. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.392 klar til exact-head
 
 Arbejd i `RavRadar-4.0.366`, branch

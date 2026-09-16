@@ -1,3 +1,24 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.393 fører ærlig missing gennem historikken
+
+4.0.392 er live efter sourcegate `35119195730`, PR #336, main
+`e84fba55ddfd1aa4585137d4d0d86169c50695a8` og providerfri deploy
+`35120023098`. Siden åbner uden den gamle 118 MB-nøddriftsblokering.
+
+Normalrun `35120782348` gemte alle providercacher og byggede
+`READY_WITH_MISSING`: DMI 37.448, Copernicus 6.465, regional DMI 944,
+Open-Meteo 34.218 og 339 lokale `MISSING`. Closure bestod. Runnet stoppede
+bagefter på `OPEN_METEO_CLOSURE_CACHE_INVALID`, fordi history-adapteren
+krævede en globalt komplet Open-Meteo-cache og udelod de 339 forseglede
+missing-par fra sin anden validering.
+
+Lokal 4.0.393 validerer den eksakte closure-rest med både positive records
+og de præcise missing-par. Hashes, counts, targetregister og upstream-
+bindinger består. Helikopterkontrol og måltests gennem RavScore, public
+runtime og 210/673-audit er grønne. Scheduler er pauset. Næste: docs/version,
+push, én exact-head, merge, providerfri code-only og én almindelig weather på
+gemte cacher; verificér levende scorer og genaktivér først derefter scheduler.
+DEC-0176. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.390 samler forlænget providerbootstrap i normalruten
 
 Main er `bf8eb739476631ec534df3b2e3ba75e7370a3c29`. Normalrun

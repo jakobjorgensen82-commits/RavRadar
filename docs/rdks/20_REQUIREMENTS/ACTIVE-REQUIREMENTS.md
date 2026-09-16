@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.393 Open-Meteo local-missing-adapter
+
+- **REQ-4.0.393-EXACT-RESIDUAL-001 – BINDENDE:** Public-history-adapteren skal validere Open-Meteo mod closureens samlede rest af positive Open-Meteo-assignments og præcise `MISSING`-assignments.
+- **REQ-4.0.393-LOCAL-CONTINUE-002 – BINDENDE:** En `READY_WITH_MISSING`-closure må fortsætte til historik, RavScore og deploy; kun berørte del/mode/time må blive utilgængelig.
+- **REQ-4.0.393-NO-SYNTHESIS-003 – BINDENDE:** Kun positive records må blive offentlige strømrecords. Et missing-par må aldrig få en konstrueret vektor eller nulværdi.
+- **REQ-4.0.393-INTEGRITY-004 – BINDENDE:** Dokumenthash, recordrefs, targetregister, upstream-bindinger samt required-, record- og missing-count skal matche closure præcist; afvigelser stopper globalt.
+- **REQ-4.0.393-NORMAL-RESUME-005 – BINDENDE:** Lever kode providerfrit først og fortsæt derefter gennem almindelig weather med gemte cacher. Ingen oneoff.
+
+DEC-0176 supplerer DEC-0173. Scheduler forbliver pauset til levende scorer og normal cachevedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.392 robust public opstart og regional identitet
 
 - **REQ-4.0.392-REGIONAL-IDENTITY-001 – BINDENDE:** Public-history-adapteren skal vælge præcis den ene regionale prøve, som closure har godkendt, ved kanonisk `modelRun`, `validTime`, collection og sourceAssetSha256.
