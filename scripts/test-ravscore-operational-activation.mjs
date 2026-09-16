@@ -37,8 +37,10 @@ import {
   operationalResolvedBindingCurrent,
   prepareIntegratedHistoricalMaintenance,
   prepareIntegratedOperationalReturn,
+  recoverMissedHistoricalIntegratedMaintenance,
   recoverMissedInitialIntegratedCutover,
   RAVSCORE_INTEGRATED_RETURN_POLICY,
+  RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY,
   RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY,
   RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,
   RAVSCORE_OPERATIONAL_STATUSES,
@@ -3057,6 +3059,150 @@ assert.throws(() => recoverMissedInitialIntegratedCutover({
     artifactId: 9999,
   },
 }), /not the pinned historical evidence/);
+
+// A later code-only deployment can already be public while its historical
+// maintenance CAS was missed. Recovery must validate both immutable endpoints
+// plus a fresh live readback, then move ACTIVE -> ACTIVE in one atomic write.
+const missedMaintenanceClosureSha256 = 'b'.repeat(64);
+const missedMaintenanceTargetReadiness = await buildIntegratedCutoverReadiness(sourceHead, {
+  publicImplementationClosureSha256: missedMaintenanceClosureSha256,
+});
+const missedMaintenanceTargetManifest = manifest(
+  integratedModelBinding(),
+  historicalManifest.datasetId,
+  historicalManifest.productionReferenceAt,
+);
+const missedMaintenanceTargetAudit = Object.freeze({
+  ...integratedAudit(integratedModelBinding(), {
+    allCurrentScoresFullHistory: false,
+    currentUnavailableModeCount: 420,
+  }),
+  datasetId: missedMaintenanceTargetManifest.datasetId,
+  productionReferenceAt: missedMaintenanceTargetManifest.productionReferenceAt,
+  continuation: Object.freeze({
+    migratedStateCount: 0,
+    continuedStateCount: 0,
+    coldReplayStateCount: 673,
+    uniqueSamplingContextCount: 673,
+  }),
+});
+const missedMaintenanceTargetVerification = Object.freeze({
+  ...verification(
+    'integrated',
+    integratedModelBinding(),
+    missedMaintenanceTargetManifest,
+    sourceHead,
+  ),
+  implementationClosureSha256: missedMaintenanceClosureSha256,
+});
+const missedMaintenancePolicyBase = Object.freeze({
+  ...RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY,
+  repository: missedCutoverPolicy.repository,
+  sourceCentralVersion: 1,
+  sourceHead,
+  sourceDeploymentId: missedCutoverPolicy.deploymentId,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  sourceManifestSha256: sha256(historicalManifest),
+  sourceAuditSha256: sha256(missedCutoverAudit),
+  sourceReadinessSha256: sha256(historicalReadiness),
+  sourceBindingSha256: sha256(historicalBinding),
+  sourceProfileSha256: sha256(historicalProfile),
+  sourcePagesArtifactSealSha256: sha256(missedCutoverArtifactSeal),
+  sourcePagesRunId: missedCutoverPolicy.runId,
+  sourcePagesRunAttempt: missedCutoverPolicy.runAttempt,
+  sourcePagesArtifactId: missedCutoverPolicy.artifactId,
+  sourcePagesArtifactDigestSha256: missedCutoverPolicy.artifactDigestSha256,
+  sourcePagesArtifactSizeBytes: missedCutoverPolicy.artifactSizeBytes,
+  targetHead: sourceHead,
+  targetDeploymentId: 'pages-5678-1',
+  targetImplementationClosureSha256: missedMaintenanceClosureSha256,
+  targetManifestSha256: sha256(missedMaintenanceTargetManifest),
+  targetAuditSha256: sha256(missedMaintenanceTargetAudit),
+  targetReadinessSha256: sha256(missedMaintenanceTargetReadiness),
+  targetBindingSha256: sha256(integratedModelBinding()),
+  targetProfileSha256: sha256(missedMaintenanceTargetReadiness.centralProfile),
+  targetPagesRunId: 5678,
+  targetPagesRunAttempt: 1,
+  targetPagesArtifactId: 6789,
+  targetPagesArtifactDigestSha256: '2'.repeat(64),
+  targetPagesArtifactSizeBytes: 890,
+});
+const missedMaintenanceTargetArtifactSeal = Object.freeze({
+  schemaVersion: 'ravscore-operational-pages-artifact-seal-v1',
+  repository: missedMaintenancePolicyBase.repository,
+  runId: missedMaintenancePolicyBase.targetPagesRunId,
+  runAttempt: missedMaintenancePolicyBase.targetPagesRunAttempt,
+  headSha: sourceHead,
+  ref: 'refs/heads/main',
+  attemptId: missedMaintenancePolicyBase.targetDeploymentId,
+  artifactId: missedMaintenancePolicyBase.targetPagesArtifactId,
+  artifactName: 'github-pages',
+  artifactDigestSha256:
+    missedMaintenancePolicyBase.targetPagesArtifactDigestSha256,
+  artifactSizeBytes: missedMaintenancePolicyBase.targetPagesArtifactSizeBytes,
+  targetPublicManifestSha256: sha256(missedMaintenanceTargetManifest),
+  targetImplementationClosureSha256: missedMaintenanceClosureSha256,
+  targetModelBinding: integratedModelBinding(),
+  createdAt: '2026-08-29T13:10:00.000Z',
+  privatePayloadIncluded: false,
+});
+const missedMaintenancePolicy = Object.freeze({
+  ...missedMaintenancePolicyBase,
+  targetPagesArtifactSealSha256: sha256(missedMaintenanceTargetArtifactSeal),
+});
+const missedMaintenanceInput = Object.freeze({
+  currentRow: Object.freeze({ version: 1, payload: missedCutoverRecovery.document }),
+  currentProfileRow: Object.freeze({ version: 9, payload: historicalProfile }),
+  sourceManifest: historicalManifest,
+  sourceAudit: missedCutoverAudit,
+  sourceReadiness: historicalReadiness,
+  sourceBinding: historicalBinding,
+  sourcePagesArtifactSeal: missedCutoverArtifactSeal,
+  targetManifest: missedMaintenanceTargetManifest,
+  targetAudit: missedMaintenanceTargetAudit,
+  targetReadiness: missedMaintenanceTargetReadiness,
+  targetBinding: integratedModelBinding(),
+  publicVerification: missedMaintenanceTargetVerification,
+  targetPagesArtifactSeal: missedMaintenanceTargetArtifactSeal,
+  eventName: 'workflow_dispatch',
+  ref: 'refs/heads/main',
+  githubSha: laterHead,
+  repository: missedMaintenancePolicy.repository,
+  confirmation: missedMaintenancePolicy.confirmation,
+  now: '2026-08-29T13:15:00.000Z',
+  policy: missedMaintenancePolicy,
+});
+const missedMaintenanceRecovery = recoverMissedHistoricalIntegratedMaintenance(
+  missedMaintenanceInput,
+);
+assert.equal(missedMaintenanceRecovery.nextVersion, 2);
+assert.equal(missedMaintenanceRecovery.document.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integrated);
+assert.equal(missedMaintenanceRecovery.document.transitionKind,
+  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn);
+assert.equal(missedMaintenanceRecovery.document.sourcePublicManifestSha256,
+  sha256(historicalManifest));
+assert.equal(missedMaintenanceRecovery.document.publicManifestSha256,
+  sha256(missedMaintenanceTargetManifest));
+assert.equal(missedMaintenanceRecovery.document.deploymentId,
+  missedMaintenancePolicy.targetDeploymentId);
+assert.deepEqual(missedMaintenanceRecovery.centralTargetProfile, integratedProfile);
+assert.deepEqual(operationalCentralProfileForTransition({
+  transition: missedMaintenanceRecovery,
+  currentProfile: historicalProfile,
+  integratedProfile,
+}), integratedProfile);
+assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
+  ...missedMaintenanceInput,
+  confirmation: 'wrong',
+}), /exact one-time authority/);
+assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
+  ...missedMaintenanceInput,
+  currentRow: {
+    ...missedMaintenanceInput.currentRow,
+    version: 2,
+  },
+}), /central source is not the pinned ACTIVE state/);
 
 const historicalCandidateBinding = Object.freeze({
   ...candidateModelBinding(),

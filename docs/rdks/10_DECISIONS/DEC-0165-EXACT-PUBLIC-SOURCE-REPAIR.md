@@ -1,6 +1,6 @@
 # DEC-0165 – Kendt offentlig kildedrift repareres eksakt uden at svække målet
 
-**Status:** Aktiv; implementeret lokalt i 4.0.383, livebevis afventer  
+**Status:** Implementeret og offentligt produktionsverificeret i 4.0.383; central fortsættelse flyttet til DEC-0166
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -53,3 +53,12 @@ artifact og Pages, fordi den første resolver fejlagtigt krævede samme binding
 før reparationspolitikken blev vurderet. Den centrale binding er
 `70f45b3d...336f`, mens offentlig 4.0.381 er `398b1132...aaf`. Den
 rettede resolver kræver nu begge eksakte identiteter særskilt.
+
+PR #326 bestod exact-head `35034134953` og blev merged som main `11f101f8`.
+Providerfri `35034589754` brugte reparationsvejen og deployede et strengt
+79/79-target. Frisk liveverifikation bestod 210/673 uden private
+payloadlæsninger. Den offentlige source-reparation er dermed lukket.
+
+Den efterfølgende centrale maintenance fejlede før write på en anden
+closurekant. Centralen forblev ACTIVE version 1; dette selvstændige
+ACTIVE→ACTIVE-genoptagelsesspor er reguleret af DEC-0166.

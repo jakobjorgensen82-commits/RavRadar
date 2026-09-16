@@ -1,4 +1,20 @@
-# Aktuel implementeringsstatus – lokal 4.0.383 eksakt public-source-reparation
+# Aktuel implementeringsstatus – lokal 4.0.384 central ACTIVE-genoptagelse
+
+- [x] Bestå 4.0.383 exact-head `35034134953`, merge PR #326 som main `11f101f8`.
+- [x] Deploy og verificér levende 4.0.383 i providerfri run `35034589754` som 210/673 uden private payloadlæsninger.
+- [x] Bevis at central version 1 fortsat er ACTIVE, og at fejlen skete før enhver central write/PENDING.
+- [x] Afgræns rodårsagen til forkert source-closure i historisk maintenance-plan.
+- [x] Ret normal code-only til centralens aktive source-closure og opret private-runtime-roden før retry.
+- [x] Implementér eksakt source+target-artifactlåst ACTIVE version 1→2-recovery uden nyt deploy eller weather.
+- [x] Bestå måltests og produktionsnær dry run mod de virkelige artifacts uden Supabase-write.
+- [x] Synkronisér releasehukommelse, måltests og versionsrent geodatabevis.
+- [ ] Commit/push og bestå én exact-head sourcegate.
+- [ ] Merge og kør kun den korte centrale recovery; kræv eksakt ACTIVE version 2-readback.
+- [ ] Derefter én normal tidsbegrænset weather og meningsfuld hjemmesidekontrol. Ingen oneoff.
+
+DEC-0166 er aktiv. DEC-0165's offentlige source-reparation er gennemført.
+
+# Historisk implementeringsstatus – 4.0.383 eksakt public-source-reparation
 
 - [x] Bestå 4.0.382 sourcegate `35024395809`, merge PR #324 som main `a7f0fcba`.
 - [x] Bestå providerfri 4.0.382-build, privacy og 79/79 targetartifact i `35025121452`, forsøg 3.
@@ -10,11 +26,12 @@
 - [x] Saml resolverregressionen i eksisterende code-only-test efter `35032447763`; gateplanen er igen 24 kommandoer.
 - [x] Afgræns `35033489693` til for tidlig same-binding-regel; ingen migration, writes, artifact eller Pages skete.
 - [x] Lås central `70f45b3d...336f` og offentlig `398b1132...aaf` separat og bevis den faktiske artifactkombination.
-- [ ] Synkronisér docs/geodatabevis, afslut måltests, commit/push og én exact-head sourcegate.
-- [ ] Merge og kør providerfri 4.0.383 til offentlig 79/79 samt central completion.
+- [x] Synkronisér docs/geodatabevis, afslut måltests, commit/push og bestå exact-head `35034134953`.
+- [x] Merge PR #326 og kør providerfri 4.0.383 til offentlig 79/79 i `35034589754`.
+- [ ] Central completion flyttet til 4.0.384/DEC-0166 efter separat closurefejl før write.
 - [ ] Derefter én normal tidsbegrænset weather for tal, scorer, rotation og cache. Ingen oneoff.
 
-DEC-0165 er aktiv.
+DEC-0165 er offentligt gennemført; central fortsættelse følger DEC-0166.
 
 # Historisk implementeringsstatus – lokal 4.0.382 offentlig adminclosure
 

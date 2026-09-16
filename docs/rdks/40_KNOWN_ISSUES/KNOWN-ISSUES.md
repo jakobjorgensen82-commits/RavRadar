@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-16 – 4.0.383 er live; central maintenance mangler
+
+- **ISSUE-4.0.383-PAGES-DEPLOY – LUKKET:** `35034589754` deployede og friskverificerede levende 4.0.383 som 210/673 uden private payloadlæsninger.
+- **ISSUE-4.0.383-CENTRAL-SOURCE-CLOSURE – RETTET LOKALT / CENTRAL WRITE MANGLER:** Planen brugte den gamle offentlige forgængers closure i stedet for central ACTIVE version 1's closure. Der skete ingen central write og ingen PENDING.
+- **ISSUE-4.0.384-RECOVERY – LOKALT GRØN / LIVEBEVIS MANGLER:** Eksakt source+target-artifactlåst ACTIVE version 1→2-CAS består produktionsnær dry run mod de virkelige artifacts uden Supabase-write.
+- **ISSUE-4.0.384-DEPLOY – ÅBEN P0:** Releasehukommelse, geodatabevis, exact-head, merge og det korte recoveryworkflow mangler. Ingen ny Pages/private/Edge-deploy.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den levende side har struktur, men gammel weatherreference og ikke fuldt sammenlignelige modes. Én normal tidsbegrænset weather skal måle faktiske scorer efter central version 2.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – ÅBEN DRIFTSBEVIS:** Samme normale run skal bevise DMI-rotation, fallback, cachevedligeholdelse og tidsoverskud. Ingen oneoff.
+- **ISSUE-SITE-ACCEPTANCE – DELVIST GRØN / FULD GENNEMGANG MANGLER:** Offentlig 210/673 og browserstart er grøn; alle felter, begge søgemåder, Om RavRadar og admin gennemgås efter central recovery og weather.
+
+DEC-0166. Recoveryen genkører ingen allerede beståede leverancetrin.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.382 target var komplet; sourcepointer var gammel
 
 - **ISSUE-4.0.381-ADMIN-CLOSURE-404 – RETTET I MÅLPAKKE / LIVEBEVIS MANGLER:** 4.0.382-artifactet havde 79/79, men blev ikke deployet.

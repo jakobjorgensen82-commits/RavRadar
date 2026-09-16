@@ -1,3 +1,16 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.384 eksakt central genoptagelse
+
+- **REQ-4.0.384-ALREADY-LIVE-001 – BINDENDE:** 4.0.383's verificerede Pages-, Edge- og private leverance må ikke genkøres for at rette den manglende centrale registrering.
+- **REQ-4.0.384-ACTIVE-TO-ACTIVE-001 – BINDENDE:** Recovery må kun skrive den eksakte centrale ACTIVE version 1 direkte til den eksakte ACTIVE version 2 i én atomisk CAS; ingen PENDING.
+- **REQ-4.0.384-TWO-ENDPOINT-EVIDENCE-001 – BINDENDE:** Både centralt source-artifact og levende target-artifact skal være fastlåst ved id, digest, størrelse, run, head og alle model-/manifest-/readiness-/audit-/sealhashes.
+- **REQ-4.0.384-FRESH-LIVE-001 – BINDENDE:** Den allerede offentlige targetside skal verificeres frisk som integreret 210/673 uden private payloadlæsninger umiddelbart før CAS.
+- **REQ-4.0.384-SEALED-PROFILE-001 – BINDENDE:** Recovery skriver targetartifactets forseglede 4.0.383-profil; en nyere lokal releaseprofil må ikke ændre den historiske targetidentitet.
+- **REQ-4.0.384-NO-REPEAT-001 – BINDENDE:** Recoveryworkflowet må ikke køre sourcegate, weather, oneoff, privat build/install, Edge-deploy eller Pages-deploy.
+- **REQ-4.0.384-NORMAL-CLOSURE-001 – BINDENDE:** Fremtidig historisk integrated maintenance bruger centralens aktive implementation-closure som source.
+
+DEC-0166 fortsætter den gennemførte offentlige del af DEC-0165. Normal weather
+forbliver blokeret, indtil central ACTIVE version 2 er læst tilbage.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.383 eksakt source-reparation
 
 - **REQ-4.0.383-NORMAL-SOURCE-001 – BINDENDE:** Normal code-only-source kræver fortsat eksakt central/offentlig manifestoverensstemmelse.

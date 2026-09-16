@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.384 registrerer allerede levende 4.0.383
+
+PR #326/sourcegate `35034134953` gav main `11f101f8`. Providerfri
+`35034589754` gennemførte privat runtime, backend og Pages og verificerede
+levende 4.0.383 som integreret 210/673 uden private payloadlæsninger. Ingen
+vejrprovider eller oneoff kørte.
+
+Central completion skrev intet, fordi planen brugte en ældre offentlig
+source-closure fremfor central ACTIVE version 1's forseglede closure. 4.0.384
+retter normalplanen og tilføjer én eksakt ACTIVE→ACTIVE-recovery med begge
+historiske artifacts og frisk liveverifikation. Produktionsnær dry run mod de
+virkelige beviser er grøn uden Supabase-write. Næste er exact-head, merge og
+kun den korte centrale CAS; derefter normal tidsbegrænset weather. DEC-0166.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.383 reparerer den faktiske public source
 
 4.0.382 er main `a7f0fcba` efter sourcegate `35024395809` og PR #324.

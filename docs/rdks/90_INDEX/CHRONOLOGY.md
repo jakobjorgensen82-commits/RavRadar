@@ -1,3 +1,9 @@
+# 2026-09-16 – 4.0.383 er live; 4.0.384 afslutter kun central registrering
+
+- PR #326/sourcegate `35034134953` gav main `11f101f8`; providerfri `35034589754` deployede og verificerede 4.0.383 som integreret 210/673.
+- Centralen forblev ACTIVE version 1, fordi planen brugte en ældre offentlig closure. Ingen central write eller PENDING skete.
+- 4.0.384 retter normal closurekilde og tilføjer eksakt source+target-artifactlåst ACTIVE version 1→2-recovery uden nyt deploy eller weather. DEC-0166.
+
 # 2026-09-16 – 4.0.382 byggede 79/79, men central source var ikke den offentlige
 
 - 4.0.382 sourcegate `35024395809` og PR #324 gav main `a7f0fcba`.

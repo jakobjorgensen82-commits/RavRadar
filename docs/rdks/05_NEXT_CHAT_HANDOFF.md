@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.384 central ACTIVE-genoptagelse
+
+Levende 4.0.383 er deployet fra main `11f101f8f4c304253e55d5c850d4274e626db2a2`
+i providerfri run `35034589754` og friskverificeret som integreret 210/673
+uden private payloadlæsninger. Centralen er stadig sikkert ACTIVE version 1;
+maintenance-planen fejlede før write, fordi den brugte en ældre offentlig
+source-closure i stedet for centralens `b050755e...`.
+
+Aktiv branch `codex/4.0.383-central-resume` er versionsløftet til 4.0.384.
+Normalplanens closurekilde og private-runtime-root er rettet. En kort manuel
+workflow verificerer de eksakte source- og targetartifacts plus levende target
+og skriver direkte ACTIVE version 1→2 i én CAS. Produktionsnær dry run er grøn
+uden Supabase-write.
+
+Næste: docs/geodatabevis, måltests, commit/push, én exact-head sourcegate,
+merge og kun den centrale recovery. Derefter normal tidsbegrænset weather,
+sitegennemgang og roadmaprevision. Ingen oneoff. DEC-0166.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.383 eksakt public-source-reparation
 
 4.0.382 bestod sourcegate `35024395809`, PR #324 og main `a7f0fcba`.

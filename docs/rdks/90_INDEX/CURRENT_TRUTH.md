@@ -1,4 +1,25 @@
-# NYESTE SANDHED – 2026-09-16 – 4.0.382 blev bygget, men ikke deployet
+# NYESTE SANDHED – 2026-09-16 – 4.0.383 er levende; kun central registrering mangler
+
+PR #326 bestod exact-head `35034134953` og blev merged som main
+`11f101f8f4c304253e55d5c850d4274e626db2a2`. Providerfri code-only
+`35034589754` deployede Pages og backend. Frisk offentlig kontrol viser 4.0.383,
+integreret model, 210 zoner, 673 kystdele og nul private payloadlæsninger.
+Ingen DMI, Copernicus, Open-Meteo, oneoff eller normal weather kørte.
+
+Kun central maintenance fejlede. Planen brugte den gamle offentlige
+forgængers closure `0b2fb58f...` i stedet for central ACTIVE version 1's
+forseglede closure `b050755e...`. Der skete ingen central write og ingen
+PENDING; centralen er stadig ACTIVE version 1 på `pages-34877443841-1`.
+
+Lokal 4.0.384 retter den normale closurekilde og tilføjer en eksakt
+engangsrecovery. Den genbruger source-artifact `10362720209` og target-artifact
+`10423002354`, genkontrollerer deres immutable metadata og den levende side og
+skriver derefter direkte ACTIVE version 1→2 i én CAS. Produktionsnær dry run
+med de virkelige artifacts er grøn uden Supabase-write. Recoveryen genkører
+ikke sourcegate, weather, private runtime, Edge eller Pages. Efter central
+aktivering følger normal tidsbegrænset weather. Ingen oneoff. DEC-0166.
+
+# HISTORISK SANDHED – 2026-09-16 – 4.0.382 blev bygget, men ikke deployet
 
 4.0.382 bestod exact-head `35024395809`, PR #324 og merge til main
 `a7f0fcbac844d6c0e0919015162d2409703cb44d`. Providerfri code-only

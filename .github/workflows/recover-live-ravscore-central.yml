@@ -1,0 +1,211 @@
+name: Recover already-live RavScore central state
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv RECOVER-LIVE-RAVSCORE-CENTRAL"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ravradar-weather-production
+  cancel-in-progress: false
+
+jobs:
+  recover-central:
+    name: Record exact already-live 4.0.383 target
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      RAVRADAR_SOURCE_EVIDENCE: /tmp/ravradar-central-source-34877443841
+      RAVRADAR_TARGET_EVIDENCE: /tmp/ravradar-live-target-35034589754
+      RAVRADAR_RECOVERY_WORK: /tmp/ravradar-central-recovery
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate exact manual authority and current main
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "RECOVER-LIVE-RAVSCORE-CENTRAL"
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_REF" = "refs/heads/main"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Detect only the exact missed or already-recovered state
+        id: central-state
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_RECOVERY_WORK"
+          node scripts/ravscore-operational-activation.mjs read \
+            --output "$RAVRADAR_RECOVERY_WORK/before.json"
+          current="$RAVRADAR_RECOVERY_WORK/before.json"
+          if test "$(jq -r '.centralVersion' "$current")" = "2" \
+              && test "$(jq -r '.model' "$current")" = "integrated" \
+              && test "$(jq -r '.status' "$current")" = "INTEGRATED_ACTIVE" \
+              && test "$(jq -r '.bindingCurrent' "$current")" = "true" \
+              && test "$(jq -r '.sourceHead' "$current")" = "11f101f8f4c304253e55d5c850d4274e626db2a2" \
+              && test "$(jq -r '.activeImplementationClosureSha256' "$current")" = "d99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6" \
+              && test "$(jq -r '.deploymentId' "$current")" = "pages-35034589754-1"; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test "$(jq -r '.centralVersion' "$current")" = "1"
+          test "$(jq -r '.model' "$current")" = "integrated"
+          test "$(jq -r '.status' "$current")" = "INTEGRATED_ACTIVE"
+          test "$(jq -r '.bindingCurrent' "$current")" = "false"
+          test "$(jq -r '.initialCutoverRequired' "$current")" = "false"
+          test "$(jq -r '.sourceHead' "$current")" = "fa418f43bbd070c446ed19b6587541b93af89599"
+          test "$(jq -r '.activeImplementationClosureSha256' "$current")" = "b050755ec8b904cff60838bb3c9f1ec5a5bdb9f0fd24d14b0ed957eaa32fce4d"
+          test "$(jq -r '.deploymentId' "$current")" = "pages-34877443841-1"
+          echo "required=true" >> "$GITHUB_OUTPUT"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Download exact centrally active source evidence
+        if: steps.central-state.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ravscore-operational-recovery-34877443841-1
+          path: ${{ env.RAVRADAR_SOURCE_EVIDENCE }}
+          run-id: 34877443841
+          github-token: ${{ github.token }}
+
+      - name: Download exact already-live target evidence
+        if: steps.central-state.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ravscore-operational-recovery-35034589754-1
+          path: ${{ env.RAVRADAR_TARGET_EVIDENCE }}
+          run-id: 35034589754
+          github-token: ${{ github.token }}
+
+      - name: Verify exact immutable recovery artifacts
+        if: steps.central-state.outputs.required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10362720209" \
+            > "$RAVRADAR_RECOVERY_WORK/source-artifact.json"
+          jq -e '
+            .id == 10362720209
+            and .name == "ravscore-operational-recovery-34877443841-1"
+            and .expired == false
+            and .size_in_bytes == 36528
+            and .digest == "sha256:5e82c5cbcb19ae2b1b7445863da00d9033c797048d6e2f41ab2839e4cfb884fb"
+            and .workflow_run.id == 34877443841
+            and .workflow_run.head_sha == "fa418f43bbd070c446ed19b6587541b93af89599"
+          ' "$RAVRADAR_RECOVERY_WORK/source-artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10423002354" \
+            > "$RAVRADAR_RECOVERY_WORK/target-artifact.json"
+          jq -e '
+            .id == 10423002354
+            and .name == "ravscore-operational-recovery-35034589754-1"
+            and .expired == false
+            and .size_in_bytes == 61979
+            and .digest == "sha256:4ef3cf5926334e92da38d001c8fd37e5b792ce08a40335c0b4e03f9da77e6719"
+            and .workflow_run.id == 35034589754
+            and .workflow_run.head_sha == "11f101f8f4c304253e55d5c850d4274e626db2a2"
+          ' "$RAVRADAR_RECOVERY_WORK/target-artifact.json" >/dev/null
+          for evidence in manifest.json public-audit.json integrated-readiness.json target-binding.json pages-artifact-seal.json; do
+            test -f "$RAVRADAR_SOURCE_EVIDENCE/$evidence"
+            test -f "$RAVRADAR_TARGET_EVIDENCE/$evidence"
+          done
+          for evidence in target-contract.js target-bundle.generated.js target-public-closure.json; do
+            test -f "$RAVRADAR_TARGET_EVIDENCE/$evidence"
+          done
+
+      - name: Freshly verify the exact 4.0.383 target is still public
+        if: steps.central-state.outputs.required == 'true'
+        shell: bash
+        run: >-
+          node scripts/verify-ravscore-operational-pages-deployment.mjs
+          --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+          --source-head 11f101f8f4c304253e55d5c850d4274e626db2a2
+          --model integrated
+          --manifest "$RAVRADAR_TARGET_EVIDENCE/manifest.json"
+          --binding "$RAVRADAR_TARGET_EVIDENCE/target-binding.json"
+          --contract "$RAVRADAR_TARGET_EVIDENCE/target-contract.js"
+          --bundle "$RAVRADAR_TARGET_EVIDENCE/target-bundle.generated.js"
+          --public-closure "$RAVRADAR_TARGET_EVIDENCE/target-public-closure.json"
+          --observation-nonce "missed-maintenance-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          --output "$RAVRADAR_RECOVERY_WORK/live-verification.json"
+
+      - name: Reconfirm current main immediately before central recovery
+        if: steps.central-state.outputs.required == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$current_main" = "$EXPECTED_HEAD_SHA"
+
+      - name: Atomically record the exact already-live maintenance target
+        if: steps.central-state.outputs.required == 'true'
+        shell: bash
+        run: >-
+          node scripts/ravscore-operational-activation.mjs
+          recover-missed-integrated-historical-maintenance
+          --source-manifest "$RAVRADAR_SOURCE_EVIDENCE/manifest.json"
+          --source-audit "$RAVRADAR_SOURCE_EVIDENCE/public-audit.json"
+          --source-readiness "$RAVRADAR_SOURCE_EVIDENCE/integrated-readiness.json"
+          --source-binding "$RAVRADAR_SOURCE_EVIDENCE/target-binding.json"
+          --source-pages-artifact-seal "$RAVRADAR_SOURCE_EVIDENCE/pages-artifact-seal.json"
+          --manifest "$RAVRADAR_TARGET_EVIDENCE/manifest.json"
+          --audit "$RAVRADAR_TARGET_EVIDENCE/public-audit.json"
+          --readiness "$RAVRADAR_TARGET_EVIDENCE/integrated-readiness.json"
+          --binding "$RAVRADAR_TARGET_EVIDENCE/target-binding.json"
+          --verification "$RAVRADAR_RECOVERY_WORK/live-verification.json"
+          --pages-artifact-seal "$RAVRADAR_TARGET_EVIDENCE/pages-artifact-seal.json"
+          --output "$RAVRADAR_RECOVERY_WORK/recovered.json"
+        env:
+          RAVRADAR_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_CONFIRMATION: RECOVER-MISSED-INTEGRATED-HISTORICAL-MAINTENANCE-35034589754
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Require exact final active central identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ravscore-operational-activation.mjs read \
+            --output "$RAVRADAR_RECOVERY_WORK/after.json"
+          current="$RAVRADAR_RECOVERY_WORK/after.json"
+          test "$(jq -r '.centralVersion' "$current")" = "2"
+          test "$(jq -r '.model' "$current")" = "integrated"
+          test "$(jq -r '.status' "$current")" = "INTEGRATED_ACTIVE"
+          test "$(jq -r '.bindingCurrent' "$current")" = "true"
+          test "$(jq -r '.initialCutoverRequired' "$current")" = "false"
+          test "$(jq -r '.legacySourceRequired' "$current")" = "false"
+          test "$(jq -r '.sourceHead' "$current")" = "11f101f8f4c304253e55d5c850d4274e626db2a2"
+          test "$(jq -r '.activeImplementationClosureSha256' "$current")" = "d99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6"
+          test "$(jq -r '.deploymentId' "$current")" = "pages-35034589754-1"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

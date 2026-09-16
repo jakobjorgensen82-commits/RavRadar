@@ -1,3 +1,22 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.384 central ACTIVE-genoptagelse
+
+Levende 4.0.383 er deployet fra main `11f101f8f4c304253e55d5c850d4274e626db2a2`
+i providerfri run `35034589754` og friskverificeret som integreret 210/673
+uden private payloadlæsninger. Centralen er stadig sikkert ACTIVE version 1;
+maintenance-planen fejlede før write, fordi den brugte en ældre offentlig
+source-closure i stedet for centralens `b050755e...`.
+
+Aktiv branch er `codex/4.0.383-central-resume`, versionsløftet til 4.0.384.
+Normalplanens closurekilde og private-runtime-root er rettet. Ny kort workflow
+genbruger eksakt source-artifact `10362720209` og target-artifact `10423002354`,
+verificerer immutable metadata og levende target og skriver direkte ACTIVE
+version 1→2 i én CAS. Virkelige artifacts består dry run uden Supabase-write.
+
+Næste: afslut docs/geodatabevis og måltests, commit/push, én exact-head
+sourcegate, merge og kør kun recoveryworkflowet. Ingen weather før central
+version 2; derefter normal tidsbegrænset weather, visuel sitegennemgang og
+roadmaprevision. Ingen oneoff. DEC-0166. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.383 er publiceret; central genoptagelse mangler
 
 PR #326 er merged som main `11f101f8f4c304253e55d5c850d4274e626db2a2`

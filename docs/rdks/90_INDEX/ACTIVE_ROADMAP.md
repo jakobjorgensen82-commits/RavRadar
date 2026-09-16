@@ -1,15 +1,29 @@
-# Aktiv roadmap – 4.0.383 fra kendt kildedrift til hel offentlig closure
+# Aktiv roadmap – 4.0.384 fra levende 4.0.383 til central sandhed og normal drift
+
+1. [x] Deploy og friskverificér 4.0.383 offentligt som 210/673 uden private payloadlæsninger.
+2. [x] Afgræns centralstoppet til forkert historisk source-closure; bevis ingen write og ingen PENDING.
+3. [x] Implementér og måltest én atomisk, artifactlåst ACTIVE version 1→2-recovery uden nyt deploy.
+4. [x] Afslut versions-/RDKS-/geodatabevis og målrettede slutkontroller.
+5. [ ] Commit/push, én exact-head sourcegate, merge og den korte centrale recovery; kræv eksakt version 2 og aktuel binding.
+6. [ ] Kør én normal tidsbegrænset weather og bevis numeriske scorer, DMI-rotation, fallback og cachevedligeholdelse. Ingen oneoff.
+7. [ ] Gennemgå hovedkort, begge søgemåder, Om RavRadar, admin og privacy meningsfuldt på den levende runtime.
+8. [ ] Revurdér de resterende roadmap-punkter mod faktisk produktværdi og luk/afgræns forældede punkter.
+
+DEC-0166 er aktiv. Ingen vejrhentning før punkt 5 er grønt.
+
+# Historisk roadmap – 4.0.383 fra kendt kildedrift til hel offentlig closure
 
 1. [x] Bestå 4.0.382 sourcegate/PR/merge og bygge en komplet 79/79-Pages-pakke uden provider.
 2. [x] Afgræns stoppet til gammel central sourcepointer mod faktisk offentlig 4.0.381-deployment.
 3. [x] Implementér en eksakt identitetslåst source-reparation og bevis live 78/79 med kun kendt 404.
 4. [x] Bevar normal 79/79-, privacy-, model-, source- og latest-main-kontrol for det nye mål.
-5. [ ] Færdiggør docs/geodatabevis, måltests, commit/push og én exact-head sourcegate.
-6. [ ] Merge og kør providerfri 4.0.383 til offentlig 79/79 og central completion.
-7. [ ] Kontrollér admin, hovedkort, Om RavRadar, modelbinding og privacy meningsfuldt.
-8. [ ] Kør én normal tidsbegrænset weather og bevis numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
+5. [x] Færdiggør docs/geodatabevis, måltests, commit/push og bestå exact-head `35034134953`.
+6. [x] Merge og kør providerfri 4.0.383 til offentlig 79/79 i `35034589754`.
+7. [ ] Central completion flyttet til 4.0.384/DEC-0166 efter separat closurefejl før write.
+8. [ ] Kontrollér admin, hovedkort, Om RavRadar, modelbinding og privacy meningsfuldt.
+9. [ ] Kør én normal tidsbegrænset weather og bevis numeriske scorer, DMI-rotation og cachevedligeholdelse. Ingen oneoff.
 
-DEC-0165 er aktiv.
+DEC-0165's offentlige del er gennemført; resterende central fortsættelse følger DEC-0166.
 
 # Historisk roadmap – 4.0.382 fra levende model til hel offentlig closure
 
