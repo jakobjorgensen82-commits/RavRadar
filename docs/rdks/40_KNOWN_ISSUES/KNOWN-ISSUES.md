@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-16 – restore er bevist; Open-Meteos restkø roteres i 4.0.386
+
+- **ISSUE-4.0.385-PRIVATE-RUNTIME-ROOT – LUKKET:** Begge normale runs gendannede de beskyttede cachefiler og nåede providers; ingen gammel runtime-rod var nødvendig.
+- **ISSUE-4.0.385-OPEN-METEO-FOLLOW-ON – LUKKET:** Den misvisende upstream-skip-fejl er væk; de røde Open-Meteo-afslutninger var reelle nul-missing-stop efter faktisk providerforløb.
+- **ISSUE-4.0.386-BOUNDED-QUEUE-STARVATION – RETTET LOKALT / LIVEBEVIS MANGLER:** Samme sorterede køhoved gentog svære/null-batches og kunne sulte senere arbejde. Hele batches roteres nu tids- og retrybaseret.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den offentlige side bruger fortsat nøddata 4.0.383. Normal weather skal nå nul reelle mangler og producere faktiske scorer før deploy.
+- **ISSUE-NORMAL-MAINTENANCE-ROTATION – DELVIST GRØN:** DMI-rotation og cachegenbrug er livebevist. Open-Meteos nye fair rotation og fuld lukning mangler livebevis.
+- **ISSUE-SITE-ACCEPTANCE – DELVIST GRØN / FULD GENNEMGANG MANGLER:** Om RavRadar viser PWA-vejledning og Facebook-link, og begge søgemåder skifter; fuld data-/admin-/scorekontrol følger efter frisk weather.
+
+DEC-0168. Scheduler er midlertidigt pauset; ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-16 – central aktiv; normal runtime-restore rettes
 
 - **ISSUE-4.0.384-CENTRAL-RECOVERY – LUKKET:** Sourcegate 35040475553, PR #327 og recovery 35040799616 gav central INTEGRATED_ACTIVE version 2 med aktuel binding.

@@ -1,6 +1,6 @@
 # DEC-0167 – Normal weather opretter og gendanner privat runtime før providers
 
-**Status:** Aktiv; implementeret lokalt i 4.0.385, exact-head og livebevis afventer
+**Status:** Gennemført; merged i 4.0.385 og livebevist i normalrun 35043360563 og 35046314979
 **Dato:** 2026-09-16
 
 ## Evidens
@@ -32,3 +32,9 @@ RavScore-formel, modelbinding, geometri, providerprioritet, rotation,
 cacheformat og offentlig datakontrakt ændres ikke. Rettelsen åbner kun den
 allerede besluttede normale vedligeholdelsesvej og fjerner én umulig
 følgeklassifikation.
+
+## Liveudfald
+
+Begge normale runs gendannede de beskyttede cacher, nåede providers og gemte
+fremgang. De stoppede senere korrekt på reelle Open-Meteo-huller. Den
+efterfølgende, selvstændige køplanlægningsfejl behandles i DEC-0168.

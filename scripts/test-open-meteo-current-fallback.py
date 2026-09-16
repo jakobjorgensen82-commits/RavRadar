@@ -503,6 +503,56 @@ rejected(lambda: build_record(
 
 cli = runpy.run_path(str(Path(__file__).with_name("fill-open-meteo-current-fallback.py")))
 
+# The bounded provider queue must move without turning provider evidence into
+# scheduler state. UTC-equivalent starts are stable, quarter/hour slots spread
+# work, and a GitHub retry advances one additional batch.
+rotation_base = datetime(2026, 9, 16, 2, 0, tzinfo=timezone.utc)
+rotation_slot = cli["open_meteo_rotation_slot"]
+assert rotation_slot(rotation_base, batch_count=7) == rotation_slot(
+    rotation_base.astimezone(timezone(timedelta(hours=2))), batch_count=7,
+)
+assert rotation_slot(rotation_base, batch_count=7) == rotation_slot(
+    rotation_base + timedelta(minutes=14, seconds=59), batch_count=7,
+)
+assert {
+    rotation_slot(rotation_base + timedelta(hours=offset), batch_count=7)
+    for offset in range(7)
+} == set(range(7))
+assert len({
+    rotation_slot(rotation_base + timedelta(minutes=15 * quarter), batch_count=8)
+    for quarter in range(4)
+}) == 4
+default_retry_slot = rotation_slot(rotation_base, batch_count=7)
+with patch.dict(rotation_slot.__globals__["os"].environ, {
+    "GITHUB_RUN_ATTEMPT": "2",
+}):
+    assert rotation_slot(rotation_base, batch_count=7) == (
+        default_retry_slot + 1
+    ) % 7
+for bad_count in (0, -1, True, "7"):
+    try:
+        rotation_slot(rotation_base, batch_count=bad_count)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Invalid batch count selected an arbitrary queue head")
+for bad_attempt in ("0", "101", "invalid"):
+    with patch.dict(rotation_slot.__globals__["os"].environ, {
+        "GITHUB_RUN_ATTEMPT": bad_attempt,
+    }):
+        try:
+            rotation_slot(rotation_base, batch_count=7)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Invalid retry metadata steered Open-Meteo")
+try:
+    rotation_slot(rotation_base.replace(tzinfo=None), batch_count=7)
+except ValueError:
+    pass
+else:
+    raise AssertionError("Naive time depended on the runner timezone")
+
 with tempfile.TemporaryDirectory(prefix="ravradar-open-meteo-cache-") as raw_folder:
     unparseable_path = Path(raw_folder) / "progress.json"
     unparseable_path.write_text("{", encoding="utf-8")
@@ -760,6 +810,7 @@ batch_required = [
     {"partId": target["partId"], "validTime": first_hour}
     for target in batch_targets
 ]
+
 batch_calls = []
 batch_sequence = [0, 1, 2, 3, 1, 2]
 batch_clock = FakeClock()
@@ -883,6 +934,44 @@ def requested_part_ids(url, candidates):
         part_by_point[(longitude, latitude)]
         for longitude, latitude in zip(longitudes, latitudes)
     ], query["start_hour"][0], query["end_hour"][0]
+
+
+# A production-style call (dynamic acquisition time) rotates whole batches
+# before the bounded request loop. With one allowed attempt, batch three is
+# visited first and every other batch remains truthfully unresolved.
+rotated_calls = []
+rotated_diagnostics = {}
+
+
+def rotated_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, batch_targets,
+    )
+    rotated_calls.append(part_ids)
+    return response_payload(batch_target_map[part_ids[0]])
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 1,
+    "MAX_TOTAL_REQUEST_ATTEMPTS": 1,
+    "open_meteo_rotation_slot": lambda *_args, **_kwargs: 2,
+    "request_json": rotated_request,
+}):
+    rotated_records = cli["fetch_records"](
+        batch_required,
+        batch_target_map,
+        None,
+        30,
+        240,
+        diagnostics=rotated_diagnostics,
+    )
+
+assert rotated_calls == [["I3"]]
+assert [row["partId"] for row in rotated_records] == ["I3"]
+assert rotated_diagnostics["rotationSlot"] == 2
+assert rotated_diagnostics["rotationApplied"] is True
+assert rotated_diagnostics["batchUnresolvedCount"] == 3
+assert rotated_diagnostics["unresolvedPairCount"] == 3
 
 
 # A successful subset of a same-cardinality multi-location response is

@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.386 fair Open-Meteo-restkø
+
+4.0.385 er main `879f4644`. Normalrun `35043360563` og `35046314979`
+beviste, at private cacher gendannes, DMI roterer, og providerfremgang
+gemmes. Open-Meteos mangler faldt først fra 59.382 til 33.383, men næste run
+tilføjede kun 244 og endte på 33.412.
+
+Den tidsbegrænsede restkø startede hver gang ved samme sorterede batch.
+4.0.386 roterer derfor hele stabile batches efter UTC-time, kvarter og
+GitHub-forsøg uden at ændre providerbevis, datagodkendelse eller cacheformat.
+Nul reelle mangler kræves fortsat før build/deploy. Scheduler er pauset.
+Måltests og rent geodataversionsbevis er grønne. Afslut RDKS, commit/push,
+én exact-head, merge, genaktivér og kør én normal `force=false` weather.
+Ingen oneoff. DEC-0168. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – central aktiv; lokal 4.0.385 normal-weather restore
 
 4.0.384 er afsluttet: exact-head 35040475553, PR #327, main 2628ddef og

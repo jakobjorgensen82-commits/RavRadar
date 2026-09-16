@@ -1,3 +1,16 @@
+# Aktiv roadmap – 4.0.386 fra bevaret cache til fair normal restfyldning
+
+1. [x] Bevis live, at 4.0.385 gendanner private cacher og lader DMI, Copernicus og Open-Meteo gemme fremgang.
+2. [x] Sammenlign to almindelige runs og afgræns stagnationen til gentaget køstart, ikke mistet cache eller for kort samlet DMI-tid.
+3. [x] Implementér UTC-/kvarter-/retry-baseret rotation af hele stabile Open-Meteo-batches.
+4. [x] Bevar ældst-først-genopfriskning, providerbevis, cacheformat og hård nul-missing-gate; bestå måltests og rent geodataversionsbevis.
+5. [ ] Commit/push, én exact-head sourcegate og merge.
+6. [ ] Genaktivér scheduler og kør én normal `force=false` weather; bevis rotationsslot, fortsat cachefremgang og nul reelle mangler før deploy. Ingen oneoff.
+7. [ ] Verificér offentlig version, numeriske scorer, hovedkort, begge søgemåder, Om RavRadar, admin og privacy.
+8. [ ] Revurdér resterende roadmap-punkter mod faktisk produktværdi og luk eller afgræns forældede punkter.
+
+DEC-0168 er aktiv. Scheduler er kun pauset, mens den kendte køfejl leveres.
+
 # Aktiv roadmap – 4.0.385 fra central aktiv model til bevist normal drift
 
 1. [x] Afslut 4.0.384 exact-head, PR #327, merge og central ACTIVE version 2-recovery.

@@ -1,4 +1,4 @@
-import { RAVSCORE_BEST_TIME_POLICY } from './ravscore-model-contract.js?v=4.0.385';
+import { RAVSCORE_BEST_TIME_POLICY } from './ravscore-model-contract.js?v=4.0.386';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const scoreQualityRank = value => value === 'FULL_HISTORY' ? 0

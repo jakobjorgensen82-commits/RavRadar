@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-16 – 4.0.385 restore virker; 4.0.386 retter kørotation
+
+4.0.385 er merged som main `879f4644d391b41cb52c7f5435551c368fedd1fa`.
+Normalrun `35043360563` og `35046314979` gendannede Open-Meteo-progress og
+donorbank samt Copernicus- og DMI-cacher. DMI roterede, og fremgang blev
+gemt. DEC-0167's private runtime-rettelse er dermed livebevist.
+
+Første run begyndte før Copernicus med 59.382 reelle mangler og sluttede med
+33.383. Næste run begyndte før Copernicus med 33.656, men Open-Meteo bevarede
+26.300, hentede kun 244 og sluttede med 33.412. Den stabile sorterede kø
+begyndte ved samme svære/null-batches under hver begrænset passage, så senere
+batches kunne forblive uprøvede. Det er en køplanlægningsfejl, ikke bevis for
+tab af den gemte cache.
+
+Lokal 4.0.386 roterer hele batches efter UTC-time, kvarter og GitHub-forsøg.
+Acceptregler, providerbevis, cacheformat og hård nul-missing-gate er uændrede.
+Den offentlige side bruger fortsat nøddata 4.0.383, indtil en normal komplet
+weather kan bygge og deploye. Scheduler er pauset til merge. Ingen oneoff.
+DEC-0168.
+
 # NYESTE SANDHED – 2026-09-16 – central version 2 er aktiv; normal weatherstart rettes i 4.0.385
 
 4.0.384 bestod exact-head 35040475553, PR #327 og merge

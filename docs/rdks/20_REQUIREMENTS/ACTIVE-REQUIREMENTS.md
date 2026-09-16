@@ -1,3 +1,16 @@
+# Aktuelt ejerdelta – 2026-09-16 – 4.0.386 fair bounded Open-Meteo-kø
+
+- **REQ-4.0.386-STABLE-BATCH-001 – BINDENDE:** Restpar sorteres og opdeles deterministisk i stabile hele batches, før køens startpunkt flyttes.
+- **REQ-4.0.386-FAIR-ROTATION-001 – BINDENDE:** Produktlignende tidsbegrænset restfyldning skal rotere køens start efter UTC-time, kvarter og GitHub-forsøg, så svære eller tomme batches ikke kan sulte senere reelle huller.
+- **REQ-4.0.386-NO-EVIDENCE-CURSOR-001 – BINDENDE:** Providerbevis, negative observationer og cachedata må ikke bruges som skjult scheduler-cursor.
+- **REQ-4.0.386-REFRESH-ORDER-001 – BINDENDE:** Proaktiv genopfriskning med bevaret inputrækkefølge forbliver ældst-først og må ikke rammes af restkørotationen.
+- **REQ-4.0.386-SAFE-DIAGNOSTICS-001 – BINDENDE:** Offentlig/sikker diagnostik må kun vise numerisk rotationsslot og boolesk anvendelse; ingen del-id'er, koordinater eller rå vektorer.
+- **REQ-4.0.386-HARD-COMPLETENESS-001 – BINDENDE:** Rotation lemper ikke datakravet. Reelle manglende par stopper fortsat build og deploy.
+- **REQ-4.0.386-NORMAL-PROOF-001 – BINDENDE:** Livebeviset bruger én almindelig `force=false`-kørsel og den gemte cache. Ingen oneoff.
+- **REQ-4.0.386-SCHEDULER-001 – BINDENDE:** Scheduler er pauset under rettelsen og genaktiveres efter sikker merge.
+
+DEC-0168 følger DEC-0167's livebevis og retter kun den selvstændige køplanlægning.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.385 normal-weather restore
 
 - **REQ-4.0.385-RUNTIME-ROOT-001 – BINDENDE:** Normal weather skal oprette sin private runtime-rod før protected restore; et friskt GitHub-run må ikke afhænge af en mappe fra et tidligere trin.

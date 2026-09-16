@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.386 roterer Open-Meteos tidsbegrænsede restkø
+
+- 4.0.385 blev merged som main `879f4644`; normalrun `35043360563` og `35046314979` gendannede de private cacher og gemte providerfremgang.
+- Første run reducerede reelle mangler fra 59.382 til 33.383. Næste startede ved 33.656, hentede kun 244 Open-Meteo-par og sluttede ved 33.412.
+- Rodårsagen var gentaget start ved samme sorterede batch under begrænset køretid; senere batches kunne sulte.
+- 4.0.386 roterer hele stabile batches med UTC-time, kvarter og GitHub-forsøg uden at ændre providerbevis, cache eller nul-missing-gate. DEC-0168.
+
 # 2026-09-16 – central version 2 er aktiv; 4.0.385 retter normal weatherstart
 
 - 4.0.384 sourcegate 35040475553, PR #327 og main 2628ddef blev fulgt af grøn central recovery 35040799616.
