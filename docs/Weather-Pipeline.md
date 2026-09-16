@@ -1,5 +1,25 @@
 # Weather Pipeline 1.0
 
+## 4.0.390 – forlænget bootstrap uden den gamle oneoff
+
+To 4.0.389-normalruns beviste, at rotationen og cacherne virker, men også at
+de korte DMI/Copernicus-passager vil kræve mange gentagelser. Første run
+reducerede 6.450 rester til 5.025. Næste target var en time nyere; DMI voksede
+fra 14.260 til 14.772, regional DMI fra 416 til 704, og slutresten faldt til
+4.565.
+
+Open-Meteo nåede hele køen i begge runs. Andet run afsluttede alle retries
+uden at ramme 900-sekundersbudgettet. De resterende par var provider-negative
+null-/gitterafstandstilfælde, så mere Open-Meteo-tid ville ikke være en
+meningsfuld løsning.
+
+4.0.390 genopliver ikke den Candidate G-bundne før-cutover-oneoff. I stedet
+kan ejeren eksplicit starte normalruten med `force=true` og
+`extended_provider_bootstrap=true` på main. DMI får da op til 3.600
+sekunder og seks samlinger, Copernicus op til 3.300 sekunder og hele
+buildjobbet 240 minutter. Planlagte og almindelige runs beholder de korte
+budgetter. Open-Meteo, caches, kildeorden og nul-missing-gate er uændrede.
+
 ## 4.0.389 – normal Open-Meteo bruger kun ekstra tid på reelle huller
 
 Normalrun `35064588725` gendannede og gemte DMI-, Copernicus- og

@@ -1,3 +1,10 @@
+# 2026-09-16 – 4.0.390 samler post-cutover-bootstrap i den normale rute
+
+- 4.0.389 blev main `bf8eb739`; normalrun `35069942328` reducerede 6.450→5.025 reelle rester.
+- Næste normalrun `35074225256` flyttede target en time, øgede DMI 14.260→14.772 og regional DMI 416→704 samt reducerede 5.181→4.565.
+- Open-Meteo nåede hele køen i begge runs; resten var provider-negative null-/gittertilfælde, ikke uafprøvede batches.
+- 4.0.390 tilføjer eksplicit main-only force-bootstrap med DMI 3.600 sekunder/seks samlinger og Copernicus 3.300 sekunder gennem normalruten; DMI har dermed længst providertid. DEC-0172.
+
 # 2026-09-16 – 4.0.389 giver den normale kritiske restliste en realistisk ramme
 
 - 4.0.388 blev main `8d0a5ac5`; normalrun `35064588725` livebeviste journalrebase, rotation og cache-save hos alle tre providerled.

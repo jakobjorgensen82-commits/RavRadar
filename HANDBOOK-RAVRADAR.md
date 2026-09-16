@@ -1,6 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.389
+**Håndbogsversion:** 4.0.390
+
+## 88.94 4.0.390 – DMI og Copernicus får én samlet lang indhentning
+
+### Aktuel status – post-cutover-bootstrap
+
+**Status – lokal rettelse klar; GitHub-kontrol og levende kørsel mangler**
+
+**Kort fortalt:** To almindelige vejropdateringer viste, at RavRadar bevæger
+sig i den rigtige retning, men for langsomt. Den første sluttede med 5.025
+huller. Den næste sluttede med 4.565, selv om prognosevinduet samtidig
+flyttede en time frem.
+
+Open‑Meteo nåede hele sin arbejdsliste i begge kørsler. De sidste huller var
+derfor ikke grupper, som Open‑Meteo bare manglede tid til at prøve. De var
+steder og timer, hvor leverandøren svarede tomt eller ikke havde et gyldigt
+nært havgitterpunkt. Mere ventetid hos Open‑Meteo ville ikke løse det.
+
+4.0.390 giver i stedet DMI og Copernicus en særskilt, manuelt startet lang
+indhentning gennem den samme sikre vej som almindelige vejropdateringer.
+DMI får op til 60 minutter og dobbelt antal samlinger. Copernicus får op til
+55 minutter. De allerede gemte data genbruges.
+
+Den lange tilstand kan kun startes udtrykkeligt på main sammen med en tvungen
+vejropdatering. Planlagte og almindelige kørsler forbliver korte. Open‑Meteo
+forbliver 15 minutter og arbejder kun med reelle huller.
+
+Kildeordenen ændres ikke: DMI først, derefter Copernicus, regional DMI og til
+sidst Open‑Meteo. Intet nyt kommer online, før alle 79.414 par er udfyldt og
+de almindelige datakontroller er bestået.
 
 ## 88.93 4.0.389 – Den normale vejropdatering får tid til at lukke de sidste huller
 

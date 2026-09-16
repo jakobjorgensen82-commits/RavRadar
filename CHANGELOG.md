@@ -1,3 +1,9 @@
+## 4.0.390 – forlænget post-cutover-providerbootstrap (2026-09-16, lokal kandidat)
+
+- To normale 4.0.389-runs reducerede slutresten fra 5.025 til 4.565, mens target rykkede en time. Open-Meteo nåede hele køen; resten var provider-negative null-/gittertilfælde.
+- Et eksplicit main-only `extended_provider_bootstrap` på `force=true` giver førsteprioriteten DMI 3.600 sekunder/seks samlinger og Copernicus 3.300 sekunder gennem den fungerende normale produktionsrute.
+- Normaldrift forbliver kort, Open-Meteo forbliver 900 sekunder/`--critical-only`, og nul-missing-gaten lempes ikke. Se `CHANGELOG-4.0.390.md` og DEC-0172.
+
 ## 4.0.389 – realistisk normal Open-Meteo-restfyldning (2026-09-16, lokal kandidat)
 
 - Normalrun `35064588725` livebeviste 4.0.388-journalrettelsen, cachegenbrug og alle tre providerled, men 240 sekunder gav kun fire vellykkede Open-Meteo-requests og 396 udfyldte par; 5.858 reelle rester stod tilbage uden providerfejl.

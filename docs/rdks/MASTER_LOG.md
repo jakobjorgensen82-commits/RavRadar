@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.390 forlænger de højere kilder samlet
+
+4.0.389 er main. To almindelige passager viste reel, men for langsom
+rotation: `35069942328` sluttede med 5.025 rester, og
+`35074225256` sluttede med 4.565, selv om target rykkede en time.
+DMI steg 512 par og regional DMI 288 mellem planerne. Open-Meteo nåede hele
+køen og efterlod provider-negative null-/gitterrester; mere tid dér er ikke
+begrundet.
+
+4.0.390 tilføjer en eksplicit main-only force-bootstrap til den fungerende
+normale post-cutover-rute. Kun den får DMI 3.600 sekunder/seks samlinger,
+Copernicus 3.300 sekunder og 240 minutters jobloft. DMI har længst providertid. Normaldrift og alle
+datagates er uændrede. Scheduler er pauset. DEC-0172.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.389 bruger normalruten til kritisk closure
 
 4.0.388 er main, og normalrun `35064588725` beviste journalrettelsen,

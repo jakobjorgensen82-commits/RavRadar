@@ -17,6 +17,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
     inputs: freezeList([
       'production_target_hour',
       'force',
+      'extended_provider_bootstrap',
       'produce_weather_handoff',
       'produce_weather_handoff_confirmation',
       'ravscore_candidate_g_rollback_mode',

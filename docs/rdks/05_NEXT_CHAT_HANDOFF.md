@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.390 forlænget post-cutover-bootstrap
+
+Arbejd i `RavRadar-4.0.366`, branch
+`codex/4.0.390-provider-bootstrap`, baseret på main
+`bf8eb739476631ec534df3b2e3ba75e7370a3c29`.
+
+4.0.389 normalrun `35069942328` gav 6.450→5.025 rester. Næste
+`35074225256` rykkede target til 08Z, gav DMI 14.772, regional 704,
+5.181 før Open-Meteo og 4.565 efter. Open-Meteo nåede hele køen; mere tid
+dér er ikke løsningen.
+
+Lokal 4.0.390 bruger den normale sikre post-cutover-rute med eksplicit
+`force=true` og `extended_provider_bootstrap=true`: DMI 3.600 sekunder/
+seks samlinger, Copernicus 3.300 sekunder og jobloft 240 minutter. Normal
+drift forbliver kort. Afslut version/RDKS/håndbog/måltests, push, exact-head,
+merge og dispatch bootstrap. Kræv nul mangler før deploy. DEC-0172.
+Scheduler pauset. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.389 kritisk normal restfyldning
 
 Arbejd i `RavRadar-4.0.366`, branch

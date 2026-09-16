@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.390 fra roterende fremgang til samlet providerbootstrap
+
+1. [x] Merge 4.0.389 som main `bf8eb739` og kør to kontrollerede normale passager med scheduler pauset.
+2. [x] Bevis fuld Open-Meteo-køgennemgang: `35069942328` 6.450→5.025 og `35074225256` 5.181→4.565.
+3. [x] Bevis højere kildefremgang mellem target 07Z og 08Z: DMI 14.260→14.772 og regional DMI 416→704.
+4. [x] Afvis mere blind Open-Meteo-tid og den gamle Candidate G-oneoff; vælg normal post-cutover-rute med eksplicit længere DMI/Copernicus.
+5. [x] Implementér main-only `force + extended_provider_bootstrap`, DMI 3.600 sekunder/seks samlinger, Copernicus 3.300 sekunder og 240-minutters jobloft.
+6. [x] Synkronisér 4.0.390-version, RDKS og håndbog; bestå måltests og rent geodataversionsbevis.
+7. [ ] Commit/push, én exact-head sourcegate og merge.
+8. [ ] Kør én forlænget bootstrap på gemte cacher; kræv nul mangler før build/deploy.
+9. [ ] Verificér levende numeriske scorer og mål normal DMI/Copernicus-overtagelse; kør højst én yderligere begrundet bootstrap ved reel fortsat fremgang.
+10. [ ] Genaktivér scheduler, gennemgå hele sitet og fortsæt aktuelle roadmap-punkter.
+
+DEC-0172 er aktiv. Scheduler er pauset.
+
 # Aktiv roadmap – 4.0.389 fra bevist rotation til komplet normal drift
 
 1. [x] Livebevis 4.0.388-journalrebase, DMI/Copernicus/Open-Meteo-cachegenbrug og anvendt Open-Meteo-rotation i normalrun `35064588725`.
