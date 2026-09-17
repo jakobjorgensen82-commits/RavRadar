@@ -1,4 +1,19 @@
-# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles freshness-parser
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.406-bounded-public-view`, head afventer nyt commit efter
+`9a2875b1`. Live 4.0.405 er 210/673 med 141 brugbare og 69 helt
+utilgængelige zoner. 296 dele mangler vind trods strøm/bølger, fordi
+normalrun `35205052150` aldrig nåede HARMONIE.
+
+Mobilrettelsen og den afgrænsede HARMONIE-først-plan er måltestet. Første
+exact-head `35241236001` bestod 22/24 og fandt kun fire UI-tekster i
+RavScore-closure. Teksterne ligger nu i appen; modelbundle `d9ba75ed...` og
+otte bindinger er uændrede. Commit/push og ny exact-head, derefter merge,
+providerfri deploy og én almindelig weather. Ingen oneoff. Scheduler pauset.
+DEC-0188/0189. Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles freshness-parser
 
 Arbejd i RavRadar-4.0.396, branch codex/4.0.405-freshness-parser, baseret på
 4.0.404-main 5fc6e2fd789aba1cbffd7c68d79f6cb788317648.
@@ -1683,21 +1698,3 @@ Næste: afslut målrettede kontroller og rent geodataversionsbevis, commit/push,
 én exact-head, merge og saved-weather-continuation. Verificér derefter live
 version, prognoser og scorer. Ingen oneoff eller ny providerhentning.
 Scheduler pauset. DEC-0185. Sol/Ekstra høj.
-# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
-
-Arbejd i `RavRadar-4.0.396`, branch
-`codex/4.0.406-bounded-public-view`, baseret på 4.0.405-main
-`e128b15d3b80bdab9f7b7e88092fb9de5ec188d0`.
-
-4.0.405 er live gennem saved-weather `35222128772`. Offentlig runtime har
-210 zoner/673 dele, 141 brugbare zoner og 69 helt utilgængelige. Mobilværnet
-udskød korrekt den cirka 175 MB store detaljepakke, men blankede også den
-gyldige kompakte startpakke. 4.0.406 viser nu et eksplicit tidsmærket
-samme-model-snapshot; pile og turstart forbliver lukkede.
-
-296 dele har strøm og bølger, men mangler vind; 224 af dem udgør de 69 hele
-zoner. Normalrun `35205052150` nåede aldrig HARMONIE. Schedulerrettelsen giver
-derfor ét HARMONIE-asset førsteplads, når delvind mangler, og fortsætter så
-DKSS/WAM normalt. Måltests er grønne. Næste: dokumentation/geodatabevis,
-commit/push, én exact-head, merge, providerfri deploy og én almindelig
-weather. Ingen oneoff. Scheduler pauset. DEC-0188/0189. Sol/Ekstra høj.

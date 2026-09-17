@@ -1,4 +1,20 @@
-# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles tidskontrakt
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
+
+4.0.405 er live gennem exact-head `35217753258`, PR #349, main
+`e128b15d` og saved-weather `35222128772`. Livepakken er 210/673 med 141
+brugbare og 69 helt utilgængelige zoner. 296 dele har strøm og bølger, men
+mangler vind; normalrun `35205052150` nåede ikke HARMONIE.
+
+4.0.406 viser den kompakte, tidsmærkede samme-model-startpakke uden cirka
+175 MB opstartshentning og giver ét HARMONIE-asset førsteplads ved manglende
+delvind før normal DKSS/WAM. Første exact-head `35241236001` bestod 22/24;
+de to fejl var samme utilsigtede modelhashændring fra fire UI-tekster i den
+fælles sprogfil. Teksterne er nu isoleret i appen. Aktiv modelbundle
+`d9ba75ed...` og alle otte bindinger er uændrede. Næste: ny exact-head,
+merge, providerfri deploy og én almindelig weather. Ingen oneoff. Scheduler
+pauset. DEC-0188/0189. Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles tidskontrakt
 
 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
 Saved-weather 35216079458 genbrugte 09Z uden providerkald og gennemførte
@@ -1289,22 +1305,3 @@ source-ancestry, 210/673, privacy og normal Pages-kontrol.
 Næste: slut dokumentation/måltests/geodatabevis → én exact-head → merge →
 saved-weather-continuation → levende prognose- og scorekontrol. Ingen
 providergentagelse eller oneoff. Scheduler pauset. DEC-0185. Sol/Ekstra høj.
-# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 brugbar mobil og vindgrund
-
-4.0.405 bestod exact-head `35217753258`, PR #349 og main
-`e128b15d3b80bdab9f7b7e88092fb9de5ec188d0`. Saved-weather
-`35222128772` leverede integreret model, privat runtime, Edge og Pages uden
-providerkald. Live er 210/673, men 141 zoner er brugbare og 69 helt
-utilgængelige.
-
-Mobilen udskød korrekt detaljepakken på cirka 175 MB, men skjulte samtidig
-den gyldige kompakte startpakke. Lokal 4.0.406 viser derfor samme-model,
-tidsmærket snapshot uden stor opstartshentning; turstart og pile forbliver
-lukkede.
-
-Rodårsagen til de 69 zoner er 296 kystdele med strøm og bølger, men uden vind
-på delpunktet. Normalrun `35205052150` nåede ikke HARMONIE efter DKSS/WAM.
-Når delvind mangler, forsøger 4.0.406 derfor ét HARMONIE-asset først og
-fortsætter derefter normal strøm-/bølgeprioritet. Næste: docs/geodatabevis,
-én exact-head, providerfri deploy og én almindelig weather. Ingen oneoff.
-Scheduler pauset. DEC-0188/0189. Sol/Ekstra høj.

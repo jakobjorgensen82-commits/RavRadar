@@ -1,4 +1,20 @@
-# Aktuel implementeringsstatus – lokal 4.0.405 fælles UTC-timekontrakt
+# Aktuel implementeringsstatus – lokal 4.0.406 mobilvisning og vindgrund
+
+- [x] Lever 4.0.405 som integreret 210/673 og mål 141 brugbare/69 utilgængelige zoner.
+- [x] Afgræns 69 zoner til 224 af samlet 296 dele uden vind trods strøm/bølger.
+- [x] Vis den kompakte startpakke tidsmærket uden stor detaljehentning; luk pile/turstart.
+- [x] Planlæg ét HARMONIE-grundforsøg først ved manglende delvind; fortsæt derefter normal DKSS/WAM.
+- [x] Bestå målrettede browser-, data-service-, scheduler- og Python-kontroller.
+- [x] Kør exact-head `35241236001`; 22/24 bestod, to delte én UI-tekst/modelhash-årsag.
+- [x] Isolér UI-tekster i appen og bevis uændret modelbundle `d9ba75ed...` samt otte bindinger.
+- [ ] Commit/push den rettede head og bestå én ny exact-head.
+- [ ] Merge og deploy 4.0.406 providerfrit; verificér mobil og desktop.
+- [ ] Kør én almindelig weather og mål delvind, scorer, providerfremgang og cachevedligeholdelse.
+- [ ] Genaktivér scheduler efter grøn normal drift; fortsæt site-/roadmapgennemgang.
+
+DEC-0188/0189. Ingen oneoff.
+
+# Historisk implementeringsstatus – lokal 4.0.405 fælles UTC-timekontrakt
 
 - [x] Lever 4.0.404 via exact-head 35215528731, PR #348 og main 5fc6e2fd.
 - [x] Kør saved-weather 35216079458 uden providerkald gennem artifact, privacy, privat runtime og Edge.
@@ -4570,21 +4586,3 @@ Ingen oneoff. Den offentlige validator er ikke svækket.
 - [ ] Kør derefter næste almindelige vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo før scheduler genaktiveres.
 
 DEC-0185 er aktiv. Ingen oneoff eller gentaget providerarbejde.
-# Aktuel implementeringsstatus – lokal 4.0.406 mobilvisning og vindgrund
-
-- [x] Lever 4.0.405 via exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772`.
-- [x] Bevis live integreret 210/673 samt 141 brugbare og 69 helt utilgængelige zoner.
-- [x] Afgræns mobilblankningen til den udskudte cirka 175 MB detaljepakke.
-- [x] Vis samme-model startpakken som tydeligt tidsmærket snapshot uden stor opstartshentning.
-- [x] Filtrér passerede prognoser og luk pile/turstart i snapshottilstanden.
-- [x] Afgræns de 69 zoner til 224 delpunkter uden vind; samlet mangler 296/673 dele vind.
-- [x] Bevis at normalrun `35205052150` ikke nåede HARMONIE efter DKSS/WAM.
-- [x] Planlæg ét HARMONIE-grundforsøg først ved manglende delvind og fortsæt derefter normal current-/bølgeprioritet.
-- [x] Bestå målrettede browser-, data-service-, scheduler- og Python-syntakskontroller.
-- [ ] Afslut RDKS/håndbog, versions- og geodatabevis.
-- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
-- [ ] Deploy 4.0.406 providerfrit og verificér mobil/desktop.
-- [ ] Kør én almindelig weather, mål delvind/score/providerfremgang og bevis cachevedligeholdelse.
-- [ ] Genaktivér scheduler først efter grøn normal drift; fortsæt site- og roadmapgennemgang.
-
-DEC-0188/0189. Ingen oneoff.

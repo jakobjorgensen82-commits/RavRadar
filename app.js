@@ -17,6 +17,30 @@ import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/foreca
 import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.406';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
+const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
+  da:Object.freeze({
+    ranking:'Viser senest verificerede scorer fra {time}. Det er ikke den aktuelle time.',
+    forecast:'Viser kun fremtidige prognoser fra den senest verificerede pakke.',
+    data:'Begrænset nøddrift: Senest verificerede score og vejr fra {time} vises tydeligt som ældre data. Konservativ vejrreference er {source} ({age} timer). {known} af {total} kildealdre kan sammenlignes; {unknown} kan ikke. Den aktuelle time og lokale prognosedetaljer afventer næste vejr-opdatering.',
+    trip:'En ravtur kan ikke startes fra den ældre nødvisning. Vent på næste vejr-opdatering.',
+  }),
+  de:Object.freeze({
+    ranking:'Zuletzt verifizierte RavScores von {time}. Dies ist nicht die aktuelle Stunde.',
+    forecast:'Es werden nur zukünftige Prognosen aus dem zuletzt verifizierten Paket angezeigt.',
+    data:'Eingeschränkter Notbetrieb: Der zuletzt verifizierte RavScore und das Wetter von {time} werden deutlich als ältere Daten angezeigt. Die konservative Wetterreferenz ist {source} ({age} Stunden). {known} von {total} Quellenaltern sind vergleichbar; {unknown} nicht. Die aktuelle Stunde und lokale Prognosedetails warten auf die nächste Wetteraktualisierung.',
+    trip:'Eine Bernsteintour kann nicht aus der älteren Notansicht gestartet werden. Warte auf die nächste Wetteraktualisierung.',
+  }),
+  en:Object.freeze({
+    ranking:'Showing the latest verified RavScores from {time}. This is not the current hour.',
+    forecast:'Only future forecasts from the latest verified package are shown.',
+    data:'Limited emergency mode: The latest verified RavScore and weather from {time} are clearly shown as older data. The conservative weather reference is {source} ({age} hours). {known} of {total} source ages are comparable; {unknown} are not. The current hour and local forecast details await the next weather update.',
+    trip:'An amber trip cannot start from the older emergency view. Wait for the next weather update.',
+  }),
+});
+function runtimeSnapshotText(key,values={}){
+  const template=(RUNTIME_SNAPSHOT_TEXT[getLanguage()]||RUNTIME_SNAPSHOT_TEXT.da)[key]||'';
+  return template.replace(/\{(\w+)\}/g,(_,name)=>values[name]??`{${name}}`);
+}
 const hasNumber = value => value !== null
   && value !== undefined
   && value !== ''
@@ -123,7 +147,7 @@ function renderRanking() {
   const rows=state.zones.features.map(feature=>nationalRankingRow({zone:feature.properties,result:currentScoreFor(feature.properties)})).filter(item=>item.result.available).sort(compareNationalRankingRows).slice(0,5);
   ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('ranking.waiting')}</p>`;
   const snapshotReference=emergencySnapshotReferenceAt();
-  if(snapshotReference)ranking.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${t('ranking.snapshot',{time:formatDateTime(snapshotReference)})}</p>`);
+  if(snapshotReference)ranking.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${runtimeSnapshotText('ranking',{time:formatDateTime(snapshotReference)})}</p>`);
   ranking.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(item=>item.properties.id===button.dataset.zoneId).properties)));
 }
 
@@ -190,7 +214,7 @@ async function renderNationalForecast() {
     }),
   })):dates.map(date=>({date,rows:[]}));
   nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat(getLocale(),{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat(getLocale(),{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"><p class="ranking-empty">${t('forecast.calculating',{progress:0})}</p></div>`;
-  if(snapshotReference)nationalForecast.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${t('forecast.snapshot')}</p>`);
+  if(snapshotReference)nationalForecast.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${runtimeSnapshotText('forecast')}</p>`);
   await yieldToBrowser();
   if(renderId!==state.forecastRenderId)return false;
 
@@ -266,7 +290,7 @@ function updatePublicDataStatus(conditions){
   const availability=conditions?.publicRuntimeAvailability;
   if(conditions?.available&&conditions?.emergencyDetailsDeferred){
     const snapshotReference=conditions.productionReferenceAt||conditions.generatedAt;
-    dataStatus.textContent=t('data.emergencySnapshot',{
+    dataStatus.textContent=runtimeSnapshotText('data',{
       time:formatDateTime(snapshotReference),
       source:formatDateTime(availability?.ageReferenceAt),
       age:formatNumber(availability?.ageHours,{minimumFractionDigits:1,maximumFractionDigits:1}),
@@ -349,11 +373,11 @@ function updateTripUi(message=''){
   const stopped=Boolean(trip?.stoppedAt);
   const snapshotOnly=Boolean(state.conditions?.emergencyDetailsDeferred);
   tripButton.disabled=snapshotOnly;
-  tripButton.title=snapshotOnly?t('trip.snapshotUnavailable'):'';
+  tripButton.title=snapshotOnly?runtimeSnapshotText('trip'):'';
   tripButton.textContent=t(stopped?'header.trip.complete':trip?'header.trip.finish':'header.trip.start');
   tripButton.classList.toggle('trip-active',Boolean(trip));
   tripButton.setAttribute('aria-pressed',String(Boolean(trip)));
-  document.querySelector('#tripStatus').textContent=message||(snapshotOnly?t('trip.snapshotUnavailable'):stopped?t('trip.status.stopped'):trip?t('trip.status.active'):'');
+  document.querySelector('#tripStatus').textContent=message||(snapshotOnly?runtimeSnapshotText('trip'):stopped?t('trip.status.stopped'):trip?t('trip.status.active'):'');
 }
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
 [assistantDialog,accountDialog,developerDialog,pinDialog].forEach(enableDialogClose);

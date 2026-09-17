@@ -1,3 +1,10 @@
+## 4.0.406 – brugbart mobilsnapshot og aktuel delvind (2026-09-17)
+
+- Viser den kompakte, tidsmærkede samme-model-startpakke uden cirka 175 MB opstartshentning.
+- Giver ét HARMONIE-asset førsteplads, når delpunkter mangler vind, og fortsætter derefter normal DKSS/WAM.
+- Bevarer aktiv RavScore-bundle `d9ba75ed...`; rene UI-tekster ligger uden for modelclosure, så ingen databasebinding ændres.
+- Ingen oneoff. Se CHANGELOG-4.0.406.md, DEC-0188 og DEC-0189.
+
 ## 4.0.405 – fælles UTC-timekontrakt i hele deploykæden (2026-09-17)
 
 - 4.0.404 bestod exact-head 35215528731 og blev main 5fc6e2fd gennem PR #348.
@@ -1557,14 +1564,3 @@ Se `CHANGELOG-4.0.330.md`.
   runtime efter alder-, kilde-, model-, 210/673-, privacy- og Pages-kontrol.
 - Standard-code-only er uændret. Ingen scoreformel, vejrdata, geometri eller
   providerprioritet ændres. Se CHANGELOG-4.0.403.md og DEC-0185.
-## 4.0.406 – brugbart mobilsnapshot og aktuel vind på kystdelene (2026-09-17)
-
-- 4.0.405 blev live gennem exact-head `35217753258`, PR #349, main
-  `e128b15d` og saved-weather `35222128772`.
-- Mobil kan vise den aktive integrerede models kompakte, tidsmærkede snapshot
-  uden at hente cirka 175 MB detaljer ved opstart. Pile og turstart er lukket.
-- 296 kystdele havde strøm og bølger, men manglede vind; 224 af dem gjorde 69
-  zoner helt utilgængelige. Normalrun `35205052150` nåede ikke HARMONIE.
-- Ved manglende delvind forsøges nu ét HARMONIE-asset først; derefter
-  fortsætter samme normale kørsel med current og bølger. Ingen oneoff.
-- Se CHANGELOG-4.0.406.md, DEC-0188 og DEC-0189.

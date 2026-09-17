@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-17 – 4.0.405 lukker tidsformatet i hele kæden
+# NYESTE SANDHED – 2026-09-17 – 4.0.406 mobilvisning og delvind
+
+4.0.405 er live 210/673 gennem main `e128b15d` og saved-weather
+`35222128772`. 141 zoner er brugbare; 69 er helt utilgængelige. 296 dele har
+strøm og bølger, men mangler vind på modelpunktet, fordi normalrun
+`35205052150` ikke nåede HARMONIE efter DKSS/WAM.
+
+4.0.406 viser startpakken som tidsmærket samme-model-snapshot og forsøger ét
+HARMONIE-asset først ved manglende delvind. Første exact-head `35241236001`
+bestod 22/24; den ene fælles årsag var UI-tekst i modelclosure. Teksterne er
+flyttet til appen, aktiv modelbundle `d9ba75ed...` og alle otte bindinger er
+uændrede. Ny exact-head, providerfri deploy og én almindelig weather mangler.
+Ingen oneoff. Scheduler pauset. DEC-0188/0189.
+
+# HISTORISK SANDHED – 2026-09-17 – 4.0.405 lukker tidsformatet i hele kæden
 
 4.0.404 bestod exact-head 35215528731, blev merged gennem PR #348 som main
 5fc6e2fd789aba1cbffd7c68d79f6cb788317648. Providerfri saved-weather
@@ -3763,22 +3777,3 @@ strengt nyere og højst 240 minutter gammel runtime, forfaderbinding til main,
 aktiv integreret model, 210/673, privacy og normal Pages-kontrol. Ingen ny
 vejrindsamling eller oneoff. Exact-head, merge og live deploy afventer.
 Scheduler er pauset. DEC-0185.
-# NYESTE SANDHED – 2026-09-17 – 4.0.406 adskiller mobilstørrelse og delvind
-
-4.0.405 er live efter exact-head `35217753258`, PR #349, main
-`e128b15d3b80bdab9f7b7e88092fb9de5ec188d0` og saved-weather
-`35222128772`. Den integrerede offentlige pakke har 210 zoner og 673
-kystdele. 141 zoner er brugbare; 69 er helt utilgængelige.
-
-Mobilen udskyder korrekt detaljepakken på cirka 175 MB, men 4.0.405 skjuler
-også de 141 gyldige scorer. Lokal 4.0.406 viser i stedet den samme forseglede
-models kompakte startpakke som et tydeligt tidsmærket snapshot. Passerede
-prognoser filtreres; pile og turstart forbliver lukkede.
-
-377 dele scorer. 296 dele har strøm og bølger, men mangler vind på deres
-modelpunkt; 224 af disse udgør de 69 helt utilgængelige zoner. 60 af de 69
-har vind på det ældre zonepunkt, så problemet er ikke generelt manglende
-vejrhentning. Normalrun `35205052150` nåede ikke HARMONIE efter DKSS/WAM.
-4.0.406 forsøger derfor ét HARMONIE-asset først, når delvind mangler, og
-fortsætter derefter normal current-/bølgeprioritet. Livebevis kræver én
-almindelig weather; ingen oneoff. Scheduler pauset. DEC-0188/0189.

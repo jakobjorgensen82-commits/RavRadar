@@ -1,4 +1,17 @@
-# Aktiv roadmap – 4.0.405 fra fælles tidskontrakt til offentlig prognose
+# Aktiv roadmap – 4.0.406 fra manglende delvind til normal drift
+
+1. [x] Bevis live 210/673, 141 brugbare zoner og 69 helt utilgængelige zoner.
+2. [x] Ret mobilens skjulte startpakke med et ærligt tidsmærket snapshot.
+3. [x] Afgræns 69 zoner til manglende delvind og ret normal DMI-plan med ét HARMONIE-forsøg først.
+4. [x] Fjern ren UI-tekst fra modelclosure; bevar aktiv modelbundle og databasebinding.
+5. [ ] Commit/push og bestå én ny exact-head på den rettede head.
+6. [ ] Merge og deploy kode uden providerkald; verificér mobil og desktop.
+7. [ ] Kør én almindelig weather og mål vinddækning, scorer og providerfremgang. Ingen oneoff.
+8. [ ] Bevis næste vedligeholdelse, genaktivér scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0188/0189.
+
+# Historisk roadmap – 4.0.405 fra fælles tidskontrakt til offentlig prognose
 
 1. [x] Lever 4.0.404 og genbrug den gemte 09Z-runtime uden providerkald.
 2. [x] Gennemfør artifact, privacy, privat runtime og Edge i 35216079458.
@@ -1999,18 +2012,3 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 10. [ ] Genaktivér scheduler efter bevist normal vedligeholdelse; gennemgå derefter hele sitet og de resterende roadmap-punkter.
 
 DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrindsamling.
-# Aktiv roadmap – 4.0.406 fra skjult snapshot og manglende delvind til normal drift
-
-1. [x] Lever 4.0.405 og verificér integreret 210/673 offentligt.
-2. [x] Afgræns mobilblankningen til den udskudte store detaljepakke.
-3. [x] Gør den kompakte startpakke brugbar som tidsmærket samme-model-snapshot.
-4. [x] Afgræns 69 utilgængelige zoner til manglende HARMONIE-vind på delpunkter.
-5. [x] Giv ét HARMONIE-asset førsteplads ved manglende delvind, derefter normal DKSS/WAM.
-6. [ ] Afslut måltests, dokumentation, diff og geodataversionsbevis.
-7. [ ] Commit/push, bestå én exact-head og merge samme head.
-8. [ ] Deploy kode providerfrit og verificér siden på mobil og desktop.
-9. [ ] Kør én almindelig weather; mål vinddækning, scorede dele og providerfremgang. Ingen oneoff.
-10. [ ] Bevis næste normale cachevedligeholdelse og genaktivér scheduler.
-11. [ ] Gennemgå hele sitet og revurdér de resterende roadmap-punkter.
-
-DEC-0188/0189.

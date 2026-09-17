@@ -622,7 +622,7 @@ assert.match(appSource,
   'The public view must use the timestamped manifest-bound startup score.',
 );
 assert.match(appSource,
-  /emergencyDetailsDeferred[\s\S]{0,360}data\.emergencySnapshot/,
+  /emergencyDetailsDeferred[\s\S]{0,360}runtimeSnapshotText\('data'/,
   'The public status must describe the deferred snapshot as older data.',
 );
 assert.match(appSource,
@@ -630,7 +630,7 @@ assert.match(appSource,
   'The deferred national forecast must discard already elapsed forecast rows.',
 );
 assert.match(appSource,
-  /tripButton\.disabled=snapshotOnly[\s\S]{0,180}trip\.snapshotUnavailable/,
+  /tripButton\.disabled=snapshotOnly[\s\S]{0,180}runtimeSnapshotText\('trip'\)/,
   'Trip capture must remain closed when displayed score time is older than the selected runtime hour.',
 );
 

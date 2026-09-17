@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.406 viser mobilpakken og prioriterer nødvendig delvind
+
+- Live 4.0.405 er integreret 210/673 med 141 brugbare og 69 utilgængelige zoner.
+- 296 dele mangler vind trods strøm/bølger; normalrun `35205052150` nåede ikke HARMONIE.
+- 4.0.406 viser startpakken tidsmærket og forsøger ét HARMONIE-asset først ved manglende delvind.
+- Exact-head `35241236001` bestod 22/24; fire UI-tekster er flyttet ud af modelclosure, så aktiv modelbundle er uændret. DEC-0188/0189.
+
 # 2026-09-17 – 4.0.405 gør UTC-timekontrakten fælles
 
 - 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
@@ -1230,10 +1237,3 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - Normalrun 35205052150 gennemførte alle provider-, cache-, closure-, historik-, runtimeaudit- og 52+3-led og gemte runtime for 09Z beskyttet.
 - Adminsynkroniseringen stoppede derefter på den udefinerede stableDigest, før Pages.
 - 4.0.403 retter readback og tilføjer en streng providerfri fortsættelse af præcis den nyere gemte runtime. DEC-0185.
-# 2026-09-17 – 4.0.406 viser mobilpakken og prioriterer nødvendig delvind
-
-- 4.0.405 bestod exact-head `35217753258`, PR #349 og main `e128b15d` og blev leveret gennem saved-weather `35222128772`.
-- Livepakken er integreret 210/673 med 141 brugbare og 69 helt utilgængelige zoner.
-- Mobilværnet udskød cirka 175 MB detaljer, men skjulte også den gyldige kompakte startpakke; 4.0.406 viser den tidsmærket uden pile eller turstart.
-- 296 dele mangler vind trods strøm og bølger; normalrun `35205052150` nåede ikke HARMONIE efter DKSS/WAM.
-- Ét HARMONIE-asset forsøges nu først ved manglende delvind, hvorefter normal strøm-/bølgeprioritet fortsætter. DEC-0188/0189.

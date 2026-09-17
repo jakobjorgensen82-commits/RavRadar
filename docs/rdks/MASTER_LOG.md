@@ -1,4 +1,17 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.405 fælles UTC-time
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.406 mobil og delvind
+
+4.0.405 er live som integreret 210/673. Mobilen skjulte 141 gyldige scorer,
+når cirka 175 MB detaljer blev udskudt. Samtidig manglede 296 dele vind trods
+strøm og bølger; 224 dele gjorde 69 zoner helt utilgængelige. 4.0.406 viser
+det tidsmærkede samme-model-snapshot og forsøger ét HARMONIE-asset først ved
+manglende delvind, før normal DKSS/WAM fortsætter.
+
+Exact-head `35241236001` bestod 22/24. Begge fejl var samme rene
+præsentationstekst i modelclosure. Teksterne er isoleret i appen, og den
+aktive modelbundle `d9ba75ed...` er uændret. Ingen migration eller oneoff.
+DEC-0188/0189.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.405 fælles UTC-time
 
 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
 Saved-weather 35216079458 genbrugte 09Z uden providerkald, bestod model,
@@ -3905,19 +3918,3 @@ bruger stableJsonDigest og indfører en eksplicit providerfri fortsættelse.
 Kun en strengt nyere, højst 240 minutter gammel, source-forbundet runtime
 med aktiv integreret drift, tomt repair-id, 210/673 og grøn privacy kan
 fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.406 mobil og delvind
-
-4.0.405 blev leveret gennem exact-head `35217753258`, PR #349, main
-`e128b15d` og providerfri saved-weather `35222128772`. Livepakken er korrekt
-integreret 210/673, men mobilvisningen skjulte 141 gyldige zonescorer, når
-den cirka 175 MB store detaljepakke blev udskudt.
-
-4.0.406 viser den forseglede startpakke som et tydeligt tidsmærket
-samme-model-snapshot. Passerede prognoser fjernes; turstart og pile er lukket.
-
-Den offentlige delanalyse viser 377 scorede dele og 296 dele med strøm og
-bølger, men uden delvind. 224 manglende dele gør 69 zoner helt utilgængelige;
-72 ligger i 31 delvise zoner. Normalrun `35205052150` brugte DMI-budgettet på
-DKSS/WAM og nåede ikke HARMONIE. Derfor forsøges ét HARMONIE-asset først, når
-delvind mangler, hvorefter normal current-/bølgeprioritet fortsætter. Ingen
-oneoff. DEC-0188/0189.

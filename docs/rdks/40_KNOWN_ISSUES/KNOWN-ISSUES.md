@@ -1,4 +1,15 @@
-# NYESTE CHECKPOINT – 2026-09-17 – 4.0.405 lukker den fælles parserkant
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.406 mobilvisning og delvind
+
+- **ISSUE-4.0.405-DELIVERY – LUKKET:** Exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772` er grønne.
+- **ISSUE-MOBILE-DETAIL-BLANK – RETTET LOKALT / LIVEBEVIS MANGLER:** Det tidsmærkede samme-model-snapshot viser de 141 gyldige zoner uden cirka 175 MB opstartshentning.
+- **ISSUE-69-ZONES-NO-SCORE – RETTET LOKALT / LIVEBEVIS MANGLER:** 224 dele i 69 zoner mangler vind; samlet mangler 296/673 dele vind trods strøm/bølger.
+- **ISSUE-HARMONIE-SCHEDULER-STARVATION – RETTET LOKALT / LIVEBEVIS MANGLER:** Ét HARMONIE-asset forsøges først ved manglende delvind, derefter normal DKSS/WAM.
+- **ISSUE-4.0.406-UI-TEXT-MODEL-HASH – LUKKET:** Exact-head `35241236001` fandt UI-tekst i modelclosure. Teksterne er isoleret i appen; modelbundle `d9ba75ed...` og otte bindinger er uændrede.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Én almindelig weather skal bevise delvind, scorer og cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0188/0189. Ingen oneoff.
+
+# HISTORISK CHECKPOINT – 2026-09-17 – 4.0.405 lukker den fælles parserkant
 
 - **ISSUE-4.0.404-DELIVERY – LUKKET:** Exact-head 35215528731, PR #348 og main 5fc6e2fd er gennemført.
 - **ISSUE-4.0.404-PAGES-TIME-FORMAT – RETTET LOKALT / LIVEBEVIS MANGLER:** 35216079458 nåede privat runtime, Edge og færdigt Pages-artifact uden providerkald, men Pages' direkte freshness-kald afviste gyldig 09:00:00.000Z.
@@ -2007,12 +2018,3 @@ Ingen oneoff. Scheduler er pauset.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til offentlig prognose og næste almindelige vedligeholdelse er bevist.
 
 DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
-# NYESTE CHECKPOINT – 2026-09-17 – 4.0.406 mobilvisning og delvind
-
-- **ISSUE-4.0.405-DELIVERY – LUKKET:** Exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772` er grønne.
-- **ISSUE-MOBILE-DETAIL-BLANK – RETTET LOKALT / LIVEBEVIS MANGLER:** 4.0.405 udskyder cirka 175 MB detaljer, men skjuler også 141 gyldige scorer. 4.0.406 viser startpakkens tidsmærkede samme-model-snapshot uden pile/turstart.
-- **ISSUE-69-ZONES-NO-SCORE – RETTET LOKALT / LIVEBEVIS MANGLER:** 224 dele i 69 zoner mangler vind på delpunktet; samlet mangler 296/673 dele vind trods strøm og bølger.
-- **ISSUE-HARMONIE-SCHEDULER-STARVATION – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun `35205052150` nåede ikke HARMONIE. Ét HARMONIE-asset forsøges nu først ved manglende delvind og må derefter ikke bruge resten af DMI-budgettet.
-- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Én almindelig weather skal bevise delvind, scorer, providerfremgang og cachevedligeholdelse før scheduler genaktiveres.
-
-DEC-0188/0189. Ingen oneoff.
