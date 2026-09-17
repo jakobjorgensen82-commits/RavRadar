@@ -1,4 +1,18 @@
-# Aktiv roadmap – 4.0.391 fra globalt stop til gyldig fastholdelse og lokal missing
+# Aktiv roadmap – 4.0.399 fra importstop til frisk offentlig prognose
+
+1. [x] Lever 4.0.398 exact-head/PR/merge og afgræns code-only `35175276505` før enhver data- eller produktionsændring.
+2. [x] Ret alle 21 browserimports samlet og tilføj regression i begge versionskontroller.
+3. [x] Bestå målrettet 79-fils offentlig browserlukning, version/RDKS/håndbog, diff og rent geodataversionsbevis.
+4. [ ] Commit/push, bestå én exact-head og merge samme head.
+5. [ ] Kør providerfri code-only og verificér offentlig 4.0.399/210/673 uden private lækager.
+6. [ ] Kør én almindelig weather på gemte cacher; verificér friske prognoser, scorer og lokal missing. Ingen oneoff.
+7. [ ] Kør næste normale vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo samt cachefremgang.
+8. [ ] Genaktivér scheduler først efter bevist normal vedligeholdelse.
+9. [ ] Gennemgå hele sitet på den levende runtime og ryd historiske/dublerede roadmap-punkter mod faktisk evidens.
+
+DEC-0181. Scoremodel, vejr og cache er uændrede.
+
+# Historisk roadmap – 4.0.391 fra globalt stop til gyldig fastholdelse og lokal missing
 
 1. [x] Merge 4.0.390 og gennemfør providerbootstrap `35081537023` på bevarede cacher.
 2. [x] Afgræns de sidste 84 par som faktisk forsøgte provider-negative svar, ikke manglende køretid.

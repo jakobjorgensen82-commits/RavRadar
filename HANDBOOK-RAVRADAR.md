@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.398
+**Håndbogsversion:** 4.0.399
+
+## 89.03 4.0.399 – Browserens importstier bevares ved versionsløft
+
+### Et versionsnummer må ikke blive en del af filnavnet
+
+4.0.398-koden bestod kildekontrollen, men den providerfri levering stoppede
+efter 19 sekunder, før data, Supabase, runtime eller deploy blev rørt. Ved det
+manuelle versionsløft var browsermarkøren `?v=` blevet skrevet som `$1` i 21
+imports i `app.js` og `bootstrap.js`. Browserlukningen kunne derfor ikke finde
+den første JavaScript-fil.
+
+4.0.399 gendanner alle 21 imports som `fil.js?v=4.0.399`. De to eksisterende
+versionskontroller afviser nu også enhver tilsvarende ugyldig dollarmarkør,
+så et korrekt versionsnummer alene ikke længere kan skjule en ødelagt
+importsti.
+
+Rettelsen ændrer ikke RavScore, vejr, cache, providerprioritet eller offentlige
+data. Den gør kun browserens kodegraf opløselig igen.
 
 ## 89.02 4.0.398 – Kontrollen skelner kystdele fra brugbare zoner
 
@@ -46,7 +64,7 @@ Dette ændrer ikke den score, brugeren får. Det fjerner kun et falsk stop i
 den efterfølgende kontrol. Prognoserne bliver først synlige, når den rettede
 kontrol og resten af udgivelsen er gennemført.
 
-4.0.398 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+4.0.399 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede implementering er
 `modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler
 og otte deklarerede forbrugere. Den private Candidate G-rollback er særskilt

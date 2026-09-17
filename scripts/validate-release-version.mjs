@@ -14,6 +14,10 @@ await walk('js');
 for(const file of await fs.readdir('.'))if(/\.(?:js|html)$/.test(file)&&!/^KYSTZONER-/.test(file))browserSources.push(file);
 for(const file of browserSources){
   const text=await fs.readFile(file,'utf8');
+  const malformedCacheReference=text.match(/\$\d+\.\d+\.\d+/);
+  if(malformedCacheReference){
+    throw new Error(`${file} har en ugyldig browserimport ${malformedCacheReference[0]}; cacheversionen skal stå som ?v=${version}.`);
+  }
   for(const match of text.matchAll(/[?&]v=(\d+\.\d+\.\d+)/g)){
     if(match[1]!==version)throw new Error(`${file} importerer browserkode med cacheversion ${match[1]}, men releaseversionen er ${version}.`);
   }

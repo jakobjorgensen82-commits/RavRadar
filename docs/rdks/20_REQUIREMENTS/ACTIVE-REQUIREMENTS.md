@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-17 – gyldige browserimports ved versionsløft
+
+- **REQ-4.0.399-IMPORT-PATH-001 – BINDENDE:** Alle relative browserimports skal bevare deres gyldige filsti og bruge `?v=<release>` som cachemarkør.
+- **REQ-4.0.399-MALFORMED-MARKER-002 – BINDENDE:** Releaseversions- og modullukningskontrollen skal afvise en markør på formen `$<tal>.<tal>.<tal>`.
+- **REQ-4.0.399-CLOSURE-003 – BINDENDE:** Den integrerede offentlige browserlukning skal kunne opløse hele importgrafen før code-only-levering.
+- **REQ-4.0.399-NO-DATA-CHANGE-004 – BINDENDE:** Rettelsen ændrer ikke score, vejr, cache, providerprioritet, geometri eller modelbinding.
+- **REQ-4.0.399-DELIVERY-005 – BINDENDE:** Lever providerfrit efter én exact-head og kør derefter én almindelig weather på gemte cacher. Ingen oneoff.
+
+DEC-0181. Scheduler forbliver pauset til frisk offentlig prognose og normal
+vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-17 – præcis audit og lokal deldækning
 
 - **REQ-4.0.398-ADDITIVE-PRECISION-001 – BINDENDE:** Summen af tre uafhængigt seksdecimal-afrundede bidrag må afvige højst `2e-6` fra den uafhængigt afrundede råsum. Større afvigelse stopper.

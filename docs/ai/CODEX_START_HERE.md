@@ -1,3 +1,22 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.399 retter browserimports samlet
+
+4.0.398 bestod sourcegate `35174942101`, blev merged gennem PR #342 som main
+`d7420ade95990b97e6d3c65bcabe2a9f7c88dec1`, og code-only
+`35175276505` blev startet. Runnet stoppede efter 19 sekunder i den første
+offentlige browserlukning, før kildebevis, data, Supabase, runtime, provider
+eller deploy.
+
+Rodårsagen var 21 ugyldige imports i `app.js` og `bootstrap.js`: den manuelle
+versionssynkronisering havde gjort `?v=4.0.398` til `$14.0.398`. Lokal
+4.0.399 gendanner alle 21 imports som `?v=4.0.399`. Begge eksisterende
+versionskontroller afviser nu samme fejltype, og den egentlige offentlige
+browserlukning køres målrettet lokalt.
+
+Ingen vejrdata, cache eller offentlig side blev ændret af det røde run.
+Næste: afgrænsede kontroller, version/RDKS/geodatabevis, commit/push, én ny
+exact-head, merge og providerfri code-only. Derefter én almindelig weather
+med gemte cacher; ingen oneoff. Scheduler pauset. DEC-0181. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.398 retter de sidste to auditfejl
 
 4.0.397 er live som kode efter sourcegate `35167221199`, PR #341, main
