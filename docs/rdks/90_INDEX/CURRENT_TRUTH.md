@@ -1,3 +1,20 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.399 gendanner 21 browserimports
+
+4.0.398 bestod exact-head `35174942101` og blev merged som main
+`d7420ade95990b97e6d3c65bcabe2a9f7c88dec1`. Providerfri code-only
+`35175276505` stoppede efter 19 sekunder i browserens implementation closure.
+Det skete før source-proof, offentlige downloads, centrale læsninger/writes,
+privat runtime, providerkald eller deploy.
+
+`app.js` og `bootstrap.js` havde tilsammen 21 imports med `$14.0.398` i
+stedet for `?v=4.0.398`. Fejlen kom fra den manuelle mekaniske
+versionssynkronisering. Lokal 4.0.399 retter alle 21 samlet og gør både
+releaseversionskontrollen og modullukningskontrollen i stand til at afvise
+samme markørfejl fremover. Scoremodel, vejr, cache og produktion er uændrede.
+
+Afgrænsede kontroller, exact-head, merge og code-only mangler. Derefter køres
+én almindelig weather på gemte cacher. Scheduler er pauset. DEC-0181.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.398 retter auditpræcision og delvis zonedækning
 
 4.0.397 er offentlig kode som main `f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9`

@@ -1,4 +1,14 @@
-# Nyeste prioritering – 4.0.383 eksakt source-reparation 2026-09-16
+# Nyeste prioritering – 4.0.399 gyldig browserimportgraf 2026-09-17
+
+4.0.398 er merged som main `d7420ade`. Code-only `35175276505` stoppede
+før data og writes på 21 ugyldige browserimports fra den manuelle
+versionssynkronisering. 4.0.399 retter dem samlet og gør versionskontrollerne
+strenge på selve markørsyntaksen. Næste er afgrænsede kontroller, én
+exact-head, merge, providerfri code-only og én almindelig weather på gemte
+cacher. Derefter levende sitekontrol, normal vedligeholdelse/providerprioritet,
+scheduler og oprydning af historiske roadmapdubletter. Ingen oneoff.
+
+# Historisk prioritering – 4.0.383 eksakt source-reparation 2026-09-16
 
 4.0.382 er merged som main `a7f0fcba`. Providerfri `35025121452`, forsøg 3,
 byggede 79/79, men stoppede før Pages på den dokumenterede forskel mellem

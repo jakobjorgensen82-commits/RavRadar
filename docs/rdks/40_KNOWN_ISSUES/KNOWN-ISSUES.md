@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.399 retter ugyldige browserimports
+
+- **ISSUE-4.0.398-MERGE – LUKKET:** Exact-head `35174942101`, PR #342 og main `d7420ade` er gennemført.
+- **ISSUE-4.0.398-BROWSER-IMPORTS – RETTET LOKALT / LIVEBEVIS MANGLER:** 21 imports havde `$14.0.398` i stedet for `?v=4.0.398`; 4.0.399 gendanner dem samlet.
+- **ISSUE-4.0.398-CODE-ONLY – SIKKERT STOP:** Run `35175276505` stoppede før source-proof, data, Supabase, runtime, provider og deploy. Der er ingen delvis produktionsændring at rulle tilbage.
+- **ISSUE-VERSION-IMPORT-SYNTAX-GATE – RETTET LOKALT:** Begge versionskontroller afviser nu ugyldige dollarmarkører.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Friske prognoser fra normalrun `35168055561` er endnu ikke offentlige.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til frisk deploy og efterfølgende normal vedligeholdelse er bevist.
+
+DEC-0181. Ingen model-, vejr- eller cacheændring.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.398 retter to falske auditstop
 
 - **ISSUE-4.0.397-DELIVERY – LUKKET:** Sourcegate `35167221199`, PR #341, main `f3a200ff` og code-only `35167698742` leverede koden.

@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.399 browserimportrettelse
+
+- [x] Bestå 4.0.398 exact-head `35174942101` og merge PR #342 som main `d7420ade`.
+- [x] Start providerfri code-only `35175276505`; stop efter 19 sekunder før data, writes og deploy.
+- [x] Afgræns fejlen til 21 `$14.0.398`-imports i `app.js` og `bootstrap.js`.
+- [x] Gendan alle imports som `?v=4.0.399`.
+- [x] Skærp begge versionskontroller, så ugyldige dollarmarkører afvises.
+- [x] Bestå målrettet 79-fils browserlukning, version/RDKS/håndbog og rent geodataversionsbevis.
+- [ ] Commit/push og bestå én exact-head sourcegate.
+- [ ] Merge og kør providerfri code-only af 4.0.399.
+- [ ] Kør én almindelig weather på gemte cacher; verificér levende prognoser/scorer.
+- [ ] Bevis næste normale vedligeholdelse/providerprioritet før scheduler og roadmapfortsættelse.
+
+DEC-0181 er aktiv. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.398 auditpræcision og delvis dækning
 
 - [x] Lever 4.0.397 via sourcegate `35167221199`, PR #341, main `f3a200ff` og code-only `35167698742`.

@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.399 browserimportrettelse
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.399-browser-import-version`, baseret på 4.0.398-main
+`d7420ade95990b97e6d3c65bcabe2a9f7c88dec1`.
+
+4.0.398 bestod sourcegate `35174942101` og PR #342. Code-only
+`35175276505` stoppede efter 19 sekunder i browserlukningen, før data,
+Supabase, runtime, provider eller deploy. 21 imports i `app.js` og
+`bootstrap.js` havde `$14.0.398` i stedet for `?v=4.0.398`.
+
+Lokal 4.0.399 retter alle 21 samlet og tilføjer regression i begge
+versionskontroller. Kør målrettet offentlig browserlukning, version/RDKS,
+håndbog, syntax/diff og geodatabevis; derefter commit/push, én exact-head,
+merge og providerfri code-only. Kør så én almindelig weather på gemte cacher.
+Ingen oneoff. Scheduler pauset. DEC-0181. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.398 klar til afgrænsede slutkontroller
 
 Arbejd i `RavRadar-4.0.396`, branch

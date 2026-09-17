@@ -1,3 +1,14 @@
+## 4.0.399 – gyldige browserimports ved versionsløft (2026-09-17)
+
+- Code-only `35175276505` stoppede efter 19 sekunder før data, writes og deploy,
+  fordi 21 imports i `app.js` og `bootstrap.js` havde fået `$1` i stedet for
+  `?v=` ved det manuelle 4.0.398-versionsløft.
+- Alle 21 imports bruger nu `?v=4.0.399`.
+- Versions- og modullukningskontrollerne afviser fremover ugyldige
+  dollarmarkører, selv om selve versionsnummeret er korrekt.
+- Scoremodel, vejr, cache, providerprioritet og offentlige data er uændrede.
+  Se `CHANGELOG-4.0.399.md` og DEC-0181.
+
 ## 4.0.398 – præcis offentlig audit og korrekt delvis zonedækning (2026-09-17)
 
 - Normalrun `35168055561` gennemførte alle providere, gemte cacher og byggede

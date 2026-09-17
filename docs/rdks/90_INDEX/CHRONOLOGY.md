@@ -1,3 +1,9 @@
+# 2026-09-17 – 4.0.399 gendanner browserens importgraf
+
+- 4.0.398 bestod sourcegate `35174942101`, PR #342 og blev main `d7420ade`.
+- Code-only `35175276505` stoppede efter 19 sekunder før data/writes/deploy på 21 ugyldige `$14.0.398`-imports.
+- 4.0.399 gendanner `?v=` og gør begge versionskontroller i stand til at afvise samme fejltype. DEC-0181.
+
 # 2026-09-17 – 4.0.398 retter auditpræcision og delvis zonebrugbarhed
 
 - 4.0.397 blev main `f3a200ff` efter sourcegate `35167221199`, PR #341 og code-only `35167698742`.

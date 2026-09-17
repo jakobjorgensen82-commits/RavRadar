@@ -1,3 +1,18 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.399 browserimports
+
+4.0.398 bestod exact-head `35174942101` og blev merged gennem PR #342 som
+main `d7420ade95990b97e6d3c65bcabe2a9f7c88dec1`. Code-only
+`35175276505` stoppede efter 19 sekunder i browserens implementation closure.
+Ingen source-proof, data, Supabase, privat runtime, provider eller deploy blev
+nået.
+
+Den manuelle versionering havde ændret `?v=4.0.398` til `$14.0.398` i 21
+imports i `app.js` og `bootstrap.js`. Lokal 4.0.399 gendanner alle imports og
+tilføjer en direkte afvisning af ugyldige dollarmarkører i begge
+versionskontroller. Rettelsen ændrer intet produktionsindhold. Afgrænsede
+kontroller, exact-head, merge og code-only afventer. Derefter almindelig
+weather på gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0181.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.398 offentlig audit
 
 4.0.397 blev leveret som main `f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9`
