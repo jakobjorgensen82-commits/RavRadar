@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.398 retter auditpræcision og delvis zonedækning
+
+4.0.397 er offentlig kode som main `f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9`
+efter sourcegate `35167221199` og providerfri deploy `35167698742`.
+Normalrun `35168055561` gennemførte alle tre providerled, gemte cacher og
+byggede 118 timer for 210 zoner og 673 kystdele. Det offentlige deploy blev
+stoppet af 86 del- og 1.250 zoneformelfejl samt én profilfejl.
+
+Log, producentkode og offentlig runtime viser to auditfejl. Tre bidrag og
+råsummen afrundes hver for sig til seks decimaler og kan derfor lovligt
+afvige `2e-6` i sum. Auditgrænsen på `1e-6` var for snæver. Profilfejlen
+sidestillede fejlagtigt fuld dækning af alle kystdele med tilgængelighed af
+alle zonescorer; en fler-delszone kan være gyldig delvis.
+
+Lokal 4.0.398 ændrer ingen score, vægte eller vejrdata. Den accepterer kun
+den matematisk mulige `2e-6`-kant, afviser `3e-6`, genberegner fortsat alle
+profilfelter og bevarer den ene gyldige retning: fuld deldækning kan ikke
+have en utilgængelig zone. 210/673-måltesten er grøn. Exact-head, merge,
+providerfri code-only og almindelig weather på gemte cacher mangler.
+Scheduler er pauset. DEC-0180.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.397 retter falsk scoreaudit efter prognosebygning
 
 4.0.396 er leveret som main `265ec215ace894264e7c687d2e7fe8955f305a76`;

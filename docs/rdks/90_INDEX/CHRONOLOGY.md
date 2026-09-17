@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.398 retter auditpræcision og delvis zonebrugbarhed
+
+- 4.0.397 blev main `f3a200ff` efter sourcegate `35167221199`, PR #341 og code-only `35167698742`.
+- Normalrun `35168055561` gennemførte DMI, Copernicus og Open-Meteo, gemte cacher og byggede 118 timer for 210/673, men auditten stoppede Pages.
+- Tre bidrag og råsummen afrundes hver for sig og kan lovligt afvige `2e-6`; den tidligere `1e-6`-grænse var for snæver.
+- Fuld dækning af alle kystdele er ikke det samme som brugbarhed af alle zoner. 4.0.398 skelner de to fakta og bevarer de uafhængige profilkontroller. DEC-0180.
+
 # 2026-09-17 – 4.0.397 retter falsk auditstop efter prognosebygning
 
 - 4.0.396 blev main `265ec215` og leveret providerfrit i `35158653973`.

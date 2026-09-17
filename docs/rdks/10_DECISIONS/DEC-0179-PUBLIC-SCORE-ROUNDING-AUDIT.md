@@ -1,6 +1,7 @@
 # DEC-0179 – Offentlig scoreaudit følger den forseglede afrunding
 
-**Status:** Aktiv og bindende; implementeret og måltestet i 4.0.397, livebevis afventer
+**Status:** Delvist erstattet af DEC-0180. Halv-point-intervallet består;
+bidragssummens `1e-6`-grænse var for snæver og er erstattet.
 **Dato:** 2026-09-17
 
 ## Baggrund
@@ -44,3 +45,7 @@ Den målrettede auditregression reproducerer `50.499999` i publicerede
 bidrag mod `50.5` i publiceret rå score og accepterer begge eneste mulige
 producentudfald. Eksisterende malformed-fixtures afvises fortsat. Exact-head,
 merge og live fortsættelse af den gemte vejrgeneration afventer.
+
+Efter livekørslen viste det sig, at tre selvstændigt afrundede bidrag mod én
+selvstændigt afrundet råsum kan afvige med `2e-6`. Den korrigerede grænse og
+adskillelsen mellem deldækning og zonebrugbarhed er bindende i DEC-0180.

@@ -1,3 +1,24 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.398 retter de sidste to auditfejl
+
+4.0.397 er live som kode efter sourcegate `35167221199`, PR #341, main
+`f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9` og providerfri deploy
+`35167698742`. Normalrun `35168055561` gennemførte DMI, Copernicus og
+Open-Meteo, gemte cacher og byggede 118 timer for 210 zoner og 673 kystdele.
+Pages blev ikke opdateret, fordi auditten meldte 86 del- og 1.250
+zoneformelfejl samt én profilfejl.
+
+4.0.398 retter kun auditten. Tre bidrag og råsummen afrundes uafhængigt, så
+den matematisk mulige sumforskel er `2e-6`, ikke `1e-6`. Desuden er fuld
+dækning af 673 kystdele ikke det samme som tilgængelighed af alle zoner: en
+fler-delszone må være brugbar, når mindst én del giver gyldig score.
+Profilfelterne genberegnes stadig uafhængigt og får konkrete fejlkoder.
+
+210/673-måltesten og negative fejlprøver er grønne. Næste: afslut
+version/RDKS/geodatabevis, commit/push, én exact-head, PR/merge,
+providerfri code-only og én almindelig weather med de gemte cacher. Ingen
+oneoff. Verificér levende prognoser, scorer og derefter næste normale
+cachevedligeholdelse før scheduler genaktiveres. DEC-0180. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.397 retter falsk prognoseaudit
 
 4.0.396 er live som kode efter main `265ec215ace894264e7c687d2e7fe8955f305a76`

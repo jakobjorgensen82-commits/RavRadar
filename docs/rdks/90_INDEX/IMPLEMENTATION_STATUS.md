@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.398 auditpræcision og delvis dækning
+
+- [x] Lever 4.0.397 via sourcegate `35167221199`, PR #341, main `f3a200ff` og code-only `35167698742`.
+- [x] Kør normal weather `35168055561`; gennemfør alle providerled, gem cacher og byg 118 timer for 210/673.
+- [x] Afgræns 86 del- og 1.250 zonefejl til højst `2e-6` fra fire selvstændige seksdecimal-afrundinger.
+- [x] Afgræns profilfejlen til falsk lighed mellem fuld deldækning og zonebrugbarhed.
+- [x] Bevar uafhængig kontrol af dækning, hukommelse, migration, advisories, historik og umulige summer.
+- [x] Bestå 210/673-regression, gyldig delvis fler-delszone, `2e-6` pass og `3e-6` fail.
+- [x] Afslut version, RDKS, håndbog, modulversioner og rent geodataversionsbevis.
+- [ ] Bestå én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only af 4.0.398.
+- [ ] Kør én almindelig weather på gemte cacher og verificér levende prognoser/scorer.
+- [ ] Bevis næste normale cachevedligeholdelse og providerprioritet før scheduler genaktiveres.
+
+DEC-0180 er aktiv. Scheduler er pauset. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.397 offentlig scoreafrunding
 
 - [x] Lever 4.0.396 som main `265ec215` og providerfri code-only `35158653973`.

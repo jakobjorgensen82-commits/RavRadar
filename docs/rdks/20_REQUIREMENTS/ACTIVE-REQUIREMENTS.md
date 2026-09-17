@@ -1,3 +1,18 @@
+# Aktuelt ejerdelta – 2026-09-17 – præcis audit og lokal deldækning
+
+- **REQ-4.0.398-ADDITIVE-PRECISION-001 – BINDENDE:** Summen af tre uafhængigt seksdecimal-afrundede bidrag må afvige højst `2e-6` fra den uafhængigt afrundede råsum. Større afvigelse stopper.
+- **REQ-4.0.398-SEALED-ROUNDING-002 – BINDENDE:** DEC-0179's smalle fuldpræcisionsinterval for heltalsafrunding består uændret.
+- **REQ-4.0.398-PART-ZONE-SEPARATION-003 – BINDENDE:** `modelCoverageReady` beskriver alle kystdele og må ikke sidestilles med nul utilgængelige zoner. En fler-delszone kan være brugbar med lokal missing.
+- **REQ-4.0.398-INVERSE-SAFETY-004 – BINDENDE:** Hvis fuld deldækning er erklæret og genberegnet sand, må ingen aktuel zonescore være utilgængelig.
+- **REQ-4.0.398-PROFILE-CHECKS-005 – BINDENDE:** Dækning, hukommelse, migration, advisories og historiesammendrag kontrolleres uafhængigt og rapporteres med konkrete fejlkoder.
+- **REQ-4.0.398-NO-MODEL-CHANGE-006 – BINDENDE:** Rettelsen ændrer ikke RavScore, vægte, vejr, kildeprioritet, geometri eller offentlig score.
+- **REQ-4.0.398-DELIVERY-007 – BINDENDE:** Lever kode providerfrit og brug derefter én almindelig weather på gemte cacher. Ingen oneoff eller unødvendig providergentagelse.
+
+`REQ-4.0.397-CONTRIBUTION-CHECK-002` er erstattet af den præcise
+`REQ-4.0.398-ADDITIVE-PRECISION-001`. Øvrige DEC-0179-krav består.
+DEC-0180. Scheduler forbliver pauset til frisk offentlig prognose og normal
+vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-17 – korrekt offentlig scoreafrunding
 
 - **REQ-4.0.397-SEALED-ROUNDING-001 – BINDENDE:** Den offentlige audit skal kontrollere scoreheltallet mod det mulige fuldpræcisionsinterval bag den seksdecimal-afrundede rå score; den må ikke genafrunde summen af allerede afrundede bidrag som om den var originalen.

@@ -1,3 +1,25 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.398 klar til afgrænsede slutkontroller
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.398-public-audit-precision`, baseret på 4.0.397-main
+`f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9`.
+
+4.0.397 er online som kode efter sourcegate `35167221199`, PR #341 og
+providerfri deploy `35167698742`. Normalrun `35168055561` gennemførte alle
+tre providere, gemte cacher og byggede 118 timer for 210/673. Pages blev
+stoppet af 86 del- og 1.250 zoneformelfejl samt én profilfejl.
+
+4.0.398 retter to fejl i auditten: separat afrunding af tre bidrag og råsum
+tillader højst `2e-6` sumforskel; fuld deldækning må ikke sidestilles med
+zonebrugbarhed. Profilens felter kontrolleres fortsat uafhængigt med konkrete
+fejlkoder. 210/673-regression og negative fixtures er grønne.
+
+Afslut version/RDKS/geodatabevis, commit/push, én exact-head, PR/merge og
+providerfri code-only. Kør derefter én almindelig weather med de gemte cacher,
+verificér levende prognoser/scorer og først derefter næste normale
+vedligeholdelse/providerprioritet samt scheduler. Ingen oneoff. DEC-0180.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.397 prognoseaudit
 
 Arbejd i `RavRadar-4.0.396`, branch
