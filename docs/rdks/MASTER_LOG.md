@@ -1,3 +1,23 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.401 historisk kildeberedskab
+
+4.0.400 blev leveret som main `0744c79c` gennem exact-head `35181131552`, PR
+#344 og providerfri code-only `35181573799`. Normalrun `35181918091`
+gennemførte DMI, Copernicus og Open-Meteo, gemte alle providercacher og
+byggede closure, historik, offentlig runtime og grøn uafhængig runtimeaudit.
+
+Den rettede nationale shadow-test fra 4.0.400 bestod. Det næste stop lå sent i
+den historiske Candidate G-rollbacktest: den kræver den pinnede kildecommit
+`49dd4cb`, men runnet havde genbrugt et eksakt grønt sourceproof. Den
+betingede sourcegate-fetch kørte derfor ikke, og shallow checkout indeholdt
+ikke den gamle commit.
+
+4.0.401 læser commit- og træidentitet fra den centrale Candidate G-kontrakt,
+genbruger committen, hvis den allerede findes, og henter ellers kun denne ene
+commit før fuldvalideringen. En workflowtest binder betingelse, identitet,
+hentning, træbevis og placering. Ingen score-, vejr-, cache-, geometri- eller
+kildeprioritet ændres. Cacherne fra `35181918091` genbruges i næste almindelige
+weather; ingen oneoff. Scheduler pauset. DEC-0183.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.400 præcis workflowtest
 
 4.0.399 blev leveret som main `b86bcf97` via exact-head `35175844570`, PR

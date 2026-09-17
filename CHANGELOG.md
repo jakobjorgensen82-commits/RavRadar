@@ -1,3 +1,17 @@
+## 4.0.401 – eksakt historisk kilde før fuldvalidering (2026-09-17)
+
+- 4.0.400 blev leveret gennem exact-head `35181131552`, PR #344, main
+  `0744c79c` og providerfri code-only `35181573799`.
+- Normalrun `35181918091` gennemførte alle providere, gemte cacher, byggede
+  closure/historik/runtime og bestod den uafhængige runtimeaudit.
+- Den efterfølgende Candidate G-rollbacktest stoppede, fordi runnerens shallow
+  checkout ikke havde den historiske commit `49dd4cb`, når sourceproofet blev
+  genbrugt.
+- Workflowet genbruger nu committen, hvis den findes, og henter ellers kun den
+  eksakte pinnede commit samt bekræfter dens kendte træ før fuldvalideringen.
+- RavScore, vejr, cache, providerprioritet og geometri er uændrede. Se
+  `CHANGELOG-4.0.401.md` og DEC-0183.
+
 ## 4.0.400 – præcis workflowtest efter grøn vejr- og scorebygning (2026-09-17)
 
 - 4.0.399 blev leveret gennem exact-head `35175844570`, PR #343, main

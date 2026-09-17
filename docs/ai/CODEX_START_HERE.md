@@ -1,3 +1,26 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.401 sikrer historikkilden før slutkontrol
+
+4.0.400 bestod exact-head `35181131552`, blev merged gennem PR #344 som main
+`0744c79cfba7a884a11bba9e0ddb532cea0230b9` og kom providerfrit online i
+`35181573799` med grøn privat runtime, Pages og offentlig 210/673-verifikation.
+
+Normalrun `35181918091` gennemførte DMI, Copernicus og Open-Meteo, gemte alle
+tre providercacher, byggede closure, syvdøgnshistorik og offentlig runtime og
+bestod den uafhængige runtimeaudit. 4.0.400's rettede nationale shadow-test
+bestod dermed i den virkelige helkæde.
+
+Runnet stoppede sent i `npm run validate`, fordi den historiske Candidate G-
+rollbacktest kræver commit `49dd4cb`, mens det normale workflow havde genbrugt
+et grønt sourceproof og derfor ikke havde hentet den commit i runneren. Det er
+en checkout-/testforberedelsesfejl, ikke en vejr- eller scorefejl.
+
+Lokal 4.0.401 sikrer præcis den pinnede commit og dens kendte træ umiddelbart
+før fuldvalideringen. Findes den allerede, genbruges den; ellers hentes kun den
+ene commit. Hele Git-historikken hentes ikke. Næste: målrettede kontroller,
+RDKS/geodatabevis, én exact-head, merge, providerfri code-only og én almindelig
+weather på de gemte cacher. Ingen oneoff. Scheduler pauset. DEC-0183.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.400 retter et falsk fuldvalideringsstop
 
 4.0.399 bestod exact-head `35175844570`, blev merged som main

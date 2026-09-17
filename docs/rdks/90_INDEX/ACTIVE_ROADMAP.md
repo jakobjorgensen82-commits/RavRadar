@@ -1,3 +1,19 @@
+# Aktiv roadmap – 4.0.401 fra historisk checkoutstop til frisk offentlig prognose
+
+1. [x] Lever 4.0.400 exact-head/PR/merge og providerfri code-only med offentlig 210/673.
+2. [x] Kør én almindelig weather; gennemfør alle provider-, cache-, closure-, historik-, build- og runtimeauditled.
+3. [x] Bevis 4.0.400's nationale shadow-rettelse og afgræns næste stop til manglende `49dd4cb` i den genbrugte sourceproof-rute.
+4. [x] Tilføj præcis historikforberedelse umiddelbart før fuldvalideringen uden fuld Git-history checkout.
+5. [x] Bestå målrettede kontrakter, version/RDKS/håndbog, diff og rent geodataversionsbevis.
+6. [ ] Commit/push, bestå én exact-head og merge samme head.
+7. [ ] Kør providerfri code-only og verificér offentlig 4.0.401/210/673 uden private lækager.
+8. [ ] Kør én almindelig weather på gemte DMI-, Copernicus- og Open-Meteo-cacher; verificér friske prognoser, scorer og ærlig lokal missing. Ingen oneoff.
+9. [ ] Kør næste normale vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo samt cachefremgang.
+10. [ ] Genaktivér scheduler først efter bevist normal vedligeholdelse.
+11. [ ] Gennemgå hele sitet på den levende runtime og fortsæt kun stadig aktuelle roadmap-punkter.
+
+DEC-0183. Ingen model-, vejr- eller kildeprioritetsændring.
+
 # Aktiv roadmap – 4.0.400 fra falsk teststop til frisk offentlig prognose
 
 1. [x] Lever 4.0.399 exact-head/PR/merge og providerfri code-only med offentlig 210/673.

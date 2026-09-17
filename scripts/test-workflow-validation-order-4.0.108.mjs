@@ -1413,6 +1413,7 @@ const positions = {
   publicAudit: text.indexOf('name: Audit runtime and collect independent cutover validation failures'),
   checkpointDisposition: text.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
+  legacyFullValidationSource: text.indexOf('name: Ensure exact historical Candidate G source is present for full validation'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData: text.indexOf('name: Validate updated weather cache'),
@@ -1490,6 +1491,7 @@ const expected = [
   'publicAudit',
   'checkpointDisposition',
   'reference',
+  'legacyFullValidationSource',
   'validate',
   'gate',
   'validateData',
@@ -1537,6 +1539,23 @@ const normalValidationBlock = text.slice(positions.validate, positions.gate);
 for (const block of [normalProvenanceBlock, normalValidationBlock]) {
   if (!block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json')) {
     throw new Error('Normal provenance og fuld spatial validering skal læse samme kandidat-DMI som leverandørkæden.');
+  }
+}
+const legacyFullValidationSourceBlock = text.slice(
+  positions.legacyFullValidationSource,
+  positions.validate,
+);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'",
+  'LEGACY_CANDIDATE_G_SOURCE_HEAD',
+  'LEGACY_CANDIDATE_G_SOURCE_TREE',
+  'git cat-file -e "${legacy_source_head}^{commit}"',
+  'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
+  'test "$(git rev-parse "${legacy_source_head}^{commit}")" = "$legacy_source_head"',
+  'test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"',
+]) {
+  if (!legacyFullValidationSourceBlock.includes(marker)) {
+    throw new Error(`Fuld validering mangler præcis historisk Candidate G-forberedelse: ${marker}`);
   }
 }
 const dmiProducerBlock = text.slice(positions.dmiBulk, positions.dmiGribSave);
@@ -2243,12 +2262,12 @@ if (!(positions.legacyCutoverImport < positions.legacySourceFetch
   throw new Error('Den eksakte Candidate G Git-kilde skal hentes efter isoleret public import og før lokal attestation.');
 }
 const legacyFetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
-if (buildWorkflow.split(legacyFetchCommand).length - 1 !== 2
+if (buildWorkflow.split(legacyFetchCommand).length - 1 !== 3
   || deployWorkflow.split(legacyFetchCommand).length - 1 !== 1
   || buildWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1
   || buildWorkflow.split('test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"').length - 1 !== 1
   || deployWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1) {
-  throw new Error('Buildets sourcegate og first-cutover-attestation samt deploy-verifikationen skal hver hente og bekræfte den pinnede Candidate G-sourcecommit.');
+  throw new Error('Buildets sourcegate, fulde validering og first-cutover-attestation samt deploy-verifikationen skal hente og bekræfte den pinnede Candidate G-sourcecommit.');
 }
 const legacyDeployFetch = deployWorkflow.indexOf(
   'name: Fetch exact public Candidate G source commit for first cutover verification',

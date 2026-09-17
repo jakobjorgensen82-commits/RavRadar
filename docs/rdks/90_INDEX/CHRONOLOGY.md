@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.401 sikrer den historiske kilde før fuldvalidering
+
+- 4.0.400 bestod exact-head `35181131552`, PR #344, main `0744c79c` og providerfri code-only `35181573799`.
+- Normalrun `35181918091` gennemførte provider-, cache-, closure-, historik-, build- og runtimeauditled; 4.0.400's shadow-rettelse bestod live.
+- Fuldvalideringen stoppede bagefter, fordi den historiske Candidate G-test krævede `49dd4cb`, som en shallow runner med genbrugt sourceproof ikke havde hentet.
+- 4.0.401 genbruger committen, hvis den findes, og henter ellers kun den eksakte pinnede commit samt bekræfter dens kendte træ før `npm run validate`. DEC-0183.
+
 # 2026-09-17 – 4.0.400 retter falsk teststop efter grøn runtimeaudit
 
 - 4.0.399 bestod sourcegate `35175844570`, PR #343, main `b86bcf97` og providerfri code-only `35176215202`.

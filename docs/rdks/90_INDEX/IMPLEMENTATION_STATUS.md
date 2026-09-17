@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.401 historisk kilde før fuldvalidering
+
+- [x] Lever 4.0.400 via exact-head `35181131552`, PR #344, main `0744c79c` og providerfri code-only `35181573799`.
+- [x] Kør normal weather `35181918091`; gennemfør alle provider-, cache-, closure-, historik-, build- og runtimeauditled.
+- [x] Livebevis 4.0.400's nationale shadow-rettelse i den virkelige helkæde.
+- [x] Afgræns næste stop til manglende historisk commit `49dd4cb` i runnerens shallow checkout efter genbrugt sourceproof.
+- [x] Sikr commit og kendt træ umiddelbart før fuldvalideringen; genbrug lokalt objekt og hent ellers kun præcis den ene commit.
+- [x] Bind hentning, identitet og placering før `npm run validate` i workflowets rækkefølgekontrakt.
+- [x] Afslut version/RDKS/håndbog, målrettede kontroller og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Kør providerfri code-only af 4.0.401 og derefter én almindelig weather på de gemte cacher; ingen oneoff.
+- [ ] Verificér friske prognoser/scorer og næste normale vedligeholdelse/providerprioritet før scheduler og roadmapfortsættelse.
+
+DEC-0183 er aktiv. Scheduler er pauset. RavScore, vejrdata og providerprioritet er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.400 præcis workflowtest
 
 - [x] Lever 4.0.399 via exact-head `35175844570`, PR #343, main `b86bcf97` og providerfri code-only `35176215202`.

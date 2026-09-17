@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.400
+**Håndbogsversion:** 4.0.401
+
+## 89.05 4.0.401 – Slutkontrollen får den historiske kilde, den selv kræver
+
+### En genbrugt kildekontrol må ikke efterlade en senere test uden dens gamle version
+
+Den almindelige kørsel gennemførte DMI, Copernicus og Open-Meteo, gemte
+cacher, byggede prognoser og bestod den uafhængige runtimekontrol. Først sent
+i den samlede slutkontrol stoppede den historiske rollbacktest.
+
+Rollbacktesten sammenligner med den fastlåste Candidate G-kode fra 4.0.316.
+Kildekontrollen var allerede grøn for præcis samme main-kode og blev derfor
+korrekt genbrugt. Men runneren havde kun hentet den nyeste Git-version, så den
+gamle sammenligningsversion fandtes ikke lokalt.
+
+4.0.401 kontrollerer nu lige før sluttesten, om den præcise gamle commit og
+dens kendte træ findes. Findes den allerede, genbruges den. Ellers hentes kun
+den ene commit, ikke hele projektets Git-historik.
+
+Rettelsen ændrer ikke vejret eller scoren. De gemte providercacher bruges i
+næste almindelige kørsel; der startes ingen oneoff.
+
+4.0.401 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den uændrede integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906`
+over 56 kanonisk normaliserede transitive implementeringsfiler og otte
+deklarerede forbrugere.
 
 ## 89.04 4.0.400 – En test må ikke overse et korrekt workflowtrin
 
