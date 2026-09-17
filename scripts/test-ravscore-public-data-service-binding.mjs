@@ -589,8 +589,8 @@ assert.deepEqual(new Set(emergencyRequests), new Set([
 ]), 'Emergency must verify exactly the manifest-bound four-file package.');
 
 // A production-sized details monolith must never block public mobile startup.
-// The compact verified startup remains available, while scores and stale
-// weather are suppressed by app.js until a fresh weather package arrives.
+// The compact verified startup remains available as an explicitly timestamped
+// same-model snapshot; it must never be described as the current hour.
 service.clearDataMemoryCache();
 const oversizedManifest = structuredClone(primary.manifest);
 oversizedManifest.publicConditionDetailsBytes = 117_820_378;
@@ -614,8 +614,24 @@ assert.equal(
   'Oversized emergency details must stay out of the mobile startup path.',
 );
 assert.match(appSource,
-  /emergencyDetailsDeferred[\s\S]{0,240}forecast\.nextUpdate/,
-  'The public view must render an honest lightweight emergency state without starting details.',
+  /function emergencySnapshotReferenceAt\(\)[\s\S]{0,240}productionReferenceAt/,
+  'The public view must derive the snapshot time from the manifest-bound startup.',
+);
+assert.match(appSource,
+  /localZoneScore\(zone,emergencySnapshotReferenceAt\(\)\)/,
+  'The public view must use the timestamped manifest-bound startup score.',
+);
+assert.match(appSource,
+  /emergencyDetailsDeferred[\s\S]{0,360}data\.emergencySnapshot/,
+  'The public status must describe the deferred snapshot as older data.',
+);
+assert.match(appSource,
+  /snapshotReference&&Array\.isArray\(visiblePrepared\)[\s\S]{0,420}Date\.parse\(row\.time\)>=currentHourMs/,
+  'The deferred national forecast must discard already elapsed forecast rows.',
+);
+assert.match(appSource,
+  /tripButton\.disabled=snapshotOnly[\s\S]{0,180}trip\.snapshotUnavailable/,
+  'Trip capture must remain closed when displayed score time is older than the selected runtime hour.',
 );
 
 const emergencyStart = createTripStartFromPublicState({

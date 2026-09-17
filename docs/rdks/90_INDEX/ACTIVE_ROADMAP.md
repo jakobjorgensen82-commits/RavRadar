@@ -1999,3 +1999,18 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 10. [ ] Genaktivér scheduler efter bevist normal vedligeholdelse; gennemgå derefter hele sitet og de resterende roadmap-punkter.
 
 DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrindsamling.
+# Aktiv roadmap – 4.0.406 fra skjult snapshot og manglende delvind til normal drift
+
+1. [x] Lever 4.0.405 og verificér integreret 210/673 offentligt.
+2. [x] Afgræns mobilblankningen til den udskudte store detaljepakke.
+3. [x] Gør den kompakte startpakke brugbar som tidsmærket samme-model-snapshot.
+4. [x] Afgræns 69 utilgængelige zoner til manglende HARMONIE-vind på delpunkter.
+5. [x] Giv ét HARMONIE-asset førsteplads ved manglende delvind, derefter normal DKSS/WAM.
+6. [ ] Afslut måltests, dokumentation, diff og geodataversionsbevis.
+7. [ ] Commit/push, bestå én exact-head og merge samme head.
+8. [ ] Deploy kode providerfrit og verificér siden på mobil og desktop.
+9. [ ] Kør én almindelig weather; mål vinddækning, scorede dele og providerfremgang. Ingen oneoff.
+10. [ ] Bevis næste normale cachevedligeholdelse og genaktivér scheduler.
+11. [ ] Gennemgå hele sitet og revurdér de resterende roadmap-punkter.
+
+DEC-0188/0189.

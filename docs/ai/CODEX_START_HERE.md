@@ -1289,3 +1289,22 @@ source-ancestry, 210/673, privacy og normal Pages-kontrol.
 Næste: slut dokumentation/måltests/geodatabevis → én exact-head → merge →
 saved-weather-continuation → levende prognose- og scorekontrol. Ingen
 providergentagelse eller oneoff. Scheduler pauset. DEC-0185. Sol/Ekstra høj.
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 brugbar mobil og vindgrund
+
+4.0.405 bestod exact-head `35217753258`, PR #349 og main
+`e128b15d3b80bdab9f7b7e88092fb9de5ec188d0`. Saved-weather
+`35222128772` leverede integreret model, privat runtime, Edge og Pages uden
+providerkald. Live er 210/673, men 141 zoner er brugbare og 69 helt
+utilgængelige.
+
+Mobilen udskød korrekt detaljepakken på cirka 175 MB, men skjulte samtidig
+den gyldige kompakte startpakke. Lokal 4.0.406 viser derfor samme-model,
+tidsmærket snapshot uden stor opstartshentning; turstart og pile forbliver
+lukkede.
+
+Rodårsagen til de 69 zoner er 296 kystdele med strøm og bølger, men uden vind
+på delpunktet. Normalrun `35205052150` nåede ikke HARMONIE efter DKSS/WAM.
+Når delvind mangler, forsøger 4.0.406 derfor ét HARMONIE-asset først og
+fortsætter derefter normal strøm-/bølgeprioritet. Næste: docs/geodatabevis,
+én exact-head, providerfri deploy og én almindelig weather. Ingen oneoff.
+Scheduler pauset. DEC-0188/0189. Sol/Ekstra høj.

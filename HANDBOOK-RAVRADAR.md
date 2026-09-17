@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.405
+**Håndbogsversion:** 4.0.406
+
+## 89.10 4.0.406 – Mobilen kan vise scorer, og delvind hentes først
+
+4.0.405 er online med den integrerede model, 210 zoner og 673 kystdele. Den
+store detaljepakke er cirka 175 MB. Mobilværnet gjorde det rigtige ved ikke at
+hente den under opstart, men siden skjulte samtidig de 141 gyldige scorer i
+den lille startpakke. 4.0.406 viser dem i stedet som et tydeligt tidsmærket
+snapshot. Gamle tider kaldes ikke aktuelle, passerede prognoser fjernes, og
+pile samt turstart venter på den præcise aktuelle time.
+
+De 69 helt utilgængelige zoner skyldes ikke, at alt vejr mangler. 296
+kystdele har strøm og bølger, men mangler vind på deres præcise modelpunkt;
+224 af dem ligger i de 69 zoner. Den almindelige DMI-kørsel nåede ikke
+HARMONIE, fordi strøm og bølger kom først og brugte tiden.
+
+Når delvind mangler, forsøger RavRadar nu ét aktuelt HARMONIE-asset først.
+Det ene komplette atmosfæregitter kan give vind til alle aktive punkter.
+Derefter fortsætter samme almindelige kørsel med DMI-strøm og DMI-bølger som
+før. HARMONIE får ikke lov at bruge hele tidsbudgettet. Rettelsen bevises i
+almindelig drift; der køres ingen oneoff.
 
 ## 89.09 4.0.405 – Samme UTC-time forstås ens i hele leveringen
 

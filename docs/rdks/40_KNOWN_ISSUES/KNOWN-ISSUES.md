@@ -2007,3 +2007,12 @@ Ingen oneoff. Scheduler er pauset.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til offentlig prognose og næste almindelige vedligeholdelse er bevist.
 
 DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.406 mobilvisning og delvind
+
+- **ISSUE-4.0.405-DELIVERY – LUKKET:** Exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772` er grønne.
+- **ISSUE-MOBILE-DETAIL-BLANK – RETTET LOKALT / LIVEBEVIS MANGLER:** 4.0.405 udskyder cirka 175 MB detaljer, men skjuler også 141 gyldige scorer. 4.0.406 viser startpakkens tidsmærkede samme-model-snapshot uden pile/turstart.
+- **ISSUE-69-ZONES-NO-SCORE – RETTET LOKALT / LIVEBEVIS MANGLER:** 224 dele i 69 zoner mangler vind på delpunktet; samlet mangler 296/673 dele vind trods strøm og bølger.
+- **ISSUE-HARMONIE-SCHEDULER-STARVATION – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun `35205052150` nåede ikke HARMONIE. Ét HARMONIE-asset forsøges nu først ved manglende delvind og må derefter ikke bruge resten af DMI-budgettet.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Én almindelig weather skal bevise delvind, scorer, providerfremgang og cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0188/0189. Ingen oneoff.

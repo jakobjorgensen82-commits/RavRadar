@@ -3905,3 +3905,19 @@ bruger stableJsonDigest og indfører en eksplicit providerfri fortsættelse.
 Kun en strengt nyere, højst 240 minutter gammel, source-forbundet runtime
 med aktiv integreret drift, tomt repair-id, 210/673 og grøn privacy kan
 fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.406 mobil og delvind
+
+4.0.405 blev leveret gennem exact-head `35217753258`, PR #349, main
+`e128b15d` og providerfri saved-weather `35222128772`. Livepakken er korrekt
+integreret 210/673, men mobilvisningen skjulte 141 gyldige zonescorer, når
+den cirka 175 MB store detaljepakke blev udskudt.
+
+4.0.406 viser den forseglede startpakke som et tydeligt tidsmærket
+samme-model-snapshot. Passerede prognoser fjernes; turstart og pile er lukket.
+
+Den offentlige delanalyse viser 377 scorede dele og 296 dele med strøm og
+bølger, men uden delvind. 224 manglende dele gør 69 zoner helt utilgængelige;
+72 ligger i 31 delvise zoner. Normalrun `35205052150` brugte DMI-budgettet på
+DKSS/WAM og nåede ikke HARMONIE. Derfor forsøges ét HARMONIE-asset først, når
+delvind mangler, hvorefter normal current-/bølgeprioritet fortsætter. Ingen
+oneoff. DEC-0188/0189.

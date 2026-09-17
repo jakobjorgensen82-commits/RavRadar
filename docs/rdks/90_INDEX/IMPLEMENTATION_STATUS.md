@@ -4570,3 +4570,21 @@ Ingen oneoff. Den offentlige validator er ikke svækket.
 - [ ] Kør derefter næste almindelige vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo før scheduler genaktiveres.
 
 DEC-0185 er aktiv. Ingen oneoff eller gentaget providerarbejde.
+# Aktuel implementeringsstatus – lokal 4.0.406 mobilvisning og vindgrund
+
+- [x] Lever 4.0.405 via exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772`.
+- [x] Bevis live integreret 210/673 samt 141 brugbare og 69 helt utilgængelige zoner.
+- [x] Afgræns mobilblankningen til den udskudte cirka 175 MB detaljepakke.
+- [x] Vis samme-model startpakken som tydeligt tidsmærket snapshot uden stor opstartshentning.
+- [x] Filtrér passerede prognoser og luk pile/turstart i snapshottilstanden.
+- [x] Afgræns de 69 zoner til 224 delpunkter uden vind; samlet mangler 296/673 dele vind.
+- [x] Bevis at normalrun `35205052150` ikke nåede HARMONIE efter DKSS/WAM.
+- [x] Planlæg ét HARMONIE-grundforsøg først ved manglende delvind og fortsæt derefter normal current-/bølgeprioritet.
+- [x] Bestå målrettede browser-, data-service-, scheduler- og Python-syntakskontroller.
+- [ ] Afslut RDKS/håndbog, versions- og geodatabevis.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Deploy 4.0.406 providerfrit og verificér mobil/desktop.
+- [ ] Kør én almindelig weather, mål delvind/score/providerfremgang og bevis cachevedligeholdelse.
+- [ ] Genaktivér scheduler først efter grøn normal drift; fortsæt site- og roadmapgennemgang.
+
+DEC-0188/0189. Ingen oneoff.

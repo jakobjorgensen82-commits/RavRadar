@@ -3763,3 +3763,22 @@ strengt nyere og højst 240 minutter gammel runtime, forfaderbinding til main,
 aktiv integreret model, 210/673, privacy og normal Pages-kontrol. Ingen ny
 vejrindsamling eller oneoff. Exact-head, merge og live deploy afventer.
 Scheduler er pauset. DEC-0185.
+# NYESTE SANDHED – 2026-09-17 – 4.0.406 adskiller mobilstørrelse og delvind
+
+4.0.405 er live efter exact-head `35217753258`, PR #349, main
+`e128b15d3b80bdab9f7b7e88092fb9de5ec188d0` og saved-weather
+`35222128772`. Den integrerede offentlige pakke har 210 zoner og 673
+kystdele. 141 zoner er brugbare; 69 er helt utilgængelige.
+
+Mobilen udskyder korrekt detaljepakken på cirka 175 MB, men 4.0.405 skjuler
+også de 141 gyldige scorer. Lokal 4.0.406 viser i stedet den samme forseglede
+models kompakte startpakke som et tydeligt tidsmærket snapshot. Passerede
+prognoser filtreres; pile og turstart forbliver lukkede.
+
+377 dele scorer. 296 dele har strøm og bølger, men mangler vind på deres
+modelpunkt; 224 af disse udgør de 69 helt utilgængelige zoner. 60 af de 69
+har vind på det ældre zonepunkt, så problemet er ikke generelt manglende
+vejrhentning. Normalrun `35205052150` nåede ikke HARMONIE efter DKSS/WAM.
+4.0.406 forsøger derfor ét HARMONIE-asset først, når delvind mangler, og
+fortsætter derefter normal current-/bølgeprioritet. Livebevis kræver én
+almindelig weather; ingen oneoff. Scheduler pauset. DEC-0188/0189.
