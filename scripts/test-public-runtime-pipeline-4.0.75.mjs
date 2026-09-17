@@ -30,7 +30,7 @@ if(occurrences!==1) throw new Error(`Workflowet skal genopbygge public runtime p
 const runtimeIndex=workflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy');
 const weatherIndex=workflow.indexOf('name: Update central weather cache');
 const provenanceIndex=workflow.indexOf('name: Attach scientific current provenance and exact DMI grid points');
-const validateIndex=workflow.indexOf('name: Validate full project after fresh weather and current provenance');
+const validateIndex=workflow.indexOf('name: Validate critical production artifact after fresh weather and current provenance');
 if(!(weatherIndex<provenanceIndex && provenanceIndex<runtimeIndex && runtimeIndex<validateIndex)) throw new Error('Public runtime bygges ikke i den sikre rækkefølge efter frisk vejr og proveniens, men før validering.');
 const updater=await fs.readFile('scripts/update-weather.mjs','utf8');
 if(!updater.includes('writePublicRuntimeFromFull(output)')) throw new Error('Vejropdateringen bruger ikke den fælles runtime-writer.');

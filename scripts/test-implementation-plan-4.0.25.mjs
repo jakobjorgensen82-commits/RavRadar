@@ -8,7 +8,7 @@ const audit=fs.readFileSync('scripts/audit-implementation-plan-4.0.25.mjs','utf8
 for(const token of ['oceanDiagnostics','cacheAudit','implementationAudit','freshMarine','preservedMarine','missingReasons','hourlyProviderSwitches']) assert.match(admin,new RegExp(token));
 assert.match(
   buildWorkflow,
-  /DMI_BULK_COLLECTIONS_PER_RUN:\s*\$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
+  /DMI_BULK_COLLECTIONS_PER_RUN:\s*\$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
   'Implementeringsplanen skal følge den gældende seks/tre-collection-rotation.'
 );
 assert.match(buildWorkflow,/audit:implementation-plan/);

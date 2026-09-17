@@ -403,16 +403,16 @@ assert.match(build, /current-field-shadow\.json/);
 assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(
   build,
-  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
+  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: \$\{\{ inputs\.extended_provider_bootstrap && 70 \|\| 55 \}\}[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ inputs\.extended_provider_bootstrap == true && '3600' \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\) && '3000' \|\| '900' \}\}/,
 );
 assert.match(
   build,
-  /DMI_BULK_MAX_DOWNLOAD_MB: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '4096' \|\| '2048' \}\}/,
+  /DMI_BULK_MAX_DOWNLOAD_MB: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '4096' \|\| '2048' \}\}/,
   'Første integrerede cutover skal kunne hente den målte fulde bootstrapmængde; normale vejrkørsler beholder 2048 MB-grænsen.',
 );
 assert.match(
   build,
-  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
   'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normal vedligeholdelse behandler tre collections.',
 );
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
@@ -503,7 +503,13 @@ for (const marker of [
 ]) {
   assert.ok(terminalGateBlock.includes(marker), `DMI-terminalgaten mangler ${marker}`);
 }
-assert.doesNotMatch(terminalGateBlock, /continue-on-error/);
+const directInstallContinuePolicy = "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}";
+assert.ok(terminalGateBlock.includes(directInstallContinuePolicy));
+assert.doesNotMatch(
+  terminalGateBlock.replace(directInstallContinuePolicy, ''),
+  /continue-on-error/,
+  'DMI-terminalgaten må kun fortsætte i den udtrykkeligt godkendte direkte first-cutover-vej.',
+);
 const selectorBlock = build.slice(
   copernicusSelector,
   build.indexOf('name: Bind production to resolved DMI current hour'),

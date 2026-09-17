@@ -99,4 +99,30 @@ assert.ok(projectPlan.includes('node scripts/test-workflow-validation-order-4.0.
 assert.ok(projectPlan.includes('python scripts/test-dmi-oneoff-fill.py'));
 assert.ok(projectPlan.includes('python scripts/test-dmi-contiguous-component-horizon-4.0.210.py'));
 
-console.log(`Validation collector covers all ${projectPlan.length} declared leaf checks, preserves partial progress and reports every failure.`);
+const productionPlan = expandValidationCommands(projectScripts, 'validate:production-artifact');
+assert.equal(productionPlan.length, 52,
+  'the production artifact gate must remain the owner-approved 52-leaf critical plan');
+for (const command of [
+  'node scripts/validate-weather-health.mjs',
+  'node scripts/test-forecast-integrity-4.0.17.mjs',
+  'node scripts/test-score-presentation-4.0.45.mjs',
+  'node scripts/test-public-runtime-4.0.74.mjs',
+  'node scripts/test-current-full-coverage-gate-4.0.232.mjs',
+  'node scripts/test-current-provenance-null-safety-4.0.78.mjs',
+  'node scripts/test-missing-weather-null-safety-4.0.116.mjs',
+  'node scripts/test-water-source-production-chain-4.0.103.mjs',
+]) assert.ok(productionPlan.includes(command), `critical production plan is missing ${command}`);
+for (const command of [
+  'node scripts/test-dmi-bulk-model-download.mjs',
+  'node scripts/test-feedback-learning.mjs',
+  'node scripts/test-workflow-validation-order-4.0.108.mjs',
+]) assert.ok(!productionPlan.includes(command), `production plan retained non-artifact check ${command}`);
+
+const productionReleasePlan = expandValidationCommands(projectScripts, 'validate:production-release');
+assert.deepEqual(productionReleasePlan, [
+  'node scripts/validate-release-version.mjs',
+  'node scripts/build-ravscore-model-bundle.mjs --check',
+  'node scripts/sync-ravscore-model-binding.mjs --check',
+], 'normal production must keep only exact version and active model-binding governance');
+
+console.log(`Validation collector covers all ${projectPlan.length} full-suite checks, the ${productionPlan.length}-check production gate and three release checks, preserves partial progress and reports every failure.`);

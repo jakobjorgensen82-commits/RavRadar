@@ -1,3 +1,11 @@
+# 2026-09-17 – 4.0.402 afgrænser efter-vejr-kontrollen til det friske artifact
+
+- 4.0.401 bestod exact-head 35187093136, PR #345, main 82f4fb08 og providerfri code-only 35187388134.
+- Normalrun 35187767148 gennemførte alle provider-, cache-, closure-, historik-, runtime- og audittrin, men stoppede bagefter på en forældet DMI-testforventning.
+- Helkæden havde 277 validate-bladkontroller og 44 historiske releasegatetests, som kunne stoppe normal vejrleverance på gamle kildeantagelser.
+- 4.0.402 bruger 52 artifactkritiske og tre version-/modelbindingskontroller med samlet fejlrapport; runtime, Supabase, privacy, artifact og deploy består som hårde trin.
+- Browserens gamle 4.0.398-fallback er fjernet. DEC-0184.
+
 # 2026-09-17 – 4.0.401 sikrer den historiske kilde før fuldvalidering
 
 - 4.0.400 bestod exact-head `35181131552`, PR #344, main `0744c79c` og providerfri code-only `35181573799`.

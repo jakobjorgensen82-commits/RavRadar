@@ -1,3 +1,20 @@
+# Aktiv roadmap – 4.0.402 fra teststop til frisk offentlig prognose
+
+1. [x] Lever 4.0.401 exact-head/PR/merge og providerfri code-only.
+2. [x] Kør almindelig weather 35187767148; gennemfør provider-, cache-, closure-, historik-, runtime- og auditkæden.
+3. [x] Afgræns stoppet til forældet DMI-test og gennemgå hele efter-vejr-kontrollen.
+4. [x] Erstat 277+44 gentagne blokeringer med 52 artifactkritiske og tre releasekontroller, som samler alle fejl.
+5. [x] Bevar runtime-, Supabase-, checkpoint-, privacy-, artifact- og deploytrin som hårde.
+6. [x] Ret browserens gamle versionsfallback og de beslægtede regressioner.
+7. [x] Afslut version/RDKS/håndbog, målrettede tests, diff og geodatabevis.
+8. [ ] Commit/push, bestå én exact-head og merge samme head.
+9. [ ] Kør providerfri code-only og verificér offentlig 4.0.402/210/673.
+10. [ ] Kør én almindelig weather på gemte cacher; verificér friske prognoser, scorer og lokale huller. Ingen oneoff.
+11. [ ] Kør næste normale vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo.
+12. [ ] Genaktivér scheduler først efter bevist vedligeholdelse; gennemgå derefter hele sitet og fortsæt aktuelle roadmap-punkter.
+
+DEC-0184.
+
 # Aktiv roadmap – 4.0.401 fra historisk checkoutstop til frisk offentlig prognose
 
 1. [x] Lever 4.0.400 exact-head/PR/merge og providerfri code-only med offentlig 210/673.

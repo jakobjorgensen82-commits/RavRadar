@@ -21,6 +21,13 @@ for (const [file, field] of [
 for (const file of ['index.html', 'about.html', 'admin.html', 'bootstrap.js', 'service-worker.js']) {
   assert.ok(read(file).includes(version), `${file} mangler cache-/releaseversion ${version}.`);
 }
+const appSource = read('app.js');
+assert.ok(appSource.includes('function currentAppVersion()')
+  && appSource.includes("document.querySelector('#appVersion')?.textContent"),
+'Browseren skal læse appversionen fra den versionssynkroniserede side uden en gammel hardkodet fallback.');
+for (const match of appSource.matchAll(/\b\d+\.\d+\.\d+\b/g)) {
+  assert.equal(match[0], version, `app.js indeholder den forældede runtimeversion ${match[0]}.`);
+}
 
 function javascriptFiles(directory) {
   return fs.readdirSync(path.join(root, directory), { withFileTypes: true }).flatMap(entry => {
@@ -49,8 +56,64 @@ for (const page of ['index.html', 'about.html', 'admin.html']) {
 }
 
 const buildWorkflow = read('.github/workflows/reusable-weather-build.yml');
-assert.ok(buildWorkflow.includes('run: npm run validate'), 'Produktionsbyg mangler den fulde post-data-validering.');
-assert.ok(buildWorkflow.includes('run: npm run release:gate'), 'Produktionsbyg mangler den fulde post-data-releasegate.');
+const productionValidationSteps = packageJson.scripts['validate:production-artifact']
+  ?.split(/\s*&&\s*/)
+  .map(command => command.match(/^npm run ([\w:.-]+)$/)?.[1]);
+assert.deepEqual(productionValidationSteps, [
+  'validate:data',
+  'validate:weather-health',
+  'validate:coastlines',
+  'validate:zone-plan',
+  'test:data-quality',
+  'test:forecast-integrity',
+  'audit:zone-geometry',
+  'test:score-presentation',
+  'test:fresh-startup',
+  'test:site-function-suite',
+  'test:best-time-consistency',
+  'test:public-runtime',
+  'test:mobile-live-cache',
+  'test:release-integrity-4.0.73',
+  'test:public-runtime-pipeline',
+  'test:progressive-public-conditions',
+  'test:current-full-coverage-gate',
+  'test:current-spatial-audit',
+  'test:current-provenance-null-safety',
+  'test:public-startup-order',
+  'test:public-nonblocking-forecast',
+  'test:current-provenance-vector-consistency',
+  'test:flow-arrow-runtime',
+  'test:map-zoom-refresh',
+  'test:zone-admin-propagation',
+  'test:zone-deletion-runtime',
+  'test:admin-config-production',
+  'test:state-reference-report',
+  'test:current-transport-history',
+  'test:dmi-vector-grid-integrity',
+  'test:missing-weather-null-safety',
+  'test:local-part-direction-isolation',
+  'test:current-direction-audit',
+  'test:water-source-production-chain',
+  'test:water-station-active-routing-display',
+  'test:hydrated-zone-pruning',
+], 'Den kritiske produktionsgate må ikke vokse med historiske eller kildeinterne kontroller.');
+assert.ok(buildWorkflow.includes('node scripts/run-validation-collection.mjs')
+  && buildWorkflow.includes('--script validate:production-artifact')
+  && buildWorkflow.includes('--output .geometry-v2-work/production-artifact-validation-report.json'),
+'Produktionsbyg mangler samlet kritisk post-data-validering.');
+assert.equal(packageJson.scripts['release:gate:production'],
+  'node scripts/run-validation-collection.mjs --script validate:production-release --output .geometry-v2-work/production-release-validation-report.json',
+  'Den afgrænsede produktionsartifact-gate mangler.');
+assert.ok(buildWorkflow.includes('run: npm run release:gate:production'),
+  'Produktionsbyg mangler post-data-governance uden den historiske testsuite.');
+assert.ok(!buildWorkflow.includes('run: npm run release:gate\n'),
+  'Normal produktion må ikke genkøre den brede historiske release-testsuite.');
+assert.ok(buildWorkflow.includes("if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'"),
+'Releasegaten skal stadig forsøges, når den samlede produktionsvalidering finder fejl.');
+assert.ok(buildWorkflow.includes('name: Upload payload-free production validation reports')
+  && buildWorkflow.includes('.geometry-v2-work/production-artifact-validation-report.json')
+  && buildWorkflow.includes('.geometry-v2-work/production-release-validation-report.json'),
+'Den payloadfri produktionsrapport mangler.');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
 assert.ok(orchestrator.includes('uses: ./.github/workflows/reusable-pages-deploy.yml'), 'Pages-deployet er ikke koblet til produktionsworkflowet.');
 assert.ok(read('.github/workflows/validate-pull-request.yml').includes('run: npm run validate:source'), 'PR-kildegaten er ikke aktiv.');

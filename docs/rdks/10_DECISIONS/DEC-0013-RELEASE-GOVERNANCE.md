@@ -4,6 +4,13 @@
 - **Besluttet:** 2026-08-01
 - **Gælder fra:** 4.0.58
 
+## Supersession 4.0.402
+
+DEC-0184 erstatter punkt 2s krav om fuld npm run validate og fuld npm run
+release:gate efter hver almindelig frisk vejrbygning. Normal produktion
+bruger nu den faste 52+3-gate og de faktiske runtime-, Supabase-, privacy-,
+artifact- og deploytrin. Øvrige krav i denne beslutning består.
+
 ## Beslutning
 En RavRadar-version er ikke færdig, før den samlede release-gate er bestået. En ZIP må ikke leveres som installationsklar på baggrund af kodegennemgang alene.
 

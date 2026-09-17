@@ -1,3 +1,24 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.402 kritisk produktionsgate
+
+4.0.401 blev leveret som main 82f4fb08 gennem exact-head 35187093136, PR
+#345 og providerfri code-only 35187388134. Normalrun 35187767148 gennemførte
+alle provider-, cache-, closure-, historik-, runtime- og uafhængige
+audittrin og gemte providercacherne.
+
+Runnet stoppede før deploy på en gammel DMI-test, som ikke kendte den
+eksisterende extended-bootstrap-gren. Helkædegennemgangen fandt 277
+validate-bladkontroller og 44 yderligere historiske tests i releasegaten.
+Ejeren godkendte udtrykkeligt, at normal produktion i stedet bruger 52
+artifactkritiske og tre version-/modelbindingskontroller, mens de øvrige
+tests bevares uden for hver vejrleverance.
+
+Alle 52+3 kontroller køres til ende og samles i payloadfri rapporter. Den
+uafhængige runtimeaudit samt faktiske Supabase-, checkpoint-, privat
+runtime-, privacy-, artifact- og deploytrin forbliver hårde. Gamle DMI-tests
+følger nu den virkelige 70/55-, 3600/3000/900- og seks/tre-kontrakt.
+Browserens hardkodede 4.0.398-fallback er fjernet. Ingen score-, vejr-,
+geometri- eller kildeprioritet ændres. Scheduler pauset. DEC-0184.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.401 historisk kildeberedskab
 
 4.0.400 blev leveret som main `0744c79c` gennem exact-head `35181131552`, PR

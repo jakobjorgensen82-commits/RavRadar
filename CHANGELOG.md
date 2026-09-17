@@ -1,3 +1,18 @@
+## 4.0.402 – kritisk produktionsgate og korrekt vist version (2026-09-17)
+
+- 4.0.401 blev leveret gennem exact-head 35187093136, PR #345, main
+  82f4fb08 og providerfri code-only 35187388134.
+- Normalrun 35187767148 gennemførte alle provider-, cache-, closure-,
+  historik-, runtime- og uafhængige audittrin, men den brede validering
+  stoppede bagefter på en forældet DMI-testforventning.
+- Normal produktion bruger nu 52 artifactkritiske kontroller plus tre hurtige
+  version-/modelbindingskontroller. Alle forsøges og samles i payloadfri
+  rapporter; 225 øvrige validate-kontroller og 44 historiske releasegatetests
+  bevares uden for hver almindelig vejrleverance.
+- Faktiske runtime-, Supabase-, privacy-, artifact- og deploytrin består som
+  hårde krav. Browseren kan ikke længere overskrive 4.0.402 med en
+  hardkodet 4.0.398-fallback. Se CHANGELOG-4.0.402.md og DEC-0184.
+
 ## 4.0.401 – eksakt historisk kilde før fuldvalidering (2026-09-17)
 
 - 4.0.400 blev leveret gennem exact-head `35181131552`, PR #344, main

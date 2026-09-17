@@ -40,7 +40,7 @@ const normalShadowSave = stepIndex(buildWorkflow, 'Save private seven-day curren
 const normalTerminal = stepIndex(buildWorkflow, 'Classify DMI readiness before current supplement');
 const normalSnapshot = stepIndex(buildWorkflow, 'Strictly snapshot the maintained READY active DMI generation');
 const normalActiveSave = stepIndex(buildWorkflow, 'Save the maintained complete active DMI generation');
-const validate = stepIndex(buildWorkflow, 'Validate full project after fresh weather and current provenance');
+const validate = stepIndex(buildWorkflow, 'Validate critical production artifact after fresh weather and current provenance');
 
 assert.ok(
   normalNodeSetup < normalLegacyResolve
@@ -104,8 +104,8 @@ assert.match(normalUpdateBlock, /DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false/);
 assert.doesNotMatch(normalUpdateBlock, /dmi-candidate-state\.outputs\.retain_preferred/);
 assert.match(
   normalUpdateBlock,
-  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
-  'Normal vedligeholdelse skal behandle tre collections; kun den særskilte cutovervej må bruge seks.',
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
+  'Normal vedligeholdelse skal behandle tre collections; eksplicit bootstrap eller særskilt cutover må bruge seks.',
 );
 assert.match(normalUpdateBlock, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/dmi-active-complete\.json/);
 
@@ -296,7 +296,8 @@ assert.doesNotMatch(builder, /WATER_SOURCES_PATH\.read_bytes/);
 assert.doesNotMatch(builder, /ZONES_PATH\.read_bytes/);
 
 const fullValidation = buildWorkflow.slice(validate);
-assert.match(fullValidation, /npm run validate/);
-assert.match(fullValidation, /npm run release:gate/);
+assert.match(fullValidation, /run-validation-collection\.mjs/);
+assert.match(fullValidation, /--script validate:production-artifact/);
+assert.match(fullValidation, /npm run release:gate:production/);
 
 console.log('OK: normal drift og oneoff gemmer partial kandidat isoleret og promoverer kun READY til active.');
