@@ -1,6 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.396
+**Håndbogsversion:** 4.0.397
+
+## 89.01 4.0.397 – En korrekt prognose må ikke stoppes af decimalafrunding
+
+### Prognoserne blev bygget, men kontrollen regnede dem forkert efter
+
+Den seneste almindelige vejrkørsel nåede gennem alle tre leverandører og
+byggede 118 timers prognoser. De kom ikke ud på hjemmesiden, fordi den sidste
+kontrol lagde tre allerede afrundede scorebidrag sammen og afrundede summen
+igen. Ved præcis et halvt point kunne den nye sum ligge en milliontedel på
+den anden side og få kontrollen til at tro, at en korrekt score var forkert.
+
+Kontrollen bruger nu det meget smalle interval, som den offentliggjorte
+seksdecimalers rå score faktisk repræsenterer. Den kontrollerer stadig, at de
+tre bidrag passer med totalscoren inden for en milliontedel, og alle øvrige
+krav til model, data, waders-loft og slutscore er uændrede.
+
+Dette ændrer ikke den score, brugeren får. Det fjerner kun et falsk stop i
+den efterfølgende kontrol. Prognoserne bliver først synlige, når den rettede
+kontrol og resten af udgivelsen er gennemført.
+
+4.0.397 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler
+og otte deklarerede forbrugere. Den private Candidate G-rollback er særskilt
+låst med
+`modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
+og
+`modelBundleSha256=da27b811159b768bc33972e6a20621782179a7b0b1f96232a6dfd946c2cadbc7`
+over 57 transitive filer. Den maskinlæsbare autoritet er
+`version.json.releaseContract.modelBindings`.
 
 ## 89.00 4.0.396 – Delvise zoner må stadig få prognoser
 
@@ -1526,7 +1556,7 @@ Dette afsnit beskriver det historiske 4.0.321-checkpoint, hvor Candidate G endnu
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `3b9b0fd53b02e18fa2c3b85efe3a2108fb488e9c1ae738b998ec0476e932292c` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `d20939c1b141a763fb20aa39b39506d79bf150860714bf1ce306f64d5314e7e6` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

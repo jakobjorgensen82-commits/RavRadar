@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.397 retter falsk prognoseaudit
+
+4.0.396 er live som kode efter main `265ec215ace894264e7c687d2e7fe8955f305a76`
+og providerfri deploy `35158653973`. Normalrun `35159168292` gennemførte
+DMI, Copernicus og Open-Meteo, gemte cacher og byggede 118 timers prognoser
+for 210 zoner og 673 kystdele. Det udgav ikke prognoserne: auditten meldte 47
+del- og 1.285 zonefejl, og Pages blev korrekt sprunget over.
+
+Rodårsagen er en auditfejl ved seksdecimal afrunding omkring præcis `.5`;
+scoreproducenten og de byggede scores er konsistente. Lokal 4.0.397 bruger
+den forseglede rå scores mulige fuldpræcisionsinterval og kontrollerer stadig
+bidragssummen inden for `1e-6`. Kontrakt- og formelfejl samles separat.
+Måltesten er grøn. Næste: RDKS/version, commit/push, én exact-head, PR/merge,
+providerfri deploy og derefter fortsættelse fra den eksakte gemte vejrgeneration
+gennem resterende gates og Pages. Ingen oneoff. Scheduler pauset. DEC-0179.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.393 fører ærlig missing gennem historikken
 
 4.0.392 er live efter sourcegate `35119195730`, PR #336, main

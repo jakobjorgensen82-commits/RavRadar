@@ -1,3 +1,9 @@
+# 2026-09-17 – 4.0.397 retter falsk auditstop efter prognosebygning
+
+- 4.0.396 blev main `265ec215` og leveret providerfrit i `35158653973`.
+- Normalrun `35159168292` gennemførte providerne, gemte cacher og byggede 118 timers prognoser for 210/673, men deploy blev stoppet af 47 del- og 1.285 zone-auditfejl.
+- Auditten genafrundede tre allerede seksdecimal-afrundede bidrag ved en halv-point-grænse. 4.0.397 følger det eksakte mulige publiceringsinterval, bevarer bidragssumkontrollen og rapporterer kontrakt/formel separat. DEC-0179.
+
 # 2026-09-16 – 4.0.393 fører ærlig Open-Meteo-missing gennem historikken
 
 - 4.0.392 blev live som main `e84fba55` gennem sourcegate `35119195730`, PR #336 og providerfri deploy `35120023098`.

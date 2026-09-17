@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.397 retter falsk scoreaudit efter prognosebygning
+
+4.0.396 er leveret som main `265ec215ace894264e7c687d2e7fe8955f305a76`;
+providerfri `35158653973` gjorde koden offentlig. Normalrun `35159168292`
+gennemførte DMI, Copernicus og Open-Meteo, gemte cacher, lukkede historik og
+byggede 118 timers prognoser for alle 210 zoner og 673 kystdele.
+
+Prognoserne er ikke på hjemmesiden endnu. Slutauditten rapporterede 47
+`PUBLIC_PART_MODE_CONTRACT_INVALID` og 1.285
+`PUBLIC_ZONE_MODE_CONTRACT_INVALID`, hvorefter deploy blev sprunget over.
+Den konkrete rodårsag er en falsk auditfejl: tre seksdecimal-afrundede bidrag
+kunne summere til `50.499999`, mens den separat forseglede rå score var
+`50.5` og producentens korrekte heltal var 51.
+
+Lokal 4.0.397 bevarer bidragssumkontrollen inden for `1e-6`, men accepterer
+ved publiceret præcis `.5` kun de heltal, som den oprindelige værdi inden for
+en halv mikroenhed kan have givet. Kontrakt- og formelfejl rapporteres nu
+separat i samme gennemløb. RavScore, data og brugerens score ændres ikke.
+Måltesten er grøn. Exact-head, merge, providerfri code-only og sikker
+fortsættelse af den gemte vejrgeneration til Pages mangler. Scheduler pauset.
+DEC-0179.
+
 # NYESTE SANDHED – 2026-09-16 – 4.0.393 retter Open-Meteos history-adapter
 
 4.0.392 er live som main `e84fba55ddfd1aa4585137d4d0d86169c50695a8`
