@@ -1,3 +1,16 @@
+# Aktiv roadmap – 4.0.404 fra tidsformatkant til offentlig prognose
+
+1. [x] Bestå 4.0.403 exact-head, merge PR #347 og start providerfri fortsættelse.
+2. [x] Afgræns 35214668708 før writes/Pages til .000Z mod kanonisk Z.
+3. [x] Normalisér kun den ækvivalente time og kræv eksplicit FRESH under 240 minutter.
+4. [ ] Afslut målrettede tests, dokumentation, diff og geodataversionsbevis.
+5. [ ] Commit/push, bestå én exact-head og merge samme head.
+6. [ ] Fortsæt den gemte 09Z-runtime uden providerkald; verificér live prognoser og scorer.
+7. [ ] Kør næste almindelige vedligeholdelse og mål providerfordeling/cachefremgang.
+8. [ ] Genaktivér scheduler efter bevist vedligeholdelse og fortsæt site-/roadmapgennemgang.
+
+DEC-0186. Ingen ny oneoff eller vejrhentning i rettelsesdeployet.
+
 # Aktiv roadmap – 4.0.402 fra teststop til frisk offentlig prognose
 
 1. [x] Lever 4.0.401 exact-head/PR/merge og providerfri code-only.

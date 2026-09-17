@@ -1,6 +1,21 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.403
+**Håndbogsversion:** 4.0.404
+
+## 89.08 4.0.404 – Den samme hele time får én kanonisk skrivemåde
+
+Den gemte pakke angav klokken 09 som 09:00:00.000Z. Den eksisterende
+friskhedskontrol bruger 09:00:00Z. De to tekster er præcis samme tidspunkt,
+men det første deployforsøg stoppede sikkert på formatforskellen før
+produktionswrites og Pages.
+
+4.0.404 fjerner kun den valgfrie .000-del, før kontrollen køres. Pakken skal
+stadig være nyere end den offentlige og eksplicit under fire timer gammel.
+Alle model-, kilde-, 210/673-, privacy-, artifact- og deploykrav består.
+
+4.0.404 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den uændrede integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.07 4.0.403 – Gemte, validerede vejrdata genbruges
 

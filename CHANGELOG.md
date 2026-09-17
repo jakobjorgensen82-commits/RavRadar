@@ -1,3 +1,13 @@
+## 4.0.404 – kanonisk produktionstime for gemt runtime (2026-09-17)
+
+- 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.
+- Providerfri fortsættelse 35214668708 stoppede før writes og Pages, fordi
+  descriptorens gyldige 09:00:00.000Z ikke var normaliseret til freshness-
+  kontraktens identiske 09:00:00Z.
+- 4.0.404 fjerner kun den valgfrie .000-del og kræver fortsat eksplicit FRESH
+  under 240 minutter. Ingen provider, scoreformel eller vejrdata ændres.
+- Se CHANGELOG-4.0.404.md og DEC-0186.
+
 ## 4.0.402 – kritisk produktionsgate og korrekt vist version (2026-09-17)
 
 - 4.0.401 blev leveret gennem exact-head 35187093136, PR #345, main

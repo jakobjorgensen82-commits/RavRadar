@@ -122,6 +122,8 @@ for (const marker of [
   'Describe newest protected runtime for saved-weather continuation',
   'Bind saved-weather continuation to exact newer runtime',
   'Saved protected runtime does not strictly advance the public production hour',
+  'target_reference="${target_reference_raw%.000Z}Z"',
+  "grep -Fxq 'status=FRESH' \"$freshness_output\"",
   '--mode "$mode"',
   'savedProtectedRuntimeReused == true',
   'publicRuntimeAdvanced == true',

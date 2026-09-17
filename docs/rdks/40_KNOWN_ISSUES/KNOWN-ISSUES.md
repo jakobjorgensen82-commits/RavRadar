@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.404 kanoniserer gemt produktionstime
+
+- **ISSUE-4.0.403-DELIVERY – LUKKET:** Exact-head 35214029193, PR #347 og main c685c83d er gennemført.
+- **ISSUE-4.0.403-SAVED-TIME-FORMAT – RETTET LOKALT / LIVEBEVIS MANGLER:** 35214668708 afviste gyldig 09:00:00.000Z mod freshness-parserens 09:00:00Z før writes. 4.0.404 normaliserer samme instant.
+- **ISSUE-SAVED-WEATHER-PUBLICATION – ÅBEN P0:** Den validerede 09Z-runtime er fortsat centralt gemt og ikke offentlig.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler er pauset til offentlig prognose og næste normale vedligeholdelse er bevist.
+
+DEC-0186. Ingen provider eller produktionswrite blev nået i 35214668708.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.402 afgrænser produktionskontrollen
 
 - **ISSUE-4.0.401-DELIVERY – LUKKET:** Exact-head 35187093136, PR #345, main 82f4fb08 og code-only 35187388134 er grønne.

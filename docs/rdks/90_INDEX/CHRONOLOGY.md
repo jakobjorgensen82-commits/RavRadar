@@ -1,3 +1,9 @@
+# 2026-09-17 – 4.0.404 normaliserer den gemte hele UTC-time
+
+- 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.
+- Providerfri 35214668708 stoppede før writes og Pages på 09:00:00.000Z mod den ækvivalente kanoniske 09:00:00Z.
+- 4.0.404 normaliserer kun wire-formatet og kræver fortsat FRESH under 240 minutter. DEC-0186.
+
 # 2026-09-17 – 4.0.402 afgrænser efter-vejr-kontrollen til det friske artifact
 
 - 4.0.401 bestod exact-head 35187093136, PR #345, main 82f4fb08 og providerfri code-only 35187388134.

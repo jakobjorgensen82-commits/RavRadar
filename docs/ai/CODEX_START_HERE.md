@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.404 tidsformatkant
+
+4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.
+Providerfri fortsættelse 35214668708 stoppede efter 31 sekunder før writes og
+Pages. Descriptoren brugte 09:00:00.000Z; freshness-kontrakten kræver den
+samme time skrevet 09:00:00Z.
+
+Lokal 4.0.404 normaliserer kun den valgfrie .000-del og kræver derefter
+eksplicit FRESH under 240 minutter. Model, kilde, dataset og alle DEC-0185-
+grænser består. Næste: måltests/RDKS/geodatabevis → én exact-head → merge →
+providerfri fortsættelse → live score/prognose. Scheduler pauset. DEC-0186.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.402 kritisk produktionsartifact-gate
 
 4.0.401 bestod exact-head 35187093136, blev merged gennem PR #345 som main
