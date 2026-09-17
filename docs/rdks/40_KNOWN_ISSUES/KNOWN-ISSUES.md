@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.405 lukker den fælles parserkant
+
+- **ISSUE-4.0.404-DELIVERY – LUKKET:** Exact-head 35215528731, PR #348 og main 5fc6e2fd er gennemført.
+- **ISSUE-4.0.404-PAGES-TIME-FORMAT – RETTET LOKALT / LIVEBEVIS MANGLER:** 35216079458 nåede privat runtime, Edge og færdigt Pages-artifact uden providerkald, men Pages' direkte freshness-kald afviste gyldig 09:00:00.000Z.
+- **ISSUE-SAVED-WEATHER-PUBLICATION – ÅBEN P0:** 09Z-artifactet er forsejlet, men endnu ikke aktiveret offentligt på Pages.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler er pauset til offentlig prognose og næste normale vedligeholdelse er bevist.
+
+DEC-0187. Ingen ny vejrhentning er nødvendig.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.404 kanoniserer gemt produktionstime
 
 - **ISSUE-4.0.403-DELIVERY – LUKKET:** Exact-head 35214029193, PR #347 og main c685c83d er gennemført.

@@ -1,3 +1,21 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.405 lukker tidsformatet i hele kæden
+
+4.0.404 bestod exact-head 35215528731, blev merged gennem PR #348 som main
+5fc6e2fd789aba1cbffd7c68d79f6cb788317648. Providerfri saved-weather
+35216079458 genbrugte den validerede 09Z-runtime, bestod model-, 210/673-,
+privacy- og artifactkrav, publicerede privat runtime og Edge og forseglede
+Pages-artifactet.
+
+Det genbrugte Pages-workflow kaldte derefter den fælles freshness-parser
+direkte med 09:00:00.000Z og stoppede før Pages-aktivering. Dataalderen var
+161 minutter mod grænsen på 240; det var kun den samme formatkant.
+
+4.0.405 retter kontrakten centralt: præcise hele UTC-timer accepteres både
+med og uden .000. Halve timer, offsets, fremtid, forkert horisont, udløb og
+alder afvises fortsat. Ingen provider, vejrdata, score, cache eller geometri
+ændres. Næste er én exact-head, merge og providerfri Pages-fortsættelse.
+Scheduler er pauset. DEC-0187.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.404 normaliserer den samme hele produktionstime
 
 4.0.403 bestod exact-head 35214029193, blev merged gennem PR #347 som main

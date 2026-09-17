@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles freshness-parser
+
+Arbejd i RavRadar-4.0.396, branch codex/4.0.405-freshness-parser, baseret på
+4.0.404-main 5fc6e2fd789aba1cbffd7c68d79f6cb788317648.
+
+Saved-weather 35216079458 genbrugte 09Z uden providerkald, bestod artifact og
+privacy og publicerede privat runtime og Edge. Det forseglede Pages-artifact
+stoppede før aktivering, fordi reusable-pages kaldte freshness-parseren direkte
+med 09:00:00.000Z.
+
+Lokal 4.0.405 accepterer begge ækvivalente hele UTC-former i den fælles
+parser; det virkelige 09Z-input er FRESH. Næste: RDKS/geodatabevis,
+commit/push, én exact-head, merge og providerfri Pages-fortsættelse. Ingen
+oneoff/providerkald. Scheduler pauset. DEC-0187. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.404 tidsformatkant
 
 Arbejd i RavRadar-4.0.396, branch codex/4.0.404-saved-runtime-time, baseret

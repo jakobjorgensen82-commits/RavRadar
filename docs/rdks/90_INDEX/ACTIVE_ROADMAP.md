@@ -1,3 +1,16 @@
+# Aktiv roadmap – 4.0.405 fra fælles tidskontrakt til offentlig prognose
+
+1. [x] Lever 4.0.404 og genbrug den gemte 09Z-runtime uden providerkald.
+2. [x] Gennemfør artifact, privacy, privat runtime og Edge i 35216079458.
+3. [x] Afgræns Pages-stoppet til den fælles parsers afvisning af ækvivalent .000Z.
+4. [x] Ret parseren centralt og måltest både produktionstime og horisont.
+5. [ ] Commit/push, bestå én exact-head og merge samme head.
+6. [ ] Fortsæt uden providerkald til Pages og verificér levende prognoser/scorer.
+7. [ ] Kør næste almindelige vedligeholdelse og mål providerfordeling/cachefremgang.
+8. [ ] Genaktivér scheduler efter bevist vedligeholdelse; fortsæt site- og roadmapgennemgang.
+
+DEC-0187. Ingen ny oneoff eller vejrhentning i rettelsesdeployet.
+
 # Aktiv roadmap – 4.0.404 fra tidsformatkant til offentlig prognose
 
 1. [x] Bestå 4.0.403 exact-head, merge PR #347 og start providerfri fortsættelse.

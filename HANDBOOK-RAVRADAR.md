@@ -1,6 +1,17 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.404
+**Håndbogsversion:** 4.0.405
+
+## 89.09 4.0.405 – Samme UTC-time forstås ens i hele leveringen
+
+Den første rettelse normaliserede tiden ved indgangen, men Pages brugte senere
+den fælles tidskontrol direkte. Derfor stoppede den på samme forskel mellem
+09:00:00.000Z og 09:00:00Z, efter at privat runtime og Edge var leveret.
+
+4.0.405 retter den fælles kontrol. Begge tekster betyder præcis samme hele
+UTC-time og accepteres overalt. Kontrollen er stadig streng over for halve
+timer, andre tidszoner, fremtidige eller udløbne data og en forkert horisont.
+Ingen vejrdata eller score ændres.
 
 ## 89.08 4.0.404 – Den samme hele time får én kanonisk skrivemåde
 
@@ -13,7 +24,7 @@ produktionswrites og Pages.
 stadig være nyere end den offentlige og eksplicit under fire timer gammel.
 Alle model-, kilde-, 210/673-, privacy-, artifact- og deploykrav består.
 
-4.0.404 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+4.0.405 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den uændrede integrerede implementering er
 `modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 

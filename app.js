@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.404";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, reevaluatePublicConditions } from "./js/services/data-service.js?v=4.0.404";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.404";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.404";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.404";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.404";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.404";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.404";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.404";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.404";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.404";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.404";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.404";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.404';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.404';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.404';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.404';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.405";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, reevaluatePublicConditions } from "./js/services/data-service.js?v=4.0.405";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.405";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.405";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.405";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.405";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.405";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.405";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.405";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.405";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.405";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.405";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.405";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.405';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.405';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.405';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.405';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const hasNumber = value => value !== null

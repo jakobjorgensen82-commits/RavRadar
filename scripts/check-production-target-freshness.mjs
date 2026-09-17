@@ -2,12 +2,18 @@
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const EXACT_UTC_HOUR = /^\d{4}-\d{2}-\d{2}T\d{2}:00:00Z$/;
+const EXACT_UTC_HOUR = /^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/;
 
 function canonicalTime(value) {
   return typeof value === 'string' && Number.isFinite(Date.parse(value))
     ? new Date(value).toISOString()
     : null;
+}
+
+function isExactUtcHour(value, canonical) {
+  return EXACT_UTC_HOUR.test(value ?? '')
+    && canonical !== null
+    && canonical.replace('.000Z', 'Z') === value.replace('.000Z', 'Z');
 }
 
 export function classifyProductionTargetFreshness({
@@ -19,18 +25,16 @@ export function classifyProductionTargetFreshness({
 }) {
   const canonicalTarget = canonicalTime(target);
   const canonicalNow = canonicalTime(now);
-  if (!EXACT_UTC_HOUR.test(target ?? '')
-    || canonicalTarget?.replace('.000Z', 'Z') !== target
-    || canonicalNow === null) {
+  if (!isExactUtcHour(target, canonicalTarget) || canonicalNow === null) {
     throw new Error('PRODUCTION_TARGET_TIME_INVALID');
   }
   const derivedOperationalRangeEnd = new Date(
     Date.parse(canonicalTarget) + 117 * 3_600_000,
   ).toISOString().replace('.000Z', 'Z');
+  const canonicalOperationalRangeEnd = canonicalTime(operationalRangeEnd);
   if (operationalRangeEnd !== undefined
-    && (!EXACT_UTC_HOUR.test(operationalRangeEnd ?? '')
-      || canonicalTime(operationalRangeEnd)?.replace('.000Z', 'Z') !== operationalRangeEnd
-      || operationalRangeEnd !== derivedOperationalRangeEnd)) {
+    && (!isExactUtcHour(operationalRangeEnd, canonicalOperationalRangeEnd)
+      || canonicalOperationalRangeEnd.replace('.000Z', 'Z') !== derivedOperationalRangeEnd)) {
     throw new Error('PRODUCTION_TARGET_HORIZON_INVALID');
   }
   if (!Number.isInteger(maximumAgeMinutes)

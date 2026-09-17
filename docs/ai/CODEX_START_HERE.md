@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles tidskontrakt
+
+4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
+Saved-weather 35216079458 genbrugte 09Z uden providerkald og gennemførte
+artifact, privacy, privat runtime og Edge. Pages stoppede før aktivering,
+fordi den fælles freshness-parser stadig afviste samme time med .000Z.
+
+Lokal 4.0.405 accepterer præcise hele UTC-timer med eller uden .000 centralt,
+mens øvrige tids- og gyldighedskrav består. Det faktiske 09Z-input er FRESH.
+Næste: RDKS/geodatabevis → én exact-head → merge → providerfri Pages →
+live score/prognose. Scheduler pauset. DEC-0187. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.404 tidsformatkant
 
 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.

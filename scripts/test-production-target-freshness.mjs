@@ -14,6 +14,18 @@ assert.deepEqual(classifyProductionTargetFreshness({
 });
 
 assert.deepEqual(classifyProductionTargetFreshness({
+  target: '2026-09-05T01:00:00.000Z',
+  now: '2026-09-05T02:30:00Z',
+  maximumAgeMinutes: 90,
+}), {
+  status: 'FRESH',
+  target: '2026-09-05T01:00:00.000Z',
+  checkedAt: '2026-09-05T02:30:00.000Z',
+  ageMinutes: 90,
+  maximumAgeMinutes: 90,
+});
+
+assert.deepEqual(classifyProductionTargetFreshness({
   target: '2026-09-05T01:00:00Z',
   now: '2026-09-05T02:31:00Z',
   maximumAgeMinutes: 90,
@@ -46,6 +58,12 @@ assert.equal(classifyProductionTargetFreshness({
   now: '2026-09-09T22:00:00.000Z',
   maximumAgeMinutes: 90,
 }).status, 'STALE_TARGET_VALID', 'the exact final forecast instant remains usable');
+assert.equal(classifyProductionTargetFreshness({
+  target: '2026-09-05T01:00:00.000Z',
+  operationalRangeEnd: '2026-09-09T22:00:00.000Z',
+  now: '2026-09-09T22:00:00.000Z',
+  maximumAgeMinutes: 90,
+}).status, 'STALE_TARGET_VALID', 'millisecond notation preserves the exact final forecast instant');
 assert.throws(() => classifyProductionTargetFreshness({
   target: '2026-09-05T01:00:00Z',
   operationalRangeEnd: '2026-09-09T22:00:00Z',
