@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.404 tidsformatkant
+
+4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.
+Den providerfrie fortsættelse 35214668708 godkendte integreret drift, tomt
+repair-id, nyere runtime og source ancestry, men stoppede før writes/Pages.
+
+Den centralt gemte produktionstime var 09:00:00.000Z; freshness-kontrakten
+accepterer samme instant i kanonisk 09:00:00Z-form. 4.0.404 normaliserer kun
+den valgfrie .000-del og kræver eksplicit FRESH under 240 minutter. Alle
+DEC-0185-krav består. Ingen provider eller produktionswrite blev nået.
+DEC-0186.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.402 kritisk produktionsgate
 
 4.0.401 blev leveret som main 82f4fb08 gennem exact-head 35187093136, PR

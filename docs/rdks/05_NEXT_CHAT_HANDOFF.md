@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.404 tidsformatkant
+
+Arbejd i RavRadar-4.0.396, branch codex/4.0.404-saved-runtime-time, baseret
+på 4.0.403-main c685c83d10583b038329d2c13a7e790855433e71.
+
+4.0.403 bestod exact-head 35214029193 og PR #347. Providerfri deploy
+35214668708 stoppede efter 31 sekunder før writes og Pages, fordi den gemte
+09:00:00.000Z-time ikke var normaliseret til freshness-kontraktens identiske
+09:00:00Z-form.
+
+Lokal 4.0.404 normaliserer kun .000-delen og kræver status FRESH under 240
+minutter. Næste: målrettede kontroller/geodatabevis, commit/push, én
+exact-head, merge og saved-weather-continuation. Ingen oneoff/providerkald.
+Scheduler pauset. DEC-0186. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.402 efter grøn provider- og runtimekæde
 
 Arbejd i RavRadar-4.0.396, branch codex/4.0.402-production-gate, baseret på

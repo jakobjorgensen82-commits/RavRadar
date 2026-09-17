@@ -1,7 +1,7 @@
 # DEC-0185 – Gemte, validerede vejrdata må fortsætte uden nye providerkald
 
-**Status:** Aktiv og bindende; implementeret og måltestet lokalt i 4.0.403,
-exact-head og livebevis afventer
+**Status:** Aktiv og bindende; 4.0.403 bestod exact-head, første liveforsøg
+afgrænsede tidsformatkanten, og 4.0.404-livebevis afventer
 **Dato:** 2026-09-17
 
 ## Baggrund
@@ -54,3 +54,10 @@ generel mulighed for at udgive vilkårlige cacher eller gamle artifacts. Alle
 identitets-, alder-, kilde-, privacy-, zone-, kystdels-, artifact- og
 deploykrav er hårde. Ved afvigelse stopper ruten før offentlig udgivelse.
 
+## Første liveforsøg
+
+4.0.403 bestod exact-head 35214029193 og blev main c685c83d. Deploy
+35214668708 stoppede før writes og Pages, fordi descriptorens gyldige
+09:00:00.000Z skulle normaliseres til freshness-kontraktens kanoniske
+09:00:00Z. DEC-0186 retter kun denne grænse og håndhæver fortsat FRESH under
+240 minutter.

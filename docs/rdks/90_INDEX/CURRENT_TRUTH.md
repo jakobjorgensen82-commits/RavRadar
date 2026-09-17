@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.404 normaliserer den samme hele produktionstime
+
+4.0.403 bestod exact-head 35214029193, blev merged gennem PR #347 som main
+c685c83d10583b038329d2c13a7e790855433e71. Providerfri fortsættelse
+35214668708 stoppede efter 31 sekunder før private writes og Pages.
+
+Den gemte runtime havde den gyldige time 2026-09-17T09:00:00.000Z, mens den
+eksisterende freshness-kontrol kræver den kanonisk ækvivalente tekst
+2026-09-17T09:00:00Z. Model, integreret status, tomt repair-id, nyere
+produktionstime og source ancestry bestod.
+
+4.0.404 fjerner kun den valgfrie .000-del ved grænsen og kræver derefter
+eksplicit FRESH under 240 minutter. Alle øvrige DEC-0185-krav består. Ingen
+provider, write eller offentlig ændring blev nået i det røde run. Exact-head,
+merge og ny providerfri fortsættelse afventer. Scheduler pauset. DEC-0186.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.402 måler det friske artifact
 
 4.0.401 bestod exact-head 35187093136, blev merged gennem PR #345 som main

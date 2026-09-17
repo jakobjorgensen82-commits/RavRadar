@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.404 kanonisk produktionstime
+
+- [x] Bestå 4.0.403 exact-head 35214029193, merge PR #347 som main c685c83d.
+- [x] Start providerfri saved-weather 35214668708; stop efter 31 sekunder før writes og Pages.
+- [x] Afgræns fejlen til ækvivalent HH:00:00.000Z mod freshness-kontraktens HH:00:00Z.
+- [x] Normalisér kun den valgfrie .000-del; bevar samme instant og dataset.
+- [x] Kræv eksplicit FRESH under 240 minutter efter normalisering.
+- [ ] Afslut 4.0.404-dokumentation, målrettede kontroller og geodataversionsbevis.
+- [ ] Commit/push, én exact-head, merge og providerfri fortsættelse.
+- [ ] Verificér offentlig 4.0.404, prognoser, scorer og 210/673.
+- [ ] Bevis næste almindelige vedligeholdelse før scheduler genaktiveres.
+
+DEC-0186 supplerer DEC-0185. Ingen oneoff eller providerkald.
+
 # Aktuel implementeringsstatus – lokal 4.0.402 kritisk produktionsgate
 
 - [x] Lever 4.0.401 via exact-head 35187093136, PR #345, main 82f4fb08 og providerfri code-only 35187388134.

@@ -383,7 +383,11 @@ jobs:
           test "${{ steps.operational-action.outputs.action }}" = "integrated"
           test -z "${{ steps.public-source.outputs.repair_id }}"
           descriptor="$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
-          target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$descriptor")"
+          target_reference_raw="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$descriptor")"
+          case "$target_reference_raw" in
+            *.000Z) target_reference="${target_reference_raw%.000Z}Z" ;;
+            *) target_reference="$target_reference_raw" ;;
+          esac
           source_head="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$descriptor")"
           SAVED_REFERENCE="$target_reference" node --input-type=module <<'NODE'
           const publicMs = Date.parse(process.env.PUBLIC_REFERENCE);
@@ -393,7 +397,10 @@ jobs:
           }
           NODE
           git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
-          node scripts/check-production-target-freshness.mjs --target "$target_reference" --maximum-age-minutes 240
+          freshness_output="$RUNNER_TEMP/saved-weather-freshness.txt"
+          : > "$freshness_output"
+          node scripts/check-production-target-freshness.mjs --target "$target_reference" --maximum-age-minutes 240 --github-output "$freshness_output"
+          grep -Fxq 'status=FRESH' "$freshness_output"
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
           node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$target_reference" --output .cache/private-production-runtime-expected.json
 

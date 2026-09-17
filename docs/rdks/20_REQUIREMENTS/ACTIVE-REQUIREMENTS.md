@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-17 – kanonisk produktionstime ved runtimegrænsen
+
+- **REQ-4.0.404-EQUIVALENT-HOUR-001 – BINDENDE:** HH:00:00.000Z normaliseres til den identiske kanoniske HH:00:00Z før freshness-kontrol.
+- **REQ-4.0.404-NO-TIME-SHIFT-002 – BINDENDE:** Normaliseringen må ikke ændre instant, dataset eller vælge en anden central generation.
+- **REQ-4.0.404-HARD-FRESH-003 – BINDENDE:** Resultatet skal være FRESH; mere end 240 minutter stopper reparationsruten.
+- **REQ-4.0.404-NO-WRITES-ON-BINDING-004 – BINDENDE:** Bindingsfejl stopper før private writes, Edge, handoff, artifact og Pages.
+- **REQ-4.0.404-DEC-0185-005 – BINDENDE:** Alle kilde-, model-, privacy-, 210/673-, artifact- og providerfri krav fra DEC-0185 består.
+
+DEC-0186. Scheduler forbliver pauset.
+
 # Aktuelt ejerdelta – 2026-09-17 – kritisk produktionsartifact-gate
 
 - **REQ-4.0.402-ARTIFACT-PLAN-001 – BINDENDE:** Normal produktion skal køre præcis den godkendte 52-blads gate for data, vejr, forecast, geometri, score, startup, mobil, runtime, coverage, proveniens, retninger, vandkilder og lokal missing.
