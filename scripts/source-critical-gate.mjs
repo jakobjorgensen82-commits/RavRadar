@@ -157,7 +157,9 @@ for (const marker of [
   'node scripts/integrated-cutover-readiness.mjs verify-db',
   'node scripts/prepare-code-only-public-runtime.mjs',
   'providerRequestsPerformed == false',
-  'code_only_repair: true',
+  'code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}',
+  'DEPLOY-SAVED-WEATHER-REPAIR',
+  'saved-weather-continuation',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
 ]) assert.ok(codeOnlyWorkflow.includes(marker), `Code-only-workflowet mangler ${marker}.`);
 for (const marker of [

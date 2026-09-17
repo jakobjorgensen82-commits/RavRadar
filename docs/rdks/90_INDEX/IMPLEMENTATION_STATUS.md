@@ -4527,3 +4527,18 @@ DEC-0178 er aktiv. Ingen oneoff.
 - [ ] Verificér offentlig version/datasættid og genaktivér først derefter scheduler; følg næste normale vedligeholdelse.
 
 Ingen oneoff. Den offentlige validator er ikke svækket.
+# Aktuel implementeringsstatus – lokal 4.0.403 gemt vejr-runtime til Pages
+
+- [x] Lever 4.0.402 via exact-head `35203813380`, PR #346, main `0132900c` og providerfri deploy `35204369048`.
+- [x] Kør normal weather `35205052150`; gennemfør alle providere, cacher, closure, historik, runtimeaudit og 52+3-kontroller.
+- [x] Bevis at den validerede runtime for `2026-09-17T09:00:00Z` blev gemt beskyttet før stoppet.
+- [x] Afgræns stoppet til adminsynkroniseringens udefinerede `stableDigest`; Pages blev ikke nået.
+- [x] Ret readback til delt stabil JSON-digest med positiv og negativ regression.
+- [x] Byg eksplicit providerfri fortsættelse med nyere/alder/kilde/model/210/673/privacy-grænser.
+- [x] Bevar normal Pages-freshness, artifactlukning og deploy som hårde krav.
+- [ ] Afslut RDKS/håndbog, målrettede kontroller og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Deploy den gemte vejrpakke uden providerkald og verificér offentlig 4.0.403, prognoser og scorer.
+- [ ] Kør derefter næste almindelige vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo før scheduler genaktiveres.
+
+DEC-0185 er aktiv. Ingen oneoff eller gentaget providerarbejde.

@@ -1,6 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.402
+**Håndbogsversion:** 4.0.403
+
+## 89.07 4.0.403 – Gemte, validerede vejrdata genbruges
+
+### En sen adminfejl må ikke tvinge alle vejrproviderne til at begynde forfra
+
+Den almindelige kørsel 35205052150 nåede gennem DMI, Copernicus,
+Open-Meteo, cache, historik, prognosebygning, runtimekontrol og de 52+3
+produktionskontroller. Den validerede private vejr- og scorepakke for klokken
+09Z blev gemt centralt.
+
+Først bagefter stoppede synkronisering af de beskyttede adminoplysninger.
+Den brugte et forkert funktionsnavn ved sammenligning af readback. Derfor
+blev hjemmesiden ikke opdateret, selv om selve pakken allerede var bygget og
+kontrolleret.
+
+4.0.403 bruger den eksisterende stabile JSON-sammenligning og kan fortsætte
+præcis denne gemte pakke uden nye kald til vejrleverandørerne. Pakken skal
+være nyere end den offentlige, højst fire timer gammel, høre til den aktuelle
+kildehistorik og stadig bestå model-, 210/673-, privacy-, freshness-,
+artifact- og deploykontrol.
+
+Det er ikke en genvej for vilkårlige eller gamle data. Hvis identitet,
+indhold, alder eller offentlig runtime ikke passer præcist, stopper
+fortsættelsen. RavScore, vejret og kildeprioriteten ændres ikke.
+
+4.0.403 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den uændrede integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.06 4.0.402 – Produktionskontrollen måler det, der kan ødelægge RavRadar
 

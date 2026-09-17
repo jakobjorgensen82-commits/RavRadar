@@ -1979,3 +1979,13 @@ DEC-0178. Scheduler er fortsat pauset.
 Ingen oneoff. Scheduler er pauset.
 
 - **ISSUE-4.0.396-BUNDLE-BINDING – RETTET LOKALT / EXACT-HEAD MANGLER:** Første exact-head `35155765121` bestod alle øvrige kritiske led, men den gamle bundlehash matchede naturligt ikke den ændrede `local-zone-score.js`. Rollback `da27b811…`, integrated `d9ba75ed…` og append-only migration `20260917001500` er genereret i afhængighedsrækkefølge; forgængeren er urørt.
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.403 fortsætter den gemte vejrpakke
+
+- **ISSUE-4.0.402-DELIVERY – LUKKET:** Exact-head 35203813380, PR #346, main 0132900c og providerfri deploy 35204369048 er gennemført.
+- **ISSUE-4.0.402-PRODUCTION-GATE – LIVEBEVIST:** Normalrun 35205052150 gennemførte providere, cache, closure, historik, runtimeaudit og alle 52+3 kontroller.
+- **ISSUE-PROTECTED-ADMIN-STABLE-DIGEST – RETTET LOKALT / LIVEBEVIS MANGLER:** Adminsync kaldte den udefinerede stableDigest efter gemt privat runtime. 4.0.403 bruger den delte stableJsonDigest og bevarer indholdsstoppet.
+- **ISSUE-SAVED-WEATHER-PUBLICATION – RETTET LOKALT / LIVEBEVIS MANGLER:** En særskilt providerfri rute fortsætter kun den strengt nyere gemte runtime gennem normal Pages-freshness og deploy.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** 09Z-runtime er valideret og gemt, men prognoser og scorer er ikke offentlige før 4.0.403-fortsættelsen er grøn.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til offentlig prognose og næste almindelige vedligeholdelse er bevist.
+
+DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.

@@ -1632,3 +1632,24 @@ den forventede gamle bundlehash. Lokal head har nu deterministisk hash
 rollback `da27b811…`, integrated `d9ba75ed…`, ny append-only migration `20260917001500` og 19-migrations
 installationskæde. Kør målrettede binding-/versionskontroller, commit/push og
 præcis én ny exact-head; gentag ikke den brede gate lokalt.
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.403 gemt vejr-runtime
+
+Arbejd i RavRadar-4.0.396, branch codex/4.0.403-saved-runtime-resume,
+baseret på 4.0.402-main 0132900c2d9ae6770c910e12579dabf32e316768.
+
+4.0.402 bestod exact-head 35203813380, PR #346 og providerfri deploy
+35204369048. Normalrun 35205052150 gennemførte alle provider-, cache-,
+closure-, historik-, runtimeaudit- og 52+3-led og gemte den validerede
+private runtime for 2026-09-17T09:00:00Z centralt. Det stoppede først
+bagefter på adminsynkroniseringens udefinerede stableDigest; Pages blev
+sprunget over.
+
+Lokal 4.0.403 bruger stableJsonDigest og har en særskilt providerfri
+saved-weather-continuation med krav om nyere runtime, højst 240 minutters
+alder, source ancestry, aktiv integreret drift, tomt repair-id, 210/673,
+privacy og normal Pages-freshness. Standard-code-only er uændret.
+
+Næste: afslut målrettede kontroller og rent geodataversionsbevis, commit/push,
+én exact-head, merge og saved-weather-continuation. Verificér derefter live
+version, prognoser og scorer. Ingen oneoff eller ny providerhentning.
+Scheduler pauset. DEC-0185. Sol/Ekstra høj.

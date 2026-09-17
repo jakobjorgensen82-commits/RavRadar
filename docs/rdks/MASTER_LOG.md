@@ -3867,3 +3867,17 @@ Første exact-head `35155765121` gennemførte hele kontrolløbet. Alle andre
 kritiske led bestod; kun den gamle RavScore-bundlehash fejlede. Bundlen er
 genbygget i rækkefølgen rollback `da27b811…` og integrated `d9ba75ed…`, og en ny 19. append-only migration
 `20260917001500` fører bindingen frem uden at ændre den anvendte forgænger.
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.403 gemt runtime
+
+4.0.402 blev leveret som main 0132900c gennem exact-head 35203813380, PR
+#346 og providerfri deploy 35204369048. Normalrun 35205052150 gennemførte
+DMI, Copernicus, Open-Meteo, alle cachewrites, closure, historik, offentlig
+runtime, uafhængig audit og samtlige 52+3 produktionskontroller. Den
+validerede private runtime for 2026-09-17T09:00:00Z blev gemt centralt.
+
+Det efterfølgende adminsync-trin kaldte en udefineret stableDigest ved
+aktiveringsreadback. Derfor blev Pages ikke nået. 4.0.403 eksporterer og
+bruger stableJsonDigest og indfører en eksplicit providerfri fortsættelse.
+Kun en strengt nyere, højst 240 minutter gammel, source-forbundet runtime
+med aktiv integreret drift, tomt repair-id, 210/673 og grøn privacy kan
+fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.

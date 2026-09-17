@@ -6,10 +6,12 @@ const stable=value=>Array.isArray(value)
     ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])]))
     :value;
 
-export const stableHandbookDigest=value=>{
+export const stableJsonDigest=value=>{
   const encoded=JSON.stringify(stable(value));
   return crypto.createHash('sha256').update(encoded===undefined?'__undefined__':encoded).digest('hex');
 };
+
+export const stableHandbookDigest=stableJsonDigest;
 
 export const handbookPayloadDigest=value=>crypto
   .createHash('sha256')

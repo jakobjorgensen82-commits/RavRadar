@@ -1246,3 +1246,21 @@ den gamle RavScore-hash. Aktuel lokal closure er genbundet i rækkefølgen
 rollback `da27b811…` og integrated `d9ba75ed…`
 med append-only migration `20260917001500`; anvendt migrationshistorik er
 ikke omskrevet. Fortsæt med målrettet bevis og én ny exact-head.
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.403 fortsætter den gemte vejrpakke
+
+4.0.402 bestod exact-head 35203813380, PR #346 og providerfri deploy
+35204369048 som main 0132900c. Normalrun 35205052150 gennemførte DMI,
+Copernicus, Open-Meteo, cache, closure, historik, offentlig runtime,
+uafhængig audit og 52+3-kontroller. Den validerede private runtime for
+2026-09-17T09:00:00Z blev gemt centralt.
+
+Runnet stoppede derefter i beskyttet adminsynkronisering, fordi scriptet
+kaldte den udefinerede stableDigest. Pages blev ikke nået. Lokal 4.0.403
+retter dette til den delte stabile JSON-digest og tilføjer en eksplicit
+providerfri fortsættelse af præcis den nyere gemte runtime. Ruten kræver
+aktiv integreret model, tomt repair-id, alder højst 240 minutter,
+source-ancestry, 210/673, privacy og normal Pages-kontrol.
+
+Næste: slut dokumentation/måltests/geodatabevis → én exact-head → merge →
+saved-weather-continuation → levende prognose- og scorekontrol. Ingen
+providergentagelse eller oneoff. Scheduler pauset. DEC-0185. Sol/Ekstra høj.

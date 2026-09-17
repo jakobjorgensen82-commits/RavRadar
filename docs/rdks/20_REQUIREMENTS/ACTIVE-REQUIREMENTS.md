@@ -1602,3 +1602,14 @@ lokalisolationskrav består.
 - **REQ-4.0.396-PUBLIC-REGRESSION-003 – BINDENDE:** Den målrettede producenttest skal sende en `FULL_HISTORY partial-zone` med et lokalt hul gennem den offentlige nationale prognose uden metadata- eller usikkerhedskonflikt.
 - **REQ-4.0.396-RESUME-004 – BINDENDE DRIFT:** Næste normale vejrkørsel skal genbruge de gemte DMI-, Copernicus- og Open-Meteo-fremskridt fra `35147366418`. Ingen oneoff; scheduler forbliver pauset til frisk offentlig prognose og fuld kæde er grøn.
 - **REQ-4.0.396-BINDING-005 – BINDENDE:** Fordi `local-zone-score.js` indgår i rollback-, integrated- og continuation-closure, skal 4.0.396 binde rollback til `da27b811159b768bc33972e6a20621782179a7b0b1f96232a6dfd946c2cadbc7`, integrated til `d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` og continuation til `d20939c1b141a763fb20aa39b39506d79bf150860714bf1ce306f64d5314e7e6` gennem den nye append-only migration `20260917001500_partial_zone_public_metadata_binding`. Den allerede anvendte migration `20260916120000` er uforanderlig og må ikke omskrives.
+# Aktuelt ejerdelta – 2026-09-17 – fortsæt den validerede gemte vejrpakke
+
+- **REQ-4.0.403-STABLE-READBACK-001 – BINDENDE:** Beskyttede adminaktiver skal sammenlignes med en defineret, kanonisk JSON-digest; reel indholdsforskel stopper fortsat.
+- **REQ-4.0.403-SAVED-ONLY-002 – BINDENDE:** Fortsættelsen må kun bruge den nyeste centralt beskyttede runtime, som allerede er bygget og auditeret af normal produktion.
+- **REQ-4.0.403-ADVANCE-003 – BINDENDE:** Den gemte produktionstime skal være strengt nyere end den offentlige, højst 240 minutter gammel og bundet til en kildecommit, som er forfader til ny main.
+- **REQ-4.0.403-INTEGRATED-004 – BINDENDE:** Kun aktiv integreret drift med tomt offentligt repair-id, 210 zoner, 673 kystdele, uændret geometri og grøn privacy må fortsætte.
+- **REQ-4.0.403-NO-PROVIDERS-005 – BINDENDE:** Ruten må ikke kontakte DMI, Copernicus, regional DMI eller Open-Meteo og må ikke starte oneoff.
+- **REQ-4.0.403-NORMAL-DEPLOY-006 – BINDENDE:** Normal Pages-freshness, artifactlukning, offentlig runtimeaudit og deploykontrol må ikke lempes.
+- **REQ-4.0.403-ONE-SOURCE-GATE-007 – BINDENDE:** 4.0.403 kører én exact-head sourcegate før merge; den gemte fortsættelse genbruger dette bevis.
+
+DEC-0185. Scheduler forbliver pauset til offentlig prognose og efterfølgende normal vedligeholdelse er bevist.
