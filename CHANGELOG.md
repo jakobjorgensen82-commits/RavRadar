@@ -1,3 +1,14 @@
+## 4.0.405 – fælles UTC-timekontrakt i hele deploykæden (2026-09-17)
+
+- 4.0.404 bestod exact-head 35215528731 og blev main 5fc6e2fd gennem PR #348.
+- Saved-weather-run 35216079458 genbrugte 09Z-data uden providerkald, bestod
+  runtime/privacy, publicerede privat runtime og Edge og byggede Pages-artifactet.
+- Pages-kaldet brugte stadig den fælles freshness-parser direkte og afviste
+  den ækvivalente tekst 09:00:00.000Z før offentlig Pages-aktivering.
+- 4.0.405 lader den fælles parser acceptere præcis hele UTC-timer med eller
+  uden .000. Halve timer, offsets, fremtid, udløb og alder kontrolleres uændret.
+- Se CHANGELOG-4.0.405.md og DEC-0187.
+
 ## 4.0.404 – kanonisk produktionstime for gemt runtime (2026-09-17)
 
 - 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.

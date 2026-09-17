@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.405 gør UTC-timekontrakten fælles
+
+- 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
+- Saved-weather 35216079458 genbrugte 09Z uden providerkald og nåede gennem privat runtime, Edge og Pages-artifact.
+- Pages stoppede før aktivering, fordi den fælles parser stadig afviste ækvivalent 09:00:00.000Z.
+- 4.0.405 accepterer begge præcise UTC-former centralt; øvrige gyldighedskrav består. DEC-0187.
+
 # 2026-09-17 – 4.0.404 normaliserer den gemte hele UTC-time
 
 - 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.

@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-17 – fælles UTC-timekontrakt
+
+- **REQ-4.0.405-EQUIVALENT-HOUR-001 – BINDENDE:** Den fælles freshness-parser skal acceptere præcise hele UTC-timer som både HH:00:00Z og HH:00:00.000Z.
+- **REQ-4.0.405-ALL-CALLERS-002 – BINDENDE:** Reglen gælder alle direkte og genbrugte workflowkald samt en eksplicit prognosehorisont.
+- **REQ-4.0.405-STRICT-BOUNDARY-003 – BINDENDE:** Ikke-hele timer, andre millisekunder, offsets, fremtid, forkert horisont og udløb skal fortsat afvises.
+- **REQ-4.0.405-NO-DATA-CHANGE-004 – BINDENDE:** Rettelsen ændrer ikke instant, dataset, vejrdata, score, cache, geometri eller providerprioritet.
+- **REQ-4.0.405-RESUME-005 – BINDENDE:** Lever efter én exact-head og fortsæt den gemte runtime uden providerkald eller oneoff.
+
+DEC-0187. Scheduler forbliver pauset til offentlig og normal vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-17 – kanonisk produktionstime ved runtimegrænsen
 
 - **REQ-4.0.404-EQUIVALENT-HOUR-001 – BINDENDE:** HH:00:00.000Z normaliseres til den identiske kanoniske HH:00:00Z før freshness-kontrol.

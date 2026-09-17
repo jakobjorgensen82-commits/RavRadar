@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.404",
+  "handbookVersion": "4.0.405",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-17",
   "sections": [
+    {
+      "id": "shared-production-hour-contract-4-0-405",
+      "chapter": "89.09",
+      "title": "4.0.405 – Samme UTC-time forstås ens i hele leveringen",
+      "summary": "Den fælles tidskontrol accepterer nu præcise hele UTC-timer både med og uden .000, så alle workflowtrin bruger samme regel.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Pages kaldte tidskontrollen direkte og ramte derfor samme formatforskel, selv om den første workflowgrænse allerede var rettet.</div><div class=\"handbook-stack\"><p>4.0.405 løser kontrakten centralt. <code>09:00:00.000Z</code> og <code>09:00:00Z</code> accepteres som præcis samme hele UTC-time.</p><p>Halve timer, offsets, fremtid, forkert horisont og udløb afvises fortsat. Ingen vejrdata, score, cache, geometri eller providerprioritet ændres.</p></div>"
+    },
     {
       "id": "canonical-saved-production-hour-4-0-404",
       "chapter": "89.08",
@@ -651,7 +658,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.404 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.405 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.399 ændrer ikke modellen eller scorerne; versionen retter browserimports efter 4.0.398's manuelle versionsfejl.</div><div class=\"handbook-stack\"><p><strong>Aktuel drift:</strong> 4.0.398 er merged som main <code>d7420ade</code>. Code-only <code>35175276505</code> stoppede før kildebevis, data, writes og deploy, fordi 21 browserimports havde ugyldig <code>$1</code>-markør. Den offentlige side og de gemte providercacher blev ikke ændret.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=da27b811159b768bc33972e6a20621782179a7b0b1f96232a6dfd946c2cadbc7</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Alle 21 imports er rettet, og versionskontrollen har en regression mod samme fejl. Exact-head, merge, providerfri code-only og almindelig weather mangler.</div></div>"
     },

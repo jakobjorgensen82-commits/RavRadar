@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.405 fælles UTC-time
+
+4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
+Saved-weather 35216079458 genbrugte 09Z uden providerkald, bestod model,
+210/673, privacy og artifact og publicerede privat runtime og Edge.
+
+Pages stoppede før aktivering, fordi den fælles freshness-parser stadig
+afviste descriptorens ækvivalente 09:00:00.000Z. 4.0.405 accepterer nu begge
+præcise former centralt for produktionstime og horisont. Alle øvrige
+gyldighedskrav består. Ingen vejrdata, score, cache eller geometri ændres.
+DEC-0187.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.404 tidsformatkant
 
 4.0.403 bestod exact-head 35214029193 og blev main c685c83d gennem PR #347.

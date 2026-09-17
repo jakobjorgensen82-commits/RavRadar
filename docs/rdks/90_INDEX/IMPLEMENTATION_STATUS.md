@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.405 fælles UTC-timekontrakt
+
+- [x] Lever 4.0.404 via exact-head 35215528731, PR #348 og main 5fc6e2fd.
+- [x] Kør saved-weather 35216079458 uden providerkald gennem artifact, privacy, privat runtime og Edge.
+- [x] Afgræns Pages-stoppet til samme gyldige 09:00:00.000Z-format i den fælles parser.
+- [x] Ret parseren centralt for både produktionstime og prognosehorisont.
+- [x] Bevar strenge afvisninger af ikke-hele timer, offsets, fremtid, udløb og forkert horisont.
+- [x] Bevis det faktiske 09Z-input som FRESH og bestå saved-weather-kontrakten.
+- [ ] Afslut version/RDKS/geodatabevis, commit/push og én exact-head.
+- [ ] Merge og fortsæt providerfrit til offentlig Pages; verificér score/prognose og 210/673.
+- [ ] Bevis næste almindelige vedligeholdelse før scheduler genaktiveres.
+
+DEC-0187. Ingen oneoff eller providerkald.
+
 # Aktuel implementeringsstatus – lokal 4.0.404 kanonisk produktionstime
 
 - [x] Bestå 4.0.403 exact-head 35214029193, merge PR #347 som main c685c83d.
