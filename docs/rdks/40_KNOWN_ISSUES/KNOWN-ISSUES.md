@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.400 retter et falsk teststop
+
+- **ISSUE-4.0.399-DELIVERY – LUKKET:** Exact-head `35175844570`, PR #343, main `b86bcf97` og code-only `35176215202` er grønne.
+- **ISSUE-4.0.399-NORMAL-WEATHER – DELVIST GRØN:** `35176561317` gennemførte alle provider-, cache-, closure-, historik-, build- og runtimeauditled; Pages blev ikke nået.
+- **ISSUE-4.0.400-SHADOW-TEST-WINDOW – RETTET LOKALT / LIVEBEVIS MANGLER:** Testens vilkårlige 180-tegnsvindue overså et korrekt 3.000-sekunders budget. Kontrollen er nu afgrænset til hele det eksakte YAML-trin.
+- **ISSUE-VERSION-REPLACEMENT-AMBIGUITY – RETTET LOKALT:** `set-version.mjs` bruger callbacks i stedet for tvetydige `$1${version}`-replacement-strings.
+- **ISSUE-LOCAL-WEATHER-MISSING – ÅBEN FAGLIG FORBEDRING:** 420 af 79.414 par var ærligt lokale `MISSING`. Det blokerer ikke andre scorer, men nul missing er fortsat målet.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den byggede friske pakke er endnu ikke offentlig; næste almindelige weather skal gennem resterende gates og Pages.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til frisk deploy og den efterfølgende normale vedligeholdelse er bevist.
+
+DEC-0182. Ingen model-, vejr-, cache- eller kildeprioritetsændring.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.399 retter ugyldige browserimports
 
 - **ISSUE-4.0.398-MERGE – LUKKET:** Exact-head `35174942101`, PR #342 og main `d7420ade` er gennemført.

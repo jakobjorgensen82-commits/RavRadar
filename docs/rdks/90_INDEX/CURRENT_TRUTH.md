@@ -1,3 +1,27 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.400 retter testen efter en vellykket vejr- og scorebygning
+
+4.0.399 bestod exact-head `35175844570`, blev merged som main
+`b86bcf9712de119d29b98e0a5d5d9536e56c994b` og blev leveret providerfrit i
+`35176215202`. Offentlig kode, privat runtime, Pages og 210/673 var grønne.
+
+Normalrun `35176561317` gennemførte DMI, Copernicus og Open-Meteo, gemte
+providerfremgang og byggede closure, syvdøgnshistorik og offentlig runtime.
+Alle 79.414 identiteter var bogført; 420 var ærlige lokale `MISSING` efter
+provider-negative/null-/gitterresultater. Ingen provider ramte tids-,
+forsøgs-, kø- eller global fejlgrænse. Den uafhængige runtimeaudit bestod.
+
+Deploy blev alligevel ikke nået. Den efterfølgende fuldvalidering stoppede i
+en gammel workflowtest, som kun ledte 180 tegn efter det korrekte trinnavn.
+Trinnet havde allerede det krævede private tidsbudget på 3.000 sekunder, men
+en længere YAML-linje havde flyttet teksten uden for testens vilkårlige
+vindue. Det er en testfejl, ikke en fejl i vejrdata eller scoremodellen.
+
+Lokal 4.0.400 udtrækker hele det eksakte YAML-trin, kører testen i den
+billige source-critical deploykontrol og gør `set-version.mjs` robust mod
+capture group/versionssammenblanding. Næste er én exact-head, providerfri
+code-only og én almindelig weather på gemte cacher. Ingen oneoff. Scheduler
+er pauset. DEC-0182.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.399 gendanner 21 browserimports
 
 4.0.398 bestod exact-head `35174942101` og blev merged som main

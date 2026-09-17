@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.400 efter falsk shadow-teststop
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.400-production-gate-resume`, baseret på 4.0.399-main
+`b86bcf9712de119d29b98e0a5d5d9536e56c994b`.
+
+4.0.399 er online gennem sourcegate `35175844570`, PR #343 og code-only
+`35176215202`. Normalrun `35176561317` gennemførte alle providere, gemte
+cacher, lukkede 79.414 identiteter med 420 lokale `MISSING`, byggede runtime
+og bestod 210/673-audit. Det stoppede først bagefter, fordi en test søgte et
+korrekt YAML-budget i et vilkårligt 180-tegnsvindue.
+
+Lokal 4.0.400 udtrækker det eksakte workflowtrin, kører testen tidligt i den
+billige deploy-source-gate og retter versionsværktøjets tvetydige replacement-
+strings. Fortsæt målrettede tests/RDKS/geodatabevis → én exact-head → merge →
+providerfri code-only → én almindelig weather med gemte cacher. Ingen oneoff.
+Scheduler pauset. DEC-0182. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.399 browserimportrettelse
 
 Arbejd i `RavRadar-4.0.396`, branch

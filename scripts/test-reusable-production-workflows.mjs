@@ -8,6 +8,10 @@ import {
   readProductionWorkflowSources,
 } from './lib/production-workflow-sources.mjs';
 
+// Keep the private national weather contract inside this existing cheap
+// deploy-workflow command so the source gate does not grow another process.
+await import('./test-national-weather-shadow-contract.mjs');
+
 const rawSources = await readProductionWorkflowSources();
 const sources = Object.freeze(
   Object.fromEntries(
