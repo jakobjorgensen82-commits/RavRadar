@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.406 viser mobilpakken og prioriterer nødvendig delvind
+
+- Live 4.0.405 er integreret 210/673 med 141 brugbare og 69 utilgængelige zoner.
+- 296 dele mangler vind trods strøm/bølger; normalrun `35205052150` nåede ikke HARMONIE.
+- 4.0.406 viser startpakken tidsmærket og forsøger ét HARMONIE-asset først ved manglende delvind.
+- Exact-head `35241236001` bestod 22/24; fire UI-tekster er flyttet ud af modelclosure, så aktiv modelbundle er uændret. DEC-0188/0189.
+
 # 2026-09-17 – 4.0.405 gør UTC-timekontrakten fælles
 
 - 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.

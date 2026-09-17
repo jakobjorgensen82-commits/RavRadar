@@ -1,3 +1,10 @@
+## 4.0.406 – brugbart mobilsnapshot og aktuel delvind (2026-09-17)
+
+- Viser den kompakte, tidsmærkede samme-model-startpakke uden cirka 175 MB opstartshentning.
+- Giver ét HARMONIE-asset førsteplads, når delpunkter mangler vind, og fortsætter derefter normal DKSS/WAM.
+- Bevarer aktiv RavScore-bundle `d9ba75ed...`; rene UI-tekster ligger uden for modelclosure, så ingen databasebinding ændres.
+- Ingen oneoff. Se CHANGELOG-4.0.406.md, DEC-0188 og DEC-0189.
+
 ## 4.0.405 – fælles UTC-timekontrakt i hele deploykæden (2026-09-17)
 
 - 4.0.404 bestod exact-head 35215528731 og blev main 5fc6e2fd gennem PR #348.

@@ -1,4 +1,20 @@
-# Aktuel implementeringsstatus – lokal 4.0.405 fælles UTC-timekontrakt
+# Aktuel implementeringsstatus – lokal 4.0.406 mobilvisning og vindgrund
+
+- [x] Lever 4.0.405 som integreret 210/673 og mål 141 brugbare/69 utilgængelige zoner.
+- [x] Afgræns 69 zoner til 224 af samlet 296 dele uden vind trods strøm/bølger.
+- [x] Vis den kompakte startpakke tidsmærket uden stor detaljehentning; luk pile/turstart.
+- [x] Planlæg ét HARMONIE-grundforsøg først ved manglende delvind; fortsæt derefter normal DKSS/WAM.
+- [x] Bestå målrettede browser-, data-service-, scheduler- og Python-kontroller.
+- [x] Kør exact-head `35241236001`; 22/24 bestod, to delte én UI-tekst/modelhash-årsag.
+- [x] Isolér UI-tekster i appen og bevis uændret modelbundle `d9ba75ed...` samt otte bindinger.
+- [ ] Commit/push den rettede head og bestå én ny exact-head.
+- [ ] Merge og deploy 4.0.406 providerfrit; verificér mobil og desktop.
+- [ ] Kør én almindelig weather og mål delvind, scorer, providerfremgang og cachevedligeholdelse.
+- [ ] Genaktivér scheduler efter grøn normal drift; fortsæt site-/roadmapgennemgang.
+
+DEC-0188/0189. Ingen oneoff.
+
+# Historisk implementeringsstatus – lokal 4.0.405 fælles UTC-timekontrakt
 
 - [x] Lever 4.0.404 via exact-head 35215528731, PR #348 og main 5fc6e2fd.
 - [x] Kør saved-weather 35216079458 uden providerkald gennem artifact, privacy, privat runtime og Edge.

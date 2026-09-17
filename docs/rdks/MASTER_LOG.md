@@ -1,4 +1,17 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.405 fælles UTC-time
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.406 mobil og delvind
+
+4.0.405 er live som integreret 210/673. Mobilen skjulte 141 gyldige scorer,
+når cirka 175 MB detaljer blev udskudt. Samtidig manglede 296 dele vind trods
+strøm og bølger; 224 dele gjorde 69 zoner helt utilgængelige. 4.0.406 viser
+det tidsmærkede samme-model-snapshot og forsøger ét HARMONIE-asset først ved
+manglende delvind, før normal DKSS/WAM fortsætter.
+
+Exact-head `35241236001` bestod 22/24. Begge fejl var samme rene
+præsentationstekst i modelclosure. Teksterne er isoleret i appen, og den
+aktive modelbundle `d9ba75ed...` er uændret. Ingen migration eller oneoff.
+DEC-0188/0189.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.405 fælles UTC-time
 
 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
 Saved-weather 35216079458 genbrugte 09Z uden providerkald, bestod model,

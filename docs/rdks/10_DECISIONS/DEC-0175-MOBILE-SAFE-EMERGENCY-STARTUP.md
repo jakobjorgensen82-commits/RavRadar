@@ -1,6 +1,6 @@
 # DEC-0175 – Stor nøddriftspakke må ikke blokere mobil opstart
 
-**Status:** Aktiv og bindende; implementeres i 4.0.392, livebevis afventer
+**Status:** Aktiv og bindende for mobilgrænsen; den blanke visning i punkt 3-4 er erstattet af DEC-0188 i 4.0.406
 **Dato:** 2026-09-16
 
 ## Baggrund
@@ -24,6 +24,14 @@ I denne tilstand:
 3. rangliste, prognose og berørte zoner vises ærligt som utilgængelige;
 4. status forklarer, at næste friske vejr-opdatering skal levere data;
 5. manifest-, filhash-, bodyhash-, model- og datasætbindinger består.
+
+## Supersession 2026-09-17
+
+4.0.405-livebeviset viste, at punkt 3-4 gjorde hele RavRadar tom, selv om den
+verificerede startpakke bar 141 gyldige zonescorer. DEC-0188 bevarer forbuddet
+mod den store detaljedownload og mod at kalde ældre værdier aktuelle, men
+erstatter den blanke visning med den aktive models egen tydeligt tidsmærkede
+startpakke og kun fremtidige kompakte prognoser.
 
 Den browserlokale markør indgår ikke i den kanoniske signerede payload.
 Små verificerede nødpakker kan fortsat projekteres efter den eksisterende

@@ -1129,6 +1129,7 @@ def operational_collection_plan(
     *,
     now_epoch: float | None = None,
     force_wam_collections: set[str] | None = None,
+    atmosphere_foundation_needed: bool = False,
 ) -> tuple[list[str], dict[str, Any]]:
     """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -1174,6 +1175,12 @@ def operational_collection_plan(
         collection for collection in eligible
         if collection not in proof_complete_wam
     ]
+    critical_atmosphere = (
+        ["harmonie_dini_sf"]
+        if atmosphere_foundation_needed
+        and "harmonie_dini_sf" in work_eligible
+        else []
+    )
     strict_current = strict_current_collection_order(
         [
             collection for collection in work_eligible
@@ -1203,6 +1210,7 @@ def operational_collection_plan(
         ) > 0
     ]
     prioritized = [
+        *critical_atmosphere,
         *([lead_dkss] if lead_dkss else []),
         *critical_wam,
         *strict_current[1:],
@@ -1247,6 +1255,9 @@ def operational_collection_plan(
             quality_eligible_complete_wam
         ),
         "criticalWamOutsideBaseCollectionQuota": True,
+        "criticalAtmosphereCollections": critical_atmosphere,
+        "criticalAtmosphereOutsideBaseCollectionQuota": True,
+        "criticalAtmosphereAssetAttemptLimit": 1,
         "criticalWamRuntimeReserveSeconds": round(reserve_total, 3),
         "strictCurrentLeadRuntimeReserveSeconds": (
             round(current_reserve_by_collection.get(lead_dkss, 0.0), 3)
@@ -2201,8 +2212,15 @@ def refine_operational_collection_plan_after_prefetch(
         for collection in coverage.get("criticalWamCollections", [])
         if collection in scheduled
     ]
+    critical_atmosphere = [
+        collection
+        for collection in coverage.get("criticalAtmosphereCollections", [])
+        if collection in scheduled
+        and collection not in refresh_only_collections
+    ]
     lead = strict_current[0] if strict_current else None
     prioritized = [
+        *critical_atmosphere,
         *([lead] if lead else []),
         *critical_wam,
         *strict_current[1:],
@@ -10926,6 +10944,9 @@ def main() -> int:
         coastal_part_current_cache_healthy,
         operational_wave_residual,
         runtime_remaining(),
+        atmosphere_foundation_needed=(
+            int(schedule_coverage.get("missingAnyWind") or 0) > 0
+        ),
         force_wam_collections=(
             set(WAVE_BOOTSTRAP_COLLECTIONS)
             if wave_bootstrap_configuration is not None
@@ -11359,6 +11380,19 @@ def main() -> int:
         for collection in schedule_coverage.get("strictCurrentCollections", [])
         if collection in scheduled
     ]
+    critical_atmosphere_collections = [
+        collection
+        for collection in schedule_coverage.get(
+            "criticalAtmosphereCollections", []
+        )
+        if collection in scheduled
+    ]
+    critical_atmosphere_attempt_limit = max(
+        0,
+        int(schedule_coverage.get(
+            "criticalAtmosphereAssetAttemptLimit"
+        ) or 0),
+    )
     strict_current_reserve, strict_current_reserve_total = (
         strict_current_runtime_reserve(
             strict_current_collections,
@@ -11395,11 +11429,16 @@ def main() -> int:
     )
 
     for collection in scheduled:
+        collection_is_critical_atmosphere = (
+            collection in critical_atmosphere_collections
+        )
         collection_is_critical_wam = collection in critical_wam_collections
         collection_is_critical_current = (
             collection in strict_current_collections
         )
         if (
+            not collection_is_critical_atmosphere
+            and
             not collection_is_critical_wam
             and not collection_is_critical_current
             and productive_collections >= COLLECTIONS_PER_RUN
@@ -11441,6 +11480,7 @@ def main() -> int:
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         collection_start_error_count = len(result["diagnostics"]["errors"])
         strict_current_lead_attempts = 0
+        critical_atmosphere_attempts = 0
         collection_refresh_only = (
             DKSS_PRIMARY_MODE
             and collection in primary_refresh_only_collections
@@ -12321,6 +12361,19 @@ def main() -> int:
                                 break
                     continue
                 if (
+                    collection_is_critical_atmosphere
+                    and critical_atmosphere_attempts
+                        >= critical_atmosphere_attempt_limit
+                ):
+                    budget_stop = (
+                        "critical atmosphere foundation yielded after its "
+                        "bounded current-hour asset attempt"
+                    )
+                    budget_stop_code = (
+                        "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
+                    )
+                    break
+                if (
                     not strict_current_lead_attempt_available(
                         collection,
                         strict_current_lead_collection,
@@ -12354,6 +12407,11 @@ def main() -> int:
                     strict_current_lead_attempts += 1
                     run_info["strictCurrentLeadAssetsAttempted"] = (
                         strict_current_lead_attempts
+                    )
+                if collection_is_critical_atmosphere:
+                    critical_atmosphere_attempts += 1
+                    run_info["criticalAtmosphereAssetsAttempted"] = (
+                        critical_atmosphere_attempts
                     )
                 if bounded_primary_refresh:
                     primary_refresh_assets_remaining -= 1
@@ -13545,6 +13603,7 @@ def main() -> int:
             if (
                 made_progress
                 and not refresh_maintenance_no_progress
+                and not collection_is_critical_atmosphere
                 and not collection_is_critical_wam
                 and not collection_is_critical_current
             ):
@@ -13552,6 +13611,7 @@ def main() -> int:
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
                 if budget_stop_code in {
+                    "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT",
                     "CRITICAL_COLLECTION_RUNTIME_RESERVED",
                     "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",
                 }:
@@ -13573,9 +13633,15 @@ def main() -> int:
                                 == "CRITICAL_COLLECTION_RUNTIME_RESERVED"
                             else {
                                 "attemptLimit":
-                                    strict_current_lead_attempt_limit,
+                                    critical_atmosphere_attempt_limit
+                                    if budget_stop_code
+                                        == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
+                                    else strict_current_lead_attempt_limit,
                                 "attemptedAssets":
-                                    strict_current_lead_attempts,
+                                    critical_atmosphere_attempts
+                                    if budget_stop_code
+                                        == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
+                                    else strict_current_lead_attempts,
                             }
                         ),
                         "partialProgressPreserved": True,

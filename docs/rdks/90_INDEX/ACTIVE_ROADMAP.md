@@ -1,4 +1,17 @@
-# Aktiv roadmap – 4.0.405 fra fælles tidskontrakt til offentlig prognose
+# Aktiv roadmap – 4.0.406 fra manglende delvind til normal drift
+
+1. [x] Bevis live 210/673, 141 brugbare zoner og 69 helt utilgængelige zoner.
+2. [x] Ret mobilens skjulte startpakke med et ærligt tidsmærket snapshot.
+3. [x] Afgræns 69 zoner til manglende delvind og ret normal DMI-plan med ét HARMONIE-forsøg først.
+4. [x] Fjern ren UI-tekst fra modelclosure; bevar aktiv modelbundle og databasebinding.
+5. [ ] Commit/push og bestå én ny exact-head på den rettede head.
+6. [ ] Merge og deploy kode uden providerkald; verificér mobil og desktop.
+7. [ ] Kør én almindelig weather og mål vinddækning, scorer og providerfremgang. Ingen oneoff.
+8. [ ] Bevis næste vedligeholdelse, genaktivér scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0188/0189.
+
+# Historisk roadmap – 4.0.405 fra fælles tidskontrakt til offentlig prognose
 
 1. [x] Lever 4.0.404 og genbrug den gemte 09Z-runtime uden providerkald.
 2. [x] Gennemfør artifact, privacy, privat runtime og Edge i 35216079458.

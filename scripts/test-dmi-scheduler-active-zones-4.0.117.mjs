@@ -22,11 +22,14 @@ assert.match(bulk,/balanced_foundation_recovery/);
 assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
 assert.match(bulk,/operational_wave_residual_by_collection\(/);
 assert.match(bulk,/and not has_operational_wave_residual\(/);
+assert.match(bulk,/atmosphere_foundation_needed/);
+assert.match(bulk,/"criticalAtmosphereAssetAttemptLimit": 1/);
+assert.match(bulk,/ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT/);
 assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
 assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections \+= 1/);
 assert.match(
   bulk,
-  /if budget_stop_code in \{\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
+  /if budget_stop_code in \{\s*"ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT",\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
 );
 assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
 assert.match(
@@ -222,6 +225,23 @@ assert set(plan_diag['strictCurrentRuntimeReserveSecondsByCollection'].values())
 assert plan_diag['criticalWamOutsideBaseCollectionQuota'] is True, plan_diag
 assert plan_diag['criticalWamRuntimeReserveSeconds']==240, plan_diag
 assert set(plan_diag['criticalWamRuntimeReserveSecondsByCollection'].values())=={120}, plan_diag
+wind_planned,wind_plan_diag=module.operational_collection_plan(
+ mixed_schedule,{},False,wave_residual,600,now_epoch=1,
+ atmosphere_foundation_needed=True,
+)
+assert wind_planned[:4]==[
+ 'harmonie_dini_sf','dkss_nsbs','wam_dw','wam_nsb'
+], wind_planned
+assert wind_plan_diag['criticalAtmosphereCollections']==['harmonie_dini_sf'], wind_plan_diag
+assert wind_plan_diag['criticalAtmosphereOutsideBaseCollectionQuota'] is True, wind_plan_diag
+assert wind_plan_diag['criticalAtmosphereAssetAttemptLimit']==1, wind_plan_diag
+wind_refined,wind_refined_diag=module.refine_operational_collection_plan_after_prefetch(
+ wind_planned,wind_plan_diag,{'dkss_nsbs'},600,
+)
+assert wind_refined[:4]==[
+ 'harmonie_dini_sf','dkss_lf','wam_dw','wam_nsb'
+], wind_refined
+assert wind_refined_diag['criticalAtmosphereCollections']==['harmonie_dini_sf'], wind_refined_diag
 refined,refined_diag=module.refine_operational_collection_plan_after_prefetch(
  planned,plan_diag,{'dkss_nsbs'},600,
 )

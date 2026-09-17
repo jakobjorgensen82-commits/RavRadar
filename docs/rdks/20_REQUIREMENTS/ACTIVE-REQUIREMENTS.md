@@ -1,4 +1,15 @@
-# Aktuelt ejerdelta – 2026-09-17 – fælles UTC-timekontrakt
+# Aktuelt ejerdelta – 2026-09-17 – brugbar mobil og delvind
+
+- **REQ-4.0.406-BOUNDED-SNAPSHOT-001 – BINDENDE:** Vis den aktive integrerede models kompakte startpakke som eksplicit tidsmærket snapshot, når den store detaljepakke udskydes.
+- **REQ-4.0.406-NO-RELABEL-002 – BINDENDE:** Passerede prognoser fjernes; pile og turstart er lukket, og snapshot kaldes aldrig aktuelt.
+- **REQ-4.0.406-WIND-FIRST-003 – BINDENDE:** Når aktive delpunkter mangler vind, forsøger normal DMI ét HARMONIE-asset før normal DKSS/WAM.
+- **REQ-4.0.406-NO-MODEL-MIGRATION-004 – BINDENDE:** Rene UI-tekster må ikke ændre RavScore-bundle eller udløse en databasebinding.
+- **REQ-4.0.406-NO-ONEOFF-005 – BINDENDE:** Lever kode providerfrit; bevis derefter rettelsen i én almindelig weather. Ingen oneoff.
+- **REQ-WEATHER-VALID-OVER-EMPTY-006 – BINDENDE:** Nye gyldige data erstatter gamle. Ved et hul beholdes den gamle værdi for samme sted og tidspunkt, mens den er gyldig. Først når begge mangler/er udløbet, bliver feltet `MISSING`. Et lokalt `MISSING` må ikke gøre resten af RavRadar ubrugelig.
+
+DEC-0188/0189. Scheduler forbliver pauset til normal drift er livebevist.
+
+# Historisk ejerdelta – 2026-09-17 – fælles UTC-timekontrakt
 
 - **REQ-4.0.405-EQUIVALENT-HOUR-001 – BINDENDE:** Den fælles freshness-parser skal acceptere præcise hele UTC-timer som både HH:00:00Z og HH:00:00.000Z.
 - **REQ-4.0.405-ALL-CALLERS-002 – BINDENDE:** Reglen gælder alle direkte og genbrugte workflowkald samt en eksplicit prognosehorisont.

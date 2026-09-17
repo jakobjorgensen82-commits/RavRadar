@@ -1,4 +1,20 @@
-# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles tidskontrakt
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
+
+4.0.405 er live gennem exact-head `35217753258`, PR #349, main
+`e128b15d` og saved-weather `35222128772`. Livepakken er 210/673 med 141
+brugbare og 69 helt utilgængelige zoner. 296 dele har strøm og bølger, men
+mangler vind; normalrun `35205052150` nåede ikke HARMONIE.
+
+4.0.406 viser den kompakte, tidsmærkede samme-model-startpakke uden cirka
+175 MB opstartshentning og giver ét HARMONIE-asset førsteplads ved manglende
+delvind før normal DKSS/WAM. Første exact-head `35241236001` bestod 22/24;
+de to fejl var samme utilsigtede modelhashændring fra fire UI-tekster i den
+fælles sprogfil. Teksterne er nu isoleret i appen. Aktiv modelbundle
+`d9ba75ed...` og alle otte bindinger er uændrede. Næste: ny exact-head,
+merge, providerfri deploy og én almindelig weather. Ingen oneoff. Scheduler
+pauset. DEC-0188/0189. Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-17 – lokal 4.0.405 fælles tidskontrakt
 
 4.0.404 bestod exact-head 35215528731, PR #348 og main 5fc6e2fd.
 Saved-weather 35216079458 genbrugte 09Z uden providerkald og gennemførte
