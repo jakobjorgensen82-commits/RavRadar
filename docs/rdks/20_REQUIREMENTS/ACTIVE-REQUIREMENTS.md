@@ -1,3 +1,18 @@
+# Aktuelt ejerdelta – 2026-09-17 – kritisk produktionsartifact-gate
+
+- **REQ-4.0.402-ARTIFACT-PLAN-001 – BINDENDE:** Normal produktion skal køre præcis den godkendte 52-blads gate for data, vejr, forecast, geometri, score, startup, mobil, runtime, coverage, proveniens, retninger, vandkilder og lokal missing.
+- **REQ-4.0.402-COLLECT-ALL-002 – BINDENDE:** Alle valgte kontroller forsøges; collectorrapporten skal være payloadfri, planbundet og samlet fejle efter sidste kontrol.
+- **REQ-4.0.402-RELEASE-PLAN-003 – BINDENDE:** Normal produktion kører tre selvstændige releasekontroller af eksakt version, aktiv modelbundle og alle aktive modelbindingsforbrugere.
+- **REQ-4.0.402-NO-HISTORIC-RERUN-004 – BINDENDE:** De øvrige 225 validate-kontroller og 44 historiske releasegatetests bevares, men må ikke genkøres efter hver almindelig vejrindsamling.
+- **REQ-4.0.402-HARD-RUNTIME-005 – BINDENDE:** Runtimeaudit, Supabase/checkpoint, privat runtime, artifactlukning, privacy og deploy forbliver hårde og må ikke skjules af rapport-/bookkeepingfejl.
+- **REQ-4.0.402-VERSION-TRUTH-006 – BINDENDE:** Browseren må kun vise den versionssynkroniserede runtime/DOM-version og må ikke falde tilbage til en hardkodet tidligere version.
+- **REQ-4.0.402-NO-DATA-MODEL-CHANGE-007 – BINDENDE:** Rettelsen ændrer ikke RavScore, vejrdata, providerprioritet, geometri eller land-/vandpunkter.
+- **REQ-4.0.402-DELIVERY-008 – BINDENDE:** Lever kode providerfrit efter én exact-head og kør derefter én almindelig weather på gemte cacher. Ingen oneoff.
+
+DEC-0184 supersederer DEC-0013/DEC-0045s gamle krav om fuld validate og fuld
+releasegate efter hver frisk vejrbygning. Deres reelle data-, privacy- og
+deploykrav består.
+
 # Aktuelt ejerdelta – 2026-09-17 – historisk kildeberedskab før fuldvalidering
 
 - **REQ-4.0.401-EXACT-HISTORY-001 – BINDENDE:** Før den normale fuldvalidering skal den pinnede Candidate G-kildecommit og dens kendte træ være lokalt tilgængelige og identitetsbevist.

@@ -4,6 +4,14 @@
 - **Dato:** 2026-08-21
 - **Besluttet af:** Ejer og Codex
 
+## Supersession 2026-09-17
+
+DEC-0184 erstatter formuleringerne nedenfor om fuld npm run validate og fuld
+npm run release:gate efter hver frisk vejrbygning. De gamle afsnit bevares
+som historik. Aktuel normal produktion bruger 52 artifactkritiske og tre
+version-/modelbindingskontroller samt de faktiske hårde runtime-, Supabase-,
+privacy-, artifact- og deploytrin.
+
 ## Problem
 
 RavRadar brugte for meget tid på at gentage den samme kildekodekontrol lokalt, i PR og igen ved hver planlagt vejropdatering. Den virkelige 4.0.245-fejl skyldtes derimod samspillet mellem en frisk DMI-cache og den valgte strømtime og blev kun fundet af den fulde produktionsdatagate.

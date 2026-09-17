@@ -1,6 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.401
+**Håndbogsversion:** 4.0.402
+
+## 89.06 4.0.402 – Produktionskontrollen måler det, der kan ødelægge RavRadar
+
+### Gamle testforventninger må ikke stoppe et allerede gyldigt vejr- og scoreartifact
+
+Den almindelige kørsel 35187767148 gennemførte DMI, Copernicus og
+Open-Meteo, gemte cacher, byggede prognoser og bestod den uafhængige
+runtimekontrol. Først bagefter stoppede en gammel test, fordi den stadig
+forventede en tidligere DMI-budgettekst.
+
+Den gamle efterkontrol bestod af 277 små kontroller og stoppede ved den
+første fejl. Derefter ventede yderligere 44 historiske kilde- og
+rollbacktests. 4.0.402 bruger i normal produktion i stedet 52 kontroller af
+det friske data-, vejr-, forecast-, score- og browserartifact samt tre
+hurtige kontroller af version og aktiv modelbinding.
+
+Alle valgte kontroller bliver forsøgt. Fejlene samles i rapporter, så én
+fejl ikke skjuler de næste. De øvrige tests er ikke slettet; de bruges ved
+relevante kodeændringer og periodiske fulde gennemgange.
+
+RavRadars virkelige sikkerhedstrin består: runtimeauditten, Supabase,
+checkpoint, privat runtime, privacy, Pages-artifact og deploy kan stadig
+stoppe en ugyldig udgivelse. Browseren læser samtidig sin version fra den
+versionssynkroniserede side og kan derfor ikke længere vise en ny version
+kort og derefter skifte tilbage til 4.0.398.
+
+Rettelsen ændrer ikke RavScore, vejrdata eller kildeprioriteten.
+
+4.0.402 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den uændrede integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler
+og otte deklarerede forbrugere.
 
 ## 89.05 4.0.401 – Slutkontrollen får den historiske kilde, den selv kræver
 

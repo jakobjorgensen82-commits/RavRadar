@@ -1414,7 +1414,7 @@ const positions = {
   checkpointDisposition: text.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   legacyFullValidationSource: text.indexOf('name: Ensure exact historical Candidate G source is present for full validation'),
-  validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
+  validate: text.indexOf('name: Validate critical production artifact after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData: text.indexOf('name: Validate updated weather cache'),
   deployFreshness: text.indexOf('name: Reclassify target freshness before protected writes and Pages artifact'),
@@ -3349,7 +3349,7 @@ assert.ok(!deployCallerSection.includes('needs: copernicus-post-build-refresh'),
 for (const step of ['validate', 'gate']) {
   const blockEnd = text.indexOf('\n\n', positions[step]);
   const block = text.slice(positions[step], blockEnd < 0 ? text.length : blockEnd);
-  if (!block.includes("if: steps.preflight.outputs.should_run == 'true'")) {
+  if (!block.includes("steps.preflight.outputs.should_run == 'true'")) {
     throw new Error(`${step} skal køre ved enhver reel produktionsopbygning.`);
   }
   if (block.includes('github.event_name') || block.includes('inputs.force')) {

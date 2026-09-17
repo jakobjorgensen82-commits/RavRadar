@@ -1011,7 +1011,7 @@ const provenanceStep = workflowStep(
   'Attach scientific current provenance and exact DMI grid points',
 );
 const fullValidationStep = workflowStep(
-  'Validate full project after fresh weather and current provenance',
+  'Validate critical production artifact after fresh weather and current provenance',
 );
 assert.ok(
   activeDmiRestoreStep.start < activeDmiMaterializeStep.start

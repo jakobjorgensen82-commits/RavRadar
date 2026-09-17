@@ -29,9 +29,9 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
 - Almindelige rettelser deployes efter DEC-0148 som kode-only med eksakt genbrug af senest gyldige data og uden ekstern vejrhentning. Normal vejrhentning følger som et særskilt, tidsbegrænset forløb.
 - Den tidlige kildekodegate køres på ny eller uverificeret main-kode. Vejropdateringer, også cron-/watchdog-dispatch og manuelle genkørsler, må genbruge et live-verificeret grønt source-step på præcis samme main-commit. Senere fejl, ændret run-attempt eller ukendt evidens kræver ny kontrol; en cachemarkør alene er aldrig bevis. Se DEC-0045's tillæg 2026-09-04.
-- Hvert artifact med frisk produktionsdata skal fortsat bestå fuld validering og releasegate efter central hydrering og frisk vejr/proveniens. Et kode-only artifact skal i stedet bestå den produktkritiske sourcegate samt eksakt genbrugs-, kompatibilitets-, privacy-, artifact- og deploykontrol og må ikke kontakte vejrleverandører.
+- Hvert artifact med frisk produktionsdata skal efter DEC-0184 bestå den faste 52-blads artifactgate, tre version-/modelbindingskontroller og de selvstændige runtime-, Supabase-, checkpoint-, privacy-, artifact- og deploytrin. De øvrige fulde/historiske suites køres målrettet eller periodisk, ikke efter hver vejrindsamling. Et kode-only artifact følger fortsat DEC-0148.
 - Fuld 210/673-browserkontrol køres ugentligt eller efter relevante ændringer i UI, score eller offentlig datakontrakt. Små afgrænsede ændringer får målrettet kontrol.
-- Ingen kontrol må springes over ved en kendt fejl, væsentlig usikkerhed eller konkret modstridende evidens. Se DEC-0045.
+- En kendt fejl eller konkret modstridende evidens i den berørte produktionsflade kræver målrettet kontrol og må ikke skjules. En forældet eller historisk test uden betydning for artifactet registreres og rettes uden at blokere normal produktion. Se DEC-0184.
 
 ## Codex og systemisk arbejdsmodel
 - `docs/ai/CODEX_START_HERE.md` er obligatorisk indgang for Codex.
@@ -49,6 +49,7 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - Den planlagte videnskabelige RavRadar-/RavScore-analyse udføres som udgangspunkt med Sol. Billigere modeller må kun udføre afgrænsede støtte- eller rutineopgaver uden kvalitetsrisiko. Se DEC-0031.
 
 ## Midlertidig Codex-overgangstilstand 2026-08-07
+- Dette afsnit beskriver den historiske 4.0.117-overgang. Kravet om fuld validate/releasegate efter hver vejrbygning er supersederet af DEC-0184; kravet om reelle data-, privacy-, artifact- og deploygates består.
 - Den nuværende 4.0.117-handoff er en **bootstrap til Codex**, ikke en ny dokumenteret stabil release.
 - GitHub-workflowet har en kendt alvorlig gate-fejl: almindelige `workflow_dispatch`-vejropdateringer kan bygge og deploye, selv om `npm run validate` og `npm run release:gate` springes over. Et grønt automatisk run er derfor ikke i sig selv releasebevis.
 - **Første kodeopgave i Codex:** ret workflowet, så ethvert nyt produktionsartifact/deploy, der bygger frisk produktionsdata, ikke kan passere uden de relevante fulde gates. Bevar muligheden for billigt preflight-skip, når der slet ikke bygges/deployes nyt artifact.
@@ -66,5 +67,5 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 ## Lokal Codex-klargøring og kildekontrol
 - På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
 - Før en kilde-PR køres den lille produktkritiske sourcegate målrettet. Den kræver ikke central adminhydrering eller frisk produktionsdata.
-- Sourcegaten erstatter aldrig den fulde `npm run validate` og `npm run release:gate`, når der bygges frisk produktionsdata. Kode-only rettelsesdeploy følger DEC-0148 og beviser i stedet eksakt genbrug og artifactintegritet.
+- Sourcegaten erstatter ikke DEC-0184s post-data artifact-, modelbinding-, runtime-, privacy-, Supabase- og deploybevis. Den fulde validate/releasegate bevares til målrettet eller periodisk brug. Kode-only rettelsesdeploy følger DEC-0148 og beviser eksakt genbrug og artifactintegritet.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.

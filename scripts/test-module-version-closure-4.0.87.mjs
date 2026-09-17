@@ -10,6 +10,7 @@ for(const file of [...roots,...jsFiles]){
   const text=await fs.readFile(file,'utf8');
   for(const match of text.matchAll(/\$\d+\.\d+\.\d+/g))failures.push(`${file}: ugyldig browsercachemarkør ${match[0]}`);
   for(const match of text.matchAll(/[?&]v=(\d+\.\d+\.\d+)/g))if(match[1]!==version)failures.push(`${file}: ${match[0]} (forventede ${version})`);
+  if(file==='app.js')for(const match of text.matchAll(/\b\d+\.\d+\.\d+\b/g))if(match[0]!==version)failures.push(`${file}: forældet runtimeversion ${match[0]} (forventede ${version})`);
 }
 if(failures.length){console.error('Modulversionering fejlede:\n- '+failures.slice(0,50).join('\n- '));process.exit(1)}
 console.log(`OK: Alle aktive browserimports bruger releaseversion ${version}.`);

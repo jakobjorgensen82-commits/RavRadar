@@ -1,3 +1,24 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.402 efter grøn provider- og runtimekæde
+
+Arbejd i RavRadar-4.0.396, branch codex/4.0.402-production-gate, baseret på
+4.0.401-main 82f4fb08ab14bf50fd4c285e0148f2ebb7666313.
+
+4.0.401 er online gennem exact-head 35187093136, PR #345 og code-only
+35187388134. Normalrun 35187767148 gennemførte alle provider-, cache-,
+closure-, historik-, runtime- og audittrin, men deployede ikke, fordi en
+gammel DMI-test forventede en afløst budgettekst.
+
+Lokal 4.0.402 har 52 artifactkritiske og tre releasekontroller, som alle
+forsøges og rapporteres samlet. De øvrige 225 validate-kontroller og 44
+historiske releasegatetests kører ikke efter hver almindelig vejrindsamling.
+Faktiske runtime-, Supabase-, checkpoint-, privacy-, artifact- og deploytrin
+er fortsat hårde. DMI-runtime er ikke ændret. app.js bruger korrekt
+versionssandhed uden 4.0.398-fallback.
+
+Næste: slutkontroller og geodatabevis, commit/push, én exact-head, merge,
+providerfri code-only og én almindelig weather på gemte cacher. Ingen oneoff.
+Scheduler pauset. DEC-0184. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.401 efter historisk checkoutstop
 
 Arbejd i `RavRadar-4.0.396`, branch

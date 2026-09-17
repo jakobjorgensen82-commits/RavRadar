@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – lokal 4.0.402 kritisk produktionsgate
+
+- [x] Lever 4.0.401 via exact-head 35187093136, PR #345, main 82f4fb08 og providerfri code-only 35187388134.
+- [x] Kør normal weather 35187767148; gennemfør alle provider-, cache-, closure-, historik-, runtime- og uafhængige audittrin.
+- [x] Afgræns stoppet til forældede DMI-testforventninger efter grøn artifactbygning.
+- [x] Gennemgå helkæden: 277 validate-bladkontroller og 44 skjulte historiske releasegatetests.
+- [x] Indfør 52 artifactkritiske og tre version-/modelbindingskontroller med samlet fejlopsamling og payloadfri rapport.
+- [x] Bevar faktiske runtime-, Supabase-, checkpoint-, privacy-, artifact- og deploytrin som hårde.
+- [x] Synkronisér gamle DMI-tests med den eksisterende extended-bootstrap-kontrakt.
+- [x] Fjern hardkodet 4.0.398-fallback fra browserens version og turbevis.
+- [x] Bestå version/RDKS/håndbog, målrettede slutkontroller og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Kør providerfri code-only af 4.0.402 og verificér offentlig version/210/673.
+- [ ] Kør én almindelig weather på gemte cacher; verificér prognoser, scorer, lokale huller og offentlig runtime.
+- [ ] Bevis den næste normale cachevedligeholdelse og providerprioritet før scheduler genaktiveres.
+
+DEC-0184 er aktiv. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.401 historisk kilde før fuldvalidering
 
 - [x] Lever 4.0.400 via exact-head `35181131552`, PR #344, main `0744c79c` og providerfri code-only `35181573799`.

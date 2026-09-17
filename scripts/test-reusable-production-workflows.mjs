@@ -411,7 +411,7 @@ for (const stepName of [
   'Build exact DMI-first current operational closure',
   'Build public seven-day current history and controlled live selection',
   'Update central weather cache',
-  'Validate full project after fresh weather and current provenance',
+  'Validate critical production artifact after fresh weather and current provenance',
   'Run release governance gate after refreshed data validation',
 ]) {
   assert.equal(

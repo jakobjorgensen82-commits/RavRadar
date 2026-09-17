@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.402 kritisk produktionsartifact-gate
+
+4.0.401 bestod exact-head 35187093136, blev merged gennem PR #345 som main
+82f4fb08ab14bf50fd4c285e0148f2ebb7666313 og kom providerfrit online i
+35187388134.
+
+Normalrun 35187767148 gennemførte DMI, Copernicus, Open-Meteo, closure,
+syvdøgnshistorik, offentlig runtime og den uafhængige runtimeaudit. Det
+stoppede før deploy på en stale DMI-test, ikke på vejr- eller scoreartifactet.
+
+4.0.402 erstatter den normale efter-vejr-kæde på 277 bladkontroller plus 44
+historiske releasegatetests med præcis 52 artifactkritiske og tre
+version-/modelbindingskontroller. Collector kører alle og skriver payloadfri
+samlede rapporter. Faktiske runtime-, Supabase-, checkpoint-, privacy-,
+artifact- og deploytrin forbliver hårde. Den fulde suite og releasegate er
+bevaret til målrettet/periodisk brug.
+
+Gamle DMI-testforventninger er synkroniseret med den eksisterende
+extended-bootstrap-gren; produktionsruntime er uændret. Browserens
+hardkodede 4.0.398-fallback er fjernet. Næste: målrettede slutkontroller,
+RDKS/geodatabevis, én exact-head, merge, providerfri code-only og én
+almindelig weather på gemte cacher. Ingen oneoff. Scheduler pauset.
+DEC-0184. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.401 sikrer historikkilden før slutkontrol
 
 4.0.400 bestod exact-head `35181131552`, blev merged gennem PR #344 som main

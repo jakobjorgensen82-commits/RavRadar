@@ -1247,7 +1247,7 @@ const workflowPositions={
   runtimeAudit:buildWorkflow.indexOf('name: Audit runtime and collect independent cutover validation failures'),
   checkpointDisposition:buildWorkflow.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   reference:buildWorkflow.indexOf('name: Generate and strictly validate production reference zones'),
-  validate:buildWorkflow.indexOf('name: Validate full project after fresh weather and current provenance'),
+  validate:buildWorkflow.indexOf('name: Validate critical production artifact after fresh weather and current provenance'),
   releaseGate:buildWorkflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:buildWorkflow.indexOf('name: Validate updated weather cache'),
   checkpointBuild:buildWorkflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),

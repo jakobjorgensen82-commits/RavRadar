@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.402 afgrænser produktionskontrollen
+
+- **ISSUE-4.0.401-DELIVERY – LUKKET:** Exact-head 35187093136, PR #345, main 82f4fb08 og code-only 35187388134 er grønne.
+- **ISSUE-4.0.401-STALE-DMI-TEST – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun 35187767148 byggede og auditerede runtime, men stoppede bagefter på gamle 55-minutters/900-sekunders/tre-collection-forventninger.
+- **ISSUE-BROAD-PRODUCTION-TEST-SPIRAL – RETTET LOKALT / LIVEBEVIS MANGLER:** Normal produktion bruger nu 52 artifactkontroller og tre releasekontroller; 225 øvrige validate-kontroller og 44 historiske releasegatetests ligger uden for hver vejrleverance.
+- **ISSUE-INCOMPLETE-ERROR-LIST – RETTET LOKALT:** Alle valgte bladkontroller forsøges og bindes til én payloadfri rapport.
+- **ISSUE-VERSION-401-TO-398-FLICKER – RETTET LOKALT:** app.js har ikke længere en hardkodet 4.0.398-fallback.
+- **ISSUE-PROVIDER-CACHE-RESUME – BEVARET:** Cacherne fra 35187767148 genbruges i næste almindelige weather; ingen oneoff.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den friske runtime fra 35187767148 blev ikke deployet.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler er pauset til frisk deploy og næste normale vedligeholdelse er bevist.
+
+DEC-0184. Ingen model-, vejr-, geometri- eller kildeprioritetsændring.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.401 retter manglende historikkilde
 
 - **ISSUE-4.0.400-DELIVERY – LUKKET:** Exact-head `35181131552`, PR #344, main `0744c79c` og code-only `35181573799` er grønne.

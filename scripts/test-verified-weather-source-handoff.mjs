@@ -224,7 +224,7 @@ for (const name of [
   'Build exact DMI-first current operational closure',
   'Build public seven-day current history and controlled live selection',
   'Update central weather cache',
-  'Validate full project after fresh weather and current provenance',
+  'Validate critical production artifact after fresh weather and current provenance',
   'Run release governance gate after refreshed data validation',
 ]) assert.equal(stepBlock(reusableWorkflow, name).includes("steps.weather-source-handoff.outputs.reused != 'true'"), false, `handoff retained step: ${name}`);
 for (const marker of [

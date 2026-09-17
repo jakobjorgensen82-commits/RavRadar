@@ -1,3 +1,30 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.402 måler det friske artifact
+
+4.0.401 bestod exact-head 35187093136, blev merged gennem PR #345 som main
+82f4fb08ab14bf50fd4c285e0148f2ebb7666313 og blev leveret providerfrit i
+35187388134.
+
+Normalrun 35187767148 gennemførte DMI, Copernicus, Open-Meteo,
+DMI-first-closure, syvdøgnshistorik, central vejrbygning, offentlig runtime
+og den uafhængige runtimeaudit. Providercacherne blev gemt. Runnet stoppede
+før deploy i den brede validering, fordi en gammel DMI-test stadig forventede
+den afløste normalbudgettekst. Der er ingen evidens for, at vejr- eller
+scoreartifactet fejlede.
+
+Helkædegennemgangen fandt 277 validate-bladkontroller og yderligere 44
+historiske tests inde i releasegaten. Lokal 4.0.402 lader normal produktion
+køre præcis 52 artifactkritiske og tre version-/modelbindingskontroller. Alle
+forsøges og rapporteres samlet. De øvrige tests bevares til fuld, målrettet
+eller periodisk brug; faktiske runtime-, Supabase-, checkpoint-, privacy-,
+artifact- og deploytrin er fortsat hårde.
+
+De gamle DMI-testforventninger følger nu den allerede implementerede
+extended-bootstrap-kontrakt. app.js bruger den versionssynkroniserede
+runtime/DOM-version, så siden ikke længere viser 4.0.402 kort og derefter
+skifter til en hardkodet 4.0.398. Ingen scoreformel, vejrdata,
+providerprioritet, geometri eller land-/vandpunkt ændres. Scheduler er
+pauset. DEC-0184.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.401 gør den historiske slutkontrol selvforsynende
 
 4.0.400 bestod exact-head `35181131552`, blev merged gennem PR #344 som main

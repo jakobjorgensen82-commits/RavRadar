@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.401",
+  "handbookVersion": "4.0.402",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-17",
   "sections": [
+    {
+      "id": "critical-production-artifact-gate-4-0-402",
+      "chapter": "89.06",
+      "title": "4.0.402 – Produktionskontrollen måler det friske artifact",
+      "summary": "Alle relevante fejl samles, mens gamle kilde- og rollbacktests ikke længere stopper hver almindelig vejrleverance.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Vejr, prognoser og runtime var bygget korrekt, men en gammel DMI-test stoppede udgivelsen bagefter.</div><div class=\"handbook-stack\"><p>Normalrun 35187767148 gennemførte DMI, Copernicus, Open-Meteo, cacher, closure, historik, offentlig runtime og uafhængig audit. Stoppet lå i en forældet testforventning.</p><p>4.0.402 kører 52 kontroller af det friske artifact og tre kontroller af version og aktiv modelbinding. Alle forsøges, og fejlene samles i payloadfri rapporter.</p><p>De øvrige tests er bevaret til målrettet og periodisk brug. Runtimeaudit, Supabase, checkpoint, privacy, artifact og deploy er fortsat hårde sikkerhedstrin.</p><p>Browseren bruger den versionssynkroniserede version og kan ikke længere skifte fra en ny version tilbage til den hardkodede 4.0.398.</p></div>"
+    },
     {
       "id": "legacy-source-before-full-validation-4-0-401",
       "chapter": "89.05",
@@ -630,7 +637,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.401 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.402 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.399 ændrer ikke modellen eller scorerne; versionen retter browserimports efter 4.0.398's manuelle versionsfejl.</div><div class=\"handbook-stack\"><p><strong>Aktuel drift:</strong> 4.0.398 er merged som main <code>d7420ade</code>. Code-only <code>35175276505</code> stoppede før kildebevis, data, writes og deploy, fordi 21 browserimports havde ugyldig <code>$1</code>-markør. Den offentlige side og de gemte providercacher blev ikke ændret.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=da27b811159b768bc33972e6a20621782179a7b0b1f96232a6dfd946c2cadbc7</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Aktuel gate:</strong> Alle 21 imports er rettet, og versionskontrollen har en regression mod samme fejl. Exact-head, merge, providerfri code-only og almindelig weather mangler.</div></div>"
     },
