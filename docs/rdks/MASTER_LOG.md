@@ -1,3 +1,22 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.398 offentlig audit
+
+4.0.397 blev leveret som main `f3a200ff4d4a2bc0ce0aec36c841f6e3972b28a9`
+efter sourcegate `35167221199`, PR #341 og code-only `35167698742`.
+Normalrun `35168055561` gennemførte alle providere, gemte cacher og byggede
+118 timer for 210 zoner og 673 kystdele. Pages blev sprunget over efter 86
+del- og 1.250 zoneformelfejl samt én profilfejl.
+
+Helhedsgennemgangen fandt to kontrolfejl. Fire uafhængigt seksdecimal-
+afrundede publiceringer kan give `2e-6` forskel mellem bidragssum og råsum.
+Og fuld dækning af 673 kystdele er ikke identisk med tilgængelighed af alle
+zoner; en fler-delszone kan være gyldig delvis.
+
+4.0.398 retter kun auditten, splitter profilfejl i konkrete koder og bevarer
+alle uafhængige model-, migrations-, historik- og datakrav. 210/673-testen,
+den maksimalt gyldige `2e-6`-kant, en ugyldig `3e-6`-kant og en delvis
+fler-delszone er grønne. Exact-head, merge, code-only og almindelig weather
+på gemte cacher afventer. Ingen oneoff. Scheduler pauset. DEC-0180.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – prognoseaudit ved halv-point
 
 4.0.396 blev leveret som main `265ec215ace894264e7c687d2e7fe8955f305a76`

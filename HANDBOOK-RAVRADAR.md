@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.397
+**Håndbogsversion:** 4.0.398
+
+## 89.02 4.0.398 – Kontrollen skelner kystdele fra brugbare zoner
+
+### En lokal manglende del er ikke det samme som en ubrugelig zone
+
+Den seneste almindelige vejrkørsel byggede prognoser for 210 zoner og 673
+kystdele, men slutkontrollen stoppede udgivelsen. Der var to fejl i selve
+kontrollen.
+
+For det første afrundes tre scorebidrag og deres rå sum hver for sig til seks
+decimaler. De fire selvstændige afrundinger kan tilsammen give en forskel på
+højst to milliontedele. Kontrollen accepterer nu netop denne matematiske
+grænse og afviser stadig alt over den.
+
+For det andet betyder fuld modeldækning, at alle 673 kystdele har score. En
+zone kan godt være brugbar med en tydeligt markeret delvis score, selv om én
+af dens kystdele mangler data. Kontrollen kræver fortsat, at profilens
+dækning, hukommelse, migration og advarsler passer med de genberegnede
+værdier, men den gør ikke længere lokal missing til en landsdækkende fejl.
+
+Rettelsen ændrer ikke RavScore, vægte, vejrdata eller den score, brugeren ser.
+Den gør kun den efterfølgende kontrol enig med den allerede vedtagne regel:
+et lokalt hul må ikke gøre resten af RavRadar ubrugelig.
 
 ## 89.01 4.0.397 – En korrekt prognose må ikke stoppes af decimalafrunding
 
@@ -12,16 +35,18 @@ kontrol lagde tre allerede afrundede scorebidrag sammen og afrundede summen
 igen. Ved præcis et halvt point kunne den nye sum ligge en milliontedel på
 den anden side og få kontrollen til at tro, at en korrekt score var forkert.
 
-Kontrollen bruger nu det meget smalle interval, som den offentliggjorte
+4.0.397 indførte det meget smalle interval, som den offentliggjorte
 seksdecimalers rå score faktisk repræsenterer. Den kontrollerer stadig, at de
-tre bidrag passer med totalscoren inden for en milliontedel, og alle øvrige
-krav til model, data, waders-loft og slutscore er uændrede.
+tre bidrag passer med totalscoren. Livekørslen viste bagefter, at den præcise
+grænse er to milliontedele, fordi fire tal publiceres med hver sin afrunding.
+Det er rettet i 4.0.398; alle øvrige krav til model, data, waders-loft og
+slutscore er uændrede.
 
 Dette ændrer ikke den score, brugeren får. Det fjerner kun et falsk stop i
 den efterfølgende kontrol. Prognoserne bliver først synlige, når den rettede
 kontrol og resten af udgivelsen er gennemført.
 
-4.0.397 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+4.0.398 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede implementering er
 `modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler
 og otte deklarerede forbrugere. Den private Candidate G-rollback er særskilt

@@ -100,6 +100,11 @@ const HOUR_MS = 3_600_000;
 const SHA256_KEY_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
 const EPSILON = 1e-6;
+// The producer publishes three independently rounded contributions and one
+// independently rounded total. Each six-decimal publication can move by half
+// a micro-unit, so the sum can differ from the published total by at most two
+// micro-units without any disagreement in the underlying full-precision sum.
+const PUBLIC_ADDITIVE_ROUNDING_EPSILON = EPSILON * 2;
 const CANDIDATE_G_MEASURED_WARMUP_STATUS = 'BUILDING_MEASURED_ONLY';
 const CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY = 'MEASURED_ONLY';
 const scoreQualityRank = value => value === RAVSCORE_SCORE_QUALITY.FULL_HISTORY ? 0
@@ -665,7 +670,8 @@ export function publicModeFormulaIsConsistent(mode, value) {
   const expectedFinal = mode === 'waders'
     ? Math.min(roundedScore, explanation.wadersHuntabilityMaximum)
     : roundedScore;
-  return close(reconstructedRawScore, explanation.rawScore)
+  return Math.abs(reconstructedRawScore - explanation.rawScore)
+      <= PUBLIC_ADDITIVE_ROUNDING_EPSILON + (Number.EPSILON * 100)
     && Number.isInteger(roundedScore)
     && roundedScoreCandidates.has(roundedScore)
     && explanation.finalScore === expectedFinal
@@ -1341,16 +1347,26 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     ...(!expectedModelMigrationReady
       ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
   ];
-  collector.add(currentHistoryQualitySummaryReady
-    && profile?.modelCoverageReady === expectedModelCoverageReady
-    && profile?.modelMemoryReady === expectedModelMemoryReady
-    && profile?.modelMigrationReady === expectedModelMigrationReady
-    && profile?.modelMigrationReady === true
-    && profile?.modelCoverageReady === (currentUnavailableModeCount === 0)
-    && sameCanonical(profile?.advisories, expectedProfileAdvisories)
-    && (currentHistoryIncompleteModeCount === 0
-      || expectedHistoryIncompleteZones.length > 0),
-  'PUBLIC_PROFILE_NOT_READY');
+  // Part coverage and zone availability are deliberately different facts. A
+  // multi-part zone can remain usable when one local part is unavailable, so
+  // modelCoverageReady=false must not be equated with an unavailable zone.
+  // The inverse remains mandatory: complete part coverage may never coexist
+  // with an unavailable current zone score.
+  collector.add(profile?.modelCoverageReady === expectedModelCoverageReady,
+    'PUBLIC_PROFILE_COVERAGE_MISMATCH');
+  collector.add(profile?.modelMemoryReady === expectedModelMemoryReady,
+    'PUBLIC_PROFILE_MEMORY_MISMATCH');
+  collector.add(profile?.modelMigrationReady === expectedModelMigrationReady,
+    'PUBLIC_PROFILE_MIGRATION_MISMATCH');
+  collector.add(profile?.modelMigrationReady === true,
+    'PUBLIC_PROFILE_MIGRATION_NOT_READY');
+  collector.add(profile?.modelCoverageReady !== true || currentUnavailableModeCount === 0,
+    'PUBLIC_PROFILE_COVERAGE_CONTRADICTS_ZONE_AVAILABILITY');
+  collector.add(sameCanonical(profile?.advisories, expectedProfileAdvisories),
+    'PUBLIC_PROFILE_ADVISORIES_MISMATCH');
+  collector.add(currentHistoryIncompleteModeCount === 0
+      || expectedHistoryIncompleteZones.length > 0,
+  'PUBLIC_PROFILE_HISTORY_SUMMARY_MISMATCH');
 
   let reconstructedModeCount = 0;
   let stateReplayCount = 0;
@@ -1919,6 +1935,21 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       currentHistoryIncompleteModeCount,
       currentUnavailableModeCount,
     },
+    profile: {
+      declared: {
+        modelCoverageReady: profile?.modelCoverageReady ?? null,
+        modelMemoryReady: profile?.modelMemoryReady ?? null,
+        modelMigrationReady: profile?.modelMigrationReady ?? null,
+        advisories: Array.isArray(profile?.advisories) ? profile.advisories : null,
+      },
+      expected: {
+        modelCoverageReady: expectedModelCoverageReady,
+        modelMemoryReady: expectedModelMemoryReady,
+        modelMigrationReady: expectedModelMigrationReady,
+        advisories: expectedProfileAdvisories,
+      },
+      currentUnavailableModeCount,
+    },
     rollback: {
       status: rollbackDescriptorPresent
         ? 'READY' : CANDIDATE_G_MEASURED_WARMUP_STATUS,
@@ -1994,6 +2025,7 @@ async function main() {
   if (report.status !== 'passed') {
     console.error(`Integreret RavScore public runtime fejlkoder: ${report.errors.join(', ')}`);
     console.error(`Integreret RavScore public runtime fejltal: ${JSON.stringify(report.errorCounts)}`);
+    console.error(`Integreret RavScore profildiagnose: ${JSON.stringify(report.profile)}`);
     process.exitCode = 1;
   }
 }

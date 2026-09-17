@@ -1056,6 +1056,54 @@ assert.equal(directMissingSmall.coastalParts.scoreProfile.modelCoverageReady, fa
 assert.deepEqual(directMissingSmall.coastalParts.scoreProfile.advisories,
   ['LOCAL_MODEL_COVERAGE_INCOMPLETE']);
 
+const partialPartMissing = syntheticFull({ zoneCount: 1, partCounts: [2] });
+const onePartMissing = syntheticFull({ zoneCount: 1, partCounts: [1], directMissing: true });
+partialPartMissing.coastalParts.parts['synthetic-part-1'] = structuredClone(
+  onePartMissing.coastalParts.parts['synthetic-part-1'],
+);
+partialPartMissing.coastalParts.scoreProfile = structuredClone(
+  onePartMissing.coastalParts.scoreProfile,
+);
+partialPartMissing.coastalParts.zones['synthetic-zone-1'].hourly = publicForecastOffsets
+  .map(offsetHours => buildIntegratedZoneHourlyProjection({
+    rows: ['synthetic-part-1', 'synthetic-part-2'].map(partId => ({
+      partId,
+      name: partialPartMissing.coastalParts.parts[partId].name,
+      scores: [{
+        time: time(offsetHours),
+        weather: {
+          ...partialPartMissing.coastalParts.parts[partId].current.weather,
+          time: time(offsetHours),
+          waveInputSource: 'DIRECT_OFFICIAL',
+          waveInputUncertainty: 'LOW',
+          waveInputNoticeId: null,
+        },
+        waders: partialPartMissing.coastalParts.parts[partId].current.waders,
+        beach: partialPartMissing.coastalParts.parts[partId].current.beach,
+      }],
+    })),
+    expectedPartCount: 2,
+    selectedMode: (scoreRow, mode) => scoreRow[mode],
+  })[0]);
+partialPartMissing.coastalParts.scoreAvailability = buildIntegratedPublicScoreAvailability({
+  zones: partialPartMissing.coastalParts.zones,
+  referenceAt: REFERENCE_AT,
+  zoneNames: new Map([['synthetic-zone-1', 'Synthetic zone 1']]),
+});
+const partialPartMissingPackage = publicPackage(partialPartMissing);
+const partialPartMissingReport = audit(
+  partialPartMissing,
+  partialPartMissingPackage,
+  1,
+  2,
+);
+assert.deepEqual(partialPartMissingReport.errors, [],
+  'En fler-kystdelszone skal forblive brugbar, når én lokal del mangler gyldigt input.');
+assert.equal(partialPartMissingReport.history.currentUnavailableModeCount, 0);
+assert.equal(partialPartMissing.coastalParts.scoreProfile.modelCoverageReady, false);
+assert.deepEqual(partialPartMissing.coastalParts.scoreProfile.advisories,
+  ['LOCAL_MODEL_COVERAGE_INCOMPLETE']);
+
 const allDirectMissing = syntheticFull({
   zoneCount: 1,
   partCounts: [1],
@@ -1123,7 +1171,7 @@ assert.ok(audit(
   historyIncompletePackage,
   1,
   1,
-).errors.includes('PUBLIC_PROFILE_NOT_READY'),
+).errors.includes('PUBLIC_PROFILE_MEMORY_MISMATCH'),
 'modelMemoryReady=false must not contradict independently READY point memory');
 
 for (const [label, mutate] of [
@@ -1275,6 +1323,18 @@ oppositeHalfPointRounding.scoreBounds = {
 };
 assert.equal(publicModeFormulaIsConsistent('beach', oppositeHalfPointRounding), true,
   'auditten skal ved et publiceret eksakt .5 acceptere begge mulige heltalsresultater fra den oprindelige fuldpræcisionsværdi');
+const maximumPublishedRoundingDrift = structuredClone(halfPointRounding);
+maximumPublishedRoundingDrift.explanation.contributions = {
+  huntability: 10.166667,
+  transport: 25.166667,
+  release: 15.166668,
+};
+assert.equal(publicModeFormulaIsConsistent('beach', maximumPublishedRoundingDrift), true,
+  'tre separat afrundede bidrag må samlet afvige to mikroenheder fra den separat afrundede råsum');
+const impossiblePublishedRoundingDrift = structuredClone(maximumPublishedRoundingDrift);
+impossiblePublishedRoundingDrift.explanation.contributions.release = 15.166669;
+assert.equal(publicModeFormulaIsConsistent('beach', impossiblePublishedRoundingDrift), false,
+  'en afvigelse over den matematisk mulige publiceringstolerance skal fortsat afvises');
 assert.doesNotMatch(JSON.stringify(smallPackage),
   /transportEvent|stateExplanation|coastTransportExplanation|legacy Candidate G|legacy-shadow-phase|nearshorePotential|inboundCurrentMomentum/,
   'offentlige slutartifacts må hverken bære gamle forklaringer eller legacy/shadow-history');

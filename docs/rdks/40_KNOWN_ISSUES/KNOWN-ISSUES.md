@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.398 retter to falske auditstop
+
+- **ISSUE-4.0.397-DELIVERY – LUKKET:** Sourcegate `35167221199`, PR #341, main `f3a200ff` og code-only `35167698742` leverede koden.
+- **ISSUE-4.0.397-NORMAL-WEATHER – DELVIST GRØN:** `35168055561` gennemførte alle providere, gemte cacher og byggede 210/673, men Pages blev sprunget over efter audit.
+- **ISSUE-4.0.398-ADDITIVE-ROUNDING – RETTET LOKALT / LIVEBEVIS MANGLER:** Auditgrænsen var `1e-6`, men fire uafhængige afrundinger tillader præcis `2e-6`. Større afvigelser afvises fortsat.
+- **ISSUE-4.0.398-PART-VS-ZONE – RETTET LOKALT / LIVEBEVIS MANGLER:** Auditten krævede fejlagtigt fuld 673-delsdækning for nul utilgængelige zoner. En gyldig delvis fler-delszone accepteres nu.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Den byggede friske pakke er endnu ikke offentlig; næste almindelige weather skal gennem resterende gates og Pages.
+- **ISSUE-PROVIDER-PRIORITY-TAKEOVER – ÅBEN VERIFIKATION:** DMI dækkede 39.827 af 79.414 i attestation; fordelingen efter hele fallbackkæden og næste target skal måles før konklusion.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler er pauset, indtil frisk offentlig pakke og den efterfølgende normale vedligeholdelse er bevist.
+
+DEC-0180. Scoremodel, vejrdata og providerprioritet er uændrede.
+
 # NYESTE CHECKPOINT – 2026-09-17 – prognoser bygget, men audit stoppede deploy
 
 - **ISSUE-4.0.396-DELIVERY – LUKKET:** Main `265ec215` og code-only `35158653973` leverede 4.0.396-koden.

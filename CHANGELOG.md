@@ -1,3 +1,17 @@
+## 4.0.398 – præcis offentlig audit og korrekt delvis zonedækning (2026-09-17)
+
+- Normalrun `35168055561` gennemførte alle providere, gemte cacher og byggede
+  118 timer for 210 zoner og 673 kystdele, men auditten stoppede Pages med
+  86 del- og 1.250 zoneformelfejl samt én profilfejl.
+- Tre bidrag og råsummen afrundes hver for sig til seks decimaler. Auditten
+  accepterer nu den matematisk mulige forskel på højst `2e-6` og afviser
+  fortsat `3e-6` og større.
+- Fuld dækning af alle kystdele er ikke det samme som brugbarhed af alle
+  zoner. En gyldig delvis fler-delszone må fortsætte, mens profilfelterne
+  stadig genberegnes og kontrolleres hver for sig.
+- Scoremodel, vægte, vejrdata, providerprioritet og offentlig score er
+  uændrede. Se `CHANGELOG-4.0.398.md` og DEC-0180.
+
 ## 4.0.397 – korrekt kontrol af offentlig scoreafrunding (2026-09-17)
 
 - Normalrun `35159168292` byggede 118 timers prognoser for 210/673 efter alle
