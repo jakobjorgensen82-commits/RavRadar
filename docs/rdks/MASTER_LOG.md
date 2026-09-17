@@ -1,3 +1,25 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.400 præcis workflowtest
+
+4.0.399 blev leveret som main `b86bcf97` via exact-head `35175844570`, PR
+#343 og providerfri code-only `35176215202`. Normalrun `35176561317`
+gennemførte DMI, Copernicus og Open-Meteo, gemte alle providercacher og
+byggede closure, historik, offentlig runtime og 210/673-audit.
+
+Alle 79.414 identiteter var bogført. 420 stod som ærligt lokalt `MISSING`
+efter provider-negative/null-/gitterresultater; ingen provider havde ramt
+tids-, forsøgs-, kø- eller global fejlgrænse. Datasættet er derfor brugbart
+med lokal utilgængelighed, men må ikke kaldes komplet.
+
+Deploy stoppede først i den efterfølgende fuldvalidering. Den gamle nationale
+shadow-test søgte kun 180 tegn efter trinnavnet og overså derfor det allerede
+eksisterende `DMI_BULK_MAX_RUNTIME_SECONDS: "3000"`. 4.0.400 udtrækker hele
+det eksakte YAML-trin, flytter kontrollen ind i den billige deploy-source-
+gate og gør versionsværktøjets capture group-erstatninger entydige.
+
+Ingen score-, vejr-, geometri-, cache- eller kildeprioritet ændres. Næste er
+én exact-head, providerfri code-only og én almindelig weather på gemte cacher.
+Ingen oneoff. Scheduler pauset. DEC-0182.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.399 browserimports
 
 4.0.398 bestod exact-head `35174942101` og blev merged gennem PR #342 som

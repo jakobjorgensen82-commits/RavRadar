@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.400 retter falsk teststop efter grøn runtimeaudit
+
+- 4.0.399 bestod sourcegate `35175844570`, PR #343, main `b86bcf97` og providerfri code-only `35176215202`.
+- Normalrun `35176561317` gennemførte alle provider-, cache-, closure-, historik-, build- og runtimeauditled med 79.414 bogførte par og 420 lokale `MISSING`.
+- Fuldvalideringen stoppede bagefter på en gammel 180-tegnssøgning, selv om det krævede 3.000-sekunders budget fandtes i det korrekte YAML-trin.
+- 4.0.400 udtrækker det eksakte trin, kører testen tidligt i deploy-source-gaten og hærder versionsværktøjets capture group-erstatninger. DEC-0182.
+
 # 2026-09-17 – 4.0.399 gendanner browserens importgraf
 
 - 4.0.398 bestod sourcegate `35174942101`, PR #342 og blev main `d7420ade`.

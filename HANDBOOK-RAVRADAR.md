@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.399
+**Håndbogsversion:** 4.0.400
+
+## 89.04 4.0.400 – En test må ikke overse et korrekt workflowtrin
+
+### Vejr og score var bygget, før den gamle test stoppede udgivelsen
+
+Den almindelige kørsel nåede gennem DMI, Copernicus og Open-Meteo, gemte
+cacher, byggede prognoser og bestod den uafhængige kontrol af 210 zoner og
+673 kystdele. Alle 79.414 sted/tid-par var bogført; 420 var ærligt lokale
+huller. Det er ikke et komplet datasæt, men resten af RavRadar kan bruges.
+
+Udgivelsen stoppede bagefter i en gammel test. Den ledte kun 180 tegn efter
+navnet på det nationale vindtrin. Det korrekte tidsbudget på 3.000 sekunder
+stod længere nede i det samme trin og blev derfor overset.
+
+4.0.400 læser hele det præcise workflowtrin frem til næste trin. Testen køres
+også tidligt, så en reel fejl fremover findes før en lang vejrindhentning.
+Versionsværktøjet er samtidig ændret, så det ikke igen kan lave en gyldig
+`?v=`-import om til `$14.0.x`.
+
+Rettelsen ændrer ikke vejret eller scoren. Den fjerner kun et falsk stop og
+forebygger den tidligere versionsfejl.
 
 ## 89.03 4.0.399 – Browserens importstier bevares ved versionsløft
 

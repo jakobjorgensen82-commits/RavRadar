@@ -1,11 +1,27 @@
-# Aktiv roadmap – 4.0.399 fra importstop til frisk offentlig prognose
+# Aktiv roadmap – 4.0.400 fra falsk teststop til frisk offentlig prognose
+
+1. [x] Lever 4.0.399 exact-head/PR/merge og providerfri code-only med offentlig 210/673.
+2. [x] Kør én almindelig weather; gennemfør alle provider-, cache-, closure-, historik-, build- og runtimeauditled.
+3. [x] Afgræns stoppet efter den grønne runtimeaudit til den gamle shadows tests vilkårlige 180-tegnsvindue.
+4. [x] Ret testen til eksakt YAML-trin, flyt den ind i billig source-critical kontrol og hærd versionsværktøjet.
+5. [x] Bestå målrettede kontroller, 79-fils browserlukning, RDKS/håndbog, diff og rent geodataversionsbevis.
+6. [ ] Commit/push, bestå én exact-head og merge samme head.
+7. [ ] Kør providerfri code-only og verificér offentlig 4.0.400/210/673 uden private lækager.
+8. [ ] Kør én almindelig weather på gemte cacher; verificér friske prognoser, scorer og 420 eller færre ærlige lokale huller. Ingen oneoff.
+9. [ ] Kør næste normale vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo samt cachefremgang.
+10. [ ] Genaktivér scheduler først efter bevist normal vedligeholdelse.
+11. [ ] Gennemgå hele sitet på den levende runtime og ryd historiske/dublerede roadmap-punkter mod faktisk evidens.
+
+DEC-0182. Scoremodel, vejr og kildeprioritet er uændrede.
+
+# Historisk roadmap – 4.0.399 fra importstop til fungerende browsergraf
 
 1. [x] Lever 4.0.398 exact-head/PR/merge og afgræns code-only `35175276505` før enhver data- eller produktionsændring.
 2. [x] Ret alle 21 browserimports samlet og tilføj regression i begge versionskontroller.
 3. [x] Bestå målrettet 79-fils offentlig browserlukning, version/RDKS/håndbog, diff og rent geodataversionsbevis.
-4. [ ] Commit/push, bestå én exact-head og merge samme head.
-5. [ ] Kør providerfri code-only og verificér offentlig 4.0.399/210/673 uden private lækager.
-6. [ ] Kør én almindelig weather på gemte cacher; verificér friske prognoser, scorer og lokal missing. Ingen oneoff.
+4. [x] Commit/push, bestå exact-head `35175844570` og merge PR #343 som main `b86bcf97`.
+5. [x] Kør providerfri code-only `35176215202` og verificér offentlig 4.0.399/210/673 uden private lækager.
+6. [x] Kør én almindelig weather `35176561317`; provider/cache/build/audit bestod, men en gammel test stoppede før deploy. Ingen oneoff.
 7. [ ] Kør næste normale vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo samt cachefremgang.
 8. [ ] Genaktivér scheduler først efter bevist normal vedligeholdelse.
 9. [ ] Gennemgå hele sitet på den levende runtime og ryd historiske/dublerede roadmap-punkter mod faktisk evidens.

@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – lokal 4.0.400 præcis workflowtest
+
+- [x] Lever 4.0.399 via exact-head `35175844570`, PR #343, main `b86bcf97` og providerfri code-only `35176215202`.
+- [x] Kør normal weather `35176561317`; gennemfør alle tre providerled, gem cacher, byg closure/historik/runtime og bestå 210/673-audit.
+- [x] Bogfør alle 79.414 par som værdi eller ærligt lokalt `MISSING`; 420 lokale huller betyder, at datasættet ikke kaldes komplet.
+- [x] Afgræns stoppet til workflowtestens vilkårlige 180-tegnsvindue omkring et allerede korrekt 3.000-sekunders DMI-budget.
+- [x] Udtræk det eksakte navngivne YAML-trin og kontroller budgettet inden for dette trin.
+- [x] Flyt samme billige kontrol ind i `test:deploy-source-critical`, så fejlen fanges før providerarbejde.
+- [x] Gør versionsværktøjets capture group-erstatninger entydige, så `$14.0.x` ikke kan genskabes.
+- [x] Bestå målrettede kontroller, 79-fils browserlukning, version/RDKS/håndbog og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Kør providerfri code-only af 4.0.400 og verificér offentlig 210/673.
+- [ ] Kør én almindelig weather på gemte cacher; verificér friske prognoser, scorer og ærlig lokal missing.
+- [ ] Bevis næste normale vedligeholdelse/providerprioritet før scheduler og roadmapfortsættelse.
+
+DEC-0182 er aktiv. Scheduler er pauset. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.399 browserimportrettelse
 
 - [x] Bestå 4.0.398 exact-head `35174942101` og merge PR #342 som main `d7420ade`.

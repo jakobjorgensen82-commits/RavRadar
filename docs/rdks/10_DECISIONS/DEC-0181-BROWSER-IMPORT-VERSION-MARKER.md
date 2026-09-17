@@ -1,7 +1,7 @@
 # DEC-0181 – Versionsløft skal bevare browserens importsti
 
-**Status:** Aktiv og bindende; implementeret og måltestet lokalt i 4.0.399,
-livebevis afventer
+**Status:** Aktiv og bindende; produktionsverificeret i 4.0.399 gennem
+exact-head `35175844570` og code-only `35176215202`
 **Dato:** 2026-09-17
 
 ## Baggrund

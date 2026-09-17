@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.400 retter et falsk fuldvalideringsstop
+
+4.0.399 bestod exact-head `35175844570`, blev merged som main
+`b86bcf9712de119d29b98e0a5d5d9536e56c994b` og kom offentligt online gennem
+providerfri code-only `35176215202` med 210 zoner og 673 kystdele.
+
+Den normale weather `35176561317` gennemførte DMI, Copernicus og Open-Meteo,
+gemte alle providercacher, lukkede alle 79.414 identiteter som gyldig værdi
+eller ærligt lokalt `MISSING`, byggede historik og offentlig runtime og bestod
+den uafhængige 210/673-audit. Resten var 420 lokale provider-negative/null-/
+gitterpar; ingen provider ramte tids-, forsøgs- eller køloft.
+
+Runnet stoppede først i `npm run validate`, fordi
+`test-national-weather-shadow-contract.mjs` kun søgte 180 tegn efter et
+trinnavn. En længere `continue-on-error`-linje skubbede det eksisterende
+`DMI_BULK_MAX_RUNTIME_SECONDS: "3000"` uden for vinduet. Lokal 4.0.400
+udtrækker nu det eksakte YAML-trin, kører testen tidligt i den billige
+deploy-source-gate og gør versionsværktøjets capture group-erstatninger
+entydige. Ingen score-, vejr-, geometri- eller kildeprioritet ændres.
+
+Næste: målrettede kontroller og RDKS/geodatabevis, én exact-head, merge,
+providerfri code-only og én almindelig weather på de gemte cacher. Ingen
+oneoff. Scheduler pauset. DEC-0182. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.399 retter browserimports samlet
 
 4.0.398 bestod sourcegate `35174942101`, blev merged gennem PR #342 som main

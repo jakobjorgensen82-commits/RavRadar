@@ -1,3 +1,18 @@
+## 4.0.400 – præcis workflowtest efter grøn vejr- og scorebygning (2026-09-17)
+
+- 4.0.399 blev leveret gennem exact-head `35175844570`, PR #343, main
+  `b86bcf97` og providerfri code-only `35176215202`.
+- Normalrun `35176561317` gennemførte alle providere, gemte cacher, byggede
+  closure/historik/runtime og bestod 210/673-audit med 420 lokale `MISSING`.
+- Fuldvalideringen stoppede bagefter, fordi en gammel test kun søgte 180 tegn
+  efter et trinnavn og derfor overså et allerede korrekt 3.000-sekunders
+  budget.
+- Testen udtrækker nu hele det eksakte YAML-trin og kører tidligt i
+  deploy-source-gaten. Versionsværktøjets capture group-erstatninger er gjort
+  entydige for at forebygge en ny `$14.0.x`-importfejl.
+- RavScore, vejr, cache, providerprioritet og geometri er uændrede. Se
+  `CHANGELOG-4.0.400.md` og DEC-0182.
+
 ## 4.0.399 – gyldige browserimports ved versionsløft (2026-09-17)
 
 - Code-only `35175276505` stoppede efter 19 sekunder før data, writes og deploy,

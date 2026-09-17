@@ -5,10 +5,18 @@ const source=fs.readFileSync('scripts/build-national-weather-shadow-contract.py'
 const policy=JSON.parse(fs.readFileSync('data/geometry-v2/national-weather-shadow-policy.json','utf8'));
 const workflows=await readProductionWorkflowSources();
 const workflow=workflows.orchestrator;
+function namedWorkflowStep(source, name) {
+  const marker=`- name: ${name}`;
+  const start=source.indexOf(marker);
+  if(start<0)throw new Error(`Workflow mangler trin: ${name}`);
+  const next=source.indexOf('\n      - name:',start+marker.length);
+  return source.slice(start,next<0?source.length:next);
+}
 for(const marker of ['private-national-shadow-contract-ready','seriesId','historyKey','coverageGaps','crossPartMergeDetected','parentFallbackDetected','rawWeatherValuesStored','publicProjectionEnabled','automaticActivationAllowed'])if(!source.includes(marker))throw new Error(`National shadow-kontrakt mangler ${marker}`);
 if(policy.mergePolicy.crossPartMergeAllowed!==false||policy.mergePolicy.parentFallbackAllowed!==false||policy.mergePolicy.missingRemainsMissing!==true)throw new Error('National shadow-policy tillader ulovlig merge/fallback');
 for(const marker of ['python scripts/build-national-weather-shadow-contract.py','python scripts/validate-national-multi-step-series.py','node scripts/validate-national-state-history.mjs','python scripts/validate-national-local-part-wind-series.py','node scripts/validate-national-shadow-score.mjs','national-weather-shadow-contract.json','national-multi-step-series-validation.json','national-state-history-validation.json','national-local-part-wind-series.json','national-shadow-score-validation.json'])if(!workflow.includes(marker))throw new Error(`Workflow mangler ${marker}`);
-if(!/Validate isolated private native wind series[\s\S]{0,180}DMI_BULK_MAX_RUNTIME_SECONDS: "3000"/.test(workflow))throw new Error('National vindgate mangler eksplicit privat tidsbudget til 774 dele');
+const nativeWindStep=namedWorkflowStep(workflow,'Validate isolated private native wind series for coastal parts');
+if(!/DMI_BULK_MAX_RUNTIME_SECONDS:\s*"3000"/.test(nativeWindStep))throw new Error('National vindgate mangler eksplicit privat tidsbudget til 774 dele');
 const multi=fs.readFileSync('scripts/validate-national-multi-step-series.py','utf8');
 for(const marker of ['passed-private-national-multi-step-series-validation','minimumCompleteStepsPerAvailableFamily','rawWeatherValuesStored','crossPartMergeDetected','parentFallbackDetected'])if(!multi.includes(marker))throw new Error(`National flertrinsvalidator mangler ${marker}`);
 const state=fs.readFileSync('scripts/validate-national-state-history.mjs','utf8');

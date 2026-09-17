@@ -60,7 +60,7 @@ for(const root of ['.','js']){
 }
 for(const file of [...new Set(browserSources)]){
   let text=await fs.readFile(file,'utf8');
-  text=text.replace(/([?&]v=)\d+\.\d+\.\d+/g,`$1${version}`);
+  text=text.replace(/([?&]v=)\d+\.\d+\.\d+/g,(_match,prefix)=>`${prefix}${version}`);
   await fs.writeFile(file,text);
 }
 
@@ -77,12 +77,12 @@ for(const file of [...new Set(versionedWeatherWorkflows)]){
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
   text=text.replace(
     /(firstCutoverException\.releaseVersion\s*==\s*")\d+\.\d+\.\d+("\s*)/g,
-    `$1${version}$2`,
+    (_match,prefix,suffix)=>`${prefix}${version}${suffix}`,
   );
   text=text.replace(/owner-approved \d+\.\d+\.\d+ successor exception/g,`owner-approved ${version} successor exception`);
   text=text.replace(/One-time \d+\.\d+\.\d+ handoff-only continuation/g,`One-time ${version} handoff-only continuation`);
   text=text.replace(/Check out current \d+\.\d+\.\d+ main for handoff-only continuation/g,`Check out current ${version} main for handoff-only continuation`);
-  text=text.replace(/(require\('\.\/package\.json'\)\.version\"\)\" = \")\d+\.\d+\.\d+(\")/g,`$1${version}$2`);
+  text=text.replace(/(require\('\.\/package\.json'\)\.version\"\)\" = \")\d+\.\d+\.\d+(\")/g,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
   await fs.writeFile(file,text);
 }
 
@@ -92,7 +92,7 @@ for(const file of [...new Set(versionedWeatherWorkflows)]){
 {
   const file='scripts/private-production-runtime-workflow.mjs';
   let text=await fs.readFile(file,'utf8');
-  text=text.replace(/(releaseVersion:\s*')\d+\.\d+\.\d+(')/g,`$1${version}$2`);
+  text=text.replace(/(releaseVersion:\s*')\d+\.\d+\.\d+(')/g,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
   await fs.writeFile(file,text);
 }
 
@@ -108,10 +108,10 @@ await synchronizeReleaseContractMetadata({write:true});
 // eksplicitte versionsfelter i stedet for kun at erstatte previousVersion.
 {
  let text=await fs.readFile('HANDBOOK-RAVRADAR.md','utf8');
- text=text.replace(/(\*\*Håndbogsversion:\*\*\s*)\d+\.\d+\.\d+/,`$1${version}`);
- text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,`$1${version}$2`);
- text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,`$1${version}$2`);
- text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(, exact-head og cutover afventer)/,`$1${version}$2`);
+ text=text.replace(/(\*\*Håndbogsversion:\*\*\s*)\d+\.\d+\.\d+/,(_match,prefix)=>`${prefix}${version}`);
+ text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
+ text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
+ text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(, exact-head og cutover afventer)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
  await fs.writeFile('HANDBOOK-RAVRADAR.md',text);
 }
 {

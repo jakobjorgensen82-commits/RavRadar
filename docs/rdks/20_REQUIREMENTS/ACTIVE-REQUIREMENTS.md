@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-17 – præcis og tidlig national workflowtest
+
+- **REQ-4.0.400-EXACT-STEP-001 – BINDENDE:** Den nationale vindbudgetkontrol skal udtrække det eksakte navngivne YAML-trin og kontrollere budgettet inden for hele dette trin; vilkårlige tegnvinduer er forbudt.
+- **REQ-4.0.400-EARLY-CHECK-002 – BINDENDE:** Den billige statiske test skal indgå i `test:deploy-source-critical`, så samme fejl fanges før vejrproviderne.
+- **REQ-4.0.400-VERSION-REPLACE-003 – BINDENDE:** Versionsværktøjet skal bruge entydige callback-erstatninger, når et versionsnummer følger en numerisk capture group; `$1` må aldrig kunne sammenblandes med næste versionsciffer.
+- **REQ-4.0.400-HONEST-WEATHER-004 – BINDENDE:** Run `35176561317` beviser 79.414 bogførte identiteter med 420 lokale `MISSING`; det må ikke kaldes komplet, men lokale huller må ikke blokere øvrige gyldige scorer.
+- **REQ-4.0.400-NO-MODEL-DATA-CHANGE-005 – BINDENDE:** Rettelsen ændrer ikke RavScore, vejrdata, cache, providerprioritet, geometri eller offentlig score.
+- **REQ-4.0.400-DELIVERY-006 – BINDENDE:** Lever providerfrit efter én exact-head og kør derefter én almindelig weather på gemte cacher. Ingen oneoff.
+
+DEC-0182. Scheduler forbliver pauset til frisk offentlig prognose og normal
+vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-17 – gyldige browserimports ved versionsløft
 
 - **REQ-4.0.399-IMPORT-PATH-001 – BINDENDE:** Alle relative browserimports skal bevare deres gyldige filsti og bruge `?v=<release>` som cachemarkør.
