@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.401 retter manglende historikkilde
+
+- **ISSUE-4.0.400-DELIVERY – LUKKET:** Exact-head `35181131552`, PR #344, main `0744c79c` og code-only `35181573799` er grønne.
+- **ISSUE-4.0.400-SHADOW-TEST-WINDOW – LIVEBEVIST LUKKET:** Den rettede test bestod i normalrun `35181918091` efter alle provider- og runtimeled.
+- **ISSUE-4.0.401-LEGACY-SOURCE-ABSENT – RETTET LOKALT / LIVEBEVIS MANGLER:** Fuldvalideringen krævede `49dd4cb`, men en genbrugt sourceproof-rute havde ikke hentet committen. Workflowet sikrer nu præcis commit og kendt træ lige før valideringen.
+- **ISSUE-PROVIDER-CACHE-RESUME – BEVARET:** DMI-, Copernicus- og Open-Meteo-cacher fra `35181918091` findes og skal genbruges i næste almindelige weather. Den færdigbyggede runtime blev ikke uploadet som deploybart artefakt.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Frisk runtime blev bygget og auditeret, men Pages blev ikke nået; offentlig prognose afventer næste grønne normalrun.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til frisk deploy og den efterfølgende normale vedligeholdelse er bevist.
+
+DEC-0183. Ingen model-, vejr-, cache- eller kildeprioritetsændring.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.400 retter et falsk teststop
 
 - **ISSUE-4.0.399-DELIVERY – LUKKET:** Exact-head `35175844570`, PR #343, main `b86bcf97` og code-only `35176215202` er grønne.

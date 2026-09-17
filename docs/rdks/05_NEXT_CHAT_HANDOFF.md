@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.401 efter historisk checkoutstop
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.401-exact-legacy-source`, baseret på 4.0.400-main
+`0744c79cfba7a884a11bba9e0ddb532cea0230b9`.
+
+4.0.400 er online gennem sourcegate `35181131552`, PR #344 og code-only
+`35181573799`. Normalrun `35181918091` gennemførte alle providerled, gemte
+cacher, byggede closure/historik/runtime og bestod runtimeaudit. Den stoppede
+først i historisk Candidate G-validering, fordi sourceproofet var genbrugt og
+runneren derfor ikke havde hentet den pinnede commit `49dd4cb`.
+
+Lokal 4.0.401 sikrer commit og kendt træ lige før fuldvalideringen. Den
+genbruger objektet, hvis det findes, og henter ellers kun den ene commit.
+Fortsæt målrettede tests/RDKS/geodatabevis → én exact-head → merge →
+providerfri code-only → én almindelig weather med gemte cacher. Ingen oneoff.
+Scheduler pauset. DEC-0183. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.400 efter falsk shadow-teststop
 
 Arbejd i `RavRadar-4.0.396`, branch

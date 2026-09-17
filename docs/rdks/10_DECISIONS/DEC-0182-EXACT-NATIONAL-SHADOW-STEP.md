@@ -1,7 +1,7 @@
 # DEC-0182 – National shadow-test skal læse det eksakte workflowtrin
 
-**Status:** Aktiv og bindende; implementeret og måltestet lokalt i 4.0.400,
-livebevis afventer
+**Status:** Aktiv og bindende; implementeret i 4.0.400 og livebevist i
+normalrun `35181918091`
 **Dato:** 2026-09-17
 
 ## Baggrund

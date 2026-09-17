@@ -1,3 +1,26 @@
+# NYESTE SANDHED – 2026-09-17 – 4.0.401 gør den historiske slutkontrol selvforsynende
+
+4.0.400 bestod exact-head `35181131552`, blev merged gennem PR #344 som main
+`0744c79cfba7a884a11bba9e0ddb532cea0230b9` og blev leveret providerfrit i
+`35181573799`. Offentlig kode, privat runtime, Pages og 210/673 var grønne.
+
+Normalrun `35181918091` gennemførte alle tre providerled, gemte DMI-,
+Copernicus- og Open-Meteo-cacher, byggede closure, syvdøgnshistorik og
+offentlig runtime og bestod den uafhængige runtimeaudit. Den rettede nationale
+shadow-kontrakt fra 4.0.400 bestod i samme helkæde.
+
+Fuldvalideringen stoppede derefter i den historiske Candidate G-
+rollbackkontrol. Kontrollen læser den pinnede 4.0.316-kilde fra commit
+`49dd4cb`, men sourcegaten var korrekt genbrugt fra samme main-head, så dens
+betingede historikfetch blev ikke kørt. Runnerens normale shallow checkout
+havde derfor ikke committen. Vejr, scorebygning og runtimeaudit var ikke
+årsagen.
+
+4.0.401 sikrer den eksakte historiske commit og dens kendte træ lige før
+fuldvalideringen. Den genbruges, når den findes, og ellers hentes kun denne ene
+commit. Providerfremgangen er bevaret i cacher; næste produktionskørsel er
+almindelig weather, ikke oneoff. Scheduler er pauset. DEC-0183.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.400 retter testen efter en vellykket vejr- og scorebygning
 
 4.0.399 bestod exact-head `35175844570`, blev merged som main

@@ -1,3 +1,15 @@
+# Aktuelt ejerdelta – 2026-09-17 – historisk kildeberedskab før fuldvalidering
+
+- **REQ-4.0.401-EXACT-HISTORY-001 – BINDENDE:** Før den normale fuldvalidering skal den pinnede Candidate G-kildecommit og dens kendte træ være lokalt tilgængelige og identitetsbevist.
+- **REQ-4.0.401-REUSE-FIRST-002 – BINDENDE:** Findes committen allerede efter sourcegate eller anden legitim forberedelse, skal den genbruges; ellers hentes kun den eksakte commit. En fuld Git-history checkout er ikke nødvendig.
+- **REQ-4.0.401-SOURCEPROOF-INDEPENDENT-003 – BINDENDE:** Genbrug af et grønt exact-head sourceproof må ikke fjerne historikkilden, som den senere fuldvalidering selv kræver.
+- **REQ-4.0.401-ORDER-004 – BINDENDE:** Historikkilden skal være bekræftet efter den friske runtimebygning og før `npm run validate`; regressionstesten skal binde denne rækkefølge.
+- **REQ-4.0.401-NO-MODEL-DATA-CHANGE-005 – BINDENDE:** Rettelsen ændrer ikke RavScore, vejrdata, cacheindhold, providerprioritet, geometri eller offentlig score.
+- **REQ-4.0.401-DELIVERY-006 – BINDENDE:** Lever kode providerfrit efter én exact-head og kør derefter én almindelig weather på de gemte providercacher. Ingen oneoff.
+
+DEC-0183. Scheduler forbliver pauset til frisk offentlig prognose og normal
+vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-17 – præcis og tidlig national workflowtest
 
 - **REQ-4.0.400-EXACT-STEP-001 – BINDENDE:** Den nationale vindbudgetkontrol skal udtrække det eksakte navngivne YAML-trin og kontrollere budgettet inden for hele dette trin; vilkårlige tegnvinduer er forbudt.
