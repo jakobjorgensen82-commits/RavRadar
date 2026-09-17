@@ -28,6 +28,7 @@ import {
 import {
   auditIntegratedRavScorePublicRuntime,
   candidateGReferenceMatchesProduction,
+  publicModeFormulaIsConsistent,
 } from './audit-ravscore-integrated-public-runtime.mjs';
 import {
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
@@ -1212,7 +1213,7 @@ for (const [label, malformed] of [
       full.coastalParts.zones['synthetic-zone-1'].hourly[0]
         .waders.comparisonPartCount = structuredClone(malformed);
     }],
-    ['waders maximum', 'PUBLIC_PART_MODE_CONTRACT_INVALID', full => {
+    ['waders maximum', 'PUBLIC_PART_MODE_FORMULA_INVALID', full => {
       full.coastalParts.parts['synthetic-part-1'].current
         .waders.explanation.wadersHuntabilityMaximum = structuredClone(malformed);
     }],
@@ -1240,6 +1241,40 @@ assert.equal(projectedCurrentDiagnostics.currentMemoryCoverageHours, baseRow.cur
   'den aktuelle kystdelsprojektion skal bevare memory coverage');
 assert.equal(projectedCurrentDiagnostics.currentMemoryWindowHours, baseRow.currentMemoryWindowHours,
   'den aktuelle kystdelsprojektion skal bevare memory window');
+const halfPointRounding = structuredClone(
+  smallPackage.details.coastalParts.parts['synthetic-part-1'].current.beach,
+);
+halfPointRounding.explanation.contributions = {
+  huntability: 10.166667,
+  transport: 25.166667,
+  release: 15.166665,
+};
+halfPointRounding.explanation.rawScore = 50.5;
+halfPointRounding.explanation.roundedScore = 51;
+halfPointRounding.explanation.finalScore = 51;
+halfPointRounding.score = 51;
+halfPointRounding.baseScore = 51;
+halfPointRounding.scoreBounds = {
+  lower: 51,
+  upper: 51,
+  modelUncertaintyPoints: 0,
+  rawLower: 50.5,
+  rawUpper: 50.5,
+};
+assert.equal(publicModeFormulaIsConsistent('beach', halfPointRounding), true,
+  'auditten skal bruge det forseglede rawScore ved heltalsafrunding, når separat afrundede bidrag ligger præcis én mikroenhed på den anden side af .5');
+const oppositeHalfPointRounding = structuredClone(halfPointRounding);
+oppositeHalfPointRounding.explanation.roundedScore = 50;
+oppositeHalfPointRounding.explanation.finalScore = 50;
+oppositeHalfPointRounding.score = 50;
+oppositeHalfPointRounding.baseScore = 50;
+oppositeHalfPointRounding.scoreBounds = {
+  ...oppositeHalfPointRounding.scoreBounds,
+  lower: 50,
+  upper: 50,
+};
+assert.equal(publicModeFormulaIsConsistent('beach', oppositeHalfPointRounding), true,
+  'auditten skal ved et publiceret eksakt .5 acceptere begge mulige heltalsresultater fra den oprindelige fuldpræcisionsværdi');
 assert.doesNotMatch(JSON.stringify(smallPackage),
   /transportEvent|stateExplanation|coastTransportExplanation|legacy Candidate G|legacy-shadow-phase|nearshorePotential|inboundCurrentMomentum/,
   'offentlige slutartifacts må hverken bære gamle forklaringer eller legacy/shadow-history');

@@ -1,3 +1,24 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – prognoseaudit ved halv-point
+
+4.0.396 blev leveret som main `265ec215ace894264e7c687d2e7fe8955f305a76`
+og code-only `35158653973`. Normalrun `35159168292` gennemførte DMI,
+Copernicus og Open-Meteo, gemte cacher og byggede 118 timers prognoser for
+210 zoner og 673 kystdele. Auditten stoppede derefter deploy med 47 del- og
+1.285 zonefejl, så hjemmesiden beholdt sin gamle vejrpakke.
+
+Fejlen lå i auditten. Producenten heltalsafrunder den oprindelige
+fuldpræcisionssum, mens den offentlige rå score og de tre bidrag bagefter
+afrundes hver for sig til seks decimaler. Ved præcis halv-point kan en ny sum
+af de publicerede bidrag derfor ligge én mikroenhed på den anden side uden at
+den forseglede score er forkert.
+
+4.0.397 accepterer kun de matematisk mulige heltal inden for den halve
+mikroenheds publiceringskant og kræver fortsat, at bidragssummen matcher rå
+score inden for `1e-6`. Kontrakt- og formelfejl samles separat. RavScore,
+vejret og brugerens score ændres ikke. Måltesten er grøn; exact-head, merge,
+providerfri kodeleverance og sikker fortsættelse af den gemte vejrgeneration
+til Pages afventer. Ingen oneoff. Scheduler pauset. DEC-0179.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-16 – 4.0.393 lokal missing gennem historikken
 
 4.0.392 blev leveret som main `e84fba55` via sourcegate `35119195730`,

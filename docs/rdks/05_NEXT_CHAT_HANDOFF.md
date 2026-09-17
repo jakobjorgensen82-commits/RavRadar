@@ -1,3 +1,26 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.397 prognoseaudit
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.397-public-formula-rounding`, baseret på 4.0.396-main
+`265ec215ace894264e7c687d2e7fe8955f305a76`.
+
+Code-only `35158653973` leverede 4.0.396. Normalrun `35159168292` kørte alle
+tre providere, gemte cacher og byggede 118 timers prognoser for 210/673, men
+slutauditten stoppede deploy med 47 del- og 1.285 zonefejl. Offentlig side har
+derfor stadig den gamle vejrpakke.
+
+Rodårsagen er auditens genafrunding af tre allerede seksdecimal-afrundede
+bidrag ved præcis halv-point. 4.0.397 accepterer kun de to matematisk mulige
+producentudfald i den halve mikroenheds publiceringskant og bevarer
+bidragssum-, kontrakt-, waders- og modelkontrol. Kontrakt/formelfejl tælles
+separat. Måltesten er grøn.
+
+Afslut docs/version/geodatabevis, commit/push, én exact-head, PR/merge og
+providerfri code-only. Før derefter den eksakte gemte vejrgeneration gennem
+de resterende gates og Pages uden oneoff eller unødvendig providergentagelse.
+Verificér levende prognoser, score og kildeandel før scheduler. DEC-0179.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-16 – lokal 4.0.393 klar til slutkontrol
 
 Arbejd i `RavRadar-4.0.366`, branch

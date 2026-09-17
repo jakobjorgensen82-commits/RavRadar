@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.397 offentlig scoreafrunding
+
+- [x] Lever 4.0.396 som main `265ec215` og providerfri code-only `35158653973`.
+- [x] Kør normal weather `35159168292`; gennemfør alle providerled, gem cacher og byg 118 timers prognoser for 210/673.
+- [x] Bevis at deploystoppet skyldes auditens genafrunding af seksdecimal-afrundede bidrag ved halv-point, ikke scoremodellen eller manglende prognosebygning.
+- [x] Begræns tolerancen til den halve mikroenheds publiceringskant og bevar `1e-6` bidragssumkontrol samt alle øvrige kontraktkrav.
+- [x] Del kontrakt- og formelfejl i separate samlede auditkoder.
+- [x] Bestå den målrettede public-runtimeaudit-regression for begge mulige halv-point-udfald.
+- [ ] Afslut version/RDKS/geodatabevis og én exact-head sourcegate.
+- [ ] Commit/push, PR, merge og providerfri code-only af 4.0.397.
+- [ ] Før den eksakte gemte vejrgeneration gennem resterende gates og Pages uden oneoff; verificér offentlig 118-timers prognose og scorer.
+- [ ] Bevis næste normale cachevedligeholdelse og kildeprioritet før scheduler genaktiveres.
+
+DEC-0179 er aktiv. Scheduler er pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.393 Open-Meteo local-missing-adapter
 
 - [x] Lever 4.0.392 via sourcegate `35119195730`, PR #336, main `e84fba55` og code-only `35120023098`.

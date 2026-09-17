@@ -1,3 +1,15 @@
+## 4.0.397 – korrekt kontrol af offentlig scoreafrunding (2026-09-17)
+
+- Normalrun `35159168292` byggede 118 timers prognoser for 210/673 efter alle
+  providerled, men udgav dem ikke, fordi slutauditten genberegnede heltal fra
+  tre allerede afrundede bidrag.
+- Ved en præcis halv-point-grænse kunne kontrollen derfor være én point uenig
+  med den korrekte forseglede score. 4.0.397 accepterer kun de matematisk
+  mulige udfald inden for den seksdecimale publiceringsusikkerhed og bevarer
+  den uafhængige bidragssumkontrol.
+- Kontrakt- og formelfejl samles nu hver for sig i samme audit. Scoremodel,
+  vejrdata og brugerens score er uændrede. Se `CHANGELOG-4.0.397.md`.
+
 ## 4.0.396 – delvis zonedækning når den offentlige prognose (2026-09-16)
 
 - Normalrun `35147366418` hentede hos DMI, Copernicus og Open-Meteo, men udgav ikke datasættet, fordi lokalprojektionen tabte deldækningens metadata før den offentlige prognose blev bygget.

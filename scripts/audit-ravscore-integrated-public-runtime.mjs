@@ -619,7 +619,7 @@ function candidateGTransportReplayMatches(state) {
   }
 }
 
-function publicModeFormulaIsConsistent(mode, value) {
+export function publicModeFormulaIsConsistent(mode, value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   if (value.available !== true) {
     return exactPublicScoreQuality(value)
@@ -644,8 +644,20 @@ function publicModeFormulaIsConsistent(mode, value) {
     || explanation?.weights?.release !== RAVSCORE_WEIGHTS.mobilisation) {
     return false;
   }
-  const rawScore = contributions.huntability + contributions.transport + contributions.release;
-  const roundedScore = Math.round(Math.max(0, Math.min(100, rawScore)));
+  const reconstructedRawScore = contributions.huntability
+    + contributions.transport
+    + contributions.release;
+  // The producer rounds the three public contributions and the raw total
+  // independently to six decimals after rounding the original full-precision
+  // total to an integer. At an exact published .5 boundary, that lossy public
+  // raw total can therefore legitimately describe either neighbouring integer.
+  // Accept only the integer outcomes inside that half-micro-unit publication
+  // interval, while independently checking the published contribution sum.
+  const roundedScoreCandidates = new Set([
+    Math.round(Math.max(0, Math.min(100, explanation.rawScore - (EPSILON / 2)))),
+    Math.round(Math.max(0, Math.min(100, explanation.rawScore + (EPSILON / 2)))),
+  ]);
+  const roundedScore = explanation.roundedScore;
   if (mode === 'waders'
     && (!finite(explanation.wadersHuntabilityMaximum)
       || explanation.wadersHuntabilityMaximum < 0
@@ -653,8 +665,9 @@ function publicModeFormulaIsConsistent(mode, value) {
   const expectedFinal = mode === 'waders'
     ? Math.min(roundedScore, explanation.wadersHuntabilityMaximum)
     : roundedScore;
-  return close(rawScore, explanation.rawScore)
-    && explanation.roundedScore === roundedScore
+  return close(reconstructedRawScore, explanation.rawScore)
+    && Number.isInteger(roundedScore)
+    && roundedScoreCandidates.has(roundedScore)
     && explanation.finalScore === expectedFinal
     && value.score === expectedFinal
     && (value.baseScore === undefined || value.baseScore === expectedFinal)
@@ -1208,18 +1221,29 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       collector.add(validTime(row?.time), 'ZONE_SCORE_TIME_INVALID');
       for (const mode of MODES) {
         zoneModeCount += 1;
-        let consistent = false;
+        let contractValid = false;
+        let formulaValid = false;
         try {
-          consistent = assertIntegratedPublicScoreResult(
+          contractValid = assertIntegratedPublicScoreResult(
             row?.[mode],
             `integrated public zone ${zoneId} ${row?.time ?? 'invalid-time'} ${mode}`,
-          ) && publicModeFormulaIsConsistent(mode, row?.[mode]);
+          );
         } catch {
-          consistent = false;
+          contractValid = false;
         }
-        collector.add(consistent, 'PUBLIC_ZONE_MODE_CONTRACT_INVALID');
+        if (contractValid) {
+          try {
+            formulaValid = publicModeFormulaIsConsistent(mode, row?.[mode]);
+          } catch {
+            formulaValid = false;
+          }
+        }
+        collector.add(contractValid, 'PUBLIC_ZONE_MODE_CONTRACT_INVALID');
+        collector.add(!contractValid || formulaValid, 'PUBLIC_ZONE_MODE_FORMULA_INVALID');
         if (row?.[mode]?.available !== true) unavailableZoneModeCount += 1;
-        if (consistent) contractDatesByMode[mode].add(String(row?.time ?? '').slice(0, 10));
+        if (contractValid && formulaValid) {
+          contractDatesByMode[mode].add(String(row?.time ?? '').slice(0, 10));
+        }
       }
     }
     collector.add(MODES.every(mode => contractDatesByMode[mode].size >= 5),
@@ -1647,16 +1671,29 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       } catch {
         collector.fail('MODE_RECONSTRUCTION_FAILED');
       }
-      let publicModeConsistent = false;
+      let publicModeContractValid = false;
+      let publicModeFormulaValid = false;
       try {
-        publicModeConsistent = assertIntegratedPublicScoreResult(
+        publicModeContractValid = assertIntegratedPublicScoreResult(
           part?.current?.[mode],
           `integrated public part ${partId} ${mode}`,
-        ) && publicModeFormulaIsConsistent(mode, part?.current?.[mode]);
+        );
       } catch {
-        publicModeConsistent = false;
+        publicModeContractValid = false;
       }
-      collector.add(publicModeConsistent, 'PUBLIC_PART_MODE_CONTRACT_INVALID');
+      if (publicModeContractValid) {
+        try {
+          publicModeFormulaValid = publicModeFormulaIsConsistent(
+            mode,
+            part?.current?.[mode],
+          );
+        } catch {
+          publicModeFormulaValid = false;
+        }
+      }
+      collector.add(publicModeContractValid, 'PUBLIC_PART_MODE_CONTRACT_INVALID');
+      collector.add(!publicModeContractValid || publicModeFormulaValid,
+        'PUBLIC_PART_MODE_FORMULA_INVALID');
       collector.add(part?.current?.[mode]?.score === persisted?.score
         && part?.current?.[mode]?.scoreQuality === persisted?.scoreQuality
         && part?.current?.[mode]?.calibrationEligible === persisted?.calibrationEligible

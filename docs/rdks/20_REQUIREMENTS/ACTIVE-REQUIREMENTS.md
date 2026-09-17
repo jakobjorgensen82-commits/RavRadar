@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-17 – korrekt offentlig scoreafrunding
+
+- **REQ-4.0.397-SEALED-ROUNDING-001 – BINDENDE:** Den offentlige audit skal kontrollere scoreheltallet mod det mulige fuldpræcisionsinterval bag den seksdecimal-afrundede rå score; den må ikke genafrunde summen af allerede afrundede bidrag som om den var originalen.
+- **REQ-4.0.397-CONTRIBUTION-CHECK-002 – BINDENDE:** Summen af de tre publicerede bidrag skal fortsat matche den publicerede rå score inden for højst `1e-6`.
+- **REQ-4.0.397-BOUNDARY-ONLY-003 – BINDENDE:** Kun ved en publiceret præcis `.5` må begge naboh heltal accepteres, og kun hvis de ligger i den halve mikroenheds publiceringsinterval. Alle øvrige umulige heltal stopper.
+- **REQ-4.0.397-AGGREGATE-004 – BINDENDE:** Kontraktform og formelkonsistens rapporteres som separate samlede fejlgrupper i samme audit.
+- **REQ-4.0.397-NO-MODEL-CHANGE-005 – BINDENDE:** Rettelsen må ikke ændre scoremodel, vægte, vejrdata, kildeprioritet, lokal missing eller brugerens score.
+- **REQ-4.0.397-RESUME-006 – BINDENDE:** Efter providerfri kodeleverance skal den eksakte gemte vejrgeneration fortsætte gennem resterende gates og deploy uden oneoff og uden unødvendig gentagelse af providerarbejdet.
+
+DEC-0179. Scheduler forbliver pauset til frisk offentlig prognose og normal vedligeholdelse er bevist.
+
 # Aktuelt ejerdelta – 2026-09-16 – 4.0.393 Open-Meteo local-missing-adapter
 
 - **REQ-4.0.393-EXACT-RESIDUAL-001 – BINDENDE:** Public-history-adapteren skal validere Open-Meteo mod closureens samlede rest af positive Open-Meteo-assignments og præcise `MISSING`-assignments.

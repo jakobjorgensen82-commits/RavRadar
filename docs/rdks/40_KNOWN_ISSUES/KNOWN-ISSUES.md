@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-17 – prognoser bygget, men audit stoppede deploy
+
+- **ISSUE-4.0.396-DELIVERY – LUKKET:** Main `265ec215` og code-only `35158653973` leverede 4.0.396-koden.
+- **ISSUE-4.0.396-PUBLIC-FORMULA-AUDIT – RETTET LOKALT / LIVEBEVIS MANGLER:** Normalrun `35159168292` byggede 118-timers prognoser, men auditten genafrundede allerede afrundede bidrag ved `.5`. 4.0.397 følger det forseglede publiceringsinterval og bevarer `1e-6`-summekontrollen.
+- **ISSUE-POST-CUTOVER-NUMERIC-COVERAGE – ÅBEN P0:** Prognoserne blev bygget, men ikke deployet. Offentlig side bruger fortsat det ældre datasæt, indtil den gemte generation har bestået resterende gates og Pages.
+- **ISSUE-PROVIDER-CACHE-RESUME – ÅBEN LEVERING:** DMI-, Copernicus- og Open-Meteo-cacher fra `35159168292` er gemt. De skal genbruges eksakt uden oneoff; ingen cache må kaldes deploybevis før alle post-weather-gates er grønne.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler er pauset; næste normale target skal senere bevise fortsat kildeprioritet og cachevedligeholdelse.
+- **ISSUE-SITE-ACCEPTANCE – AFVENTER FRISK PAKKE:** 4.0.396-koden er online, men levende prognoser, scorevisning og fuld sidekontrol afventer frisk deploy.
+
+DEC-0179. Scoremodel og vejrdata er ikke ændret af rettelsen.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.393 retter Open-Meteo history-adapteren
 
 - **ISSUE-4.0.392-DELIVERY – LUKKET:** Sourcegate `35119195730`, PR #336, main `e84fba55` og providerfri `35120023098` er grønne.
