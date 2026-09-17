@@ -1524,3 +1524,15 @@ Se `CHANGELOG-4.0.330.md`.
 - Begrænser ekspertadministration i RLS, RPC og UI og flytter observationsinsert til en validerende, rate-limited Edge-gateway.
 - Samler fælles CORS/gatewaykode. Begge funktioner er live-verificeret uden private testdata; lokal assistent er standard, fordi fjernsecret ikke er installeret.
 - Overvåger Supabases varsel om mulig begrænsning fra 9. september 2026. Se `CHANGELOG-4.0.284.md` og DEC-0080.
+## 4.0.403 – fortsæt den gemte validerede vejrpakke (2026-09-17)
+
+- 4.0.402 blev leveret gennem exact-head 35203813380, PR #346, main
+  0132900c og providerfri deploy 35204369048.
+- Normalrun 35205052150 gennemførte alle providere, cache, closure, historik,
+  runtimeaudit og 52+3-kontroller og gemte den validerede private 09Z-runtime.
+- Beskyttet adminsync bruger nu en defineret stabil JSON-digest i stedet for
+  det fejlagtige stableDigest-kald.
+- En eksplicit providerfri fortsættelse kan udgive præcis den nyere gemte
+  runtime efter alder-, kilde-, model-, 210/673-, privacy- og Pages-kontrol.
+- Standard-code-only er uændret. Ingen scoreformel, vejrdata, geometri eller
+  providerprioritet ændres. Se CHANGELOG-4.0.403.md og DEC-0185.

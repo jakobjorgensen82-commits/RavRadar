@@ -3710,3 +3710,22 @@ RavScore-bundlehash. 4.0.396 er nu deterministisk genbundet med rollback
 via ny append-only migration `20260917001500`; den anvendte forgænger
 `20260916120000` er ikke ændret. En ny exact-head på dette præcise head
 mangler fortsat før merge.
+# NYESTE SANDHED – 2026-09-17 – 4.0.403 fortsætter den gemte vejrpakke
+
+4.0.402 bestod exact-head `35203813380`, blev merged gennem PR #346 som main
+`0132900c2d9ae6770c910e12579dabf32e316768` og kom providerfrit online i
+`35204369048`.
+
+Normalrun `35205052150` gennemførte DMI, Copernicus, Open-Meteo, alle
+cachewrites, closure, syvdøgnshistorik, offentlig runtime, uafhængig audit
+og de nye 52+3 produktionskontroller. Den validerede private runtime for
+`2026-09-17T09:00:00Z` blev gemt centralt. Først derefter stoppede
+adminsynkroniseringen på et kald til den ikke-definerede `stableDigest`, så
+Pages blev sprunget over.
+
+4.0.403 bruger den eksisterende stabile JSON-funktion til readback og føjer
+en eksplicit providerfri fortsættelse til den gemte runtime. Den kræver en
+strengt nyere og højst 240 minutter gammel runtime, forfaderbinding til main,
+aktiv integreret model, 210/673, privacy og normal Pages-kontrol. Ingen ny
+vejrindsamling eller oneoff. Exact-head, merge og live deploy afventer.
+Scheduler er pauset. DEC-0185.

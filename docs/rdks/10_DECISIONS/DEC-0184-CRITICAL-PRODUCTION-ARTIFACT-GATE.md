@@ -1,7 +1,7 @@
 # DEC-0184 – Kritisk produktionsartifact-gate uden historisk testspiral
 
-**Status:** Aktiv og bindende; implementeret og måltestet lokalt i 4.0.402,
-exact-head og livebevis afventer
+**Status:** Aktiv og bindende; exact-head og den virkelige 52+3-produktionskæde
+er livebevist i 4.0.402
 **Dato:** 2026-09-17
 
 ## Baggrund
@@ -69,3 +69,12 @@ DEC-0013 og DEC-0045s krav om fuld npm run validate og fuld
 npm run release:gate efter hver frisk vejrbygning er supersederet af denne
 beslutning. Deres krav om reel udgivelsessikkerhed, dataintegritet, privacy
 og dokumenteret deployment består.
+
+## Gennemførelsesbevis 2026-09-17
+
+4.0.402 bestod exact-head `35203813380`, blev merged gennem PR #346 og kom
+providerfrit online i `35204369048`. Normalrun `35205052150` gennemførte
+alle provider-, cache-, closure-, historik- og runtimeled samt alle 52+3
+kontroller. Det efterfølgende stop lå i adminsynkroniseringens udefinerede
+`stableDigest` efter den validerede private runtime var gemt; det ændrer ikke
+beviset for denne beslutnings produktionsgate.

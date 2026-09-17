@@ -1211,3 +1211,9 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - Normalrun `35147366418` gennemførte providerkæde, closure og historik, men stoppede før deploy, fordi lokalprojektionen tabte `partial-zone`-metadata.
 - 4.0.396 bevarer den validerede metadataallowliste og har en målrettet `partial-zone`→offentlig-prognose-regression. Ingen oneoff; scheduler pauset.
 - Exact-head `35155765121` bestod alle øvrige kritiske kontroller og fandt kun den gamle bundlehash. Rollback `da27b811…`, integrated `d9ba75ed…` og continuation `d20939c1…` føres frem gennem 19. append-only migration `20260917001500`; forgængeren er urørt.
+# 2026-09-17 – 4.0.403 fortsætter en allerede valideret runtime
+
+- 4.0.402 bestod exact-head 35203813380, PR #346 og providerfri deploy 35204369048 som main 0132900c.
+- Normalrun 35205052150 gennemførte alle provider-, cache-, closure-, historik-, runtimeaudit- og 52+3-led og gemte runtime for 09Z beskyttet.
+- Adminsynkroniseringen stoppede derefter på den udefinerede stableDigest, før Pages.
+- 4.0.403 retter readback og tilføjer en streng providerfri fortsættelse af præcis den nyere gemte runtime. DEC-0185.

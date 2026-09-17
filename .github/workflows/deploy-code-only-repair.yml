@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: "Skriv DEPLOY-CODE-ONLY-REPAIR"
+        description: "Skriv DEPLOY-CODE-ONLY-REPAIR eller DEPLOY-SAVED-WEATHER-REPAIR"
         required: true
         type: string
+      publish_newest_saved_weather:
+        description: "Fortsæt den nyeste centralt gemte og allerede validerede vejrpakke uden providerkald"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -59,7 +64,11 @@ jobs:
           CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
-          test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+          if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
+            test "$CONFIRMATION" = "DEPLOY-SAVED-WEATHER-REPAIR"
+          else
+            test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+          fi
           git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
           test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
           test "$GITHUB_REF" = "refs/heads/main"
@@ -98,6 +107,7 @@ jobs:
           echo "Exact source tree already passed the PR source gate; it is not run again."
 
       - name: Download exact currently public code-only source
+        id: public-snapshot
         shell: bash
         run: |
           set -euo pipefail
@@ -119,7 +129,7 @@ jobs:
           fetch_public data/zones.geojson zones.geojson 33554432
           fetch_public data/water-level-station-routing.json water-level-station-routing.json 4194304
           target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json")"
-          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
+          echo "target_reference=$target_reference" >> "$GITHUB_OUTPUT"
 
       - name: Detect only the exact missed initial cutover state
         id: missed-cutover
@@ -345,11 +355,47 @@ jobs:
           node scripts/integrated-cutover-readiness.mjs verify-db
 
       - name: Build current private-runtime restore expectation
+        if: inputs.publish_newest_saved_weather != true
+        shell: bash
+        env:
+          PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
+        run: |
+          set -euo pipefail
+          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$PUBLIC_REFERENCE" >> "$GITHUB_ENV"
+          node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$PUBLIC_REFERENCE" --output .cache/private-production-runtime-expected.json
+
+      - name: Describe newest protected runtime for saved-weather continuation
+        if: inputs.publish_newest_saved_weather == true
         run: >-
-          node scripts/private-production-runtime-workflow.mjs expected
-          --repository-root "$GITHUB_WORKSPACE"
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --output .cache/private-production-runtime-expected.json
+          node scripts/protected-private-production-runtime.mjs --describe-current
+          --output "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Bind saved-weather continuation to exact newer runtime
+        if: inputs.publish_newest_saved_weather == true
+        shell: bash
+        env:
+          PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.operational-action.outputs.action }}" = "integrated"
+          test -z "${{ steps.public-source.outputs.repair_id }}"
+          descriptor="$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+          target_reference="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$descriptor")"
+          source_head="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$descriptor")"
+          SAVED_REFERENCE="$target_reference" node --input-type=module <<'NODE'
+          const publicMs = Date.parse(process.env.PUBLIC_REFERENCE);
+          const savedMs = Date.parse(process.env.SAVED_REFERENCE);
+          if (!Number.isFinite(publicMs) || !Number.isFinite(savedMs) || savedMs <= publicMs) {
+            throw new Error('Saved protected runtime does not strictly advance the public production hour');
+          }
+          NODE
+          git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
+          node scripts/check-production-target-freshness.mjs --target "$target_reference" --maximum-age-minutes 240
+          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
+          node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$target_reference" --output .cache/private-production-runtime-expected.json
 
       - name: Try newest current-compatible private runtime
         id: current-private-protected-restore
@@ -407,7 +453,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Describe exact current private runtime source for bounded migration
-        if: steps.current-private-install.outcome != 'success'
+        if: steps.current-private-install.outcome != 'success' && inputs.publish_newest_saved_weather != true
         run: >-
           node scripts/protected-private-production-runtime.mjs --describe-current
           --output "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
@@ -530,17 +576,24 @@ jobs:
           fi
 
       - name: Rebuild public runtime from saved state without provider acquisition
-        run: >-
-          node scripts/prepare-code-only-public-runtime.mjs
-          --repository-root "$GITHUB_WORKSPACE"
-          --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT"
-          --report .geometry-v2-work/code-only-public-runtime-reuse.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode=code-only-reuse
+          if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
+            mode=saved-weather-continuation
+          fi
+          node scripts/prepare-code-only-public-runtime.mjs --repository-root "$GITHUB_WORKSPACE" --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" --report .geometry-v2-work/code-only-public-runtime-reuse.json --mode "$mode"
 
       - name: Require exact code-only reuse invariants
-        run: >-
-          jq -e
-          '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673'
-          .geometry-v2-work/code-only-public-runtime-reuse.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
+            jq -e '.providerRequestsPerformed == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == true and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
+          else
+            jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
+          fi
 
       - name: Audit regenerated integrated public runtime
         id: runtime-audit
@@ -839,7 +892,9 @@ jobs:
             --arg checkpointPublishOutcome "${{ steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
             --arg sourceRepairId "${{ steps.public-source.outputs.repair_id }}" \
-            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:false,checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,codeOnlyRepair:true,codeOnlyReuseReportSha256:$codeOnlyReuseReportSha256,sourceRepairId:(if $sourceRepairId == "" then null else $sourceRepairId end),privatePayloadIncluded:false}' \
+            --argjson codeOnlyRepair '${{ inputs.publish_newest_saved_weather != true }}' \
+            --argjson savedWeatherContinuation '${{ inputs.publish_newest_saved_weather }}' \
+            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:false,checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,codeOnlyRepair:$codeOnlyRepair,savedWeatherContinuation:$savedWeatherContinuation,codeOnlyReuseReportSha256:$codeOnlyReuseReportSha256,sourceRepairId:(if $sourceRepairId == "" then null else $sourceRepairId end),privatePayloadIncluded:false}' \
             > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
           if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
             echo "Operational handoff contains forbidden private fields." >&2
@@ -908,7 +963,7 @@ jobs:
     with:
       active_deployment_id: ${{ needs.build-code-only.outputs.active_deployment_id }}
       central_version: ${{ needs.build-code-only.outputs.central_version }}
-      code_only_repair: true
+      code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}
       deployment_model: integrated
       integrated_implementation_closure_sha256: ${{ needs.build-code-only.outputs.integrated_implementation_closure_sha256 }}
       legacy_source_required: 'false'

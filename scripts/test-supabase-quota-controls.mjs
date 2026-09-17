@@ -16,6 +16,8 @@ for(const token of ['preserve_newer_owner_approved_activation','local_version > 
 for(const token of ['protected-asset-manifest','sha256','springer skrivning over','buildRuntimeDiagnosticsEnvelope','pakket tabsfrit','handbook-source-baseline','mergeProtectedHandbook','RAVRADAR_PREVIOUS_HANDBOOK_URL','fc13fb5ab326d8824ca55235ac454ac230e3db3e','fetchPreviousHandbookSource'])assert.ok(`${writer}\n${workflow}`.includes(token),`Idempotent protected sync mangler ${token}`);
 for(const token of ['ravscore-profile-selection','preserve_newer_owner_approved_ravscore_selection','prePublicWarmupAccepted'])assert.ok(reader.includes(token),`Central RavScore-hydrering mangler ${token}`);
 for(const token of ['ravscore-profile-selection','Central RavScore-profil verificeret'])assert.ok(writer.includes(token),`Central RavScore-readback mangler ${token}`);
+for(const token of ['stableJsonDigest','stableJsonDigest(activationCentral)','stableJsonDigest(activationLocal)'])assert.ok(writer.includes(token),`Beskyttet aktiveringsreadback mangler stabil JSON-sammenligning: ${token}`);
+assert.doesNotMatch(writer,/\bstableDigest\(/,'Beskyttet aktiveringsreadback må ikke kalde en udefineret stableDigest');
 assert.ok(writer.includes('coastal-point-staging-status'),'Beskyttet driftssync mangler det operationelle staging-dokument');
 for(const token of ['admin_document_versions','ryd driftshistorik','method:\'DELETE\''])assert.equal(writer.includes(token),false,`Beskyttet driftssync må ikke slette bevaret historik: ${token}`);
 for(const token of ['new.payload is not distinct from old.payload','if not machine_document','r.rn>100','VACUUM FULL is deliberately not automatic'])assert.ok(migration.includes(token),`Kvotemigration mangler ${token}`);

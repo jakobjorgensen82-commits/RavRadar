@@ -1959,3 +1959,17 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [ ] Kør én exact-head-kildegate, merge sikkert og start derefter én stor main-oneoff. Gentag kun efter ny bevaret fremgang eller en rettet konkret fejl.
 - [ ] Bevis DMI/Copernicus/regional/Open-Meteo-closure 79.414/79.414 og Feggesund-bølger 354/354.
 - [ ] Fortsæt direkte med Supabase-kapacitetsbevis, fulde produktionsgates og særskilt integreret Fase B. Offentlig model må først skifte efter alle eksisterende stopgates.
+# Aktiv roadmap – 4.0.403 fra gemt runtime til offentlig prognose
+
+1. [x] Lever 4.0.402 exact-head/PR/merge og providerfri kode.
+2. [x] Gennemfør normalrun `35205052150` gennem alle providere, cacher, closure, historik, runtimeaudit og 52+3-kontroller.
+3. [x] Bevis at den validerede private runtime blev centralt gemt før adminsynkroniseringens `stableDigest`-stop.
+4. [x] Ret stabil readback og byg en afgrænset providerfri fortsættelse af præcis den nyere gemte runtime.
+5. [x] Kræv aktiv integreret model, ren offentlig kilde, 240 minutters alder, source ancestry, 210/673 og privacy.
+6. [ ] Afslut dokumentation, målrettede kontroller, diff og rent geodataversionsbevis.
+7. [ ] Commit/push, bestå én exact-head og merge samme head.
+8. [ ] Kør `saved-weather-continuation`; verificér at ingen provider kaldes, og at offentlig 4.0.403 viser prognoser og scorer.
+9. [ ] Kør næste almindelige vedligeholdelse og mål providerfordeling og cachefremgang.
+10. [ ] Genaktivér scheduler efter bevist normal vedligeholdelse; gennemgå derefter hele sitet og de resterende roadmap-punkter.
+
+DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrindsamling.

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {buildRuntimeDiagnosticsEnvelope} from './lib/runtime-diagnostics-envelope.mjs';
-import {fetchPreviousHandbookSource,mergeProtectedHandbook,stableHandbookDigest} from './lib/merge-protected-handbook.mjs';
+import {fetchPreviousHandbookSource,mergeProtectedHandbook,stableHandbookDigest,stableJsonDigest} from './lib/merge-protected-handbook.mjs';
 import {assertIntegratedRavScoreSelection,isCandidateGOnlySelection} from './lib/ravscore-profile-transition.mjs';
 import {buildProtectedRdksDocumentation} from './lib/protected-rdks-documentation.mjs';
 const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
@@ -110,7 +110,7 @@ nextManifest.generatedAt=new Date().toISOString();
 await request('?on_conflict=document_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key:manifestKey,payload:nextManifest,updated_by:null})},`beskyttet sync: skriv ${manifestKey}`);
 const activationLocal=JSON.parse(await fs.readFile(assets['coastal-parts-v2-activation'],'utf8'));
 const activationCentral=await existingDocument('coastal-parts-v2-activation');
-if(!activationCentral||stableDigest(activationCentral)!==stableDigest(activationLocal)||activationCentral.publicActivation!==activationLocal.publicActivation){
+if(!activationCentral||stableJsonDigest(activationCentral)!==stableJsonDigest(activationLocal)||activationCentral.publicActivation!==activationLocal.publicActivation){
  throw new Error('coastal-parts-v2-activation central readback matcher ikke den publicerede aktivering');
 }
 console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);

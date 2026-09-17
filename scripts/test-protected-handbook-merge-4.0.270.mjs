@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {fetchPreviousHandbookSource,handbookPayloadDigest,mergeProtectedHandbook} from './lib/merge-protected-handbook.mjs';
+import {fetchPreviousHandbookSource,handbookPayloadDigest,mergeProtectedHandbook,stableJsonDigest} from './lib/merge-protected-handbook.mjs';
+
+assert.equal(
+  stableJsonDigest({z:1,nested:{b:2,a:3}}),
+  stableJsonDigest({nested:{a:3,b:2},z:1}),
+  'Stabil JSON-digest skal tåle Supabase JSONB-nøgleorden',
+);
+assert.notEqual(
+  stableJsonDigest({z:1,nested:{a:3,b:2}}),
+  stableJsonDigest({z:1,nested:{a:3,b:4}}),
+  'Stabil JSON-digest skal stadig opdage indholdsændringer',
+);
 
 const section=(id,body)=>({id,title:id,summary:`Kort ${id}`,body});
 const baseline={handbookVersion:'4.0.269',updatedAt:'før',sections:[section('a','gammel a'),section('b','gammel b')]};

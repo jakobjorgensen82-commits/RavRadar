@@ -31,6 +31,10 @@ export const CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES = 192 * 1024 * 1024;
 // a smaller independent limit can reject a valid, already-verified cache.
 export const CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES =
   PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes;
+export const RUNTIME_REUSE_MODES = Object.freeze({
+  CODE_ONLY: 'code-only-reuse',
+  SAVED_WEATHER: 'saved-weather-continuation',
+});
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const DERIVED_HASH_KEYS = new Set([
@@ -110,6 +114,14 @@ function assertProjectionEquivalent(liveValue, generatedValue, label) {
   );
 }
 
+export function normalizeRuntimeReuseMode(value) {
+  const mode = value ?? RUNTIME_REUSE_MODES.CODE_ONLY;
+  if (!Object.values(RUNTIME_REUSE_MODES).includes(mode)) {
+    throw new Error('Unknown protected runtime reuse mode');
+  }
+  return mode;
+}
+
 async function readRegularFile(file, label, maximumBytes) {
   const stat = await fs.lstat(file).catch(() => null);
   if (!stat?.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > maximumBytes) {
@@ -171,7 +183,10 @@ export async function prepareCodeOnlyPublicRuntime({
   repositoryRoot,
   snapshotRoot,
   reportPath,
+  mode: requestedMode,
 } = {}) {
+  const mode = normalizeRuntimeReuseMode(requestedMode);
+  const savedWeatherContinuation = mode === RUNTIME_REUSE_MODES.SAVED_WEATHER;
   const { repository, snapshot } = await assertSeparateRegularDirectory(repositoryRoot, snapshotRoot);
   const paths = Object.fromEntries(Object.entries(CODE_ONLY_SNAPSHOT_FILES)
     .map(([key, filename]) => [key, path.join(snapshot, filename)]));
@@ -228,11 +243,25 @@ export async function prepareCodeOnlyPublicRuntime({
   for (const [label, document] of [
     ['Live startup runtime', publicSource.value],
     ['Live detail runtime', detailsSource.value],
-    ['Restored private runtime', fullSource.value],
   ]) {
     if (document?.datasetId !== manifest.datasetId
         || document?.productionReferenceAt !== manifest.productionReferenceAt) {
       throw new Error(`${label} does not match the live manifest identity`);
+    }
+  }
+  if (!savedWeatherContinuation) {
+    if (fullSource.value?.datasetId !== manifest.datasetId
+        || fullSource.value?.productionReferenceAt !== manifest.productionReferenceAt) {
+      throw new Error('Restored private runtime does not match the live manifest identity');
+    }
+  } else {
+    const liveReference = Date.parse(manifest.productionReferenceAt ?? '');
+    const savedReference = Date.parse(fullSource.value?.productionReferenceAt ?? '');
+    if (!fullSource.value?.datasetId
+        || !Number.isFinite(liveReference)
+        || !Number.isFinite(savedReference)
+        || savedReference <= liveReference) {
+      throw new Error('Saved weather continuation must strictly advance the public production hour');
     }
   }
   if (Object.keys(fullSource.value?.zones ?? {}).length !== manifest.zoneCount
@@ -269,26 +298,37 @@ export async function prepareCodeOnlyPublicRuntime({
   assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
   assertPublicRuntimePrivacy(generated.detailsDocument, 'details');
   assertPublicRuntimePrivacy(generated.manifest, 'manifest');
-  assertProjectionEquivalent(publicSource.value, generated.publicDocument,
-    'Code-only startup projection');
-  assertProjectionEquivalent(detailsSource.value, generated.detailsDocument,
-    'Code-only detail projection');
-  assertProjectionEquivalent(manifest, generated.manifest,
-    'Code-only manifest projection');
+  if (!savedWeatherContinuation) {
+    assertProjectionEquivalent(publicSource.value, generated.publicDocument,
+      'Code-only startup projection');
+    assertProjectionEquivalent(detailsSource.value, generated.detailsDocument,
+      'Code-only detail projection');
+    assertProjectionEquivalent(manifest, generated.manifest,
+      'Code-only manifest projection');
+  } else if (generated.manifest.datasetId !== fullSource.value.datasetId
+      || generated.manifest.productionReferenceAt !== fullSource.value.productionReferenceAt) {
+    throw new Error('Saved weather continuation did not preserve the protected runtime identity');
+  }
 
   const report = {
     schemaVersion: 1,
-    kind: 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
-    datasetId: manifest.datasetId,
-    productionReferenceAt: manifest.productionReferenceAt,
+    kind: savedWeatherContinuation
+      ? 'RAVRADAR_SAVED_WEATHER_PUBLIC_RUNTIME_CONTINUATION'
+      : 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
+    mode,
+    sourceDatasetId: manifest.datasetId,
+    datasetId: generated.manifest.datasetId,
+    productionReferenceAt: generated.manifest.productionReferenceAt,
     releaseVersion,
     zoneCount: manifest.zoneCount,
     coastalPartCount: manifest.coastalPartCount,
     sourcePublicManifestSha256: sha256Text(manifestSource.text),
     generatedPublicManifestSha256: sha256Text(`${JSON.stringify(generated.manifest, null, 2)}\n`),
     waterLevelRoutingSha256: sha256Text(routingSource.text),
-    weatherValuesChanged: false,
-    scoresChanged: false,
+    publicRuntimeAdvanced: savedWeatherContinuation,
+    savedProtectedRuntimeReused: savedWeatherContinuation,
+    weatherValuesChanged: savedWeatherContinuation,
+    scoresChanged: savedWeatherContinuation,
     geometryChanged: false,
     providerRequestsPerformed: false,
     privatePayloadIncluded: false,
@@ -303,14 +343,27 @@ function argument(argv, name) {
   return argv[index + 1];
 }
 
+function optionalArgument(argv, name) {
+  const index = argv.indexOf(name);
+  if (index < 0) return undefined;
+  if (!argv[index + 1] || argv[index + 1].startsWith('--')) {
+    throw new Error(`Missing ${name}`);
+  }
+  return argv[index + 1];
+}
+
 async function main() {
+  const argv = process.argv.slice(2);
   const report = await prepareCodeOnlyPublicRuntime({
-    repositoryRoot: argument(process.argv.slice(2), '--repository-root'),
-    snapshotRoot: argument(process.argv.slice(2), '--snapshot-root'),
-    reportPath: argument(process.argv.slice(2), '--report'),
+    repositoryRoot: argument(argv, '--repository-root'),
+    snapshotRoot: argument(argv, '--snapshot-root'),
+    reportPath: argument(argv, '--report'),
+    mode: optionalArgument(argv, '--mode'),
   });
   console.log(JSON.stringify({
-    status: 'code-only-runtime-reused',
+    status: report.savedProtectedRuntimeReused
+      ? 'saved-weather-runtime-continued'
+      : 'code-only-runtime-reused',
     datasetId: report.datasetId,
     zoneCount: report.zoneCount,
     coastalPartCount: report.coastalPartCount,

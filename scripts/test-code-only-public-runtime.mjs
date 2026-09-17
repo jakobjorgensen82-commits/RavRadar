@@ -10,6 +10,8 @@ import {
   CODE_ONLY_SNAPSHOT_FILES,
   manifestBoundedPublicDetailsBytes,
   normalizeCodeOnlyProjection,
+  normalizeRuntimeReuseMode,
+  RUNTIME_REUSE_MODES,
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
@@ -22,6 +24,15 @@ assert.equal(
 );
 assert.ok(CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES > 256 * 1024 * 1024,
   'Den forældede 256 MiB-grænse må ikke afvise den komplette private runtime');
+assert.equal(normalizeRuntimeReuseMode(), RUNTIME_REUSE_MODES.CODE_ONLY);
+assert.equal(
+  normalizeRuntimeReuseMode('saved-weather-continuation'),
+  RUNTIME_REUSE_MODES.SAVED_WEATHER,
+);
+assert.throws(
+  () => normalizeRuntimeReuseMode('provider-refresh'),
+  /Unknown protected runtime reuse mode/,
+);
 
 const current = ravScoreModelBinding();
 assertCodeOnlyModelBinding(current, current);
@@ -104,6 +115,17 @@ const workflow = fs.readFileSync('.github/workflows/deploy-code-only-repair.yml'
 for (const marker of [
   'workflow_dispatch:',
   'DEPLOY-CODE-ONLY-REPAIR',
+  'DEPLOY-SAVED-WEATHER-REPAIR',
+  'publish_newest_saved_weather:',
+  'test "${{ steps.operational-action.outputs.action }}" = "integrated"',
+  'test -z "${{ steps.public-source.outputs.repair_id }}"',
+  'Describe newest protected runtime for saved-weather continuation',
+  'Bind saved-weather continuation to exact newer runtime',
+  'Saved protected runtime does not strictly advance the public production hour',
+  '--mode "$mode"',
+  'savedProtectedRuntimeReused == true',
+  'publicRuntimeAdvanced == true',
+  'code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}',
   'test "${{ steps.source-proof.outputs.required }}" = "false"',
   'prepare-code-only-public-runtime.mjs',
   'migrate-post-cutover-private-runtime.mjs',
@@ -141,7 +163,6 @@ for (const marker of [
   '--root _site',
   'pages-public-closure.json',
   'cmp -s',
-  'code_only_repair: true',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
 const independentPrewriteDecision = workflow.indexOf(
   '- name: Decide all independent prewrite checks together',
