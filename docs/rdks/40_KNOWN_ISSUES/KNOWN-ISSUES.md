@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.418 præcis offentlig vejrakse
+
+- **ISSUE-4.0.417-DELIVERY – LUKKET:** Exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337` er leveret.
+- **ISSUE-NORMAL-WEATHER-35357557315 – DELVIS FREMGANG GEMT:** Alle providerled gennemførte; 32.232 DMI-, 5.158 Copernicus-, 912 regional DMI- og 40.039 Open-Meteo-par blev valgt, mens 1.073 var ærlige lokale huller.
+- **ISSUE-PUBLIC-WEATHER-HORIZON-SHIFT – RETTET LOKALT / LIVEBEVIS MANGLER:** En ældre DMI-caches starttime kunne skubbe den offentlige akse én time og fjerne +117. 4.0.418 binder alle zoner til produktionstimen +0..+117.
+- **ISSUE-DMI-STRICT-CURRENT-PARTIAL – ÅBEN DRIFTSMÅLING:** Normalrunnet var tidsbegrænset og gemte delvis DMI-fremgang. Koden prioriterer konkrete del/time-huller før fornyelse; ændring af rotation eller budget afventer trend fra almindelige kørsler.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Exact-head, merge, providerfri kode og mindst én grøn almindelig weather mangler. Scheduler er deaktiveret.
+
+DEC-0201. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.417 afledt scorekæde
 
 - **ISSUE-4.0.416-DELIVERY – LUKKET:** Exact-head `35351272955`, PR #360 og main `496ba278` er leveret.

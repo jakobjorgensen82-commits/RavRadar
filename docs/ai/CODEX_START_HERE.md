@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.418 præcis offentlig vejrakse
+
+4.0.417 bestod exact-head `35356064367`, PR #361, main `0890ed0e` og
+providerfri levering `35356645337`. Normalrun `35357557315` gennemførte og
+gemte DMI, Copernicus, regional DMI og Open-Meteo. Currentfordelingen var
+32.232 / 5.158 / 912 / 40.039 med 1.073 ærlige lokale huller af 79.414.
+
+Publicering stoppede, fordi en ældre DMI-caches starttime forskød én zones
+118-timersakse og skar den rigtige +117-time væk. Lokal 4.0.418 binder alle
+offentlige zoner til den aktuelle produktionstime +0..+117, bevarer gyldige
+samme-time-komponenter og materialiserer ærlige huller som `MISSING` uden
+forskydning. Måltests er grønne. Næste: version/RDKS, exact-head, merge,
+providerfri kode og én almindelig weather på de gemte cacher. Ingen oneoff;
+scheduler pauset. DEC-0201. Standard/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.417 afledt scorekæde
 
 4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.

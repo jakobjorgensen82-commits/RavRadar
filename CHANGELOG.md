@@ -1,3 +1,14 @@
+## 4.0.418 – præcis offentlig vejrakse (2026-09-18)
+
+- 4.0.417 er live gennem exact-head `35356064367`, PR #361, main `0890ed0e`
+  og providerfri levering `35356645337`.
+- Normalrun `35357557315` gemte fremgang fra alle providerled, men stoppede
+  før publicering på én forskudt offentlig 118-timersakse.
+- Hver zone bindes nu til produktionstimen +0..+117. Et ærligt lokalt hul
+  bliver `MISSING` på den rigtige time og kan ikke forskyde resten.
+- Providerorden, DMI-rotation, scoremodel og geometri er uændrede. Se
+  CHANGELOG-4.0.418.md og DEC-0201.
+
 ## 4.0.417 – repareret state og viste scorer hænger sammen (2026-09-18)
 
 - 4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.

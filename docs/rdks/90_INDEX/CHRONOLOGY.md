@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.418 låser offentlig vejr til produktionens timeakse
+
+- 4.0.417 bestod exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337`.
+- Normalrun `35357557315` gennemførte og gemte alle providerled, men stoppede før publicering på en forskudt zonehorisont.
+- Rodårsagen var en ældre DMI-caches starttime, som skubbede +0..+117 og skar den sidste time væk.
+- 4.0.418 materialiserer alle zoner på præcis produktionstime +0..+117 og viser reelle huller uden at forskyde tiden. DEC-0201.
+
 # 2026-09-18 – 4.0.417 samler repareret state og aktuelle scorer
 
 - 4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.

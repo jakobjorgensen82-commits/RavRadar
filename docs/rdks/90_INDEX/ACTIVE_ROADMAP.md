@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.418 fra tidsaksefejl til stabil normal drift
+
+1. [x] Lever og liveverificér 4.0.417 gennem exact-head, PR #361 og providerfri code-only.
+2. [x] Kør normal weather `35357557315`; gem DMI-, Copernicus-, regional DMI- og Open-Meteo-fremgang.
+3. [x] Afgræns stoppet til en ældre DMI-starttime, der forskød én offentlig zones 118 timer.
+4. [x] Ret den fælles sammenlægning og endelige zonematerialisering til præcis produktionstime +0..+117.
+5. [x] Bevar gyldige samme-time-komponenter; repræsentér reelle lokale huller som `MISSING` uden at forskyde aksen.
+6. [x] Gennemgå DMI-rotationen og bevar den, fordi reelle del/time-huller allerede prioriteres før fornyelse.
+7. [x] Afslut version, RDKS, håndbog, målrettede slutkontroller og rent geodataversionsbevis.
+8. [ ] Commit/push, bestå én exact-head, merge og lever koden uden providerkald.
+9. [ ] Kør én almindelig weather på de gemte cacher; verificér publicering, aktuel time, lokale femdøgn og providerfordeling.
+10. [ ] Bevis næste almindelige vedligeholdelse; genaktivér først derefter scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0201. Ingen oneoff; bootstrap kun ved senere målt utilstrækkelig normal fremgang.
+
 # Aktiv roadmap – 4.0.417 fra sammenhængende score til stabil normal drift
 
 1. [x] Lever 4.0.416 gennem exact-head `35351272955`, PR #360 og main `496ba278`.

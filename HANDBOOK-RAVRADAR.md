@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.417
+**Håndbogsversion:** 4.0.418
+
+## 89.22 4.0.418 – Et hul må ikke flytte hele vejrudsigten
+
+Den første almindelige vejrkørsel efter 4.0.417 hentede og gemte data fra alle
+leverandører. Den blev ikke lagt online, fordi én zones tidslinje begyndte én
+time for tidligt og derfor manglede den sidste af de 118 timer.
+
+Fejlen skyldtes ikke, at en hel zone manglede data. En ældre DMI-cache fik lov
+at bestemme, hvor tidslinjen begyndte. 4.0.418 bruger i stedet altid den
+aktuelle produktionstime og bygger præcis 118 timer derfra.
+
+Hvis DMI mangler én værdi, kan en gyldig værdi fra næste leverandør bruges for
+præcis samme sted og time. Hvis alle leverandører mangler timen, vises den som
+`MISSING` på det rigtige sted. Resten af timerne og resten af RavRadar virker
+stadig. Leverandørernes rækkefølge og DMI-rotationen er ikke ændret.
+
+Formel og vægte er uændrede. 4.0.418 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.21 4.0.417 – Repareret historik og viste scorer hænger sammen
 

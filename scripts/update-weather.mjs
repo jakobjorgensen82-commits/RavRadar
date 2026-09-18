@@ -2904,16 +2904,60 @@ function selectAtomicComponentTuple(
   return null;
 }
 
+function exactPublicForecastTimes(referenceAt) {
+  const referenceMs = Date.parse(referenceAt ?? '');
+  const reference = new Date(referenceMs);
+  if (!Number.isFinite(referenceMs)
+    || reference.toISOString() !== referenceAt
+    || reference.getUTCMinutes() !== 0
+    || reference.getUTCSeconds() !== 0
+    || reference.getUTCMilliseconds() !== 0) {
+    throw new Error('Public weather horizon requires one exact UTC production hour');
+  }
+  return Array.from({ length: ACCEPTED_FORECAST_HOURS }, (_, index) =>
+    new Date(referenceMs + index * 3_600_000).toISOString());
+}
+
+function materializeExactPublicWeatherHorizon(hourly = [], referenceAt) {
+  const rowsByTime = new Map(normalizeForecastHourly(hourly, {
+    limit: Number.MAX_SAFE_INTEGER,
+  }).map(row => [row.time, row]));
+  return exactPublicForecastTimes(referenceAt).map(time => rowsByTime.get(time) ?? {
+    time,
+    windSpeedMps: null,
+    windDirectionDeg: null,
+    airTemperatureC: null,
+    waveHeightM: null,
+    waveDirectionDeg: null,
+    wavePeriodS: null,
+    waterLevelCm: null,
+    waterLevelTrendCm3h: null,
+    currentUMps: null,
+    currentVMps: null,
+    currentSpeedMps: null,
+    currentDirectionDeg: null,
+    waterTemperatureC: null,
+    sources: {
+      wind: { provider: 'missing', fallback: false },
+      wave: { provider: 'missing', fallback: false },
+      current: { provider: 'missing', fallback: false },
+      waterLevel: { provider: 'missing', fallback: false },
+      waterTemperature: { provider: 'missing', fallback: false },
+    },
+  });
+}
+
 function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
   { generatedAt = null, expectedIdentity = null } = {},
 ) {
-  const cutoffMs = Number.isFinite(Date.parse(generatedAt)) ? Date.parse(generatedAt) - 65 * 60000 : -Infinity;
-  const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER }).filter(item => Date.parse(item.time) >= cutoffMs);
+  const times = exactPublicForecastTimes(generatedAt);
+  const expectedTimeSet = new Set(times);
+  const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER })
+    .filter(item => expectedTimeSet.has(item.time));
   const dmiByTime = new Map(future(dmiHourly).map(item => [item.time, item]));
   const fallbackByTime = new Map(future(fallbackHourly).map(item => [item.time, item]));
-  const times = [...new Set([...dmiByTime.keys(), ...fallbackByTime.keys()])].sort((a, b) => Date.parse(a) - Date.parse(b));
   const merged = times.map(time => {
     const item = dmiByTime.get(time) ?? {};
     const fallback = fallbackByTime.get(time) ?? {};
@@ -2970,13 +3014,22 @@ function mergeHourlyPreferDmi(
       currentDirectionDeg: selectedCurrent?.values.currentDirectionDeg ?? null,
       currentUMps: selectedCurrentVectorAvailable ? selectedCurrentU : null,
       currentVMps: selectedCurrentVectorAvailable ? selectedCurrentV : null,
-      waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
+      airTemperatureC: ravScoreNumber(item.airTemperatureC)
+        ?? ravScoreNumber(fallback.airTemperatureC)
+        ?? null,
+      waterTemperatureC: ravScoreNumber(item.waterTemperatureC)
+        ?? ravScoreNumber(fallback.waterTemperatureC)
+        ?? null,
       sources: {
         wind: selectedWind?.attestation ?? { provider: 'missing', fallback: false },
         wave: selectedWave?.attestation ?? { provider: 'missing', fallback: false },
         current: selectedCurrent?.attestation ?? { provider: 'missing', fallback: false },
         waterLevel: { provider: 'pending', fallback: false },
-        waterTemperature: item.waterTemperatureC != null ? (item.sources?.waterTemperature ?? { provider: 'dmi', fallback: false }) : fallback.waterTemperatureC != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false }
+        waterTemperature: ravScoreNumber(item.waterTemperatureC) !== null
+          ? (item.sources?.waterTemperature ?? { provider: 'dmi', fallback: false })
+          : ravScoreNumber(fallback.waterTemperatureC) !== null
+            ? (fallback.sources?.waterTemperature ?? { provider: fallback.source ?? 'open-meteo', fallback: true })
+            : { provider: 'missing', fallback: false }
       }
     };
     if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;
@@ -3030,7 +3083,7 @@ function sourceForComponent(zone, component, generatedAt) {
   });
 }
 
-function mergeDmiWithFallback(dmiResult, fallbackZone) {
+function mergeDmiWithFallback(dmiResult, fallbackZone, generatedAt) {
   if (!fallbackZone) return dmiResult;
   const groups = {
     wind: ['windSpeedMps','windDirectionDeg'],
@@ -3078,7 +3131,11 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
   }
   const dmiForecast = dmiResult.dmiForecast ?? dmiResult.forecast ?? null;
   if (dmiForecast) {
-    dmiForecast.hourly = mergeHourlyPreferDmi(dmiForecast.hourly, fallbackZone.forecast?.hourly ?? [], { generatedAt: dmiForecast.generatedAt });
+    dmiForecast.hourly = mergeHourlyPreferDmi(
+      dmiForecast.hourly,
+      fallbackZone.forecast?.hourly ?? [],
+      { generatedAt },
+    );
     dmiForecast.validFrom = dmiForecast.hourly[0]?.time ?? dmiForecast.validFrom;
     dmiForecast.validUntil = dmiForecast.hourly.at(-1)?.time ?? dmiForecast.validUntil;
     dmiForecast.horizonHours = dmiForecast.hourly.length;
@@ -3523,7 +3580,9 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
       return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'dmi-cache-only', remainingHours: existingCoverage.remainingHours } };
     }
     const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
-    const merged = fallback ? mergeDmiWithFallback(healthyCachedDmi, fallback) : healthyCachedDmi;
+    const merged = fallback
+      ? mergeDmiWithFallback(healthyCachedDmi, fallback, generatedAt)
+      : healthyCachedDmi;
     const history = historyFor(previous, zoneId, merged.current, generatedAt, feature);
     return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts, acquisition: { mode: fallback ? 'cache-first-dmi-component-fill' : 'cache-first-dmi-only', remainingHours: existingCoverage.remainingHours } };
   }
@@ -3552,7 +3611,9 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
   if (cachedDmi) {
     nextDmiForecastStore.zones[zoneId] = { ...dmiForecastStore.zones[zoneId], hourly: normalizeForecastHourly(dmiForecastStore.zones[zoneId]?.hourly ?? []) };
     const fallback = dmiOnly ? null : await fallbackForZone(feature, generatedAt, previous, attempts);
-    const merged = fallback ? mergeDmiWithFallback(cachedDmi, fallback) : cachedDmi;
+    const merged = fallback
+      ? mergeDmiWithFallback(cachedDmi, fallback, generatedAt)
+      : cachedDmi;
     const history = historyFor(previous, zoneId, merged.current, generatedAt, feature);
     return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts };
   }
@@ -3757,7 +3818,7 @@ for (const feature of targetFeatures) {
     const existingRecord = nextDmiForecastStore.zones?.[zoneId];
     const includeAtmosphere = !recordHasAtmosphere(existingRecord, generatedAt);
     const dmiResult = await fromDmi(feature, generatedAt, { includeAtmosphere });
-    const merged = mergeDmiWithFallback(dmiResult, output.zones[zoneId]);
+    const merged = mergeDmiWithFallback(dmiResult, output.zones[zoneId], generatedAt);
     nextDmiForecastStore.zones[zoneId] = merged.dmiForecast;
     const forecast = {
       provider: 'dmi', providerLabel: merged.providerLabel,
@@ -3957,7 +4018,21 @@ for (const record of Object.values(nextDmiForecastStore.zones ?? {})) {
   record.hourly = normalizeForecastHourly(record.hourly ?? []);
 }
 for (const zone of Object.values(output.zones ?? {})) {
-  if (zone.forecast?.hourly) zone.forecast.hourly = normalizeForecastHourly(zone.forecast.hourly);
+  const forecast = zone.forecast ?? {};
+  const hourly = materializeExactPublicWeatherHorizon(
+    forecast.hourly ?? [],
+    generatedAt,
+  );
+  zone.forecast = {
+    ...forecast,
+    provider: forecast.provider ?? 'missing',
+    providerLabel: forecast.providerLabel ?? 'Mangler prognosedata',
+    generatedAt: forecast.generatedAt ?? generatedAt,
+    validFrom: hourly[0]?.time ?? null,
+    validUntil: hourly.at(-1)?.time ?? null,
+    horizonHours: hourly.length,
+    hourly,
+  };
 }
 
 nextDmiForecastStore.generatedAt = generatedAt;
