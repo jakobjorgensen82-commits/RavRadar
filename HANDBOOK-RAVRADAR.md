@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.425
+**Håndbogsversion:** 4.0.426
+
+## 89.30 4.0.426 – Manglende checkpoint kan genopbygges af målte data
+
+4.0.425 beviste, at den gamle private runtime var inkompatibel, og at der slet
+ikke fandtes et schema-6-checkpoint i hverken GitHub-cache eller beskyttet
+Supabase. Der var altså ingen fil at kontrollere eller fortsætte fra.
+
+4.0.426 lader kun den allerede aktive integrerede model i det midlertidige
+`integrated-historical-maintenance`-stadie genopbygge tilstanden fra den
+afgrænsede 48-timers målehistorik, når checkpointfilen reelt mangler. Findes
+filen, skal den fortsat bestå alle kontroller og være aktuel; en ødelagt,
+forkert eller udløbet fil stopper. Candidate G, cutover, retur og ukendte
+handlinger får ingen adgang til denne vej.
+
+Genopbygningen opfinder ingen vejrdata. Manglende historiske positioner
+markeres som ukendte, og næste vellykkede normale kørsel gemmer en ny privat
+runtime og et nyt checkpoint. Kravet er stadig fuld gyldig vejrdækning;
+`MISSING` er kun lokal robusthed.
 
 ## 89.29 4.0.425 – Historisk vedligeholdelse fortsætter kun med gyldigt checkpoint
 

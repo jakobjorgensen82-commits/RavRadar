@@ -1,3 +1,13 @@
+# 2026-09-19 – 4.0.426 genopbygger kun ved reelt checkpointfravær
+
+- 4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.
+- Normalrun `35403510608` viste, at checkpointet hverken fandtes i GitHub-
+  cache eller Supabase, og stoppede før provider uden dataændring.
+- 4.0.426 tillader den allerede aktive historical integrated-handling at bruge
+  afgrænset 48-timers measured recovery ved reelt fravær. En eksisterende
+  ugyldig/udløbet fil stopper fortsat; øvrige handlinger åbnes ikke.
+  DEC-0206-tillæg.
+
 # 2026-09-19 – 4.0.425 fører historical maintenance gennem checkpointet
 
 - 4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.

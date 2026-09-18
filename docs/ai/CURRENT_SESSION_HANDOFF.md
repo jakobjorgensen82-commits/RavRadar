@@ -1,4 +1,23 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+
+4.0.425 bestod exact-head `35403040711`, blev merged gennem PR #370 som main
+`05892afc` og startede normalrun `35403510608`. Den centrale model er
+`integrated`, action er korrekt `integrated-historical-maintenance`, og tre
+gamle private runtimes blev korrekt afvist. GitHub-cachen fandt intet
+schema-6-checkpoint; Supabase svarede ligeledes `protected-checkpoint-not-found`.
+4.0.425 stoppede derfor før providerkald og ændrede ingen produktionsdata.
+
+På branch `codex/4.0.426-stateless-historical-recovery` er hele recoveryvejen
+fulgt gennem vejrgenerator, modelstate, Candidate G-companion, runtimeaudit,
+checkpoint, privat runtime, Pages og central historical-maintenance-reseal.
+Et checkpoint, der findes, er fortsat autoritativt og skal være aktuelt og
+fuldt gyldigt; fejl eller expiry stopper. Kun ved reelt filfravær må den
+allerede aktive integrerede model genopbygge fra den afgrænsede målte
+48-timers historik. Candidate G/cutover/retur/ukendte actions åbnes ikke.
+Afslut måltests/RDKS/geodatabevis, exact-head, merge og én almindelig weather.
+Ingen oneoff; `.tmp-420/` er privat og må ikke stages.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
 
 4.0.424 bestod exact-head `35401458027`, blev merged gennem PR #369 som main
 `0b4a08ec` og startede normalrun `35401927838`. Den centrale model er

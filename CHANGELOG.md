@@ -1,3 +1,15 @@
+## 4.0.426 – measured recovery ved reelt checkpointfravær (2026-09-19)
+
+- 4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.
+- Normalrun `35403510608` beviste, at checkpointet ikke fandtes i hverken
+  GitHub-cache eller Supabase, og stoppede før provider uden dataændring.
+- Den allerede aktive `integrated-historical-maintenance` må nu bruge den
+  eksisterende afgrænsede 48-timers measured recovery ved helt manglende fil.
+- En eksisterende ugyldig, inkompatibel, fremtidig eller udløbet checkpointfil
+  stopper stadig. Candidate G, cutover, retur og ukendte actions åbnes ikke.
+- Scoremodel, vejrlogik, geometri, providerprioritet og rotation er uændrede.
+  Se CHANGELOG-4.0.426.md og DEC-0206.
+
 ## 4.0.425 – historical maintenance fortsætter fra valideret checkpoint (2026-09-19)
 
 - 4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.

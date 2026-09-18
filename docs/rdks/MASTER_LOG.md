@@ -1,4 +1,19 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.425 historical-maintenance recovery
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.426 measured historical recovery
+
+4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.
+Normalrun `35403510608` afviste tre inkompatible runtimes og viste derefter
+entydigt, at checkpointet hverken fandtes i GitHub-cache eller beskyttet
+Supabase. Ingen provider eller produktionsskrivning blev nået.
+
+4.0.426 gør fravær til den snævre, allerede implementerede measured recovery:
+kun centralt aktiv `integrated-historical-maintenance` må ved helt manglende
+checkpoint genopbygge state fra den afgrænsede 48-timers målehistorik. En
+tilstedeværende fil er fortsat autoritativ; beskadigelse, inkompatibilitet,
+fremtid eller expiry stopper. Candidate G, cutover, retur og ukendte actions
+forbliver lukkede. Kravet om 100 % gyldige vejrdata er uændret. Ingen oneoff;
+næste bevis er én almindelig weather. DEC-0206-tillæg.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.425 historical-maintenance recovery
 
 4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.
 Normalrun `35401927838` viste, at den aktive model under den endnu ikke

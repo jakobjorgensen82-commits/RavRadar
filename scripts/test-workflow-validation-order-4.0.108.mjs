@@ -2213,8 +2213,10 @@ for (const marker of [
   "checkpointPath: '.cache/ravscore-continuation-checkpoint/checkpoint.json'",
   'targetReference: process.env.RAVRADAR_PRODUCTION_TARGET_HOUR',
   'repositoryRoot: process.env.GITHUB_WORKSPACE',
+  'if test -f .cache/ravscore-continuation-checkpoint/checkpoint.json; then',
   '!checkpoint.loaded || !checkpoint.continuationAvailable',
   'Integrated historical maintenance will continue from the validated continuation checkpoint.',
+  'Integrated historical maintenance will rebuild measured state from the bounded 48-hour weather history.',
   'node scripts/protected-private-production-runtime.mjs',
   '--restore',
   'node scripts/private-production-runtime-bundle.mjs restore',
@@ -2244,12 +2246,11 @@ const historicalMaintenanceRestoreFallback = privateRuntimeRestoreSection.slice(
 );
 if (!historicalMaintenanceRestoreFallback.includes('exit 0')
   || !historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
+  || !historicalMaintenanceRestoreFallback.includes('if test -f .cache/ravscore-continuation-checkpoint/checkpoint.json; then')
   || !historicalMaintenanceRestoreFallback.includes('!checkpoint.loaded || !checkpoint.continuationAvailable')
-  || !historicalMaintenanceRestoreFallback.includes('validated continuation checkpoint')) {
-  throw new Error('Historisk integrated maintenance må kun fortsætte uden privat runtime efter streng checkpointvalidering.');
-}
-if (historicalMaintenanceRestoreFallback.includes('stateless recovery')) {
-  throw new Error('Historisk integrated maintenance må ikke åbne den state-less cold-start-vej.');
+  || !historicalMaintenanceRestoreFallback.includes('validated continuation checkpoint')
+  || !historicalMaintenanceRestoreFallback.includes('bounded 48-hour weather history')) {
+  throw new Error('Historisk integrated maintenance skal validere et tilstedeværende checkpoint strengt og kun bruge bounded measured cold start ved reelt fravær.');
 }
 for (const step of [
   'privateRuntimeExpected',
@@ -2326,7 +2327,7 @@ for (const marker of [
   'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
   'elif test "$OPERATIONAL_ACTION" = "integrated-cutover"; then',
   'echo "required=true" >> "$GITHUB_OUTPUT"',
-  'elif test "$OPERATIONAL_ACTION" = "integrated"; then',
+  'elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
   'echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"',
   'No protected continuation exists; active integrated scoring will use measured state-less recovery.',
   'No protected continuation exists; this non-integrated action remains fail-closed.',
@@ -2340,20 +2341,20 @@ if ((legacyBootstrapSection.match(/stateless_integrated_recovery=true/g) || []).
   || (legacyBootstrapSection.match(/stateless_integrated_recovery=false/g) || []).length !== 3
   || (legacyBootstrapSection.match(/required=true/g) || []).length !== 1
   || (legacyBootstrapSection.match(/required=false/g) || []).length !== 3) {
-  throw new Error('Legacy-bootstrap må have præcis én actionbundet first-cutover-gren og én exact-integrated state-less recoverygren.');
+  throw new Error('Legacy-bootstrap må have præcis én actionbundet first-cutover-gren og én active-integrated state-less recoverygren.');
 }
 const activeIntegratedRecoveryBranch = legacyBootstrapSection.slice(
-  legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then'),
-  legacyBootstrapSection.indexOf('\n          else', legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then')),
+  legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
+  legacyBootstrapSection.indexOf('\n          else', legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then')),
 );
 if (!activeIntegratedRecoveryBranch.includes('echo "required=false" >> "$GITHUB_OUTPUT"')
   || !activeIntegratedRecoveryBranch.includes('echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"')
   || activeIntegratedRecoveryBranch.includes('required=true')) {
-  throw new Error('Kun exact active integrated må vælge measured state-less recovery uden legacy bootstrap.');
+  throw new Error('Kun active integrated eller dens historical-maintenance-reseal må vælge measured state-less recovery uden legacy bootstrap.');
 }
 const weatherGenerationSection = text.slice(positions.weather, positions.provenance);
 if (!weatherGenerationSection.includes(
-  "RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}",
+  "RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}",
 )) {
   throw new Error('Vejrgeneratoren mangler den exact-action-afledte state-less integrated recoverybinding.');
 }

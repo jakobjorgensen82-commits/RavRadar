@@ -1347,8 +1347,10 @@ for(const marker of [
   "checkpointPath: '.cache/ravscore-continuation-checkpoint/checkpoint.json'",
   'targetReference: process.env.RAVRADAR_PRODUCTION_TARGET_HOUR',
   'repositoryRoot: process.env.GITHUB_WORKSPACE',
+  'if test -f .cache/ravscore-continuation-checkpoint/checkpoint.json; then',
   '!checkpoint.loaded || !checkpoint.continuationAvailable',
   'Integrated historical maintenance will continue from the validated continuation checkpoint.',
+  'Integrated historical maintenance will rebuild measured state from the bounded 48-hour weather history.',
 ]){
   ok(privateRuntimeRestoreSection.includes(marker),`Private runtime-recovery mangler ${marker}`);
 }
@@ -1358,9 +1360,10 @@ const historicalMaintenanceRestoreFallback=privateRuntimeRestoreSection.slice(
 );
 ok(historicalMaintenanceRestoreFallback.includes('exit 0')
   &&historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
+  &&historicalMaintenanceRestoreFallback.includes('if test -f .cache/ravscore-continuation-checkpoint/checkpoint.json; then')
   &&historicalMaintenanceRestoreFallback.includes('!checkpoint.loaded || !checkpoint.continuationAvailable')
-  &&!historicalMaintenanceRestoreFallback.includes('stateless recovery'),
-'Historisk integrated maintenance må kun fortsætte med et aktuelt valideret checkpoint og aldrig som state-less cold start');
+  &&historicalMaintenanceRestoreFallback.includes('bounded 48-hour weather history'),
+'Historisk integrated maintenance skal validere tilstedeværende checkpoints og må kun cold-starte ved reelt fravær');
 ok(!buildWorkflow.includes('private-production-runtime-v1-')
   && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(buildWorkflow),
 'Det fulde private runtimebundle må ikke lagres i GitHub Actions cache');
@@ -1391,7 +1394,7 @@ for(const marker of [
   'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
   'elif test "$OPERATIONAL_ACTION" = "integrated-cutover"; then',
   'echo "required=true" >> "$GITHUB_OUTPUT"',
-  'elif test "$OPERATIONAL_ACTION" = "integrated"; then',
+  'elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
   'echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"',
   'No protected continuation exists; active integrated scoring will use measured state-less recovery.',
   'No protected continuation exists; this non-integrated action remains fail-closed.',
@@ -1405,15 +1408,15 @@ ok((legacyBootstrapSection.match(/stateless_integrated_recovery=true/g)||[]).len
   &&(legacyBootstrapSection.match(/stateless_integrated_recovery=false/g)||[]).length===3
   &&(legacyBootstrapSection.match(/required=true/g)||[]).length===1
   &&(legacyBootstrapSection.match(/required=false/g)||[]).length===3,
-'Legacy-bootstrap skal have præcis én first-cutover-gren og én exact-integrated state-less recoverygren');
+'Legacy-bootstrap skal have præcis én first-cutover-gren og én active-integrated state-less recoverygren');
 const activeIntegratedRecoveryBranch=legacyBootstrapSection.slice(
-  legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then'),
-  legacyBootstrapSection.indexOf('\n          else',legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then')),
+  legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
+  legacyBootstrapSection.indexOf('\n          else',legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated" || test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then')),
 );
 ok(activeIntegratedRecoveryBranch.includes('echo "required=false" >> "$GITHUB_OUTPUT"')
   &&activeIntegratedRecoveryBranch.includes('echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"')
   &&!activeIntegratedRecoveryBranch.includes('required=true'),
-'Kun exact active integrated må vælge measured state-less recovery uden legacy bootstrap');
+'Kun active integrated eller dens historical-maintenance-reseal må vælge measured state-less recovery uden legacy bootstrap');
 const firstCutoverGuard="steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
 const extendedProviderGuard=`(inputs.extended_provider_bootstrap == true || (${firstCutoverGuard}))`;
 const waveResolverStart=buildWorkflow.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target');
@@ -1435,7 +1438,7 @@ for(const marker of [
 for(const marker of [
   `RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}`,
   `RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}`,
-  "RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}",
+  "RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}",
 ]){
   ok(weatherSection.includes(marker),`Vejrgeneratoren mangler actionbundet first-cutover-attestering: ${marker}`);
 }
