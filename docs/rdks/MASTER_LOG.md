@@ -1,3 +1,23 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.409 nyeste gyldige komponent
+
+4.0.408 er live gennem PR #352 og main `891b5f3c`. Normalrun
+`35311408813` gennemførte DMI, Copernicus og Open-Meteo, gemte alle
+providercacher og livebeviste, at den gamle Copernicus-journalfejl er væk.
+Closure havde 78.594 gyldige par og 820 ærlige lokale `MISSING`.
+
+Central weather stoppede bagefter på en bølgekonflikt. Den gamle deployede
+private historik og den nye progressive DMI-cache havde begge en gyldig værdi
+for samme del/time, men fra forskellige DMI-prognosekørsler. 4.0.409 vælger
+nu den nyeste gyldige `modelRun` pr. komponent. Ny strøm og gammel gyldig
+bølge kan derfor bruges sammen, hvis den nyere prognose mangler bølger, uden
+at blande felter inde i komponenten. Samme eller ikke-sammenlignelige
+prognoseversioner med forskellige værdier stopper fortsat.
+
+Replay-, bulk-, produktionsadapter- og live-adaptertests er grønne. Den
+generiske replayguard og RavScore-bundlen `d9ba75ed...` er uændrede. Næste er
+exact-head, merge, providerfri code-only og én normal weather på de gemte
+cacher. Ingen oneoff; bootstrap kræver målt behov. DEC-0192.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.408 Copernicus-fortsættelse
 
 4.0.407 er live gennem PR #351 og main `74ce8c38`. Normalrun

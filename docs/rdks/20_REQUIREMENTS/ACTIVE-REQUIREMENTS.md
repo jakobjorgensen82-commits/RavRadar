@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-18 – nyeste gyldige komponent vinder
+
+- **REQ-4.0.409-NEWEST-VALID-001 – BINDENDE:** For samme kystdel, time og komponent erstatter den gyldige værdi fra nyeste dokumenterede DMI-`modelRun` en ældre gyldig værdi.
+- **REQ-4.0.409-COMPONENT-INDEPENDENCE-002 – BINDENDE:** Strøm og bølger vælges uafhængigt. Strøm-U/V og bølgehøjde/periode/kildebevis forbliver hver sin atomiske pakke.
+- **REQ-4.0.409-OLD-OVER-EMPTY-003 – BINDENDE:** Mangler den nyere prognose en gyldig komponent, beholdes den ældre gyldige komponent for samme sted/time, indtil den udløber; tomt er aldrig bedre end gyldigt gammelt.
+- **REQ-4.0.409-EQUAL-RUN-CONFLICT-004 – BINDENDE:** Forskellige værdier fra samme eller ikke-sammenlignelige `modelRun` må ikke skjules og stopper fortsat fail-closed.
+- **REQ-4.0.409-NO-MODEL-CHANGE-005 – BINDENDE:** Rettelsen ændrer ikke RavScore-formel, vægte, modelbundle, kildeprioritet, geometri eller land-/vandpunkter.
+- **REQ-4.0.409-NORMAL-RESUME-006 – BINDENDE:** Næste almindelige weather genbruger DMI-, Copernicus- og Open-Meteo-fremgangen fra `35311408813`; ingen oneoff, og bootstrap kræver målt behov.
+
+DEC-0192. 4.0.408 er live; scheduler er pauset.
+
 # Aktuelt ejerdelta – 2026-09-18 – fortsæt Copernicus fra frisk journal
 
 - **REQ-4.0.408-JOURNAL-FRESHNESS-001 – BINDENDE:** Varige Copernicus-forsøgskvitteringer må kun genbruges inden for den samme firetimersgrænse som source-stage-rebasen.

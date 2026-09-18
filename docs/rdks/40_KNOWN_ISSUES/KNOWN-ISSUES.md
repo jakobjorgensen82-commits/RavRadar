@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.409 komponentvis prognoserevision
+
+- **ISSUE-4.0.408-DELIVERY – LUKKET:** Exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329` er grønne; live viser 4.0.408.
+- **ISSUE-COPERNICUS-SEGMENT-ATTEMPT-REPLAY – LUKKET OG LIVEBEVIST:** Normalrun `35311408813` fortsatte gennem Copernicus uden den gamle referencefejl og gemte 4.956 validerede par.
+- **ISSUE-RAVSCORE-RECOVERY-FORECAST-REVISION – RETTET LOKALT / LIVEBEVIS MANGLER:** Central weather behandlede gammel og nyere gyldig DMI-bølge som ligeværdige peers. 4.0.409 vælger nyeste gyldige `modelRun` pr. komponent og bevarer gammel gyldig komponent ved nyt hul.
+- **ISSUE-PROVIDER-CACHE-RESUME – BEVARET:** Runnet gemte DMI-, Copernicus- og Open-Meteo-fremgang før centralfejlen; næste normalrun genbruger den.
+- **ISSUE-DMI-LIVE-ZONE-429 – OBSERVATION, IKKE STOPÅRSAG:** Ét separat EDR-kald fik HTTP 429; fallback blev bevaret, og provider-/closurekæden var allerede gyldig.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Central weather, runtimeaudit, frisk deploy og en efterfølgende normal cachevedligeholdelse mangler før scheduler.
+
+DEC-0192. Ingen oneoff; bootstrap kun ved målt behov.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.408 Copernicus-journalfriskhed
 
 - **ISSUE-4.0.407-DELIVERY – LUKKET:** Exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877` er grønne; live viser 4.0.407.

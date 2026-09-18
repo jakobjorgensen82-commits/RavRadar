@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.409 nyeste gyldige komponent
+
+4.0.408 er live gennem exact-head `35310381268`, PR #352, main `891b5f3c`
+og code-only `35310919329`. Normalrun `35311408813` gennemførte og gemte alle
+providerled samt livebeviste Copernicus-rettelsen, men central weather
+stoppede på en bølgekonflikt mellem gammel og nyere gyldig DMI-prognose.
+
+Lokal 4.0.409 vælger nyeste dokumenterede `modelRun` pr. komponent/time.
+Ny strøm og gammel gyldig bølge kan bruges sammen, når den nye bølge mangler;
+samme prognoseversion med forskellige værdier stopper fortsat. RavScore-
+modelbundle `d9ba75ed...` er uændret. Næste: docs/version/geodatabevis,
+commit/push, exact-head, merge, providerfri kode og én normal weather på
+gemte cacher. Ingen oneoff; bootstrap kun ved målt behov. Scheduler pauset.
+DEC-0192. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.408 journalfriskhed
 
 4.0.407 er live gennem exact-head `35305418536`, PR #351, main `74ce8c38`

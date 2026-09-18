@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.409 vælger nyeste gyldige DMI-komponent
+
+- 4.0.408 blev leveret gennem exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329`.
+- Normalrun `35311408813` gennemførte alle providerled, gemte cacher og livebeviste Copernicus-rettelsen.
+- Central weather stoppede på gammel og nyere gyldig DMI-bølge for samme del/time, fordi de blev behandlet som ligeværdige peers.
+- 4.0.409 vælger nyeste gyldige `modelRun` pr. komponent, bevarer gammel gyldig komponent ved nyt hul og ændrer ikke RavScore-modellen. DEC-0192.
+
 # 2026-09-18 – 4.0.408 udløber gamle Copernicus-forsøg uden at slette data
 
 - 4.0.407 blev leveret gennem exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877`.

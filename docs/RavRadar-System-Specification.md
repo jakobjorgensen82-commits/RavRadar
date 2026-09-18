@@ -1,5 +1,14 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.409-præcisering – DEC-0192:** Når gammel deployet privat
+RavScore-historik og progressiv DMI-historik begge har en valideret komponent
+for samme kystdel/time, vælges den fra nyeste dokumenterede `modelRun`.
+Strøm og bølger vælges uafhængigt, mens U/V-par og bølgetuple forbliver
+atomiske. En manglende eller ugyldig nyere komponent erstatter aldrig en
+stadig gyldig gammel komponent. Samme eller ikke-sammenlignelige modelkørsel
+med forskellige værdier forbliver en hård replaykonflikt. RavScore-modellen
+og den generiske peer-konfliktgate er uændrede.
+
 **Bindende 4.0.368-præcisering:** Workflowoutputs skal skelne et manglende felt fra en eksisterende boolsk `false`-værdi. Den gennemførte centrale recovery er irreversibelt næste kildetilstand for code-only-fortsættelsen og må ikke genudføres; næste run fortsætter fra central version 1 uden provider.
 
 **Bindende 4.0.367-præcisering – DEC-0149:** Et allerede publiceret historisk Pages-target må kun genskabes som central aktiv tilstand gennem en engangsrecovery, der kræver den eksakte manglende operationelle række, eksakt legacyprofil, fastlåst repository/run/attempt/head/artifact og kanoniske hashes for alle kilde- og targetbeviser samt en frisk offentlig implementation-verification. Efter atomisk central 0→1 fortsætter det samme code-only-forløb gennem normal historisk bindingsvedligeholdelse. En deployterminal kræver Pages, offentlig verification, checkpoint og handlingens centrale completion eller en gyldig reconciliation; `continue-on-error` er alene fejlsamling og kan ikke give grøn status.

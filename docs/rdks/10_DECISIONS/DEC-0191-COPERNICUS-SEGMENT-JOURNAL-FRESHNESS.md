@@ -1,6 +1,6 @@
 # DEC-0191 – Copernicus-segmentjournal følger firetimersgrænsen
 
-**Status:** Aktiv og bindende; implementeret lokalt i 4.0.408, livebevis afventer
+**Status:** Aktiv, bindende og livebevist i 4.0.408
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -43,3 +43,8 @@ projekteres fra donorbanken. Source-stage-, pilot- og segmentjournaltests skal
 være grønne. Efter exact-head og merge skal én normalrun fortsætte gennem
 Copernicus, Open-Meteo, runtimeaudit og deploy eller levere en ny konkret
 fejl uden at miste cachefremgangen.
+
+Normalrun `35311408813` fortsatte gennem Copernicus uden referencefejlen,
+gemte 4.956 Copernicus-par og nåede Open-Meteo. DEC-0191 er dermed
+livebevist. Det senere stop i central weather var den særskilte prognose-
+revisionskant, som håndteres i DEC-0192; providerfremskridtet gik ikke tabt.

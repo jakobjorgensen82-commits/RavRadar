@@ -90,6 +90,9 @@ import {
   selectRavScoreProductionInitialState,
 } from './lib/ravscore-production-part-pipeline.mjs';
 import {
+  buildNewestValidRavScoreRecoverySources,
+} from './lib/ravscore-recovery-source-priority.mjs';
+import {
   exactNationalOperationalColdReplayInitialization,
 } from './lib/ravscore-operational-state-readiness.mjs';
 import {
@@ -2246,7 +2249,7 @@ function scoreCoastalPartsRuntime(
         initialSelection.state,
         generatedAt,
       );
-      const recoverySources = [];
+      let deployedRecoverySource = null;
       // A promoted point has a deliberately new sampling context; old deployed
       // rows for the prior point must not enter its replay. Its private staged
       // DMI history has already been promoted into the progressive cache.
@@ -2275,7 +2278,7 @@ function scoreCoastalPartsRuntime(
               )),
             },
           );
-          recoverySources.push({
+          deployedRecoverySource = {
             source: 'deployed-private-runtime',
             record: {
               ...deployedRecord,
@@ -2286,7 +2289,7 @@ function scoreCoastalPartsRuntime(
                 { ...part, zoneId },
               ),
             },
-          });
+          };
         }
       }
       const progressiveDmiRecord = bulkZoneToForecastRecord(
@@ -2296,6 +2299,7 @@ function scoreCoastalPartsRuntime(
         null,
         { startAt: replayStartAt, expectedIdentity: partDmiIdentity },
       );
+      let progressiveRecoverySource = null;
       if (progressiveDmiRecord) {
         const progressiveRecord = mergeLiveCurrentPilotIntoRecord(
           progressiveDmiRecord,
@@ -2313,7 +2317,7 @@ function scoreCoastalPartsRuntime(
             )),
           },
         );
-        recoverySources.push({
+        progressiveRecoverySource = {
           source: 'progressive-private-dmi',
           record: {
             ...progressiveRecord,
@@ -2324,8 +2328,12 @@ function scoreCoastalPartsRuntime(
               { ...part, zoneId },
             ),
           },
-        });
+        };
       }
+      const recoverySources = buildNewestValidRavScoreRecoverySources({
+        fallbackSource: deployedRecoverySource,
+        preferredSource: progressiveRecoverySource,
+      });
       const {
         recovery,
         ravScoreState,

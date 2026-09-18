@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.409 nyeste gyldige komponent
+
+- [x] Lever 4.0.408 via exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329`.
+- [x] Kør normal weather `35311408813`; gennemfør alle providerled, gem cacher og livebevis 4.0.408.
+- [x] Mål closure til 31.733 DMI + 4.956 Copernicus + 904 regional + 41.001 Open-Meteo + 820 lokale `MISSING`.
+- [x] Afgræns stoppet til gammel og nyere gyldig DMI-bølge i den private recovery-union.
+- [x] Vælg nyeste dokumenterede `modelRun` pr. komponent/time; bevar gammel gyldig komponent ved nyt hul.
+- [x] Bevar hård konflikt ved samme/ukendt prognoseversion og bevar generisk replayguard.
+- [x] Bestå replay-, bulk-, produktionsadapter-, live-adapter-, syntaks- og diffkontrol samt uændret modelbundle.
+- [x] Afslut RDKS, changelog, begge håndbøger, installationskopi, version og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head, merge og lever 4.0.409 providerfrit.
+- [ ] Kør én almindelig weather på gemte cacher; verificér central weather, runtimeaudit og deploy.
+- [ ] Vurdér bootstrap kun mod målt rest; bevis næste normale vedligeholdelse før scheduler og roadmap.
+
+DEC-0192. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.408 Copernicus-journalfriskhed
 
 - [x] Lever 4.0.407 via exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877`.

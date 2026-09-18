@@ -1,3 +1,19 @@
+# Aktiv roadmap – 4.0.409 fra prognoserevision til normal drift
+
+1. [x] Lever 4.0.408 og livebevis Copernicus-journalrettelsen i `35311408813`.
+2. [x] Gennemfør alle providerled og gem DMI-, Copernicus- og Open-Meteo-fremgang.
+3. [x] Afgræns centralstoppet til gammel kontra nyere gyldig DMI-bølge i recovery.
+4. [x] Implementér nyeste gyldige komponent pr. `modelRun`, sted og time.
+5. [x] Bevis uafhængig strøm/bølge, gammel-over-tom og fortsat hård samme-run-konflikt.
+6. [x] Bestå de fem målrettede kode-/modelbeviser uden ændret modelbundle.
+7. [ ] Afslut dokumentation, version, installationskopi og rent geodataversionsbevis.
+8. [ ] Commit/push, bestå én exact-head, merge og lever kode providerfrit.
+9. [ ] Kør én almindelig weather på gemte cacher; verificér central weather, score/runtime og deploy.
+10. [ ] Vurdér bootstrap alene mod den målte restdækning.
+11. [ ] Bevis næste normale vedligeholdelse, genaktivér scheduler og fortsæt site-/score-/roadmapgennemgang.
+
+DEC-0192. Ingen oneoff.
+
 # Aktiv roadmap – 4.0.408 fra gemt providerfremgang til normal drift
 
 1. [x] Lever 4.0.407 og verificér live version/modelbinding.

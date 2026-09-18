@@ -224,6 +224,8 @@ const recoveryRuntime = integratedRuntime.slice(
   integratedRuntime.indexOf('// A promoted point has a deliberately new sampling context'),
   integratedRuntime.indexOf('const {\n        ravScoreState'),
 );
+assert.match(recoveryRuntime, /buildNewestValidRavScoreRecoverySources\(\{[\s\S]*?fallbackSource: deployedRecoverySource,[\s\S]*?preferredSource: progressiveRecoverySource/,
+  'normal maintenance must resolve old/new verified DMI revisions component by component before replay');
 assert.doesNotMatch(recoveryRuntime, /materializeMissingHorizon/,
   'deployed/progressive replay keeps its existing optional recovery behavior');
 assert.match(integratedRuntime, /FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH/,
