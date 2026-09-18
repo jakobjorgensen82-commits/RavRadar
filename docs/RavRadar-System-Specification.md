@@ -1,5 +1,13 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.413-præcisering – DEC-0196:** Den eksakte RavScore-recovery
+accepterer både historiske audits uden `profile` og den aktuelle kendte form
+med feltet. En tilstedeværende profil skal have eksakt struktur, boolsk
+readiness, sikre unikke advisories, identisk deklareret/forventet indhold,
+migration klar og samme current-unavailable-antal som historikregnskabet.
+Fuld audithash samt artifact-, Pages-, binding-, deployment- og CAS-beviser
+forbliver uændrede.
+
 **Bindende 4.0.412-præcisering – DEC-0195:** Et allerede Pages-verificeret
 same-binding-target, som er offentligt men mangler central post-deploy-reseal,
 må kun registreres gennem en engangsrecovery med eksakt source-/target-run,

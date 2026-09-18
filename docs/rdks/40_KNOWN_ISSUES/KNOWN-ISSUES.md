@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.413 auditprofil
+
+- **ISSUE-4.0.412-DELIVERY – LUKKET:** PR #356 er merged som main `58212e59`.
+- **ISSUE-RECOVERY-AUDIT-PROFILE – RETTET LOKALT / LIVEBEVIS MANGLER:** Run `35342779550` bestod artifacts og Pages, men den gamle exact-key-liste afviste den nyere `profile`-blok før CAS. 4.0.413 validerer begge kendte schemaformer.
+- **ISSUE-CENTRAL-23-TO-24 – ÅBEN P0:** Recoverygenkørsel, code-only og normal weather mangler. Live og central tilstand er uændrede efter det sikre stop.
+
+DEC-0196. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.412 liveforsegling
 
 - **ISSUE-4.0.411-DELIVERY – LUKKET:** Exact-head `35339636413`, PR #355 og main `52a7a15d` er leveret.

@@ -1,3 +1,9 @@
+# 2026-09-18 – 4.0.413 validerer recoveryrapportens nyere profilblok
+
+- 4.0.412 blev merged som `58212e59`; recovery `35342779550` bestod artifacts og frisk Pages.
+- Den gamle exact-key-liste afviste den nyere korrekte `profile`-blok før CAS, så central og live forblev uændrede.
+- 4.0.413 validerer både historisk og aktuel auditform uden at svække hashes eller andre beviser. DEC-0196.
+
 # 2026-09-18 – 4.0.412 registrerer det allerede offentlige 4.0.410-target
 
 - 4.0.411 bestod exact-head `35339636413` og blev merged gennem PR #355 som `52a7a15d`.

@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.413 auditprofil
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.413-recovery-audit-profile`, baseret på main `58212e59`.
+
+4.0.412-recovery `35342779550` bestod immutable artifacts og frisk Pages, men
+stoppede før CAS, fordi den gamle eksakte auditfeltliste ikke rummede den
+nyere `profile`-blok. Central version 23 og live 4.0.410 er uændrede.
+
+4.0.413 tillader den historiske auditform uden profile og validerer den nyere
+form med eksakt struktur, boolsk readiness, sikre advisories,
+deklareret/forventet lighed og unavailable-sammenhæng. Målrettede lokale
+activation-, code-only-, workflow-, RDKS-, versions-, bindings-, håndbogs- og
+browserkildekontroller er grønne. Næste: commit/push, exact-head, merge,
+recovery, providerfri code-only og én normal weather. Ingen oneoff. DEC-0196.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.412 eksakt live-recovery
 
 Arbejd i `RavRadar-4.0.396`, branch

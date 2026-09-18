@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.412
+**Håndbogsversion:** 4.0.413
+
+## 89.17 4.0.413 – Recovery forstår den aktuelle kontrolrapport
+
+Den første 4.0.412-recovery kontrollerede de gemte source- og targetbeviser og
+den offentlige side korrekt. Den stoppede før databaseskrivningen, fordi dens
+gamle liste over tilladte rapportfelter ikke indeholdt den nyere `profile`-
+blok, som den almindelige scoreaudit producerer.
+
+4.0.413 tillader fortsat gamle forseglede rapporter uden feltet. Hvis feltet
+findes, kontrolleres dets eksakte form, boolske readinessfelter, advarsler,
+sammenhæng mellem deklareret og beregnet profil samt antal utilgængelige
+aktuelle scorer. Den fastlåste hash over hele rapporten og alle øvrige beviser
+er uændrede. Genkørslen kan derfor fortsat kun registrere det ene allerede
+offentlige 4.0.410-target.
 
 ## 89.16 4.0.412 – Den allerede offentlige produktion registreres præcist
 
@@ -50,7 +64,7 @@ nu følge et verificeret same-model-deploy med afgrænsede diagnostiske fund,
 men sådanne data må ikke bruges til kalibrering. Modelskift og første cutover
 har fortsat de strengere krav.
 
-Formel og vægte er uændrede. 4.0.412 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Formel og vægte er uændrede. 4.0.413 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den rettede integrerede kode er bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er fortsat særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859` over 57 transitive filer. Den nye continuationidentitet følger med append-only migration `20260918125600`.
 

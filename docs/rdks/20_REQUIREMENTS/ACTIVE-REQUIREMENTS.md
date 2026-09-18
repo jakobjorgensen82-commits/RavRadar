@@ -1,3 +1,12 @@
+# Aktuelt ejerdelta – 2026-09-18 – recovery-auditprofil
+
+- **REQ-4.0.413-AUDIT-PROFILE-001 – BINDENDE:** Recovery skal acceptere den historiske auditform uden `profile` og den aktuelle form med en eksakt valideret `profile`-blok.
+- **REQ-4.0.413-PROFILE-CONSISTENCY-002 – BINDENDE:** Deklareret og forventet profil skal være ens, readiness skal være boolsk, advisories sikre og afledt af readiness, migration klar og unavailable-antal lig historiens regnskab.
+- **REQ-4.0.413-PINNING-UNCHANGED-003 – BINDENDE:** Rapporthash, artifact-, Pages-, binding-, deployment- og CAS-beviser må ikke svækkes.
+- **REQ-4.0.413-SAFE-RETRY-004 – BINDENDE:** Recovery må kun genkøres fra eksakt central version 23 eller anerkende den eksakte allerede gendannede version 24.
+
+DEC-0196.
+
 # Aktuelt ejerdelta – 2026-09-18 – eksakt registrering af live 4.0.410
 
 - **REQ-4.0.412-EXACT-LIVE-001 – BINDENDE:** Kun det allerede offentlige og eksakt verificerede 4.0.410-target fra run `35331664087` må registreres som central version 24.

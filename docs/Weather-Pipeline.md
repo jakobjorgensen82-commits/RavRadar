@@ -1,5 +1,13 @@
 # Weather Pipeline 1.0
 
+## 4.0.413 – recovery validerer auditprofilen
+
+Recovery `35342779550` nåede gennem immutable artifact- og live Pages-bevis,
+men stoppede før CAS på en gammel eksakt feltliste. Den nyere runtimeaudit har
+en `profile`-blok med deklareret og forventet readiness samt current-unavailable-
+antal. 4.0.413 validerer denne blok fuldt og bevarer samtidig den historiske
+auditform uden feltet. Alle hashes og øvrige recoverygrænser er uændrede.
+
 ## 4.0.412 – præcis liveforsegling før kode-only-fortsættelse
 
 Pages-run `35331664087` udgav og verificerede 4.0.410, men den efterfølgende

@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.413 auditprofil i recovery
+
+- [x] Lever 4.0.412 gennem PR #356 som main `58212e59`.
+- [x] Kør recovery `35342779550` gennem immutable artifacts og frisk Pages.
+- [x] Afgræns stop til gammel eksakt auditfeltliste; bevis at CAS ikke blev kaldt.
+- [x] Valider optional `profile` med eksakt kendt struktur og intern sammenhæng.
+- [x] Tilføj positiv test af den virkelige nyere form og negativ selvmodsigelsestest.
+- [x] Afslut version/docs og målrettede lokale kontroller.
+- [ ] Commit/push, én exact-head-kontrol og merge samme head.
+- [ ] Genkør recovery, kør providerfri code-only og derefter én normal weather.
+
+DEC-0196. Ingen oneoff og ingen providerarbejde før code-only-deployet.
+
 # Aktuel implementeringsstatus – lokal 4.0.412 eksakt live-reseal-recovery
 
 - [x] Lever 4.0.411 gennem exact-head `35339636413`, PR #355 og main

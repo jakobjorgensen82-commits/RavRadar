@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.413 validerer aktuel auditprofil
+
+4.0.412 blev exact-head-verificeret, merged som `58212e59` og startede den
+eksakte recovery i `35342779550`. Source-/target-artifacts og frisk offentlig
+4.0.410-verifikation bestod. Recovery stoppede før CAS/databasekaldet, fordi
+den genbrugte eksakte auditfeltliste ikke kendte producentens nyere `profile`-
+blok. Central tilstand er derfor uændret version 23; live er uændret 4.0.410.
+
+4.0.413 accepterer den gamle auditform og validerer den nye profilblok
+strukturelt og semantisk. Fuld rapporthash og alle øvrige fastlåste beviser er
+uændrede. Næste: målrettede tests, exact-head, merge og sikker genkørsel af
+samme recovery; derefter providerfri code-only og én normal weather.
+DEC-0196.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.412 genopretter liveforseglingen
 
 4.0.411 blev exact-head-verificeret i `35339636413` og merged gennem PR #355
