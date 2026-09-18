@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.408 Copernicus-fortsættelse
+
+4.0.407 er live gennem PR #351 og main `74ce8c38`. Normalrun
+`35306467385` gennemførte DMI, gemte fremgangen og gendannede Copernicus'
+gyldige `IN_PROGRESS`-tilstand, men nåede ikke Open-Meteo eller deploy.
+
+Rodårsagen var en gammel varig segmentjournal, som efter en korrekt rebase
+genindsatte et forsøg fra den tidligere produktionstime. 4.0.408 anvender den
+eksisterende firetimersgrænse også på dette replay. Gyldige målinger bevares
+uændret i donorbanken; kun udløbet negativ forsøgs-/udmattelsesevidens
+fjernes. Målrettede source-stage-, pilot- og segmentjournaltests er grønne.
+Næste er exact-head, merge og normal fortsættelse på de gemte cacher. Ingen
+oneoff; bootstrap kræver målt behov. DEC-0191.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.407 vejrgenopretning
 
 Ejeren kræver, at vejrhentningen bringes i stabil normal drift, cachen fyldes

@@ -17,6 +17,7 @@ from typing import Any, Callable, NamedTuple
 
 from lib.copernicus_current import (
     COMPONENT_PAIR,
+    FUTURE_ACQUISITION_FRESHNESS_HOURS,
     PreparedJsonSnapshot,
     VerifiedPreparedJsonSnapshot,
     empty_shadow,
@@ -988,6 +989,9 @@ def persist_source_stage_progress(
                 shadow=donor_projection,
                 required_pairs=registry["operationalRequiredPairs"],
                 target_identities=target_identities,
+                reference=parse_time(
+                    registry["productionReferenceAt"], "Registry reference"
+                ),
             )
 
         if prepared_donor is not None:
@@ -1193,12 +1197,15 @@ def consolidate_durable_segment_progress(
 def journal_for_donor_projection(
     attempts: list[dict[str, Any]], *, bank: dict[str, Any], shadow: dict[str, Any],
     required_pairs: list[dict[str, Any]], target_identities: dict[str, dict[str, Any]],
+    reference: datetime,
 ) -> list[dict[str, Any]]:
     """Keep immutable attempts only where the selected donor generation permits.
 
     A damaged positive acquisition cannot suppress reacquisition merely because
-    another row from its multi-pair shard still exists. New post-damage negative
-    attempts retain their normal bounded retry meaning.
+    another row from its multi-pair shard still exists. Measurements may survive
+    through the donor bank after their original production reference advances,
+    but the short-lived attempt/exhaustion journal must obey the same freshness
+    window as an ordinarily rebased source stage.
     """
     acquisition_ids = {row["acquisitionId"] for row in shadow["acquisitions"]}
     masks = {(row["partId"], row["validTime"], row["source"]): row for row in bank["sourceMasks"]}
@@ -1209,6 +1216,14 @@ def journal_for_donor_projection(
             (pair["partId"], pair["validTime"]) in required
             for pair in row["requestedPairs"]
         )
+        and 0 <= (
+            reference
+            - parse_time(row["productionReferenceAt"], "Attempt reference")
+        ).total_seconds() <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
+        and abs((
+            reference
+            - parse_time(row["acquisitionAt"], "Attempt acquisition")
+        ).total_seconds()) <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
         and (row["parsedRecordCount"] == 0 or row["acquisitionId"] in acquisition_ids)
         and not any(
             (mask := masks.get((pair["partId"], pair["validTime"], row["source"])))
@@ -1860,7 +1875,8 @@ def run_bounded_operational_refresh(
             donor_state=donor_state, targets=authoritative_targets, reference=reference, updated_at=acquisition_at)
         acquisitions, records = candidate_projection["acquisitions"], candidate_projection["records"]
         attempts = journal_for_donor_projection(attempts, bank=candidate_bank, shadow=candidate_projection,
-            required_pairs=required_pairs, target_identities=target_identities)
+            required_pairs=required_pairs, target_identities=target_identities,
+            reference=reference)
         advisory_refs, advisory_missing, _ = select_primary_advisory_history(
             required_pairs=list(registry["advisoryHistoryRequiredPairs"]), acquisitions=acquisitions,
             records=records, reference=reference)
@@ -2128,7 +2144,8 @@ def main() -> int:
         # The donor bank is authoritative over an independently restored
         # projection.  Drop attempts whose positive acquisition is absent from
         # that generation before validating/merging its observed native axis.
-        # Zero-row attempts remain valid negative evidence and are retained.
+        # Zero-row attempts remain valid negative evidence only inside the
+        # same bounded four-hour rebase window as the ordinary source stage.
         authoritative_projection = projected_donor_shadow(
             donor_state,
             targets=authoritative_targets,
@@ -2139,6 +2156,7 @@ def main() -> int:
             shadow=authoritative_projection,
             required_pairs=required_pairs,
             target_identities=target_identities,
+            reference=reference,
         )
         if restored_segment_journal is not None:
             for entry in restored_segment_journal["entries"]:
@@ -2168,7 +2186,8 @@ def main() -> int:
         initial_projection = projected_donor_shadow(donor_state, targets=authoritative_targets)
         existing_acquisitions, existing_records = initial_projection["acquisitions"], initial_projection["records"]
         source_attempts = journal_for_donor_projection(source_attempts, bank=donor_state,
-            shadow=initial_projection, required_pairs=required_pairs, target_identities=target_identities)
+            shadow=initial_projection, required_pairs=required_pairs,
+            target_identities=target_identities, reference=reference)
     else:
         existing_acquisitions, existing_records = merge_cache_evidence(
             existing, [], [], reference, target_identities,
@@ -2527,6 +2546,7 @@ def main() -> int:
                         shadow=working_projection,
                         required_pairs=required_pairs,
                         target_identities=target_identities,
+                        reference=reference,
                     )
                     _, checkpoint_missing, _ = select_source_order_admissible_records(
                         required_pairs,

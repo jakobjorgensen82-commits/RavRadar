@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.408 journalfriskhed
+
+4.0.407 er live gennem exact-head `35305418536`, PR #351, main `74ce8c38`
+og code-only `35306056877`. Normalrun `35306467385` gennemførte DMI og gemte
+fremgangen, men stoppede i Copernicus før Open-Meteo/deploy.
+
+En korrekt rebased source-stage blev bagefter forurenet af et gammelt forsøg
+fra den varige segmentjournal. Lokal 4.0.408 filtrerer replayede forsøg med
+den samme firetimersgrænse og bevarer gyldige positive records i donorbanken.
+Python-syntaks, tre målrettede Copernicus-tests, version, RDKS, håndbog,
+geodataversionsbevis og uændret modelbinding er grønne. Næste: commit/push,
+exact-head, merge, providerfri kode og én almindelig weather på gemte cacher.
+Ingen oneoff; bootstrap kun ved målt behov.
+Scheduler pauset. DEC-0191. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.407 vindhorisont og replaydiagnose
 
 4.0.406 er live gennem exact-head `35242940822`, PR #350, main `459dc41c`

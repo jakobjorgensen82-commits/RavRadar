@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – fortsæt Copernicus fra frisk journal
+
+- **REQ-4.0.408-JOURNAL-FRESHNESS-001 – BINDENDE:** Varige Copernicus-forsøgskvitteringer må kun genbruges inden for den samme firetimersgrænse som source-stage-rebasen.
+- **REQ-4.0.408-POSITIVE-PRESERVATION-002 – BINDENDE:** Gyldige positive målinger bevares i donorbanken, selv når en kortlivet negativ forsøgs-/udmattelseskvittering udløber.
+- **REQ-4.0.408-NORMAL-RESUME-003 – BINDENDE:** Næste almindelige weather genbruger de gemte DMI- og Copernicus-cacher fra `35306467385`; ingen ny oneoff.
+- **REQ-4.0.408-NO-MODEL-DATA-CHANGE-004 – BINDENDE:** Rettelsen ændrer ikke RavScore, vejrværdier, kildeprioritet, geometri eller land-/vandpunkter.
+- **REQ-4.0.408-BOOTSTRAP-EVIDENCE-005 – BINDENDE:** Bootstrap bruges kun, hvis målt restdækning efter den normale kæde viser et reelt behov.
+
+DEC-0191. 4.0.407 er live; scheduler er pauset.
+
 # Aktuelt ejerdelta – 2026-09-17 – fyld og vedligehold vejrcachen
 
 - **REQ-4.0.407-WIND-HORIZON-001 – BINDENDE:** Ét gammelt vindpunkt er ikke dækning. Mangler et aktivt punkt den sammenhængende 96-timers vindhorisont, forsøges ét HARMONIE-asset først.

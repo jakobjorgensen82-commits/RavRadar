@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.408 Copernicus-journalfriskhed
+
+- **ISSUE-4.0.407-DELIVERY – LUKKET:** Exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877` er grønne; live viser 4.0.407.
+- **ISSUE-HARMONIE-TRIGGER-TOO-WEAK – LUKKET I PLAN / LIVE UDEN ARBEJDE:** Normalrun `35306467385` vurderede den sammenhængende vindhorisont korrekt; HARMONIE havde nul nødvendige parametre for targettimen.
+- **ISSUE-COPERNICUS-SEGMENT-ATTEMPT-REPLAY – RETTET LOKALT / LIVEBEVIS MANGLER:** En gammel segmentjournal genindsatte et forsøg efter en korrekt source-stage-rebase og udløste `source attempt reference mismatch`. 4.0.408 anvender samme firetimersgrænse efter replay.
+- **ISSUE-PROVIDER-CACHE-RESUME – BEVARET:** DMI- og Copernicus-fremgang fra `35306467385` er gemt; næste normalrun skal genbruge den.
+- **ISSUE-OPEN-METEO-NOT-REACHED – ÅBEN FØLGEVIRKNING:** Open-Meteo og deploy blev ikke nået, fordi Copernicus-gaten stoppede først.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Frisk deploy og en efterfølgende normal cachevedligeholdelse mangler før scheduler.
+
+DEC-0191. Ingen oneoff; bootstrap kun ved målt behov.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.407 vindhorisont og state replay
 
 - **ISSUE-4.0.406-DELIVERY – LUKKET:** Exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724` er grønne; live viser scorer og femdøgn.

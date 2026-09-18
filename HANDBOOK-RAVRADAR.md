@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.407
+**Håndbogsversion:** 4.0.408
+
+## 89.12 4.0.408 – Gamle Copernicus-forsøg må ikke blokere nye kørsler
+
+Den almindelige vejrvedligeholdelse gennemførte DMI og gemte fremskridtet.
+Copernicus genfandt også sine gyldige, tidligere hentede målinger. Alligevel
+stoppede den, fordi en separat lille journal lagde en gammel kvittering for et
+tidligere forsøg tilbage efter, at systemet var flyttet til en nyere
+produktionstime.
+
+Målingerne og forsøgskvitteringerne har forskellig levetid. En gyldig måling
+må fortsat bruges, så længe den dækker den ønskede prognosetime. En besked om,
+at et bestemt forsøg allerede er udført, må derimod højst genbruges i fire
+timer. Ellers kan den fejlagtigt forhindre et nyt forsøg.
+
+4.0.408 håndhæver samme firetimersregel, også når den varige segmentjournal
+afspilles efter en genstart. Den sletter ikke brugbare Copernicus-data og
+ændrer ikke kildeprioriteten. Næste almindelige kørsel fortsætter på de gemte
+DMI- og Copernicus-cacher; der startes ingen oneoff.
+
+4.0.408 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den uændrede integrerede implementering er
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.11 4.0.407 – Vind skal være dækkende, ikke bare findes et sted
 

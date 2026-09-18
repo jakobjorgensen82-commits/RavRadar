@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.408 Copernicus-journalfriskhed
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.408-copernicus-journal-rebase`, baseret på main `74ce8c38`.
+4.0.407 er live efter PR #351 og code-only `35306056877`.
+
+Normalrun `35306467385` gennemførte DMI, gemte providerfremgang og gendannede
+Copernicus. DMI dækkede 30.911/79.414; Copernicus' genbrugelige
+`IN_PROGRESS`-tilstand valgte 3.181 af de 48.503 DMI-restpar. En gammel
+segmentjournal genindsatte bagefter et forældet forsøg og udløste
+`source attempt reference mismatch`; Open-Meteo/deploy blev ikke nået.
+
+Lokal 4.0.408 anvender source-stagens eksisterende firetimersgrænse på den
+replayede forsøgsjournal. Positive records bliver i donorbanken. Python-
+syntaks, de tre målrettede Copernicus-tests, version, RDKS, håndbog,
+geodataversionsbevis og uændret modelbinding er grønne. Næste: commit/push,
+én exact-head, merge, providerfri code-only og én almindelig weather på gemte
+cacher. Ingen oneoff; bootstrap kun ved målt behov. Scheduler pauset.
+DEC-0191. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.407 vindhorisont og replaydiagnose
 
 Arbejd i `RavRadar-4.0.396`, branch

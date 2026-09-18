@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.408 bevarer data og udløber gamle forsøg
+
+4.0.407 er live gennem exact-head `35305418536`, PR #351, main `74ce8c38`
+og providerfri code-only `35306056877`.
+
+Normalrun `35306467385` gennemførte DMI og gemte fremgangen. DMI havde 30.911
+af 79.414 aktuelle par; 48.503 var den aktuelle rest. Den gendannede
+Copernicus-tilstand dækkede 3.181 og efterlod 45.322 til fortsættelse.
+Producenten stoppede før Open-Meteo på `source attempt reference mismatch`.
+
+Rodårsagen er ikke tabte målinger. Den almindelige source-stage blev korrekt
+flyttet til ny produktionstime, men den varige segmentjournal genindsatte
+bagefter et ældre forsøg uden den samme firetimersgrænse. Lokal 4.0.408
+filtrerer korte forsøgskvitteringer efter den eksisterende grænse, mens
+positive data fortsat bevares i donorbanken. De tre målrettede Copernicus-
+kontroller er grønne. Næste: RDKS/geodatabevis, exact-head, merge,
+providerfri kode og én almindelig weather på gemte cacher. Ingen oneoff;
+bootstrap kun ved målt behov. Scheduler pauset. DEC-0191.
+
 # NYESTE SANDHED – 2026-09-17 – lokal 4.0.407 og gemt providerfremgang
 
 4.0.406 er live gennem main `459dc41c` og code-only `35252644724` med

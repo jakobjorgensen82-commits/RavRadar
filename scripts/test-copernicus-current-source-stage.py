@@ -1341,9 +1341,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert fast_stage["attempts"] == [no_record_attempt]
 
     # A durable journal can outlive the production-reference matrix that
-    # created it. Preserve immutable mixed attempts when at least one pair is
-    # still required, but discard an attempt that has no overlap at all before
-    # rebuilding the strictly validated source-stage progress.
+    # created it. Positive measurements survive independently through the
+    # donor bank, while the short-lived attempt/exhaustion receipt must still
+    # overlap the current matrix and remain inside the four-hour rebase window.
     disjoint_required_pairs = [{
         "partId": TARGET["partId"],
         "validTime": (VALID_TIME - timedelta(hours=1)).isoformat().replace(
@@ -1356,6 +1356,15 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow=reused_projection,
         required_pairs=disjoint_required_pairs,
         target_identities={TARGET["partId"]: TARGET},
+        reference=REFERENCE,
+    ) == []
+    assert RUNNER_MODULE.journal_for_donor_projection(
+        [no_record_attempt],
+        bank=fast_state,
+        shadow=reused_projection,
+        required_pairs=fast_registry["operationalRequiredPairs"],
+        target_identities={TARGET["partId"]: TARGET},
+        reference=REFERENCE + timedelta(hours=5),
     ) == []
 
     # Every completed segment first lands in a small fsynced receipt. The
@@ -1488,6 +1497,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow=strict_projection,
         required_pairs=admission_registry["operationalRequiredPairs"],
         target_identities={TARGET["partId"]: TARGET},
+        reference=REFERENCE,
     )
     strict_shadow = empty_shadow(fast_updated_at)
     strict_shadow["acquisitions"] = sorted(

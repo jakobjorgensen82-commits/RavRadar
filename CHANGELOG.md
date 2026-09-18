@@ -1,3 +1,15 @@
+## 4.0.408 – frisk Copernicus-journal efter referenceflyt (2026-09-18)
+
+- 4.0.407 er live gennem exact-head `35305418536`, PR #351, main
+  `74ce8c38` og providerfri code-only `35306056877`.
+- Normalrun `35306467385` gennemførte DMI og gemte fremgangen, men stoppede i
+  Copernicus, da en gammel segmentjournal genindførte et forældet forsøg
+  efter source-stage-rebasen.
+- 4.0.408 lader kun korte forsøgs-/udmattelseskvitteringer overleve inden for
+  den eksisterende firetimersgrænse. Gyldige målinger bevares i donorbanken.
+- Ingen score-, data-, geometri- eller kildeprioritetsændring. Se
+  CHANGELOG-4.0.408.md og DEC-0191.
+
 ## 4.0.407 – korrekt vindgrund og sikker replaydiagnose (2026-09-17)
 
 - 4.0.406 er live gennem PR #350, main `459dc41c` og code-only `35252644724`.

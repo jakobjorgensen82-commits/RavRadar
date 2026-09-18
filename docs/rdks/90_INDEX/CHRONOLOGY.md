@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.408 udløber gamle Copernicus-forsøg uden at slette data
+
+- 4.0.407 blev leveret gennem exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877`.
+- Normalrun `35306467385` gennemførte DMI og gemte fremgangen, men stoppede i Copernicus før Open-Meteo.
+- En varig segmentjournal genindsatte et forældet forsøg efter den korrekte source-stage-rebase og udløste referencefejl.
+- 4.0.408 anvender samme firetimersgrænse ved journalreplay og bevarer positive records i donorbanken. DEC-0191.
+
 # 2026-09-17 – 4.0.407 retter vindmålet og gør replayfejlen konkret
 
 - 4.0.406 blev live gennem exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724`.
