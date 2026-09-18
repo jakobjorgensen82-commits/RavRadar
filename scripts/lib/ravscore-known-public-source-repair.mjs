@@ -21,6 +21,8 @@ export const RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY = Object.freeze({
     'eedd7212387a2d5db65fb59bdcfedb0bb61634146a72790c538293a1d120a965',
   sourcePublicManifestSha256:
     '17bd3839066ac4c5b4de27711ccf00779a69f0eb734fc51b1fd8c12a48e1f638',
+  sourcePublicAuditSha256:
+    '82d4d18de4c41977bf589ca4de72387ec3e4aaaac51dd0a90bb012cb1403d3fa',
   sourceModelBindingSha256:
     'ec26108e8e4d961bba035909b77023d3619e674be024cc40721fd9d5a062768c',
   sourcePublicClosureSha256:

@@ -1,3 +1,13 @@
+## 4.0.421 – eksakt kendt audit fortsætter til de afgørende kontroller (2026-09-18)
+
+- 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
+- Providerfri `35381918986` stoppede før skrivning og deploy på en audit, som
+  er byte-identisk med begge audits fra den allerede offentlige kilde.
+- 4.0.421 fortsætter kun ved det eksakte repair-id og tre ens fastlåste
+  audithashes. Ukendt eller ændret diagnostik stopper stadig, og alle senere
+  private-, privacy-, artifact-, Pages- og centrale kontroller bevares.
+- Ingen vejrprovider eller cache ændres. Se CHANGELOG-4.0.421.md og DEC-0204.
+
 ## 4.0.420 – eksakt samling af komplet offentlig kilde og central status (2026-09-18)
 
 - Normal weather `35374238410` gennemførte hele provider- og byggekæden,

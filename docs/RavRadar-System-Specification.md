@@ -1,5 +1,13 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.421-præcisering – DEC-0204:** Når code-only genbruger den
+eksakte DEC-0203-kilde, må dens kendte auditdiagnostik kun føres videre, hvis
+kildens offentlige audit, kildens checkpointaudit og den nyberegnede målaudit
+alle matcher den fastlåste kanoniske SHA-256. Ukendt, manglende eller ændret
+diagnostik stopper før mutation. Reglen må ikke springe private-runtime-,
+prewrite-, privacy-, artifact-, Pages-, offentlig-verifikations- eller
+centrale afslutningskontroller over og må ikke svække målets 79/79-kontrol.
+
 **Bindende 4.0.420-præcisering – DEC-0203:** En offentlig RavScore-pakke må
 kun bruges som source foran central status gennem en eksplicit engangsregel,
 der matcher begge sider eksakt: central version og deployment, source-head og

@@ -226,6 +226,33 @@ jobs:
             echo "$output_name=$(jq -r --arg field "$field" 'if has($field) and .[$field] != null then .[$field] else "" end' "$RAVRADAR_OPERATIONAL_WORK/public-source.json")" >> "$GITHUB_OUTPUT"
           done
 
+      - name: Resolve exact known public source evidence coordinates
+        id: source-repair-policy
+        if: steps.public-source.outputs.repair_id != ''
+        shell: bash
+        env:
+          SOURCE_REPAIR_ID: ${{ steps.public-source.outputs.repair_id }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as policy } from './scripts/lib/ravscore-known-public-source-repair.mjs';
+          if (process.env.SOURCE_REPAIR_ID !== policy.id) {
+            throw new Error('Unknown public source repair evidence request');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            `run_id=${policy.sourceRunId}\nrun_attempt=${policy.sourceRunAttempt}\nartifact_name=ravscore-operational-handoff-${policy.sourceRunId}-${policy.sourceRunAttempt}\n`);
+          NODE
+
+      - name: Download exact known public source audit evidence
+        if: steps.public-source.outputs.repair_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.source-repair-policy.outputs.artifact_name }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/source-repair-evidence
+          run-id: ${{ steps.source-repair-policy.outputs.run_id }}
+          github-token: ${{ github.token }}
+
       - name: Resolve only post-cutover integrated maintenance
         id: operational-action
         shell: bash
@@ -626,12 +653,42 @@ jobs:
       - name: Audit regenerated integrated public runtime
         id: runtime-audit
         shell: bash
+        env:
+          SOURCE_REPAIR_ID: ${{ steps.public-source.outputs.repair_id }}
         run: |
           set -euo pipefail
           audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
-          node scripts/audit-ravscore-integrated-public-runtime.mjs \
-            --input data/live/conditions.json \
-            --output "$audit_path"
+          runtime_audit_outcome=success
+          if ! node scripts/audit-ravscore-integrated-public-runtime.mjs \
+              --input data/live/conditions.json \
+              --output "$audit_path"; then
+            runtime_audit_outcome=failure
+          fi
+          echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
+          if test "$runtime_audit_outcome" = "failure"; then
+            test -n "$SOURCE_REPAIR_ID"
+            AUDIT_PATH="$audit_path" \
+            SOURCE_EVIDENCE_ROOT="$RAVRADAR_OPERATIONAL_WORK/source-repair-evidence" \
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as policy } from './scripts/lib/ravscore-known-public-source-repair.mjs';
+          const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+          const root = process.env.SOURCE_EVIDENCE_ROOT;
+          const targetAudit = read(process.env.AUDIT_PATH);
+          const sourceAudit = read(`${root}/public-audit.json`);
+          const sourceCheckpointAudit = read(`${root}/checkpoint-runtime-audit.json`);
+          const expected = policy.sourcePublicAuditSha256;
+          if (process.env.SOURCE_REPAIR_ID !== policy.id
+            || !/^[a-f0-9]{64}$/.test(String(expected ?? ''))
+            || sha256CanonicalJson(sourceAudit) !== expected
+            || sha256CanonicalJson(sourceCheckpointAudit) !== expected
+            || sha256CanonicalJson(targetAudit) !== expected) {
+            throw new Error('Code-only runtime audit differs from the exact known public source audit');
+          }
+          NODE
+            echo "::warning title=Exact known RavScore diagnostic retained::The regenerated target has the byte-identical payload-free audit findings already verified on the exact public source; protected, privacy, artifact and deployment checks continue."
+          fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
           rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"
           case "$rollback_status:$rollback_activation_ready" in

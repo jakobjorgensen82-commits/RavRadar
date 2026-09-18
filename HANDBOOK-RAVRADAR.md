@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.420
+**Håndbogsversion:** 4.0.421
+
+## 89.25 4.0.421 – En kendt kontrolrapport kan føres videre sikkert
+
+4.0.420 fandt den rigtige offentlige pakke og den rigtige private runtime,
+men stoppede på en kontrolrapport, før hjemmesiden kunne opdateres. Rapporten
+var præcis den samme som de to rapporter, der allerede var gemt sammen med
+den offentlige pakke. Der var altså ikke kommet en ny fejl i dette forsøg.
+
+4.0.421 fortsætter kun, hvis alle tre rapporter er helt ens og matcher den
+fastlåste hash. Hvis rapporten mangler eller bare ændrer sig, stopper
+leveringen stadig. De vigtigste kontroller bagefter springes ikke over:
+privat runtime, databeskyttelse, artifact, Pages, den offentlige side og den
+centrale afslutning skal stadig lykkes.
+
+Der hentes ikke nyt vejr i denne levering. Vejrcacher, scorer, model, geometri
+og DMI-rotation ændres ikke. Den kendte score-/tilstandsdiagnostik skal
+fejlsøges særskilt på det kørende system efter leveringen.
+
+Formel og vægte er uændrede. 4.0.421 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.24 4.0.420 – En komplet offentlig vejropdatering samles sikkert
 

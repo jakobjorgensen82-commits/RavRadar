@@ -1,5 +1,17 @@
 # Weather Pipeline 1.0
 
+## 4.0.421 – eksakt kendt audit føres videre uden ny vejrhentning
+
+4.0.420 blev merged efter grøn exact-head, men providerfri code-only
+`35381918986` stoppede før writes og deploy i den uafhængige runtimeaudit.
+Den nyberegnede audit var kanonisk identisk med både public- og
+checkpointauditen i den eksakte offentlige kilde fra `35374238410`.
+
+4.0.421 henter det forseglede kildeartifact og fortsætter kun, når repair-id
+og alle tre audithashes matcher den fastlåste evidens. Enhver anden audit
+stopper. Der kaldes ingen provider, ingen cache ændres, og de efterfølgende
+private-, privacy-, artifact-, Pages- og centralchecks bevares.
+
 ## 4.0.420 – komplet offentlig weather samles med central status
 
 Normalrun `35374238410` gennemførte DMI, Copernicus, regional DMI og

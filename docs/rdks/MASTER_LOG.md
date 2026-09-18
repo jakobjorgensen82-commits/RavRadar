@@ -4133,3 +4133,11 @@ fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
 - DEC-0203 fastlåser den komplette offentlige kilde og central version 27 til
   providerfri code-only. Ingen RavScore-, vejr-, rotations- eller
   geometriændring.
+
+# 4.0.421 – Eksakt kendt code-only-audit (2026-09-18)
+
+- 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
+- Providerfri `35381918986` verificerede source og privat runtime, men
+  stoppede før writes/deploy på den samme audit, som kilden allerede bar.
+- DEC-0204 fastlåser tre ens audit-SHA'er under DEC-0203-repair-id'et og
+  bevarer alle senere private-, privacy-, artifact-, Pages- og centralchecks.
