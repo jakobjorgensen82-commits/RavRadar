@@ -1128,7 +1128,7 @@ function bulkZoneToForecastRecord(
   const mergedDmiHourly = mergeHourlyPreferDmi(
     built.hourly,
     compatiblePrevious?.hourly ?? [],
-    { generatedAt, expectedIdentity: dmiIdentity },
+    { generatedAt, startAt, expectedIdentity: dmiIdentity },
   );
   const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
     ? mergedDmiHourly.map(hour => {
@@ -2950,9 +2950,12 @@ function materializeExactPublicWeatherHorizon(hourly = [], referenceAt) {
 function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
-  { generatedAt = null, expectedIdentity = null } = {},
+  { generatedAt = null, startAt = generatedAt, expectedIdentity = null } = {},
 ) {
-  const times = exactPublicForecastTimes(generatedAt);
+  // Public records keep the exact production +0..+117 axis. Private replay
+  // callers deliberately supply an earlier startAt; using generatedAt here
+  // used to discard the very measured history they had just reconstructed.
+  const times = exactPublicForecastTimes(startAt);
   const expectedTimeSet = new Set(times);
   const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER })
     .filter(item => expectedTimeSet.has(item.time));

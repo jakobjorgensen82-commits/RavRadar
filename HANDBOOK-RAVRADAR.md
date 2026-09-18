@@ -1,6 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.422
+**Håndbogsversion:** 4.0.423
+
+## 89.27 4.0.423 – Komplet betyder gyldige data, ikke blot håndterede huller
+
+RavRadar skal tilstræbe gyldige data i alle nødvendige felter, for alle
+kystdele og timer. `MISSING` er kun nødadfærd: det forhindrer ét lokalt hul i
+at slukke resten af siden, men hullet tæller aldrig som gyldig data, fuld
+dækning eller afsluttet vejrarbejde.
+
+4.0.423 skelner derfor mellem sikkert håndterede dele og faktisk scoreklare
+dele. Kun 673 af 673 scoreklare dele uden `MISSING` er komplet. Den normale
+vejrhentning fortsætter med at arbejde på ethvert hul og gemmer en lille,
+payloadfri stageoversigt, så et resterende hul kan placeres præcist i kæden.
+
+Vindplanlægningen følger nu samme regler som den kode, der bruger dataene:
+både hastighed, retning og gyldig proveniens skal kunne opløses time for time.
+Den kan sikkert finde en anden intakt HARMONIE-serie ved en modelkørselskant,
+men accepterer ikke skift i grid eller mål. Privat historik bevares i replay,
+Feggesunds to nødvendige kildezoner indgår i WAM-lukningen, og en langsom
+WAM-fil gør ikke andre providerfamilier kunstigt langsomme.
+
+Et verificeret Pages-deploy rapporteres fremover som deployet, selv om en
+efterfølgende diagnostik finder et dataproblem. Problemet bliver stående som
+ufuldstændigt og skal rettes; det bliver blot ikke længere forvekslet med, at
+hjemmesiden slet ikke kom online.
+
+RavScore-formel og vægte er uændrede. 4.0.423 er låst med
+`modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er bundet med
+`modelBundleSha256=1c142a31477ec69ccfa8d87d31ac86cc96df9f14244dfdec5b6b6ebff1c30a9e`.
 
 ## 89.26 4.0.422 – Den rigtige aktive model må også bruge den kendte kilde
 

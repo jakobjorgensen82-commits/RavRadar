@@ -1,3 +1,13 @@
+# 2026-09-18 – 4.0.423 adskiller fuld datadækning fra sikker nødvisning
+
+- 4.0.422-normalrun `35386276428` deployede og verificerede Pages, men viste
+  ufuldstændig numerisk dækning og sluttede falsk rødt efter deploy.
+- 4.0.423 retter samlet den fælles terminal, vindhorisont, HARMONIE-seriekant,
+  replayakse, Feggesund-støttezoner og tidsestimat pr. providerfamilie.
+- `MISSING` tæller aldrig som data eller komplethed; kun 100 % gyldig dækning
+  er færdig. Append-only migration `20260918190000` binder inputrettelsen.
+  Produktionsbevis afventer én almindelig vejrkørsel. DEC-0206.
+
 # 2026-09-18 – 4.0.422 fører aktiv integrated source-repair gennem Pages
 
 - 4.0.421-buildjob `105726470812` bestod hele providerfri predeploykæden.

@@ -48,9 +48,9 @@ for (const marker of [
   'force: true',
   'extended_provider_bootstrap: false',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
-  'test "$FULL_VALIDATION_OUTCOME" = "success"',
-  'test "$RELEASE_GATE_OUTCOME" = "success"',
-  'test "$DEPLOYED_VERIFIED" = "true"',
+  'node scripts/lib/verified-weather-deployment-terminal.mjs',
+  'PAGES_ARTIFACT_SEAL_OUTCOME:',
+  'DEPLOYED_VERIFIED:',
 ]) assert.ok(
   manualCurrentWeatherWorkflow.includes(marker),
   `Den afgrænsede normale vejrindgang mangler ${marker}.`,
@@ -242,7 +242,7 @@ if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery'))
 if (!workflowActionContracts.includes('npm run test:production-workflow-outcome')
   || !workflowActionContracts.includes('npm run test:validation-collection')
   || packageJson?.scripts?.['test:production-workflow-outcome']
-    !== 'node scripts/test-production-workflow-outcome.mjs'
+    !== 'node scripts/test-production-workflow-outcome.mjs && node scripts/test-verified-weather-deployment-terminal.mjs'
   || packageJson?.scripts?.['test:validation-collection']
     !== 'node scripts/test-validation-collection.mjs && python scripts/test-dmi-oneoff-fill.py') {
   throw new Error('Produktionsslutstatus og valideringsopsamling skal være registreret som separate trin i workflow-kontraktsuiten.');
@@ -1844,7 +1844,7 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the twenty exact integrated cutover migrations',
+  'Require only the twenty-one exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1865,6 +1865,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260916120000_valid_data_before_local_missing_binding.sql"',
   'test -f "$migrations_directory/20260917001500_partial_zone_public_metadata_binding.sql"',
   'test -f "$migrations_directory/20260918125600_last_mile_history_envelope_binding.sql"',
+  'test -f "$migrations_directory/20260918190000_weather_input_resolution_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

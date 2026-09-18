@@ -146,6 +146,21 @@ assert.ok(!exactHorizonMerged.some(row => row.time === '2026-09-08T13:00:00.000Z
 assert.equal(exactHorizonMerged[0].airTemperatureC, 12,
   'a missing primary scalar must retain the valid exact-time fallback scalar');
 
+const recoveryStartAt = '2026-09-06T14:00:00.000Z';
+const recoveryAxisMerged = mergeHourlyPreferDmiForTest(
+  hoursFrom(recoveryStartAt, 120, 'dmi'),
+  [],
+  { generatedAt: exactHorizonReference, startAt: recoveryStartAt },
+);
+assert.equal(recoveryAxisMerged.length, 118,
+  'private recovery retains its exact bounded 118-hour source domain');
+assert.equal(recoveryAxisMerged[0].time, recoveryStartAt,
+  'private recovery must not be silently truncated to the public production hour');
+assert.equal(recoveryAxisMerged.filter(row => row.time < exactHorizonReference).length, 48,
+  'a cold recovery keeps all 48 measured hours before the target');
+assert.equal(exactHorizonMerged.some(row => row.time < exactHorizonReference), false,
+  'the distinct public build remains locked to production +0..+117');
+
 const materializedGap = materializeExactPublicWeatherHorizonForTest([
   exactHorizonMerged[0],
   exactHorizonMerged[2],

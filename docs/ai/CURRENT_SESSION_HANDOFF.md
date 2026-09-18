@@ -1,4 +1,32 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.422 Pages source-repair
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
+
+Arbejd i det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.423-current-score-and-terminal`, HEAD main `8a95c7cf` fra PR #367.
+Den ydre cb79-mappe er et andet, ændret worktræ og må ikke ryddes/redigeres.
+Appversionen er løftet samlet til 4.0.423; commit og exact-head afventer.
+
+Normalrun `35386276428` deployede/verificerede 4.0.422 med target kl. 21
+dansk tid. Runtimeaudit: 673 fortsættelser, nul replayafvigelser. Den sene
+røde status skyldtes fuldvalideringens strømaudit, ikke mislykket Pages.
+420 aktuelle zonetilstande mangler stadig; det er ikke en HTTP-fejlkode.
+83 refererer til kystdele, ikke zoner. Hjemmesiden er ikke fuldt kørende.
+
+Læs **ASTRA_WEATHER_REVIEW_2026-09-18.md** og DEC-0206. Den lokale kandidat
+retter fælles manuel/cron-terminal, falsk vindhorisont, HARMONIE-seriekant,
+bortfiltreret privat historik, Feggesunds manglende planner/promotion-behov
+og familiesammenblandet tidsbudget. Normal weather uploader desuden en
+payloadfri stageoversigt for alle 673 dele.
+
+Komplethed og robusthed er adskilt: `MISSING` må holde resten af RavRadar
+brugbar, men må aldrig tælle som data, komplethed eller færdig vejrhentning.
+Append-only migration `20260918190000` bevarer alle forgængere og binder
+integrated `1c142a31...`, Candidate G `ad7a2a81...` samt continuation
+`d18183fb...`. Målrettede kontrakter er grønne. Afslut version/RDKS,
+geodataversionsbevis og relevante tests; push/merge efter én exact-head;
+kør derefter én almindelig weather, ikke oneoff. Bevar `.tmp-420/` lokalt og
+stage/publicér den aldrig.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – lokal 4.0.422 Pages source-repair
 
 Arbejd i `RavRadar-4.0.396`, branch
 `codex/4.0.422-pages-source-repair`, fra main

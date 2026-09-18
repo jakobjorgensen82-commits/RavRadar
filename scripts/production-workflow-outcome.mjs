@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { classifyVerifiedWeatherDeployment } from './lib/verified-weather-deployment-terminal.mjs';
 
 export const PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2';
 export const PRODUCTION_WORKFLOW_OUTCOME_STATUSES = Object.freeze([
@@ -37,6 +38,7 @@ const PROOF_KEYS = Object.freeze([
   'releaseGateOutcome',
   'pagesBuildOutcome',
   'pagesPrivacyOutcome',
+  'pagesArtifactSealOutcome',
   'handoffUploadOutcome',
   'checkpointDisposition',
   'checkpointDispositionSha256',
@@ -180,6 +182,11 @@ function normalizeEvidence(input) {
     releaseGateOutcome: normalizeStepOutcome(input.proof?.releaseGateOutcome, errors, 'releaseGateOutcome'),
     pagesBuildOutcome: normalizeStepOutcome(input.proof?.pagesBuildOutcome, errors, 'pagesBuildOutcome'),
     pagesPrivacyOutcome: normalizeStepOutcome(input.proof?.pagesPrivacyOutcome, errors, 'pagesPrivacyOutcome'),
+    pagesArtifactSealOutcome: normalizeStepOutcome(
+      input.proof?.pagesArtifactSealOutcome,
+      errors,
+      'pagesArtifactSealOutcome',
+    ),
     handoffUploadOutcome: normalizeStepOutcome(input.proof?.handoffUploadOutcome, errors, 'handoffUploadOutcome'),
     checkpointDisposition: normalizeCheckpointDisposition(input.proof?.checkpointDisposition, errors),
     checkpointDispositionSha256: normalizeSha256(
@@ -396,6 +403,7 @@ function classifyNormalized(evidence) {
         proof.releaseGateOutcome,
         proof.pagesBuildOutcome,
         proof.pagesPrivacyOutcome,
+        proof.pagesArtifactSealOutcome,
         proof.handoffUploadOutcome,
         proof.pagesConfigureOutcome,
         proof.pagesUploadOutcome,
@@ -423,13 +431,17 @@ function classifyNormalized(evidence) {
     'weatherOutcome',
     'pagesBuildOutcome',
     'pagesPrivacyOutcome',
+    'pagesArtifactSealOutcome',
     'handoffUploadOutcome',
   ]) {
     if (proof[key] !== 'success') return result('FAILED', 'INCOMPLETE_BUILD_GATES');
   }
   if (!ownerAuthorizedFirstCutoverSkip
-    && (proof.fullValidationOutcome !== 'success'
-      || proof.releaseGateOutcome !== 'success')) {
+    && !['success', 'failure'].includes(proof.fullValidationOutcome)) {
+    return result('FAILED', 'INCOMPLETE_BUILD_GATES');
+  }
+  if (!ownerAuthorizedFirstCutoverSkip
+    && !['success', 'failure'].includes(proof.releaseGateOutcome)) {
     return result('FAILED', 'INCOMPLETE_BUILD_GATES');
   }
   if (proof.artifactBuilt !== true || proof.operationalAction == null) {
@@ -461,7 +473,26 @@ function classifyNormalized(evidence) {
     && proof.deploymentOutcome === 'success'
     && proof.publicVerificationOutcome === 'success'
     && proof.deployedVerified === true) {
-    return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+    if (ownerAuthorizedFirstCutoverSkip) {
+      return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+    }
+    const terminal = classifyVerifiedWeatherDeployment({
+      targetOutcome: 'success',
+      buildOutcome: jobs.buildAndPrepare,
+      shouldDeploy: proof.shouldDeploy,
+      weatherOutcome: proof.weatherOutcome,
+      fullValidationOutcome: proof.fullValidationOutcome,
+      releaseGateOutcome: proof.releaseGateOutcome,
+      pagesBuildOutcome: proof.pagesBuildOutcome,
+      pagesPrivacyOutcome: proof.pagesPrivacyOutcome,
+      pagesArtifactSealOutcome: proof.pagesArtifactSealOutcome,
+      artifactBuilt: proof.artifactBuilt,
+      deployJobOutcome: jobs.deployPages,
+      deploymentOutcome: proof.deploymentOutcome,
+      publicVerificationOutcome: proof.publicVerificationOutcome,
+      deployedVerified: proof.deployedVerified,
+    });
+    return result(terminal.status, terminal.reasonCode);
   }
   return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED');
 }
@@ -620,6 +651,7 @@ function environmentEvidence(env) {
       releaseGateOutcome: env.RAVRADAR_OUTCOME_RELEASE_GATE,
       pagesBuildOutcome: env.RAVRADAR_OUTCOME_PAGES_BUILD,
       pagesPrivacyOutcome: env.RAVRADAR_OUTCOME_PAGES_PRIVACY,
+      pagesArtifactSealOutcome: env.RAVRADAR_OUTCOME_PAGES_ARTIFACT_SEAL,
       handoffUploadOutcome: env.RAVRADAR_OUTCOME_HANDOFF_UPLOAD,
       checkpointDisposition: env.RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION,
       checkpointDispositionSha256: env.RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256,

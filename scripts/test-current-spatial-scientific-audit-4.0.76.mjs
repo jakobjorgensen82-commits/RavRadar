@@ -7,6 +7,7 @@ import {
 import {
   buildOperationalCurrentEntryIndex,
   verifyCoastalPartCurrentProjection,
+  verifyCoastalPartMissingCurrent,
   verifyCoastalPartNativeCadenceHold,
 } from './lib/current-spatial-runtime-proof.mjs';
 import {
@@ -108,6 +109,7 @@ if(verifiedHours<1000)(controlledLive?warnings:failures).push(`Kun ${verifiedHou
 const expectedParts=flattenCoastalPartsWithParentZoneId(coastalParts);
 let verifiedPartGridPoints=0;
 let verifiedNativeCadenceHeldParts=0;
+let documentedMissingParts=0;
 const verifiedPartsBySource={'dmi-local':0,'copernicus-local':0,'dmi-regional-proxy':0,'open-meteo-combined-current':0};
 for(const part of expectedParts){
   const bulkId=`PART::${part.partId}`;
@@ -126,7 +128,12 @@ for(const part of expectedParts){
       verifiedPartsBySource['dmi-regional-proxy']++;
       continue;
     }
-    failures.push(`${bulkId}: ${holdProof?.reason??'den viste lokale strøm mangler afledt hastighed eller retning'}`);
+    const missingProof=verifyCoastalPartMissingCurrent({part,runtimePart,publicPart});
+    if(missingProof.ok){
+      documentedMissingParts++;
+      continue;
+    }
+    failures.push(`${bulkId}: ${missingProof.reason??holdProof?.reason??'den viste lokale strøm mangler afledt hastighed eller retning'}`);
     continue;
   }
   const expectedDmiIdentity=dmiExpectedIdentityForPart(part,bulkId);
@@ -146,16 +153,20 @@ for(const part of expectedParts){
 }
 const requiredPartCoverage=expectedParts.length;
 const verifiedScoreReadyParts=verifiedPartGridPoints+verifiedNativeCadenceHeldParts;
-if(controlledLive&&verifiedScoreReadyParts<requiredPartCoverage)failures.push(`Kun ${verifiedScoreReadyParts}/${expectedParts.length} lokale kystdele har enten eksakt verificeret strøm eller dokumenteret native-cadence-tilstand; alle ${requiredPartCoverage} kræves.`);
+const accountedParts=verifiedScoreReadyParts+documentedMissingParts;
+if(accountedParts!==requiredPartCoverage)failures.push(`Kun ${accountedParts}/${expectedParts.length} lokale kystdele er enten verificeret, sikkert fastholdt eller ærligt MISSING.`);
+if(controlledLive&&documentedMissingParts>0)warnings.push(`${documentedMissingParts}/${expectedParts.length} lokale kystdele er ærligt MISSING; resten af RavRadar forbliver brugbar, mens vejrhentningen forsøger at lukke hullerne.`);
 if(dmiOnlyRollback)warnings.push(`DMI-only rollback er aktiv: ${verifiedPartGridPoints}/${expectedParts.length} dele har lokal DMI-strøm; resten er tydeligt missing.`);
 const publicScoredParts=Number(publicDoc.coastalParts?.scoredPartCount||0);
-if(publicScoredParts>verifiedScoreReadyParts)failures.push(`Offentlig runtime scorer ${publicScoredParts} kystdele, men kun ${verifiedScoreReadyParts} har eksakt verificeret strøm eller dokumenteret native-cadence-tilstand.`);
+const publicAvailableCurrentParts=Object.values(publicDetails.coastalParts?.parts??{}).filter(part=>
+  ['waders','beach'].some(mode=>part?.current?.[mode]?.available===true&&finite(part?.current?.[mode]?.score))).length;
+if(publicAvailableCurrentParts>verifiedScoreReadyParts)failures.push(`Offentlig runtime har ${publicAvailableCurrentParts} kystdele med en aktuel tilgængelig score, men kun ${verifiedScoreReadyParts} har verificeret strøm eller dokumenteret native-cadence-tilstand.`);
 const mapSource=await fs.readFile('js/map/map-view.js','utf8');
 if(/arrowOffsetsForZoom|pairBase\.add/.test(mapSource))failures.push('Kortet fremstiller stadig kunstige pilepositioner omkring zonen.');
 if(!/flowPoints\.current/.test(mapSource))failures.push('Kortet bruger ikke dokumenteret strøm-gitterpunkt.');
-const report={schemaVersion:6,generatedAt:new Date().toISOString(),livePilotMode:liveMode,currentVectorSemanticsVersion:bulk.currentVectorSemanticsVersion??null,basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°; a held native-cadence state shows no current arrow.',waterCellProof:'Both U and V must be finite in the exact same source, coordinate, forecast time and vertical layer.',selectionRule:'Per exact time: verified local DMI within 5 km, then Baltic NEMO within 5 km, then AMM15 within 5 km. Only the eight owner-approved dkss_lf regional proxies may preserve the latest derived transport state for at most three hours until the next native sample. No temporal or spatial interpolation and no movement is added while held.',verificationRule:'Exact arrows require status=verified and documented provider/grid/time/layer provenance. A score-only native-cadence hold requires a verified regional source row at the earlier transport reference, ready 48-hour memory and a maximum age of three hours. Missing provenance is never represented as 0/0.'},activeZones:active.length,expectedCoastalParts:expectedParts.length,verifiedCoastalPartGridPoints:verifiedPartGridPoints,verifiedNativeCadenceHeldParts,verifiedScoreReadyParts,verifiedPartsBySource,requiredCoastalPartCoverage:requiredPartCoverage,requiredCoastalPartCoverageRatio:controlledLive?1:null,publicScoredParts,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours:unverifiedHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
+const report={schemaVersion:7,generatedAt:new Date().toISOString(),livePilotMode:liveMode,currentVectorSemanticsVersion:bulk.currentVectorSemanticsVersion??null,basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°; a held native-cadence state shows no current arrow.',waterCellProof:'Both U and V must be finite in the exact same source, coordinate, forecast time and vertical layer.',selectionRule:'Per exact time: verified local DMI within 5 km, then Baltic NEMO within 5 km, then AMM15 within 5 km. Only the eight owner-approved dkss_lf regional proxies may preserve the latest derived transport state for at most three hours until the next native sample. No temporal or spatial interpolation and no movement is added while held.',verificationRule:'Exact arrows require status=verified and documented provider/grid/time/layer provenance. A score-only native-cadence hold requires a verified regional source row at the earlier transport reference, ready 48-hour memory and a maximum age of three hours. Missing provenance is never represented as 0/0; a proved local MISSING disables only that local score.'},activeZones:active.length,expectedCoastalParts:expectedParts.length,verifiedCoastalPartGridPoints:verifiedPartGridPoints,verifiedNativeCadenceHeldParts,verifiedScoreReadyParts,documentedMissingParts,accountedParts,accountedPartRatio:accountedParts/requiredPartCoverage,verifiedPartsBySource,requiredCoastalPartCoverage:requiredPartCoverage,requiredCoastalPartCoverageRatio:controlledLive?verifiedScoreReadyParts/requiredPartCoverage:null,dataCompletenessStatus:verifiedScoreReadyParts===requiredPartCoverage?'COMPLETE':'INCOMPLETE',publicScoredParts,publicAvailableCurrentParts,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
 await fs.mkdir('data/diagnostics',{recursive:true});
 await fs.writeFile('data/diagnostics/current-spatial-audit-4.0.76.json',`${JSON.stringify(report,null,2)}\n`);
 if(failures.length)throw new Error(`Strømaudit fejlede:\n- ${failures.slice(0,40).join('\n- ')}${failures.length>40?`\n... ${failures.length-40} flere`:''}`);
-console.log(`OK (${liveMode}): ${verifiedGridZones}/${active.length} hovedzoner og ${verifiedScoreReadyParts}/${expectedParts.length} lokale kystdele har eksakt verificeret strøm eller dokumenteret native-cadence-tilstand; ${verifiedHours} hovedzonetimer er verificeret og ${unverifiedHours} er tydeligt ikke-verificerbare.`);
+console.log(`OK (${liveMode}): ${verifiedGridZones}/${active.length} hovedzoner; ${verifiedScoreReadyParts}/${expectedParts.length} lokale kystdele er scoreklare og ${documentedMissingParts} er ærligt MISSING; ${verifiedHours} hovedzonetimer er verificeret og ${unverifiedHours} er tydeligt ikke-verificerbare.`);
 if(warnings.length)console.log(`ADVARSLER (${warnings.length}):\n- ${warnings.slice(0,30).join('\n- ')}`);

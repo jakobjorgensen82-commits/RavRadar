@@ -156,6 +156,55 @@ export function verifyCoastalPartNativeCadenceHold({
 }
 
 /**
+ * Prove an honest local MISSING state. Missing current is allowed to disable
+ * only that local score; it may never be presented as calm water, borrow an
+ * arrow from another hour, or claim verified provenance.
+ */
+export function verifyCoastalPartMissingCurrent({
+  part,
+  runtimePart,
+  publicPart,
+} = {}) {
+  const selectedTime = canonicalTime(runtimePart?.current?.time);
+  if (!selectedTime || canonicalTime(publicPart?.current?.time) !== selectedTime) {
+    return fail('intern og offentlig MISSING er ikke bundet til samme scoretime');
+  }
+  const runtimeWeather = runtimePart?.current?.weather;
+  const publicWeather = publicPart?.current?.weather;
+  if (!runtimeWeather || !publicWeather) {
+    return fail('MISSING mangler intern eller offentlig vejrprojektion');
+  }
+  if ([runtimeWeather, publicWeather].some(weather => (
+    finite(weather.currentSpeedMps) || finite(weather.currentDirectionDeg)
+    || FORBIDDEN_PUBLIC_VECTOR_FIELDS.some(field => Object.hasOwn(weather, field))
+  ))) {
+    return fail('MISSING indeholder alligevel en hel eller delvis strømvektor');
+  }
+  const runtimeProof = runtimeWeather.currentProvenance;
+  const publicProof = publicWeather.currentProvenance;
+  if (runtimeProof?.status !== 'unverified'
+    || publicProof?.status !== 'unverified'
+    || typeof runtimeProof?.reason !== 'string' || !runtimeProof.reason
+    || publicProof?.reason !== runtimeProof.reason) {
+    return fail('MISSING mangler ens eksplicit ikke-verificeret proveniens');
+  }
+  for (const projection of [runtimePart, publicPart]) {
+    if (!samePoint(projection?.flowPoints?.current, part?.waterPoint)
+      || projection?.flowPoints?.sources?.current !== 'zone-marine-anchor'
+      || projection?.flowPoints?.sourceMetadata?.current != null) {
+      return fail('MISSING udgiver en strømpil eller et strømgrid som måling');
+    }
+    for (const mode of ['waders', 'beach']) {
+      const result = projection?.current?.[mode];
+      if (result?.available === true || finite(result?.score)) {
+        return fail('MISSING er alligevel udgivet som en tilgængelig lokal score');
+      }
+    }
+  }
+  return { ok: true, reason: runtimeProof.reason };
+}
+
+/**
  * Validate the complete closure once and index only its operational entries.
  * Consumers can then prove 673 displayed parts without repeatedly hashing the
  * full 79,414-pair document.

@@ -431,7 +431,7 @@ function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {})
 }
 
 function safeWindSeriesBracket(items, targetMs, component, options = {}) {
-  if (component !== 'windTail') return null;
+  if (!['wind', 'windTail'].includes(component)) return null;
   const groups = new Map();
   for (const item of items ?? []) {
     const source = provenanceAt(item, component);
@@ -499,9 +499,19 @@ function componentBracket(items, targetMs, component, options) {
     }
     return bracket;
   }
+  const beforeSource = provenanceAt(bracket?.before, component);
+  const afterSource = provenanceAt(bracket?.after, component);
+  const windRunSeamOnly = ['wind', 'windTail'].includes(component)
+    && beforeSource && afterSource
+    && beforeSource.modelRun !== afterSource.modelRun
+    && sameNativeIdentity(
+      { ...beforeSource, modelRun: '__run_seam__' },
+      { ...afterSource, modelRun: '__run_seam__' },
+      component,
+    );
   return component === 'wave'
     ? safeWaveSeriesBracket(items, targetMs, componentOptions)
-    : component === 'windTail'
+    : windRunSeamOnly
       ? safeWindSeriesBracket(items, targetMs, component, componentOptions)
       : null;
 }

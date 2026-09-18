@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {
   buildOperationalCurrentEntryIndex,
   verifyCoastalPartCurrentProjection,
+  verifyCoastalPartMissingCurrent,
   verifyCoastalPartNativeCadenceHold,
 } from './lib/current-spatial-runtime-proof.mjs';
 import {
@@ -575,6 +576,35 @@ assert.equal(integratedHoldProof.ok, true,
   'the spatial audit must read an integrated native hold from ravScoreModel, not the retired Candidate G field');
 assert.equal(integratedHoldProof.referenceAt, new Date(SOURCE_TIME).toISOString());
 assert.equal(integratedHoldProof.ageHours, 1);
+const missingRuntimePart = {
+  flowPoints: {
+    current: regionalPart.waterPoint,
+    wind: regionalPart.waterPoint,
+    sources: { current: 'zone-marine-anchor', wind: 'zone-marine-anchor' },
+  },
+  current: {
+    time: REFERENCE,
+    weather: {
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentProvenance: { status: 'unverified', reason: 'NO_EXACT_CURRENT' },
+    },
+    waders: { available: false, score: null },
+    beach: { available: false, score: null },
+  },
+};
+const missingPublicPart = structuredClone(missingRuntimePart);
+assert.equal(verifyCoastalPartMissingCurrent({
+  part: regionalPart,
+  runtimePart: missingRuntimePart,
+  publicPart: missingPublicPart,
+}).ok, true, 'et lokalt ærligt MISSING må ikke gøre hele produktionen rød');
+missingPublicPart.current.waders = { available: true, score: 42 };
+assert.equal(verifyCoastalPartMissingCurrent({
+  part: regionalPart,
+  runtimePart: missingRuntimePart,
+  publicPart: missingPublicPart,
+}).ok, false, 'MISSING må aldrig skjule en offentlig score');
 assert.equal(sanitizedRegional[0].currentProvenance.status, 'unverified');
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.validTime, REFERENCE);
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.sourceValidTime, SOURCE_TIME);

@@ -81,6 +81,15 @@ sys.modules['eccodes']=eccodes
 spec=importlib.util.spec_from_file_location('bulk','scripts/update-dmi-bulk.py')
 module=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+# A slow WAM file may reserve later WAM work, but it must not make a small
+# unseen DKSS/HARMONIE asset look equally expensive.
+real_runtime_remaining=module.runtime_remaining
+module.runtime_remaining=lambda:150.0
+cost_controller=module.ProgressCheckpointController({},set(),{})
+cost_controller.observe_asset_duration(200.0,cost_family='wam_dw')
+assert cost_controller.can_start_asset(cost_family='wam_dw') is False
+assert cost_controller.can_start_asset(cost_family='dkss_lf') is True
+module.runtime_remaining=real_runtime_remaining
 active=[
  {'id':'L1','coastType':'limfjord'}, {'id':'L2','coastType':'limfjord'}, {'id':'L3','coastType':'limfjord'},
  {'id':'W1','coastType':'west'}, {'id':'E1','coastType':'east'},
@@ -102,11 +111,27 @@ assert diag['preferredWindTailDemand']['dkss_idw']==1, diag
 # One historical wind value is not a complete rolling horizon. This is the
 # production regression from 4.0.406: every point had some cached wind, while
 # hundreds of coastal parts still lacked score-time wind.
+real_complete_native_source=module.complete_native_source_for_hour
+module.complete_native_source_for_hour=lambda *args,**kwargs: True
+def wind_source(component,run='2026-01-01T00:00:00Z'):
+ return {
+  'collection':'harmonie_dini_sf' if component=='wind' else 'dkss_nsbs',
+  'collectionFamily':'atmosphere' if component=='wind' else 'marine',
+  'modelRun':run,'component':component,'componentKind':'vector',
+  'entityId':'TEST','parentZoneId':'TEST','entityType':'coastal-part',
+  'samplingContext':'coastal-part-water-point','gridDefinitionSha256':'a'*64,
+  'spatialSelection':'nearest-grid-point','spatialSemanticsVersion':'v1',
+  'vectorSelection':'native-vector','vectorSemanticsVersion':'v1',
+  'fieldSet':['u','v'],'gridPoint':[10.0,56.0],
+  'samplingPoint':[10.0,56.0],'distanceKm':1.0,
+  'vectorReference':'earth-relative','vectorTransform':'none',
+ }
 wind_active=[{'id':'PART::WIND-GAP','coastType':'east'}]
 wind_valid=(datetime.now(timezone.utc).replace(minute=0,second=0,microsecond=0)
             +timedelta(hours=1)).isoformat().replace('+00:00','Z')
 wind_previous={'zones':{'PART::WIND-GAP':{'hourly':{
- wind_valid:{'wind-speed-10m':5.0},
+ wind_valid:{'wind-speed-10m':5.0,'wind-dir-10m':90.0,
+             'sources':{'wind':wind_source('wind')}},
 }}},'collectionState':{}}
 _,wind_diag=module.collection_schedule(wind_previous,wind_active)
 assert wind_diag['missingAnyWind']==0, wind_diag
@@ -140,10 +165,33 @@ for zone in active:
     zones.setdefault(zone['id'],{'hourly':{valid:{} for valid in future}})['marineSelection']={'collection':'dkss_nsbs'}
 for zone in active[:40]:
     for valid in future:
-        zones[zone['id']]['hourly'][valid].update({'wind-tail-u-10m':1.0,'wind-tail-v-10m':2.0})
+        zones[zone['id']]['hourly'][valid].update({
+         'wind-tail-speed-10m':2.2,'wind-tail-dir-10m':243.4,
+         'sources':{'windTail':wind_source('windTail')},
+        })
 scheduled,diag=module.collection_schedule({'zones':zones,'collectionState':previous['collectionState']},active)
 assert diag['preferredWindTailDemand']['dkss_nsbs']==168, diag
 assert scheduled[0]=='dkss_nsbs', scheduled
+
+# Native three-hour endpoints only form usable hourly coverage when they belong
+# to one unchanged run/grid/entity series. Alternating model runs are the live
+# false-positive that previously reported 117 hours while leaving score hours
+# unresolved.
+wind_reference=start.timestamp()
+def wind_zone(run_for_offset):
+ hourly={}
+ for offset in range(0,100,3):
+  valid=(start+timedelta(hours=offset)).isoformat().replace('+00:00','Z')
+  hourly[valid]={
+   'wind-speed-10m':7.0,'wind-dir-10m':90.0,
+   'sources':{'wind':wind_source('wind',run_for_offset(offset))},
+  }
+ return {'hourly':hourly}
+alternating=wind_zone(lambda offset:'2026-01-01T00:00:00Z' if offset%6==0 else '2026-01-01T03:00:00Z')
+same_run=wind_zone(lambda _offset:'2026-01-01T00:00:00Z')
+assert module.wind_component_horizon_hours('PART::ALT',alternating,'wind',wind_reference)<24
+assert module.wind_component_horizon_hours('PART::SAME',same_run,'wind',wind_reference)>=96
+module.complete_native_source_for_hour=real_complete_native_source
 
 # Producer-local DKSS ids override misleading generic ecCodes metadata. This
 # reproduces production #1828, where id 34 was exposed as SST and got dropped.
@@ -213,19 +261,35 @@ wave_zones=[
  *[
   {'id':f'PART::WEST-{index:03d}','parentZoneId':'WEST',
    'lon':8.0+index/100000,'lat':56.0,'coastType':'west','coastalPart':True}
-  for index in range(335)
+ for index in range(335)
  ],
+ {'id':'DK-B05-10','lon':10.0,'lat':56.0,'coastType':'limfjord'},
+ {'id':'DK-B05-12','lon':10.1,'lat':56.0,'coastType':'limfjord'},
 ]
 wave_doc={'zones':{zone['id']:{'hourly':{}} for zone in wave_zones}}
 wave_gap=module.operational_wave_residual_by_collection(
  wave_doc,wave_zones,wave_reference,
 )
-assert wave_gap['wam_dw']['requiredPairCount']==335*118, wave_gap
+assert wave_gap['wam_dw']['requiredPairCount']==337*118, wave_gap
 assert wave_gap['wam_dw']['missingPairCount']==0, wave_gap
+assert wave_gap['wam_dw']['proxySupportRequiredPairCount']==2*118, wave_gap
+assert wave_gap['wam_dw']['proxySupportMissingPairCount']==0, wave_gap
 assert wave_gap['wam_nsb']['requiredPairCount']==335*118, wave_gap
 assert wave_gap['wam_nsb']['missingPairCount']==335*18, wave_gap
-assert len(resolver_calls)==670, len(resolver_calls)
+assert len(resolver_calls)==672, len(resolver_calls)
 assert {call['collection'] for call in resolver_calls}=={'wam_dw','wam_nsb'}, resolver_calls
+def fake_proxy_support_gap(_hourly,**kwargs):
+ required=tuple(kwargs['required_hours'])
+ if kwargs['collection']=='wam_dw' and kwargs['entity_id']=='DK-B05-12':
+  required=required[:74]
+ return {hour:() for hour in required}
+module.resolved_native_wave_hour_evidence=fake_proxy_support_gap
+support_gap=module.operational_wave_residual_by_collection(
+ wave_doc,wave_zones,wave_reference,
+)
+assert support_gap['wam_dw']['missingPairCount']==44, support_gap
+assert support_gap['wam_dw']['proxySupportMissingPairCount']==44, support_gap
+assert module.has_operational_wave_residual(support_gap) is True
 module.resolved_native_wave_hour_evidence=real_wave_resolver
 
 # Missing strict provenance permits one DKSS lead attempt, then every real WAM

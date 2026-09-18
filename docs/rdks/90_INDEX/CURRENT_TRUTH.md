@@ -1,4 +1,29 @@
-# NYESTE SANDHED – 2026-09-18 – lokal 4.0.422 fører aktiv repair gennem Pages
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.423, komplethed afventer normalrun
+
+Main `8a95c7cf` / PR #367 / normalrun `35386276428`: build og Pages samt
+offentlig verifikation lykkedes, target kl. 21 dansk tid. Runtimeaudit
+bestod med 673 fortsættelser og nul replayafvigelser. Den sene terminal
+var rød efter 51/52 artifactkontroller og 3/3 releasekontroller.
+
+420 aktuelle zonetilstande (210 zoner gange to måder) er stadig
+utilgængelige; 43.942/49.560 over hele horisonten. Feggesund har
+222/354 accepterede bølgedeltimer, 132 mangler. Grøn runtimeaudit er
+ikke fuld datadækning eller bevis på stabile, brugbare prognoser.
+
+Samlet analyse står i `docs/ai/ASTRA_WEATHER_REVIEW_2026-09-18.md`.
+4.0.423 retter lokalt terminalkonflikt, falsk vindhorisont,
+HARMONIE-seriekant, privat historik fjernet af offentlig tidsakse,
+Feggesund-blindfelt i plan/promotion samt fælles tidspris på tværs af
+providerfamilier. En payloadfri stageoversigt fra normalrun skal binde
+eventuelle rester til det præcise inputled.
+
+`MISSING` er ikke komplethed. Det tillader alene, at resten af siden virker.
+Den faktiske scoreklare ratio føres separat og er kun komplet ved 673/673.
+RavScore-formel, vægte, geometri og providerprioritet er uændrede. Fælles
+inputkode bindes append-only i migration `20260918190000`; anvendt historik
+ændres ikke. Exact-head, merge og almindelig produktionskørsel afventer.
+
+# HISTORISK SANDHED – 2026-09-18 – lokal 4.0.422 fører aktiv repair gennem Pages
 
 4.0.421-run `35383989821` gennemførte hele det providerfri build med eksakt
 audit, privat runtime, privacy/prewrite, Edge-readiness og Pages-artifact.

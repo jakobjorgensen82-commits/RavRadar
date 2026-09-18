@@ -1,4 +1,25 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 model-neutral runtimeombinding
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
+
+Seneste faktiske status står i `CURRENT_SESSION_HANDOFF.md` og
+`ASTRA_WEATHER_REVIEW_2026-09-18.md` i denne mappe. Brug det indlejrede
+`node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.423-current-score-and-terminal`, baseret på main `8a95c7cf`;
+appversion 4.0.423. Det gamle ydre worktræ må ikke ændres.
+
+Normalrun `35386276428` byggede og deployede/verificerede 4.0.422. De
+tidligere 672 replayafvigelser er væk; 420 aktuelle zonetilstande var stadig
+utilgængelige, og en forældet terminalregel gav fejlmail efter deploy.
+
+Den lokale 4.0.423-kandidat implementerer nu den samlede rettelse: fælles
+manuel/cron-terminal, reelt opløselig vindhorisont, sikker HARMONIE-
+seriesøgning, bevaret privat replayhistorik, Feggesunds to nødvendige
+WAM-kildezoner, tidsestimat pr. providerfamilie og payloadfri 673-dels
+stageoversigt. `MISSING` holder alene resten af siden brugbar; det tæller
+aldrig som data eller komplethed. Append-only migration `20260918190000`
+binder begge modelbundles og continuation. Måltests er grønne; version,
+samlet validering, exact-head, merge og normal produktionskørsel afventer.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – lokal 4.0.419 model-neutral runtimeombinding
 
 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men
 code-only `35366953774` stoppede før writes/Pages. Den private migration var
