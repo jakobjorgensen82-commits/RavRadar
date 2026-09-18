@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.417 sammenhængende same-time-score
+
+- [x] Lever 4.0.416 gennem exact-head `35351272955`, PR #360 og main `496ba278`.
+- [x] Kør providerfri code-only `35351928923`; reparér 673/673 continuations uden måleændringer.
+- [x] Afgræns det eneste auditfund til 156 ikke-genberegnede aktuelle modes; state-replay er grøn.
+- [x] Genberegn kompakte modes, offentlige delscorer og aktuel zonevinder fra repareret state.
+- [x] Kræv uændret tilgængelighed/historikkvalitet og eksakt uændret vejr, tid, geometri og flowpunkter.
+- [x] Bestå målrettet 210/673-runtimeaudit, negative fixtures, workflow- og modelbundlekontrol lokalt.
+- [ ] Commit/push, én exact-head, merge og genkør samme providerfri code-only.
+- [ ] Browserverificér 4.0.417, aktuel time, historik, femdøgn og scorer.
+- [ ] Etablér sikker current-main normal-weather-indgang; tre gamle køposter må aldrig starte.
+- [ ] Bevis almindelig weather og næste cachevedligeholdelse før scheduler.
+
+DEC-0200. Ingen oneoff og ingen provider før offentlig verifikation.
+
 # Aktuel implementeringsstatus – lokal 4.0.416 privat last-mile-ombinding
 
 - [x] Lever 4.0.415 gennem exact-head `35348220691`, PR #359 og main `3a705259`.

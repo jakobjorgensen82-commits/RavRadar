@@ -34,6 +34,7 @@ export const CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES =
 export const RUNTIME_REUSE_MODES = Object.freeze({
   CODE_ONLY: 'code-only-reuse',
   SAVED_WEATHER: 'saved-weather-continuation',
+  POST_CUTOVER_REPAIR: 'post-cutover-last-mile-repair',
 });
 
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -114,6 +115,96 @@ function assertProjectionEquivalent(liveValue, generatedValue, label) {
   );
 }
 
+function withoutKeys(value, keys) {
+  const cloned = structuredClone(value);
+  keys.forEach(key => delete cloned[key]);
+  return cloned;
+}
+
+function partNonScoreProjection(part) {
+  const projected = structuredClone(part);
+  if (isPlainObject(projected.current)) {
+    delete projected.current.waders;
+    delete projected.current.beach;
+  }
+  return projected;
+}
+
+function scoreZoneTimeAxes(zones) {
+  return Object.fromEntries(Object.entries(zones ?? {}).map(([zoneId, zone]) => [
+    zoneId,
+    {
+      expectedPartCount: zone?.expectedPartCount,
+      scoredPartCount: zone?.scoredPartCount,
+      currentReferenceAt: zone?.currentReferenceAt,
+      times: Array.isArray(zone?.hourly) ? zone.hourly.map(row => row?.time) : null,
+    },
+  ]));
+}
+
+function detailedScoreProjection(document) {
+  const coastal = document?.coastalParts;
+  return {
+    parts: Object.fromEntries(Object.entries(coastal?.parts ?? {}).map(([partId, part]) => [
+      partId,
+      { waders: part?.current?.waders, beach: part?.current?.beach },
+    ])),
+    zones: Object.fromEntries(Object.entries(coastal?.zones ?? {}).map(([zoneId, zone]) => [
+      zoneId,
+      (zone?.hourly ?? []).map(row => ({
+        time: row?.time,
+        waders: row?.waders,
+        beach: row?.beach,
+      })),
+    ])),
+  };
+}
+
+export function assertPostCutoverRepairProjection(liveStartup, liveDetails, generatedStartup,
+  generatedDetails) {
+  assertSame(
+    withoutKeys(liveStartup, ['ravScoreRuntime', 'nationalForecast', 'zones', 'coastalParts']),
+    withoutKeys(generatedStartup, ['ravScoreRuntime', 'nationalForecast', 'zones', 'coastalParts']),
+    'Post-cutover startup non-score envelope',
+  );
+  assertSame(liveStartup?.zones, generatedStartup?.zones,
+    'Post-cutover startup weather');
+  assertSame(
+    withoutKeys(liveDetails, ['ravScoreRuntime', 'zones', 'coastalParts']),
+    withoutKeys(generatedDetails, ['ravScoreRuntime', 'zones', 'coastalParts']),
+    'Post-cutover detail non-score envelope',
+  );
+  assertSame(liveDetails?.zones, generatedDetails?.zones,
+    'Post-cutover detailed weather');
+
+  const liveCoastal = liveDetails?.coastalParts;
+  const generatedCoastal = generatedDetails?.coastalParts;
+  assertSame(
+    withoutKeys(liveCoastal, ['modelBinding', 'scoreProfile', 'parts', 'zones']),
+    withoutKeys(generatedCoastal, ['modelBinding', 'scoreProfile', 'parts', 'zones']),
+    'Post-cutover coastal runtime non-score metadata',
+  );
+  const livePartIds = Object.keys(liveCoastal?.parts ?? {}).sort();
+  const generatedPartIds = Object.keys(generatedCoastal?.parts ?? {}).sort();
+  assertSame(livePartIds, generatedPartIds, 'Post-cutover coastal-part inventory');
+  for (const partId of livePartIds) {
+    assertSame(
+      partNonScoreProjection(liveCoastal.parts[partId]),
+      partNonScoreProjection(generatedCoastal.parts[partId]),
+      `Post-cutover coastal-part weather and geometry ${partId}`,
+    );
+  }
+  assertSame(
+    scoreZoneTimeAxes(liveCoastal?.zones),
+    scoreZoneTimeAxes(generatedCoastal?.zones),
+    'Post-cutover score-zone time axes',
+  );
+  if (canonical(normalizeCodeOnlyProjection(detailedScoreProjection(liveDetails)))
+      === canonical(normalizeCodeOnlyProjection(detailedScoreProjection(generatedDetails)))) {
+    throw new Error('Post-cutover score repair did not change any derived score');
+  }
+}
+
 export function normalizeRuntimeReuseMode(value) {
   const mode = value ?? RUNTIME_REUSE_MODES.CODE_ONLY;
   if (!Object.values(RUNTIME_REUSE_MODES).includes(mode)) {
@@ -187,6 +278,7 @@ export async function prepareCodeOnlyPublicRuntime({
 } = {}) {
   const mode = normalizeRuntimeReuseMode(requestedMode);
   const savedWeatherContinuation = mode === RUNTIME_REUSE_MODES.SAVED_WEATHER;
+  const postCutoverRepair = mode === RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR;
   const { repository, snapshot } = await assertSeparateRegularDirectory(repositoryRoot, snapshotRoot);
   const paths = Object.fromEntries(Object.entries(CODE_ONLY_SNAPSHOT_FILES)
     .map(([key, filename]) => [key, path.join(snapshot, filename)]));
@@ -298,13 +390,24 @@ export async function prepareCodeOnlyPublicRuntime({
   assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
   assertPublicRuntimePrivacy(generated.detailsDocument, 'details');
   assertPublicRuntimePrivacy(generated.manifest, 'manifest');
-  if (!savedWeatherContinuation) {
+  if (!savedWeatherContinuation && !postCutoverRepair) {
     assertProjectionEquivalent(publicSource.value, generated.publicDocument,
       'Code-only startup projection');
     assertProjectionEquivalent(detailsSource.value, generated.detailsDocument,
       'Code-only detail projection');
     assertProjectionEquivalent(manifest, generated.manifest,
       'Code-only manifest projection');
+  } else if (postCutoverRepair) {
+    assertPostCutoverRepairProjection(
+      publicSource.value,
+      detailsSource.value,
+      generated.publicDocument,
+      generated.detailsDocument,
+    );
+    if (generated.manifest.datasetId !== manifest.datasetId
+        || generated.manifest.productionReferenceAt !== manifest.productionReferenceAt) {
+      throw new Error('Post-cutover score repair changed the protected runtime identity');
+    }
   } else if (generated.manifest.datasetId !== fullSource.value.datasetId
       || generated.manifest.productionReferenceAt !== fullSource.value.productionReferenceAt) {
     throw new Error('Saved weather continuation did not preserve the protected runtime identity');
@@ -314,7 +417,9 @@ export async function prepareCodeOnlyPublicRuntime({
     schemaVersion: 1,
     kind: savedWeatherContinuation
       ? 'RAVRADAR_SAVED_WEATHER_PUBLIC_RUNTIME_CONTINUATION'
-      : 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
+      : postCutoverRepair
+        ? 'RAVRADAR_POST_CUTOVER_SCORE_REPAIR'
+        : 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
     mode,
     sourceDatasetId: manifest.datasetId,
     datasetId: generated.manifest.datasetId,
@@ -326,9 +431,9 @@ export async function prepareCodeOnlyPublicRuntime({
     generatedPublicManifestSha256: sha256Text(`${JSON.stringify(generated.manifest, null, 2)}\n`),
     waterLevelRoutingSha256: sha256Text(routingSource.text),
     publicRuntimeAdvanced: savedWeatherContinuation,
-    savedProtectedRuntimeReused: savedWeatherContinuation,
+    savedProtectedRuntimeReused: savedWeatherContinuation || postCutoverRepair,
     weatherValuesChanged: savedWeatherContinuation,
-    scoresChanged: savedWeatherContinuation,
+    scoresChanged: savedWeatherContinuation || postCutoverRepair,
     geometryChanged: false,
     providerRequestsPerformed: false,
     privatePayloadIncluded: false,

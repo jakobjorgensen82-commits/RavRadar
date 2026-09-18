@@ -1,3 +1,13 @@
+## 4.0.417 – repareret state og viste scorer hænger sammen (2026-09-18)
+
+- 4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.
+- Providerfri code-only `35351928923` reparerede 673/673 continuations uden
+  måleændringer; replay blev grøn, men 156 aktuelle modes var ikke genberegnet.
+- 4.0.417 genberegner mode, offentlig delscore og aktuel zonevinder samlet og
+  stopper ved ændret tilgængelighed/historikkvalitet.
+- En særskilt same-time-proof tillader scoreændringen, men kræver uændret vejr,
+  tid, geometri og flowpunkter. Se CHANGELOG-4.0.417.md og DEC-0200.
+
 ## 4.0.416 – privat same-time-runtime kan bruge den kendte last-mile-reparation (2026-09-18)
 
 - 4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.

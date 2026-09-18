@@ -22,6 +22,18 @@ import {
 import {
   buildIntegratedRavScoreStateSeries,
 } from '../js/core/ravscore-integrated-state-pipeline.js';
+import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
+import { selectPublicRavScoreResult } from '../js/core/ravscore-public-model.js';
+import {
+  buildIntegratedZoneHourlyProjection,
+} from './lib/ravscore-production-adapters.mjs';
+import {
+  compactIntegratedRavScoreMode,
+  integratedInputCalibrationEligible,
+} from './lib/ravscore-integrated-runtime.mjs';
+import {
+  reconstructIntegratedEvaluationState,
+} from './audit-ravscore-integrated-public-runtime.mjs';
 import {
   assertRavScoreModelBinding as assertCandidateBinding,
   ravScoreModelBinding as candidateModelBinding,
@@ -174,6 +186,114 @@ function collectChangedPaths(before, after, prefix = '') {
     after[key],
     joinedPath(prefix, key),
   ));
+}
+
+function addExactChangedPaths(allowed, before, after, prefix) {
+  const changed = collectChangedPaths(before, after, prefix);
+  changed.forEach(pathValue => allowed.add(pathValue));
+  return changed;
+}
+
+function scoreAvailabilitySignature(value) {
+  return {
+    available: value?.available === true,
+    scoreQuality: value?.scoreQuality ?? null,
+    calibrationEligible: value?.calibrationEligible === true,
+    scoreSemantics: value?.scoreSemantics ?? null,
+    conservativeTailResetApplied: value?.conservativeTailResetApplied === true,
+    historyCoverageHours: value?.historyCoverageHours ?? null,
+    historyReasonCodes: Array.isArray(value?.historyReasonCodes)
+      ? [...value.historyReasonCodes].sort() : [],
+    reason: value?.available === false ? value?.reason ?? null : null,
+    readiness: value?.available === false ? value?.readiness ?? null : null,
+  };
+}
+
+function finiteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function migratedPublicContext(part, wrapper, evaluationState) {
+  const weather = part?.current?.weather ?? {};
+  const currentAlignment = finiteNumber(weather.currentDirectionDeg)
+    && finiteNumber(part?.onshoreDirectionDeg)
+    ? Math.cos((weather.currentDirectionDeg - part.onshoreDirectionDeg) * Math.PI / 180)
+    : null;
+  return {
+    windSpeedMps: weather.windSpeedMps,
+    waveHeightM: weather.waveHeightM,
+    currentSpeedMps: weather.currentSpeedMps,
+    currentCoastNormalSpeedMps: evaluationState.currentCoastNormalSpeedMps,
+    currentAlignment,
+    currentVerified: evaluationState.currentVerified === true,
+    currentTransition: wrapper.currentTransition ?? null,
+    currentReferenceAt: wrapper.currentReferenceAt ?? null,
+    currentReferenceProvenance: weather.currentProvenance ?? null,
+    currentMemoryReady: wrapper.currentMemoryReady === true,
+    currentMemoryStatus: wrapper.currentMemoryStatus ?? null,
+    currentMemoryCoverageHours: wrapper.currentMemoryCoverageHours ?? null,
+    currentMemoryWindowHours: wrapper.currentMemoryWindowHours ?? null,
+    waveLastVerifiedAt: wrapper.waveLastVerifiedAt ?? null,
+    waveMemoryReady: wrapper.waveMemoryReady === true,
+    waveMemoryStatus: wrapper.waveMemoryStatus ?? null,
+    lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt ?? null,
+    lastMileMemoryReady: evaluationState.lastMileMemoryReady === true,
+    lastMileMemoryStatus: evaluationState.lastMileMemoryStatus ?? null,
+  };
+}
+
+export function reconcileIntegratedCurrentPartProjection({
+  part,
+  scoreProfile,
+} = {}) {
+  if (!isPlainObject(part?.ravScoreModel)
+      || !isPlainObject(part?.current)
+      || !isPlainObject(part.current.weather)
+      || !isPlainObject(scoreProfile)) {
+    throw new Error('Current part projection is incomplete');
+  }
+  const wrapper = part.ravScoreModel;
+  const weather = part.current.weather;
+  const evaluationState = reconstructIntegratedEvaluationState(
+    wrapper.currentState,
+    wrapper,
+    weather,
+    wrapper.modes?.waders,
+    part.onshoreDirectionDeg,
+  );
+  const inputCalibrationEligible = integratedInputCalibrationEligible(weather);
+  const modes = Object.fromEntries(['waders', 'beach'].map(mode => [
+    mode,
+    compactIntegratedRavScoreMode(evaluateRavScoreIntegrated({
+      mode,
+      weather,
+      zone: { onshoreDirectionDeg: part.onshoreDirectionDeg },
+    }, { state: evaluationState }), { inputCalibrationEligible }),
+  ]));
+  for (const mode of ['waders', 'beach']) {
+    if (!same(
+      scoreAvailabilitySignature(wrapper.modes?.[mode]),
+      scoreAvailabilitySignature(modes[mode]),
+    )) {
+      throw new Error(`${mode} availability or history classification changed during repair`);
+    }
+  }
+  const context = migratedPublicContext(part, wrapper, evaluationState);
+  const modelState = { ...wrapper, modes };
+  const current = {
+    ...part.current,
+    ...Object.fromEntries(['waders', 'beach'].map(mode => [
+      mode,
+      selectPublicRavScoreResult({
+        profile: scoreProfile,
+        modelResult: modes[mode],
+        modelState,
+        mode,
+        context,
+      }),
+    ])),
+  };
+  return { modes, current };
 }
 
 const EXACT_LAST_MILE_REPAIR_PREFIXES = Object.freeze([
@@ -496,6 +616,9 @@ function validateAndMigrateConditions({
   ]);
   const errors = [];
   let repairedContinuationCount = 0;
+  let recomputedModeCount = 0;
+  let recomputedZoneCount = 0;
+  const zonesRequiringProjection = new Set();
   const partIds = Object.keys(source.coastalParts.parts).sort();
   for (const partId of partIds) {
     try {
@@ -562,9 +685,89 @@ function validateAndMigrateConditions({
           `coastalParts.parts.${partId}.ravScoreModel.currentState.${repairPath}`,
         );
       }
-      if (reconciliation.repairPaths.length > 0) repairedContinuationCount += 1;
+      if (reconciliation.repairPaths.length > 0) {
+        repairedContinuationCount += 1;
+        const projection = reconcileIntegratedCurrentPartProjection({
+          part: migratedPart,
+          scoreProfile: migrated.coastalParts.scoreProfile,
+        });
+        let currentProjectionChanged = false;
+        for (const mode of ['waders', 'beach']) {
+          const modelPrefix = `coastalParts.parts.${partId}.ravScoreModel.modes.${mode}`;
+          const currentPrefix = `coastalParts.parts.${partId}.current.${mode}`;
+          const modelChanges = addExactChangedPaths(
+            exactAllowedPaths,
+            migratedWrapper.modes?.[mode],
+            projection.modes[mode],
+            modelPrefix,
+          );
+          const publicChanges = addExactChangedPaths(
+            exactAllowedPaths,
+            migratedPart.current?.[mode],
+            projection.current[mode],
+            currentPrefix,
+          );
+          if (modelChanges.length || publicChanges.length) recomputedModeCount += 1;
+          if (publicChanges.length) currentProjectionChanged = true;
+        }
+        migratedWrapper.modes = projection.modes;
+        migratedPart.current = projection.current;
+        if (currentProjectionChanged) {
+          if (typeof migratedPart.zoneId !== 'string' || !migratedPart.zoneId) {
+            throw new Error('current projection has no parent zone');
+          }
+          zonesRequiringProjection.add(migratedPart.zoneId);
+        }
+      }
     } catch (error) {
       errors.push({ scope: partId, message: error.message });
+    }
+  }
+
+  for (const zoneId of [...zonesRequiringProjection].sort()) {
+    try {
+      const zone = migrated.coastalParts.zones?.[zoneId];
+      if (!isPlainObject(zone)
+          || !Number.isInteger(zone.expectedPartCount)
+          || !Array.isArray(zone.hourly)
+          || typeof zone.currentReferenceAt !== 'string') {
+        throw new Error('current score-zone projection is incomplete');
+      }
+      const zoneParts = Object.entries(migrated.coastalParts.parts)
+        .filter(([, part]) => part?.zoneId === zoneId)
+        .map(([partId, part]) => ({
+          partId,
+          name: part.name,
+          scores: [part.current],
+        }));
+      const projected = buildIntegratedZoneHourlyProjection({
+        rows: zoneParts,
+        expectedPartCount: zone.expectedPartCount,
+        selectedMode: (scoreRow, mode) => scoreRow?.[mode],
+        marginPoints: migrated.coastalParts.marginPoints,
+      });
+      if (projected.length !== 1 || projected[0]?.time !== zone.currentReferenceAt) {
+        throw new Error('current score-zone projection does not match its exact reference hour');
+      }
+      const indexes = zone.hourly
+        .map((row, index) => row?.time === zone.currentReferenceAt ? index : -1)
+        .filter(index => index >= 0);
+      if (indexes.length !== 1) {
+        throw new Error('current score-zone reference hour is not unique');
+      }
+      const index = indexes[0];
+      const zoneChanges = addExactChangedPaths(
+        exactAllowedPaths,
+        zone.hourly[index],
+        projected[0],
+        `coastalParts.zones.${zoneId}.hourly.${index}`,
+      );
+      if (zoneChanges.length) {
+        zone.hourly[index] = projected[0];
+        recomputedZoneCount += 1;
+      }
+    } catch (error) {
+      errors.push({ scope: zoneId, message: error.message });
     }
   }
 
@@ -677,6 +880,8 @@ function validateAndMigrateConditions({
     candidateRoot: candidateRootName,
     partCount: partIds.length,
     repairedContinuationCount,
+    recomputedModeCount,
+    recomputedZoneCount,
     transitionKind: changedPaths.length > 0
       ? 'MODEL_BINDING_MIGRATION'
       : 'CONTRACT_ONLY_REBIND',
@@ -806,6 +1011,8 @@ export async function migratePostCutoverPrivateRuntime({
   return {
     ...report,
     repairedContinuationCount: result.repairedContinuationCount,
+    recomputedModeCount: result.recomputedModeCount,
+    recomputedZoneCount: result.recomputedZoneCount,
   };
 }
 
@@ -831,6 +1038,8 @@ async function main() {
     status: 'post-cutover-private-runtime-migrated',
     migratedPartCount: report.migratedPartCount,
     repairedContinuationCount: report.repairedContinuationCount,
+    recomputedModeCount: report.recomputedModeCount,
+    recomputedZoneCount: report.recomputedZoneCount,
     copiedPrivateFileCount: report.copiedPrivateFileCount,
     measurementsChanged: report.measurementsChanged,
     privatePayloadIncluded: false,

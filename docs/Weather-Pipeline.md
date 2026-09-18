@@ -1,5 +1,17 @@
 # Weather Pipeline 1.0
 
+## 4.0.417 – repareret historik og aktuelle scorer genberegnes samlet
+
+Code-only `35351928923` reparerede alle 673 gemte last-mile-states uden at
+ændre en måling. De viste aktuelle resultater blev imidlertid ikke genberegnet
+ovenpå reparationen, så 156 mode-resultater beskrev den gamle state.
+
+4.0.417 genberegner derfor mode, offentlig kystdelsscore og aktuel zonevinder
+som én sammenhængende afledning. Hvis tilgængelighed eller historikkvalitet
+skifter, stopper den. Den providerfri publicering kræver samtidig eksakt
+uændret vejr, tid, geometri, flowpunkter og scoretidsakser. Der foretages ingen
+providerkald og ingen cacheopdatering.
+
 ## 4.0.416 – kendt privat last-mile-state repareres før genbinding
 
 Den providerfri samme-time-kørsel gendannede den eksakte private runtime fra

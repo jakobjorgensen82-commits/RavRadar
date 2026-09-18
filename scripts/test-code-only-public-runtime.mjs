@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
+  assertPostCutoverRepairProjection,
   assertCodeOnlyModelBinding,
   assertZoneRegistryVersionOnly,
   CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
@@ -28,6 +29,10 @@ assert.equal(normalizeRuntimeReuseMode(), RUNTIME_REUSE_MODES.CODE_ONLY);
 assert.equal(
   normalizeRuntimeReuseMode('saved-weather-continuation'),
   RUNTIME_REUSE_MODES.SAVED_WEATHER,
+);
+assert.equal(
+  normalizeRuntimeReuseMode('post-cutover-last-mile-repair'),
+  RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR,
 );
 assert.throws(
   () => normalizeRuntimeReuseMode('provider-refresh'),
@@ -73,6 +78,103 @@ after.ravScoreRuntime.startup.fileSha256 = 'e'.repeat(64);
 assert.deepEqual(normalizeCodeOnlyProjection(before), normalizeCodeOnlyProjection(after));
 after.zones.z1.forecast[0].waveHeightM = 0.8;
 assert.notDeepEqual(normalizeCodeOnlyProjection(before), normalizeCodeOnlyProjection(after));
+
+const repairStartup = {
+  schemaVersion: 3,
+  datasetId: 'rr-repair',
+  generatedAt: '2026-09-18T10:00:00.000Z',
+  productionReferenceAt: '2026-09-18T10:00:00.000Z',
+  weatherSourceAge: { status: 'FRESH' },
+  ravScoreRuntime: { modelBinding: { old: true } },
+  nationalForecast: { modes: { waders: [{ rows: [{ score: 20 }] }] } },
+  zones: { z1: { current: { waveHeightM: 0.7 }, forecast: { hourly: [] } } },
+  coastalParts: { parts: { p1: { id: 'p1' } }, zones: {} },
+};
+const repairDetails = {
+  schemaVersion: 2,
+  datasetId: 'rr-repair',
+  generatedAt: '2026-09-18T10:00:00.000Z',
+  productionReferenceAt: '2026-09-18T10:00:00.000Z',
+  weatherSourceAge: { status: 'FRESH' },
+  ravScoreRuntime: { modelBinding: { old: true } },
+  zones: { z1: { forecast: { hourly: [{ time: '2026-09-18T10:00:00.000Z', waveHeightM: 0.7 }] } } },
+  coastalParts: {
+    schemaVersion: 2,
+    expectedPartCount: 1,
+    scoredPartCount: 1,
+    scoreAvailability: { activeZoneCount: 1 },
+    modelBinding: { old: true },
+    scoreProfile: { old: true },
+    parts: {
+      p1: {
+        id: 'p1',
+        zoneId: 'z1',
+        name: 'Part 1',
+        landPoint: [1, 2],
+        waterPoint: [3, 4],
+        flowPoints: { current: [3, 4] },
+        current: {
+          time: '2026-09-18T10:00:00.000Z',
+          weather: { waveHeightM: 0.7 },
+          waders: { score: 20 },
+          beach: { score: 30 },
+        },
+      },
+    },
+    zones: {
+      z1: {
+        expectedPartCount: 1,
+        scoredPartCount: 1,
+        currentReferenceAt: '2026-09-18T10:00:00.000Z',
+        hourly: [{
+          time: '2026-09-18T10:00:00.000Z',
+          waders: { score: 20 },
+          beach: { score: 30 },
+        }],
+      },
+    },
+  },
+};
+const generatedRepairStartup = structuredClone(repairStartup);
+generatedRepairStartup.ravScoreRuntime = { modelBinding: { current: true } };
+generatedRepairStartup.nationalForecast.modes.waders[0].rows[0].score = 24;
+generatedRepairStartup.coastalParts = { parts: { p1: { id: 'p1', score: 24 } } };
+const generatedRepairDetails = structuredClone(repairDetails);
+generatedRepairDetails.ravScoreRuntime = { modelBinding: { current: true } };
+generatedRepairDetails.coastalParts.modelBinding = { current: true };
+generatedRepairDetails.coastalParts.scoreProfile = { current: true };
+generatedRepairDetails.coastalParts.parts.p1.current.waders.score = 24;
+generatedRepairDetails.coastalParts.zones.z1.hourly[0].waders.score = 24;
+assert.doesNotThrow(() => assertPostCutoverRepairProjection(
+  repairStartup,
+  repairDetails,
+  generatedRepairStartup,
+  generatedRepairDetails,
+));
+const changedRepairWeather = structuredClone(generatedRepairDetails);
+changedRepairWeather.coastalParts.parts.p1.current.weather.waveHeightM = 0.8;
+assert.throws(() => assertPostCutoverRepairProjection(
+  repairStartup,
+  repairDetails,
+  generatedRepairStartup,
+  changedRepairWeather,
+), /coastal-part weather and geometry/);
+const changedRepairGeometry = structuredClone(generatedRepairDetails);
+changedRepairGeometry.coastalParts.parts.p1.waterPoint = [3.1, 4];
+assert.throws(() => assertPostCutoverRepairProjection(
+  repairStartup,
+  repairDetails,
+  generatedRepairStartup,
+  changedRepairGeometry,
+), /coastal-part weather and geometry/);
+const changedRepairTime = structuredClone(generatedRepairDetails);
+changedRepairTime.coastalParts.zones.z1.hourly[0].time = '2026-09-18T11:00:00.000Z';
+assert.throws(() => assertPostCutoverRepairProjection(
+  repairStartup,
+  repairDetails,
+  generatedRepairStartup,
+  changedRepairTime,
+), /score-zone time axes/);
 
 const observedProductionDetailsBytes = 117_820_378;
 assert.equal(
@@ -124,6 +226,8 @@ for (const marker of [
   'target_reference="${target_reference_raw%.000Z}Z"',
   "grep -Fxq 'status=FRESH' \"$freshness_output\"",
   '--mode "$mode"',
+  'mode=post-cutover-last-mile-repair',
+  '.mode == "post-cutover-last-mile-repair"',
   'savedProtectedRuntimeReused == true',
   'publicRuntimeAdvanced == true',
   'code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}',
@@ -311,7 +415,8 @@ for (const marker of [
   'if: inputs.code_only_repair != true',
   '.providerRequestsPerformed == false',
   '.weatherValuesChanged == false',
-  '.scoresChanged == false',
+  '.mode == "post-cutover-last-mile-repair"',
+  '.scoresChanged == true',
   '.geometryChanged == false',
   'id: integrated-historical-maintenance-complete',
   'id: failure-reconciliation',

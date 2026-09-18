@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.416
+**Håndbogsversion:** 4.0.417
+
+## 89.21 4.0.417 – Repareret historik og viste scorer hænger sammen
+
+Den providerfri kørsel reparerede alle 673 gemte historikforløb uden at ændre
+en måling. Den efterfølgende kontrol fandt 156 aktuelle mode-resultater, som
+stadig beskrev historikken før reparationen. Derfor blev ingen ny privat
+runtime eller offentlig side skrevet.
+
+4.0.417 genberegner nu hele den aktuelle kæde: begge interne modes, de
+offentlige scorer for kystdelen og zonens aktuelle samlede resultat og vinder.
+Tilgængelighed og historikkvalitet skal være de samme før og efter. Ellers
+stopper rettelsen.
+
+Den providerfri publicering må vise den nødvendige nye score, men kræver
+samtidig eksakt uændret datasæt og tid, alle offentlige vejrrækker, de 673
+kystdeles aktuelle vejr, geometri, flowpunkter og scoretidsakser. Der hentes
+ikke nyt vejr.
+
+Formel og vægte er uændrede. 4.0.417 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.20 4.0.416 – Den kendte gemte scoretilstand kan repareres sikkert
 

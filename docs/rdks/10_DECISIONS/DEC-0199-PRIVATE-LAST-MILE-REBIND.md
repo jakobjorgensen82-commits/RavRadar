@@ -1,6 +1,6 @@
 # DEC-0199 – Kendt last-mile-reparation må passere privat ombinding
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.416, livebevis afventer
+**Status:** Aktiv; ombindingen livebevist i `35351928923`, efterfølgende afledt scorekæde overtages af DEC-0200
 **Dato:** 2026-09-18
 
 ## Evidens

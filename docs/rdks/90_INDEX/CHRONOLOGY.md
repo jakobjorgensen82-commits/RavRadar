@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.417 samler repareret state og aktuelle scorer
+
+- 4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.
+- Code-only `35351928923` reparerede 673 states uden måleændringer; replay var grøn.
+- 156 gemte aktuelle modes var ikke genberegnet, så kørselen stoppede før writes og Pages.
+- 4.0.417 genberegner mode, offentlig delscore og zonevinder med eksakt vejr-/geometrilås. DEC-0200.
+
 # 2026-09-18 – 4.0.416 fører kendt last-mile-state gennem privat ombinding
 
 - 4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.

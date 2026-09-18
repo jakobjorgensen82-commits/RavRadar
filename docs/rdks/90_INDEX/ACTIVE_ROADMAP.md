@@ -1,4 +1,18 @@
-# Aktiv roadmap – 4.0.416 fra kendt privat state til stabil normal drift
+# Aktiv roadmap – 4.0.417 fra sammenhængende score til stabil normal drift
+
+1. [x] Lever 4.0.416 gennem exact-head `35351272955`, PR #360 og main `496ba278`.
+2. [x] Reparer 673/673 continuations i `35351928923`; bevis nul måleændringer og grøn replay.
+3. [x] Afgræns de 156 fund til afledte modes, som ikke blev genberegnet ovenpå repareret state.
+4. [x] Genberegn mode → offentlig delscore → aktuel zonevinder atomisk og lås al vejr/geometri/tid.
+5. [ ] Lever 4.0.417 gennem én exact-head og samme providerfri code-only.
+6. [ ] Verificér offentlig version, aktuel time, historik, lokale femdøgn og scorer i browseren.
+7. [ ] Opret sikker current-main-indgang til normal weather uden de tre gamle køposter.
+8. [ ] Kør én almindelig weather; mål DMI → Copernicus → Open-Meteo, gammel-over-tom og ærlige lokale huller.
+9. [ ] Bevis næste cachevedligeholdelse og genaktivér først derefter scheduler.
+
+DEC-0200. Ingen oneoff; bootstrap kun ved senere målt databehov.
+
+# Tidligere roadmap – 4.0.416 fra kendt privat state til stabil normal drift
 
 1. [x] Lever 4.0.415 gennem exact-head `35348220691`, PR #359 og main `3a705259`.
 2. [x] Bevis i saved-weather `35349088863`, at historical-maintenance-handlingen accepteres; targetet var ikke nyere end offentlig 09:00.

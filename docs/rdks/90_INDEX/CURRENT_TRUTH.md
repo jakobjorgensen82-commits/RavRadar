@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.417 genberegner afledte scorer
+
+4.0.416 bestod exact-head `35351272955`, blev merged gennem PR #360 som main
+`496ba278`, og code-only `35351928923` reparerede alle 673 gemte last-mile-
+continuations uden at ændre målinger. State-replay blev grøn. Auditten fandt
+derefter 156 `MODE_RECONSTRUCTION_MISMATCH`, fordi den reparerede state var
+opdateret, mens de gemte aktuelle modes stadig beskrev tilstanden før
+reparationen. Ingen privat runtime eller Pages-pakke blev publiceret.
+
+Lokal 4.0.417 genberegner begge aktuelle modes, de offentlige delresultater og
+zonens aktuelle samlede resultat fra den reparerede state. Klassifikation og
+historikkvalitet må ikke ændres. Den providerfri same-time-rute beviser, at
+vejrrækker, aktuelt delvejr, datasæt/tid, geometri, flowpunkter og tidsakser er
+uændrede. Næste: exact-head, merge, samme code-only og browserbevis; derefter
+sikker current-main normal weather. DEC-0200.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.416 genbinder kendt last-mile-state
 
 4.0.415 bestod exact-head `35348220691`, blev merged som main `3a705259`, og
