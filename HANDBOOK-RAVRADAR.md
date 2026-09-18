@@ -21,6 +21,15 @@ vejrhentning fortsætte på de allerede gemte data.
 Formel og vægte er uændrede. 4.0.419 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
+4.0.419 er efterfølgende lagt online uden ny vejrhentning. Den gamle automatiske
+vejrkørsel er endnu ikke åbnet, fordi GitHub viser tre meget gamle køposter, som
+ikke kan fjernes. I stedet bruges én særskilt manuel start på den aktuelle kode.
+Den kører den samme almindelige, tidsbegrænsede DMI-, Copernicus- og
+Open-Meteo-kæde og den samme publicering, men den deler ikke kø med de gamle
+kørsler. Den er ikke en oneoff og får ikke forlænget bootstrap-tid. Først når
+hele vejrbygningen, kontrollerne, publiceringen og den levende side er grønne,
+tæller kørslen som gennemført.
+
 ## 89.22 4.0.418 – Et hul må ikke flytte hele vejrudsigten
 
 Den første almindelige vejrkørsel efter 4.0.417 hentede og gemte data fra alle

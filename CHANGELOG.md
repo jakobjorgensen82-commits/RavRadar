@@ -8,6 +8,12 @@
   kræver uændret vejr, score, geometri og tid samt nul providerkald.
 - Kontrakthash-kontrollen bevares. Gemte providercacher genbruges efter den
   providerfri levering. Se CHANGELOG-4.0.419.md og DEC-0202.
+- Produktionsbevis: exact-head `35370864611`, PR #363, main `1ec8358f` og
+  providerfri code-only `35371475804` er grønne; Chrome viser 4.0.419.
+- Et efterfølgende same-version driftstillæg åbner én almindelig weather via
+  en særskilt manuel current-main-kø og de eksisterende reusable build- og
+  Pages-workflows. Det gamle schedulerworkflow og dets tre fastlåste
+  historiske køposter vækkes ikke. Ingen oneoff eller extended bootstrap.
 
 ## 4.0.418 – præcis offentlig vejrakse (2026-09-18)
 

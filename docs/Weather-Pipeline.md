@@ -14,6 +14,17 @@ uændrede, og der må ikke laves providerkald. Når denne providerfri levering e
 online, kan almindelig weather bruge samme current-kontrakt og fortsætte på de
 allerede gemte providercacher. Kontraktsikkerheden er ikke svækket.
 
+4.0.419 er nu live gennem exact-head `35370864611`, PR #363, main `1ec8358f`
+og providerfri code-only `35371475804`. Det gamle schedulerworkflow er fortsat
+deaktiveret, fordi GitHub viser tre historiske køposter, som ikke kan
+annulleres. Den første almindelige kørsel startes derfor gennem
+`run-current-weather-once.yml`. Den har sin egen kø, kræver eksakt aktuel
+`main`, bruger de normale providerbudgetter og kalder de samme reusable build-
+og deployworkflows. Den bruger ikke extended bootstrap eller oneoff og kan kun
+slutte grønt efter fuld validering, releasegate, artifact, Pages og offentlig
+verifikation. Når normal drift er bevist, tages særskilt stilling til den
+permanente scheduler; den midlertidige indgang må ikke blive en ekstra cron.
+
 ## 4.0.418 – alle offentlige zoner følger samme præcise produktionstime
 
 Normalrun `35357557315` gennemførte DMI, Copernicus, regional DMI og

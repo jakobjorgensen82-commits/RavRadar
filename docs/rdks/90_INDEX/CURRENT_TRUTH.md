@@ -1,18 +1,25 @@
-# NYESTE SANDHED – 2026-09-18 – lokal 4.0.419 model-neutral runtimeombinding
+# NYESTE SANDHED – 2026-09-18 – 4.0.419 er live; normal weather genåbnes afgrænset
 
-4.0.418 bestod exact-head `35366221956`, blev merged gennem PR #362 som main
-`9573264f`, men er ikke live. Code-only `35366953774` gendannede og migrerede
-den beskyttede private runtime korrekt som `CONTRACT_ONLY_REBIND`. Workflowet
-ignorerede derefter klassifikationen og krævede fejlagtigt, at en score skulle
-ændres. Det stoppede før beskyttet publicering og Pages. Gentagelsen
-`35368826476` blev afbrudt.
+4.0.419 bestod exact-head `35370864611`, blev merged gennem PR #363 som main
+`1ec8358fad6b20eb2c10f830956fcbf0f0e1db42`, og code-only `35371475804`
+gennemførte den model-neutrale `CONTRACT_ONLY_REBIND`, publicerede den
+beskyttede runtime og deployede/verificerede Pages uden providerkald. Chrome
+viser 4.0.419, kort, rangliste og femdøgn. Siden står ærligt i begrænset
+nøddrift på det senest verificerede datasæt fra 18. september kl. 11 dansk
+tid, indtil næste almindelige vejrproduktion er deployet.
 
-Normal weather `35369122090` stoppede før alle providerkald, fordi runtime endnu
-havde forgængerens kontrakthash. De gemte providercacher er derfor urørte.
-Lokal 4.0.419 giver ren kontraktombinding sin egen vej med samme datasæt/time,
-uændret vejr, score og geometri samt nul providerkald. Den strenge
-kontrakthash-kontrol bevares. Næste: exact-head, merge, code-only og én normal
-weather på de gemte cacher. DEC-0202. Ingen oneoff.
+Det historiske `update-and-deploy.yml` er stadig `disabled_manually`. GitHub
+viser tre gamle køposter (`34868901509`, `34613079069`, `34228112413`), som
+platformen hverken kan annullere, force-cancel eller slette. Deres egen kode
+kræver eksakt aktuel `main` før providerarbejde, men de må ikke vækkes for at
+starte normal drift. Et same-version driftstillæg til 4.0.419 tilføjer derfor
+`run-current-weather-once.yml`: manuel dispatch, særskilt concurrencykø,
+eksakt-current-main/time-lås og genbrug af de eksisterende reusable build- og
+Pages-workflows. Den tvinger én almindelig tidsbegrænset kørsel, ikke oneoff
+eller extended bootstrap, og bliver kun grøn ved fuld validering, releasegate,
+artifact, deploy og offentlig verifikation. Næste: exact-head, merge, dispatch
+og browser-/providerbevis. Scheduler forbliver deaktiveret indtil mindst to
+almindelige vedligeholdelser er forstået. DEC-0202.
 
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.418 præcis vejrhorisont
 

@@ -1,16 +1,24 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 kontraktombinding
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.419 live, manuel normal weather klar
 
 Arbejd i `RavRadar-4.0.396`, branch
-`codex/4.0.419-model-neutral-runtime-rebind`, fra main `9573264f`.
+`codex/4.0.419-manual-current-weather-production`, fra main
+`1ec8358fad6b20eb2c10f830956fcbf0f0e1db42`.
 
-4.0.418 er merged, men ikke live. Code-only `35366953774` migrerede den
-beskyttede private runtime korrekt som `CONTRACT_ONLY_REBIND` og stoppede kun,
-fordi den efterfølgende publiceringskontrol fejlagtigt krævede en scoreændring.
-Normal weather `35369122090` stoppede før providerkald på den endnu gamle
-kontraktbinding. 4.0.419 skelner nu mellem ren kontraktombinding og reel
-modelbindingsovergang gennem både build og Pages-handoff. Afslut måltests,
-version/RDKS, exact-head, merge og code-only. Kør derefter én normal weather
-på de bevarede cacher. Ingen oneoff. Scheduler pauset. DEC-0202.
+4.0.419 bestod exact-head `35370864611`, PR #363 og providerfri code-only
+`35371475804`. Live Chrome viser 4.0.419, men siden bruger fortsat det ældre
+verificerede datasæt og markerer begrænset nøddrift. Det gamle
+`update-and-deploy.yml` er deaktiveret og har tre historiske køposter, som
+GitHub ikke kan annullere. De må ikke vækkes.
+
+Den aktuelle branch tilføjer kun `run-current-weather-once.yml` og dens
+workflowkontrakt. Den har egen kø, kræver eksakt current `main`, tvinger én
+almindelig tidsbegrænset weather gennem de eksisterende reusable build-/Pages-
+workflows og afviser alt andet end fuld validering, releasegate, artifact,
+deploy og offentlig verifikation. Ingen appversion, runtimekontrakt, score,
+data, geometri, rotation, oneoff eller extended bootstrap ændres. Målrettet
+workflowtest og diff-check er grønne. Næste: RDKS/håndbogskontrol, commit/push,
+én exact-head, merge, dispatch af kun den nye workflowfil og browser-/provider-
+bevis. Scheduler forbliver pauset. DEC-0202.
 
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.392 mobil opstart før normal weather
 
