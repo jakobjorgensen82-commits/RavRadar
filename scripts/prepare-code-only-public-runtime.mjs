@@ -35,6 +35,7 @@ export const RUNTIME_REUSE_MODES = Object.freeze({
   CODE_ONLY: 'code-only-reuse',
   SAVED_WEATHER: 'saved-weather-continuation',
   POST_CUTOVER_REPAIR: 'post-cutover-last-mile-repair',
+  CONTRACT_REBIND: 'post-cutover-contract-rebind',
 });
 
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -92,6 +93,11 @@ export function assertCodeOnlyModelBinding(liveBinding, currentBinding) {
   assertBindingUpgrade(liveBinding, currentBinding, 'Code-only model binding', {
     requireChange: false,
   });
+}
+
+export function assertContractOnlyModelBinding(liveBinding, currentBinding) {
+  assertCodeOnlyModelBinding(liveBinding, currentBinding);
+  assertSame(liveBinding, currentBinding, 'Contract-only model binding');
 }
 
 export function manifestBoundedPublicDetailsBytes(value) {
@@ -213,6 +219,31 @@ export function normalizeRuntimeReuseMode(value) {
   return mode;
 }
 
+export function runtimeReuseSemantics(value) {
+  const mode = normalizeRuntimeReuseMode(value);
+  const savedWeatherContinuation = mode === RUNTIME_REUSE_MODES.SAVED_WEATHER;
+  const postCutoverRepair = mode === RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR;
+  const contractOnlyRebind = mode === RUNTIME_REUSE_MODES.CONTRACT_REBIND;
+  return {
+    mode,
+    savedWeatherContinuation,
+    postCutoverRepair,
+    contractOnlyRebind,
+    reportKind: savedWeatherContinuation
+      ? 'RAVRADAR_SAVED_WEATHER_PUBLIC_RUNTIME_CONTINUATION'
+      : postCutoverRepair
+        ? 'RAVRADAR_POST_CUTOVER_SCORE_REPAIR'
+        : contractOnlyRebind
+          ? 'RAVRADAR_POST_CUTOVER_CONTRACT_REBIND'
+          : 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
+    savedProtectedRuntimeReused:
+      savedWeatherContinuation || postCutoverRepair || contractOnlyRebind,
+    publicRuntimeAdvanced: savedWeatherContinuation,
+    weatherValuesChanged: savedWeatherContinuation,
+    scoresChanged: savedWeatherContinuation || postCutoverRepair,
+  };
+}
+
 async function readRegularFile(file, label, maximumBytes) {
   const stat = await fs.lstat(file).catch(() => null);
   if (!stat?.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > maximumBytes) {
@@ -276,9 +307,12 @@ export async function prepareCodeOnlyPublicRuntime({
   reportPath,
   mode: requestedMode,
 } = {}) {
-  const mode = normalizeRuntimeReuseMode(requestedMode);
-  const savedWeatherContinuation = mode === RUNTIME_REUSE_MODES.SAVED_WEATHER;
-  const postCutoverRepair = mode === RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR;
+  const semantics = runtimeReuseSemantics(requestedMode);
+  const {
+    mode,
+    savedWeatherContinuation,
+    postCutoverRepair,
+  } = semantics;
   const { repository, snapshot } = await assertSeparateRegularDirectory(repositoryRoot, snapshotRoot);
   const paths = Object.fromEntries(Object.entries(CODE_ONLY_SNAPSHOT_FILES)
     .map(([key, filename]) => [key, path.join(snapshot, filename)]));
@@ -324,7 +358,11 @@ export async function prepareCodeOnlyPublicRuntime({
 
   const liveBinding = manifest.ravScoreModelBinding;
   const currentBinding = ravScoreModelBinding();
-  assertCodeOnlyModelBinding(liveBinding, currentBinding);
+  if (semantics.contractOnlyRebind) {
+    assertContractOnlyModelBinding(liveBinding, currentBinding);
+  } else {
+    assertCodeOnlyModelBinding(liveBinding, currentBinding);
+  }
   assertSame(publicSource.value?.ravScoreRuntime?.modelBinding, liveBinding,
     'Live startup model binding');
   assertSame(detailsSource.value?.ravScoreRuntime?.modelBinding, liveBinding,
@@ -415,11 +453,7 @@ export async function prepareCodeOnlyPublicRuntime({
 
   const report = {
     schemaVersion: 1,
-    kind: savedWeatherContinuation
-      ? 'RAVRADAR_SAVED_WEATHER_PUBLIC_RUNTIME_CONTINUATION'
-      : postCutoverRepair
-        ? 'RAVRADAR_POST_CUTOVER_SCORE_REPAIR'
-        : 'RAVRADAR_CODE_ONLY_PUBLIC_RUNTIME_REUSE',
+    kind: semantics.reportKind,
     mode,
     sourceDatasetId: manifest.datasetId,
     datasetId: generated.manifest.datasetId,
@@ -430,10 +464,10 @@ export async function prepareCodeOnlyPublicRuntime({
     sourcePublicManifestSha256: sha256Text(manifestSource.text),
     generatedPublicManifestSha256: sha256Text(`${JSON.stringify(generated.manifest, null, 2)}\n`),
     waterLevelRoutingSha256: sha256Text(routingSource.text),
-    publicRuntimeAdvanced: savedWeatherContinuation,
-    savedProtectedRuntimeReused: savedWeatherContinuation || postCutoverRepair,
-    weatherValuesChanged: savedWeatherContinuation,
-    scoresChanged: savedWeatherContinuation || postCutoverRepair,
+    publicRuntimeAdvanced: semantics.publicRuntimeAdvanced,
+    savedProtectedRuntimeReused: semantics.savedProtectedRuntimeReused,
+    weatherValuesChanged: semantics.weatherValuesChanged,
+    scoresChanged: semantics.scoresChanged,
     geometryChanged: false,
     providerRequestsPerformed: false,
     privatePayloadIncluded: false,
@@ -465,10 +499,14 @@ async function main() {
     reportPath: argument(argv, '--report'),
     mode: optionalArgument(argv, '--mode'),
   });
+  const status = {
+    [RUNTIME_REUSE_MODES.CODE_ONLY]: 'code-only-runtime-reused',
+    [RUNTIME_REUSE_MODES.SAVED_WEATHER]: 'saved-weather-runtime-continued',
+    [RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR]: 'post-cutover-score-repaired',
+    [RUNTIME_REUSE_MODES.CONTRACT_REBIND]: 'post-cutover-contract-rebound',
+  }[report.mode];
   console.log(JSON.stringify({
-    status: report.savedProtectedRuntimeReused
-      ? 'saved-weather-runtime-continued'
-      : 'code-only-runtime-reused',
+    status,
     datasetId: report.datasetId,
     zoneCount: report.zoneCount,
     coastalPartCount: report.coastalPartCount,

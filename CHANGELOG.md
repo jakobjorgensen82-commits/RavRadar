@@ -1,3 +1,14 @@
+## 4.0.419 – model-neutral privat runtimeombinding (2026-09-18)
+
+- 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men
+  code-only stoppede før private writes og Pages.
+- `35366953774` klassificerede korrekt en ren kontraktombinding; workflowet
+  krævede bagefter fejlagtigt en ændret score.
+- 4.0.419 fører transitionstypen gennem code-only og Pages. Ren ombinding
+  kræver uændret vejr, score, geometri og tid samt nul providerkald.
+- Kontrakthash-kontrollen bevares. Gemte providercacher genbruges efter den
+  providerfri levering. Se CHANGELOG-4.0.419.md og DEC-0202.
+
 ## 4.0.418 – præcis offentlig vejrakse (2026-09-18)
 
 - 4.0.417 er live gennem exact-head `35356064367`, PR #361, main `0890ed0e`

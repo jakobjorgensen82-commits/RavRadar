@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 model-neutral runtimeombinding
+
+4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men
+code-only `35366953774` stoppede før writes/Pages. Den private migration var
+korrekt `CONTRACT_ONLY_REBIND`; workflowet kaldte den bagefter fejlagtigt en
+score-reparation og krævede en scoreændring. `35368826476` blev afbrudt som en
+bevist gentagelse. Normal weather `35369122090` stoppede før providerkald, fordi
+den beskyttede runtime stadig havde forgængerens kontrakthash.
+
+Lokal 4.0.419 fører migrationens eksakte klassifikation gennem code-only og
+Pages. En kontraktombinding kræver samme datasæt/time, uændret vejr, score og
+geometri samt nul providerkald; kun en reel modelbindingsovergang må kræve en
+scoreændring. Næste: måltests, version/RDKS, exact-head, merge, én providerfri
+code-only og derefter én almindelig weather på de gemte cacher. Ingen oneoff;
+scheduler pauset. DEC-0202. Standard/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.418 præcis offentlig vejrakse
 
 4.0.417 bestod exact-head `35356064367`, PR #361, main `0890ed0e` og

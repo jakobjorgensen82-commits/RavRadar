@@ -1,6 +1,6 @@
 # DEC-0201 – Offentligt vejr bindes til den præcise produktionstime
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.418, livebevis afventer
+**Status:** Aktiv; 4.0.418 er source-verificeret og merged, livebevis afventer DEC-0202
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -15,6 +15,11 @@ Sammenlægningen brugte `dmiForecast.generatedAt` som tidsgrænse. Hvis DMI-
 cachen startede én time før den aktuelle produktionstime, kom den gamle time
 med først, hvorefter den korrekte sidste +117-time blev skåret væk ved
 normalisering til 118 rækker.
+
+4.0.418 bestod senere exact-head `35366221956` og blev merged gennem PR #362
+som main `9573264f`. Leveringen blev blokeret af en separat model-neutral
+runtimeklassifikation og fortsætter under DEC-0202; selve horisontrettelsen er
+ikke ændret.
 
 ## Beslutning
 

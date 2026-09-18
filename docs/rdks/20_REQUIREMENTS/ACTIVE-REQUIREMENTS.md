@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – model-neutral kontraktombinding
+
+- **REQ-4.0.419-TRANSITION-KIND-001 – BINDENDE:** Code-only og Pages skal bruge den forseglede migrations `transitionKind`; `CONTRACT_ONLY_REBIND` må ikke behandles som en score-reparation.
+- **REQ-4.0.419-NEUTRAL-PROOF-002 – BINDENDE:** Ren kontraktombinding kræver samme datasæt og produktionstime, uændret vejr, uændrede scorer, uændret geometri, nul providerkald og genbrug af den beskyttede runtime.
+- **REQ-4.0.419-MODEL-PROOF-003 – BINDENDE:** Kun `MODEL_BINDING_MIGRATION` må bruge last-mile-scorevejen og kræve en reel afledt scoreændring.
+- **REQ-4.0.419-KEEP-CONTRACT-GATE-004 – BINDENDE:** Kontrakthash-kontrollen må ikke svækkes; forgængerruntime genbindes kun gennem eksakt source, forseglet migration og same-reference-successor-bevis.
+- **REQ-4.0.419-RECOVER-THEN-NORMAL-005 – ÅBEN P0:** Lever 4.0.419 providerfrit, og kør derefter én almindelig weather på de bevarede provider-cacher. Ingen oneoff.
+
+DEC-0202.
+
 # Aktuelt ejerdelta – 2026-09-18 – præcis offentlig vejrakse
 
 - **REQ-4.0.418-RUN-BOUND-HORIZON-001 – BINDENDE:** Hver offentlig zone skal materialiseres på præcis `productionReferenceAt +0..+117`; en caches generationstid må ikke definere eller forskyde aksen.

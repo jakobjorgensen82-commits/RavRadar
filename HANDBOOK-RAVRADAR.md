@@ -1,6 +1,25 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.418
+**Håndbogsversion:** 4.0.419
+
+## 89.23 4.0.419 – En vejrettelse behøver ikke ændre scorer
+
+RavRadar gemmer en privat, kontrolleret runtime med vejr og scoretilstand. Når
+selve vejrkoden ændres, skal denne runtime bindes til den nye kode, før den
+almindelige vejrhentning må fortsætte.
+
+Den første 4.0.418-levering udførte ombindingen korrekt, men den efterfølgende
+kontrol troede fejlagtigt, at alle ombindinger også skulle ændre en score.
+Det gav et stop, selv om netop uændrede scorer var det rigtige resultat.
+
+4.0.419 skelner nu mellem en rigtig modelændring og en ren kodekontraktændring.
+Ved ren ombinding skal tidspunkt, vejr, scorer og geometri forblive uændrede,
+og der må ikke hentes nyt vejr. Den strenge kontrol af den gemte runtime er
+bevaret. Efter denne korte providerfri levering kan den almindelige
+vejrhentning fortsætte på de allerede gemte data.
+
+Formel og vægte er uændrede. 4.0.419 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.22 4.0.418 – Et hul må ikke flytte hele vejrudsigten
 

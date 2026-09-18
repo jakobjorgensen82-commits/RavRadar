@@ -1,5 +1,19 @@
 # Weather Pipeline 1.0
 
+## 4.0.419 – vejrkode kan genbinde gemt runtime uden falsk scoreændring
+
+Når vejrkode ændres, ændres den private runtime-kontrakt med vilje. Den gemte
+runtime skal derfor først genbindes sikkert til den nye kode, før almindelig
+weather må fortsætte. Code-only `35366953774` udførte selve genbindingen
+korrekt, men workflowet krævede bagefter fejlagtigt, at scorerne skulle ændre
+sig.
+
+4.0.419 skelner mellem en reel modelændring og en ren kontraktombinding. Ved
+ren ombinding skal datasæt, produktionstime, vejr, scorer og geometri være
+uændrede, og der må ikke laves providerkald. Når denne providerfri levering er
+online, kan almindelig weather bruge samme current-kontrakt og fortsætte på de
+allerede gemte providercacher. Kontraktsikkerheden er ikke svækket.
+
 ## 4.0.418 – alle offentlige zoner følger samme præcise produktionstime
 
 Normalrun `35357557315` gennemførte DMI, Copernicus, regional DMI og

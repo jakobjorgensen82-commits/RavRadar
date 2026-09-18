@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.419 kontraktombinding
+
+- [x] Lever 4.0.418 source gennem exact-head `35366221956`, PR #362 og main `9573264f`.
+- [x] Afgræns code-only `35366953774`: korrekt kontraktmigration, forkert efterfølgende krav om scoreændring.
+- [x] Afbryd den identiske gentagelse `35368826476`.
+- [x] Bevis at normal `35369122090` stoppede før providerkald, og at gemte caches er urørte.
+- [x] Tilføj særskilt `post-cutover-contract-rebind` og før migrationsklassifikationen gennem build og Pages.
+- [x] Bevar eksakt same-reference-, privacy-, kontrakthash-, nul-provider-, vejr-, score- og geometri-bevis.
+- [x] Afslut version/RDKS/håndbog, måltests og rent geodataversionsbevis.
+- [ ] Commit/push, én exact-head, merge og providerfri code-only.
+- [ ] Kør én almindelig weather på gemte cacher og verificér 4.0.418-horisont, deploy og providerfremgang.
+- [ ] Bevis næste normale vedligeholdelse før scheduler genaktiveres.
+
+DEC-0202. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.418 præcis offentlig vejrakse
 
 - [x] Lever 4.0.417 gennem exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337`.
@@ -8,7 +23,8 @@
 - [x] Gennemgå DMI-prioritering; reelle del/time-huller ligger før fornyelse, så ingen rotationsændring er begrundet nu.
 - [x] Bestå målrettede vejr-, horisont-, missing-, progressive-runtime- og scoregeneratorkontroller.
 - [x] Versionsløft, RDKS-/håndbogsvalidering og rent geodataversionsbevis.
-- [ ] Commit/push, én exact-head, merge og providerfri kodelevering.
+- [x] Commit/push, exact-head `35366221956`, PR #362 og merge som main `9573264f`.
+- [ ] Providerfri kodelevering fortsætter gennem 4.0.419/DEC-0202 efter separat runtimeklassifikationsstop.
 - [ ] Kør én almindelig weather på gemte cacher og verificér præcis 118-timersakse, deploy og providerfremgang.
 - [ ] Bevis endnu en almindelig cachevedligeholdelse før scheduler genaktiveres.
 

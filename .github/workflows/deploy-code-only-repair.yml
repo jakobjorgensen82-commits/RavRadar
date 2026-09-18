@@ -593,7 +593,11 @@ jobs:
           if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
             mode=saved-weather-continuation
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
-            mode=post-cutover-last-mile-repair
+            case "$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)" in
+              MODEL_BINDING_MIGRATION) mode=post-cutover-last-mile-repair ;;
+              CONTRACT_ONLY_REBIND) mode=post-cutover-contract-rebind ;;
+              *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
+            esac
           fi
           node scripts/prepare-code-only-public-runtime.mjs --repository-root "$GITHUB_WORKSPACE" --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" --report .geometry-v2-work/code-only-public-runtime-reuse.json --mode "$mode"
 
@@ -604,7 +608,17 @@ jobs:
           if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
             jq -e '.providerRequestsPerformed == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == true and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
-            jq -e '.mode == "post-cutover-last-mile-repair" and .providerRequestsPerformed == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false and .weatherValuesChanged == false and .scoresChanged == true and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
+            transition_kind="$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)"
+            case "$transition_kind" in
+              MODEL_BINDING_MIGRATION)
+                jq -e '.mode == "post-cutover-last-mile-repair" and .scoresChanged == true' .geometry-v2-work/code-only-public-runtime-reuse.json
+                ;;
+              CONTRACT_ONLY_REBIND)
+                jq -e '.mode == "post-cutover-contract-rebind" and .scoresChanged == false' .geometry-v2-work/code-only-public-runtime-reuse.json
+                ;;
+              *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
+            esac
+            jq -e '.providerRequestsPerformed == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           else
             jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           fi

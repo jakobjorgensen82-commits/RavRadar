@@ -1,5 +1,12 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.419-præcisering – DEC-0202:** En forseglede private-runtime-
+migration skal klassificeres gennem hele publiceringskæden. En
+`CONTRACT_ONLY_REBIND` må kun genbinde samme datasæt og produktionstime og skal
+bevise uændret vejr, uændrede scorer, uændret geometri og nul providerkald. Den
+må ikke kræve en kunstig scoreændring. `MODEL_BINDING_MIGRATION` beholder den
+strenge score-reparationsvej. Kontrakthash-kontrollen må ikke omgås.
+
 **Bindende 4.0.418-præcisering – DEC-0201:** Hver offentlig vejrzone skal have
 præcis `productionReferenceAt +0..+117`. Cache- eller providergenerationstid må
 ikke definere aksen. Komponenter sammenlægges kun ved eksakt samme sted og
