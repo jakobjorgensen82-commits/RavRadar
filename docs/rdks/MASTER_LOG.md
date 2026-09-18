@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.413 auditprofil
+
+4.0.412 er merged som `58212e59`. Recovery `35342779550` verificerede begge
+immutable handoff-artifacts og den offentlige 4.0.410-side. Den stoppede før
+databasekaldet, fordi den genbrugte historiske exact-key-validator ikke kendte
+runtimeaudittens nyere `profile`-blok. Central version 23 og live er uændrede.
+
+4.0.413 bevarer kompatibilitet med gamle audits uden feltet. En tilstedeværende
+profil skal have eksakt kendt struktur, boolske readinessfelter, unikke sikre
+advisories, identisk deklareret/forventet indhold, migration klar og samme
+unavailable-antal som historikken. Fuld audit-hash og alle andre recoverybeviser
+er uændrede. DEC-0196.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.412 live-recovery
 
 4.0.411 er merged som main `52a7a15d` efter exact-head `35339636413`.

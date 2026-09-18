@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.412";
-import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.412";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.413";
+import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.413";
 
 const PREFIX="ravradar-admin-document:";
 const listeners=new Set();

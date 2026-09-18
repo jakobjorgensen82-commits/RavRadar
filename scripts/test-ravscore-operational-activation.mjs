@@ -3254,6 +3254,27 @@ const missedResealTargetAudit = Object.freeze({
   status: 'failed',
   datasetId: missedResealTargetManifest.datasetId,
   productionReferenceAt: missedResealTargetManifest.productionReferenceAt,
+  profile: Object.freeze({
+    declared: Object.freeze({
+      modelCoverageReady: false,
+      modelMemoryReady: false,
+      modelMigrationReady: true,
+      advisories: Object.freeze([
+        'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+        'LOCAL_MODEL_MEMORY_INCOMPLETE',
+      ]),
+    }),
+    expected: Object.freeze({
+      modelCoverageReady: false,
+      modelMemoryReady: false,
+      modelMigrationReady: true,
+      advisories: Object.freeze([
+        'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+        'LOCAL_MODEL_MEMORY_INCOMPLETE',
+      ]),
+    }),
+    currentUnavailableModeCount: 420,
+  }),
   errors: Object.freeze(['STATE_REPLAY_FAILED']),
   errorCounts: Object.freeze({ STATE_REPLAY_FAILED: 673 }),
 });
@@ -3324,6 +3345,29 @@ assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
   targetPagesArtifactSeal: missedResealTargetArtifactSeal,
   policy: missedResealPolicy,
 }), /not pinned evidence|public audit/);
+const inconsistentProfileAudit = Object.freeze({
+  ...missedResealTargetAudit,
+  profile: Object.freeze({
+    ...missedResealTargetAudit.profile,
+    expected: Object.freeze({
+      ...missedResealTargetAudit.profile.expected,
+      modelMemoryReady: true,
+    }),
+  }),
+});
+assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
+  ...missedMaintenanceInput,
+  targetManifest: missedResealTargetManifest,
+  targetAudit: inconsistentProfileAudit,
+  targetReadiness: historicalReadiness,
+  targetBinding: historicalBinding,
+  publicVerification: missedResealTargetVerification,
+  targetPagesArtifactSeal: missedResealTargetArtifactSeal,
+  policy: {
+    ...missedResealPolicy,
+    targetAuditSha256: sha256(inconsistentProfileAudit),
+  },
+}), /profile summary is inconsistent/);
 
 const historicalCandidateBinding = Object.freeze({
   ...candidateModelBinding(),

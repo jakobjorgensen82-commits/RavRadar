@@ -1409,11 +1409,13 @@ function missedInitialCutoverCalibrationEligible(publicAudit, {
       : allowDiagnosticFindings
         && publicAudit?.status === 'failed'
         && auditErrors.length > 0);
-  if (!exactKeys(publicAudit, [
+  const auditFields = [
     'schemaVersion', 'status', 'datasetId', 'productionReferenceAt', 'model',
     'coverage', 'continuation', 'history', 'rollback', 'payload', 'errors',
     'errorCounts',
-  ])
+    ...(publicAudit?.profile === undefined ? [] : ['profile']),
+  ];
+  if (!exactKeys(publicAudit, auditFields)
     || publicAudit.schemaVersion !== 1
     || !auditDispositionValid
     || publicAudit.datasetId !== targetManifest.datasetId
@@ -1451,6 +1453,41 @@ function missedInitialCutoverCalibrationEligible(publicAudit, {
       !== (fullCount === RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
         && incompleteCount === 0 && unavailableCount === 0)) {
     throw new Error('Missed initial cutover public audit lacks an exact historical score summary');
+  }
+  if (publicAudit.profile !== undefined) {
+    const profile = publicAudit.profile;
+    const readinessFields = [
+      'modelCoverageReady', 'modelMemoryReady', 'modelMigrationReady', 'advisories',
+    ];
+    const readinessValid = value => exactKeys(value, readinessFields)
+      && ['modelCoverageReady', 'modelMemoryReady', 'modelMigrationReady']
+        .every(field => typeof value[field] === 'boolean')
+      && Array.isArray(value.advisories)
+      && value.advisories.length <= 16
+      && new Set(value.advisories).size === value.advisories.length
+      && value.advisories.every(code => SAFE_ID_PATTERN.test(String(code ?? '')));
+    const expectedAdvisories = readinessValid(profile?.expected) ? [
+      ...(profile.expected.modelCoverageReady === false
+        ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
+      ...(profile.expected.modelMemoryReady === false
+        ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
+      ...(profile.expected.modelMigrationReady === false
+        ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
+    ] : null;
+    if (!exactKeys(profile, ['declared', 'expected', 'currentUnavailableModeCount'])
+      || !readinessValid(profile.declared)
+      || !readinessValid(profile.expected)
+      || JSON.stringify(canonical(profile.declared))
+        !== JSON.stringify(canonical(profile.expected))
+      || JSON.stringify(profile.expected.advisories) !== JSON.stringify(expectedAdvisories)
+      || profile.expected.modelMigrationReady !== true
+      || typeof profile.currentUnavailableModeCount !== 'number'
+      || !Number.isSafeInteger(profile.currentUnavailableModeCount)
+      || profile.currentUnavailableModeCount < 0
+      || profile.currentUnavailableModeCount > RAVSCORE_PUBLIC_CURRENT_MODE_COUNT
+      || profile.currentUnavailableModeCount !== unavailableCount) {
+      throw new Error('Missed initial cutover public audit profile summary is inconsistent');
+    }
   }
   return publicAudit.status === 'passed' && history.allCurrentScoresFullHistory;
 }
