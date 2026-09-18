@@ -4124,3 +4124,12 @@ bruger stableJsonDigest og indfører en eksplicit providerfri fortsættelse.
 Kun en strengt nyere, højst 240 minutter gammel, source-forbundet runtime
 med aktiv integreret drift, tomt repair-id, 210/673 og grøn privacy kan
 fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
+# 4.0.420 – Eksakt komplet public-ahead recovery (2026-09-18)
+
+- Normal weather `35374238410` gennemførte alle providere, gemte caches og
+  deployede/verificerede Pages med 210/673 og 79/79 browserfiler.
+- Central reseal stoppede alene på readiness-head `1ec8358f` mod offentlig
+  source `779fd7a9`; providerfri `35379571657` afviste sikkert ukendt drift.
+- DEC-0203 fastlåser den komplette offentlige kilde og central version 27 til
+  providerfri code-only. Ingen RavScore-, vejr-, rotations- eller
+  geometriændring.

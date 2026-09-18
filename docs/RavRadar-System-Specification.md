@@ -1,5 +1,14 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.420-præcisering – DEC-0203:** En offentlig RavScore-pakke må
+kun bruges som source foran central status gennem en eksplicit engangsregel,
+der matcher begge sider eksakt: central version og deployment, source-head og
+deployment, artifact-id og -digest samt manifest-, modelbindings-, browser-
+og implementeringslukninger. Den aktuelle kilde kræver præcis 79/79 filer og
+nul manglende filer. Kode-only-målet skal selv bestå normal komplet closure,
+privacy, Pages-verifikation og central afslutning. Ukendt drift stopper før
+mutation. Ruten må ikke hente vejr eller ændre providercacher.
+
 **Bindende 4.0.419-præcisering – DEC-0202:** En forseglede private-runtime-
 migration skal klassificeres gennem hele publiceringskæden. En
 `CONTRACT_ONLY_REBIND` må kun genbinde samme datasæt og produktionstime og skal

@@ -1,3 +1,23 @@
+# Aktuel implementeringsstatus – lokal 4.0.420 offentlig/central samling
+
+- [x] Kør normal weather `35374238410`; gennemfør og gem alle providerled.
+- [x] Bestå build, produktionsvalidering, releasegate, artifact, privacy,
+  Pages-deploy og offentlig 210/673-verifikation med 79/79 browserfiler.
+- [x] Afgræns det sene stop til readiness på `1ec8358f` mod offentlig source
+  `779fd7a9`; modelbinding og implementeringslukning er identiske.
+- [x] Bevis med `35379571657`, at ukendt public-ahead-central stopper før
+  writes, providerkald og deploy.
+- [x] Fastlås engangsreglen til central version 27 og den eksakte offentlige
+  artifact-/manifest-/binding-/closureidentitet.
+- [x] Understøt og test en komplet repair-source med nul manglende filer uden
+  at svække den ældre præcise én-fil-kontrakt.
+- [ ] Afslut docs, version, geodataversionsbevis og målrettede slutkontroller.
+- [ ] Commit/push, bestå én exact-head, merge og kør providerfri code-only.
+- [ ] Verificér central afslutning og offentlig 4.0.420 i Chrome.
+- [ ] Bevis en efterfølgende almindelig cachevedligeholdelse før scheduler.
+
+DEC-0203. Ingen oneoff og ingen provider i rettelsesdeployet.
+
 # Aktuel implementeringsstatus – live 4.0.419 og afgrænset normal weather
 
 - [x] Lever 4.0.418 source gennem exact-head `35366221956`, PR #362 og main `9573264f`.

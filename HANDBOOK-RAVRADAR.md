@@ -1,6 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.419
+**Håndbogsversion:** 4.0.420
+
+## 89.24 4.0.420 – En komplet offentlig vejropdatering samles sikkert
+
+Den almindelige vejrkørsel blev faktisk færdig: alle leverandører kørte,
+cacherne blev gemt, hele pakken blev kontrolleret, og hjemmesiden blev
+opdateret med 210 zoner, 673 kystdele og alle 79 browserfiler.
+
+Fejlen kom først bagefter. Den centrale registrering forventede stadig
+committen før den manuelle vejrindgang, mens den offentlige side kom fra den
+nyere commit. Derfor kunne RavRadar vise de nye vejrdata, men ikke afslutte
+den centrale registrering og forlade begrænset nøddrift.
+
+4.0.420 genkender kun netop denne kendte kombination. Både den gamle centrale
+post og den offentlige pakke skal matche alle fastlåste identiteter. Den
+offentlige kilde skal fortsat være komplet; hvis blot én af de 79 filer
+mangler, stopper rettelsen. Leveringen genbruger vejret og kalder ingen
+providere.
+
+RavScore-formel, modelbundle, DMI-rotation, providerprioritet og geometri er
+uændrede. Efter providerfri levering kontrolleres siden i Chrome, og næste
+almindelige vedligeholdelse bevises særskilt.
+
+Formel og vægte er uændrede. 4.0.420 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.23 4.0.419 – En vejrettelse behøver ikke ændre scorer
 

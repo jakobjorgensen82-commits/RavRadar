@@ -23,6 +23,7 @@ import {
   assertIntegratedReturnPlan,
   assertLegacyCandidateRefreshPlan,
   assertOperationalActivationDocument,
+  assertOperationalSourceRepairBrowserClosure,
   candidateGOperationalProfileDocument,
   operationalActivationTransition,
   operationalCandidateRefreshTransition,
@@ -49,6 +50,25 @@ import {
   resolveOperationalRavScoreModel,
   writeCentralCas,
 } from './ravscore-operational-activation.mjs';
+
+assert.equal(assertOperationalSourceRepairBrowserClosure({
+  expectedPublicFileCount: 79,
+  verifiedPublicFileCount: 79,
+  missingPublicFiles: [],
+}, {
+  expectedPublicFileCount: 79,
+  knownMissingPublicFile: null,
+}), true);
+assert.throws(() => assertOperationalSourceRepairBrowserClosure({
+  expectedPublicFileCount: 79,
+  verifiedPublicFileCount: 78,
+  missingPublicFiles: [{
+    path: 'unexpected.js', sha256: 'a'.repeat(64), httpStatus: 404,
+  }],
+}, {
+  expectedPublicFileCount: 79,
+  knownMissingPublicFile: null,
+}), /exact pinned browser closure/);
 
 const canonical = value => Array.isArray(value)
   ? value.map(canonical)

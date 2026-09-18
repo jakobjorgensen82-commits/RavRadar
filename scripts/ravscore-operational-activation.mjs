@@ -762,6 +762,26 @@ function assertOperationalPagesVerification(verification, {
   return true;
 }
 
+export function assertOperationalSourceRepairBrowserClosure(verification, policy = SOURCE_REPAIR) {
+  const expectedMissing = policy?.knownMissingPublicFile;
+  const missing = verification?.missingPublicFiles;
+  const exactMissing = expectedMissing === null
+    ? Array.isArray(missing) && missing.length === 0
+    : expectedMissing && Array.isArray(missing) && missing.length === 1
+      && exactKeys(missing[0], ['path', 'sha256', 'httpStatus'])
+      && missing[0].path === expectedMissing.path
+      && missing[0].sha256 === expectedMissing.sha256
+      && missing[0].httpStatus === expectedMissing.expectedHttpStatus;
+  if (!Number.isSafeInteger(policy?.expectedPublicFileCount)
+    || verification?.expectedPublicFileCount !== policy.expectedPublicFileCount
+    || verification?.verifiedPublicFileCount
+      !== policy.expectedPublicFileCount - (expectedMissing === null ? 0 : 1)
+    || !exactMissing) {
+    throw new Error('Operational source repair lacks its exact pinned browser closure');
+  }
+  return true;
+}
+
 function assertOperationalSourceVerification(verification, {
   model,
   binding,
@@ -781,7 +801,6 @@ function assertOperationalSourceVerification(verification, {
     });
     return Object.freeze({ repair: false, sourceDeploymentId: null });
   }
-  const expectedMissing = SOURCE_REPAIR.knownMissingPublicFile;
   if (!exactKeys(verification, OPERATIONAL_SOURCE_REPAIR_VERIFICATION_FIELDS)
     || verification.schemaVersion !== 'ravscore-operational-source-repair-verification-v1'
     || verification.status !== 'repairable-source'
@@ -798,19 +817,12 @@ function assertOperationalSourceVerification(verification, {
     || verification.implementationClosureSha256 !== expectedImplementationClosureSha256
     || verification.publicManifestSha256 !== SOURCE_REPAIR.sourcePublicManifestSha256
     || verification.publicManifestSha256 !== sha256(publicManifest)
-    || !Array.isArray(verification.missingPublicFiles)
-    || verification.missingPublicFiles.length !== 1
-    || !exactKeys(verification.missingPublicFiles[0], ['path', 'sha256', 'httpStatus'])
-    || verification.missingPublicFiles[0].path !== expectedMissing.path
-    || verification.missingPublicFiles[0].sha256 !== expectedMissing.sha256
-    || verification.missingPublicFiles[0].httpStatus !== expectedMissing.expectedHttpStatus
-    || verification.expectedPublicFileCount !== SOURCE_REPAIR.expectedPublicFileCount
-    || verification.verifiedPublicFileCount !== SOURCE_REPAIR.expectedPublicFileCount - 1
     || verification.zoneCount !== 210
     || verification.coastalPartCount !== 673
     || verification.privatePayloadRead !== false) {
-    throw new Error('Operational source repair lacks the exact pinned 4.0.381 evidence');
+    throw new Error('Operational source repair lacks the exact pinned source evidence');
   }
+  assertOperationalSourceRepairBrowserClosure(verification);
   if (assertExpectedBinding) {
     assertBinding(verification.modelBinding, binding, assertExpectedBinding,
       'Operational source repair binding');

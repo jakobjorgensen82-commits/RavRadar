@@ -1,5 +1,22 @@
 # Weather Pipeline 1.0
 
+## 4.0.420 – komplet offentlig weather samles med central status
+
+Normalrun `35374238410` gennemførte DMI, Copernicus, regional DMI og
+Open-Meteo, gemte alle cacher, byggede closure/historik og central weather og
+bestod validering, releasegate, artifact, privacy, Pages og offentlig 210/673-
+verifikation. Den offentlige browserlukning har 79 af 79 filer.
+
+Kun den sene centrale afslutning fejlede, fordi readiness var bundet til
+`1ec8358f`, mens den offentlige pakke kom fra `779fd7a9`. 4.0.420 fastlåser
+netop denne central/offentlig-kombination og genbruger den som code-only-
+kilde. Alle identities skal matche, og nul filer må mangle. Ukendt drift
+stopper før writes.
+
+Rettelsesleveringen laver ingen providerkald og ændrer ingen cache. RavScore,
+providerorden, DMI-rotation og vejrdata er uændrede. Efter livekontrol køres
+en ny almindelig vedligeholdelse som et særskilt driftsbevis.
+
 ## 4.0.419 – vejrkode kan genbinde gemt runtime uden falsk scoreændring
 
 Når vejrkode ændres, ændres den private runtime-kontrakt med vilje. Den gemte
