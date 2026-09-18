@@ -1,5 +1,18 @@
 # Weather Pipeline 1.0
 
+## 4.0.415 – gemt vejr accepterer begge integrerede maintenanceformer
+
+Efter grøn central recovery installerede saved-weather-run `35346790218` den
+korrekte append-only binding, men stoppede før private runtime, artifact og
+Pages. Trinnet krævede ordet `integrated`, selv om den korrekte handling under
+bindingsfremføringen var `integrated-historical-maintenance`.
+
+4.0.415 tillader begge handlinger i den providerfri fortsættelse. Candidate,
+retur og cutover forbliver afvist. Det gemte target skal fortsat være nyere
+end live, friskt, komme fra en commit i current mains historie og have tomt
+repair-id. Den allerede installerede migration giver nul pending migrations
+og genbruges sikkert.
+
 ## 4.0.414 – same-binding-source bevises direkte
 
 Recovery `35344230599` bestod de fastlåste artifacts og den friske kontrol af

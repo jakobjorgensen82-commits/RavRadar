@@ -380,7 +380,10 @@ jobs:
           PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
         run: |
           set -euo pipefail
-          test "${{ steps.operational-action.outputs.action }}" = "integrated"
+          case "${{ steps.operational-action.outputs.action }}" in
+            integrated|integrated-historical-maintenance) ;;
+            *) echo "Saved-weather continuation requires active integrated maintenance." >&2; exit 1 ;;
+          esac
           test -z "${{ steps.public-source.outputs.repair_id }}"
           descriptor="$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
           target_reference_raw="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00(.000)?Z$"))' "$descriptor")"

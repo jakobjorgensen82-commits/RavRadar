@@ -1,3 +1,9 @@
+# 2026-09-18 – 4.0.415 lader gemt vejr følge den sikre bindingsovergang
+
+- 4.0.414 blev merged som `f1f33c44`; recovery `35346704791` skrev central version 24.
+- Saved-weather `35346790218` installerede bindingen, men stoppede før private runtime og Pages på en gammel eksakt handlingskontrol.
+- 4.0.415 accepterer begge integrerede maintenanceformer, afviser modelskift og genbruger den allerede installerede migration. DEC-0198.
+
 # 2026-09-18 – 4.0.414 beviser den faktiske same-binding-source direkte
 
 - 4.0.413 bestod exact-head `35343692557` og blev merged gennem PR #357 som `50216cd6`.

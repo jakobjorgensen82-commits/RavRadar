@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.415 saved-weather fortsættelse
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.415-saved-weather-historical`, bygget fra den grønne 4.0.414-tree.
+
+4.0.414 bestod exact-head `35346135848`, PR #358 og main `f1f33c44`.
+Recovery `35346704791` skrev central version 24. Saved-weather
+`35346790218` installerede bindingen, men stoppede før private runtime,
+artifact og Pages, fordi fortsættelsen kun accepterede `integrated` og ikke
+den sikre `integrated-historical-maintenance`.
+
+4.0.415 accepterer begge integrerede maintenanceformer i dette ene trin og
+afviser fortsat alle modelskift. Måltests er grønne. Næste: versions-/RDKS-
+slutkontroller, commit/push, exact-head, merge og genkør saved-weather.
+Migrationen er allerede installeret og genkendes idempotent. Derefter normal
+weather og browserkontrol. Ingen oneoff. DEC-0198. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.414 direkte source-identitet
 
 Arbejd i `RavRadar-4.0.396`, branch

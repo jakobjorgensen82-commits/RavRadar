@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.415 gemt vejr kan fortsætte
+
+4.0.414 bestod exact-head `35346135848`, blev merged gennem PR #358 som main
+`f1f33c44`, og recovery `35346704791` registrerede live target som central
+version 24. Saved-weather `35346790218` installerede og verificerede den
+append-only binding, men stoppede før private runtime, artifact og Pages,
+fordi én gammel kontrol kun accepterede handlingen `integrated`.
+
+Lokal 4.0.415 accepterer også den sikre
+`integrated-historical-maintenance`-handling i netop saved-weather-trinnet.
+Candidate, retur og cutover er fortsat afvist; nyere/friskt target,
+source-forgænger, tomt repair-id og eksakt runtime består. Migrationplanen
+genkender den allerede installerede migration som sikker genkørsel. Næste:
+exact-head, merge og providerfri fortsættelse; derefter én almindelig weather
+og browserkontrol. Ingen oneoff; scheduler pauset. DEC-0198.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.414 direkte same-binding recovery
 
 4.0.413 bestod exact-head `35343692557`, blev merged gennem PR #357 som main
