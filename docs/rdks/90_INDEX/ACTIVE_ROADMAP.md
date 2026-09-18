@@ -1,3 +1,17 @@
+# Aktiv roadmap – 4.0.415 fra gemt runtime til almindelig vejrdrift
+
+1. [x] Lever 4.0.414 og registrér det allerede offentlige target som central version 24.
+2. [x] Installer og verificér den append-only last-mile-binding uden providerarbejde.
+3. [x] Afgræns det næste stop til en gammel eksakt handlingskontrol før private runtime/artifact/Pages.
+4. [x] Tillad begge sikre integrerede maintenanceformer og afvis fortsat alle modelskift.
+5. [ ] Lever 4.0.415 gennem exact-head og providerfri saved-weather.
+6. [ ] Verificér offentlig version, aktuel time, historik og lokale femdøgnsprognoser.
+7. [ ] Kør almindelig weather; mål DMI → Copernicus → Open-Meteo og ret reelle huller samlet.
+8. [ ] Bevis næste almindelige cachevedligeholdelse og tilføj generel post-Pages-genoptagelse.
+9. [ ] Genaktivér scheduler først efter stabil normal drift.
+
+DEC-0198. Ingen oneoff; bootstrap kun ved målt behov.
+
 # Aktiv roadmap – fra recovery til pålidelig vejrdrift uden prognosehuller
 
 1. [x] Bevis at live 4.0.410 og de gemte providercacher findes, og at den aktuelle blokering er central registrering frem for manglende vejropbygning.

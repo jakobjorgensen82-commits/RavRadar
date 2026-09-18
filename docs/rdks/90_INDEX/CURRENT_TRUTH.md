@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.415 fortsætter gemt vejr
+
+4.0.414 bestod exact-head `35346135848`, blev merged som main `f1f33c44`, og
+recovery `35346704791` registrerede central version 24. Saved-weather
+`35346790218` installerede og læste den append-only binding tilbage, men
+stoppede derefter før private runtime, artifact og Pages. Den gemte runtime
+blev ikke afvist; trinnets første linje accepterede kun action `integrated`,
+mens den korrekte midlertidige action var `integrated-historical-maintenance`.
+
+4.0.415 accepterer begge sikre integrerede maintenanceformer i netop dette
+trin. Alle modelskift forbliver afvist, og target-, freshness-, ancestry-,
+repair- og runtimekrav består. Migrationen er allerede installeret;
+eksisterende nul-pending-validering gør næste forsøg sikkert. Næste:
+exact-head, merge, providerfri deploy, normal weather og browserbevis.
+DEC-0198.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.414 beviser faktisk source
 
 4.0.413 bestod exact-head `35343692557`, blev merged som main `50216cd6` og

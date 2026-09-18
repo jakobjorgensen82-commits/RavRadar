@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.414
+**Håndbogsversion:** 4.0.415
+
+## 89.19 4.0.415 – Den gemte vejrpakke kan fortsætte
+
+Den centrale registrering blev samlet korrekt. Næste levering installerede
+også den nødvendige binding, men stoppede derefter på et gammelt navn i
+workflowet. Trinnet accepterede kun “almindelig integreret vedligeholdelse”,
+selv om den samme sikre model midlertidigt stod som “historisk integreret
+vedligeholdelse”, mens bindingen blev ført frem.
+
+4.0.415 accepterer begge navne i netop denne providerfri fortsættelse.
+Candidate-modellen, modelretur og første cutover er fortsat afvist. Den gemte
+vejrpakke skal stadig være nyere end den offentlige, frisk, komme fra en
+forgænger til den aktuelle kode og bestå den eksakte runtimekontrol.
+
+Den tidligere kørsel nåede ikke at skrive en ny privat runtime eller deploye
+Pages. Den korrekt installerede binding genkendes ved næste forsøg og kræver
+ikke endnu en ny migration.
 
 ## 89.18 4.0.414 – Recovery ser på det, der faktisk blev gemt
 
@@ -82,7 +99,7 @@ nu følge et verificeret same-model-deploy med afgrænsede diagnostiske fund,
 men sådanne data må ikke bruges til kalibrering. Modelskift og første cutover
 har fortsat de strengere krav.
 
-Formel og vægte er uændrede. 4.0.414 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Formel og vægte er uændrede. 4.0.415 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den rettede integrerede kode er bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er fortsat særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859` over 57 transitive filer. Den nye continuationidentitet følger med append-only migration `20260918125600`.
 

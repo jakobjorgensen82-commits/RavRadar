@@ -1,3 +1,16 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.415 saved-weather
+
+4.0.414 er merged som `f1f33c44`; recovery `35346704791` registrerede det
+allerede offentlige target som central version 24. Saved-weather
+`35346790218` installerede og verificerede den korrekte append-only migration,
+men stoppede før private runtime, artifact og Pages på en gammel eksakt
+`integrated`-kontrol.
+
+4.0.415 tillader også `integrated-historical-maintenance` i den providerfri
+saved-weather-grænse. Det er stadig same-model maintenance; Candidate, retur
+og cutover er afvist. Migrationplanens eksisterende nul-pending-kontrakt gør
+genkørslen idempotent. DEC-0198.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.414 direkte sourcebevis
 
 4.0.413 er merged som `50216cd6`. Recovery `35344230599` verificerede source-

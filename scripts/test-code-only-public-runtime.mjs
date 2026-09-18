@@ -117,7 +117,6 @@ for (const marker of [
   'DEPLOY-CODE-ONLY-REPAIR',
   'DEPLOY-SAVED-WEATHER-REPAIR',
   'publish_newest_saved_weather:',
-  'test "${{ steps.operational-action.outputs.action }}" = "integrated"',
   'test -z "${{ steps.public-source.outputs.repair_id }}"',
   'Describe newest protected runtime for saved-weather continuation',
   'Bind saved-weather continuation to exact newer runtime',
@@ -166,6 +165,29 @@ for (const marker of [
   'pages-public-closure.json',
   'cmp -s',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+const savedWeatherBindingStart = workflow.indexOf(
+  '- name: Bind saved-weather continuation to exact newer runtime',
+);
+const savedWeatherBindingEnd = workflow.indexOf('\n      - name:', savedWeatherBindingStart + 1);
+const savedWeatherBinding = workflow.slice(savedWeatherBindingStart, savedWeatherBindingEnd);
+for (const marker of [
+  'case "${{ steps.operational-action.outputs.action }}" in',
+  'integrated|integrated-historical-maintenance) ;;',
+  'Saved-weather continuation requires active integrated maintenance.',
+]) assert.ok(savedWeatherBinding.includes(marker),
+  `Saved-weather-fortsættelsen mangler integreret vedligeholdelsesgrænse: ${marker}`);
+for (const forbiddenAction of [
+  'candidate-execute',
+  'candidate-maintenance',
+  'candidate-historical-maintenance',
+  'candidate-legacy-maintenance',
+  'integrated-return',
+  'integrated-cutover',
+]) assert.ok(!savedWeatherBinding.includes(forbiddenAction),
+  `Saved-weather-fortsættelsen må ikke åbne for en modeltransition: ${forbiddenAction}`);
+assert.ok(!savedWeatherBinding.includes(
+  'test "${{ steps.operational-action.outputs.action }}" = "integrated"',
+), 'Saved-weather må ikke afvise den sikre historiske integrerede vedligeholdelse');
 const independentPrewriteDecision = workflow.indexOf(
   '- name: Decide all independent prewrite checks together',
 );

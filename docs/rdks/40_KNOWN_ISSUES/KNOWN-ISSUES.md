@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.415 saved-weather action
+
+- **ISSUE-4.0.414-DELIVERY – LUKKET:** Exact-head `35346135848`, PR #358 og main `f1f33c44` er leveret.
+- **ISSUE-CENTRAL-23-TO-24 – LUKKET:** Recovery `35346704791` registrerede den allerede offentlige pakke som central version 24.
+- **ISSUE-SAVED-WEATHER-HISTORICAL-ACTION – RETTET LOKALT / LIVEBEVIS MANGLER:** Run `35346790218` installerede bindingen, men en gammel kontrol afviste den sikre `integrated-historical-maintenance`-handling før private runtime og Pages. 4.0.415 accepterer begge same-model maintenanceformer.
+- **ISSUE-LIVE-OLD-HOUR-HISTORY – ÅBEN P0:** Providerfri 4.0.415, normal weather og browserbevis mangler fortsat.
+- **ISSUE-GENERIC-POST-PAGES-RESUME – ÅBEN P1:** Generel same-binding-genoptagelse efter totalt runnerstop er fortsat et efterfølgende driftskrav.
+
+DEC-0198. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.414 direkte same-binding-source
 
 - **ISSUE-4.0.413-DELIVERY – LUKKET:** Exact-head `35343692557`, PR #357 og main `50216cd6` er leveret.

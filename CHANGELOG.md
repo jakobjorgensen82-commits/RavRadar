@@ -1,3 +1,14 @@
+## 4.0.415 – gemt vejr gennem historisk integreret vedligeholdelse (2026-09-18)
+
+- 4.0.414 bestod exact-head `35346135848`, blev merged gennem PR #358 som
+  `f1f33c44`, og recovery `35346704791` samlede central version 24 med live.
+- Saved-weather `35346790218` installerede den korrekte binding, men stoppede
+  før private runtime, artifact og Pages på en for snæver handlingskontrol.
+- 4.0.415 tillader både almindelig og historisk integreret vedligeholdelse i
+  netop den providerfri fortsættelse; modelskift er stadig afvist.
+- Allerede installeret migration genbruges sikkert. Vejr, score, geometri og
+  kildeprioritet ændres ikke. Se CHANGELOG-4.0.415.md og DEC-0198.
+
 ## 4.0.414 – direkte bevis af same-binding-source (2026-09-18)
 
 - 4.0.413 bestod exact-head `35343692557`, blev merged gennem PR #357 som

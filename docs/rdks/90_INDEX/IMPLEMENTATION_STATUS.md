@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – lokal 4.0.415 saved-weather action
+
+- [x] Lever 4.0.414 gennem exact-head `35346135848`, PR #358 og main `f1f33c44`.
+- [x] Registrér central version 24 gennem grøn recovery `35346704791`.
+- [x] Afgræns saved-weather-stop `35346790218` til den gamle eksakte `integrated`-kontrol efter vellykket migration.
+- [x] Gennemgå resten af providerfri rute og bevis, at ingen anden saved-weather-grænse afviser historical same-model maintenance.
+- [x] Tillad begge integrerede maintenanceformer og tilføj negative modeltransitionstests.
+- [x] Afslut version/RDKS/håndbog og målrettede slutkontroller.
+- [ ] Commit/push, exact-head, merge og genkør providerfri saved-weather.
+- [ ] Kør én almindelig weather og browserverificér aktuel time, historik og lokal femdøgn.
+
+DEC-0198. Ingen oneoff; scheduler forbliver pauset.
+
 # Aktuel implementeringsstatus – lokal 4.0.414 direkte same-binding-source
 
 - [x] Lever 4.0.413 gennem exact-head `35343692557`, PR #357 og main `50216cd6`.

@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – saved-weather gennem integreret maintenance
+
+- **REQ-4.0.415-ACTIONS-001 – BINDENDE:** Saved-weather må fortsætte ved `integrated` og `integrated-historical-maintenance`, fordi begge er aktiv same-model vedligeholdelse.
+- **REQ-4.0.415-NO-TRANSITION-002 – BINDENDE:** Candidate, integreret retur og første cutover må ikke åbnes af ændringen.
+- **REQ-4.0.415-EVIDENCE-003 – BINDENDE:** Tomt repair-id, nyere og friskt target, source-head som forgænger til current main og eksakt private-runtime-kontrakt består.
+- **REQ-4.0.415-IDEMPOTENT-MIGRATION-004 – BINDENDE:** En allerede eksakt installeret sidste binding skal accepteres som nul pending migrations; andre pending migrations afvises.
+- **REQ-4.0.415-NO-PROVIDERS-005 – BINDENDE:** Fortsættelsen må ikke kalde DMI, Copernicus eller Open-Meteo.
+
+DEC-0198.
+
 # Aktuelt ejerdelta – 2026-09-18 – direkte same-binding sourcebevis
 
 - **REQ-4.0.414-SOURCE-IDENTITY-001 – BINDENDE:** Same-binding recovery skal bevise central version 23 gennem dens faktiske sourcefelter og normale maintenance-seal; et historisk transitionnavn må ikke bruges som erstatning for denne identitet.

@@ -1,5 +1,13 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.415-præcisering – DEC-0198:** Providerfri saved-weather må
+fortsætte ved både `integrated` og `integrated-historical-maintenance`, når
+den aktive model er integreret. Candidate, retur og cutover er fortsat
+forbudt. Public source må ikke være en repair-source; saved target skal være
+nyere end live, friskt og stamme fra en commit i current mains historie.
+Eksakt nul pending migrations efter en allerede installeret godkendt binding
+er en sikker genkørsel; enhver anden pending migration afvises.
+
 **Bindende 4.0.414-præcisering – DEC-0197:** Ved eksakt same-binding recovery
 er source-identiteten dens faktiske centrale version, aktive status, head,
 dataset/reference, manifest-, closure-, deployment-, binding-, readiness-,
