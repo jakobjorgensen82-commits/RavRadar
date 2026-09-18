@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.409 vælger nyeste gyldige komponent
+
+4.0.408 er live gennem exact-head `35310381268`, PR #352, main `891b5f3c`
+og providerfri code-only `35310919329`.
+
+Normalrun `35311408813` gennemførte DMI, Copernicus og Open-Meteo og gemte
+alle providerfremskridt. Copernicus fortsatte uden den tidligere
+referencefejl. Closure fordelte 79.414 par som 31.733 DMI, 4.956 Copernicus,
+904 regional DMI, 41.001 Open-Meteo og 820 ærlige lokale `MISSING`.
+
+Central weather stoppede bagefter på en bølgekonflikt mellem den gamle
+deployede private historik og den nye progressive DMI-cache. Begge værdier
+var gyldige, men de kom fra forskellige DMI-prognosekørsler. Lokal 4.0.409
+vælger derfor den nyeste gyldige `modelRun` pr. komponent og time. En nyere
+strøm kan kombineres med en ældre, stadig gyldig bølge, hvis den nye bølge
+mangler. Samme prognosekørsel med forskellige værdier stopper fortsat.
+
+Målrettet replay, bulk-integration, produktionsadapter og live-adapter er
+grønne. Modelbundlen er uændret `d9ba75ed...` over 56 filer. Næste: RDKS,
+exact-head, merge, providerfri code-only og én normal weather på gemte cacher.
+Ingen oneoff; bootstrap kun ved målt behov. Scheduler pauset. DEC-0192.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.408 bevarer data og udløber gamle forsøg
 
 4.0.407 er live gennem exact-head `35305418536`, PR #351, main `74ce8c38`

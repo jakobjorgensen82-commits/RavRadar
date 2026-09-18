@@ -1,5 +1,27 @@
 # Weather Pipeline 1.0
 
+## 4.0.409 – gammel og ny DMI-historik samles komponentvist
+
+Normalrun `35311408813` gennemførte DMI, Copernicus og Open-Meteo, byggede
+operationel closure og gemte alle providerfremskridt. Central weather
+stoppede bagefter, fordi deployed-private-runtime og progressive-private-dmi
+begge leverede en gyldig bølge for samme kystdel/time fra forskellige
+DMI-`modelRun`. Den generiske replay-union er med vilje fail-closed for
+ligeværdige peers, men de to produktionskilder er prognoserevisioner, ikke
+ligeværdige samtidige sandheder.
+
+Før unionen sammenlignes derfor strøm og bølger hver for sig. Når begge er
+validerede, vinder den nyeste dokumenterede `modelRun`. Mangler den nyere
+komponent, bevares den ældre gyldige komponent. Strøm-U/V og bølge-
+højde/periode/proveniens forbliver atomiske tuples. Samme eller
+ikke-sammenlignelige modelkørsel med forskellige værdier går fortsat til den
+generiske konfliktgate og stopper.
+
+Rettelsen ligger kun i normal weather-kildesamling. Punktaktivering har én
+recoverykilde og ændres ikke. Providerorden DMI → Copernicus → regional DMI
+→ Open-Meteo, cache-save før central weather, closure, modelkode og deploygate
+er uændrede. Næste normalrun genbruger cacherne fra `35311408813`.
+
 ## 4.0.390 – forlænget bootstrap uden den gamle oneoff
 
 To 4.0.389-normalruns beviste, at rotationen og cacherne virker, men også at

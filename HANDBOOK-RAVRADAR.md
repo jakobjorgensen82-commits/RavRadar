@@ -1,6 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.408
+**Håndbogsversion:** 4.0.409
+
+## 89.13 4.0.409 – Nyeste gyldige prognosekomponent vinder
+
+Den almindelige vejrkørsel `35311408813` kom gennem DMI, Copernicus og
+Open-Meteo og gemte deres fremskridt. Først bagefter stoppede scorehistorikken,
+fordi den gamle deployede pakke og den nye arbejdscache havde forskellige,
+men begge gyldige, DMI-bølger for samme sted og time.
+
+Det er normalt, at DMI ændrer en prognose i en nyere modelkørsel. RavRadar
+vælger derfor nu den gyldige komponent fra den nyeste dokumenterede
+`modelRun`. Valget sker særskilt for strøm og bølger. Ny gyldig strøm kan
+således bruges sammen med en ældre, stadig gyldig bølge, hvis den nyere
+prognose ikke indeholder en brugbar bølge for den time.
+
+Systemet blander ikke enkelte felter vilkårligt. Strømmens U/V-værdier hører
+sammen, og bølgehøjde, periode og kildebevis behandles som én gyldig pakke.
+Hvis den nyere pakke mangler eller er ugyldig, beholdes den gamle gyldige
+pakke. Først når ingen af dem kan bruges, bliver komponenten `MISSING`.
+
+To forskellige værdier fra samme prognoseversion er fortsat en reel konflikt
+og stopper. Rettelsen ændrer ikke scoreformlen, vægtene eller den aktive
+modelbundle. 4.0.409 er låst med
+`modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906`
+over 56 kanonisk normaliserede transitive implementeringsfiler.
 
 ## 89.12 4.0.408 – Gamle Copernicus-forsøg må ikke blokere nye kørsler
 

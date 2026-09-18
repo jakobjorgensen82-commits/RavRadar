@@ -1,3 +1,15 @@
+## 4.0.409 – nyeste gyldige DMI-komponent i recovery (2026-09-18)
+
+- 4.0.408 er live gennem exact-head `35310381268`, PR #352, main
+  `891b5f3c` og providerfri code-only `35310919329`.
+- Normalrun `35311408813` gennemførte alle providerled, gemte cacher og
+  livebeviste Copernicus-rettelsen, men central weather stoppede på en
+  bølgekonflikt mellem gammel og nyere gyldig DMI-prognose.
+- 4.0.409 vælger den gyldige komponent fra nyeste dokumenterede `modelRun`.
+  Mangler den nyere strøm eller bølge, bevares den gamle gyldige komponent.
+- Samme prognoseversion med forskellige værdier stopper fortsat. RavScore-
+  model, vægte og bundle er uændrede. Se CHANGELOG-4.0.409.md og DEC-0192.
+
 ## 4.0.408 – frisk Copernicus-journal efter referenceflyt (2026-09-18)
 
 - 4.0.407 er live gennem exact-head `35305418536`, PR #351, main

@@ -31,6 +31,9 @@ import {
   ravScoreRecoverySourceStartAt,
   selectRavScoreInitialState,
 } from './lib/ravscore-recovery-replay.mjs';
+import {
+  buildNewestValidRavScoreRecoverySources,
+} from './lib/ravscore-recovery-source-priority.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import {
@@ -163,6 +166,26 @@ function withoutCurrent(row) {
     currentUMps: null,
     currentVMps: null,
     currentProvenance: null,
+  };
+}
+
+function withoutWave(row) {
+  const sources = { ...(row?.sources ?? {}) };
+  delete sources.wave;
+  return {
+    ...row,
+    waveHeightM: null,
+    wavePeriodS: null,
+    waveDirectionDeg: null,
+    waveProvenance: null,
+    sources,
+  };
+}
+
+function withVerifiedWave(row) {
+  return {
+    ...row,
+    waveProvenance: { status: 'verified' },
   };
 }
 
@@ -577,6 +600,86 @@ assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { waveHeight: 1.3 })]) },
 ]), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+const deployedFallbackRows = [weather(1), weather(2), weather(3)]
+  .map(withVerifiedWave);
+const freshWaveOnly = {
+  ...withoutCurrent(weather(2, { waveHeight: 1.3, modelRun: time(-48) })),
+  waveProvenance: { status: 'verified' },
+};
+const deployedFallbackSnapshot = JSON.stringify(deployedFallbackRows);
+const freshWaveSnapshot = JSON.stringify(freshWaveOnly);
+const freshFirstSources = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: {
+    source: 'deployed-private-runtime',
+    record: record(deployedFallbackRows),
+  },
+  preferredSource: {
+    source: 'progressive-private-dmi',
+    record: record([freshWaveOnly]),
+  },
+});
+const freshFirstRecovery = replayForAge(4, freshFirstSources);
+const freshFirstHour = freshFirstRecovery.hourly.find(row => row.time === time(2));
+assert.equal(freshFirstHour.waveHeightM, 1.3,
+  'fresh verified wave must replace an older deployed wave at the same hour');
+assert.equal(freshFirstHour.currentSpeedMps, 0.09,
+  'the old verified current must remain when the fresh row has no current');
+assert.equal(JSON.stringify(deployedFallbackRows), deployedFallbackSnapshot,
+  'fresh-first recovery preparation must not mutate deployed history');
+assert.equal(JSON.stringify(freshWaveOnly), freshWaveSnapshot,
+  'fresh-first recovery preparation must not mutate progressive history');
+const newerCurrentOnly = withoutWave(weather(2, {
+  modelRun: time(-47),
+  speed: 0.11,
+  rawU: 0.11,
+}));
+const newestPerComponentSources = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: {
+    source: 'deployed-private-runtime',
+    record: record(deployedFallbackRows),
+  },
+  preferredSource: {
+    source: 'progressive-private-dmi',
+    record: record([newerCurrentOnly]),
+  },
+});
+const newestPerComponentRecovery = replayForAge(4, newestPerComponentSources);
+const newestPerComponentHour = newestPerComponentRecovery.hourly
+  .find(row => row.time === time(2));
+assert.equal(newestPerComponentHour.currentSpeedMps, 0.11,
+  'the newest verified current must replace an older current independently');
+assert.equal(newestPerComponentHour.waveHeightM, 1.2,
+  'an older valid wave must remain when the newer DMI run lacks waves');
+const olderProgressiveSources = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: {
+    source: 'deployed-private-runtime',
+    record: record([withVerifiedWave(
+      weather(2, { modelRun: time(-48), waveHeight: 1.4 }),
+    )]),
+  },
+  preferredSource: {
+    source: 'progressive-private-dmi',
+    record: record([withVerifiedWave(
+      weather(2, { modelRun: time(-54), waveHeight: 1.2 }),
+    )]),
+  },
+});
+const olderProgressiveRecovery = replayForAge(4, olderProgressiveSources);
+const olderProgressiveHour = olderProgressiveRecovery.hourly
+  .find(row => row.time === time(2));
+assert.equal(olderProgressiveHour.waveHeightM, 1.4,
+  'a cache position may not override a genuinely newer DMI model run');
+assert.throws(() => replayForAge(4, buildNewestValidRavScoreRecoverySources({
+  fallbackSource: {
+    source: 'deployed-private-runtime',
+    record: record([weather(2, { modelRun: time(-48), waveHeight: 1.2 })]),
+  },
+  preferredSource: {
+    source: 'progressive-private-dmi',
+    record: record([weather(2, { modelRun: time(-48), waveHeight: 1.3 })]),
+  },
+})), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+'different values from the same model run must remain a hard conflict');
 assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { modelRun: time(-53) })]) },

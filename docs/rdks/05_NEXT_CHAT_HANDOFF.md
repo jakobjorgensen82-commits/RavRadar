@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.409 nyeste gyldige komponent
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.408-copernicus-journal-rebase`, baseret på main `891b5f3c`.
+4.0.408 er live efter PR #352 og code-only `35310919329`.
+
+Normalrun `35311408813` gennemførte alle providerled, gemte cacher og
+livebeviste 4.0.408. DMI dækkede 31.733/79.414, Copernicus 4.956, regional
+DMI 904 og Open-Meteo 41.001; 820 var ærlige lokale `MISSING`. Central
+weather stoppede bagefter på en bølgekonflikt mellem gammel deployet og nyere
+progressiv DMI-historik.
+
+Lokal 4.0.409 vælger den gyldige komponent fra nyeste dokumenterede
+`modelRun` for samme del/time. Mangler den nyere komponent, bliver den ældre
+gyldige stående. Samme/ukendt prognoseversion med forskellige værdier stopper
+fortsat. Fem målrettede kontroller og uændret modelbundle `d9ba75ed...` er
+grønne. Næste: afslut docs/version, commit/push, én exact-head, merge,
+providerfri code-only og én normal weather på gemte cacher. Ingen oneoff;
+bootstrap kun ved målt behov. Scheduler pauset. DEC-0192. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.408 Copernicus-journalfriskhed
 
 Arbejd i `RavRadar-4.0.396`, branch
