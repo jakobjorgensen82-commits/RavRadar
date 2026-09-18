@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.410 holder prognoser aktuelle trods kontrolfund
+
+- 4.0.409 blev leveret gennem exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.
+- Normalrun `35320738621` gennemførte hele vejropbygningen og livebeviste prognoserevisionsrettelsen.
+- Runtimeauditten stoppede bagefter på 673 `LAST_MILE_STATE`-fund; 420 aktuelle modes var utilgængelige, og senere kontroller/deploy blev ikke nået.
+- 4.0.410 kører og samler alle uafhængige kontroludfald uden alene at blokere gyldige friske prognoser; hårde target-/main-, private-state-, privacy-, artifact- og deploygrænser består. DEC-0193.
+
 # 2026-09-18 – 4.0.409 vælger nyeste gyldige DMI-komponent
 
 - 4.0.408 blev leveret gennem exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329`.

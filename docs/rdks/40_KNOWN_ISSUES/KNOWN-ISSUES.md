@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.410 prognosetilgængelighed
+
+- **ISSUE-4.0.409-DELIVERY – LUKKET:** Exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547` er grønne; live viser 4.0.409.
+- **ISSUE-RECOVERY-FORECAST-REVISION – LUKKET OG LIVEBEVIST:** Normalrun `35320738621` passerede central weather uden den tidligere replaykonflikt.
+- **ISSUE-NORMAL-CONTROL-FAIL-FAST – RETTET LOKALT / LIVEBEVIS MANGLER:** Ét runtimefund stoppede resten af kontrollerne og et ellers friskt vejrdeploy. 4.0.410 fortsætter, samler og uploader alle uafhængige kontroludfald.
+- **ISSUE-RAVSCORE-LAST-MILE-REPLAY – ÅBEN P0:** 673/673 dele fejlede genlæsning i den brede kategori `LAST_MILE_STATE`. Næste normalrun opdeler continuation i skema, tid, momenter, readiness, reference eller seneste vektor og skelner desuden parent-time, punkt-mod-bounds og eksakte bounds.
+- **ISSUE-CURRENT-SCORE-AVAILABILITY – ÅBEN P0:** 420 aktuelle modes var utilgængelige i den ikke-deployede runtime. Gyldige prognoser må komme online, mens den præcise scoreårsag rettes.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Ét fortsættende normalt deploy og derefter én normal vedligeholdelse mangler før scheduler genaktiveres.
+
+DEC-0193. Ingen oneoff; hårde privacy-/main-/artifactgrænser består.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.409 komponentvis prognoserevision
 
 - **ISSUE-4.0.408-DELIVERY – LUKKET:** Exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329` er grønne; live viser 4.0.408.

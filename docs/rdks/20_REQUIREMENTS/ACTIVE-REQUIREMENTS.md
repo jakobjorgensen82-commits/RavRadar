@@ -1,3 +1,17 @@
+# Aktuelt ejerdelta – 2026-09-18 – aktuelle prognoser trods kontrolfund
+
+- **REQ-4.0.410-COLLECT-ALL-001 – BINDENDE:** En almindelig weather skal forsøge alle uafhængige driftskontroller og samle udfaldene i én payloadfri rapport.
+- **REQ-4.0.410-VALID-WEATHER-CONTINUES-002 – BINDENDE:** Et fund i runtimeaudit, artifactkontrol, releasegate, backend-/datakontrol, trip-readback, implementeringsaudit eller stationsinventar må ikke alene blokere ellers gyldige friske prognoser.
+- **REQ-4.0.410-LOCAL-SCORE-ISOLATION-003 – BINDENDE:** Et lokalt score-/stateproblem gør den berørte score utilgængelig og synlig, men må ikke gøre resten af RavRadar eller gyldige vejrdata ubrugelige.
+- **REQ-4.0.410-HARD-SAFETY-004 – BINDENDE:** Ikke-regressivt target, eksakt main, byggeligt artifact, beskyttet statekontinuitet, Pages-privacy og forseglet deployhandoff er fortsat hårde.
+- **REQ-4.0.410-DIAGNOSTIC-EVIDENCE-005 – BINDENDE:** Normalruten uploader runtimeauditten og opdeler last-mile-replay uden state, koordinater, rå vejrdata eller private payloads.
+- **REQ-4.0.410-NORMAL-PROOF-006 – BINDENDE:** Næste almindelige weather genbruger de gemte providercacher; ingen oneoff. Scheduler genaktiveres først efter deploy og efterfølgende cachevedligeholdelse er bevist.
+- **REQ-4.0.410-NO-MODEL-CHANGE-007 – BINDENDE:** Rettelsen ændrer ikke RavScore-formel, vægte, modelbundle, geometri, land-/vandpunkter eller kildeprioritet.
+
+DEC-0193 supersederer kun den globale blokering ved ikke-sikkerhedskritiske
+kontrolfund. Reelle target-, main-, private-state-, privacy-, artifact- og
+deployfejl består som hårde grænser.
+
 # Aktuelt ejerdelta – 2026-09-18 – nyeste gyldige komponent vinder
 
 - **REQ-4.0.409-NEWEST-VALID-001 – BINDENDE:** For samme kystdel, time og komponent erstatter den gyldige værdi fra nyeste dokumenterede DMI-`modelRun` en ældre gyldig værdi.
@@ -23,7 +37,7 @@ DEC-0191. 4.0.407 er live; scheduler er pauset.
 
 - **REQ-4.0.407-WIND-HORIZON-001 – BINDENDE:** Ét gammelt vindpunkt er ikke dækning. Mangler et aktivt punkt den sammenhængende 96-timers vindhorisont, forsøges ét HARMONIE-asset først.
 - **REQ-4.0.407-NORMAL-RESUME-002 – BINDENDE:** Genbrug de gemte DMI-, Copernicus- og Open-Meteo-cacher fra `35253587766`; ingen ny oneoff.
-- **REQ-4.0.407-REPLAY-HARD-003 – BINDENDE:** En kompakt scoretilstand, der ikke kan læses tilbage, må ikke deployes.
+- **REQ-4.0.407-REPLAY-HARD-003 – SUPERSEDED AF DEC-0193:** En kompakt scoretilstand, der ikke kan læses tilbage, isolerer og markerer den berørte score; replayfundet må ikke alene blokere gyldige vejrdata eller øvrige zoner.
 - **REQ-4.0.407-SAFE-DIAG-004 – BINDENDE:** Replayfejl samles i faste kategorier uden state, evidens, koordinater, vejrdata eller providerpayload.
 - **REQ-BOOTSTRAP-EVIDENCE-005 – BINDENDE:** Udvidet bootstrap bruges kun, hvis målt restdækning og normal kørselskapacitet viser et reelt behov.
 - **REQ-NORMAL-MAINTENANCE-006 – BINDENDE:** Scheduler genaktiveres først efter grønt frisk deploy og en efterfølgende almindelig kørsel, der beviser cachevedligeholdelse.
@@ -67,7 +81,7 @@ DEC-0186. Scheduler forbliver pauset.
 - **REQ-4.0.402-COLLECT-ALL-002 – BINDENDE:** Alle valgte kontroller forsøges; collectorrapporten skal være payloadfri, planbundet og samlet fejle efter sidste kontrol.
 - **REQ-4.0.402-RELEASE-PLAN-003 – BINDENDE:** Normal produktion kører tre selvstændige releasekontroller af eksakt version, aktiv modelbundle og alle aktive modelbindingsforbrugere.
 - **REQ-4.0.402-NO-HISTORIC-RERUN-004 – BINDENDE:** De øvrige 225 validate-kontroller og 44 historiske releasegatetests bevares, men må ikke genkøres efter hver almindelig vejrindsamling.
-- **REQ-4.0.402-HARD-RUNTIME-005 – BINDENDE:** Runtimeaudit, Supabase/checkpoint, privat runtime, artifactlukning, privacy og deploy forbliver hårde og må ikke skjules af rapport-/bookkeepingfejl.
+- **REQ-4.0.402-HARD-RUNTIME-005 – DELVIST SUPERSEDED AF DEC-0193:** Runtimeauditfund samles og isoleres uden global vejrblokering. Supabase/checkpoint, privat statekontinuitet, artifactlukning, privacy og deploy forbliver hårde og må ikke skjules af rapport-/bookkeepingfejl.
 - **REQ-4.0.402-VERSION-TRUTH-006 – BINDENDE:** Browseren må kun vise den versionssynkroniserede runtime/DOM-version og må ikke falde tilbage til en hardkodet tidligere version.
 - **REQ-4.0.402-NO-DATA-MODEL-CHANGE-007 – BINDENDE:** Rettelsen ændrer ikke RavScore, vejrdata, providerprioritet, geometri eller land-/vandpunkter.
 - **REQ-4.0.402-DELIVERY-008 – BINDENDE:** Lever kode providerfrit efter én exact-head og kør derefter én almindelig weather på gemte cacher. Ingen oneoff.

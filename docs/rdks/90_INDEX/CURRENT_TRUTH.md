@@ -1,3 +1,29 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.410 holder prognoser aktuelle trods kontrolfund
+
+4.0.409 er live gennem exact-head `35318809153`, PR #353, main `013baac8`
+og providerfri code-only `35320190547`.
+
+Normalrun `35320738621` gennemførte DMI, Copernicus, Open-Meteo, closure,
+historik, central weather, proveniens og offentlig runtime. Den gamle
+prognoserevisionskonflikt kom ikke igen. Runtimeauditten stoppede derefter på
+673 ens `LAST_MILE_STATE`-replayfund; 420 aktuelle modes var utilgængelige.
+Alle senere kontroller blev sprunget over, og den friske vejrpakke kom ikke
+online.
+
+Lokal 4.0.410 gør normale driftskontroller fortsættende og samler alle
+udfald i én payloadfri rapport. Et score-/test-/readinessfund kan derfor
+ikke alene gøre gyldige prognoser gamle. Target/main, byggeligt artifact,
+beskyttet state, privacy og forseglet deploy er fortsat hårde grænser.
+Runtimeauditten uploades i normalruten og opdeler continuation i skema, tid,
+momenter, readiness, reference og seneste vektor samt parent-time og
+historikgrænser. Den målrettede deploysuite, workflowrækkefølge, RDKS,
+håndbog, version, YAML, diff og geodataversionsbevis er grønne. Modelbundlen
+er uændret `d9ba75ed...`.
+
+Næste: commit/push, exact-head, merge, providerfri kode og én normal weather
+på gemte cacher. Ingen oneoff; scheduler pauset.
+DEC-0193.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.409 vælger nyeste gyldige komponent
 
 4.0.408 er live gennem exact-head `35310381268`, PR #352, main `891b5f3c`

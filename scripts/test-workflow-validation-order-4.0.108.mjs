@@ -1431,6 +1431,8 @@ const positions = {
   privateRuntimeAnonAudit: text.indexOf('name: Prove the private runtime object is not anonymously readable'),
   artifact: text.indexOf('name: Build lean GitHub Pages artifact'),
   pagesPrivacyAudit: text.indexOf('name: Audit the complete Pages artifact for private runtime material'),
+  operationalHandoffSeal: text.indexOf('name: Seal privacy-safe operational deploy handoff'),
+  operationalControlSummary: text.indexOf('name: Collect every operational control outcome without blocking valid weather'),
   pagesUpload: text.indexOf('name: Upload GitHub Pages artifact'),
 };
 for (const [name, pos] of Object.entries(positions)) {
@@ -1509,6 +1511,8 @@ const expected = [
   'privateRuntimeAnonAudit',
   'artifact',
   'pagesPrivacyAudit',
+  'operationalHandoffSeal',
+  'operationalControlSummary',
   'pagesUpload',
 ];
 for (let i = 1; i < expected.length; i += 1) {
@@ -1540,6 +1544,42 @@ for (const block of [normalProvenanceBlock, normalValidationBlock]) {
   if (!block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json')) {
     throw new Error('Normal provenance og fuld spatial validering skal læse samme kandidat-DMI som leverandørkæden.');
   }
+}
+
+for (const [label, start, end] of [
+  ['runtimeaudit', positions.publicAudit, positions.checkpointDisposition],
+  ['referencezoner', positions.reference, positions.legacyFullValidationSource],
+  ['historisk kildeforberedelse', positions.legacyFullValidationSource, positions.validate],
+  ['artifactvalidering', positions.validate, positions.gate],
+  ['releasegate', positions.gate, text.indexOf('name: Upload payload-free production validation reports')],
+  ['datavalidering', positions.validateData, positions.deployFreshness],
+]) {
+  assert.ok(
+    text.slice(start, end).includes('continue-on-error: true'),
+    `Normal weather skal samle ${label} som et fund uden at blokere gyldige friske prognoser.`,
+  );
+}
+const operationalControlSummarySection = text.slice(
+  positions.operationalControlSummary,
+  positions.pagesUpload,
+);
+for (const marker of [
+  'weather-operational-control-summary.mjs',
+  '--check "runtime-audit|diagnostic|',
+  '--check "reference-zones|diagnostic|',
+  '--check "historical-source|diagnostic|',
+  '--check "full-validation|diagnostic|',
+  '--check "release-gate|diagnostic|',
+  '--check "prewrite-target-freshness|safety|',
+  '--check "checkpoint-disposition|safety|',
+  '--check "private-runtime-publish|safety|',
+  '--check "pages-privacy|safety|',
+  'weather-operational-controls-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  assert.ok(
+    operationalControlSummarySection.includes(marker),
+    `Den samlede operationelle kontrolrapport mangler ${marker}`,
+  );
 }
 const legacyFullValidationSourceBlock = text.slice(
   positions.legacyFullValidationSource,
@@ -2341,6 +2381,10 @@ for (const marker of [
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
   '--output "$audit_path"',
+  'runtime_audit_outcome="success"',
+  '|| runtime_audit_outcome="failure"',
+  'echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"',
+  'valid weather publication continues',
   'node scripts/cutover-validation-report.mjs build',
   '--step "runtime-audit|true|$runtime_audit_outcome"',
   '--step "state-reference|false|$state_reference_outcome"',
@@ -2359,8 +2403,8 @@ for (const marker of [
     throw new Error(`Den faktiske integrerede public runtime-gate mangler ${marker}`);
   }
 }
-if (publicAuditBlock.includes('continue-on-error: true')) {
-  throw new Error('Den faktiske integrerede public runtime-gate må ikke være ubetinget vejledende.');
+if (!publicAuditBlock.includes('continue-on-error: true')) {
+  throw new Error('Normal drift skal samle runtimefund uden at blokere et ellers sikkert vejrdeploy.');
 }
 for (const forbidden of [
   'run_validation state_reference_outcome',
@@ -2375,6 +2419,8 @@ assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_
 assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
   'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
 for (const marker of [
+  'name: Upload the payload-free runtime audit for every weather build',
+  'ravscore-runtime-audit-${{ github.run_id }}-${{ github.run_attempt }}',
   'name: Upload the incremental payload-free full-validation report',
   'ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}',
   'path: .geometry-v2-work/ravscore-integrated-full-validation-report.json',
@@ -3460,7 +3506,10 @@ if (pagesLiveWriteLines.length !== 5
   || pagesLiveWriteLines.slice(1).some((line) => !line.startsWith('install -m 0644 "$pages_source/data/live/'))) {
   throw new Error('Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer.');
 }
-const pagesPrivacyAuditSection = text.slice(positions.pagesPrivacyAudit, positions.pagesUpload);
+const pagesPrivacyAuditSection = text.slice(
+  positions.pagesPrivacyAudit,
+  positions.operationalHandoffSeal,
+);
 for (const marker of [
   "if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'",
   'node scripts/audit-pages-artifact-privacy.mjs',

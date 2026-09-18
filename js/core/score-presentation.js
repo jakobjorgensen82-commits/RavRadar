@@ -1,4 +1,4 @@
-import { RAVSCORE_PRESENTATION_POLICY } from './ravscore-model-contract.js?v=4.0.409';
+import { RAVSCORE_PRESENTATION_POLICY } from './ravscore-model-contract.js?v=4.0.410';
 
 export const SCORE_PRESENTATION = RAVSCORE_PRESENTATION_POLICY;
 

@@ -1,5 +1,28 @@
 # Weather Pipeline 1.0
 
+## 4.0.410 – normal drift fortsætter efter kontrolfund
+
+Normalrun `35320738621` gennemførte provider-, closure-, historik-, central
+weather-, proveniens- og runtimekæden. `RAVSCORE_RECOVERY_REPLAY_CONFLICT`
+kom ikke igen. Den uafhængige runtimeaudit fandt bagefter 673 replayfejl i
+den brede kategori `LAST_MILE_STATE`; 420 aktuelle modes var utilgængelige.
+Fail-fast gjorde, at de resterende kontroller og deploy ikke blev nået.
+
+Normal weather kører nu de uafhængige kontroller videre og gemmer udfaldene i
+en payloadfri rapport. Runtimeaudit, artifactvalidering, releasegate,
+backend-/datakontrol, trip-readback, implementeringsaudit og stationsinventar
+kan give et synligt `DEGRADED`-resultat uden alene at blokere et ellers
+sikkert artifact med friske vejrdata. Et lokalt scoreproblem isoleres til
+den berørte score; gyldige prognoser og øvrige zoner kan udgives.
+
+Sikkerhedsgrænser er fortsat fail-closed: ikke-regressivt produktionstarget,
+eksakt main, byggeligt artifact, beskyttet statekontinuitet, Pages-privacy og
+forseglet deployhandoff. Normalruten uploader desuden runtimeauditten og
+klassificerer last-mile-replay som continuation-skema, -tid, -momenter,
+-readiness, -reference eller -seneste-vektor samt parent-time,
+point-vs-bounds eller exact-bounds. Providerorden,
+komponentvis nyeste-gyldig-regel og gammel-over-tom-kontrakten er uændrede.
+
 ## 4.0.409 – gammel og ny DMI-historik samles komponentvist
 
 Normalrun `35311408813` gennemførte DMI, Copernicus og Open-Meteo, byggede

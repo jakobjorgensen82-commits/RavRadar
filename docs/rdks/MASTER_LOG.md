@@ -1,3 +1,21 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.410 aktuelle prognoser
+
+4.0.409 er live gennem PR #353 og main `013baac8`. Normalrun
+`35320738621` gennemførte DMI, Copernicus, Open-Meteo, closure, historik,
+central weather, proveniens og offentlig runtime. Den tidligere
+prognoserevisionskonflikt kom ikke igen.
+
+Kørslen stoppede derefter på 673 ens `LAST_MILE_STATE`-replayfund, og 420
+aktuelle modes var utilgængelige. Fordi auditten var et hårdt stop, blev
+senere kontroller ikke forsøgt, og den friske vejrpakke blev ikke deployet.
+
+Ejeren har besluttet, at normale driftskontroller skal køre til ende, samle
+fund og ikke alene må forhindre udgivelse af gyldige prognoser. 4.0.410
+implementerer den regel, uploader normal runtimeaudit og en samlet payloadfri
+driftsrapport samt gør næste last-mile-fejl præcis. Hårde grænser for
+target/main, privat state, artifact, privacy og deploy består. RavScore-model
+og bundle `d9ba75ed...` er uændrede. DEC-0193.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.409 nyeste gyldige komponent
 
 4.0.408 er live gennem PR #352 og main `891b5f3c`. Normalrun

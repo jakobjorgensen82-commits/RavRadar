@@ -1,3 +1,20 @@
+# Aktiv roadmap – 4.0.410 fra kontrolstop til aktuelle prognoser
+
+1. [x] Lever 4.0.409 gennem exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.
+2. [x] Kør normal weather `35320738621`; gennemfør providere, closure, historik, central weather, proveniens og offentlig runtime.
+3. [x] Bevis at 4.0.409 fjernede `RAVSCORE_RECOVERY_REPLAY_CONFLICT`.
+4. [x] Afgræns næste stop til runtimeaudit med 673 `LAST_MILE_STATE`; 420 aktuelle modes var utilgængelige.
+5. [x] Lad alle uafhængige driftskontroller køre og samle fund uden at blokere ellers gyldige friske prognoser.
+6. [x] Bevar hårde grænser for target/main, byggeligt artifact, privat state, privacy og forseglet deploy.
+7. [x] Upload normal runtimeaudit og samlet payloadfri driftsrapport; opdel last-mile-fejl i præcise underkategorier.
+8. [x] Afslut måltests, dokumentation, version, uændret modelbundle og rent geodataversionsbevis.
+9. [ ] Commit/push, bestå én exact-head, merge og lever kode providerfrit.
+10. [ ] Kør én almindelig weather på gemte cacher; verificér fortsættelse, rapport, deploy, levende prognoser og præcis statefejl.
+11. [ ] Ret den dokumenterede statefejl uden at afbryde vejrtilgængeligheden; bevis næste normale vedligeholdelse før scheduler.
+12. [ ] Fortsæt site-, kildeprioritets- og roadmapgennemgang efter bevist normal drift.
+
+DEC-0193. Ingen oneoff; bootstrap kun ved målt behov.
+
 # Aktiv roadmap – 4.0.409 fra prognoserevision til normal drift
 
 1. [x] Lever 4.0.408 og livebevis Copernicus-journalrettelsen i `35311408813`.
