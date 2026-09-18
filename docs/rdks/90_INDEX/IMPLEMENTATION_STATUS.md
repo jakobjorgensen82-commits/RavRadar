@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.408 Copernicus-journalfriskhed
+
+- [x] Lever 4.0.407 via exact-head `35305418536`, PR #351, main `74ce8c38` og code-only `35306056877`.
+- [x] Kør normal weather `35306467385`; gennemfør DMI, gem fremgang og gendan Copernicus `IN_PROGRESS`.
+- [x] Afgræns stoppet til en gammel segmentjournal, der genindsatte et forsøg efter korrekt source-stage-rebase.
+- [x] Bevis at positive målinger ligger i donorbanken og kan bevares uafhængigt af den korte forsøgsjournal.
+- [x] Anvend den eksisterende firetimersgrænse på replayede journalforsøg.
+- [x] Bestå Python-syntaks samt målrettet source-stage-, pilot- og segmentjournaltest.
+- [x] Afslut RDKS, changelog, håndbog, version og rent geodataversionsbevis; bevis uændret modelbundle/binding.
+- [ ] Commit/push, bestå én exact-head, merge og lever 4.0.408 providerfrit.
+- [ ] Kør én almindelig weather på gemte cacher; verificér Copernicus-fortsættelse, Open-Meteo, runtimeaudit og deploy.
+- [ ] Vurdér bootstrap kun mod den målte rest; bevis næste normale vedligeholdelse før scheduler og roadmap.
+
+DEC-0191. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.407 vindhorisont og replaydiagnose
 
 - [x] Lever 4.0.406 via exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724`.

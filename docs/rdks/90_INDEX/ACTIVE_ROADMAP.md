@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.408 fra gemt providerfremgang til normal drift
+
+1. [x] Lever 4.0.407 og verificér live version/modelbinding.
+2. [x] Kør normal weather `35306467385`; gennemfør DMI og gem providerfremgang.
+3. [x] Afgræns Copernicus-stoppet til replay af et forældet segmentjournalforsøg.
+4. [x] Bevar positive målinger i donorbanken og filtrér kun den korte forsøgsjournal efter fire timer.
+5. [x] Bestå de tre målrettede Copernicus-kontroller og syntaks.
+6. [x] Afslut dokumentation, versionskontrol, uændret modelbinding og rent geodataversionsbevis.
+7. [ ] Commit/push, bestå én exact-head, merge og lever kode providerfrit.
+8. [ ] Kør én almindelig weather på de gemte cacher; verificér Copernicus, Open-Meteo, score/runtime og deploy.
+9. [ ] Vurdér bootstrap alene mod den målte restdækning.
+10. [ ] Bevis næste normale vedligeholdelse, genaktivér scheduler og fortsæt site-/score-/roadmapgennemgang.
+
+DEC-0191. Ingen oneoff.
+
 # Aktiv roadmap – 4.0.407 fra gemte cacher til bevist normal drift
 
 1. [x] Lever 4.0.406 gennem PR #350 og verificér live scorer/femdøgn.
