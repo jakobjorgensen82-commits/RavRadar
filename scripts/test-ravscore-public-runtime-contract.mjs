@@ -1,4 +1,9 @@
 import assert from 'node:assert/strict';
+
+// Keep the replay-category regression inside the existing public-runtime
+// command so the source gate remains bounded.
+await import('./test-ravscore-replay-failure-classification.mjs');
+
 import {
   assertPublicRuntimePrivacy,
   buildPublicConditionDetails,

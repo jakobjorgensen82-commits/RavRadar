@@ -1,3 +1,26 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.410 prognosetilgængelighed
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.410-operational-weather-availability`, baseret på main
+`013baac897e2158d316301abd04193442c3a0ddb`. 4.0.409 er live efter PR #353
+og code-only `35320190547`.
+
+Normalrun `35320738621` gennemførte DMI, Copernicus, Open-Meteo, closure,
+historik, central weather, proveniens og offentlig runtime. 4.0.409 er
+livebevist. Den friske pakke blev ikke deployet, fordi runtimeauditten
+stoppede på 673 `LAST_MILE_STATE`-fund; 420 aktuelle modes var utilgængelige.
+
+Lokal 4.0.410 lader de uafhængige driftskontroller køre til ende og samler
+dem payloadfrit uden alene at blokere gyldige prognoser. Target/main, privat
+state, artifact, privacy og deployhandoff er stadig hårde. Runtimeauditten
+uploades og opdeler næste last-mile-fejl i continuation-skema, -tid,
+-momenter, -readiness, -reference eller -seneste-vektor samt parent-time og
+historikgrænser. Den målrettede deploysuite, workflow, replaydiagnose, RDKS,
+håndbog, version, YAML, diff og geodataversionsbevis er grønne. Næste er
+commit/push, én exact-head, merge, providerfri kode og én normal weather på
+gemte cacher. Ingen oneoff. Scheduler pauset.
+DEC-0193. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.409 nyeste gyldige komponent
 
 Arbejd i `RavRadar-4.0.396`, branch

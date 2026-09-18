@@ -1,3 +1,17 @@
+## 4.0.410 – friske prognoser trods ikke-sikkerhedskritiske kontrolfund (2026-09-18)
+
+- 4.0.409 er live gennem exact-head `35318809153`, PR #353, main
+  `013baac8` og providerfri code-only `35320190547`.
+- Normalrun `35320738621` gennemførte vejrkæden og beviste 4.0.409, men en
+  replayaudit med 673 `LAST_MILE_STATE`-fund stoppede alle senere kontroller
+  og deploy.
+- Normale driftskontroller fortsætter nu, og deres udfald samles i én
+  payloadfri rapport. Et kontrol- eller scorefund blokerer ikke alene gyldige
+  friske prognoser.
+- Eksakt target/main, privat state, artifactbygning, privacy og deployhandoff
+  forbliver hårde. RavScore-formel, vægte og modelbundle er uændrede. Se
+  CHANGELOG-4.0.410.md og DEC-0193.
+
 ## 4.0.409 – nyeste gyldige DMI-komponent i recovery (2026-09-18)
 
 - 4.0.408 er live gennem exact-head `35310381268`, PR #352, main

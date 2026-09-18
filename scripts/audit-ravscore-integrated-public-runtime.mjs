@@ -10,7 +10,13 @@ import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import { buildCurrentSupplyScoreBounds }
   from '../js/core/ravscore-current-supply-memory.js';
 import { waveMobilisationEnergy } from '../js/core/ravscore-mobilisation-memory.js';
-import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
+import {
+  RAVSCORE_WAVE_APPROACH_POLICY,
+  RAVSCORE_WAVE_APPROACH_STATE_SCHEMA_VERSION,
+  RAVSCORE_WAVE_APPROACH_STATUS,
+  waveApproachDeliveryContext,
+} from '../js/core/ravscore-wave-approach-state.js';
+import { canonicalRavScoreTime } from '../js/core/ravscore-time.js';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { buildIntegratedRavScoreStateSeries }
   from '../js/core/ravscore-integrated-state-pipeline.js';
@@ -96,10 +102,25 @@ const DEFAULT_OUTPUT = '.geometry-v2-work/ravscore-integrated-public-runtime-aud
 const EXPECTED_ZONES = 210;
 const EXPECTED_PARTS = 673;
 const MODES = Object.freeze(['waders', 'beach']);
+const WAVE_APPROACH_STATE_FIELDS = Object.freeze([
+  'schemaVersion',
+  'policyId',
+  'time',
+  'waveReferenceAt',
+  'waveActivityMoment',
+  'waveNormalMoment',
+  'waveTangentMoment',
+  'latestWaveEnergyWeight',
+  'latestWaveNormalAlignment',
+  'latestWaveTangentAlignment',
+  'readiness',
+  'status',
+]);
 const HOUR_MS = 3_600_000;
 const SHA256_KEY_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
 const EPSILON = 1e-6;
+const WAVE_APPROACH_EPSILON = 1e-9;
 // The producer publishes three independently rounded contributions and one
 // independently rounded total. Each six-decimal publication can move by half
 // a micro-unit, so the sum can differ from the published total by at most two
@@ -573,10 +594,78 @@ function assertCanonicalBinding(binding) {
   return true;
 }
 
+export function waveApproachContinuationFailureKind(value) {
+  if (!sameKeys(value, WAVE_APPROACH_STATE_FIELDS)
+    || value.schemaVersion !== RAVSCORE_WAVE_APPROACH_STATE_SCHEMA_VERSION
+    || value.policyId !== RAVSCORE_WAVE_APPROACH_POLICY.id) {
+    return 'LAST_MILE_CONTINUATION_SCHEMA';
+  }
+  const time = canonicalRavScoreTime(value.time);
+  const waveReferenceAt = value.waveReferenceAt === null
+    ? null
+    : canonicalRavScoreTime(value.waveReferenceAt);
+  if (!time || value.time !== time
+    || (value.waveReferenceAt !== null
+      && (!waveReferenceAt || value.waveReferenceAt !== waveReferenceAt))
+    || (waveReferenceAt !== null && Date.parse(waveReferenceAt) > Date.parse(time))) {
+    return 'LAST_MILE_CONTINUATION_TIME';
+  }
+  const activity = value.waveActivityMoment;
+  const normal = value.waveNormalMoment;
+  const tangent = value.waveTangentMoment;
+  if (!finite(activity) || activity < 0 || activity > 1
+    || !finite(normal) || Math.abs(normal) > activity + WAVE_APPROACH_EPSILON
+    || !finite(tangent) || Math.abs(tangent) > activity + WAVE_APPROACH_EPSILON
+    || Math.hypot(normal, tangent) > activity + WAVE_APPROACH_EPSILON) {
+    return 'LAST_MILE_CONTINUATION_MOMENTS';
+  }
+  const statuses = new Set(Object.values(RAVSCORE_WAVE_APPROACH_STATUS));
+  const readyStatus = RAVSCORE_WAVE_APPROACH_POLICY.readyStatuses.includes(value.status);
+  if (typeof value.readiness !== 'boolean'
+    || !statuses.has(value.status)
+    || value.readiness !== readyStatus) {
+    return 'LAST_MILE_CONTINUATION_READINESS';
+  }
+  const exactZeroMoments = activity === 0 && normal === 0 && tangent === 0;
+  if ((readyStatus && waveReferenceAt !== time)
+    || (value.status === RAVSCORE_WAVE_APPROACH_STATUS.COLD_START
+      && (waveReferenceAt !== time || !exactZeroMoments))
+    || (value.status === RAVSCORE_WAVE_APPROACH_STATUS.MISSING_INPUT
+      && waveReferenceAt !== null && Date.parse(waveReferenceAt) >= Date.parse(time))
+    || (value.status === RAVSCORE_WAVE_APPROACH_STATUS.MISSING_INPUT
+      && waveReferenceAt === null && !exactZeroMoments)) {
+    return 'LAST_MILE_CONTINUATION_REFERENCE';
+  }
+  const latestEnergy = value.latestWaveEnergyWeight;
+  const latestNormal = value.latestWaveNormalAlignment;
+  const latestTangent = value.latestWaveTangentAlignment;
+  const latestAllNull = latestEnergy === null
+    && latestNormal === null
+    && latestTangent === null;
+  const latestAllPresent = latestEnergy !== null
+    && latestNormal !== null
+    && latestTangent !== null;
+  const latestExactZeroVector = latestNormal === 0 && latestTangent === 0;
+  const latestUnitVector = latestAllPresent
+    && Math.abs(Math.hypot(latestNormal, latestTangent) - 1) <= WAVE_APPROACH_EPSILON;
+  if ((waveReferenceAt === null ? !latestAllNull : !latestAllPresent)
+    || (latestAllPresent && !latestExactZeroVector && !latestUnitVector)
+    || (latestExactZeroVector && latestEnergy !== 0)
+    || (latestEnergy !== null
+      && (!finite(latestEnergy) || latestEnergy < 0 || latestEnergy > 1))
+    || (latestNormal !== null
+      && (!finite(latestNormal) || latestNormal < -1 || latestNormal > 1))
+    || (latestTangent !== null
+      && (!finite(latestTangent) || latestTangent < -1 || latestTangent > 1))) {
+    return 'LAST_MILE_CONTINUATION_LATEST_VECTOR';
+  }
+  return 'LAST_MILE_CONTINUATION_OTHER';
+}
+
 // Replay exceptions are collapsed to a fixed, payload-free vocabulary. This
 // keeps production diagnostics useful without logging state, evidence,
 // coordinates or provider values.
-export function stateReplayFailureKind(error) {
+export function stateReplayFailureKind(error, state = null) {
   const message = error instanceof Error ? error.message : '';
   const rules = [
     [/model metadata|state model/i, 'MODEL_BINDING'],
@@ -586,6 +675,13 @@ export function stateReplayFailureKind(error) {
     [/native-hold proof|native-hold interval/i, 'NATIVE_HOLD_PROOF'],
     [/current evidence|signed current evidence|supply state/i, 'CURRENT_EVIDENCE'],
     [/current bounds/i, 'CURRENT_BOUNDS'],
+    [/wave-approach continuation has an incompatible exact schema/i,
+      'LAST_MILE_CONTINUATION_SCHEMA'],
+    [/wave-approach continuation is internally inconsistent/i,
+      waveApproachContinuationFailureKind(state?.waveApproachState)],
+    [/wave-approach state is not bound to parent time/i, 'LAST_MILE_PARENT_TIME'],
+    [/last-mile point lies outside its history bounds/i, 'LAST_MILE_HISTORY_POINT'],
+    [/exact last-mile history must have collapsed tracks/i, 'LAST_MILE_HISTORY_BOUNDS'],
     [/wave-approach|last-mile/i, 'LAST_MILE_STATE'],
     [/wave point|wave history|wave state|wave mobilisation/i, 'WAVE_STATE'],
     [/history bounds/i, 'HISTORY_BOUNDS'],
@@ -1629,7 +1725,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       stateReplayCount += 1;
     } catch (error) {
       collector.fail('STATE_REPLAY_FAILED');
-      const kind = stateReplayFailureKind(error);
+      const kind = stateReplayFailureKind(error, state);
       stateReplayFailureCounts[kind] = (stateReplayFailureCounts[kind] ?? 0) + 1;
     }
 

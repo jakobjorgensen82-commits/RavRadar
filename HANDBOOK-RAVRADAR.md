@@ -1,6 +1,31 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.409
+**Håndbogsversion:** 4.0.410
+
+## 89.14 4.0.410 – Kontrolfund må ikke gøre gyldige prognoser gamle
+
+Den almindelige vejrkørsel `35320738621` kom gennem hele vejropbygningen og
+beviste, at 4.0.409-rettelsen virker. Den stoppede først bagefter, fordi alle
+673 kystdeles scoretilstand ramte den samme brede last-mile-fejl i en audit.
+Dermed blev resten af kontrollerne aldrig kørt, og de friske prognoser blev
+ikke lagt online.
+
+Fra 4.0.410 forsøger normal drift alle uafhængige kontroller og samler deres
+udfald i én rapport uden private data. En fejl i en scoreaudit, test eller
+readiness-kontrol kan gøre den berørte score utilgængelig og skal rettes, men
+den må ikke alene blokere gyldige vejrdata eller resten af RavRadar.
+
+Det betyder ikke, at alt ignoreres. RavRadar stopper fortsat, hvis target går
+baglæns, koden ikke er den aktuelle main, artifactet ikke kan bygges, privat
+state ikke kan bevares, Pages kan lække private data, eller deploypakken ikke
+kan forsegles sikkert. Ved sådan en fejl bliver den eksisterende side stående.
+
+Den næste almindelige kørsel uploader både auditten og den samlede rapport.
+Den brede last-mile-fejl opdeles samtidig i konkrete underårsager, så den kan
+rettes uden igen at holde friske prognoser tilbage. RavScore-formel, vægte og
+modelbundle er uændrede. 4.0.410 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=d9ba75ed7f7ff2b477676e418a3ede61adf90b00aca77259bb6ccd73ee3f2906`
+over 56 kanonisk normaliserede transitive implementeringsfiler.
 
 ## 89.13 4.0.409 – Nyeste gyldige prognosekomponent vinder
 

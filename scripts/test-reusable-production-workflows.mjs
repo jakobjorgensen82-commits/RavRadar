@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 
+// Keep the payload-free operational control report inside this existing cheap
+// workflow command so the source gate does not grow another process.
+await import('./test-weather-operational-control-summary.mjs');
+
 import {
   PRODUCTION_WORKFLOW_INTERFACES,
   PRODUCTION_WORKFLOW_ROLES,

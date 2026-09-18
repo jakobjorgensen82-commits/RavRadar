@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – lokal 4.0.410 driftskontroller uden prognosestop
+
+- [x] Lever 4.0.409 via exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.
+- [x] Kør normal weather `35320738621`; gennemfør provider-, closure-, historik-, central weather-, proveniens- og runtimeled.
+- [x] Livebevis 4.0.409: den gamle `RAVSCORE_RECOVERY_REPLAY_CONFLICT` kom ikke igen.
+- [x] Afgræns stoppet til 673 runtime-replayfund i den brede kategori `LAST_MILE_STATE`; 420 aktuelle modes var utilgængelige.
+- [x] Gør runtimeaudit, artifactkontroller og øvrige uafhængige driftskontroller fortsættende med synlige udfald.
+- [x] Tilføj én payloadfri samlet driftsrapport og upload runtimeauditten for alle normale builds.
+- [x] Bevar hårde target-/main-, private-state-, privacy-, artifact- og deploygrænser.
+- [x] Opdel continuation i skema, tid, momenter, readiness, reference og seneste vektor og skeln parent-time/historikgrænser uden at logge state, koordinater eller vejrpayload.
+- [x] Afslut målrettede tests, RDKS/changelog/håndbog, version, diff og rent geodataversionsbevis.
+- [ ] Commit/push, bestå én exact-head, merge og lever 4.0.410 providerfrit.
+- [ ] Kør én normal weather på gemte cacher; verificér rapport, deploy, levende prognoser og den præcise replayårsag.
+- [ ] Ret replayårsagen og bevis næste normale cachevedligeholdelse før scheduler og roadmap.
+
+DEC-0193. Ingen oneoff; RavScore-formel og modelbundle er uændrede.
+
 # Aktuel implementeringsstatus – lokal 4.0.409 nyeste gyldige komponent
 
 - [x] Lever 4.0.408 via exact-head `35310381268`, PR #352, main `891b5f3c` og code-only `35310919329`.

@@ -432,7 +432,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.409 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.410 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -705,7 +705,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.409 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.410 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
@@ -732,7 +732,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.409 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.410 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
@@ -1129,7 +1129,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.409 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.410 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1637,7 +1637,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.409 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.410 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1665,7 +1665,11 @@ jobs:
         run: node scripts/generate-public-conditions.mjs
 
       - name: Audit runtime and collect independent cutover validation failures
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        # A model/control finding must remain visible, but it must not prevent
+        # a normal weather run from publishing otherwise valid fresh data.
+        # Artifact construction, source authority and privacy remain separate
+        # hard safety boundaries below.
+        continue-on-error: true
         id: ravscore-integrated-runtime-audit
         if: steps.preflight.outputs.should_run == 'true'
         shell: bash
@@ -1714,9 +1718,15 @@ jobs:
             echo "release_gate_outcome=$release_gate_outcome" >> "$GITHUB_OUTPUT"
             node scripts/cutover-validation-report.mjs check --input "$report_path"
           else
+            runtime_audit_outcome="success"
             node scripts/audit-ravscore-integrated-public-runtime.mjs \
               --input data/live/conditions.json \
-              --output "$audit_path"
+              --output "$audit_path" \
+              || runtime_audit_outcome="failure"
+            echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
+            if test "$runtime_audit_outcome" = "failure"; then
+              echo "::warning title=RavScore runtime audit::The audit found one or more model/state issues. The issues are retained in the payload-free audit report; valid weather publication continues."
+            fi
           fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
           rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"
@@ -1729,6 +1739,16 @@ jobs:
           echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"
           echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"
           echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the payload-free runtime audit for every weather build
+        continue-on-error: true
+        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-runtime-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload the incremental payload-free full-validation report
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
@@ -1790,12 +1810,14 @@ jobs:
           echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Generate and strictly validate production reference zones
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: production-reference-zones
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Ensure exact historical Candidate G source is present for full validation
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: historical-source-prepare
         if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
         shell: bash
         run: |
@@ -1810,7 +1832,7 @@ jobs:
           test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
 
       - name: Validate critical production artifact after fresh weather and current provenance
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
         id: full-validation
         if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
         env:
@@ -1821,7 +1843,7 @@ jobs:
           --output .geometry-v2-work/production-artifact-validation-report.json
 
       - name: Run release governance gate after refreshed data validation
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
         id: release-gate
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
         run: npm run release:gate:production
@@ -1911,7 +1933,8 @@ jobs:
           echo "closure_sha256=$closure_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Require exact integrated backend and Edge readiness before integrated Pages
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: integrated-backend-readiness
         if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
         shell: bash
         run: |
@@ -1930,12 +1953,14 @@ jobs:
           RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
 
       - name: Validate updated weather cache
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: updated-weather-validation
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
         run: npm run validate:data
 
       - name: Verify active trip-storage Edge and D1 read contracts without creating data
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: trip-storage-contract-check
         if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true'
         run: |
           node scripts/verify-trip-storage-edge.mjs
@@ -1959,6 +1984,7 @@ jobs:
 
       - name: Reconfirm current origin/main before protected writes and Pages artifact
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: prewrite-main-authority
         if: steps.preflight.outputs.should_run == 'true'
         shell: bash
         env:
@@ -1970,7 +1996,8 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Atomically promote the validated point candidate in central admin storage
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: point-candidate-promotion
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: python scripts/promote-coastal-point-activation.py
         env:
@@ -2029,6 +2056,7 @@ jobs:
 
       - name: Save dataminimized weather preflight state
         continue-on-error: true
+        id: weather-preflight-state-save
         if: steps.weather-preflight-state-build.outcome == 'success' && (env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'))
         uses: actions/cache/save@v6
         with:
@@ -2037,6 +2065,7 @@ jobs:
 
       - name: Build private production runtime bundle specification
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: private-runtime-bundle-spec
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success')
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-spec
@@ -2046,6 +2075,7 @@ jobs:
 
       - name: Create the next private production runtime bundle atomically
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: private-runtime-bundle-create
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success')
         shell: bash
         run: |
@@ -2062,6 +2092,7 @@ jobs:
 
       - name: Reconfirm current main before protected private-runtime write
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: private-runtime-write-authority
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success')
         shell: bash
         run: |
@@ -2071,6 +2102,7 @@ jobs:
 
       - name: Publish bounded private runtime with one protected rollback generation
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: private-runtime-publish
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')
         run: >-
           node scripts/protected-private-production-runtime.mjs
@@ -2086,6 +2118,7 @@ jobs:
 
       - name: Prove the private runtime object is not anonymously readable
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: private-runtime-anon-audit
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success')
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
@@ -2202,10 +2235,12 @@ jobs:
       - name: Generate implementation and coverage audit
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'
         continue-on-error: true
+        id: implementation-plan-audit
         run: npm run audit:implementation-plan
 
       - name: Verify DMI station inventory for admin map
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: dmi-station-inventory
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success')
         run: |
           python - <<'PY'
@@ -2261,6 +2296,7 @@ jobs:
 
       - name: Reconfirm current origin/main immediately before protected admin sync
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: protected-admin-write-authority
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'
         shell: bash
         env:
@@ -2272,7 +2308,8 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Sync protected admin data to Supabase
-        continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        continue-on-error: true
+        id: protected-admin-sync
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'candidate-dry-run')
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -2383,6 +2420,7 @@ jobs:
 
       - name: Seal privacy-safe operational deploy handoff
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
+        id: operational-handoff-seal
         if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'
         shell: bash
         run: |
@@ -2479,6 +2517,57 @@ jobs:
             echo "Operational deploy handoff contains forbidden private fields."
             exit 1
           fi
+
+      - name: Collect every operational control outcome without blocking valid weather
+        continue-on-error: true
+        id: operational-control-summary
+        if: always() && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        run: >-
+          node scripts/weather-operational-control-summary.mjs
+          --output .geometry-v2-work/weather-operational-control-summary.json
+          --source-head "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --check "runtime-audit|diagnostic|${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome || steps.ravscore-integrated-runtime-audit.outcome }}"
+          --check "reference-zones|diagnostic|${{ steps.production-reference-zones.outcome }}"
+          --check "historical-source|diagnostic|${{ steps.historical-source-prepare.outcome }}"
+          --check "full-validation|diagnostic|${{ steps.full-validation.outcome }}"
+          --check "release-gate|diagnostic|${{ steps.release-gate.outcome }}"
+          --check "integrated-backend-readiness|diagnostic|${{ steps.integrated-backend-readiness.outcome }}"
+          --check "updated-weather-validation|diagnostic|${{ steps.updated-weather-validation.outcome }}"
+          --check "trip-storage-contract|diagnostic|${{ steps.trip-storage-contract-check.outcome }}"
+          --check "prewrite-target-freshness|safety|${{ steps.prewrite-target-freshness.outcome }}"
+          --check "prewrite-main-authority|safety|${{ steps.prewrite-main-authority.outcome }}"
+          --check "point-candidate-promotion|operation|${{ steps.point-candidate-promotion.outcome }}"
+          --check "checkpoint-disposition|safety|${{ steps.checkpoint-disposition.outcome }}"
+          --check "checkpoint-build|safety|${{ steps.checkpoint-build.outcome }}"
+          --check "checkpoint-save|safety|${{ steps.checkpoint-save.outcome }}"
+          --check "checkpoint-publish|safety|${{ steps.checkpoint-publish.outcome }}"
+          --check "weather-preflight-state-build|operation|${{ steps.weather-preflight-state-build.outcome }}"
+          --check "weather-preflight-state-save|operation|${{ steps.weather-preflight-state-save.outcome }}"
+          --check "private-runtime-bundle-spec|safety|${{ steps.private-runtime-bundle-spec.outcome }}"
+          --check "private-runtime-bundle-create|safety|${{ steps.private-runtime-bundle-create.outcome }}"
+          --check "private-runtime-write-authority|safety|${{ steps.private-runtime-write-authority.outcome }}"
+          --check "private-runtime-publish|safety|${{ steps.private-runtime-publish.outcome }}"
+          --check "private-runtime-anon-audit|safety|${{ steps.private-runtime-anon-audit.outcome }}"
+          --check "implementation-plan-audit|diagnostic|${{ steps.implementation-plan-audit.outcome }}"
+          --check "dmi-station-inventory|diagnostic|${{ steps.dmi-station-inventory.outcome }}"
+          --check "protected-admin-write-authority|safety|${{ steps.protected-admin-write-authority.outcome }}"
+          --check "protected-admin-sync|operation|${{ steps.protected-admin-sync.outcome }}"
+          --check "pages-build|safety|${{ steps.pages-build.outcome }}"
+          --check "pages-privacy|safety|${{ steps.pages-privacy.outcome }}"
+          --check "operational-handoff-seal|safety|${{ steps.operational-handoff-seal.outcome }}"
+
+      - name: Upload the payload-free operational control summary
+        continue-on-error: true
+        if: always() && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/weather-operational-control-summary.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: weather-operational-controls-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .geometry-v2-work/weather-operational-control-summary.json
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Decide whether this sealed artifact may deploy
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
