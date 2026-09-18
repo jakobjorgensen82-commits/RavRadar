@@ -1,3 +1,20 @@
+# Aktiv roadmap – 4.0.420 fra offentlig vejropdatering til samlet drift
+
+1. [x] Gennemfør normal weather `35374238410` med alle providere, gemte caches,
+   fulde produktionsgates, Pages og offentlig 210/673-verifikation.
+2. [x] Afgræns den sene fejl til central readiness på forgængerens head.
+3. [x] Bevis at ukendt public-ahead-central stopper før mutation i
+   providerfri `35379571657`.
+4. [x] Fastlås en engangsregel til de eksakte centrale og offentlige beviser;
+   kræv 79/79 filer og nul manglende filer.
+5. [ ] Afslut versions-/RDKS-/håndbogs- og geodatakontroller.
+6. [ ] Commit/push, bestå én exact-head, merge og lever 4.0.420 providerfrit.
+7. [ ] Verificér offentlig version, 19-tiden, scorevisning og central reseal.
+8. [ ] Kør og bevis næste almindelige vedligeholdelse; genaktivér først derefter
+   scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0203. Ingen oneoff; ingen ny vejrprovider i rettelsesleveringen.
+
 # Aktiv roadmap – 4.0.419 fra kontraktstop til almindelig weather
 
 1. [x] Lever 4.0.418 source gennem exact-head `35366221956`, PR #362 og main `9573264f`.

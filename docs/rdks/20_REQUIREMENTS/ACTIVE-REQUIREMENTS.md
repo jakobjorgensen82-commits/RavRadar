@@ -1,3 +1,24 @@
+# Aktuelt ejerdelta – 2026-09-18 – eksakt komplet public-ahead recovery
+
+- **REQ-4.0.420-EXACT-PAIR-001 – BINDENDE:** Kun central version 27 fra
+  `pages-35371475804-1` og offentlig `pages-35374238410-1` må bruge den
+  aktuelle engangsgenopretning.
+- **REQ-4.0.420-ALL-EVIDENCE-002 – BINDENDE:** Heads, deployments, artifact-id
+  og -digest samt manifest-, modelbindings-, browserluknings- og
+  implementeringshashes skal matche eksakt; ukendt drift stopper før mutation.
+- **REQ-4.0.420-COMPLETE-SOURCE-003 – BINDENDE:** Kilden skal have præcis
+  79/79 browserfiler og nul manglende filer. Engangsreglen må ikke skjule 404.
+- **REQ-4.0.420-NO-PROVIDER-004 – BINDENDE:** Rettelsesleveringen bruger
+  code-only og må ikke kalde vejrprovidere eller ændre gemte caches.
+- **REQ-4.0.420-TARGET-STRICT-005 – BINDENDE:** Det nye mål skal bestå normal
+  komplet closure, artifact/privacy, Pages-verifikation og central afslutning
+  uden source-undtagelsen.
+- **REQ-4.0.420-LIVE-PROOF-006 – ÅBEN P0:** Exact-head, merge, providerfri
+  deploy, central reseal og Chrome-kontrol mangler; derefter bevises næste
+  normale vedligeholdelse før scheduler.
+
+DEC-0203. RavScore, vejr, rotation, geometri og punkter er uændrede.
+
 # Aktuelt ejerdelta – 2026-09-18 – model-neutral kontraktombinding
 
 - **REQ-4.0.419-TRANSITION-KIND-001 – BINDENDE:** Code-only og Pages skal bruge den forseglede migrations `transitionKind`; `CONTRACT_ONLY_REBIND` må ikke behandles som en score-reparation.

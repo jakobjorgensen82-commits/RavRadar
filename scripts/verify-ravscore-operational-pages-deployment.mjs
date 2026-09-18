@@ -189,6 +189,39 @@ function exactKeys(value, fields) {
     && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...fields].sort());
 }
 
+export function assertKnownSourceRepairBrowserClosure({
+  knownSourceRepair,
+  expectedPublicFileCount,
+  missingPublicFiles,
+} = {}) {
+  if (!knownSourceRepair || !Object.hasOwn(knownSourceRepair, 'knownMissingPublicFile')
+    || !Number.isSafeInteger(knownSourceRepair.expectedPublicFileCount)
+    || knownSourceRepair.expectedPublicFileCount < 1
+    || !Number.isSafeInteger(expectedPublicFileCount)
+    || !Array.isArray(missingPublicFiles)) {
+    throw new Error('Known public source repair browser closure policy is incompatible');
+  }
+  const expectedMissing = knownSourceRepair.knownMissingPublicFile;
+  if (expectedMissing !== null
+    && (!exactKeys(expectedMissing, ['path', 'sha256', 'expectedHttpStatus'])
+      || typeof expectedMissing.path !== 'string'
+      || !SHA256_PATTERN.test(String(expectedMissing.sha256 ?? ''))
+      || !Number.isSafeInteger(expectedMissing.expectedHttpStatus))) {
+    throw new Error('Known public source repair missing-file policy is incompatible');
+  }
+  const exactMissing = expectedMissing === null
+    ? missingPublicFiles.length === 0
+    : missingPublicFiles.length === 1
+      && exactKeys(missingPublicFiles[0], ['path', 'sha256', 'httpStatus'])
+      && missingPublicFiles[0].path === expectedMissing.path
+      && missingPublicFiles[0].sha256 === expectedMissing.sha256
+      && missingPublicFiles[0].httpStatus === expectedMissing.expectedHttpStatus;
+  if (expectedPublicFileCount !== knownSourceRepair.expectedPublicFileCount || !exactMissing) {
+    throw new Error('Known public source repair does not have its exact pinned browser closure');
+  }
+  return true;
+}
+
 export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
   assertExactPublicRavScoreModelBindingShape(binding, 'sealed bundle binding');
   if (!MODEL_MODES[model]) throw new Error('Sealed bundle model is unknown');
@@ -307,6 +340,7 @@ async function verifyPublicImplementationClosure({
   fetchImpl,
   knownSourceRepair = null,
 }) {
+  const expectedMissingPublicFile = knownSourceRepair?.knownMissingPublicFile ?? null;
   const sealedIdentity = computeSealedPublicImplementationClosureIdentity({
     expectedModel,
     expectedBinding,
@@ -344,7 +378,7 @@ async function verifyPublicImplementationClosure({
       bytes = await fetchBytes(fetchImpl,
         withCacheBuster(baseUrl, item.path, sourceHead, observationNonce), item.path);
     } catch (error) {
-      const allowed = knownSourceRepair?.knownMissingPublicFile;
+      const allowed = expectedMissingPublicFile;
       if (!allowed || item.path !== allowed.path || item.sha256 !== allowed.sha256
         || error?.message !== `${item.path} returned HTTP ${allowed.expectedHttpStatus}`) {
         throw error;
@@ -360,11 +394,12 @@ async function verifyPublicImplementationClosure({
       throw new Error(`Deployed public browser implementation closure drifted: ${item.path}`);
     }
   }
-  if (knownSourceRepair !== null
-    && (expectedPublicClosure.files.length !== knownSourceRepair.expectedPublicFileCount
-      || missingPublicFiles.length !== 1
-      || missingPublicFiles[0].path !== knownSourceRepair.knownMissingPublicFile.path)) {
-    throw new Error('Known public source repair does not have its one exact missing browser file');
+  if (knownSourceRepair !== null) {
+    assertKnownSourceRepairBrowserClosure({
+      knownSourceRepair,
+      expectedPublicFileCount: expectedPublicClosure.files.length,
+      missingPublicFiles,
+    });
   }
   if (sha256(contractBytes) !== sealedIdentity.contractFileSha256
     || sha256(bundleBytes) !== sealedIdentity.generatedBundleFileSha256) {

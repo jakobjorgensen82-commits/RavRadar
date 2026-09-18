@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.420 public-ahead central recovery
+
+- **ISSUE-NORMAL-WEATHER-35374238410 – DATA OG PAGES GENNEMFØRT:** Alle
+  provider-, cache-, build-, gate-, artifact-, privacy- og Pages-trin er
+  gennemført; offentlig pakke er 210/673 og 79/79.
+- **ISSUE-PUBLIC-AHEAD-CENTRAL-27 – RETTET LOKALT / LIVEBEVIS MANGLER:** Den
+  sene reseal afviste source `779fd7a9`, fordi readiness stod på `1ec8358f`.
+  4.0.420 fastlåser netop denne komplette kombination.
+- **ISSUE-CODE-ONLY-35379571657 – SIKKERT STOP / INGEN MUTATION:** Den gamle
+  policy afviste offentlig-ahead-central før writes, provider og deploy.
+- **ISSUE-4.0.420-LIVE – ÅBEN P0:** Exact-head, merge, providerfri code-only,
+  central afslutning og Chrome-kontrol mangler.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** En efterfølgende almindelig
+  cachevedligeholdelse mangler fortsat før scheduler genaktiveres.
+
+DEC-0203. Ingen oneoff eller provider i rettelsesdeployet.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.419 model-neutral kontraktombinding
 
 - **ISSUE-4.0.418-SOURCE – LUKKET:** Exact-head `35366221956`, PR #362 og main `9573264f` er gennemført.

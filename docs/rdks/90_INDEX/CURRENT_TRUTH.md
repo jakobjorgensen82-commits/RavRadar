@@ -1,3 +1,21 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.420 samler Pages og central status
+
+Normal weather `35374238410` gennemførte DMI, Copernicus, regional DMI og
+Open-Meteo, gemte caches, byggede og validerede den fulde produktionspakke og
+deployede/verificerede Pages med 210/673 og 79/79 browserfiler. Chrome viser
+den nye vejrtid fra kl. 19 dansk tid, men stadig 4.0.419 i begrænset nøddrift.
+
+Kun den sene centrale afslutning fejlede: readiness pegede på main
+`1ec8358f`, mens den offentlige pakke kom fra `779fd7a9`. Providerfri
+`35379571657` stoppede derefter sikkert før writes og deploy, fordi Pages var
+foran central status uden en eksakt reparationsregel.
+
+Lokal 4.0.420 fastlåser netop central version 27 og den komplette offentlige
+kilde gennem alle source-, deployment-, artifact-, manifest-, binding- og
+closureidentiteter. Kilden skal have nul manglende filer. Næste: exact-head,
+merge, providerfri code-only, central afslutning og Chrome-kontrol. Ingen ny
+weather eller oneoff i rettelsesleveringen. DEC-0203.
+
 # NYESTE SANDHED – 2026-09-18 – 4.0.419 er live; normal weather genåbnes afgrænset
 
 4.0.419 bestod exact-head `35370864611`, blev merged gennem PR #363 som main

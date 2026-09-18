@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.420 public-ahead recovery
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.420-public-ahead-recovery`, fra main
+`779fd7a9a022f64a496a27323cdb7216d809d0e4`.
+
+Normal weather `35374238410` gennemførte alle providere og fulde gates,
+deployede Pages og blev offentligt verificeret 210/673 med 79/79 browserfiler.
+Chrome viser vejrtid kl. 19 dansk, men stadig 4.0.419 i begrænset nøddrift.
+Kun central reseal fejlede: readiness stod på `1ec8358f`, mens source var
+`779fd7a9`. Providerfri `35379571657` stoppede korrekt før writes/deploy på
+manglende eksakt repairpolicy.
+
+4.0.420 låser netop central version 27, deployment `pages-35371475804-1` og
+den offentlige `pages-35374238410-1` gennem alle artifacts og hashes. Kilden
+kræver 79/79 og nul manglende filer. Målrettede Pages-, code-only- og
+aktiveringskontroller er grønne. Næste: docs/version/geodatabevis, commit,
+push, én exact-head, merge, providerfri code-only og Chrome/central-kontrol.
+Ingen ny weather eller oneoff før 4.0.420 er samlet online. DEC-0203.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.419 live, manuel normal weather klar
 
 Arbejd i `RavRadar-4.0.396`, branch

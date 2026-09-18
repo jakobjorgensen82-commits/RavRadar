@@ -1,3 +1,13 @@
+## 4.0.420 – eksakt samling af komplet offentlig kilde og central status (2026-09-18)
+
+- Normal weather `35374238410` gennemførte hele provider- og byggekæden,
+  deployede og offentligt verificerede 210/673 med 79/79 browserfiler.
+- Den sene centrale afslutning stoppede på gammel readiness-head; Pages er
+  derfor foran central status, selv om model og implementering matcher.
+- 4.0.420 accepterer kun den eksakte fastlåste central/offentlig-kombination
+  og leverer målpakken providerfrit. Ukendt drift og enhver manglende fil
+  afvises. Se CHANGELOG-4.0.420.md og DEC-0203.
+
 ## 4.0.419 – model-neutral privat runtimeombinding (2026-09-18)
 
 - 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men

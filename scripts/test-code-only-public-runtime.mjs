@@ -19,6 +19,16 @@ import {
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { resolveCodeOnlyPublicSource } from './resolve-code-only-public-source.mjs';
+import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
+  './lib/ravscore-known-public-source-repair.mjs';
+
+assert.equal(SOURCE_REPAIR.id, 'public-ahead-weather-4.0.420-v1');
+assert.equal(SOURCE_REPAIR.centralVersion, 27);
+assert.equal(SOURCE_REPAIR.sourceRunId, 35374238410);
+assert.equal(SOURCE_REPAIR.sourceHead, '779fd7a9a022f64a496a27323cdb7216d809d0e4');
+assert.equal(SOURCE_REPAIR.sourceArtifactId, 10560987527);
+assert.equal(SOURCE_REPAIR.expectedPublicFileCount, 79);
+assert.equal(SOURCE_REPAIR.knownMissingPublicFile, null);
 
 assert.equal(
   CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,

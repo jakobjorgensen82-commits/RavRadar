@@ -1,3 +1,12 @@
+# 2026-09-18 – 4.0.420 samler komplet offentlig vejropdatering med central status
+
+- Normal weather `35374238410` gennemførte alle providere, gemte caches og
+  deployede/verificerede en komplet 210/673- og 79/79-pakke.
+- Den sene centrale afslutning stoppede alene på gammel readiness-head, så
+  Pages er foran central status.
+- Providerfri `35379571657` afviste sikkert den ukendte kombination før
+  mutation; 4.0.420 fastlåser den eksakte engangsgenopretning. DEC-0203.
+
 # 2026-09-18 – 4.0.419 skelner kontraktombinding fra scoreændring
 
 - 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men er endnu ikke live.

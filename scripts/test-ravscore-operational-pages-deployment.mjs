@@ -8,6 +8,7 @@ import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import {
+  assertKnownSourceRepairBrowserClosure,
   computeSealedPublicImplementationClosureIdentity,
   verifyRavScoreOperationalPagesDeployment,
 } from './verify-ravscore-operational-pages-deployment.mjs';
@@ -37,6 +38,36 @@ const MODEL_CLOSURE = Object.freeze([
   'js/services/rav-assistant.js',
   'js/services/trip-evidence-public-adapter.js',
 ]);
+const completeSourceRepair = Object.freeze({
+  expectedPublicFileCount: 79,
+  knownMissingPublicFile: null,
+});
+assert.equal(assertKnownSourceRepairBrowserClosure({
+  knownSourceRepair: completeSourceRepair,
+  expectedPublicFileCount: 79,
+  missingPublicFiles: [],
+}), true, 'a pinned complete 79/79 source must be repairable without inventing a missing file');
+assert.throws(() => assertKnownSourceRepairBrowserClosure({
+  knownSourceRepair: completeSourceRepair,
+  expectedPublicFileCount: 79,
+  missingPublicFiles: [{
+    path: 'unexpected.js', sha256: 'a'.repeat(64), httpStatus: 404,
+  }],
+}), /exact pinned browser closure/,
+'a complete source repair must reject any missing browser file');
+const oneMissingSourceRepair = Object.freeze({
+  expectedPublicFileCount: 79,
+  knownMissingPublicFile: Object.freeze({
+    path: 'known-missing.js', sha256: 'b'.repeat(64), expectedHttpStatus: 404,
+  }),
+});
+assert.equal(assertKnownSourceRepairBrowserClosure({
+  knownSourceRepair: oneMissingSourceRepair,
+  expectedPublicFileCount: 79,
+  missingPublicFiles: [{
+    path: 'known-missing.js', sha256: 'b'.repeat(64), httpStatus: 404,
+  }],
+}), true, 'the older one-file repair shape must remain exact and supported');
 const INDEX_HTML = '<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://unpkg.com"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script type="module" src="bootstrap.js?v=4.0.308"></script>';
 const ADMIN_HTML = '<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://unpkg.com"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script type="module" src="js/ui/admin-dashboard.js?v=4.0.308"></script>';
 const normalizedSource = value => String(value)

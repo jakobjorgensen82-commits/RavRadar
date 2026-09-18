@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.419",
+  "handbookVersion": "4.0.420",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-18",
   "sections": [
+    {
+      "id": "exact-complete-public-source-recovery-4-0-420",
+      "chapter": "89.24",
+      "title": "4.0.420 – En komplet offentlig vejropdatering samles sikkert",
+      "summary": "Den offentlige 79/79-pakke er foran central status og genforbindes kun gennem alle eksakte beviser.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den almindelige vejrkørsel og selve hjemmesidens opdatering lykkedes. Kun den efterfølgende centrale registrering stod stadig på committen før den manuelle vejrindgang.</div><div class=\"handbook-stack\"><p>4.0.420 genkender kun netop den kendte centrale post og den allerede offentlige pakke. Source-head, deployments, artifact, manifest, modelbinding og begge closures skal alle matche de fastlåste værdier.</p><p>Kilden er komplet og skal have 79 af 79 browserfiler. En uventet manglende fil eller anden drift stopper før skrivning.</p><p>Rettelsen leveres providerfrit på de gemte vejrdata. RavScore, providerprioritet, DMI-rotation, vejr og geometri ændres ikke.</p></div>"
+    },
     {
       "id": "model-neutral-private-runtime-rebind-4-0-419",
       "chapter": "89.23",
@@ -756,7 +763,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.419 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.420 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.416 ændrer ikke scoreformlen eller vægtene; versionen fører den kendte gemte last-mile-state gennem den sikre kanoniske reparation uden providerkald.</div><div class=\"handbook-stack\"><p><strong>Aktuel rettelse:</strong> Hvis ny usikkerhed opstår efter en konservativ nulstilling, bliver det gemte historikinterval udvidet til også at indeholde det fortsat gyldige punktspor. Privat ombinding tillader kun denne faktiske kanoniske ændring i minimums- og maksimumssporet; alle andre state-, vejr- eller måleændringer afvises.</p><p><strong>Driftsgenopretning:</strong> Central version 24 er registreret, den append-only binding er installeret, og samme-time code-only kan genbruge den eksakte beskyttede 4.0.410-runtime. Candidate, retur og cutover forbliver afvist.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop.</div></div>"
     },
