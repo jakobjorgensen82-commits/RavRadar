@@ -488,6 +488,17 @@ for (const marker of [
   'Known public source repair artifact seal is not exact',
   '--source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"',
 ]) assert.ok(pagesWorkflow.includes(marker), `Pages code-only-kontrakt mangler ${marker}`);
+const handoffIdentityStart = pagesWorkflow.indexOf('- name: Verify exact privacy-safe handoff identity');
+const handoffIdentityEnd = pagesWorkflow.indexOf('\n      - name:', handoffIdentityStart + 1);
+const handoffIdentity = pagesWorkflow.slice(handoffIdentityStart, handoffIdentityEnd);
+assert.ok(handoffIdentity.includes('integrated|integrated-historical-maintenance) ;;'),
+  'Eksakt public-source-repair skal tillade både allerede aktiv integrated og historisk maintenance');
+const integratedSourceRepairCondition =
+  "(inputs.operational_action == 'integrated' && inputs.source_repair_id != '')";
+assert.equal(pagesWorkflow.split(integratedSourceRepairCondition).length - 1, 4,
+  'Allerede aktiv integrated repair skal observere, gendanne, verificere og gemme source-evidens');
+assert.ok(pagesWorkflow.includes('integrated) source_model="integrated" ;;'),
+  'Allerede aktiv integrated repair skal verificere kilden som integrated');
 const targetVerificationStart = pagesWorkflow.indexOf(
   '- name: Verify deployed exact model, implementation and 210/673 artifact',
 );

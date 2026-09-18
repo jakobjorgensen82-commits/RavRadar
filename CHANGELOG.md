@@ -1,3 +1,13 @@
+## 4.0.422 – aktiv integrated source-repair føres sikkert gennem Pages (2026-09-18)
+
+- 4.0.421-kørsel `35383989821` bestod hele providerfri byggejobbet, inklusive
+  den eksakte audit og alle prewrite-/privacy-/artifactkontroller.
+- Pages stoppede før deploy på en gammel antagelse om, at enhver source-repair
+  skulle være historisk maintenance; den korrekte handling var `integrated`.
+- 4.0.422 tillader begge gyldige integrerede tilstande og kræver stadig
+  manifest-, source-seal-, 79/79- og evidensverifikation før deploy.
+- Target og central afslutning forbliver strenge. Se CHANGELOG-4.0.422.md og DEC-0205.
+
 ## 4.0.421 – eksakt kendt audit fortsætter til de afgørende kontroller (2026-09-18)
 
 - 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.

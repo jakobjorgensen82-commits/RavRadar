@@ -109,7 +109,10 @@ jobs:
           test "$(jq -r '.sourceRepairId // ""' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.source_repair_id }}"
           if [ -n "${{ inputs.source_repair_id }}" ]; then
             test "${{ inputs.code_only_repair }}" = "true"
-            test "${{ inputs.operational_action }}" = "integrated-historical-maintenance"
+            case "${{ inputs.operational_action }}" in
+              integrated|integrated-historical-maintenance) ;;
+              *) echo "Known public source repair requires active integrated operation." >&2; exit 1 ;;
+            esac
           fi
           if [ "${{ inputs.code_only_repair }}" = "true" ]; then
             test -f "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json"
@@ -197,7 +200,7 @@ jobs:
 
       - name: Observe and seal the currently public source manifest
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
-        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || (inputs.operational_action == 'integrated' && inputs.source_repair_id != '') || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
           curl --fail --silent --show-error --location --retry 3 \
@@ -221,7 +224,7 @@ jobs:
 
       - name: Restore the exact sealed active source implementation
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
-        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || (inputs.operational_action == 'integrated-cutover' && inputs.legacy_source_required != 'true')
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || (inputs.operational_action == 'integrated' && inputs.source_repair_id != '') || inputs.operational_action == 'integrated-return' || (inputs.operational_action == 'integrated-cutover' && inputs.legacy_source_required != 'true')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -248,7 +251,7 @@ jobs:
 
       - name: Verify the complete currently public source model before begin CAS
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
-        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || (inputs.operational_action == 'integrated' && inputs.source_repair_id != '') || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
           case "${{ inputs.operational_action }}" in
@@ -266,6 +269,7 @@ jobs:
               ;;
             integrated-return) source_model="candidate-g" ;;
             integrated-historical-maintenance) source_model="integrated" ;;
+            integrated) source_model="integrated" ;;
             integrated-cutover)
               if [ "${{ inputs.legacy_source_required }}" = "true" ]; then
                 node scripts/verify-legacy-candidate-g-source.mjs verify \
@@ -324,7 +328,7 @@ jobs:
 
       - name: Upload privacy-safe source evidence before any activation CAS
         continue-on-error: ${{ inputs.operational_action == 'integrated-cutover' }}
-        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || (inputs.operational_action == 'integrated' && inputs.source_repair_id != '') || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-operational-recovery-${{ github.run_id }}-${{ github.run_attempt }}

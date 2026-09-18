@@ -1,11 +1,11 @@
-import { scoreRating } from './score-presentation.js?v=4.0.421';
+import { scoreRating } from './score-presentation.js?v=4.0.422';
 import {
   RAVSCORE_BEST_TIME_POLICY,
   compareRavScoreBestTimeCandidates,
   ravScoreBestTimeSelectionReason,
-} from './best-time-policy.js?v=4.0.421';
-import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.421';
-import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.421';
+} from './best-time-policy.js?v=4.0.422';
+import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.422';
+import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.422';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const safeCount = value => Number.isSafeInteger(value) && value >= 0;

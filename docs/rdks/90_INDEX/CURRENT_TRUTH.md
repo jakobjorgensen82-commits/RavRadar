@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-18 – lokal 4.0.421 fortsætter kun eksakt kendt audit
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.422 fører aktiv repair gennem Pages
+
+4.0.421-run `35383989821` gennemførte hele det providerfri build med eksakt
+audit, privat runtime, privacy/prewrite, Edge-readiness og Pages-artifact.
+Pages blev ikke ændret: job `105727514271` stoppede i handoff-identiteten,
+fordi en gammel regel krævede historisk maintenance ved source-repair.
+
+Central model og binding er allerede aktive, så handlingen `integrated` er
+korrekt. Lokal 4.0.422 tillader denne handling, men kræver stadig source-
+manifest, eksakt source-seal, fastlåst 79/79-verifikation og evidensupload før
+deploy. Target bruger ingen repair-undtagelse, og central reseal sker efter
+offentlig verifikation. Næste er exact-head, merge, providerfri levering og
+Chrome/central-kontrol. Ingen weather eller oneoff. DEC-0205.
+
+# SANDHED – 2026-09-18 – lokal 4.0.421 fortsætter kun eksakt kendt audit
 
 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
 Providerfri `35381918986` kom forbi den tidligere source-resolver, fandt den

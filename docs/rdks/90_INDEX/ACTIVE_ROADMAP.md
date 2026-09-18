@@ -1,4 +1,19 @@
-# Aktiv roadmap – 4.0.421 fra kendt auditstop til samlet online drift
+# Aktiv roadmap – 4.0.422 fra Pages-handoff til samlet online drift
+
+1. [x] Før 4.0.421 providerfrit gennem eksakt audit, privat runtime, privacy,
+   Edge og artifact i buildjob `105726470812`.
+2. [x] Afgræns Pages-stop før deploy til en falsk historisk-actionregel.
+3. [x] Gennemgå alle source-repair-brug i Pages og før aktiv `integrated`
+   gennem source-manifest, seal, 79/79 og evidensupload.
+4. [x] Bevar target strict og normal central reseal efter verificeret deploy.
+5. [x] Afslut version/RDKS/håndbog, måltests og geodataversionsbevis.
+6. [ ] Commit/push, én exact-head, merge og providerfri 4.0.422 code-only.
+7. [ ] Verificér offentlig version, 19-tiden, scoretilstand og central reseal.
+8. [ ] Fejlsøg 672/420 live, bevis normal cachevedligeholdelse og fortsæt roadmap.
+
+DEC-0205. Ingen oneoff eller vejrprovider i rettelsesleveringen.
+
+# Roadmap – 4.0.421 fra kendt auditstop til samlet online drift
 
 1. [x] Lever 4.0.420 gennem exact-head `35381401273`, PR #365 og main
    `069de220`.

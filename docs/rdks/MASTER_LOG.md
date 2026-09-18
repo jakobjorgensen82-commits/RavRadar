@@ -4141,3 +4141,10 @@ fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
   stoppede før writes/deploy på den samme audit, som kilden allerede bar.
 - DEC-0204 fastlåser tre ens audit-SHA'er under DEC-0203-repair-id'et og
   bevarer alle senere private-, privacy-, artifact-, Pages- og centralchecks.
+
+# 4.0.422 – Aktiv integrated source-repair gennem Pages (2026-09-18)
+
+- 4.0.421-run `35383989821` bestod hele providerfri buildjobbet, men Pages
+  stoppede før deploy på en falsk historisk-actionantagelse.
+- DEC-0205 tillader aktiv `integrated` og kræver samtidig komplet source-
+  manifest-, seal-, 79/79- og evidensverifikation før strict targetdeploy.

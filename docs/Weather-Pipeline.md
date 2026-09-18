@@ -1,5 +1,18 @@
 # Weather Pipeline 1.0
 
+## 4.0.422 – aktiv integrated source-repair gennem Pages
+
+Providerfri `35383989821` gennemførte 4.0.421-buildjobbet med eksakt audit,
+privat runtime, privacy, Edge-readiness og forseglet Pages-artifact. Pages
+stoppede før deploy, fordi handoff-kontrollen kun tillod historisk maintenance
+ved source-repair, mens den allerede aktive centrale model korrekt gav
+handlingen `integrated`.
+
+4.0.422 tillader denne aktive tilstand, men kræver fortsat source-manifest,
+eksakt forseglet source-artifact, fastlåst 79/79-verifikation og source-
+evidens før deploy. Target kontrolleres normalt, og central reseal sker først
+efter offentlig verifikation. Ingen provider eller cache røres.
+
 ## 4.0.421 – eksakt kendt audit føres videre uden ny vejrhentning
 
 4.0.420 blev merged efter grøn exact-head, men providerfri code-only
