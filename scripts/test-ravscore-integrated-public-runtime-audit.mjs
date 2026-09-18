@@ -1488,10 +1488,12 @@ assert.ok(audit(publicShadow, smallPackage, 1, 1).errors
 const incompatibleState = structuredClone(small);
 incompatibleState.coastalParts.parts['synthetic-part-1']
   .ravScoreModel.currentState.schemaVersion = CANDIDATE_G_STATE_SCHEMA_VERSION;
-assert.ok(audit(incompatibleState, smallPackage, 1, 1).errors
-  .includes('STATE_MODEL_BINDING_MISMATCH'));
-assert.ok(audit(incompatibleState, smallPackage, 1, 1).errors
-  .includes('STATE_REPLAY_FAILED'));
+const incompatibleStateReport = audit(incompatibleState, smallPackage, 1, 1);
+assert.ok(incompatibleStateReport.errors.includes('STATE_MODEL_BINDING_MISMATCH'));
+assert.ok(incompatibleStateReport.errors.includes('STATE_REPLAY_FAILED'));
+assert.deepEqual(incompatibleStateReport.continuation.stateReplayFailureCounts,
+  { MODEL_BINDING: 1 },
+  'Replaydiagnostik må kun udlevere en fast fejlklasse og et antal.');
 
 const incompatibleStatePolicy = structuredClone(small);
 incompatibleStatePolicy.coastalParts.parts['synthetic-part-1']
@@ -1519,6 +1521,8 @@ for (const [label, mutate] of [
     `${label} must fail the explicit schema-5 lineage gate`);
   assert.ok(invalidLineageReport.errors.includes('STATE_REPLAY_FAILED'),
     `${label} must fail state replay`);
+  assert.equal(invalidLineageReport.continuation.stateReplayFailureCounts.LINEAGE, 1,
+    `${label} must expose only the payload-free lineage failure class`);
   assert.equal(invalidLineageReport.rollback.readyPartCount, 1,
     `${label} must not damage the independent Candidate G companion`);
   assert.ok(!invalidLineageReport.errors.includes('ROLLBACK_STATE_CONTRACT_MISMATCH'),

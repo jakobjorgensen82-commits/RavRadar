@@ -1,3 +1,10 @@
+# 2026-09-17 – 4.0.407 retter vindmålet og gør replayfejlen konkret
+
+- 4.0.406 blev live gennem exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724`.
+- Normalrun `35253587766` gennemførte DMI, Copernicus og Open-Meteo, gemte cacher og byggede 210/673 med 192 utilgængelige aktuelle modes.
+- Pages blev ikke nået: HARMONIE var ikke planlagt, og state replay fejlede 673/673 efter build.
+- 4.0.407 bruger manglende 96-timers vindhorisont og rapporterer replayfejl i faste payloadfrie kategorier. DEC-0190.
+
 # 2026-09-17 – 4.0.406 viser mobilpakken og prioriterer nødvendig delvind
 
 - Live 4.0.405 er integreret 210/673 med 141 brugbare og 69 utilgængelige zoner.

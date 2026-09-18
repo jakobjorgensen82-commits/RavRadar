@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.407 vindhorisont og replaydiagnose
+
+4.0.406 er live gennem exact-head `35242940822`, PR #350, main `459dc41c`
+og code-only `35252644724`; browseren viser scorer og femdøgn. Normalrun
+`35253587766` gennemførte DMI, Copernicus og Open-Meteo og gemte cacher. Den
+byggede runtime forbedrede aktuelle utilgængelige modes til 192, men blev ikke
+deployet: HARMONIE kørte ikke, og state replay fejlede ens 673/673.
+
+Rodårsagen til HARMONIE er bekræftet: `missingAnyWind` accepterede ét gammelt
+vindpunkt som grunddækning. Lokal 4.0.407 bruger den sammenhængende 96-timers
+vindhorisont og bevarer ét-asset-loftet. Replayauditten logger nu kun faste
+payloadfrie fejlkategorier og forbliver hård. Næste: måltests, RDKS/geodata,
+exact-head, merge, providerfri kode og én normal weather på gemte cacher.
+Ingen oneoff; bootstrap kun ved målt behov. Scheduler pauset. DEC-0190.
+Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
 
 4.0.405 er live gennem exact-head `35217753258`, PR #349, main

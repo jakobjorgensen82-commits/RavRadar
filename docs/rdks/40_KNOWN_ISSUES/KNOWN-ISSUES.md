@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-17 – 4.0.407 vindhorisont og state replay
+
+- **ISSUE-4.0.406-DELIVERY – LUKKET:** Exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724` er grønne; live viser scorer og femdøgn.
+- **ISSUE-HARMONIE-TRIGGER-TOO-WEAK – RETTET LOKALT / LIVEBEVIS MANGLER:** `missingAnyWind` skjulte delvindsgabet, når et punkt havde blot én gammel vindværdi. 4.0.407 bruger manglende sammenhængende 96-timers horisont.
+- **ISSUE-STATE-REPLAY-673 – ÅBEN P0 / DIAGNOSE RETTET LOKALT:** Normalrun `35253587766` byggede 673 dele, men alle kompakte states fejlede genlæsning. Auditten samler nu den præcise payloadfrie fejlklasse uden at svække stoppet.
+- **ISSUE-PROVIDER-CACHE-RESUME – BEVARET:** DMI, Copernicus og Open-Meteo gemte fremgang før auditstoppet; næste normalrun genbruger den.
+- **ISSUE-CURRENT-AVAILABILITY – FORBEDRET, IKKE LIVE:** Den byggede runtime havde 192 utilgængelige aktuelle modes mod op til 592 før kørslen; deploy blev korrekt sprunget over.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Frisk deploy og næste normale cachevedligeholdelse mangler før scheduler.
+
+DEC-0190. Ingen oneoff; bootstrap kun ved målt behov.
+
 # NYESTE CHECKPOINT – 2026-09-17 – 4.0.406 mobilvisning og delvind
 
 - **ISSUE-4.0.405-DELIVERY – LUKKET:** Exact-head `35217753258`, PR #349, main `e128b15d` og saved-weather `35222128772` er grønne.

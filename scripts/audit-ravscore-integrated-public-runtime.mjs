@@ -573,6 +573,27 @@ function assertCanonicalBinding(binding) {
   return true;
 }
 
+// Replay exceptions are collapsed to a fixed, payload-free vocabulary. This
+// keeps production diagnostics useful without logging state, evidence,
+// coordinates or provider values.
+export function stateReplayFailureKind(error) {
+  const message = error instanceof Error ? error.message : '';
+  const rules = [
+    [/model metadata|state model/i, 'MODEL_BINDING'],
+    [/sampling context/i, 'SAMPLING_CONTEXT'],
+    [/field set/i, 'FIELD_SET'],
+    [/causal time|non-canonical .*At|non-canonical .*time/i, 'CAUSAL_TIME'],
+    [/native-hold proof|native-hold interval/i, 'NATIVE_HOLD_PROOF'],
+    [/current evidence|signed current evidence|supply state/i, 'CURRENT_EVIDENCE'],
+    [/current bounds/i, 'CURRENT_BOUNDS'],
+    [/wave-approach|last-mile/i, 'LAST_MILE_STATE'],
+    [/wave point|wave history|wave state|wave mobilisation/i, 'WAVE_STATE'],
+    [/history bounds/i, 'HISTORY_BOUNDS'],
+    [/lineage/i, 'LINEAGE'],
+  ];
+  return rules.find(([pattern]) => pattern.test(message))?.[1] ?? 'UNKNOWN';
+}
+
 export function candidateGReferenceMatchesProduction({
   candidateState,
   integratedState,
@@ -1370,6 +1391,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
 
   let reconstructedModeCount = 0;
   let stateReplayCount = 0;
+  const stateReplayFailureCounts = {};
   let rollbackReadyPartCount = 0;
   let rollbackEvidenceLimitExceededPartCount = 0;
   let rollbackReconstructionFailurePartCount = 0;
@@ -1605,8 +1627,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         && sameCanonical(replayed.continuationState, state),
       'STATE_REPLAY_MISMATCH');
       stateReplayCount += 1;
-    } catch {
+    } catch (error) {
       collector.fail('STATE_REPLAY_FAILED');
+      const kind = stateReplayFailureKind(error);
+      stateReplayFailureCounts[kind] = (stateReplayFailureCounts[kind] ?? 0) + 1;
     }
 
     const candidateState = candidateRuntimeParts?.[partId]?.ravScoreModel?.currentState;
@@ -1925,6 +1949,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       continuedStateCount,
       coldReplayStateCount,
       uniqueSamplingContextCount: stateKeys.size,
+      stateReplayFailureCounts: Object.fromEntries(
+        Object.entries(stateReplayFailureCounts).sort(([left], [right]) =>
+          left.localeCompare(right)),
+      ),
     },
     history: {
       allCurrentScoresFullHistory:
@@ -2025,6 +2053,7 @@ async function main() {
   if (report.status !== 'passed') {
     console.error(`Integreret RavScore public runtime fejlkoder: ${report.errors.join(', ')}`);
     console.error(`Integreret RavScore public runtime fejltal: ${JSON.stringify(report.errorCounts)}`);
+    console.error(`Integreret RavScore replayfejl: ${JSON.stringify(report.continuation.stateReplayFailureCounts)}`);
     console.error(`Integreret RavScore profildiagnose: ${JSON.stringify(report.profile)}`);
     process.exitCode = 1;
   }

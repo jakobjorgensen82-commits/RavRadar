@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – lokal 4.0.407 vindhorisont og replaydiagnose
+
+- [x] Lever 4.0.406 via exact-head `35242940822`, PR #350, main `459dc41c` og code-only `35252644724`.
+- [x] Verificér live 4.0.406, 210/673, scorer og femdøgn i frisk browser.
+- [x] Kør normal weather `35253587766`; gennemfør DMI, Copernicus og Open-Meteo og gem providercacher.
+- [x] Afgræns det manglende HARMONIE-forsøg til `missingAnyWind` i den virkelige schedulerafledning.
+- [x] Mål den ikke-deployede runtime til 192 utilgængelige aktuelle modes og afgræns stoppet til state replay 673/673.
+- [x] Ret HARMONIE-behovet til manglende sammenhængende 96-timers vindhorisont; bevar ét asset først.
+- [x] Tilføj fast payloadfri replayfejlfordeling uden at svække artifactstoppet.
+- [x] Bestå den målrettede DMI-schedulertest og syntakskontrol.
+- [x] Bestå direkte replayklassifikation, RDKS, version og uændret modelbinding; stop den tunge lokale nationale fixture og kør den én gang på exact head.
+- [ ] Afslut diff/geodataversionsbevis og exact-heads RavScore-audittest.
+- [ ] Commit/push, bestå én exact-head, merge og lever 4.0.407 providerfrit.
+- [ ] Kør én almindelig weather på gemte cacher og verificér HARMONIE, state replay, score, providerfordeling og deploy.
+- [ ] Brug kun bootstrap ved målt behov; bevis derefter næste normalrun før scheduler og roadmap.
+
+DEC-0190. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.406 mobilvisning og vindgrund
 
 - [x] Lever 4.0.405 som integreret 210/673 og mål 141 brugbare/69 utilgængelige zoner.

@@ -1,3 +1,24 @@
+# NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.407 vindhorisont og replaydiagnose
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.407-weather-state-recovery`, baseret på main `459dc41c`.
+4.0.406 er live efter PR #350 og code-only `35252644724`.
+
+Normalrun `35253587766` gemte DMI-, Copernicus- og Open-Meteo-fremgang og
+byggede 210/673 med 192 utilgængelige aktuelle modes, men deployede ikke.
+HARMONIE blev sprunget over, fordi ét gammelt vindpunkt gjorde
+`missingAnyWind=0`; efter build fejlede state replay 673/673 med skjult
+fælles årsag.
+
+Lokal 4.0.407 bruger manglende 96-timers vindhorisont til ét HARMONIE-forsøg
+først og tilføjer kun faste payloadfrie replayfejlkategorier. DMI-måltest,
+direkte replayklassifikation, syntaks, version, RDKS og uændret modelbinding er
+grønne. Den store lokale RavScore-fixture blev stoppet efter over ti minutter
+på Windows og overlades til den ene exact-head-gate. Næste: geodatabevis,
+commit/push, exact-head, merge, providerfri code-only og én almindelig weather
+med gemte cacher. Ingen oneoff. Bootstrap kun ved målt normal-kapacitetsmangel.
+Scheduler pauset. DEC-0190. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-17 – lokal 4.0.406 mobilvisning og delvind
 
 Arbejd i `RavRadar-4.0.396`, branch

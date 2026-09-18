@@ -1,3 +1,14 @@
+## 4.0.407 – korrekt vindgrund og sikker replaydiagnose (2026-09-17)
+
+- 4.0.406 er live gennem PR #350, main `459dc41c` og code-only `35252644724`.
+- Normalrun `35253587766` gemte fremgang fra DMI, Copernicus og Open-Meteo,
+  men udgav ikke den forbedrede runtime: HARMONIE blev ikke planlagt, og den
+  fælles state-replay-audit fejlede for 673/673 dele.
+- HARMONIE-triggeren bruger nu manglende 96-timers vindhorisont i stedet for
+  “ingen vind nogensinde”. Replayfejl samles i faste, payloadfrie kategorier.
+- Ingen oneoff; næste almindelige weather genbruger de gemte cacher. Se
+  CHANGELOG-4.0.407.md og DEC-0190.
+
 ## 4.0.406 – brugbart mobilsnapshot og aktuel delvind (2026-09-17)
 
 - Viser den kompakte, tidsmærkede samme-model-startpakke uden cirka 175 MB opstartshentning.
