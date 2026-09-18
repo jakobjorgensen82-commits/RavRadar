@@ -1,3 +1,23 @@
+# Aktuel implementeringsstatus – lokal 4.0.412 eksakt live-reseal-recovery
+
+- [x] Lever 4.0.411 gennem exact-head `35339636413`, PR #355 og main
+  `52a7a15d`.
+- [x] Bevis at code-only `35340175304` stoppede før migration/skrivning/deploy,
+  fordi offentlig 4.0.410 var foran central version 23.
+- [x] Bevis at normalrun `35340393791` stoppede før provider/skrivning, og at
+  scheduler igen er `disabled_manually`.
+- [x] Fastlås source `35331109332` og target `35331664087` med eksakte heads,
+  artifacts, digests, hashes, deployments, binding og Pages-seals.
+- [x] Implementér og måltest same-binding recovery 23→24 med friskt livebevis
+  og kalibreringslås ved diagnostiske fund.
+- [x] Afslut RDKS/håndbog, versions-/geodatabevis og relevante workflowtests.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Kør recovery, providerfri kode-only og derefter én normal weather.
+- [ ] Browserverificér aktuel time, historik, lokal femdøgn og almindelig
+  cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0195. Ingen oneoff og ingen gentagelse af allerede gemt providerarbejde.
+
 # Aktuel implementeringsstatus – lokal 4.0.411 last-mile-historik og reseal
 
 - [x] Lever 4.0.410 gennem exact-head `35330643842`, PR #354, main

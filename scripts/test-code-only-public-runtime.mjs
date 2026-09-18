@@ -263,13 +263,13 @@ const centralRecoveryWorkflow = fs.readFileSync(
 for (const marker of [
   'RECOVER-LIVE-RAVSCORE-CENTRAL',
   'recover-missed-integrated-historical-maintenance',
-  'ravscore-operational-recovery-34877443841-1',
-  'ravscore-operational-recovery-35034589754-1',
-  'Freshly verify the exact 4.0.383 target is still public',
+  'ravscore-operational-handoff-35331109332-1',
+  'ravscore-operational-handoff-35331664087-1',
+  'Freshly verify the exact 4.0.410 target is still public',
   'Atomically record the exact already-live maintenance target',
   'Require exact final active central identity',
-  'd99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6',
-  'pages-35034589754-1',
+  '6391ab91144cd9f00ac5f554d1d5be1c59973acb0806fb2c670f4e9f81be4db4',
+  'pages-35331664087-1',
 ]) assert.ok(centralRecoveryWorkflow.includes(marker),
   `Central recovery-workflow mangler ${marker}`);
 for (const forbidden of [

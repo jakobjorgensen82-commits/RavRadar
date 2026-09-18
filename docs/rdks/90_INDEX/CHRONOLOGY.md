@@ -1,3 +1,9 @@
+# 2026-09-18 – 4.0.412 registrerer det allerede offentlige 4.0.410-target
+
+- 4.0.411 bestod exact-head `35339636413` og blev merged gennem PR #355 som `52a7a15d`.
+- Code-only og normal weather stoppede uden mutation, fordi Pages var foran central aktiv tilstand efter den tidligere sene resealfejl.
+- 4.0.412 tilføjer en eksakt, same-binding og kalibreringslåst 23→24-recovery før providerfri deploy af last-mile-rettelsen. DEC-0195.
+
 # 2026-09-18 – 4.0.411 retter last-mile-historikken og den sene reseal
 
 - 4.0.410 blev leveret gennem exact-head `35330643842`, PR #354, main

@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-18 – eksakt registrering af live 4.0.410
+
+- **REQ-4.0.412-EXACT-LIVE-001 – BINDENDE:** Kun det allerede offentlige og eksakt verificerede 4.0.410-target fra run `35331664087` må registreres som central version 24.
+- **REQ-4.0.412-ALL-EVIDENCE-002 – BINDENDE:** Head, run, attempt, artifact, digest, størrelse, deployment, manifest, audit, readiness, binding, profil, closure og Pages-seal skal matche den fastlåste source og target.
+- **REQ-4.0.412-FRESH-PAGES-003 – BINDENDE:** Target skal genverificeres friskt mod offentlig Pages før central skrivning.
+- **REQ-4.0.412-DIAGNOSTIC-LOCK-004 – BINDENDE:** Kun bounded payloadfrie diagnostiske fund med positive tællinger accepteres; de giver altid `calibrationEligible=false`.
+- **REQ-4.0.412-NO-NEW-WEATHER-005 – BINDENDE:** Recovery må ikke hente vejr, bygge artifact eller deploye. Den efterfølgende code-only-rute genbruger gemt vejr; først derefter køres normal vedligeholdelse.
+- **REQ-4.0.412-NO-MODEL-CHANGE-006 – BINDENDE:** Formel, vægte, providerprioritet, geometri og punkter er uændrede.
+
+DEC-0195.
+
 # Aktuelt ejerdelta – 2026-09-18 – last-mile-historik og normal reseal
 
 - **REQ-4.0.411-OPEN-ENVELOPE-001 – BINDENDE:** Et åbent last-mile-usikkerhedsinterval skal rumme den allerede validerede fysiske punkt-tilstand.

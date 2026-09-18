@@ -101,51 +101,53 @@ export const RAVSCORE_MISSED_INITIAL_CUTOVER_RECOVERY_POLICY = Object.freeze({
   pagesArtifactSealSha256: 'aa9d3e95a99182d8e11bf8f20b48ee856819ea35bb6b6e5ef3166d42e062d4e7',
 });
 export const RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY = Object.freeze({
-  confirmation: 'RECOVER-MISSED-INTEGRATED-HISTORICAL-MAINTENANCE-35034589754',
+  confirmation: 'RECOVER-MISSED-INTEGRATED-MAINTENANCE-35331664087',
   repository: 'jakobjorgensen82-commits/RavRadar',
-  sourceCentralVersion: 1,
-  sourceHead: 'fa418f43bbd070c446ed19b6587541b93af89599',
-  sourceDeploymentId: 'pages-34877443841-1',
+  sameBindingReseal: true,
+  allowTargetDiagnosticFindings: true,
+  sourceCentralVersion: 23,
+  sourceHead: 'ca2735af81137785ca6fd8a6432a578f1ae55e5b',
+  sourceDeploymentId: 'pages-35331109332-1',
   sourceImplementationClosureSha256:
-    'b050755ec8b904cff60838bb3c9f1ec5a5bdb9f0fd24d14b0ed957eaa32fce4d',
-  sourceManifestSha256: '4254bdb2ba157bbde3847c8d621ac7a3182e14296a3ae99aa40a2ac7f6f8211e',
-  sourceAuditSha256: 'b61e54f6691b23f42df05eca565c43fc0a5ac4a9c534b1eec797c41ecf199d93',
-  sourceReadinessSha256: '062d8d143af8bcd113059a45215e9e10561272d9685f4a5c1413d4802a85df28',
-  sourceBindingSha256: '70f45b3d485f6424d94e80483a98ce1492a9bf8bbb9d8e207f7483317988336f',
-  sourceProfileSha256: 'b3699f35f0f15e2e9cf60d67570779098927053cf79520efac8d4a7b0e1e1078',
+    '6391ab91144cd9f00ac5f554d1d5be1c59973acb0806fb2c670f4e9f81be4db4',
+  sourceManifestSha256: '126b1e171e2d7a3994ed7190f69b788864227bcb504b87cb3ae30add3e56154a',
+  sourceAuditSha256: '719f23878d2787f49b399111ec6f4fe61805210b83fa4d20bab6515a3f27462f',
+  sourceReadinessSha256: '0d669b4332aa3367bf1e116e69d9b195499b0a5b4b7678acfdbbbffc460e289b',
+  sourceBindingSha256: 'ff980ed4827deea7df504ddb8b3fc849e44876a3fbb4cca78b868fc0af29fc4d',
+  sourceProfileSha256: '5cbf90f7d6ea76043454b9686c730f59ca5be23009931c640ca0afc257532035',
   sourcePagesArtifactSealSha256:
-    'aa9d3e95a99182d8e11bf8f20b48ee856819ea35bb6b6e5ef3166d42e062d4e7',
-  sourcePagesRunId: 34877443841,
+    '1f1cda3235db0304a4e000bfefc61b8a5220d4fe42fbe3ac58da866d0f7162cb',
+  sourcePagesRunId: 35331109332,
   sourcePagesRunAttempt: 1,
-  sourcePagesArtifactId: 10362017512,
+  sourcePagesArtifactId: 10540489999,
   sourcePagesArtifactDigestSha256:
-    '475bf345eeb37803a3fab7b1963bbea22e0c9eaf50db401a207dfb58fec2cedd',
-  sourcePagesArtifactSizeBytes: 4362045,
-  sourceRecoveryArtifactId: 10362720209,
+    '1412940556ad06b851cf3cf087a10154e822101c2da1c2c13f61019a6acaad4d',
+  sourcePagesArtifactSizeBytes: 7900205,
+  sourceRecoveryArtifactId: 10541720150,
   sourceRecoveryArtifactDigestSha256:
-    '5e82c5cbcb19ae2b1b7445863da00d9033c797048d6e2f41ab2839e4cfb884fb',
-  sourceRecoveryArtifactSizeBytes: 36528,
-  targetHead: '11f101f8f4c304253e55d5c850d4274e626db2a2',
-  targetDeploymentId: 'pages-35034589754-1',
+    'fc9588f1e814ffcce3a119a584e100e025e3eb8b4ec470b7c69bec9898887e40',
+  sourceRecoveryArtifactSizeBytes: 27318,
+  targetHead: 'ca2735af81137785ca6fd8a6432a578f1ae55e5b',
+  targetDeploymentId: 'pages-35331664087-1',
   targetImplementationClosureSha256:
-    'd99abf65cd153dfc4eb3c604b9d55f3fac06057c065948589d5133812b4143f6',
-  targetManifestSha256: '648a52c70c9dc2e58e75faa67647a4e6fb9e8cad1441cace468496866ae80bf7',
-  targetAuditSha256: '3b6992e958e1eea1169774f97afc3997bf693ef353b3769eb6f4954321172923',
-  targetReadinessSha256: 'bf4414194e1184ccff1d05d23fec0b1fc879b935f6a230247b8288ef11382834',
-  targetBindingSha256: '398b11329fec406505fe0c5bbff48e71a30a7df189478997948322770a2ddaaf',
-  targetProfileSha256: '807f7e0d2bf70ed7d399c2013335f2cbe2bfd9817006bb08b4e0a8d65b99fff4',
+    '6391ab91144cd9f00ac5f554d1d5be1c59973acb0806fb2c670f4e9f81be4db4',
+  targetManifestSha256: 'dcfb6e179d4e689a41dc379d6a382cbbedc0401a7a70c45a82023dfb7ff15f58',
+  targetAuditSha256: 'c1efcd33af85986bf4b0be656f76f39cbf47faecac6bbaf736d3587a6cd887da',
+  targetReadinessSha256: '0d669b4332aa3367bf1e116e69d9b195499b0a5b4b7678acfdbbbffc460e289b',
+  targetBindingSha256: 'ff980ed4827deea7df504ddb8b3fc849e44876a3fbb4cca78b868fc0af29fc4d',
+  targetProfileSha256: '5cbf90f7d6ea76043454b9686c730f59ca5be23009931c640ca0afc257532035',
   targetPagesArtifactSealSha256:
-    'd3005f366bf1d0ad53be2b9bbc8f95389b06f11e39cad17345e651977bec326c',
-  targetPagesRunId: 35034589754,
+    'b2dd86ed68440249f17fc5c60b600f891386448e3da6e61cabf048c101e3403d',
+  targetPagesRunId: 35331664087,
   targetPagesRunAttempt: 1,
-  targetPagesArtifactId: 10423340321,
+  targetPagesArtifactId: 10542906772,
   targetPagesArtifactDigestSha256:
-    '064f09ef9192216253cb2518a371abc83bf29fd31dab49f01d82ddcc3c6a8ba6',
-  targetPagesArtifactSizeBytes: 4359786,
-  targetRecoveryArtifactId: 10423002354,
+    '4ad321e4487ba61b4ab8e237cc0b83a77215920414dcf2ba629a784a7c16f2c2',
+  targetPagesArtifactSizeBytes: 6635030,
+  targetRecoveryArtifactId: 10543570556,
   targetRecoveryArtifactDigestSha256:
-    '4ef3cf5926334e92da38d001c8fd37e5b792ce08a40335c0b4e03f9da77e6719',
-  targetRecoveryArtifactSizeBytes: 61979,
+    'b13364452b0b20c475748ceae5b09887c6d1ff8a1a3a584c258cbbf38c3e1600',
+  targetRecoveryArtifactSizeBytes: 26494,
 });
 const RAVSCORE_PUBLIC_CURRENT_MODE_COUNT =
   RAVSCORE_INTEGRATED_RETURN_POLICY.expectedZoneCount * 2;
@@ -1391,14 +1393,29 @@ function missedInitialCutoverCalibrationEligible(publicAudit, {
   policy,
   targetBinding,
   targetManifest,
+  allowDiagnosticFindings = false,
 } = {}) {
+  const auditErrors = Array.isArray(publicAudit?.errors) ? publicAudit.errors : null;
+  const boundedDiagnosticErrors = auditErrors !== null
+    && auditErrors.length <= 128
+    && new Set(auditErrors).size === auditErrors.length
+    && auditErrors.every(code => SAFE_ID_PATTERN.test(String(code ?? '')))
+    && exactKeys(publicAudit?.errorCounts, auditErrors)
+    && auditErrors.every(code => Number.isSafeInteger(Number(publicAudit.errorCounts[code]))
+      && Number(publicAudit.errorCounts[code]) > 0);
+  const auditDispositionValid = boundedDiagnosticErrors
+    && (publicAudit?.status === 'passed'
+      ? auditErrors.length === 0
+      : allowDiagnosticFindings
+        && publicAudit?.status === 'failed'
+        && auditErrors.length > 0);
   if (!exactKeys(publicAudit, [
     'schemaVersion', 'status', 'datasetId', 'productionReferenceAt', 'model',
     'coverage', 'continuation', 'history', 'rollback', 'payload', 'errors',
     'errorCounts',
   ])
     || publicAudit.schemaVersion !== 1
-    || publicAudit.status !== 'passed'
+    || !auditDispositionValid
     || publicAudit.datasetId !== targetManifest.datasetId
     || publicAudit.productionReferenceAt !== targetManifest.productionReferenceAt
     || publicAudit.model?.modelId !== targetBinding.modelId
@@ -1414,8 +1431,6 @@ function missedInitialCutoverCalibrationEligible(publicAudit, {
     || publicAudit.payload?.publicRawVectorIncluded !== false
     || publicAudit.payload?.publicUnapprovedCoordinateIncluded !== false
     || publicAudit.payload?.publicShadowIncluded !== false
-    || !Array.isArray(publicAudit.errors)
-    || publicAudit.errors.length !== 0
     || sha256(publicAudit) !== policy.targetAuditSha256) {
     throw new Error('Missed initial cutover public audit differs from the pinned historical evidence');
   }
@@ -1437,7 +1452,7 @@ function missedInitialCutoverCalibrationEligible(publicAudit, {
         && incompleteCount === 0 && unavailableCount === 0)) {
     throw new Error('Missed initial cutover public audit lacks an exact historical score summary');
   }
-  return history.allCurrentScoresFullHistory;
+  return publicAudit.status === 'passed' && history.allCurrentScoresFullHistory;
 }
 
 function assertMissedInitialCutoverArtifactSeal(pagesArtifactSeal, {
@@ -1774,8 +1789,6 @@ export function recoverMissedHistoricalIntegratedMaintenance({
   assertSameSealedBinding(current.modelBinding, sourceBinding,
     'Missed historical maintenance central source binding');
 
-  assertSameSealedBinding(targetBinding, integratedModelBinding(),
-    'Missed historical maintenance current target binding');
   assertMissedInitialCutoverArtifactSeal(targetPagesArtifactSeal, {
     policy: targetPolicy,
     targetBinding,
@@ -1790,17 +1803,80 @@ export function recoverMissedHistoricalIntegratedMaintenance({
     policy: targetPolicy,
     targetBinding,
     targetManifest,
+    allowDiagnosticFindings: policy.allowTargetDiagnosticFindings === true,
   });
+  const sameBindingReseal = policy.sameBindingReseal === true;
+  if (sameBindingReseal) {
+    assertSameSealedBinding(targetBinding, sourceBinding,
+      'Missed same-binding maintenance target binding');
+    if (policy.targetHead !== policy.sourceHead
+      || policy.targetImplementationClosureSha256
+        !== policy.sourceImplementationClosureSha256) {
+      throw new Error('Missed same-binding maintenance policy changes code identity');
+    }
+  } else {
+    assertSameSealedBinding(targetBinding, integratedModelBinding(),
+      'Missed historical maintenance current target binding');
+  }
   assertOperationalPagesVerification(publicVerification, {
     model: 'integrated',
     binding: targetBinding,
     sourceHead: policy.targetHead,
     publicManifest: targetManifest,
     expectedImplementationClosureSha256: policy.targetImplementationClosureSha256,
-    assertBinding: assertIntegratedBinding,
+    assertBinding: sameBindingReseal ? null : assertIntegratedBinding,
   });
   if (sha256(targetReadiness.centralProfile) !== policy.targetProfileSha256) {
     throw new Error('Missed historical maintenance target profile is not pinned evidence');
+  }
+  if (sameBindingReseal) {
+    const targetManifestSha256 = sha256(targetManifest);
+    const maintenanceSeal = {
+      kind: 'RAVSCORE_INTEGRATED_ACTIVE_PUBLIC_RESEAL_RECOVERY',
+      sourceHead: policy.targetHead,
+      modelBinding: structuredClone(targetBinding),
+      publicManifestSha256: targetManifestSha256,
+      integratedReadinessSha256: policy.targetReadinessSha256,
+      integratedPublicAuditSha256: policy.targetAuditSha256,
+      pagesArtifactSealSha256: policy.targetPagesArtifactSealSha256,
+    };
+    const document = Object.freeze({
+      ...currentRow.payload,
+      sourceHead: policy.targetHead,
+      datasetId: targetManifest.datasetId,
+      productionReferenceAt: targetManifest.productionReferenceAt,
+      activeModelBinding: structuredClone(targetBinding),
+      requestedModelBinding: structuredClone(targetBinding),
+      sourceModelBinding: structuredClone(targetBinding),
+      publicManifestSha256: targetManifestSha256,
+      sourcePublicManifestSha256: targetManifestSha256,
+      requestedPublicManifestSha256: targetManifestSha256,
+      sourceImplementationClosureSha256: policy.targetImplementationClosureSha256,
+      requestedImplementationClosureSha256: policy.targetImplementationClosureSha256,
+      sourceDeploymentId: policy.targetDeploymentId,
+      deploymentId: policy.targetDeploymentId,
+      calibrationEligible,
+      requestedAt: targetPagesArtifactSeal.createdAt,
+      activatedAt: new Date(now).toISOString(),
+      failureCode: null,
+      returnPlanSha256: sha256(maintenanceSeal),
+      integratedReadinessSha256: policy.targetReadinessSha256,
+      integratedPublicAuditSha256: policy.targetAuditSha256,
+      integratedManifestSha256: targetManifestSha256,
+    });
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({
+      document,
+      nextVersion: Number(policy.sourceCentralVersion) + 1,
+      centralTargetProfile: Object.freeze(structuredClone(targetReadiness.centralProfile)),
+      reconciliation: Object.freeze({
+        action: 'complete',
+        model: 'integrated',
+        observedSha256: targetManifestSha256,
+      }),
+    });
   }
   const plan = prepareIntegratedHistoricalMaintenance({
     currentRow,

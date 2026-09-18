@@ -1,5 +1,16 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.412-præcisering – DEC-0195:** Et allerede Pages-verificeret
+same-binding-target, som er offentligt men mangler central post-deploy-reseal,
+må kun registreres gennem en engangsrecovery med eksakt source-/target-run,
+head, attempt, artifact-id, navn, størrelse, digest, deployment, manifest,
+audit, readiness, modelbinding, profil, implementation closure og Pages-seal
+samt frisk offentlig verification. Kun bounded payloadfrie diagnostiske fund
+med positive tællinger accepteres, altid med kalibrering falsk. Recovery må
+hverken hente vejr, bygge artifact eller deploye; mismatch stopper før
+skrivning. Efter central registrering fortsætter den eksisterende providerfri
+kode-only-rute med gemte vejrdata og normal append-only bindingsvedligeholdelse.
+
 **Bindende 4.0.411-præcisering – DEC-0194:** Når last-mile-usikkerhed
 genåbnes efter et konservativt tail-reset, skal bounds rumme den fortsat
 validerede fysiske punkt-tilstand. Allerede gemt schema-6-state må kun

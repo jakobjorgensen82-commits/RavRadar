@@ -1,3 +1,22 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.412 eksakt live-recovery
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.412-live-reseal-recovery`, baseret på main `52a7a15d`.
+4.0.411 bestod exact-head `35339636413` og er merged via PR #355.
+
+Code-only `35340175304` stoppede før mutation, fordi offentligt 4.0.410-target
+fra `35331664087` er foran central version 23. Normalrun `35340393791`
+stoppede før providere, fordi den beskyttede runtime korrekt afviste samme
+uafklarede tilstand. Scheduler er deaktiveret; live er uændret 4.0.410.
+
+4.0.412 fastlåser source `35331109332` og target `35331664087` og tillader kun
+eksakt same-binding recovery 23→24 efter frisk Pages-verifikation. Targetets
+673 diagnostiske fund holder kalibrering falsk. Målrettede lokale sluttests,
+RDKS, bindings-, versions-, browserkilde- og workflowkontroller er grønne.
+Næste: commit/push, exact-head, merge, recovery, providerfri code-only og én normal weather.
+Browseren skal derefter vise aktuel time, sammenhængende historik og lokal
+femdøgn. Ingen oneoff. DEC-0195. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.411 last-mile-historik
 
 Arbejd i `RavRadar-4.0.396`, branch
