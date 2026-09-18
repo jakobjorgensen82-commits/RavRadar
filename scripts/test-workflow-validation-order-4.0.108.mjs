@@ -20,10 +20,11 @@ const productionWorkflowNames = new Set(
   Object.values(PRODUCTION_WORKFLOW_SOURCES).map(sourcePath => sourcePath.split('/').at(-1)),
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
+productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -33,6 +34,37 @@ for (const privateName of expectedWorkflowFiles.filter(name => !productionWorkfl
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
+const manualCurrentWeatherWorkflow = fs.readFileSync(
+  `${workflowDirectory}/run-current-weather-once.yml`,
+  'utf8',
+).replace(/\r\n/g, '\n');
+for (const marker of [
+  '  workflow_dispatch:',
+  'group: ravradar-current-weather-once',
+  'cancel-in-progress: false',
+  'Require checked-out HEAD to equal current origin/main',
+  'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
+  'uses: ./.github/workflows/reusable-weather-build.yml',
+  'force: true',
+  'extended_provider_bootstrap: false',
+  'uses: ./.github/workflows/reusable-pages-deploy.yml',
+  'test "$FULL_VALIDATION_OUTCOME" = "success"',
+  'test "$RELEASE_GATE_OUTCOME" = "success"',
+  'test "$DEPLOYED_VERIFIED" = "true"',
+]) assert.ok(
+  manualCurrentWeatherWorkflow.includes(marker),
+  `Den afgrænsede normale vejrindgang mangler ${marker}.`,
+);
+for (const forbidden of [
+  '  schedule:',
+  'update-and-deploy.yml/dispatches',
+  'extended_provider_bootstrap: true',
+  'ravscore_integrated_first_cutover: true',
+  'ravscore_integrated_return: true',
+]) assert.ok(
+  !manualCurrentWeatherWorkflow.includes(forbidden),
+  `Den afgrænsede normale vejrindgang må ikke indeholde ${forbidden}.`,
+);
 const sourceGateRequirementMarkers = [
   '-r requirements-dmi.txt',
   '-r requirements-geometry.txt',

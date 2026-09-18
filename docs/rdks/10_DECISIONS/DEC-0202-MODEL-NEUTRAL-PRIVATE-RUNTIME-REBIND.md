@@ -1,6 +1,6 @@
 # DEC-0202 – Model-neutral kode må genbinde den gemte private runtime
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.419, livebevis afventer
+**Status:** Aktiv; 4.0.419 er live, første almindelige weather afventer
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -37,3 +37,22 @@ fordi den beskyttede runtime endnu var bundet til forgængerens kontrakthash.
 Vejrværdier, DMI-rotation, providerorden, RavScore-formel, modelbundle,
 modelstate, geometri, land-/vandpunkter og scheduler ændres ikke. Der startes
 ingen oneoff.
+
+## Produktionsbevis og sikker genåbning af normal weather
+
+PR #363 bestod exact-head `35370864611` og blev merged som
+`1ec8358fad6b20eb2c10f830956fcbf0f0e1db42`. Code-only `35371475804`
+gennemførte `CONTRACT_ONLY_REBIND`, publicerede den beskyttede runtime og
+deployede/verificerede Pages uden providerkald. Chrome viser 4.0.419 med den
+senest verificerede vejrpakke i begrænset nøddrift.
+
+Det gamle schedulerworkflow forbliver deaktiveret, fordi GitHub stadig viser
+tre historiske køposter, som platformen ikke kan annullere. De kan ikke nå
+providere på deres gamle heads, men de vækkes ikke. Samme appversion får i
+stedet en afgrænset manuel indgang med en særskilt concurrencykø. Den må kun
+køre på eksakt aktuel `main`, bruger den almindelige tidsbegrænsede
+providerkæde med `extended_provider_bootstrap=false` og genbruger de
+eksisterende reusable build-/Pages-workflows. Den må ikke kalde eller aktivere
+det gamle workflow. Den er først grøn ved fuld validering, releasegate,
+artifact, Pages og offentlig verifikation. Dette driftstillæg ændrer ikke
+runtimekontrakten, RavScore, data, geometri, providerorden eller rotation.

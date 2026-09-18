@@ -1,0 +1,171 @@
+name: Run current RavRadar weather once
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  pages: write
+  id-token: write
+
+# This queue is intentionally separate from the disabled scheduled workflow.
+# It cannot awaken or wait behind historical update-and-deploy queue entries.
+concurrency:
+  group: ravradar-current-weather-once
+  cancel-in-progress: false
+
+jobs:
+  current-main-target:
+    name: Lock one normal run to exact current main and UTC hour
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      target_hour: ${{ steps.cache-state.outputs.target_hour }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Restore private Copernicus current cache for target-hour lock
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-progress-v3-manual-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-progress-v3-
+            copernicus-current-shadow-v1-
+            copernicus-current-range-v2-
+
+      - name: Lock the canonical UTC production hour
+        id: cache-state
+        run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
+
+      - name: Require one canonical target hour
+        shell: bash
+        env:
+          TARGET_HOUR: ${{ steps.cache-state.outputs.target_hour }}
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
+
+  build-and-prepare:
+    name: Build and prepare weather production through reusable workflow
+    needs: current-main-target
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: ./.github/workflows/reusable-weather-build.yml
+    with:
+      production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
+      force: true
+      extended_provider_bootstrap: false
+      produce_weather_handoff: false
+      produce_weather_handoff_confirmation: ''
+      ravscore_candidate_g_rollback_mode: ''
+      ravscore_candidate_g_rollback_confirmation: ''
+      ravscore_integrated_first_cutover: false
+      ravscore_integrated_first_cutover_confirmation: ''
+      ravscore_integrated_weather_handoff_run_id: ''
+      ravscore_integrated_return: false
+      ravscore_integrated_return_confirmation: ''
+    secrets:
+      CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+      COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+      COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+      DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+
+  deploy-pages:
+    name: Deploy prepared Pages artifact through reusable workflow
+    needs: build-and-prepare
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/reusable-pages-deploy.yml
+    with:
+      active_deployment_id: ${{ needs.build-and-prepare.outputs.active_deployment_id }}
+      central_version: ${{ needs.build-and-prepare.outputs.central_version }}
+      code_only_repair: false
+      deployment_model: ${{ needs.build-and-prepare.outputs.deployment_model }}
+      integrated_implementation_closure_sha256: ${{ needs.build-and-prepare.outputs.integrated_implementation_closure_sha256 }}
+      legacy_source_required: ${{ needs.build-and-prepare.outputs.legacy_source_required }}
+      operational_action: ${{ needs.build-and-prepare.outputs.operational_action }}
+      source_repair_id: ''
+    secrets:
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+
+  terminal-outcome:
+    name: Require a verified current-weather deployment
+    needs: [current-main-target, build-and-prepare, deploy-pages]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Summarize and require the complete normal production path
+        shell: bash
+        env:
+          TARGET_RESULT: ${{ needs.current-main-target.result }}
+          BUILD_RESULT: ${{ needs.build-and-prepare.result }}
+          SHOULD_DEPLOY: ${{ needs.build-and-prepare.outputs.should_deploy }}
+          WEATHER_OUTCOME: ${{ needs.build-and-prepare.outputs.weather_outcome }}
+          FULL_VALIDATION_OUTCOME: ${{ needs.build-and-prepare.outputs.full_validation_outcome }}
+          RELEASE_GATE_OUTCOME: ${{ needs.build-and-prepare.outputs.release_gate_outcome }}
+          PAGES_BUILD_OUTCOME: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
+          PAGES_PRIVACY_OUTCOME: ${{ needs.build-and-prepare.outputs.pages_privacy_outcome }}
+          PAGES_ARTIFACT_SEAL_OUTCOME: ${{ needs.build-and-prepare.outputs.pages_artifact_seal_outcome }}
+          ARTIFACT_BUILT: ${{ needs.build-and-prepare.outputs.artifact_built }}
+          DEPLOY_RESULT: ${{ needs.deploy-pages.result }}
+          DEPLOYMENT_OUTCOME: ${{ needs.deploy-pages.outputs.deployment_outcome }}
+          PUBLIC_VERIFICATION_OUTCOME: ${{ needs.deploy-pages.outputs.public_verification_outcome }}
+          DEPLOYED_VERIFIED: ${{ needs.deploy-pages.outputs.deployed_verified }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Current weather production"
+            echo ""
+            echo "- Target lock: $TARGET_RESULT"
+            echo "- Weather build: $BUILD_RESULT / $WEATHER_OUTCOME"
+            echo "- Full validation: $FULL_VALIDATION_OUTCOME"
+            echo "- Release gate: $RELEASE_GATE_OUTCOME"
+            echo "- Artifact: $ARTIFACT_BUILT / $PAGES_BUILD_OUTCOME / $PAGES_PRIVACY_OUTCOME / $PAGES_ARTIFACT_SEAL_OUTCOME"
+            echo "- Pages: $DEPLOY_RESULT / $DEPLOYMENT_OUTCOME / $PUBLIC_VERIFICATION_OUTCOME / verified=$DEPLOYED_VERIFIED"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$TARGET_RESULT" = "success"
+          test "$BUILD_RESULT" = "success"
+          test "$SHOULD_DEPLOY" = "true"
+          test "$WEATHER_OUTCOME" = "success"
+          test "$FULL_VALIDATION_OUTCOME" = "success"
+          test "$RELEASE_GATE_OUTCOME" = "success"
+          test "$PAGES_BUILD_OUTCOME" = "success"
+          test "$PAGES_PRIVACY_OUTCOME" = "success"
+          test "$PAGES_ARTIFACT_SEAL_OUTCOME" = "success"
+          test "$ARTIFACT_BUILT" = "true"
+          test "$DEPLOY_RESULT" = "success"
+          test "$DEPLOYMENT_OUTCOME" = "success"
+          test "$PUBLIC_VERIFICATION_OUTCOME" = "success"
+          test "$DEPLOYED_VERIFIED" = "true"

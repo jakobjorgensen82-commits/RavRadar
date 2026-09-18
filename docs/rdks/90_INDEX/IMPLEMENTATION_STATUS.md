@@ -1,4 +1,4 @@
-# Aktuel implementeringsstatus – lokal 4.0.419 kontraktombinding
+# Aktuel implementeringsstatus – live 4.0.419 og afgrænset normal weather
 
 - [x] Lever 4.0.418 source gennem exact-head `35366221956`, PR #362 og main `9573264f`.
 - [x] Afgræns code-only `35366953774`: korrekt kontraktmigration, forkert efterfølgende krav om scoreændring.
@@ -7,8 +7,12 @@
 - [x] Tilføj særskilt `post-cutover-contract-rebind` og før migrationsklassifikationen gennem build og Pages.
 - [x] Bevar eksakt same-reference-, privacy-, kontrakthash-, nul-provider-, vejr-, score- og geometri-bevis.
 - [x] Afslut version/RDKS/håndbog, måltests og rent geodataversionsbevis.
-- [ ] Commit/push, én exact-head, merge og providerfri code-only.
-- [ ] Kør én almindelig weather på gemte cacher og verificér 4.0.418-horisont, deploy og providerfremgang.
+- [x] Commit/push, exact-head `35370864611`, PR #363, merge `1ec8358f` og providerfri code-only `35371475804`.
+- [x] Verificér offentlig 4.0.419, kort, rangliste og femdøgn i Chrome; siden viser ærligt ældre verificeret vejr indtil næste weather.
+- [x] Afgræns tre gamle ikke-annullerbare GitHub-køposter og bevis deres current-main-stop før providere.
+- [x] Tilføj en same-version manuel current-main-indgang med egen kø og genbrug af de normale build-/deployworkflows.
+- [ ] Bestå én exact-head for driftstillægget, merge og dispatch kun `run-current-weather-once.yml`.
+- [ ] Verificér 118-timershorisont, deploy, scorer og trinvist DMI/Copernicus/Open-Meteo-regnskab fra den almindelige kørsel.
 - [ ] Bevis næste normale vedligeholdelse før scheduler genaktiveres.
 
 DEC-0202. Ingen oneoff.

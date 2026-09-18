@@ -6,6 +6,13 @@ migration skal klassificeres gennem hele publiceringskæden. En
 bevise uændret vejr, uændrede scorer, uændret geometri og nul providerkald. Den
 må ikke kræve en kunstig scoreændring. `MODEL_BINDING_MIGRATION` beholder den
 strenge score-reparationsvej. Kontrakthash-kontrollen må ikke omgås.
+Efter liveombinding må første normale weather startes fra en særskilt manuel
+current-main-indgang, når det gamle schedulerworkflow har ikke-annullerbare
+historiske køposter. Indgangen skal have egen concurrencykø, kræve eksakt
+aktuel `main`, bruge normal tidsbegrænset providerkæde og de samme reusable
+build-/Pages-workflows samt kræve fuld validering, releasegate, artifact og
+offentlig verifikation. Den må ikke aktivere eller kalde det gamle workflow,
+må ikke bruge extended bootstrap og må ikke blive en ekstra scheduler.
 
 **Bindende 4.0.418-præcisering – DEC-0201:** Hver offentlig vejrzone skal have
 præcis `productionReferenceAt +0..+117`. Cache- eller providergenerationstid må
