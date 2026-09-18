@@ -1,4 +1,18 @@
-# Aktuel implementeringsstatus – lokal 4.0.421 eksakt auditfortsættelse
+# Aktuel implementeringsstatus – lokal 4.0.422 Pages source-repair
+
+- [x] Gennemfør 4.0.421-buildjob `105726470812` uden provider.
+- [x] Bevis at eksakt audit, privat runtime, prewrite/privacy, Edge og artifact består.
+- [x] Afgræns Pages-stop til den falske `integrated-historical-maintenance`-antagelse.
+- [x] Tillad kun `integrated` og historisk integrated ved kendt source-repair.
+- [x] Før aktiv integrated gennem manifest, source-seal, 79/79 og evidensupload.
+- [x] Bevar target strict og almindelig central reseal efter deploy.
+- [x] Afslut version, RDKS, geodatabevis og målrettede slutkontroller.
+- [ ] Commit/push, én exact-head, merge og providerfri code-only.
+- [ ] Verificér central afslutning og offentlig 4.0.422 i Chrome.
+
+DEC-0205. Ingen oneoff eller provider.
+
+# Implementeringsstatus – lokal 4.0.421 eksakt auditfortsættelse
 
 - [x] Bestå 4.0.420 exact-head `35381401273`, PR #365 og merge `069de220`.
 - [x] Afgræns `35381918986` til auditstop før writes/deploy; ingen provider.

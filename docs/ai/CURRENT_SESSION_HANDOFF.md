@@ -1,4 +1,25 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.421 eksakt auditfortsættelse
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.422 Pages source-repair
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.422-pages-source-repair`, fra main
+`5fbc664397de593c56b0329fcda425c389d3188d`.
+
+4.0.421-buildjob `105726470812` i run `35383989821` bestod hele den
+providerfri kæde frem til Pages: eksakt source, kendt audit, privat runtime,
+privacy/prewrite, Edge-readiness og forseglet artifact. Pages-job
+`105727514271` stoppede før deploy i handoff-kontrollen, fordi den krævede
+`integrated-historical-maintenance` ved enhver source-repair, mens den
+korrekte allerede aktive tilstand var `integrated`.
+
+Lokal 4.0.422 tillader de to gyldige integrerede handlinger og fører også
+aktiv `integrated` gennem source-manifest, source-seal, 79/79-verifikation og
+evidensupload. Target forbliver uden repair-undtagelse; normal central reseal
+sker efter verificeret deploy. Målrettede code-only-, Pages-, aktiverings- og
+workflowtests er grønne; version/RDKS/håndbog og geodatabevis er afsluttet.
+Næste: commit/push, én exact-head, merge og providerfri code-only. Ingen weather eller oneoff.
+DEC-0205.
+
+# CHECKPOINT – 2026-09-18 – 4.0.421 eksakt auditfortsættelse
 
 Arbejd i `RavRadar-4.0.396`, branch
 `codex/4.0.421-exact-audit-continuation`, fra main

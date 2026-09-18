@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.421
+**Håndbogsversion:** 4.0.422
+
+## 89.26 4.0.422 – Den rigtige aktive model må også bruge den kendte kilde
+
+4.0.421 kom sikkert forbi den tidligere auditfejl og byggede hele den nye
+pakke. Den stoppede først i Pages, før hjemmesiden blev ændret. Årsagen var
+en for snæver regel: den forventede en historisk modelvedligeholdelse, selv
+om den centrale model allerede var aktiv og derfor korrekt hed `integrated`.
+
+4.0.422 tillader begge gyldige integrerede situationer. Det betyder ikke, at
+kilden godkendes løst. Pages henter stadig det aktuelle offentlige manifest,
+gendanner det eksakte forseglede artifact, verificerer alle 79 browserfiler
+og gemmer kontrolbeviset før deploy. Den nye målpakke skal bagefter bestå sin
+egen normale 79/79-kontrol uden undtagelsen.
+
+Der hentes ikke nyt vejr. Efter et verificeret deploy genforsegles den
+allerede aktive centrale model gennem den almindelige vej i stedet for at
+opfinde en unødvendig historisk overgang.
+
+Formel og vægte er uændrede. 4.0.422 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.25 4.0.421 – En kendt kontrolrapport kan føres videre sikkert
 

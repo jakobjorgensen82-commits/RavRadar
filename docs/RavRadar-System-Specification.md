@@ -1,5 +1,14 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.422-præcisering – DEC-0205:** En eksakt kendt offentlig
+source-repair kan forekomme, mens den centrale integrerede model allerede er
+aktiv. Pages må da acceptere handlingen `integrated`, men skal stadig før
+deploy observere source-manifestet, gendanne det forseglede source-artifact,
+verificere den fastlåste integrerede 79/79-kilde og gemme source-evidens.
+Targetverifikationen bruger aldrig source-undtagelsen. Efter verificeret
+deploy bruges almindelig integreret reseal; ukendt handling eller drift
+stopper.
+
 **Bindende 4.0.421-præcisering – DEC-0204:** Når code-only genbruger den
 eksakte DEC-0203-kilde, må dens kendte auditdiagnostik kun føres videre, hvis
 kildens offentlige audit, kildens checkpointaudit og den nyberegnede målaudit

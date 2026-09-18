@@ -1,3 +1,19 @@
+# Aktuelt ejerdelta – 2026-09-18 – aktiv integrated source-repair i Pages
+
+- **REQ-4.0.422-INTEGRATED-ACTION-001 – BINDENDE:** Eksakt kendt source-
+  repair må kun bruge `integrated` eller `integrated-historical-maintenance`.
+- **REQ-4.0.422-SOURCE-PROOF-002 – BINDENDE:** Aktiv `integrated` repair skal
+  før deploy observere manifest, gendanne source-seal, verificere den
+  fastlåste 79/79-kilde og gemme privacy-sikker source-evidens.
+- **REQ-4.0.422-TARGET-STRICT-003 – BINDENDE:** Target bruger aldrig repair-
+  undtagelsen og skal bestå normal offentlig kontrol.
+- **REQ-4.0.422-ORDINARY-RESEAL-004 – BINDENDE:** Allerede aktiv integrated
+  afsluttes med almindelig reseal efter deploy, ikke en falsk historisk CAS.
+- **REQ-4.0.422-LIVE-PROOF-005 – ÅBEN P0:** Exact-head, merge, providerfri
+  levering, central afslutning og Chrome-kontrol mangler.
+
+DEC-0205. Ingen oneoff eller provider.
+
 # Aktuelt ejerdelta – 2026-09-18 – eksakt kendt code-only-audit
 
 - **REQ-4.0.421-THREE-AUDITS-001 – BINDENDE:** Kun DEC-0203-repair-id'et må

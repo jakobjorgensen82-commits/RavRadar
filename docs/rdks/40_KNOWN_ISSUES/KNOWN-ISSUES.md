@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-18 – 4.0.421 eksakt auditfortsættelse
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.422 Pages source-repair
+
+- **ISSUE-4.0.421-BUILD – LUKKET:** Run `35383989821`, job `105726470812`
+  bestod eksakt audit, privat runtime, privacy, Edge og artifact uden provider.
+- **ISSUE-4.0.421-PAGES-HANDOFF – SIKKERT STOP / INGEN DEPLOY:** Job
+  `105727514271` afviste korrekt før Pages, men på en for snæver antagelse om
+  historisk maintenance.
+- **ISSUE-INTEGRATED-SOURCE-REPAIR – RETTET LOKALT / LIVEBEVIS MANGLER:**
+  4.0.422 accepterer aktiv `integrated` og fører den gennem hele source-
+  verificeringen før deploy; target er fortsat strict.
+- **ISSUE-4.0.422-LIVE – ÅBEN P0:** Exact-head, merge, code-only, central
+  afslutning og Chrome-kontrol mangler.
+- **ISSUE-RUNTIME-AUDIT-672-420 – ÅBEN P0 EFTER ONLINEGANG:** Den kendte
+  live-diagnostik skal fortsat forklares efter onlinegang.
+
+DEC-0205. Ingen oneoff eller provider.
+
+# CHECKPOINT – 2026-09-18 – 4.0.421 eksakt auditfortsættelse
 
 - **ISSUE-4.0.420-SOURCE – LUKKET:** Exact-head `35381401273`, PR #365 og
   merge `069de220` er gennemført.

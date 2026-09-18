@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.422 fører aktiv integrated source-repair gennem Pages
+
+- 4.0.421-buildjob `105726470812` bestod hele providerfri predeploykæden.
+- Pages stoppede før deploy på en gammel historisk-actionantagelse.
+- 4.0.422 accepterer aktiv integrated, men kræver fortsat komplet source-
+  verifikation og strict target før almindelig central reseal. DEC-0205.
+
 # 2026-09-18 – 4.0.421 fortsætter kun en byte-identisk kendt audit
 
 - 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
