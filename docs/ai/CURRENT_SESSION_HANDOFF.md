@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 kontraktombinding
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.419-model-neutral-runtime-rebind`, fra main `9573264f`.
+
+4.0.418 er merged, men ikke live. Code-only `35366953774` migrerede den
+beskyttede private runtime korrekt som `CONTRACT_ONLY_REBIND` og stoppede kun,
+fordi den efterfølgende publiceringskontrol fejlagtigt krævede en scoreændring.
+Normal weather `35369122090` stoppede før providerkald på den endnu gamle
+kontraktbinding. 4.0.419 skelner nu mellem ren kontraktombinding og reel
+modelbindingsovergang gennem både build og Pages-handoff. Afslut måltests,
+version/RDKS, exact-head, merge og code-only. Kør derefter én normal weather
+på de bevarede cacher. Ingen oneoff. Scheduler pauset. DEC-0202.
+
 # NYESTE CHECKPOINT – 2026-09-16 – 4.0.392 mobil opstart før normal weather
 
 Aktiv branch er `codex/4.0.392-regional-closure-adapter` i

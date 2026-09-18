@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.419 skelner kontraktombinding fra scoreændring
+
+- 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men er endnu ikke live.
+- Code-only `35366953774` migrerede den beskyttede runtime som `CONTRACT_ONLY_REBIND`, men stoppede på et forkert krav om ændret score.
+- Gentagelsen `35368826476` blev afbrudt; normal `35369122090` stoppede før providerkald på den gamle kontraktbinding.
+- 4.0.419 fører den forseglede transitionstype gennem code-only og Pages og bevarer de strenge uændrethedsbeviser. DEC-0202.
+
 # 2026-09-18 – 4.0.418 låser offentlig vejr til produktionens timeakse
 
 - 4.0.417 bestod exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337`.

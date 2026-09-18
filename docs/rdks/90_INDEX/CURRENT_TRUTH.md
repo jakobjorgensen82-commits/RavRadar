@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.419 model-neutral runtimeombinding
+
+4.0.418 bestod exact-head `35366221956`, blev merged gennem PR #362 som main
+`9573264f`, men er ikke live. Code-only `35366953774` gendannede og migrerede
+den beskyttede private runtime korrekt som `CONTRACT_ONLY_REBIND`. Workflowet
+ignorerede derefter klassifikationen og krævede fejlagtigt, at en score skulle
+ændres. Det stoppede før beskyttet publicering og Pages. Gentagelsen
+`35368826476` blev afbrudt.
+
+Normal weather `35369122090` stoppede før alle providerkald, fordi runtime endnu
+havde forgængerens kontrakthash. De gemte providercacher er derfor urørte.
+Lokal 4.0.419 giver ren kontraktombinding sin egen vej med samme datasæt/time,
+uændret vejr, score og geometri samt nul providerkald. Den strenge
+kontrakthash-kontrol bevares. Næste: exact-head, merge, code-only og én normal
+weather på de gemte cacher. DEC-0202. Ingen oneoff.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.418 præcis vejrhorisont
 
 4.0.417 er live efter exact-head `35356064367`, PR #361, main `0890ed0e` og

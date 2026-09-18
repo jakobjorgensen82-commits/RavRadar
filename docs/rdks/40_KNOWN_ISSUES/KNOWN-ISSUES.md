@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.419 model-neutral kontraktombinding
+
+- **ISSUE-4.0.418-SOURCE – LUKKET:** Exact-head `35366221956`, PR #362 og main `9573264f` er gennemført.
+- **ISSUE-CODE-ONLY-CONTRACT-REBIND – RETTET LOKALT / LIVEBEVIS MANGLER:** `35366953774` klassificerede migrationen korrekt som `CONTRACT_ONLY_REBIND`, men workflowet krævede fejlagtigt en scoreændring. 4.0.419 fører transitionstypen gennem build og Pages.
+- **ISSUE-REPEATED-CODE-ONLY-35368826476 – LUKKET:** Gentagelsen blev afbrudt, før samme kendte stop blev spildt igennem igen.
+- **ISSUE-NORMAL-WEATHER-35369122090 – SIKKERT STOP / INGEN PROVIDERKALD:** Normal weather afviste den gamle kontraktbinding før DMI, Copernicus og Open-Meteo. Gemte caches er urørte.
+- **ISSUE-4.0.418-LIVE – ÅBEN P0:** 4.0.418-horisontrettelsen er merged, men afventer 4.0.419 code-only og derefter én almindelig weather.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Bevis præcis horisont, publicering og providerfremgang i almindelig drift før scheduler genaktiveres.
+
+DEC-0202. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.418 præcis offentlig vejrakse
 
 - **ISSUE-4.0.417-DELIVERY – LUKKET:** Exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337` er leveret.

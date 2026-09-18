@@ -114,7 +114,7 @@ jobs:
           if [ "${{ inputs.code_only_repair }}" = "true" ]; then
             test -f "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json"
             test "$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" | awk '{print $1}')" = "$(jq -er '.codeOnlyReuseReportSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")"
-            jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673 and ((.mode == "code-only-reuse" and .scoresChanged == false) or (.mode == "post-cutover-last-mile-repair" and .scoresChanged == true and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" >/dev/null
+            jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673 and ((.mode == "code-only-reuse" and .scoresChanged == false) or (.mode == "post-cutover-contract-rebind" and .scoresChanged == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false) or (.mode == "post-cutover-last-mile-repair" and .scoresChanged == true and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json" >/dev/null
           fi
 
       - name: Require horizon-valid weather before any Pages begin CAS

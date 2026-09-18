@@ -1,3 +1,16 @@
+# Aktiv roadmap – 4.0.419 fra kontraktstop til almindelig weather
+
+1. [x] Lever 4.0.418 source gennem exact-head `35366221956`, PR #362 og main `9573264f`.
+2. [x] Afgræns code-only `35366953774` til forkert krav om scoreændring efter korrekt `CONTRACT_ONLY_REBIND`.
+3. [x] Stop den identiske gentagelse `35368826476` og bevis, at normal `35369122090` stoppede før providerkald på gammel kontraktbinding.
+4. [x] Før migrationsklassifikationen gennem code-only og Pages; kræv uændret score ved ren kontraktombinding.
+5. [x] Afslut version, RDKS, håndbog og målrettede workflow-/runtimekontroller.
+6. [ ] Commit/push, bestå én exact-head, merge og lever én providerfri code-only.
+7. [ ] Kør én almindelig weather på gemte cacher; verificér 4.0.418-horisont, deploy, aktuel time og providerfordeling.
+8. [ ] Bevis næste normale cachevedligeholdelse, genaktivér scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0202. Ingen oneoff; ingen ny providerhentning før code-only er live.
+
 # Aktiv roadmap – 4.0.418 fra tidsaksefejl til stabil normal drift
 
 1. [x] Lever og liveverificér 4.0.417 gennem exact-head, PR #361 og providerfri code-only.
@@ -7,9 +20,10 @@
 5. [x] Bevar gyldige samme-time-komponenter; repræsentér reelle lokale huller som `MISSING` uden at forskyde aksen.
 6. [x] Gennemgå DMI-rotationen og bevar den, fordi reelle del/time-huller allerede prioriteres før fornyelse.
 7. [x] Afslut version, RDKS, håndbog, målrettede slutkontroller og rent geodataversionsbevis.
-8. [ ] Commit/push, bestå én exact-head, merge og lever koden uden providerkald.
-9. [ ] Kør én almindelig weather på de gemte cacher; verificér publicering, aktuel time, lokale femdøgn og providerfordeling.
-10. [ ] Bevis næste almindelige vedligeholdelse; genaktivér først derefter scheduler og fortsæt site-/roadmapgennemgang.
+8. [x] Commit/push, bestå exact-head `35366221956` og merge PR #362 som main `9573264f`.
+9. [ ] Lever koden uden providerkald gennem 4.0.419/DEC-0202.
+10. [ ] Kør én almindelig weather på de gemte cacher; verificér publicering, aktuel time, lokale femdøgn og providerfordeling.
+11. [ ] Bevis næste almindelige vedligeholdelse; genaktivér først derefter scheduler og fortsæt site-/roadmapgennemgang.
 
 DEC-0201. Ingen oneoff; bootstrap kun ved senere målt utilstrækkelig normal fremgang.
 

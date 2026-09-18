@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 kontraktombinding
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.419-model-neutral-runtime-rebind`, baseret på main `9573264f`.
+
+4.0.418 bestod exact-head `35366221956`, PR #362 og merge, men er ikke live.
+Code-only `35366953774` beviste `CONTRACT_ONLY_REBIND` og stoppede på et
+fejlagtigt krav om scoreændring. `35368826476` blev afbrudt som gentagelse.
+Normal `35369122090` stoppede før providerkald, fordi ombindingen endnu ikke
+var publiceret. 4.0.419 bruger nu transitionstypen i build og Pages og kræver
+uændret vejr/score/geometri ved ren kontraktombinding. Næste: måltests,
+version/RDKS, exact-head, merge, code-only og én normal weather. Gemte caches
+bevares; ingen oneoff; scheduler deaktiveret. DEC-0202. Standard/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.418 offentlig vejrakse
 
 Arbejd i `RavRadar-4.0.396`, branch

@@ -1,6 +1,6 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.418";
-import { initialiseI18n } from "./js/i18n.js?v=4.0.418";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.419";
+import { initialiseI18n } from "./js/i18n.js?v=4.0.419";
 
 let appImported = false;
 addEventListener('pageshow', event => {
@@ -13,9 +13,9 @@ addEventListener('pageshow', event => {
 initialiseI18n();
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.418");
+await import("./app.js?v=4.0.419");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
-void import("./js/services/visit-counter.js?v=4.0.418")
+void import("./js/services/visit-counter.js?v=4.0.419")
   .then(({ schedulePublicPageView }) => schedulePublicPageView())
   .catch(() => {});

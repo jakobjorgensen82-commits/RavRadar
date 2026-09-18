@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import {
   assertPostCutoverRepairProjection,
   assertCodeOnlyModelBinding,
+  assertContractOnlyModelBinding,
   assertZoneRegistryVersionOnly,
   CODE_ONLY_MAXIMUM_PRIVATE_CONDITIONS_BYTES,
   CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES,
@@ -13,6 +14,7 @@ import {
   normalizeCodeOnlyProjection,
   normalizeRuntimeReuseMode,
   RUNTIME_REUSE_MODES,
+  runtimeReuseSemantics,
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
@@ -34,6 +36,21 @@ assert.equal(
   normalizeRuntimeReuseMode('post-cutover-last-mile-repair'),
   RUNTIME_REUSE_MODES.POST_CUTOVER_REPAIR,
 );
+assert.equal(
+  normalizeRuntimeReuseMode('post-cutover-contract-rebind'),
+  RUNTIME_REUSE_MODES.CONTRACT_REBIND,
+);
+assert.deepEqual(runtimeReuseSemantics('post-cutover-contract-rebind'), {
+  mode: RUNTIME_REUSE_MODES.CONTRACT_REBIND,
+  savedWeatherContinuation: false,
+  postCutoverRepair: false,
+  contractOnlyRebind: true,
+  reportKind: 'RAVRADAR_POST_CUTOVER_CONTRACT_REBIND',
+  savedProtectedRuntimeReused: true,
+  publicRuntimeAdvanced: false,
+  weatherValuesChanged: false,
+  scoresChanged: false,
+});
 assert.throws(
   () => normalizeRuntimeReuseMode('provider-refresh'),
   /Unknown protected runtime reuse mode/,
@@ -42,6 +59,14 @@ assert.throws(
 const current = ravScoreModelBinding();
 assertCodeOnlyModelBinding(current, current);
 assertCodeOnlyModelBinding({ ...current, modelBundleSha256: 'a'.repeat(64) }, current);
+assertContractOnlyModelBinding(current, current);
+assert.throws(
+  () => assertContractOnlyModelBinding(
+    { ...current, modelBundleSha256: 'a'.repeat(64) },
+    current,
+  ),
+  /Contract-only model binding mismatch/,
+);
 assert.throws(
   () => assertCodeOnlyModelBinding({ ...current, profileId: 'wrong-profile' }, current),
   /changes more than the implementation bundle hash/,
@@ -227,7 +252,9 @@ for (const marker of [
   "grep -Fxq 'status=FRESH' \"$freshness_output\"",
   '--mode "$mode"',
   'mode=post-cutover-last-mile-repair',
+  'mode=post-cutover-contract-rebind',
   '.mode == "post-cutover-last-mile-repair"',
+  '.mode == "post-cutover-contract-rebind"',
   'savedProtectedRuntimeReused == true',
   'publicRuntimeAdvanced == true',
   'code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}',
@@ -333,6 +360,7 @@ const preparationSource = fs.readFileSync(
   'utf8',
 );
 for (const marker of [
+  "[RUNTIME_REUSE_MODES.CONTRACT_REBIND]: 'post-cutover-contract-rebound'",
   "assertPublicRuntimePrivacy(generated.publicDocument, 'startup')",
   "assertPublicRuntimePrivacy(generated.detailsDocument, 'details')",
   "assertPublicRuntimePrivacy(generated.manifest, 'manifest')",
@@ -416,7 +444,9 @@ for (const marker of [
   '.providerRequestsPerformed == false',
   '.weatherValuesChanged == false',
   '.mode == "post-cutover-last-mile-repair"',
+  '.mode == "post-cutover-contract-rebind"',
   '.scoresChanged == true',
+  '.scoresChanged == false',
   '.geometryChanged == false',
   'id: integrated-historical-maintenance-complete',
   'id: failure-reconciliation',

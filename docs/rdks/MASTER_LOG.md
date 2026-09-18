@@ -1,3 +1,18 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.419 kontraktombinding
+
+4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men kom
+ikke online. Code-only `35366953774` beviste korrekt en ren
+`CONTRACT_ONLY_REBIND`; den efterfølgende kontrol krævede fejlagtigt en
+scoreændring og stoppede før writes/Pages. `35368826476` blev afbrudt som
+gentagelse. Normal `35369122090` stoppede før providerkald, fordi den private
+runtime endnu var bundet til forgængerens kontrakthash.
+
+4.0.419 bruger nu migrationens forseglede transitionstype i både code-only og
+Pages. Ren kontraktombinding kræver uændret datasæt/time, vejr, score og
+geometri samt nul providerkald. Modelovergangens strengere scorekrav bevares,
+og kontrakthash-kontrollen er ikke svækket. Ingen oneoff; næste bevis er
+providerfri code-only og én almindelig weather på gemte cacher. DEC-0202.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.418 tidsakse
 
 4.0.417 er live gennem exact-head `35356064367`, PR #361, main `0890ed0e` og
