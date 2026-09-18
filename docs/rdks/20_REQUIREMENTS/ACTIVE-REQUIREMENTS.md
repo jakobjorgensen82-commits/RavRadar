@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-17 – fyld og vedligehold vejrcachen
+
+- **REQ-4.0.407-WIND-HORIZON-001 – BINDENDE:** Ét gammelt vindpunkt er ikke dækning. Mangler et aktivt punkt den sammenhængende 96-timers vindhorisont, forsøges ét HARMONIE-asset først.
+- **REQ-4.0.407-NORMAL-RESUME-002 – BINDENDE:** Genbrug de gemte DMI-, Copernicus- og Open-Meteo-cacher fra `35253587766`; ingen ny oneoff.
+- **REQ-4.0.407-REPLAY-HARD-003 – BINDENDE:** En kompakt scoretilstand, der ikke kan læses tilbage, må ikke deployes.
+- **REQ-4.0.407-SAFE-DIAG-004 – BINDENDE:** Replayfejl samles i faste kategorier uden state, evidens, koordinater, vejrdata eller providerpayload.
+- **REQ-BOOTSTRAP-EVIDENCE-005 – BINDENDE:** Udvidet bootstrap bruges kun, hvis målt restdækning og normal kørselskapacitet viser et reelt behov.
+- **REQ-NORMAL-MAINTENANCE-006 – BINDENDE:** Scheduler genaktiveres først efter grønt frisk deploy og en efterfølgende almindelig kørsel, der beviser cachevedligeholdelse.
+
+DEC-0190. 4.0.406 er live; scheduler er pauset.
+
 # Aktuelt ejerdelta – 2026-09-17 – brugbar mobil og delvind
 
 - **REQ-4.0.406-BOUNDED-SNAPSHOT-001 – BINDENDE:** Vis den aktive integrerede models kompakte startpakke som eksplicit tidsmærket snapshot, når den store detaljepakke udskydes.

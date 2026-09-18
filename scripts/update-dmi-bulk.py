@@ -8675,6 +8675,11 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     any_data = {family: int(details.get("zonesWithAnyData") or 0) for family, details in coverage.items()}
     missing96 = {family: max(0, zone_count - complete96[family]) for family in ("wind", "wave", "marine")}
     missing_any = {family: max(0, zone_count - any_data[family]) for family in ("wind", "wave", "marine")}
+    # HARMONIE is the current-hour wind foundation for the active point
+    # registry. A single old wind value is not coverage: when one or more
+    # active points lack the required horizon, one bounded HARMONIE asset must
+    # run before DKSS/WAM. This also keeps the rolling horizon maintained.
+    atmosphere_foundation_needed = missing96["wind"] > 0
     marine_recovery_active = missing96["marine"] > 0
     marine_foundation_missing = missing_any["marine"] > 0
     marine_foundation_ratio = any_data["marine"] / zone_count
@@ -8808,6 +8813,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "windHorizon": coverage["wind"], "waveHorizon": coverage["wave"], "marineHorizon": coverage["marine"],
         "missingWind": missing96["wind"], "missingWave": missing96["wave"], "missingMarine": missing96["marine"],
         "missingAnyWind": missing_any["wind"], "missingAnyWave": missing_any["wave"], "missingAnyMarine": missing_any["marine"],
+        "atmosphereFoundationNeeded": atmosphere_foundation_needed,
         "marineRecoveryActive": marine_recovery_active,
         "marineFoundationMissing": marine_foundation_missing,
         "marineFoundationRatio": round(marine_foundation_ratio, 4),
@@ -10945,7 +10951,7 @@ def main() -> int:
         operational_wave_residual,
         runtime_remaining(),
         atmosphere_foundation_needed=(
-            int(schedule_coverage.get("missingAnyWind") or 0) > 0
+            schedule_coverage.get("atmosphereFoundationNeeded") is True
         ),
         force_wam_collections=(
             set(WAVE_BOOTSTRAP_COLLECTIONS)

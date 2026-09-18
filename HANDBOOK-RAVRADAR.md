@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.406
+**Håndbogsversion:** 4.0.407
+
+## 89.11 4.0.407 – Vind skal være dækkende, ikke bare findes et sted
+
+4.0.406 er online og viser scorer. Den første almindelige vejrvedligeholdelse
+gennemførte DMI, Copernicus og Open-Meteo og gemte deres fremskridt. De nye
+data blev dog ikke lagt online, fordi den afsluttende kontrol ikke kunne læse
+de nye gemte scoretilstande tilbage.
+
+HARMONIE startede heller ikke. Systemet spurgte forkert, om hvert punkt havde
+bare ét vindpunkt i cachen. Derfor kunne et gammelt vindpunkt få et punkt til
+at se dækket ud, selv om det manglede vind til den aktuelle prognose.
+
+4.0.407 bruger i stedet den rullende vindhorisont. Er mindst ét aktivt punkt
+ikke dækket gennem den krævede 96-timers horisont, forsøges præcis ét aktuelt
+HARMONIE-asset først. Derefter fortsætter samme almindelige kørsel med DKSS,
+WAM og fallbackkæden.
+
+Scorekontrollen er ikke slået fra. Hvis genlæsningen fejler, samles årsagen nu
+i en fast teknisk kategori uden at skrive scoretilstand, koordinater eller
+vejrdata i loggen. Det gør næste fejl rettelig uden at udgive en ugyldig
+pakke. Der bruges ingen oneoff; eksisterende providercacher genbruges.
 
 ## 89.10 4.0.406 – Mobilen kan vise scorer, og delvind hentes først
 

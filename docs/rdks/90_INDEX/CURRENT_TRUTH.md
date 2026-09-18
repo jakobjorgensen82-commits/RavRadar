@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-17 – lokal 4.0.407 og gemt providerfremgang
+
+4.0.406 er live gennem main `459dc41c` og code-only `35252644724` med
+integreret score, 210 zoner og 673 kystdele. Normalrun `35253587766`
+gennemførte DMI, Copernicus og Open-Meteo og gemte alle cacher. Den byggede
+runtime forbedrede aktuelle utilgængelige modes fra op til 592 til 192, men
+blev ikke offentlig.
+
+To fælles problemer er bevist. HARMONIE kørte ikke, fordi schedulerens
+`missingAnyWind` kun målte, om et punkt havde nogen vindværdi. Efter build
+fejlede genlæsningen af den kompakte scoretilstand for alle 673 dele; den
+gamle audit skjulte den fælles underårsag bag én kode.
+
+Lokal 4.0.407 bruger manglende sammenhængende 96-timers vindhorisont og
+bevarer ét-asset-loftet. Auditten samler faste payloadfrie replaykategorier
+og stopper fortsat ugyldige artifacts. Næste er exact-head, merge,
+providerfri kode og én almindelig weather med de gemte cacher. Ingen oneoff;
+bootstrap kun ved målt behov. Scheduler pauset. DEC-0190.
+
 # NYESTE SANDHED – 2026-09-17 – 4.0.406 mobilvisning og delvind
 
 4.0.405 er live 210/673 gennem main `e128b15d` og saved-weather

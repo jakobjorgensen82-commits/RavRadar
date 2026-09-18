@@ -1,3 +1,18 @@
+# Aktiv roadmap – 4.0.407 fra gemte cacher til bevist normal drift
+
+1. [x] Lever 4.0.406 gennem PR #350 og verificér live scorer/femdøgn.
+2. [x] Kør normal weather `35253587766`; gem alle tre providercacher og afgræns deploystoppet til state replay 673/673.
+3. [x] Bevis at HARMONIE ikke startede, fordi `missingAnyWind` accepterede ét gammelt vindpunkt.
+4. [x] Ret triggeren til manglende 96-timers vindhorisont og bevar præcis ét HARMONIE-asset først.
+5. [x] Tilføj payloadfri replayfejlfordeling uden at svække den hårde artifactgate.
+6. [ ] Afslut måltests, RDKS, changelog, håndbog og rent geodataversionsbevis.
+7. [ ] Commit/push, bestå én exact-head, merge og lever kode providerfrit.
+8. [ ] Kør én almindelig weather på gemte cacher; verificér HARMONIE først, 673-state-replay, scorer, providerfordeling og deploy.
+9. [ ] Vurdér bootstrap alene mod målt restdækning; kør den kun ved dokumenteret behov.
+10. [ ] Bevis næste normale vedligeholdelse, genaktivér scheduler og fortsæt site-/roadmapgennemgang.
+
+DEC-0190. Ingen oneoff.
+
 # Aktiv roadmap – 4.0.406 fra manglende delvind til normal drift
 
 1. [x] Bevis live 210/673, 141 brugbare zoner og 69 helt utilgængelige zoner.

@@ -23,6 +23,17 @@ assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
 assert.match(bulk,/operational_wave_residual_by_collection\(/);
 assert.match(bulk,/and not has_operational_wave_residual\(/);
 assert.match(bulk,/atmosphere_foundation_needed/);
+assert.match(bulk,/"atmosphereFoundationNeeded": atmosphere_foundation_needed/);
+assert.match(
+  bulk,
+  /schedule_coverage\.get\("atmosphereFoundationNeeded"\) is True/,
+  'Et gammelt enkelt vindpunkt må ikke skjule et aktuelt HARMONIE-grundbehov.',
+);
+assert.doesNotMatch(
+  bulk,
+  /schedule_coverage\.get\("missingAnyWind"\)/,
+  'HARMONIE må ikke kun starte for punkter, der aldrig har haft vind.',
+);
 assert.match(bulk,/"criticalAtmosphereAssetAttemptLimit": 1/);
 assert.match(bulk,/ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT/);
 assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
@@ -87,6 +98,20 @@ assert diag['preferredMarineDemand']['dkss_idw']==1, diag
 assert diag['preferredWindTailDemand']['dkss_lf']==3, diag
 assert diag['preferredWindTailDemand']['dkss_nsbs']==1, diag
 assert diag['preferredWindTailDemand']['dkss_idw']==1, diag
+
+# One historical wind value is not a complete rolling horizon. This is the
+# production regression from 4.0.406: every point had some cached wind, while
+# hundreds of coastal parts still lacked score-time wind.
+wind_active=[{'id':'PART::WIND-GAP','coastType':'east'}]
+wind_valid=(datetime.now(timezone.utc).replace(minute=0,second=0,microsecond=0)
+            +timedelta(hours=1)).isoformat().replace('+00:00','Z')
+wind_previous={'zones':{'PART::WIND-GAP':{'hourly':{
+ wind_valid:{'wind-speed-10m':5.0},
+}}},'collectionState':{}}
+_,wind_diag=module.collection_schedule(wind_previous,wind_active)
+assert wind_diag['missingAnyWind']==0, wind_diag
+assert wind_diag['missingWind']==1, wind_diag
+assert wind_diag['atmosphereFoundationNeeded'] is True, wind_diag
 
 # Once marine coverage is broadly established, a few persistent gaps must not
 # block a completely missing atmosphere model from both productive slots.

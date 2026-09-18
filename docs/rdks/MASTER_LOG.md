@@ -1,3 +1,20 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.407 vejrgenopretning
+
+Ejeren kræver, at vejrhentningen bringes i stabil normal drift, cachen fyldes
+og vedligeholdes, og at bootstrap kun bruges, hvis det faktisk giver mening.
+Derefter fortsætter det stadig aktuelle roadmap autonomt.
+
+4.0.406 er live gennem PR #350 og main `459dc41c`. Normalrun `35253587766`
+gennemførte og gemte DMI, Copernicus og Open-Meteo. Den nye runtime havde 192
+utilgængelige aktuelle modes, men blev ikke deployet, fordi kompakt state
+ikke kunne genlæses for 673/673 dele. HARMONIE kørte ikke: et enkelt gammelt
+vindpunkt blev fejlagtigt behandlet som grunddækning.
+
+4.0.407 måler nu den sammenhængende 96-timers vindhorisont og forsøger højst
+ét HARMONIE-asset først. Replayauditten forbliver hård, men samler den
+præcise årsag i en fast payloadfri kategori. Ingen oneoff; gemte cacher
+genbruges, og bootstrap kræver målt behov. DEC-0190.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-17 – 4.0.406 mobil og delvind
 
 4.0.405 er live som integreret 210/673. Mobilen skjulte 141 gyldige scorer,
