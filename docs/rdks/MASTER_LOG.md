@@ -1,3 +1,15 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.417 afledt score
+
+4.0.416 er merged som `496ba278`. Code-only `35351928923` reparerede alle 673
+continuations og efterlod målinger urørte. Auditten viste derefter 156 gamle
+mode-resultater ovenpå den reparerede state; replayfejl var nul, og intet blev
+publiceret.
+
+4.0.417 genberegner hele den aktuelle afledte kæde og accepterer kun samme
+tilgængeligheds-/historikklasse. En intern providerfri repair-mode tillader den
+reelle scoreændring, men kræver uændret vejr, tid, geometri, flowpunkter og
+tidsakser. Modelbundle er fortsat `039abdfe...`. DEC-0200.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.416 privat last-mile
 
 4.0.415 er merged som `3a705259`. Saved-weather `35349088863` beviste den

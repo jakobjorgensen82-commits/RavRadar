@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.417 afledt scorekæde
+
+4.0.416 bestod exact-head `35351272955`, PR #360 og main `496ba278`.
+Providerfri `35351928923` reparerede 673/673 continuations uden måleændringer,
+men auditten fandt 156 gamle aktuelle modes ovenpå den nye state. Replay var
+grøn; ingen beskyttet runtime eller Pages blev skrevet.
+
+4.0.417 genberegner mode, offentlig delscore og aktuel zonevinder samlet.
+Klassifikation skal være uændret, og en særskilt proof låser vejr, tid,
+geometri, flowpunkter og tidsakser. Næste er én exact-head, merge og samme
+providerfri code-only; derefter browserbevis og sikker normal weather.
+DEC-0200. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.416 kendt privat state kan repareres
 
 4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.

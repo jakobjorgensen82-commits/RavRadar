@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – sammenhængende same-time-score
+
+- **REQ-4.0.417-DERIVED-CHAIN-001 – BINDENDE:** En repareret continuation skal genberegne begge aktuelle modes, offentlige delscorer og zonens aktuelle samlede række i samme migration.
+- **REQ-4.0.417-CLASSIFICATION-002 – BINDENDE:** Tilgængelighed, historikkvalitet, kalibrering, semantik, dækning og reason codes må ikke ændres under same-time-reparationen.
+- **REQ-4.0.417-NO-WEATHER-CHANGE-003 – BINDENDE:** Datasæt/tid, offentlige vejrrækker, alle deles aktuelle vejr, geometri, flowpunkter og scoretidsakser skal være eksakt uændrede.
+- **REQ-4.0.417-SCORE-CHANGE-004 – BINDENDE:** Providerfri same-time-publicering må acceptere scoreændringer alene i den interne reparationsrute og skal bevise, at en reel afledt score faktisk ændres.
+- **REQ-4.0.417-NO-PROVIDER-005 – BINDENDE:** Rettelsen må ikke hente DMI, Copernicus eller Open-Meteo og må ikke starte oneoff.
+
+DEC-0200.
+
 # Aktuelt ejerdelta – 2026-09-18 – privat last-mile-ombinding
 
 - **REQ-4.0.416-CURRENT-CANONICAL-001 – BINDENDE:** Når forgængerens validator afviser en gemt integrated continuation, må ombinding kun fortsætte, hvis den aktuelle validator accepterer og returnerer en faktisk kanonisk reparation.

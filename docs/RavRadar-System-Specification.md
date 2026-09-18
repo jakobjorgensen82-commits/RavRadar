@@ -1,5 +1,12 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.417-præcisering – DEC-0200:** Når private same-time-state
+repareres, skal begge aktuelle modes, offentlige delresultater og zonens
+aktuelle samlede række genberegnes fra den reparerede state. Tilgængelighed og
+historikkvalitet må ikke skifte. Providerfri publicering må kun acceptere de
+afledte scoreændringer, når datasæt/tid, offentligt vejr, alle 673 deles
+aktuelle vejr, geometri, flowpunkter og scoretidsakser er eksakt uændrede.
+
 **Bindende 4.0.416-præcisering – DEC-0199:** Ved privat same-binding-ombinding
 forsøges forgængerens validator først. Hvis den afviser, må den aktuelle
 validator kun føre state videre ved at returnere en faktisk kanonisk ændring

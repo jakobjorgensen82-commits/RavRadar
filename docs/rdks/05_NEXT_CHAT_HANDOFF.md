@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.417 sammenhængende score
+
+Arbejd i `RavRadar-4.0.396`. 4.0.416 er merged som main `496ba278` efter grøn
+exact-head `35351272955`. Code-only `35351928923` reparerede 673 states uden
+måleændringer, men stoppede før writes/Pages på 156 gamle afledte modes.
+
+4.0.417 genberegner kompakte modes, offentlige delscorer og aktuelle zoner og
+beviser uændret klassifikation, vejr, tid og geometri. Målrettet 210/673-audit,
+workflowtests og modelbundle er grønne lokalt. Næste: docs/slutkontrol,
+commit/push, én exact-head, merge og providerfri code-only. Derefter browser
+og sikker current-main normal weather. Ingen oneoff. DEC-0200. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.416 privat last-mile-ombinding
 
 Arbejd i `RavRadar-4.0.396`, branch

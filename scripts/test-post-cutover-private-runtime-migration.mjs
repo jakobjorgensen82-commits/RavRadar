@@ -308,6 +308,11 @@ for (const marker of [
   'Private runtime inventory is not the exact nine-file allowlist',
   'Private runtime migration changed forbidden paths',
   'Current continuation repair changed forbidden paths',
+  'reconcileIntegratedCurrentPartProjection',
+  'availability or history classification changed during repair',
+  'buildIntegratedZoneHourlyProjection',
+  'recomputedModeCount',
+  'recomputedZoneCount',
   'summarizeIndependentErrors(errors)',
   'raw Git archive is therefore not a byte-identical reconstruction',
 ]) assert.match(source, new RegExp(marker.replace(/[.*+?^$()|[\]\\]/g, '\\$&')));

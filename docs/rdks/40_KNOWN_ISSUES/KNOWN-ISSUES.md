@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.417 afledt scorekæde
+
+- **ISSUE-4.0.416-DELIVERY – LUKKET:** Exact-head `35351272955`, PR #360 og main `496ba278` er leveret.
+- **ISSUE-PRIVATE-LAST-MILE-REBIND – LUKKET:** `35351928923` reparerede 673/673 continuations; målinger var uændrede og replay grøn.
+- **ISSUE-SAME-TIME-DERIVED-SCORE – RETTET LOKALT / LIVEBEVIS MANGLER:** 156 aktuelle modes var ikke genberegnet. 4.0.417 genberegner mode, offentlig delscore og aktuel zonevinder samlet.
+- **ISSUE-LIVE-OLD-HOUR-HISTORY – ÅBEN P0:** Providerfri levering og browserbevis mangler.
+- **ISSUE-OLD-WEATHER-GHOST-RUNS – ÅBEN P0 FØR NORMAL WEATHER:** `34868901509`, `34613079069` og `34228112413` må ikke starte; normal drift kræver en ny current-main-indgang.
+
+DEC-0200. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.416 privat last-mile-ombinding
 
 - **ISSUE-4.0.415-DELIVERY – LUKKET:** Exact-head `35348220691`, PR #359 og main `3a705259` er leveret.
