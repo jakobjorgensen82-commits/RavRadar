@@ -299,6 +299,10 @@ CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 REGIONAL_PROXY_MAX_HOLD_HOURS = 3
 OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS = frozenset({"DK-B05-11"})
+OPERATIONAL_WAVE_PROXY_SOURCE_ZONE_IDS = frozenset({
+    "DK-B05-10",
+    "DK-B05-12",
+})
 OPERATIONAL_WAVE_NATIVE_PART_COUNT = 670
 TARGETS = {
     "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"],
@@ -4196,6 +4200,21 @@ def native_operational_wave_zones(
     return list(by_id.values())
 
 
+def operational_wave_proxy_support_zones(
+    collection: str,
+    zones: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Native parent rows required by the one approved Feggesund proxy."""
+    if collection not in WAVE_BOOTSTRAP_COLLECTIONS:
+        return []
+    return [
+        zone for zone in zones
+        if str(zone.get("id") or "")
+            in OPERATIONAL_WAVE_PROXY_SOURCE_ZONE_IDS
+        and wave_owner_for_target(zone) == collection
+    ]
+
+
 def build_operational_zone_config(
     zones_geo: dict[str, Any],
     coastal_part_targets: list[dict[str, Any]],
@@ -4273,10 +4292,21 @@ def operational_wave_collection_evidence(
         *exact_required,
     }, key=epoch))
     relevant = native_operational_wave_zones(collection, zones)
-    required_pairs = len(relevant) * len(valid_times)
+    proxy_support = operational_wave_proxy_support_zones(collection, zones)
+    proof_targets = [
+        *((zone, str(zone.get("id") or "").removeprefix("PART::"))
+          for zone in relevant),
+        *((zone, f"PROXY_SOURCE::{str(zone.get('id') or '')}")
+          for zone in proxy_support),
+    ]
+    required_pairs = len(proof_targets) * len(valid_times)
     evidence_by_zone: dict[str, dict[str, Any]] = {}
     missing_valid_times: set[str] = set()
-    for zone in relevant:
+    pair_id_by_zone_id = {
+        str(zone.get("id") or ""): pair_id
+        for zone, pair_id in proof_targets
+    }
+    for zone, _pair_id in proof_targets:
         zone_id = str(zone.get("id") or "")
         point = (document.get("zones") or {}).get(zone_id) or {}
         identity = sampling_identity(zone)
@@ -4299,10 +4329,10 @@ def operational_wave_collection_evidence(
     )
     target_pair_keys = frozenset(
         (
-            str(zone.get("id") or "").removeprefix("PART::"),
+            pair_id,
             required_hour,
         )
-        for zone in relevant
+        for _zone, pair_id in proof_targets
         for required_hour in valid_times
     )
     verified_pair_keys: set[tuple[str, str]] = set()
@@ -4314,7 +4344,7 @@ def operational_wave_collection_evidence(
             for required_hour, used in evidence.items()
             if not any(key in lineage_conflicts for key, _lineage in used)
         }
-        part_id = zone_id.removeprefix("PART::")
+        part_id = pair_id_by_zone_id[zone_id]
         for required_hour in resolved_without_conflicts:
             pair_key = (part_id, required_hour)
             verified_pair_keys.add(pair_key)
@@ -4330,10 +4360,24 @@ def operational_wave_collection_evidence(
         )
     closure = {
         "relevantZoneCount": len(relevant),
+        "proxySupportZoneCount": len(proxy_support),
         "requiredHourCount": len(valid_times),
         "requiredPairCount": required_pairs,
         "verifiedPairCount": len(verified_pair_keys),
         "missingPairCount": required_pairs - len(verified_pair_keys),
+        "nativeRequiredPairCount": len(relevant) * len(valid_times),
+        "proxySupportRequiredPairCount": len(proxy_support) * len(valid_times),
+        "proxySupportVerifiedPairCount": sum(
+            pair_key[0].startswith("PROXY_SOURCE::")
+            for pair_key in verified_pair_keys
+        ),
+        "proxySupportMissingPairCount": (
+            len(proxy_support) * len(valid_times)
+            - sum(
+                pair_key[0].startswith("PROXY_SOURCE::")
+                for pair_key in verified_pair_keys
+            )
+        ),
         "lineageConflictNativeTimeCount": len(lineage_conflicts),
         "lineageConflictRequiredPairCount": lineage_conflict_pairs,
         "rangeStart": valid_times[0],
@@ -4869,7 +4913,17 @@ def apply_operational_wave_closure_to_run_info(
         "remainingClosureByCategory": {
             "exactRequiredHourCount": exact_missing,
             "forecastHourCount": len(missing) - exact_missing,
-            "nativePairCount": int(closure.get("missingPairCount") or 0),
+            "nativePairCount": max(
+                0,
+                int(closure.get("missingPairCount") or 0)
+                - int(closure.get("proxySupportMissingPairCount") or 0),
+            ),
+            "feggesundProxySupportPairCount": int(
+                closure.get("proxySupportMissingPairCount") or 0
+            ),
+            "operationalPairCount": int(
+                closure.get("missingPairCount") or 0
+            ),
             "lineageConflictPairCount": int(
                 closure.get("lineageConflictRequiredPairCount") or 0
             ),
@@ -4919,6 +4973,7 @@ def promote_operational_wave_collection_stage(
         if asset_processing_seconds is not None:
             checkpoint_controller.observe_asset_duration(
                 asset_processing_seconds,
+                cost_family=collection,
             )
         return {**decision, "checkpointWritten": False}
     commit_operational_wave_collection_candidate(
@@ -4938,6 +4993,7 @@ def promote_operational_wave_collection_stage(
     )
     checkpoint_written = checkpoint_controller.note_committed_asset(
         seconds=asset_processing_seconds,
+        cost_family=collection,
     )
     if force_checkpoint and not checkpoint_written:
         checkpoint_written = checkpoint_controller.flush_if_due(force=True)
@@ -6946,6 +7002,7 @@ def execute_private_wave_history_bootstrap(
                 continue
             if not controller.can_start_asset(
                 reserve_seconds=preserve_for_later_wam,
+                cost_family=collection,
             ):
                 if preserve_for_later_wam <= 0:
                     controller.flush_if_due(force=True)
@@ -7146,6 +7203,7 @@ def execute_private_wave_history_bootstrap(
                 locked[collection].add(asset.valid_time)
             checkpoint_written = controller.note_committed_asset(
                 seconds=asset_processing_seconds,
+                cost_family=collection,
             )
             if checkpoint_written:
                 progress(
@@ -8667,7 +8725,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     active_zones = {zone_id: (previous.get("zones") or {}).get(zone_id, {}) for zone_id in active_ids}
     zone_count = max(1, len(active_ids))
     coverage = {
-        "wind": coverage_summary(active_zones, ("wind-speed-10m",)),
+        "wind": coverage_summary(active_zones, ("wind-speed-10m", "wind-dir-10m")),
         "wave": coverage_summary(active_zones, ("significant-wave-height",)),
         "marine": coverage_summary(active_zones, ("sea-mean-deviation", "current-u", "current-v")),
     }
@@ -8710,7 +8768,11 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     # Otherwise valid tail data for IDW/NSBS can be starved indefinitely.
     missing_wind_tail_zone_ids = [
         zone_id for zone_id in active_ids
-        if component_horizon_hours(active_zones.get(zone_id, {}), ("wind-tail-u-10m", "wind-tail-v-10m")) < COMPLETE_HORIZON_HOURS
+        if wind_component_horizon_hours(
+            zone_id,
+            active_zones.get(zone_id, {}),
+            "windTail",
+        ) < COMPLETE_HORIZON_HOURS
     ]
     preferred_wind_tail_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
     for zone_id in missing_wind_tail_zone_ids:
@@ -8910,9 +8972,115 @@ def component_horizon_hours(zone: dict[str, Any], required: tuple[str, ...], now
     return max(0.0, (contiguous_end - now_value) / 3600.0)
 
 
+def _wind_series_identity(source: dict[str, Any], component: str) -> str:
+    """Stable fields that the forecast consumer requires across endpoints."""
+    fields = {
+        key: source.get(key)
+        for key in (
+            "collection", "collectionFamily", "modelRun", "component",
+            "componentKind", "entityId", "parentZoneId", "entityType",
+            "samplingContext", "gridDefinitionSha256", "spatialSelection",
+            "spatialSemanticsVersion", "vectorSelection",
+            "vectorSemanticsVersion", "fieldSet", "gridPoint",
+            "samplingPoint",
+        )
+    }
+    fields["distanceKm"] = round(float(source.get("distanceKm")), 3)
+    if component == "wind":
+        fields["vectorReference"] = source.get("vectorReference")
+        fields["vectorTransform"] = source.get("vectorTransform")
+    return json.dumps(fields, sort_keys=True, separators=(",", ":"))
+
+
+def wind_component_horizon_hours(
+    zone_id: str,
+    zone: dict[str, Any],
+    component: str,
+    reference_epoch: float | None = None,
+) -> float:
+    """Measure hourly wind the JS forecast can actually resolve and verify.
+
+    Raw native points are not an hourly horizon. Endpoints must carry one full
+    vector tuple, valid native provenance and one unchanged model/grid/entity
+    series. This mirrors the bounded four-hour interpolation and 95-minute
+    edge rule consumed by buildDmiForecastHourly.
+    """
+    if component not in {"wind", "windTail"}:
+        raise ValueError("Unsupported wind component")
+    reference = (
+        production_reference_hour().timestamp()
+        if reference_epoch is None
+        else math.floor(float(reference_epoch) / 3600.0) * 3600.0
+    )
+    fields = (
+        ("wind-speed-10m", "wind-dir-10m")
+        if component == "wind"
+        else ("wind-tail-speed-10m", "wind-tail-dir-10m")
+    )
+    groups: dict[str, list[float]] = {}
+    for valid_time, hour in (zone.get("hourly") or {}).items():
+        if not isinstance(hour, dict) or not all(
+            isinstance(hour.get(field), (int, float))
+            and not isinstance(hour.get(field), bool)
+            and math.isfinite(float(hour[field]))
+            for field in fields
+        ):
+            continue
+        source = (hour.get("sources") or {}).get(component)
+        if not complete_native_source_for_hour(
+            source,
+            component,
+            zone_id,
+            zone,
+            valid_time,
+        ):
+            continue
+        groups.setdefault(_wind_series_identity(source, component), []).append(
+            epoch(valid_time)
+        )
+    ordered_groups = [sorted(set(values)) for values in groups.values() if values]
+    if not ordered_groups:
+        return 0.0
+
+    def resolvable(target: float) -> bool:
+        for times in ordered_groups:
+            if target in times:
+                return True
+            before = max((value for value in times if value < target), default=None)
+            after = min((value for value in times if value > target), default=None)
+            if before is not None and after is not None:
+                if after - before <= 4 * 3600:
+                    return True
+                continue
+            edge = after if before is None else before
+            if edge is not None and abs(edge - target) <= 95 * 60:
+                return True
+        return False
+
+    resolved_end = None
+    for offset in range(HOURS + 7):
+        target = reference + offset * 3600
+        if not resolvable(target):
+            break
+        resolved_end = target
+    return 0.0 if resolved_end is None else max(0.0, (resolved_end - reference) / 3600.0)
+
+
 def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[str, Any]:
     now_value = time.time()
-    horizons = [component_horizon_hours(zone, required, now_value) for zone in zones.values()]
+    wind_component = (
+        "wind"
+        if required == ("wind-speed-10m", "wind-dir-10m")
+        else "windTail"
+        if required == ("wind-tail-speed-10m", "wind-tail-dir-10m")
+        else None
+    )
+    horizons = [
+        wind_component_horizon_hours(zone_id, zone, wind_component, now_value)
+        if wind_component
+        else component_horizon_hours(zone, required, now_value)
+        for zone_id, zone in zones.items()
+    ]
     return {
         "zonesWithAnyData": sum(1 for value in horizons if value > 0),
         "zonesWith24Hours": sum(1 for value in horizons if value >= 24),
@@ -9914,13 +10082,13 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     diag["waterSourceCount"] = sum(1 for zone_id in result["zones"] if zone_id.startswith("SOURCE::"))
     diag["coastalPartCount"] = len(coastal_part_zones)
     diag["coastalPartComponentHorizonCoverage"] = {
-        "wind": coverage_summary(coastal_part_zones, ("wind-speed-10m",)),
+        "wind": coverage_summary(coastal_part_zones, ("wind-speed-10m", "wind-dir-10m")),
         "wave": coverage_summary(coastal_part_zones, ("significant-wave-height",)),
         "marine": coverage_summary(coastal_part_zones, ("sea-mean-deviation", "current-u", "current-v")),
     }
     component_coverage = {
-        "wind": coverage_summary(production_zones, ("wind-speed-10m",)),
-        "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m",)),
+        "wind": coverage_summary(production_zones, ("wind-speed-10m", "wind-dir-10m")),
+        "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m", "wind-tail-dir-10m")),
         "wave": coverage_summary(production_zones, ("significant-wave-height",)),
         "marine": coverage_summary(production_zones, ("sea-mean-deviation", "current-u", "current-v")),
     }
@@ -10191,11 +10359,19 @@ class ProgressCheckpointController:
         self.last_write_monotonic = time.monotonic()
         self.bulk_dirty = False
         self.sidecars_dirty = False
-        self.asset_seconds: list[float] = []
+        self.asset_seconds_by_family: dict[str, list[float]] = {}
         self.progress_write_seconds: list[float] = []
 
-    def can_start_asset(self, reserve_seconds: float = 0.0) -> bool:
-        expected_asset = percentile_95(self.asset_seconds, 75.0)
+    def can_start_asset(
+        self,
+        reserve_seconds: float = 0.0,
+        *,
+        cost_family: str = "generic",
+    ) -> bool:
+        expected_asset = percentile_95(
+            self.asset_seconds_by_family.get(cost_family, []),
+            75.0,
+        )
         expected_write = percentile_95(self.progress_write_seconds, 10.0)
         return runtime_remaining() > max(0.0, reserve_seconds) + max(
             30.0, expected_asset + expected_write + 10.0,
@@ -10206,12 +10382,15 @@ class ProgressCheckpointController:
         *,
         seconds: float | None = None,
         sidecars_dirty: bool = False,
+        cost_family: str = "generic",
     ) -> bool:
         self.committed_assets_since_write += 1
         self.bulk_dirty = True
         self.sidecars_dirty = self.sidecars_dirty or sidecars_dirty
         if seconds is not None and math.isfinite(float(seconds)):
-            self.asset_seconds.append(float(seconds))
+            self.asset_seconds_by_family.setdefault(cost_family, []).append(
+                float(seconds)
+            )
         return self.flush_if_due()
 
     def mark_bulk_dirty(self) -> None:
@@ -10220,10 +10399,17 @@ class ProgressCheckpointController:
     def mark_sidecars_dirty(self) -> None:
         self.sidecars_dirty = True
 
-    def observe_asset_duration(self, seconds: float) -> None:
+    def observe_asset_duration(
+        self,
+        seconds: float,
+        *,
+        cost_family: str = "generic",
+    ) -> None:
         """Learn runtime without claiming that candidate rows were committed."""
         if math.isfinite(float(seconds)):
-            self.asset_seconds.append(float(seconds))
+            self.asset_seconds_by_family.setdefault(cost_family, []).append(
+                float(seconds)
+            )
 
     def flush_if_due(self, *, force: bool = False) -> bool:
         due = progress_checkpoint_due(
@@ -10657,10 +10843,30 @@ def main() -> int:
         coastal_part_targets,
         locked_production_reference,
     )
+    active_operational_zones = build_operational_zone_config(
+        zones_geo,
+        coastal_part_targets,
+    )
+    active_wind_zones = {
+        str(zone.get("id")): (previous.get("zones") or {}).get(
+            str(zone.get("id")), {}
+        )
+        for zone in active_operational_zones
+        if str(zone.get("id") or "")
+    }
+    live_wind_horizon = coverage_summary(
+        active_wind_zones,
+        ("wind-speed-10m", "wind-dir-10m"),
+    )
+    previous.setdefault("diagnostics", {})[
+        "verifiedHourlyWindCoverageBeforeFreshShortcut"
+    ] = live_wind_horizon
     previous_refresh_status = str(previous.get("refreshStatus") or "").lower()
     horizon_coverage = previous_diag.get("componentHorizonCoverage") or {}
     previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(previous.get("zones") or {}) or 1))
-    wind_horizon_healthy = int((horizon_coverage.get("wind") or {}).get("zonesWith96Hours") or 0) >= previous_zone_count
+    wind_horizon_healthy = int(live_wind_horizon.get("zonesWith96Hours") or 0) >= max(
+        1, len(active_wind_zones),
+    )
     marine_horizon_healthy = int((horizon_coverage.get("marine") or {}).get("zonesWith96Hours") or 0) >= previous_zone_count
     marine_cache_healthy = (
         int(previous_ocean.get("waterLevelZones") or 0) > 0
@@ -10672,10 +10878,6 @@ def main() -> int:
         and coastal_part_current_cache_healthy
         and not previous_marine_errors
         and previous_refresh_status not in {"failed", "partial"}
-    )
-    active_operational_zones = build_operational_zone_config(
-        zones_geo,
-        coastal_part_targets,
     )
     previous_operational_wave_residual = (
         operational_wave_residual_by_collection(
@@ -11534,10 +11736,16 @@ def main() -> int:
                 collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
             collection_operational_wave_zones = (
-                native_operational_wave_zones(
-                    collection,
-                    active_zones_config,
-                )
+                [
+                    *native_operational_wave_zones(
+                        collection,
+                        active_zones_config,
+                    ),
+                    *operational_wave_proxy_support_zones(
+                        collection,
+                        active_zones_config,
+                    ),
+                ]
                 if bootstrap_operational_wam
                 else []
             )
@@ -12149,6 +12357,7 @@ def main() -> int:
                         break
                     if not checkpoint_controller.can_start_asset(
                         reserve_seconds=reserve_for_pending_critical,
+                        cost_family=collection,
                     ):
                         if reserve_for_pending_critical > 0:
                             budget_stop = (
@@ -12395,6 +12604,7 @@ def main() -> int:
                     break
                 if not checkpoint_controller.can_start_asset(
                     reserve_seconds=reserve_for_pending_critical,
+                    cost_family=collection,
                 ):
                     checkpoint_controller.flush_if_due(force=True)
                     if reserve_for_pending_critical > 0:
@@ -12813,7 +13023,8 @@ def main() -> int:
                             recognized.update(REQUIRED_TARGETS["wave"])
                             run_info["recognizedParameters"] = sorted(recognized)
                             checkpoint_controller.observe_asset_duration(
-                                time.monotonic() - asset_processing_started
+                                time.monotonic() - asset_processing_started,
+                                cost_family=collection,
                             )
                             checkpoint_controller.mark_bulk_dirty()
                             checkpoint_controller.flush_if_due(force=True)
@@ -13224,6 +13435,7 @@ def main() -> int:
                         if wave_phase_deferred_quality_promotion:
                             checkpoint_controller.observe_asset_duration(
                                 seconds=asset_processing_seconds,
+                                cost_family=collection,
                             )
                             checkpoint_status = (
                                 "quality-kandidat akkumuleret"
@@ -13239,12 +13451,14 @@ def main() -> int:
                     elif bootstrap_operational_wam:
                         checkpoint_controller.observe_asset_duration(
                             seconds=asset_processing_seconds,
+                            cost_family=collection,
                         )
                         checkpoint_status = "asset-kandidat afvist"
                     else:
                         checkpoint_written = (
                             checkpoint_controller.note_committed_asset(
                                 seconds=asset_processing_seconds,
+                                cost_family=collection,
                             )
                         )
                         checkpoint_status = (

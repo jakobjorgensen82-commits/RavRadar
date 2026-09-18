@@ -16,8 +16,8 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
-assert.equal(latest.version, '20260918125600');
-assert.equal(latest.filename, '20260918125600_last_mile_history_envelope_binding.sql');
+assert.equal(latest.version, '20260918190000');
+assert.equal(latest.filename, '20260918190000_weather_input_resolution_binding.sql');
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
@@ -31,5 +31,5 @@ assert.ok(
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : 'Code-only migration dry-run contains exactly the one expected last-mile envelope binding successor.',
+    : 'Code-only migration dry-run contains exactly the one expected weather-input binding successor.',
 );

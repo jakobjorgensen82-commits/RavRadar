@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.422",
+  "handbookVersion": "4.0.423",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-18",
   "sections": [
+    {
+      "id": "verified-weather-completeness-and-terminal-4-0-423",
+      "chapter": "89.27",
+      "title": "4.0.423 – Komplet betyder gyldige data, ikke håndterede huller",
+      "summary": "MISSING holder resten af siden brugbar, men kun 100 procent gyldig dækning er komplet; produktionens slutstatus skelner deploy fra diagnostik.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar skal altid tilstræbe gyldige data i alle nødvendige felter, steder og timer. <code>MISSING</code> er kun sikker nødadfærd og tæller aldrig som komplethed.</div><div class=\"handbook-stack\"><p>4.0.423 skelner mellem sikkert håndterede kystdele og de dele, der faktisk har gyldige, scoreklare data. Kun 673/673 uden <code>MISSING</code> er komplet. Et lokalt hul må fortsat ikke slukke resten af siden, og næste normale kørsel fortsætter reparationen.</p><p>Vinddækning måles på brugbare speed+direction-timer med korrekt proveniens. HARMONIE-seriekanten, privat replayhistorik, Feggesunds to nødvendige kildezoner og tidsbudget pr. providerfamilie er rettet samlet. En payloadfri stageoversigt gør eventuelle rester præcist sporbare.</p><p>Et verificeret Pages-deploy rapporteres som deployet, selv om en efterfølgende diagnostik finder et problem. Problemet forbliver synligt og uafsluttet; det forveksles blot ikke længere med et manglende deploy. RavScore-formel, vægte, geometri og providerprioritet er uændrede.</p></div>"
+    },
     {
       "id": "integrated-public-source-repair-pages-4-0-422",
       "chapter": "89.26",
@@ -777,7 +784,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.422 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.423 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.416 ændrer ikke scoreformlen eller vægtene; versionen fører den kendte gemte last-mile-state gennem den sikre kanoniske reparation uden providerkald.</div><div class=\"handbook-stack\"><p><strong>Aktuel rettelse:</strong> Hvis ny usikkerhed opstår efter en konservativ nulstilling, bliver det gemte historikinterval udvidet til også at indeholde det fortsat gyldige punktspor. Privat ombinding tillader kun denne faktiske kanoniske ændring i minimums- og maksimumssporet; alle andre state-, vejr- eller måleændringer afvises.</p><p><strong>Driftsgenopretning:</strong> Central version 24 er registreret, den append-only binding er installeret, og samme-time code-only kan genbruge den eksakte beskyttede 4.0.410-runtime. Candidate, retur og cutover forbliver afvist.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop.</div></div>"
     },

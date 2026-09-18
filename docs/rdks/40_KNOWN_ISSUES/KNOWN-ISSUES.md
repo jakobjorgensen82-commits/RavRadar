@@ -1,4 +1,33 @@
-# NYESTE CHECKPOINT – 2026-09-18 – 4.0.422 Pages source-repair
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423, produktionsbevis afventer
+
+- **ISSUE-4.0.422-LIVE – LUKKET:** Main `8a95c7cf`, normalrun
+  `35386276428`, build/Pages/offentlig verifikation gennemført.
+- **ISSUE-RUNTIME-AUDIT-672-420 – OPDELT:** De 672 replayafvigelser er
+  væk i seneste audit. 420 aktuelle zonetilstande mangler fortsat; separat
+  input-/dækningsproblem, ikke HTTP 420 eller bevis på 420 ens kodefejl.
+- **ISSUE-WEATHER-TERMINAL-FALSE-FAILURE – LOKALT RETTET:** Manuel og cron
+  bruger samme verificerede terminal. Produktionsbevis afventer normalrun.
+- **ISSUE-WIND-HOURLY-RESOLVABILITY – LOKALT RETTET P0:** Planner måler nu
+  komplette, proveniensbundne speed+direction-timer; HARMONIE kan vælge en
+  sikker alternativ bracket inden for samme native serie.
+- **ISSUE-REPLAY-PUBLIC-AXIS-TRUNCATION – LOKALT RETTET P0:** Privat replay
+  bruger sin eksplicitte historiske start; offentlig akse er fortsat +0..+117.
+- **ISSUE-FEGGESUND-ACQUISITION-DEMAND – LOKALT RETTET P0:** WAM-DW-plan,
+  candidate og closure kræver nu også de to nødvendige parentzoner. Faktisk
+  354/354-bevis afventer normalrun.
+- **ISSUE-DMI-FAMILY-COST-STARVATION – LOKALT RETTET:** Asset-p95 holdes pr.
+  providerfamilie. Produktionsvirkning afventer normalrun.
+- **ISSUE-INPUT-REPAIR-DELIVERY-BINDING – LOKALT RETTET:** Den anvendte
+  migration forbliver immutable. Append-only `20260918190000` binder begge
+  ændrede modelbundles og continuationkontrakten.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – ÅBEN P0:** `MISSING` er kun
+  robusthed og tæller ikke som gyldig dækning. 4.0.423 rapporterer scoreklar
+  ratio separat; næste normale run skal bevise 100 % gyldige nødvendige data.
+
+Beviser, afkræftede hypoteser og fælles plan:
+`docs/ai/ASTRA_WEATHER_REVIEW_2026-09-18.md` og DEC-0206.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – 4.0.422 Pages source-repair
 
 - **ISSUE-4.0.421-BUILD – LUKKET:** Run `35383989821`, job `105726470812`
   bestod eksakt audit, privat runtime, privacy, Edge og artifact uden provider.

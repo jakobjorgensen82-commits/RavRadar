@@ -260,6 +260,49 @@ assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 }
 
 {
+  const at = hour => new Date(Date.parse(generatedAt) + hour * 3600000).toISOString();
+  const windRow = (hour, runHour, speed, overrides = {}) => ({
+    step: at(hour),
+    'wind-speed-10m': speed,
+    'wind-dir-10m': 90,
+    provenance: {
+      wind: native('wind', 'harmonie_dini_sf', at(hour), at(runHour), overrides).wind,
+    },
+  });
+  const seam = [windRow(-2, -3, 6), windRow(1, 0, 9), windRow(4, 0, 12)];
+  const resolved = buildDmiForecastHourly({
+    wind: seam,
+    generatedAt,
+    hours: 2,
+    sourceCadenceMinutes: 180,
+  });
+  assert.equal(resolved.hourly[0].windSpeedMps, 9,
+    'HARMONIE skal bruge samme sikre, tidsbegrænsede seriesøgning som DKSS-halen');
+  assert.equal(resolved.hourly[0].sources.wind.component, 'wind');
+  assert.equal(resolved.hourly[0].sources.wind.temporalResolution, 'nearest-edge');
+  assert.equal(resolved.hourly[0].sources.wind.modelRun, at(0));
+  assert.deepEqual(resolved.hourly[0].sources.wind.nativeValidTimes, [at(1)]);
+  assert.ok(verifiedDmiForecastSource(
+    resolved.hourly[0].sources.wind,
+    'wind',
+    generatedAt,
+    {
+      entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+      samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+    },
+  ));
+  assert.deepEqual(buildDmiForecastHourly({
+    wind: [...seam].reverse(), generatedAt, hours: 2, sourceCadenceMinutes: 180,
+  }).hourly, resolved.hourly, 'HARMONIE-seriesøgningen er uafhængig af inputrækkefølge');
+  assert.equal(buildDmiForecastHourly({
+    wind: [windRow(-2, -3, 6), windRow(2, 0, 10)],
+    generatedAt,
+    hours: 1,
+    sourceCadenceMinutes: 180,
+  }).hourly[0].windSpeedMps, null, 'HARMONIE må ikke udvide kanttolerancen');
+}
+
+{
   const oldRun = new Date(Date.parse(generatedAt) - 6 * 3600000).toISOString();
   const plus1 = new Date(Date.parse(generatedAt) + 1 * 3600000).toISOString();
   const plus3 = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
@@ -438,8 +481,12 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
     { step: laterRun, 'wind-speed-10m': 8, 'wind-dir-10m': 210, provenance: native('wind', 'harmonie_dini_sf', laterRun, laterRun) }
   ];
   const guarded = buildDmiForecastHourly({ wind: mixedRuns, generatedAt, hours: 4 });
-  assert.equal(guarded.hourly[1].windSpeedMps, null);
-  assert.equal(guarded.hourly[2].windSpeedMps, null);
+  assert.equal(guarded.hourly[1].windSpeedMps, 5,
+    'en sikker kant fra den gamle kørsel må bruges uden at blande modelkørsler');
+  assert.equal(guarded.hourly[2].windSpeedMps, 8,
+    'en sikker kant fra den nye kørsel må bruges uden at blande modelkørsler');
+  assert.equal(guarded.hourly[1].sources.wind.temporalResolution, 'nearest-edge');
+  assert.equal(guarded.hourly[2].sources.wind.temporalResolution, 'nearest-edge');
   assert.equal(guarded.hourly[0].sources.wind.modelRun, generatedAt);
   assert.equal(guarded.hourly[3].sources.wind.modelRun, laterRun);
 

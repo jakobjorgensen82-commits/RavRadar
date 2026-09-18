@@ -185,7 +185,7 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260918125600_last_mile_history_envelope_binding.sql'),
+    .includes('20260918190000_weather_input_resolution_binding.sql'),
   'Code-only migrationsplanen er ikke bundet til den præcise aktuelle successor.',
 );
 

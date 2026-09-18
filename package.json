@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.422",
+  "version": "4.0.423",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -20,7 +20,7 @@
     "test:ravscore-model-bundle": "node scripts/build-ravscore-model-bundle.mjs --check && node scripts/test-ravscore-model-bundle.mjs",
     "test:ravscore-model-binding": "node scripts/sync-ravscore-model-binding.mjs --check && npm run test:release-contract-metadata",
     "sync:release-contract-metadata": "node scripts/sync-release-contract-metadata.mjs --write",
-    "test:release-contract-metadata": "node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs && node scripts/build-public-runtime-oracle-binding-migration.mjs && node scripts/build-h0-reference-recovery-binding-migration.mjs && node scripts/build-h0-state-snapshot-binding-migration.mjs && node scripts/build-post-cutover-current-hold-binding-migration.mjs && node scripts/build-valid-data-before-local-missing-binding-migration.mjs && node scripts/build-partial-zone-public-metadata-binding-migration.mjs && node scripts/build-last-mile-history-envelope-binding-migration.mjs",
+    "test:release-contract-metadata": "node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs && node scripts/build-public-runtime-oracle-binding-migration.mjs && node scripts/build-h0-reference-recovery-binding-migration.mjs && node scripts/build-h0-state-snapshot-binding-migration.mjs && node scripts/build-post-cutover-current-hold-binding-migration.mjs && node scripts/build-valid-data-before-local-missing-binding-migration.mjs && node scripts/build-partial-zone-public-metadata-binding-migration.mjs && node scripts/build-last-mile-history-envelope-binding-migration.mjs && node scripts/build-weather-input-resolution-binding-migration.mjs",
     "test:integrated-cutover-readiness": "node scripts/test-integrated-cutover-readiness.mjs",
     "test:ravscore-public-browser-closure": "node scripts/test-ravscore-public-browser-closure.mjs",
     "sync:ravscore-model-binding": "node scripts/sync-ravscore-model-binding.mjs --write",
@@ -217,7 +217,7 @@
     "audit:supabase-pipeline-egress": "node scripts/audit-supabase-pipeline-egress.mjs",
     "test:state-model-shadow": "node scripts/test-state-model-shadow-4.0.107.mjs",
     "test:workflow-validation-order": "node scripts/test-workflow-validation-order-4.0.108.mjs && npm run test:validation-collection",
-    "test:production-workflow-outcome": "node scripts/test-production-workflow-outcome.mjs",
+    "test:production-workflow-outcome": "node scripts/test-production-workflow-outcome.mjs && node scripts/test-verified-weather-deployment-terminal.mjs",
     "test:dmi-marine-first-recovery": "node scripts/test-dmi-marine-first-recovery-4.0.110.mjs",
     "test:state-explanations": "node scripts/test-state-explanations-4.0.111.mjs",
     "test:project-source-neutrality": "node scripts/test-project-source-neutrality-4.0.111.mjs",

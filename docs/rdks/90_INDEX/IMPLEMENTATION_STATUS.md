@@ -1,4 +1,23 @@
-# Aktuel implementeringsstatus – lokal 4.0.422 Pages source-repair
+# Aktuel implementeringsstatus – lokal 4.0.423, produktionsbevis afventer
+
+- [x] Merge PR #367 til main `8a95c7cf`; offentlig 4.0.422 verificeret.
+- [x] Normalrun `35386276428`: build, Pages og offentlig verifikation gennemført.
+- [x] Runtimeaudit: 673 fortsættelser og nul tidligere state-replay-afvigelser.
+- [x] Samlet read-only Astra-analyse med målrettede reproduktioner gemt i
+  `docs/ai/ASTRA_WEATHER_REVIEW_2026-09-18.md`.
+- [x] Ret fælles manuel/cron-terminal og adskil deploy fra diagnostik.
+- [x] Adskil sikkert håndteret MISSING fra faktisk gyldig datadækning.
+- [x] Ret private genopbygningstimer og reelt brugbar vinddækning.
+- [x] Ret Feggesunds operationelle planner/promotion-behov og tidsbudget pr. familie.
+- [x] Tilføj payloadfri 673-dels stageoversigt til hver normal vejropbygning.
+- [x] Bind begge modelbundles og continuation append-only i `20260918190000`.
+- [ ] Samlet version/dokumentation, relevante kontroller, PR/merge og levering.
+- [ ] Bevis normale kørsler vedligeholder aktuel time, mellemtimer og hale.
+
+Ingen oneoff er startet. Scheduler forbliver pauset, indtil almindelige runs
+har bevist fuld gyldig dækning og stabil vedligeholdelse.
+
+# Historisk implementeringsstatus – lokal 4.0.422 Pages source-repair
 
 - [x] Gennemfør 4.0.421-buildjob `105726470812` uden provider.
 - [x] Bevis at eksakt audit, privat runtime, prewrite/privacy, Edge og artifact består.

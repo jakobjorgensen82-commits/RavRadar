@@ -1,4 +1,26 @@
-# Aktiv roadmap – 4.0.422 fra Pages-handoff til samlet online drift
+# Aktiv roadmap – 4.0.423 fra strukturel pakke til komplet normal drift
+
+1. [x] Afgræns 4.0.422-run `35386276428`: verificeret deploy, men ufuldstændig
+   numerisk dækning og falsk rød terminal.
+2. [x] Gennemgå hele kæden fra scheduler, DMI/WAM, replay og modelinput til
+   artifact, Pages, offentlig runtime og slutstatus.
+3. [x] Ret reelt opløselig vindhorisont, sikker HARMONIE-seriesøgning,
+   replaystart, Feggesund-støttezoner og providerfamiliernes tidsestimat.
+4. [x] Skeln mellem sikkert håndteret `MISSING` og faktisk gyldig dækning;
+   kun 100 % gyldige nødvendige felter må kaldes komplet.
+5. [x] Saml manuel/cron-slutstatus og tilføj payloadfri 673-dels inputtrace.
+6. [ ] Afslut 4.0.423-version, RDKS/håndbog, måltests og rent
+   geodataversionsbevis.
+7. [ ] Commit/push, bestå én exact-head sourcegate, merge og kør én almindelig
+   weather fra de gemte cacher; ingen oneoff.
+8. [ ] Kræv faktisk 100 % gyldig dækning, Feggesund 354/354, aktuel time og
+   scorer. Ved rest: brug stageoversigten og ret hele fejlkategorien samlet.
+9. [ ] Bevis med næste almindelige drift, at rotationen vedligeholder cachen;
+   genaktivér først derefter scheduler og fortsæt site-/roadmapgennemgangen.
+
+DEC-0206. `MISSING` er robusthed, aldrig et accepteret driftsmål.
+
+# Historisk roadmap – 4.0.422 fra Pages-handoff til samlet online drift
 
 1. [x] Før 4.0.421 providerfrit gennem eksakt audit, privat runtime, privacy,
    Edge og artifact i buildjob `105726470812`.

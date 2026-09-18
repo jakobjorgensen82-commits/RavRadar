@@ -124,8 +124,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     steps:
+      - uses: actions/checkout@v7
+
       - name: Summarize and require the complete normal production path
         shell: bash
         env:
@@ -155,17 +158,4 @@ jobs:
             echo "- Artifact: $ARTIFACT_BUILT / $PAGES_BUILD_OUTCOME / $PAGES_PRIVACY_OUTCOME / $PAGES_ARTIFACT_SEAL_OUTCOME"
             echo "- Pages: $DEPLOY_RESULT / $DEPLOYMENT_OUTCOME / $PUBLIC_VERIFICATION_OUTCOME / verified=$DEPLOYED_VERIFIED"
           } >> "$GITHUB_STEP_SUMMARY"
-          test "$TARGET_RESULT" = "success"
-          test "$BUILD_RESULT" = "success"
-          test "$SHOULD_DEPLOY" = "true"
-          test "$WEATHER_OUTCOME" = "success"
-          test "$FULL_VALIDATION_OUTCOME" = "success"
-          test "$RELEASE_GATE_OUTCOME" = "success"
-          test "$PAGES_BUILD_OUTCOME" = "success"
-          test "$PAGES_PRIVACY_OUTCOME" = "success"
-          test "$PAGES_ARTIFACT_SEAL_OUTCOME" = "success"
-          test "$ARTIFACT_BUILT" = "true"
-          test "$DEPLOY_RESULT" = "success"
-          test "$DEPLOYMENT_OUTCOME" = "success"
-          test "$PUBLIC_VERIFICATION_OUTCOME" = "success"
-          test "$DEPLOYED_VERIFIED" = "true"
+          node scripts/lib/verified-weather-deployment-terminal.mjs

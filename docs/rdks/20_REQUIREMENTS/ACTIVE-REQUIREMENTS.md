@@ -1,4 +1,26 @@
-# Aktuelt ejerdelta – 2026-09-18 – aktiv integrated source-repair i Pages
+# Aktuelt ejerdelta – 2026-09-18 – fuld gyldig vejrdækning og robust side
+
+- **REQ-4.0.423-COMPLETE-MEANS-VALID-001 – BINDENDE:** Komplet betyder
+  gyldige nødvendige felter for alle steder og timer. `MISSING` tæller aldrig
+  som data, komplethed eller afsluttet vejrhentning.
+- **REQ-4.0.423-LOCAL-RESILIENCE-002 – BINDENDE:** Et lokalt hul gør kun den
+  konkrete score utilgængelig; resten af RavRadar forbliver brugbar, mens
+  normal drift fortsætter reparationen.
+- **REQ-4.0.423-REAL-WIND-HORIZON-003 – BINDENDE:** Scheduler og runtime skal
+  måle samme opløselige speed+direction-tupler og proveniensregler.
+- **REQ-4.0.423-FEGGESUND-004 – BINDENDE:** WAM-DW-plan/promotion/closure
+  skal medregne begge godkendte Feggesund-kildezoner; 354/354 skal bevises.
+- **REQ-4.0.423-REPLAY-005 – BINDENDE:** Privat historisk replay må ikke
+  beskæres af den offentlige +0..+117-akse.
+- **REQ-4.0.423-TERMINAL-006 – BINDENDE:** Verificeret deploy og diagnostiske
+  fund rapporteres sandt og hver for sig; fund forbliver åbne til rettelse.
+- **REQ-4.0.423-NORMAL-PROOF-007 – ÅBEN P0:** Exact-head, merge og én
+  almindelig weather skal bevise 100 % gyldig dækning, aktuel time, scorer,
+  Feggesund og cachefremgang. Ingen oneoff.
+
+DEC-0206.
+
+# Historisk ejerdelta – 2026-09-18 – aktiv integrated source-repair i Pages
 
 - **REQ-4.0.422-INTEGRATED-ACTION-001 – BINDENDE:** Eksakt kendt source-
   repair må kun bruge `integrated` eller `integrated-historical-maintenance`.

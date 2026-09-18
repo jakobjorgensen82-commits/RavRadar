@@ -2263,6 +2263,7 @@ jobs:
           RAVRADAR_OUTCOME_RELEASE_GATE: ${{ needs.build-and-prepare.outputs.release_gate_outcome }}
           RAVRADAR_OUTCOME_PAGES_BUILD: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
           RAVRADAR_OUTCOME_PAGES_PRIVACY: ${{ needs.build-and-prepare.outputs.pages_privacy_outcome }}
+          RAVRADAR_OUTCOME_PAGES_ARTIFACT_SEAL: ${{ needs.build-and-prepare.outputs.pages_artifact_seal_outcome }}
           RAVRADAR_OUTCOME_HANDOFF_UPLOAD: ${{ needs.build-and-prepare.outputs.handoff_upload_outcome }}
           RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION: ${{ needs.build-and-prepare.outputs.checkpoint_disposition || needs.reconcile-operational-pending.outputs.checkpoint_disposition }}
           RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256: ${{ needs.build-and-prepare.outputs.checkpoint_disposition_sha256 || needs.reconcile-operational-pending.outputs.checkpoint_disposition_sha256 }}

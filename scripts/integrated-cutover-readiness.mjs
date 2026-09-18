@@ -144,10 +144,15 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260918125600_last_mile_history_envelope_binding',
     filename: '20260918125600_last_mile_history_envelope_binding.sql',
   }),
+  Object.freeze({
+    version: '20260918190000',
+    id: '20260918190000_weather_input_resolution_binding',
+    filename: '20260918190000_weather_input_resolution_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260918125600');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260918190000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

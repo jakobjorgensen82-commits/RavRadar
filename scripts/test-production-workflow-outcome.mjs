@@ -44,6 +44,7 @@ const base = () => ({
     releaseGateOutcome: 'success',
     pagesBuildOutcome: 'success',
     pagesPrivacyOutcome: 'success',
+    pagesArtifactSealOutcome: 'success',
     handoffUploadOutcome: 'success',
     checkpointDisposition: 'READY_PUBLISHED',
     checkpointDispositionSha256: 'c'.repeat(64),
@@ -144,6 +145,7 @@ const recoveryOnlyDeployment = withPatch(base(), {
     releaseGateOutcome: null,
     pagesBuildOutcome: null,
     pagesPrivacyOutcome: null,
+    pagesArtifactSealOutcome: null,
     handoffUploadOutcome: null,
     pagesConfigureOutcome: null,
     pagesUploadOutcome: null,
@@ -220,6 +222,7 @@ expectStatus(withPatch(base(), {
     releaseGateOutcome: null,
     pagesBuildOutcome: null,
     pagesPrivacyOutcome: null,
+    pagesArtifactSealOutcome: null,
     handoffUploadOutcome: null,
     checkpointDisposition: null,
     checkpointDispositionSha256: null,
@@ -299,6 +302,22 @@ expectStatus(withPatch(base(), {
 
 expectStatus(withPatch(base(), {
   proof: { releaseGateOutcome: 'skipped' },
+}), 'FAILED', 'INCOMPLETE_BUILD_GATES');
+
+expectStatus(withPatch(base(), {
+  proof: { fullValidationOutcome: 'failure' },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED_WITH_DIAGNOSTIC_FINDINGS');
+
+expectStatus(withPatch(base(), {
+  proof: { releaseGateOutcome: 'failure' },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED_WITH_DIAGNOSTIC_FINDINGS');
+
+expectStatus(withPatch(base(), {
+  proof: { fullValidationOutcome: 'cancelled' },
+}), 'FAILED', 'INCOMPLETE_BUILD_GATES');
+
+expectStatus(withPatch(base(), {
+  proof: { pagesArtifactSealOutcome: 'failure' },
 }), 'FAILED', 'INCOMPLETE_BUILD_GATES');
 
 expectStatus(withPatch(base(), {
@@ -459,6 +478,7 @@ const cli = spawnSync(process.execPath, [
     RAVRADAR_OUTCOME_RELEASE_GATE: 'success',
     RAVRADAR_OUTCOME_PAGES_BUILD: 'success',
     RAVRADAR_OUTCOME_PAGES_PRIVACY: 'success',
+    RAVRADAR_OUTCOME_PAGES_ARTIFACT_SEAL: 'success',
     RAVRADAR_OUTCOME_HANDOFF_UPLOAD: 'success',
     RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION: 'READY_PUBLISHED',
     RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256: 'e'.repeat(64),
@@ -481,7 +501,7 @@ assert.match(fs.readFileSync(githubOutput, 'utf8'), /^status=DEPLOYED\nreason_co
 assert.match(fs.readFileSync(summary, 'utf8'), /Status: `DEPLOYED`/);
 
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-assert.equal(packageJson.scripts['test:production-workflow-outcome'], 'node scripts/test-production-workflow-outcome.mjs');
+assert.match(packageJson.scripts['test:production-workflow-outcome'], /test-production-workflow-outcome\.mjs && node scripts\/test-verified-weather-deployment-terminal\.mjs/);
 assert.match(packageJson.scripts['test:workflow-action-contracts'], /npm run test:production-workflow-outcome/);
 const releaseGate = fs.readFileSync('scripts/release-gate.mjs', 'utf8');
 assert.ok(RELEASE_GATE_TEST_FILES.includes('scripts/test-production-workflow-outcome.mjs'),

@@ -1383,10 +1383,14 @@ class OperationalWaveClosureTests(unittest.TestCase):
                 self.observed = 0
                 self.committed = 0
 
-            def observe_asset_duration(self, _seconds: float) -> None:
+            def observe_asset_duration(
+                self, _seconds: float, *, cost_family: str = "generic",
+            ) -> None:
                 self.observed += 1
 
-            def note_committed_asset(self, *, seconds: float) -> bool:
+            def note_committed_asset(
+                self, *, seconds: float, cost_family: str = "generic",
+            ) -> bool:
                 self.committed += 1
                 return seconds > 0
 
@@ -1569,13 +1573,16 @@ class OperationalWaveClosureTests(unittest.TestCase):
                 self.committed_seconds: list[float | None] = []
                 self.forced_flushes = 0
 
-            def observe_asset_duration(self, seconds: float) -> None:
+            def observe_asset_duration(
+                self, seconds: float, *, cost_family: str = "generic",
+            ) -> None:
                 self.observed_seconds.append(seconds)
 
             def note_committed_asset(
                 self,
                 *,
                 seconds: float | None,
+                cost_family: str = "generic",
             ) -> bool:
                 self.committed_seconds.append(seconds)
                 return False
@@ -1717,10 +1724,14 @@ class OperationalWaveClosureTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.commits = 0
 
-            def observe_asset_duration(self, _seconds: float) -> None:
+            def observe_asset_duration(
+                self, _seconds: float, *, cost_family: str = "generic",
+            ) -> None:
                 raise AssertionError("an improving hole must not be observation-only")
 
-            def note_committed_asset(self, *, seconds: float | None) -> bool:
+            def note_committed_asset(
+                self, *, seconds: float | None, cost_family: str = "generic",
+            ) -> bool:
                 self.commits += 1
                 return True
 

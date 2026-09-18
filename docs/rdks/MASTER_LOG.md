@@ -1,4 +1,19 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.419 kontraktombinding
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.423 komplet normal weather
+
+Ejeren har præciseret, at `MISSING` aldrig er et acceptabelt datamål.
+RavRadar skal altid tilstræbe gyldige data i alle nødvendige felter, steder
+og timer. Lokal nødvisning må holde resten af siden brugbar, men tæller ikke
+som data, komplethed eller færdig vejrhentning.
+
+4.0.423 retter samlet vindhorisont, HARMONIE-seriesøgning, privat replayakse,
+Feggesunds WAM-støttezoner, tidsestimat pr. providerfamilie og den fælles
+manuel/cron-terminal. Datadækning og sikkert håndterede rækker rapporteres
+separat. En payloadfri stageoversigt gemmes ved normal weather. Fælles
+inputændringer er bundet append-only i migration `20260918190000`; den
+anvendte forgænger ændres ikke. Ingen oneoff. Næste bevis er én almindelig
+weather og derefter almindelig cachevedligeholdelse. DEC-0206.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.419 kontraktombinding
 
 4.0.418 bestod exact-head `35366221956`, PR #362 og main `9573264f`, men kom
 ikke online. Code-only `35366953774` beviste korrekt en ren
