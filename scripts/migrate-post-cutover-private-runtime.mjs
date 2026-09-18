@@ -20,6 +20,9 @@ import {
   assertExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
 import {
+  buildIntegratedRavScoreStateSeries,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
+import {
   assertRavScoreModelBinding as assertCandidateBinding,
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
@@ -171,6 +174,81 @@ function collectChangedPaths(before, after, prefix = '') {
     after[key],
     joinedPath(prefix, key),
   ));
+}
+
+const EXACT_LAST_MILE_REPAIR_PREFIXES = Object.freeze([
+  'historyBounds.lastMile.minimumFactorTrack',
+  'historyBounds.lastMile.maximumFactorTrack',
+]);
+
+function exactLastMileRepairPath(pathValue) {
+  return EXACT_LAST_MILE_REPAIR_PREFIXES.some(prefix => (
+    pathValue === prefix || pathValue.startsWith(`${prefix}.`)
+  ));
+}
+
+export function reconcileIntegratedContinuation({
+  originalState,
+  migratedState,
+  assertPredecessor,
+  canonicalizeCurrent,
+} = {}) {
+  if (typeof assertPredecessor !== 'function'
+      || typeof canonicalizeCurrent !== 'function') {
+    throw new Error('Integrated continuation reconciliation requires both validators');
+  }
+  let predecessorError = null;
+  try {
+    assertPredecessor(originalState);
+  } catch (error) {
+    predecessorError = error instanceof Error ? error : new Error(String(error));
+  }
+  const canonicalState = canonicalizeCurrent(migratedState);
+  const repairPaths = collectChangedPaths(migratedState, canonicalState);
+  const forbiddenRepairPaths = repairPaths.filter(pathValue => (
+    !exactLastMileRepairPath(pathValue)
+  ));
+  if (forbiddenRepairPaths.length) {
+    throw new Error(
+      `Current continuation repair changed forbidden paths: ${forbiddenRepairPaths.join(', ')}`,
+    );
+  }
+  if (predecessorError && repairPaths.length === 0) {
+    throw new Error(
+      `Predecessor continuation was rejected without the exact last-mile repair: ${predecessorError.message}`,
+    );
+  }
+  return {
+    canonicalState,
+    repairPaths,
+    predecessorValidationRecovered: predecessorError !== null,
+  };
+}
+
+export function summarizeIndependentErrors(errors, { maximumGroups = 8 } = {}) {
+  const groups = new Map();
+  for (const entry of Array.isArray(errors) ? errors : []) {
+    const scope = String(entry?.scope ?? 'unknown');
+    const rawMessage = String(entry?.message ?? 'Unknown error');
+    const message = rawMessage
+      .split(scope).join('<item>')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 320);
+    const current = groups.get(message) ?? { count: 0, examples: [] };
+    current.count += 1;
+    if (current.examples.length < 3) current.examples.push(scope);
+    groups.set(message, current);
+  }
+  const ordered = [...groups.entries()]
+    .sort((left, right) => right[1].count - left[1].count || left[0].localeCompare(right[0]));
+  const summary = ordered.slice(0, maximumGroups).map(([message, group]) => (
+    `${group.count}x ${message} [examples: ${group.examples.join(', ')}]`
+  ));
+  if (ordered.length > maximumGroups) {
+    summary.push(`${ordered.length - maximumGroups} additional error group(s) omitted`);
+  }
+  return summary.join(' | ');
 }
 
 function exactBindingCarrier(value, previousBinding) {
@@ -417,6 +495,7 @@ function validateAndMigrateConditions({
     ...candidateMetadataPaths,
   ]);
   const errors = [];
+  let repairedContinuationCount = 0;
   const partIds = Object.keys(source.coastalParts.parts).sort();
   for (const partId of partIds) {
     try {
@@ -438,10 +517,6 @@ function validateAndMigrateConditions({
         bindingFromWrapper(originalWrapper, `Part ${partId} wrapper`),
         `Part ${partId} predecessor wrapper binding`,
       );
-      oldStaging.assertIntegratedCoastalPointContinuation(originalWrapper.currentState, {
-        samplingContextKey: oldIdentity.samplingContextKey,
-        label: `Part ${partId} predecessor continuation`,
-      });
       assertRavScoreModelBinding(
         bindingFromWrapper(migratedWrapper, `Part ${partId} migrated wrapper`),
         `Part ${partId} migrated wrapper binding`,
@@ -457,12 +532,39 @@ function validateAndMigrateConditions({
           `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
         );
       }
-      assertIntegratedCoastalPointContinuation(migratedWrapper.currentState, {
-        samplingContextKey: currentIdentity.samplingContextKey,
-        label: `Part ${partId} migrated continuation`,
+      const reconciliation = reconcileIntegratedContinuation({
+        originalState: originalWrapper.currentState,
+        migratedState: migratedWrapper.currentState,
+        assertPredecessor: state => oldStaging.assertIntegratedCoastalPointContinuation(state, {
+          samplingContextKey: oldIdentity.samplingContextKey,
+          label: `Part ${partId} predecessor continuation`,
+        }),
+        canonicalizeCurrent: state => {
+          assertIntegratedCoastalPointContinuation(state, {
+            samplingContextKey: currentIdentity.samplingContextKey,
+            label: `Part ${partId} migrated continuation`,
+          });
+          const replay = buildIntegratedRavScoreStateSeries([], {
+            samplingContextKey: currentIdentity.samplingContextKey,
+            initialState: state,
+          });
+          if (replay.initialStateAccepted !== true
+              || replay.initialStateSource !== 'INTEGRATED_CONTINUATION'
+              || !isPlainObject(replay.continuationState)) {
+            throw new Error(`Part ${partId} current continuation repair is not canonical`);
+          }
+          return replay.continuationState;
+        },
       });
+      migratedWrapper.currentState = reconciliation.canonicalState;
+      for (const repairPath of reconciliation.repairPaths) {
+        exactAllowedPaths.add(
+          `coastalParts.parts.${partId}.ravScoreModel.currentState.${repairPath}`,
+        );
+      }
+      if (reconciliation.repairPaths.length > 0) repairedContinuationCount += 1;
     } catch (error) {
-      errors.push(`${partId}: ${error.message}`);
+      errors.push({ scope: partId, message: error.message });
     }
   }
 
@@ -470,7 +572,10 @@ function validateAndMigrateConditions({
     ['ravScoreCandidateGRollback', 'rollbackModelBinding'],
     ['ravScoreCandidateGWarmup', 'candidateModelBinding'],
   ].filter(([root]) => source[root] !== undefined);
-  if (candidateRoots.length !== 1) errors.push('Exactly one private Candidate G runtime root is required');
+  if (candidateRoots.length !== 1) errors.push({
+    scope: 'candidate-runtime',
+    message: 'Exactly one private Candidate G runtime root is required',
+  });
   if (candidateRoots.length === 1) {
     const [rootName, bindingName] = candidateRoots[0];
     try {
@@ -510,11 +615,13 @@ function validateAndMigrateConditions({
         if (!same(originalState, migratedState)) throw new Error(`Part ${partId} Candidate G state changed`);
       }
     } catch (error) {
-      errors.push(`${rootName}: ${error.message}`);
+      errors.push({ scope: rootName, message: error.message });
     }
   }
   if (errors.length) {
-    throw new Error(`Private runtime migration rejected ${errors.length} independent error(s): ${errors.join(' | ')}`);
+    throw new Error(
+      `Private runtime migration rejected ${errors.length} independent error(s): ${summarizeIndependentErrors(errors)}`,
+    );
   }
   const [candidateRootName, candidateBindingName] = candidateRoots[0];
   const requiredMetadataPaths = [
@@ -569,6 +676,7 @@ function validateAndMigrateConditions({
     changedPaths,
     candidateRoot: candidateRootName,
     partCount: partIds.length,
+    repairedContinuationCount,
     transitionKind: changedPaths.length > 0
       ? 'MODEL_BINDING_MIGRATION'
       : 'CONTRACT_ONLY_REBIND',
@@ -695,7 +803,10 @@ export async function migratePostCutoverPrivateRuntime({
     privatePayloadIncluded: false,
   };
   await atomicWriteJson(reportPath, report);
-  return report;
+  return {
+    ...report,
+    repairedContinuationCount: result.repairedContinuationCount,
+  };
 }
 
 function argument(argv, name) {
@@ -719,6 +830,7 @@ async function main() {
   console.log(JSON.stringify({
     status: 'post-cutover-private-runtime-migrated',
     migratedPartCount: report.migratedPartCount,
+    repairedContinuationCount: report.repairedContinuationCount,
     copiedPrivateFileCount: report.copiedPrivateFileCount,
     measurementsChanged: report.measurementsChanged,
     privatePayloadIncluded: false,

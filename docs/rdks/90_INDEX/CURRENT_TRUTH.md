@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.416 genbinder kendt last-mile-state
+
+4.0.415 bestod exact-head `35348220691`, blev merged som main `3a705259`, og
+saved-weather `35349088863` beviste den rettede handlingskontrol. Det target
+var dog ikke strengt nyere end offentlig 09:00 og blev derfor sikkert afvist.
+
+Den korrekte samme-time code-only `35349313096` gendannede den eksakte
+4.0.410-private runtime og stoppede før ny runtime, artifact og Pages.
+Forgængerens validator afviste alle de 673 kendte last-mile-continuations,
+før den aktuelle 4.0.411+-reparation kunne køre. Lokal 4.0.416 tillader kun den
+aktuelle kanoniske reparation af minimums- og maksimumssporet i last-mile-
+intervallet; enhver anden state-, måle- eller vejrændring stopper. Ens fejl
+samles i korte grupper. Næste: exact-head, merge, samme providerfri code-only,
+browserbevis og derefter én sikker almindelig vejrkørsel. DEC-0199.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.415 fortsætter gemt vejr
 
 4.0.414 bestod exact-head `35346135848`, blev merged som main `f1f33c44`, og

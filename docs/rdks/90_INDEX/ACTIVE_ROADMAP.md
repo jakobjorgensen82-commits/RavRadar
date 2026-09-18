@@ -1,3 +1,17 @@
+# Aktiv roadmap – 4.0.416 fra kendt privat state til stabil normal drift
+
+1. [x] Lever 4.0.415 gennem exact-head `35348220691`, PR #359 og main `3a705259`.
+2. [x] Bevis i saved-weather `35349088863`, at historical-maintenance-handlingen accepteres; targetet var ikke nyere end offentlig 09:00.
+3. [x] Kør korrekt samme-time code-only `35349313096`; gendan den eksakte beskyttede 4.0.410-runtime og afgræns stoppet til rækkefølgen mellem gammel validator og kendt reparation.
+4. [x] Tillad kun den kanoniske last-mile-reparation af minimums- og maksimumsspor; afvis alle andre private ændringer og gruppér ens fejl.
+5. [ ] Afslut målrettede slutkontroller, exact-head, merge og samme providerfri code-only.
+6. [ ] Verificér offentlig 4.0.416, aktuel time, sammenhængende historik, lokale femdøgnsprognoser og scorer i browseren.
+7. [ ] Opret en sikker current-main-indgang til almindelig weather; det gamle workflow forbliver deaktiveret, så tre gamle køposter ikke kan starte på forældet kode.
+8. [ ] Kør én almindelig weather og mål DMI → Copernicus → Open-Meteo, cachebevaring, gammel-over-tom og lokale ærlige `MISSING`.
+9. [ ] Bevis næste almindelige vedligeholdelse og genaktivér først derefter scheduler.
+
+DEC-0199. Ingen oneoff; bootstrap kun ved målt behov.
+
 # Aktiv roadmap – 4.0.415 fra gemt runtime til almindelig vejrdrift
 
 1. [x] Lever 4.0.414 og registrér det allerede offentlige target som central version 24.

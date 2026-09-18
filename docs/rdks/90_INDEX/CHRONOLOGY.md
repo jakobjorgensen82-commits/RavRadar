@@ -1,3 +1,10 @@
+# 2026-09-18 – 4.0.416 fører kendt last-mile-state gennem privat ombinding
+
+- 4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.
+- Saved-weather `35349088863` livebeviste actionrettelsen, men targetet var ikke nyere end offentlig 09:00.
+- Samme-time code-only `35349313096` gendannede 4.0.410-runtime og stoppede på gammel validation før den kendte 673-dels reparation.
+- 4.0.416 tillader kun den aktuelle kanoniske last-mile-reparation og grupperer ens fejl uden private payloads. DEC-0199.
+
 # 2026-09-18 – 4.0.415 lader gemt vejr følge den sikre bindingsovergang
 
 - 4.0.414 blev merged som `f1f33c44`; recovery `35346704791` skrev central version 24.

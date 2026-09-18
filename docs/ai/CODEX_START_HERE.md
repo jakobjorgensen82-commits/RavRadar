@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.416 kendt privat state kan repareres
+
+4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.
+Saved-weather `35349088863` beviste handlingsrettelsen, men targetet var ikke
+nyere end offentlig 09:00. Samme-time code-only `35349313096` gendannede den
+eksakte beskyttede 4.0.410-runtime og stoppede før artifact/Pages, fordi den
+gamle validator afviste de 673 kendte last-mile-states før den aktuelle
+deterministiske reparation.
+
+Lokal 4.0.416 lader den aktuelle validator kanonisere netop denne kendte kant.
+Kun last-mile-minimums-/maksimumsspor og det godkendte modelhashskifte må
+ændres; andre ændringer stopper. Ens fejl grupperes. Næste: exact-head, merge,
+samme providerfri code-only og browserbevis. Før almindelig weather skal de
+tre gamle køposter holdes ude gennem en sikker current-main-indgang. Ingen
+oneoff; det gamle workflow og scheduler forbliver pauset. DEC-0199.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.415 gemt vejr kan fortsætte
 
 4.0.414 bestod exact-head `35346135848`, blev merged gennem PR #358 som main

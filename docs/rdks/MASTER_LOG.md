@@ -1,3 +1,19 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.416 privat last-mile
+
+4.0.415 er merged som `3a705259`. Saved-weather `35349088863` beviste den
+rettede maintenance-action, men havde ikke en streng nyere targettime.
+Samme-time code-only `35349313096` gendannede derefter den eksakte beskyttede
+4.0.410-runtime. Den gamle validator afviste de kendte 673 last-mile-states,
+før den nyere sikre reparation blev nået.
+
+4.0.416 kræver fortsat gammel validation først. Ved dens afvisning må kun den
+aktuelle kanoniske validator acceptere og faktisk reparere minimums- og/eller
+maksimumssporet i last-mile-intervallet. Alle andre ændringer stopper. Ens
+fejl tælles i korte grupper. Den skriftlige migrationsrapport er uændret og
+payloadfri. Tre gamle køposter fastholdes ufarlige ved, at det gamle normale
+workflow forbliver deaktiveret, indtil en sikker current-main-indgang findes.
+DEC-0199.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.415 saved-weather
 
 4.0.414 er merged som `f1f33c44`; recovery `35346704791` registrerede det

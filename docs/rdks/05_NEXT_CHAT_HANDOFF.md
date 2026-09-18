@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.416 privat last-mile-ombinding
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.416-private-last-mile-rebind`, baseret på main `3a705259`.
+
+4.0.415 bestod exact-head `35348220691` og blev merged gennem PR #359.
+Saved-weather `35349088863` livebeviste actionrettelsen, men havde ikke et
+target nyere end offentlig 09:00. Korrekt samme-time code-only `35349313096`
+gendannede den eksakte 4.0.410-runtime og stoppede, fordi gammel validation
+afviste de 673 kendte last-mile-states før den aktuelle reparation.
+
+4.0.416 accepterer kun den aktuelle kanoniske ændring i last-mile-
+minimums-/maksimumssporene og afviser enhver anden state-, vejr- eller
+måleændring. Ens fejl grupperes læsbart. Næste: slutkontroller, exact-head,
+merge og samme code-only; derefter browserbevis. Før almindelig weather skal
+en sikker current-main-indgang omgå de tre gamle køposter uden at aktivere
+det deaktiverede gamle workflow. Ingen oneoff. DEC-0199. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.415 saved-weather fortsættelse
 
 Arbejd i `RavRadar-4.0.396`, branch
