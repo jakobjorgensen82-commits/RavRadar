@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.423
+**Håndbogsversion:** 4.0.424
+
+## 89.28 4.0.424 – En gammel privat runtime må ikke blokere den aktive model
+
+Efter installationen af 4.0.423 var den centrale integrerede model og den nye
+databasebinding korrekte. De to gemte private runtime-generationer tilhørte
+derimod den tidligere kontrakt og blev derfor med rette afvist. Fejlen var, at
+normaldriften stoppede, før den nåede sin allerede godkendte genopbygning uden
+den gamle runtime.
+
+4.0.424 prøver fortsat den beskyttede runtime tre gange. Findes ingen
+kompatibel generation, må kun den allerede aktive integrerede model fortsætte
+gennem den målte stateless recovery og bygge en ny kontraktbundet generation.
+Første cutover, Candidate G og ukendte tilstande stopper fortsat. Der ændres
+ikke i scoreformel, vejr, geometri, providerorden eller rotation.
 
 ## 89.27 4.0.423 – Komplet betyder gyldige data, ikke blot håndterede huller
 

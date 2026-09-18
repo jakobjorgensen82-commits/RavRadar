@@ -1,4 +1,13 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.423 komplet normal weather
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.424 runtime-recovery
+
+4.0.423 blev merged som PR #368 på main `8718c1ec`. Backendrun `35400575522`
+installerede den append-only binding og verificerede hele Supabase/D1/Edge-
+kæden. Normalrun `35400832705` stoppede før provider, fordi de to gemte private
+runtime-generationer tilhørte den gamle kontrakt. 4.0.424 bevarer tre retries
+og lader derefter kun allerede aktiv `integrated` fortsætte til den eksisterende
+målte stateless recovery. Andre actions forbliver fail-closed. Ingen oneoff.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.423 komplet normal weather
 
 Ejeren har præciseret, at `MISSING` aldrig er et acceptabelt datamål.
 RavRadar skal altid tilstræbe gyldige data i alle nødvendige felter, steder

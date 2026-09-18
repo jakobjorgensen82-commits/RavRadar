@@ -1,4 +1,15 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.424-integrated-runtime-recovery`, fra main `8718c1ec` / PR #368.
+4.0.423 exact-head og backendrun `35400575522` er grønne. Normalrun
+`35400832705` stoppede før provider, fordi begge private runtime-generationer
+tilhørte den tidligere kontrakt. 4.0.424 lader kun active `integrated` nå den
+allerede eksisterende stateless recovery efter tre retries; øvrige actions
+forbliver fail-closed. Næste er måltest, version/RDKS, exact-head, merge og én
+almindelig weather. Ingen oneoff. `.tmp-420/` må aldrig publiceres.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
 
 Seneste faktiske status står i `CURRENT_SESSION_HANDOFF.md` og
 `ASTRA_WEATHER_REVIEW_2026-09-18.md` i denne mappe. Brug det indlejrede

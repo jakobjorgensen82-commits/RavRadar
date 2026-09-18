@@ -1,6 +1,11 @@
-# Aktuel implementeringsstatus – lokal 4.0.423, produktionsbevis afventer
+# Aktuel implementeringsstatus – lokal 4.0.424, normalrun-recovery
 
-- [x] Merge PR #367 til main `8a95c7cf`; offentlig 4.0.422 verificeret.
+- [x] Merge 4.0.423 PR #368 til main `8718c1ec`; exact-head grøn.
+- [x] Backendrun `35400575522`: migration, Supabase, D1, Edge og readiness grøn.
+- [x] Afgræns normalrun `35400832705`: stop før provider på inkompatible gamle
+  private runtime-generationer; ingen vejrdata blev hentet eller ændret.
+- [x] Lad kun centralt aktiv `integrated` nå eksisterende stateless recovery
+  efter tre restoreforsøg; øvrige actions forbliver fail-closed.
 - [x] Normalrun `35386276428`: build, Pages og offentlig verifikation gennemført.
 - [x] Runtimeaudit: 673 fortsættelser og nul tidligere state-replay-afvigelser.
 - [x] Samlet read-only Astra-analyse med målrettede reproduktioner gemt i
@@ -11,7 +16,7 @@
 - [x] Ret Feggesunds operationelle planner/promotion-behov og tidsbudget pr. familie.
 - [x] Tilføj payloadfri 673-dels stageoversigt til hver normal vejropbygning.
 - [x] Bind begge modelbundles og continuation append-only i `20260918190000`.
-- [ ] Samlet version/dokumentation, relevante kontroller, PR/merge og levering.
+- [ ] 4.0.424 version/dokumentation, måltest, PR/merge og levering.
 - [ ] Bevis normale kørsler vedligeholder aktuel time, mellemtimer og hale.
 
 Ingen oneoff er startet. Scheduler forbliver pauset, indtil almindelige runs

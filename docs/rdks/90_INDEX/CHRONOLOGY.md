@@ -1,3 +1,11 @@
+# 2026-09-19 – 4.0.424 fører aktiv integrated forbi gammel privat runtime
+
+- 4.0.423 bestod exact-head, PR #368 og backendrun `35400575522`.
+- Normalrun `35400832705` stoppede før provider, fordi begge private runtime-
+  generationer korrekt tilhørte den tidligere kontrakt.
+- 4.0.424 lader kun aktiv `integrated` fortsætte til eksisterende målt stateless
+  recovery; øvrige handlinger forbliver fail-closed. DEC-0206-tillæg.
+
 # 2026-09-18 – 4.0.423 adskiller fuld datadækning fra sikker nødvisning
 
 - 4.0.422-normalrun `35386276428` deployede og verificerede Pages, men viste

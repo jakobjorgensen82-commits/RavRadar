@@ -1,4 +1,20 @@
-# Aktiv roadmap – 4.0.423 fra strukturel pakke til komplet normal drift
+# Aktiv roadmap – 4.0.424 fra runtime-recovery til komplet normal drift
+
+1. [x] Lever 4.0.423 gennem exact-head, PR #368, main `8718c1ec` og grøn
+   backendinstallation `35400575522`.
+2. [x] Afgræns `35400832705` til inkompatibel gammel privat runtime før
+   providerkald; migration og aktiv model er korrekte.
+3. [x] Før kun aktiv `integrated` videre til den eksisterende målte stateless
+   recovery efter tre restoreforsøg; bevar fail-closed for andre actions.
+4. [ ] Lever 4.0.424 med måltest og én exact-head sourcegate.
+5. [ ] Genkør én almindelig weather, ikke oneoff, og kræv faktisk provider-
+   fremgang, 100 % gyldige felter, Feggesund 354/354, aktuel time og scorer.
+6. [ ] Brug payloadfri stageoversigt til samlet rettelse af enhver rest og
+   bevis derefter normal cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0206-tillæg. `MISSING` er fortsat robusthed, aldrig et driftsmål.
+
+# Historisk roadmap – 4.0.423 fra strukturel pakke til komplet normal drift
 
 1. [x] Afgræns 4.0.422-run `35386276428`: verificeret deploy, men ufuldstændig
    numerisk dækning og falsk rød terminal.
