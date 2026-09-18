@@ -1,3 +1,29 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.411 last-mile-historik
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.411-last-mile-envelope-reseal`, baseret på main `ca2735af`.
+4.0.410 er live efter PR #354 og code-only `35331109332`.
+
+Normalrun `35331664087` gennemførte alle providere, cachewrites, kontroller og
+et verificeret Pages-deploy. Auditten fandt 673 ens
+`LAST_MILE_HISTORY_POINT`; browseren viste derfor 4.0.410 i nødvisning med
+kl. 11.00, historikufuldstændige intervaller, tre timers verificeret historik
+i Agger Tange og ingen lokal femdøgnsprognose. Jobbet blev først rødt efter
+deploy på en for snæver normal reseal.
+
+Lokal 4.0.411 retter både producenten og de allerede gemte schema-6-states ved
+kun at udvide et åbent usikkerhedsinterval til det gyldige punkt. Normal reseal
+accepterer bounded payloadfrie diagnosefund efter verificeret Pages og sætter
+kalibrering falsk. Formel/vægte er uændrede. Ny binding er integrated
+`039abdfe...`, rollback `d3ad4e85...`, continuation `c294198d...` og append-only
+migration `20260918125600`. Måltests er grønne; migrations-tests med egne
+underprocesser krævede blot kørsel uden for sandkassen og bestod.
+
+Næste: afslut docs/version/geodatabevis og relevante workflowtests, commit,
+push, én exact-head, merge og én almindelig weather på gemte cacher. Verificér
+aktuel time, lokal femdøgn, replay, Pages og reseal. Ingen oneoff. Scheduler
+pauset. DEC-0194. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.410 prognosetilgængelighed
 
 Arbejd i `RavRadar-4.0.396`, branch

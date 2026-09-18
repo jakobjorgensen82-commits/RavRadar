@@ -1,3 +1,16 @@
+# 2026-09-18 – 4.0.411 retter last-mile-historikken og den sene reseal
+
+- 4.0.410 blev leveret gennem exact-head `35330643842`, PR #354, main
+  `ca2735af` og code-only `35331109332`.
+- Normalrun `35331664087` gennemførte alle providere, gemte cacher og
+  deployede/verificerede 210/673 på Pages trods runtimeauditfund.
+- Auditten afgrænsede alle 673 replayfejl til `LAST_MILE_HISTORY_POINT`;
+  browseren viste nødvisning, en passeret time, tre timers historik og ingen
+  lokal femdøgnsprognose.
+- 4.0.411 omslutter den gyldige punkt-tilstand ved genåbnet usikkerhed,
+  reparerer den gamle schema-6-kant og lader normal reseal følge et sikkert
+  verificeret deploy med bounded diagnostiske fund. DEC-0194.
+
 # 2026-09-18 – 4.0.410 holder prognoser aktuelle trods kontrolfund
 
 - 4.0.409 blev leveret gennem exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.

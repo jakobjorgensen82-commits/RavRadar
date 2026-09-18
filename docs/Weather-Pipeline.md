@@ -1,5 +1,27 @@
 # Weather Pipeline 1.0
 
+## 4.0.411 – genåbnet last-mile-usikkerhed omslutter sit punkt
+
+Normalrun `35331664087` gennemførte hele provider- og deploykæden og
+livebeviste 4.0.410's fortsættende driftsmodel. Runtimeauditten fandt 673 ens
+`LAST_MILE_HISTORY_POINT`, og browseren endte derfor i begrænset nødvisning
+uden aktuel time og lokale femdøgnsdetaljer.
+
+Efter en konservativ 40-timers tail-reset kan den fysiske last-mile-punktbane
+bevidst ligge anderledes end den kollapsede scoringbane. Hvis et senere hul
+åbner usikkerheden igen, udvider 4.0.411 minimums-/maksimumsbanerne til at
+rumme punktbanen. Den samme snævre fejl i allerede gemte schema-6-states
+repareres ved læsning. Reparationen ændrer ikke punktet og må kun anvendes,
+når `lastUnknownAt` er sat og `conservativeResetAt` er nul. Alle øvrige
+statekrav er fortsat fail-closed.
+
+Den normale centrale reseal accepterer efter verificeret Pages kun bounded
+payloadfrie diagnostiske fejlkoder med positive tællinger og bestået binding,
+210/673, historik-, rollback- og privacyregnskab. Et sådant resultat låser
+kalibrering. Historisk bindingsovergang, første cutover og retur forbliver
+strenge. Providerorden, cache-save, gammel-over-tom og nyeste-gyldig pr.
+komponent er uændrede.
+
 ## 4.0.410 – normal drift fortsætter efter kontrolfund
 
 Normalrun `35320738621` gennemførte provider-, closure-, historik-, central

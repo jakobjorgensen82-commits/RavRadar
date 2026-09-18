@@ -1,3 +1,16 @@
+# Aktuelt ejerdelta – 2026-09-18 – last-mile-historik og normal reseal
+
+- **REQ-4.0.411-OPEN-ENVELOPE-001 – BINDENDE:** Et åbent last-mile-usikkerhedsinterval skal rumme den allerede validerede fysiske punkt-tilstand.
+- **REQ-4.0.411-STRICT-EXACT-002 – BINDENDE:** Deterministisk reparation er kun tilladt ved punkt-mod-åbent-interval-kanten. Eksakt historik, markører, tid, momenter og binding forbliver fail-closed.
+- **REQ-4.0.411-NO-INVENTED-DATA-003 – BINDENDE:** Reparationen må kun udvide bounds; den må ikke ændre punktet eller opfinde vejrdata.
+- **REQ-4.0.411-NORMAL-RESEAL-004 – BINDENDE:** Efter eksakt Pages-verifikation må almindelig same-binding reseal acceptere bounded payloadfrie diagnostiske auditfund, når 210/673, binding, historikregnskab, rollback og privacy består.
+- **REQ-4.0.411-CALIBRATION-LOCK-005 – BINDENDE:** En reseal med auditfund sætter altid `calibrationEligible=false`.
+- **REQ-4.0.411-TRANSITION-STRICT-006 – BINDENDE:** Første cutover, retur og bindingsovergang må ikke bruge normal reseals diagnoseundtagelse.
+- **REQ-4.0.411-BINDING-007 – BINDENDE:** Den ændrede implementering føres gennem append-only migration `20260918125600`; anvendte forgængere ændres ikke.
+- **REQ-4.0.411-LIVE-PROOF-008 – BINDENDE:** Næste almindelige weather skal på gemte cacher bevise state replay, aktuel time, lokale femdøgnsprognoser, Pages og reseal. Ingen oneoff.
+
+DEC-0194. Formel, vægte, providerprioritet, geometri og punkter er uændrede.
+
 # Aktuelt ejerdelta – 2026-09-18 – aktuelle prognoser trods kontrolfund
 
 - **REQ-4.0.410-COLLECT-ALL-001 – BINDENDE:** En almindelig weather skal forsøge alle uafhængige driftskontroller og samle udfaldene i én payloadfri rapport.

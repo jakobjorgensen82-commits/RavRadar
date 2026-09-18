@@ -1,5 +1,14 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.411-præcisering – DEC-0194:** Når last-mile-usikkerhed
+genåbnes efter et konservativt tail-reset, skal bounds rumme den fortsat
+validerede fysiske punkt-tilstand. Allerede gemt schema-6-state må kun
+repareres ved at udvide netop dette åbne interval; punkt, vejrdata, eksakt
+historik, markører, tid og binding ændres ikke. Normal same-binding reseal må
+efter eksakt Pages-, privacy-, model- og 210/673-verifikation acceptere bounded
+payloadfrie diagnostiske auditfund med positive tællinger og skal da sætte
+kalibrering falsk. Cutover, retur og bindingsovergang forbliver strenge.
+
 **Bindende 4.0.409-præcisering – DEC-0192:** Når gammel deployet privat
 RavScore-historik og progressiv DMI-historik begge har en valideret komponent
 for samme kystdel/time, vælges den fra nyeste dokumenterede `modelRun`.

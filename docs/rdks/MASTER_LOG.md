@@ -1,3 +1,25 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.411 last-mile-historik
+
+4.0.410 er live gennem PR #354/main `ca2735af`. Normalrun `35331664087`
+gennemførte DMI, Copernicus, Open-Meteo, closure, syvdøgnshistorik, cache-save,
+alle driftskontroller og et verificeret Pages-deploy. DEC-0193 er livebevist.
+
+Den payloadfrie audit gav 673 × `LAST_MILE_HISTORY_POINT`. Efter et
+konservativt last-mile-reset fortsatte den fysiske punktbane korrekt. Et
+senere hul åbnede usikkerheden, men intervallet blev ikke udvidet til punktet;
+næste run afviste derfor alle states. Browseren viste 4.0.410 i nødvisning med
+kl. 11.00, mange historikintervaller, tre timers verificeret historik i Agger
+Tange og ingen lokal femdøgnsprognose. Pages var grønt; normal reseal gjorde
+først bagefter jobbet rødt ved at kræve auditstatus `passed`.
+
+4.0.411 udvider kun et åbent interval nok til at indeholde det validerede
+punkt og reparerer samme allerede gemte schema-6-kant deterministisk. Eksakt
+og ugyldig state forbliver hårdt afvist. Same-binding normal reseal accepterer
+bounded payloadfrie diagnosefund efter eksakt Pages-/privacy-/210/673-bevis og
+sætter altid kalibrering falsk. Formel og vægte er uændrede. Implementeringen
+er bundet som `039abdfe...`, rollback `d3ad4e85...`, continuation
+`c294198d...` gennem append-only migration `20260918125600`. DEC-0194.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.410 aktuelle prognoser
 
 4.0.409 er live gennem PR #353 og main `013baac8`. Normalrun

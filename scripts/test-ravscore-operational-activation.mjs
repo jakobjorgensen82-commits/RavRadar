@@ -612,6 +612,40 @@ const maintenance = operationalIntegratedMaintenanceTransition({
   readiness,
   deploymentId: 'pages-integrated-h2',
 });
+const diagnosticAudit = Object.freeze({
+  ...integratedAudit(),
+  status: 'failed',
+  errors: Object.freeze(['STATE_REPLAY_FAILED']),
+  errorCounts: Object.freeze({ STATE_REPLAY_FAILED: 673 }),
+});
+const diagnosticMaintenance = operationalIntegratedMaintenanceTransition({
+  currentRow: integratedActiveRow,
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 4,
+  sourceHead,
+  publicManifest: integratedH2,
+  publicAudit: diagnosticAudit,
+  publicVerification: integratedH2Verification,
+  readiness,
+  deploymentId: 'pages-integrated-h2-diagnostic',
+});
+assert.equal(diagnosticMaintenance.document.calibrationEligible, false,
+  'a bounded diagnostic finding may reseal verified Pages but never enter calibration');
+assert.throws(() => operationalIntegratedMaintenanceTransition({
+  currentRow: integratedActiveRow,
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 4,
+  sourceHead,
+  publicManifest: integratedH2,
+  publicAudit: {
+    ...diagnosticAudit,
+    errorCounts: { STATE_REPLAY_FAILED: 0 },
+  },
+  publicVerification: integratedH2Verification,
+  readiness,
+  deploymentId: 'pages-integrated-h2-invalid-diagnostic',
+}), /full public runtime audit/,
+'ordinary reseal must reject an unbounded or internally inconsistent diagnostic report');
 assert.throws(() => operationalIntegratedMaintenanceTransition({
   currentRow: integratedActiveRow,
   currentProfileRow: integratedProfileRow,

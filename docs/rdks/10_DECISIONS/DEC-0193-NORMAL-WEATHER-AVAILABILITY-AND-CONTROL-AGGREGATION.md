@@ -1,6 +1,6 @@
 # DEC-0193 – Normal weather udgiver gyldige prognoser trods kontrolfund
 
-**Status:** Aktiv og bindende; implementeret lokalt i 4.0.410, livebevis afventer
+**Status:** Aktiv, bindende og livebevist i 4.0.410 gennem normalrun `35331664087`
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -48,6 +48,12 @@ underkategori kan ikke bevises bagudrettet.
    land-/vandpunkter eller kildeprioritet.
 
 ## Verifikation
+
+Livebeviset er gennemført. Run `35331664087` fortsatte efter den røde
+runtimeaudit, gennemførte de øvrige kontroller og deployede/verificerede Pages
+med 210 zoner og 673 kystdele. Den sene centrale reseal fejlede bagefter og er
+rettet særskilt i DEC-0194; det ændrer ikke, at selve prognosedeployet og denne
+beslutnings fortsættelseskrav blev bevist.
 
 Kildeændringen skal bestå de målrettede workflow-, opsamlings- og
 replayklassifikationstests samt én exact-head sourcegate. Efter merge køres

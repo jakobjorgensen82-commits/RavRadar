@@ -41,6 +41,8 @@ const VALID_DATA_BEFORE_LOCAL_MISSING_BINDING_CHECK =
   'node scripts/build-valid-data-before-local-missing-binding-migration.mjs';
 const PARTIAL_ZONE_PUBLIC_METADATA_BINDING_CHECK =
   'node scripts/build-partial-zone-public-metadata-binding-migration.mjs';
+const LAST_MILE_HISTORY_ENVELOPE_BINDING_CHECK =
+  'node scripts/build-last-mile-history-envelope-binding-migration.mjs';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -54,9 +56,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   POST_CUTOVER_CURRENT_HOLD_BINDING_CHECK,
   VALID_DATA_BEFORE_LOCAL_MISSING_BINDING_CHECK,
   PARTIAL_ZONE_PUBLIC_METADATA_BINDING_CHECK,
+  LAST_MILE_HISTORY_ENVELOPE_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql';
+  'supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -88,6 +91,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260914020000_h0_state_snapshot_binding.sql',
   'supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql',
   'supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql',
+  'supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 

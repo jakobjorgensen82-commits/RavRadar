@@ -424,6 +424,20 @@ function lastMileFactorFromTrack(track) {
   );
 }
 
+function encloseLastMilePointTrack(bounds, pointTrack) {
+  const pointFactor = lastMileFactorFromTrack(pointTrack);
+  const lowerFactor = lastMileFactorFromTrack(bounds.minimumFactorTrack);
+  const upperFactor = lastMileFactorFromTrack(bounds.maximumFactorTrack);
+  return {
+    minimumFactorTrack: pointFactor < lowerFactor - EPSILON
+      ? { ...pointTrack }
+      : { ...bounds.minimumFactorTrack },
+    maximumFactorTrack: pointFactor > upperFactor + EPSILON
+      ? { ...pointTrack }
+      : { ...bounds.maximumFactorTrack },
+  };
+}
+
 function collapsedHistoryBoundsFromPointState(state) {
   const waveApproach = state.waveApproachState;
   if (state.currentMemoryReady !== true
@@ -706,6 +720,15 @@ function advanceLastMileHistoryBounds(previous, row, sample, onshoreDirectionDeg
         ),
       };
     }
+  }
+  // A conservative tail reset intentionally lets the physical point track
+  // continue separately from the collapsed scoring track. If a later missing
+  // interval opens uncertainty again, that still-valid point track becomes
+  // one member of the interval and must therefore be enclosed. Without this,
+  // the newly reopened interval can be narrower than its own point state and
+  // the next ordinary run rejects the saved continuation.
+  if (historyUncertaintyOpen(lastUnknownAt, conservativeResetAt)) {
+    bounds = encloseLastMilePointTrack(bounds, row.continuationState);
   }
   const unknownAgeHours = lastUnknownAt === null
     ? Number.POSITIVE_INFINITY
@@ -1349,7 +1372,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
       !== JSON.stringify(rebuilt.nativeHoldIntervalEnds)) {
     throw new Error('Integrated RavScore state contradicts its signed current evidence');
   }
-  const historyBounds = canonicalHistoryBounds(initialState.historyBounds, time);
+  let historyBounds = canonicalHistoryBounds(initialState.historyBounds, time);
   const currentScoreBounds = buildCurrentSupplyScoreBounds(evidence, {
     referenceTime: time,
     nativeHold,
@@ -1400,17 +1423,42 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     normalMoment: waveApproachState.waveNormalMoment,
   };
   const pointLastMileFactor = lastMileFactorFromTrack(pointLastMileTrack);
-  const lowerLastMileFactor = lastMileFactorFromTrack(
+  let lowerLastMileFactor = lastMileFactorFromTrack(
     historyBounds.lastMile.minimumFactorTrack,
   );
-  const upperLastMileFactor = lastMileFactorFromTrack(
+  let upperLastMileFactor = lastMileFactorFromTrack(
     historyBounds.lastMile.maximumFactorTrack,
   );
   const lastMileConservativeReset = historyBounds.lastMile.conservativeResetAt !== null;
-  if (lowerLastMileFactor > upperLastMileFactor + EPSILON
-    || (!lastMileConservativeReset
-      && (pointLastMileFactor < lowerLastMileFactor - EPSILON
-        || pointLastMileFactor > upperLastMileFactor + EPSILON))) {
+  if (lowerLastMileFactor > upperLastMileFactor + EPSILON) {
+    throw new Error('Integrated RavScore last-mile point lies outside its history bounds');
+  }
+  let historyBoundsRepairApplied = false;
+  if (!lastMileConservativeReset
+    && historyUncertaintyOpen(
+      historyBounds.lastMile.lastUnknownAt,
+      historyBounds.lastMile.conservativeResetAt,
+    )
+    && (pointLastMileFactor < lowerLastMileFactor - EPSILON
+      || pointLastMileFactor > upperLastMileFactor + EPSILON)) {
+    historyBounds = {
+      ...historyBounds,
+      lastMile: {
+        ...historyBounds.lastMile,
+        ...encloseLastMilePointTrack(historyBounds.lastMile, pointLastMileTrack),
+      },
+    };
+    lowerLastMileFactor = lastMileFactorFromTrack(
+      historyBounds.lastMile.minimumFactorTrack,
+    );
+    upperLastMileFactor = lastMileFactorFromTrack(
+      historyBounds.lastMile.maximumFactorTrack,
+    );
+    historyBoundsRepairApplied = true;
+  }
+  if (!lastMileConservativeReset
+    && (pointLastMileFactor < lowerLastMileFactor - EPSILON
+      || pointLastMileFactor > upperLastMileFactor + EPSILON)) {
     throw new Error('Integrated RavScore last-mile point lies outside its history bounds');
   }
   if (!historyUncertaintyOpen(
@@ -1469,8 +1517,11 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     waveApproachState,
     historyBounds,
     stateV5MigrationApplied: migratedSchema5 !== null,
+    historyBoundsRepairApplied,
     lineage,
-    canonicalState: initialState,
+    canonicalState: historyBoundsRepairApplied
+      ? { ...initialState, historyBounds }
+      : initialState,
   };
 }
 
@@ -1649,9 +1700,11 @@ export function buildIntegratedRavScoreStateSeries(
       initialWaveApproachState = continued.waveApproachState;
       initialHistoryBounds = continued.historyBounds;
       stateV5MigrationApplied = continued.stateV5MigrationApplied;
+      if (stateV5MigrationApplied || continued.historyBoundsRepairApplied) {
+        initialState = continued.canonicalState;
+      }
       if (stateV5MigrationApplied) {
         initialStateSource = 'INTEGRATED_SCHEMA5_READY_POINT_MIGRATION';
-        initialState = continued.canonicalState;
       }
       lineage = continued.lineage;
     } else {

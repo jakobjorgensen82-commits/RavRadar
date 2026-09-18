@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.411 last-mile state og reseal
+
+- **ISSUE-4.0.410-DELIVERY – LUKKET:** Exact-head `35330643842`, PR #354,
+  main `ca2735af` og code-only `35331109332` er leveret; live viser 4.0.410.
+- **ISSUE-DEC-0193-LIVE-PROOF – LUKKET:** Normalrun `35331664087` fortsatte
+  efter rød runtimeaudit og deployede/verificerede 210/673 på Pages.
+- **ISSUE-LAST-MILE-HISTORY-POINT-673 – RETTET LOKALT / LIVEBEVIS MANGLER:**
+  Et nyt hul efter konservativt reset åbnede intervallet uden den gyldige
+  punkt-tilstand. 4.0.411 omslutter punktet og reparerer den gemte schema-6-kant.
+- **ISSUE-CURRENT-HOUR-AND-LOCAL-FORECAST – RETTET I KÆDEN / LIVEBEVIS MANGLER:**
+  Browseren viste kl. 11.00, tre timers historik og ingen lokal femdøgnsprognose,
+  fordi ingen af de 673 continuations kunne genlæses.
+- **ISSUE-POST-DEPLOY-RESEAL-STRICT – RETTET LOKALT / LIVEBEVIS MANGLER:**
+  Pages og offentlig verifikation var grønne, men reseal gjorde jobbet rødt.
+  Normal same-binding reseal accepterer nu kun bounded payloadfrie diagnosefund
+  og låser kalibrering.
+- **ISSUE-4.0.411-BINDING-MIGRATION – RETTET LOKALT / REMOTE APPLY MANGLER:**
+  Ny append-only migration `20260918125600` fører integrated-, rollback- og
+  continuation-hashes frem; forgængeren er byteuændret.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN P0:** Én almindelig weather og den
+  efterfølgende normale cachevedligeholdelse mangler før scheduler genaktiveres.
+
+DEC-0194. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.410 prognosetilgængelighed
 
 - **ISSUE-4.0.409-DELIVERY – LUKKET:** Exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547` er grønne; live viser 4.0.409.

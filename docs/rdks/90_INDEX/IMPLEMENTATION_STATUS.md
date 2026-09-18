@@ -1,3 +1,28 @@
+# Aktuel implementeringsstatus – lokal 4.0.411 last-mile-historik og reseal
+
+- [x] Lever 4.0.410 gennem exact-head `35330643842`, PR #354, main
+  `ca2735af` og providerfri code-only `35331109332`.
+- [x] Kør normal weather `35331664087` gennem alle providere, cachewrites,
+  runtime, kontroller og et verificeret Pages-deploy.
+- [x] Afgræns 673 replayfejl til `LAST_MILE_HISTORY_POINT` og reproducer
+  post-reset → gyldig retning → nyt hul-regressionen.
+- [x] Udvid kun åbne last-mile-intervaller til deres gyldige punkt og reparer
+  den eksisterende schema-6-kant deterministisk.
+- [x] Lad normal reseal følge et verificeret Pages-deploy med afgrænsede
+  diagnostiske auditfund uden at gøre fundet kalibreringsberettiget.
+- [x] Generér integrated/rollback/continuation-binding og append-only migration
+  `20260918125600` uden at omskrive forgængeren.
+- [x] Verificér rettelsen målrettet i state-, activation-, bundle-, binding-,
+  migrations-, installations- og readiness-tests.
+- [ ] Afslut RDKS/håndbog, versions- og geodatadiff samt relevante workflowtests.
+- [ ] Commit/push, bestå én exact-head sourcegate og merge samme head.
+- [ ] Kør én almindelig weather på gemte cacher; verificér aktuel time, lokale
+  femdøgnsprognoser, replay, historikstatus, Pages og central reseal.
+- [ ] Bevis næste normale cachevedligeholdelse og genaktivér først derefter
+  scheduler; fortsæt så roadmap.
+
+DEC-0194. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.410 driftskontroller uden prognosestop
 
 - [x] Lever 4.0.409 via exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.
