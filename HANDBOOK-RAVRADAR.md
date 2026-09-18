@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.413
+**Håndbogsversion:** 4.0.414
+
+## 89.18 4.0.414 – Recovery ser på det, der faktisk blev gemt
+
+Den anden recovery nåede igen gennem de fastlåste artifacts og den offentlige
+kontrol. Den stoppede derefter på et forkert spørgsmål: om central version 23
+havde navnet fra den første cutover. Loggen viser, at version 23 i stedet blev
+gemt af en almindelig vedligeholdelse. Navnet sagde derfor intet om, hvorvidt
+dataene var de rigtige.
+
+4.0.414 kontrollerer nu selve indholdet: central version og status, head,
+datasæt og tidspunkt, manifests, closures, deployments, alle modelbindinger,
+readiness, audit, profil og den normale maintenance-forsegling. Hvis flere
+felter er forkerte, bliver de meldt samlet før nogen skrivning. Beviserne for
+det allerede offentlige target er ikke svækket.
+
+Nye almindelige vejrcacher bruger en enklere vedligeholdelsesvej og ser ikke
+på første-cutover-historik. Den nuværende recovery er fortsat kun til det ene
+allerede kendte stop mellem offentlig og central registrering.
 
 ## 89.17 4.0.413 – Recovery forstår den aktuelle kontrolrapport
 
@@ -64,7 +82,7 @@ nu følge et verificeret same-model-deploy med afgrænsede diagnostiske fund,
 men sådanne data må ikke bruges til kalibrering. Modelskift og første cutover
 har fortsat de strengere krav.
 
-Formel og vægte er uændrede. 4.0.413 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Formel og vægte er uændrede. 4.0.414 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den rettede integrerede kode er bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er fortsat særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859` over 57 transitive filer. Den nye continuationidentitet følger med append-only migration `20260918125600`.
 

@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.414 direkte sourcebevis
+
+4.0.413 er merged som `50216cd6`. Recovery `35344230599` verificerede source-
+og target-artifacts og den offentlige 4.0.410-side, men stoppede før CAS på
+kravet om transitionnavnet `INITIAL_INTEGRATED_CUTOVER`. Loggen fra source-run
+`35331109332` beviser, at central version 23 i stedet er en almindelig
+`integrated-maintenance`-forsegling.
+
+4.0.414 fjerner transitionnavnet som source-identitet kun ved den fastlåste
+same-binding recovery. Alle materielle sourcefelter og den normale
+maintenance-seal kontrolleres direkte, og alle afvigelser samles. Target- og
+CAS-grænser er uændrede. Normale nye caches bruger fortsat den særskilte
+maintenance-vej. DEC-0197.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.413 auditprofil
 
 4.0.412 er merged som `58212e59`. Recovery `35342779550` verificerede begge

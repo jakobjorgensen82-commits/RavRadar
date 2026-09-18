@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.414 direkte source-identitet
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.414-direct-live-reseal`, baseret på main `50216cd6`.
+
+4.0.413 bestod exact-head `35343692557`, blev merged via PR #357, og recovery
+`35344230599` bestod artifacts og frisk Pages. Den stoppede før CAS, fordi
+same-binding recovery fejlagtigt krævede første-cutover-transitionen. Faktisk
+blev central version 23 oprettet af normal integreret maintenance i
+`35331109332`.
+
+4.0.414 validerer i stedet alle materielle sourcefelter og den normale
+maintenance-seal direkte og samler alle afvigelser som feltkoder. Targetbeviser
+og CAS er uændrede. Activation-måltesten er grøn. Næste: docs/slutkontroller,
+commit/push, exact-head, merge, recovery, providerfri code-only og én normal
+weather. Ingen oneoff; scheduler pauset. DEC-0197. Sol/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.413 auditprofil
 
 Arbejd i `RavRadar-4.0.396`, branch

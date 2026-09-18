@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.414 direkte same-binding-source
+
+- **ISSUE-4.0.413-DELIVERY – LUKKET:** Exact-head `35343692557`, PR #357 og main `50216cd6` er leveret.
+- **ISSUE-RECOVERY-SOURCE-TRANSITION – RETTET LOKALT / LIVEBEVIS MANGLER:** Recovery `35344230599` stoppede før CAS, fordi den krævede første-cutover-navnet fra en source, som source-loggen beviser blev oprettet af normal integrated maintenance. 4.0.414 beviser source direkte gennem alle materielle felter og maintenance-sealen.
+- **ISSUE-CENTRAL-23-TO-24 – ÅBEN P0:** Recoverygenkørsel, code-only og normal weather mangler. Live og central tilstand er fortsat uændrede.
+- **ISSUE-GENERIC-POST-PAGES-RESUME – ÅBEN P1:** Normale caches bruger ikke den gamle cutover-historik, men et totalt runnerstop efter Pages og før central registrering har endnu ikke en generel same-binding-genoptagelse. Det må ikke blokere den aktuelle eksakte recovery.
+
+DEC-0197. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.413 auditprofil
 
 - **ISSUE-4.0.412-DELIVERY – LUKKET:** PR #356 er merged som main `58212e59`.

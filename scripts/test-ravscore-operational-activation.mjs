@@ -3313,8 +3313,47 @@ const missedResealPolicy = Object.freeze({
   ...missedResealPolicyBase,
   targetPagesArtifactSealSha256: sha256(missedResealTargetArtifactSeal),
 });
-const missedResealRecovery = recoverMissedHistoricalIntegratedMaintenance({
+const missedResealSourceMaintenanceSeal = Object.freeze({
+  kind: 'RAVSCORE_INTEGRATED_ACTIVE_PUBLIC_RESEAL',
+  sourceHead,
+  modelBinding: historicalBinding,
+  publicManifestSha256: sha256(historicalManifest),
+  integratedReadinessSha256: sha256(historicalReadiness),
+  integratedPublicAuditSha256: sha256(missedCutoverAudit),
+});
+const missedResealSourceDocument = Object.freeze({
+  ...missedCutoverRecovery.document,
+  status: RAVSCORE_OPERATIONAL_STATUSES.integrated,
+  transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+  sourceHead,
+  datasetId: historicalManifest.datasetId,
+  productionReferenceAt: historicalManifest.productionReferenceAt,
+  activeModelBinding: historicalBinding,
+  requestedModelBinding: historicalBinding,
+  sourceModelBinding: historicalBinding,
+  publicManifestSha256: sha256(historicalManifest),
+  sourcePublicManifestSha256: sha256(historicalManifest),
+  requestedPublicManifestSha256: sha256(historicalManifest),
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  sourceDeploymentId: missedResealPolicy.sourceDeploymentId,
+  deploymentId: missedResealPolicy.sourceDeploymentId,
+  calibrationEligible: false,
+  failureCode: null,
+  returnPlanSha256: sha256(missedResealSourceMaintenanceSeal),
+  integratedReadinessSha256: sha256(historicalReadiness),
+  integratedPublicAuditSha256: sha256(missedCutoverAudit),
+  integratedManifestSha256: sha256(historicalManifest),
+});
+assertOperationalActivationDocument(missedResealSourceDocument, {
+  allowSealedHistoricalBindings: true,
+});
+const missedResealInput = Object.freeze({
   ...missedMaintenanceInput,
+  currentRow: Object.freeze({
+    version: missedResealPolicy.sourceCentralVersion,
+    payload: missedResealSourceDocument,
+  }),
   targetManifest: missedResealTargetManifest,
   targetAudit: missedResealTargetAudit,
   targetReadiness: historicalReadiness,
@@ -3323,9 +3362,12 @@ const missedResealRecovery = recoverMissedHistoricalIntegratedMaintenance({
   targetPagesArtifactSeal: missedResealTargetArtifactSeal,
   policy: missedResealPolicy,
 });
+const missedResealRecovery = recoverMissedHistoricalIntegratedMaintenance({
+  ...missedResealInput,
+});
 assert.equal(missedResealRecovery.nextVersion, 2);
 assert.equal(missedResealRecovery.document.transitionKind,
-  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
+  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn);
 assert.equal(missedResealRecovery.document.publicManifestSha256,
   sha256(missedResealTargetManifest));
 assert.equal(missedResealRecovery.document.sourcePublicManifestSha256,
@@ -3333,18 +3375,22 @@ assert.equal(missedResealRecovery.document.sourcePublicManifestSha256,
 assert.equal(missedResealRecovery.document.calibrationEligible, false);
 assert.deepEqual(missedResealRecovery.centralTargetProfile, historicalProfile);
 assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
-  ...missedMaintenanceInput,
-  targetManifest: missedResealTargetManifest,
+  ...missedResealInput,
   targetAudit: {
     ...missedResealTargetAudit,
     errorCounts: { STATE_REPLAY_FAILED: 0 },
   },
-  targetReadiness: historicalReadiness,
-  targetBinding: historicalBinding,
-  publicVerification: missedResealTargetVerification,
-  targetPagesArtifactSeal: missedResealTargetArtifactSeal,
-  policy: missedResealPolicy,
 }), /not pinned evidence|public audit/);
+assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
+  ...missedResealInput,
+  currentRow: {
+    ...missedResealInput.currentRow,
+    payload: {
+      ...missedResealSourceDocument,
+      returnPlanSha256: 'f'.repeat(64),
+    },
+  },
+}), /central source mismatches: MAINTENANCE_SEAL/);
 const inconsistentProfileAudit = Object.freeze({
   ...missedResealTargetAudit,
   profile: Object.freeze({
@@ -3356,13 +3402,8 @@ const inconsistentProfileAudit = Object.freeze({
   }),
 });
 assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
-  ...missedMaintenanceInput,
-  targetManifest: missedResealTargetManifest,
+  ...missedResealInput,
   targetAudit: inconsistentProfileAudit,
-  targetReadiness: historicalReadiness,
-  targetBinding: historicalBinding,
-  publicVerification: missedResealTargetVerification,
-  targetPagesArtifactSeal: missedResealTargetArtifactSeal,
   policy: {
     ...missedResealPolicy,
     targetAuditSha256: sha256(inconsistentProfileAudit),

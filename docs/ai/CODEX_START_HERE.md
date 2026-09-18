@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.414 direkte same-binding recovery
+
+4.0.413 bestod exact-head `35343692557`, blev merged gennem PR #357 som main
+`50216cd6`, og recovery `35344230599` bestod de fastlåste artifacts samt frisk
+Pages-verifikation. Den stoppede før CAS, fordi den gamle recovery også krævede
+transitionnavnet fra første cutover. Central version 23 blev imidlertid
+oprettet af almindelig integreret vedligeholdelse i run `35331109332`.
+
+Lokal 4.0.414 beviser derfor same-binding-source direkte gennem alle materielle
+centrale felter og den normale maintenance-seal. Afvigelser samles i ét stop;
+første-cutover-navnet bruges ikke som identitetsbevis. Måltesten er grøn.
+Næste: RDKS/version/slutkontroller, exact-head, merge og recovery. Derefter
+providerfri code-only og én normal weather. Nye normale caches bruger allerede
+den særskilte maintenance-vej. Ingen oneoff; scheduler pauset. DEC-0197.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.410 aktuelle prognoser trods kontrolfund
 
 4.0.409 er live gennem exact-head `35318809153`, PR #353, main `013baac8`

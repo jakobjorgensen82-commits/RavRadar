@@ -1,3 +1,17 @@
+# Aktiv roadmap – fra recovery til pålidelig vejrdrift uden prognosehuller
+
+1. [x] Bevis at live 4.0.410 og de gemte providercacher findes, og at den aktuelle blokering er central registrering frem for manglende vejropbygning.
+2. [x] Afgræns 4.0.413-stoppet til et irrelevant transitionnavn og bevis den faktiske source som normal integrated maintenance.
+3. [x] Implementér direkte same-binding-sourcebevis med samlet fejlrapport uden at svække target eller CAS.
+4. [ ] Lever 4.0.414 gennem én exact-head, merge og den fastlåste recovery.
+5. [ ] Deploy last-mile-rettelsen providerfrit fra gemt vejr og verificér siden.
+6. [ ] Kør én almindelig vejrhentning; mål DMI først, Copernicus som næste lag og Open-Meteo kun som dokumenteret rest.
+7. [ ] Verificér aktuel time, sammenhængende historik og lokale femdøgnsprognoser på siden; ret reelle huller samlet.
+8. [ ] Bevis endnu en almindelig cachevedligeholdelse og tilføj generel same-binding-genoptagelse efter et eventuelt post-Pages-runnerstop.
+9. [ ] Genaktivér scheduler først efter bevist normal drift; fortsæt derefter de stadig aktuelle roadmap-punkter.
+
+DEC-0197. Ingen oneoff; bootstrap kun hvis målt restdækning og normal kapacitet kræver det.
+
 # Aktiv roadmap – 4.0.410 fra kontrolstop til aktuelle prognoser
 
 1. [x] Lever 4.0.409 gennem exact-head `35318809153`, PR #353, main `013baac8` og code-only `35320190547`.
