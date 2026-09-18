@@ -1,5 +1,13 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.418-præcisering – DEC-0201:** Hver offentlig vejrzone skal have
+præcis `productionReferenceAt +0..+117`. Cache- eller providergenerationstid må
+ikke definere aksen. Komponenter sammenlægges kun ved eksakt samme sted og
+time; ny gyldig værdi vinder, ellers bevares gyldig samme-time-fallback. Et
+reelt hul materialiseres som lokal `MISSING` på det korrekte tidsstempel og må
+hverken forskyde nabotimer eller deaktivere resten af RavRadar. Providerorden,
+DMI-rotation, RavScore, geometri og punkter er uændrede.
+
 **Bindende 4.0.417-præcisering – DEC-0200:** Når private same-time-state
 repareres, skal begge aktuelle modes, offentlige delresultater og zonens
 aktuelle samlede række genberegnes fra den reparerede state. Tilgængelighed og

@@ -1,3 +1,14 @@
+# Aktuelt ejerdelta – 2026-09-18 – præcis offentlig vejrakse
+
+- **REQ-4.0.418-RUN-BOUND-HORIZON-001 – BINDENDE:** Hver offentlig zone skal materialiseres på præcis `productionReferenceAt +0..+117`; en caches generationstid må ikke definere eller forskyde aksen.
+- **REQ-4.0.418-EXACT-TIME-MERGE-002 – BINDENDE:** DMI og fallback må kun sammenlægges for eksakt samme sted og tidsstempel. Ny gyldig komponent vinder; ellers bevares gyldig samme-time-fallback.
+- **REQ-4.0.418-HONEST-MISSING-003 – BINDENDE:** Et reelt lokalt hul skal være en eksplicit `MISSING`-række på korrekt time og må ikke flytte eller fjerne nabotimer.
+- **REQ-4.0.418-LOCAL-FAILURE-004 – BINDENDE:** Et lokalt `MISSING` må ikke gøre resten af zonen eller RavRadar ubrugelig.
+- **REQ-4.0.418-NO-ROTATION-GUESS-005 – BINDENDE:** DMI-rotation og budget ændres kun ved målt manglende fremgang; det aktuelle prioriteringsbevis lægger reelle del/time-huller før fornyelse.
+- **REQ-4.0.418-NORMAL-PROOF-006 – ÅBEN P0:** Rettelsen leveres providerfrit, hvorefter én almindelig weather skal genbruge gemte cacher og bevise deploy, horisont og providerfremgang. Ingen oneoff.
+
+DEC-0201.
+
 # Aktuelt ejerdelta – 2026-09-18 – sammenhængende same-time-score
 
 - **REQ-4.0.417-DERIVED-CHAIN-001 – BINDENDE:** En repareret continuation skal genberegne begge aktuelle modes, offentlige delscorer og zonens aktuelle samlede række i samme migration.

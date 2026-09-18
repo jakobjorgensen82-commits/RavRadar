@@ -1,3 +1,17 @@
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.418 offentlig vejrakse
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.418-exact-public-weather-horizon`, baseret på main `0890ed0e`.
+
+4.0.417 er live. Normalrun `35357557315` gemte alle providerfremskridt og
+stoppede først ved central weather, fordi en ældre DMI-starttime forskød
+`DK-B01-12`'s offentlige 118 timer. Rettelsen binder sammenlægning og endelig
+materialisering til den præcise produktionstime +0..+117. Reelle lokale huller
+forbliver `MISSING`; de forskyder ikke aksen. Providerorden og DMI-rotation er
+uændrede. Næste: version/docs/slutkontrol, exact-head, merge, providerfri kode
+og én almindelig weather på gemte cacher. Ingen oneoff. Scheduler deaktiveret.
+DEC-0201. Standard/Ekstra høj.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.417 sammenhængende score
 
 Arbejd i `RavRadar-4.0.396`. 4.0.416 er merged som main `496ba278` efter grøn

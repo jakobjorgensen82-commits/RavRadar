@@ -1,5 +1,21 @@
 # Weather Pipeline 1.0
 
+## 4.0.418 – alle offentlige zoner følger samme præcise produktionstime
+
+Normalrun `35357557315` gennemførte DMI, Copernicus, regional DMI og
+Open-Meteo og gemte deres fremgang. Publicering stoppede bagefter, fordi en
+ældre DMI-cache begyndte én time før den aktuelle produktionstime. Den gamle
+time kom med først, mens den korrekte sidste +117-time blev skåret væk.
+
+4.0.418 bygger nu zonehorisonten direkte som `productionReferenceAt +0..+117`.
+DMI og fallback kan kun mødes ved samme tidsstempel. En gyldig komponent for
+den præcise time bevares; mangler hele timen, står der en ærlig lokal
+`MISSING`-række på den rigtige time. Et hul kan dermed ikke flytte de andre
+timer eller gøre resten af RavRadar ubrugelig.
+
+Providerordenen og DMI-rotationen ændres ikke. Gemt fremgang genbruges i næste
+almindelige weather-kørsel; ingen oneoff.
+
 ## 4.0.417 – repareret historik og aktuelle scorer genberegnes samlet
 
 Code-only `35351928923` reparerede alle 673 gemte last-mile-states uden at

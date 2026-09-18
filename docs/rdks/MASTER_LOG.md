@@ -1,3 +1,17 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.418 tidsakse
+
+4.0.417 er live gennem exact-head `35356064367`, PR #361, main `0890ed0e` og
+providerfri `35356645337`. Normalrun `35357557315` gennemførte alle providerled
+og gemte cacherne. Currentfordelingen endte på 32.232 DMI, 5.158 Copernicus,
+912 regional DMI, 40.039 Open-Meteo og 1.073 ærlige lokale huller.
+
+Kørselen stoppede før ny publicering, fordi zone `DK-B01-12`'s vejrhorisont
+blev forskudt af en ældre DMI-caches generationstime. 4.0.418 bruger den
+aktuelle produktionstime som eneste +0..+117-akse, sammenlægger komponenter
+kun ved samme tidsstempel og materialiserer et ærligt hul som lokal `MISSING`.
+DMI-rotation og kildeprioritet er gennemgået og uændret. Ingen oneoff; næste
+bevis er én almindelig weather på gemte cacher. DEC-0201.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.417 afledt score
 
 4.0.416 er merged som `496ba278`. Code-only `35351928923` reparerede alle 673

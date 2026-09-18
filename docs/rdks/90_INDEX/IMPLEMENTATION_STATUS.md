@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – lokal 4.0.418 præcis offentlig vejrakse
+
+- [x] Lever 4.0.417 gennem exact-head `35356064367`, PR #361, main `0890ed0e` og code-only `35356645337`.
+- [x] Kør normal weather `35357557315`; gennemfør og gem alle providerled.
+- [x] Afgræns publiceringsstoppet til én forskudt 118-timerszoneakse.
+- [x] Bind sammenlægning og endelig zonematerialisering til præcis produktionstime +0..+117.
+- [x] Bevar gyldige samme-time-fallbackkomponenter og gør reelle huller eksplicitte uden tidsforskydning.
+- [x] Gennemgå DMI-prioritering; reelle del/time-huller ligger før fornyelse, så ingen rotationsændring er begrundet nu.
+- [x] Bestå målrettede vejr-, horisont-, missing-, progressive-runtime- og scoregeneratorkontroller.
+- [x] Versionsløft, RDKS-/håndbogsvalidering og rent geodataversionsbevis.
+- [ ] Commit/push, én exact-head, merge og providerfri kodelevering.
+- [ ] Kør én almindelig weather på gemte cacher og verificér præcis 118-timersakse, deploy og providerfremgang.
+- [ ] Bevis endnu en almindelig cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0201. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.417 sammenhængende same-time-score
 
 - [x] Lever 4.0.416 gennem exact-head `35351272955`, PR #360 og main `496ba278`.

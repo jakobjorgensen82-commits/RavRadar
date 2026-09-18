@@ -1,6 +1,6 @@
 # DEC-0200 – Same-time-reparation skal genberegne hele den afledte scorekæde
 
-**Status:** Aktiv; implementeret og måltestet lokalt i 4.0.417, livebevis afventer
+**Status:** Aktiv; produktionsverificeret i 4.0.417
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -34,3 +34,10 @@ land-/vandpunkter ændres ikke. Der køres ingen oneoff eller almindelig weather
 før 4.0.417 er offentlig og browserverificeret. Derefter etableres en sikker
 current-main-indgang til normal weather, og almindelig cachevedligeholdelse
 bevises før scheduler genaktiveres.
+
+## Produktionsbevis
+
+4.0.417 bestod exact-head `35356064367`, blev merged gennem PR #361 som main
+`0890ed0e` og kom providerfrit online i `35356645337`. Den efterfølgende
+almindelige weather-kørsel nåede gennem provider- og scorekæden; dens senere
+offentlige tidsaksefejl behandles særskilt i DEC-0201.

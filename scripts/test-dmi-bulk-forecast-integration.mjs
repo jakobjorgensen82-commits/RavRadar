@@ -35,6 +35,7 @@ const atomicMergeSource = source.slice(
 const {
   mergeHourlyPreferDmi: mergeHourlyPreferDmiForTest,
   mergeDmiWithFallback: mergeDmiWithFallbackForTest,
+  materializeExactPublicWeatherHorizon: materializeExactPublicWeatherHorizonForTest,
 } = Function(
   'ravScoreNumber',
   'normalizeForecastHourly',
@@ -43,7 +44,11 @@ const {
   'SHORT_DMI_WATER_GAP_HOURS',
   'WATER_LEVEL_JUMP_WARN_CM',
   'ACCEPTED_FORECAST_HOURS',
-  `${atomicMergeSource}; return { mergeHourlyPreferDmi, mergeDmiWithFallback };`,
+  `${atomicMergeSource}; return {
+    mergeHourlyPreferDmi,
+    mergeDmiWithFallback,
+    materializeExactPublicWeatherHorizon,
+  };`,
 )(
   value => typeof value === 'number' && Number.isFinite(value) ? value : null,
   (rows, { limit = Number.MAX_SAFE_INTEGER } = {}) => (Array.isArray(rows) ? rows : [])
@@ -111,6 +116,50 @@ assert.deepEqual(
   [hourlyDomainValidated.currentSpeedMps, hourlyDomainValidated.currentDirectionDeg],
   [0.3, 45],
   'hourly retention must reject direction 360 and retain one complete valid current tuple',
+);
+
+const exactHorizonReference = '2026-09-08T14:00:00.000Z';
+const hoursFrom = (startAt, length, source) => Array.from({ length }, (_, index) => ({
+  time: new Date(Date.parse(startAt) + index * 3_600_000).toISOString(),
+  windSpeedMps: source === 'dmi' ? 5 : 7,
+  windDirectionDeg: source === 'dmi' ? 180 : 270,
+  waveHeightM: source === 'dmi' ? 0.7 : 0.9,
+  wavePeriodS: source === 'dmi' ? 6 : 7,
+  waveDirectionDeg: source === 'dmi' ? 250 : 260,
+  airTemperatureC: source === 'dmi' ? null : 12,
+  waterTemperatureC: source === 'dmi' ? null : 11,
+  source,
+}));
+const exactHorizonMerged = mergeHourlyPreferDmiForTest(
+  hoursFrom('2026-09-08T13:00:00.000Z', 120, 'dmi'),
+  hoursFrom(exactHorizonReference, 120, 'open-meteo'),
+  { generatedAt: exactHorizonReference },
+);
+assert.equal(exactHorizonMerged.length, 118,
+  'a stale DMI start hour plus fresh fallback must still produce exactly 118 public hours');
+assert.equal(exactHorizonMerged[0].time, exactHorizonReference,
+  'the public weather horizon must start at the run-bound production hour, not the DMI cache generation hour');
+assert.equal(exactHorizonMerged.at(-1).time, '2026-09-13T11:00:00.000Z',
+  'the exact public weather horizon must retain its final +117 hour');
+assert.ok(!exactHorizonMerged.some(row => row.time === '2026-09-08T13:00:00.000Z'),
+  'an older still-valid DMI row outside the public horizon may not shift the public time axis');
+assert.equal(exactHorizonMerged[0].airTemperatureC, 12,
+  'a missing primary scalar must retain the valid exact-time fallback scalar');
+
+const materializedGap = materializeExactPublicWeatherHorizonForTest([
+  exactHorizonMerged[0],
+  exactHorizonMerged[2],
+], exactHorizonReference);
+assert.equal(materializedGap.length, 118,
+  'an honest local provider gap must remain represented in the exact public horizon');
+assert.equal(materializedGap[1].time, '2026-09-08T15:00:00.000Z');
+assert.equal(materializedGap[1].windSpeedMps, null);
+assert.equal(materializedGap[1].sources.wind.provider, 'missing',
+  'an absent exact-time value must be explicit MISSING, never a shifted neighboring hour');
+assert.throws(
+  () => materializeExactPublicWeatherHorizonForTest([], '2026-09-08T14:30:00.000Z'),
+  /exact UTC production hour/,
+  'a partial-hour reference must fail instead of being silently rounded onto another public axis',
 );
 
 const zoneDomainValidated = mergeDmiWithFallbackForTest({
@@ -246,6 +295,10 @@ assert.match(hourlyMerge, /selectedCurrentVectorAvailable \? selectedCurrentU : 
   'U/V must be retained or rejected as a pair from the selected current row');
 assert.match(fallbackMerge, /selectAtomicComponentTuple\([\s\S]*?atomicSelection\?\.values/,
   'the zone-level DMI/fallback merge must use the same atomic tuple selector');
+assert.match(fallbackMerge, /fallbackZone\.forecast\?\.hourly \?\? \[\],[\s\S]*?\{ generatedAt \}/,
+  'the zone-level merge must bind the public horizon to the current run reference');
+assert.doesNotMatch(fallbackMerge, /mergeHourlyPreferDmi\([\s\S]*?\{\s*generatedAt:\s*dmiForecast\.generatedAt\s*\}/,
+  'a stale DMI cache generation hour may not define the current public horizon');
 const atmosphereReadiness = source.slice(
   source.indexOf('function recordHasAtmosphere('),
   source.indexOf('function waterLevelDiagnostic('),

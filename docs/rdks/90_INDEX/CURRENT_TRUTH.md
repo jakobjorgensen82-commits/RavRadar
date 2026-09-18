@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.418 præcis vejrhorisont
+
+4.0.417 er live efter exact-head `35356064367`, PR #361, main `0890ed0e` og
+code-only `35356645337`. Normalrun `35357557315` gennemførte alle providerled
+og gemte deres fremgang. Slutfordelingen for current var 32.232 DMI, 5.158
+Copernicus, 912 regional DMI, 40.039 Open-Meteo og 1.073 ærlige lokale huller.
+
+Kørselen stoppede før ny publicering, fordi en ældre DMI-generation kunne
+indsætte en time før produktionens +0 og dermed skære den korrekte +117-time
+væk. Lokal 4.0.418 bruger kun den præcise produktionstime som offentlig akse,
+bevarer gyldige samme-time-fallbackkomponenter og viser et reelt hul som
+`MISSING` på den rigtige time. Providerorden og rotation er uændrede. Næste:
+exact-head, merge, providerfri kode og én almindelig weather på de bevarede
+cacher. DEC-0201.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.417 genberegner afledte scorer
 
 4.0.416 bestod exact-head `35351272955`, blev merged gennem PR #360 som main
