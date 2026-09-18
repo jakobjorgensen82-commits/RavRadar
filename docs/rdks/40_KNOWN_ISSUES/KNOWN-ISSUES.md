@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.412 liveforsegling
+
+- **ISSUE-4.0.411-DELIVERY – LUKKET:** Exact-head `35339636413`, PR #355 og main `52a7a15d` er leveret.
+- **ISSUE-PUBLIC-AHEAD-OF-CENTRAL – RETTET LOKALT / LIVEBEVIS MANGLER:** 4.0.410 Pages-targetet blev verificeret og deployet, men post-deploy reseal stoppede; 4.0.412 registrerer kun dette eksakte target som central version 24.
+- **ISSUE-CODE-ONLY-35340175304 – SIKKERT STOP / INGEN MUTATION:** Run stoppede før migration, skrivning og deploy på den uafklarede centrale tilstand.
+- **ISSUE-NORMAL-35340393791 – SIKKERT STOP / INGEN PROVIDERE:** Beskyttet runtime blev afvist før providerarbejde; scheduler er igen deaktiveret.
+- **ISSUE-LIVE-OLD-HOUR-HISTORY – ÅBEN P0:** Live 4.0.410 viser passeret time, historikadvarsler og manglende lokale femdøgnsdetaljer. 4.0.411-rettelsen skal deployes via recovery + code-only og bevises i browser efter normal weather.
+
+DEC-0195. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.411 last-mile state og reseal
 
 - **ISSUE-4.0.410-DELIVERY – LUKKET:** Exact-head `35330643842`, PR #354,

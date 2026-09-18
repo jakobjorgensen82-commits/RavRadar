@@ -1,5 +1,23 @@
 # Weather Pipeline 1.0
 
+## 4.0.412 – præcis liveforsegling før kode-only-fortsættelse
+
+Pages-run `35331664087` udgav og verificerede 4.0.410, men den efterfølgende
+centrale reseal stoppede på 673 diagnostiske historikfund. Offentlig target var
+derfor foran central version 23. De næste code-only- og normalruter stoppede
+før mutation/providerarbejde, som de skulle.
+
+En engangsrecovery er låst til de eksakte payloadfrie source- og targetbeviser
+fra `35331109332` og `35331664087`. Den genverificerer live, kræver uændret
+forseglet modelbinding og skriver kun den allerede offentlige 23→24-overgang.
+Diagnostiske fund låser kalibrering. Recovery henter intet vejr, bygger intet
+artifact og deployer intet.
+
+Derefter genbruger den normale providerfri code-only-rute de gemte
+providercacher og anvender den eksisterende append-only 4.0.411-binding. Først
+efter deploy køres én almindelig vedligeholdelse for at bevise aktuel time,
+historik, lokale femdøgnsprognoser og cachevedligeholdelse. Ingen oneoff.
+
 ## 4.0.411 – genåbnet last-mile-usikkerhed omslutter sit punkt
 
 Normalrun `35331664087` gennemførte hele provider- og deploykæden og

@@ -3131,6 +3131,8 @@ const missedMaintenanceTargetVerification = Object.freeze({
 });
 const missedMaintenancePolicyBase = Object.freeze({
   ...RAVSCORE_MISSED_HISTORICAL_MAINTENANCE_RECOVERY_POLICY,
+  sameBindingReseal: false,
+  allowTargetDiagnosticFindings: false,
   repository: missedCutoverPolicy.repository,
   sourceCentralVersion: 1,
   sourceHead,
@@ -3237,6 +3239,91 @@ assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
     version: 2,
   },
 }), /central source is not the pinned ACTIVE state/);
+
+// A normal same-binding weather release may reach Pages before its final ACTIVE
+// reseal. The recovery is deliberately exact: both immutable artifacts, the
+// fresh live readback and the bounded diagnostic audit must agree. It advances
+// ACTIVE -> ACTIVE without pretending the failed diagnostic is calibration-safe.
+const missedResealTargetManifest = manifest(
+  historicalBinding,
+  'rr-missed-same-binding-reseal-210',
+  '2026-08-29T14:00:00.000Z',
+);
+const missedResealTargetAudit = Object.freeze({
+  ...missedCutoverAudit,
+  status: 'failed',
+  datasetId: missedResealTargetManifest.datasetId,
+  productionReferenceAt: missedResealTargetManifest.productionReferenceAt,
+  errors: Object.freeze(['STATE_REPLAY_FAILED']),
+  errorCounts: Object.freeze({ STATE_REPLAY_FAILED: 673 }),
+});
+const missedResealTargetVerification = verification(
+  'integrated',
+  historicalBinding,
+  missedResealTargetManifest,
+  sourceHead,
+);
+const missedResealPolicyBase = Object.freeze({
+  ...missedMaintenancePolicyBase,
+  sameBindingReseal: true,
+  allowTargetDiagnosticFindings: true,
+  targetHead: sourceHead,
+  targetDeploymentId: 'pages-5680-1',
+  targetImplementationClosureSha256: defaultImplementationClosureSha256,
+  targetManifestSha256: sha256(missedResealTargetManifest),
+  targetAuditSha256: sha256(missedResealTargetAudit),
+  targetReadinessSha256: sha256(historicalReadiness),
+  targetBindingSha256: sha256(historicalBinding),
+  targetProfileSha256: sha256(historicalProfile),
+  targetPagesRunId: 5680,
+  targetPagesArtifactId: 6790,
+});
+const missedResealTargetArtifactSeal = Object.freeze({
+  ...missedMaintenanceTargetArtifactSeal,
+  runId: missedResealPolicyBase.targetPagesRunId,
+  attemptId: missedResealPolicyBase.targetDeploymentId,
+  artifactId: missedResealPolicyBase.targetPagesArtifactId,
+  headSha: sourceHead,
+  targetPublicManifestSha256: sha256(missedResealTargetManifest),
+  targetImplementationClosureSha256: defaultImplementationClosureSha256,
+  targetModelBinding: historicalBinding,
+});
+const missedResealPolicy = Object.freeze({
+  ...missedResealPolicyBase,
+  targetPagesArtifactSealSha256: sha256(missedResealTargetArtifactSeal),
+});
+const missedResealRecovery = recoverMissedHistoricalIntegratedMaintenance({
+  ...missedMaintenanceInput,
+  targetManifest: missedResealTargetManifest,
+  targetAudit: missedResealTargetAudit,
+  targetReadiness: historicalReadiness,
+  targetBinding: historicalBinding,
+  publicVerification: missedResealTargetVerification,
+  targetPagesArtifactSeal: missedResealTargetArtifactSeal,
+  policy: missedResealPolicy,
+});
+assert.equal(missedResealRecovery.nextVersion, 2);
+assert.equal(missedResealRecovery.document.transitionKind,
+  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
+assert.equal(missedResealRecovery.document.publicManifestSha256,
+  sha256(missedResealTargetManifest));
+assert.equal(missedResealRecovery.document.sourcePublicManifestSha256,
+  sha256(missedResealTargetManifest));
+assert.equal(missedResealRecovery.document.calibrationEligible, false);
+assert.deepEqual(missedResealRecovery.centralTargetProfile, historicalProfile);
+assert.throws(() => recoverMissedHistoricalIntegratedMaintenance({
+  ...missedMaintenanceInput,
+  targetManifest: missedResealTargetManifest,
+  targetAudit: {
+    ...missedResealTargetAudit,
+    errorCounts: { STATE_REPLAY_FAILED: 0 },
+  },
+  targetReadiness: historicalReadiness,
+  targetBinding: historicalBinding,
+  publicVerification: missedResealTargetVerification,
+  targetPagesArtifactSeal: missedResealTargetArtifactSeal,
+  policy: missedResealPolicy,
+}), /not pinned evidence|public audit/);
 
 const historicalCandidateBinding = Object.freeze({
   ...candidateModelBinding(),

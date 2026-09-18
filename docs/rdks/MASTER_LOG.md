@@ -1,3 +1,21 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.412 live-recovery
+
+4.0.411 er merged som main `52a7a15d` efter exact-head `35339636413`.
+Code-only `35340175304` og normalrun `35340393791` muterede intet; de stoppede
+henholdsvis før migration/deploy og før providerarbejde, fordi det offentlige
+4.0.410-target fra `35331664087` var foran central version 23.
+
+4.0.412 tilføjer en engangsgenopretning, der er låst til source
+`35331109332`, target `35331664087` og deres eksakte payloadfrie artifacts,
+digests, hashes, deployments, binding og Pages-seals. Live genverificeres
+friskt. Kun den allerede offentlige same-binding-overgang 23→24 kan skrives,
+og de 673 diagnostiske fund fastholder `calibrationEligible=false`.
+
+Efter central samling fortsætter providerfri code-only med gemt vejr og den
+eksisterende append-only binding. Derefter skal én normal weather og browseren
+bevise aktuel time, historik, lokal femdøgn og cachevedligeholdelse. Ingen
+oneoff. DEC-0195.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-18 – 4.0.411 last-mile-historik
 
 4.0.410 er live gennem PR #354/main `ca2735af`. Normalrun `35331664087`

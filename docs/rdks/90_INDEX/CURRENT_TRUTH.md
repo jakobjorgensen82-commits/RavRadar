@@ -1,3 +1,21 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.412 genopretter liveforseglingen
+
+4.0.411 blev exact-head-verificeret i `35339636413` og merged gennem PR #355
+som main `52a7a15d`. Den providerfri fortsættelse stoppede sikkert, før
+migration, skrivning og deploy, fordi Pages-targetet fra 4.0.410-run
+`35331664087` var offentligt, men ikke centralt registreret. Et efterfølgende
+normalrun stoppede ligeledes før providere og skrivning, fordi den beskyttede
+private runtime ikke måtte genbruges over den uafklarede centrale tilstand.
+Live er derfor fortsat uændret 4.0.410 i begrænset nøddrift.
+
+4.0.412 tilføjer en eksakt engangsgenopretning af det allerede verificerede
+same-binding-target fra `35331664087`. Den kræver alle fastlåste source- og
+targetbeviser, genverificerer live og skriver kun central version 23→24 med
+kalibrering falsk. Derefter skal den providerfri kode-only-rute genbruge gemt
+vejr, anvende den eksisterende append-only binding og deploye last-mile-
+rettelsen. Først bagefter køres én almindelig vejrvedligeholdelse. Ingen oneoff.
+DEC-0195.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.411 retter scorehistorikken
 
 4.0.410 er live gennem exact-head `35330643842`, PR #354, main
