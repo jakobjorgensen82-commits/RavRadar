@@ -1,4 +1,21 @@
-# Aktiv roadmap – 4.0.420 fra offentlig vejropdatering til samlet drift
+# Aktiv roadmap – 4.0.421 fra kendt auditstop til samlet online drift
+
+1. [x] Lever 4.0.420 gennem exact-head `35381401273`, PR #365 og main
+   `069de220`.
+2. [x] Afgræns code-only `35381918986` til audit før writes/deploy.
+3. [x] Bevis, at targetaudit er identisk med begge forseglede kildeaudits.
+4. [x] Fastlås tre-hash-reglen under det eksakte DEC-0203-repair-id og bevar
+   alle senere afgørende kontroller.
+5. [x] Afslut version/RDKS/håndbog, måltests og geodataversionsbevis.
+6. [ ] Commit/push, én exact-head, merge og providerfri 4.0.421 code-only.
+7. [ ] Verificér offentlig version, 19-tiden, central afslutning og den
+   faktiske scoretilstand i Chrome.
+8. [ ] Fejlsøg 672/420 live, bevis almindelig cachevedligeholdelse og
+   genaktivér først derefter scheduler; fortsæt site- og roadmapgennemgang.
+
+DEC-0204. Ingen oneoff; ingen vejrprovider i rettelsesleveringen.
+
+# Roadmap – 4.0.420 fra offentlig vejropdatering til samlet drift
 
 1. [x] Gennemfør normal weather `35374238410` med alle providere, gemte caches,
    fulde produktionsgates, Pages og offentlig 210/673-verifikation.

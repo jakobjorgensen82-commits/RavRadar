@@ -1,3 +1,11 @@
+# 2026-09-18 – 4.0.421 fortsætter kun en byte-identisk kendt audit
+
+- 4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
+- Providerfri `35381918986` stoppede før writes/deploy i runtimeauditen.
+- Targetaudit og begge kildeaudits har samme kanoniske hash; 4.0.421
+  fortsætter kun på denne tre-hash-identitet og bevarer alle senere gates.
+  DEC-0204.
+
 # 2026-09-18 – 4.0.420 samler komplet offentlig vejropdatering med central status
 
 - Normal weather `35374238410` gennemførte alle providere, gemte caches og

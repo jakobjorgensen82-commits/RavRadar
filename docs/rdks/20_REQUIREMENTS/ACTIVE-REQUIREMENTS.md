@@ -1,3 +1,20 @@
+# Aktuelt ejerdelta – 2026-09-18 – eksakt kendt code-only-audit
+
+- **REQ-4.0.421-THREE-AUDITS-001 – BINDENDE:** Kun DEC-0203-repair-id'et må
+  fortsætte, og source public-audit, source checkpoint-audit og ny targetaudit
+  skal alle matche SHA-256 `82d4d18d…d3fa`.
+- **REQ-4.0.421-UNKNOWN-STOPS-002 – BINDENDE:** Manglende artifact, ukendt
+  repair-id eller ændret audit stopper før writes og deploy.
+- **REQ-4.0.421-LATER-GATES-003 – BINDENDE:** Privat runtime, prewrite,
+  privacy, artifact, 79/79 Pages, offentlig verifikation og central
+  afslutning må ikke springes over.
+- **REQ-4.0.421-NO-WEATHER-004 – BINDENDE:** Leveringen er providerfri og må
+  ikke ændre vejr, cache, scorer, model, geometri eller rotation.
+- **REQ-4.0.421-LIVE-PROOF-005 – ÅBEN P0:** Exact-head, merge, providerfri
+  levering, central afslutning og Chrome-kontrol mangler.
+
+DEC-0204. Den kendte 672/420-diagnostik fejlsøges særskilt efter onlinegang.
+
 # Aktuelt ejerdelta – 2026-09-18 – eksakt komplet public-ahead recovery
 
 - **REQ-4.0.420-EXACT-PAIR-001 – BINDENDE:** Kun central version 27 fra

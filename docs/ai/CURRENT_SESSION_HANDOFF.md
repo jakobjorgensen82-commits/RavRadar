@@ -1,4 +1,25 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.420 public-ahead recovery
+# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.421 eksakt auditfortsættelse
+
+Arbejd i `RavRadar-4.0.396`, branch
+`codex/4.0.421-exact-audit-continuation`, fra main
+`069de2204e78ed2bbfcd7940d1500098f22c39bc`.
+
+4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
+Providerfri code-only `35381918986` verificerede DEC-0203-kilden og den
+aktuelle private runtime, men stoppede før writes/deploy på en runtimeaudit,
+der er identisk med både public- og checkpointauditen fra kildeartifactet.
+Den kanoniske hash er `82d4d18de4c41977bf589ca4de72387ec3e4aaaac51dd0a90bb012cb1403d3fa`.
+
+Lokal 4.0.421 henter den eksakte kildeevidens og fortsætter kun ved tre ens
+fastlåste hashes og korrekt repair-id. Alle senere private-, privacy-,
+artifact-, Pages-, offentlig- og centralchecks bevares. Målrettede workflow-,
+runtime-, versions-, håndbogs- og RDKS-kontroller er grønne, og geodata har
+kun fået versionsfeltet ændret. Chrome-adgang er genetableret og viser
+fortsat offentlig 4.0.419 i begrænset nøddrift med vejrtid 18. september kl.
+19 dansk. Næste: commit/push, én exact-head, merge, providerfri code-only og livekontrol.
+Ingen ny weather eller oneoff før modellen er samlet online. DEC-0204.
+
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.420 public-ahead recovery
 
 Arbejd i `RavRadar-4.0.396`, branch
 `codex/4.0.420-public-ahead-recovery`, fra main

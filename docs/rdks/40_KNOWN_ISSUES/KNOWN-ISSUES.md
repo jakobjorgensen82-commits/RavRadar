@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-18 – 4.0.420 public-ahead central recovery
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.421 eksakt auditfortsættelse
+
+- **ISSUE-4.0.420-SOURCE – LUKKET:** Exact-head `35381401273`, PR #365 og
+  merge `069de220` er gennemført.
+- **ISSUE-CODE-ONLY-35381918986 – SIKKERT STOP / INGEN MUTATION:** Kilde og
+  private runtime blev verificeret; audittrinnet stoppede før writes/deploy.
+- **ISSUE-EXACT-KNOWN-AUDIT – RETTET LOKALT / LIVEBEVIS MANGLER:** Targetaudit
+  er identisk med begge forseglede kildeaudits. 4.0.421 accepterer kun de tre
+  ens hashes under DEC-0203-repair-id'et og bevarer alle senere kontroller.
+- **ISSUE-RUNTIME-AUDIT-672-420 – ÅBEN P0 EFTER ONLINEGANG:** Den kendte
+  diagnostik med 672 state-replay-afvigelser og 420 utilgængelige aktuelle
+  tilstande skal forklares på det kørende system; 4.0.421 skjuler ikke ny drift.
+- **ISSUE-4.0.421-LIVE – ÅBEN P0:** Exact-head, merge, code-only, central
+  afslutning og Chrome-kontrol mangler.
+
+DEC-0204. Ingen oneoff eller provider i rettelsesdeployet.
+
+# CHECKPOINT – 2026-09-18 – 4.0.420 public-ahead central recovery
 
 - **ISSUE-NORMAL-WEATHER-35374238410 – DATA OG PAGES GENNEMFØRT:** Alle
   provider-, cache-, build-, gate-, artifact-, privacy- og Pages-trin er

@@ -1,4 +1,19 @@
-# Aktuel implementeringsstatus – lokal 4.0.420 offentlig/central samling
+# Aktuel implementeringsstatus – lokal 4.0.421 eksakt auditfortsættelse
+
+- [x] Bestå 4.0.420 exact-head `35381401273`, PR #365 og merge `069de220`.
+- [x] Afgræns `35381918986` til auditstop før writes/deploy; ingen provider.
+- [x] Bevis kanonisk identitet mellem targetaudit og begge kildeaudits.
+- [x] Fastlås audit-SHA og repair-id; bevar stop ved enhver afvigelse.
+- [x] Bevar private-, prewrite-, privacy-, artifact-, Pages-, offentlig- og
+  central kontrol efter den snævre fortsættelse.
+- [x] Afslut version, RDKS, geodatabevis og målrettede slutkontroller.
+- [ ] Commit/push, bestå én exact-head, merge og kør providerfri code-only.
+- [ ] Verificér central afslutning og offentlig 4.0.421 i Chrome.
+- [ ] Fejlsøg derefter 672/420-diagnostikken live og bevis normal weather.
+
+DEC-0204. Ingen oneoff eller provider i rettelsesdeployet.
+
+# Implementeringsstatus – lokal 4.0.420 offentlig/central samling
 
 - [x] Kør normal weather `35374238410`; gennemfør og gem alle providerled.
 - [x] Bestå build, produktionsvalidering, releasegate, artifact, privacy,

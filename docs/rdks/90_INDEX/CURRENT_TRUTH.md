@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-09-18 – lokal 4.0.420 samler Pages og central status
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.421 fortsætter kun eksakt kendt audit
+
+4.0.420 bestod exact-head `35381401273`, PR #365 og merge `069de220`.
+Providerfri `35381918986` kom forbi den tidligere source-resolver, fandt den
+aktuelle private runtime og byggede målpakken, men stoppede før writes/deploy
+i runtimeauditen.
+
+Targetauditen er kanonisk identisk med både `public-audit.json` og
+`checkpoint-runtime-audit.json` fra den eksakte offentlige kilde. Alle har
+SHA-256 `82d4d18de4c41977bf589ca4de72387ec3e4aaaac51dd0a90bb012cb1403d3fa`.
+Lokal 4.0.421 fortsætter kun ved korrekt repair-id og tre ens fastlåste
+hashes; alt ukendt stopper, og alle senere afgørende kontroller bevares.
+Chrome viser fortsat 4.0.419 i begrænset nøddrift fra kl. 19 dansk. Næste er
+exact-head, merge, providerfri levering og live/central verifikation. Ingen
+ny weather eller oneoff før modellen er online. DEC-0204.
+
+# SANDHED – 2026-09-18 – 4.0.420 samler Pages og central status
 
 Normal weather `35374238410` gennemførte DMI, Copernicus, regional DMI og
 Open-Meteo, gemte caches, byggede og validerede den fulde produktionspakke og

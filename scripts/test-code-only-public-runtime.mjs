@@ -27,6 +27,8 @@ assert.equal(SOURCE_REPAIR.centralVersion, 27);
 assert.equal(SOURCE_REPAIR.sourceRunId, 35374238410);
 assert.equal(SOURCE_REPAIR.sourceHead, '779fd7a9a022f64a496a27323cdb7216d809d0e4');
 assert.equal(SOURCE_REPAIR.sourceArtifactId, 10560987527);
+assert.equal(SOURCE_REPAIR.sourcePublicAuditSha256,
+  '82d4d18de4c41977bf589ca4de72387ec3e4aaaac51dd0a90bb012cb1403d3fa');
 assert.equal(SOURCE_REPAIR.expectedPublicFileCount, 79);
 assert.equal(SOURCE_REPAIR.knownMissingPublicFile, null);
 
@@ -278,6 +280,10 @@ for (const marker of [
   'Atomically record the exact already-public historical cutover',
   'Resolve the actual currently public source',
   'resolve-code-only-public-source.mjs',
+  'Download exact known public source audit evidence',
+  'runtime_audit_outcome=failure',
+  'Code-only runtime audit differs from the exact known public source audit',
+  'Exact known RavScore diagnostic retained',
   'steps.public-source.outputs.deployment_id',
   'steps.public-source.outputs.implementation_closure_sha256',
   'sourceRepairId:',
@@ -306,6 +312,18 @@ for (const marker of [
   'pages-public-closure.json',
   'cmp -s',
 ]) assert.ok(workflow.includes(marker), `Code-only-workflow mangler ${marker}`);
+const runtimeAuditStart = workflow.indexOf('- name: Audit regenerated integrated public runtime');
+const runtimeAuditEnd = workflow.indexOf('\n      - name:', runtimeAuditStart + 1);
+const runtimeAudit = workflow.slice(runtimeAuditStart, runtimeAuditEnd);
+for (const marker of [
+  'sha256CanonicalJson(sourceAudit) !== expected',
+  'sha256CanonicalJson(sourceCheckpointAudit) !== expected',
+  'sha256CanonicalJson(targetAudit) !== expected',
+  'process.env.SOURCE_REPAIR_ID !== policy.id',
+]) assert.ok(runtimeAudit.includes(marker),
+  `Code-only-auditens sn\u00e6vre undtagelse mangler ${marker}`);
+assert.ok(runtimeAudit.includes('throw new Error('),
+  'Code-only-auditen skal fortsat stoppe p\u00e5 ukendt eller \u00e6ndret diagnostik');
 const savedWeatherBindingStart = workflow.indexOf(
   '- name: Bind saved-weather continuation to exact newer runtime',
 );
