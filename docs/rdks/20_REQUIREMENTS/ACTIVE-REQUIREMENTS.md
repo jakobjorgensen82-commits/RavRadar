@@ -1,4 +1,22 @@
-# Aktuelt ejerdelta – 2026-09-19 – historical-maintenance runtime-recovery
+# Aktuelt ejerdelta – 2026-09-19 – measured historical recovery
+
+- **REQ-4.0.426-ABSENT-ONLY-001 – BINDENDE:** Når både kompatibel privat
+  runtime og checkpointfilen reelt mangler, må kun den centralt allerede
+  aktive `integrated-historical-maintenance` bruge den eksisterende afgrænsede
+  48-timers measured state-less recovery.
+- **REQ-4.0.426-PRESENT-AUTHORITATIVE-002 – BINDENDE:** En checkpointfil, der
+  findes, er autoritativ og skal bestå eksisterende struktur-, integritets-,
+  modelbindings-, 673-dels- og tidsvalidering. Udløbet, fremtidigt,
+  beskadiget eller inkompatibelt checkpoint må ikke maskeres som fravær.
+- **REQ-4.0.426-ACTION-SCOPE-003 – BINDENDE:** Candidate G, første cutover,
+  retur og ukendte handlinger får ingen cold-start-adgang.
+- **REQ-4.0.426-NORMAL-PROOF-004 – ÅBEN P0:** Næste almindelige run skal nå
+  providerkæden, gemme ny runtime/checkpoint og bevise 100 % gyldig dækning,
+  Feggesund 354/354, aktuel time, scorer og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0206-tillæg.
+
+# Historisk ejerdelta – 2026-09-19 – historical-maintenance runtime-recovery
 
 - **REQ-4.0.425-HISTORICAL-ACTION-001 – BINDENDE:** Centralt aktiv
   `integrated-historical-maintenance` må efter tre afviste forgængerruntimes

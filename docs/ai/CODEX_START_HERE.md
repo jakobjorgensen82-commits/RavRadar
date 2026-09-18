@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.426-stateless-historical-recovery`, fra main `05892afc` / PR #370.
+4.0.425 bestod exact-head `35403040711` og normalrun `35403510608` beviste,
+at hverken GitHub-cache eller beskyttet Supabase havde et schema-6-checkpoint.
+Runnet stoppede før providerkald og ændrede ingen produktionsdata.
+
+4.0.426 skelner nu mellem fravær og fejl: findes checkpointfilen, skal den
+fortsat bestå hele struktur-, hash-, binding-, 673-dels- og tidsvalideringen.
+Findes filen slet ikke, må kun den allerede centralt aktive integrerede model
+i sit midlertidige `integrated-historical-maintenance`-stadie genopbygge state
+fra den eksisterende afgrænsede 48-timers målehistorik. Candidate G, første
+cutover, retur og ukendte actions forbliver lukkede. Næste: måltest,
+exact-head, merge og én almindelig weather. Ingen oneoff. `.tmp-420/` må aldrig
+publiceres.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
 `codex/4.0.425-historical-runtime-recovery`, fra main `0b4a08ec` / PR #369.

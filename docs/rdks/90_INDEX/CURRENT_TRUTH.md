@@ -1,4 +1,21 @@
-# NYESTE SANDHED – 2026-09-19 – lokal 4.0.425, historical-maintenance recovery
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.426, measured historical recovery
+
+4.0.425 bestod exact-head `35403040711`, blev merged gennem PR #370 som main
+`05892afc`, og normalrun `35403510608` nåede den korrekte action
+`integrated-historical-maintenance`. Tre gamle runtimes blev afvist. Der var
+intet schema-6-checkpoint i GitHub-cache og Supabase svarede
+`protected-checkpoint-not-found`; runnet stoppede derfor før provider og
+ændrede ingen produktionsdata.
+
+4.0.426 skelner mellem fravær og fejl. Ved helt manglende checkpointfil må
+kun den allerede aktive historical integrated-handling genopbygge state fra
+den afgrænsede målte 48-timers historik. Findes checkpointet, skal det fortsat
+være fuldt gyldigt og aktuelt; en fejl, fremtid eller expiry stopper. Candidate
+G, første cutover, retur og ukendte actions åbnes ikke. Næste bevis er én
+almindelig normalrun, ikke oneoff. Kravet er fortsat 100 % gyldige nødvendige
+vejrdata; `MISSING` er alene robusthed.
+
+# HISTORISK SANDHED – 2026-09-19 – lokal 4.0.425, historical-maintenance recovery
 
 4.0.424 bestod exact-head `35401458027`, blev merged gennem PR #369 som main
 `0b4a08ec`, og normalrun `35401927838` nåede den virkelige klassifikation

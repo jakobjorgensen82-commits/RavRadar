@@ -1,4 +1,23 @@
-# Aktiv roadmap – 4.0.425 fra historical-maintenance til komplet normal drift
+# Aktiv roadmap – 4.0.426 fra measured recovery til komplet normal drift
+
+1. [x] Lever 4.0.425 gennem exact-head `35403040711`, PR #370 og main
+   `05892afc`.
+2. [x] Afgræns normalrun `35403510608`: ingen kompatibel runtime og intet
+   checkpoint i hverken GitHub-cache eller Supabase; ingen provider/dataændring.
+3. [x] Gennemgå hele state-less recoveryvejen til runtimeaudit, checkpoint,
+   privat runtime, Pages og central historical-maintenance-reseal.
+4. [x] Tillad kun active historical integrated measured cold replay ved reelt
+   filfravær; bevar hårdt stop for eksisterende ugyldigt/udløbet checkpoint.
+5. [ ] Commit/push 4.0.426 og bestå én exact-head sourcegate før merge.
+6. [ ] Kør én almindelig weather, ikke oneoff, og kræv providerfremgang, ny
+   runtime/checkpoint, 100 % gyldige felter, Feggesund 354/354, aktuel time og
+   scorer.
+7. [ ] Brug stageoversigten til samlet rettelse af enhver rest og bevis normal
+   cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0206-tillæg. `MISSING` er robusthed, aldrig et driftsmål.
+
+# Historisk roadmap – 4.0.425 fra historical-maintenance til komplet normal drift
 
 1. [x] Lever 4.0.424 gennem exact-head `35401458027`, PR #369 og main
    `0b4a08ec`.

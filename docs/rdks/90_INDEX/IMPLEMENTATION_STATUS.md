@@ -1,4 +1,24 @@
-# Aktuel implementeringsstatus – lokal 4.0.425, historical-maintenance recovery
+# Aktuel implementeringsstatus – lokal 4.0.426, measured historical recovery
+
+- [x] Lever 4.0.425 gennem exact-head `35403040711`, PR #370 og main
+  `05892afc`.
+- [x] Afgræns normalrun `35403510608`: checkpoint manglede i både cache og
+  Supabase; stop før provider og uden produktionsændring.
+- [x] Gennemgå generator, measured 48-timers replay, Candidate G-companion,
+  runtimeaudit, checkpoint, privat runtime, Pages og central reseal samlet.
+- [x] Åbn kun stateless recovery for allerede aktiv
+  `integrated-historical-maintenance`, når checkpointfilen reelt ikke findes.
+- [x] Bevar eksisterende checkpoint som autoritativt: ugyldig, inkompatibel,
+  fremtidig eller udløbet fil stopper fortsat.
+- [x] Afslut 4.0.426 dokumentation, versionssynkronisering, måltests og rent
+  geodataversionsbevis.
+- [ ] Commit/push, én exact-head og merge.
+- [ ] Kør én almindelig weather og kræv ny runtime/checkpoint, 100 % gyldige
+  felter, Feggesund 354/354, aktuel time, scorer og cachevedligeholdelse.
+
+Ingen oneoff. `MISSING` er robusthed, aldrig komplethed.
+
+# Historisk implementeringsstatus – lokal 4.0.425, historical-maintenance recovery
 
 - [x] Lever 4.0.424 gennem exact-head `35401458027`, PR #369 og main
   `0b4a08ec`.

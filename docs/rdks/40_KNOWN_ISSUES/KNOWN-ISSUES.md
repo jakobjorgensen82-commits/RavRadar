@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+
+- **ISSUE-4.0.425-DELIVERY – LUKKET:** Exact-head `35403040711`, PR #370 og
+  main `05892afc` er gennemført.
+- **ISSUE-HISTORICAL-CHECKPOINT-ABSENT – RETTET LOKALT P0:** Normalrun
+  `35403510608` beviste `protected-checkpoint-not-found` i både GitHub-cache og
+  Supabase og stoppede før provider. 4.0.426 lader kun den allerede aktive
+  historiske integrated-vedligeholdelse bruge afgrænset measured cold replay
+  ved helt manglende fil. En tilstedeværende ugyldig eller udløbet fil stopper
+  fortsat. Produktionsbevis afventer.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** Providerkald blev
+  ikke nået i `35403510608`. Næste normale run skal bevise 100 % gyldige
+  nødvendige data, Feggesund 354/354, aktuel time og scorer.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
 
 - **ISSUE-4.0.424-DELIVERY – LUKKET:** Exact-head `35401458027`, PR #369 og
   main `0b4a08ec` er gennemført.

@@ -1,6 +1,6 @@
 # DEC-0206 – verificeret vejrkomplethed og sand produktionsslutstatus
 
-**Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.425
+**Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.426
 **Dato:** 2026-09-18
 
 ## Problem
@@ -101,3 +101,23 @@ providerarbejde. Historical maintenance får aldrig den stateless cold-start-
 vej, der fortsat er begrænset til exact `integrated`. Candidate G, første
 cutover, retur og ukendte handlinger åbnes ikke. Datakomplethedskravet ændres
 ikke: næste normale run skal stadig bevise 100 % gyldige nødvendige felter.
+
+## Tillæg 2026-09-19 – checkpointet findes ikke
+
+4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.
+Normalrun `35403510608` viste den konkrete forskel, som den foregående regel
+ikke dækkede: GitHub-cache havde ingen checkpointfil, og den beskyttede
+Supabase-restore svarede `protected-checkpoint-not-found`. Der var derfor
+intet checkpoint at validere eller fortsætte fra.
+
+Den allerede aktive integrerede model må i dette præcise fraværstilfælde bruge
+den eksisterende state-less recovery: 48 afgrænsede historiske positioner
+bygges kun af målte vejrdata, manglende historiske positioner markeres som
+ukendte, og der opfindes ingen data. Dette gælder både action `integrated` og
+dens midlertidige samme-model-reseal `integrated-historical-maintenance`.
+
+En checkpointfil, der findes, er fortsat autoritativ. Den skal være aktuel og
+bestå struktur-, hash-, modelbindings-, 673-dels- og tidsvalidering; udløb,
+fremtid, beskadigelse eller inkompatibilitet stopper og må aldrig omskrives til
+fravær. Candidate G, første cutover, retur og ukendte handlinger åbnes ikke.
+Datakomplethedskravet ændres ikke, og næste bevis er én almindelig weather.
