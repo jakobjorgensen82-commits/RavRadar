@@ -1,5 +1,22 @@
 # Weather Pipeline 1.0
 
+## 4.0.414 – same-binding-source bevises direkte
+
+Recovery `35344230599` bestod de fastlåste artifacts og den friske kontrol af
+live 4.0.410, men stoppede før CAS, fordi den også krævede navnet fra første
+cutover. Source-run `35331109332` viser, at central version 23 faktisk blev
+oprettet af den almindelige integrerede vedligeholdelse.
+
+4.0.414 bruger derfor ikke transitionnavnet som identitet ved den fastlåste
+same-binding recovery. Central version, status, head, dataset/reference,
+manifest-, closure-, deployment-, binding-, readiness-, audit-, profil- og
+maintenance-seal-felter skal alle stemme; alle afvigelser samles før stop.
+Target og atomisk 23→24-skrivning er uændrede.
+
+Nye normale caches går fortsat gennem `integrated-maintenance` og læser ikke
+første-cutover-historik. Et totalt runnerstop efter Pages, men før central
+registrering, er et særskilt åbent generelt genoptagelseskrav.
+
 ## 4.0.413 – recovery validerer auditprofilen
 
 Recovery `35342779550` nåede gennem immutable artifact- og live Pages-bevis,

@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – direkte same-binding sourcebevis
+
+- **REQ-4.0.414-SOURCE-IDENTITY-001 – BINDENDE:** Same-binding recovery skal bevise central version 23 gennem dens faktiske sourcefelter og normale maintenance-seal; et historisk transitionnavn må ikke bruges som erstatning for denne identitet.
+- **REQ-4.0.414-AGGREGATE-002 – BINDENDE:** Alle sourceafvigelser skal samles som faste feltkoder i samme stop før CAS.
+- **REQ-4.0.414-TARGET-UNCHANGED-003 – BINDENDE:** Eksakte source-/target-artifacts, digests, Pages-seals, liveverifikation, audits, profiler, bindinger og CAS-version 23→24 forbliver fastlåste.
+- **REQ-4.0.414-NORMAL-CACHE-004 – BINDENDE:** Nye normale caches skal bruge `integrated-maintenance` og må ikke afhænge af første-cutover-historik.
+- **REQ-4.0.414-RECOVERY-SCOPE-005 – BINDENDE:** Den hændelsesspecifikke recovery må ikke fremstilles som generel løsning på et totalt runnerstop mellem Pages og central registrering.
+
+DEC-0197.
+
 # Aktuelt ejerdelta – 2026-09-18 – recovery-auditprofil
 
 - **REQ-4.0.413-AUDIT-PROFILE-001 – BINDENDE:** Recovery skal acceptere den historiske auditform uden `profile` og den aktuelle form med en eksakt valideret `profile`-blok.

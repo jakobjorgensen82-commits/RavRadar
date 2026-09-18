@@ -1,3 +1,14 @@
+## 4.0.414 – direkte bevis af same-binding-source (2026-09-18)
+
+- 4.0.413 bestod exact-head `35343692557`, blev merged gennem PR #357 som
+  `50216cd6`, og recovery `35344230599` bestod artifacts og frisk Pages.
+- Recovery stoppede før CAS på et irrelevant første-cutover-transitionnavn;
+  source-runnet viser normal integrated maintenance.
+- 4.0.414 validerer alle materielle sourcefelter og maintenance-sealen direkte
+  og samler afvigelser før skrivning. Target- og CAS-beviser er uændrede.
+- Formel, vægte, cacheindhold, providerprioritet og geometri ændres ikke. Se
+  CHANGELOG-4.0.414.md og DEC-0197.
+
 ## 4.0.410 – friske prognoser trods ikke-sikkerhedskritiske kontrolfund (2026-09-18)
 
 - 4.0.409 er live gennem exact-head `35318809153`, PR #353, main

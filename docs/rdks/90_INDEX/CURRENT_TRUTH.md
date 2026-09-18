@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.414 beviser faktisk source
+
+4.0.413 bestod exact-head `35343692557`, blev merged som main `50216cd6` og
+startede recovery `35344230599`. Source-/target-artifacts og frisk offentlig
+4.0.410-verifikation bestod. Recovery stoppede før CAS, fordi den krævede et
+første-cutover-transitionnavn, selv om source-run `35331109332` dokumenterer en
+almindelig integrated-maintenance-forsegling af central version 23.
+
+4.0.414 validerer same-binding-source direkte gennem alle materielle centrale
+felter, tre modelbindinger og den genberegnede normale maintenance-seal.
+Afvigelser samles før skrivning. Targetets fastlåste beviser og CAS er
+uændrede. Nye normale caches bruger allerede den separate maintenance-vej og
+læser ikke første-cutover-historik. Næste: slutkontroller, exact-head, merge,
+recovery, providerfri code-only og én normal weather. DEC-0197.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.413 validerer aktuel auditprofil
 
 4.0.412 blev exact-head-verificeret, merged som `58212e59` og startede den

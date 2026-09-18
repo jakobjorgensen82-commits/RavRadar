@@ -1729,6 +1729,83 @@ function missedHistoricalMaintenanceEvidencePolicy(policy, prefix) {
   });
 }
 
+function assertMissedSameBindingActiveSource({
+  currentRow,
+  currentProfileRow,
+  sourceManifest,
+  sourceBinding,
+  sourceCalibrationEligible,
+  policy,
+} = {}) {
+  assertOperationalActivationDocument(currentRow?.payload, {
+    allowSealedHistoricalBindings: true,
+  });
+  const current = resolveOperationalRavScoreModel(currentRow, {
+    profileRow: currentProfileRow,
+  });
+  const sourceMaintenanceSealSha256 = sha256({
+    kind: 'RAVSCORE_INTEGRATED_ACTIVE_PUBLIC_RESEAL',
+    sourceHead: policy.sourceHead,
+    modelBinding: structuredClone(sourceBinding),
+    publicManifestSha256: policy.sourceManifestSha256,
+    integratedReadinessSha256: policy.sourceReadinessSha256,
+    integratedPublicAuditSha256: policy.sourceAuditSha256,
+  });
+  const expected = Object.freeze({
+    CENTRAL_VERSION: Number(current.centralVersion) === Number(policy.sourceCentralVersion),
+    MODEL: current.model === 'integrated',
+    STATUS: current.status === RAVSCORE_OPERATIONAL_STATUSES.integrated,
+    NOT_PENDING: current.pending === false,
+    SOURCE_HEAD: current.sourceHead === policy.sourceHead,
+    DATASET: currentRow.payload.datasetId === sourceManifest.datasetId,
+    REFERENCE: currentRow.payload.productionReferenceAt
+      === sourceManifest.productionReferenceAt,
+    PUBLIC_MANIFEST: currentRow.payload.publicManifestSha256
+      === policy.sourceManifestSha256,
+    SOURCE_MANIFEST: currentRow.payload.sourcePublicManifestSha256
+      === policy.sourceManifestSha256,
+    REQUESTED_MANIFEST: currentRow.payload.requestedPublicManifestSha256
+      === policy.sourceManifestSha256,
+    SOURCE_CLOSURE: currentRow.payload.sourceImplementationClosureSha256
+      === policy.sourceImplementationClosureSha256,
+    REQUESTED_CLOSURE: currentRow.payload.requestedImplementationClosureSha256
+      === policy.sourceImplementationClosureSha256,
+    SOURCE_DEPLOYMENT: currentRow.payload.sourceDeploymentId
+      === policy.sourceDeploymentId,
+    DEPLOYMENT: currentRow.payload.deploymentId === policy.sourceDeploymentId,
+    CALIBRATION: currentRow.payload.calibrationEligible === sourceCalibrationEligible,
+    FAILURE_CLEAR: currentRow.payload.failureCode === null,
+    READINESS: currentRow.payload.integratedReadinessSha256
+      === policy.sourceReadinessSha256,
+    AUDIT: currentRow.payload.integratedPublicAuditSha256
+      === policy.sourceAuditSha256,
+    INTEGRATED_MANIFEST: currentRow.payload.integratedManifestSha256
+      === policy.sourceManifestSha256,
+    MAINTENANCE_SEAL: currentRow.payload.returnPlanSha256
+      === sourceMaintenanceSealSha256,
+    PROFILE: sha256(currentProfileRow?.payload) === policy.sourceProfileSha256,
+  });
+  const mismatches = Object.entries(expected)
+    .filter(([, matches]) => matches !== true)
+    .map(([field]) => field);
+  for (const [binding, label] of [
+    [currentRow.payload.activeModelBinding, 'ACTIVE_BINDING'],
+    [currentRow.payload.sourceModelBinding, 'SOURCE_BINDING'],
+    [currentRow.payload.requestedModelBinding, 'REQUESTED_BINDING'],
+  ]) {
+    try {
+      assertSameSealedBinding(binding, sourceBinding,
+        `Missed same-binding maintenance ${label}`);
+    } catch {
+      mismatches.push(label);
+    }
+  }
+  if (mismatches.length > 0) {
+    throw new Error(`Missed same-binding maintenance central source mismatches: ${mismatches.join(',')}`);
+  }
+  return current;
+}
+
 export function recoverMissedHistoricalIntegratedMaintenance({
   currentRow,
   currentProfileRow,
@@ -1802,26 +1879,39 @@ export function recoverMissedHistoricalIntegratedMaintenance({
     targetBinding: sourceBinding,
     targetManifest: sourceManifest,
   });
-  const current = resolveOperationalRavScoreModel(currentRow, {
-    profileRow: currentProfileRow,
-  });
-  if (current.centralVersion !== Number(policy.sourceCentralVersion)
-    || current.model !== 'integrated'
-    || current.status !== RAVSCORE_OPERATIONAL_STATUSES.integrated
-    || current.pending
-    || current.sourceHead !== policy.sourceHead
-    || current.transitionKind
-      !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
-    || current.publicManifestSha256 !== policy.sourceManifestSha256
-    || current.activeImplementationClosureSha256
-      !== policy.sourceImplementationClosureSha256
-    || current.deploymentId !== policy.sourceDeploymentId
-    || currentRow.payload.calibrationEligible !== sourceCalibrationEligible
-    || currentRow.payload.integratedReadinessSha256 !== policy.sourceReadinessSha256
-    || currentRow.payload.integratedPublicAuditSha256 !== policy.sourceAuditSha256
-    || currentRow.payload.integratedManifestSha256 !== policy.sourceManifestSha256
-    || sha256(currentProfileRow?.payload) !== policy.sourceProfileSha256) {
-    throw new Error('Missed historical maintenance central source is not the pinned ACTIVE state');
+  const sameBindingReseal = policy.sameBindingReseal === true;
+  let current;
+  if (sameBindingReseal) {
+    current = assertMissedSameBindingActiveSource({
+      currentRow,
+      currentProfileRow,
+      sourceManifest,
+      sourceBinding,
+      sourceCalibrationEligible,
+      policy,
+    });
+  } else {
+    current = resolveOperationalRavScoreModel(currentRow, {
+      profileRow: currentProfileRow,
+    });
+    if (current.centralVersion !== Number(policy.sourceCentralVersion)
+      || current.model !== 'integrated'
+      || current.status !== RAVSCORE_OPERATIONAL_STATUSES.integrated
+      || current.pending
+      || current.sourceHead !== policy.sourceHead
+      || current.transitionKind
+        !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+      || current.publicManifestSha256 !== policy.sourceManifestSha256
+      || current.activeImplementationClosureSha256
+        !== policy.sourceImplementationClosureSha256
+      || current.deploymentId !== policy.sourceDeploymentId
+      || currentRow.payload.calibrationEligible !== sourceCalibrationEligible
+      || currentRow.payload.integratedReadinessSha256 !== policy.sourceReadinessSha256
+      || currentRow.payload.integratedPublicAuditSha256 !== policy.sourceAuditSha256
+      || currentRow.payload.integratedManifestSha256 !== policy.sourceManifestSha256
+      || sha256(currentProfileRow?.payload) !== policy.sourceProfileSha256) {
+      throw new Error('Missed historical maintenance central source is not the pinned ACTIVE state');
+    }
   }
   assertSameSealedBinding(current.modelBinding, sourceBinding,
     'Missed historical maintenance central source binding');
@@ -1842,7 +1932,6 @@ export function recoverMissedHistoricalIntegratedMaintenance({
     targetManifest,
     allowDiagnosticFindings: policy.allowTargetDiagnosticFindings === true,
   });
-  const sameBindingReseal = policy.sameBindingReseal === true;
   if (sameBindingReseal) {
     assertSameSealedBinding(targetBinding, sourceBinding,
       'Missed same-binding maintenance target binding');

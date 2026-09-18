@@ -1,5 +1,13 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.414-præcisering – DEC-0197:** Ved eksakt same-binding recovery
+er source-identiteten dens faktiske centrale version, aktive status, head,
+dataset/reference, manifest-, closure-, deployment-, binding-, readiness-,
+audit-, profil- og normale maintenance-seal-felter. Et historisk
+transitionnavn må ikke erstatte disse beviser. Alle sourceafvigelser samles
+før CAS. Targetbeviser og atomisk 23→24-versionering er uændrede. Nye normale
+caches bruger den separate `integrated-maintenance`-vej uden cutover-historik.
+
 **Bindende 4.0.413-præcisering – DEC-0196:** Den eksakte RavScore-recovery
 accepterer både historiske audits uden `profile` og den aktuelle kendte form
 med feltet. En tilstedeværende profil skal have eksakt struktur, boolsk

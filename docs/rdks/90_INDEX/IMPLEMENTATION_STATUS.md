@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – lokal 4.0.414 direkte same-binding-source
+
+- [x] Lever 4.0.413 gennem exact-head `35343692557`, PR #357 og main `50216cd6`.
+- [x] Kør recovery `35344230599` gennem immutable artifacts og frisk Pages.
+- [x] Bevis fra source-loggen, at central version 23 blev oprettet af normal integrated maintenance.
+- [x] Erstat det irrelevante transitionkrav med direkte validering af alle sourcefelter, tre bindinger og maintenance-seal.
+- [x] Saml sourceafvigelser og tilføj produktionsrealistisk positiv/negativ måltest.
+- [x] Afslut version/RDKS/håndbog og målrettede slutkontroller.
+- [ ] Commit/push, én exact-head-kontrol og merge samme head.
+- [ ] Genkør recovery, kør providerfri code-only og derefter én normal weather.
+- [ ] Browserverificér aktuel time, historik, lokal femdøgn og cachevedligeholdelse.
+
+DEC-0197. Ingen oneoff; scheduler forbliver pauset til normal drift er bevist.
+
 # Aktuel implementeringsstatus – lokal 4.0.413 auditprofil i recovery
 
 - [x] Lever 4.0.412 gennem PR #356 som main `58212e59`.

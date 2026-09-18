@@ -1,3 +1,9 @@
+# 2026-09-18 – 4.0.414 beviser den faktiske same-binding-source direkte
+
+- 4.0.413 bestod exact-head `35343692557` og blev merged gennem PR #357 som `50216cd6`.
+- Recovery `35344230599` bestod artifacts og frisk Pages, men krævede fejlagtigt første-cutover-transitionen fra en source, der faktisk var normal integrated maintenance.
+- 4.0.414 validerer alle materielle sourcefelter og maintenance-sealen direkte og samler afvigelser før CAS. DEC-0197.
+
 # 2026-09-18 – 4.0.413 validerer recoveryrapportens nyere profilblok
 
 - 4.0.412 blev merged som `58212e59`; recovery `35342779550` bestod artifacts og frisk Pages.
