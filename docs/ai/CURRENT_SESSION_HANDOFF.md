@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+
+4.0.424 bestod exact-head `35401458027`, blev merged gennem PR #369 som main
+`0b4a08ec` og startede normalrun `35401927838`. Den centrale model er
+`integrated`, men bindingen er endnu ikke resealet af en frisk vejrpakkes
+deploy, så workflowets korrekte midlertidige handling er
+`integrated-historical-maintenance`. 4.0.424 genkendte kun `integrated` efter
+tre afviste gamle private runtimes og stoppede derfor før providerkald.
+
+På branch `codex/4.0.425-historical-runtime-recovery` fortsætter den historiske
+integrated-vedligeholdelse kun, når schema-6-checkpointet findes, består den
+eksisterende fulde struktur-/hash-/binding-/673-dels-/tidsvalidering og stadig
+er aktuelt. Den får ikke stateless cold start. Candidate G, første cutover,
+udløbet/manglende checkpoint og ukendte actions forbliver fail-closed. Afslut
+måltests/RDKS/geodatabevis, exact-head, merge og genkør én almindelig weather.
+Ingen oneoff; `.tmp-420/` er privat og må ikke stages.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
 
 4.0.423 bestod exact-head run `35400101123`, PR #368 og main `8718c1ec`.
 Backendrun `35400575522` installerede migration `20260918190000` og bestod

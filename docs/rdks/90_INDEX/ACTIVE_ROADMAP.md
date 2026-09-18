@@ -1,4 +1,22 @@
-# Aktiv roadmap – 4.0.424 fra runtime-recovery til komplet normal drift
+# Aktiv roadmap – 4.0.425 fra historical-maintenance til komplet normal drift
+
+1. [x] Lever 4.0.424 gennem exact-head `35401458027`, PR #369 og main
+   `0b4a08ec`.
+2. [x] Afgræns `35401927838` til den for snævre fallback efter korrekt
+   klassifikation som `integrated-historical-maintenance`; ingen providerkald.
+3. [x] Gennemgå resten af hele actionvejen og bevar særskilt normal seal,
+   checkpointvalidering, Pages og central afslutning.
+4. [x] Tillad kun historical maintenance uden kompatibel runtime, når et
+   aktuelt fuldt valideret 673-dels-checkpoint findes; ingen stateless cold start.
+5. [ ] Lever 4.0.425 med måltest og én exact-head sourcegate.
+6. [ ] Kør én almindelig weather, ikke oneoff, og kræv faktisk providerfremgang,
+   100 % gyldige felter, Feggesund 354/354, aktuel time og scorer.
+7. [ ] Brug den payloadfri stageoversigt til samlet rettelse af enhver rest og
+   bevis normal cachevedligeholdelse før scheduler genaktiveres.
+
+DEC-0206-tillæg. `MISSING` er fortsat robusthed, aldrig et driftsmål.
+
+# Historisk roadmap – 4.0.424 fra runtime-recovery til komplet normal drift
 
 1. [x] Lever 4.0.423 gennem exact-head, PR #368, main `8718c1ec` og grøn
    backendinstallation `35400575522`.

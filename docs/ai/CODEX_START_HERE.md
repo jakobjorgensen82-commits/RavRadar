@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.425-historical-runtime-recovery`, fra main `0b4a08ec` / PR #369.
+4.0.424 bestod exact-head `35401458027`, blev merged og startede normalrun
+`35401927838`. Runnet stoppede før providerkald, fordi den aktuelle action er
+`integrated-historical-maintenance`, mens 4.0.424 kun tillod navnet
+`integrated` efter afvisning af de gamle private runtimes.
+
+4.0.425 lader den historiske integrated-vedligeholdelse fortsætte efter tre
+restoreforsøg, men kun hvis det lokale schema-6-checkpoint først består den
+eksisterende fulde validering og stadig er aktuelt. Den historiske handling får
+ingen stateless cold start. Candidate G, første cutover, manglende/udløbet
+checkpoint og ukendte actions stopper fortsat. Næste: måltest, version/RDKS,
+exact-head, merge og én almindelig weather. Ingen oneoff. `.tmp-420/` må aldrig
+publiceres.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
 `codex/4.0.424-integrated-runtime-recovery`, fra main `8718c1ec` / PR #368.

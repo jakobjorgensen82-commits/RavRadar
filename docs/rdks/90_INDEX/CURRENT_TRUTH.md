@@ -1,4 +1,19 @@
-# NYESTE SANDHED – 2026-09-19 – lokal 4.0.424, normalrun-recovery
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.425, historical-maintenance recovery
+
+4.0.424 bestod exact-head `35401458027`, blev merged gennem PR #369 som main
+`0b4a08ec`, og normalrun `35401927838` nåede den virkelige klassifikation
+`integrated-historical-maintenance`. De gamle private runtime-generationer blev
+korrekt afvist tre gange, men 4.0.424-fallbacken genkendte kun actionnavnet
+`integrated`; runnet stoppede derfor stadig før providerkald.
+
+4.0.425 tillader også den midlertidige historiske integrated-vedligeholdelse,
+men kun efter fuld validering af et aktuelt schema-6-checkpoint med 673 dele.
+Den får ingen stateless cold start. Candidate G, første cutover, retur,
+manglende/udløbet checkpoint og ukendte actions forbliver lukkede. Kravet er
+fortsat 100 % gyldige nødvendige vejrdata; `MISSING` er alene robusthed. Næste
+bevis er én almindelig normalrun, ikke oneoff.
+
+# HISTORISK SANDHED – 2026-09-19 – lokal 4.0.424, normalrun-recovery
 
 4.0.423 bestod exact-head, blev merged som main `8718c1ec`, og backendrun
 `35400575522` installerede migration `20260918190000` samt verificerede

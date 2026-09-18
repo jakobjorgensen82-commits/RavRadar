@@ -1,6 +1,6 @@
 # DEC-0206 – verificeret vejrkomplethed og sand produktionsslutstatus
 
-**Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.424
+**Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.425
 **Dato:** 2026-09-18
 
 ## Problem
@@ -83,3 +83,21 @@ restore-trinnet stoppede før den eksisterende active-integrated stateless
 recovery. 4.0.424 lader kun handlingen `integrated` fortsætte efter tre
 mislykkede restoreforsøg. Første cutover, Candidate G og andre handlinger
 forbliver fail-closed. Det er recovery af runtime, ikke lempet datakomplethed.
+
+## Tillæg 2026-09-19 – den midlertidige historical-maintenance-action
+
+4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`, men
+normalrun `35401927838` viste en anden sikker vedligeholdelsesaction end den
+første fallback omfattede. Den centrale model er allerede `integrated`, mens
+bindingen først bliver current efter en frisk pakkes verificerede deploy og
+reseal. Indtil da er actionen korrekt `integrated-historical-maintenance`.
+
+Efter tre afviste private runtimes må denne action fortsætte uden runtimebundle,
+men kun hvis det eksisterende schema-6-checkpoint først består den samme fulde
+struktur-, integritets-, modelbindings-, 673-dels- og tidsvalidering, som
+vejrbyggeren senere bruger, og `continuationAvailable` er sand. Manglende,
+udløbet, fremtidigt, beskadiget eller inkompatibelt checkpoint stopper før
+providerarbejde. Historical maintenance får aldrig den stateless cold-start-
+vej, der fortsat er begrænset til exact `integrated`. Candidate G, første
+cutover, retur og ukendte handlinger åbnes ikke. Datakomplethedskravet ændres
+ikke: næste normale run skal stadig bevise 100 % gyldige nødvendige felter.
