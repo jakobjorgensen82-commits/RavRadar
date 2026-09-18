@@ -1,3 +1,12 @@
+# 2026-09-19 – 4.0.425 fører historical maintenance gennem checkpointet
+
+- 4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.
+- Normalrun `35401927838` stoppede før provider, fordi fallbacken ikke
+  genkendte den korrekte midlertidige action `integrated-historical-maintenance`.
+- 4.0.425 fortsætter kun den handling med et fuldt valideret, aktuelt
+  schema-6-checkpoint; ingen stateless cold start eller modelovergang åbnes.
+  DEC-0206-tillæg.
+
 # 2026-09-19 – 4.0.424 fører aktiv integrated forbi gammel privat runtime
 
 - 4.0.423 bestod exact-head, PR #368 og backendrun `35400575522`.

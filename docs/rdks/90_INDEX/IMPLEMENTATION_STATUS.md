@@ -1,4 +1,23 @@
-# Aktuel implementeringsstatus – lokal 4.0.424, normalrun-recovery
+# Aktuel implementeringsstatus – lokal 4.0.425, historical-maintenance recovery
+
+- [x] Lever 4.0.424 gennem exact-head `35401458027`, PR #369 og main
+  `0b4a08ec`.
+- [x] Afgræns normalrun `35401927838`: korrekt action var
+  `integrated-historical-maintenance`; stop før provider og uden dataændring.
+- [x] Gennemgå hele overgangsvejen: checkpointrestore, privat runtime,
+  bootstrap/cold start, vejrbyg, Pages og central historical-maintenance-seal.
+- [x] Tillad historical maintenance efter tre restoreforsøg, men kun efter
+  fuld validering af et aktuelt schema-6-checkpoint med 673 dele.
+- [x] Bevar stateless recovery kun for exact `integrated`; historical
+  maintenance, Candidate G og cutover får ingen ny cold-start-vej.
+- [x] Afslut 4.0.425 dokumentation, måltests og geodataversionsbevis.
+- [ ] Commit/push, én exact-head, PR/merge og én almindelig weather.
+- [ ] Kræv 100 % gyldige felter, Feggesund 354/354, aktuel time, scorer og
+  efterfølgende normal cachevedligeholdelse før scheduler genaktiveres.
+
+Ingen oneoff. `MISSING` er robusthed, aldrig komplethed.
+
+# Historisk implementeringsstatus – lokal 4.0.424, normalrun-recovery
 
 - [x] Merge 4.0.423 PR #368 til main `8718c1ec`; exact-head grøn.
 - [x] Backendrun `35400575522`: migration, Supabase, D1, Edge og readiness grøn.

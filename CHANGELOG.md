@@ -1,3 +1,25 @@
+## 4.0.425 – historical maintenance fortsætter fra valideret checkpoint (2026-09-19)
+
+- 4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.
+- Normalrun `35401927838` stoppede før provider, fordi den korrekte midlertidige
+  action var `integrated-historical-maintenance`, mens fallbacken kun kendte
+  `integrated`.
+- 4.0.425 fortsætter den historiske integrated-vedligeholdelse uden en gammel
+  runtime kun efter fuld validering af et aktuelt 673-dels schema-6-checkpoint.
+- Historical maintenance får ingen stateless cold start. Candidate G, cutover,
+  retur og ukendte actions forbliver lukkede. Score, vejr, geometri,
+  providerorden og rotation er uændrede. Se CHANGELOG-4.0.425.md og DEC-0206.
+
+## 4.0.424 – aktiv integrated kan genopbygge gammel privat runtime (2026-09-19)
+
+- 4.0.423 bestod exact-head `35400101123`, PR #368 og main `8718c1ec`.
+- Backendrun `35400575522` installerede den nye binding og bestod Supabase, D1,
+  Edge og readiness.
+- Normalrun `35400832705` afviste de gamle runtime-generationer korrekt og
+  stoppede før provider. 4.0.424 åbnede measured stateless recovery for exact
+  `integrated`; normalrun `35401927838` viste bagefter den manglende historiske
+  actionkant, som 4.0.425 retter.
+
 ## 4.0.422 – aktiv integrated source-repair føres sikkert gennem Pages (2026-09-18)
 
 - 4.0.421-kørsel `35383989821` bestod hele providerfri byggejobbet, inklusive

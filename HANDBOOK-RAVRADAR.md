@@ -1,6 +1,25 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.424
+**Håndbogsversion:** 4.0.425
+
+## 89.29 4.0.425 – Historisk vedligeholdelse fortsætter kun med gyldigt checkpoint
+
+Den integrerede model er aktiv, men den nye binding bliver først markeret som
+helt aktuel, når en frisk vejropdatering er bygget, offentliggjort og centralt
+forseglet. I dette korte mellemstadie hedder normaldriften
+`integrated-historical-maintenance`. 4.0.424 kendte kun navnet `integrated` i
+sin fallback og stoppede derfor, selv om det nødvendige checkpoint fandtes.
+
+4.0.425 genkender mellemstadiet. Efter tre mislykkede forsøg på at hente en
+kompatibel gammel runtime må kørslen fortsætte fra checkpointet, men først når
+det har bestået alle eksisterende kontroller af struktur, hash, modelbinding,
+673 kystdele og alder. Et manglende, udløbet eller beskadiget checkpoint
+stopper før den lange vejrhentning. Mellemstadiet må ikke starte helt uden
+historik; Candidate G og cutover åbnes heller ikke.
+
+Rettelsen ændrer hverken scoreformel, vejrdata, geometri, providerorden eller
+rotation. Målet er fortsat gyldige nødvendige data overalt; `MISSING` er kun
+lokal robusthed.
 
 ## 89.28 4.0.424 – En gammel privat runtime må ikke blokere den aktive model
 

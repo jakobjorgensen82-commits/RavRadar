@@ -1339,6 +1339,28 @@ for(const marker of [
 }
 ok(!privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime'),
 'Det private produktionsbundle må ikke gendannes i repositoryets cachetræ');
+for(const marker of [
+  'if test "$OPERATIONAL_ACTION" = "integrated"; then',
+  'Active integrated production will continue through the measured stateless recovery path.',
+  'if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
+  'loadRavScoreContinuationCheckpointForTarget',
+  "checkpointPath: '.cache/ravscore-continuation-checkpoint/checkpoint.json'",
+  'targetReference: process.env.RAVRADAR_PRODUCTION_TARGET_HOUR',
+  'repositoryRoot: process.env.GITHUB_WORKSPACE',
+  '!checkpoint.loaded || !checkpoint.continuationAvailable',
+  'Integrated historical maintenance will continue from the validated continuation checkpoint.',
+]){
+  ok(privateRuntimeRestoreSection.includes(marker),`Private runtime-recovery mangler ${marker}`);
+}
+const historicalMaintenanceRestoreFallback=privateRuntimeRestoreSection.slice(
+  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
+  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+);
+ok(historicalMaintenanceRestoreFallback.includes('exit 0')
+  &&historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
+  &&historicalMaintenanceRestoreFallback.includes('!checkpoint.loaded || !checkpoint.continuationAvailable')
+  &&!historicalMaintenanceRestoreFallback.includes('stateless recovery'),
+'Historisk integrated maintenance må kun fortsætte med et aktuelt valideret checkpoint og aldrig som state-less cold start');
 ok(!buildWorkflow.includes('private-production-runtime-v1-')
   && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(buildWorkflow),
 'Det fulde private runtimebundle må ikke lagres i GitHub Actions cache');

@@ -432,7 +432,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.424 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.425 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -623,6 +623,23 @@ jobs:
             echo "::warning title=Protected runtime unavailable::Active integrated production will continue through the measured stateless recovery path."
             exit 0
           fi
+          if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then
+            node --input-type=module <<'NODE'
+          import { loadRavScoreContinuationCheckpointForTarget } from './scripts/ravscore-continuation-checkpoint.mjs';
+
+          const checkpoint = await loadRavScoreContinuationCheckpointForTarget({
+            checkpointPath: '.cache/ravscore-continuation-checkpoint/checkpoint.json',
+            targetReference: process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
+            repositoryRoot: process.env.GITHUB_WORKSPACE,
+          });
+          if (!checkpoint.loaded || !checkpoint.continuationAvailable) {
+            throw new Error('Integrated historical maintenance requires a current validated continuation checkpoint when no compatible private runtime exists');
+          }
+          console.log(`Validated ${checkpoint.partCount} continuation parts for integrated historical maintenance.`);
+          NODE
+            echo "::warning title=Protected runtime unavailable::Integrated historical maintenance will continue from the validated continuation checkpoint."
+            exit 0
+          fi
           exit "$status"
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -710,7 +727,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.424 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.425 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
@@ -737,7 +754,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.424 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.425 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}
@@ -1134,7 +1151,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.424 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.425 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1644,7 +1661,7 @@ jobs:
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
           RAVSCORE_CURRENT_TRACE_PATH: data/diagnostics/ravscore-current-input-stage-trace.json
           RAVSCORE_CURRENT_TRACE_PART_IDS: dk-b04-07-national-part-02,dk-b04-07-national-part-05,dk-b05-12-national-part-01,dk-b05-17-national-part-03,dk-b05-17-national-part-02,dk-b05-17-national-part-04,dk-b05-18-national-part-02,dk-b05-18-national-part-03,dk-b05-18-national-part-05,dk-b05-20-owner-approved-01,dk-b09-06-national-part-06,dk-b10-23-national-part-01,dk-b12-03-national-part-05,dk-b12-06-national-part-02
-          WEATHER_USER_AGENT: "RavRadar/4.0.424 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.425 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild

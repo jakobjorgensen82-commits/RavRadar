@@ -2208,6 +2208,13 @@ for (const marker of [
   'OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}',
   'if test "$OPERATIONAL_ACTION" = "integrated"; then',
   'Active integrated production will continue through the measured stateless recovery path.',
+  'if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
+  'loadRavScoreContinuationCheckpointForTarget',
+  "checkpointPath: '.cache/ravscore-continuation-checkpoint/checkpoint.json'",
+  'targetReference: process.env.RAVRADAR_PRODUCTION_TARGET_HOUR',
+  'repositoryRoot: process.env.GITHUB_WORKSPACE',
+  '!checkpoint.loaded || !checkpoint.continuationAvailable',
+  'Integrated historical maintenance will continue from the validated continuation checkpoint.',
   'node scripts/protected-private-production-runtime.mjs',
   '--restore',
   'node scripts/private-production-runtime-bundle.mjs restore',
@@ -2230,6 +2237,19 @@ const activeIntegratedRestoreFallback = privateRuntimeRestoreSection.slice(
 if (!activeIntegratedRestoreFallback.includes('exit 0')
   || !activeIntegratedRestoreFallback.includes('measured stateless recovery path')) {
   throw new Error('En inkompatibel privat runtime skal nå exact active-integrated stateless recovery uden at åbne andre actions.');
+}
+const historicalMaintenanceRestoreFallback = privateRuntimeRestoreSection.slice(
+  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
+  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+);
+if (!historicalMaintenanceRestoreFallback.includes('exit 0')
+  || !historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
+  || !historicalMaintenanceRestoreFallback.includes('!checkpoint.loaded || !checkpoint.continuationAvailable')
+  || !historicalMaintenanceRestoreFallback.includes('validated continuation checkpoint')) {
+  throw new Error('Historisk integrated maintenance må kun fortsætte uden privat runtime efter streng checkpointvalidering.');
+}
+if (historicalMaintenanceRestoreFallback.includes('stateless recovery')) {
+  throw new Error('Historisk integrated maintenance må ikke åbne den state-less cold-start-vej.');
 }
 for (const step of [
   'privateRuntimeExpected',

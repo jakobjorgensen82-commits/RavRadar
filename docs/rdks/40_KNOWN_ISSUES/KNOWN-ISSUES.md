@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.425 historical-maintenance recovery
+
+- **ISSUE-4.0.424-DELIVERY – LUKKET:** Exact-head `35401458027`, PR #369 og
+  main `0b4a08ec` er gennemført.
+- **ISSUE-HISTORICAL-RUNTIME-FALLBACK – RETTET LOKALT P0:** Normalrun
+  `35401927838` klassificerede korrekt aktiv drift som
+  `integrated-historical-maintenance`, men 4.0.424 genkendte kun `integrated`
+  efter tre afviste gamle runtimes. 4.0.425 fortsætter kun den historiske
+  handling efter fuld validering af et aktuelt 673-dels-checkpoint og åbner
+  ingen stateless cold start. Produktionsbevis afventer.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** Providerkald blev
+  ikke nået i `35401927838`. Næste normale run skal bevise 100 % gyldige
+  nødvendige data, Feggesund 354/354, aktuel time og scorer.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
 
 - **ISSUE-4.0.423-DELIVERY – LUKKET:** Exact-head grøn, PR #368, main
   `8718c1ec`, backendrun `35400575522` fuldt grønt.

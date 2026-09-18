@@ -1,4 +1,23 @@
-# Aktuelt ejerdelta – 2026-09-19 – aktiv integrated runtime-recovery
+# Aktuelt ejerdelta – 2026-09-19 – historical-maintenance runtime-recovery
+
+- **REQ-4.0.425-HISTORICAL-ACTION-001 – BINDENDE:** Centralt aktiv
+  `integrated-historical-maintenance` må efter tre afviste forgængerruntimes
+  fortsætte uden privat runtime, når et schema-6-checkpoint er til stede.
+- **REQ-4.0.425-CHECKPOINT-002 – BINDENDE:** Checkpointet skal før providerkald
+  bestå den eksisterende struktur-, integritets-, modelbindings-, 673-dels- og
+  tidsvalidering og fortsat være aktuelt.
+- **REQ-4.0.425-NO-COLD-START-003 – BINDENDE:** Historical maintenance må
+  aldrig bruge den stateless cold-start-vej. Manglende, udløbet, fremtidigt,
+  inkompatibelt eller beskadiget checkpoint stopper.
+- **REQ-4.0.425-OTHER-ACTIONS-CLOSED-004 – BINDENDE:** Candidate G, første
+  cutover, retur og ukendte handlinger åbnes ikke af rettelsen.
+- **REQ-4.0.425-NORMAL-PROOF-005 – ÅBEN P0:** Næste almindelige run skal nå
+  providerkæden og bevise 100 % gyldig dækning, Feggesund 354/354, aktuel time,
+  scorer og cachevedligeholdelse. Ingen oneoff.
+
+DEC-0206-tillæg.
+
+# Historisk ejerdelta – 2026-09-19 – aktiv integrated runtime-recovery
 
 - **REQ-4.0.424-RESTORE-RETRY-001 – BINDENDE:** Beskyttet privat runtime
   forsøges tre gange før recovery.

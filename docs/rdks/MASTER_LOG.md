@@ -1,4 +1,18 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.424 runtime-recovery
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.425 historical-maintenance recovery
+
+4.0.424 bestod exact-head `35401458027`, PR #369 og main `0b4a08ec`.
+Normalrun `35401927838` viste, at den aktive model under den endnu ikke
+resealede binding korrekt bruger action `integrated-historical-maintenance`.
+4.0.424-fallbacken genkendte kun `integrated` og stoppede derfor før provider.
+
+4.0.425 fører den historiske integrated-vedligeholdelse videre efter tre
+restoreforsøg, men kun når det eksisterende schema-6-checkpoint først består
+fuld struktur-, hash-, binding-, 673-dels- og tidsvalidering og stadig er
+aktuelt. Ingen stateless cold start åbnes for denne handling. Candidate G,
+cutover, retur og ukendte handlinger forbliver lukkede. Ingen oneoff; næste
+bevis er én almindelig weather. DEC-0206-tillæg.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.424 runtime-recovery
 
 4.0.423 blev merged som PR #368 på main `8718c1ec`. Backendrun `35400575522`
 installerede den append-only binding og verificerede hele Supabase/D1/Edge-
