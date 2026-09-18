@@ -1,6 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.410
+**Håndbogsversion:** 4.0.411
+
+## 89.15 4.0.411 – Historikken kan fortsætte efter et nyt hul
+
+Den almindelige kørsel `35331664087` hentede og gemte vejrdata fra alle tre
+leverandørled, byggede den offentlige pakke og lagde 4.0.410 online. Det viser,
+at kontrolfund ikke længere holder hele RavRadar tilbage. Auditten fandt
+samtidig den konkrete scorefejl: alle 673 gemte last-mile-tilstande kunne ikke
+læses tilbage.
+
+Fejlen opstod kun i en bestemt rækkefølge. Efter et konservativt 40-timers
+reset fortsatte den fysiske punkt-tilstand som planlagt. Hvis der senere kom
+et nyt hul, blev usikkerhedsintervallet åbnet igen, men det glemte at rumme
+punktet. Næste kørsel afviste derfor den selvmodsigende tilstand. På siden gav
+det nødvisning, kl. 11.00 i stedet for den aktuelle time, mange meldinger om
+ufuldstændig historik og manglende lokale femdøgnsprognoser.
+
+4.0.411 gør intervallet bredt nok til det allerede gyldige punkt, men kun
+mens usikkerheden faktisk er åben. Eksakt historik og reelt ugyldige data
+bliver stadig afvist. Allerede gemte tilstande med præcis denne fejl repareres
+ved at udvide intervallet; selve punktet og vejrdataene ændres ikke.
+
+Pages-deployet var grønt, men den efterfølgende centrale forsegling gjorde
+jobbet rødt, fordi den stadig krævede en fejlfri audit. Normal forsegling må
+nu følge et verificeret same-model-deploy med afgrænsede diagnostiske fund,
+men sådanne data må ikke bruges til kalibrering. Modelskift og første cutover
+har fortsat de strengere krav.
+
+Formel og vægte er uændrede. 4.0.411 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den rettede integrerede kode er bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Den private Candidate G-rollback er fortsat særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859` over 57 transitive filer. Den nye continuationidentitet følger med append-only migration `20260918125600`.
 
 ## 89.14 4.0.410 – Kontrolfund må ikke gøre gyldige prognoser gamle
 

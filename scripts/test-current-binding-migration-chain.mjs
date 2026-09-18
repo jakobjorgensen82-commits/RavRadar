@@ -5,6 +5,7 @@ const generators = [
   'scripts/build-post-cutover-current-hold-binding-migration.mjs',
   'scripts/build-valid-data-before-local-missing-binding-migration.mjs',
   'scripts/build-partial-zone-public-metadata-binding-migration.mjs',
+  'scripts/build-last-mile-history-envelope-binding-migration.mjs',
 ];
 
 for (const generator of generators) {

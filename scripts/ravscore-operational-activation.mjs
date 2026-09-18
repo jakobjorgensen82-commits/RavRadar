@@ -1271,7 +1271,22 @@ function assertIntegratedPublicEvidence(publicManifest, publicAudit, {
   sourceHead,
   datasetId = null,
   allowMeasuredWarmup = false,
+  allowDiagnosticFindings = false,
 } = {}) {
+  const auditErrors = Array.isArray(publicAudit?.errors) ? publicAudit.errors : null;
+  const boundedDiagnosticErrors = auditErrors !== null
+    && auditErrors.length <= 128
+    && new Set(auditErrors).size === auditErrors.length
+    && auditErrors.every(code => SAFE_ID_PATTERN.test(String(code ?? '')))
+    && exactKeys(publicAudit?.errorCounts, auditErrors)
+    && auditErrors.every(code => Number.isSafeInteger(Number(publicAudit.errorCounts[code]))
+      && Number(publicAudit.errorCounts[code]) > 0);
+  const auditDispositionValid = boundedDiagnosticErrors
+    && (publicAudit?.status === 'passed'
+      ? auditErrors.length === 0
+      : allowDiagnosticFindings
+        && publicAudit?.status === 'failed'
+        && auditErrors.length > 0);
   if (!publicManifest || publicManifest.schemaVersion !== 4
     || !SAFE_ID_PATTERN.test(String(publicManifest.datasetId ?? ''))
     || (datasetId !== null && publicManifest.datasetId !== datasetId)
@@ -1284,7 +1299,7 @@ function assertIntegratedPublicEvidence(publicManifest, publicAudit, {
   assertBinding(publicManifest.ravScoreModelBinding, integratedModelBinding(),
     assertIntegratedBinding, 'Integrated return public manifest binding');
   if (!publicAudit || publicAudit.schemaVersion !== 1
-    || publicAudit.status !== 'passed'
+    || !auditDispositionValid
     || publicAudit.model?.modelId !== integratedModelBinding().modelId
     || publicAudit.model?.stateSchemaVersion !== integratedModelBinding().stateSchemaVersion
     || publicAudit.model?.modelContractSha256
@@ -1301,8 +1316,6 @@ function assertIntegratedPublicEvidence(publicManifest, publicAudit, {
     || publicAudit.payload?.publicRawVectorIncluded !== false
     || publicAudit.payload?.publicUnapprovedCoordinateIncluded !== false
     || publicAudit.payload?.publicShadowIncluded !== false
-    || !Array.isArray(publicAudit.errors)
-    || publicAudit.errors.length !== 0
     || !HEAD_PATTERN.test(String(sourceHead ?? ''))) {
     throw new Error('Integrated return lacks the passed full public runtime audit');
   }
@@ -3365,8 +3378,10 @@ export function operationalIntegratedMaintenanceTransition({
   assertIntegratedPublicEvidence(publicManifest, publicAudit, {
     sourceHead,
     allowMeasuredWarmup: currentRow.payload.calibrationEligible === false,
+    allowDiagnosticFindings: true,
   });
-  const calibrationEligible = integratedPublicAuditCalibrationEligible(publicAudit);
+  const calibrationEligible = publicAudit.status === 'passed'
+    && integratedPublicAuditCalibrationEligible(publicAudit);
   assertOperationalPagesVerification(publicVerification, {
     model: 'integrated',
     binding: integratedModelBinding(),

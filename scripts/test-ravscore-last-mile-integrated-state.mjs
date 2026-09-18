@@ -169,6 +169,79 @@ assert.equal(missingDirection.rows[0].lastMileMemoryStatus, 'MISSING_INPUT');
 assert.equal(missingDirection.rows[0].lastMileEvidenceStatus,
   'ACTIVE_WAVE_DIRECTION_MISSING');
 
+// After the bounded 40-hour tail reset, the physical directional point keeps
+// evolving while the conservative score track starts from its collapsed lower
+// bound. A later missing direction reopens uncertainty. The reopened interval
+// must enclose the physical point immediately, and already-saved schema-6
+// states from the former producer must be repaired deterministically.
+const postResetDirectionRecovery = buildIntegratedRavScoreStateSeries(
+  rows.map((row, index) => index > 40 ? { ...row, waveDirectionDeg: 180 } : row),
+  {
+    samplingContextKey,
+    onshoreDirectionDeg,
+    coldReplayBootstrap: {
+      recoveryId: RAVSCORE_COLD_REPLAY_ID,
+      expectedCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+      completeCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+      boundedUnknownPositionCount: 0,
+      historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
+      targetReferenceAt: time(0),
+    },
+  },
+);
+const postResetTarget = postResetDirectionRecovery.rows.at(-1);
+assert.equal(
+  postResetTarget.continuationState.historyBounds.lastMile.conservativeResetAt,
+  time(-8),
+);
+const reopenedAfterReset = buildIntegratedRavScoreStateSeries([{
+  ...rows.at(-1),
+  time: time(1),
+  waveDirectionDeg: null,
+}], {
+  samplingContextKey,
+  onshoreDirectionDeg,
+  initialState: postResetTarget.continuationState,
+});
+assert.ok(
+  reopenedAfterReset.rows[0].lastMileFactor
+    >= reopenedAfterReset.rows[0].lastMileFactorLower - 1e-9,
+);
+assert.ok(
+  reopenedAfterReset.rows[0].lastMileFactor
+    <= reopenedAfterReset.rows[0].lastMileFactorUpper + 1e-9,
+);
+assert.equal(buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  onshoreDirectionDeg,
+  initialState: reopenedAfterReset.continuationState,
+}).initialStateAccepted, true,
+'a reopened post-reset envelope must be valid on the next ordinary run');
+
+const formerlySavedInvalidState = structuredClone(reopenedAfterReset.continuationState);
+formerlySavedInvalidState.historyBounds.lastMile = {
+  ...formerlySavedInvalidState.historyBounds.lastMile,
+  minimumFactorTrack: {
+    ...postResetTarget.continuationState.historyBounds.lastMile.minimumFactorTrack,
+  },
+  maximumFactorTrack: {
+    ...postResetTarget.continuationState.historyBounds.lastMile.maximumFactorTrack,
+  },
+  lastUnknownAt: time(1),
+  conservativeResetAt: null,
+};
+const repairedFormerState = buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  onshoreDirectionDeg,
+  initialState: formerlySavedInvalidState,
+});
+assert.equal(repairedFormerState.initialStateAccepted, true);
+assert.notDeepEqual(
+  repairedFormerState.continuationState.historyBounds.lastMile,
+  formerlySavedInvalidState.historyBounds.lastMile,
+  'an open schema-6 interval may only be widened enough to enclose its valid point track',
+);
+
 const calmDirectionless = buildIntegratedRavScoreStateSeries([{
   ...rows.at(-1),
   time: time(1),

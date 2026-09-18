@@ -1,3 +1,29 @@
+# NYESTE SANDHED – 2026-09-18 – lokal 4.0.411 retter scorehistorikken
+
+4.0.410 er live gennem exact-head `35330643842`, PR #354, main
+`ca2735af81137785ca6fd8a6432a578f1ae55e5b` og code-only `35331109332`.
+Normalrun `35331664087` gennemførte alle providerled, gemte cacher, byggede
+offentlig runtime og deployede/verificerede Pages med 210 zoner og 673 dele.
+DEC-0193 er dermed livebevist: auditfundet blev synligt uden at holde hele
+pakken tilbage.
+
+Audittens præcise fejl var 673 × `LAST_MILE_HISTORY_POINT`. Efter et tidligere
+40-timers reset og et nyt hul blev last-mile-intervallet åbnet igen uden at
+rumme den fortsat gyldige punkt-tilstand. Browseren viste derfor nødvisning,
+kl. 11.00 i stedet for aktuel time, gentagne historikintervaller, kun tre
+timers verificeret historik i den kontrollerede zone og ingen lokal
+femdøgnsprognose. Pages var grønt; jobbet blev først rødt på den efterfølgende
+reseal, som stadig krævede auditstatus `passed`.
+
+Lokal 4.0.411 udvider kun et åbent usikkerhedsinterval nok til at rumme det
+validerede punkt og reparerer deterministisk den allerede gemte smalle
+schema-6-fejl. Eksakt eller reelt ugyldig state afvises fortsat. Normal reseal
+kan følge et verificeret Pages-deploy med afgrænsede diagnostiske fund, men
+sætter altid kalibrering til falsk. Formel og vægte er uændrede; den ændrede
+implementering bindes ærligt gennem migration `20260918125600` og bundle
+`039abdfe...`. Næste: docs/sluttests, exact-head, merge og én normal weather
+på de gemte cacher. Ingen oneoff; scheduler pauset. DEC-0194.
+
 # NYESTE SANDHED – 2026-09-18 – lokal 4.0.410 holder prognoser aktuelle trods kontrolfund
 
 4.0.409 er live gennem exact-head `35318809153`, PR #353, main `013baac8`
