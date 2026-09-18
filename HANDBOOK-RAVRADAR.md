@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.415
+**Håndbogsversion:** 4.0.416
+
+## 89.20 4.0.416 – Den kendte gemte scoretilstand kan repareres sikkert
+
+Den rigtige providerfri kørsel fandt den gamle private runtime og kontrollerede
+dens identitet. Den stoppede bagefter, fordi den først krævede, at 4.0.410's
+validator accepterede de 673 tilstande, som netop har den kendte last-mile-fejl.
+Den nyere, afgrænsede reparation fik derfor aldrig lov at køre.
+
+4.0.416 prøver stadig den gamle kontrol først. Hvis den afviser, skal den
+aktuelle kontrol både acceptere og lave en reel kanonisk reparation. Kun
+minimums- og maksimumssporet i det kendte last-mile-interval må ændres. Vejr,
+målinger, den fysiske punktværdi, Candidate G og andre statefelter må ikke
+ændres. Sker det, stopper leveringen.
+
+Hundredvis af ens fejl bliver nu vist som én kort fejltype med et antal i
+stedet for én skjult kæmpelinje. Ingen private data kommer i loggen. Efter
+providerfri levering kontrolleres siden, hvorefter én almindelig vejrkørsel
+skal bevise stabil vedligeholdelse.
+
+Formel og vægte er uændrede. 4.0.416 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er fortsat bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 
 ## 89.19 4.0.415 – Den gemte vejrpakke kan fortsætte
 
@@ -99,7 +120,7 @@ nu følge et verificeret same-model-deploy med afgrænsede diagnostiske fund,
 men sådanne data må ikke bruges til kalibrering. Modelskift og første cutover
 har fortsat de strengere krav.
 
-Formel og vægte er uændrede. 4.0.415 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Formel og vægte er uændrede. 4.0.415 var låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den rettede integrerede kode er bundet med `modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er fortsat særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859` over 57 transitive filer. Den nye continuationidentitet følger med append-only migration `20260918125600`.
 

@@ -1,5 +1,15 @@
 # RavRadar – gældende systemspecifikation
 
+**Bindende 4.0.416-præcisering – DEC-0199:** Ved privat same-binding-ombinding
+forsøges forgængerens validator først. Hvis den afviser, må den aktuelle
+validator kun føre state videre ved at returnere en faktisk kanonisk ændring
+under `historyBounds.lastMile.minimumFactorTrack` og/eller
+`maximumFactorTrack`. Alle andre state-, vejr-, måle-, geometri- og Candidate
+G-ændringer afvises. En afvisning uden tilladt reparation må ikke omgås. Ens
+uafhængige fejl grupperes med antal uden private payloads. Normal weather må
+ikke åbnes gennem det gamle workflow, mens gamle køposter kan starte på
+forældede heads.
+
 **Bindende 4.0.415-præcisering – DEC-0198:** Providerfri saved-weather må
 fortsætte ved både `integrated` og `integrated-historical-maintenance`, når
 den aktive model er integreret. Candidate, retur og cutover er fortsat

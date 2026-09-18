@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-18 – 4.0.416 privat last-mile-ombinding
+
+- **ISSUE-4.0.415-DELIVERY – LUKKET:** Exact-head `35348220691`, PR #359 og main `3a705259` er leveret.
+- **ISSUE-SAVED-WEATHER-ACTION – LUKKET:** `35349088863` accepterede korrekt `integrated-historical-maintenance`; det stoppede i stedet sikkert, fordi targetet ikke var strengt nyere end offentlig 09:00.
+- **ISSUE-PRIVATE-LAST-MILE-REBIND – RETTET LOKALT / LIVEBEVIS MANGLER:** `35349313096` gendannede den eksakte 4.0.410-runtime, men den gamle validator afviste de kendte 673 last-mile-states før den nyere reparation. 4.0.416 tillader kun den kanoniske minimums-/maksimumssporsreparation.
+- **ISSUE-UNREADABLE-REBIND-ERRORS – RETTET LOKALT:** Ens fejl grupperes og tælles; private payloads logges fortsat ikke.
+- **ISSUE-LIVE-OLD-HOUR-HISTORY – ÅBEN P0:** Providerfri levering, browserbevis og én almindelig weather mangler.
+- **ISSUE-OLD-WEATHER-GHOST-RUNS – ÅBEN P0 FØR NORMAL WEATHER:** GitHub viser fortsat de gamle køposter `34868901509`, `34613079069` og `34228112413` fra forældede heads. Det gamle workflow forbliver deaktiveret. En current-main-indgang skal være på plads, før almindelig drift åbnes.
+
+DEC-0199. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-18 – 4.0.415 saved-weather action
 
 - **ISSUE-4.0.414-DELIVERY – LUKKET:** Exact-head `35346135848`, PR #358 og main `f1f33c44` er leveret.

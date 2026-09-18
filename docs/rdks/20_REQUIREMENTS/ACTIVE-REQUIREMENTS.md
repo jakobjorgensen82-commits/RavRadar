@@ -1,3 +1,13 @@
+# Aktuelt ejerdelta – 2026-09-18 – privat last-mile-ombinding
+
+- **REQ-4.0.416-CURRENT-CANONICAL-001 – BINDENDE:** Når forgængerens validator afviser en gemt integrated continuation, må ombinding kun fortsætte, hvis den aktuelle validator accepterer og returnerer en faktisk kanonisk reparation.
+- **REQ-4.0.416-EXACT-REPAIR-002 – BINDENDE:** Reparationen må kun ændre `historyBounds.lastMile.minimumFactorTrack` og/eller `maximumFactorTrack`. Andre state-, vejr-, måle-, geometri- eller Candidate G-ændringer afvises.
+- **REQ-4.0.416-NO-SILENT-BYPASS-003 – BINDENDE:** En gammel validatorafvisning uden en faktisk tilladt reparation må ikke passere.
+- **REQ-4.0.416-ERROR-GROUPING-004 – BINDENDE:** Uafhængige ens fejl tælles og grupperes læsbart uden private payloads; alle fejlkategorier skal fortsat fremgå.
+- **REQ-4.0.416-NORMAL-ENTRY-005 – BINDENDE:** Det deaktiverede gamle weather-workflow må ikke genaktiveres, mens gamle køposter kan starte på forældede heads. Normal drift kræver en sikker current-main-indgang.
+
+DEC-0199.
+
 # Aktuelt ejerdelta – 2026-09-18 – saved-weather gennem integreret maintenance
 
 - **REQ-4.0.415-ACTIONS-001 – BINDENDE:** Saved-weather må fortsætte ved `integrated` og `integrated-historical-maintenance`, fordi begge er aktiv same-model vedligeholdelse.

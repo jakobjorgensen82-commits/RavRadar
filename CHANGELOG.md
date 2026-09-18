@@ -1,3 +1,15 @@
+## 4.0.416 – privat same-time-runtime kan bruge den kendte last-mile-reparation (2026-09-18)
+
+- 4.0.415 bestod exact-head `35348220691`, PR #359 og main `3a705259`.
+- Saved-weather `35349088863` beviste den rettede handlingskontrol, men havde
+  ikke et target, som var nyere end offentlig 09:00.
+- Samme-time code-only `35349313096` gendannede 4.0.410-runtime og stoppede,
+  fordi den gamle validator afviste den kendte 673-dels last-mile-kant før den
+  nyere deterministiske reparation.
+- 4.0.416 tillader kun den aktuelle kanoniske last-mile-reparation og samler
+  ens fejl i læsbare tællinger. Formel, modelbundle, vejr og geometri er
+  uændrede. Se CHANGELOG-4.0.416.md og DEC-0199.
+
 ## 4.0.415 – gemt vejr gennem historisk integreret vedligeholdelse (2026-09-18)
 
 - 4.0.414 bestod exact-head `35346135848`, blev merged gennem PR #358 som

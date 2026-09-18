@@ -1,3 +1,18 @@
+# Aktuel implementeringsstatus – lokal 4.0.416 privat last-mile-ombinding
+
+- [x] Lever 4.0.415 gennem exact-head `35348220691`, PR #359 og main `3a705259`.
+- [x] Livebevis saved-weather-actionen i `35349088863`; afvis det ikke-nyere target korrekt.
+- [x] Gendan eksakt 4.0.410-runtime i `35349313096` og afgræns stoppet til gammel validator før kendt reparation.
+- [x] Tillad kun kanonisk minimums-/maksimumssporsreparation og afvis alle andre private ændringer.
+- [x] Gruppér ens fejl uden private payloads og måltest 673 ens fund.
+- [x] Afslut versions-/RDKS-/håndbogs- og målrettede slutkontroller.
+- [ ] Commit/push, exact-head, merge og kør samme providerfri code-only.
+- [ ] Browserverificér offentlig version, time, historik, femdøgn og scorer.
+- [ ] Etablér sikker current-main normal-weather-indgang før det gamle workflow genaktiveres; tre gamle køposter må ikke starte.
+- [ ] Bevis én almindelig vejrkørsel og næste cachevedligeholdelse før scheduler.
+
+DEC-0199. Ingen oneoff.
+
 # Aktuel implementeringsstatus – lokal 4.0.415 saved-weather action
 
 - [x] Lever 4.0.414 gennem exact-head `35346135848`, PR #358 og main `f1f33c44`.

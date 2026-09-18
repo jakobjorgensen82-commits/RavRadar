@@ -1,5 +1,23 @@
 # Weather Pipeline 1.0
 
+## 4.0.416 – kendt privat last-mile-state repareres før genbinding
+
+Den providerfri samme-time-kørsel gendannede den eksakte private runtime fra
+4.0.410. Den gamle validator afviste alle 673 kendte last-mile-states, før den
+aktuelle 4.0.411+-reparation kunne køre. Derfor blev intet nyt artifact eller
+Pages-deploy lavet.
+
+4.0.416 forsøger stadig forgængerens validator først. Ved den kendte afvisning
+skal den aktuelle validator både acceptere og returnere en faktisk kanonisk
+reparation. Kun minimums- og maksimumssporet i last-mile-intervallet må ændres,
+ud over det allerede godkendte modelhashskifte. Andre private ændringer stopper.
+Ens fejl tælles i korte grupper, mens den skriftlige rapport og log fortsat er
+payloadfri.
+
+Det gamle normale weather-workflow forbliver deaktiveret, fordi tre gamle
+køposter ellers kan starte på forældet kode. Efter providerfri levering og
+browserbevis skal almindelig drift startes gennem en sikker current-main-rute.
+
 ## 4.0.415 – gemt vejr accepterer begge integrerede maintenanceformer
 
 Efter grøn central recovery installerede saved-weather-run `35346790218` den

@@ -6,6 +6,8 @@ import {
   assertBindingUpgrade,
   migrateExactModelBindingMetadata,
   migratePostCutoverPrivateRuntime,
+  reconcileIntegratedContinuation,
+  summarizeIndependentErrors,
   validatePredecessorIdentity,
   validatePredecessorManifest,
 } from './migrate-post-cutover-private-runtime.mjs';
@@ -122,6 +124,57 @@ for (const pathValue of [
   'datasetId',
 ]) assert.equal(allowedChange(pathValue, exactAllowedPaths), false,
   `Privat måle-/statefelt blev tilladt: ${pathValue}`);
+
+const continuationBeforeRepair = {
+  modelBundleSha256: 'a'.repeat(64),
+  historyBounds: {
+    lastMile: {
+      minimumFactorTrack: { waveNormalMoment: 2, waveTangentMoment: 4 },
+      maximumFactorTrack: { waveNormalMoment: 6, waveTangentMoment: 8 },
+      lastUnknownAt: '2026-09-18T09:00:00.000Z',
+    },
+  },
+};
+const continuationAfterRepair = structuredClone(continuationBeforeRepair);
+continuationAfterRepair.historyBounds.lastMile.minimumFactorTrack.waveNormalMoment = 1;
+continuationAfterRepair.historyBounds.lastMile.maximumFactorTrack.waveTangentMoment = 9;
+const exactRepair = reconcileIntegratedContinuation({
+  originalState: continuationBeforeRepair,
+  migratedState: continuationBeforeRepair,
+  assertPredecessor: () => { throw new Error('old last-mile envelope rejected'); },
+  canonicalizeCurrent: () => continuationAfterRepair,
+});
+assert.equal(exactRepair.predecessorValidationRecovered, true);
+assert.deepEqual(exactRepair.repairPaths, [
+  'historyBounds.lastMile.maximumFactorTrack.waveTangentMoment',
+  'historyBounds.lastMile.minimumFactorTrack.waveNormalMoment',
+]);
+assert.equal(
+  exactRepair.canonicalState.historyBounds.lastMile.maximumFactorTrack.waveTangentMoment,
+  9,
+);
+assert.throws(() => reconcileIntegratedContinuation({
+  originalState: continuationBeforeRepair,
+  migratedState: continuationBeforeRepair,
+  assertPredecessor: () => { throw new Error('unknown old rejection'); },
+  canonicalizeCurrent: () => continuationBeforeRepair,
+}), /without the exact last-mile repair/);
+assert.throws(() => reconcileIntegratedContinuation({
+  originalState: continuationBeforeRepair,
+  migratedState: continuationBeforeRepair,
+  assertPredecessor: () => {},
+  canonicalizeCurrent: () => ({
+    ...continuationBeforeRepair,
+    modelBundleSha256: 'b'.repeat(64),
+  }),
+}), /changed forbidden paths: modelBundleSha256/);
+const groupedErrors = summarizeIndependentErrors(Array.from({ length: 673 }, (_, index) => ({
+  scope: `DK-PART-${index + 1}`,
+  message: `Part DK-PART-${index + 1} predecessor continuation is outside last-mile bounds`,
+})));
+assert.match(groupedErrors, /^673x Part <item> predecessor continuation is outside last-mile bounds/);
+assert.ok(groupedErrors.length < 500,
+  'Hundreds of identical private migration errors must remain readable in GitHub logs');
 
 const integratedProfile = resolvePublicRavScoreProfile({
   modelCoverageReady: false,
@@ -254,6 +307,8 @@ for (const marker of [
   'migratedConditionsSha256:',
   'Private runtime inventory is not the exact nine-file allowlist',
   'Private runtime migration changed forbidden paths',
+  'Current continuation repair changed forbidden paths',
+  'summarizeIndependentErrors(errors)',
   'raw Git archive is therefore not a byte-identical reconstruction',
 ]) assert.match(source, new RegExp(marker.replace(/[.*+?^$()|[\]\\]/g, '\\$&')));
 
