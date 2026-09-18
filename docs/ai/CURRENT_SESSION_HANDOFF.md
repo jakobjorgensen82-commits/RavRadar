@@ -1,4 +1,18 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+
+4.0.423 bestod exact-head run `35400101123`, PR #368 og main `8718c1ec`.
+Backendrun `35400575522` installerede migration `20260918190000` og bestod
+Supabase, D1, Edge og integrated-readiness. Normalrun `35400832705` stoppede
+før providerkald med tre ens `MODEL_OR_CONTRACT_INELIGIBLE`: de to private
+runtime-generationer tilhørte den gamle binding.
+
+På branch `codex/4.0.424-integrated-runtime-recovery` er workflowet rettet,
+så tre retries bevares, men kun centralt aktiv `integrated` fortsætter til den
+allerede implementerede stateless recovery. Candidate G, første cutover og
+ukendte actions stopper fortsat. Afslut måltests/RDKS/geodatabevis, exact-head,
+merge og genkør én almindelig weather. Ingen oneoff; `.tmp-420/` er privat.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – lokal 4.0.423 samlet vejrrettelse
 
 Arbejd i det indlejrede `node_modules/RavRadar-4.0.396`, branch
 `codex/4.0.423-current-score-and-terminal`, HEAD main `8a95c7cf` fra PR #367.

@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.423, produktionsbevis afventer
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.424 runtime-recovery
+
+- **ISSUE-4.0.423-DELIVERY – LUKKET:** Exact-head grøn, PR #368, main
+  `8718c1ec`, backendrun `35400575522` fuldt grønt.
+- **ISSUE-PRIVATE-RUNTIME-CONTRACT-ROLLOVER – RETTET LOKALT P0:** Normalrun
+  `35400832705` afviste korrekt to gamle runtime-generationer, men stoppede
+  før active-integrated stateless recovery. 4.0.424 fortsætter kun denne ene
+  handling efter tre retries; produktionsbevis afventer.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** Providerkald blev
+  ikke nået i `35400832705`. Næste normalrun skal stadig bevise 100 % gyldige
+  nødvendige data, Feggesund 354/354, aktuel time og scorer.
+
+# HISTORISK CHECKPOINT – 2026-09-18 – lokal 4.0.423, produktionsbevis afventer
 
 - **ISSUE-4.0.422-LIVE – LUKKET:** Main `8a95c7cf`, normalrun
   `35386276428`, build/Pages/offentlig verifikation gennemført.

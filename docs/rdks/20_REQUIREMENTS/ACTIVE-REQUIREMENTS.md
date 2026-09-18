@@ -1,4 +1,17 @@
-# Aktuelt ejerdelta – 2026-09-18 – fuld gyldig vejrdækning og robust side
+# Aktuelt ejerdelta – 2026-09-19 – aktiv integrated runtime-recovery
+
+- **REQ-4.0.424-RESTORE-RETRY-001 – BINDENDE:** Beskyttet privat runtime
+  forsøges tre gange før recovery.
+- **REQ-4.0.424-ACTIVE-INTEGRATED-002 – BINDENDE:** Kun centralt allerede
+  aktiv handling `integrated` må fortsætte uden kompatibel forgængerruntime.
+- **REQ-4.0.424-OTHER-ACTIONS-CLOSED-003 – BINDENDE:** Første cutover,
+  Candidate G og ukendte handlinger forbliver fail-closed.
+- **REQ-4.0.424-NORMAL-PROOF-004 – ÅBEN P0:** Næste almindelige run skal nå
+  providerkæden og bevise fuld gyldig dækning; ingen oneoff.
+
+DEC-0206-tillæg.
+
+# Historisk ejerdelta – 2026-09-18 – fuld gyldig vejrdækning og robust side
 
 - **REQ-4.0.423-COMPLETE-MEANS-VALID-001 – BINDENDE:** Komplet betyder
   gyldige nødvendige felter for alle steder og timer. `MISSING` tæller aldrig

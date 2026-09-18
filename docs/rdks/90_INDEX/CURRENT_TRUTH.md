@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-18 – lokal 4.0.423, komplethed afventer normalrun
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.424, normalrun-recovery
+
+4.0.423 bestod exact-head, blev merged som main `8718c1ec`, og backendrun
+`35400575522` installerede migration `20260918190000` samt verificerede
+Supabase, D1, Edge og integrated-readiness. Normalrun `35400832705` stoppede
+før providerkald: de to gemte private runtime-generationer var korrekt bundet
+til den gamle kontrakt, men restore-trinnet stoppede før active-integrated
+stateless recovery.
+
+4.0.424 beholder tre restoreforsøg og fortsætter derefter kun for den centralt
+aktive handling `integrated`. Candidate G, første cutover og ukendte handlinger
+forbliver lukkede. Næste bevis er samme almindelige normalrun; ingen oneoff.
+Kravet er fortsat 100 % gyldig dækning, ikke `MISSING`.
+
+# HISTORISK SANDHED – 2026-09-18 – lokal 4.0.423, komplethed afventer normalrun
 
 Main `8a95c7cf` / PR #367 / normalrun `35386276428`: build og Pages samt
 offentlig verifikation lykkedes, target kl. 21 dansk tid. Runtimeaudit

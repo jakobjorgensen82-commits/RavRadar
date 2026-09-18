@@ -1,6 +1,6 @@
 # DEC-0206 – verificeret vejrkomplethed og sand produktionsslutstatus
 
-**Status:** Aktiv; implementeret lokalt i 4.0.423, produktionsbevis afventer
+**Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.424
 **Dato:** 2026-09-18
 
 ## Problem
@@ -73,3 +73,13 @@ tekniske implementeringsidentitet. Derfor bruges den append-only migration
 Produktionsbevis kræver efter merge en almindelig vejrkørsel, ikke en oneoff.
 Kun den kørsel kan bevise 100 % gyldig datadækning, Feggesund 354/354,
 faktisk providerfremgang, aktuel time, scorer og stabil cachevedligeholdelse.
+
+## Tillæg 2026-09-19 – inkompatibel forgængerruntime
+
+Backendrun `35400575522` installerede og verificerede den nye binding. Normalrun
+`35400832705` stoppede før providerkald, fordi begge beskyttede private runtime-
+generationer korrekt blev klassificeret `MODEL_OR_CONTRACT_INELIGIBLE`, men
+restore-trinnet stoppede før den eksisterende active-integrated stateless
+recovery. 4.0.424 lader kun handlingen `integrated` fortsætte efter tre
+mislykkede restoreforsøg. Første cutover, Candidate G og andre handlinger
+forbliver fail-closed. Det er recovery af runtime, ikke lempet datakomplethed.

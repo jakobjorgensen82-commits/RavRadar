@@ -2205,6 +2205,9 @@ for (const marker of [
   'mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
   'for attempt in 1 2 3; do',
   'Protected normal-weather restore attempt $attempt of 3 failed.',
+  'OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}',
+  'if test "$OPERATIONAL_ACTION" = "integrated"; then',
+  'Active integrated production will continue through the measured stateless recovery path.',
   'node scripts/protected-private-production-runtime.mjs',
   '--restore',
   'node scripts/private-production-runtime-bundle.mjs restore',
@@ -2219,6 +2222,14 @@ for (const marker of [
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]) {
   if (!privateRuntimeRestoreSection.includes(marker)) throw new Error(`Private runtime-restore mangler ${marker}`);
+}
+const activeIntegratedRestoreFallback = privateRuntimeRestoreSection.slice(
+  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated"; then'),
+  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+);
+if (!activeIntegratedRestoreFallback.includes('exit 0')
+  || !activeIntegratedRestoreFallback.includes('measured stateless recovery path')) {
+  throw new Error('En inkompatibel privat runtime skal nå exact active-integrated stateless recovery uden at åbne andre actions.');
 }
 for (const step of [
   'privateRuntimeExpected',
