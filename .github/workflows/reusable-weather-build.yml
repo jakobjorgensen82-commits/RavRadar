@@ -600,7 +600,10 @@ jobs:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
         run: |
           set -euo pipefail
-          test "$EXPECTED_SOURCE_HEAD" = "4bee5b0d0909b56a6f66e0f0e961f51321f9d236"
+          case "$EXPECTED_SOURCE_HEAD" in
+            4bee5b0d0909b56a6f66e0f0e961f51321f9d236|d4e8844ece6bfa46447b762a662cac0d7f1da385) ;;
+            *) echo "Unapproved private-runtime predecessor source." >&2; exit 1 ;;
+          esac
           git fetch --no-tags --depth=1 origin "$EXPECTED_SOURCE_HEAD"
           test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_SOURCE_HEAD"
           rm -rf "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
@@ -638,7 +641,7 @@ jobs:
             if test "$attempt" -lt 3; then sleep $((attempt * 5)); fi
           done
           if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
-            echo "The exact audited predecessor could not be restored; the measured transition cannot reuse or silently replace it."
+            echo "The exact audited predecessor could not be restored; the approved transition cannot reuse or silently replace it."
             exit "$status"
           fi
           if test "$OPERATIONAL_ACTION" = "integrated"; then

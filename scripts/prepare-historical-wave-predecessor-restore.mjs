@@ -9,6 +9,14 @@ import {
   HISTORICAL_WAVE_INPUT_TRANSITION_POLICY,
   buildHistoricalWavePredecessorRestoreExpectation,
 } from './lib/historical-wave-input-transition.mjs';
+import {
+  BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
+  buildBoundedConditionsPredecessorRestoreExpectation,
+} from './lib/bounded-conditions-predecessor-transition.mjs';
+import {
+  privateRuntimeContractHashes,
+} from './private-production-runtime-workflow.mjs';
+import packageDocument from '../package.json' with { type: 'json' };
 
 function parseArguments(argv) {
   const result = {};
@@ -55,22 +63,42 @@ async function atomicWriteJson(file, value) {
 }
 
 export async function prepareHistoricalWavePredecessorRestore(options) {
-  const expectation = buildHistoricalWavePredecessorRestoreExpectation({
-    sourceDescription: await readDescription(options.sourceDescriptionPath),
+  const sourceDescription = await readDescription(options.sourceDescriptionPath);
+  const historicalExpectation = buildHistoricalWavePredecessorRestoreExpectation({
+    sourceDescription,
     targetReferenceAt: options.targetReferenceAt,
     currentBinding: ravScoreModelBinding(),
     now: options.now ?? new Date().toISOString(),
   });
+  const boundedConditionsExpectation = historicalExpectation ? null
+    : buildBoundedConditionsPredecessorRestoreExpectation({
+      sourceDescription,
+      targetReferenceAt: options.targetReferenceAt,
+      currentBinding: ravScoreModelBinding(),
+      currentContractHashes: await privateRuntimeContractHashes(),
+      currentReleaseVersion: packageDocument.version,
+      now: options.now ?? new Date().toISOString(),
+    });
+  const expectation = historicalExpectation ?? boundedConditionsExpectation;
+  const transitionKind = historicalExpectation
+    ? 'historical-wave-input'
+    : boundedConditionsExpectation ? 'bounded-conditions-writer' : '';
+  const sourceHead = historicalExpectation
+    ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead
+    : boundedConditionsExpectation
+      ? BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead
+      : '';
   if (expectation) await atomicWriteJson(options.outputPath, expectation);
   await fs.appendFile(options.githubOutputPath, [
     `required=${expectation ? 'true' : 'false'}`,
-    `source_head=${expectation
-      ? HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceHead : ''}`,
+    `source_head=${sourceHead}`,
     `expected_path=${expectation ? path.resolve(options.outputPath) : ''}`,
+    `transition_kind=${transitionKind}`,
     '',
   ].join('\n'));
   return {
     required: Boolean(expectation),
+    transitionKind: transitionKind || null,
     privatePayloadIncluded: false,
   };
 }
@@ -81,8 +109,9 @@ async function main() {
   );
   console.log(JSON.stringify({
     status: result.required
-      ? 'historical-wave-predecessor-restore-required'
-      : 'historical-wave-predecessor-restore-not-applicable',
+      ? 'private-runtime-predecessor-restore-required'
+      : 'private-runtime-predecessor-restore-not-applicable',
+    transitionKind: result.transitionKind,
     privatePayloadIncluded: false,
   }));
 }

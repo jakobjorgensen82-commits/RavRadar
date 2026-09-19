@@ -36,6 +36,12 @@ grænse, som holder den parsebar i de efterfølgende private trin.
 - Writeren er med i den private fuldruntimekontrakt og har en måltest for
   byteidentisk JSON, UTF-8, delte objekter, store arrays, overskridelse,
   atomisk bevaring og cirkulære objekter.
+- Den gemte krypterede providerfremgang er bundet til den eksakte private
+  4.0.434-baseline. En release- og hashafgrænset engangsovergang gendanner
+  derfor præcis `d4e8844e`/`ad2337ab…` med den gamle verificerede reader,
+  før 4.0.436 fortsætter. Ukendt head, bundle, binding, hash eller version
+  afvises; efter første nye runtimegeneration er overgangen automatisk
+  uanvendelig.
 
 ## Uændret
 

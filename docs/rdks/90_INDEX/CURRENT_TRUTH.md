@@ -11,8 +11,12 @@ Runnet stoppede først ved skrivning af den private `conditions.json`, fordi
 hele den indrykkede JSON blev samlet i én V8-streng. Krypteret fremgang blev
 gemt efter fejlen. Lokal 4.0.436 skriver samme komplette dokument kompakt,
 løbende og atomisk under en fast parsebar grænse; ingen timer eller data er
-fjernet. Måltests er grønne. Exact-head, merge, genbrugt normal continuation,
-artifact, deploy og offentlig browserkontrol mangler. DEC-0215.
+fjernet. Da den krypterede fremgang er bundet til den tidligere private
+bundle, har 4.0.436 desuden en eksakt engangsovergang for
+`d4e8844e`/`ad2337ab…`; den kan ikke åbnes af andre heads, hashes, bindinger
+eller versioner. Måltests er grønne. PR #381 og exact-head kører; merge,
+genbrugt normal continuation, artifact, deploy og offentlig browserkontrol
+mangler. DEC-0215.
 
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.435 resumérbar DMI-kandidat
 

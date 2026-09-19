@@ -101,6 +101,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/flow-points-from-forecast-record.mjs',
     'scripts/lib/current-transport-history.mjs',
     'scripts/lib/feggesund-wave-proxy.mjs',
+    'scripts/lib/bounded-conditions-predecessor-transition.mjs',
     'scripts/lib/historical-wave-input-transition.mjs',
     'scripts/lib/ravscore-wave-input-migration.mjs',
     'scripts/classify-historical-wave-input-transition.mjs',

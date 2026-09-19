@@ -10,7 +10,11 @@ vindpar og beregnelige vade-/strandscorer. Stoppet kom først bagefter:
 parsebar maksimumgrænse og indholdsfri størrelseslog. Den gamle destination
 bevares ved fejl, og helperen er bundet ind i den private fuldruntimekontrakt.
 Krypteret fremgang fra runnet er gemt og skal fortsættes, ikke blindt
-genhentes. Se DEC-0215 og CHANGELOG-4.0.436.md.
+genhentes. Før merge blev den nødvendige baselinebro derfor tilføjet: kun
+release 4.0.436 kan gendanne den eksakte `d4e8844e`/`ad2337ab…`-forgænger med
+dens egen reader; samme binding, 210/673 og gamle kontrakthashes er påkrævet.
+Efter første nye protected runtime er broen automatisk uanvendelig. Se
+DEC-0215 og CHANGELOG-4.0.436.md.
 
 # 2026-09-19 – 4.0.435 resumérbar DMI-kandidat før producenten
 

@@ -11,8 +11,11 @@ length`. Krypteret fremgang blev gemt. Branch
 `codex/4.0.436-bounded-conditions-writer` skriver samme private JSON kompakt,
 løbende og atomisk under V8's parsebare grænse; den gamle fil bevares ved
 fejl. Helperen er tilføjet privat fuldruntimekontrakt, og måltests er grønne.
-DEC-0215. Næste: version/docs/slutchecks, exact-head, PR/merge og normal
-continuation fra gemt fremgang. `.tmp-420/` er privat og må aldrig stages.
+Den krypterede fremgang kræver den eksakte tidligere baseline; PR #381 har
+derfor også en 4.0.436-only overgang, som kun accepterer
+`d4e8844e`/`ad2337ab…`, samme binding, 210/673 og gamle kontrakthashes.
+DEC-0215. Næste: exact-head, merge og normal continuation fra gemt fremgang.
+`.tmp-420/` er privat og må aldrig stages.
 
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.435 DMI-genoptagelse
 

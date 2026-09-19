@@ -9,9 +9,11 @@
   provider- og scorearbejdet var allerede afsluttet.
 - [x] Implementér kompakt, løbende, atomisk og størrelsesbundet JSON-writer;
   bind den til privat fuldruntime og måltest gammel-fil-bevaring.
+- [x] Bind continuation til den eksakte tidligere private baseline og dens
+  reader, så cachen kan genbruges uden at åbne en generel gammel-kodevej.
 - [x] Synkronisér version/RDKS/begge håndbøger og bestå writer-, weather-,
   private-runtime-, releasekontrakt-, RDKS- og versionmålchecks.
-- [ ] Exact-head, PR og merge.
+- [ ] PR #381 exact-head og merge.
 - [ ] Fortsæt almindelig weather fra gemt krypteret fremgang. Bevis privat
   runtime, artifact, Pages, offentlig aktuel time og stabil næste cron.
 

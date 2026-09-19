@@ -9,6 +9,9 @@
 - 4.0.436 skriver den uændrede private JSON kompakt, løbende og atomisk under
   en parsebar grænse. Fejl bevarer den gamle gyldige fil, og størrelsesfordeling
   logges uden private værdier. Se CHANGELOG-4.0.436.md og DEC-0215.
+- En eksakt engangsovergang gendanner den bundle, som den krypterede fremgang
+  er bundet til, med dens egen godkendte reader. Det undgår blind genhentning;
+  ukendt version, head, bundle, binding eller kontrakthash stopper fortsat.
 
 ## 4.0.435 – delvis DMI-fremgang kan genoptages (2026-09-19)
 

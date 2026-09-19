@@ -20,6 +20,12 @@ RavScore eller kildeprioriteten. Den løser kun den tekniske lagring af det
 fulde resultat. Fremgangen fra den stoppede kørsel blev gemt krypteret, så
 næste kørsel skal fortsætte den i stedet for blindt at hente alt igen.
 
+Den gemte fremgang kan kun åbnes oven på præcis den private grundpakke, den
+blev lavet fra. 4.0.436 har derfor en engangsbro, som først gendanner netop
+den kendte grundpakke med dens egen kontrollerede læser. Forkert version,
+kode, pakke, modelbinding eller antal kyststrækninger bliver afvist. Når den
+nye pakke er gemt, passer engangsbroen ikke længere og kan ikke bruges igen.
+
 ## 89.40 4.0.435 – En delvis DMI-hentning skal kunne fortsætte
 
 Den første almindelige vejrkørsel efter 4.0.434 fandt en gemt DMI-fil, som

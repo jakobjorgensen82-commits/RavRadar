@@ -6,6 +6,9 @@
   V8's grænse før artifact/deploy. Krypteret fremgang blev gemt.
 - 4.0.436 skriver samme private dokument kompakt og løbende med atomisk
   udskiftning, parsebar grænse og indholdsfri størrelseslog. DEC-0215.
+- Før merge blev en overgangsrisiko fundet: den gemte cache er bundet til
+  forgængerbundlen. En eksakt 4.0.436-only readerbro for
+  `d4e8844e`/`ad2337ab…` bevarer fremgangen uden bred kompatibilitetslempelse.
 
 # 2026-09-19 – 4.0.429 giver gemt vejr og HARMONIE samme reelle vej frem
 

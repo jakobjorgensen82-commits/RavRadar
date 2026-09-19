@@ -7,11 +7,13 @@
 3. [x] Afgræns eneste slutstop til V8-strenggrænsen ved privat JSON-skrivning;
    krypteret fremgang er gemt.
 4. [x] Ret med kompakt, løbende, atomisk, parsebar og runtimebundet writer.
-5. [ ] Afslut 4.0.436-docs/målchecks, exact-head, merge og fortsæt normalrun
-   med den gemte fremgang frem for blind providerstart.
-6. [ ] Bevis artifact, deploy, aktuel time, alle 673 lokale scoreinput og
+5. [x] Tilføj eksakt engangsgendannelse af den tidligere baseline, som den
+   krypterede fremgang er bundet til; afvis alle andre forgængere.
+6. [ ] Afslut PR #381 exact-head, merge og fortsæt normalrun med den gemte
+   fremgang frem for blind providerstart.
+7. [ ] Bevis artifact, deploy, aktuel time, alle 673 lokale scoreinput og
    Safari/browser. Kør derefter mindst næste almindelige cron som driftbevis.
-7. [ ] Fortsæt roadmapets helhedsbevis for komplethed, DMI-first,
+8. [ ] Fortsæt roadmapets helhedsbevis for komplethed, DMI-first,
    fallbackprioritet, rotation og vedligeholdelsesfri normal drift.
 
 # Historisk roadmap – 2026-09-19, 4.0.435 fra delvis DMI til normal drift

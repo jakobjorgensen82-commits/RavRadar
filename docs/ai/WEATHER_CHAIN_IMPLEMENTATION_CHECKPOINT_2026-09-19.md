@@ -20,7 +20,9 @@ Krypteret providerfremgang blev gemt efter fejlen. Lokal 4.0.436 bevarer alle
 data, men skriver dokumentet kompakt, løbende og atomisk under en konservativ
 parsegrænse. Helperen er med i privat fuldruntimekontrakt. Næste run skal
 fortsætte gemt fremgang og bevise artifact/deploy; det må ikke blindt genhente
-alt. Se DEC-0215.
+alt. Fordi fremgangen er bundet til den gamle protected bundle, gendanner en
+snæver 4.0.436-engangsovergang kun `d4e8844e`/`ad2337ab…` med den gamle
+reader og eksakte binding/hashes, før nuværende kode fortsætter. Se DEC-0215.
 
 ## NYESTE efter 4.0.431-merge og central ACTIVE31
 

@@ -31,6 +31,13 @@ grænse: alle senere private læsere skal fortsat kunne parse dokumentet.
 5. Samlet størrelse og de største topfelters byteantal logges uden indhold.
 6. Writeren indgår i private runtimes fulde implementeringshash, så gammel
    kode ikke kan behandles som samme produktionskontrakt.
+7. Den krypterede fremgang fra det fejlede run er bundet til bundle
+   `ad2337ab…`, som blev publiceret fra `d4e8844e`. 4.0.436 må derfor én gang
+   gendanne netop denne baseline med netop dens gamle reader, før fremgangen
+   åbnes. Releaseversion, source head, bundlehash, modelbinding, zone-/delantal
+   og alle tre gamle kontrakthashes skal matche eksakt. Alle andre
+   forgængere afvises. Når en ny 4.0.436-runtime er publiceret, matcher
+   engangsovergangen ikke længere og kan ikke genbruges.
 
 ## Konsekvens
 
