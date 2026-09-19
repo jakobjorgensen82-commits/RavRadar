@@ -1,3 +1,16 @@
+# 2026-09-19 – 4.0.434 measured-warmup-checkpoint er ikke relevant
+
+4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.
+Providerfri `35451791985` passerede den tidligere auditblokering uden
+providerkald, men stoppede før artifact, fordi Candidate G-checkpointet blev
+krævet under `BUILDING_MEASURED_ONLY`.
+
+4.0.434 genindfører DEC-0114's N/A-kontrakt i både code-only og normal weather:
+checkpointRequired=false og build/save/publish alle skipped. Den integrerede
+private runtime gemmes fortsat uændret gennem sine strenge gates. Måltests er
+grønne; exact-head, merge, providerfri deploy og normal vind-/scorekørsel
+mangler. Se CHANGELOG-4.0.434.md og DEC-0213's tillæg.
+
 # 2026-09-19 – 4.0.433 afgrænset code-only og Candidate G pensioneret
 
 4.0.432 blev merged som `0d2fd78a`. Providerfri `35449470349` bestod central

@@ -61,12 +61,13 @@ assert.match(recovery, /--durable-evidence/);
 assert.match(recovery, /TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY/);
 for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
   const source = await read(name);
-  assert.match(source, /MEASURED_WARMUP_PUBLISHED/);
+  assert.match(source, /NOT_APPLICABLE_DURING_MEASURED_WARMUP/);
   assert.match(source, /copy-public-delivery-shards.mjs/);
   for (const step of ['checkpoint-build', 'checkpoint-save', 'checkpoint-publish']) {
     const at = source.indexOf(`id: ${step}`), end = source.indexOf('\n      - ', at);
     const block = source.slice(at, end);
-    assert.match(block, /BUILDING_MEASURED_ONLY/);
+    assert.match(block, /rollback_status == 'READY'/);
+    assert.doesNotMatch(block, /BUILDING_MEASURED_ONLY/);
     assert.doesNotMatch(block, /rollback_activation_ready == 'true'/);
   }
 }

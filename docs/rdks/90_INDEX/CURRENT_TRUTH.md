@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.434 checkpoint-N/A
+
+Main er 4.0.433 / `b6afcdca` efter PR #378 og exact-head `35451524450`.
+Providerfri `35451791985` passerede den kendte sekskodeaudit og udførte ingen
+providerkald. Den stoppede før artifact/deploy på Candidate G-checkpointet;
+det var ikke en ny vejr-, score- eller modelbindingsfejl.
+
+Rodårsagen er en konkret kontraktregression: `BUILDING_MEASURED_ONLY` blev
+fejlagtigt mappet til obligatorisk checkpoint, selv om DEC-0114 kræver N/A.
+Lokal 4.0.434 retter både code-only og normal weather. Den integrerede private
+runtime gemmes stadig med conditions, state, vejrcacher, hash og privacy.
+
+Måltests er grønne. Exact-head, merge, providerfri deploy, normal weather og
+offentligt vind-/scorebevis mangler. Lokal vind er stadig 0/673 i den senest
+gemte runtime og må ikke kaldes løst, før den almindelige kørsel måler vækst.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.433 kodeleveringskant
 
 Main er 4.0.432 / `0d2fd78a` efter PR #377. Providerfri `35449470349`

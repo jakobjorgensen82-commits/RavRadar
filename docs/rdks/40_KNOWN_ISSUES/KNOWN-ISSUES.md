@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-19 – Candidate G-checkpointblokering
+
+- **ISSUE-MEASURED-WARMUP-CHECKPOINT-BLOCK – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Providerfri `35451791985` passerede 4.0.433's afgrænsede audit,
+  men stoppede før artifact, fordi code-only forsøgte at bygge et checkpoint,
+  som kræver en READY Candidate G companion. 4.0.434 bruger igen den
+  eksisterende N/A-disposition med tre eksplicit skipped udfald. Samme
+  rettelse er lavet i normal weather. Exact-head, merge og livebevis mangler.
+- **ISSUE-LOCAL-PART-WIND-ABSENT – FORTSAT ÅBENT:** Denne rettelse henter ikke
+  vind. Den gemte runtime har fortsat 0/673 lokal kystdelsvind. Efter
+  code-only skal normal weather bevise, at den allerede implementerede
+  komponentkæde faktisk øger dækningen og danner score.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal kystdelsvind og code-only
 
 - **ISSUE-LOCAL-PART-WIND-ABSENT – ÅBENT / RODÅRSAG AFGRÆNSET:** Den

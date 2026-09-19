@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.433
+**Håndbogsversion:** 4.0.434
+
+## 89.39 4.0.434 – Den pensionerede reserve må ikke stoppe RavRadar
+
+4.0.433 kom gennem den fejl, den var lavet til at løse. Den genbyggede den
+integrerede pakke og accepterede kun de seks helt kendte kontrolmeldinger.
+Derefter stoppede installationen på et andet krav: den forsøgte at gemme et
+rollbackcheckpoint til Candidate G, selv om Candidate G ikke var klar og ikke
+længere er en model, vi vil kunne skifte tilbage til.
+
+RavRadars eksisterende regel var allerede den rigtige: når denne gamle private
+reserve kun er under opbygning, er dens checkpoint ikke relevant. 4.0.434
+bruger igen den regel. Bygning, gemning og offentliggørelse af checkpointet
+springes alle tre tydeligt over, og slutkontrollen kræver, at alle tre faktisk
+er sprunget over. En ukendt eller modstridende tilstand stopper stadig.
+
+Den integrerede models egen private pakke bliver fortsat gemt og kontrolleret.
+Den indeholder den fulde conditions-pakke, modeltilstand og de private
+vejrcacher, så vi mister ikke den integrerede fremgang. Samme rettelse er lavet
+i den almindelige vejrkørsel, så fejlen ikke vender tilbage, når lokal vind
+skal hentes til de 673 kystdele. Rettelsen henter ikke selv vind; den fjerner
+kun den forkerte blokering, så den aktuelle kode først kan komme online.
 
 ## 89.38 4.0.433 – Én model, og koden leveres før vinden genhentes
 
@@ -88,7 +109,7 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.433 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.434 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 

@@ -346,6 +346,28 @@ assert.match(workflow, /build-code-only:[\s\S]*?timeout-minutes: 60/,
   'Code-only deploy skal have tid til den observerede cirka 20 minutters runtimegenbygning og efterfølgende gates.');
 assert.ok(runtimeAudit.includes('throw new Error('),
   'Code-only-auditen skal fortsat stoppe p\u00e5 ukendt eller \u00e6ndret diagnostik');
+const checkpointDispositionStart = workflow.indexOf(
+  '- name: Create one hash-bound checkpoint disposition',
+);
+const checkpointDispositionEnd = workflow.indexOf('\n      - name:', checkpointDispositionStart + 1);
+const checkpointDisposition = workflow.slice(
+  checkpointDispositionStart,
+  checkpointDispositionEnd,
+);
+for (const marker of [
+  'READY:true) disposition=READY_PUBLISHED; checkpoint_required=true',
+  'BUILDING_MEASURED_ONLY:false) disposition=NOT_APPLICABLE_DURING_MEASURED_WARMUP; checkpoint_required=false',
+]) assert.ok(checkpointDisposition.includes(marker),
+  `Code-only checkpointdisposition mangler ${marker}`);
+for (const step of ['checkpoint-build', 'checkpoint-save', 'checkpoint-publish']) {
+  const start = workflow.indexOf(`id: ${step}`);
+  const end = workflow.indexOf('\n      - name:', start + 1);
+  const block = workflow.slice(start, end);
+  assert.ok(block.includes("if: steps.runtime-audit.outputs.rollback_status == 'READY'"),
+    `${step} må kun køre for en faktisk READY rollbackkilde`);
+  assert.ok(!block.includes('BUILDING_MEASURED_ONLY'),
+    `${step} må ikke kræve det pensionerede Candidate G-checkpoint under measured warmup`);
+}
 const savedWeatherBindingStart = workflow.indexOf(
   '- name: Bind saved-weather continuation to exact newer runtime',
 );
