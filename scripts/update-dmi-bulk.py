@@ -1321,12 +1321,14 @@ def asset_identity_sha256(href: Any) -> str | None:
     return hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
 
 
-def official_current_asset_identity(
+def official_forecast_asset_identity(
     collection: str,
     model_run: Any,
     asset: Any,
+    *,
+    allowed_collections: set[str],
 ) -> dict[str, Any] | None:
-    if collection not in MARINE_COLLECTIONS or not isinstance(asset, dict):
+    if collection not in allowed_collections or not isinstance(asset, dict):
         return None
     run = canonical_time(model_run)
     valid_time = canonical_time(asset.get("valid") or asset.get("validTime"))
@@ -1367,47 +1369,43 @@ def official_current_asset_identity(
     }
 
 
+def official_current_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: Any,
+) -> dict[str, Any] | None:
+    return official_forecast_asset_identity(
+        collection,
+        model_run,
+        asset,
+        allowed_collections=set(MARINE_COLLECTIONS),
+    )
+
+
 def official_wave_asset_identity(
     collection: str,
     model_run: Any,
     asset: Any,
 ) -> dict[str, Any] | None:
-    if collection not in WAVE_BOOTSTRAP_COLLECTIONS or not isinstance(asset, dict):
-        return None
-    run = canonical_time(model_run)
-    valid_time = canonical_time(asset.get("valid") or asset.get("validTime"))
-    item_id = str(asset.get("id") or asset.get("itemId") or "").strip()
-    identity = str(asset.get("assetIdentitySha256") or "")
-    asset_size = asset.get("assetSizeBytes", asset.get("size"))
-    item_created_at = canonical_time(asset.get("itemCreatedAt"))
-    item_updated_at = canonical_time(asset.get("itemUpdatedAt"))
-    if not identity:
-        identity = str(asset_identity_sha256(asset.get("href")) or "")
-    if not (
-        run
-        and valid_time
-        and item_id
-        and re.fullmatch(r"[0-9a-f]{64}", identity)
-        and (
-            asset_size is None
-            or isinstance(asset_size, int)
-            and not isinstance(asset_size, bool)
-            and asset_size > 0
-        )
-        and (asset.get("itemCreatedAt") is None or item_created_at)
-        and (asset.get("itemUpdatedAt") is None or item_updated_at)
-    ):
-        return None
-    return {
-        "collection": collection,
-        "modelRun": run,
-        "validTime": valid_time,
-        "itemId": item_id,
-        "assetIdentitySha256": identity,
-        "assetSizeBytes": asset_size,
-        "itemCreatedAt": item_created_at,
-        "itemUpdatedAt": item_updated_at,
-    }
+    return official_forecast_asset_identity(
+        collection,
+        model_run,
+        asset,
+        allowed_collections=set(WAVE_BOOTSTRAP_COLLECTIONS),
+    )
+
+
+def official_atmosphere_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: Any,
+) -> dict[str, Any] | None:
+    return official_forecast_asset_identity(
+        collection,
+        model_run,
+        asset,
+        allowed_collections={"harmonie_dini_sf"},
+    )
 
 
 def asset_identity_is_required_for_resume(
@@ -2864,6 +2862,10 @@ def list_latest_assets(
             official_wave_asset_identity(collection, run, row)
             if collection in WAVE_BOOTSTRAP_COLLECTIONS
             else official_current_asset_identity(collection, run, row)
+            if collection in MARINE_COLLECTIONS
+            else official_atmosphere_asset_identity(collection, run, row)
+            if collection == "harmonie_dini_sf"
+            else None
         )
         if identity is None:
             stats["catalogInventoryComplete"] = False
@@ -11839,6 +11841,12 @@ def main() -> int:
                         asset,
                     )
                     if collection in WAVE_BOOTSTRAP_COLLECTIONS
+                    else official_atmosphere_asset_identity(
+                        collection,
+                        asset_model_run,
+                        asset,
+                    )
+                    if collection == "harmonie_dini_sf"
                     else None
                 )
                 if identity is not None and asset_identity_is_required_for_resume(
@@ -11868,6 +11876,7 @@ def main() -> int:
                     required_asset_provenance
                     if collection in MARINE_COLLECTIONS
                     or collection in WAVE_BOOTSTRAP_COLLECTIONS
+                    or collection == "harmonie_dini_sf"
                     else None
                 ),
                 current_target_ids=(

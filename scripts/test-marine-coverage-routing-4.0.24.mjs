@@ -21,6 +21,6 @@ assert.match(
   /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
   'Eksplicit bootstrap eller første cutover skal kunne nå seks DMI-collections, mens normal rotation betjener tre pr. kørsel.'
 );
-assert.match(buildWorkflow, /DMI_BULK_MAX_RUNTIME_SECONDS:.*3600.*3000.*900/);
+assert.match(buildWorkflow, /DMI_BULK_MAX_RUNTIME_SECONDS:.*3600.*3000.*1500/);
 assert.match(buildWorkflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS:.*180.*120/);
 console.log('Marine overlap, grid candidate and coverage diagnostics test passed.');

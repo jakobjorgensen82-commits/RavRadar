@@ -282,6 +282,8 @@ for (const marker of [
   'resolve-code-only-public-source.mjs',
   'Download exact known public source audit evidence',
   'runtime_audit_outcome=failure',
+  'SAVED_WEATHER_CONTINUATION: ${{ inputs.publish_newest_saved_weather }}',
+  'Saved-weather RavScore diagnostic retained',
   'Code-only runtime audit differs from the exact known public source audit',
   'Exact known RavScore diagnostic retained',
   'steps.public-source.outputs.deployment_id',

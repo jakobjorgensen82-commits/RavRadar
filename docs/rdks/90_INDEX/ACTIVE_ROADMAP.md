@@ -1,3 +1,22 @@
+# Aktiv roadmap – 4.0.429 fra gemt 02:00-vejr til reel normal HARMONIE
+
+1. [x] Lever 4.0.428 gennem exact-head, PR #373 og main `a2d03d95`.
+2. [x] Bevar providerarbejdet fra normalrun `35416641052`; afgræns det sene
+   readiness-stop uden ny vejrhentning.
+3. [x] Afgræns providerfri `35419876748` til saved-weather-auditreglen.
+4. [x] Afgræns manglende H0 til både forkert marine-identitet og manglende
+   arbejdstid efter katalogprefetch og marine reserver.
+5. [x] Ret alle tre forhold samlet og tilføj målrettede regressioner.
+6. [ ] Lever 4.0.429 gennem måltests og én exact-head sourcegate.
+7. [ ] Merge og deploy gemt 02:00-runtime providerfrit; verificér Pages og
+   offentlig version uden at gentage DMI/Copernicus/Open-Meteo.
+8. [ ] Kør én almindelig weather og bevis HARMONIE-asset, score, providerorden
+   og samlet restdækning.
+9. [ ] Luk nul H0-vind, 420 utilgængelige modes, 156 Feggesund-huller og øvrige
+   nødvendige felter; bevis derefter stabil normal cachevedligeholdelse.
+
+DEC-0209. Ingen oneoff. Fuld gyldig dækning er fortsat målet.
+
 # Aktiv roadmap – 4.0.428 fra H0-vind og artifact til virkelig normal drift
 
 1. [x] Lever 4.0.427 gennem exact-head, PR/merge og grøn backend.

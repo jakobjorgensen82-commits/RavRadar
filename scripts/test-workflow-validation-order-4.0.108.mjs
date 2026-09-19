@@ -1640,7 +1640,7 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.extended_provider_bootstrap == true && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '900' }}",
+  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.extended_provider_bootstrap == true && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}",
   "DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}",
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
@@ -3526,7 +3526,7 @@ const dmiStepTimeoutContract = dmiBulkSection.match(/^        timeout-minutes: (
 const dmiStepTimeoutMinutes = dmiStepTimeoutContract
   === '${{ inputs.extended_provider_bootstrap && 70 || 55 }}' ? 70 : Number(dmiStepTimeoutContract);
 const bootstrapRuntimeSeconds = Number(
-  dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'900'/)?.[1],
+  dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'1500'/)?.[1],
 );
 if (!Number.isFinite(buildTimeoutMinutes)
   || !Number.isFinite(dmiStepTimeoutMinutes)

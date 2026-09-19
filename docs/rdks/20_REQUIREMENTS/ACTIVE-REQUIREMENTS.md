@@ -1,3 +1,21 @@
+# Aktuelt ejerdelta – 2026-09-19 – saved-weather og reel HARMONIE-tid
+
+- **REQ-4.0.429-SAVED-DIAGNOSTIC-001 – BINDENDE:** Saved-weather-fortsættelse
+  må rapportere en diagnostisk runtimeaudit og fortsætte, mens privacy,
+  artifact, main/target, privat runtime, Pages og offentlig verifikation
+  fortsat er hårde krav.
+- **REQ-4.0.429-EXACT-STAC-002 – BINDENDE:** HARMONIE-asset skal have eksakt
+  kanonisk run-/time-/item-/hash-/revisionsidentitet, og samme identitet skal
+  bindes til resume. Marine-only identitet må ikke bruges på atmosfæren.
+- **REQ-4.0.429-RUNTIME-003 – BINDENDE:** Normal DMI skal have nok tid til det
+  ene kritiske H0-forsøg uden at fjerne WAM-/DKSS-reserver, asset-watchdog eller
+  afslutningsreserve. Totalbudgettet er 1.500 sekunder.
+- **REQ-4.0.429-COMPLETE-004 – ÅBEN P0:** Nul H0-vindtupler, 420 utilgængelige
+  aktuelle modes og 156/354 Feggesund-bølgehuller er ikke komplet og skal
+  lukkes gennem normal drift.
+
+DEC-0209.
+
 # Aktuelt ejerdelta – 2026-09-19 – H0-cooldown og diagnostisk deploy
 
 - **REQ-4.0.428-H0-COOLDOWN-001 – BINDENDE:** Manglende eksakt H0-vind skal

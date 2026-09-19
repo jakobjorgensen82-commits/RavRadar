@@ -750,6 +750,15 @@ module.time.time=lambda:module.epoch('2026-01-01T09:00:00Z')
 fresh_run,fresh_assets,fresh_diag=module.list_latest_assets('wam_dw')
 assert fresh_run=='2026-01-01T06:00:00Z' and len(fresh_assets)==1, fresh_diag
 assert fresh_assets[0]['id']=='item-c' and fresh_assets[0]['itemCreatedAt']=='2026-01-01T07:00:00Z'
+harmonie_run,harmonie_assets,harmonie_diag=module.list_latest_assets(
+ 'harmonie_dini_sf',minimum_valid_time='2026-01-06T06:00:00Z',
+ required_valid_times={'2026-01-06T06:00:00Z'},
+)
+assert harmonie_run=='2026-01-01T06:00:00Z' and len(harmonie_assets)==1, harmonie_diag
+assert harmonie_diag['catalogInventoryComplete'] is True, harmonie_diag
+assert harmonie_diag['catalogInventoryFailureCodes']==[], harmonie_diag
+assert len(harmonie_diag['officialRequiredAssets'])==1, harmonie_diag
+assert harmonie_diag['officialRequiredAssets'][0]['collection']=='harmonie_dini_sf', harmonie_diag
 advanced_run,advanced_assets,advanced_diag=module.list_latest_assets('wam_dw','2026-01-01T00:00:00Z')
 assert advanced_run=='2026-01-01T06:00:00Z' and len(advanced_assets)==1, advanced_diag
 assert advanced_diag['preferredProgressiveRunDiscardedAsStale'] is True, advanced_diag

@@ -1,3 +1,29 @@
+# Aktuel implementeringsstatus – lokal 4.0.429, saved-weather og HARMONIE-tid
+
+- [x] Lever 4.0.428 gennem exact-head `35416314162`, PR #373 og main
+  `a2d03d95`.
+- [x] Gennemfør normalrun `35416641052`; gem alle providercacher/runtime og
+  afgræns det sene stop til gammel 4.0.427-readiness.
+- [x] Kør providerfri `35419876748`; afgræns stop til saved-weather-audittens
+  fejlagtige krav om et historisk source-repair-id.
+- [x] Bevis HARMONIE-planen: ét eksakt H0-asset blev valgt, men 268 sekunders
+  prefetch plus 512 sekunders marine reserver blokerede start i 779 sekunder.
+- [x] Giv saved-weather samme diagnostiske fortsættelse som normal maintenance;
+  bevar alle privacy-, artifact-, main/target- og deploykrav.
+- [x] Ret HARMONIE-identitet og resumebinding; hæv normal DMI til 1.500
+  sekunder uden at fjerne marine reserver, watchdog eller finalize-reserve.
+- [x] Afslut version/RDKS/geodatabevis og målrettede tests: 63 Python-
+  integrationer, scheduler, DMI-modeldownload, workflowrækkefølge,
+  saved-weather, marine routing, releasekontrakt, modelbundle og binding er
+  grønne; to historiske tekstforventninger er synkroniseret med den allerede
+  aktive 3-collection-rotation og fælles grid-target-helper.
+- [ ] Bestå én exact-head sourcegate, merge og deploy den gemte 02:00-runtime
+  providerfrit uden kildegate eller vejrhentning i leveringskørslen.
+- [ ] Kør én almindelig weather og kræv faktisk HARMONIE-behandling, aktuel
+  score, Pages og samlet restdækning; luk derefter alle datamangler.
+
+Ingen oneoff. `MISSING` er robusthed, aldrig komplethed. DEC-0209.
+
 # Aktuel implementeringsstatus – lokal 4.0.428, H0-cooldown og deployfortsættelse
 
 - [x] Lever 4.0.427 gennem exact-head `35410861514`, PR #372 og main

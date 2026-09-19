@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.428
+**Håndbogsversion:** 4.0.429
+
+## 89.33 4.0.429 – Gemt vejr fortsætter, og HARMONIE får reel tid
+
+4.0.428-kørslen hentede og gemte vejret, men hjemmesiden blev ikke opdateret,
+fordi den centrale afslutning stadig beskrev den forrige version. Den hurtige
+fortsættelse gendannede den gemte pakke, men stoppede på en kontrolregel, der
+kun var skrevet til en anden historisk reparationsvej. 4.0.429 lader derfor
+gemt vejr følge samme regel som almindelig drift: kendte model-/statefund
+rapporteres, mens privatliv, artifact, korrekt main, deploy og offentlig
+verifikation stadig skal lykkes.
+
+DMI fandt faktisk den rigtige HARMONIE-fil for den aktuelle time, men brugte
+først ca. 4½ minut på at kortlægge kilderne. Resten af den gamle tid var
+reserveret til bølger og strøm, så vindfilen aldrig blev åbnet. Den blev også
+fejlagtigt kontrolleret som en havstrømsfil. HARMONIE har nu sin egen korrekte
+filidentitet, og den normale DMI-tid hæves fra 15 til 25 minutter. Reserverne
+til bølger og strøm og alle datakrav bevares.
+
+Den aktuelle pakke er stadig ikke komplet: den havde ingen vind på den
+aktuelle time, 420 utilgængelige scoretilstande og 156 manglende Feggesund-
+bølgedeltimer. Først deployes den gemte pakke uden ny vejrhentning. Derefter
+skal en almindelig kørsel bevise, at HARMONIE faktisk behandles, og at hullerne
+bliver færre. `MISSING` er fortsat nødvisning, ikke målet.
 
 ## 89.32 4.0.428 – Den aktuelle vindtime får ét sikkert forsøg
 

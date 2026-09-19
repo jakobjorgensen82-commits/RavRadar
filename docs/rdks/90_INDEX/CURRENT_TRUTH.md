@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.429, gemt vejr og HARMONIE-tid
+
+4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
+Normalrun `35416641052` gennemførte DMI, Copernicus, regional DMI og
+Open-Meteo og gemte cacher/runtime. Det stoppede sent, fordi beskyttet
+readiness stadig var bundet til 4.0.427. Providerfri `35419876748` gendannede
+den gemte 02:00-runtime, men dens auditvej krævede fejlagtigt et historisk
+source-repair-id i stedet for at følge normal maintenance.
+
+DMI nåede HARMONIE og valgte ét eksakt H0-asset. Det blev ikke behandlet:
+katalogprefetch havde brugt ca. 268 sekunder, og de ventende WAM-/DKSS-led
+reserverede 512 sekunder, så det gamle 779-sekunders arbejdsbudget ikke havde
+sikker starttid. Samme fil blev desuden falsk mærket ufortolkelig, fordi den
+blev sendt gennem en identitetsfunktion, der kun tillader marine collections.
+
+4.0.429 lader saved-weather fortsætte med diagnostiske fund, giver HARMONIE
+korrekt officiel identitet/resumebinding og hæver normalt DMI-totalbudget fra
+900 til 1.500 sekunder uden at svække marine reserver eller datavalidering.
+Den aktuelle runtime havde nul H0-vindtupler, 420 utilgængelige modes og
+156/354 Feggesund-bølgehuller. Den er ikke komplet. Næste er providerfri deploy
+af gemt vejr og derefter én normal vejrkørsel. DEC-0209.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.428, H0-cooldown og deployfortsættelse
 
 4.0.427 bestod exact-head `35410861514`, PR #372 og main `abf0274f`.
