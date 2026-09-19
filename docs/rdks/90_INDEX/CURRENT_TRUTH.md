@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-19 – ACTIVE31, lokal 4.0.432 importlukning
+
+Main er 4.0.431 / `686ebec4`; exact-head `35448032367` var grøn. Providerfri
+`35448284914` afsluttede den centrale overgang som `INTEGRATED_ACTIVE`
+version 31/profil 73 og anvendte/læste migration `20260919020000` tilbage.
+Ingen DMI-, Copernicus- eller Open-Meteo-led og intet deploy blev startet.
+
+Efter central afslutning blev begge gemte current-generationer korrekt afvist
+som historisk model/kontrakt. Den eksakte forgængerkilde manglede derefter to
+af den nyere restore-wrappers modeluafhængige imports. Lokal 4.0.432 kopierer
+wrapper, Supabase-transport og komponentinventar samlet og importtester dem,
+men bevarer historisk modelkontrakt og bundleverifier. Det er en snæver
+kompatibilitetslukning, ikke en privacy-, vejr- eller modellempelse. DEC-0212.
+
+Offentlig Pages er endnu ikke opdateret af denne kæde. Næste providerfri
+code-only starter fra ACTIVE31 og allerede anvendt migration. Derefter skal
+almindelige kørsler stadig bevise DMI-horisont/rotation, komponentbevaring,
+fallback, kildeprioritet, Feggesund, komplethed, retry/cache og browser.
+
 # NYESTE SANDHED – 2026-09-19 – 4.0.430 merged, 4.0.431 reentry lokal
 
 Main er 4.0.430 / `f7c954fe` efter PR #375 og grøn exact-head

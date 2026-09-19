@@ -296,7 +296,7 @@ for (const marker of [
   '--describe-current',
   'current-private-runtime-source.json',
   'compare/$predecessor...$GITHUB_SHA',
-  'Add payload-free rejection codes to the exact predecessor restore',
+  'Install and import-check the exact predecessor restore compatibility closure',
   'Prove the saved predecessor runtime is no longer client-readable',
   'for attempt in 1 2 3; do',
   'Protected current restore attempt $attempt of 3 failed.',
@@ -403,8 +403,54 @@ assert.match(workflow,
   /Prove the current-compatible runtime is no longer client-readable[\s\S]{0,180}if: steps\.current-private-install\.outcome == 'success'[\s\S]{0,220}--audit-anon/,
   'Den direkte current-runtimevej skal bevise privacy før den må fortsætte');
 assert.ok(workflow.indexOf('Build exact predecessor private-runtime expectation')
-  < workflow.indexOf('Add payload-free rejection codes to the exact predecessor restore'),
+  < workflow.indexOf('Install and import-check the exact predecessor restore compatibility closure'),
   'Predecessorforventningen skal forsegles mod den urørte historiske kilde før diagnostic wrapper-copy');
+const predecessorCompatibilityStart = workflow.indexOf(
+  '- name: Install and import-check the exact predecessor restore compatibility closure',
+);
+const predecessorCompatibilityEnd = workflow.indexOf(
+  '\n      - name:',
+  predecessorCompatibilityStart + 1,
+);
+const predecessorCompatibility = workflow.slice(
+  predecessorCompatibilityStart,
+  predecessorCompatibilityEnd,
+);
+for (const marker of [
+  'scripts/protected-private-production-runtime.mjs',
+  'scripts/lib/supabase-admin-rest.mjs',
+  'scripts/lib/private-weather-component-inventory.mjs',
+  'await import(`${pathToFileURL(target).href}?compatibility-closure=1`)',
+]) assert.ok(predecessorCompatibility.includes(marker),
+  `Predecessor-restorelukningen mangler ${marker}`);
+for (const forbidden of [
+  'install -m 0644 scripts/private-production-runtime-bundle.mjs',
+  'install -m 0644 js/core/ravscore-model-contract.js',
+]) assert.ok(!predecessorCompatibility.includes(forbidden),
+  `Predecessorens forseglede model-/bundlekode må ikke overskrives: ${forbidden}`);
+const protectedRuntimeSource = fs.readFileSync(
+  'scripts/protected-private-production-runtime.mjs',
+  'utf8',
+);
+function relativeModuleSpecifiers(source) {
+  return [
+    ...[...source.matchAll(/\bfrom\s+['"](\.\.?\/[^'"]+)['"]/g)].map(match => match[1]),
+    ...[...source.matchAll(/\bimport\s+['"](\.\.?\/[^'"]+)['"]/g)].map(match => match[1]),
+    ...[...source.matchAll(/\bimport\s*\(\s*['"](\.\.?\/[^'"]+)['"]\s*\)/g)].map(match => match[1]),
+  ].sort();
+}
+const protectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntimeSource);
+assert.deepEqual(protectedRuntimeRelativeImports, [
+  '../js/core/ravscore-model-contract.js',
+  './lib/private-weather-component-inventory.mjs',
+  './lib/supabase-admin-rest.mjs',
+  './private-production-runtime-bundle.mjs',
+].sort(), 'Alle relative restore-wrapperimports skal klassificeres i kompatibilitetslukningen');
+for (const helperPath of [
+  'scripts/lib/private-weather-component-inventory.mjs',
+  'scripts/lib/supabase-admin-rest.mjs',
+]) assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(helperPath, 'utf8')), [],
+  `Den kopierede kompatibilitetshjælper har fået en uklassificeret relativ import: ${helperPath}`);
 const predecessorPreparationStart = workflow.indexOf(
   '- name: Prepare exact predecessor source for bounded binding migration',
 );

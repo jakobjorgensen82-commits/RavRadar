@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.432 importlukning
+
+- [x] 4.0.431 exact-head `35448032367`, PR #376 og merge `686ebec4`.
+- [x] Providerfri `35448284914` afsluttede PENDING som ACTIVE31/profil73 og
+  anvendte/læste migration `20260919020000` tilbage uden weather/deploy.
+- [x] Afgræns både den synlige og næste sekventielle importfejl i forgænger-
+  restore: komponentinventar og Supabase-responsebody-transport.
+- [x] Installer wrapper og begge modeluafhængige hjælpere efter historisk
+  forsegling; bevar forgængerens modelkontrakt og bundleverifier urørt.
+- [x] Importér hele lukningen før Storage/privacy og lås alle relative imports
+  samt hjælpernes leaf-status i regressionen.
+- [x] Replay eksakt `4bee5b0d`-kilde lokalt med den samme tre-fils lukning.
+- [x] Synkronisér 4.0.432-version/RDKS/håndbog og bestå målrettede slutchecks.
+- [ ] Én exact-head-sourcegate, PR/merge og providerfri code-only fra ACTIVE31.
+- [ ] Derefter almindelig weather/browser og flere runs som livebevis for
+  hele DEC-0210-matricen; den er fortsat ikke erklæret stabil eller komplet.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.431 reentry
 
 - [x] 4.0.430 exact-head `35446765316`, PR #375 og merge `f7c954fe`.

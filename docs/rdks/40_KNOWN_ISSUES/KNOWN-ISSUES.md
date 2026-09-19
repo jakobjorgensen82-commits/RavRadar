@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-19 – forgænger-restores importlukning
+
+- **ISSUE-PREDECESSOR-RESTORE-IMPORT-CLOSURE – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Code-only `35448284914` afsluttede central PENDING som ACTIVE31,
+  men stoppede før privacy/artifact/deploy, fordi den aktuelle restore-wrapper
+  i den eksakte forgængerkilde manglede komponentinventaret. Helhedskrydset
+  fandt også den næste sekventielle fejl: forgængerens Supabase-helper havde
+  ikke `readSupabaseBodyTransport`. 4.0.432 installerer begge modeluafhængige
+  hjælpere sammen med wrapperen og importtester hele lukningen. Historisk
+  modelkontrakt og bundleverifier forbliver urørte. DEC-0212.
+
+Stoppet er ikke bevis for anonym adgang til private data; den anonyme audit
+blev ikke nået. Migration `20260919020000` er allerede anvendt. Offentlig
+Pages er stadig ikke opdateret. Vejrkædens tidligere fejl- og bevismatrix er
+fortsat åben og må ikke reduceres til denne restorefejl.
+
 # NYESTE CHECKPOINT – 2026-09-19 – PENDING-reentry 4.0.431
 
 - **ISSUE-HISTORICAL-PENDING-CURRENT-READINESS – RETTET LOKALT / DRIFTSBEVIS

@@ -1,3 +1,18 @@
+# Nyeste prioritering – 2026-09-19, 4.0.432 code-only fra ACTIVE31
+
+4.0.431 er merged som `686ebec4` efter exact-head `35448032367`.
+Providerfri `35448284914` afsluttede den centrale overgang som ACTIVE31/
+profil73 og anvendte migration `20260919020000`, men stoppede før deploy på
+en ufuldstændig historisk importlukning. Helhedskrydset fandt både den synlige
+inventarfil og den næste latente Supabase-transporteksport.
+
+4.0.432 leverer de to modeluafhængige hjælpere sammen med restore-wrapperen,
+importtester hele lukningen og bevarer forgængerens model/bundle. Næste er
+slutchecks, én exact-head, merge og providerfri code-only. Først når koden er
+online, køres almindelig weather som produktionsbevis for hele DEC-0210-
+matricen. Ingen tidligere data-, Feggesund-, fallback-, cache-, historik- eller
+browserfejl er fjernet fra planen.
+
 # Nyeste prioritering – 2026-09-19, 4.0.431 historisk reentry
 
 4.0.430 bestod exact-head og blev merged som `f7c954fe`. Den første
