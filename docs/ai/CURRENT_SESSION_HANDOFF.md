@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.436 bounded conditions
+
+Main er `725068be` / 4.0.435 efter PR #380 og exact-head `35457292220`.
+Normalrun `35457642258` fortsatte DMI-kandidaten og gennemførte DMI,
+Copernicus, Open-Meteo, DMI-first-samling, historik og scorebygning. Den sikre
+trace viser vind 673/673, bølger 673/673, direkte strøm 665/673 plus otte
+state-only-hold og beregnelig vade-/strandscore 673/673.
+
+Runnet stoppede ved `JSON.stringify(output)` med `RangeError: Invalid string
+length`. Krypteret fremgang blev gemt. Branch
+`codex/4.0.436-bounded-conditions-writer` skriver samme private JSON kompakt,
+løbende og atomisk under V8's parsebare grænse; den gamle fil bevares ved
+fejl. Helperen er tilføjet privat fuldruntimekontrakt, og måltests er grønne.
+DEC-0215. Næste: version/docs/slutchecks, exact-head, PR/merge og normal
+continuation fra gemt fremgang. `.tmp-420/` er privat og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.435 DMI-genoptagelse
 
 Main er `d4e8844e` / 4.0.434 efter PR #379 og exact-head `35453677623`.

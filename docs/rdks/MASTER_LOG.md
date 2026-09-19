@@ -1,3 +1,17 @@
+# 2026-09-19 – 4.0.436 bounded atomisk conditions efter 673/673
+
+4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.
+Normalrun `35457642258` gennemførte DMI, Copernicus og Open-Meteo samt den
+samlede DMI-first- og scorekæde. Den sikre trace dokumenterer 673/673 gyldige
+vindpar og beregnelige vade-/strandscorer. Stoppet kom først bagefter:
+`JSON.stringify(output)` kunne ikke oprette én meget stor indrykket streng.
+
+4.0.436 indfører en kompakt streamingwriter, atomisk tempfil, sync/rename,
+parsebar maksimumgrænse og indholdsfri størrelseslog. Den gamle destination
+bevares ved fejl, og helperen er bundet ind i den private fuldruntimekontrakt.
+Krypteret fremgang fra runnet er gemt og skal fortsættes, ikke blindt
+genhentes. Se DEC-0215 og CHANGELOG-4.0.436.md.
+
 # 2026-09-19 – 4.0.435 resumérbar DMI-kandidat før producenten
 
 4.0.434 bestod exact-head `35453677623`, PR #379, merge `d4e8844e` og

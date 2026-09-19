@@ -5,6 +5,23 @@ Dette er genfundet implementeringsstatus, ikke en ny release eller et
 produktionsbevis. Ejeren har udtrykkeligt krævet, at **alle fund fra den
 store analyse følger med i rettelsen, som var i gang før genstarten**.
 
+## NYESTE efter almindelig 4.0.435-kørsel
+
+4.0.435 bestod exact-head `35457292220` og blev merged som `725068be`.
+Normalrun `35457642258` fortsatte den gemte DMI-kandidat og gennemførte DMI,
+Copernicus, Open-Meteo, DMI-first-samling, syvdageshistorik og scorebygning.
+Den sikre stage-trace dokumenterer vind 673/673, bølger 673/673, direkte strøm
+665/673 plus otte kontrollerede state-only-hold og beregnelig vade-/strandscore
+673/673. Dette lukker den tidligere 0/673-vindhypotese for netop runnets data.
+
+Stoppet kom først ved lagringen af hele den private `conditions.json`:
+indrykket `JSON.stringify(output)` overskred V8's maksimale strengstørrelse.
+Krypteret providerfremgang blev gemt efter fejlen. Lokal 4.0.436 bevarer alle
+data, men skriver dokumentet kompakt, løbende og atomisk under en konservativ
+parsegrænse. Helperen er med i privat fuldruntimekontrakt. Næste run skal
+fortsætte gemt fremgang og bevise artifact/deploy; det må ikke blindt genhente
+alt. Se DEC-0215.
+
 ## NYESTE efter 4.0.431-merge og central ACTIVE31
 
 4.0.431 er merged som `686ebec4` efter grøn exact-head `35448032367`.

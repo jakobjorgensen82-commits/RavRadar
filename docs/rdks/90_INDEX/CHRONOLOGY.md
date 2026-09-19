@@ -1,3 +1,12 @@
+# 2026-09-19 – 4.0.436 skriver fuld 673-runtime atomisk
+
+- 4.0.435 bestod exact-head `35457292220`, PR #380 og main `725068be`.
+- Normalrun `35457642258` gennemførte alle providers og byggede gyldigt
+  vind- og scoreinput 673/673, men én samlet indrykket JSON-streng overskred
+  V8's grænse før artifact/deploy. Krypteret fremgang blev gemt.
+- 4.0.436 skriver samme private dokument kompakt og løbende med atomisk
+  udskiftning, parsebar grænse og indholdsfri størrelseslog. DEC-0215.
+
 # 2026-09-19 – 4.0.429 giver gemt vejr og HARMONIE samme reelle vej frem
 
 - 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.

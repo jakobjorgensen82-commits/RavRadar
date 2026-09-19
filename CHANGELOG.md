@@ -1,3 +1,15 @@
+## 4.0.436 – stor privat conditions skrives uden én kæmpestreng (2026-09-19)
+
+- 4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.
+- Normalrun `35457642258` gennemførte DMI, Copernicus, Open-Meteo og
+  DMI-first-samling. Produktionssporet viste gyldigt vindpar og beregnelig
+  vade-/strandscore på alle 673 kystdele.
+- Runnet stoppede bagefter ved `JSON.stringify(output)` med
+  `RangeError: Invalid string length`; krypteret fremgang blev gemt.
+- 4.0.436 skriver den uændrede private JSON kompakt, løbende og atomisk under
+  en parsebar grænse. Fejl bevarer den gamle gyldige fil, og størrelsesfordeling
+  logges uden private værdier. Se CHANGELOG-4.0.436.md og DEC-0215.
+
 ## 4.0.435 – delvis DMI-fremgang kan genoptages (2026-09-19)
 
 - 4.0.434 bestod exact-head `35453677623`, PR #379 og merge `d4e8844e`;

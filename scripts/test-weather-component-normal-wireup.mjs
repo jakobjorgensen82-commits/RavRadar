@@ -66,7 +66,7 @@ test('normal PART production plans on current central identity and passes the pr
 test('durable selected-input marker is written after scoring and before private conditions output', () => {
   const score = source.indexOf('const coastalPartScoreBuild =');
   const save = source.indexOf('output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);');
-  const conditions = source.indexOf('await fs.writeFile(OUTPUT_PATH', save);
+  const conditions = source.indexOf('await writeBoundedJsonAtomic(OUTPUT_PATH, output)', save);
   assert.ok(score > 0 && save > score && conditions > save);
   assert.match(source, /recordSelectedWeatherComponents\(componentInputs\.componentSelectionHistory, \{ \.\.\.part, zoneId \}, hourly\)/);
   assert.match(source, /COMPONENT_COPERNICUS_BUDGET_MS = WEATHER_CACHE_ONLY \? 0/);
