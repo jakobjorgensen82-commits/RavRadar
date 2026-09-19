@@ -1,3 +1,15 @@
+# 2026-09-19 – 4.0.438 pakker 118 offentlige timer separat
+
+- 4.0.437 blev merged som `65bda6a9`.
+- Normalrun `35463989289` gennemførte DMI, Copernicus, Open-Meteo og
+  scorebygning med vind/bølger/brugbar strøm/score 673/673.
+- Stoppet ved privat save skyldtes 673 × 118 redundante hourly-rækker i én
+  JSON, som senere læsere fortsat skulle parse samlet.
+- 4.0.438 bevarer de eksakte timefiler og startsidens nationale ranking i en
+  autentificeret gzip-pakke/markør, installerer parret atomisk og genskaber
+  public bytes uden tom genberegning. 203.510.947 rå bytes bliver 9.331.534
+  pakket. DEC-0217.
+
 # 2026-09-19 – 4.0.436 skriver fuld 673-runtime atomisk
 
 - 4.0.435 bestod exact-head `35457292220`, PR #380 og main `725068be`.

@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.438 bevarer timer i separat pakke
+
+4.0.437 blev merged som `65bda6a9`. Normalrun `35463989289` gendannede den
+krypterede fremgang og gennemførte DMI, Copernicus, Open-Meteo, DMI-first-
+samling, historik og scorebygning. Det sikre produktionsspor viser vind og
+bølger 673/673, brugbar strøm 673/673 og beregnelig vade-/strandscore 673/673.
+Vandstand var 669/673 og er fortsat åbent som DMI-only-komplethedsmål.
+
+Runnet stoppede først ved den endelige private conditions-skrivning. Den
+kompakte streamingwriter undgik den første store stringify, men efterfølgende
+læsere kræver stadig hele JSON-filen som én streng. Den største del var en
+redundant kopi af de allerede offentligt sharded 118 timer for 673 kystdele.
+
+4.0.438 bygger den fulde offentlige runtime og strømproveniens først, pakker
+derefter de eksakte 118 timefiler privat og hashbundet og gemmer en kompakt
+conditions uden kun den dobbelte hourly-projektion. Parret installeres
+atomisk; publicering genskaber samme filer byte-for-byte. Startsiderangeringen
+bevares særskilt og hashbundet, så den ikke bliver tom efter restore. Faktisk
+kapacitet er 203.510.947 rå bytes mod 9.331.534 pakkede bytes. Ingen timer, scorefelter,
+kildeprioritet eller geometri er fjernet. Måltests er grønne; merge,
+migration, continuation, artifact, Pages og næste cron er åbne. DEC-0217.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.437 efter tidsformatstop
 
 4.0.436 bestod exact-head `35462534974`, PR #381 og blev merged som

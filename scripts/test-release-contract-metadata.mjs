@@ -49,6 +49,8 @@ const CURRENT_INPUT_FOUNDATION_BINDING_CHECK =
   'node scripts/build-current-input-foundation-binding-migration.mjs';
 const MEASURED_WARMUP_CHECKPOINT_CHECK =
   'node scripts/build-measured-warmup-checkpoint-migration.mjs';
+const PUBLIC_HOUR_DELIVERY_BINDING_CHECK =
+  'node scripts/build-public-hour-delivery-binding-migration.mjs';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -66,9 +68,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   WEATHER_INPUT_RESOLUTION_BINDING_CHECK,
   CURRENT_INPUT_FOUNDATION_BINDING_CHECK,
   MEASURED_WARMUP_CHECKPOINT_CHECK,
+  PUBLIC_HOUR_DELIVERY_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260919020000_measured_warmup_checkpoint.sql';
+  'supabase/migrations/20260919231000_public_hour_delivery_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -102,6 +105,7 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql',
   'supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql',
   'supabase/migrations/20260919010000_current_input_foundation_binding.sql',
+  'supabase/migrations/20260919020000_measured_warmup_checkpoint.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 
@@ -124,6 +128,13 @@ assert.equal(
   ).length,
   1,
   'Release gate must run the measured-warmup checkpoint successor check exactly once',
+);
+assert.equal(
+  RELEASE_GATE_TEST_FILES.filter(
+    file => file === 'scripts/build-public-hour-delivery-binding-migration.mjs',
+  ).length,
+  1,
+  'Release gate must run the public-hour delivery binding successor check exactly once',
 );
 assert.equal(
   RELEASE_GATE_TEST_FILES.filter(

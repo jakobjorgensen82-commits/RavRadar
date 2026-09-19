@@ -1,3 +1,18 @@
+# Nyeste prioritering – 2026-09-19, 4.0.438 afslut den gemte generation
+
+4.0.437 er main `65bda6a9`. Normalrun `35463989289` beviste, at den samlede
+provider- og scorekæde kan nå vind, bølger, brugbar strøm og scorer 673/673.
+Det sidste stop var ikke endnu en providerfejl, men den monolitiske private
+conditions, som stadig duplikerede 673 × 118 offentlige timer.
+
+4.0.438 bevarer de eksakte timefiler i en privat hashbundet gzip-pakke og
+fjerner kun denne dobbelte kopi fra conditions. Public runtime og
+strømproveniens færdiggøres før forsegling; pakke og conditions installeres
+atomisk og publiceres byte-identisk. Næste rækkefølge er slutdocs/-checks, én
+exact-head sourcegate, merge, append-only backendbinding og én almindelig
+continuation fra gemt fremgang. Derefter verificeres Pages og næste cron.
+Ingen blind oneoff eller gentagelse af allerede beviste providerfaser.
+
 # Nyeste prioritering – 2026-09-19, 4.0.435 DMI-genoptagelse
 
 4.0.434 er online efter exact-head `35453677623`, PR #379, merge `d4e8844e`

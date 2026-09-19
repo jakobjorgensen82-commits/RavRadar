@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
@@ -134,48 +136,71 @@ function applyProvenance(row, raw){
   return true;
 }
 
-async function read(path){try{return JSON.parse(await fs.readFile(path,'utf8'));}catch{return null;}}
-const conditions=await read(CONDITIONS);
-const bulk=await readDmiBulkDocument(BULK,{optional:true});
-const forecast=await read(FORECAST);
-if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');process.exit(0);}
-let zones=0,verifiedHours=0,unverifiedHours=0;
-const historyReferenceAt=historySampleReferenceAt(conditions);
-for(const [zoneId,zone] of Object.entries(conditions.zones)){
-  const bz=bulk.zones[zoneId];if(!bz)continue;
-  const currentRows=rawRows(bz.hourly,bulk,bz,zone.point);
-  const wind=gridPoint(bz.gridPoints,'wind-u-10m','wind-v-10m');
-  const wave=gridPoint(bz.gridPoints,'significant-wave-height','mean-wave-dir');
+export function enrichCurrentProvenanceDocuments({conditions,bulk,forecast=null}={}){
+  if(!conditions?.zones||!bulk?.zones)return {conditions,forecast,zones:0,verifiedHours:0,unverifiedHours:0,skipped:true};
+  let zones=0,verifiedHours=0,unverifiedHours=0;
+  const historyReferenceAt=historySampleReferenceAt(conditions);
+  for(const [zoneId,zone] of Object.entries(conditions.zones)){
+    const bz=bulk.zones[zoneId];if(!bz)continue;
+    const currentRows=rawRows(bz.hourly,bulk,bz,zone.point);
+    const wind=gridPoint(bz.gridPoints,'wind-u-10m','wind-v-10m');
+    const wave=gridPoint(bz.gridPoints,'significant-wave-height','mean-wave-dir');
 
-  const currentProvider=normalizedProvider(zone?.current?.source?.provider||zone?.current?.provider);
-  const rawNow=interpolatedRaw(currentRows,zone.modelSteps?.ocean||zone.current?.time||conditions.generatedAt);
-  zone.flowPoints={current:rawNow?.current?.point||null,wind:wind||zone.point||null,wave:wave||zone.point||null,sources:{current:rawNow?'dmi-marine-grid':'unverified',wind:wind?'dmi-atmospheric-grid':'zone-marine-anchor',wave:wave?'dmi-wave-grid':'zone-marine-anchor'}};
-  if(currentProvider && currentProvider!=='dmi') clearProvenance(zone.current,'non-dmi-current');
-  else if(!applyProvenance(zone.current,rawNow)) clearProvenance(zone.current,currentRows.length?'no-time-match':'no-marine-grid-point');
+    const currentProvider=normalizedProvider(zone?.current?.source?.provider||zone?.current?.provider);
+    const rawNow=interpolatedRaw(currentRows,zone.modelSteps?.ocean||zone.current?.time||conditions.generatedAt);
+    zone.flowPoints={current:rawNow?.current?.point||null,wind:wind||zone.point||null,wave:wave||zone.point||null,sources:{current:rawNow?'dmi-marine-grid':'unverified',wind:wind?'dmi-atmospheric-grid':'zone-marine-anchor',wave:wave?'dmi-wave-grid':'zone-marine-anchor'}};
+    if(currentProvider && currentProvider!=='dmi') clearProvenance(zone.current,'non-dmi-current');
+    else if(!applyProvenance(zone.current,rawNow)) clearProvenance(zone.current,currentRows.length?'no-time-match':'no-marine-grid-point');
 
-  zone.samples24h=attachVerifiedCurrentToSample(Array.isArray(zone.samples24h)?zone.samples24h:[],zone.current,historyReferenceAt);
-  zone.samples72h=attachVerifiedCurrentToSample(Array.isArray(zone.samples72h)?zone.samples72h:[],zone.current,historyReferenceAt);
-  zone.history=applyCurrentTransportToHistory(zone.history||{},zone.samples24h);
+    zone.samples24h=attachVerifiedCurrentToSample(Array.isArray(zone.samples24h)?zone.samples24h:[],zone.current,historyReferenceAt);
+    zone.samples72h=attachVerifiedCurrentToSample(Array.isArray(zone.samples72h)?zone.samples72h:[],zone.current,historyReferenceAt);
+    zone.history=applyCurrentTransportToHistory(zone.history||{},zone.samples24h);
 
-  for(const row of zone.forecast?.hourly||[]){
-    if(!isDmiCurrentRow(row)){clearProvenance(row,'non-dmi-current');unverifiedHours++;continue;}
-    const raw=interpolatedRaw(currentRows,row.time);
-    if(applyProvenance(row,raw)) verifiedHours++;
-    else {clearProvenance(row,currentRows.length?'no-time-match':'no-marine-grid-point');unverifiedHours++;}
-  }
-
-  const rec=forecast?.zones?.[zoneId];
-  if(rec){
-    rec.model=rec.model||{};rec.model.completeness=rec.model.completeness||{};
-    rec.model.completeness.gridPoints=bz.gridPoints||{};rec.model.completeness.collections=bz.collections||{};
-    for(const row of rec.hourly||[]){
-      if(!isDmiCurrentRow(row)){clearProvenance(row,'non-dmi-current');continue;}
+    for(const row of zone.forecast?.hourly||[]){
+      if(!isDmiCurrentRow(row)){clearProvenance(row,'non-dmi-current');unverifiedHours++;continue;}
       const raw=interpolatedRaw(currentRows,row.time);
-      if(!applyProvenance(row,raw))clearProvenance(row,currentRows.length?'no-time-match':'no-marine-grid-point');
+      if(applyProvenance(row,raw)) verifiedHours++;
+      else {clearProvenance(row,currentRows.length?'no-time-match':'no-marine-grid-point');unverifiedHours++;}
     }
+
+    const rec=forecast?.zones?.[zoneId];
+    if(rec){
+      rec.model=rec.model||{};rec.model.completeness=rec.model.completeness||{};
+      rec.model.completeness.gridPoints=bz.gridPoints||{};rec.model.completeness.collections=bz.collections||{};
+      for(const row of rec.hourly||[]){
+        if(!isDmiCurrentRow(row)){clearProvenance(row,'non-dmi-current');continue;}
+        const raw=interpolatedRaw(currentRows,row.time);
+        if(!applyProvenance(row,raw))clearProvenance(row,currentRows.length?'no-time-match':'no-marine-grid-point');
+      }
+    }
+    zones++;
   }
-  zones++;
+  return {conditions,forecast,zones,verifiedHours,unverifiedHours,skipped:false};
 }
-await fs.writeFile(CONDITIONS,`${JSON.stringify(conditions,null,2)}\n`);
-if(forecast)await fs.writeFile(FORECAST,`${JSON.stringify(forecast,null,2)}\n`);
-console.log(`Berigede ${zones} zoner: ${verifiedHours} verificerede og ${unverifiedHours} ikke-verificerbare prognosetimer.`);
+
+async function read(file){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch{return null;}}
+
+async function main(){
+  const conditions=await read(CONDITIONS);
+  const bulk=await readDmiBulkDocument(BULK,{optional:true});
+  const forecast=await read(FORECAST);
+  if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');return;}
+  const sealed=conditions?.publicHourDelivery?.kind==='PRIVATE_PUBLIC_HOUR_DELIVERY_PACK';
+  const beforeZones=sealed?JSON.stringify(conditions.zones):null;
+  const beforeForecast=sealed?JSON.stringify(forecast):null;
+  const result=enrichCurrentProvenanceDocuments({conditions,bulk,forecast});
+  if(sealed){
+    if(beforeZones!==JSON.stringify(conditions.zones)||beforeForecast!==JSON.stringify(forecast)){
+      throw new Error('SEALED_PUBLIC_HOUR_PROVENANCE_NOT_FINAL');
+    }
+    console.log(`Kontrollerede ${result.zones} allerede berigede zoner uden at ændre den forseglede runtime.`);
+    return;
+  }
+  await fs.writeFile(CONDITIONS,`${JSON.stringify(conditions,null,2)}\n`);
+  if(forecast)await fs.writeFile(FORECAST,`${JSON.stringify(forecast,null,2)}\n`);
+  console.log(`Berigede ${result.zones} zoner: ${result.verifiedHours} verificerede og ${result.unverifiedHours} ikke-verificerbare prognosetimer.`);
+}
+
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  main().catch(error=>{console.error(error.message);process.exit(1);});
+}

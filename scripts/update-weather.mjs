@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
+import { enrichCurrentProvenanceDocuments } from './enrich-current-provenance.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import {
   integratedRavScoreProfileReadiness,
@@ -41,6 +43,14 @@ import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-hist
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { writeBoundedJsonAtomic } from './lib/bounded-json-writer.mjs';
+import {
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
+} from './lib/private-weather-component-inventory.mjs';
+import {
+  buildPrivatePublicHourDeliveryPack,
+  compactPrivateConditionsForPersistence,
+  installPrivateConditionsAndHourPack,
+} from './lib/public-hour-delivery-pack.mjs';
 import {
   selectLatestLocalScoreRowAtOrBefore,
 } from './lib/local-current-reference.mjs';
@@ -4446,13 +4456,55 @@ if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
 if (weatherComponents) {
   output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);
 }
-// Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
-// 673 kystdele med en komplet timeprognose må ikke samles i én V8-streng.
-// Den kompakte writer bevarer den hidtidige JSON-kontrakt, skriver atomisk og
-// afviser filen før publicering, hvis den ikke længere kan parses sikkert.
-const conditionsWrite = await writeBoundedJsonAtomic(OUTPUT_PATH, output);
+const currentProvenanceEnrichment = enrichCurrentProvenanceDocuments({
+  conditions: output,
+  bulk: dmiBulkCache,
+  forecast: nextDmiForecastStore,
+});
+if (currentProvenanceEnrichment.skipped) {
+  throw new Error('Current provenance enrichment could not run before public-hour sealing');
+}
+await writeDmiForecastStoreCheckpoint();
+console.log(`Berigede strømproveniens før forsegling: ${currentProvenanceEnrichment.zones} zoner, ${currentProvenanceEnrichment.verifiedHours} verificerede timer og ${currentProvenanceEnrichment.unverifiedHours} ikke-verificerbare timer.`);
+// Byg først de offentlige, begrænsede timefiler fra den komplette beregning i
+// hukommelsen. Gem derefter en komprimeret og hashbundet genstartspakke og fjern
+// de 673 x 118 afledte timer fra den monolitiske private conditions-fil. Den
+// næste vejrberegning behøver delens aktuelle tilstand, ikke en ekstra kopi af
+// alle allerede offentliggjorte fremtidstimer.
+const privateWriteId = `${process.pid}-${crypto.randomUUID()}`;
+const stagedConditionsPath = `${OUTPUT_PATH}.stage-${privateWriteId}`;
+const publicHourPackPath = PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath;
+const stagedPublicHourPackPath = `${publicHourPackPath}.stage-${privateWriteId}`;
+let publicHourPack;
+let conditionsWrite;
+let privatePairInstalled = false;
+try {
+  const publicRuntime = await writePublicRuntimeFromFull(output);
+  publicHourPack = await buildPrivatePublicHourDeliveryPack({
+    liveDirectory: path.dirname('data/live/manifest.json'),
+    publicManifest: publicRuntime.manifest,
+    startupNationalForecast: publicRuntime.publicDocument.nationalForecast,
+    outputPath: stagedPublicHourPackPath,
+  });
+  const privateOutput = compactPrivateConditionsForPersistence(output, publicHourPack.marker);
+  conditionsWrite = await writeBoundedJsonAtomic(stagedConditionsPath, privateOutput);
+  await installPrivateConditionsAndHourPack({
+    stagedConditionsPath,
+    conditionsPath: OUTPUT_PATH,
+    stagedPackPath: stagedPublicHourPackPath,
+    packPath: publicHourPackPath,
+  });
+  privatePairInstalled = true;
+} finally {
+  if (!privatePairInstalled) {
+    await Promise.all([
+      fs.rm(stagedConditionsPath, { force: true }).catch(() => {}),
+      fs.rm(stagedPublicHourPackPath, { force: true }).catch(() => {}),
+    ]);
+  }
+}
 console.log(`Skrev privat conditions atomisk: ${conditionsWrite.bytes} byte. Største topfelter: ${JSON.stringify(Object.entries(conditionsWrite.topLevelBytes).sort((left, right) => right[1] - left[1]).slice(0, 5))}`);
-await writePublicRuntimeFromFull(output);
+console.log(`Skrev privat offentlig-timepakke: ${publicHourPack.marker.packBytes} byte for ${publicHourPack.marker.rawBytes} offentlige byte.`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);

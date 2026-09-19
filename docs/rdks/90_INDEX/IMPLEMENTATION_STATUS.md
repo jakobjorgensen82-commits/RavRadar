@@ -1,3 +1,26 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.438
+
+- [x] 4.0.437 merged som `65bda6a9`; normalrun `35463989289` gennemførte
+  providers og scorebygning med vind/bølger/strøm/score 673/673.
+- [x] Afgræns sidste stop til den redundante 673 × 118 hourly-projektion i
+  privat conditions; en højere grænse ville blot flytte V8-fejlen til læseren.
+- [x] Byg komplet public runtime og slutproveniens før privat forsegling.
+- [x] Pak de eksakte 118 timefiler deterministisk med per-post- og samlet
+  SHA-256, størrelsesgrænser samt dataset-/time-/model-/detaljebinding.
+- [x] Fjern kun den pakkede hourly-kopi fra privat conditions; installer
+  conditions + pakke atomisk og materialisér public timefiler byte-for-byte.
+- [x] Bind den nye private fuldruntime, eksakte forgængerovergang og den
+  append-only migration `20260919231000_public_hour_delivery_binding.sql`.
+- [x] Måltest pakning, rollback, provenanceforsegling, restore, public
+  runtime, workflow, migration og 210/673-kontrakt lokalt.
+- [x] Bevar og hashbind startsidens færdige nationale ranking ved kompakt
+  restore; den må ikke genberegnes tom uden private hourly-rækker.
+- [x] Kapacitetsaudit: 203.510.947 rå bytes → 9.331.534 pakkede bytes.
+- [ ] Synkronisér RDKS/håndbog, kør slutchecks og én exact-head sourcegate;
+  merge og anvend/læs ny backendbinding tilbage.
+- [ ] Fortsæt normal weather fra gemt fremgang og bevis artifact, Pages,
+  aktuel time, vandstandsrest samt næste normale cron uden Codex.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.437
 
 - [x] 4.0.436 exact-head `35462534974`, PR #381 og merge `0d72ce41`.

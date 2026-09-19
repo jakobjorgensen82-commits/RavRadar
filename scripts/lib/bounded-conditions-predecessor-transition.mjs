@@ -11,7 +11,7 @@ const CONTRACT_KEYS = Object.freeze([
 ]);
 
 export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
-  releaseVersion: '4.0.437',
+  releaseVersion: '4.0.438',
   sourceDescriptionKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
   sourceDescriptionSchemaVersion: '1.0.0',
   sourceHead: 'd4e8844ece6bfa46447b762a662cac0d7f1da385',
@@ -25,6 +25,34 @@ export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
     publicProjectionContractSha256:
       '2522b75dbac0b45c52c429a9955cac66b8b3529961124f4738334a4291ed50d1',
   }),
+  sourceModelBinding: Object.freeze({
+    modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
+    stateSchemaVersion: '6.0.0',
+    variantId: 'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2',
+    profileId: 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5',
+    componentSchemaId: 'ravscore-components-huntability-delivery-mobilisation-bounds-v5',
+    explanationSchemaId: 'ravscore-explanation-integrated-bounds-v5',
+    rankingPolicyId: 'direction-broad-19-history-tie-v2',
+    bestTimePolicyId: 'score-history-water-tie-earliest-v3',
+    presentationPolicyId: 'score-bands-35-55-75-exceptional90-v1',
+    modelContractSha256: 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b',
+    modelBundleSha256: '8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26',
+  }),
+  targetModelBinding: Object.freeze({
+    modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
+    stateSchemaVersion: '6.0.0',
+    variantId: 'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2',
+    profileId: 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5',
+    componentSchemaId: 'ravscore-components-huntability-delivery-mobilisation-bounds-v5',
+    explanationSchemaId: 'ravscore-explanation-integrated-bounds-v5',
+    rankingPolicyId: 'direction-broad-19-history-tie-v2',
+    bestTimePolicyId: 'score-history-water-tie-earliest-v3',
+    presentationPolicyId: 'score-bands-35-55-75-exceptional90-v1',
+    modelContractSha256: 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b',
+    modelBundleSha256: '0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a',
+  }),
+  targetPublicProjectionContractSha256:
+    '6b4ad46384194130cdbd3be1701ae1822831822801a9fcaea3b75d95b3bc77ec',
   expectedZoneCount: 210,
   expectedPartCount: 673,
 });
@@ -97,7 +125,10 @@ export function boundedConditionsPredecessorApplies({
     || sourceDescription.expectedPartCount
       !== BOUNDED_CONDITIONS_PREDECESSOR_POLICY.expectedPartCount
     || sourceDescription.privatePayloadIncluded !== false
-    || !same(sourceDescription.modelBinding, currentBinding)
+    || !same(sourceDescription.modelBinding,
+      BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceModelBinding)
+    || !same(currentBinding,
+      BOUNDED_CONDITIONS_PREDECESSOR_POLICY.targetModelBinding)
     || !contractHashesAreExact(
       sourceDescription.contractHashes,
       BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceContractHashes,
@@ -108,7 +139,7 @@ export function boundedConditionsPredecessorApplies({
   return currentContractHashes.continuationStateContractSha256
       === sourceDescription.contractHashes.continuationStateContractSha256
     && currentContractHashes.publicProjectionContractSha256
-      === sourceDescription.contractHashes.publicProjectionContractSha256
+      === BOUNDED_CONDITIONS_PREDECESSOR_POLICY.targetPublicProjectionContractSha256
     && currentContractHashes.fullRuntimeContractSha256
       !== sourceDescription.contractHashes.fullRuntimeContractSha256;
 }

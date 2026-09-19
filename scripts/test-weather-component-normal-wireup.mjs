@@ -63,11 +63,15 @@ test('normal PART production plans on current central identity and passes the pr
   assert.equal(output.weatherEngine.componentFallback.prepared, true);
 });
 
-test('durable selected-input marker is written after scoring and before private conditions output', () => {
+test('durable selected-input marker precedes provenance, public shards and compact private output', () => {
   const score = source.indexOf('const coastalPartScoreBuild =');
   const save = source.indexOf('output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);');
-  const conditions = source.indexOf('await writeBoundedJsonAtomic(OUTPUT_PATH, output)', save);
-  assert.ok(score > 0 && save > score && conditions > save);
+  const provenance = source.indexOf('enrichCurrentProvenanceDocuments({', save);
+  const publicRuntime = source.indexOf('writePublicRuntimeFromFull(output)', provenance);
+  const compact = source.indexOf('compactPrivateConditionsForPersistence(output, publicHourPack.marker)', publicRuntime);
+  const conditions = source.indexOf('writeBoundedJsonAtomic(stagedConditionsPath, privateOutput)', compact);
+  assert.ok(score > 0 && save > score && provenance > save && publicRuntime > provenance
+    && compact > publicRuntime && conditions > compact);
   assert.match(source, /recordSelectedWeatherComponents\(componentInputs\.componentSelectionHistory, \{ \.\.\.part, zoneId \}, hourly\)/);
   assert.match(source, /COMPONENT_COPERNICUS_BUDGET_MS = WEATHER_CACHE_ONLY \? 0/);
   assert.match(source, /COMPONENT_OPEN_METEO_BUDGET_MS = WEATHER_CACHE_ONLY \? 0/);

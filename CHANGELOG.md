@@ -1,3 +1,22 @@
+## 4.0.438 – public timer bevares i en privat leveringspakke (2026-09-19)
+
+- Normalrun `35463989289` på main `65bda6a9` gennemførte DMI, Copernicus,
+  Open-Meteo og scorebygning med vind/bølger/brugbar strøm/score 673/673.
+- Det sidste stop var stadig den monolitiske private conditions: streaming
+  kunne ikke hjælpe de senere læsere, der skal parse hele filen samlet.
+- De eksakte 118 public timefiler pakkes nu privat, gzip-komprimeret,
+  hashbundet og størrelsesbegrænset; conditions fjerner kun deres dobbelte
+  `parts[*].hourly`-kopi.
+- Conditions og pakke installeres atomisk, og publicering genskaber de samme
+  timefiler byte-for-byte. Strømproveniens færdiggøres før forsegling.
+- Startsidens færdigberegnede nationale ranking hashbindes også, så den ikke
+  bliver tom ved restore af den kompakte conditions.
+- Faktisk audit: 203.510.947 rå bytes → 9.331.534 pakkede bytes.
+- Eksakt forgængerovergang, privat fuldruntime og append-only migration
+  `20260919231000_public_hour_delivery_binding.sql` er opdateret.
+- Ingen scoreformel, kildeprioritet, vandstandsregel eller geometri ændres.
+  Se CHANGELOG-4.0.438.md og DEC-0217.
+
 ## 4.0.437 – workflowets hele UTC-time accepteres i overgangen (2026-09-19)
 
 - 4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.

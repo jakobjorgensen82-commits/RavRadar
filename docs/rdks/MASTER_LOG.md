@@ -1,3 +1,20 @@
+# 2026-09-19 – 4.0.438 bevarer 118 public timer uden monolitisk privat kopi
+
+4.0.437 blev merged som `65bda6a9`. Normalrun `35463989289` gendannede
+krypteret fremgang, gennemførte alle providerfaser og byggede vind, bølger,
+brugbar strøm og scorer 673/673. Det stoppede først ved privat conditions-save,
+fordi den redundante 673 × 118-timeprojektion stadig oversteg V8's samlede
+streng-/parsevej.
+
+4.0.438 bygger public runtime og slutproveniens først, pakker de eksakte 118
+timefiler privat med gzip og stærke bindinger og fjerner kun den dobbelte
+hourly-kopi fra conditions. Conditions og pakke installeres atomisk;
+publicering genskaber filerne byte-for-byte. Startsiderangeringen bindes også,
+så restore ikke genberegner den tom. Kapacitetsbeviset er 203.510.947 rå bytes
+mod 9.331.534 pakkede bytes. Eksakt overgang og append-only
+migration er opdateret. Ingen score-, prioriterings- eller geometriændring.
+Se DEC-0217 og CHANGELOG-4.0.438.md.
+
 # 2026-09-19 – 4.0.437 normaliserer workflowets hele UTC-time
 
 4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.

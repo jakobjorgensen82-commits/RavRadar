@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260919020000_measured_warmup_checkpoint.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260919231000_public_hour_delivery_binding.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -1194,7 +1194,7 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the twenty-three exact integrated cutover migrations',
+  'Require only the twenty-four exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
   '20260914010000_h0_reference_recovery_binding.sql',
@@ -1207,6 +1207,7 @@ for(const marker of [
   '20260918190000_weather_input_resolution_binding.sql',
   '20260919010000_current_input_foundation_binding.sql',
   '20260919020000_measured_warmup_checkpoint.sql',
+  '20260919231000_public_hour_delivery_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

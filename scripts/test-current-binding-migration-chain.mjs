@@ -7,6 +7,8 @@ const generators = [
   'scripts/build-partial-zone-public-metadata-binding-migration.mjs',
   'scripts/build-last-mile-history-envelope-binding-migration.mjs',
   'scripts/build-current-input-foundation-binding-migration.mjs',
+  'scripts/build-measured-warmup-checkpoint-migration.mjs',
+  'scripts/build-public-hour-delivery-binding-migration.mjs',
 ];
 
 for (const generator of generators) {

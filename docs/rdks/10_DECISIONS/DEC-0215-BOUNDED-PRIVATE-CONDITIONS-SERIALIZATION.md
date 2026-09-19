@@ -1,7 +1,9 @@
 # DEC-0215 – Stor privat conditions skrives løbende og atomisk
 
 **Status:** Writeren er leveret i 4.0.436; overgangens versions-/tidskant er
-erstattet af DEC-0216 og 4.0.437; samlet produktionsbevis åbent
+erstattet af DEC-0216 og 4.0.437. Antagelsen om ét samlet conditions-dokument
+er delvist erstattet af DEC-0217 efter virkeligt størrelsesbevis; data- og
+atomaritetskravet består. Samlet produktionsbevis åbent.
 **Dato:** 2026-09-19
 
 ## Observeret problem
@@ -45,6 +47,13 @@ grænse: alle senere private læsere skal fortsat kunne parse dokumentet.
 providers på forskellen mellem de ækvivalente UTC-former `...:00Z` og
 `...:00.000Z`. DEC-0216 flytter derfor den uændrede eksakte overgang til
 4.0.437 og normaliserer de to tilladte heltimeformer.
+
+**Tillæg 4.0.438:** Normalrun `35463989289` beviste, at den komplette
+673 × 118-runtime stadig ikke kan bæres af ét dokument, fordi de senere
+læsere kræver én samlet streng og parse. DEC-0217 bevarer derfor den
+redundante offentlige hourly-projektion byte-eksakt i en tilhørende privat
+pakke. Formuleringen »ingen time må fjernes« består som datakrav; den betyder
+ikke længere, at alle repræsentationer skal ligge i samme JSON-fil.
 
 ## Konsekvens
 

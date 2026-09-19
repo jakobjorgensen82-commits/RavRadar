@@ -1,3 +1,26 @@
+# AKTUELT CHECKPOINT – 2026-09-19 – lokal 4.0.438 timeleveringspakke
+
+Main er 4.0.437 / `65bda6a9`. Normalrun `35463989289` gendannede den
+krypterede fremgang og gennemførte DMI, Copernicus, Open-Meteo, historik og
+scorebygning. Det sikre spor viste vind, bølger, brugbar strøm og beregnelig
+score 673/673. Runnet stoppede først ved den endelige private
+`conditions.json`: den redundante 673 × 118-timeprojektion overskred stadig
+V8's samlede streng-/parsemodel.
+
+Lokal 4.0.438 bygger først den komplette offentlige runtime, færdiggør
+strømproveniens og gemmer de eksakte 118 timefiler i en hashbundet privat
+gzip-pakke. Den private conditions fjerner kun denne dobbelte hourly-kopi;
+current, state, metadata, proveniens og scorer bevares. Conditions og pakke
+installeres atomisk og publicering genskaber timefilerne byte-for-byte.
+Startsidens færdigberegnede nationale oversigt bindes også, så den ikke kan
+blive tom ved restore. Faktisk kapacitetsbevis: 203.510.947 rå bytes →
+9.331.534 pakkede bytes.
+
+Måltests og model-/migrationsbinding er grønne lokalt. Næste: RDKS/version-
+slutkontrol, én exact-head sourcegate, PR/merge, append-only migration og én
+almindelig continuation fra gemt fremgang. Derefter artifact, Pages, aktuel
+time og næste cron. `.tmp-420/` er privat og må aldrig stages. DEC-0217.
+
 # AKTUELT CHECKPOINT – 2026-09-19 – 4.0.435 resumérbar DMI-kandidat
 
 4.0.434 er online efter exact-head `35453677623`, PR #379, main `d4e8844e`
