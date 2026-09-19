@@ -1,3 +1,26 @@
+# NYESTE CHECKPOINT – 2026-09-19 – stor privat JSON efter fuld scorebygning
+
+- **ISSUE-PRIVATE-CONDITIONS-V8-STRING-LIMIT – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** `35457642258` gennemførte providers og byggede gyldigt vind- og
+  scoreinput for 673/673 kystdele, men stoppede ved én samlet indrykket
+  `JSON.stringify` med `RangeError: Invalid string length`. 4.0.436 skriver
+  samme komplette dokument kompakt, løbende og atomisk under en parsebar
+  grænse. Gammel gyldig fil bevares ved fejl. DEC-0215.
+- **ISSUE-PRIVATE-PROGRESS-BASELINE-REENTRY – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Fremgangscachen fra `35457642258` er med vilje bundet til den
+  tidligere private bundle. Uden en overgang ville 4.0.436 afvise cachen og
+  genhente providers. Den lokale rettelse tillader kun den eksakte
+  `d4e8844e`/`ad2337ab…`-baseline med dens gamle reader og kun i 4.0.436;
+  alle ukendte identiteter stopper. Live genbrug er endnu ikke bevist.
+- **ISSUE-LOCAL-PART-WIND-ABSENT – LØST I DEN AKTUELLE KØRSELS DATA, OFFENTLIGT
+  BEVIS ÅBENT:** Den sikre trace fra `35457642258` viser 673/673 gyldige
+  vindpar og 673/673 beregnelige scorer. Runnet nåede ikke artifact/deploy,
+  så den offentlige side viser endnu ikke denne generation. Næste continuation
+  skal genbruge den gemte fremgang og bevise offentlig levering.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Ét run beviser, at
+  provider- og scorekæden kan nå frem. Artifact/deploy samt mindst næste
+  normale cron skal stadig bevise vedligeholdelse, kildeprioritet og cache.
+
 # NYESTE CHECKPOINT – 2026-09-19 – DMI stoppede før hentning
 
 - **ISSUE-DMI-PREPRODUCER-READY-DEADLOCK – RETTET LOKALT / DRIFTSBEVIS

@@ -1,3 +1,20 @@
+# Aktuelt krav til stor privat conditions – 2026-09-19
+
+- **REQ-BOUNDED-ATOMIC-PRIVATE-CONDITIONS-0215 – BINDENDE:** Den komplette
+  private `conditions.json` skal bevares, men må ikke kræve én samlet
+  outputstreng. Den skal skrives kompakt og løbende til en ny fil, være
+  bounded under de efterfølgende læseres reelle parsegrænse og først erstatte
+  den gamle fil efter fuld skrivning og sync. Fejl må ikke efterlade en halv
+  destination. Samlet byteantal og største topfelter må logges uden private
+  værdier. Ingen time, kystdel, state eller provenance må fjernes som genvej.
+  Writeren skal indgå i privat fuldruntimekontrakt. DEC-0215.
+- **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – BINDENDE:** 4.0.436 skal
+  genbruge den krypterede fremgang gennem den eksakte baseline, den er bundet
+  til. Kun release 4.0.436, source `d4e8844e`, bundle `ad2337ab…`, samme
+  modelbinding, 210/673 og de tre dokumenterede forgængerkontrakthashes må
+  åbne den gamle reader. Det er en engangsovergang, ikke en generel lempelse;
+  ukendt eller senere forgænger skal afvises.
+
 # Aktuelt DMI-genindtrædelseskrav – 2026-09-19
 
 - **REQ-DMI-RESUMABLE-CANDIDATE-BOOTSTRAP-0214 – BINDENDE:** En gendannet

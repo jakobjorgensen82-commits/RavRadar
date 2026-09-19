@@ -40,6 +40,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { writeBoundedJsonAtomic } from './lib/bounded-json-writer.mjs';
 import {
   selectLatestLocalScoreRowAtOrBefore,
 } from './lib/local-current-reference.mjs';
@@ -4446,7 +4447,11 @@ if (weatherComponents) {
   output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);
 }
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
-await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
+// 673 kystdele med en komplet timeprognose må ikke samles i én V8-streng.
+// Den kompakte writer bevarer den hidtidige JSON-kontrakt, skriver atomisk og
+// afviser filen før publicering, hvis den ikke længere kan parses sikkert.
+const conditionsWrite = await writeBoundedJsonAtomic(OUTPUT_PATH, output);
+console.log(`Skrev privat conditions atomisk: ${conditionsWrite.bytes} byte. Største topfelter: ${JSON.stringify(Object.entries(conditionsWrite.topLevelBytes).sort((left, right) => right[1] - left[1]).slice(0, 5))}`);
 await writePublicRuntimeFromFull(output);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);

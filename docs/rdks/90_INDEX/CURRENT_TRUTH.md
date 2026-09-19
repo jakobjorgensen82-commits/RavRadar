@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.436 efter fuld 673-scorebygning
+
+4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.
+Normalrun `35457642258` fortsatte den delvise DMI-kandidat, gennemførte DMI,
+Copernicus, Open-Meteo, DMI-first-samling og scorebygning. Dens sikre trace
+viser 673/673 gyldige vindpar efter sanitizer, 673/673 bølgeinput og 673/673
+beregnelige vade- og strandscorer. Strømgrundlaget var 665 direkte
+verificerede plus otte kontrollerede state-only-hold, i alt 673/673.
+
+Runnet stoppede først ved skrivning af den private `conditions.json`, fordi
+hele den indrykkede JSON blev samlet i én V8-streng. Krypteret fremgang blev
+gemt efter fejlen. Lokal 4.0.436 skriver samme komplette dokument kompakt,
+løbende og atomisk under en fast parsebar grænse; ingen timer eller data er
+fjernet. Da den krypterede fremgang er bundet til den tidligere private
+bundle, har 4.0.436 desuden en eksakt engangsovergang for
+`d4e8844e`/`ad2337ab…`; den kan ikke åbnes af andre heads, hashes, bindinger
+eller versioner. Måltests er grønne. PR #381 og exact-head kører; merge,
+genbrugt normal continuation, artifact, deploy og offentlig browserkontrol
+mangler. DEC-0215.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.435 resumérbar DMI-kandidat
 
 4.0.434 bestod exact-head `35453677623`, PR #379 og merge `d4e8844e`.

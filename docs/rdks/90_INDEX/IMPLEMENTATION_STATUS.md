@@ -1,3 +1,22 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.436
+
+- [x] 4.0.435 exact-head `35457292220`, PR #380 og merge `725068be`.
+- [x] Normalrun `35457642258` startede alle tre providerfaser og bevarede
+  fremgang; DMI-first-samling og syvdageshistorik lykkedes.
+- [x] Produktionsspor: vind 673/673, bølger 673/673, direkte strøm 665/673,
+  kontrolleret state-only-hold 8/673 og beregnelig score 673/673 pr. søgemåde.
+- [x] Afgræns stop til V8's ene store JSON-streng ved conditions-skrivning;
+  provider- og scorearbejdet var allerede afsluttet.
+- [x] Implementér kompakt, løbende, atomisk og størrelsesbundet JSON-writer;
+  bind den til privat fuldruntime og måltest gammel-fil-bevaring.
+- [x] Bind continuation til den eksakte tidligere private baseline og dens
+  reader, så cachen kan genbruges uden at åbne en generel gammel-kodevej.
+- [x] Synkronisér version/RDKS/begge håndbøger og bestå writer-, weather-,
+  private-runtime-, releasekontrakt-, RDKS- og versionmålchecks.
+- [ ] PR #381 exact-head og merge.
+- [ ] Fortsæt almindelig weather fra gemt krypteret fremgang. Bevis privat
+  runtime, artifact, Pages, offentlig aktuel time og stabil næste cron.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.435
 
 - [x] 4.0.434 exact-head `35453677623`, PR #379, merge `d4e8844e` og

@@ -423,7 +423,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.436 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -600,7 +600,10 @@ jobs:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
         run: |
           set -euo pipefail
-          test "$EXPECTED_SOURCE_HEAD" = "4bee5b0d0909b56a6f66e0f0e961f51321f9d236"
+          case "$EXPECTED_SOURCE_HEAD" in
+            4bee5b0d0909b56a6f66e0f0e961f51321f9d236|d4e8844ece6bfa46447b762a662cac0d7f1da385) ;;
+            *) echo "Unapproved private-runtime predecessor source." >&2; exit 1 ;;
+          esac
           git fetch --no-tags --depth=1 origin "$EXPECTED_SOURCE_HEAD"
           test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_SOURCE_HEAD"
           rm -rf "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
@@ -638,7 +641,7 @@ jobs:
             if test "$attempt" -lt 3; then sleep $((attempt * 5)); fi
           done
           if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
-            echo "The exact audited predecessor could not be restored; the measured transition cannot reuse or silently replace it."
+            echo "The exact audited predecessor could not be restored; the approved transition cannot reuse or silently replace it."
             exit "$status"
           fi
           if test "$OPERATIONAL_ACTION" = "integrated"; then
@@ -817,7 +820,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.436 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -842,7 +845,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.436 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1102,7 +1105,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.436 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1445,7 +1448,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.436 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Encrypt newly saved private weather progress before later production steps

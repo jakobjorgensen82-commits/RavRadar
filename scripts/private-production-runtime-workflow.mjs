@@ -93,6 +93,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/open-meteo-part-bank.mjs',
     'scripts/lib/open-meteo-o1280-grid.mjs',
     'scripts/lib/open-meteo-part-runtime.mjs',
+    'scripts/lib/bounded-json-writer.mjs',
     'scripts/lib/private-weather-component-inventory.mjs',
     'scripts/lib/private-weather-component-pack.mjs',
     'scripts/produce-open-meteo-part-components.mjs',
@@ -100,6 +101,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/flow-points-from-forecast-record.mjs',
     'scripts/lib/current-transport-history.mjs',
     'scripts/lib/feggesund-wave-proxy.mjs',
+    'scripts/lib/bounded-conditions-predecessor-transition.mjs',
     'scripts/lib/historical-wave-input-transition.mjs',
     'scripts/lib/ravscore-wave-input-migration.mjs',
     'scripts/classify-historical-wave-input-transition.mjs',
@@ -168,7 +170,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.435',
+  releaseVersion: '4.0.436',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -182,7 +184,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.435',
+  releaseVersion: '4.0.436',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
