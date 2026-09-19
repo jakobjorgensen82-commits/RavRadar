@@ -1,3 +1,15 @@
+## 2026-09-19 lokal 4.0.429 – saved-weather og HARMONIE-arbejdstid
+
+- Saved-weather-continuation og normal integrated maintenance deler den samme
+  diagnostiske runtimeauditregel; code-only source-repair beholder sit eksakte
+  repair-id/audithash-krav.
+- HARMONIE har officiel STAC-identitet og resumeproof parallelt med marine
+  assets, men uden at blive optaget i marine current-ledgeren.
+- Normal DMI har 1.500 sekunders totalbudget. Marine runtime-reserver,
+  asset-watchdog, finalize-reserve og ét-H0-asset-loft består uændret.
+- Den gemte 02:00-runtime deployes providerfrit før næste normaldriftsbevis.
+  DEC-0209.
+
 ## 2026-09-16 4.0.383 – faktisk offentlig source og strengt nyt target
 
 - `resolve-code-only-public-source.mjs` sammenholder central pointer med den

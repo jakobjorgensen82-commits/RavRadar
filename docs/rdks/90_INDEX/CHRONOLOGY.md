@@ -1,3 +1,14 @@
+# 2026-09-19 – 4.0.429 giver gemt vejr og HARMONIE samme reelle vej frem
+
+- 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
+- Normalrun `35416641052` gemte alle providercacher, men stoppede sent på
+  gammel readiness; providerfri `35419876748` stoppede på en særskilt for
+  snæver saved-weather-auditregel.
+- HARMONIE valgte ét H0-asset, men prefetch + marine reserver fyldte det gamle
+  arbejdsbudget, og en marine-only identitet gav et falsk parserfund.
+- 4.0.429 ensretter diagnostisk fortsættelse, retter HARMONIE-identiteten og
+  øger normal DMI til 1.500 sekunder. Reelle datamangler består. DEC-0209.
+
 # 2026-09-19 – 4.0.428 sikrer H0-forsøg og fortsætter sikkert til deploy
 
 - 4.0.427 bestod exact-head `35410861514`, PR #372, main `abf0274f` og grøn

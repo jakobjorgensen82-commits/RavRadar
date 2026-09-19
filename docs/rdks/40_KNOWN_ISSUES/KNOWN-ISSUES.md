@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
+
+- **ISSUE-4.0.428-DELIVERY – LUKKET:** Exact-head `35416314162`, PR #373 og
+  main `a2d03d95` er gennemført.
+- **ISSUE-OLD-INTEGRATED-READINESS – OPERATIONELT AFGRÆNSET:** Normalrun
+  `35416641052` gemte providerarbejdet, men den sene seal så stadig 4.0.427-
+  readiness. Den eksisterende providerfrie saved-weather-vej genbruger dataene.
+- **ISSUE-SAVED-WEATHER-AUDIT-STOP – RETTET LOKALT P0:** Run `35419876748`
+  stoppede på manglende source-repair-id efter en diagnostisk audit. Saved-
+  weather følger nu samme diagnostiske regel som normal maintenance.
+- **ISSUE-HARMONIE-MARINE-IDENTITY – RETTET LOKALT P0:** Den valgte kanoniske
+  H0-fil blev fejlagtigt vurderet med en marine-only identitetsfunktion.
+- **ISSUE-HARMONIE-RUNTIME-STARVATION – RETTET LOKALT P0:** Det gamle normale
+  arbejdsbudget kunne ikke rumme 268 sekunders prefetch, H0-forsøget og 512
+  sekunders marine reserver. Totalbudgettet er nu 1.500 sekunder.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** Nul H0-vind,
+  420 utilgængelige modes og 156 Feggesund-huller er ikke acceptabel drift.
+
+DEC-0209. Ingen oneoff; gemt vejr deployes først providerfrit.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.428 H0-cooldown og deployfortsættelse
 
 - **ISSUE-4.0.427-DELIVERY – LUKKET:** Exact-head `35410861514`, PR #372,

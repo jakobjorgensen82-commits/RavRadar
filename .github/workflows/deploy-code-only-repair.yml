@@ -655,6 +655,7 @@ jobs:
         shell: bash
         env:
           SOURCE_REPAIR_ID: ${{ steps.public-source.outputs.repair_id }}
+          SAVED_WEATHER_CONTINUATION: ${{ inputs.publish_newest_saved_weather }}
         run: |
           set -euo pipefail
           audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
@@ -666,10 +667,13 @@ jobs:
           fi
           echo "runtime_audit_outcome=$runtime_audit_outcome" >> "$GITHUB_OUTPUT"
           if test "$runtime_audit_outcome" = "failure"; then
-            test -n "$SOURCE_REPAIR_ID"
-            AUDIT_PATH="$audit_path" \
-            SOURCE_EVIDENCE_ROOT="$RAVRADAR_OPERATIONAL_WORK/source-repair-evidence" \
-            node --input-type=module <<'NODE'
+            if test "$SAVED_WEATHER_CONTINUATION" = "true"; then
+              echo "::warning title=Saved-weather RavScore diagnostic retained::The regenerated saved-weather target retains its payload-free model/state findings; protected runtime, privacy, artifact and deployment checks continue."
+            else
+              test -n "$SOURCE_REPAIR_ID"
+              AUDIT_PATH="$audit_path" \
+              SOURCE_EVIDENCE_ROOT="$RAVRADAR_OPERATIONAL_WORK/source-repair-evidence" \
+              node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
           import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as policy } from './scripts/lib/ravscore-known-public-source-repair.mjs';
@@ -687,7 +691,8 @@ jobs:
             throw new Error('Code-only runtime audit differs from the exact known public source audit');
           }
           NODE
-            echo "::warning title=Exact known RavScore diagnostic retained::The regenerated target has the byte-identical payload-free audit findings already verified on the exact public source; protected, privacy, artifact and deployment checks continue."
+              echo "::warning title=Exact known RavScore diagnostic retained::The regenerated target has the byte-identical payload-free audit findings already verified on the exact public source; protected, privacy, artifact and deployment checks continue."
+            fi
           fi
           rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
           rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean") | tostring' "$audit_path")"

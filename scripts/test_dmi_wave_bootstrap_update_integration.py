@@ -3730,7 +3730,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         extended_guard = f"(inputs.extended_provider_bootstrap == true || ({cutover_guard}))"
         for marker in (
             f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {extended_guard} && '4096' || '2048' }}}}",
-            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.extended_provider_bootstrap == true && '3600' || ({cutover_guard}) && '3000' || '900' }}}}",
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.extended_provider_bootstrap == true && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
             f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {extended_guard} && '180' || '120' }}}}",
             f"DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}}}",
         ):

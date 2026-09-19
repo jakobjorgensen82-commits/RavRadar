@@ -1,3 +1,19 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.429 gemt vejr og HARMONIE
+
+4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
+Normalrun `35416641052` gennemførte og gemte providerarbejdet, men gammel
+4.0.427-readiness stoppede den sene seal. Providerfri `35419876748` nåede den
+gemte runtimeaudit og afslørede, at saved-weather ikke fulgte normaldriftens
+diagnostiske fortsættelsesregel.
+
+DMI katalogiserede HARMONIE og valgte ét eksakt H0-asset, men 268 sekunders
+prefetch og 512 sekunders marine reserver efterlod ikke sikker starttid i det
+779-sekunders arbejdsbudget. En marine-only identitetsfunktion gav samtidig en
+falsk `UNPARSEABLE_SELECTED_STAC_ASSET`. 4.0.429 retter begge kontrakter og
+hæver normal DMI fra 900 til 1.500 sekunder uden at fjerne marine reserver,
+watchdog eller datakrav. Nul H0-vind, 420 utilgængelige modes og 156 Feggesund-
+huller er fortsat ufuldstændigt. DEC-0209.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.428 H0 og deploy
 
 4.0.427 bestod exact-head `35410861514`, PR #372 og main `abf0274f`;

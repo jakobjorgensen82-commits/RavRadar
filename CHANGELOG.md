@@ -1,3 +1,23 @@
+## 4.0.429 – gemt vejr fortsætter og HARMONIE får reel tid (2026-09-19)
+
+- 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
+- Normalrun `35416641052` gemte alle providercacher, men stoppede på gammel
+  readiness. Providerfri `35419876748` afgrænsede den næste fejl til en for
+  snæver saved-weather-auditregel.
+- Saved-weather følger nu normaldriftens diagnostiske fortsættelse, mens alle
+  privacy-, artifact-, main/target- og deploykrav bevares.
+- HARMONIE får korrekt officiel STAC-/resumeidentitet og normal DMI hæves fra
+  900 til 1.500 sekunder, så H0-forsøget kan starte uden at fjerne marine
+  reserver. Se CHANGELOG-4.0.429.md og DEC-0209.
+
+## 4.0.428 – H0-cooldown og diagnostisk deployfortsættelse (2026-09-19)
+
+- 4.0.427 bestod exact-head `35410861514`, PR #372 og main `abf0274f`.
+- Kritisk H0-vind fik ét afgrænset forsøg trods arvet cooldown, og historical
+  maintenance kunne fortsætte med afgrænsede diagnostiske auditfund.
+- Strømaudittens rapportreference blev rettet uden ændrede kriterier.
+- De reelle datamangler var fortsat åbne. Se CHANGELOG-4.0.428.md og DEC-0208.
+
 ## 4.0.427 – aktuel strøm bevares og DMI lukker tidligste hul først (2026-09-19)
 
 - 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.

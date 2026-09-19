@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.428-weather-completeness`. 4.0.428 bestod exact-head `35416314162`,
+PR #373 og main `a2d03d95`. Normalrun `35416641052` gemte alle providercacher,
+men stoppede sent på gammel 4.0.427-readiness. Providerfri `35419876748`
+gendannede 02:00-runtime og stoppede på en for snæver auditundtagelse.
+
+DMI valgte ét eksakt HARMONIE-H0-asset, men startede det ikke: 268 sekunders
+katalogarbejde plus 512 sekunders marine reserver kunne ikke være i det gamle
+779-sekunders arbejdsbudget. HARMONIE blev desuden fejlagtigt kørt gennem en
+marine-only assetidentitet. 4.0.429 retter begge forhold, hæver normal DMI fra
+900 til 1.500 sekunder og lader saved-weather følge normaldriftens diagnostiske
+deployregel. Næste: måltests, exact-head, merge, providerfri 02:00-deploy og én
+normal weather. Nul H0-vind, 420 utilgængelige modes og 156/354 Feggesund-huller
+er fortsat åbne P0. `.tmp-420/` må aldrig publiceres. DEC-0209.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.428 H0-cooldown og deployfortsættelse
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
