@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.427
+**Håndbogsversion:** 4.0.428
+
+## 89.32 4.0.428 – Den aktuelle vindtime får ét sikkert forsøg
+
+Den seneste almindelige kørsel havde brug for vind på den aktuelle time, men
+HARMONIE blev ikke forsøgt. Årsagen var ikke manglende køretid: en ventetid
+fra en tidligere fejl blev kontrolleret, før systemet udpegede den aktuelle
+vindtime som kritisk. Derfor kunne hele det ene tilladte forsøg forsvinde.
+
+4.0.428 lader netop dette ene aktuelle HARMONIE-forsøg gå foran den gamle
+ventetid. Data bliver ikke lettere at godkende: forkert tid, grid, tuple,
+afstand eller kilde bliver stadig afvist. Almindelig baggrundsvedligeholdelse
+følger fortsat ventetiderne.
+
+Kørslen nåede også gennem providerne og alle produktionskontroller, men blev
+stoppet før hjemmesiden blev opdateret af en ældre afslutningsregel. Den følger
+nu samme regel som resten af kæden: et sikkert artifact må deployes, mens
+diagnostiske datamangler stadig rapporteres og skal rettes. En sådan pakke må
+ikke bruges til kalibrering, før audit og historik er helt grønne.
+
+Der mangler fortsat virkelige data: 2.334 af 79.414 providerpar og 153 af 354
+Feggesund-bølgedeltimer. Det er ikke en accepteret sluttilstand. Næste
+almindelige kørsel skal både prøve HARMONIE, nå Pages og vise præcis, hvad der
+eventuelt stadig mangler.
 
 ## 89.31 4.0.427 – Gyldig aktuel strøm må ikke kasseres af valgfri historik
 

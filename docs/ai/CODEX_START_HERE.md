@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.428 H0-cooldown og deployfortsættelse
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.428-weather-completeness`, fra main `abf0274f` / PR #372.
+4.0.427 bestod exact-head `35410861514`; backend `35411487128` var grøn.
+Normalrun `35411701055` gennemførte providerne, build og alle 52+3 kontroller,
+men stoppede før Pages i historical-maintenance-sealens for snævre krav til
+en diagnostisk offentlig audit.
+
+Stagebeviset viser, at aktuel strøm nu bevares til 665/673 dele. HARMONIE blev
+ikke forsøgt, fordi en arvet cooldown blev anvendt før det kritiske H0-valg.
+4.0.428 omgår kun denne cooldown for ét H0-asset, bevarer alle admissionkrav
+og lader afgrænsede diagnostiske fund fortsætte til deploy uden at åbne
+kalibrering. Næste: måltests, exact-head, merge og én almindelig weather.
+2.334/79.414 providerpar og 153/354 Feggesund-bølgedeltimer mangler fortsat;
+det er ikke komplet. `.tmp-420/` må aldrig publiceres. DEC-0208.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.427 strøm- og DMI-recovery
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch

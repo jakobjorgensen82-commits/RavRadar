@@ -920,6 +920,57 @@ const historicalIntegratedPlan = prepareIntegratedHistoricalMaintenance({
   ref: 'refs/heads/main',
   githubSha: sourceHead,
 });
+const historicalDiagnosticAudit = Object.freeze({
+  ...integratedH3Audit,
+  status: 'failed',
+  errors: Object.freeze(['STATE_REPLAY_FAILED']),
+  errorCounts: Object.freeze({ STATE_REPLAY_FAILED: 673 }),
+});
+const historicalDiagnosticPlan = prepareIntegratedHistoricalMaintenance({
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  sourceHead,
+  publicManifest: integratedH3,
+  publicAudit: historicalDiagnosticAudit,
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: 'schedule',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+});
+assert.equal(historicalDiagnosticPlan.calibrationEligibleAfterVerifiedActivation,
+  false,
+  'diagnostic historical maintenance may deploy but must not become calibration eligible');
+assert.doesNotThrow(() => assertIntegratedHistoricalMaintenancePlan(
+  historicalDiagnosticPlan,
+  {
+    expectedSourceHead: sourceHead,
+    expectedCentralVersion: 40,
+    currentRow: historicalIntegratedSourceRow,
+    currentProfileRow: historicalIntegratedSourceProfileRow,
+    readiness,
+    publicManifest: integratedH3,
+    publicAudit: historicalDiagnosticAudit,
+  },
+));
+assert.throws(() => prepareIntegratedHistoricalMaintenance({
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  sourceHead,
+  publicManifest: integratedH3,
+  publicAudit: {
+    ...historicalDiagnosticAudit,
+    errorCounts: { STATE_REPLAY_FAILED: 0 },
+  },
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: 'schedule',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+}), /passed full public runtime audit/,
+'historical maintenance must still reject a malformed diagnostic audit');
 assert.equal(historicalIntegratedPlan.sourceProfileSha256,
   sha256(oldIntegratedProfile));
 assert.equal(historicalIntegratedPlan.sourceCalibrationEligible, false);

@@ -1,3 +1,24 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.428 H0-cooldown og deployfortsættelse
+
+- **ISSUE-4.0.427-DELIVERY – LUKKET:** Exact-head `35410861514`, PR #372,
+  main `abf0274f` og backend `35411487128` er gennemført.
+- **ISSUE-HARMONIE-COOLDOWN-SUPPRESSION – RETTET LOKALT P0:** Normalrun
+  `35411701055` manglede H0-vind på alle 673 dele, men forsøgte ingen
+  HARMONIE. Kritisk H0 får nu ét forsøg trods arvet collection-cooldown.
+- **ISSUE-HISTORICAL-SEAL-DIAGNOSTIC-STOP – RETTET LOKALT P0:** Runnet
+  gennemførte 52+3 kontroller, men historical-maintenance-seal afviste den
+  diagnostiske audit før Pages. Seal følger nu DEC-0193 uden at åbne
+  kalibrering eller svække privacy/artifact.
+- **ISSUE-CURRENT-SPATIAL-REPORT-REFERENCE – RETTET LOKALT:** Audit-scriptet
+  brugte et forkert variabelnavn ved rapportskrivning; kriterierne er uændrede.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** 2.334/79.414
+  providerpar og 153/354 Feggesund-bølgedeltimer manglede. Nul mangler skal
+  fortsat tilstræbes og produktionsbevises.
+- **ISSUE-4.0.428-LIVE – ÅBEN P0:** Exact-head, merge og normal weather med
+  HARMONIE, aktuelle scorer og Pages mangler.
+
+DEC-0208. Ingen oneoff.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.427 strøm- og DMI-recovery
 
 - **ISSUE-4.0.426-DELIVERY – LUKKET:** Exact-head `35404863947`, PR #371 og

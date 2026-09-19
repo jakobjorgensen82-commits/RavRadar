@@ -1137,12 +1137,34 @@ def operational_collection_plan(
 ) -> tuple[list[str], dict[str, Any]]:
     """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
-    retry_deferred = [
-        collection for collection in scheduled
-        if not collection_retry_eligible(
+    # The exact production-hour HARMONIE tuple is a score foundation, not
+    # ordinary quality maintenance.  A collection-wide cooldown can have been
+    # written by another model run/asset and must not suppress the next normal
+    # run's single bounded H0 attempt.  Admission remains fail-closed and the
+    # producer still attempts at most one asset, so overriding the scheduling
+    # cooldown cannot turn a failed parser/provider response into data.
+    critical_atmosphere_requested = bool(
+        atmosphere_foundation_needed
+        and "harmonie_dini_sf" in scheduled
+    )
+    retry_eligible = {
+        collection: collection_retry_eligible(
             state.setdefault(collection, {}),
             now_value,
         )
+        for collection in scheduled
+    }
+    critical_atmosphere_cooldown_override = bool(
+        critical_atmosphere_requested
+        and not retry_eligible.get("harmonie_dini_sf", True)
+    )
+    retry_deferred = [
+        collection for collection in scheduled
+        if not (
+            critical_atmosphere_requested
+            and collection == "harmonie_dini_sf"
+        )
+        if not retry_eligible[collection]
     ]
     eligible = [
         collection for collection in scheduled
@@ -1181,7 +1203,7 @@ def operational_collection_plan(
     ]
     critical_atmosphere = (
         ["harmonie_dini_sf"]
-        if atmosphere_foundation_needed
+        if critical_atmosphere_requested
         and "harmonie_dini_sf" in work_eligible
         else []
     )
@@ -1262,6 +1284,9 @@ def operational_collection_plan(
         "criticalAtmosphereCollections": critical_atmosphere,
         "criticalAtmosphereOutsideBaseCollectionQuota": True,
         "criticalAtmosphereAssetAttemptLimit": 1,
+        "criticalAtmosphereCooldownOverride": (
+            critical_atmosphere_cooldown_override
+        ),
         "criticalWamRuntimeReserveSeconds": round(reserve_total, 3),
         "strictCurrentLeadRuntimeReserveSeconds": (
             round(current_reserve_by_collection.get(lead_dkss, 0.0), 3)

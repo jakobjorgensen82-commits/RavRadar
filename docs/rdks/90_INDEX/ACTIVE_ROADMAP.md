@@ -1,3 +1,22 @@
+# Aktiv roadmap – 4.0.428 fra H0-vind og artifact til virkelig normal drift
+
+1. [x] Lever 4.0.427 gennem exact-head, PR/merge og grøn backend.
+2. [x] Gennemfør normalrun `35411701055` og bevar provider-/stagebeviset.
+3. [x] Afgræns HARMONIE-fravær til collection-cooldown før kritisk H0-valg.
+4. [x] Afgræns Pages-stoppet til historical-maintenance-sealens afvigelse fra
+   den allerede gældende diagnostiske deploykontrakt.
+5. [x] Ret begge årsager afgrænset; bevar admission, privacy, artifact,
+   modelbinding og kalibreringsstop.
+6. [ ] Lever 4.0.428 gennem måltests og én exact-head sourcegate.
+7. [ ] Kør én almindelig weather og verificér HARMONIE-forsøg, privat runtime,
+   Pages, aktuel score og korrekt slutstatus.
+8. [ ] Brug samme runs stageoversigt til én samlet lukning af alle resterende
+   felter, inklusive 2.334 providerpar og 153 Feggesund-bølgedeltimer.
+9. [ ] Bevis efterfølgende normal cachevedligeholdelse, genaktivér scheduler
+   og fortsæt site- og roadmapgennemgangen.
+
+DEC-0208. Ingen oneoff. Fuld gyldig dækning er fortsat målet.
+
 # Aktiv roadmap – 4.0.427 fra gyldigt providerinput til komplet normal drift
 
 1. [x] Lever 4.0.426 gennem exact-head `35404863947`, PR #371 og main
