@@ -82,7 +82,7 @@ assert.doesNotMatch(bootstrap,/createPublicPageReturnWatchdog|matchMedia|max-wid
 const app=await fs.readFile('app.js','utf8');
 assert.match(app,/createPublicPageResumeHandler/);
 assert.match(app,/isCoreReady:\(\)=>coreViewReady&&Boolean\(state\.zoneLayer&&state\.zones\)/);
-assert.match(app,/detailsRequired:\(\)=>conditionDetailsPromise!==null/);
+assert.match(app,/detailsRequired:\(\)=>!activeManifest\?\.detailDelivery&&conditionDetailsPromise!==null/);
 assert.match(app,/isDetailsReady:\(\)=>conditionDetailsReady/);
 assert.match(app,/map\.invalidateSize\(\{pan:false\}\)/);
 assert.match(app,/renderRanking\(\);renderSelectedZone\(\);[\s\S]*await renderNationalForecast\(\)/);

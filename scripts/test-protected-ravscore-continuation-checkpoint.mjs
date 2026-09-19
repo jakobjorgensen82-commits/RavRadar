@@ -159,6 +159,10 @@ const payloadsAreEquivalent = (left, right) =>
 
 const payloadWithoutContinuationReattestationFields = payload => {
   const result = clone(payload);
+  delete result.schemaVersion;
+  delete result.status;
+  delete result.candidateGRollbackCompanion.schemaVersion;
+  delete result.candidateGRollbackCompanion.status;
   delete result.continuationStateContractSha256;
   delete result.generationSha256;
   delete result.candidateGRollbackCompanion.generationSha256;
@@ -178,10 +182,16 @@ const isExactPredecessorSameTargetTransition = (current, incoming) =>
 
 const checkpointWithImplementation = (checkpoint, implementationSha256) => {
   const result = clone(checkpoint);
+  if (RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS.some(item => item.implementationSha256 === implementationSha256)) {
+    result.schemaVersion = 4;
+    result.status = 'ravscore-schema6-with-candidate-g-rollback-companion';
+    result.candidateGRollbackCompanion.schemaVersion = 1;
+    result.candidateGRollbackCompanion.status = 'candidate-g-rollback-ready-companion';
+  }
   result.continuationStateContractSha256 = implementationSha256;
   result.generationSha256 = sha256({
-    schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
-    status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
+    schemaVersion: result.schemaVersion,
+    status: result.status,
     datasetId: result.datasetId,
     productionReferenceAt: result.productionReferenceAt,
     modelBinding: result.modelBinding,
@@ -894,7 +904,7 @@ try {
   assert.equal(
     JSON.parse(await fs.readFile(expiredCompanionPath, 'utf8'))
       .candidateGRollbackCompanion.status,
-    'candidate-g-rollback-ready-companion',
+    'candidate-g-measured-continuation-companion',
   );
   const expiredPublishMemory = memoryCentral();
   await assert.rejects(

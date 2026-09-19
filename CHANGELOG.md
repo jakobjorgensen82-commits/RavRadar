@@ -1,3 +1,19 @@
+## 4.0.430 – samlet vejrkæde og holdbar automatisk fremgang (2026-09-19)
+
+- DMI-plan/rotation, per-komponent databevaring, fuld CP/OM-reserve,
+  DMI-first/96 timer, DMI-only-vandstand, PP1D-peak, H118–H120,
+  historik/checkpoint, reentry/Pages og browser/current-hour er rettet samlet.
+- Private providerfremskridt gemmes kun krypteret og kan fortsætte på en ren
+  runner; gamle rå private cachewriters er fjernet eller permanent deaktiveret.
+- Holdbar privat terminalevidens understøtter genoptagelse efter GitHubs
+  14-dages artifactudløb. Supabase body-retry er afgrænset og idempotent.
+- Kildegaten er reduceret til 24 direkte produktionskritiske kommandoer.
+- Recovery-workflow og warmup-migration er bundet til releasekontrakt,
+  bindingsfixture og releasegate.
+- Det er endnu lokal kode: exact-head, merge, deploy og almindelige
+  produktionskørsler skal bevise komplethed og selvkørende drift.
+  Se CHANGELOG-4.0.430.md og DEC-0210.
+
 ## 4.0.429 – gemt vejr fortsætter og HARMONIE får reel tid (2026-09-19)
 
 - 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.

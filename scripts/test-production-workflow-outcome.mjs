@@ -93,6 +93,12 @@ assert.equal(PRODUCTION_WORKFLOW_OUTCOME_SCHEMA, 'ravradar-production-workflow-o
 assert.deepEqual(PRODUCTION_WORKFLOW_OUTCOME_STATUSES, ['NOOP', 'DEFERRED', 'BUILT', 'DEPLOYED', 'FAILED']);
 expectStatus(base(), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
 expectStatus(withPatch(base(), {
+  proof: { checkpointDisposition: 'MEASURED_WARMUP_PUBLISHED' },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+expectStatus(withPatch(base(), {
+  proof: { checkpointDisposition: 'MEASURED_WARMUP_PUBLISHED', checkpointPublishOutcome: 'skipped' },
+}), 'FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+expectStatus(withPatch(base(), {
   proof: {
     checkpointDisposition: 'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
     checkpointBuildOutcome: 'skipped',

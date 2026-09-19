@@ -1,10 +1,10 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.429";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.429";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.429";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.429";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.429";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.429";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.429";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.430";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.430";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.430";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.430";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.430";
+import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.430";
+import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.430";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);

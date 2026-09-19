@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { verifiedSelectedWeatherReserve } from './weather-reserve-admission.mjs';
 
 export const FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID = 'DK-B05-11';
 export const FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS = Object.freeze([
@@ -495,7 +496,14 @@ export function verifyCompactFeggesundWaveProxy({
   }
 }
 
-export function buildFeggesundWaveInputProofEntry({ partId, time, hour } = {}) {
+function admittedReserveWave(hour, part, time, componentInputs) {
+  if (!part || (part.zoneId ?? part.sourceZoneId) !== FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) return false;
+  return Boolean(verifiedSelectedWeatherReserve(hour, componentInputs, {
+    part, validTime: time, component: 'wave',
+  }));
+}
+
+export function buildFeggesundWaveInputProofEntry({ partId, time, hour, part = null, componentInputs = null } = {}) {
   const validTime = canonicalHour(time);
   if (typeof partId !== 'string' || !partId) {
     throw new Error('Feggesund wave proof requires a part id');
@@ -521,7 +529,8 @@ export function buildFeggesundWaveInputProofEntry({ partId, time, hour } = {}) {
   let accepted = false;
   if (directTupleValid && source === 'DIRECT_OFFICIAL'
     && hour?.waveProvenance?.status === 'verified'
-    && hour.waveProvenance.provider === 'dmi') {
+    && (hour.waveProvenance.provider === 'dmi'
+      || (part?.partId === partId && admittedReserveWave(hour, part, validTime, componentInputs)))) {
     disposition = FEGGESUND_WAVE_DISPOSITIONS.direct;
     accepted = true;
   } else if (proxyTupleValid && source === FEGGESUND_WAVE_PROXY_INPUT_SOURCE

@@ -17,11 +17,40 @@ assert.equal(rows[1].waterLevelSource, 'dmi-interpolated');
 assert.equal(rows[0].sources.waterLevel.collection, 'dkss_idw', 'vandstandskontinuitet skal bevare den originale DMI-identitet');
 assert.equal(rows[0].sources.waterLevel.modelRun, '2026-07-27T18:00:00.000Z');
 assert.equal(rows[0].sources.waterLevel.leadTimeHours, 6);
-assert.equal(rows[5].waterLevelSource, 'open-meteo-adjusted');
-assert.ok(Math.abs(rows[5].waterLevelCm - rows[4].waterLevelCm) < 10, 'fallback block must join DMI continuously');
-assert.ok(Math.abs(rows[9].waterLevelCm - rows[8].waterLevelCm) < 10, 'fallback block must return to DMI continuously');
+assert.equal(rows[5].waterLevelSource, 'missing');
+assert.ok(rows.slice(5, 9).every(row => row.waterLevelCm === null), 'reserve blocks must not replace DMI-only gaps');
+assert.equal(diagnostics.fallbackHours, 0);
 assert.equal(diagnostics.interpolatedDmiGapHours, 2);
-console.log('OK: DMI-authoritative continuity and bias-adjusted fallback blocks.');
+console.log('OK: DMI-only continuity; reserve levels cannot fill gaps.');
+
+const retainedTimes = [times[0], times[1]];
+const retainedRows = retainedTimes.map(time => ({ time, sources: {} }));
+const retainedDmi = new Map([[times[0], { waterLevelCm: 22, sources: { waterLevel: { provider: 'dmi' } } }],
+  [times[1], { waterLevelCm: 99, sources: { waterLevel: { provider: 'open-meteo' } } }]]);
+repairWaterLevelContinuity(retainedRows, new Map(), retainedDmi);
+assert.equal(retainedRows[0].waterLevelCm, 22, 'valid retained DMI value survives a new hole');
+assert.equal(retainedRows[1].waterLevelCm, null, 'reserve value cannot enter through retained donor map');
+
+const sparseRows = [0, 1, 2, 4].map(hour => ({ time: times[hour] }));
+repairWaterLevelContinuity(sparseRows, new Map(sparseRows.map((row, i) => [row.time,
+  { waterLevelCm: i * 10 }])), new Map());
+assert.equal(sparseRows[0].waterLevelTrendCm3h, null, 'third next array row is not necessarily T+3');
+assert.equal(sparseRows[1].waterLevelTrendCm3h, 20, 'trend uses the exact timestamp, not row position');
+
+const oldBiasRows = times.slice(0, 3).map(time => ({ time, waterLevelCm: 999,
+  waterLevelFallbackRawCm: 99, waterLevelFallbackOffsetCm: 900,
+  waterLevelRepairBasis: 'open-meteo-gap-shape-bias-adjusted-to-dmi',
+  waterLevelReference: 'open-meteo-global-mean-sea-level', waterLevelProvenance: { provider: 'open-meteo' },
+  sources: { waterLevel: { provider: 'open-meteo-adjusted' } } }));
+repairWaterLevelContinuity(oldBiasRows, new Map([
+  [times[0], { waterLevelCm: 10 }], [times[2], { waterLevelCm: 14 }],
+]), fallback);
+assert.deepEqual(oldBiasRows.map(row => row.waterLevelCm), [10, 12, 14]);
+assert.equal(oldBiasRows[1].waterLevelSource, 'dmi-interpolated');
+assert.equal(oldBiasRows[1].sources.waterLevel.provider, 'dmi-interpolated');
+assert.ok(oldBiasRows.every(row => row.waterLevelFallbackRawCm === undefined
+  && row.waterLevelFallbackOffsetCm === undefined && row.waterLevelRepairBasis === undefined
+  && row.waterLevelReference === undefined && row.waterLevelProvenance === undefined));
 
 // Large hourly changes can be physically correct in tidal waters. Valid DMI
 // values must therefore remain untouched solely because a generic threshold is exceeded.

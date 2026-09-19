@@ -411,7 +411,9 @@ function assertTerminalEvidence(evidence, pending) {
   }
   if (
     evidence.status === 'NOT_STARTED' &&
-    (evidence.deployStepConclusion !== 'skipped' || evidence.pagesRequestAccepted !== false)
+    (evidence.deployStepConclusion !== 'skipped'
+      || evidence.pagesRequestAccepted !== false
+      || evidence.runConclusion === 'success')
   ) {
     throw new Error('NOT_STARTED er ikke bevist af skipped deploy og pagesRequestAccepted=false.');
   }
@@ -497,27 +499,24 @@ function makeResult(action, reasonCode, pending, seal, observationCount) {
 export function classifyRavScoreOperationalPagesRecovery({
   pending,
   artifactSeal,
-  artifactEvidence,
+  artifactEvidence = null,
   terminalEvidence,
   observations,
-  targetManifest
+  targetManifest,
+  durableEvidence = false,
 }) {
   assertPendingIdentity(pending);
   const targetManifestSha256 = assertTargetManifest(targetManifest, pending);
   assertArtifactSeal(artifactSeal, pending, targetManifestSha256);
-  assertArtifactEvidence(artifactEvidence, artifactSeal, pending);
+  if (durableEvidence) {
+    if (artifactEvidence !== null) {
+      throw new Error('Durable recovery must not pretend that an expired artifact is available.');
+    }
+  } else {
+    assertArtifactEvidence(artifactEvidence, artifactSeal, pending);
+  }
   assertTerminalEvidence(terminalEvidence, pending);
   const endpoints = assertAndClassifyObservations(observations, pending, terminalEvidence);
-
-  if (terminalEvidence.runConclusion === 'success') {
-    return makeResult(
-      RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED,
-      'CONTROLLER_PENDING_AFTER_SUCCESSFUL_RUN',
-      pending,
-      artifactSeal,
-      endpoints.length
-    );
-  }
 
   if (endpoints.includes('third')) {
     return makeResult(
@@ -572,6 +571,39 @@ export function classifyRavScoreOperationalPagesRecovery({
     );
   }
 
+  if (durableEvidence
+    && ['failure', 'cancelled', 'timed_out', 'action_required', 'stale', 'neutral', 'skipped']
+      .includes(terminalEvidence.runConclusion)
+    && ['failure', 'cancelled', null].includes(terminalEvidence.deployStepConclusion)) {
+    return makeResult(
+      RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT,
+      'STABLE_SOURCE_AFTER_TERMINAL_FAILED_EXPIRED_ATTEMPT',
+      pending,
+      artifactSeal,
+      endpoints.length
+    );
+  }
+
+  if (terminalEvidence.runConclusion === 'success') {
+    return makeResult(
+      RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED,
+      'CONTROLLER_PENDING_AFTER_SUCCESSFUL_RUN',
+      pending,
+      artifactSeal,
+      endpoints.length
+    );
+  }
+
+  if (durableEvidence) {
+    return makeResult(
+      RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED,
+      'EXPIRED_TARGET_ARTIFACT_WITHOUT_SAFE_SOURCE_TERMINAL',
+      pending,
+      artifactSeal,
+      endpoints.length
+    );
+  }
+
   return makeResult(
     RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.EXACT_TARGET_REDEPLOY,
     'STABLE_SOURCE_AND_AMBIGUOUS_DEPLOYMENT',
@@ -589,18 +621,30 @@ function parseArgs(argv) {
     '--terminal-evidence',
     '--observations',
     '--target-manifest',
+    '--durable-evidence',
     '--output'
   ]);
   const args = {};
-  for (let index = 0; index < argv.length; index += 2) {
+  for (let index = 0; index < argv.length;) {
     const key = argv[index];
+    if (key === '--durable-evidence') {
+      args['durable-evidence'] = true;
+      index += 1;
+      continue;
+    }
     const value = argv[index + 1];
     if (!allowed.has(key) || !value || value.startsWith('--')) {
       throw new Error('Ugyldige CLI-argumenter til Pages-recoveryhelperen.');
     }
     args[key.slice(2)] = value;
+    index += 2;
   }
-  if (Object.keys(args).length !== allowed.size) {
+  const required = [...allowed].filter(key => key !== '--durable-evidence'
+    && !(args['durable-evidence'] === true && key === '--artifact-evidence'));
+  if (args['durable-evidence'] === true && args['artifact-evidence'] !== undefined) {
+    throw new Error('Durable recovery must not receive artifact-evidence.');
+  }
+  if (required.some(key => args[key.slice(2)] === undefined)) {
     throw new Error('Alle CLI-inputfiler og --output er obligatoriske.');
   }
   return args;
@@ -630,10 +674,13 @@ async function main() {
   const result = classifyRavScoreOperationalPagesRecovery({
     pending: await readJson(args.pending, 'Pending-identiteten'),
     artifactSeal: await readJson(args['artifact-seal'], 'Artifact-sealet'),
-    artifactEvidence: await readJson(args['artifact-evidence'], 'Artifact-evidensen'),
+    artifactEvidence: args['durable-evidence']
+      ? null
+      : await readJson(args['artifact-evidence'], 'Artifact-evidensen'),
     terminalEvidence: await readJson(args['terminal-evidence'], 'Terminal-evidensen'),
     observations: await readJson(args.observations, 'De offentlige observationer'),
-    targetManifest: await readJson(args['target-manifest'], 'Target-manifestet')
+    targetManifest: await readJson(args['target-manifest'], 'Target-manifestet'),
+    durableEvidence: args['durable-evidence'] === true,
   });
   await writeJsonAtomic(args.output, result);
   console.log(`Pages-recovery klassificeret som ${result.action}.`);

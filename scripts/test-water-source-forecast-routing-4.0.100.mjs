@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 const generatedAt='2026-08-05T06:02:00Z';
 const currentHour='2026-08-05T06:00:00.000Z';
-const times=Array.from({length:40},(_,i)=>new Date(Date.parse(currentHour)+i*3*3600000).toISOString());
+const times=Array.from({length:41},(_,i)=>new Date(Date.parse(currentHour)+i*3*3600000).toISOString());
 const rows=(base,collection,key,samplingPoint)=>Object.fromEntries(times.map((time,i)=>[time,{
   time,
   'sea-mean-deviation':(base+i)/100,
@@ -33,8 +33,8 @@ assert.equal(index.get('oceanobs:A').hourly[0].time,currentHour,'Kildeindekset s
 const aware=applyWaterSourceForecastStatus(sources,index,generatedAt,{minimumHours:96});
 assert.ok(aware.every(s=>s.sourceForecastStatus==='receiving'&&s.routingEligible));
 const hourly=index.get('oceanobs:A').hourly.map(r=>({...r,windSpeedMps:1}));
-const publicHourly=hourly.map((row,index)=>({...row,fallbackWind:index>=2?9:null,sources:{...(row.sources??{}),waterLevel:{provider:'dmi',collection:'stale-wrong-collection',modelRun:'stale-wrong-run'}}}));
-const output={zones:{Z:{point:[10.5,56],current:{waterLevelCm:null},forecast:{hourly:publicHourly},waterLevel:{}}}};
+const publicHourly=hourly.slice(0,118).map((row,index)=>({...row,fallbackWind:index>=2?9:null,sources:{...(row.sources??{}),waterLevel:{provider:'dmi',collection:'stale-wrong-collection',modelRun:'stale-wrong-run'}}}));
+const output={zones:{Z:{point:[10.5,56],current:{waterLevelCm:null,waterLevelTrendCm3h:999},forecast:{hourly:publicHourly},waterLevel:{}}}};
 const store={zones:{Z:{hourly:[...hourly]}}};
 const features=[{properties:{id:'Z',name:'Testzone',dataPoint:[10.5,56],coastLine:[[10,56],[11,56]],onshoreDirectionDeg:0}}];
 const routing={zones:{Z:{enabled:true,method:'inverse-distance',requireAll:true,stations:[{sourceKey:'oceanobs:A',stationId:'A'},{sourceKey:'tidewater:B',stationId:'B'}]}}};
@@ -54,4 +54,9 @@ assert.equal(output.zones.Z.forecast.hourly[0].sources.waterLevel.forecastAgeHou
 assert.equal(store.zones.Z.hourly[0].sources.waterLevel.collection,'dkss_idw+dkss_nsbs','Forecaststore skal have samme faktiske routingproveniens.');
 assert.equal(output.zones.Z.forecast.hourly[2].fallbackWind,9,'Vandstandsrouting mÃ¥ ikke slette komponentvis fallback fra den offentlige prognose.');
 assert.equal(store.zones.Z.hourly[2].fallbackWind,undefined,'Den rene DMI-cache skal ikke forurenes med offentlig fallback.');
+assert.equal(index.get('oceanobs:A').hourly.length,121,'Privat kildeindex skal bevare H118–H120.');
+assert.equal(output.zones.Z.forecast.hourly.length,118,'Routet offentlig prognose må ikke udvides med private støttetimer.');
+for(const hour of [115,116,117])assert.equal(output.zones.Z.forecast.hourly[hour].waterLevelTrendCm3h,1,'Alle sidste tre offentlige trends bruger deres præcise private DMI-støttetime.');
+assert.equal(output.zones.Z.current.waterLevelTrendCm3h,1,'Aktuel trend skal følge den nyvalgte routede vandstand.');
+assert.equal(output.zones.Z.current.sources.waterLevel.collection,'dkss_idw+dkss_nsbs');
 console.log('OK: målestationer og DMI-prognosepunkter leverer samme DKSS-femdøgnsformat, kan afstandsinterpoleres og styrer zoneprognosen.');

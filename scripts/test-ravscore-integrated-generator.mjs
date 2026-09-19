@@ -638,15 +638,13 @@ for (const marker of [
 const supabasePersistenceStep = workflowStep('Test Supabase persistence roundtrip');
 assert.match(
   supabasePersistenceStep.block,
-  /if: \$\{\{ \(github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'\) && env\.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' \}\}/,
-  'ordinary runs and non-historical integrated cutovers must retain the production Supabase persistence roundtrip',
+  /if: \$\{\{ \(github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'\) \}\}/,
+  'ordinary runs and validated integrated cutovers must retain the production Supabase persistence roundtrip',
 );
-assert.equal(
-  supabasePersistenceStep.block.includes(
-    "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}",
-  ),
-  true,
-  'only the exact sealed historical first-cutover path may bypass the persistence roundtrip',
+assert.doesNotMatch(
+  supabasePersistenceStep.block,
+  /continue-on-error/,
+  'the expired historical first-cutover path cannot bypass the persistence roundtrip',
 );
 
 const legacySourceImportStep = workflowStep(
@@ -924,24 +922,24 @@ assert.match(
 );
 assert.match(
   updater,
-  /const previousPrivateCandidateGRuntime = selectPreviousPrivateCandidateGRuntime\(\s*previous,?\s*\)[\s\S]*?previousPrivateCandidateGRuntime,/,
-  'update-weather must route exactly the validated private root into Candidate G continuation',
+  /const previousPrivateCandidateGRuntime = historicalWaveInputTransition[\s\S]*?\? null[\s\S]*?: selectPreviousPrivateCandidateGRuntime\(previous\);[\s\S]*?previousPrivateCandidateGRuntime,/,
+  'update-weather must route exactly the validated private root into Candidate G continuation except for the measured one-time cold transition',
 );
 
 assert.ok(
   dmiBulkStep.block.includes(
-    `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
+    'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ (steps.operational-action.outputs.action == \'integrated-cutover\' && steps.legacy-bootstrap.outputs.required == \'true\' && steps.ravscore-wave-bootstrap-target.outputs.mode) || (steps.historical-wave-transition.outputs.required == \'true\' && steps.historical-wave-transition.outputs.mode) || \'none\' }}',
   ),
-  'the WAM producer must receive the aggregate resolver mode without remapping it',
+  'the WAM producer must receive either the first-cutover or measured-transition mode without remapping it',
 );
 assert.ok(
   dmiBulkStep.block.includes(
-    'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}',
+    'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ (steps.historical-wave-transition.outputs.required == \'true\' && steps.historical-wave-transition.outputs.target_hour) || steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}',
   ),
-  'the WAM producer must receive the aggregate resolver target hour',
+  'the WAM producer must receive the exact selected initialization target hour',
 );
 const wamGateStep = workflowStep(
-  'Inspect operational WAM handoff before first integrated cutover',
+  'Inspect operational WAM handoff before state initialization',
 );
 assert.ok(
   wamGateStep.block.includes('id: wam-bootstrap-readiness')
@@ -958,18 +956,18 @@ assert.ok(
 );
 assert.ok(
   wamGateStep.block.includes(
-    '--mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}"',
+    '--mode "$WAM_BOOTSTRAP_MODE"',
   ),
   'the WAM completion gate must validate the same resolver mode as the producer',
 );
 assert.ok(
   wamGateStep.block.includes(
-    '--target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}"',
+    '--target-hour "$WAM_BOOTSTRAP_TARGET"',
   ),
   'the WAM completion gate must validate the same resolver target as the producer',
 );
 const wamFinalGateStep = workflowStep(
-  'Require complete operational WAM after provider progress for first cutover',
+  'Require complete operational WAM after provider progress for state initialization',
 );
 assert.ok(
   wamFinalGateStep.block.includes('if: always()')
@@ -977,10 +975,8 @@ assert.ok(
     && wamFinalGateStep.block.includes('WAM_CODE: ${{ steps.wam-bootstrap-readiness.outputs.code }}')
     && wamFinalGateStep.block.includes('test "$WAM_OUTCOME" = "success"')
     && wamFinalGateStep.block.includes('test "$WAM_CODE" = "NONE"')
-    && wamFinalGateStep.block.includes(
-      "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}",
-    ),
-  'the final WAM gate must fail closed after downstream progress except for the exact sealed historical first-cutover path',
+    && !wamFinalGateStep.block.includes('continue-on-error'),
+  'the final WAM gate must fail closed after downstream progress without a historical bypass',
 );
 
 const activeDmiRestoreStep = workflowStep(

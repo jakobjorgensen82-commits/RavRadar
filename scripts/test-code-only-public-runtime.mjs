@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import './test-post-cutover-migration-routing.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
@@ -483,8 +484,8 @@ for (const marker of [
   'if: always() && !cancelled()',
   'steps.integrated-historical-maintenance-complete.outcome',
   'steps.failure-reconciliation.outcome',
-  'Begin code-only integrated maintenance after verified Pages deployment',
-  "inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance' && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
+  'Begin code-only integrated maintenance with durable intent before Pages deployment',
+  "inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance'",
   'source_repair_id:',
   '--known-source-repair-id',
   'Known public source repair artifact seal is not exact',
@@ -497,8 +498,14 @@ assert.ok(handoffIdentity.includes('integrated|integrated-historical-maintenance
   'Eksakt public-source-repair skal tillade både allerede aktiv integrated og historisk maintenance');
 const integratedSourceRepairCondition =
   "(inputs.operational_action == 'integrated' && inputs.source_repair_id != '')";
-assert.equal(pagesWorkflow.split(integratedSourceRepairCondition).length - 1, 4,
-  'Allerede aktiv integrated repair skal observere, gendanne, verificere og gemme source-evidens');
+assert.equal(pagesWorkflow.split(integratedSourceRepairCondition).length - 1, 2,
+  'Integrated source repair skal være eksplicit afgrænset ved kildeverifikation og artifactbevis');
+for (const marker of [
+  "inputs.operational_action == 'integrated' || inputs.operational_action == 'integrated-return'",
+  '- name: Restore the exact sealed active source implementation',
+  '- name: Backfill the exact active source into durable protected evidence',
+]) assert.ok(pagesWorkflow.includes(marker),
+  `Integrated source repair mangler fælles observe/restore/persist-led: ${marker}`);
 assert.ok(pagesWorkflow.includes('integrated) source_model="integrated" ;;'),
   'Allerede aktiv integrated repair skal verificere kilden som integrated');
 const targetVerificationStart = pagesWorkflow.indexOf(
@@ -513,11 +520,19 @@ const preDeployHistoricalBegin = pagesWorkflow.indexOf(
 );
 const pagesDeploy = pagesWorkflow.indexOf('- name: Deploy to GitHub Pages');
 const codeOnlyHistoricalBegin = pagesWorkflow.indexOf(
-  '- name: Begin code-only integrated maintenance after verified Pages deployment',
+  '- name: Begin code-only integrated maintenance with durable intent before Pages deployment',
 );
 assert.ok(preDeployHistoricalBegin >= 0 && preDeployHistoricalBegin < pagesDeploy);
-assert.ok(codeOnlyHistoricalBegin > pagesDeploy,
-  'Code-only central bookkeeping must start only after the safe Pages attempt');
+assert.ok(codeOnlyHistoricalBegin >= 0 && codeOnlyHistoricalBegin < pagesDeploy,
+  'Code-only maintenance must persist durable intent before the Pages attempt');
+const codeOnlyHistoricalBeginEnd = pagesWorkflow.indexOf('\n      - name:', codeOnlyHistoricalBegin + 1);
+const codeOnlyHistoricalBeginStep = pagesWorkflow.slice(
+  codeOnlyHistoricalBegin,
+  codeOnlyHistoricalBeginEnd,
+);
+assert.ok(codeOnlyHistoricalBeginStep.includes(
+  '--source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"',
+), 'Code-only durable intent must bind the exact verified source deployment');
 const deploymentTerminalStart = pagesWorkflow.indexOf(
   '- name: Seal exact verified deployment terminal',
 );

@@ -4,9 +4,11 @@ import {
   buildPublicConditionDetails,
   buildPublicConditions,
   buildPublicManifest,
+  buildPublicDeliveryDocument,
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
+import { publicDeliveryEntries, assertPublicDeliveryDocument, assertPublicDeliveryEquivalence } from '../js/core/public-delivery-contract.js';
 import {
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
@@ -322,7 +324,7 @@ assert.ok(bootstrapStart >= 0, 'App bootstrap must remain present.');
 const bootstrapSource = appSource.slice(bootstrapStart);
 assert.ok(bootstrapSource.indexOf('loadDataManifest()') < bootstrapSource.indexOf('loadZones({manifest})'));
 assert.match(appSource, /conditionDetailsReady=conditions\.detailsAvailable===true/);
-assert.match(appSource, /if\(conditionDetailsReady\)return Promise\.resolve\(state\.conditions\)/);
+assert.match(appSource, /if\(!partitioned&&conditionDetailsReady\)return Promise\.resolve\(state\.conditions\)/);
 
 for (const mutate of [
   manifest => { delete manifest.publicConditionsSha256; },
@@ -844,6 +846,77 @@ assert.throws(() => service.mergeConditionDetails(first, trustMixedDetails), /VE
   'progressive merging must independently reject reconstructed trust');
 
 assert.ok(requests.some(request => request.cache === 'force-cache'));
+
+// New delivery uses the exact same 118-hour oracle, but only downloads one
+// hour plus an explicitly selected zone. Unknown age does not force H0.
+service.clearDataMemoryCache();
+const deliverySource = full(primary.manifest.datasetId, 61);
+const time9 = horizonTimes[9];
+deliverySource.coastalParts.parts['part-2'].hourly = [{
+  time: time9, weather: { time: time9, windSpeedMps: 7.2 },
+  waders: score(65, partsByZone['zone-1'][1], 4, time9),
+  beach: score(66, partsByZone['zone-1'][1], 4, time9),
+  flowPoints: deliverySource.coastalParts.parts['part-2'].flowPoints,
+}];
+const deliveryManifest = structuredClone(primary.manifest);
+const placeholder = key => { const sha256 = sha256Text(key); return { path: `./forecast/${sha256}.json`, sha256, bytes: 1 }; };
+deliveryManifest.detailDelivery = { schemaVersion: 1, forecastHours: 118,
+  sourceDetailsSha256: deliveryManifest.publicConditionDetailsSha256,
+  hours: Object.fromEntries(horizonTimes.map(time => [time, placeholder(time)])),
+  zones: Object.fromEntries(zoneIds.map(id => [id, placeholder(id)])),
+};
+function registerDelivery(kind, key) {
+  const document = buildPublicDeliveryDocument(deliverySource, primary.details, deliveryManifest, kind, key);
+  const text = compactJson(document), sha256 = sha256Text(text);
+  const descriptor = { path: `./forecast/${sha256}.json`, sha256, bytes: Buffer.byteLength(text) };
+  deliveryManifest.detailDelivery[kind === 'hour' ? 'hours' : 'zones'][key] = descriptor;
+  const url = `./data/live/forecast/${sha256}.json?dataset=${deliveryManifest.datasetId}&sha=${sha256}`;
+  documents.set(url, text);
+  return { document, descriptor, url };
+}
+const hour9 = registerDelivery('hour', time9);
+const zone1 = registerDelivery('zone', 'zone-1');
+assert.equal(publicDeliveryEntries(deliveryManifest).length, 328);
+assert.equal(assertPublicDeliveryEquivalence(hour9.document, primary.details), true);
+assert.deepEqual(hour9.document.zones['zone-1'].forecast.hourly, [primary.details.zones['zone-1'].forecast.hourly[9]]);
+assert.deepEqual(zone1.document.coastalParts.zones['zone-1'].hourly, primary.details.coastalParts.zones['zone-1'].hourly);
+assert.equal(hour9.document.coastalParts.parts['part-2'].current.weather.windSpeedMps, 7.2);
+assert.equal(hour9.document.coastalParts.parts['part-3'].current, undefined, 'Legacy H0 must not become invented future part data.');
+assert.equal(hour9.document.coastalParts.parts['part-3'].flowPoints, undefined, 'H0 grid provenance must not leak into a later hour.');
+const badHour = structuredClone(hour9.document);
+badHour.coastalParts.parts['part-2'].current.time = generatedAt;
+assert.throws(() => assertPublicDeliveryDocument(badHour, deliveryManifest, { kind: 'hour', key: time9 }), /stale local/);
+const changedScore = structuredClone(hour9.document);
+changedScore.coastalParts.zones['zone-1'].hourly[0].waders.score += 1;
+assert.throws(() => assertPublicDeliveryEquivalence(changedScore, primary.details), /changed weather or computed/);
+const beforeShardRequests = requests.length;
+const [smallCurrent, sameCurrent] = await Promise.all([
+  service.loadConditions({ manifest: deliveryManifest, now: emergencyNow }),
+  service.loadConditions({ manifest: deliveryManifest, now: emergencyNow }),
+]);
+assert.equal(smallCurrent.available, true, warnings.at(-1));
+assert.equal(sameCurrent.publicRuntimeAvailability.selectedReferenceAt, time9);
+assert.equal(smallCurrent.emergencyDetailsDeferred, undefined);
+assert.equal(smallCurrent.coastalParts.parts['part-2'].current.weather.windSpeedMps, 7.2);
+assert.equal(requests.slice(beforeShardRequests).filter(row => row.url === hour9.url).length, 1, 'Concurrent consumers share one hash-bound request.');
+assert.equal(requests.slice(beforeShardRequests).some(row => row.url === primaryUrl(primary.manifest, true)), false, 'No monolithic download for current-hour projection.');
+const selectedZone = await service.loadConditionDetails({ manifest: deliveryManifest, conditions: smallCurrent, zoneId: 'zone-1' });
+const mergedZone = service.mergeConditionDetails(smallCurrent, selectedZone);
+assert.equal(mergedZone.zones['zone-1'].forecast.hourly.length, 109);
+assert.equal(mergedZone.zones['zone-2'].forecast.hourly.length, 1);
+assert.equal(Object.keys(mergedZone.coastalParts.parts).length, 673);
+assert.equal(mergedZone.coastalParts.parts['part-2'].current.weather.windSpeedMps, 7.2);
+assert.throws(() => service.mergeConditionDetails({ ...smallCurrent, deliveryGeneration: 'new-generation' }, selectedZone), /gammel zonepakke/);
+let boundedZones = mergedZone;
+for (const id of ['zone-2','zone-3','zone-4','zone-5']) {
+  const next = registerDelivery('zone', id);
+  boundedZones = service.mergeConditionDetails(boundedZones, next.document);
+}
+assert.equal(boundedZones.loadedDetailZones.length, 4);
+assert.equal(boundedZones.zones['zone-1'].forecast.hourly.length, 1, 'Evicted zone forecasts release retained row graphs.');
+assert.match(appSource, /generation!==runtimeGeneration\|\|selectedReferenceAt!==state\.conditions\.publicRuntimeAvailability\?\.selectedReferenceAt/);
+assert.match(appSource, /refreshPublicRuntimeGeneration\(\{manifest:activeManifest/);
+assert.match(appSource, /visibilitychange/);
 
 globalThis.fetch = realFetch;
 console.warn = realWarn;

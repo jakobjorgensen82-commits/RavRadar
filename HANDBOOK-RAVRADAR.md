@@ -1,6 +1,55 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.429
+**Håndbogsversion:** 4.0.430
+
+## 89.35 Samlet vejrkæde – bevar gyldige data og fortsæt automatisk
+
+Den samlede rettelse følger én enkel regel pr. sted, time og vejrdel: en ny
+gyldig værdi erstatter den gamle; et hul i en ny hentning beholder den gamle
+gyldige værdi; først når både ny data mangler og den gamle værdi er udløbet,
+bliver feltet `MISSING`. Et lokalt hul må ikke gøre resten af RavRadar
+ubrugelig, men hullet tæller aldrig som komplet dækning.
+
+DMI er førstevalg og kan overtage gyldige reserveværdier. Copernicus udfylder
+de resterende huller, og Open-Meteo udfylder derefter det, der stadig mangler.
+For vind, bølger, strøm og vandtemperatur kan en faktisk nyere kvalificeret
+reserve erstatte DMI, når det konkrete DMI-modelrun er mindst 96 timer gammelt.
+Hentetid er ikke modelalder. Uden en nyere gyldig reserve bevares DMI, og ny
+gyldig DMI vinder igen. Vandstand og dens tre-timers ændring er altid DMI-only.
+
+Kørslerne gemmer rotation og privat komponentfremskridt, så næste rene
+GitHub-runner kan fortsætte. Private DMI-/Copernicus-/Open-Meteo-mellemdata
+gemmes kun som autentificeret krypteret fremgang; officielle rå DMI-GRIB-
+filer kan fortsat caches som offentlige kildeassets. En vellykket privat
+runtime bærer fremskridtet videre, og en afbrudt central overgang kan
+genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
+midlertidige 14-dages artifact er udløbet.
+
+Scoreformlen og vægtene er uændrede. 4.0.430 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Den private Candidate G-rollback er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer.
+
+Dette er lokalt implementeret og måltestet, men ikke endnu bevist gennem
+merge, deploy og flere almindelige produktionskørsler. Cron genaktiveres
+først efter bevis for komplethed, korrekt kildeprioritet, browservisning og
+automatisk fortsættelse uden Codex eller ejerens computer.
+
+## 89.34 Beslutning 19. september – Vandstand kommer kun fra DMI
+
+Vandstand og ændringen over tre timer skal kun bruge DMI. Dette er den
+seneste ejerbeslutning og erstatter ældre beskrivelser af Open-Meteo eller
+Copernicus som reserve for netop vandstand. Rettelsen er under samlet
+levering; denne tekst er ikke i sig selv bevis for, at den er online.
+
+Ny gyldig DMI-vandstand erstatter gammel. Hvis en ny hentning har et hul,
+beholder vi den gamle gyldige DMI-værdi for præcis samme sted og tidspunkt.
+Korte huller kan fortsat udfyldes med den eksisterende godkendte beregning
+mellem DMI-punkter. Mangler der stadig en gyldig værdi, vises feltet som
+manglende. Resten af RavRadar skal stadig kunne bruges.
+
+Målet er fortsat gyldig vandstand i alle nødvendige felter. En tom værdi
+tæller ikke som komplet dækning. Vind, bølger, strøm og vandtemperatur kan
+fortsat bruge de aftalte reservekilder; denne undtagelse gælder kun vandstand.
 
 ## 89.33 4.0.429 – Gemt vejr fortsætter, og HARMONIE får reel tid
 
@@ -2245,7 +2294,7 @@ Dette afsnit beskriver det historiske 4.0.321-checkpoint, hvor Candidate G endnu
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `d20939c1b141a763fb20aa39b39506d79bf150860714bf1ce306f64d5314e7e6` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `3d4e51b9dca15bafac98cf5c1e69f0b60d6ca354d3aa9e05bf9302d8622c8f77` kræver det nye eksakte append-only bindingsled; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 

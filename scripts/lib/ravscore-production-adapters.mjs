@@ -15,6 +15,9 @@ import {
   verifiedLivePilotSource,
   verifiedStateOnlyCurrentHold,
 } from './live-current-pilot.mjs';
+import { selectQualifiedWeatherComponent } from './weather-component-selection.mjs';
+import { qualifiedWeatherReserveCandidates, selectedWeatherReserveSource } from './weather-reserve-admission.mjs';
+import { retainPreviouslySelectedReserve } from './weather-component-selection-history.mjs';
 import {
   FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
   FEGGESUND_WAVE_PROXY_NOTICE_ID,
@@ -419,6 +422,20 @@ function sanitizeWaterLevel(hour, expectedIdentity) {
   };
 }
 
+function sanitizeWaterTemperature(hour, expectedIdentity) {
+  const source = verifiedDmiForecastComponentSource(
+    hour?.sources?.waterTemperature, hour?.time, 'waterTemperature', expectedIdentity,
+  );
+  const temperature = finite(hour?.waterTemperatureC);
+  return source && temperature !== null ? {
+    waterTemperatureC: temperature,
+    waterTemperatureProvenance: { ...source, status: 'verified' },
+  } : {
+    waterTemperatureC: null,
+    waterTemperatureProvenance: { status: 'unverified', reason: 'no-exact-authorized-water-temperature-source' },
+  };
+}
+
 function sameDmiSeries(left, right) {
   return left?.status === 'verified'
     && right?.status === 'verified'
@@ -441,13 +458,70 @@ function sameDmiSeries(left, right) {
     && samePoint(left.gridPoint, right.gridPoint);
 }
 
+const RESERVE_FIELDS = Object.freeze([
+  ['wind', ['windSpeedMps', 'windDirectionDeg'], 'windProvenance'],
+  ['wave', ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg'], 'waveProvenance'],
+  ['waterTemperature', ['waterTemperatureC'], 'waterTemperatureProvenance'],
+]);
+export const SCORING_RESERVE_COMPONENTS = Object.freeze(RESERVE_FIELDS.map(([component]) => component));
+
+function applyVerifiedPartReserves(row, part, {
+  productionReferenceAt, openMeteoComponentIndex = null, copernicusComponentIndex = null,
+  componentSelectionHistory = null,
+} = {}) {
+  if (!openMeteoComponentIndex && !copernicusComponentIndex) return row;
+  let result = row;
+  for (const [component, fields, provenanceKey] of RESERVE_FIELDS) {
+    const reserves = qualifiedWeatherReserveCandidates({ openMeteoComponentIndex, copernicusComponentIndex }, {
+      part, validTime: row.time, component,
+    });
+    if (!reserves.length) continue;
+    const wholeTuple = fields.every(field => finite(row[field]) !== null
+      || (component === 'wave' && field === 'waveDirectionDeg' && row.waveHeightM === 0));
+    const provenance = row[provenanceKey];
+    // The owner-approved neighbour-wave proxy remains a valid retained input.
+    // Reserve gap filling is not permission to replace it with unknown-age data.
+    if (wholeTuple && provenance?.status === 'verified-derived') continue;
+    const primary = wholeTuple && provenance?.status === 'verified'
+      && provenance.provider === 'dmi' ? { source: provenance, row } : null;
+    const candidates = retainPreviouslySelectedReserve([primary, ...reserves].filter(Boolean), componentSelectionHistory,
+      { part, time: row.time, component });
+    const admitted = new Map(candidates.map(candidate => [candidate, candidate.source]));
+    const choice = selectQualifiedWeatherComponent(candidates, {
+      component, productionReferenceAt,
+      // Primary came through the strict DMI sanitizer above. Reserve is rebuilt
+      // from original response bytes by an opaque, validated PART-bank index;
+      // arbitrary cache status/provenance flags cannot create this capability.
+      admit: candidate => admitted.get(candidate) ?? null,
+    });
+    if (!choice || choice.candidate.source.provider === 'dmi') continue;
+    const reserve = choice.candidate;
+    const source = selectedWeatherReserveSource(reserve);
+    result = { ...result, ...reserve.values,
+      sources: { ...(result.sources ?? {}), [component]: source },
+      [provenanceKey]: { ...source, status: 'verified' },
+    };
+    if (component === 'wave') {
+      result.waveInputSource = 'DIRECT_OFFICIAL';
+      result.waveInputUncertainty = 'LOW';
+      result.waveInputNoticeId = null;
+      delete result.feggesundNeighborWaveSource;
+    }
+  }
+  // Owner policy: water level and its T+3 difference use DMI only.
+  // Current continues through the separately validated operational closure.
+  return result;
+}
+
 /**
  * The integrated model may consume current only when the exact hourly U/V pair
  * is backed by verified DMI provenance or the separately controlled live pilot.
  */
-export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
+export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part, componentInputs = {}) {
   const expectedDmiIdentity = dmiExpectedIdentityForPart(part, bulkId);
-  const sanitized = normalizeForecastHourly(record?.hourly ?? []).map(hour => {
+  const sanitized = normalizeForecastHourly(record?.hourly ?? [], {
+    limit: Number.MAX_SAFE_INTEGER,
+  }).map(hour => {
     const holdProvenance = hour?.currentProvenance;
     const currentStateOnlyHold = verifiedStateOnlyCurrentHold(
       holdProvenance,
@@ -497,12 +571,14 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
     const wind = sanitizeWind(hour, expectedDmiIdentity);
     const wave = sanitizeWave(hour, expectedDmiIdentity);
     const waterLevel = sanitizeWaterLevel(hour, expectedDmiIdentity);
+    const waterTemperature = sanitizeWaterTemperature(hour, expectedDmiIdentity);
     if (currentStateOnlyHold) {
       return {
         ...hourWithoutHold,
         ...wind,
         ...wave,
         ...waterLevel,
+        ...waterTemperature,
         currentProvenance: {
           status: 'unverified',
           reason: 'closure-verified-exact-state-only-hold',
@@ -530,6 +606,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
         ...wind,
         ...wave,
         ...waterLevel,
+        ...waterTemperature,
         currentSpeedMps: round(Math.hypot(currentUMps, currentVMps), 2),
         currentDirectionDeg: normalizeDegrees(round(
           uvToTowardDirectionDeg(currentUMps, currentVMps),
@@ -549,6 +626,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
       ...wind,
       ...wave,
       ...waterLevel,
+      ...waterTemperature,
       currentUMps: null,
       currentVMps: null,
       currentSpeedMps: null,
@@ -559,7 +637,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
         reason: 'no-time-specific-verified-water-column',
       },
     };
-  });
+  }).map(row => applyVerifiedPartReserves(row, part, componentInputs));
   const byTime = new Map(sanitized.map(row => [row.time, row]));
   return sanitized.map(row => {
     if (finite(row.waterLevelCm) === null) return row;
@@ -807,6 +885,7 @@ export function buildIntegratedPartPublicProjection({
   scoreProfile,
   selectedMode,
   flowPoints,
+  flowPointsAt = null,
 } = {}) {
   if (!row || typeof selectedMode !== 'function' || !scoreProfile) {
     throw new Error('Integrated part projection requires row, profile and mode selector');
@@ -846,6 +925,15 @@ export function buildIntegratedPartPublicProjection({
     onshoreDirectionDeg: row.onshoreDirectionDeg,
     onshoreDirectionSource: row.onshoreDirectionSource,
     flowPoints,
+    // Transport only: these are the already computed per-part results, not a
+    // second score calculation or a copy of the zone winner's weather.
+    hourly: (row.scores ?? []).map(hour => ({
+      time: hour.time,
+      weather: hour.weather,
+      waders: selectedMode(hour, 'waders'),
+      beach: selectedMode(hour, 'beach'),
+      flowPoints: typeof flowPointsAt === 'function' ? flowPointsAt(hour.time) : null,
+    })),
     current: score ? {
       ...score,
       ravScoreModel: undefined,

@@ -77,6 +77,8 @@ const dmiContracts = {
     collection: 'wam_dw',
     collectionFamily: 'wave',
     componentKind: 'wave-mobilisation-tuple',
+    wavePeriodSemantics: 'peak',
+    wavePeriodField: { shortName: 'pp1d', paramId: 231, indicatorOfParameter: null },
     fieldSet: ['significant-wave-height', 'dominant-wave-period'],
     spatialSelection: 'nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation',
   },
@@ -121,6 +123,10 @@ function dmiForecastSource(component, at, modelRun) {
       leadTimeHours: source.leadTimeHours,
       acquiredAt: source.acquiredAt,
       optionalFieldSet: [...source.optionalFieldSet],
+      ...(component === 'wave' ? {
+        wavePeriodSemantics: source.wavePeriodSemantics,
+        wavePeriodField: { ...source.wavePeriodField },
+      } : {}),
     }],
   };
 }

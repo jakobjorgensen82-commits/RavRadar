@@ -1,4 +1,6 @@
-export const DMI_FORECAST_HOURS = 120;
+// Private H0..H120 includes the exact T+3 support for public H115..H117.
+// The public projection remains 118 hours; support rows are not extra scores.
+export const DMI_FORECAST_HOURS = 121;
 export const DMI_FORECAST_SCHEMA_VERSION = 1;
 
 // Score-bearing DMI values cross a strict numeric trust boundary here. JSON
@@ -161,6 +163,18 @@ function haversinePointKm(first, second) {
 }
 const sourceKey = component => component === 'windTail' ? 'wind' : component;
 
+export function verifiedDmiPeakPeriodField(field) {
+  if (!field || typeof field !== 'object' || Array.isArray(field)
+    || Object.keys(field).sort().join(',') !== 'indicatorOfParameter,paramId,shortName'
+    || typeof field.shortName !== 'string' || field.shortName.length > 32
+    || field.shortName !== field.shortName.trim().toLowerCase()) return false;
+  const ids = [field.paramId, field.indicatorOfParameter];
+  if (ids.some(value => value !== null && (!Number.isInteger(value) || value < 0))) return false;
+  if (['mwp', 'mp2', 'perpw'].includes(field.shortName)
+    || ids.some(value => value === 221 || value === 232)) return false;
+  return field.shortName === 'pp1d' || ids.includes(231);
+}
+
 export function verifiedDmiNativeSource(source, component, nativeTime) {
   const runMs = explicitTimestampMs(source?.modelRun);
   const validMs = explicitTimestampMs(source?.nativeValidTime);
@@ -216,7 +230,9 @@ export function verifiedDmiNativeSource(source, component, nativeTime) {
       && ['identity-earth-relative', 'lambert-conformal-to-earth-relative'].includes(source.vectorTransform)
     ))
   )) return null;
-  if (component === 'wave' && source.optionalFieldSet.some(value => value !== 'mean-wave-dir')) return null;
+  if (component === 'wave' && (source.wavePeriodSemantics !== 'peak'
+    || !verifiedDmiPeakPeriodField(source.wavePeriodField)
+    || source.optionalFieldSet.some(value => value !== 'mean-wave-dir'))) return null;
   return source;
 }
 
@@ -228,7 +244,7 @@ function provenanceAt(item, component) {
   );
 }
 
-function sameNativeIdentity(before, after, component) {
+export function sameNativeIdentity(before, after, component) {
   return Boolean(before && after
     && before.collection === after.collection
     && before.collectionFamily === after.collectionFamily
@@ -265,6 +281,7 @@ function sameNativeIdentity(before, after, component) {
 const NATIVE_STEP_KEYS = new Set([
   'itemId', 'assetIdentitySha256', 'nativeValidTime', 'leadTimeHours',
   'acquiredAt', 'optionalFieldSet', 'itemCreatedAt', 'itemUpdatedAt',
+  'wavePeriodSemantics', 'wavePeriodField',
 ]);
 
 function matchesExpectedIdentity(source, expectedIdentity) {
@@ -292,7 +309,7 @@ function reconstructNativeEndpoint(source, step) {
     optionalFieldSet: step.optionalFieldSet,
   };
   for (const key of ['nativeValidTimes', 'nativeSteps', 'temporalResolution', 'forecastAgeHours']) delete endpoint[key];
-  for (const key of ['itemCreatedAt', 'itemUpdatedAt']) {
+  for (const key of ['itemCreatedAt', 'itemUpdatedAt', 'wavePeriodSemantics', 'wavePeriodField']) {
     if (Object.hasOwn(step, key)) endpoint[key] = step[key];
     else delete endpoint[key];
   }
@@ -352,6 +369,10 @@ export function verifiedDmiForecastSource(source, component, rowTime, expectedId
     && step.acquiredAt === source.acquiredAt
     && (step.itemCreatedAt ?? null) === (source.itemCreatedAt ?? null)
     && (step.itemUpdatedAt ?? null) === (source.itemUpdatedAt ?? null)
+    && (component !== 'wave' || (step.wavePeriodSemantics === source.wavePeriodSemantics
+      && step.wavePeriodField?.shortName === source.wavePeriodField?.shortName
+      && step.wavePeriodField?.paramId === source.wavePeriodField?.paramId
+      && step.wavePeriodField?.indicatorOfParameter === source.wavePeriodField?.indicatorOfParameter))
   ));
   if (!selectedStep) return null;
   const expectedOptional = component === 'wave'
@@ -535,6 +556,10 @@ function componentSource(bracket, component, targetMs, generatedAt) {
       leadTimeHours: source.leadTimeHours,
       acquiredAt: source.acquiredAt,
       optionalFieldSet: [...source.optionalFieldSet],
+      ...(component === 'wave' ? {
+        wavePeriodSemantics: source.wavePeriodSemantics,
+        wavePeriodField: { ...source.wavePeriodField },
+      } : {}),
       ...(source.itemCreatedAt ? { itemCreatedAt: source.itemCreatedAt } : {}),
       ...(source.itemUpdatedAt ? { itemUpdatedAt: source.itemUpdatedAt } : {})
     }));
@@ -626,23 +651,91 @@ export function canonicalForecastHour(value, { ceil = false } = {}) {
   return date.toISOString();
 }
 
-export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOURS } = {}) {
+const HOURLY_COMPONENT_FIELDS = Object.freeze({
+  wind: ['windSpeedMps', 'windDirectionDeg', 'windProvenance'],
+  wave: ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg', 'waveProvenance',
+    'waveInputSource', 'waveInputUncertainty', 'waveInputNoticeId', 'feggesundNeighborWaveSource'],
+  current: ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg',
+    'currentCoastNormalSpeedMps', 'currentProvenance', 'currentStateOnlyHold'],
+  waterLevel: ['waterLevelCm', 'waterLevelModelCm', 'waterLevelBiasCm',
+    'waterLevelObservationDifferenceCm', 'waterLevelTrendCm3h',
+    'waterLevelSource', 'waterLevelProvenance', 'waterLevelReference'],
+  waterTemperature: ['waterTemperatureC', 'waterTemperatureProvenance'],
+});
+const HOURLY_COMPONENT_FIELD_SET = new Set(Object.values(HOURLY_COMPONENT_FIELDS).flat());
+
+function completeHourlyComponent(row, component) {
+  if (component === 'wind') return finite(row?.windSpeedMps) !== null
+    && row.windSpeedMps >= 0 && finite(row?.windDirectionDeg) !== null
+    && row.windDirectionDeg >= 0 && row.windDirectionDeg < 360;
+  if (component === 'wave') return finite(row?.waveHeightM) !== null
+    && row.waveHeightM >= 0 && finite(row?.wavePeriodS) !== null
+    && row.wavePeriodS >= 0
+    && (row.waveHeightM === 0 || row.wavePeriodS > 0)
+    && ((row.waveHeightM === 0 && row.waveDirectionDeg == null)
+      || (finite(row.waveDirectionDeg) !== null
+        && row.waveDirectionDeg >= 0 && row.waveDirectionDeg < 360));
+  if (component === 'current') {
+    // A partial raw vector cannot be completed using another acquisition.
+    if (row?.currentUMps != null || row?.currentVMps != null) {
+      return finite(row.currentUMps) !== null && finite(row.currentVMps) !== null;
+    }
+    return finite(row?.currentSpeedMps) !== null && row.currentSpeedMps >= 0
+      && finite(row?.currentDirectionDeg) !== null
+      && row.currentDirectionDeg >= 0 && row.currentDirectionDeg < 360;
+  }
+  return finite(row?.[HOURLY_COMPONENT_FIELDS[component][0]]) !== null;
+}
+
+export function normalizeForecastHourly(hourly = [], {
+  limit = DMI_FORECAST_HOURS, preferCompleteComponent = null, admitComponent = null,
+} = {}) {
   const byTime = new Map();
-  for (const row of hourly ?? []) {
-    const ms = Date.parse(row?.time);
+  for (const input of hourly ?? []) {
+    const ms = Date.parse(input?.time);
     if (!Number.isFinite(ms)) continue;
     const time = canonicalForecastHour(ms);
     if (!time) continue;
-    const previous = byTime.get(time) ?? { time };
+    const row = { ...input, time, ...(input.sources ? { sources: { ...input.sources } } : {}) };
+    // 360 degrees is north, not a distinct or invalid direction. Canonicalise
+    // exactly that endpoint; do not wrap arbitrary out-of-range observations.
+    for (const key of ['windDirectionDeg', 'waveDirectionDeg', 'currentDirectionDeg']) {
+      if (row[key] === 360) row[key] = 0;
+    }
+    // Admission is distinct from preference: a lone row, a previously empty
+    // component and a donor-only tail hour need the same proof as a replacement.
+    // Keep the default structural normaliser usable for raw/legacy callers.
+    if (admitComponent) for (const [component, keys] of Object.entries(HOURLY_COMPONENT_FIELDS)) {
+      if (completeHourlyComponent(row, component) && admitComponent(row, component)) continue;
+      for (const key of keys) delete row[key];
+      if (row.sources) delete row.sources[component];
+    }
+    const previous = byTime.get(time);
+    if (!previous) {
+      byTime.set(time, row);
+      continue;
+    }
     const merged = { ...previous, time };
-    for (const [key, value] of Object.entries(row ?? {})) {
-      if (key === 'time') continue;
-      // Samme tidspunkt kan komme fra flere DMI-collections. Bevar allerede
-      // gyldige værdier, men udfyld tomme komponenter fra den næste række.
-      if (merged[key] === null || merged[key] === undefined || merged[key] === '') merged[key] = value;
-      else if (value !== null && value !== undefined && value !== '' && key === 'sources') {
-        merged.sources = { ...(merged.sources ?? {}), ...value };
+    for (const [component, keys] of Object.entries(HOURLY_COMPONENT_FIELDS)) {
+      if ((completeHourlyComponent(previous, component)
+          && (!completeHourlyComponent(row, component)
+            || !preferCompleteComponent?.(previous, row, component)))
+        || (!completeHourlyComponent(row, component)
+          && (keys.some(key => previous[key] !== null && previous[key] !== undefined)
+            || !keys.some(key => row[key] !== null && row[key] !== undefined)))) continue;
+      // Choose a whole tuple and its proof. Never retain the first value and
+      // attach the next row's source, or combine vector/wave fields across rows.
+      for (const key of keys) {
+        delete merged[key];
+        if (Object.hasOwn(row, key)) merged[key] = row[key];
       }
+      merged.sources = { ...(merged.sources ?? {}) };
+      delete merged.sources[component];
+      if (row.sources?.[component] !== undefined) merged.sources[component] = row.sources[component];
+    }
+    for (const [key, value] of Object.entries(row ?? {})) {
+      if (key === 'time' || key === 'sources' || HOURLY_COMPONENT_FIELD_SET.has(key)) continue;
+      if (merged[key] === null || merged[key] === undefined || merged[key] === '') merged[key] = value;
     }
     byTime.set(time, merged);
   }

@@ -56,7 +56,11 @@ export function exactNationalOperationalColdReplayInitialization(
     && expectedPartCount > 0
     && Array.isArray(partRows)
     && partRows.length === expectedPartCount
-    && partRows.every(row => exactOperationalColdReplayInitialization(row?.ravScoreState));
-  return exactRows
-    && new Set(partRows.map(row => row.ravScoreState.initialStateSource)).size === 1;
+    && partRows.every(row => row?.ravScoreState?.initialStateAccepted === true
+      || row?.ravScoreState?.migrationApplied === true
+      || exactOperationalColdReplayInitialization(row?.ravScoreState));
+  // Initialization is proved per part. A lawful cold replay does not become
+  // unlawful because another part resumed an accepted state, or because their
+  // measured history coverage differs. Memory/coverage readiness is separate.
+  return exactRows;
 }

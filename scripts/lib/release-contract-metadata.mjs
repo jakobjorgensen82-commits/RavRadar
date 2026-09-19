@@ -81,7 +81,7 @@ function assertReleaseVersion(releaseVersion) {
 }
 
 function exactWorkflowSources(workflowSources) {
-  const expectedKeys = ['build', 'deploy', 'orchestrator'];
+  const expectedKeys = ['build', 'deploy', 'orchestrator', 'recovery'];
   if (!workflowSources || typeof workflowSources !== 'object' || Array.isArray(workflowSources)) {
     throw new Error('Release contract workflow sources are missing');
   }
@@ -98,6 +98,7 @@ function exactWorkflowSources(workflowSources) {
     orchestrator: workflowSources.orchestrator,
     build: workflowSources.build,
     deploy: workflowSources.deploy,
+    recovery: workflowSources.recovery,
   };
 }
 

@@ -1,4 +1,174 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+# NYESTE CHECKPOINT – 2026-09-19 – hele fundlisten samlet før levering
+
+Rettelsen på disk dækker nu alle fund fra sidste vejrkørsel, den første
+helhedsanalyse og senere krydstjek. Vigtige nyere lukninger er 256 MiB
+krypteret progress med afledt eksisterende secret og alle DMI/CP/OM/staging-
+filer, udfasede rå private cachewriters samt holdbar privat terminalevidens
+til reentry efter 14-dages artifacts. Dertil kommer DMI-plan/rotation,
+komponentbevaring, fuld reservekæde, 96 timer, DMI-only-vandstand, PP1D,
+H118–H120, historik/checkpoint, Supabase-body-retry, Pages-rækkefølge,
+browser/aktuel time og vagthund. Se lukningsmatrixen; ældre topnoter om
+64 MiB, særskilt secret, ni filer og uimplementeret langtidsreentry er
+erstattet. Produktion er stadig 4.0.429, og rigtig drift er ikke bevist.
+
+## Modelskift efter ejerens kreditønske
+
+Ejeren beder fortsætte den samlede rettelse til afslutning, men sige til
+så snart Sol ekstra høj er tilstrækkelig; Astra Ultra koster for meget til
+rutineimplementeringen. Anbefalet næste model er nu Sol, indsats Ekstra høj.
+Den eksisterende bølgeanalyse og measured-cold-beslutning skal bruges,
+ikke gentages med en tredje identisk diagnose. Den reelle næste kodeopgave
+er genudtræk af PP1D fra de hashverificerede gemte originaler og samlet
+engangskobling før begge modellers statevalg. Ingen omdøbning af MWP,
+ingen same-time input-repair og ingen gentagen reset i normale kørsler.
+
+Artifactudløbet er nu både dokumenteret og lokalt rettet: nødvendig payloadfri
+terminalevidens kan overleve privat, mens en overgang er uafsluttet. Længere
+retention alene eller ignorering af manglende bevis er fortsat afvist. Ingen
+ny produktversion, merge, deploy eller weather er endnu lavet; den resterende
+opgave er samlet levering og faktisk normaldrift.
+
+## Tidligere fortsættelse i samme samlede rettelse
+
+Senere fortsættelse: ejeren har ændret vandstand til kun DMI, inklusive
+T+3. DEC-0210/krav/roadmaps og begge håndbøger er opdateret;
+runtimeafgrænsning er lokalt implementeret og måltestet. Historik/T+3-
+krydstjek fandt og rettede hovedzone-trim og efterfølgende routingtab af
+sidste tre trends samt ubevist gammel trend ved rent niveaumatch.
+Snæver state-neutral vandstandsmigration er også måltestet; begge states
+bevares ved fjernelse alene, bølgeændring beholder sin replaypligt.
+CP/OM-datumomregning er ikke længere en rest. Storageclientens interrupted
+responsebody får nu ét sikkert retry; 6 små cases og eksisterende private
+storage/retention/rollback-test består. Ingen produktionsændring.
+Isoleret diagnosticcheckout findes i `.codex/worktrees/ravradar-readonly-evidence/RavRadar`
+på `codex/readonly-weather-evidence-20260919`, baseret på main429. Commit
+`4c5489ec` er pushet og read-only run `35437186403` bestået: 95,2 MB faktisk
+Storage, ingen ekstra objekter, samt 44.174/44.217 sammenlignede gemte
+nativerækker med MWP i stedet for PP1D. Det er blandede bulk-entities, ikke
+en berørt scorestate-optælling. Den næste snævre diagnose er også afsluttet:
+`35438520417` på `45342643`, exact protectedgeneration for 19/9 kl. 04 dansk.
+673/673 aktive dele har en PP1D-afvigelse i inputbanken før/på H0;
+34.404/34.434 sammenlignede PART-rækker er MWP fremfor peak. Gammel fuld
+bundlevalidator og identiteter består; faktisk konsumeret journal findes
+stadig ikke, så det er ikke 673 beviste scorefejl. Næste er eksisterende
+paired measured-cold replay for det dokumenterede eksponeringsscope, kun
+med kvalificeret korrigeret input og ærlig warmup. Ingen tredje identisk
+diagnose. Se WEATHER_INPUT_MIGRATION_PLAN_2026-09-19.md for optioner/værn.
+Den normale monitor på main og den store dirty rettelse her ændres ikke
+af diagnosticbranchens workflow; branchen må ikke merges til main.
+
+Encrypted progress-helper er uafhængigt gennemgået og normalworkflowet
+forbundet med krævet whole-bundle+conditionshash. 256 MiB ciphertextcap;
+overbudget bevarer gammel fil og stopper ikke produktion. Nøglen afledes fra
+den eksisterende service-role-secret. DMI/CP/OM/staging/source-handoff indgår
+nu i den samlede krypterede pakke, og rå aktive writers er fjernet/deaktiveret.
+Faktisk drift og senere præcis cachecleanup mangler. PENDING/artifactudløb
+gælder binding/cutover/rollback, ikke almindelig ACTIVE/samme-binding drift.
+
+Seneste fortsættelse frem til cirka kl. 12 dansk: normal topcaller er nu
+koblet til CP→OM-komponentkoordinator→faktisk score→gemt valgledger.
+Ny OM-native-nearest IFS/WAM/SST-policy, current96 gennem normal delkæde,
+CP selvreparation af manglende originaler og private9+1restore/migration er
+lokalt måltestet. Ingen produktion/commit/version ændret. Native vandstand,
+gammel rå bølgehistorik og endelig binding er stadig åbne. Ejer kræver
+minimal vedligeholdelse uden løbende Codex-licens, måske årligt eftersyn.
+Nye driftsrester er gemt: produktionsbevis for failed-run-progress og holdbar
+reentry på ren runner, transient tre-generationers kapacitet, alarm-livscyklus
+og præcis oprydning efter bevist krypteret overgang.
+Se det samlede checkpoints NYESTE topafsnit før ældre delstatus nedenfor.
+
+Windows genstartede kl. 09.33.28 dansk. Gemte kode-/test-/SQL-ændringer er
+bevaret til 09.33.12; gammelt handoff fra 09.06 var bagefter arbejdet.
+Læs [fuld fund→rettelse-matrix og restarbejde](WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md).
+Ejeren præciserer, at det er HELE analysen, der skal med i den igangværende
+rettelse. Ingen indsnævring til 96 timer eller den senest fundne fejl.
+
+41 tracked filer var ændret ved auditten plus nye filer. DMI-plan/peakproof,
+komponentmerge/støtteakse, warmup-checkpoint/retry/readiness og små public-
+pakker/UI er delvist implementeret. De uafhængige genstartsaudits er afsluttet.
+Katalog→horizon, LF/resume-støtte, warmupglue, fælles recovery/serialisering,
+monoton Pages-generation, artifactkopi og mobil/netfejl er nu rettet lokalt.
+Komponentmerge vælger nyere beviste DMI-revisioner og bevarer gammel gyldig
+værdi/tail ved en nyere cachefils hul. Endelig SQL/hash, fuld PART-fallback,
+modelreference/96-timerspartition, datum og historisk inputmigration er ikke
+færdige. 96-timershelperens tests er ikke produktionskobling. Ingen
+releaseklarhed. CP-reader er lokalt klar, men ikke produktionskoblet.
+Udløben first-cutover-nødvej er fjernet med normal advisory bevaret.
+Code-only skelner nu ren bindingsændring fra faktisk state-/scorereparation;
+ændrede vejrinput kan ikke passere som kosmetisk rebind.
+
+Senere i fortsættelsen er merge-admission ved hul/ekstra timer, 360°-grænsen
+og afledte strømfelter rettet. CP `DatasetUpdating` bevarer fremgang med ét
+budgetafgrænset retry. CP/OM har nye private komponentbank-helpers; OM har
+et afprøvet snit ind i den faktiske PART-adapter/Feggesund-bevis, men normal
+pipeline leverer ikke bankindexet endnu. Officiel OM-kode viste, at
+best_match kan blande modeller/koordinater; single-model-requests er nu
+færdige i både ny PART- og gammel 210-zone-rute. Faktisk normalfunktion har
+låst H0..H120, særskilte fejl og SST-centerkontrol. Privat OM-transport er
+lokalt klar. Valgte reserveværdier følger nu videre til kortpil med samme
+kilde/time; CP-kildealder og særskilt komponentbehovsplan er rettet. Peak-state-
+replayhelper er lokalt klar, ikke tilkoblet. v1-strøm accepterer ikke falsk
+eftermonteret modelalder. Samlet 96h-/datum-/spatial-/migrationwireup mangler.
+
+Aktiv indlejret rod/branch/main er uændret: `node_modules/RavRadar-4.0.396`,
+`codex/4.0.428-weather-completeness`, `4bee5b0d` / 4.0.429. Ingen ny commit,
+push, deploy eller providerkørsel. Cron disabled, ingen aktive runs, tre
+gamle queued runs må ikke vækkes. Privat `.tmp-420/` må ikke stages.
+Fortsæt fra checkpointets konkrete integrationspunkter, ikke fra starten.
+
+# HISTORISK ANALYSECHECKPOINT – 2026-09-19 – samlet kædeanalyse på merged 4.0.429
+
+Analysen er fortsat for HELE kæden efter udtrykkelig ejerkorrektion, ikke
+kun 96 timer. Læs [krydstjek og samlet plan](WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+Den samler persistence/reentry/retry, inputvalg/scheduler, historik og
+public/browser som sammenhængende pakker; ikke én release pr. fejl.
+Nyt: wave-decoder kan forveksle PP1D/MWP; produktionseffekt endnu ukendt.
+118-timersmerge rammer de sidste tre trends. CP/OM mangler modelalderbevis.
+Adminfingerprints er stabile ved uændrede punkter; ændret punkt har særskilt
+migrationsbehov og er uden for denne rettelse. Ingen ny runtimeændring.
+
+Seneste ejerforslag erstatter den tidligere sidste-døgn-idé: tillad nyere
+gyldig reserve ved DMI-alder mindst 96 timer fra eget beviste modelrun.
+Assistenten anbefaler denne præcisering. Faktisk gyldighed/retention består;
+uden erstatning bevares gyldig DMI, og ny DMI overtager igen. Se DEC-0210's
+topafsnit. H94..H117 nedenfor er tidligere forslag; ingen regel er kodet.
+
+Læs [helhedsanalysen](WEATHER_CHAIN_REVIEW_2026-09-19.md) og nyeste afsnit i
+CODEX_START_HERE. Brug det indlejrede `node_modules/RavRadar-4.0.396`, ikke
+den ydre beskidte worktree. Branch `codex/4.0.428-weather-completeness`,
+HEAD/main `4bee5b0d` efter PR #374. Exact-head `35420912328` er grøn.
+
+Saved-weather `35421108551`: Pages lykkedes, offentlig verifier fejlede på
+migrationflag, central PENDING30. Efterfølgende normal `35421627495` stoppede
+i admin-sync før provider. Sidste faktiske providerdata: `35416641052`, H0
+19/9 kl. 04 dansk. Cron318363965 er livebekræftet disabled. Ingen nyt run.
+
+Analysen er udført med parallel uafhængig krydslæsning, små offline-
+reproduktioner, GitHub-log/API, officiel leverandørdokumentation og Chrome.
+Ingen nye runtimekodeændringer. De to eksisterende lokale verifier/testfiler
+er for snævre (kun nul aktive zoner) og må ikke leveres alene. Bevar dem som
+ufærdigt arbejde, indtil samlet readiness/recovery-design er implementeret.
+Privat `.tmp-420/` må aldrig stages. Nuværende docs er analyse, ikke 4.0.430.
+
+Ejerens aftale gælder alle vejrtyper: gyldig DMI bevares; Copernicus udfylder
+resterende huller og Open-Meteo resten. Ikke kun strøm, ikke kun halen.
+Eksisterende legacy-zonehentning af flere OM-felter er ikke accepteret
+PART-input; ret hele vejen gennem cache, adapter, model og visning.
+Reservedækning må ikke gøre DMI permanent færdig: når DMI er med og har
+kapacitet, skal den også opsøge og overtage samme gyldige komponent fra
+CP/OM. Kildeopgradering er en særskilt opgavetype, ikke et reelt datahul.
+Gyldig reserve bevares ved mislykket eller ugyldigt DMI-forsøg. DEC-0210.
+Det tidligere sidste-døgn-forslag er erstattet af den senere 96-timers-
+afgrænsning; brug ikke H94..H117 som en samtidig kildepolitik.
+
+Næste: færdiggør fallback-/datum-/proveniensdesign, implementér rapportens
+fælles rettelser (inkl. varmup-state, genindgang, concurrency, retry og
+tidskorrekt lille public-pakke), lever providerfrit med bevaret state, og
+bevis normal vedligeholdelse gennem flere providerfaser. Ingen ændring af
+scoreformel/geometri. Ekstra høj indsats som minimum til implementering;
+fortsat dyb tværgående review før levering. Ingen påstand om fuld drift nu.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
 
 4.0.425 bestod exact-head `35403040711`, blev merged gennem PR #370 som main
 `05892afc` og startede normalrun `35403510608`. Den centrale model er

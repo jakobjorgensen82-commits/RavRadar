@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import {
@@ -36,7 +37,7 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
-import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
+import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import {
@@ -49,7 +50,12 @@ import {
   nativeCadenceHoldHoursForPart,
 } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
-import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
+import { OPEN_METEO_FUTURE_HOURS, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
+import { buildOpenMeteoIndependentHourlyComponents, fetchOpenMeteoComponentResponses } from './lib/open-meteo-hourly-components.mjs';
+import { OPEN_METEO_PART_COMPONENTS, OPEN_METEO_NATIVE_NEAREST_POLICIES, openMeteoComponentRequestParts, openMeteoComponentGridMatches } from './lib/open-meteo-part-bank.mjs';
+import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
+import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
+import { recordSelectedWeatherComponents } from './lib/weather-component-selection-history.mjs';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   assertCandidateGRollbackContinuation,
@@ -99,6 +105,10 @@ import {
   RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
+import {
+  historicalWaveMeasuredColdPipelineInitialization,
+  loadHistoricalWaveInputTransition,
+} from './lib/historical-wave-input-transition.mjs';
 import {
   CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
@@ -150,6 +160,11 @@ const DMI_OBSERVATION_INTERVAL_MINUTES = Math.max(10, Number(process.env.DMI_OBS
 const STATION_CACHE_GRACE_HOURS = Math.max(1, Number(process.env.STATION_CACHE_GRACE_HOURS ?? 6));
 const DMI_DEPLOYED_CACHE_URL = process.env.DMI_DEPLOYED_CACHE_URL ?? null;
 const WEATHER_CACHE_ONLY = process.env.RAVRADAR_WEATHER_CACHE_ONLY === 'true';
+// Bounded normal-run residual work; saved-weather/code delivery never fetches.
+const COMPONENT_COPERNICUS_BUDGET_MS = WEATHER_CACHE_ONLY ? 0
+  : Number(process.env.RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS ?? 90_000);
+const COMPONENT_OPEN_METEO_BUDGET_MS = WEATHER_CACHE_ONLY ? 0
+  : Number(process.env.RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS ?? 90_000);
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
@@ -169,6 +184,8 @@ const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =
   process.env.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true';
 const RAVSCORE_CURRENT_TRACE_PATH =
   process.env.RAVSCORE_CURRENT_TRACE_PATH?.trim() || null;
+const RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH =
+  process.env.RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH?.trim() || null;
 const RAVSCORE_CURRENT_TRACE_PART_IDS = new Set(
   (process.env.RAVSCORE_CURRENT_TRACE_PART_IDS ?? '')
     .split(',')
@@ -524,6 +541,55 @@ function withoutZoneCurrent(zone) {
   };
 }
 
+
+// Legacy display/history policy only; PART admission remains independently
+// verified. Explicit row sources win over a containing cache's provider.
+function retainOnlyDmiWaterLevel(row, inheritedProvider = null) {
+  if (!row) return row;
+  const provider = row.sources?.waterLevel?.provider ?? row.waterLevelProvenance?.provider
+    ?? row.waterLevelSource ?? inheritedProvider;
+  if (typeof provider === 'string' && /^dmi(?:$|-)/.test(provider)) return row;
+  const clean = { ...row, waterLevelCm: null, waterLevelTrendCm3h: null };
+  for (const key of Object.keys(clean)) {
+    if (key.startsWith('waterLevel') && !['waterLevelCm', 'waterLevelTrendCm3h'].includes(key)) delete clean[key];
+  }
+  if (row.sources) clean.sources = { ...row.sources, waterLevel: { provider: 'missing', fallback: false,
+    fallbackReason: 'Vandstand bruger kun DMI' } };
+  return clean;
+}
+
+function retainOnlyDmiZoneWaterLevel(zone) {
+  if (!zone) return zone;
+  const clean = { ...zone, current: retainOnlyDmiWaterLevel(zone.current,
+    zone.sources?.waterLevel?.provider ?? zone.provider) };
+  for (const key of ['forecast', 'dmiForecast']) {
+    if (zone[key]) clean[key] = { ...zone[key], hourly: (zone[key].hourly ?? []).map(row =>
+      retainOnlyDmiWaterLevel(row, zone[key].provider ?? (key === 'dmiForecast' ? 'dmi' : zone.provider))) };
+  }
+  const proofByTime = new Map((clean.dmiForecast?.hourly ?? clean.forecast?.hourly ?? []).map(row => [row.time, row]));
+  for (const key of ['samples24h', 'samples72h']) {
+    if (!Array.isArray(zone[key])) continue;
+    clean[key] = zone[key].map(row => {
+      if (!row) return row;
+      const exact = proofByTime.get(row.at);
+      const inherited = exact?.waterLevelCm === row.waterLevelCm && exact?.waterLevelCm != null
+        ? exact.sources?.waterLevel?.provider ?? exact.waterLevelSource : null;
+      const retained = retainOnlyDmiWaterLevel(row, inherited);
+      const ownProvider = row.sources?.waterLevel?.provider ?? row.waterLevelProvenance?.provider
+        ?? row.waterLevelSource;
+      // A matching old level does not authenticate a different old T+3 trend.
+      // Keep the proven level and independent weather fields, not that trend.
+      return ownProvider == null && inherited != null && retained.waterLevelCm != null
+        && retained.waterLevelTrendCm3h !== exact.waterLevelTrendCm3h
+        ? { ...retained, waterLevelTrendCm3h: null } : retained;
+    });
+  }
+  if (zone.current?.waterLevelCm != null && clean.current?.waterLevelCm == null) {
+    clean.waterLevel = { source: 'missing', reference: null, interpolation: null, modelBiasCm: null };
+    clean.sources = { ...(zone.sources ?? {}), waterLevel: { provider: 'missing', fallback: false } };
+  }
+  return clean;
+}
 
 function haversineKm(a, b) {
   const toRad = degrees => degrees * Math.PI / 180;
@@ -1290,6 +1356,7 @@ function feggesundWaveProofEntriesForPart(
   hourly,
   partId,
   forecastStartAt,
+  { part = null, componentInputs = null } = {},
 ) {
   const startMs = Date.parse(forecastStartAt);
   if (!Number.isFinite(startMs) || typeof partId !== 'string' || !partId) {
@@ -1304,6 +1371,8 @@ function feggesundWaveProofEntriesForPart(
       partId,
       time,
       hour: byTime.get(time) ?? missingFeggesundWaveHour(time),
+      part,
+      componentInputs,
     });
   });
 }
@@ -1315,6 +1384,7 @@ function preflightFeggesundOperationalWaveReadiness({
   generatedAt,
   forecastStartAt,
   sourcesByTime,
+  componentInputs = {},
 }) {
   const parts = contract?.zones?.[FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID];
   const partIds = Array.isArray(parts)
@@ -1365,11 +1435,13 @@ function preflightFeggesundOperationalWaveReadiness({
       bulkCache,
       bulkId,
       partWithZone,
+      componentInputs,
     );
     entries.push(...feggesundWaveProofEntriesForPart(
       hourly,
       part.partId,
       forecastStartAt,
+      { part: partWithZone, componentInputs },
     ));
   }
   const proof = buildFeggesundWaveCoverageProof({
@@ -1984,9 +2056,14 @@ function scoreCoastalPartsRuntime(
   pointStateInjections = {},
   checkpointStates = {},
   checkpointCandidateGRollbackStates = {},
+  componentInputs = {},
+  historicalWaveInputTransition = null,
 ) {
+  const forceHistoricalWaveMeasuredColdReplay =
+    historicalWaveInputTransition !== null;
   const previousEvidenceTrust = previousCoastalParts?.evidenceTrust ?? null;
-  if (previousEvidenceTrust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS) {
+  if (!forceHistoricalWaveMeasuredColdReplay
+    && previousEvidenceTrust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS) {
     throw new Error('Integrated RavScore cutover refuses Candidate G source with active reconstructed evidence trust');
   }
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
@@ -2061,6 +2138,7 @@ function scoreCoastalPartsRuntime(
     generatedAt,
     forecastStartAt: partForecastStartAt,
     sourcesByTime: feggesundSourcesByTime,
+    componentInputs,
   });
   const feggesundWaveProofEntries = [];
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
@@ -2082,48 +2160,64 @@ function scoreCoastalPartsRuntime(
       const checkpointCandidateGContinuation =
         checkpointCandidateGRollbackStates?.[part.partId] ?? null;
       const publicCandidateGMigrationState = existingPart?.candidateG?.currentState ?? null;
-      for (const candidateState of [
-        privateCandidateGContinuation,
-        checkpointCandidateGContinuation,
-        publicCandidateGMigrationState,
-      ]) {
-        if (!candidateState) continue;
-        const transportEvidence = candidateState?.transport?.evidence;
-        const reconstructedEvidenceCount = Array.isArray(transportEvidence)
-          ? transportEvidence.filter(isReconstructedTransportEvidence).length
-          : 0;
-        if (candidateState.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
-          || reconstructedEvidenceCount > 0) {
-          throw new Error('Integrated RavScore cutover refuses Candidate G schema 2.1 or reconstructed transport samples');
+      if (!forceHistoricalWaveMeasuredColdReplay) {
+        for (const candidateState of [
+          privateCandidateGContinuation,
+          checkpointCandidateGContinuation,
+          publicCandidateGMigrationState,
+        ]) {
+          if (!candidateState) continue;
+          const transportEvidence = candidateState?.transport?.evidence;
+          const reconstructedEvidenceCount = Array.isArray(transportEvidence)
+            ? transportEvidence.filter(isReconstructedTransportEvidence).length
+            : 0;
+          if (candidateState.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
+            || reconstructedEvidenceCount > 0) {
+            throw new Error('Integrated RavScore cutover refuses Candidate G schema 2.1 or reconstructed transport samples');
+          }
         }
       }
       // A READY exact-point activation is the only state allowed to outrank an
       // existing integrated continuation. General checkpoints remain below
       // an existing exact-context state and above the one-time legacy source.
       const pointActivationPair = pointStateInjections?.[part.partId] ?? null;
-      const initialSelection = selectRavScoreProductionInitialState({
-        part,
-        pointStateInjections: pointActivationPair
-          ? { [part.partId]: pointActivationPair.integratedState }
-          : {},
-        existingPart,
-        checkpointStates,
-        targetReferenceAt: generatedAt,
-        candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,
-        candidateGSourceValidated: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED,
-      });
-      let previousCandidateGContinuation = null;
-      let legacyCandidateGMigrationState = null;
-      let candidateGRollbackMeasuredColdStart = false;
-      let candidateGRollbackMeasuredWarmupContinuation = false;
-      if (initialSelection.source === 'CANDIDATE_G_MIGRATION') {
+      const forcedHistoricalWaveInitialization =
+        forceHistoricalWaveMeasuredColdReplay
+          ? historicalWaveMeasuredColdPipelineInitialization(
+            historicalWaveInputTransition,
+          )
+          : null;
+      const initialSelection = forceHistoricalWaveMeasuredColdReplay
+        ? forcedHistoricalWaveInitialization.initialSelection
+        : selectRavScoreProductionInitialState({
+          part,
+          pointStateInjections: pointActivationPair
+            ? { [part.partId]: pointActivationPair.integratedState }
+            : {},
+          existingPart,
+          checkpointStates,
+          targetReferenceAt: generatedAt,
+          candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,
+          candidateGSourceValidated: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED,
+        });
+      let previousCandidateGContinuation =
+        forcedHistoricalWaveInitialization?.previousCandidateGContinuation ?? null;
+      let legacyCandidateGMigrationState =
+        forcedHistoricalWaveInitialization?.legacyCandidateGMigrationState ?? null;
+      let candidateGRollbackMeasuredColdStart =
+        forcedHistoricalWaveInitialization?.candidateGRollbackMeasuredColdStart ?? false;
+      let candidateGRollbackMeasuredWarmupContinuation =
+        forcedHistoricalWaveInitialization
+          ?.candidateGRollbackMeasuredWarmupContinuation ?? false;
+      if (!forceHistoricalWaveMeasuredColdReplay
+        && initialSelection.source === 'CANDIDATE_G_MIGRATION') {
         if (!publicCandidateGMigrationState
           || JSON.stringify(initialSelection.state)
             !== JSON.stringify(publicCandidateGMigrationState)) {
           throw new Error('First integrated cutover lacks its exact public Candidate G source');
         }
         legacyCandidateGMigrationState = publicCandidateGMigrationState;
-      } else if (
+      } else if (!forceHistoricalWaveMeasuredColdReplay &&
         initialSelection.source === 'COLD_START'
         && [
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart,
@@ -2131,7 +2225,7 @@ function scoreCoastalPartsRuntime(
         ].includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)
       ) {
         candidateGRollbackMeasuredColdStart = true;
-      } else {
+      } else if (!forceHistoricalWaveMeasuredColdReplay) {
         const candidateGContinuationSelection =
           selectCoastalPointCandidateGRollbackContinuation({
           partId: part.partId,
@@ -2144,9 +2238,10 @@ function scoreCoastalPartsRuntime(
           });
         previousCandidateGContinuation = candidateGContinuationSelection.state;
         candidateGRollbackMeasuredWarmupContinuation =
-          candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'
-          && previousCandidateGRollbackRuntime?.status
-            === CANDIDATE_G_MEASURED_WARMUP_STATUS;
+          (candidateGContinuationSelection.source === 'PRIVATE_RUNTIME'
+            && previousCandidateGRollbackRuntime?.status === CANDIDATE_G_MEASURED_WARMUP_STATUS)
+          || (candidateGContinuationSelection.source === 'CHECKPOINT_COMPANION'
+            && previousCandidateGContinuation?.transportMemoryReady === false);
       }
       const feature = {
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
@@ -2175,7 +2270,10 @@ function scoreCoastalPartsRuntime(
           partDmiIdentity,
         )),
       });
-      const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
+      const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId }, componentInputs);
+      if (componentInputs.componentSelectionHistory) {
+        recordSelectedWeatherComponents(componentInputs.componentSelectionHistory, { ...part, zoneId }, hourly);
+      }
       const sourceAgeHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
       const traced = RAVSCORE_CURRENT_TRACE_PART_IDS.has(part.partId);
       const rawBulkRows = Array.isArray(bulkCache?.zones?.[bulkId]?.hourly)
@@ -2241,6 +2339,7 @@ function scoreCoastalPartsRuntime(
           hourly,
           part.partId,
           partForecastStartAt,
+          { part: { ...part, zoneId }, componentInputs },
         ));
       }
       const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
@@ -2287,6 +2386,7 @@ function scoreCoastalPartsRuntime(
                 deployedBulkCache,
                 bulkId,
                 { ...part, zoneId },
+                componentInputs,
               ),
             },
           };
@@ -2326,6 +2426,7 @@ function scoreCoastalPartsRuntime(
               bulkCache,
               bulkId,
               { ...part, zoneId },
+              componentInputs,
             ),
           },
         };
@@ -2350,7 +2451,10 @@ function scoreCoastalPartsRuntime(
         candidateGRollbackMeasuredWarmupContinuation,
         targetReferenceAt: generatedAt,
         recoverySources,
-        publicHourly: hourly,
+        // T+118..T+120 were needed to derive the last public trends above,
+        // but must never extend the public score horizon or its state walk.
+        publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+          && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
         nativeCadenceHoldHours,
         resolveNativeCadenceReferenceSample: sourceValidTime =>
           latestVerifiedNativeCadenceSampleForPart(
@@ -2556,7 +2660,7 @@ function scoreCoastalPartsRuntime(
           ravScoreState,
           candidateGState,
           candidateGRollbackScores,
-          record,
+          record: { ...record, hourly },
           scores
         });
       }
@@ -2616,6 +2720,7 @@ function scoreCoastalPartsRuntime(
       row.waterPoint,
       score?.time ?? generatedAt,
       row,
+      componentInputs,
     );
     return [row.partId, buildIntegratedPartPublicProjection({
       row,
@@ -2623,6 +2728,7 @@ function scoreCoastalPartsRuntime(
       scoreProfile,
       selectedMode,
       flowPoints,
+      flowPointsAt: time => flowPointsFromForecastRecord(row.record, row.waterPoint, time, row, componentInputs),
     })];
   }));
   const scoreAvailability = buildIntegratedPublicScoreAvailability({
@@ -2830,6 +2936,7 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
       windSpeedMps: currentForecast.windSpeedMps, windDirectionDeg: currentForecast.windDirectionDeg,
       waveHeightM: currentForecast.waveHeightM, waveDirectionDeg: currentForecast.waveDirectionDeg,
       wavePeriodS: currentForecast.wavePeriodS, waterLevelCm: currentForecast.waterLevelCm,
+      waterLevelSource: currentForecast.sources?.waterLevel?.provider ?? 'dmi',
       waterLevelTrendCm3h: currentForecast.waterLevelTrendCm3h, currentUMps: currentForecast.currentUMps ?? null, currentVMps: currentForecast.currentVMps ?? null,
       currentSpeedMps: currentForecast.currentSpeedMps, currentDirectionDeg: currentForecast.currentDirectionDeg, waterTemperatureC: currentForecast.waterTemperatureC
     },
@@ -2847,18 +2954,34 @@ const ATOMIC_COMPONENT_TUPLE_KEYS = Object.freeze({
   wind: Object.freeze(['windSpeedMps', 'windDirectionDeg']),
   wave: Object.freeze(['waveHeightM', 'wavePeriodS', 'waveDirectionDeg']),
   current: Object.freeze(['currentSpeedMps', 'currentDirectionDeg']),
+  waterLevel: Object.freeze(['waterLevelCm']),
+  waterTemperature: Object.freeze(['waterTemperatureC']),
 });
 
 function atomicComponentTupleValues(row, component) {
   const keys = ATOMIC_COMPONENT_TUPLE_KEYS[component];
   if (!keys) return null;
+  if (component === 'waterLevel' || component === 'waterTemperature') {
+    const value = ravScoreNumber(row?.[keys[0]]);
+    return value === null ? null : { [keys[0]]: value };
+  }
+  if (component === 'current' && (row?.currentUMps != null || row?.currentVMps != null)) {
+    const u = ravScoreNumber(row.currentUMps);
+    const v = ravScoreNumber(row.currentVMps);
+    if (u === null || v === null) return null;
+    // Derived cache fields do not invalidate or supersede a complete raw pair.
+    // Source admission still runs before this pair can be selected.
+    return { currentSpeedMps: Number(Math.hypot(u, v).toFixed(2)),
+      currentDirectionDeg: ((Math.round(Math.atan2(u, v) * 180 / Math.PI) % 360) + 360) % 360 };
+  }
   if (component === 'wave') {
     const height = ravScoreNumber(row?.waveHeightM);
     const period = ravScoreNumber(row?.wavePeriodS);
-    const direction = row?.waveDirectionDeg === null
+    const rawDirection = row?.waveDirectionDeg === null
       || row?.waveDirectionDeg === undefined
       ? null
       : ravScoreNumber(row.waveDirectionDeg);
+    const direction = rawDirection === 360 ? 0 : rawDirection;
     const directionValid = direction === null
       || (direction >= 0 && direction < 360);
     if (height === null || height < 0 || period === null || period < 0
@@ -2873,6 +2996,7 @@ function atomicComponentTupleValues(row, component) {
     };
   }
   const values = Object.fromEntries(keys.map(key => [key, ravScoreNumber(row?.[key])]));
+  if (values[keys[1]] === 360) values[keys[1]] = 0;
   const speed = values[keys[0]];
   const direction = values[keys[1]];
   if (speed === null || speed < 0
@@ -2888,6 +3012,7 @@ function selectAtomicComponentTuple(
   component,
   { attest = () => true } = {},
 ) {
+  let selected = null;
   for (const candidate of [
     { row: primary, retained: false },
     { row: fallback, retained: true },
@@ -2899,9 +3024,12 @@ function selectAtomicComponentTuple(
       retained: candidate.retained,
     });
     if (!attestation) continue;
-    return { ...candidate, values, attestation };
+    const admitted = { ...candidate, values, attestation };
+    if (!selected || preferQualifiedDmiComponentSource(
+      selected.attestation, attestation, component,
+    )) selected = admitted;
   }
-  return null;
+  return selected;
 }
 
 function exactPublicForecastTimes(referenceAt) {
@@ -2955,8 +3083,18 @@ function mergeHourlyPreferDmi(
   // Public records keep the exact production +0..+117 axis. Private replay
   // callers deliberately supply an earlier startAt; using generatedAt here
   // used to discard the very measured history they had just reconstructed.
-  const times = exactPublicForecastTimes(startAt);
+  const publicTimes = exactPublicForecastTimes(startAt);
+  const times = expectedIdentity
+    ? Array.from({ length: DMI_FORECAST_HOURS }, (_, index) =>
+      new Date(Date.parse(startAt) + index * 3_600_000).toISOString())
+    : publicTimes;
   const expectedTimeSet = new Set(times);
+  if (!expectedIdentity && times.length) {
+    const lastPublicMs = Date.parse(times.at(-1));
+    for (let offset = 1; offset <= 3; offset += 1) {
+      expectedTimeSet.add(new Date(lastPublicMs + offset * 3_600_000).toISOString());
+    }
+  }
   const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER })
     .filter(item => expectedTimeSet.has(item.time));
   const dmiByTime = new Map(future(dmiHourly).map(item => [item.time, item]));
@@ -3000,6 +3138,8 @@ function mergeHourlyPreferDmi(
     const selectedWind = select('wind');
     const selectedWave = select('wave');
     const selectedCurrent = select('current');
+    const selectedWaterLevel = expectedIdentity ? select('waterLevel') : null;
+    const selectedWaterTemperature = expectedIdentity ? select('waterTemperature') : null;
     const selectedCurrentU = ravScoreNumber(selectedCurrent?.row?.currentUMps);
     const selectedCurrentV = ravScoreNumber(selectedCurrent?.row?.currentVMps);
     const selectedCurrentVectorAvailable = selectedCurrentU !== null
@@ -3011,7 +3151,7 @@ function mergeHourlyPreferDmi(
       waveHeightM: selectedWave?.values.waveHeightM ?? null,
       waveDirectionDeg: selectedWave?.values.waveDirectionDeg ?? null,
       wavePeriodS: selectedWave?.values.wavePeriodS ?? null,
-      waterLevelCm: null,
+      waterLevelCm: selectedWaterLevel?.values.waterLevelCm ?? null,
       waterLevelTrendCm3h: null,
       currentSpeedMps: selectedCurrent?.values.currentSpeedMps ?? null,
       currentDirectionDeg: selectedCurrent?.values.currentDirectionDeg ?? null,
@@ -3020,27 +3160,51 @@ function mergeHourlyPreferDmi(
       airTemperatureC: ravScoreNumber(item.airTemperatureC)
         ?? ravScoreNumber(fallback.airTemperatureC)
         ?? null,
-      waterTemperatureC: ravScoreNumber(item.waterTemperatureC)
+      waterTemperatureC: expectedIdentity
+        ? selectedWaterTemperature?.values.waterTemperatureC ?? null
+        : ravScoreNumber(item.waterTemperatureC)
         ?? ravScoreNumber(fallback.waterTemperatureC)
         ?? null,
       sources: {
         wind: selectedWind?.attestation ?? { provider: 'missing', fallback: false },
         wave: selectedWave?.attestation ?? { provider: 'missing', fallback: false },
         current: selectedCurrent?.attestation ?? { provider: 'missing', fallback: false },
-        waterLevel: { provider: 'pending', fallback: false },
-        waterTemperature: ravScoreNumber(item.waterTemperatureC) !== null
+        waterLevel: selectedWaterLevel?.attestation ?? { provider: 'pending', fallback: false },
+        waterTemperature: expectedIdentity
+          ? selectedWaterTemperature?.attestation ?? { provider: 'missing', fallback: false }
+          : ravScoreNumber(item.waterTemperatureC) !== null
           ? (item.sources?.waterTemperature ?? { provider: 'dmi', fallback: false })
           : ravScoreNumber(fallback.waterTemperatureC) !== null
             ? (fallback.sources?.waterTemperature ?? { provider: fallback.source ?? 'open-meteo', fallback: true })
             : { provider: 'missing', fallback: false }
       }
     };
+    if (expectedIdentity) {
+      // A donor can now replace an older primary. The whole-row spread above
+      // must not carry that primary's cached derived proof/bias into the new
+      // tuple. The strict PART sanitizer derives these from the selected
+      // source and exact T/T+3 series; current never trusts a stale parallel
+      // currentProvenance in preference to the newly selected sources.current.
+      for (const key of [
+        'windProvenance', 'waveProvenance', 'waveInputSource',
+        'waveInputUncertainty', 'waveInputNoticeId', 'feggesundNeighborWaveSource',
+        'currentProvenance', 'currentStateOnlyHold', 'currentCoastNormalSpeedMps',
+        'waterLevelModelCm', 'waterLevelBiasCm', 'waterLevelObservationDifferenceCm',
+        'waterLevelSource', 'waterLevelProvenance', 'waterLevelReference',
+        'waterTemperatureProvenance',
+      ]) delete mergedRow[key];
+    }
     if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;
     return mergedRow;
   });
-  const waterLevelContinuity = repairWaterLevelContinuity(merged, dmiByTime, fallbackByTime, { shortDmiGapHours: SHORT_DMI_WATER_GAP_HOURS, jumpWarningCm: WATER_LEVEL_JUMP_WARN_CM });
+  // The model's attested PART series must not be altered by the legacy
+  // display-level offset interpolation. Its exact T/T+3 trend is calculated
+  // from matching verified series in verifiedIntegratedPartHourly.
+  const waterLevelContinuity = expectedIdentity
+    ? { status: 'exact-qualified-components-no-datum-adjustment' }
+    : repairWaterLevelContinuity(merged, dmiByTime, fallbackByTime, { shortDmiGapHours: SHORT_DMI_WATER_GAP_HOURS, jumpWarningCm: WATER_LEVEL_JUMP_WARN_CM });
   for (const row of merged) row.waterLevelContinuity = waterLevelContinuity;
-  return normalizeForecastHourly(merged, { limit: ACCEPTED_FORECAST_HOURS });
+  return normalizeForecastHourly(merged, { limit: times.length });
 }
 
 function componentSource(provider, zone, component, generatedAt, extra = {}) {
@@ -3102,7 +3266,7 @@ function mergeDmiWithFallback(dmiResult, fallbackZone, generatedAt) {
     const atomicSelection = isAtomicComponent
       ? selectAtomicComponentTuple(
         dmiResult.current,
-        fallbackZone.current,
+        component === 'waterLevel' ? null : fallbackZone.current,
         component,
       )
       : null;
@@ -3116,7 +3280,9 @@ function mergeDmiWithFallback(dmiResult, fallbackZone, generatedAt) {
         && fallbackZone.current?.[key] !== undefined);
     for (const key of keys) {
       mergedCurrent[key] = isAtomicComponent
-        ? atomicSelection?.values?.[key] ?? null
+        ? (key === 'waterLevelTrendCm3h'
+          ? ravScoreNumber(atomicSelection?.row?.waterLevelTrendCm3h)
+          : atomicSelection?.values?.[key] ?? null)
         : dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
     }
     if (component === 'current') {
@@ -3144,6 +3310,7 @@ function mergeDmiWithFallback(dmiResult, fallbackZone, generatedAt) {
     dmiForecast.horizonHours = dmiForecast.hourly.length;
   }
   const mergedForecast = dmiForecast ? { provider: 'mixed', providerLabel: 'DMI med komponentvis fallback', generatedAt: dmiForecast.generatedAt, validUntil: dmiForecast.validUntil, hourly: dmiForecast.hourly } : fallbackZone.forecast;
+  mergedCurrent.waterLevelSource = sources.waterLevel.provider;
   return {
     ...fallbackZone,
     ...dmiResult,
@@ -3258,39 +3425,21 @@ function currentFromHourly(data, variable, target = Date.now()) {
   return best >= 0 ? data.hourly?.[variable]?.[best] ?? null : null;
 }
 
-async function fromOpenMeteo(feature, generatedAt) {
+async function fromOpenMeteo(feature, generatedAt, suppliedForecast = null) {
   const [longitude, latitude] = zonePoint(feature);
-  const weatherQuery = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude),
-    current: 'wind_speed_10m,wind_direction_10m', wind_speed_unit: 'ms', timezone: 'GMT', forecast_days: '1'
-  });
-  const marineQuery = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude),
-    current: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature',
-    hourly: 'sea_level_height_msl', velocity_unit: 'ms', timezone: 'GMT', forecast_days: '1', cell_selection: 'sea'
-  });
-  const [weather, marine] = await Promise.all([
-    fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo', retries: 2 }),
-    fetchJson(`https://marine-api.open-meteo.com/v1/marine?${marineQuery}`, { provider: 'Open-Meteo Marine', retries: 2 })
-  ]);
-  const c = marine.current ?? {};
-  const sea = num(c.sea_level_height_msl);
-  const sea3 = num(currentFromHourly(marine, 'sea_level_height_msl', Date.parse(generatedAt) + 3 * 3600000));
+  const forecast = suppliedForecast ?? await forecastFromOpenMeteo(feature, generatedAt);
+  const time = canonicalForecastHour(generatedAt);
+  const current = forecast.hourly.find(row => row.time === time);
+  if (!current) throw new Error('Open-Meteo mangler den præcise produktionstime');
   return {
     point: [longitude, latitude], provider: 'open-meteo', providerLabel: 'Open-Meteo Marine',
-    modelSteps: { wind: weather.current?.time ?? null, wave: marine.current?.time ?? null, ocean: marine.current?.time ?? null },
-    current: {
-      windSpeedMps: round(num(weather.current?.wind_speed_10m), 1),
-      windDirectionDeg: round(num(weather.current?.wind_direction_10m), 0),
-      waveHeightM: round(num(c.wave_height), 2),
-      waveDirectionDeg: round(num(c.wave_direction), 0),
-      wavePeriodS: round(num(c.wave_period), 1),
-      waterLevelCm: sea === null ? null : round(sea * 100, 0),
-      waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
-      currentSpeedMps: null,
-      currentDirectionDeg: null,
-      waterTemperatureC: round(num(c.sea_surface_temperature), 1)
-    }
+    modelSteps: {
+      wind: current.windSpeedMps === null ? null : time,
+      wave: current.waveHeightM === null ? null : time,
+      ocean: current.waterLevelCm === null && current.waterTemperatureC === null ? null : time,
+    },
+    current,
+    forecast,
   };
 }
 
@@ -3368,6 +3517,8 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
     currentVerified: current.currentProvenance?.status === 'verified',
     waterLevelCm: current.waterLevelCm,
     waterLevelTrendCm3h: current.waterLevelTrendCm3h,
+    waterLevelSource: current.waterLevelProvenance?.provider ?? current.sources?.waterLevel?.provider
+      ?? current.waterLevelSource ?? null,
     waterTemperatureC: current.waterTemperatureC
   };
   const previousZone = previous?.zones?.[zoneId] ?? {};
@@ -3407,60 +3558,88 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
 }
 
 
-function hourlyValue(data, variable, index) {
-  const value = data?.hourly?.[variable]?.[index];
-  return num(value);
-}
-
 async function forecastFromOpenMeteo(feature, generatedAt) {
   const [longitude, latitude] = zonePoint(feature);
-  const fallbackPastHours = openMeteoPastHours(generatedAt);
-  const weatherQuery = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude),
-    hourly: 'wind_speed_10m,wind_direction_10m,temperature_2m',
-    wind_speed_unit: 'ms', timezone: 'GMT', forecast_hours: String(OPEN_METEO_FUTURE_HOURS), past_hours: String(fallbackPastHours)
+  const referenceMs = Date.parse(generatedAt);
+  if (!Number.isFinite(referenceMs) || referenceMs % 3_600_000 !== 0) {
+    throw new Error('OPEN_METEO_LOCKED_REFERENCE_INVALID');
+  }
+  const startHour = new Date(referenceMs).toISOString().slice(0, 16);
+  const endHour = new Date(referenceMs + (OPEN_METEO_FUTURE_HOURS - 1) * 3_600_000).toISOString().slice(0, 16);
+  const componentErrors = [];
+  const responses = await fetchOpenMeteoComponentResponses(Object.fromEntries(
+    OPEN_METEO_PART_COMPONENTS.map(component => [component, async () => {
+      const spatialPolicy = OPEN_METEO_NATIVE_NEAREST_POLICIES[component];
+      const { endpoint, query } = openMeteoComponentRequestParts(component, {
+        spatialPolicy, cellSelection: 'nearest',
+      });
+      const params = new URLSearchParams({ ...query,
+        latitude: String(latitude), longitude: String(longitude),
+        hourly: component === 'wind' ? `${query.hourly},temperature_2m` : query.hourly,
+        start_hour: startHour, end_hour: endHour,
+      });
+      const response = await fetchJson(`${endpoint}?${params}`, { provider: `Open-Meteo ${component}`, retries: 2 });
+      if (spatialPolicy
+        && !openMeteoComponentGridMatches(component, [longitude, latitude], [response?.longitude, response?.latitude], spatialPolicy)) {
+        throw new Error('OPEN_METEO_COMPONENT_RESPONSE_GRID_MISMATCH');
+      }
+      return response;
+    }]),
+  ), {
+    onError: component => componentErrors.push(component), concurrency: 2,
   });
-  const marineQuery = new URLSearchParams({
-    latitude: String(latitude), longitude: String(longitude),
-    hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature',
-    velocity_unit: 'ms', timezone: 'GMT', forecast_hours: String(OPEN_METEO_FUTURE_HOURS), past_hours: String(fallbackPastHours), cell_selection: 'sea'
-  });
-  const [weather, marine] = await Promise.all([
-    fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo forecast', retries: 2 }),
-    fetchJson(`https://marine-api.open-meteo.com/v1/marine?${marineQuery}`, { provider: 'Open-Meteo Marine forecast', retries: 2 })
-  ]);
-  const times = weather?.hourly?.time ?? marine?.hourly?.time ?? [];
-  const marineIndex = new Map((marine?.hourly?.time ?? []).map((time, index) => [time, index]));
-  const hourly = trimOpenMeteoForecast(times.map((time, index) => {
-    const mi = marineIndex.get(time) ?? index;
-    const sea = hourlyValue(marine, 'sea_level_height_msl', mi);
-    const sea3 = hourlyValue(marine, 'sea_level_height_msl', Math.min(mi + 3, (marine?.hourly?.time?.length ?? 1) - 1));
-    return {
-      time: new Date(`${time}Z`).toISOString(),
-      windSpeedMps: round(hourlyValue(weather, 'wind_speed_10m', index), 1),
-      windDirectionDeg: round(hourlyValue(weather, 'wind_direction_10m', index), 0),
-      airTemperatureC: round(hourlyValue(weather, 'temperature_2m', index), 1),
-      waveHeightM: round(hourlyValue(marine, 'wave_height', mi), 2),
-      waveDirectionDeg: round(hourlyValue(marine, 'wave_direction', mi), 0),
-      wavePeriodS: round(hourlyValue(marine, 'wave_period', mi), 1),
-      waterLevelCm: sea === null ? null : round(sea * 100, 0),
-      waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
-      currentSpeedMps: null,
-      currentDirectionDeg: null,
-      waterTemperatureC: round(hourlyValue(marine, 'sea_surface_temperature', mi), 1)
-    };
+  const hourly = trimOpenMeteoForecast(buildOpenMeteoIndependentHourlyComponents(responses, {
+    onInvalidField: (component, variable, code) => componentErrors.push(`${component}:${variable}:${code}`),
   }), generatedAt);
-  if (!hourly.some(item => item.windSpeedMps !== null)) throw new Error('5-dages prognose mangler vinddata');
-  return { provider: 'open-meteo', providerLabel: 'Open-Meteo 5-day forecast', hourly };
+  if (!hourly.some(item => ['windSpeedMps', 'waveHeightM', 'waterTemperatureC']
+    .some(key => item[key] !== null))) throw new Error('5-dages prognose mangler gyldige komponenter');
+  return { provider: 'open-meteo', providerLabel: 'Open-Meteo 5-day forecast', hourly, componentErrors };
 }
 
-function newerDmiRecord(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  const aGenerated = Date.parse(a.generatedAt ?? '');
-  const bGenerated = Date.parse(b.generatedAt ?? '');
-  if (Number.isFinite(aGenerated) && Number.isFinite(bGenerated) && aGenerated !== bGenerated) return bGenerated > aGenerated ? b : a;
-  return Date.parse(b.validUntil ?? '') > Date.parse(a.validUntil ?? '') ? b : a;
+function newerDmiRecord(a, b, expectedIdentity = null) {
+  if (!a && !b) return null;
+  const aGenerated = Date.parse(a?.generatedAt ?? '');
+  const bGenerated = Date.parse(b?.generatedAt ?? '');
+  const primary = !a ? b : !b ? a
+    : Number.isFinite(aGenerated) && Number.isFinite(bGenerated) && aGenerated !== bGenerated
+    ? (bGenerated > aGenerated ? b : a)
+    : Date.parse(b.validUntil ?? '') > Date.parse(a.validUntil ?? '') ? b : a;
+  const donor = primary === a ? b : a;
+  // File freshness chooses bookkeeping, not ownership of every component.
+  // A new partial forecast must retain qualified values at the same point/time.
+  const samePoint = primary.zoneId && primary.zoneId === donor?.zoneId
+    && Array.isArray(primary.point) && Array.isArray(donor.point)
+    && primary.point.length === 2 && donor.point.length === 2
+    && primary.point.every((value, index) => ravScoreNumber(value) !== null
+      && ravScoreNumber(donor.point[index]) !== null
+      && Math.abs(value - donor.point[index]) <= 1e-7);
+  if (!primary.zoneId
+    || !Array.isArray(primary.point)
+    || primary.point.length !== 2
+    || primary.point.some(value => ravScoreNumber(value) === null)) return { ...primary, hourly: [] };
+  const startMs = Date.parse(primary.validFrom ?? '');
+  if (!Number.isFinite(startMs)) return { ...primary, hourly: [] };
+  const identity = expectedIdentity ?? { entityId: primary.zoneId, parentZoneId: primary.zoneId,
+    entityType: 'parent-zone', samplingContext: 'parent-zone-water-point', samplingPoint: primary.point };
+  const sourceAt = (row, component) => verifiedDmiForecastComponentSource(
+    row?.sources?.[component], row.time,
+    component === 'wind' && row?.sources?.wind?.component === 'windTail' ? 'windTail' : component,
+    identity,
+  );
+  const hourly = normalizeForecastHourly([...(primary.hourly ?? []), ...(samePoint ? donor.hourly ?? [] : [])]
+    .filter(row => Date.parse(row?.time) >= startMs
+      && Date.parse(row?.time) < startMs + DMI_FORECAST_HOURS * 3_600_000), {
+    limit: DMI_FORECAST_HOURS,
+    admitComponent: sourceAt,
+    preferCompleteComponent: (oldRow, newRow, component) => {
+      const candidate = sourceAt(newRow, component);
+      if (!candidate) return false;
+      const existing = sourceAt(oldRow, component);
+      return !existing || preferQualifiedDmiComponentSource(existing, candidate, component);
+    },
+  });
+  return hourly.length ? { ...primary, hourly, validFrom: hourly[0].time,
+    validUntil: hourly.at(-1).time, horizonHours: hourly.length } : { ...primary, hourly: [] };
 }
 
 function mergeDmiStores(...stores) {
@@ -3495,7 +3674,13 @@ async function readDmiForecastStore() {
 }
 
 function zoneFromDmiForecastCache(feature, record, generatedAt) {
-  const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));
+  const point = zonePoint(feature);
+  const zoneId = feature.properties?.id;
+  const qualifiedRecord = newerDmiRecord(record, null, {
+    entityId: zoneId, parentZoneId: zoneId, entityType: 'parent-zone',
+    samplingContext: 'parent-zone-water-point', samplingPoint: point,
+  });
+  const safeRecord = withOnlyVerifiedCurrent(qualifiedRecord, point);
   const selected = selectDmiForecastAt(safeRecord, generatedAt);
   if (!selected) return null;
   const remaining = (safeRecord.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
@@ -3513,6 +3698,7 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
       wavePeriodS: selected.wavePeriodS ?? null,
       waterLevelCm: selected.waterLevelCm ?? null,
       waterLevelTrendCm3h: selected.waterLevelTrendCm3h ?? null,
+      waterLevelSource: selected.sources?.waterLevel?.provider ?? 'dmi',
       currentUMps: selected.currentUMps ?? null,
       currentVMps: selected.currentVMps ?? null,
       currentSpeedMps: selected.currentSpeedMps ?? null,
@@ -3538,7 +3724,12 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
 }
 
 async function readPrevious() {
-  try { return JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8')); }
+  try {
+    const previous = JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8'));
+    previous.zones = Object.fromEntries(Object.entries(previous.zones ?? {})
+      .map(([id, zone]) => [id, retainOnlyDmiZoneWaterLevel(zone)]));
+    return previous;
+  }
   catch { return { zones: {} }; }
 }
 
@@ -3553,12 +3744,25 @@ async function readCoastalPointStateInjections() {
 }
 
 async function fallbackForZone(feature, generatedAt, previous, attempts) {
+  // Fetch the useful horizon independently of any current-condition request.
+  // Retain exact-time old components only where the fresh response has a hole.
+  const oldForecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
+  let forecast = oldForecast;
+  try {
+    const fresh = await forecastFromOpenMeteo(feature, generatedAt);
+    forecast = {
+      ...fresh,
+      hourly: trimOpenMeteoForecast(normalizeForecastHourly([
+        ...fresh.hourly, ...(oldForecast?.hourly ?? []),
+      ], { limit: Number.MAX_SAFE_INTEGER }), generatedAt),
+    };
+  } catch (error) {
+    attempts.push({ provider: 'open-meteo-forecast', message: error instanceof Error ? error.message : String(error) });
+  }
   for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
     try {
-      const result = withoutZoneCurrent(await provider(feature, generatedAt));
-      let forecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
-      try { forecast = await forecastFromOpenMeteo(feature, generatedAt); }
-      catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
+      if (name === 'open-meteo' && !forecast) continue;
+      const result = withoutZoneCurrent(await provider(feature, generatedAt, forecast));
       return withoutZoneCurrent({ ...result, forecast, stale: false, fallback: true, attempts });
     } catch (error) {
       attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
@@ -3980,10 +4184,10 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
   };
   const summary = {
     availableZones: rows.length,
-    windZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.windDirectionDeg !== null)).length,
+    windZones: rows.filter(record => has(record, item => componentRowHasValue(item, 'wind'))).length,
     waveZones: rows.filter(record => has(record, item => componentRowHasValue(item, 'wave'))).length,
-    currentZones: rows.filter(record => has(record, item => item.currentSpeedMps !== null && item.currentDirectionDeg !== null)).length,
-    waterLevelZones: rows.filter(record => has(record, item => item.waterLevelCm !== null)).length,
+    currentZones: rows.filter(record => has(record, item => componentRowHasValue(item, 'current'))).length,
+    waterLevelZones: rows.filter(record => has(record, item => componentRowHasValue(item, 'waterLevel'))).length,
     componentHorizonCoverage: {
       wind: horizonStats(['windSpeedMps','windDirectionDeg']),
       wave: horizonStats(null, 'wave'),
@@ -4131,9 +4335,49 @@ output.controlledLiveCurrentPilot = {
   credentialsIncluded: false,
   generatedAt: liveCurrentPilot?.generatedAt ?? null,
 };
-const previousPrivateCandidateGRuntime = selectPreviousPrivateCandidateGRuntime(
-  previous,
-);
+const historicalWaveInputTransition = await loadHistoricalWaveInputTransition({
+  transitionPath: RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH,
+  currentContract: coastalPartsContract,
+  previousConditions: previous,
+  targetReferenceAt: generatedAt,
+  currentBinding: ravScoreModelBinding(),
+});
+const previousPrivateCandidateGRuntime = historicalWaveInputTransition
+  ? null
+  : selectPreviousPrivateCandidateGRuntime(previous);
+let weatherComponents = null;
+if (coastalPartsContract.enabled) {
+  const parts = Object.entries(coastalPartsContract.zones).flatMap(([zoneId, zoneParts]) =>
+    zoneParts.map(part => ({ ...part, zoneId })));
+  const parentById = new Map(features.map(feature => [feature.properties?.id, feature]));
+  const sourcesByTime = feggesundNeighborSourcesByTime(nextDmiForecastStore, generatedAt);
+  const planningRecords = new Map();
+  for (const part of parts) {
+    const parent = parentById.get(part.zoneId);
+    if (!parent) throw new Error('COASTAL_PART_PARENT_DOMAIN_INVALID');
+    const bulkId = `PART::${part.partId}`;
+    const expectedIdentity = dmiExpectedIdentityForPart(part, bulkId);
+    const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
+      properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
+    const dmiRecord = bulkZoneToForecastRecord(feature, dmiBulkCache, generatedAt, null,
+      { startAt: generatedAt, expectedIdentity, materializeMissingHorizon: true });
+    // Plan from the same DMI/proxy/component adapter as scoring. Current is
+    // handled by its existing independently verified closure, not this plan.
+    planningRecords.set(part.partId, applyFeggesundOperationalWaveProxy(dmiRecord, part, sourcesByTime));
+  }
+  weatherComponents = await prepareWeatherComponentRuntime({
+    privateCacheRoot: path.resolve('.cache'), parts, productionReferenceAt: generatedAt,
+    retentionStartAt: new Date(Date.parse(generatedAt) - RESEARCH_HISTORY_HOURS * 3_600_000).toISOString(),
+    retentionEndAt: new Date(Date.parse(generatedAt) + (OPEN_METEO_FUTURE_HOURS - 1) * 3_600_000).toISOString(),
+    openMeteoSpatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
+    copernicusBudgetMs: COMPONENT_COPERNICUS_BUDGET_MS,
+    openMeteoBudgetMs: COMPONENT_OPEN_METEO_BUDGET_MS,
+    readVerifiedHourly: (part, inputs) => verifiedIntegratedPartHourly(
+      planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part, inputs),
+  });
+  planningRecords.clear();
+  output.weatherEngine.componentFallback = weatherComponents.summary;
+}
 const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,
@@ -4150,6 +4394,8 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
       ? ravScoreCheckpoint.states
       : {},
     ravScoreCheckpoint.loaded ? ravScoreCheckpoint.candidateGRollbackStates : {},
+    weatherComponents?.inputs ?? {},
+    historicalWaveInputTransition,
   )
   : null;
 if (RAVSCORE_CURRENT_TRACE_PATH) {
@@ -4195,6 +4441,9 @@ if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
     publicDuringNormalOperation: false,
     runtime: coastalPartScoreBuild.candidateGWarmupRuntime,
   };
+}
+if (weatherComponents) {
+  output.weatherComponentInputs = await persistWeatherComponentSelections(weatherComponents);
 }
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);

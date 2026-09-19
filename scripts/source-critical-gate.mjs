@@ -185,7 +185,7 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260919010000_current_input_foundation_binding.sql'),
+    .includes('20260919020000_measured_warmup_checkpoint.sql'),
   'Code-only migrationsplanen er ikke bundet til den præcise aktuelle successor.',
 );
 

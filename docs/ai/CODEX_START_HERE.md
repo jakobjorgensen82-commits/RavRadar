@@ -1,4 +1,130 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
+# NYESTE CHECKPOINT – 2026-09-19 – hele helkæderettelsen samlet før levering
+
+Den ucommittede rettelse omfatter alle aktuelle vejr-, cache-, historik-,
+reentry-, deploy- og browserfund. Krypteret progress bruger
+`.cache/weather-private-progress.encrypted`, 256 MiB og afledt eksisterende
+service-role-secret; holdbar privat terminalevidens fjerner den funktionelle
+14-dagesgrænse. Gamle rå private cachewriters er fjernet/deaktiveret.
+Læs først [samlet lukningsmatrix](WEATHER_CHAIN_CROSSCHECK_2026-09-19.md) og
+[implementeringscheckpoint](WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md).
+Produktion er stadig 4.0.429; lokale tests er ikke produktionsbevis.
+
+De tidligere topafsnit nedenfor er arbejdshistorik, når de modsiges af dette.
+
+Seneste ejerbeslutning i fortsættelsen: vandstand og tre-timers ændring
+skal kun komme fra DMI. CP/OM-datumomregning udgår; øvrige reserver består.
+Se DEC-0210's nye topafsnit. Den gamle datum-restliste nedenfor er erstattet.
+Root har desuden måltestet retry ved afbrudt Storage-responsebody. Isoleret
+diagnosticbranch `codex/readonly-weather-evidence-20260919` er kørt som
+`35437186403`: 95,2 MB faktisk Storage og konkret gammel MWP/PP1D-forskel
+i gemte native rækker. Det er ikke endnu en optælling af berørte scorestates.
+Ingen provider eller produktionswrite. Den store rettelse er stadig lokal.
+Vandstand er nu afgrænset lokalt gennem hentning/valg/legacy-visning;
+historik/T+3 og snæver state-neutral migration er også måltestet. Krypteret
+progress er koblet til normalworkflow med eksakt bundle+conditionsbinding,
+256 MiB cap og måltestet rollback; kun aktivt driftsbevis afventer.
+Anden read-only diagnose `35438520417` har verificeret protectedgenerationen
+med gammel reader. Alle 673 aktive inputbanker har forkert periode før/på
+H0; faktisk gammel statepåvirkning er ikke bevist. Næste er den eksisterende
+parrede measured-cold replay for det nu dokumenterede eksponeringsscope,
+ikke endnu en identisk diagnose. Se inputmigrationsplanen. Eksisterende rå
+private cachewriters er fjernet/deaktiveret og deres filer indgår i den
+samlede krypterede overgang. Remote caches slettes først efter en bevist ny
+generation.
+
+Læs [hele implementerings- og genstartsoversigten](WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md).
+Ejeren har bestilt den samlede rettelse og gentaget, at ALLE fund fra den
+store analyse skal med. Arbejdet er startet og bevaret på disk, men er
+ufærdigt og ucommittet. Ingen ny produktversion, produktpush, merge, deploy
+eller weather. Kun den ovennævnte isolerede read-only diagnose er pushet.
+
+Aktiv rod er stadig indlejret `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.428-weather-completeness`, main/HEAD `4bee5b0d`, 4.0.429.
+Der er gemte rettelser i DMI, komponentmerge, checkpoint/retry og public/UI.
+Workflows er nu forbundet med warmup-checkpoint, fælles recovery/kø,
+monoton Pages-generation og public-shardkopi. DMI-horizon har eget katalog;
+LF/resume bevarer støtteaksen. Nyere kvalificeret DMI vælges komponentvis;
+nyere cachefil sletter ikke længere gyldige huller/tail fra den gamle.
+Mobil/netfejl/geninstallation er rettet lokalt. PART-fallback for alle
+komponenter, koblet 96-timersvalg, DMI-only-vandstand og den kontrollerede
+input/state-overgang er implementeret lokalt. Endelig versions-/binding-
+synkronisering og produktionsbevis mangler. Se checkpointets NYESTE afsnit;
+de nedenstående gamle notater om urørte workflows er historik.
+
+Seneste snit: OM's single-model-rettelse er færdig i både PART og almindelig
+210-zone-hentning; faktisk normalfunktion bruger låst H0..H120. Privat
+budgetteret OM-transport er klar. Valgte reserveinput følger nu videre til
+kortpile med samme kilde/time, og CP-kildealder bruger kun responsbundet
+reference. Behovsplan skelner ægte huller, aged-DMI og DMI-opgradering.
+CP-spatial/transport→actual adapter, current96's normale delkæde og
+bankernes private restore er nu lokalt måltestet. Normal topcaller er koblet
+til komponentkoordinator→score→gemt valgledger; workflowbudget er 90s+90s,
+cache-only 0. OM's nye native-nearest-policy bruger præcist IFS/WAM O1280
+og MF-SST, ingen kilometer-/sea-nabolånslempelse. Vandstandsdatum er afgrænset
+til DMI, og den historiske input/state-overgang er implementeret lokalt.
+Se checkpointets nyeste topafsnit.
+Ingen nye afstande/datumomregninger er godkendt af helpernes grønne tests.
+
+Ejerens seneste præcisering: cron/GitHub skal kunne køre uden Codex som
+manuel kontrollør/retry/cacheflytter. Gemte data/rotation skal overleve
+ren runner, og flere almindelige kørsler uden håndgreb er acceptkrav.
+Se DEC-0210; cron er ikke genaktiveret ved denne dokumentation.
+
+Fortsæt fra matrixen i checkpointet; begynd ikke analysen eller en oneoff
+forfra. Små lokale checks består, men er ikke produktionsbevis. Cron er
+fortsat disabled; tre historiske kørsler står queued og må ikke vækkes.
+`.tmp-420/` må aldrig stages. Scoreformel og geometri er ikke ændret.
+
+# HISTORISK ANALYSECHECKPOINT – 2026-09-19 – samlet kædeanalyse
+
+Ejeren har fastholdt ALT i helhedsanalysen, ikke kun 96-timersreglen. Læs nu
+også [tværgående krydstjek og samlet rettelsesplan](WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+Nye fund/præciseringer: DMI alias kan blande peak- og middelbølgeperiode;
+privat 118-timersmerge mister støtte til sidste TRE vandstandstrends;
+CP/OM-cache beviser ikke modelalder; warmup-/public-schemaovergange skal
+bevare gammel læser. Public-opdeling er størrelsesmålt på ældre artifact.
+Ingen kode, providerkørsel eller deploy i analysen; kun dokumentation.
+
+Seneste afklaringspunkt: Ejeren foreslår nu fire døgn gamle DMI-data frem
+for prognosens sidste døgn som reserveundtagelse. Anbefaling: mindst 96
+timer fra komponentens beviste DMI-modelrun til låst vurderingstid, ikke
+downloadtid eller lead. Nyere gyldig reserve må da overtage; ellers bevares
+gyldig DMI. DEC-0210's nye topafsnit er autoritativt for diskussionens status;
+H94..H117 nedenfor er et tidligere forslag, ikke implementeringsordre.
+
+Læs først [helhedsanalysen](WEATHER_CHAIN_REVIEW_2026-09-19.md). Main er faktisk
+`4bee5b0d` / 4.0.429, PR #374, grøn exact-head `35420912328`. Saved-weather
+`35421108551` deployede Pages, men offentlig profilkontrol fejlede og central
+status blev PENDING. Normalrun `35421627495` stoppede derfor før providerne.
+Sidste fulde providerdata er stadig `35416641052`, H0 19/9 kl. 04 dansk.
+
+Ejerens bindende korrektion: Copernicus/Open-Meteo skal udfylde alle huller i
+alle nødvendige vejrtyper efter DMI, ikke kun strøm eller yderste timer.
+Gyldig DMI, også gyldig gemt DMI, bevares. Fallbackens snævre PART-accept er
+en implementeringsmangel. Eksisterende Open-Meteo-zonehentning er ikke nok,
+når den nye models adapter afviser felterne.
+Ejeren har desuden præciseret, at reservedækning ikke må låse DMI ude:
+almindelig DMI skal med ledig kapacitet opsøge og overtage gyldige CP/OM-
+komponenter for samme sted/time. Bevar reserven, indtil DMI er kvalificeret.
+Planlæg ægte huller og kildeopgradering særskilt. Se DEC-0210.
+Det mellemliggende forslag om sidste prognosedøgn er historisk og erstattet
+af 96-timers-forslaget. Det må ikke indføres som en parallel regel.
+
+Analysen dokumenterer sammenhængende problemer i vindplan/horizon,
+komponentfriskhed, modelhistorikkens persistens, readiness/verifier,
+central genindgang, samtidige runs, retry og browserens permanente H0-visning.
+Nuværende detaljefil er 148 MB. Browserfejlen er livekontrolleret i Chrome;
+mobil/Safari-bevis mangler. Nul H0-vind, otte aktuelle strømmangler og 156
+Feggesund-bølgedeltimer er fortsat åbne. Ingen komplet/stabil drift.
+
+Arbejd i indlejret `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.428-weather-completeness`. To lokale verifier/test-ændringer fra
+tidligere er ikke releaseklare og må ikke leveres alene. Ingen ny oneoff,
+providerkørsel eller produktionsændring i analysen. Cron er livebekræftet
+disabled. `.tmp-420/` er privat. Fortsæt den samlede plan i rapporten;
+scoreformel/geometri/gyldighed må ikke lempes for at skjule huller.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
 `codex/4.0.428-weather-completeness`. 4.0.428 bestod exact-head `35416314162`,

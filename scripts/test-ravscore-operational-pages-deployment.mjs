@@ -424,27 +424,8 @@ function installHistoryIncompleteIntegratedState(fixture) {
   resealPublicDocuments(fixture);
 }
 
-function installLocallyUnavailableIntegratedState(fixture) {
-  const localProfile = {
-    ...fixture.startup.coastalParts.scoreProfile,
-    modelCoverageReady: false,
-    advisories: ['LOCAL_MODEL_COVERAGE_INCOMPLETE'],
-  };
-  const localAvailability = {
-    ...fixture.manifest.ravScoreAvailability,
-    allZonesActive: false,
-    activeZoneCount: 209,
-    unavailableZoneCount: 1,
-    allCurrentScoresFullHistory: false,
-    fullHistoryModeCount: 419,
-    unavailableZones: [{
-      zoneId: 'zone-1',
-      zoneName: 'Zone 1',
-      modes: ['waders'],
-      reasons: ['Et direkte lokalt input mangler.'],
-    }],
-  };
-  const unavailableMode = {
+function unavailableIntegratedMode(fixture) {
+  return {
     available: false,
     score: null,
     scoreQuality: 'UNAVAILABLE',
@@ -474,6 +455,29 @@ function installLocallyUnavailableIntegratedState(fixture) {
       expectedPartCount: 1,
     },
   };
+}
+
+function installLocallyUnavailableIntegratedState(fixture) {
+  const localProfile = {
+    ...fixture.startup.coastalParts.scoreProfile,
+    modelCoverageReady: false,
+    advisories: ['LOCAL_MODEL_COVERAGE_INCOMPLETE'],
+  };
+  const localAvailability = {
+    ...fixture.manifest.ravScoreAvailability,
+    allZonesActive: false,
+    activeZoneCount: 209,
+    unavailableZoneCount: 1,
+    allCurrentScoresFullHistory: false,
+    fullHistoryModeCount: 419,
+    unavailableZones: [{
+      zoneId: 'zone-1',
+      zoneName: 'Zone 1',
+      modes: ['waders'],
+      reasons: ['Et direkte lokalt input mangler.'],
+    }],
+  };
+  const unavailableMode = unavailableIntegratedMode(fixture);
   for (const document of [fixture.startup, fixture.details]) {
     document.coastalParts.scoreProfile = structuredClone(localProfile);
     document.coastalParts.scoreAvailability = structuredClone(localAvailability);
@@ -481,6 +485,51 @@ function installLocallyUnavailableIntegratedState(fixture) {
   }
   fixture.manifest.ravScoreProfile = structuredClone(localProfile);
   fixture.manifest.ravScoreAvailability = structuredClone(localAvailability);
+  resealPublicDocuments(fixture);
+}
+
+function installCompletelyUnavailableMigrationPendingState(fixture) {
+  const unavailableProfile = {
+    ...fixture.startup.coastalParts.scoreProfile,
+    modelCoverageReady: false,
+    modelMemoryReady: false,
+    modelMigrationReady: false,
+    advisories: [
+      'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+      'LOCAL_MODEL_MEMORY_INCOMPLETE',
+      'MODEL_STATE_NOT_CONTINUED_OR_MIGRATED',
+    ],
+  };
+  const unavailableZones = Object.keys(fixture.startup.coastalParts.zones)
+    .sort().map(zoneId => ({
+      zoneId,
+      zoneName: `Zone ${zoneId.slice(5)}`,
+      modes: ['waders', 'beach'],
+      reasons: ['Et direkte lokalt input mangler.'],
+    }));
+  const unavailableAvailability = {
+    ...fixture.manifest.ravScoreAvailability,
+    allZonesActive: false,
+    activeZoneCount: 0,
+    unavailableZoneCount: unavailableZones.length,
+    allCurrentScoresFullHistory: false,
+    fullHistoryModeCount: 0,
+    historyIncompleteModeCount: 0,
+    historyIncompleteZoneCount: 0,
+    unavailableZones,
+    historyIncompleteZones: [],
+  };
+  const unavailableMode = unavailableIntegratedMode(fixture);
+  for (const document of [fixture.startup, fixture.details]) {
+    document.coastalParts.scoreProfile = structuredClone(unavailableProfile);
+    document.coastalParts.scoreAvailability = structuredClone(unavailableAvailability);
+    for (const zone of Object.values(document.coastalParts.zones)) {
+      zone.hourly[0].waders = structuredClone(unavailableMode);
+      zone.hourly[0].beach = structuredClone(unavailableMode);
+    }
+  }
+  fixture.manifest.ravScoreProfile = structuredClone(unavailableProfile);
+  fixture.manifest.ravScoreAvailability = structuredClone(unavailableAvailability);
   resealPublicDocuments(fixture);
 }
 
@@ -736,6 +785,39 @@ const historyIncomplete = attachIntegratedImplementation(
 installHistoryIncompleteIntegratedState(historyIncomplete);
 assert.equal((await verifyIntegratedFixture(historyIncomplete)).status, 'passed',
   'an exact all-active HISTORY_INCOMPLETE deployment remains operational');
+
+const partialParts = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+for (const profile of [partialParts.startup.coastalParts.scoreProfile,
+  partialParts.details.coastalParts.scoreProfile, partialParts.manifest.ravScoreProfile]) {
+  profile.modelCoverageReady = false;
+  profile.advisories = ['LOCAL_MODEL_COVERAGE_INCOMPLETE'];
+}
+resealPublicDocuments(partialParts);
+assert.equal((await verifyIntegratedFixture(partialParts)).status, 'passed',
+  'usable zones do not falsely imply every underlying part has direct-input coverage');
+
+const mixedInitialization = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installHistoryIncompleteIntegratedState(mixedInitialization);
+for (const profile of [mixedInitialization.startup.coastalParts.scoreProfile,
+  mixedInitialization.details.coastalParts.scoreProfile,
+  mixedInitialization.manifest.ravScoreProfile]) {
+  profile.modelMigrationReady = false;
+  profile.advisories.push('MODEL_STATE_NOT_CONTINUED_OR_MIGRATED');
+}
+resealPublicDocuments(mixedInitialization);
+assert.equal((await verifyIntegratedFixture(mixedInitialization)).status, 'passed',
+  'an honestly declared migration advisory does not reject a sealed usable deployment');
+
+const entirelyUnavailable = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installCompletelyUnavailableMigrationPendingState(entirelyUnavailable);
+assert.equal((await verifyIntegratedFixture(entirelyUnavailable)).status, 'passed',
+  'an honestly unavailable sealed deployment can complete bookkeeping without inventing scores');
 
 const locallyUnavailable = attachIntegratedImplementation(
   buildFixture(historyImplementation.binding, 'integrated'),

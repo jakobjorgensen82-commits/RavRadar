@@ -69,6 +69,7 @@ from lib.copernicus_current_source_stage import (
     validate_reusable_source_stage,
 )
 from lib.copernicus_target_identity import target_fingerprint
+from lib.current_model_reference import extract_subset_model_references
 from lib.copernicus_current_donor_bank import (
     BANK_MAX_BYTES, DEFAULT_DONOR_BANK,
     _advance_validated_copernicus_donor_bank,
@@ -94,6 +95,8 @@ DEFAULT_REPORT = ROOT / "data/diagnostics/copernicus-current-pilot.json"
 DEFAULT_SUMMARY = ROOT / "data/diagnostics/copernicus-current-pilot.txt"
 SOFT_DEADLINE_EPOCH_ENV = "RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH"
 BOUNDED_PROGRESS_EXIT_CODE = 75
+DATASET_UPDATING_MAX_ATTEMPTS = 2
+DATASET_UPDATING_BACKOFF_SECONDS = 5.0
 OPERATIONAL_REFRESH_MAX_SHARDS = max(
     0,
     int(os.getenv("COPERNICUS_OPERATIONAL_REFRESH_MAX_SHARDS", "4")),
@@ -111,6 +114,10 @@ NORMALIZED_DONOR_GENERATIONS: dict[tuple[Path, Path], dict[str, Any]] = {}
 
 class CopernicusOperationalBudgetReached(RuntimeError):
     """Signal that validated progress was saved before the wrapper deadline."""
+
+
+class CopernicusDatasetUpdatingDeferred(RuntimeError):
+    """A retryable upstream update, never evidence of an empty data response."""
 
 
 class PersistedSourceStageProgress(NamedTuple):
@@ -571,7 +578,7 @@ def download_subset(
     import copernicusmarine
 
     minimum_lon, maximum_lon, minimum_lat, maximum_lat = request_bounds(targets, product)
-    response = copernicusmarine.subset(
+    subset_arguments = dict(
         dataset_id=product["datasetId"],
         dataset_version=product["datasetVersion"],
         variables=["uo", "vo"],
@@ -589,7 +596,24 @@ def download_subset(
         overwrite=True,
         disable_progress_bar=True,
         netcdf_compression_level=1,
+        raise_if_updating=True,
     )
+    for attempt in range(DATASET_UPDATING_MAX_ATTEMPTS):
+        require_operational_time_budget()
+        try:
+            response = copernicusmarine.subset(**subset_arguments)
+            break
+        except copernicusmarine.DatasetUpdating:
+            # This exception is not a RuntimeError in Toolbox 2.4.1. Convert
+            # only this concrete upstream condition into the existing local
+            # shard-error/checkpoint path. No COMPLETE/negative attempt exists.
+            if (attempt + 1 >= DATASET_UPDATING_MAX_ATTEMPTS
+                or not dataset_update_retry_time_available()):
+                raise CopernicusDatasetUpdatingDeferred(
+                    "Copernicus dataset is updating; the uncompleted request remains retryable"
+                ) from None
+            print("Copernicus dataset update: one bounded retry before deferring the shard.", flush=True)
+            time.sleep(DATASET_UPDATING_BACKOFF_SECONDS)
     path = Path(response.file_path)
     if not path.exists() or path.stat().st_size <= 0:
         raise RuntimeError(f"Copernicus returned no subset for {product['source']}")
@@ -646,6 +670,7 @@ def acquire_shard_rows(
     raw_records: list[dict[str, Any]] = []
     import xarray as xr
     with xr.open_dataset(path) as dataset:
+        model_references = extract_subset_model_references(dataset, subset_sha256)
         # Validate the complete provider structure before an absent requested
         # hour can be interpreted as an honest no-record.  Persist only native
         # times actually observed inside this immutable request envelope.
@@ -667,6 +692,9 @@ def acquire_shard_rows(
                 dataset_version=product["datasetVersion"],
                 expected_times=times_by_part[target["partId"]],
             ))
+        for row in raw_records:
+            if row["validTime"] in model_references:
+                row["modelReference"] = model_references[row["validTime"]]
     returned_pairs: set[tuple[str, str]] = set()
     for row in raw_records:
         pair = (str(row.get("partId") or ""), str(row.get("validTime") or ""))
@@ -724,6 +752,20 @@ def require_operational_time_budget() -> None:
             "Copernicus bounded work stopped safely at a shard boundary; "
             "validated progress is available for the next run"
         )
+
+
+def dataset_update_retry_time_available() -> bool:
+    """Keep the existing 45-second request headroom before a single short wait."""
+    raw = os.getenv(SOFT_DEADLINE_EPOCH_ENV)
+    if not raw:
+        return True  # Direct invocations still have the fixed two-call bound.
+    try:
+        deadline = float(raw)
+    except ValueError:
+        raise RuntimeError("Copernicus soft deadline is malformed") from None
+    if not math.isfinite(deadline) or deadline <= 0:
+        raise RuntimeError("Copernicus soft deadline is invalid")
+    return time.time() + DATASET_UPDATING_BACKOFF_SECONDS + OPERATIONAL_REFRESH_MIN_REMAINING_SECONDS < deadline
 
 
 def refresh_time_available(*, fixture_directory: Path | None) -> bool:
@@ -1330,6 +1372,7 @@ def build_honest_residual_stage(
     _, missing, excluded = select_source_order_admissible_records(
         registry["operationalRequiredPairs"], shadow["acquisitions"], shadow["records"],
         reference, list(target_identities.values()), attempts,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         positive_admissions=positive_admissions, admission_attempts=admission_attempts,
     )
     attempted = {product["source"]: current_reference_attempt_pairs(
@@ -1620,6 +1663,7 @@ def run_bounded_operational_refresh(
                 reference,
                 authoritative_targets,
                 attempts,
+                aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
                 **stage_positive_evidence(current_bank),
             )
             acquisition_by_id = {
@@ -1635,6 +1679,7 @@ def run_bounded_operational_refresh(
             }
 
             candidates: list[dict[str, Any]] = []
+            challenge_keys = {(row["partId"], row["validTime"]) for row in (registry.get("agedDmiChallengePlan") or {}).get("challengePairs", [])}
             for pair_row in current_missing:
                 pair = (pair_row["partId"], pair_row["validTime"])
                 target = target_by_id[pair[0]]
@@ -1658,7 +1703,7 @@ def run_bounded_operational_refresh(
                 if (refresh_source, shard["shardId"]) in blocked_shards:
                     continue
                 candidates.append({
-                    "priority": 0,
+                    "priority": 2 if pair in challenge_keys else 0,
                     "acquisitionAt": reference,
                     "validTime": pair[1],
                     "partId": pair[0],
@@ -1892,6 +1937,7 @@ def run_bounded_operational_refresh(
             reference,
             authoritative_targets,
             source_attempts,
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
             **stage_positive_evidence(donor_state),
             )
         )
@@ -1902,6 +1948,7 @@ def run_bounded_operational_refresh(
             reference,
             authoritative_targets,
             attempts,
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
             **stage_positive_evidence(candidate_bank),
         )
         original_missing_keys = {
@@ -2219,6 +2266,7 @@ def main() -> int:
             reference,
             authoritative_targets,
             source_attempts,
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
             **stage_positive_evidence(donor_state),
         )
     else:
@@ -2228,6 +2276,10 @@ def main() -> int:
     initial_missing_keys = {
         (row["partId"], row["validTime"]) for row in initial_missing
     }
+    challenge_keys = {(row["partId"], row["validTime"]) for row in (registry.get("agedDmiChallengePlan") or {}).get("challengePairs", [])}
+    # A downstream hole-filler is not proof of a newer model. Challenges are
+    # scheduled separately after real holes, not silently suppressed by OM.
+    downstream_covered -= challenge_keys
     remaining = set(initial_missing_keys)
     if args.refresh_only:
         if not operational_contract:
@@ -2314,6 +2366,7 @@ def main() -> int:
             targets=authoritative_targets,
             acquisition_at=acquisition_at,
         )
+        challenge_work = [{**work, "agedDmiChallenge": True} for work in pending_work] if challenge_keys else []
         while pending_work:
             deferred_work: list[dict[str, Any]] = []
             serviced_segment_in_pass = False
@@ -2338,6 +2391,7 @@ def main() -> int:
                 critical_shard_pairs = {
                     pair for pair in source_required_pairs
                     if pair[0] in shard_part_ids
+                    and ((pair in challenge_keys) == bool(work.get("agedDmiChallenge")))
                 }
                 if not critical_shard_pairs:
                     if (
@@ -2555,6 +2609,7 @@ def main() -> int:
                         reference,
                         authoritative_targets,
                         source_attempts,
+                        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
                         **stage_positive_evidence(working_bank),
                     )
                     candidate_elapsed = time.monotonic() - candidate_started
@@ -2637,6 +2692,9 @@ def main() -> int:
                 ):
                     deferred_work.append(work)
             if not deferred_work or not serviced_segment_in_pass:
+                if challenge_work:
+                    pending_work, challenge_work = challenge_work, []
+                    continue
                 break
             pending_work = deferred_work
         if operational_contract and pending_segment_count:
@@ -2717,6 +2775,7 @@ def main() -> int:
             reference,
             authoritative_targets,
             source_attempts,
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
             **stage_positive_evidence(donor_state),
         )
     else:

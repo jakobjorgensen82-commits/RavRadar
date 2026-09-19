@@ -296,9 +296,9 @@ const exactColdReplayStateInitialization = model => {
 const exactNationalColdReplayStateInitialization = (parts, expectedPartCount) =>
   parts.length === expectedPartCount
   && parts.every(([, part]) =>
-    exactColdReplayStateInitialization(part?.ravScoreModel))
-  && new Set(parts.map(([, part]) =>
-    part.ravScoreModel.initialStateSource)).size === 1;
+    part?.ravScoreModel?.initialStateAccepted === true
+    || part?.ravScoreModel?.migrationApplied === true
+    || exactColdReplayStateInitialization(part?.ravScoreModel));
 
 function exactHistoryReasonCodes(value, { required = false } = {}) {
   return Array.isArray(value)

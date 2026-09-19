@@ -15,7 +15,33 @@ const {
   orchestrator: orchestratorWorkflow,
   build: buildWorkflow,
   deploy: deployWorkflow,
+  recovery: recoveryWorkflow,
 } = productionWorkflows;
+// DEC-0149/0160/0193: the completed first launch is not a reusable bypass of
+// exact target, privacy, protected state or deployment identity.
+for (const [role, source] of Object.entries(productionWorkflows)) {
+  assert.doesNotMatch(source, /RAVRADAR_DIRECT_INTEGRATED_INSTALL|34858950223|f61efac3393cf5775feb284ef6a16af93ee0d3b0/,
+    `${role} must not reopen the expired first-launch emergency path.`);
+}
+for (const field of ['operational_action', 'deployment_model', 'legacy_source_required']) {
+  assert.ok(orchestratorWorkflow.includes(`${field}: $` + `{{ needs.build-and-prepare.outputs.${field} }}`),
+    `Deploy must receive the real ${field}, never a fabricated fallback.`);
+}
+assert.ok(buildWorkflow.includes('RAVRADAR_WEATHER_HANDOFF_EXPECTED_HEAD: $' + '{{ github.sha }}'));
+assert.ok(buildWorkflow.includes('should_deploy: $' + '{{ steps.deployment-decision.outputs.should_deploy }}'));
+assert.ok(buildWorkflow.includes('deployment_model: $' + '{{ steps.deployment-decision.outputs.deployment_model }}'));
+const safetyBuildSteps = [...buildWorkflow.matchAll(/--check "[^|]+\|safety\|\$\{\{ steps\.([a-z0-9-]+)\.outcome \}\}"/g)]
+  .map(match => match[1]);
+assert.ok(safetyBuildSteps.length >= 10, 'The payload-free report must retain its safety boundaries.');
+for (const id of safetyBuildSteps) {
+  const step = buildWorkflow.split(/\n      - /).find(block => block.includes(`\n        id: ${id}\n`));
+  assert.ok(step, `Missing safety step ${id}.`);
+  assert.doesNotMatch(step, /continue-on-error:/, `Safety step ${id} cannot inherit the retired launch bypass.`);
+}
+const pagesWriteAt = deployWorkflow.indexOf('\n      - name: Deploy to GitHub Pages');
+assert.ok(pagesWriteAt >= 0);
+assert.doesNotMatch(deployWorkflow.slice(0, pagesWriteAt), /continue-on-error:/,
+  'Predeploy handoff, exact target and protected begin must succeed before Pages is written.');
 const productionWorkflowNames = new Set(
   Object.values(PRODUCTION_WORKFLOW_SOURCES).map(sourcePath => sourcePath.split('/').at(-1)),
 );
@@ -24,7 +50,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -40,7 +66,7 @@ const manualCurrentWeatherWorkflow = fs.readFileSync(
 ).replace(/\r\n/g, '\n');
 for (const marker of [
   '  workflow_dispatch:',
-  'group: ravradar-current-weather-once',
+  'group: ravradar-weather-production-v2',
   'cancel-in-progress: false',
   'Require checked-out HEAD to equal current origin/main',
   'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
@@ -669,7 +695,11 @@ assert.ok(regionalSave.includes('if: always()'));
 assert.ok(regionalSave.includes("steps.dmi-bulk.outcome != 'cancelled'"));
 assert.ok(regionalSave.includes("steps.dmi-bulk.outcome != 'skipped'"));
 assert.ok(regionalSave.includes("hashFiles('.cache/current-field-shadow.json') != ''"));
-assert.ok(buildWorkflow.includes('current-field-shadow-v1-${{ runner.os }}-'), 'Normal maintenance must restore the same regional cache family.');
+assert.ok(!buildWorkflow.includes('current-field-shadow-v1-${{ runner.os }}-'),
+  'Normal maintenance must not expose regional evidence through the retired plaintext cache family.');
+assert.match(fs.readFileSync('scripts/lib/private-weather-component-inventory.mjs', 'utf8'),
+  /currentFieldShadow: '\.cache\/current-field-shadow\.json'/,
+  'Normal regional evidence must be inside the authenticated private inventory.');
 for (const block of operationalPreflight.split('\n      - name:')) {
   if (block.includes('actions/cache/')
     && block.includes('.cache/copernicus-current-shadow.json')
@@ -1190,18 +1220,8 @@ for (const marker of [
 ]) {
   if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersorkestrator mangler ${marker}`);
 }
-const timedCopernicusRestoreStart = orchestratorWorkflow.indexOf('name: Restore private Copernicus current cache for timed gate');
-const timedCopernicusRestoreEnd = orchestratorWorkflow.indexOf('\n      - name:', timedCopernicusRestoreStart + 1);
-const timedCopernicusRestore = orchestratorWorkflow.slice(timedCopernicusRestoreStart, timedCopernicusRestoreEnd);
-for (const marker of [
-  '.cache/copernicus-current-shadow.json',
-  '.cache/copernicus-current-source-stage.json',
-  'copernicus-current-progress-v3-',
-]) {
-  if (!timedCopernicusRestore.includes(marker)) {
-    throw new Error(`Current-hour-gaten mangler den kanoniske Copernicus-cachemarkør ${marker}`);
-  }
-}
+assert.ok(!orchestratorWorkflow.includes('name: Restore private Copernicus current cache for timed gate'),
+  'Current-hour-gaten må låse UTC-timen uden at åbne en privat plaintext-cache.');
 for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}',
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
@@ -1221,17 +1241,15 @@ for (const marker of [
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   '--require-source-stage-reusable',
   '--allow-invalid-shadow-as-absent',
-  'Save non-cancelled private Copernicus source-stage progress',
-  'Save validated private Copernicus progress before downstream closure',
   'DMI_BULK_DKSS_PRIMARY_MODE: true',
-  'Restore shared private Open-Meteo current progress',
+  'Restore encrypted private weather progress only',
   'Fill only the exact remaining current gaps from Open-Meteo',
   '--runtime-seconds 900',
   '--critical-only',
-  'Reconfirm exact main before shared Open-Meteo progress cache',
-  'Save shared private Open-Meteo current progress',
+  'Encrypt newly saved private weather progress before later production steps',
+  'Save only the authenticated encrypted private weather snapshot',
   'Require verified Open-Meteo residual checkpoint before closure',
-  'Require complete operational WAM after provider progress for first cutover',
+  'Require complete operational WAM after provider progress for state initialization',
   'Classify target freshness after the bounded supplier chain',
   'id: supplier-target-freshness',
   '--maximum-age-minutes 90',
@@ -1251,12 +1269,12 @@ const productionStep = (name) => {
 };
 const normalDmiAcquisition = productionStep('Update DMI bulk model cache');
 const normalCopernicusDisposition = productionStep('Require reusable Copernicus source stage before combined current closure');
-const normalOpenMeteoRestore = productionStep('Restore shared private Open-Meteo current progress');
 const normalOpenMeteoFill = productionStep('Fill only the exact remaining current gaps from Open-Meteo');
-const normalOpenMeteoAuthority = productionStep('Reconfirm exact main before shared Open-Meteo progress cache');
-const normalOpenMeteoSave = productionStep('Save shared private Open-Meteo current progress');
 const normalOpenMeteoTerminal = productionStep('Require verified Open-Meteo residual checkpoint before closure');
-const normalWamFinal = productionStep('Require complete operational WAM after provider progress for first cutover');
+const normalEncryptedRestore = productionStep('Restore encrypted private weather progress only');
+const normalEncryptedSeal = productionStep('Encrypt newly saved private weather progress before later production steps');
+const normalEncryptedSave = productionStep('Save only the authenticated encrypted private weather snapshot');
+const normalWamFinal = productionStep('Require complete operational WAM after provider progress for state initialization');
 assert.ok(
   normalOpenMeteoTerminal.includes(
     "steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped'",
@@ -1274,32 +1292,28 @@ assert.ok(
 assert.ok(normalDmiAcquisition.includes('DMI_BULK_DKSS_PRIMARY_MODE: true'),
   'Normalproduktionen skal bruge DKSS-primary ved DMI-vedligeholdelsen.');
 for (const marker of [
-  'uses: actions/cache/restore@v6',
-  'path: .cache/open-meteo-current-fallback.json',
-  'open-meteo-current-fallback-v2-${{ runner.os }}-',
-]) assert.ok(normalOpenMeteoRestore.includes(marker), `Normal Open-Meteo restore mangler ${marker}`);
-for (const marker of [
   'id: open-meteo-fill',
   'continue-on-error: true',
   '--runtime-seconds 900',
   '--critical-only',
 ]) assert.ok(normalOpenMeteoFill.includes(marker), `Normal Open-Meteo fill mangler ${marker}`);
 for (const marker of [
-  'if: always()',
-  "steps.open-meteo-fill.outputs.checkpoint_written == 'true'",
-  "steps.open-meteo-fill.outputs.donor_bank_written == 'true'",
-  'test "$GITHUB_REF" = "refs/heads/main"',
-  'git rev-parse origin/main^{commit}',
-]) assert.ok(normalOpenMeteoAuthority.includes(marker), `Normal Open-Meteo write-authority mangler ${marker}`);
+  'uses: actions/cache/restore@v6',
+  'path: .cache/weather-private-progress.encrypted',
+  'weather-private-progress-encrypted-v2-',
+]) assert.ok(normalEncryptedRestore.includes(marker), `Krypteret provider-restore mangler ${marker}`);
 for (const marker of [
   'if: always()',
-  "steps.open-meteo-progress-write-authority.outcome == 'success'",
-  "steps.open-meteo-fill.outputs.checkpoint_written == 'true'",
-  "hashFiles('.cache/open-meteo-current-fallback.json') != ''",
+  "steps.component-progress-restore.outputs.captured == 'true'",
+  'weather-component-progress-cache.mjs save',
+]) assert.ok(normalEncryptedSeal.includes(marker), `Krypteret provider-save mangler ${marker}`);
+for (const marker of [
   'uses: actions/cache/save@v6',
-  'path: .cache/open-meteo-current-fallback.json',
-  'open-meteo-current-fallback-v2-${{ runner.os }}-',
-]) assert.ok(normalOpenMeteoSave.includes(marker), `Normal Open-Meteo save mangler ${marker}`);
+  'path: .cache/weather-private-progress.encrypted',
+  'weather-private-progress-encrypted-v2-',
+]) assert.ok(normalEncryptedSave.includes(marker), `Krypteret snapshotcache mangler ${marker}`);
+assert.doesNotMatch(text, /open-meteo-current-fallback-v2-|open-meteo-current-donor-bank-v1-/,
+  'Normalproduktionen må ikke have parallelle Open-Meteo-plaintextcaches.');
 for (const marker of [
   'if: always()',
   'steps.open-meteo-fill.outcome }}" = "success"',
@@ -1314,7 +1328,7 @@ for (const marker of [
   'test "$WAM_CODE" = "NONE"',
 ]) assert.ok(normalWamFinal.includes(marker), `Produktionsflowets WAM-slutgate mangler ${marker}`);
 for (const block of text.slice(
-    text.indexOf('name: Restore shared private Open-Meteo current progress'),
+    text.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
     text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   ).split('\n      - name:').filter(block => block.includes('upload-artifact'))) {
   assert.doesNotMatch(block, /\.cache\//, 'Private donor caches must never be artifacts.');
@@ -1336,46 +1350,24 @@ for (const marker of [
     throw new Error(`Produktionsworkflowets source-stage-inspektion mangler ${marker}`);
   }
 }
-for (const restoreName of [
+for (const retiredName of [
   'Refresh private Copernicus cache before DMI cache churn',
   'Refresh private Copernicus cache after DMI cache churn',
-]) {
-  const restoreStart = text.indexOf(`name: ${restoreName}`);
-  const restoreEnd = text.indexOf('\n      - name:', restoreStart + 1);
-  const restoreBlock = text.slice(restoreStart, restoreEnd < 0 ? text.length : restoreEnd);
-  if (!restoreBlock.includes('.cache/copernicus-current-shadow.json')
-    || !restoreBlock.includes('.cache/copernicus-current-source-stage.json')) {
-    throw new Error(`${restoreName} skal gendanne shadow og source-stage samlet.`);
-  }
-}
+]) assert.ok(!text.includes(`name: ${retiredName}`), `${retiredName} skal være erstattet af den krypterede snapshotvej.`);
 const productionAcquisitionSection = text.slice(
   text.indexOf('name: Install targeted Copernicus dependencies'),
-  text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+  text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
 );
 if ((productionAcquisitionSection.match(/steps\.targeted-copernicus-cache\.outputs\.source_stage_ready != 'true'/g) || []).length !== 3
   || productionAcquisitionSection.includes('current_hour_present')
   || productionAcquisitionSection.includes('complete_range_present')) {
   throw new Error('Produktionens install, credentials og acquisition må kun springes over på valideret source_stage_ready/komplet seal.');
 }
-const productionProgressSave = text.slice(
-  text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
-  text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
-);
-if (!productionProgressSave.includes("steps.copernicus-fill.outcome != 'cancelled'")
-  || !productionProgressSave.includes("steps.copernicus-fill.outcome != 'skipped'")
-  || !productionProgressSave.includes('.cache/copernicus-current-shadow.json')
-  || !productionProgressSave.includes('.cache/copernicus-current-source-stage.json')) {
-  throw new Error('Produktion skal gemme shadow og source-stage samlet efter ethvert ikke-annulleret acquisitionforsøg.');
-}
-const productionValidatedSave = text.slice(
-  text.indexOf('name: Save validated private Copernicus progress before downstream closure'),
-  text.indexOf('name: Build exact DMI-first current operational closure'),
-);
-if (!productionValidatedSave.includes('.cache/copernicus-current-shadow.json')
-  || !productionValidatedSave.includes('.cache/copernicus-current-source-stage.json')
-  || !productionValidatedSave.includes('actions/cache/save@v6')) {
-  throw new Error('Produktion skal gemme valideret shadow og source-stage samlet umiddelbart før closure.');
-}
+assert.match(fs.readFileSync('scripts/lib/private-weather-component-inventory.mjs', 'utf8'),
+  /copernicusCurrentShadow:[\s\S]*copernicusCurrentSourceStage:[\s\S]*copernicusCurrentDonorBank:[\s\S]*copernicusCurrentSegmentJournal:/,
+  'Copernicus shadow, source-stage, donorbank og journal skal gemmes samlet i det private inventar.');
+assert.doesNotMatch(text, /copernicus-current-progress-v3-|copernicus-current-donor-bank-v1-/,
+  'Normalproduktionen må ikke have parallelle Copernicus-plaintextcaches.');
 if (text.includes('--nearest-dmi-hour') || text.includes('--full-coast')) {
   throw new Error('Produktionsworkflowet må hverken rebindes til nearest-time eller vælge implicit full-coast.');
 }
@@ -1398,6 +1390,8 @@ const positions = {
   privateRuntimeInspect: text.indexOf('name: Inspect private production runtime availability'),
   privateRuntimeVerify: text.indexOf('name: Verify and restore the private production runtime bundle'),
   privateRuntimeInstall: text.indexOf('name: Install only the allowlisted restored private runtime files'),
+  componentProgressRestore: text.indexOf('name: Restore encrypted private weather progress only'),
+  componentProgressBind: text.indexOf('name: Bind optional progress to the exact protected baseline'),
   continuationRestore: text.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
   protectedCheckpointRestore: text.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
   legacyBootstrapGate: text.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
@@ -1408,38 +1402,27 @@ const positions = {
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
   deployedDmiMaterialize: text.indexOf('name: Materialize bounded deployed DMI storage before conditional point activation'),
   pointActivationPrepare: text.indexOf('name: Prepare only an explicitly requested READY point activation'),
-  dmiActiveRestore: text.indexOf('name: Restore last complete active DMI generation'),
-  dmiActiveLegacyResolve: text.indexOf('name: Resolve newest terminal-proven exact-main legacy DMI generation'),
-  dmiActiveLegacyBootstrap: text.indexOf('name: Bootstrap the terminal-proven exact legacy DMI generation'),
+  dmiActiveRestore: text.indexOf('name: Select encrypted active DMI generation when available'),
   dmiActiveMaterialize: text.indexOf('name: Strictly bind and materialize the active DMI generation'),
-  dmiLegacyMaterializedAuthority: text.indexOf('name: Reconfirm exact main before materialized legacy DMI cache'),
-  dmiLegacyMaterializedSave: text.indexOf('name: Save materialized legacy active DMI generation'),
-  dmiCandidateRestore: text.indexOf('name: Restore isolated DMI candidate progress for normal maintenance'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
-  dmiCandidateSave: text.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
-  dmiShadowSave: text.indexOf('name: Save private seven-day current-field research cache'),
   dmiTerminalGate: text.indexOf('name: Classify DMI readiness before current supplement'),
   dmiActiveSnapshot: text.indexOf('name: Strictly snapshot the maintained READY active DMI generation'),
-  dmiActiveSave: text.indexOf('name: Save the maintained complete active DMI generation'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
   copernicusInspect: text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
   copernicusNormalize: text.indexOf('name: Preserve original Copernicus admission evidence before production rebase'),
   copernicusFill: text.indexOf('name: Fill only exact-hour DMI gaps from Copernicus'),
-  copernicusProgressSave: text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
   copernicusRangeGate: text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
-  copernicusValidatedSave: text.indexOf('name: Save validated private Copernicus progress before downstream closure'),
-  openMeteoRestore: text.indexOf('name: Restore shared private Open-Meteo current progress'),
   openMeteoFill: text.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
-  openMeteoAuthority: text.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
-  openMeteoSave: text.indexOf('name: Save shared private Open-Meteo current progress'),
   openMeteoTerminal: text.indexOf('name: Require verified Open-Meteo residual checkpoint before closure'),
-  wamFinal: text.indexOf('name: Require complete operational WAM after provider progress for first cutover'),
+  wamFinal: text.indexOf('name: Require complete operational WAM after provider progress for state initialization'),
   supplierFreshness: text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   currentClosure: text.indexOf('name: Build exact DMI-first current operational closure'),
   liveCurrentBuild: text.indexOf('name: Build public seven-day current history and controlled live selection'),
   weather: text.indexOf('name: Update central weather cache'),
+  componentProgressSeal: text.indexOf('name: Encrypt newly saved private weather progress before later production steps'),
+  componentProgressSave: text.indexOf('name: Save only the authenticated encrypted private weather snapshot'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
   publicAudit: text.indexOf('name: Audit runtime and collect independent cutover validation failures'),
@@ -1481,6 +1464,8 @@ const expected = [
   'privateRuntimeInspect',
   'privateRuntimeVerify',
   'privateRuntimeInstall',
+  'componentProgressRestore',
+  'componentProgressBind',
   'legacyBootstrapGate',
   'legacyBootstrapImport',
   'legacyCutoverImport',
@@ -1488,38 +1473,27 @@ const expected = [
   'sourceGate',
   'deployedDmiMaterialize',
   'pointActivationPrepare',
-  'openMeteoRestore',
   'dmiActiveRestore',
-  'dmiActiveLegacyResolve',
-  'dmiActiveLegacyBootstrap',
   'dmiActiveMaterialize',
-  'dmiLegacyMaterializedAuthority',
-  'dmiLegacyMaterializedSave',
-  'dmiCandidateRestore',
   'dmiBulk',
   'dmiGribSave',
-  'dmiCandidateSave',
-  'dmiShadowSave',
   'dmiTerminalGate',
   'dmiActiveSnapshot',
-  'dmiActiveSave',
   'targetedCopernicus',
   'resolvedCurrentHour',
   'copernicusInspect',
   'copernicusNormalize',
   'copernicusFill',
-  'copernicusProgressSave',
   'copernicusRangeGate',
-  'copernicusValidatedSave',
   'openMeteoFill',
-  'openMeteoAuthority',
-  'openMeteoSave',
   'openMeteoTerminal',
   'wamFinal',
   'supplierFreshness',
   'currentClosure',
   'liveCurrentBuild',
   'weather',
+  'componentProgressSeal',
+  'componentProgressSave',
   'provenance',
   'runtime',
   'publicAudit',
@@ -1630,6 +1604,59 @@ for (const marker of [
     throw new Error(`Fuld validering mangler præcis historisk Candidate G-forberedelse: ${marker}`);
   }
 }
+const currentDmiProducer = text.slice(positions.dmiBulk, positions.dmiGribSave);
+for (const marker of [
+  'id: dmi-bulk',
+  'continue-on-error: true',
+  'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
+  'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
+  'DMI_BULK_PREFER_OUTPUT_CACHE: true',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
+  'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
+]) assert.ok(currentDmiProducer.includes(marker), `Normal DMI-producent mangler ${marker}`);
+const currentDmiRestore = text.slice(positions.dmiActiveRestore, positions.dmiActiveMaterialize);
+for (const marker of [
+  'id: dmi-active-restore',
+  'test -s .cache/dmi-active-complete.json',
+  'available=true',
+]) assert.ok(currentDmiRestore.includes(marker), `Krypteret aktiv DMI-vælger mangler ${marker}`);
+assert.doesNotMatch(currentDmiRestore, /actions\/cache|dmi-zone-active-v1-/);
+const currentDmiMaterialize = text.slice(positions.dmiActiveMaterialize, positions.dmiBulk);
+for (const marker of [
+  'steps.dmi-active-restore.outputs.available',
+  'source_path=.cache/dmi-active-complete.json',
+  'source_path=data/live/dmi-bulk-cache.json',
+  'python scripts/materialize-dmi-bulk-storage.py',
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  'python scripts/build-copernicus-target-registry.py',
+]) assert.ok(currentDmiMaterialize.includes(marker), `Aktiv DMI-materialisering mangler ${marker}`);
+const currentDmiGribSave = text.slice(positions.dmiGribSave,
+  text.indexOf('\n      - name:', positions.dmiGribSave + 1));
+assert.match(currentDmiGribSave, /if: always\(\)/);
+assert.match(currentDmiGribSave, /path: \.cache\/dmi-grib/);
+assert.match(currentDmiGribSave, /key: dmi-grib-v4-/);
+const currentDmiSnapshot = text.slice(positions.dmiActiveSnapshot,
+  text.indexOf('\n      - name:', positions.dmiActiveSnapshot + 1));
+for (const marker of [
+  "steps.dmi-terminal-gate.outputs.ready == 'true'",
+  "steps.dmi-bulk.outputs.candidate_promoted == 'true'",
+  'python scripts/check-dmi-bulk-operational-ready.py',
+  'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
+]) assert.ok(currentDmiSnapshot.includes(marker), `Normal READY-snapshot mangler ${marker}`);
+assert.doesNotMatch(text, /dmi-zone-active-v1-|dmi-zone-candidate-v1-|current-field-shadow-v1-/,
+  'Private DMI-fremdrift må ikke have en parallel plaintext-cachefamilie i normalproduktionen.');
+const privateInventory = fs.readFileSync('scripts/lib/private-weather-component-inventory.mjs', 'utf8');
+for (const marker of ['dmiActive:', 'dmiCandidate:', 'currentFieldShadow:']) {
+  assert.ok(privateInventory.includes(marker), `Krypteret privat inventar mangler ${marker}`);
+}
+assert.ok(positions.dmiActiveSnapshot < positions.componentProgressSeal
+  && positions.componentProgressSeal < positions.componentProgressSave
+  && positions.componentProgressSave < positions.validate,
+  'DMI/leverandørfremdrift skal krypteres efter producenterne og før produktionsgaterne.');
+
+// Historical plaintext-cache assertions retained only as readable migration
+// evidence; the executable contract above supersedes them.
+if (false) {
 const dmiProducerBlock = text.slice(positions.dmiBulk, positions.dmiGribSave);
 if (!dmiProducerBlock.includes('id: dmi-bulk')
   || !dmiProducerBlock.includes('continue-on-error: true')) {
@@ -1640,8 +1667,8 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.extended_provider_bootstrap == true && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}",
-  "DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}",
+  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}",
+  "DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}",
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
   if (!dmiProducerBlock.includes(marker)) throw new Error('Normal DMI-vedligeholdelse mangler ' + marker);
@@ -1794,6 +1821,7 @@ if (buildWorkflow.includes('name: Save progressive private DMI zone cache')
   || buildWorkflow.includes('key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}')) {
   throw new Error('Normal drift må ikke gemme partiel progression i den gamle aktive dmi-zone-cache-v1-familie.');
 }
+}
 const dmiTerminalBlock = text.slice(
   positions.dmiTerminalGate,
   text.indexOf('\n      - name:', positions.dmiTerminalGate + 1),
@@ -1844,7 +1872,7 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the twenty-two exact integrated cutover migrations',
+  'Require only the twenty-three exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1867,6 +1895,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260918125600_last_mile_history_envelope_binding.sql"',
   'test -f "$migrations_directory/20260918190000_weather_input_resolution_binding.sql"',
   'test -f "$migrations_directory/20260919010000_current_input_foundation_binding.sql"',
+  'test -f "$migrations_directory/20260919020000_measured_warmup_checkpoint.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -2218,12 +2247,17 @@ for (const marker of [
   '!checkpoint.loaded || !checkpoint.continuationAvailable',
   'Integrated historical maintenance will continue from the validated continuation checkpoint.',
   'Integrated historical maintenance will rebuild measured state from the bounded 48-hour weather history.',
-  'node scripts/protected-private-production-runtime.mjs',
+  'restore_script="$GITHUB_WORKSPACE/scripts/protected-private-production-runtime.mjs"',
+  'restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"',
+  'node "$restore_script"',
   '--restore',
-  'node scripts/private-production-runtime-bundle.mjs restore',
+  'restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"',
+  'restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs"',
+  'node "$restore_script" restore',
   '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
   '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--expected .cache/private-production-runtime-expected.json',
+  'restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"',
+  '--expected "$restore_expected"',
   '--output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
   'node scripts/private-production-runtime-workflow.mjs install',
   '--restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
@@ -2233,17 +2267,23 @@ for (const marker of [
 ]) {
   if (!privateRuntimeRestoreSection.includes(marker)) throw new Error(`Private runtime-restore mangler ${marker}`);
 }
+const activeIntegratedRestoreStart = privateRuntimeRestoreSection.indexOf(
+  'if test "$OPERATIONAL_ACTION" = "integrated"; then',
+);
 const activeIntegratedRestoreFallback = privateRuntimeRestoreSection.slice(
-  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated"; then'),
-  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+  activeIntegratedRestoreStart,
+  privateRuntimeRestoreSection.indexOf('exit "$status"', activeIntegratedRestoreStart),
 );
 if (!activeIntegratedRestoreFallback.includes('exit 0')
   || !activeIntegratedRestoreFallback.includes('measured stateless recovery path')) {
   throw new Error('En inkompatibel privat runtime skal nå exact active-integrated stateless recovery uden at åbne andre actions.');
 }
+const historicalMaintenanceRestoreStart = privateRuntimeRestoreSection.indexOf(
+  'if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
+);
 const historicalMaintenanceRestoreFallback = privateRuntimeRestoreSection.slice(
-  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
-  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+  historicalMaintenanceRestoreStart,
+  privateRuntimeRestoreSection.indexOf('exit "$status"', historicalMaintenanceRestoreStart),
 );
 if (!historicalMaintenanceRestoreFallback.includes('exit 0')
   || !historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
@@ -2826,6 +2866,7 @@ for (const marker of [
   'sha256CanonicalJson(runtimeAudit) !== disposition.runtimeAuditSha256',
   'handoff.checkpointDisposition !== disposition.disposition',
   "disposition.disposition === 'READY_PUBLISHED'",
+  "disposition.disposition === 'MEASURED_WARMUP_PUBLISHED'",
   "disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP'",
   "handoff.checkpointBuildOutcome !== 'success'",
   "handoff.checkpointSaveOutcome !== 'success'",
@@ -2866,45 +2907,55 @@ for (const marker of [
   'candidate-execute|candidate-maintenance|candidate-historical-maintenance|candidate-legacy-maintenance)',
   'integrated|integrated-historical-maintenance|integrated-return|integrated-cutover)',
 ]) {
-  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
+  if (!recoveryWorkflow.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
 }
 
 const operationalRecoveryPositions = {
-  reconcile: orchestratorWorkflow.indexOf('\n  reconcile-operational-pending:'),
-  writer: orchestratorWorkflow.indexOf('\n  recover-operational-pages-target:'),
-  finalizer: orchestratorWorkflow.indexOf('\n  finalize-operational-pages-recovery:'),
-  gate: orchestratorWorkflow.indexOf('\n  operational-recovery-gate:'),
+  reconcile: recoveryWorkflow.indexOf('\n  reconcile-operational-pending:'),
+  writer: recoveryWorkflow.indexOf('\n  recover-operational-pages-target:'),
+  finalizer: recoveryWorkflow.indexOf('\n  finalize-operational-pages-recovery:'),
+  gate: recoveryWorkflow.indexOf('\n  operational-recovery-gate:'),
+  caller: orchestratorWorkflow.indexOf('\n  operational-recovery-gate:'),
   currentHour: orchestratorWorkflow.indexOf('\n  current-hour-readiness:'),
 };
 assert.deepEqual(
   Object.values(operationalRecoveryPositions).map((position) => position >= 0),
-  [true, true, true, true, true],
+  [true, true, true, true, true, true],
   'Den todelte operationelle Pages-recoverykæde skal være komplet.',
 );
 assert.ok(
   operationalRecoveryPositions.reconcile < operationalRecoveryPositions.writer
     && operationalRecoveryPositions.writer < operationalRecoveryPositions.finalizer
     && operationalRecoveryPositions.finalizer < operationalRecoveryPositions.gate
-    && operationalRecoveryPositions.gate < operationalRecoveryPositions.currentHour,
+    && operationalRecoveryPositions.caller < operationalRecoveryPositions.currentHour,
   'Recovery skal være classify → Pages-writer → non-Pages CAS-finalizer → terminal gate → current-hour.',
 );
-const operationalReconcileSection = orchestratorWorkflow.slice(
+const operationalReconcileSection = recoveryWorkflow.slice(
   operationalRecoveryPositions.reconcile,
   operationalRecoveryPositions.writer,
 );
-const operationalWriterSection = orchestratorWorkflow.slice(
+const operationalWriterSection = recoveryWorkflow.slice(
   operationalRecoveryPositions.writer,
   operationalRecoveryPositions.finalizer,
 );
-const operationalFinalizerSection = orchestratorWorkflow.slice(
+const operationalFinalizerSection = recoveryWorkflow.slice(
   operationalRecoveryPositions.finalizer,
   operationalRecoveryPositions.gate,
 );
-const operationalRecoveryGateSection = orchestratorWorkflow.slice(
+const operationalRecoveryGateSection = recoveryWorkflow.slice(
   operationalRecoveryPositions.gate,
+);
+const operationalRecoveryCallerSection = orchestratorWorkflow.slice(
+  operationalRecoveryPositions.caller,
   operationalRecoveryPositions.currentHour,
 );
-const geometryExclusion = "if: github.ref == 'refs/heads/main' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true'";
+for (const marker of [
+  'needs: validate-dispatch',
+  'uses: ./.github/workflows/reusable-operational-reentry.yml',
+  "geometry_only: ${{ needs.validate-dispatch.outputs.geometry_v2_pilot == 'true' || needs.validate-dispatch.outputs.geometry_v2_national == 'true' }}",
+]) assert.ok(operationalRecoveryCallerSection.includes(marker), `Recovery-kaldet mangler ${marker}`);
+assert.ok(!/^concurrency:/m.test(recoveryWorkflow), 'Reusable recovery må ikke genoptage callerens produktionslås.');
+const geometryExclusion = "if: github.ref == 'refs/heads/main' && inputs.geometry_only != true";
 if (!operationalReconcileSection.includes(geometryExclusion)
   || operationalReconcileSection.includes('GEOMETRY_ONLY')) {
   throw new Error('Geometry-dispatches skal være helt udelukket fra reconcile/recovery-jobbet.');
@@ -3003,7 +3054,7 @@ const downstreamResumeContracts = [
     job: 'deploy-pages',
     next: 'production-outcome',
     needs: 'needs: build-and-prepare',
-    condition: "if: ${{ !cancelled() && github.ref == 'refs/heads/main' && ((needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true') || (inputs.ravscore_integrated_first_cutover == true && inputs.ravscore_integrated_weather_handoff_run_id == '34858950223' && inputs.ravscore_integrated_first_cutover_confirmation == 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE')) }}",
+    condition: "if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}",
   },
 ];
 for (const contract of downstreamResumeContracts) {
@@ -3029,10 +3080,8 @@ for (const marker of [
   'actions/runs/$attempt_run_id/attempts/$attempt_number',
   'actions/runs/$attempt_run_id/attempts/$attempt_number/jobs?per_page=100',
   '.run_attempt == $runAttempt',
-  '[.jobs[]? | select(.name == "Deploy prepared Pages artifact"',
-  '.steps[]? | select(.name == "Deploy to GitHub Pages")',
-  'test "$deploy_job_count" -eq 1',
-  'test "$deploy_step_count" -eq 1',
+  'node scripts/github-pages-attempt-evidence.mjs',
+  '"$attempt_run_id" "$attempt_number" "$pending_head"',
   '--artifact-seal "$artifact_seal"',
   '--artifact-evidence "$RAVRADAR_OPERATIONAL_WORK/artifact-evidence.json"',
   '--terminal-evidence "$RAVRADAR_OPERATIONAL_WORK/terminal-evidence-v2.json"',
@@ -3042,6 +3091,17 @@ for (const marker of [
 ]) {
   if (!operationalReconcileSection.includes(marker)) throw new Error(`Recovery-classifierjobbet mangler ${marker}`);
 }
+const pagesAttemptEvidence = fs.readFileSync('scripts/github-pages-attempt-evidence.mjs', 'utf8');
+for (const marker of [
+  'Number(job.run_id) === Number(runId)',
+  'Number(job.run_attempt) === Number(runAttempt)',
+  'job.head_sha === headSha',
+  "job.name === 'Deploy prepared Pages artifact'",
+  "job.name?.endsWith(' / Deploy prepared Pages artifact')",
+  'selected.length !== 1',
+  "step.name === 'Deploy to GitHub Pages'",
+  'steps.length !== 1',
+]) assert.ok(pagesAttemptEvidence.includes(marker), `Exact-run Pages-evidens mangler ${marker}`);
 for (const marker of [
   'if [ "$(jq -r \'.requestedModel\' "$RAVRADAR_OPERATIONAL_WORK/current.json")" = "integrated" ]; then',
   'completion_args+=(--plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json")',
@@ -3120,16 +3180,16 @@ const recoveryConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkfl
 for (const marker of [
   "inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national'",
   "inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot'",
-  "'ravradar-weather-production'",
+  "'ravradar-weather-production-v2'",
   'queue: max',
   'cancel-in-progress: false',
 ]) {
   if (!recoveryConcurrencySection.includes(marker)) throw new Error(`Event×group-kontrakten mangler ${marker}`);
 }
 const recoveryEventMatrix = [
-  { eventName: 'push', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
-  { eventName: 'schedule', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
-  { eventName: 'workflow_dispatch', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
+  { eventName: 'push', pilot: false, national: false, group: 'ravradar-weather-production-v2', reconcile: true },
+  { eventName: 'schedule', pilot: false, national: false, group: 'ravradar-weather-production-v2', reconcile: true },
+  { eventName: 'workflow_dispatch', pilot: false, national: false, group: 'ravradar-weather-production-v2', reconcile: true },
   { eventName: 'workflow_dispatch', pilot: true, national: false, group: 'ravradar-geometry-v2-pilot', reconcile: false },
   { eventName: 'workflow_dispatch', pilot: false, national: true, group: 'ravradar-geometry-v2-national', reconcile: false },
 ];
@@ -3139,7 +3199,7 @@ for (const event of recoveryEventMatrix) {
     ? 'ravradar-geometry-v2-national'
     : event.eventName === 'workflow_dispatch' && event.pilot
       ? 'ravradar-geometry-v2-pilot'
-      : 'ravradar-weather-production';
+      : 'ravradar-weather-production-v2';
   const reconcileRuns = !geometryOnly;
   assert.equal(evaluatedGroup, event.group, `Forkert concurrency-gruppe for ${event.eventName}.`);
   assert.equal(reconcileRuns, event.reconcile, `Forkert reconcile-job-if for ${event.eventName}.`);
@@ -3199,9 +3259,7 @@ for (const marker of [
 ]) {
   if (!continuationSaveSection.includes(marker)) throw new Error(`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
 }
-const firstCutoverContinueOnError = "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}";
-if (continuationSaveSection.includes('continue-on-error: true')
-  || continuationSaveSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')) {
+if (continuationSaveSection.includes('continue-on-error')) {
   throw new Error('Protected checkpoint-publicering må ikke skjule fejl.');
 }
 const checkpointDispositionSection = text.slice(
@@ -3213,9 +3271,8 @@ for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
   'READY_PUBLISHED',
-  'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+  'MEASURED_WARMUP_PUBLISHED',
   'checkpoint_required="true"',
-  'checkpoint_required="false"',
   'dataset_id="$(jq -er \'.datasetId | select(type == "string" and length > 0)\' data/live/manifest.json)"',
   'runtime_audit_sha256=',
   'sha256CanonicalJson',
@@ -3239,10 +3296,10 @@ for (const marker of [
     throw new Error(`Den obligatoriske hashbundne checkpointdisposition mangler ${marker}`);
   }
 }
-if (checkpointDispositionSection.includes('continue-on-error: true')
-  || checkpointDispositionSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')) {
+if (checkpointDispositionSection.includes('continue-on-error')) {
   throw new Error('Checkpointdispositionen må ikke skjule en kontraktfejl.');
 }
+assert.ok(!checkpointDispositionSection.includes('checkpoint_required="false"'), 'Nye measured-warmup-kørsler skal gemme et checkpoint.');
 if (text.includes('ravscore-continuation-checkpoint-applicability')) {
   throw new Error('Den valgfri applicability-ghostfil må ikke længere findes i produktionsworkflowet.');
 }
@@ -3255,14 +3312,14 @@ for (const name of [
   const start = text.indexOf(`name: ${name}`);
   const end = text.indexOf('\n      - name:', start + 1);
   const block = text.slice(start, end < 0 ? text.length : end);
-  if (!block.includes("steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true'")) {
-    throw new Error(`${name} må kun køre med attesteret READY rollback-aktivering.`);
+  if (!block.includes("steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY' || steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'BUILDING_MEASURED_ONLY')")) {
+    throw new Error(`${name} skal gemme både READY og measured-warmup efter vellykket vejrbygning.`);
   }
 }
 const preflightStateSaveSection = text.slice(positions.preflightStateBuild, positions.privateRuntimeSpec);
 for (const marker of [
-  "if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')",
-  "if: steps.weather-preflight-state-build.outcome == 'success' && (env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'))",
+  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
+  "if: steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')",
   'node scripts/private-production-runtime-workflow.mjs create-preflight',
   '--repository-root "$GITHUB_WORKSPACE"',
   '--output .cache/weather-preflight-state/state.json',
@@ -3301,10 +3358,8 @@ for (const marker of [
 }
 const privateRuntimeCriticalSection = text.slice(positions.privateRuntimeSpec, positions.privateRuntimeSave);
 const privateRuntimeSaveSection = text.slice(positions.privateRuntimeSave, text.indexOf('\n\n', positions.privateRuntimeSave));
-if (privateRuntimeCriticalSection.includes('continue-on-error: true')
-  || privateRuntimeCriticalSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')
-  || privateRuntimeSaveSection.includes('continue-on-error: true')
-  || privateRuntimeSaveSection.replaceAll(firstCutoverContinueOnError, '').includes('continue-on-error')
+if (privateRuntimeCriticalSection.includes('continue-on-error')
+  || privateRuntimeSaveSection.includes('continue-on-error')
   || privateRuntimeCreateSection.includes('path: .cache/private-production-runtime')) {
   throw new Error('Det private runtimebundle skal bygges fail-closed uden for repositoryet.');
 }
@@ -3338,7 +3393,7 @@ for (const marker of [
   'recomputed_runtime_audit_sha256=',
   'Checkpoint disposition binding mismatch',
   'READY_PUBLISHED)',
-  'NOT_APPLICABLE_DURING_MEASURED_WARMUP)',
+  'MEASURED_WARMUP_PUBLISHED)',
   'checkpointDisposition:$checkpointDisposition',
   'checkpointDispositionSha256:$checkpointDispositionSha256',
   'checkpointDatasetId:$checkpointDatasetId',
@@ -3363,7 +3418,7 @@ if (beforeWeather.includes('npm run build:current-provenance')) {
 }
 const sourceGateBlockEnd = text.indexOf('\n\n', positions.sourceGate);
 const sourceGateBlock = text.slice(positions.sourceGate, sourceGateBlockEnd < 0 ? text.length : sourceGateBlockEnd);
-if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && env.RAVRADAR_DIRECT_INTEGRATED_INSTALL != 'true' && steps.source-proof.outputs.required != 'false'")
+if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'")
   || !sourceGateBlock.includes('run: npm run validate:source')) {
   throw new Error('Kildegaten må kun genbruges efter live-verificeret exact-main-bevis; ukendt evidens kræver kontrol før DMI.');
 }
@@ -3378,6 +3433,39 @@ for (const marker of [
   'weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-',
 ]) assert.ok(buildWorkflow.includes(marker), `Exact-main source proof lacks ${marker}`);
 
+assertMarkersOrdered(buildWorkflow, [
+  'name: Restore encrypted private weather progress only',
+  'name: Bind optional progress to the exact protected baseline',
+  'name: Update DMI bulk model cache',
+  'name: Save progressed DMI GRIB download cache',
+  'name: Fill only exact-hour DMI gaps from Copernicus',
+  'name: Require reusable Copernicus source stage before combined current closure',
+  'name: Fill only the exact remaining current gaps from Open-Meteo',
+  'name: Update central weather cache',
+  'name: Encrypt newly saved private weather progress before later production steps',
+  'name: Save only the authenticated encrypted private weather snapshot',
+], 'Normal produktion skal have én baselinebundet krypteret vej for alle private providerfremskridt');
+for (const marker of [
+  'weather-private-progress-encrypted-v2-${{ runner.os }}-main-',
+  'WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  'node scripts/weather-component-progress-cache.mjs save',
+]) assert.ok(buildWorkflow.includes(marker), `Krypteret providercache mangler ${marker}`);
+for (const retiredPrefix of [
+  'dmi-zone-active-v1-', 'dmi-zone-candidate-v1-', 'current-field-shadow-v1-',
+  'copernicus-current-progress-v3-', 'copernicus-current-donor-bank-v1-',
+  'open-meteo-current-fallback-v2-', 'open-meteo-current-donor-bank-v1-',
+  'copernicus-current-post-build-input-v1-',
+]) assert.ok(!buildWorkflow.includes(retiredPrefix), `Normal build bruger stadig ${retiredPrefix}`);
+
+const retiredPostBuildStart = orchestratorWorkflow.indexOf('\n  copernicus-post-build-refresh:');
+const deployPagesStart = orchestratorWorkflow.indexOf('\n  deploy-pages:', retiredPostBuildStart);
+assert.ok(retiredPostBuildStart >= 0 && deployPagesStart > retiredPostBuildStart);
+const retiredPostBuild = orchestratorWorkflow.slice(retiredPostBuildStart, deployPagesStart);
+assert.match(retiredPostBuild, /&& false \}\}/,
+  'Den gamle plaintext Copernicus-efterkørsel skal være permanent lukket.');
+
+// Historical multi-cache assertions retained only as migration evidence.
+if (false) {
 assertMarkersOrdered(buildWorkflow, [
   'name: Update DMI bulk model cache',
   'name: Reconfirm exact main before shared DMI progress caches',
@@ -3409,9 +3497,9 @@ for (const marker of [
 assertCopernicusSegmentJournal(buildWorkflow, 'Det normale produktionsbuild');
 
 const postBuildRefreshStart = orchestratorWorkflow.indexOf('\n  copernicus-post-build-refresh:');
-const deployPagesStart = orchestratorWorkflow.indexOf('\n  deploy-pages:', postBuildRefreshStart);
-assert.ok(postBuildRefreshStart >= 0 && deployPagesStart > postBuildRefreshStart, 'Det advisory Copernicus-refreshjob mangler før det parallelle deployjob.');
-const postBuildRefresh = orchestratorWorkflow.slice(postBuildRefreshStart, deployPagesStart);
+const historicalDeployPagesStart = orchestratorWorkflow.indexOf('\n  deploy-pages:', postBuildRefreshStart);
+assert.ok(postBuildRefreshStart >= 0 && historicalDeployPagesStart > postBuildRefreshStart, 'Det advisory Copernicus-refreshjob mangler før det parallelle deployjob.');
+const postBuildRefresh = orchestratorWorkflow.slice(postBuildRefreshStart, historicalDeployPagesStart);
 for (const marker of [
   'needs: build-and-prepare',
   "needs.build-and-prepare.result == 'success'",
@@ -3452,6 +3540,7 @@ assertMarkersOrdered(postBuildRefresh, [
   'name: Reconfirm exact main immediately before refreshed Copernicus cache save',
   'name: Save successful post-build Copernicus maintenance under shared progress prefix',
 ], 'Post-build refresh skal bevise input og main både før acquisition og før cachewrite');
+}
 const outcomeStart = orchestratorWorkflow.indexOf('\n  production-outcome:');
 const productionOutcomeSection = orchestratorWorkflow.slice(outcomeStart);
 assert.ok(!productionOutcomeSection.includes('- copernicus-post-build-refresh'), 'Advisory refresh må ikke indgå i production-outcome needs eller klassifikation.');
@@ -3524,7 +3613,7 @@ const dmiBulkSection = buildWorkflow.slice(
 );
 const dmiStepTimeoutContract = dmiBulkSection.match(/^        timeout-minutes: (.+)$/m)?.[1];
 const dmiStepTimeoutMinutes = dmiStepTimeoutContract
-  === '${{ inputs.extended_provider_bootstrap && 70 || 55 }}' ? 70 : Number(dmiStepTimeoutContract);
+  === "${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true') && 70 || 55 }}" ? 70 : Number(dmiStepTimeoutContract);
 const bootstrapRuntimeSeconds = Number(
   dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'1500'/)?.[1],
 );
@@ -3568,17 +3657,19 @@ if (JSON.stringify(installedPagesLiveFiles) !== JSON.stringify(expectedPagesLive
 const pagesLiveWriteLines = pagesArtifactSection.split('\n')
   .map((line) => line.trim())
   .filter((line) => line.includes('$pages_destination/data/live'));
-if (pagesLiveWriteLines.length !== 5
+const publicDeliveryCopyCommand = 'node scripts/copy-public-delivery-shards.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"';
+if (pagesLiveWriteLines.length !== 6
   || pagesLiveWriteLines[0] !== 'mkdir -p "$pages_destination/data/live"'
-  || pagesLiveWriteLines.slice(1).some((line) => !line.startsWith('install -m 0644 "$pages_source/data/live/'))) {
-  throw new Error('Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer.');
+  || pagesLiveWriteLines.slice(1, 5).some((line) => !line.startsWith('install -m 0644 "$pages_source/data/live/'))
+  || pagesLiveWriteLines[5] !== publicDeliveryCopyCommand) {
+  throw new Error('Pages-workflowet må kun installere de fire basisfiler samt hashvaliderede manifest-allowlistede shards.');
 }
 const pagesPrivacyAuditSection = text.slice(
   positions.pagesPrivacyAudit,
   positions.operationalHandoffSeal,
 );
 for (const marker of [
-  "if: env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' || steps.preflight.outputs.should_run == 'true'",
+  "if: steps.preflight.outputs.should_run == 'true'",
   'node scripts/audit-pages-artifact-privacy.mjs',
   '--site _site',
   '--private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
@@ -3586,9 +3677,8 @@ for (const marker of [
 ]) {
   if (!pagesPrivacyAuditSection.includes(marker)) throw new Error(`Pages-privacygaten mangler ${marker}`);
 }
-if (pagesPrivacyAuditSection.includes('continue-on-error: true')
-  || !pagesPrivacyAuditSection.includes("continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}")) {
-  throw new Error('Pages-privacygaten må kun bruge den præcise historiske first-cutover-undtagelse; normal drift skal være fail-closed.');
+if (pagesPrivacyAuditSection.includes('continue-on-error')) {
+  throw new Error('Pages-privacygaten skal være fail-closed i alle produktionsveje.');
 }
 const productionConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'), orchestratorWorkflow.indexOf('\njobs:'));
 if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
@@ -3722,10 +3812,10 @@ for (const marker of [
   'CHECKPOINT_HANDOFF_ROOT="$bundle/handoff"',
   'CHECKPOINT_HANDOFF_ROOT="$handoff"',
 ]) {
-  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Recovery mangler obligatorisk checkpointproof: ${marker}`);
+  if (!recoveryWorkflow.includes(marker)) throw new Error(`Recovery mangler obligatorisk checkpointproof: ${marker}`);
 }
 assert.equal(
-  (orchestratorWorkflow.match(/Recovery checkpoint disposition validation failed/g) || []).length,
+  (recoveryWorkflow.match(/Recovery checkpoint disposition validation failed/g) || []).length,
   2,
   'Recovery skal genvalidere dispositionen før Pages-write og før completion-CAS.',
 );
@@ -3741,10 +3831,10 @@ for (const marker of [
   'path: .workflow-outcome/production-outcome.json',
   'if-no-files-found: error',
   "if: always() && steps.classify.outputs.status == 'FAILED'",
-  'RAVRADAR_OUTCOME_JOB_RECOVERY_WRITER: ${{ needs.recover-operational-pages-target.result }}',
-  'RAVRADAR_OUTCOME_JOB_RECOVERY_FINALIZER: ${{ needs.finalize-operational-pages-recovery.result }}',
+  'RAVRADAR_OUTCOME_JOB_RECOVERY_WRITER: ${{ needs.operational-recovery-gate.outputs.writer_result }}',
+  'RAVRADAR_OUTCOME_JOB_RECOVERY_FINALIZER: ${{ needs.operational-recovery-gate.outputs.finalize_result }}',
   'RAVRADAR_OUTCOME_JOB_RECOVERY_GATE: ${{ needs.operational-recovery-gate.result }}',
-  'RAVRADAR_OUTCOME_RECOVERY_ACTION: ${{ needs.reconcile-operational-pending.outputs.recovery_action }}',
+  'RAVRADAR_OUTCOME_RECOVERY_ACTION: ${{ needs.operational-recovery-gate.outputs.recovery_action }}',
   'RAVRADAR_OUTCOME_OPERATIONAL_ACTION: ${{ needs.build-and-prepare.outputs.operational_action }}',
   'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION:',
   'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256:',
@@ -3753,8 +3843,8 @@ for (const marker of [
   'RAVRADAR_OUTCOME_CHECKPOINT_BUILD:',
   'RAVRADAR_OUTCOME_CHECKPOINT_SAVE:',
   'RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH:',
-  'needs.build-and-prepare.outputs.checkpoint_disposition || needs.reconcile-operational-pending.outputs.checkpoint_disposition',
-  'needs.build-and-prepare.outputs.checkpoint_publish_outcome || needs.reconcile-operational-pending.outputs.checkpoint_publish_outcome',
+  'needs.build-and-prepare.outputs.checkpoint_disposition || needs.operational-recovery-gate.outputs.checkpoint_disposition',
+  'needs.build-and-prepare.outputs.checkpoint_publish_outcome || needs.operational-recovery-gate.outputs.checkpoint_publish_outcome',
   'exit 1',
 ]) {
   if (!outcomeSection.includes(marker)) throw new Error(`Produktionsslutstatusjobbet mangler ${marker}`);
@@ -3765,9 +3855,6 @@ const outcomeNeeds = [...outcomeSection.slice(
 ).matchAll(/^      - ([a-z0-9-]+)$/gm)].map((match) => match[1]);
 assert.deepEqual(outcomeNeeds, [
   'validate-dispatch',
-  'reconcile-operational-pending',
-  'recover-operational-pages-target',
-  'finalize-operational-pages-recovery',
   'operational-recovery-gate',
   'current-hour-readiness',
   'trip-storage-readiness',

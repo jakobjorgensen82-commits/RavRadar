@@ -53,15 +53,25 @@ for (const mutate of [
 assert.equal(
   exactNationalOperationalColdReplayInitialization([{ ravScoreState: coldState() }], 2),
   false,
-  'en delvis eller blandet national cohort må ikke godkendes',
+  'en delvis national cohort må ikke godkendes',
 );
 assert.equal(
   exactNationalOperationalColdReplayInitialization([
     { ravScoreState: coldState() },
     { ravScoreState: coldState({ unknown: 7 }) },
   ], 2),
-  false,
-  'forskellige cold-replay-kildetyper må ikke blandes i den nationale cohort',
+  true,
+  'hver dels lovlige cold-replay bevis gælder uanset de andre deles historik',
 );
+
+assert.equal(exactNationalOperationalColdReplayInitialization([
+  { ravScoreState: coldState({ unknown: 7 }) },
+  { ravScoreState: { initialStateAccepted: true, migrationApplied: false } },
+  { ravScoreState: { initialStateAccepted: false, migrationApplied: true } },
+], 3), true, 'genoptaget, migreret og lovlig cold replay må fortsætte sammen');
+assert.equal(exactNationalOperationalColdReplayInitialization([
+  { ravScoreState: coldState() },
+  { ravScoreState: { initialStateAccepted: false, migrationApplied: false } },
+], 2), false, 'en ubevist del må ikke skjules af en anden dels lovlige start');
 
 console.log('Operationel RavScore cold-start-readiness: bestået.');

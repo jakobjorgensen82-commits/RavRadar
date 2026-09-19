@@ -22,6 +22,8 @@ except ModuleNotFoundError:  # Credential-free cache checks use only stdlib path
     np = None
 
 from .copernicus_target_identity import target_fingerprint as geometry_fingerprint
+from .current_model_reference import validate_model_reference
+from .current_aged_dmi_challenge import challenge_pairs, eligible_challenge_record, validate_challenge_plan
 
 
 RETENTION_HOURS = 168
@@ -44,6 +46,7 @@ LEGACY_HISTORY_REQUEST_CONTRACT_ID = "copernicus-current-schema1-history-migrati
 SELECTION_POLICY_ID = "per-native-time-nearest-shared-uv-column-then-deepest-common-layer-v1"
 CANDIDATE_CONFLICT_POLICY_ID = "same-source-top-acquisition-exact-physical-tuple-or-ineligible-v1"
 RECORD_PROJECTION_CONTRACT_ID = "copernicus-live-current-record-fixed-decimal-v1"
+MODEL_REFERENCE_PROJECTION_CONTRACT_ID = "copernicus-live-current-record-fixed-decimal-model-reference-v2"
 DMI_VERIFIER_CONTRACT_ID = "dmi-native-current-provenance-v1"
 COMPONENT_PAIR = "same-time-cell-layer"
 HASH_PREFIX = "sha256:"
@@ -297,8 +300,19 @@ def fixed_decimal(value: Any, places: int) -> str:
 
 def live_record_projection_payload(entry: dict[str, Any]) -> dict[str, Any]:
     """Cross-language projection whose numbers are fixed decimal strings."""
-    if entry.get("recordProjectionContractId") != RECORD_PROJECTION_CONTRACT_ID:
+    contract = entry.get("recordProjectionContractId")
+    if contract not in {RECORD_PROJECTION_CONTRACT_ID, MODEL_REFERENCE_PROJECTION_CONTRACT_ID}:
         raise ValueError("Copernicus record projection contract id mismatch")
+    model_binding = {}
+    if contract == MODEL_REFERENCE_PROJECTION_CONTRACT_ID:
+        proof = validate_model_reference(entry.get("modelReference"), subset_sha256=entry.get("subsetSha256"),
+                                         valid_time=entry.get("validTime"), acquisition_at=entry.get("acquisitionAt"))
+        if entry.get("modelRun") != proof["modelRun"]:
+            raise ValueError("Copernicus live projection model reference mismatch")
+        model_binding = {"modelRun": proof["modelRun"], "subsetSha256": entry["subsetSha256"],
+                         "modelReferenceSha256": canonical_sha256(proof)}
+    elif entry.get("modelRun") is not None or entry.get("modelReference") is not None:
+        raise ValueError("Copernicus v1 live projection has no bound model reference")
     sampling = entry.get("samplingPoint")
     grid = entry.get("gridPoint")
     if not _finite_pair(sampling) or not _finite_pair(grid):
@@ -307,7 +321,8 @@ def live_record_projection_payload(entry: dict[str, Any]) -> dict[str, Any]:
     if isinstance(shared_layers, bool) or not isinstance(shared_layers, int) or shared_layers < 1:
         raise ValueError("Copernicus record projection shared-layer count is invalid")
     return {
-        "contractId": RECORD_PROJECTION_CONTRACT_ID,
+        "contractId": contract,
+        **model_binding,
         "recordId": str(entry.get("recordId") or ""),
         "acquisitionId": str(entry.get("acquisitionId") or ""),
         "collectionId": str(entry.get("collectionId") or ""),
@@ -978,9 +993,14 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
     schema_version = document.get("schemaVersion") if isinstance(document, dict) else None
     if schema_version == 2 and not isinstance(schema_version, bool):
         return _validate_legacy_target_registry(document)
+    challenge = document.get("agedDmiChallengePlan") if isinstance(document, dict) else None
+    challenge_count = 0
+    if challenge is not None:
+        validate_challenge_plan(challenge)
+        challenge_count = challenge["challengePairCount"]
     registry = _require_exact_fields(
         document,
-        OPERATIONAL_TARGET_REGISTRY_FIELDS,
+        OPERATIONAL_TARGET_REGISTRY_FIELDS | ({"agedDmiChallengePlan"} if challenge is not None else set()),
         "Copernicus operational target registry",
     )
     if (
@@ -991,8 +1011,14 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         or registry.get("matrixContractId") != OPERATIONAL_MATRIX_CONTRACT_ID
     ):
         raise ValueError("Copernicus operational target registry schema is invalid")
-    if registry.get("selectionMode") not in {"dmi-gaps-only", "manual-full-coast"}:
+    if registry.get("selectionMode") not in {"dmi-gaps-only", "dmi-gaps-and-aged-challenges", "manual-full-coast"}:
         raise ValueError("Copernicus operational target selection mode is invalid")
+    if (registry.get("selectionMode") == "dmi-gaps-and-aged-challenges") != (challenge is not None):
+        raise ValueError("Copernicus challenge plan/mode mismatch")
+    if challenge is not None and (challenge["productionReferenceAt"] != registry["productionReferenceAt"]
+            or challenge["dmiCurrentInputSha256"] != registry["dmiCurrentInputSha256"]
+            or challenge["rawDmiVerifiedPairCount"] != registry["operationalDmiVerifiedPairCount"]):
+        raise ValueError("Copernicus challenge source binding mismatch")
 
     reference = _hour(registry.get("productionReferenceAt"), "registry production reference")
     history_start, public_end = range_bounds(reference)
@@ -1067,7 +1093,7 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         registry["operationalRequiredPairCount"] != len(operational_pairs)
         or registry["operationalRequiredPairsSha256"] != required_pairs_sha256(operational_pairs)
         or registry["operationalTotalPairCount"] != operational_total
-        or registry["operationalDmiVerifiedPairCount"] + len(operational_pairs) != operational_total
+        or registry["operationalDmiVerifiedPairCount"] + len(operational_pairs) - challenge_count != operational_total
         or registry["advisoryHistoryRequiredPairCount"] != len(advisory_pairs)
         or registry["advisoryHistoryRequiredPairsSha256"] != required_pairs_sha256(advisory_pairs)
         or registry["advisoryHistoryTotalPairCount"] != advisory_total
@@ -1091,7 +1117,7 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         "schemaVersion": 2,
         "kind": registry["kind"],
         "matrixContractId": MATRIX_CONTRACT_ID,
-        "selectionMode": registry["selectionMode"],
+        "selectionMode": "dmi-gaps-only" if challenge is not None else registry["selectionMode"],
         "productionReferenceAt": registry["productionReferenceAt"],
         "targetHour": registry["targetHour"],
         "rangeStartAt": registry["rangeStartAt"],
@@ -1107,7 +1133,7 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         "dmiVerifierContractId": registry["dmiVerifierContractId"],
         "requiredPairsSha256": required_pairs_sha256(combined_pairs),
         "requiredPairCount": len(combined_pairs),
-        "dmiVerifiedPairCount": registry["dmiVerifiedPairCount"],
+        "dmiVerifiedPairCount": registry["dmiVerifiedPairCount"] - challenge_count,
         "totalPairCount": registry["totalPairCount"],
         "coordinatesChanged": registry["coordinatesChanged"],
         "targets": registry["targets"],
@@ -1118,6 +1144,8 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         legacy_projection,
         allow_bound_full_coast=True,
     )
+    if not set(challenge_pairs(challenge)).issubset({(row["partId"], row["validTime"]) for row in operational_pairs}):
+        raise ValueError("Copernicus challenge pairs outside operational plan")
     operational_ids = {str(row["partId"]) for row in operational_pairs}
     advisory_ids = {str(row["partId"]) for row in advisory_pairs}
     if registry.get("operationalPartCount") != len(operational_ids):
@@ -1219,6 +1247,9 @@ def make_record(raw: dict[str, Any], acquisition: dict[str, Any], target: dict[s
         "componentPair": COMPONENT_PAIR,
         "interpolation": False,
     }
+    if raw.get("modelReference") is not None:
+        value["modelReference"] = validate_model_reference(raw["modelReference"], subset_sha256=acquisition["subsetSha256"],
+                                                           valid_time=value["validTime"], acquisition_at=acquisition["acquisitionAt"])
     value["recordId"] = record_id(value)
     return value
 
@@ -1272,10 +1303,13 @@ def _validate_record(
     acquisitions: dict[str, dict[str, Any]],
     targets: dict[str, dict[str, Any]] | None,
 ) -> dict[str, Any]:
-    record = _require_exact_fields(value, RECORD_FIELDS, "Copernicus record")
+    record = _require_exact_fields(value, RECORD_FIELDS | ({"modelReference"} if isinstance(value, dict) and "modelReference" in value else set()), "Copernicus record")
     acquisition = acquisitions.get(str(record["acquisitionId"]))
     if acquisition is None:
         raise ValueError("Copernicus record references an unknown acquisition")
+    if "modelReference" in record:
+        validate_model_reference(record["modelReference"], subset_sha256=acquisition["subsetSha256"],
+                                 valid_time=record["validTime"], acquisition_at=acquisition["acquisitionAt"])
     for field in ("partId", "parentZoneId", "layerQuality"):
         if not isinstance(record[field], str) or not record[field]:
             raise ValueError(f"Copernicus record has invalid {field}")
@@ -1982,8 +2016,14 @@ def select_required_records(
     acquisitions: list[dict[str, Any]],
     records: list[dict[str, Any]],
     production_reference_at: datetime,
+    *, aged_dmi_challenge_plan: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
-    """Choose source priority, then its newest unambiguous acquisition time.
+    """Choose source priority, then qualified model revision and acquisition.
+
+    Response-bound v2 model references sort before unknown-age legacy rows;
+    among proved references the newest run wins before download time. Legacy
+    candidates keep their original acquisition ordering. Challenge pairs admit
+    only a proved run newer than protected DMI and not after the locked H0.
 
     Tied top records are equivalent only when every record field other than
     recordId/acquisitionId is equal, together with the source/product/dataset,
@@ -1995,6 +2035,7 @@ def select_required_records(
     subsequently wins as usual. Inputs are never removed or changed by this
     selection.
     """
+    challenges = challenge_pairs(aged_dmi_challenge_plan)
     acquisition_by_id = {row["acquisitionId"]: _validate_acquisition(row) for row in acquisitions}
     by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for record in records:
@@ -2012,18 +2053,22 @@ def select_required_records(
             acquisition = acquisition_by_id.get(record["acquisitionId"])
             if acquisition is None:
                 continue
+            challenge = challenges.get((normalized["partId"], normalized["validTime"]))
+            if challenge is not None and not eligible_challenge_record(record, acquisition, challenge, production_reference_at):
+                continue
             candidates_by_source.setdefault(acquisition["source"], []).append(record)
         record = None
         for source in sorted(candidates_by_source, key=lambda value: (source_rank.get(value, len(source_rank)), value)):
             candidates = candidates_by_source[source]
-            acquisition_times = sorted({
-                acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"]
-                for row in candidates
-            }, reverse=True)
+            def revision_key(row: dict) -> tuple:
+                proof = row.get("modelReference")
+                return (proof is not None, _hour(proof["modelRun"], "current model reference") if proof else datetime.min.replace(tzinfo=timezone.utc),
+                        acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"])
+            acquisition_times = sorted({revision_key(row) for row in candidates}, reverse=True)
             for acquisition_time in acquisition_times:
                 top = [
                     row for row in candidates
-                    if acquisition_by_id[row["acquisitionId"]]["_acquisitionAt"] == acquisition_time
+                    if revision_key(row) == acquisition_time
                 ]
                 first_tuple = {key: top[0][key] for key in tuple_fields}
                 first_policy = {key: acquisition_by_id[top[0]["acquisitionId"]][key] for key in policy_fields}

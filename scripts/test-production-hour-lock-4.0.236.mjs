@@ -85,7 +85,8 @@ assert.match(updater, /generatedAt: buildGeneratedAt, productionReferenceAt: gen
 assert.match(updater, /output\.datasetId = `rr-\$\{buildGeneratedAt/);
 assert.match(updater, /buildWeatherHealth\(previousHealth, output, buildGeneratedAt\)/);
 assert.match(updater, /forecastFromOpenMeteo\(feature, generatedAt\)/);
-assert.match(updater, /past_hours: String\(fallbackPastHours\)/);
+assert.match(updater, /start_hour: startHour, end_hour: endHour/);
+assert.match(updater, /new Date\(referenceMs\)\.toISOString\(\)\.slice\(0, 16\)/);
 assert.match(liveBuilder, /default=os\.getenv\("RAVRADAR_PRODUCTION_TARGET_HOUR"\)/);
 
 console.log('OK: produktionen låser triggerens time og bevarer samme eksakte target gennem DMI, handoff og fallback.');

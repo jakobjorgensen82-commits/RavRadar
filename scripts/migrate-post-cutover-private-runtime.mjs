@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   PRIVATE_RUNTIME_FILES,
   privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
+import {
+  PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+  assertPrivateRuntimeInventory,
+  privateWeatherComponentMarker,
+} from './lib/private-weather-component-inventory.mjs';
 import {
   assertIntegratedCoastalPointContinuation,
   assertCandidateGCoastalPointRollbackContinuation,
@@ -461,6 +467,38 @@ export function allowedChange(pathValue, exactAllowedPaths = []) {
   return allowed.has(pathValue);
 }
 
+// Called only after predecessor/current validators and the exact repair
+// allowlist have succeeded. Classify the actual full-document difference,
+// never a repair counter or the fact that a bundle hash changed.
+export function classifyVerifiedRuntimeMigration({
+  source,
+  migrated,
+  bindingMetadataPaths,
+  verifiedChangedPaths,
+} = {}) {
+  if (!isPlainObject(source) || !isPlainObject(migrated)) {
+    throw new Error('Runtime migration classification requires both complete documents');
+  }
+  const bindingPaths = new Set(bindingMetadataPaths);
+  const allowedPaths = new Set(verifiedChangedPaths);
+  if ([...bindingPaths].some(value => !value.endsWith('.modelBundleSha256'))) {
+    throw new Error('Runtime migration binding proof contains a non-binding path');
+  }
+  const changedPaths = collectChangedPaths(source, migrated);
+  if (changedPaths.some(value => !allowedPaths.has(value))
+      || [...allowedPaths].some(value => !changedPaths.includes(value))) {
+    throw new Error('Runtime migration does not match its exact verified changes');
+  }
+  if (changedPaths.length === 0) return 'CONTRACT_ONLY_REBIND';
+  const semanticChanges = changedPaths.filter(value => !bindingPaths.has(value));
+  if (semanticChanges.length === 0) return 'MODEL_BINDING_METADATA_ONLY';
+  if (!semanticChanges.some(value =>
+    /^coastalParts\.parts\.[^.]+\.ravScoreModel\.currentState\.historyBounds\.lastMile\.(minimumFactorTrack|maximumFactorTrack)(\.|$)/.test(value))) {
+    throw new Error('Runtime semantic changes lack the verified narrow last-mile repair');
+  }
+  return 'MODEL_BINDING_MIGRATION';
+}
+
 async function assertDirectoryOutside(repositoryRoot, requested, label) {
   const root = path.resolve(repositoryRoot);
   const candidate = path.resolve(requested);
@@ -528,8 +566,13 @@ async function importPredecessorModules(predecessorRoot, sourceHead) {
   return { staging, integrated, candidate };
 }
 
-async function assertExactRuntimeInventory(sourceRoot) {
-  const expected = PRIVATE_RUNTIME_FILES.map(item => item.relativePath).sort();
+export async function assertExactRuntimeInventory(sourceRoot) {
+  const allowed = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE];
+  const byPath = new Map(allowed.map(item => [item.relativePath, item]));
+  const directories = new Set(allowed.flatMap(({ relativePath }) => {
+    const segments = relativePath.split('/');
+    return segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/'));
+  }));
   const actual = [];
   async function walk(directory, relative = '') {
     for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
@@ -537,13 +580,50 @@ async function assertExactRuntimeInventory(sourceRoot) {
       const child = path.join(directory, entry.name);
       const stat = await fs.lstat(child);
       if (stat.isSymbolicLink()) throw new Error('Private runtime inventory contains a symbolic link');
-      if (stat.isDirectory()) await walk(child, childRelative);
-      else if (stat.isFile()) actual.push(childRelative.split(path.sep).join('/'));
+      const normalized = childRelative.split(path.sep).join('/');
+      if (stat.isDirectory()) {
+        if (!directories.has(normalized)) throw new Error('Private runtime inventory contains an unapproved directory');
+        await walk(child, childRelative);
+      } else if (stat.isFile()) {
+        if (!byPath.has(normalized)) throw new Error('Private runtime inventory contains an unapproved file');
+        actual.push(byPath.get(normalized));
+      }
       else throw new Error('Private runtime inventory contains a non-regular entry');
     }
   }
   await walk(sourceRoot);
-  if (!same(actual.sort(), expected)) throw new Error('Private runtime inventory is not the exact nine-file allowlist');
+  const hasExtension = assertPrivateRuntimeInventory(actual);
+  const conditions = await readJson(path.join(sourceRoot, 'data/live/conditions.json'), 'Private runtime conditions inventory');
+  if (privateWeatherComponentMarker(conditions) && !hasExtension) {
+    throw new Error('Private runtime component marker requires its preserved input pack');
+  }
+  return allowed.filter(item => actual.includes(item));
+}
+
+async function digestPrivateRuntimeFile(filePath) {
+  const hash = crypto.createHash('sha256');
+  let bytes = 0;
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+    bytes += chunk.length;
+  }
+  return { bytes, sha256: hash.digest('hex') };
+}
+
+export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, inventory) {
+  assertPrivateRuntimeInventory(inventory);
+  assertSame(await assertExactRuntimeInventory(sourceRoot), inventory, 'Private runtime copy inventory');
+  for (const descriptor of inventory) {
+    const from = path.join(sourceRoot, descriptor.relativePath);
+    const to = path.join(outputRoot, descriptor.relativePath);
+    await fs.mkdir(path.dirname(to), { recursive: true });
+    await fs.copyFile(from, to, fs.constants.COPYFILE_EXCL);
+    // The bounded extension can be large: hash streams, never buffer both copies.
+    const [before, after] = await Promise.all([
+      digestPrivateRuntimeFile(from), digestPrivateRuntimeFile(to),
+    ]);
+    assertSame(before, after, `${descriptor.id} unchanged migration copy`);
+  }
 }
 
 export function validatePredecessorManifest(
@@ -614,6 +694,7 @@ function validateAndMigrateConditions({
     ...integratedMetadataPaths,
     ...candidateMetadataPaths,
   ]);
+  const bindingMetadataPaths = new Set(exactAllowedPaths);
   const errors = [];
   let repairedContinuationCount = 0;
   let recomputedModeCount = 0;
@@ -652,6 +733,9 @@ function validateAndMigrateConditions({
           !== currentIntegratedBinding.modelBundleSha256) {
         migratedWrapper.currentState.modelBundleSha256 = currentIntegratedBinding.modelBundleSha256;
         exactAllowedPaths.add(
+          `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
+        );
+        bindingMetadataPaths.add(
           `coastalParts.parts.${partId}.ravScoreModel.currentState.modelBundleSha256`,
         );
       }
@@ -882,9 +966,12 @@ function validateAndMigrateConditions({
     repairedContinuationCount,
     recomputedModeCount,
     recomputedZoneCount,
-    transitionKind: changedPaths.length > 0
-      ? 'MODEL_BINDING_MIGRATION'
-      : 'CONTRACT_ONLY_REBIND',
+    transitionKind: classifyVerifiedRuntimeMigration({
+      source,
+      migrated,
+      bindingMetadataPaths,
+      verifiedChangedPaths: exactAllowedPaths,
+    }),
   };
 }
 
@@ -914,7 +1001,7 @@ export async function migratePostCutoverPrivateRuntime({
     throw new Error('Migrated runtime output must remain outside the repository');
   }
   if (await fs.lstat(output).catch(() => null)) throw new Error('Migrated runtime output already exists');
-  await assertExactRuntimeInventory(source);
+  const runtimeFiles = await assertExactRuntimeInventory(source);
   const modules = await importPredecessorModules(predecessor, expectedSourceHead);
   const oldIntegrated = modules.integrated.ravScoreModelBinding();
   const oldCandidate = modules.candidate.ravScoreModelBinding();
@@ -927,6 +1014,10 @@ export async function migratePostCutoverPrivateRuntime({
   // hashes, content hash and source-model identity as independent checks, while
   // using the exact archived source only for its unchanged validators.
   validatePredecessorManifest(manifest, oldIntegrated, predecessorIdentity);
+  assertPrivateRuntimeInventory(manifest.files);
+  assertSame(manifest.files.map(({ id, relativePath }) => ({ id, relativePath }))
+    .sort((a, b) => a.id.localeCompare(b.id)), [...runtimeFiles].sort((a, b) => a.id.localeCompare(b.id)),
+  'Protected predecessor preserved file inventory');
   const currentContractHashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
   const currentIntegrated = ravScoreModelBinding();
   const currentCandidate = candidateModelBinding();
@@ -950,34 +1041,16 @@ export async function migratePostCutoverPrivateRuntime({
   let migratedConditionsDigest;
   try {
     await fs.mkdir(temporary, { recursive: false });
-    for (const descriptor of PRIVATE_RUNTIME_FILES) {
-      const from = path.join(source, descriptor.relativePath);
-      const to = path.join(temporary, descriptor.relativePath);
-      await fs.mkdir(path.dirname(to), { recursive: true });
-      await fs.copyFile(from, to, fs.constants.COPYFILE_EXCL);
-    }
-    if (result.transitionKind === 'MODEL_BINDING_MIGRATION') {
+    await copyPrivateRuntimeInventory(source, temporary, runtimeFiles);
+    if (result.transitionKind !== 'CONTRACT_ONLY_REBIND') {
       migratedConditionsDigest = await atomicWriteJson(
         path.join(temporary, 'data/live/conditions.json'),
         result.migrated,
       );
     } else {
-      const unchangedConditions = await fs.readFile(
-        path.join(temporary, 'data/live/conditions.json'),
-      );
-      migratedConditionsDigest = {
-        bytes: unchangedConditions.length,
-        sha256: crypto.createHash('sha256').update(unchangedConditions).digest('hex'),
-      };
+      migratedConditionsDigest = await digestPrivateRuntimeFile(path.join(temporary, 'data/live/conditions.json'));
     }
-    for (const descriptor of PRIVATE_RUNTIME_FILES.filter(item => item.id !== 'full-conditions')) {
-      const [before, after] = await Promise.all([
-        fs.readFile(path.join(source, descriptor.relativePath)),
-        fs.readFile(path.join(temporary, descriptor.relativePath)),
-      ]);
-      if (!before.equals(after)) throw new Error(`${descriptor.id} changed during migration`);
-    }
-    await assertExactRuntimeInventory(temporary);
+    assertSame(await assertExactRuntimeInventory(temporary), runtimeFiles, 'Migrated runtime preserved file inventory');
     await fs.rename(temporary, output);
   } catch (error) {
     await fs.rm(temporary, { recursive: true, force: true }).catch(() => {});
@@ -1000,7 +1073,7 @@ export async function migratePostCutoverPrivateRuntime({
     candidateRuntimeKind: result.candidateRoot,
     migratedPartCount: result.partCount,
     changedBindingFieldCount: result.changedPaths.length,
-    copiedPrivateFileCount: PRIVATE_RUNTIME_FILES.length,
+    copiedPrivateFileCount: runtimeFiles.length,
     migratedConditionsBytes: migratedConditionsDigest.bytes,
     migratedConditionsSha256: migratedConditionsDigest.sha256,
     measurementsChanged: false,

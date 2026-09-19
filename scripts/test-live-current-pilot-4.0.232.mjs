@@ -618,6 +618,13 @@ assert.equal(merged.hourly[3].currentUMps, -0.12,
   'Target+117 must remain valid because acquisition freshness is measured against productionReferenceAt, not validTime.');
 assert.ok(verifiedLivePilotSource(merged.hourly[1].currentProvenance, part, { requireStatus: true }));
 assert.ok(verifiedLivePilotSource(merged.hourly[3].currentProvenance, part, { requireStatus: true }));
+for (const unbound of [
+  { modelRun: merged.hourly[1].currentProvenance.acquisitionAt },
+  { modelReference: { kind: 'subset-forecast-reference-time', modelRun: '2026-08-18T00:00:00Z' } },
+]) {
+  assert.equal(verifiedLivePilotSource({ ...merged.hourly[1].currentProvenance, ...unbound }, part), null,
+    'Legacy current projections cannot gain model age from unbound metadata or acquisition time');
+}
 const oldButFutureValidMerged = mergeLiveCurrentPilotIntoRecord(
   record,
   part,

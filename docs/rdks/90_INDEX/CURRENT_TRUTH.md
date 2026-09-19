@@ -1,4 +1,118 @@
-# NYESTE SANDHED – 2026-09-19 – lokal 4.0.429, gemt vejr og HARMONIE-tid
+# NYESTE SANDHED – 2026-09-19 – samlet lokal helkæderettelse før levering
+
+Produktion/main er fortsat 4.0.429 / `4bee5b0d`; cron er deaktiveret, og der
+er ikke kørt provider eller deploy fra den lokale rettelse. Den aktuelle
+ændring omfatter nu hele den aftalte fundliste: DMI-plan/rotation/horizon,
+komponentbevaring, fuld CP/OM-reserve for alle andre nødvendige komponenter,
+DMI-first med dokumenteret 96-timerskant, DMI-only-vandstand, PP1D/peak,
+privat H118–H120, historik/checkpoint, reentry/Pages-rækkefølge,
+Supabase-body-retry, browser-shards/aktuel time, vagthund og selvkørende
+persistens. Den autoritative matrix står i
+[helhedskrydstjekket](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+
+Krypteret failed-run-progress er lokalt implementeret som
+`.cache/weather-private-progress.encrypted`, AES-256-GCM, 256 MiB og en
+domæneadskilt HKDF-nøgle fra den allerede nødvendige service-role-secret.
+Pakken omfatter også DMI active/candidate/current, CP/OM-current og staging;
+vellykket protected runtime bærer samme fremskridt holdbart. Aktive workflows
+skriver ikke længere de gamle private rå Actions-cacher. Officiel DMI-GRIB
+bevares råt. PENDING-reentry kan bruge en holdbar krypteret terminalkvittering
+i eksisterende privat Supabase-lagring efter GitHub-artifactets 14 dage.
+Begge dele er måltestet lokalt, men mangler rigtig produktionssave/restore.
+
+Nedenstående afsnit i samme topblok viser arbejdets tidligere delstatus.
+Hvor de siger 64 MiB, særskilt secret, 9+1 filer, manglende komponentkæde,
+failed-run-progress eller langtids-reentry, er de erstattet af sandheden
+ovenfor. Den samlede rettelse er stadig ucommittet og ikke produktionsbevist.
+
+Nyeste kildebeslutning: vandstand og afledt tre-timers ændring er kun DMI.
+Det erstatter CP/OM-datumopgaven nedenfor, ikke komplethedsmålet eller
+reservekæden for øvrige komponenter. DEC-0210/håndbog er opdateret;
+normal/legacy-kildeafgrænsning er lokalt implementeret, historik/T+3 og
+migration krydstjekkes. Ingen ny produktionsrelease. Root har rettet og
+måltestet privat Storage-retry, når en responsebody afbrydes efter HTTP 200.
+Read-only run `35437186403` målte 95,2 MB Storage og påviste gammel MWP-
+periodesemantik i sammenlignede cache-rækker, ikke endnu berørte states.
+Krypteret progress er lokalt koblet til normalworkflow med eksakt baseline
+og 64 MiB cap; secret og faktisk driftsbevis mangler.
+
+Produktion/main er stadig 4.0.429 / `4bee5b0d`; ingen ny publicering eller
+providerkørsel. Den efterfølgende bestilte helhedsrettelse er derimod
+delvist implementeret på disk, ikke længere kun analyse. Den er ucommittet
+og ikke færdigintegreret. [Komplet status for alle fund](../../ai/WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md).
+
+DMI, sammenlægning, checkpoint/retry og public/browser har gemte ændringer.
+Workflows er nu koblet til warmup, fælles recovery/kø, monoton publicering
+og shardkopi; DMI-horizon/LF-støtte og browserresume/netfejl er rettet lokalt.
+Den fulde PART-fallback, koblet 96-timersvalg, datum og den endelige
+input/state-/SQL-migration er fortsat åbne. Samlingsfejl er dokumenteret;
+grønne lokale måltests er ikke bevis for, at den samlede rettelse virker.
+Ejeren kræver alle analysens fund med i samme plan. Ingen scoreformel- eller
+geometriændring. Cron er disabled; gamle queued runs må ikke genoplives.
+
+Yderligere lokale fremskridt: kildeadmission også ved huludfyldning,
+ensrettet 360° og rå strøm som autoritet, CP-dataset-update-retry,
+CP/OM-komponentbanker og begge kilders faktisk kvalificerede PART-adapter.
+OM bruger nu separate navngivne modeller i både PART og legacy210.
+CP har originalbytes/static-spatialautoritet og budgetteret transport.
+Current96 er lokalt forbundet gennem normal plan/producer/closure/læser.
+Privat 9+1-pakke bevarer originale nye komponentdata over restore; gamle9
+kan stadig læses. Ny koordinator adskiller ægte huller, DMI-opgradering og
+96h-challenges samt verificerer gemt generation efter afbrudt refresh.
+Den normale topcaller/workflow er nu lokalt tilkoblet med afgrænset 90s+90s
+og providerfri cache-only. OM's native-nearest-kontrakt er implementeret,
+uden at søge til en anden havcelle. Native vandstandsdatum og faktisk
+historisk input/state-migration er åbne, ligesom failed-run-progress på
+ren runner, langtids-reentry og målt privat lagringskapacitet.
+Ingen produktionsbevis eller stiltiende lempelse af fysisk kvalitet.
+
+Ejerens seneste præcisering er gemt i DEC-0210: cron/GitHub skal kunne
+vedligeholde cachen, genoptage og publicere uden Codex som mellemled.
+Fremgang, rotation, gyldige felter og faktisk inputbevis skal overleve en
+ren runner. Flere almindelige selvkørende forløb er et slutkrav, ikke en
+opgave der kan erstattes af manuel overvågning.
+
+# HISTORISK SANDHED – 2026-09-19 – 4.0.429 deployet, analyse før rettelsen
+
+Seneste [helhedskrydstjek](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md)
+samler alle fund, ikke kun kildepolitik. DMI-periodedecoder har en bevist
+peak/mean-aliasfejl; faktisk berørte produktionsværdier er ikke afgrænset.
+Privat støtteaksetab rammer sidste tre trends. Nye CP/OM-felter og 96-timers-
+valg kræver fælles admission/partition/replay; cachemetadata beviser ikke
+nyere modelrun. State- og public-schemaovergang skal bevare ældre læsning.
+Ingen runtime- eller produktionsændring er lavet i dette analyseafsnit.
+
+Seneste ejerforslag om reserveundtagelsen er nu **fire døgn gamle DMI-data**,
+ikke prognosens sidste døgn. Anbefalet afgrænsning: 96 timer fra den enkelte
+komponents DMI-modelrun til låst vurderingstid; kun nyere gyldig reserve må
+overtage, og gyldig DMI bevares uden erstatning. Ny DMI vinder igen. Dette
+er diskussion/design, ikke implementeret; tidligere H94..H117-forslag
+nedenfor må ikke behandles som den endelige regel. DEC-0210's topafsnit.
+
+Main `4bee5b0d`, PR #374 og exact-head `35420912328` er gennemført.
+Saved-weather `35421108551` deployede Pages, men verifier/recovery afviste
+migrationflaget; central PENDING blokerede normalrun `35421627495` før vejr.
+Sidste providerdata er `35416641052`: H0-vind 0/673, strøm til model 665/673,
+Feggesund-bølger 198/354, alle 673 stateforløb cold replay. Ikke komplet.
+
+Helhedsanalyse: [samlet evidens og plan](../../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md).
+Vindplan, fallbackaccept, komponentfriskhed, statepersistens, recovery,
+serialisering og browserens tidsprojektion skal løses sammen. Live Chrome
+viser H0-nødvisning; 148 MB-detaljepakken blokeres af mobilbeskyttelsen.
+
+Ejerkorrektion: Copernicus/Open-Meteo skal udfylde alle tomme nødvendige
+komponentfelter, ikke kun strøm eller fremtidshale. Gyldige DMI-værdier,
+inklusive gyldige gemte værdier, må ikke overskrives. Den nuværende snævre
+PART-adapter er en implementeringsmangel, ikke en begrænsning af aftalen.
+Reservedækning må heller ikke låse DMI ude: med ledig kapacitet skal DMI
+opsøge og overtage samme gyldige komponent fra CP/OM. Den eksisterende
+reservedækning bevares, indtil en kvalificeret bedre prioriteret kilde er
+klar; fuld fallback-cache er ikke bevis for, at DMI-opgaven er færdig.
+Det tidligere sidste-døgn-forslag er erstattet af det senere 96-timers-
+forslag. Ingen af reglerne er implementeret; hentetid er ikke modelalder.
+Ingen scoreformel, geometri eller gyldighedsgrænse ændres i analysen.
+
+# HISTORISK SANDHED – 2026-09-19 – lokal 4.0.429, gemt vejr og HARMONIE-tid
 
 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
 Normalrun `35416641052` gennemførte DMI, Copernicus, regional DMI og

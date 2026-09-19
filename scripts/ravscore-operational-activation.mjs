@@ -713,8 +713,14 @@ function assertOperationalTerminalSourceEvidence(evidence, currentRow, sourceMan
     || evidence.requestedPublicManifestSha256
       !== currentRow?.payload?.requestedPublicManifestSha256
     || evidence.attemptId !== currentRow?.payload?.deploymentId
-    || !['NOT_STARTED', 'FAILED_BEFORE_PAGES_ACCEPTANCE'].includes(evidence.status)
-    || evidence.pagesRequestAccepted !== false
+    || ![
+      'NOT_STARTED',
+      'FAILED_BEFORE_PAGES_ACCEPTANCE',
+      'TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY',
+    ].includes(evidence.status)
+    || (evidence.status === 'TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY'
+      ? evidence.pagesRequestAccepted !== null
+      : evidence.pagesRequestAccepted !== false)
     || evidence.observedSourcePublicManifestSha256
       !== observedSourcePublicManifestSha256
     || observedSourcePublicManifestSha256

@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.429";
+const APP_VERSION = "4.0.430";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -6,6 +6,7 @@ const STATIC = [
   `./assets/about/qrcode.min.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",
   "./js/core/ravscore-model-contract.js","./js/core/score-presentation.js","./js/core/best-time-policy.js","./js/core/forecast-calendar.js","./js/core/local-zone-score.js","./js/core/ravscore-integrated-explanation-presenter.js",
+  `./js/core/public-delivery-contract.js?v=${APP_VERSION}`,
   "./js/services/data-service.js","./js/services/zone-registry.js","./js/services/auth-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",
   "./js/map/map-view.js","./js/ui/info-panel.js","./js/ui/account-panel.js","./js/ui/developer-panel.js"
 ];

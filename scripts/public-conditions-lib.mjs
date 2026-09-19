@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { PUBLIC_DELIVERY_MAX_BYTES, publicDeliveryEntries, assertPublicDeliveryEquivalence } from '../js/core/public-delivery-contract.js';
 import { selectLatestLocalScoreRowAtOrBefore } from './lib/local-current-reference.mjs';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { forecastDateKeyInTimeZone } from '../js/core/forecast-calendar.js';
@@ -898,14 +900,14 @@ function publicPartsByZone(source) {
   return byZone;
 }
 
-export function buildPublicNationalForecast(full) {
+export function buildPublicNationalForecast(full, { now = 0 } = {}) {
   const source = full?.coastalParts;
   const binding = publicModelBinding(full);
   const dates = publicForecastDates(full);
   const partsByZone = publicPartsByZone(source);
   const modes = Object.fromEntries(PUBLIC_FORECAST_MODES.map(mode => [mode, dates.map(date => {
     const ranked = Object.keys(source?.zones || {}).flatMap(zoneId => {
-      const best = selectLocalBestForDay({ coastalParts: source, zoneId, mode, date, now: 0 });
+      const best = selectLocalBestForDay({ coastalParts: source, zoneId, mode, date, now });
       if (!best) return [];
       const declared = best.result?.modelBinding
         ?? (best.result?.explanation && typeof best.result.explanation === 'object'
@@ -1028,6 +1030,85 @@ export function buildPublicConditionDetails(full) {
 }
 
 export function compactJson(value) { return `${JSON.stringify(value)}\n`; }
+
+// A bounded deterministic projection of already calculated public values. The
+// legacy detail artifact remains unchanged and readable for exact-source reuse.
+export function buildPublicDeliveryDocument(full, details, manifest, kind, key) {
+  const zoneIds = kind === 'zone' ? [key] : Object.keys(details.zones);
+  const selected = kind === 'hour' ? key : null;
+  const { ravScoreRuntime: _envelope, ...body } = details;
+  const zones = Object.fromEntries(zoneIds.map(id => [id, {
+    ...details.zones[id], forecast: { ...details.zones[id].forecast,
+      hourly: details.zones[id].forecast.hourly.filter(row => !selected || row.time === selected),
+    },
+  }]));
+  const scoreZones = Object.fromEntries(zoneIds.map(id => [id, {
+    ...details.coastalParts.zones[id],
+    ...(selected ? { currentReferenceAt: selected } : {}),
+    hourly: details.coastalParts.zones[id].hourly.filter(row => !selected || row.time === selected),
+  }]));
+  const parts = {};
+  for (const [id, source] of Object.entries(full.coastalParts.parts)) {
+    if (!zoneIds.includes(source.zoneId)) continue;
+    const { current: _current, flowPoints: _flowPoints, ...metadata } = details.coastalParts.parts[id];
+    parts[id] = metadata;
+    if (!selected) continue;
+    const matches = source.hourly?.filter(row => row.time === selected) ?? [];
+    if (matches.length > 1) throw new Error('Public delivery has ambiguous local coastal-part time.');
+    const row = matches[0]
+      ?? (source.current?.time === selected ? { ...source.current, flowPoints: source.flowPoints } : null);
+    // Absence is honest. In particular, do not turn H0 source coordinates or
+    // winner-only weather into future evidence for all local coastal parts.
+    if (row) {
+      if ([row.weather, row.waders?.weather, row.beach?.weather]
+        .some(weather => weather?.time !== undefined && weather.time !== selected)) {
+        throw new Error('Public delivery has mismatched local coastal-part weather time.');
+      }
+      parts[id] = projectPart({ ...source, current: row, flowPoints: row.flowPoints }, id,
+        manifest.ravScoreModelBinding, { evidenceTrust: details.ravScoreEvidenceTrust });
+    }
+  }
+  const document = {
+    ...body,
+    delivery: { schemaVersion: 1, kind, key,
+      sourceDetailsSha256: manifest.publicConditionDetailsSha256,
+      modelBinding: manifest.ravScoreModelBinding },
+    zones,
+    coastalParts: { ...details.coastalParts, zones: scoreZones, parts },
+  };
+  if (selected) {
+    document.nationalForecast = buildPublicNationalForecast({ ...full,
+      zones: Object.fromEntries(Object.entries(full.zones).map(([id, zone]) => [id, {
+        ...zone, forecast: { ...zone.forecast, hourly: zone.forecast.hourly.filter(row => row.time >= selected) },
+      }])),
+    }, { now: Date.parse(selected) });
+  }
+  assertPublicRuntimePrivacy(document, 'details');
+  assertPublicDeliveryEquivalence(document, details);
+  return document;
+}
+
+export async function writePublicDelivery(full, details, manifest, liveDirectory) {
+  const times = Object.values(details.zones)[0].forecast.hourly.map(row => row.time);
+  const delivery = { schemaVersion: 1, forecastHours: times.length,
+    sourceDetailsSha256: manifest.publicConditionDetailsSha256, hours: {}, zones: {} };
+  await fs.mkdir(path.join(liveDirectory, 'forecast'), { recursive: true });
+  for (const [kind, keys, descriptors] of [['hour', times, delivery.hours],
+    ['zone', Object.keys(details.zones), delivery.zones]]) {
+    for (const key of keys) {
+      const document = buildPublicDeliveryDocument(full, details, manifest, kind, key);
+      const text = compactJson(document);
+      const bytes = Buffer.byteLength(text);
+      if (bytes > PUBLIC_DELIVERY_MAX_BYTES) throw new Error('Public delivery package exceeds its bounded browser limit.');
+      const sha256 = sha256Text(text);
+      descriptors[key] = { path: `./forecast/${sha256}.json`, sha256, bytes };
+      await fs.writeFile(path.join(liveDirectory, 'forecast', `${sha256}.json`), text);
+    }
+  }
+  manifest.detailDelivery = delivery;
+  publicDeliveryEntries(manifest);
+  return delivery;
+}
 
 function allowedCoordinatePath(path) {
   return /^(startup|details)\.zones\.[^.]+\.flowPoints\.(current|wind)$/.test(path)
@@ -1312,6 +1393,7 @@ export async function writePublicRuntimeFromFull(full, {
   JSON.parse(coastalPartsText);
   JSON.parse(zoneRegistryText);
   const manifest = buildPublicManifest(full, publicText, detailsText, coastalPartsText, zoneRegistryText);
+  await writePublicDelivery(full, detailsDocument, manifest, path.dirname(manifestPath));
   await fs.writeFile(publicPath, publicText);
   await fs.writeFile(detailsPath, detailsText);
   await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

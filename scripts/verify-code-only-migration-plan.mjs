@@ -16,8 +16,8 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
-assert.equal(latest.version, '20260919010000');
-assert.equal(latest.filename, '20260919010000_current_input_foundation_binding.sql');
+assert.equal(latest.version, '20260919020000');
+assert.equal(latest.filename, '20260919020000_measured_warmup_checkpoint.sql');
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
@@ -26,10 +26,10 @@ const plan = await assertSupabaseMigrationPlan({
 assert.ok(
   plan.pendingVersions.length === 0
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
-  'Code-only deployment may apply only the latest approved last-mile envelope binding migration',
+  'Code-only deployment may apply only the approved measured-warmup checkpoint successor',
 );
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : 'Code-only migration dry-run contains exactly the one expected current-input foundation binding successor.',
+    : 'Code-only migration dry-run contains exactly the one expected measured-warmup checkpoint successor.',
 );

@@ -211,8 +211,8 @@ const checkpointWithImplementation = (checkpoint, implementationSha256) => {
   const result = clone(checkpoint);
   result.continuationStateContractSha256 = implementationSha256;
   result.generationSha256 = sha256({
-    schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
-    status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
+    schemaVersion: result.schemaVersion,
+    status: result.status,
     datasetId: result.datasetId,
     productionReferenceAt: result.productionReferenceAt,
     modelBinding: result.modelBinding,
@@ -304,8 +304,8 @@ try {
     /serialized limit/,
     'an oversized protected restore input must fail before JSON parsing',
   );
-  assert.equal(checkpoint.schemaVersion, 4);
-  assert.equal(checkpoint.status, 'ravscore-schema6-with-candidate-g-rollback-companion');
+  assert.equal(checkpoint.schemaVersion, 5);
+  assert.equal(checkpoint.status, 'ravscore-schema6-with-measured-candidate-g-continuation');
   assert.equal(
     checkpoint.continuationStateContractSha256,
     continuationStateContractSha256,
@@ -343,6 +343,12 @@ try {
   }
 
   assert.deepEqual(RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS, [{
+    sourceVersion: '4.0.429',
+    sourceHead: '4bee5b0d0909b56a6f66e0f0e961f51321f9d236',
+    implementationSha256:
+      '91251f6b38835040250cd5283d2b701aab38bb23f2a4a0014baa1128d59c78f4',
+    compatibilityReason: 'MEASURED_WARMUP_CHECKPOINT_STORAGE_SUCCESSOR',
+  }, {
     sourceVersion: '4.0.320',
     sourceHead: '7198b685f4bc9d86bd6432b049380f4279ab797c',
     implementationSha256:
@@ -350,8 +356,13 @@ try {
     compatibilityReason: 'CHECKPOINT_STORAGE_BOUNDARY_ONLY',
   }]);
   const predecessor = RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS[0];
+  const legacyCheckpoint = clone(checkpoint);
+  legacyCheckpoint.schemaVersion = 4;
+  legacyCheckpoint.status = 'ravscore-schema6-with-candidate-g-rollback-companion';
+  legacyCheckpoint.candidateGRollbackCompanion.schemaVersion = 1;
+  legacyCheckpoint.candidateGRollbackCompanion.status = 'candidate-g-rollback-ready-companion';
   const predecessorCheckpoint = checkpointWithImplementation(
-    checkpoint,
+    legacyCheckpoint,
     predecessor.implementationSha256,
   );
   await writeJson(predecessorCheckpointPath, predecessorCheckpoint);
@@ -407,6 +418,8 @@ try {
     reattestedPredecessor.generationSha256,
   );
   assert.deepEqual(reattestedPredecessor.states, predecessorCheckpoint.states);
+  assert.equal(reattestedPredecessor.schemaVersion, 5);
+  assert.equal(reattestedPredecessor.candidateGRollbackCompanion.schemaVersion, 2);
   assert.deepEqual(
     reattestedPredecessor.candidateGRollbackCompanion.states,
     predecessorCheckpoint.candidateGRollbackCompanion.states,
@@ -964,6 +977,62 @@ try {
     /runtime is not complete and READY|different parts/,
     'a 672-part rollback companion must fail before checkpoint publication',
   );
+
+  const warmupSource = documentFor({
+    datasetId: 'rr-schema6-measured-warmup',
+    productionReferenceAt: atHour(49),
+    template: checkpointStateTemplate,
+  });
+  const warmupIds = partIds.slice(0, 3);
+  warmupSource.coastalParts.parts = Object.fromEntries(warmupIds.map(id =>
+    [id, warmupSource.coastalParts.parts[id]]));
+  const measuredStates = Object.fromEntries(warmupIds.map((id, index) => {
+    const samples = Array.from({ length: index === 2 ? 50 : 10 }, (_, hour) => ({
+      time: atHour(index === 2 ? hour : 40 + hour), currentSpeedMps: 0.12, currentAlignment: 0.75,
+      currentVerified: index === 2 ? hour !== 49 : index === 0 || hour !== 3,
+      waveHeightM: 1.2, wavePeriodS: 6,
+    }));
+    const state = buildCandidateGDerivedStateSeries(samples, {
+      stateKey: candidateGStateKey(partFor(id)),
+      nativeCadenceHoldHours: 3,
+    }).continuationState;
+    assert.equal(state.transportMemoryReady, index === 2);
+    if (index === 2) assert.equal(state.transportReferenceAt, atHour(48));
+    return [id, { ravScoreModel: { currentState: state } }];
+  }));
+  delete warmupSource.ravScoreCandidateGRollback;
+  warmupSource.ravScoreCandidateGWarmup = {
+    schemaVersion: '1.0.0', kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', status: 'BUILDING_MEASURED_ONLY',
+    evidencePolicy: 'MEASURED_ONLY', syntheticHistoryAllowed: false,
+    sourceModelBinding: ravScoreModelBinding(), candidateModelBinding: candidateGRollbackModelBinding(),
+    automaticActivationAllowed: false, publicDuringNormalOperation: false,
+    runtime: { status: 'BUILDING_MEASURED_ONLY', modelBinding: candidateGRollbackModelBinding(),
+      expectedPartCount: 3, measuredPartCount: 3, parts: measuredStates },
+  };
+  await writeJson(sourcePath, warmupSource);
+  await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 3 });
+  const warmupCheckpoint = JSON.parse(await fs.readFile(checkpointPath, 'utf8'));
+  const resumedWarmup = await loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath, expectedPartCount: 3, targetReference: atHour(50),
+  });
+  assert.equal(resumedWarmup.continuationAvailable, true);
+  assert.deepEqual(resumedWarmup.candidateGRollbackStates,
+    Object.fromEntries(warmupIds.map(id => [id, measuredStates[id].ravScoreModel.currentState])));
+  assert.equal(Object.values(resumedWarmup.candidateGRollbackStates)
+    .filter(state => state.transportMemoryReady === false).length, 2,
+  'persisting measured progress must never promote rollback readiness');
+  assertNoPrivateCheckpointFields(warmupCheckpoint);
+  const forgedLegacy = clone(warmupCheckpoint);
+  forgedLegacy.schemaVersion = 4;
+  forgedLegacy.status = 'ravscore-schema6-with-candidate-g-rollback-companion';
+  forgedLegacy.candidateGRollbackCompanion.schemaVersion = 1;
+  forgedLegacy.candidateGRollbackCompanion.status = 'candidate-g-rollback-ready-companion';
+  await writeJson(checkpointPath, checkpointWithImplementation(forgedLegacy,
+    continuationStateContractSha256));
+  await assert.rejects(loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath, expectedPartCount: 3, targetReference: atHour(50),
+  }), /not exact measured continuation/, 'legacy READY schema cannot disguise warmup state');
 
   console.log('Schema-6 RavScore continuation checkpoint contract passes.');
 } finally {

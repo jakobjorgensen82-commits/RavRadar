@@ -1,3 +1,5 @@
+import { sameNativeIdentity } from './dmi-forecast-store.mjs';
+
 const finite = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const round = (value, digits = 0) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 
@@ -111,8 +113,7 @@ function diagnoseTidalPattern(rows, {
  *   the hourly change is large. Large changes can be physically correct,
  *   especially in strongly tidal waters such as the Wadden Sea.
  * - Short internal DMI gaps may be interpolated between two DMI anchors.
- * - Other providers are used only for genuine DMI gaps, as contiguous,
- *   bias-adjusted blocks.
+ * - Water level is DMI-only. Other providers never fill its gaps.
  * - Large DMI changes are diagnostics, not automatic repair triggers.
  */
 export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, options = {}) {
@@ -120,6 +121,22 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
     shortDmiGapHours = 6,
     jumpWarningCm = 35
   } = options;
+  // The second map may contain a retained DMI row as well as reserves. Keep
+  // only explicitly DMI-sourced donors; never equate a missing new value with
+  // permission to erase a still-valid old DMI value at that exact hour.
+  // Keep private T+3 support even when rows contains only the public horizon.
+  // The caller bounds these maps; support is never appended to public rows.
+  const waterTimes = new Set([...rows.map(row => row.time), ...dmiByTime.keys(), ...fallbackByTime.keys()]);
+  dmiByTime = new Map([...waterTimes].map(time => {
+    const primary = dmiByTime.get(time);
+    const donor = fallbackByTime.get(time);
+    const primaryProvider = primary?.sources?.waterLevel?.provider ?? primary?.waterLevelSource;
+    const donorProvider = donor?.sources?.waterLevel?.provider ?? donor?.waterLevelSource;
+    const primaryIsDmi = primaryProvider == null || /^dmi(?:$|-)/.test(primaryProvider);
+    const donorIsDmi = typeof donorProvider === 'string' && /^dmi(?:$|-)/.test(donorProvider);
+    return [time, primaryIsDmi && finite(primary?.waterLevelCm) !== null ? primary
+      : donorIsDmi && finite(donor?.waterLevelCm) !== null ? donor : null];
+  }));
   const diagnostics = {
     dmiHours: 0,
     interpolatedDmiGapHours: 0,
@@ -139,6 +156,8 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
     delete row.waterLevelFallbackRawCm;
     delete row.waterLevelFallbackOffsetCm;
     delete row.waterLevelRepairBasis;
+    if (['open-meteo', 'copernicus'].includes(row.waterLevelProvenance?.provider)) delete row.waterLevelProvenance;
+    if (/^(?:open-meteo|copernicus)/.test(row.waterLevelReference ?? '')) delete row.waterLevelReference;
   }
 
   const values = rows.map(row => finite(dmiByTime.get(row.time)?.waterLevelCm));
@@ -160,41 +179,11 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
     start = end;
   }
 
-  // Fill remaining genuine DMI gaps with one coherent, bias-adjusted fallback block.
-  for (let start = 0; start < values.length;) {
-    if (values[start] !== null) { start += 1; continue; }
-    let end = start;
-    while (end < values.length && values[end] === null) end += 1;
-    const fallbackValues = [];
-    for (let i = start; i < end; i += 1) fallbackValues.push(finite(fallbackByTime.get(rows[i].time)?.waterLevelCm));
-    const beforeDmi = start > 0 ? values[start - 1] : null;
-    const afterDmi = end < values.length ? values[end] : null;
-    const firstFallback = fallbackValues.find(v => v !== null) ?? null;
-    const lastFallback = [...fallbackValues].reverse().find(v => v !== null) ?? null;
-    const beforeOffset = beforeDmi !== null && firstFallback !== null ? beforeDmi - firstFallback : null;
-    const afterOffset = afterDmi !== null && lastFallback !== null ? afterDmi - lastFallback : null;
-    for (let i = start; i < end; i += 1) {
-      const raw = fallbackValues[i - start];
-      if (raw === null) continue;
-      let offset = beforeOffset ?? afterOffset ?? 0;
-      if (beforeOffset !== null && afterOffset !== null && end - start > 1) {
-        offset = beforeOffset + (afterOffset - beforeOffset) * ((i - start) / (end - start - 1));
-      }
-      values[i] = raw + offset;
-      rows[i].waterLevelFallbackRawCm = raw;
-      rows[i].waterLevelFallbackOffsetCm = round(offset, 1);
-      rows[i].waterLevelRepairBasis = 'open-meteo-gap-shape-bias-adjusted-to-dmi';
-      diagnostics.fallbackHours += 1;
-      diagnostics.continuityRepairs += Math.abs(offset) >= 0.5 ? 1 : 0;
-    }
-    start = end;
-  }
-
   let previousProvider = null;
   for (let i = 0; i < rows.length; i += 1) {
     const originalDmi = finite(dmiByTime.get(rows[i].time)?.waterLevelCm) !== null;
     const interpolatedDmi = !originalDmi && values[i] !== null && rows[i].waterLevelFallbackRawCm === undefined;
-    const provider = originalDmi ? 'dmi' : interpolatedDmi ? 'dmi-interpolated' : values[i] !== null ? 'open-meteo-adjusted' : 'missing';
+    const provider = originalDmi ? 'dmi' : interpolatedDmi ? 'dmi-interpolated' : 'missing';
     rows[i].waterLevelCm = values[i] === null ? null : round(values[i], 0);
     rows[i].waterLevelModelCm = originalDmi ? rows[i].waterLevelCm : null;
     rows[i].waterLevelSource = provider;
@@ -206,8 +195,8 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
     rows[i].sources.waterLevel = {
       ...(provider === 'dmi' ? priorDmiSource : {}),
       provider,
-      fallback: provider.startsWith('open-meteo'),
-      repaired: interpolatedDmi || provider.endsWith('adjusted'),
+      fallback: false,
+      repaired: interpolatedDmi,
       repairBasis: rows[i].waterLevelRepairBasis ?? null
     };
     if (previousProvider && provider !== previousProvider && provider !== 'missing' && previousProvider !== 'missing') diagnostics.sourceSwitches += 1;
@@ -236,9 +225,20 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
   diagnostics.tidalPattern = diagnoseTidalPattern(rows, options);
   diagnostics.warnings.push(...diagnostics.tidalPattern.warnings);
 
-  for (let i = 0; i < rows.length; i += 1) {
-    const future = rows[i + 3]?.waterLevelCm;
-    rows[i].waterLevelTrendCm3h = rows[i].waterLevelCm == null || future == null ? null : round(future - rows[i].waterLevelCm, 0);
+  const repairedByTime = new Map(rows.map(row => [row.time, row]));
+  for (const row of rows) {
+    const at = Date.parse(row.time);
+    const futureTime = Number.isFinite(at) ? new Date(at + 3 * 3_600_000).toISOString() : null;
+    const publicFuture = repairedByTime.get(futureTime);
+    const supportFuture = dmiByTime.get(futureTime);
+    const future = publicFuture ?? (sameNativeIdentity(
+      dmiByTime.get(row.time)?.sources?.waterLevel,
+      supportFuture?.sources?.waterLevel,
+      'waterLevel',
+    ) ? supportFuture : null);
+    const futureValue = finite(future?.waterLevelCm);
+    row.waterLevelTrendCm3h = row.waterLevelCm == null || futureValue === null
+      ? null : round(futureValue - row.waterLevelCm, 0);
   }
   return diagnostics;
 }

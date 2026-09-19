@@ -24,18 +24,11 @@ import {
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
 } from './ravscore-continuation-checkpoint.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+  assertPrivateRuntimeInventory, privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
+import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 
-export const PRIVATE_RUNTIME_FILES = Object.freeze([
-  Object.freeze({ id: 'full-conditions', relativePath: 'data/live/conditions.json' }),
-  Object.freeze({ id: 'dmi-forecast-cache', relativePath: 'data/live/dmi-forecast-cache.json' }),
-  Object.freeze({ id: 'dmi-bulk-cache', relativePath: 'data/live/dmi-bulk-cache.json' }),
-  Object.freeze({ id: 'copernicus-current-range-cache', relativePath: '.cache/copernicus-current-shadow.json' }),
-  Object.freeze({ id: 'open-meteo-current-fallback', relativePath: '.cache/open-meteo-current-fallback.json' }),
-  Object.freeze({ id: 'current-pilot-history', relativePath: 'data/live/current-pilot-history.json' }),
-  Object.freeze({ id: 'weather-health', relativePath: 'data/live/weather-health.json' }),
-  Object.freeze({ id: 'runtime-diagnostics', relativePath: 'data/live/ravradar-runtime-diagnostics.json' }),
-  Object.freeze({ id: 'dmi-water-stations', relativePath: 'data/live/dmi-water-stations.json' }),
-]);
+export const PRIVATE_RUNTIME_FILES = PRIVATE_RUNTIME_BASE_FILES;
 
 export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
   continuationStateContractSha256: Object.freeze([
@@ -51,6 +44,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/build-weather-acquisition-plan.py',
     'scripts/run-copernicus-current-pilot.py',
     'scripts/run-copernicus-current-pilot-with-retry.py',
+    'scripts/run-copernicus-weather-components.py',
     'scripts/check-copernicus-current-range.py',
     'scripts/fill-open-meteo-current-fallback.py',
     'scripts/check-production-target-freshness.mjs',
@@ -59,11 +53,20 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/private-production-runtime-bundle.mjs',
     'scripts/private-production-runtime-workflow.mjs',
     'scripts/protected-private-production-runtime.mjs',
+    'scripts/weather-component-progress-cache.mjs',
     'scripts/lib/coastal_point_staging.py',
     'scripts/lib/copernicus_current.py',
     'scripts/lib/copernicus_current_donor_bank.py',
     'scripts/lib/copernicus_target_identity.py',
     'scripts/lib/copernicus_current_source_stage.py',
+    'scripts/lib/copernicus_weather_components.py',
+    'scripts/lib/copernicus_weather_component_bank.py',
+    'scripts/lib/copernicus_component_spatial.py',
+    'scripts/lib/copernicus_component_transport.py',
+    'scripts/lib/copernicus-component-spatial-policy.json',
+    'scripts/lib/copernicus-component-projection.mjs',
+    'scripts/lib/copernicus-component-index.mjs',
+    'scripts/lib/copernicus-component-runtime.mjs',
     'scripts/lib/current_operational_closure.py',
     'scripts/lib/open_meteo_current_fallback.py',
     'scripts/lib/weather_acquisition_plan.py',
@@ -81,8 +84,26 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/ravscore-recovery-replay.mjs',
     'scripts/lib/ravscore-sampling-context.mjs',
     'scripts/lib/dmi-forecast-store.mjs',
+    'scripts/lib/weather-component-selection.mjs',
+    'scripts/lib/weather-component-runtime.mjs',
+    'scripts/lib/weather-component-needs.mjs',
+    'scripts/lib/weather-component-selection-history.mjs',
+    'scripts/lib/weather-reserve-admission.mjs',
+    'scripts/lib/open-meteo-hourly-components.mjs',
+    'scripts/lib/open-meteo-part-bank.mjs',
+    'scripts/lib/open-meteo-o1280-grid.mjs',
+    'scripts/lib/open-meteo-part-runtime.mjs',
+    'scripts/lib/private-weather-component-inventory.mjs',
+    'scripts/lib/private-weather-component-pack.mjs',
+    'scripts/produce-open-meteo-part-components.mjs',
+    'scripts/lib/open-meteo-forecast-window.mjs',
+    'scripts/lib/flow-points-from-forecast-record.mjs',
     'scripts/lib/current-transport-history.mjs',
     'scripts/lib/feggesund-wave-proxy.mjs',
+    'scripts/lib/historical-wave-input-transition.mjs',
+    'scripts/lib/ravscore-wave-input-migration.mjs',
+    'scripts/classify-historical-wave-input-transition.mjs',
+    'scripts/prepare-historical-wave-predecessor-restore.mjs',
     'scripts/lib/live-current-pilot.mjs',
     'scripts/lib/production-reference-time.mjs',
     'scripts/lib/regional_current_operational.py',
@@ -94,8 +115,10 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'js/core/ravscore-model-contract.js',
     'js/core/ravscore-public-model.js',
     'js/core/ravscore-public-runtime-contract.js',
+    'js/core/public-delivery-contract.js',
     'js/core/local-zone-score.js',
     'scripts/public-conditions-lib.mjs',
+    'scripts/copy-public-delivery-shards.mjs',
   ]),
 });
 
@@ -145,7 +168,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.429',
+  releaseVersion: '4.0.430',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -159,7 +182,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.429',
+  releaseVersion: '4.0.430',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -528,6 +551,9 @@ export async function buildPrivateRuntimeCreateSpec({
       privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass,
     });
   }
+  const componentPack = await buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions });
+  if (componentPack) files.push({ ...componentPack, privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass });
+  assertPrivateRuntimeInventory(files);
   return {
     metadata: {
       ...metadata,
@@ -1425,19 +1451,27 @@ export async function installRestoredPrivateRuntime({
     throw new Error('Restored private runtime must remain outside the repository tree');
   }
   const actual = (await collectFiles(sourceRoot)).sort(compareText);
-  const expected = PRIVATE_RUNTIME_FILES.map(file => file.relativePath).sort(compareText);
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error('Restored private runtime inventory is incompatible');
+  const allowedDescriptors = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE];
+  const descriptors = actual.map(relativePath => allowedDescriptors.find(file => file.relativePath === relativePath)
+    ?? { id: 'unknown', relativePath });
+  const hasExtension = assertPrivateRuntimeInventory(descriptors);
+  const conditions = JSON.parse(await fs.readFile(path.join(sourceRoot, 'data/live/conditions.json'), 'utf8'));
+  if (privateWeatherComponentMarker(conditions) && !hasExtension) throw new Error('Private runtime component inputs pack is missing');
+  const componentStage = hasExtension ? `${sourceRoot}.weather-components-${crypto.randomUUID()}` : null;
+  let componentFiles = [];
+  if (hasExtension) {
+    try { componentFiles = await unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions }); }
+    catch (error) { await fs.rm(componentStage, { recursive: true, force: true }); throw error; }
   }
 
   const transactionId = `${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   const staged = [];
   let mutationStarted = false;
   try {
-    for (const descriptor of PRIVATE_RUNTIME_FILES) {
-      const source = path.resolve(sourceRoot, descriptor.relativePath);
+    for (const descriptor of [...descriptors, ...componentFiles]) {
+      const source = descriptor.sourcePath ?? path.resolve(sourceRoot, descriptor.relativePath);
       const destination = path.resolve(repository, descriptor.relativePath);
-      if (!inside(sourceRoot, source) || !inside(repository, destination)) {
+      if (!(inside(sourceRoot, source) || componentStage && inside(componentStage, source)) || !inside(repository, destination)) {
         throw new Error('Private runtime install path escapes its root');
       }
       await fs.mkdir(path.dirname(destination), { recursive: true });
@@ -1491,10 +1525,12 @@ export async function installRestoredPrivateRuntime({
       throw wrapped;
     }
     throw error;
+  } finally {
+    if (componentStage) await fs.rm(componentStage, { recursive: true, force: true });
   }
   return {
     installed: true,
-    fileCount: PRIVATE_RUNTIME_FILES.length,
+    fileCount: descriptors.length + componentFiles.length,
     privateDataLogged: false,
   };
 }

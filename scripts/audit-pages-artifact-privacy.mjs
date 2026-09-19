@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { publicDeliveryEntries, assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -113,7 +114,8 @@ function isApprovedCoordinatePath(file, tokens) {
   }
 
   if (normalizedFile === 'data/live/public-conditions.json'
-    || normalizedFile === 'data/live/public-condition-details.json') {
+    || normalizedFile === 'data/live/public-condition-details.json'
+    || /^data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(normalizedFile)) {
     if (last === 'landPoint' || last === 'waterPoint') return true;
     if (previous === 'flowPoints' && (last === 'current' || last === 'wind')) return true;
   }
@@ -569,6 +571,14 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   );
   const { entries, issues } = await collectEntries(root);
   const files = entries.filter(entry => entry.kind === 'file');
+  let deliveryManifest = null;
+  let deliveryEntries = [];
+  try {
+    deliveryManifest = JSON.parse(await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'));
+    deliveryEntries = publicDeliveryEntries(deliveryManifest);
+  } catch { issues.push('invalid public delivery manifest'); }
+  const deliveryFiles = new Map(deliveryEntries.map(entry => [`data/live/${entry.path.slice(2)}`, entry]));
+  const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys()]);
   const pathKeys = new Map();
   for (const entry of entries) {
     const key = normalizedPath(entry.relative);
@@ -579,13 +589,14 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     if (key === 'data/live' && entry.relative !== 'data/live') {
       issues.push(`non-canonical live directory at ${safePath(entry.relative)}`);
     }
-    if (key.startsWith('data/live/') && !EXPECTED_LIVE_FILES.has(entry.relative)) {
+    if (key.startsWith('data/live/') && !expectedFiles.has(entry.relative)
+      && !(entry.relative === 'data/live/forecast' && entry.kind === 'directory' && deliveryFiles.size > 0)) {
       issues.push(`unexpected live artifact at ${safePath(entry.relative)}`);
     }
   }
 
   const fileByRelative = new Map(files.map(file => [file.relative, file]));
-  for (const expected of EXPECTED_LIVE_FILES) {
+  for (const expected of expectedFiles) {
     if (!fileByRelative.has(expected)) issues.push(`missing required live artifact at ${expected}`);
   }
   if (!fileByRelative.has(ZONE_REGISTRY_FILE)) {
@@ -614,9 +625,18 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
       issues.push(`invalid JSON at ${safePath(file.relative)}`);
       continue;
     }
-    parsed.set(file.relative, document);
-    texts.set(file.relative, text);
     scanJsonPrivacy(document, { file: file.relative, issues });
+    const delivery = deliveryFiles.get(file.relative);
+    if (delivery) {
+      try {
+        if (Buffer.byteLength(text) !== delivery.bytes || sha256(text) !== delivery.sha256) throw new Error('hash');
+        assertPublicDeliveryDocument(document, deliveryManifest, delivery);
+      } catch { issues.push(`invalid public delivery binding at ${safePath(file.relative)}`); }
+      // Do not hold all 328 projections (or duplicate texts) in memory.
+    } else {
+      parsed.set(file.relative, document);
+      texts.set(file.relative, text);
+    }
   }
 
   if (parsed.has(PUBLIC_VERSION_FILE)) {
@@ -646,7 +666,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     root,
     fileCount: files.length,
     jsonFileCount: parsed.size,
-    liveFileCount: EXPECTED_LIVE_FILES.size,
+    liveFileCount: expectedFiles.size,
     privateFingerprintCount: privateFingerprints.size,
     datasetId: parsed.get('data/live/manifest.json').datasetId,
   });

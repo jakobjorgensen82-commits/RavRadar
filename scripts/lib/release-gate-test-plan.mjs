@@ -42,6 +42,7 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/build-valid-data-before-local-missing-binding-migration.mjs',
   'scripts/build-partial-zone-public-metadata-binding-migration.mjs',
   'scripts/build-last-mile-history-envelope-binding-migration.mjs',
+  'scripts/build-measured-warmup-checkpoint-migration.mjs',
   'scripts/test-reusable-production-workflows.mjs',
   'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
   'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',

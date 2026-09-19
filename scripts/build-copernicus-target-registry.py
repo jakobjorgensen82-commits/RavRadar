@@ -36,6 +36,7 @@ from lib.dmi_native_provenance import (
     verified_part_current_pair,
 )
 from lib.dmi_bulk_storage import read_dmi_bulk_document
+from lib.current_aged_dmi_challenge import build_challenge_plan
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,6 +153,15 @@ def build_registry(
         ]
         operational_verified_count = int(attestation["verifiedPairCount"])
 
+    challenge_plan = None
+    if not full_coast:
+        challenge_plan = build_challenge_plan(attestation=attestation, ledger=ledger,
+            dmi_input_sha256=dmi_sha256, production_reference_at=utc_iso(reference))
+        operational_required_pairs.extend({"partId": row["partId"], "validTime": row["validTime"]}
+                                          for row in challenge_plan["challengePairs"])
+        if not challenge_plan["challengePairCount"]:
+            challenge_plan = None
+
     advisory_history_required_pairs: list[dict[str, str]] = []
     advisory_history_verified_count = 0
     for valid_time in hours:
@@ -185,7 +195,8 @@ def build_registry(
         "schemaVersion": 3,
         "kind": REGISTRY_KIND,
         "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
-        "selectionMode": "manual-full-coast" if full_coast else "dmi-gaps-only",
+        "selectionMode": "manual-full-coast" if full_coast else "dmi-gaps-and-aged-challenges" if challenge_plan else "dmi-gaps-only",
+        **({"agedDmiChallengePlan": challenge_plan} if challenge_plan is not None else {}),
         "productionReferenceAt": utc_iso(reference),
         "targetHour": utc_iso(reference),
         "rangeStartAt": utc_iso(hours[0]),
