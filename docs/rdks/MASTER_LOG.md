@@ -1,4 +1,22 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.426 measured historical recovery
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.427 strøm- og DMI-recovery
+
+4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.
+Normalrun `35405307261` nåede hele providerkæden. Den operationelle closure
+byggede 673/673 aktuelle strømdele, men en valgfri historik/referencekontrol
+kasserede fallbackpakken, så scoreinput kun beholdt 56 direkte DMI-dele.
+Runnet havde 1.122 manglende horisontpar af 79.414 og stoppede senere i privat
+publicering på forgængerens historiske modelbinding; intet nyt Pages-deploy.
+
+4.0.427 isolerer den strenge operationelle closure fra valgfri historik,
+snævrer kritisk HARMONIE til eksakt produktionstime, lader DKSS lukke tidligste
+reelle hul først og tillader en strengt nyere privat generation at afløse en
+strukturelt gyldig historisk binding. Same-time-konflikt og tidsregression
+stopper fortsat. Ny append-only migration
+`20260919010000_current_input_foundation_binding.sql` binder de opdaterede
+modelpakker og continuation. Produktionsbevis afventer én almindelig weather;
+`MISSING` er ikke komplethed. DEC-0207.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.426 measured historical recovery
 
 4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.
 Normalrun `35403510608` afviste tre inkompatible runtimes og viste derefter

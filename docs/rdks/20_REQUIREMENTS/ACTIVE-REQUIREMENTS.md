@@ -1,4 +1,25 @@
-# Aktuelt ejerdelta – 2026-09-19 – measured historical recovery
+# Aktuelt ejerdelta – 2026-09-19 – strøm- og DMI-recovery
+
+- **REQ-4.0.427-OPERATIONAL-TRUST-001 – BINDENDE:** En fuldt valideret
+  operationel current-closure må ikke kasseres af en uafhængig valgfri
+  historik- eller referencedel. Hver valgfri del fejler lukket for sig selv.
+- **REQ-4.0.427-CURRENT-STRICT-002 – BINDENDE:** Ugyldig operationel closure,
+  vektor, tid, identitet eller proveniens afvises fortsat; ingen svagere data
+  må nå scoremodellen.
+- **REQ-4.0.427-H0-WIND-003 – BINDENDE:** Kritisk HARMONIE-grundlag måles på
+  eksakt verificeret vind ved produktionstimen og hentes med et afgrænset
+  eksakt-time-opslag.
+- **REQ-4.0.427-EARLIEST-GAP-004 – BINDENDE:** Reelle DKSS-currenthuller går
+  foran scalar-only/refresh og behandles fra tidligste prognosetime fremad.
+- **REQ-4.0.427-PRIVATE-ADVANCE-005 – BINDENDE:** Kun en strengt nyere
+  produktionstime må afløse historisk privat modelbinding uden migrationsbevis;
+  samme-time-ændring og tidsregression stopper.
+- **REQ-4.0.427-COMPLETENESS-006 – ÅBEN P0:** 1.122 manglende par er ikke
+  komplet. Almindelig drift skal nå nul mangler og bevise score/deploy.
+
+DEC-0207.
+
+# Historisk ejerdelta – 2026-09-19 – measured historical recovery
 
 - **REQ-4.0.426-ABSENT-ONLY-001 – BINDENDE:** Når både kompatibel privat
   runtime og checkpointfilen reelt mangler, må kun den centralt allerede

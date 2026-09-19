@@ -687,9 +687,20 @@ assert.equal(nativeCadenceHoldHoursForPart(regionalPart, {
   entries: [...live.entries, { ...regionalEntry, modelRun: null }],
 }), 0, 'regional cadence hold requires a real model run no newer than the valid time');
 
-for (const poisonedDocument of [
+for (const optionalHistoryPoisonedDocument of [
   { ...live, copernicusRangeSeal: { ...copernicusRangeSeal, requiredPairCount: 1 } },
   { ...live, copernicusRangeSeal: { ...copernicusRangeSeal, recordRefsSha256: sha256('wrong-refs') } },
+]) {
+  const retained = mergeLiveCurrentPilotIntoRecord(
+    record,
+    part,
+    optionalHistoryPoisonedDocument,
+    { primaryCurrentVerified: row => row.time === '2026-08-18T12:00:00.000Z' },
+  );
+  assert.equal(retained.hourly[1].currentUMps, 0.3,
+    'a broken optional history seal must not disable the independent operational closure');
+}
+for (const poisonedDocument of [
   { ...live, entries: [{ ...copernicusEntry, uMps: 0.31 }, futureCopernicusEntry] },
   { ...live, entries: [{ ...copernicusEntry, gridPoint: [10.03, 55] }, futureCopernicusEntry] },
   { ...live, entries: [{ ...copernicusEntry, collectionId: sha256('wrong-collection') }, futureCopernicusEntry] },
@@ -699,13 +710,37 @@ for (const poisonedDocument of [
     primaryCurrentVerified: row => row.time === '2026-08-18T12:00:00.000Z',
   });
   assert.equal(poisoned.hourly[1].currentUMps, null,
-    'A broken range seal, raw vector, grid/link identity or future acquisition must disable the entire supplemental projection.');
+    'A broken operational raw vector, grid/link identity or future acquisition must disable the entire supplemental projection.');
 }
 assert.equal(mergeLiveCurrentPilotIntoRecord(record, part, {
   ...live,
   copernicusRangeSeal: null,
 }, { primaryCurrentVerified: () => false }).hourly[1].currentUMps, 0.3,
 'operationalClosure v2 is authoritative for target..+117 when advisory history is explicitly empty');
+const invalidOptionalAdvisory = {
+  ...live,
+  advisoryEntries: [{ malformed: true }],
+};
+assert.equal(controlledLiveCurrentEnabled(invalidOptionalAdvisory), true,
+  'invalid optional history must not disable an independently sealed operational closure');
+assert.equal(mergeLiveCurrentPilotIntoRecord(
+  record,
+  part,
+  invalidOptionalAdvisory,
+  { primaryCurrentVerified: () => false },
+).hourly[1].currentUMps, 0.3,
+'invalid optional history must be ignored without discarding valid operational current');
+const invalidOptionalRegionalReference = {
+  ...live,
+  regionalReferenceEntries: [{ malformed: true }],
+};
+assert.equal(mergeLiveCurrentPilotIntoRecord(
+  record,
+  part,
+  invalidOptionalRegionalReference,
+  { primaryCurrentVerified: () => false },
+).hourly[1].currentUMps, 0.3,
+'invalid private reference history must be ignored without discarding valid operational current');
 
 const flow = flowPointsFromForecastRecord(
   merged,

@@ -1408,8 +1408,8 @@ ordered_priority_assets = producer.prioritize_marine_assets_for_current_gaps(
     priority_covered,
 )
 assert [row["valid"] for row in ordered_priority_assets] == [
-    required_hours[117],
     required_hours[10],
+    required_hours[117],
     required_hours[0],
 ]
 

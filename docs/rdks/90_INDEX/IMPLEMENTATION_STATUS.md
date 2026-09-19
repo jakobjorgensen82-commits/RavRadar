@@ -1,4 +1,25 @@
-# Aktuel implementeringsstatus – lokal 4.0.426, measured historical recovery
+# Aktuel implementeringsstatus – lokal 4.0.427, strøm- og DMI-recovery
+
+- [x] Lever 4.0.426 gennem exact-head `35404863947`, PR #371 og main
+  `41a39bbc`.
+- [x] Afgræns normalrun `35405307261`: 673/673 aktuelle strømdele før adapter,
+  56 efter adapter, 1.122/79.414 horisontpar mangler, og privat publicering
+  stoppede på historisk modelbinding.
+- [x] Adskil operationel strømclosure fra valgfri historik/reference uden at
+  svække valideringen af aktuelle data.
+- [x] Gør HARMONIE-grundlaget eksakt for produktionstimen og sortér reelle
+  DKSS-huller kronologisk før scalar-only/refresh.
+- [x] Tillad kun strengt nyere privat produktion at afløse en strukturelt
+  gyldig historisk binding; bevar samme-time- og regressionsstop.
+- [ ] Commit/push, én exact-head og merge.
+- [ ] Kør én almindelig weather og kræv privat publicering, Pages, aktuel
+  score, Feggesund 354/354 og 100 % gyldige nødvendige felter.
+- [ ] Brug stageoversigten til samlet at lukke enhver resterende datakategori
+  og bevis derefter normal cachevedligeholdelse før scheduler genaktiveres.
+
+Ingen oneoff. `MISSING` er robusthed, aldrig komplethed. DEC-0207.
+
+# Historisk implementeringsstatus – lokal 4.0.426, measured historical recovery
 
 - [x] Lever 4.0.425 gennem exact-head `35403040711`, PR #370 og main
   `05892afc`.

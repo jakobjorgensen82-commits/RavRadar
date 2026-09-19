@@ -1,4 +1,21 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.427 strøm- og DMI-recovery
+
+Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.427-weather-foundation`, fra main `41a39bbc` / PR #371.
+4.0.426 bestod exact-head `35404863947`. Normalrun `35405307261` gennemførte
+providerne og byggede 673/673 aktuelle strømdele, men adapteren kasserede
+fallbackstrømmen på en valgfri historik/referencefejl og beholdt kun 56
+direkte DMI-dele. Privat publicering stoppede bagefter på forgængerens gamle
+modelbinding; intet nyt Pages-deploy blev lavet.
+
+4.0.427 isolerer operationel closure fra valgfri historik, lader en nyere
+privat produktion afløse en gyldig historisk binding, spørger HARMONIE smalt
+efter produktionstimen og lader DKSS lukke tidligste reelle hul først. Næste:
+måltests, exact-head, merge og én almindelig weather. Runnet havde fortsat
+1.122 manglende par af 79.414; det er ikke komplet. `.tmp-420/` må aldrig
+publiceres. DEC-0207.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
 
 Brug det indlejrede `node_modules/RavRadar-4.0.396`, branch
 `codex/4.0.426-stateless-historical-recovery`, fra main `05892afc` / PR #370.

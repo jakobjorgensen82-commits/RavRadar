@@ -774,6 +774,41 @@ try {
   });
 
   const second = await createGeneration(1);
+  const historicalAdvanceDocuments = fakeDocuments();
+  const historicalAdvanceStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: first.bundlePath,
+    repositoryRoot: repository,
+    expected: first.expected,
+    now: '2026-08-29T11:05:00.000Z',
+    sourceHead: SOURCE_HEADS[0],
+    request: historicalAdvanceDocuments.request,
+    storage: historicalAdvanceStorage.client,
+  });
+  const historicalCurrentRow = historicalAdvanceDocuments.row();
+  historicalCurrentRow.payload.current.modelBinding = {
+    ...historicalCurrentRow.payload.current.modelBinding,
+    modelBundleSha256: 'e'.repeat(64),
+  };
+  historicalAdvanceDocuments.setRow(historicalCurrentRow);
+  const historicalAdvance = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: second.bundlePath,
+    repositoryRoot: repository,
+    expected: second.expected,
+    now: '2026-08-29T12:05:00.000Z',
+    sourceHead: SOURCE_HEADS[1],
+    request: historicalAdvanceDocuments.request,
+    storage: historicalAdvanceStorage.client,
+  });
+  assert.equal(historicalAdvance.published, true,
+    'a newer production reference must supersede a structurally valid historical model binding');
+  assert.equal(
+    historicalAdvanceDocuments.row().payload.previous.modelBinding.modelBundleSha256,
+    'e'.repeat(64),
+    'the superseded historical binding remains the exact rollback descriptor',
+  );
   await publishProtectedPrivateProductionRuntime({
     privateRoot,
     bundlePath: second.bundlePath,

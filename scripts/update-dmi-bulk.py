@@ -1931,8 +1931,8 @@ def prioritize_marine_assets_for_current_gaps(
     ] | None = None,
     verified_reusable_valid_times: set[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """Process internal holes/tail before refresh-only assets, deterministically."""
-    def priority(asset: dict[str, Any]) -> tuple[int, int, int, int, float, str, str]:
+    """Process real current holes from the target hour forward, deterministically."""
+    def priority(asset: dict[str, Any]) -> tuple[int, int, float, int, int, str, str]:
         valid_time = str(canonical_time(asset.get("valid")) or "")
         direct_missing_pairs = (
             {
@@ -1954,13 +1954,13 @@ def prioritize_marine_assets_for_current_gaps(
             or (critical_by_time or {}).get(valid_time)
         )
         return (
-            0 if critical else 1,
+            0 if real_gap_count else 1 if critical else 2,
             0 if regional_gap_count
                 and valid_time in (verified_reusable_valid_times or set())
                 else 1,
+            epoch(valid_time),
             -real_gap_count,
             -regional_gap_count,
-            epoch(valid_time),
             str(asset.get("id") or ""),
             str(asset.get("assetIdentitySha256") or ""),
         )
@@ -8706,7 +8706,11 @@ def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, An
     return restored
 
 
-def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict[str, Any]]) -> tuple[list[str], dict[str, Any]]:
+def collection_schedule(
+    previous: dict[str, Any],
+    active_zones_config: list[dict[str, Any]],
+    production_reference: datetime | str | None = None,
+) -> tuple[list[str], dict[str, Any]]:
     """Planlæg collections ud fra det aktuelle aktive zoneregister.
 
     Cache må aldrig definere nævneren: nye aktive zoner skal tælle som manglende,
@@ -8733,11 +8737,26 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     any_data = {family: int(details.get("zonesWithAnyData") or 0) for family, details in coverage.items()}
     missing96 = {family: max(0, zone_count - complete96[family]) for family in ("wind", "wave", "marine")}
     missing_any = {family: max(0, zone_count - any_data[family]) for family in ("wind", "wave", "marine")}
-    # HARMONIE is the current-hour wind foundation for the active point
-    # registry. A single old wind value is not coverage: when one or more
-    # active points lack the required horizon, one bounded HARMONIE asset must
-    # run before DKSS/WAM. This also keeps the rolling horizon maintained.
-    atmosphere_foundation_needed = missing96["wind"] > 0
+    # HARMONIE is the exact current-hour wind foundation for the active point
+    # registry. Its native horizon is shorter than 96 hours, so horizon
+    # completeness can never decide whether this urgent one-asset pass is
+    # needed. Require finite, provenance-verified wind at the locked production
+    # hour; ordinary scheduling maintains the remaining rolling horizon.
+    atmosphere_foundation_time = canonical_time(
+        production_reference
+        or datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    )
+    missing_atmosphere_foundation_ids = [
+        zone_id for zone_id in active_ids
+        if not _exact_validated_dmi_component_present(
+            zone_id,
+            active_zones.get(zone_id, {}),
+            atmosphere_foundation_time,
+            "wind",
+            ("wind-speed-10m", "wind-dir-10m"),
+        )
+    ]
+    atmosphere_foundation_needed = bool(missing_atmosphere_foundation_ids)
     marine_recovery_active = missing96["marine"] > 0
     marine_foundation_missing = missing_any["marine"] > 0
     marine_foundation_ratio = any_data["marine"] / zone_count
@@ -8876,6 +8895,10 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "missingWind": missing96["wind"], "missingWave": missing96["wave"], "missingMarine": missing96["marine"],
         "missingAnyWind": missing_any["wind"], "missingAnyWave": missing_any["wave"], "missingAnyMarine": missing_any["marine"],
         "atmosphereFoundationNeeded": atmosphere_foundation_needed,
+        "atmosphereFoundationTime": atmosphere_foundation_time,
+        "missingAtmosphereFoundationCount": len(
+            missing_atmosphere_foundation_ids
+        ),
         "marineRecoveryActive": marine_recovery_active,
         "marineFoundationMissing": marine_foundation_missing,
         "marineFoundationRatio": round(marine_foundation_ratio, 4),
@@ -11130,6 +11153,7 @@ def main() -> int:
     base_schedule, schedule_coverage = collection_schedule(
         result,
         active_zones_config,
+        locked_production_reference,
     )
     operational_wave_exact_required_times = (
         set(wave_bootstrap_configuration["operationalExactHours"])
@@ -11722,6 +11746,16 @@ def main() -> int:
                         + timedelta(hours=HOURS - 1)
                     ),
                     include_operational_wave_fallback_phases=True,
+                )
+            elif collection_is_critical_atmosphere:
+                atmosphere_foundation_time = canonical_time(
+                    locked_production_reference
+                )
+                run, assets, stac_stats = list_latest_assets(
+                    collection,
+                    None,
+                    minimum_valid_time=atmosphere_foundation_time,
+                    required_valid_times={atmosphere_foundation_time},
                 )
             else:
                 run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
