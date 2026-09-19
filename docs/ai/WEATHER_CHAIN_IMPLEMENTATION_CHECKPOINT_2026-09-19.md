@@ -5,6 +5,24 @@ Dette er genfundet implementeringsstatus, ikke en ny release eller et
 produktionsbevis. Ejeren har udtrykkeligt krævet, at **alle fund fra den
 store analyse følger med i rettelsen, som var i gang før genstarten**.
 
+## NYESTE efter 4.0.431-merge og central ACTIVE31
+
+4.0.431 er merged som `686ebec4` efter grøn exact-head `35448032367`.
+Providerfri `35448284914` startede ingen providers og deployede intet, men
+afsluttede PENDING som ACTIVE31/profil73 og anvendte/læste migration
+`20260919020000` tilbage.
+
+Det efterfølgende stop var forgænger-readernes ufuldstændige importlukning.
+Den aktuelle wrapper manglede først komponentinventaret; importgrafen viste,
+at den bagefter ville have manglet Supabase-helperens responsebody-transport.
+Lokal 4.0.432 installerer begge modeluafhængige hjælpere sammen med wrapperen,
+importtester dem og bevarer forgængerens modelkontrakt/bundleverifier. Eksakt
+`4bee5b0d`-importreplay er grøn.
+
+Dette checkpoint erstatter ikke den samlede vejrmatrice nedenfor. Alle dens
+input-, rotation-, fallback-, bevarings-, historik-, Feggesund-, retry/cache-,
+offentlige og browserbeviser er fortsat åbne til almindelig drift.
+
 ## NYESTE efter 4.0.430-merge og providerfri reentry
 
 4.0.430 er merged som `f7c954fe` efter grøn exact-head `35446765316`.

@@ -1,3 +1,14 @@
+# Aktuelt restore-delta – 2026-09-19
+
+- **REQ-PREDECESSOR-RESTORE-COMPATIBILITY-CLOSURE-0212 – BINDENDE:** Når en
+  gemt privat runtime kun kan læses af forgængerens modelbinding, forsegles
+  forventningen først mod den eksakte urørte forgængerkilde. Den aktuelle
+  restore-wrapper må derefter kun få sin komplette modeluafhængige
+  kompatibilitetslukning med. Alle relative imports skal klassificeres og
+  importtestes før Storage/privacy. Forgængerens modelkontrakt og bundlekode
+  må ikke overskrives. En ny skjult lokal afhængighed skal stoppe sourcegate,
+  ikke dukke op én fejl ad gangen i produktion. DEC-0212.
+
 # Aktuelt reentry-delta – 2026-09-19
 
 - **REQ-HISTORICAL-SEALED-REENTRY-0211 – BINDENDE:** En allerede PENDING

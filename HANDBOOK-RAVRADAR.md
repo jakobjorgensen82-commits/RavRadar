@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.431
+**Håndbogsversion:** 4.0.432
+
+## 89.37 4.0.432 – Den gamle vejrpakke får alle nødvendige læsefiler
+
+Den forrige kørsel fik faktisk afsluttet den centrale fastlåsning. RavRadar
+står nu som aktiv version 31 med profil 73. Kørselen hentede ikke nyt vejr og
+nåede heller ikke at lægge ny kode på hjemmesiden.
+
+Derefter skulle en privat vejrpakke fra den gamle kode læses. Den nye læser
+blev lagt ind sammen med den gamle kode, men to små hjælpefiler fulgte ikke
+med. Derfor stoppede den allerede ved indlæsning. Den nåede ikke kontrollen
+af offentlig adgang, så fejlen betyder ikke, at private data var offentlige.
+
+4.0.432 samler nu læseren og begge nødvendige hjælpefiler som én pakke og
+prøver at indlæse hele pakken, før den fortsætter. Den gamle scoremodel og
+kontrollen af den gamle private vejrpakke bevares urørte. Det er også låst i
+en test, så en ny hjælpefil ikke senere kan blive overset og først opdages i
+produktion.
+
+Rettelsen ændrer ikke vejr, score eller kort. Når den er lagt online uden en
+ny vejrhentning, skal almindelige vejrkørsler stadig bevise hele den samlede
+vejrkæde: fuld dækning, DMI først, reservekilder, Feggesund, gemt fremgang og
+korrekt visning i browseren.
 
 ## 89.36 4.0.431 – En afbrudt offentliggørelse følger sit gamle bevis
 
@@ -43,16 +65,16 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.431 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.432 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer.
 
-Koden blev merged i 4.0.430, men den første providerfri genoptagelse stoppede
-før deploy på den historiske reentry-fejl beskrevet i 89.36. Derfor er
-vejrkæden stadig ikke produktionsbevist. Efter 4.0.431's providerfri
-afslutning skal flere almindelige produktionskørsler bevise komplethed,
-korrekt kildeprioritet, browservisning og automatisk fortsættelse uden Codex
-eller ejerens computer, før cron genaktiveres.
+Koden blev merged i 4.0.430. 4.0.431's providerfri genoptagelse afsluttede den
+centrale status, men stoppede før deploy på den historiske importfejl beskrevet
+i 89.37. Derfor er vejrkæden stadig ikke produktionsbevist. Efter 4.0.432's
+providerfri kodelevering skal flere almindelige produktionskørsler bevise
+komplethed, korrekt kildeprioritet, browservisning og automatisk fortsættelse
+uden Codex eller ejerens computer, før cron genaktiveres.
 
 ## 89.34 Beslutning 19. september – Vandstand kommer kun fra DMI
 

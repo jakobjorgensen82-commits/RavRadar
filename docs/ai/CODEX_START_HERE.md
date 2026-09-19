@@ -1,3 +1,25 @@
+# NYESTE CHECKPOINT – 2026-09-19 – 4.0.432 komplet forgænger-restore
+
+Main er 4.0.431 / `686ebec4` efter PR #376 og grøn exact-head
+`35448032367`. Providerfri code-only `35448284914` startede ingen
+vejrleverandører og deployede intet, men afsluttede central PENDING som
+`INTEGRATED_ACTIVE` version 31/profil 73 og anvendte/læste migration
+`20260919020000` tilbage.
+
+Kørslen stoppede bagefter, fordi den nye restore-wrapper blev lagt ind i den
+eksakte forgængerkilde uden sine to nyere, modeluafhængige hjælpefiler. Første
+manglende modul var komponentinventaret; næste latente fejl var Supabase-
+transporthelperens manglende eksport. Lokal 4.0.432 kopierer præcis wrapper,
+transporthelper og inventar som én importtestet kompatibilitetslukning. Den
+gamle modelkontrakt og bundleverifier bevares. Eksakt `4bee5b0d` importerer
+lukningen lokalt. Se DEC-0212 og CHANGELOG-4.0.432.md.
+
+Næste er målrettede slutchecks, én exact-head-sourcegate, merge og samme
+providerfri code-only fra ACTIVE31. Start ikke weather før kodeleveringen er
+online. Derefter almindelige vejrkørsler og browserbevis for hele DEC-0210-
+matricen. Ingen vejrfejl er fjernet eller kaldt produktionsløst. `.tmp-420/`
+er privat og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – 4.0.431 historisk reentry
 
 4.0.430 bestod exact-head `35446765316`, PR #375 og blev merged som

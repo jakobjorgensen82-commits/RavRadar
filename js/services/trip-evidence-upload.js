@@ -1,5 +1,5 @@
-import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.431';
-import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.431';
+import { assertTripEvidencePrivacy, toObservationTripColumns } from './trip-evidence-contract.js?v=4.0.432';
+import { listPendingTripEvidence, markTripEvidenceSubmitted } from './trip-evidence-store.js?v=4.0.432';
 
 export async function uploadPendingTripEvidence({ persist, storage = null } = {}) {
   if (typeof persist !== 'function') throw new Error('Databasefunktionen mangler.');

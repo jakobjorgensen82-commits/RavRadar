@@ -1,5 +1,25 @@
 # Tværgående krydstjek og samlet rettelsesplan
 
+## NYESTE leveringshændelse – ACTIVE31 og 4.0.432 importlukning
+
+4.0.431 bestod exact-head `35448032367`, PR #376 og merge `686ebec4`.
+Providerfri `35448284914` afsluttede central PENDING som ACTIVE31/profil73 og
+anvendte/læste migration `20260919020000` tilbage. Ingen provider eller
+Pages-deploy blev startet.
+
+Efter den centrale afslutning afviste current-reader korrekt to historisk
+bundne generationer. Forgænger-restore stoppede derefter, fordi den aktuelle
+wrapper manglede sit nyere komponentinventar i den udpakkede gamle kilde.
+Krydstjek af hele den statiske importgraf fandt også næste sekventielle fejl:
+forgængerens Supabase-helper eksporterede ikke den nyere robuste responsebody-
+transport. 4.0.432 kopierer begge modeluafhængige hjælpere med wrapperen,
+importtester lukningen og bevarer gammel modelkontrakt/bundleverifier.
+
+Dette tilføjer ingen ny vejrfejlkategori og lukker ingen livebeviser i
+matricen nedenfor. H0-vind, direkte strømhuller, utilgængelige modes,
+Feggesund, reserve-/budgetfund, komponentbevaring, automatiske retries,
+historik og browser skal stadig måles i almindelige kørsler efter code-only.
+
 ## NYESTE leveringshændelse – 4.0.430 merged, 4.0.431 historisk reentry
 
 4.0.430 bestod exact-head `35446765316` og blev merged som `f7c954fe`.

@@ -1,3 +1,15 @@
+## 4.0.432 – komplet forgænger-restore før ny kørsel (2026-09-19)
+
+- 4.0.431 bestod exact-head `35448032367`, PR #376 og merge `686ebec4`.
+- Providerfri `35448284914` afsluttede central PENDING som ACTIVE31/profil73
+  og anvendte/læste migration `20260919020000` tilbage uden providers/deploy.
+- Det efterfølgende stop var en ufuldstændig historisk importlukning. Den
+  aktuelle restore-wrapper får nu begge modeluafhængige hjælpefiler samlet,
+  mens forgængerens modelkontrakt og bundleverifier bevares urørte.
+- Eksakt 4.0.429-kilde kan importere lukningen lokalt. Source-testen
+  klassificerer alle relative imports og afviser nye skjulte afhængigheder.
+- Se CHANGELOG-4.0.432.md og DEC-0212. Vejrkædens livebevis er stadig åbent.
+
 ## 4.0.431 – historisk PENDING følger sit forseglede bevis (2026-09-19)
 
 - 4.0.430 bestod exact-head `35446765316`, PR #375 og merge `f7c954fe`.

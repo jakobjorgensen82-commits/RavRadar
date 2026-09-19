@@ -1,3 +1,23 @@
+# 2026-09-19 – 4.0.432 komplet importlukning efter central ACTIVE31
+
+4.0.431 bestod exact-head `35448032367`, PR #376 og merge `686ebec4`.
+Providerfri code-only `35448284914` afsluttede den centrale PENDING-overgang
+som `INTEGRATED_ACTIVE` version 31/profil 73 og anvendte/læste migration
+`20260919020000` tilbage. Ingen vejrleverandør eller deploy blev startet.
+
+Current-runtime blev korrekt afvist som historisk binding. Ved den eksakte
+forgænger-restore manglede den nyere wrappers komponentinventar. Krydstjek af
+hele importgrafen fandt samtidig den næste fejl: forgængerens Supabase-helper
+manglede den nye responsebody-transporteksport. 4.0.432 installerer derfor
+wrapper, transporthelper og inventar som én importtestet kompatibilitetslukning
+efter at forventningen er forseglet mod urørt forgængerkode. Forgængerens
+modelkontrakt og bundleverifier bevares. Eksakt `4bee5b0d`-replay importerer
+lokalt. Se DEC-0212 og CHANGELOG-4.0.432.md.
+
+Dette lukker ikke almindelig weather. DEC-0210-matricens DMI-, fallback-,
+komponent-, historik-, Feggesund-, cache/retry- og browserpunkter kræver
+fortsat livebevis efter providerfri kodelevering.
+
 # 2026-09-19 – 4.0.431 historisk reentry efter merged 4.0.430
 
 4.0.430 bestod exact-head `35446765316`, PR #375 og merge `f7c954fe`.

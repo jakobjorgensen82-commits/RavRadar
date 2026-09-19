@@ -1,3 +1,13 @@
+# Aktiv roadmap – 2026-09-19, 4.0.432 fra ACTIVE31 til code-only deploy
+
+4.0.431 er merged (`686ebec4`), og providerfri `35448284914` har afsluttet
+PENDING som ACTIVE31/profil73 samt anvendt migration `20260919020000`. Den
+stoppede før deploy på en ufuldstændig forgænger-importlukning. 4.0.432 retter
+både den synlige og den næste latente hjælperafhængighed samlet. Næste er
+målchecks, én exact-head, merge og samme providerfri code-only. Ingen weather
+før koden er online. Derefter fortsætter hele punkt 8–10 nedenfor; ingen del
+af vejrmatricen er bortfaldet.
+
 # Aktiv roadmap – 2026-09-19, 4.0.431 reentry og stabil drift
 
 Aktuel leveringskant: 4.0.430 er merged (`f7c954fe`), men PENDING30 er ikke
@@ -25,8 +35,9 @@ Alle punkter bevares; 96-timers-reglen erstatter ikke helhedsgennemgangen.
    Se DEC-0210's topafsnit; produktionsbevis mangler.
 3. [x] Ret lokalt readiness, fælles genindgang, jobidentitet, komplette slutudfald,
    serialisering, body-retry og komponentfriskhed samlet.
-4. [ ] Merge 4.0.431 og afslut allerede publiceret target providerfrit; den
-   første 4.0.430-reentry backfillede holdbar evidens, men stoppede før CAS.
+4. [x] Merge 4.0.431 og afslut allerede publiceret target providerfrit;
+   `35448284914` lukkede PENDING som ACTIVE31 uden providers. Code-only
+   Pages-deploy af ny kode afventer 4.0.432's kompatibilitetslukning.
 5. [x] Bevar modelhistorik under warmup og ved kode-only-levering lokalt.
 6. [x] Ret acquisitionplan, cache/proveniens og PART-adapter som én kæde.
    Medtag peak/mean-wave-decoder, sidste tre trends, atomisk normalisering,

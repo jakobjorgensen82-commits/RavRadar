@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.432 importlukning
+
+Main er `686ebec4` / 4.0.431 efter PR #376 og exact-head `35448032367`.
+Providerfri `35448284914` afsluttede PENDING som ACTIVE31/profil73 og
+anvendte/læste migration `20260919020000` tilbage. Ingen provider eller
+Pages-deploy blev startet.
+
+Det næste stop var ikke anonym adgang eller ny vejrfejl. Current generationer
+blev korrekt afvist som forgængerbindinger, men den nye restore-wrapper i den
+eksakte `4bee5b0d`-kilde manglede både komponentinventaret og den nyere
+Supabase-transporteksport. Lokal 4.0.432 installerer begge hjælpere sammen med
+wrapperen, importtester lukningen og bevarer forgængerens model/bundle urørt.
+Eksakt lokal replay af importen er grøn.
+
+Næste: dokument-/versionssynk, målchecks, én exact-head, PR/merge og samme
+providerfri code-only fra ACTIVE31. Derefter almindelig weather og browser
+som bevis for hele 4.0.430-matricen. `.tmp-420/` må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – merged 4.0.430, lokal 4.0.431 reentry
 
 Main er `f7c954fe` / 4.0.430 efter PR #375 og grøn exact-head
