@@ -45,6 +45,8 @@ const LAST_MILE_HISTORY_ENVELOPE_BINDING_CHECK =
   'node scripts/build-last-mile-history-envelope-binding-migration.mjs';
 const WEATHER_INPUT_RESOLUTION_BINDING_CHECK =
   'node scripts/build-weather-input-resolution-binding-migration.mjs';
+const CURRENT_INPUT_FOUNDATION_BINDING_CHECK =
+  'node scripts/build-current-input-foundation-binding-migration.mjs';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -60,9 +62,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   PARTIAL_ZONE_PUBLIC_METADATA_BINDING_CHECK,
   LAST_MILE_HISTORY_ENVELOPE_BINDING_CHECK,
   WEATHER_INPUT_RESOLUTION_BINDING_CHECK,
+  CURRENT_INPUT_FOUNDATION_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260918190000_weather_input_resolution_binding.sql';
+  'supabase/migrations/20260919010000_current_input_foundation_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';

@@ -1,4 +1,24 @@
-# Aktiv roadmap – 4.0.426 fra measured recovery til komplet normal drift
+# Aktiv roadmap – 4.0.427 fra gyldigt providerinput til komplet normal drift
+
+1. [x] Lever 4.0.426 gennem exact-head `35404863947`, PR #371 og main
+   `41a39bbc`.
+2. [x] Gennemfør normalrun `35405307261` og afgræns samlet adapter-, HARMONIE-,
+   DKSS-prioritets- og privat-publiceringsfejl.
+3. [x] Bevar den 673/673 operationelle current-closure uafhængigt af valgfri
+   historik; ret HARMONIE til eksakt H0 og DKSS til tidligste reelle hul først.
+4. [x] Tillad en nyere privat produktion at afløse historisk modelbinding uden
+   at åbne samme-time-konflikt eller tidsregression.
+5. [ ] Lever 4.0.427 gennem måltests og én exact-head sourcegate.
+6. [ ] Kør én almindelig weather; kræv privat runtime/checkpoint, Pages,
+   aktuel score, Feggesund 354/354 og 100 % gyldige nødvendige felter.
+7. [ ] Hvis par stadig mangler, brug stageoversigten til én samlet rettelse af
+   den resterende kategori; bevis derefter normal cachevedligeholdelse.
+8. [ ] Genaktivér først scheduler efter stabilt normaldriftsbevis og fortsæt
+   derefter den samlede site- og roadmapgennemgang.
+
+DEC-0207. Ingen oneoff. `MISSING` er robusthed, aldrig et driftsmål.
+
+# Historisk roadmap – 4.0.426 fra measured recovery til komplet normal drift
 
 1. [x] Lever 4.0.425 gennem exact-head `35403040711`, PR #370 og main
    `05892afc`.

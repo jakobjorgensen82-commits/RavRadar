@@ -1,4 +1,22 @@
-# NYESTE SANDHED – 2026-09-19 – lokal 4.0.426, measured historical recovery
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.427, strøm- og DMI-recovery
+
+4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.
+Normalrun `35405307261` gennemførte DMI, Copernicus, regional DMI og
+Open-Meteo. Den operationelle closure havde 673/673 scoreklare aktuelle
+strømdele, men scoreinputtrace beholdt kun de 56 direkte DMI-dele, fordi en
+valgfri historik/referencefejl kunne kassere hele fallbackpakken.
+
+4.0.427 gør operationel closure uafhængig af valgfri historik, uden at acceptere
+ugyldige aktuelle data. Kritisk HARMONIE henter kun kataloget for den låste
+produktionstime; DKSS lukker reelle huller fra tidligste time fremad. En nyere
+privat runtime må afløse en strukturelt gyldig historisk binding, mens
+same-time-konflikt og tidsregression fortsat stopper.
+
+Runnet havde 1.122 manglende par af 79.414 over strømhorisonten. Det er ikke
+komplet. Næste bevis er én almindelig weather med aktuel score, privat
+publicering, Pages og 100 % gyldige nødvendige felter. DEC-0207.
+
+# HISTORISK SANDHED – 2026-09-19 – lokal 4.0.426, measured historical recovery
 
 4.0.425 bestod exact-head `35403040711`, blev merged gennem PR #370 som main
 `05892afc`, og normalrun `35403510608` nåede den korrekte action

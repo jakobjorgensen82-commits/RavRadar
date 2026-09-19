@@ -1,3 +1,13 @@
+# 2026-09-19 – 4.0.427 bevarer operationel strøm og lukker tidligste DMI-hul
+
+- 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.
+- Normalrun `35405307261` byggede 673/673 aktuelle strømdele, men adapteren
+  beholdt kun 56, fordi valgfri historik kunne invalidere operationel closure.
+- 4.0.427 isolerer tillidsdomænerne, gør HARMONIE-opslaget H0-smalt, sorterer
+  reelle DKSS-huller kronologisk og tillader nyere privat produktion over en
+  strukturelt gyldig historisk binding. 1.122/79.414 er fortsat ufuldstændigt.
+  DEC-0207.
+
 # 2026-09-19 – 4.0.426 genopbygger kun ved reelt checkpointfravær
 
 - 4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.

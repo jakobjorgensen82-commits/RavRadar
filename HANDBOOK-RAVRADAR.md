@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.426
+**Håndbogsversion:** 4.0.427
+
+## 89.31 4.0.427 – Gyldig aktuel strøm må ikke kasseres af valgfri historik
+
+Den seneste almindelige kørsel byggede gyldig aktuel strøm til alle 673
+kystdele. En separat fejl i valgfri historik/reference fik bagefter
+scorebyggeren til kun at beholde de 56 direkte DMI-dele. 4.0.427 behandler
+derfor den aktuelle forseglede strømpakke og den valgfrie historik som to
+uafhængige kontroller. En fejl i historikken fjerner kun historikken; en fejl
+i den aktuelle strøm afvises fortsat.
+
+DMI søger nu den præcise aktuelle vindtime med et lille HARMONIE-opslag.
+Reelle strømhuller behandles fra den tidligste manglende time fremad, før
+vedligeholdelse af allerede dækkede timer. En nyere privat scorepakke kan
+afløse en gyldig ældre modelbinding, men samme-time-konflikter og forsøg på at
+gå baglæns i tid stoppes stadig.
+
+Kørslen manglede fortsat 1.122 af 79.414 fremtidspar. Det er ikke komplet.
+`MISSING` holder kun resten af RavRadar brugbar, mens almindelige kørsler
+fortsætter arbejdet mod gyldige data overalt.
+
+RavScore-formlen er uændret. Den opdaterede inputkode er kryptografisk bundet
+gennem den append-only migration
+`20260919010000_current_input_foundation_binding.sql`.
 
 ## 89.30 4.0.426 – Manglende checkpoint kan genopbygges af målte data
 

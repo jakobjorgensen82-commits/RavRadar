@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.426",
+  "handbookVersion": "4.0.427",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-19",
   "sections": [
+    {
+      "id": "independent-current-trust-earliest-gap-4-0-427",
+      "chapter": "89.31",
+      "title": "4.0.427 – Gyldig aktuel strøm bevares",
+      "summary": "Valgfri historik kan ikke længere kassere en selvstændigt valideret aktuel strømpakke, og DMI lukker de tidligste reelle huller først.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den seneste almindelige kørsel byggede gyldig aktuel strøm til alle 673 kystdele, men en separat fejl i valgfri historik/reference fik scorebyggeren til kun at beholde de 56 direkte DMI-dele.</div><div class=\"handbook-stack\"><p>4.0.427 behandler den aktuelle forseglede strømpakke og valgfri historik som uafhængige kontroller. En fejl i historikken fjerner kun historikken; ugyldig aktuel strøm afvises fortsat.</p><p>Kritisk HARMONIE spørger kun efter den præcise produktionstime. Reelle DKSS-strømhuller behandles fra tidligste manglende time fremad før vedligeholdelse af allerede dækkede timer.</p><p>En nyere privat scorepakke kan afløse en gyldig historisk modelbinding, men samme-time-konflikt og tidsregression stopper stadig. Kørslens 1.122 manglende fremtidspar af 79.414 er ikke komplet; <code>MISSING</code> er kun lokal robusthed.</p><p>RavScore-formlen er uændret. Inputrettelsen bindes append-only i <code>20260919010000_current_input_foundation_binding.sql</code>.</p></div>"
+    },
     {
       "id": "measured-historical-recovery-4-0-426",
       "chapter": "89.30",
@@ -805,7 +812,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.426 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.427 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.416 ændrer ikke scoreformlen eller vægtene; versionen fører den kendte gemte last-mile-state gennem den sikre kanoniske reparation uden providerkald.</div><div class=\"handbook-stack\"><p><strong>Aktuel rettelse:</strong> Hvis ny usikkerhed opstår efter en konservativ nulstilling, bliver det gemte historikinterval udvidet til også at indeholde det fortsat gyldige punktspor. Privat ombinding tillader kun denne faktiske kanoniske ændring i minimums- og maksimumssporet; alle andre state-, vejr- eller måleændringer afvises.</p><p><strong>Driftsgenopretning:</strong> Central version 24 er registreret, den append-only binding er installeret, og samme-time code-only kan genbruge den eksakte beskyttede 4.0.410-runtime. Candidate, retur og cutover forbliver afvist.</p><p><strong>Integreret binding:</strong> <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=039abdfe0cede8dec764bbab904096854d0757a2c5f430b296f75baf1a686d3c</code> over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.</p><p><strong>Privat Candidate G-rollback:</strong> <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=d3ad4e8537c23865398acdb4674d141b8d94636aad0e8ddc22c5936a29cfd859</code> over 57 transitive filer. Candidate G er fortsat privat rollback og er ikke samtidig offentlig fallback. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop.</div></div>"
     },

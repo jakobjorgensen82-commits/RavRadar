@@ -1,3 +1,17 @@
+## 4.0.427 – aktuel strøm bevares og DMI lukker tidligste hul først (2026-09-19)
+
+- 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.
+- Normalrun `35405307261` byggede 673/673 scoreklare aktuelle strømdele, men
+  en valgfri historik-/referencekontrol fik adapteren til kun at bevare de 56
+  direkte DMI-dele. 4.0.427 adskiller disse tillidsdomæner uden at svække den
+  operationelle closure.
+- Kritisk HARMONIE spørger nu kun efter den låste produktionstime, og DKSS
+  behandler reelle huller fra tidligste time fremad.
+- Nyere privat produktion kan afløse en gyldig historisk modelbinding;
+  samme-time-konflikt og tidsregression stopper fortsat.
+- De 1.122 resterende par af 79.414 er fortsat ufuldstændige og skal lukkes i
+  almindelig drift. Se CHANGELOG-4.0.427.md og DEC-0207.
+
 ## 4.0.426 – measured recovery ved reelt checkpointfravær (2026-09-19)
 
 - 4.0.425 bestod exact-head `35403040711`, PR #370 og main `05892afc`.

@@ -1,4 +1,25 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.427 strøm- og DMI-recovery
+
+- **ISSUE-4.0.426-DELIVERY – LUKKET:** Exact-head `35404863947`, PR #371 og
+  main `41a39bbc` er gennemført.
+- **ISSUE-OPTIONAL-HISTORY-DISCARDS-CURRENT – RETTET LOKALT P0:** Run
+  `35405307261` havde 673/673 scoreklare aktuelle strømdele før adapteren og
+  kun 56 efter. Operationel closure er nu uafhængig af valgfri historik og
+  reference; ugyldige aktuelle data afvises fortsat.
+- **ISSUE-HARMONIE-CATALOG-STARVATION – RETTET LOKALT P0:** Kritisk H0-vind
+  bruger et smalt eksakt katalogopslag i stedet for 584-elementers horisont.
+- **ISSUE-DKSS-FAR-TAIL-FIRST – RETTET LOKALT P0:** Reelle strømhuller
+  behandles fra tidligste prognosetime fremad før scalar-only og refresh.
+- **ISSUE-PRIVATE-HISTORICAL-BINDING-PUBLISH – RETTET LOKALT P0:** En strengt
+  nyere produktion må afløse en strukturelt gyldig historisk binding;
+  same-time-konflikt og regression er fortsat lukkede.
+- **ISSUE-WEATHER-NUMERIC-COMPLETENESS – FORTSAT ÅBEN P0:** Runnet havde
+  1.122 manglende par af 79.414. Næste normale run skal bevise nul mangler,
+  Feggesund 354/354, aktuel time, scorer og deploy.
+
+DEC-0207. Ingen oneoff.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.426 measured historical recovery
 
 - **ISSUE-4.0.425-DELIVERY – LUKKET:** Exact-head `35403040711`, PR #370 og
   main `05892afc` er gennemført.

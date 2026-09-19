@@ -1325,14 +1325,17 @@ function advisoryDocumentProof(document, { revalidate = false } = {}) {
 function controlledDocumentProofs(document, { revalidate = false } = {}) {
   const closureProof = operationalClosureDocumentProof(document, { revalidate });
   if (!closureProof) return null;
+  // The exact operational closure is an independent trust domain. Optional
+  // advisory history and private native-cadence references must each fail
+  // closed on their own, but neither may discard a valid target..T+117
+  // operational current matrix. Consumers already require membership in the
+  // corresponding optional proof before using an optional entry.
   const advisoryProof = advisoryDocumentProof(document, { revalidate });
   const regionalReferenceProof = buildRegionalReferenceDocumentProof(
     document,
     closureProof,
   );
-  return advisoryProof && regionalReferenceProof
-    ? { closureProof, advisoryProof, regionalReferenceProof }
-    : null;
+  return { closureProof, advisoryProof, regionalReferenceProof };
 }
 
 function proofEntryStillBound(proof, entry) {

@@ -1082,6 +1082,11 @@ export async function publishProtectedPrivateProductionRuntime({
     allowMissing: true,
     policy,
     allowedCurrentModelBindings,
+    // A structurally valid older generation may use the model binding that
+    // was current when it was published. Read it as historical evidence so a
+    // strictly newer production reference can supersede it. Same-reference
+    // changes still require the exact migration evidence below.
+    allowHistoricalCurrentModelBinding: true,
   });
   let sameReference = false;
   let sameContentDifferentProducer = false;

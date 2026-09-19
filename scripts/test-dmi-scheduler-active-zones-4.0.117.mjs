@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
-assert.match(bulk,/def collection_schedule\(previous: dict\[str, Any\], active_zones_config: list\[dict\[str, Any\]\]\)/);
+assert.match(bulk,/def collection_schedule\([\s\S]{0,180}production_reference: datetime \| str \| None = None/);
 assert.match(bulk,/coverageDenominator": "current-active-zone-and-coastal-part-registry"/);
 assert.match(
   bulk,
@@ -36,6 +36,11 @@ assert.doesNotMatch(
 );
 assert.match(bulk,/"criticalAtmosphereAssetAttemptLimit": 1/);
 assert.match(bulk,/ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT/);
+assert.match(
+  bulk,
+  /elif collection_is_critical_atmosphere:[\s\S]{0,500}required_valid_times=\{atmosphere_foundation_time\}/,
+  'Det kritiske HARMONIE-forsøg skal hente den låste aktuelle time direkte i stedet for at inventere hele horisonten.',
+);
 assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
 assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections \+= 1/);
 assert.match(
@@ -108,9 +113,8 @@ assert diag['preferredWindTailDemand']['dkss_lf']==3, diag
 assert diag['preferredWindTailDemand']['dkss_nsbs']==1, diag
 assert diag['preferredWindTailDemand']['dkss_idw']==1, diag
 
-# One historical wind value is not a complete rolling horizon. This is the
-# production regression from 4.0.406: every point had some cached wind, while
-# hundreds of coastal parts still lacked score-time wind.
+# The urgent HARMONIE foundation is decided by exact verified wind at the
+# locked production hour, not by an impossible 96-hour HARMONIE horizon.
 real_complete_native_source=module.complete_native_source_for_hour
 module.complete_native_source_for_hour=lambda *args,**kwargs: True
 def wind_source(component,run='2026-01-01T00:00:00Z'):
@@ -133,10 +137,15 @@ wind_previous={'zones':{'PART::WIND-GAP':{'hourly':{
  wind_valid:{'wind-speed-10m':5.0,'wind-dir-10m':90.0,
              'sources':{'wind':wind_source('wind')}},
 }}},'collectionState':{}}
-_,wind_diag=module.collection_schedule(wind_previous,wind_active)
+_,wind_diag=module.collection_schedule(wind_previous,wind_active,wind_valid)
 assert wind_diag['missingAnyWind']==0, wind_diag
 assert wind_diag['missingWind']==1, wind_diag
-assert wind_diag['atmosphereFoundationNeeded'] is True, wind_diag
+assert wind_diag['atmosphereFoundationNeeded'] is False, wind_diag
+assert wind_diag['missingAtmosphereFoundationCount']==0, wind_diag
+wind_previous['zones']['PART::WIND-GAP']['hourly'][wind_valid]['wind-speed-10m']=None
+_,wind_gap_diag=module.collection_schedule(wind_previous,wind_active,wind_valid)
+assert wind_gap_diag['atmosphereFoundationNeeded'] is True, wind_gap_diag
+assert wind_gap_diag['missingAtmosphereFoundationCount']==1, wind_gap_diag
 
 # Once marine coverage is broadly established, a few persistent gaps must not
 # block a completely missing atmosphere model from both productive slots.
@@ -538,7 +547,7 @@ union_order=module.prioritize_marine_assets_for_current_gaps(
  },
 )
 assert [row['valid'] for row in union_order]==[
- union_b['valid'],union_a['valid'],
+ union_a['valid'],union_b['valid'],
 ], union_order
 # Within one DKSS family, an asset that is critical only because of scalar
 # component maintenance cannot overtake a later asset with real current gaps.
