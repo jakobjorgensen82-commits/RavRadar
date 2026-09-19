@@ -83,6 +83,38 @@ def main():
         assert report["counts"]["sourceManifestMismatchRows"] == 1
         assert report["counts"]["verifiedAssets"] == 0
 
+        # The optional active-part scope accepts only the same manifest-bound
+        # conditions and DMI cache, not a later failed-run candidate mixed in.
+        scoped_source = {**source, "entityType": "coastal-part", "entityId": "PART::synthetic-0",
+                         "parentZoneId": "synthetic-parent-0", "samplingPoint": [10.0, 56.0]}
+        scoped_document = {"zones": {"PART::synthetic-0": {"entityType": "coastal-part", "hourly": {
+            source["nativeValidTime"]: {"time": source["nativeValidTime"], "dominant-wave-period": 7.5,
+                                        "sources": {"wave": scoped_source}}}}}}
+        candidate.write_text(json.dumps(scoped_document), encoding="utf-8")
+        conditions = root / "conditions.json"
+        conditions.write_text(json.dumps({"datasetId": "rr-synthetic", "productionReferenceAt": source["nativeValidTime"],
+            "zones": {f"synthetic-parent-{index}": {} for index in range(210)},
+            "coastalParts": {"parts": {f"synthetic-{index}": {"zoneId": "synthetic-parent-0",
+                "waterPoint": [10.0, 56.0]} for index in range(673)}}}), encoding="utf-8")
+        bundle = root / "bundle-manifest.json"
+        bundle.write_text(json.dumps({"partCount": 673, "zoneCount": 210, "datasetId": "rr-synthetic",
+            "productionReferenceAt": source["nativeValidTime"], "files": [
+                {"id": file_id, "relativePath": relative, "bytes": path.stat().st_size,
+                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+                for file_id, relative, path in (("full-conditions", "data/live/conditions.json", conditions),
+                                               ("dmi-bulk-cache", "data/live/dmi-bulk-cache.json", candidate))]}), encoding="utf-8")
+        report = module.audit(candidate, raw, stage="grib", inspector=fake_inspector,
+                              conditions_path=conditions, bundle_manifest_path=bundle)
+        assert report["entityGroups"]["coastal-part"]["entitiesWithSavedPeriodDifferentFromPp1d"] == 1
+        assert report["protectedPartScope"]["counts"]["differentPeriodRowsAtH0"] == 1
+        assert report["protectedPartScope"]["counts"]["partsWithDifferentPeriodAtOrBeforeH0"] == 1
+        candidate.write_text(json.dumps(document), encoding="utf-8")
+        try:
+            module.audit(candidate, raw, conditions_path=conditions, bundle_manifest_path=bundle)
+            raise AssertionError("mixed candidate must fail")
+        except ValueError as error:
+            assert str(error) == "PROTECTED_SCOPE_FILE_BINDING_INVALID"
+
         # Exercise message iteration, exact grid binding, time and values with a
         # fake ecCodes boundary. Actual native GRIB I/O is NOT claimed tested.
         base = {"gridType": "regular_ll", "Ni": 2, "Nj": 1, "numberOfPoints": 2,
