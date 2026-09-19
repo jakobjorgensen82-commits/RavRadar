@@ -1,3 +1,13 @@
+# Aktuelt DMI-genindtrædelseskrav – 2026-09-19
+
+- **REQ-DMI-RESUMABLE-CANDIDATE-BOOTSTRAP-0214 – BINDENDE:** En gendannet
+  DMI-fil uden strict operationelt READY-bevis skal bevares som resumérbar
+  kandidat og må ikke blokere DMI-producenten. Den må ikke kaldes aktiv eller
+  komplet. En udpeget aktiv generation skal fortsat bestå hard strict READY
+  og registerkontrol. En deployed legacy-base må kun bootstrappe aktiv ved
+  samme bevis; ellers seedes kandidat. Promotion sker kun efter producentens
+  eksisterende READY- og registergates. DEC-0214.
+
 # Aktuelt checkpointkrav – 2026-09-19
 
 - **REQ-MEASURED-WARMUP-CHECKPOINT-NOT-APPLICABLE-0213 – BINDENDE:** Ved

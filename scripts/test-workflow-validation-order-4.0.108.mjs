@@ -1403,7 +1403,7 @@ const positions = {
   deployedDmiMaterialize: text.indexOf('name: Materialize bounded deployed DMI storage before conditional point activation'),
   pointActivationPrepare: text.indexOf('name: Prepare only an explicitly requested READY point activation'),
   dmiActiveRestore: text.indexOf('name: Select encrypted active DMI generation when available'),
-  dmiActiveMaterialize: text.indexOf('name: Strictly bind and materialize the active DMI generation'),
+  dmiActiveMaterialize: text.indexOf('name: Prepare strict active DMI donor or resumable candidate'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
   dmiTerminalGate: text.indexOf('name: Classify DMI readiness before current supplement'),
@@ -1625,11 +1625,20 @@ const currentDmiMaterialize = text.slice(positions.dmiActiveMaterialize, positio
 for (const marker of [
   'steps.dmi-active-restore.outputs.available',
   'source_path=.cache/dmi-active-complete.json',
+  'source_path=.cache/dmi-candidate-progress.json',
   'source_path=data/live/dmi-bulk-cache.json',
   'python scripts/materialize-dmi-bulk-storage.py',
   'python scripts/check-dmi-bulk-operational-ready.py',
   'python scripts/build-copernicus-target-registry.py',
+  'cp "$materialized_path" .cache/dmi-candidate-progress.json.tmp',
+  'strict_active_ready=false',
+  'candidate_seeded=true',
 ]) assert.ok(currentDmiMaterialize.includes(marker), `Aktiv DMI-materialisering mangler ${marker}`);
+const currentDmiPrepareStep = text.slice(
+  positions.dmiActiveMaterialize,
+  text.indexOf('\n      - name:', positions.dmiActiveMaterialize + 1),
+);
+assert.doesNotMatch(currentDmiPrepareStep, /continue-on-error/);
 const currentDmiGribSave = text.slice(positions.dmiGribSave,
   text.indexOf('\n      - name:', positions.dmiGribSave + 1));
 assert.match(currentDmiGribSave, /if: always\(\)/);

@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.435
+
+- [x] 4.0.434 exact-head `35453677623`, PR #379, merge `d4e8844e` og
+  providerfri deploy `35454050404`.
+- [x] Afgræns normalrun `35456148104`: ingen provider startede; en delvis
+  DMI-kandidat blev fejlagtigt bedømt som strict aktiv før producenten.
+- [x] Skeln strict aktiv donor, resumérbar kandidat og deployed legacy-base;
+  bevar hard fail for aktiv, men seed ikke-READY data som kandidat.
+- [x] Bevar eksisterende efter-producent READY-, register-, snapshot- og
+  promotionskrav uændrede.
+- [x] Måltests for DMI-progress, integreret generator, Python-integration,
+  workflowrækkefølge og releasekontrakt er grønne.
+- [ ] Versions-/RDKS-/håndbogsslutkontrol, exact-head, PR/merge.
+- [ ] Én almindelig weather skal bevise DMI-start, lokal vindvækst fra 0/673,
+  fallback, score, cachebevaring og korrekt promotion.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.434
 
 - [x] 4.0.433 exact-head `35451524450`, PR #378 og merge `b6afcdca`.

@@ -1,3 +1,20 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.435 resumérbar DMI-kandidat
+
+4.0.434 bestod exact-head `35453677623`, PR #379 og merge `d4e8844e`.
+Providerfri `35454050404` deployede 4.0.434 og afsluttede uden providerkald.
+Den offentlige side er på den integrerede model, men seneste runtime har
+fortsat lokal vind 0/673 og derfor ingen aktuelle scorer.
+
+Første almindelige run `35456148104` gendannede privat runtime, men stoppede
+før DMI/Copernicus/Open-Meteo. En delvis `data/live/dmi-bulk-cache.json` blev
+fejlagtigt krævet strict READY, før DMI-producenten måtte fortsætte den.
+Kørslen gemte stadig krypteret fremgang. Lokal 4.0.435 skelner nu strict aktiv
+donor fra resumérbar kandidat. Kun READY + register kan promovere aktivt;
+ikke-READY deployed data seedes kandidat og får lov at fortsætte. DEC-0214.
+
+Måltests er grønne. Exact-head, PR/merge og almindelig vejrkørsel mangler.
+Vind på 673 kystdele er ikke kaldt løst, før livekørslen viser reel vækst.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.434 checkpoint-N/A
 
 Main er 4.0.433 / `b6afcdca` efter PR #378 og exact-head `35451524450`.

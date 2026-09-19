@@ -1,3 +1,17 @@
+# Nyeste prioritering – 2026-09-19, 4.0.435 DMI-genoptagelse
+
+4.0.434 er online efter exact-head `35453677623`, PR #379, merge `d4e8844e`
+og providerfri deploy `35454050404`. Normalrun `35456148104` stoppede før
+providers, fordi den gendannede delvise DMI-base skulle være strict READY,
+før producenten fik lov at fortsætte den.
+
+4.0.435 bevarer strict aktive generationer som fail-closed donorer og bruger
+ikke-READY candidate/deployed data som resumérbar arbejdskopi. Kun de
+eksisterende efter-producent READY- og registergates kan promovere den.
+Næste rækkefølge: docs/målchecks, én exact-head, merge, så én almindelig
+weather med konkret måling af DMI-start, lokal vind, fallback og score. Ingen
+providerfri code-only gentages, og ingen oneoff startes blindt.
+
 # Nyeste prioritering – 2026-09-19, 4.0.434 korteste vej til online kode
 
 4.0.433 er merged som `b6afcdca`; exact-head `35451524450` var grøn.

@@ -1,3 +1,16 @@
+# AKTUELT CHECKPOINT – 2026-09-19 – 4.0.435 resumérbar DMI-kandidat
+
+4.0.434 er online efter exact-head `35453677623`, PR #379, main `d4e8844e`
+og providerfri deploy `35454050404`. Normalrun `35456148104` startede ingen
+provider, fordi en gendannet delvis DMI-base fejlagtigt skulle bestå strict
+READY før DMI-producenten. Krypteret failed-run-progress blev gemt.
+
+Lokal 4.0.435 skelner strict aktiv donor fra resumérbar kandidat. Kun strict
+READY + register kan være aktiv; kandidat/ikke-READY deployed data fortsættes
+af producenten og promoveres kun gennem den eksisterende efterfølgende gate.
+Næste er én exact-head, merge og én almindelig weather. Mål vind fra 0/673;
+ingen blind oneoff eller gentaget providerfri deploy. Se DEC-0214.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.434 checkpoint-N/A
 
 4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.
