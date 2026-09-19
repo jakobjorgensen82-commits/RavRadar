@@ -1,36 +1,39 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.429";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, reevaluatePublicConditions } from "./js/services/data-service.js?v=4.0.429";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.429";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.429";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.429";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.429";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.429";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.429";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.429";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.429";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.429";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.429";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.429";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.429';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.429';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.429';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.429';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.430";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.430";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.430";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.430";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.430";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.430";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.430";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.430";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.430";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.430";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.430";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.430";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.430";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.430';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.430';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.430';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.430';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
   da:Object.freeze({
+    ageUnknown:'Prognose for {time}. Nogle kilders modelalder er ukendt; det betyder ikke, at de viste værdier mangler eller er ugyldige.',
     ranking:'Viser senest verificerede scorer fra {time}. Det er ikke den aktuelle time.',
     forecast:'Viser kun fremtidige prognoser fra den senest verificerede pakke.',
     data:'Begrænset nøddrift: Senest verificerede score og vejr fra {time} vises tydeligt som ældre data. Konservativ vejrreference er {source} ({age} timer). {known} af {total} kildealdre kan sammenlignes; {unknown} kan ikke. Den aktuelle time og lokale prognosedetaljer afventer næste vejr-opdatering.',
     trip:'En ravtur kan ikke startes fra den ældre nødvisning. Vent på næste vejr-opdatering.',
   }),
   de:Object.freeze({
+    ageUnknown:'Prognose für {time}. Das Modellalter einiger Quellen ist unbekannt; angezeigte Werte sind deshalb nicht fehlend oder ungültig.',
     ranking:'Zuletzt verifizierte RavScores von {time}. Dies ist nicht die aktuelle Stunde.',
     forecast:'Es werden nur zukünftige Prognosen aus dem zuletzt verifizierten Paket angezeigt.',
     data:'Eingeschränkter Notbetrieb: Der zuletzt verifizierte RavScore und das Wetter von {time} werden deutlich als ältere Daten angezeigt. Die konservative Wetterreferenz ist {source} ({age} Stunden). {known} von {total} Quellenaltern sind vergleichbar; {unknown} nicht. Die aktuelle Stunde und lokale Prognosedetails warten auf die nächste Wetteraktualisierung.',
     trip:'Eine Bernsteintour kann nicht aus der älteren Notansicht gestartet werden. Warte auf die nächste Wetteraktualisierung.',
   }),
   en:Object.freeze({
+    ageUnknown:'Forecast for {time}. Some source model ages are unknown; that does not mean the displayed values are missing or invalid.',
     ranking:'Showing the latest verified RavScores from {time}. This is not the current hour.',
     forecast:'Only future forecasts from the latest verified package are shown.',
     data:'Limited emergency mode: The latest verified RavScore and weather from {time} are clearly shown as older data. The conservative weather reference is {source} ({age} hours). {known} of {total} source ages are comparable; {unknown} are not. The current hour and local forecast details await the next weather update.',
@@ -52,6 +55,8 @@ const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.qu
 const nationalForecast = document.querySelector("#nationalForecastContent");
 const tripButton = document.querySelector("#tripButton");
 let conditionDetailsPromise=null,conditionRuntimePromise=null,conditionRuntimeTimer=null,activeManifest;
+let runtimeGeneration=0;
+const pendingZoneDetails=new Map();
 let coreViewReady=false,conditionDetailsReady=false;
 let publicTripEvidenceRuntime=null;
 const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog");
@@ -250,15 +255,21 @@ async function renderNationalForecast() {
   return true;
 }
 
-function ensureConditionDetails(){
-  if(conditionDetailsReady)return Promise.resolve(state.conditions);
+function ensureConditionDetails(zoneId=state.selectedZone?.id??null){
+  const partitioned=Boolean(activeManifest?.detailDelivery);
+  if(partitioned&&(!zoneId||state.conditions.loadedDetailZones?.includes(zoneId)))return Promise.resolve(state.conditions);
+  if(!partitioned&&conditionDetailsReady)return Promise.resolve(state.conditions);
   if(state.conditions?.emergencyDetailsDeferred)return Promise.resolve(state.conditions);
-  if(conditionDetailsPromise)return conditionDetailsPromise;
+  const requestKey=partitioned?zoneId:'legacy';
+  if(pendingZoneDetails.has(requestKey))return pendingZoneDetails.get(requestKey);
   if(activeManifest===undefined)return Promise.reject(new Error('Datamanifestet er ikke klar endnu.'));
   let pending=null;
-  pending=loadConditionDetails({manifest:activeManifest,conditions:state.conditions}).then(details=>{
+  const generation=runtimeGeneration;
+  const selectedReferenceAt=state.conditions.publicRuntimeAvailability?.selectedReferenceAt;
+  pending=loadConditionDetails({manifest:activeManifest,conditions:state.conditions,zoneId:partitioned?zoneId:null}).then(details=>{
+    if(generation!==runtimeGeneration||selectedReferenceAt!==state.conditions.publicRuntimeAvailability?.selectedReferenceAt)return state.conditions;
     state.conditions=mergeConditionDetails(state.conditions,details);
-    conditionDetailsReady=true;
+    conditionDetailsReady=partitioned?false:true;
     performance.mark?.('ravradar:condition-details-loaded');
     state.flowArrows?.refresh?.();
     state.currentScores.clear();state.forecastGroups.clear();
@@ -268,7 +279,11 @@ function ensureConditionDetails(){
   }).catch(error=>{
     if(conditionDetailsPromise===pending)conditionDetailsPromise=null;
     throw error;
+  }).finally(()=>{
+    if(pendingZoneDetails.get(requestKey)===pending)pendingZoneDetails.delete(requestKey);
+    if(conditionDetailsPromise===pending)conditionDetailsPromise=null;
   });
+  pendingZoneDetails.set(requestKey,pending);
   conditionDetailsPromise=pending;
   return pending;
 }
@@ -298,6 +313,8 @@ function updatePublicDataStatus(conditions){
       unknown:availability?.weatherSourceAge?.unknownComparableAgeCount??0,
       total:availability?.weatherSourceAge?.totalCount??0,
     });
+  }else if(conditions?.available&&availability?.weatherSourceAge?.unknownComparableAgeCount>0){
+    dataStatus.textContent=runtimeSnapshotText('ageUnknown',{time:formatDateTime(availability.selectedReferenceAt)});
   }else if(conditions?.available&&availability?.mode==='EMERGENCY_LAST_COMPLETE'){
     dataStatus.textContent=t('data.emergency',{
       time:formatDateTime(availability.selectedReferenceAt),
@@ -316,29 +333,52 @@ function updatePublicDataStatus(conditions){
 function scheduleConditionRuntimeGate(){
   clearTimeout(conditionRuntimeTimer);conditionRuntimeTimer=null;
   const target=nextConditionRuntimeGateAt(state.conditions);
-  if(!Number.isFinite(target))return;
-  conditionRuntimeTimer=setTimeout(()=>{void reevaluateConditionRuntime();},Math.max(0,target-Date.now()));
+  const delay=Number.isFinite(target)?Math.min(5*60000,Math.max(1000,target-Date.now())):60000;
+  conditionRuntimeTimer=setTimeout(()=>{void reevaluateConditionRuntime();},delay);
 }
 async function reevaluateConditionRuntime(){
   if(conditionRuntimePromise)return conditionRuntimePromise;
-  if(!activeManifest||!state.conditions?.available)return state.conditions;
+  if(!activeManifest)return state.conditions;
   const previous=state.conditions;
-  conditionRuntimePromise=reevaluatePublicConditions({manifest:activeManifest,conditions:previous,now:Date.now()})
-    .then(async next=>{
-      state.conditions=next;
-      conditionDetailsReady=next.detailsAvailable===true;
+  conditionRuntimePromise=refreshPublicRuntimeGeneration({manifest:activeManifest,conditions:previous,now:Date.now()})
+    .then(async update=>{
+      const next=update.conditions;
+      // Prepare the complete replacement before mutating the active runtime.
+      const replacementZones=update.zones?projectPublicCoastlines(update.zones):null;
+      const replacementLayer=replacementZones
+        ?renderZones(map,replacementZones,()=>({available:false,level:'unavailable'}),zone=>openZone(zone,{scroll:false}))
+        :null;
+      const selectionChanged=update.changed||previous.available!==next.available
+        || previous.publicRuntimeAvailability?.selectedReferenceAt!==next.publicRuntimeAvailability?.selectedReferenceAt;
+      if(selectionChanged){runtimeGeneration+=1;pendingZoneDetails.clear();conditionDetailsPromise=null;}
+      if(update.zones){
+        state.zoneLayer?.destroy?.();
+        state.zones=replacementZones;
+        state.zoneLayer=replacementLayer;
+        state.flowArrows?.destroy?.();
+        state.flowArrows=null;
+        if(state.selectedZone)state.selectedZone=state.zones.features.find(feature=>feature.properties.id===state.selectedZone.id)?.properties??null;
+      }
+      activeManifest=update.manifest;
+      // A same-hour manifest refresh may finish after a zone request. Keep
+      // those newly loaded details instead of reinstalling its earlier snapshot.
+      state.conditions=selectionChanged?next:{...state.conditions,publicRuntimeAvailability:next.publicRuntimeAvailability};
+      if(next.available&&!next.emergencyDetailsDeferred&&!state.flowArrows)state.flowArrows=installFlowArrows(map,state.zones,id=>state.conditions.zones?.[id]||{},()=>state.conditions.coastalParts||null);
+      conditionDetailsReady=state.conditions.detailsAvailable===true;
       updatePublicDataStatus(next);
       updateTripUi();
       const previousAvailability=previous.publicRuntimeAvailability;
       const nextAvailability=next.publicRuntimeAvailability;
-      const changed=previous.available!==next.available
+      const changed=update.changed||previous.available!==next.available
         || previousAvailability?.mode!==nextAvailability?.mode
         || previousAvailability?.selectedReferenceAt!==nextAvailability?.selectedReferenceAt;
       if(changed&&coreViewReady)await resumePublicView();
+      if(state.selectedZone)void ensureConditionDetails().catch(error=>console.warn('Zonens prognose kunne ikke opdateres',error));
       scheduleConditionRuntimeGate();
       return state.conditions;
     })
-    .finally(()=>{conditionRuntimePromise=null;});
+    .catch(error=>{console.warn('Opdateringen kunne ikke hentes; den verificerede visning bevares',error);return state.conditions;})
+    .finally(()=>{conditionRuntimePromise=null;scheduleConditionRuntimeGate();});
   return conditionRuntimePromise;
 }
 
@@ -359,7 +399,9 @@ async function resumePublicView() {
 
 const handlePublicPageShow=createPublicPageResumeHandler({
   isCoreReady:()=>coreViewReady&&Boolean(state.zoneLayer&&state.zones),
-  detailsRequired:()=>conditionDetailsPromise!==null,
+  // Optional zone shards must never turn a healthy bfcache return into a full
+  // reload. The selected zone is retried independently after runtime refresh.
+  detailsRequired:()=>!activeManifest?.detailDelivery&&conditionDetailsPromise!==null,
   isDetailsReady:()=>conditionDetailsReady,
   waitForDetails:()=>conditionDetailsPromise,
   resume:async()=>{await reevaluateConditionRuntime();await resumePublicView();},
@@ -456,7 +498,7 @@ try {
     flowArrowAttempts+=1;
     performance.mark?.('ravradar:flow-arrows-started');
     try{
-      const arrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{},()=>state.conditions.coastalParts||null);
+      const arrows=installFlowArrows(map,state.zones,id=>state.conditions.zones?.[id]||{},()=>state.conditions.coastalParts||null);
       const counts=arrows.counts?.()||{wind:0,current:0};
       if((counts.wind||0)+(counts.current||0)===0)throw new Error('Pilelaget blev oprettet uden synlige vind- eller strømpile.');
       state.flowArrows=arrows;

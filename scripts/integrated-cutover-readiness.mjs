@@ -154,10 +154,15 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260919010000_current_input_foundation_binding',
     filename: '20260919010000_current_input_foundation_binding.sql',
   }),
+  Object.freeze({
+    version: '20260919020000',
+    id: '20260919020000_measured_warmup_checkpoint',
+    filename: '20260919020000_measured_warmup_checkpoint.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260919010000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260919020000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

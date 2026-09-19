@@ -8,6 +8,7 @@ import {
   buildSupabaseAdminHeaders,
   isRetryableStatementTimeout,
   isRetryableTranslatedSecretAuthError,
+  readSupabaseBodyTransport,
 } from './lib/supabase-admin-rest.mjs';
 import {
   loadRavScoreContinuationCheckpointForTarget,
@@ -275,7 +276,7 @@ async function readResponseTextBounded(response, maximumBytes, label) {
   }
   const reader = response?.body?.getReader?.();
   if (!reader) {
-    const text = await response.text();
+    const text = await readSupabaseBodyTransport(() => response.text());
     if (Buffer.byteLength(text, 'utf8') > maximumBytes) {
       throw new Error(`${label} exceeds its response bound`);
     }
@@ -284,7 +285,7 @@ async function readResponseTextBounded(response, maximumBytes, label) {
   const chunks = [];
   let total = 0;
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await readSupabaseBodyTransport(() => reader.read());
     if (done) break;
     const chunk = Buffer.from(value);
     total += chunk.length;
@@ -359,11 +360,21 @@ export function createProtectedRavScoreCheckpointRequester({
         }
         throw new Error(`Protected RavScore checkpoint ${operation} could not be reached`);
       }
-      const responseText = await readResponseTextBounded(
-        response,
-        PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES,
-        'Protected RavScore checkpoint restore response',
-      );
+      let responseText;
+      try {
+        responseText = await readResponseTextBounded(
+          response,
+          PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES,
+          'Protected RavScore checkpoint restore response',
+        );
+      } catch (error) {
+        if (attempt === 1 && error.code === 'SUPABASE_RESPONSE_BODY_TRANSPORT') {
+          logger('Protected RavScore checkpoint restore body was interrupted; retrying once');
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw error;
+      }
       const parsedResponse = parseRemoteJson(responseText);
       if (response.ok) {
         if (!Array.isArray(parsedResponse)) {
@@ -436,11 +447,21 @@ export function createProtectedRavScoreCheckpointVersionRequester({
         }
         throw new Error(`Protected RavScore checkpoint ${operation} could not be reached`);
       }
-      const responseText = await readResponseTextBounded(
-        response,
-        PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
-        'Protected RavScore checkpoint version response',
-      );
+      let responseText;
+      try {
+        responseText = await readResponseTextBounded(
+          response,
+          PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+          'Protected RavScore checkpoint version response',
+        );
+      } catch (error) {
+        if (attempt === 1 && error.code === 'SUPABASE_RESPONSE_BODY_TRANSPORT') {
+          logger('Protected RavScore checkpoint version body was interrupted; retrying once');
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw error;
+      }
       const parsedResponse = parseRemoteJson(responseText);
       if (response.ok) {
         if (!Array.isArray(parsedResponse)) {
@@ -521,11 +542,23 @@ export function createProtectedRavScoreCheckpointRpcRequester({
         }
         throw new Error('Protected RavScore checkpoint RPC could not be reached');
       }
-      const responseText = await readResponseTextBounded(
-        response,
-        PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
-        'Protected RavScore checkpoint RPC response',
-      );
+      let responseText;
+      try {
+        responseText = await readResponseTextBounded(
+          response,
+          PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+          'Protected RavScore checkpoint RPC response',
+        );
+      } catch (error) {
+        // The RPC checks exact payload equality before expected_version. The
+        // identical serialized request is safe even if its first write committed.
+        if (attempt === 1 && error.code === 'SUPABASE_RESPONSE_BODY_TRANSPORT') {
+          logger('Protected RavScore checkpoint RPC body was interrupted; retrying the identical request once');
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw error;
+      }
       const parsedResponse = parseRemoteJson(responseText);
       if (response.ok) {
         if (!isPlainObject(parsedResponse)) {

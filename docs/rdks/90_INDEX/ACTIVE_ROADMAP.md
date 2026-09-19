@@ -1,4 +1,51 @@
-# Aktiv roadmap – 4.0.429 fra gemt 02:00-vejr til reel normal HARMONIE
+# Aktiv roadmap – 2026-09-19, sammenhængende komplet og stabil drift
+
+Udgangspunkt: merged 4.0.429, Pages publiceret, central afslutning og næste
+weather blokeret. Læs [helhedsanalysen](../../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md).
+Den er nu krydstjekket i [samlet rettelsesplan](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+Alle punkter bevares; 96-timers-reglen erstatter ikke helhedsgennemgangen.
+
+1. [x] Krydstjek hele kæden og dokumentér både faktiske fejl og latente kanter.
+2. [x] Færdiggør komponentdesign lokalt: gyldig DMI bevares; Copernicus/Open-Meteo
+   lukker alle øvrige nødvendige vejrtyper/timer, ikke kun strøm/haler.
+   Vandstand og tre-timers ændring er efter seneste ejerbeslutning kun DMI;
+   CP/OM-datumomregning udgår. Bevar DMI-huller synligt og gyldig gammel DMI.
+   DMI skal med ledig kapacitet kunne overtage allerede reservedækkede
+   komponenter; fuld reserve er ikke en permanent afslutning af DMI-planen.
+   Seneste forslag er nu 96 timers DMI-modelalder, ikke sidste prognosedøgn.
+   Nyere gyldig reserve kan da overtage; gyldig DMI bevares uden erstatning.
+   Se DEC-0210's topafsnit; produktionsbevis mangler.
+3. [x] Ret lokalt readiness, fælles genindgang, jobidentitet, komplette slutudfald,
+   serialisering, body-retry og komponentfriskhed samlet.
+4. [ ] Afslut allerede publiceret target uden at hente samme vejr igen efter merge.
+5. [x] Bevar modelhistorik under warmup og ved kode-only-levering lokalt.
+6. [x] Ret acquisitionplan, cache/proveniens og PART-adapter som én kæde.
+   Medtag peak/mean-wave-decoder, sidste tre trends, atomisk normalisering,
+   DMI-opgradering, provideralder og feltkorrekt reserveadmission/replay.
+7. [x] Lever lokalt små tidskorrekte browserpakker; aktuel time, detaljer, pile og
+   ture skal virke efter timeskift og ny deploy i en allerede åben fane.
+8. [ ] Bevis gyldig numerisk dækning og normal vedligeholdelse gennem flere
+   leverandørfaser; kontrolleret genåbning af scheduler, derefter øvrig roadmap.
+9. [ ] Bevis selvkørende drift uden Codex/ejercomputer mellem runs: ren
+   runner, midlertidig providerfejl, budgetudløb, bevaret fremgang/rotation,
+   vinduesskift og afsluttet publicering. Lever kort dansk driftsvejledning
+   og få handlingsrettede meldinger om vedvarende fejl. Design til mindst
+   mulig service og omtrent årligt eftersyn; ingen garanti mod APIændringer.
+10. [x] Fjern lokalt genoptagelsens afhængighed af midlertidige 14-dages filer:
+    nødvendig evidens skal overleve, så længe en overgang er uafsluttet.
+    Bevis korrekt afslutning på ren runner ved artifactudløb og sikker
+    oprydning bagefter. Ingen manuel Codex-redning, falsk completion eller
+    blot længere retention. Almindelig samme-binding drift må ikke få et
+    nyt unødvendigt recoverylag. Rigtig save/restore/reentry mangler bevis.
+
+Ingen scoreformel-/geometriændring. MISSING er nødadfærd, ikke målet.
+
+Senere særskilt ved legitim punktaktivering: design kontrolleret migration
+af uændrede donoridentiteter, så én vandpunktsændring ikke nødvendigvis
+kræver fornyelse af alle øvrige reserver. Dette må ikke indføres som skjult
+svækkelse af registrybinding i den aktuelle vejrrettelse.
+
+# Historisk roadmap – 4.0.429 fra gemt 02:00-vejr til reel normal HARMONIE
 
 1. [x] Lever 4.0.428 gennem exact-head, PR #373 og main `a2d03d95`.
 2. [x] Bevar providerarbejdet fra normalrun `35416641052`; afgræns det sene

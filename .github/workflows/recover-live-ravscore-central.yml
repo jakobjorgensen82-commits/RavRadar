@@ -13,7 +13,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: ravradar-weather-production
+  group: ravradar-weather-production-v2
+  queue: max
   cancel-in-progress: false
 
 jobs:

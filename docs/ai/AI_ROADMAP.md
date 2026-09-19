@@ -1,4 +1,51 @@
-# Nyeste prioritering – 4.0.399 gyldig browserimportgraf 2026-09-17
+# Nyeste prioritering – 2026-09-19, samlet vejrkædeanalyse på 4.0.429
+
+Den samlede helkæderettelse er nu implementeret lokalt på tværs af alle
+fundgrupper. Det næste arbejde er ikke flere isolerede patches: afslut
+version/RDKS/håndbog og afledte bundles, måltests, én exact-head sourcegate,
+merge, holdbar reentry/deploy og derefter almindelige vejrkørsler med
+kompletheds-, kildeprioritets-, browser- og selvkørende driftsbevis.
+
+Seneste operative tilføjelse er [helhedskrydstjekket](WEATHER_CHAIN_CROSSCHECK_2026-09-19.md):
+alle fund samles i persistence/reentry, inputvalg, historik og offentlig
+levering. Ingen indsnævring til 96 timer og ingen standard om én release
+pr. fejl. Bølgeparameterfejl og sidste tre vandstandstrends skal med.
+
+Den operative plan er nu [helhedsanalysen](WEATHER_CHAIN_REVIEW_2026-09-19.md)
+og [aktiv roadmap](../rdks/90_INDEX/ACTIVE_ROADMAP.md). Alle ældre sektioner
+nedenfor er historik, ikke aktuelle bestillinger om at gentage færdige trin.
+
+Seneste driftskrav: så vedligeholdelsesfrit som muligt, uden Codex/licens
+eller lokal computer i den daglige kæde. Ejeren kan måske finansiere ét
+årligt eftersyn. Genoptagelse/retry/rotation/persistens/afslutning skal derfor
+ligge i eksisterende GitHub-drift og bevises uden manuelle mellemtrin.
+Undgå nye driftsabonnementer og unødige lag; slutleverancen skal have en
+kort dansk vejledning og forståelige beskeder ved reelle vedvarende fejl.
+
+Ejeren har særskilt fastholdt de midlertidige 14-dages hjælpefiler:
+genoptagelse må ikke blive manuel, når de udløber. Nødvendig evidens skal
+bevares under en uafsluttet overgang eller genskabes fra betroede varige
+kilder. Implementering og udløbsscenarie på ren runner er stadig åbne;
+længere retention alene løser ikke kravet. Se DEC-0210 og roadmap punkt 10.
+
+Ejerens fallbackaftale gælder alle nødvendige vejrtyper og alle huller,
+undtagen vandstand: seneste ejerbeslutning kræver kun DMI til både niveau
+og tre-timers ændring. CP/OM-datumomregning udgår af implementeringen.
+For de øvrige komponenter gælder:
+bevar gyldig DMI, derefter Copernicus, derefter Open-Meteo. Ret hele kæden
+gennem indsamling, cache, modelinput og UI. Saml også statepersistens,
+genindgang efter Pages, samtidige produktionsruter og tidskorrekt lille
+offentlig datapakke. Stabilitet kræver faktiske normale kørsler; ingen ny
+oneoff som erstatning for årsagsanalyse og ingen selvstændig scoreændring.
+Fuld reservedækning må ikke stoppe DMI: med ledig kapacitet skal almindelig
+DMI opsøge og overtage gyldige CP/OM-komponenter. Mål kildeopgradering
+separat fra hullukning, og bevar reservedata, indtil gyldig DMI er klar.
+Seneste forslag er nu reserveundtagelse ved DMI-alder mindst 96 timer fra
+komponentens modelrun, ikke fra download eller sidste prognosedøgn. Nyere
+gyldig reserve kan overtage; uden erstatning bevares gyldig DMI. Ny DMI
+vinder igen. Registreret som forslag/anbefaling, endnu ikke implementeret.
+
+# Historisk prioritering – 4.0.399 gyldig browserimportgraf 2026-09-17
 
 4.0.398 er merged som main `d7420ade`. Code-only `35175276505` stoppede
 før data og writes på 21 ugyldige browserimports fra den manuelle

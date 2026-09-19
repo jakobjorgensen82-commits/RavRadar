@@ -716,6 +716,29 @@ def wave_distance_allowed(collection: Any, distance_km: Any) -> bool:
     )
 
 
+def peak_wave_period_field(field: Any) -> bool:
+    """Recognise decoded DMI WAM peak evidence, never a mean-period alias.
+
+    231/PP1D is peak; 232/MWP and 221/MP2 are mean periods. Missing numeric
+    metadata is permitted only with the unambiguous PP1D short name. Keeping
+    this actual-message evidence in the source prevents relabelling old cache
+    rows that were produced by the former peak/mean alias classifier.
+    """
+    if not isinstance(field, dict) or set(field) != {
+        "shortName", "paramId", "indicatorOfParameter",
+    }:
+        return False
+    short = field.get("shortName")
+    if not isinstance(short, str) or len(short) > 32 or short != short.lower().strip():
+        return False
+    identifiers = [field.get("paramId"), field.get("indicatorOfParameter")]
+    if any(value is not None and (type(value) is not int or value < 0) for value in identifiers):
+        return False
+    if short in {"mwp", "mp2", "perpw"} or any(value in {221, 232} for value in identifiers):
+        return False
+    return short == "pp1d" or 231 in identifiers
+
+
 def sampling_identity(zone: dict[str, Any]) -> dict[str, Any] | None:
     entity_id = str(zone.get("id") or "").strip()
     sampling_point = _finite_point([zone.get("lon"), zone.get("lat")])
@@ -848,7 +871,11 @@ def complete_native_source_for_hour(
             ))
         )
     if component == "wave":
-        return wave_distance_allowed(collection, distance)
+        return bool(
+            wave_distance_allowed(collection, distance)
+            and source.get("wavePeriodSemantics") == "peak"
+            and peak_wave_period_field(source.get("wavePeriodField"))
+        )
     return True
 
 

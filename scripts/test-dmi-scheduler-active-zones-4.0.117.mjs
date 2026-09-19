@@ -38,14 +38,19 @@ assert.match(bulk,/"criticalAtmosphereAssetAttemptLimit": 1/);
 assert.match(bulk,/ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT/);
 assert.match(
   bulk,
-  /elif collection_is_critical_atmosphere:[\s\S]{0,500}required_valid_times=\{atmosphere_foundation_time\}/,
-  'Det kritiske HARMONIE-forsøg skal hente den låste aktuelle time direkte i stedet for at inventere hele horisonten.',
+  /elif collection_is_critical_atmosphere or collection_is_horizon:[\s\S]{0,220}list_atmosphere_turn_assets\([\s\S]{0,160}horizon=collection_is_horizon/,
+  'Produktionsloopet skal bruge den afgrænsede kataloghelper til både H0 og den senere horisontpassage.',
 );
-assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections >= COLLECTIONS_PER_RUN/);
+assert.match(
+  bulk,
+  /def list_atmosphere_turn_assets\([\s\S]{0,500}required_valid_times=\{target\},[\s\S]{0,180}if horizon else None/,
+  'H0-kataloget skal fortsat være lille; kun den efterfølgende passage inventerer fremtiden. Det faktiske STAC-forløb bevises i test-dmi-native-chain-continuity.py.',
+);
+assert.match(bulk,/not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,180}productive_collections >= COLLECTIONS_PER_RUN/);
 assert.match(bulk,/made_progress[\s\S]{0,180}not collection_is_critical_wam[\s\S]{0,120}not collection_is_critical_current[\s\S]{0,120}productive_collections \+= 1/);
 assert.match(
   bulk,
-  /if budget_stop_code in \{\s*"ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT",\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
+  /if budget_stop_code in \{\s*"ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT",\s*"ATMOSPHERE_HORIZON_ATTEMPT_LIMIT",\s*"CRITICAL_COLLECTION_RUNTIME_RESERVED",\s*"STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",\s*\}:[\s\S]{0,500}"reasonCode": budget_stop_code/,
 );
 assert.match(bulk,/"reservedSeconds": round\([\s\S]{0,160}"partialProgressPreserved": True/);
 assert.match(
@@ -965,6 +970,10 @@ with tempfile.TemporaryDirectory() as temporary:
  module.codes_release=lambda gid:None
  parameters={1:'significant-wave-height',2:'dominant-wave-period',3:'mean-wave-dir'}
  module.classify_parameter=lambda gid,collection:parameters[gid]
+ module.field_signature=lambda gid:(
+  {'shortName':'pp1d','paramId':231,'indicatorOfParameter':231}
+  if gid==2 else {'shortName':parameters[gid]}
+ )
  module.valid_candidates_batch=lambda gid,collection,wanted:{
   'PART::TEST':[candidate(cell,1,2,0.0,{1:1.2,2:6.0,3:270.0}[gid])]
  }

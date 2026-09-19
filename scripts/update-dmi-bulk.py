@@ -94,6 +94,7 @@ from lib.dmi_native_provenance import (
     derive_current_part_outcome_partition,
     exact_current_operational_complement,
     part_time_pairs_sha256,
+    peak_wave_period_field,
     processed_source_assets_from_current_operational_ledger,
     retained_current_asset_proofs_sha256,
     sampling_identity,
@@ -241,6 +242,9 @@ DKSS_PRIMARY_REFRESH_MAX_ASSETS = max(
     0,
     min(16, int(os.getenv("DMI_BULK_DKSS_PRIMARY_REFRESH_MAX_ASSETS", "2"))),
 )
+ATMOSPHERE_HORIZON_MAX_ASSETS = max(
+    1, min(16, int(os.getenv("DMI_BULK_ATMOSPHERE_HORIZON_MAX_ASSETS", "4"))),
+)
 RETAIN_PREFERRED_NATIVE_RUN = os.getenv(
     "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN", "false"
 ).lower() in {"1", "true", "yes", "on"}
@@ -371,7 +375,7 @@ HINT_ALIASES = {
     "wind-tail-v-10m": ("10 metre v wind", "10 meter v wind", "10m v wind", "wind-tail-v-10m", "10v", "v10", "v10m"),
     "significant-wave-height": ("significant wave height", "significant height of combined", "significant-wave-height", "swh", "htsgw"),
     "mean-wave-dir": ("mean wave direction", "mean direction of waves", "mean-wave-dir", "mwd", "dirpw", "wavedir"),
-    "dominant-wave-period": ("peak wave period", "dominant wave period", "mean wave period", "dominant-wave-period", "pp1d", "mwp", "perpw"),
+    "dominant-wave-period": ("peak wave period", "pp1d"),
 }
 
 
@@ -1417,7 +1421,36 @@ def asset_identity_is_required_for_resume(
     """Keep WAM resume proof bound to the primary phase, never its fallback."""
     if collection in WAVE_BOOTSTRAP_COLLECTIONS:
         return int(asset.get("operationalWavePhaseRank") or 0) == 0
-    return str(identity.get("validTime") or "") in required_current_valid_times
+    return bool(
+        str(identity.get("validTime") or "") in required_current_valid_times
+        or collection in MARINE_COLLECTIONS
+        and private_component_support_asset(asset, required_current_valid_times)
+    )
+
+
+def private_component_support_asset(
+    asset: dict[str, Any], required_valid_times: set[str],
+) -> bool:
+    """Only the three exact private T+3 support hours may extend the queue."""
+    required = {epoch(value) for value in required_valid_times if canonical_time(value)}
+    if not required or asset.get("privateComponentSupport") is not True:
+        return False
+    return epoch(asset.get("valid")) in {
+        max(required) + offset * 3600 for offset in (1, 2, 3)
+    }
+
+
+def filter_regional_operational_assets(
+    assets: list[dict[str, Any]], required_valid_times: set[str],
+    regional_gap_pairs_by_time: dict[str, set[tuple[str, str]]],
+) -> list[dict[str, Any]]:
+    """Keep exact current work, causal regional support and private scalar tail."""
+    return [
+        asset for asset in assets
+        if canonical_time(asset.get("valid")) in required_valid_times
+        or regional_gap_pairs_by_time.get(str(canonical_time(asset.get("valid")) or ""))
+        or private_component_support_asset(asset, required_valid_times)
+    ]
 
 
 def wave_source_asset_matches_official(source: Any, expected: Any) -> bool:
@@ -1509,6 +1542,8 @@ def reusable_processed_steps(
     wave_cache: dict[str, Any] | None = None,
     wave_zones: list[dict[str, Any]] | None = None,
     wave_resume_metrics: dict[str, Any] | None = None,
+    private_support_zones: dict[str, Any] | None = None,
+    private_support_zone_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Reuse only checkpoints bound to an exact asset and actual cache proof."""
     if not same_processing or not same_run:
@@ -1672,7 +1707,10 @@ def reusable_processed_steps(
     reusable: dict[str, Any] = {}
     for raw_valid_time, step in steps.items():
         valid_time = canonical_time(raw_valid_time)
-        if valid_time not in required:
+        private_support = private_component_support_asset(
+            {"valid": valid_time, "privateComponentSupport": True}, required,
+        )
+        if valid_time not in required and not private_support:
             continue
         official_asset = required_asset_provenance.get(valid_time)
         source = processed_step_source_for_official_asset(
@@ -1684,6 +1722,24 @@ def reusable_processed_steps(
             official_asset=official_asset,
         )
         if source is None:
+            continue
+        if private_support:
+            # These rows do not belong to the current/public denominator.
+            # Resume them from their exact scalar values and original asset,
+            # not a fabricated extra current-ledger pair or a step flag alone.
+            if not private_support_zone_ids or not isinstance(private_support_zones, dict):
+                continue
+            if all(
+                _exact_validated_dmi_component_present(
+                    zone_id, private_support_zones.get(zone_id), valid_time,
+                    "waterLevel", DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS["waterLevel"],
+                )
+                and canonical_current_source_asset(
+                    private_support_zones[zone_id]["hourly"][valid_time]["sources"]["waterLevel"]
+                ) == source
+                for zone_id in private_support_zone_ids
+            ):
+                reusable[valid_time] = step
             continue
         try:
             outcome = validate_current_part_outcome_proof(
@@ -2022,6 +2078,25 @@ def _exact_validated_dmi_component_present(
     ):
         return False
     sources = hour.get("sources") or {}
+    if component == "wave":
+        wave_source = sources.get("wave")
+        if not isinstance(wave_source, dict):
+            return False
+        height, period = hour.get("significant-wave-height"), hour.get("dominant-wave-period")
+        direction = hour.get("mean-wave-dir")
+        direction_valid = (
+            isinstance(direction, (int, float)) and not isinstance(direction, bool)
+            and math.isfinite(float(direction)) and 0 <= direction < 360
+        )
+        if (
+            height < 0 or period < 0
+            or height > 0 and (period <= 0 or not direction_valid)
+            or direction is not None and not direction_valid
+            or ((direction is not None) != (
+                "mean-wave-dir" in (wave_source.get("optionalFieldSet") or [])
+            ))
+        ):
+            return False
     return complete_native_source_for_hour(
         sources.get(component),
         component,
@@ -2086,13 +2161,14 @@ def classify_dkss_primary_asset(
     if not valid_time or not canonical_run or not normalized_targets or not normalized_zones:
         missing_components.add("configuration")
         current_missing_pair_count = len(normalized_targets)
-    elif required_valid_times is not None and valid_time not in required_valid_times:
+    elif required_valid_times is not None and valid_time not in required_valid_times and not private_component_support_asset(asset, required_valid_times):
         # A T-3..T-1 LF source is supplemental input for the approved regional
         # hold only. It must not invent a native current/component deficit
         # outside the immutable T..T+117 operational denominator.
         current_missing_pair_count = 0
     else:
-        current_missing_pair_count = sum(
+        private_support = private_component_support_asset(asset, required_valid_times or set())
+        current_missing_pair_count = 0 if private_support else sum(
             (target_id, valid_time) not in (
                 planning_covered_pair_keys
                 if planning_covered_pair_keys is not None
@@ -2101,7 +2177,9 @@ def classify_dkss_primary_asset(
             for target_id in normalized_targets
         )
         required_components = dict(DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS)
-        if stride_selected(valid_time, canonical_run):
+        if private_support:
+            required_components.pop("current", None)
+        if not private_support and stride_selected(valid_time, canonical_run):
             required_components.update(DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS)
         for component, fields in required_components.items():
             if component == "current":
@@ -2301,13 +2379,52 @@ def should_attempt_dkss_primary_refresh(
     critical_work_observed: bool,
     remaining_asset_budget: int,
 ) -> bool:
-    """Admit only new-run/revised maintenance after all critical work is clear."""
+    """Admit new/revised maintenance after pending critical turns are served.
+
+    critical_work_observed describes pending work, never a sticky indication
+    that the run *started* with holes. Callers admit this in the final bounded
+    maintenance phase, not in the critical acquisition pass.
+    """
     return bool(
         collection_refresh_only
         and not critical_work_observed
         and remaining_asset_budget > 0
         and valid_time not in previously_processed
     )
+
+
+def operational_collection_turns(
+    scheduled: list[str], coverage: dict[str, Any], state: dict[str, Any],
+    *, primary_mode: bool,
+) -> list[tuple[str, str]]:
+    """Offer every critical family before optional horizon/quality work.
+
+    Repeated turns reuse the same official catalog and the first turn's
+    processed steps. Maintenance rotates independently of the critical lead.
+    """
+    atmosphere = set(coverage.get("criticalAtmosphereCollections") or [])
+    turns = [(collection, "foundation" if collection in atmosphere else "native") for collection in scheduled]
+    turns.extend((collection, "horizon") for collection in scheduled if collection in atmosphere)
+    if primary_mode:
+        turns.extend((collection, "maintenance") for collection in sorted(
+            (value for value in scheduled if value in MARINE_COLLECTIONS),
+            key=lambda value: (
+                epoch((state.get(value) or {}).get("lastNativeRefreshAttemptAt")),
+                COLLECTION_ORDER.index(value),
+            ),
+        ))
+    return turns
+
+
+def rotate_native_refresh_assets(
+    assets: list[dict[str, Any]], cursor: Any,
+) -> list[dict[str, Any]]:
+    """A successful/negative attempted hour must not monopolise upgrades."""
+    after = epoch(cursor)
+    return sorted(assets, key=lambda asset: (
+        0 if epoch(asset.get("valid")) > after else 1,
+        epoch(asset.get("valid")), str(asset.get("id") or ""),
+    ))
 
 
 def dkss_bounded_refresh_failed_only(
@@ -2494,6 +2611,8 @@ def list_latest_assets(
     allow_documented_required_gaps: bool = False,
     retain_preferred_native_run: bool = False,
     include_operational_wave_fallback_phases: bool = False,
+    private_component_support_end_time: str | None = None,
+    inventory_end_time: str | None = None,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
     required = {
         iso(value) for value in (required_valid_times or set())
@@ -2527,6 +2646,18 @@ def list_latest_assets(
     )
     if epoch(inventory_end) < epoch(inventory_start):
         inventory_end = inventory_start
+    if inventory_end_time is not None:
+        requested_inventory_end = iso(inventory_end_time)
+        if requested_inventory_end is None:
+            raise ValueError("Invalid forecast inventory end time")
+        # Observation horizon is separate from the exact times a native run
+        # must supply. DINI may end at +60h; never require it to reach H117.
+        inventory_end = max((inventory_end, requested_inventory_end), key=epoch)
+    private_support_end = iso(private_component_support_end_time)
+    if private_support_end and collection in MARINE_COLLECTIONS:
+        # Internal scalar support (water level T+3) is separate from the
+        # immutable 118-hour current/public axis and its readiness proof.
+        inventory_end = max((inventory_end, private_support_end), key=epoch)
     observation_end = inventory_end
     if allow_documented_required_gaps and collection in MARINE_COLLECTIONS:
         # Selection requires the exact +120 h terminal of a causal model run.
@@ -2919,7 +3050,11 @@ def list_latest_assets(
                         stats.get("expiredForecastStepsSkipped") or 0
                     ) + 1
                 continue
-            if row["valid"] not in required and not stride_selected(
+            private_support = bool(
+                private_support_end and required
+                and max(epoch(value) for value in required) < epoch(row["valid"]) <= epoch(private_support_end)
+            )
+            if row["valid"] not in required and not private_support and not stride_selected(
                 row["valid"], candidate_run,
             ):
                 continue
@@ -2935,6 +3070,7 @@ def list_latest_assets(
             unique[row["valid"]] = {
                 **row,
                 "collection": collection,
+                **({"privateComponentSupport": True} if private_support else {}),
                 "modelRun": candidate_run,
                 "operationalWavePhaseRank": phase_rank,
                 "observedRunCadenceHours": cadence_hours,
@@ -3013,6 +3149,21 @@ def list_latest_assets(
         })
     stats["selectedForecastSteps"] = len(selected_rows)
     return run, selected_rows, stats
+
+
+def list_atmosphere_turn_assets(
+    collection: str, reference: datetime, *, horizon: bool,
+) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
+    """Keep urgent H0 discovery small; query future assets only on its later turn."""
+    target = canonical_time(reference)
+    return list_latest_assets(
+        collection, None, minimum_valid_time=target,
+        required_valid_times={target},
+        inventory_end_time=(
+            canonical_time(reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS))
+            if horizon else None
+        ),
+    )
 
 
 def private_wave_bootstrap_configuration() -> dict[str, Any] | None:
@@ -3565,6 +3716,14 @@ def field_signature(gid: int) -> dict[str, Any]:
             ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber", "numberOfPoints", "numberOfMissing", "minimum", "maximum", "indicatorOfParameter", "table2Version", "centre", "subCentre", "generatingProcessIdentifier", "scaledValueOfFirstFixedSurface", "typeOfFirstFixedSurface")}
 
 
+def wave_period_field_evidence(signature: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "shortName": str(signature.get("shortName") or "").lower().strip(),
+        "paramId": signature.get("paramId"),
+        "indicatorOfParameter": signature.get("indicatorOfParameter"),
+    }
+
+
 def classify_parameter(gid: int, collection: str) -> str | None:
     sig = field_signature(gid)
     short = str(sig.get("shortName") or "").lower().strip()
@@ -3572,6 +3731,19 @@ def classify_parameter(gid: int, collection: str) -> str | None:
     level_type = str(sig.get("typeOfLevel") or "").lower()
     level = sig.get("level")
     family = COLLECTION_FAMILY[collection]
+
+    if family == "wave":
+        evidence = wave_period_field_evidence(sig)
+        if peak_wave_period_field(evidence):
+            return "dominant-wave-period"
+        if (
+            short in {"mwp", "mp2", "perpw", "pp1d"}
+            or sig.get("paramId") in {221, 231, 232}
+            or sig.get("indicatorOfParameter") in {221, 231, 232}
+            or "period" in metadata
+        ):
+            # A textual alias is not sufficient proof of peak semantics.
+            return None
 
     candidates: list[str] = []
     # DMI DKSS uses local GRIB parameter ids. These numeric ids remain reliable
@@ -5878,7 +6050,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     for zone in wanted:
                         zone_candidates = candidates.get(zone["id"]) or []
                         if zone_candidates:
-                            scalar_tuple_candidates.setdefault(("wave", str(zone["id"])), {})[parameter] = zone_candidates
+                            scalar_tuple_candidates.setdefault(("wave", str(zone["id"])), {})[parameter] = [
+                                {**candidate, "_wavePeriodField": wave_period_field_evidence(sig)}
+                                if parameter == "dominant-wave-period" else candidate
+                                for candidate in zone_candidates
+                            ]
                     continue
 
                 resolved = nearest_valid_batch(gid, collection, wanted)
@@ -6022,6 +6198,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             capture=source_capture,
             spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
             optional_field_set=optional_fields,
+            wavePeriodSemantics="peak",
+            wavePeriodField=copy.deepcopy(period.get("_wavePeriodField")),
         )
         if source is None or not complete_native_source_for_hour(
             source,
@@ -6044,7 +6222,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         hour.setdefault("sources", {})["wave"] = source
         for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
             point["gridPoints"][parameter] = {
-                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index"}},
+                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index", "_wavePeriodField"}},
             }
             point["collections"][parameter] = collection
         if direction is not None:
@@ -7555,6 +7733,44 @@ def cache_progress_time(document: dict[str, Any]) -> float:
     return max((epoch(value) for value in timestamps), default=0.0)
 
 
+def prefer_qualified_cached_component_source(
+    existing: dict[str, Any], candidate: dict[str, Any], component: str,
+) -> bool:
+    """Order already-qualified cache tuples, not cache files or fetch times.
+
+    Current retains the approved nearest-cell/deepest-shared-layer ordering.
+    Other components may replace an existing tuple only within its qualified
+    collection/grid/layer: a later fetch must not undo the producer's spatial
+    ownership decision. Equal model runs need a strictly newer official STAC
+    revision timestamp; a changed content hash alone proves no ordering.
+    """
+    existing_point = existing.get("gridPoint")
+    candidate_point = candidate.get("gridPoint")
+    if component == "current":
+        if not same_sampling_point(existing_point, candidate_point):
+            existing_distance = float(existing["distanceKm"])
+            candidate_distance = float(candidate["distanceKm"])
+            if not math.isclose(existing_distance, candidate_distance, abs_tol=1e-6, rel_tol=0):
+                return candidate_distance < existing_distance
+            return tuple(reversed(candidate_point)) < tuple(reversed(existing_point))
+        if candidate.get("verticalLayerRankM") != existing.get("verticalLayerRankM"):
+            return float(candidate.get("verticalLayerRankM") or 0) > float(existing.get("verticalLayerRankM") or 0)
+    elif any(candidate.get(field) != existing.get(field) for field in (
+        "collection", "gridDefinitionSha256", "gridPoint", "verticalLayer",
+    )):
+        return False
+    old_run, new_run = epoch(existing.get("modelRun")), epoch(candidate.get("modelRun"))
+    if new_run != old_run:
+        return new_run > old_run
+    if candidate.get("collection") != existing.get("collection"):
+        return COLLECTION_ORDER.index(candidate["collection"]) < COLLECTION_ORDER.index(existing["collection"])
+    # Use the same comparable official timestamp kind on both sides. Creation
+    # can order replaced items only when neither side supplies update evidence.
+    timestamp = "itemUpdatedAt" if existing.get("itemUpdatedAt") or candidate.get("itemUpdatedAt") else "itemCreatedAt"
+    old_revision, new_revision = epoch(existing.get(timestamp)), epoch(candidate.get(timestamp))
+    return bool(old_revision and new_revision and new_revision > old_revision)
+
+
 def backfill_compatible_cache_data(
     primary: dict[str, Any],
     donor: dict[str, Any],
@@ -7566,7 +7782,7 @@ def backfill_compatible_cache_data(
     Both documents have already been bound to the same sampling-registry
     signature by load_previous. The newest progressive cache therefore remains
     authoritative for collection rotation and processed-step state, while an
-    older strict cache may restore only values that are absent. All normal
+    strict cache may supply a newer independently qualified component. All normal
     provenance and component sanitizers still run before reuse.
     """
     for key in (
@@ -7678,13 +7894,17 @@ def backfill_compatible_cache_data(
         component: str,
     ) -> dict[str, Any]:
         required_fields = tuple(COMPONENT_FIELD_SET[component])
-        if _exact_validated_dmi_component_present(
-            zone_id, primary_zone, valid_time, component, required_fields,
-        ) or not _exact_validated_dmi_component_present(
+        if not _exact_validated_dmi_component_present(
             zone_id, donor_zone, valid_time, component, required_fields,
         ):
             return primary_row
         donor_source = ((donor_row.get("sources") or {}).get(component))
+        if _exact_validated_dmi_component_present(
+            zone_id, primary_zone, valid_time, component, required_fields,
+        ) and not prefer_qualified_cached_component_source(
+            (primary_row.get("sources") or {})[component], donor_source, component,
+        ):
+            return primary_row
         optional_fields = tuple(
             donor_source.get("optionalFieldSet") or ()
         ) if isinstance(donor_source, dict) else ()
@@ -7838,23 +8058,26 @@ def backfill_compatible_cache_data(
                 )
             if not str(zone_id).startswith("PART::"):
                 continue
-            if row_has_trusted_current(
-                primary_row,
-                str(zone_id),
-                valid_time,
-                trusted_primary_current_pair_sources,
-            ) or not row_has_trusted_current(
+            if not row_has_trusted_current(
                 donor_row,
                 str(zone_id),
                 valid_time,
                 trusted_donor_current_pair_sources,
             ):
                 continue
+            if row_has_trusted_current(
+                primary_row, str(zone_id), valid_time,
+                trusted_primary_current_pair_sources,
+            ) and not prefer_qualified_cached_component_source(
+                primary_row["sources"]["current"], donor_row["sources"]["current"], "current",
+            ):
+                continue
             # Current is an independently source-bound component, but its U/V
             # values and source proof are one indivisible tuple. Preserve every
             # unrelated primary component and source; copy both current values
             # together only from the exact proof-backed donor. A proof-backed
-            # primary current tuple always wins.
+            # primary tuple wins unless its qualified donor wins the native
+            # spatial/layer/freshness ordering; values and proof never split.
             primary_sources = primary_row.get("sources")
             if not isinstance(primary_sources, dict):
                 primary_sources = {}
@@ -9055,39 +9278,35 @@ def wind_component_horizon_hours(
     series. This mirrors the bounded four-hour interpolation and 95-minute
     edge rule consumed by buildDmiForecastHourly.
     """
-    if component not in {"wind", "windTail"}:
+    if component not in {"wind", "windTail", "combined"}:
         raise ValueError("Unsupported wind component")
     reference = (
         production_reference_hour().timestamp()
         if reference_epoch is None
         else math.floor(float(reference_epoch) / 3600.0) * 3600.0
     )
-    fields = (
-        ("wind-speed-10m", "wind-dir-10m")
-        if component == "wind"
-        else ("wind-tail-speed-10m", "wind-tail-dir-10m")
-    )
     groups: dict[str, list[float]] = {}
-    for valid_time, hour in (zone.get("hourly") or {}).items():
-        if not isinstance(hour, dict) or not all(
-            isinstance(hour.get(field), (int, float))
-            and not isinstance(hour.get(field), bool)
-            and math.isfinite(float(hour[field]))
-            for field in fields
-        ):
-            continue
-        source = (hour.get("sources") or {}).get(component)
-        if not complete_native_source_for_hour(
-            source,
-            component,
-            zone_id,
-            zone,
-            valid_time,
-        ):
-            continue
-        groups.setdefault(_wind_series_identity(source, component), []).append(
-            epoch(valid_time)
+    components = ("wind", "windTail") if component == "combined" else (component,)
+    for native_component in components:
+        fields = (
+            ("wind-speed-10m", "wind-dir-10m")
+            if native_component == "wind"
+            else ("wind-tail-speed-10m", "wind-tail-dir-10m")
         )
+        for valid_time, hour in (zone.get("hourly") or {}).items():
+            if not isinstance(hour, dict) or not all(
+                isinstance(hour.get(field), (int, float))
+                and not isinstance(hour.get(field), bool)
+                and math.isfinite(float(hour[field]))
+                for field in fields
+            ):
+                continue
+            source = (hour.get("sources") or {}).get(native_component)
+            if not complete_native_source_for_hour(
+                source, native_component, zone_id, zone, valid_time,
+            ):
+                continue
+            groups.setdefault(_wind_series_identity(source, native_component), []).append(epoch(valid_time))
     ordered_groups = [sorted(set(values)) for values in groups.values() if values]
     if not ordered_groups:
         return 0.0
@@ -9119,7 +9338,7 @@ def wind_component_horizon_hours(
 def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[str, Any]:
     now_value = time.time()
     wind_component = (
-        "wind"
+        "combined"
         if required == ("wind-speed-10m", "wind-dir-10m")
         else "windTail"
         if required == ("wind-tail-speed-10m", "wind-tail-dir-10m")
@@ -11280,6 +11499,9 @@ def main() -> int:
                 required_horizon_end_time=required_current_horizon_end,
                 allow_documented_required_gaps=True,
                 retain_preferred_native_run=RETAIN_PREFERRED_NATIVE_RUN,
+                private_component_support_end_time=canonical_time(
+                    locked_production_reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS + 3)
+                ),
             )
             prefetched_marine[collection] = (run, assets, stac_stats)
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
@@ -11486,8 +11708,9 @@ def main() -> int:
     # Primary mode separates maintenance from critical acquisition. A DKSS
     # collection is refresh-only only when every selected official asset is
     # already complete in the validated cache. Those collections are moved
-    # behind all potentially critical collections, and no maintenance runs in
-    # a cycle that started with any unresolved DKSS asset.
+    # behind all potentially critical collections. Maintenance receives its
+    # own final bounded turn; a hole observed at run start is not a permanent
+    # veto on spare-capacity native upgrades later in this same run.
     primary_refresh_only_collections: set[str] = set()
     primary_critical_work_observed = bool(
         acquisition_plan_diagnostics.get("globalMissingPairCountBeforeDmi", 0)
@@ -11687,22 +11910,35 @@ def main() -> int:
         int(schedule_coverage.get("strictCurrentLeadAttemptLimit") or 0),
     )
 
-    for collection in scheduled:
+    collection_turns = operational_collection_turns(
+        scheduled, schedule_coverage, result.get("collectionState") or {},
+        primary_mode=DKSS_PRIMARY_MODE,
+    )
+    for collection, collection_turn in collection_turns:
+        collection_is_maintenance = collection_turn == "maintenance"
+        collection_is_horizon = collection_turn == "horizon"
+        if collection_is_maintenance and (
+            primary_refresh_assets_remaining <= 0
+            or collection not in prefetched_marine
+        ):
+            continue
         collection_is_critical_atmosphere = (
-            collection in critical_atmosphere_collections
+            collection_turn == "foundation"
         )
         collection_is_critical_wam = collection in critical_wam_collections
         collection_is_critical_current = (
-            collection in strict_current_collections
+            not collection_is_maintenance and collection in strict_current_collections
         )
         if (
             not collection_is_critical_atmosphere
             and
             not collection_is_critical_wam
             and not collection_is_critical_current
+            and not collection_is_horizon
+            and not collection_is_maintenance
             and productive_collections >= COLLECTIONS_PER_RUN
         ):
-            break
+            continue
         if collection_is_critical_wam:
             pending_critical_wam.remove(collection)
         if collection_is_critical_current:
@@ -11740,22 +11976,26 @@ def main() -> int:
         collection_start_error_count = len(result["diagnostics"]["errors"])
         strict_current_lead_attempts = 0
         critical_atmosphere_attempts = 0
+        atmosphere_horizon_attempts = 0
         collection_refresh_only = (
-            DKSS_PRIMARY_MODE
-            and collection in primary_refresh_only_collections
+            collection_is_maintenance
         )
         state = result["collectionState"].setdefault(collection, {})
         if begin_collection_scheduler_turn(
             state,
             collection,
-            strict_current_lead_collection,
+            None if collection_is_maintenance else strict_current_lead_collection,
             generated,
         ):
             checkpoint_controller.mark_bulk_dirty()
         # Progress cadence is shared across collections by checkpoint_controller.
         # No collection-local checkpoint clock is maintained.
         try:
-            previous_run = (previous.get("runs") or {}).get(collection) or {}
+            previous_run = (
+                (result.get("runs") or {}).get(collection)
+                if collection_is_maintenance or collection_is_horizon
+                else (previous.get("runs") or {}).get(collection)
+            ) or {}
             if collection in prefetched_marine:
                 run, assets, stac_stats = prefetched_marine[collection]
             elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
@@ -11774,15 +12014,10 @@ def main() -> int:
                     ),
                     include_operational_wave_fallback_phases=True,
                 )
-            elif collection_is_critical_atmosphere:
-                atmosphere_foundation_time = canonical_time(
-                    locked_production_reference
-                )
-                run, assets, stac_stats = list_latest_assets(
-                    collection,
-                    None,
-                    minimum_valid_time=atmosphere_foundation_time,
-                    required_valid_times={atmosphere_foundation_time},
+            elif collection_is_critical_atmosphere or collection_is_horizon:
+                run, assets, stac_stats = list_atmosphere_turn_assets(
+                    collection, locked_production_reference,
+                    horizon=collection_is_horizon,
                 )
             else:
                 run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
@@ -11793,6 +12028,15 @@ def main() -> int:
             # validated regional gain. Never mutate the prefetched official
             # catalog used by the immutable T..T+117 ledger.
             assets = list(assets)
+            if collection_is_maintenance:
+                assets = rotate_native_refresh_assets(
+                    assets,
+                    state.get("nativeRefreshCursorValidTime"),
+                )
+            elif collection_is_horizon:
+                assets = rotate_native_refresh_assets(
+                    assets, state.get("windHorizonCursorValidTime"),
+                )
             bootstrap_operational_wam = (
                 collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
@@ -11825,6 +12069,11 @@ def main() -> int:
             )
             if collection == "harmonie_dini_sf":
                 processing_signature += f"|wind-reference:{WIND_VECTOR_VERSION}"
+            elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
+                # Only wave decoded evidence changes. Preserve marine/current
+                # banks and raw assets; replay historical WAM bytes with the
+                # corrected field classifier rather than relabelling rows.
+                processing_signature += "|wave-period:peak-field-v1"
             required_asset_provenance: dict[str, dict[str, Any]] = {}
             for asset in assets:
                 asset_model_run = (
@@ -11910,6 +12159,8 @@ def main() -> int:
                     if bootstrap_operational_wam
                     else None
                 ),
+                private_support_zones=result.get("zones") or {},
+                private_support_zone_ids=active_production_zone_ids,
             )
             priority_covered_pair_keys: set[tuple[str, str]] = set()
             if collection in MARINE_COLLECTIONS:
@@ -11963,14 +12214,9 @@ def main() -> int:
                     # Supplemental pre-target assets exist solely to close a
                     # real regional hold gap. They are never quality work or
                     # additions to the official current denominator.
-                    assets = [
-                        asset for asset in assets
-                        if canonical_time(asset.get("valid"))
-                            in required_current_valid_times
-                        or regional_gap_pairs_by_time.get(
-                            str(canonical_time(asset.get("valid")) or "")
-                        )
-                    ]
+                    assets = filter_regional_operational_assets(
+                        assets, required_current_valid_times, regional_gap_pairs_by_time,
+                    )
                     verified_reusable_regional_times = (
                         next_verified_reusable_regional_time(
                             assets,
@@ -12041,6 +12287,10 @@ def main() -> int:
                         verified_reusable_regional_times
                     ),
                 )
+                if collection_is_maintenance:
+                    assets = rotate_native_refresh_assets(
+                        assets, state.get("nativeRefreshCursorValidTime"),
+                    )
             if (
                 collection in MARINE_COLLECTIONS
                 and not coastal_part_current_cache_healthy
@@ -12524,6 +12774,11 @@ def main() -> int:
                             )
                         ),
                     )
+                    if collection_is_maintenance and primary_requirement["critical"]:
+                        # The final pass reclaims only covered fallback/older
+                        # native tuples. It must not restart unfinished gap
+                        # acquisition or bypass its fair critical turn limit.
+                        continue
                     if primary_requirement["deferValidRefresh"]:
                         bounded_primary_refresh = (
                             should_attempt_dkss_primary_refresh(
@@ -12531,7 +12786,8 @@ def main() -> int:
                                 previously_processed=previously_processed,
                                 collection_refresh_only=collection_refresh_only,
                                 critical_work_observed=(
-                                    primary_critical_work_observed
+                                    bool(pending_critical_wam or pending_critical_current)
+                                    or not collection_is_maintenance
                                 ),
                                 remaining_asset_budget=(
                                     primary_refresh_assets_remaining
@@ -12656,6 +12912,10 @@ def main() -> int:
                         "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
                     )
                     break
+                if collection_is_horizon and atmosphere_horizon_attempts >= ATMOSPHERE_HORIZON_MAX_ASSETS:
+                    budget_stop = "bounded atmosphere horizon turn yielded"
+                    budget_stop_code = "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT"
+                    break
                 if (
                     not strict_current_lead_attempt_available(
                         collection,
@@ -12697,8 +12957,16 @@ def main() -> int:
                     run_info["criticalAtmosphereAssetsAttempted"] = (
                         critical_atmosphere_attempts
                     )
+                if collection_is_horizon:
+                    atmosphere_horizon_attempts += 1
+                    state["windHorizonCursorValidTime"] = asset["valid"]
+                    run_info["atmosphereHorizonAssetsAttempted"] = atmosphere_horizon_attempts
+                    checkpoint_controller.mark_bulk_dirty()
                 if bounded_primary_refresh:
                     primary_refresh_assets_remaining -= 1
+                    state["lastNativeRefreshAttemptAt"] = generated
+                    state["nativeRefreshCursorValidTime"] = asset["valid"]
+                    checkpoint_controller.mark_bulk_dirty()
                     run_info["assetsBoundedRefreshAttempted"] += 1
                     result["diagnostics"]["assetsBoundedDkssRefreshAttempted"] = int(
                         result["diagnostics"].get(
@@ -13385,18 +13653,10 @@ def main() -> int:
                                     locked_production_reference,
                                 )
                             )
-                            remaining_assets = [
-                                remaining_asset
-                                for remaining_asset in remaining_assets
-                                if canonical_time(
-                                    remaining_asset.get("valid")
-                                ) in required_current_valid_times
-                                or regional_gap_pairs_by_time.get(
-                                    str(canonical_time(
-                                        remaining_asset.get("valid")
-                                    ) or "")
-                                )
-                            ]
+                            remaining_assets = filter_regional_operational_assets(
+                                remaining_assets, required_current_valid_times,
+                                regional_gap_pairs_by_time,
+                            )
                             remaining_requirements = {
                                 str(remaining_asset["valid"]):
                                     classify_dkss_primary_asset(
@@ -13461,6 +13721,10 @@ def main() -> int:
                                     ),
                                 )
                             )
+                            if collection_is_maintenance:
+                                assets[asset_number:] = rotate_native_refresh_assets(
+                                    assets[asset_number:], state.get("nativeRefreshCursorValidTime"),
+                                )
                             acquisition_plan_diagnostics[
                                 "regionalPriorityReplanCount"
                             ] = int(acquisition_plan_diagnostics.get(
@@ -13900,6 +14164,7 @@ def main() -> int:
                 state["lastBudgetInterruptedAt"] = generated
                 if budget_stop_code in {
                     "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT",
+                    "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT",
                     "CRITICAL_COLLECTION_RUNTIME_RESERVED",
                     "STRICT_CURRENT_LEAD_ATTEMPT_LIMIT",
                 }:
@@ -13921,11 +14186,17 @@ def main() -> int:
                                 == "CRITICAL_COLLECTION_RUNTIME_RESERVED"
                             else {
                                 "attemptLimit":
+                                    ATMOSPHERE_HORIZON_MAX_ASSETS
+                                    if budget_stop_code == "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT"
+                                    else
                                     critical_atmosphere_attempt_limit
                                     if budget_stop_code
                                         == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"
                                     else strict_current_lead_attempt_limit,
                                 "attemptedAssets":
+                                    atmosphere_horizon_attempts
+                                    if budget_stop_code == "ATMOSPHERE_HORIZON_ATTEMPT_LIMIT"
+                                    else
                                     critical_atmosphere_attempts
                                     if budget_stop_code
                                         == "ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT"

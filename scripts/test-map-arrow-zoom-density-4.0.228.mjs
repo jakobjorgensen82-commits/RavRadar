@@ -62,6 +62,10 @@ need(close.length===6,'Indzoomning skal tilføje de fire verificerede lokale DMI
 need(close.filter(row=>row.partId).every(row=>row.source.startsWith('dmi-')),'Lokale pile uden eksplicit DMI-gitterproveniens blev accepteret.');
 need(close.some(row=>row.partId==='P3'&&row.type==='current'&&row.point[0]===11.1),'Et selvstændigt lokalt strømgridpunkt mangler ved indzoomning.');
 need(close.some(row=>row.partId==='P1'&&row.type==='wind'&&row.source==='dmi-marine-wind-grid'),'En dokumenteret lokal DKSS-vindpil mangler ved indzoomning.');
+const reserveParts=structuredClone(details.coastalParts);
+reserveParts.parts.P3.flowPoints.sources.wind='open-meteo-wind-grid';
+const reserveArrows=buildFlowArrowCandidates(features,zoneFor,reserveParts,10);
+need(reserveArrows.some(row=>row.partId==='P3'&&row.type==='wind'&&row.source==='open-meteo-wind-grid'&&row.point[0]===11.2),'En verificeret reservevind skal vise sin egen celles pil, ikke forsvinde eller ommærkes til DMI.');
 
 const gridPoint=(longitude,latitude,extra={})=>({longitude,latitude,...extra});
 const recordWithGrid=(gridPoints,extra={},hourly=[])=>({model:{completeness:{currentVectorSemanticsVersion:3,currentVectorSelection:'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',currentMaxDistanceKm:5,samplingPoint:[9,54],gridPoints,...extra}},hourly});
@@ -129,7 +133,7 @@ const productionAdapters=await fs.readFile('scripts/lib/ravscore-production-adap
 const app=await fs.readFile('app.js','utf8');
 need(updateWeather.includes('selectLatestLocalScoreRowAtOrBefore(hourly, generatedAt)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&/flowPointsFromForecastRecord\(\s*row\.record,\s*row\.waterPoint,\s*score\?\.time \?\? generatedAt,\s*row,/s.test(updateWeather),'Produktionsbygningen låser ikke score og pile til zonens samme faktiske time og delidentitet.');
 need(productionAdapters.includes('export function verifiedBulkCurrent')&&productionAdapters.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)')&&productionAdapters.includes('source?.verticalLayer'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
-need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
+need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const qualifiedRecord = newerDmiRecord(record, null, {')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(qualifiedRecord, point);'),'Gamle prognosecacher skal både kildekvalificeres og kontrollere strømmens vandkolonne før score eller pil.');
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));
 need(directDmiBlock.includes("['sea-mean-deviation', 'water-temperature']")&&!directDmiBlock.includes("['sea-mean-deviation', 'current-u'"),'Direkte ForecastEDR må ikke levere strøm uden dokumenteret fælles vandkolonne og dybdelag.');
 need(directDmiBlock.includes('withoutCurrent(createDmiForecastRecord('),'Direkte ForecastEDR-strøm lukkes ikke fail-closed før scoring.');

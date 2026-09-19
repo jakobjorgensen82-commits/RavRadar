@@ -66,6 +66,35 @@ const networkReadRequest=createSupabaseAdminRequester({
 assert.deepEqual(await networkReadRequest('',{},'læs operation'),[]);
 assert.equal(networkReadCalls,2,'midlertidig netværksfejl på en læsning skal genprøves én gang');
 
+for(const method of ['GET','HEAD','POST']){
+  let bodyCalls=0;
+  const bodyRequest=createSupabaseAdminRequester({
+    endpoint:'https://example.invalid/rest/v1/admin_documents',key:secret,
+    retryDelayMs:0,delayImpl:async()=>{},logger:()=>{},
+    fetchImpl:async()=>{
+      bodyCalls+=1;
+      return bodyCalls===1
+        ? {ok:true,status:200,text:async()=>{throw new TypeError('synthetic body reset');}}
+        : new Response('[]',{status:200});
+    }
+  });
+  if(method==='POST'){
+    await assert.rejects(()=>bodyRequest('',{method}),error=>error.code==='SUPABASE_RESPONSE_BODY_TRANSPORT');
+    assert.equal(bodyCalls,1,'ordinary writes must use owner-specific read-back, not blind body retries');
+  }else{
+    assert.deepEqual(await bodyRequest('',{method}),[]);
+    assert.equal(bodyCalls,2,'safe reads retry body transport interruptions as well as fetch failures');
+  }
+}
+
+let invalidJsonCalls=0;
+const invalidJsonRequest=createSupabaseAdminRequester({
+  endpoint:'https://example.invalid',key:secret,delayImpl:async()=>{},logger:()=>{},
+  fetchImpl:async()=>{invalidJsonCalls+=1;return new Response('{invalid',{status:200});}
+});
+await assert.rejects(()=>invalidJsonRequest(),/ugyldigt JSON/);
+assert.equal(invalidJsonCalls,1,'invalid JSON is not a body transport interruption');
+
 let rejectedCalls=0;
 const rejectedRequest=createSupabaseAdminRequester({
   endpoint:'https://example.invalid/rest/v1/admin_documents',key:secret,retryDelayMs:0,delayImpl:async()=>{},logger:()=>{},

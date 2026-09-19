@@ -1,4 +1,150 @@
-# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
+# NYESTE CHECKPOINT – 2026-09-19 – samlet lokal rettelse, driftsbevis åbent
+
+Alle fund fra vejrkørslen og helhedsanalysen er nu med i samme lokale
+ændring. De gamle rå private Actions-cachewriters er fjernet eller permanent
+deaktiveret; krypteret progress omfatter DMI/CP/OM/staging og bruger 256 MiB
+med afledt eksisterende secret. Holdbar privat terminalevidens er kodet til
+reentry efter artifactudløb. Det åbne er nu levering og faktisk drift, ikke
+at bygge endnu en isoleret cache- eller 14-dagespatch. Se den autoritative
+[lukningsmatrix](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+
+Ældre formuleringer i topblokken om, at disse tre forhold endnu ikke er
+implementeret, er historiske mellemtrin og erstattes af dette checkpoint.
+
+Seneste ejerafgrænsning: vandstand og tre-timers ændring skal kun bruge
+DMI. Den nedenfor tidligere åbne CP/OM-datumomregning er derfor forkastet
+som implementeringskrav, ikke »løst« ved en opdigtet omregning. Fjern også
+legacy-reserveveje; faktisk komplet DMI-vandstand er stadig et datamål.
+Øvrige komponenter følger DEC-0210 uændret.
+
+Seneste lokale krydstjek: DMI-only og hovedzoners sidste tre trends er nu
+rettet gennem merge, historik og efterfølgende vandstandsrouting. PART T+3
+var allerede korrekt. Snæver vandstandssanitering bevarer begge states;
+bølgeovergang er stadig separat. Det er endnu ikke deployet.
+
+Eksisterende raw Actions-cacher er nu konkret gennemgået: DMI active/
+candidate, CP/OM currentbanker, staging og source-handoff har privat payload.
+Den samlede krypterede komponentcache beskytter nu også disse grupper, og de
+aktive rå writers er fjernet eller deaktiveret. Ingen remote cacher slettes,
+før en ny krypteret generation er bevist; derefter kræves præcis oprydning. Se
+[afgrænsningen](../../ai/WEATHER_COMPONENT_PROGRESS_PERSISTENCE_2026-09-19.md).
+
+[Genstartsoversigten](../../ai/WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md)
+kobler alle nedenstående issues samt krydstjekkets fund til faktisk gemt
+kode og rester. Ingen af dem lukkes som produktionsløst på lokale tests.
+
+HARMONIE-horizon, LF/resume H118–H120, warmup-workflow, public shardkopi,
+mobil-resume/netfejl samt fælles recovery/serialisering er rettet lokalt.
+Fuld PART-fallback, koblet 96-timers-valgpartition, datum, input/state-
+migration og endelig SQL-binding er stadig åbne. Bevar hele restlisten.
+Nyere fil med lokale huller tabte gyldige komponenter fra gammel fil; den
+faktiske merge er rettet med måltest. Udløben first-cutover-nødvej, som kunne
+bypasse operative sikkerhedskrav, er fjernet; almindelig advisory-fejlsamling
+er bevaret, jf. DEC-0149/0193. Binding-only→last-mile-repair-routingfejlen er
+rettet lokalt med strenge uændret-input-/public-/state-/cachekrav bevaret.
+
+Supplerende konkrete fund: hulmerge-admission og 360°/råstrømsgrænse er
+rettet lokalt. OM's best_match kan derimod blande model/celle pr. felt, så
+JSON-responsens ene koordinat ikke er tilstrækkeligt bølge-/SST-bevis.
+Single-model-requestrettelsen er lokalt implementeret i både PART og gammel
+forecast-hentning; native-nearest IFS/WAM/SST genberegner faktisk centrum.
+CP/OM-bank→normal topcaller→PART-score→gemt valgledger er nu koblet lokalt.
+CP originalbytes/spatialautoritet og current96's challenge-del er måltestet.
+Intet af dette er deployet eller bevist i normaldrift. Native vandstands-
+datum, gammel faktisk bølgehistorik og endelige bindingshashes er åbne.
+
+Nye konkrete rester fra ejerens krav om drift uden løbende Codex/licens:
+
+- **ISSUE-COMPONENT-FAILED-RUN-PERSISTENCE – RETTET LOKALT / DRIFTSBEVIS ÅBENT:**
+  Komponentbanker, cursor og gamle private operationelle filer har en samlet
+  krypteret best-effort save/restore-vej. Ingen ny secret, betalt service
+  eller Supabase-progresspointer kræves. Normal save/restore skal bevises.
+- **ISSUE-PRIVATE-RUNTIME-TRANSIENT-CAPACITY – ÅBEN:** Publisher uploader
+  ny generation før pensionering af previous; kortvarigt tre generationer
+  mod kapacitetsregnestykkets to. Mål faktiske bytes før progressslot eller
+  grænseændring. Bevar produktion; ingen blind oprydning.
+- **ISSUE-PENDING-RECOVERY-ARTIFACT-EXPIRY – RETTET LOKALT / DRIFTSBEVIS ÅBENT:**
+  Reentry kan bruge en holdbar, privat, krypteret og payloadfri eksakt
+  terminalkvittering efter GitHub-artifactets udløb. Rigtig lagring og ren-
+  runner-genlæsning skal bevises. Almindelig
+  ACTIVE/samme-binding maintenance opretter ikke PENDING; risikoen gælder
+  overgange som ny binding/cutover/rollback. Offentligt target kan genbevises
+  uden gammel Pages-ZIP, men readiness/audit/plan kan ikke genskabes fra
+  hashes alene. Længere retention eller ignorering af manglende beviser
+  lukker ikke issuet. Se REQ-RECOVERY-WITHOUT-EXPIRING-ARTIFACTS.
+- **ISSUE-WATCHDOG-PERSISTENT-STALE – DELVIST RETTET LOKALT:** Nylige
+  fejlkørsler kunne skjule gammel offentlig vejrreference. Dansk advisory
+  viser nu forskellen uden nye dispatchloops. En varig, deduplikeret
+  alarm-livscyklus er ikke implementeret; jobsummary er ikke en mailgaranti.
+- **ISSUE-PRIVATE-ACTIONS-CACHE-REVIEW – ÅBEN AFGRÆNSNING:** Eksisterende
+  vejr-cachepaths kaldes private i workflowtekst, men public-repositoryets
+  Actions-cache er ikke i sig selv en privat datagrænse. Nye komponent-
+  originaler må ikke tilføjes råt; konkret inventory/adgang skal vurderes.
+
+Se checkpointets nyeste afsnit og
+[progress-/kapacitetsnotatet](../../ai/WEATHER_COMPONENT_PROGRESS_PERSISTENCE_2026-09-19.md).
+
+# HISTORISK ANALYSECHECKPOINT – 2026-09-19 – samlede åbne kædefejl på 4.0.429
+
+Detaljer, præcise refs og evidensniveauer:
+[helhedsanalyse](../../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md).
+
+Efterfølgende [krydstjek og samlet plan](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md)
+behandler alle nedenstående fejl og deres indbyrdes afhængigheder.
+
+- **ISSUE-DMI-WAVE-PERIOD-SEMANTIC-ALIAS – ÅBEN P0:** PP1D/peak og MWP/mean
+  klassificeres begge som dominant-wave-period; senere message kan overskrive
+  korrekt peak-kandidat. Classifier reproduceret; påvirkede produktionsrækker
+  endnu ikke afgrænset. Decoder, proof, cache og replay skal håndteres samlet.
+- **ISSUE-PROVIDER-MODEL-REFERENCE-EVIDENCE – ÅBEN INTEGRATION:** CP/OM-
+  cacher gemmer hentetid, ikke responsbundet modelreference. De kan fylde
+  ægte huller, men beviser ikke nyere prognose til 96-timers-DMI-overtagelse.
+- **ISSUE-FALLBACK-WATER-LEVEL-DATUM – ÅBEN INTEGRATION:** Absolutniveauer
+  er ikke dokumenteret samme reference. Påvirker UI og waders-tiebreak,
+  selv om vandstand giver nul scorepoint. Korrekt samme-series trend kan
+  håndteres særskilt; legacy-offset er ikke en datumtransformation.
+- **ISSUE-DMI-UPGRADE-STARVATION – ÅBEN:** Historisk kritisk-arbejde-flag
+  kan blokere senere native opgradering, selv efter hullukning med tid tilbage.
+- **ISSUE-FUTURE-POINT-ACTIVATION-DONOR-MIGRATION – AFGRÆNSET ROADMAP:** En
+  legitim vandpunktsændring ændrer samlet donoridentitet. Uændrede 672 dele
+  har ingen påvist kontrolleret genbindingsmigration. Ikke årsag bevist til
+  nuværende fejl; ingen geometriændring eller lempelse er godkendt her.
+
+- **ISSUE-PART-FALLBACK-COMPONENT-GAP – ÅBEN P0:** Integreret PART-input
+  accepterer ikke den aftalte reservekæde for alle nødvendige vejrtyper.
+  Eksisterende OM-zonehentning er ikke nok. Gyldig DMI må ikke overskrives.
+- **ISSUE-WIND-H0-ONLY-AND-HORIZON – ÅBEN P0:** Ét H0-asset ved akut vindhul
+  giver ikke efterfølgende native horisontarbejde. DKSS-halen kan strukturelt
+  være kortere end H117. Ret plan og accepteret fallback samlet.
+- **ISSUE-INTEGRATED-STATE-PERSISTENCE-LOOP – ÅBEN P0:** Acquisitionhash kan
+  afvise fuld runtime, mens separat checkpoint kun gemmes ved rollbackREADY.
+- **ISSUE-READINESS-RECOVERY-REENTRY – ÅBEN P0:** Lovlig blandet cold replay
+  afvises nationalt; Pages lykkedes men PENDING blokerer næste weather.
+  Recovery har forkert reusable-jobmatch og mangler på alternative ruter.
+- **ISSUE-PUBLIC-HOUR-SNAPSHOT-LOCK – ÅBEN P0:** Stor detaljepakke giver
+  permanent H0-defer; åben fane opdaterer ikke manifest. Live Chrome bekræfter.
+- **ISSUE-PRODUCTION-CONCURRENCY – ÅBEN:** Manuel og øvrige produktionsruter
+  har forskellige køgrupper; samme-main Pages kan publiceres baglæns.
+- **ISSUE-SUPABASE-BODY-RETRY – ÅBEN:** Forbindelsesbrud under body-læsning
+  efter headers falder uden for eksisterende sikre retry. Offline reproduceret.
+- **ISSUE-DMI-DONOR-COMPONENT-FRESHNESS – ÅBEN:** Gyldig ældre primary kan
+  vinde over nyere donor. Isoleret reproduceret, ikke produktionspåvist.
+- **ISSUE-WATER-LEVEL-TREND-SUPPORT-AXIS – ÅBEN:** Privat 118-timersmerge
+  fjerner H118–H120, som H115–H117-trends kræver. At ændre én default fra
+  120 til 121 er ikke nok; hele støtteaksen skal bevares privat.
+- **ISSUE-COVERAGE-TEXT-TEST-STALE – ÅBEN:** Forældet regex forventer hardcoded
+  100 % mod faktisk målt ratio. Ret testen; de reelle datamangler består.
+- **ISSUE-HOURLY-VALUE-SOURCE-SPLIT – ÅBEN P0:** Dubletnormalisering kan
+  beholde første værdi med næste rækkes kildebevis. To uafhængige offline-
+  reproduktioner; konkret produktionsforekomst er ikke bevist.
+- **ISSUE-FALLBACK-TIME-AND-COMPONENT-COUPLING – ÅBEN:** Legacy OM kan vælge
+  forkert marine-time ved manglende match, klampe tre-timersændring og
+  kassere gyldig vind ved separat marinefejl. Må ikke kopieres ind i PART.
+
+4.0.429 er merged og Pages er publiceret; dens HARMONIE-rettelse er endnu
+ikke bekræftet ved en ny providerkørsel. Ingen drift erklæres komplet/stabil.
+
+# HISTORISK CHECKPOINT – 2026-09-19 – lokal 4.0.429 saved-weather og HARMONIE-tid
 
 - **ISSUE-4.0.428-DELIVERY – LUKKET:** Exact-head `35416314162`, PR #373 og
   main `a2d03d95` er gennemført.

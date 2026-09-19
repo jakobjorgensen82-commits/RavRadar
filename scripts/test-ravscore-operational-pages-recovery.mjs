@@ -173,6 +173,51 @@ function expectHardStop(mutator, pattern) {
   assert.equal(result.exactTargetRedeployAllowed, true);
 }
 
+{
+  const input = fixture();
+  input.artifactEvidence = null;
+  input.durableEvidence = true;
+  const result = classifyRavScoreOperationalPagesRecovery(input);
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT);
+  assert.equal(result.reasonCode, 'STABLE_SOURCE_AFTER_TERMINAL_FAILED_EXPIRED_ATTEMPT');
+  assert.equal(result.exactTargetRedeployAllowed, false);
+}
+
+{
+  const input = fixture({ observationEndpoints: ['target', 'target'] });
+  input.artifactEvidence = null;
+  input.durableEvidence = true;
+  const result = classifyRavScoreOperationalPagesRecovery(input);
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.TARGET_RECONCILE);
+}
+
+{
+  const input = fixture({ observationEndpoints: ['target', 'target'] });
+  input.artifactEvidence = null;
+  input.durableEvidence = true;
+  input.terminalEvidence.runConclusion = 'success';
+  input.terminalEvidence.deployStepConclusion = 'success';
+  input.terminalEvidence.pagesRequestAccepted = true;
+  const result = classifyRavScoreOperationalPagesRecovery(input);
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.TARGET_RECONCILE);
+}
+
+{
+  const input = fixture();
+  input.artifactEvidence = null;
+  input.durableEvidence = true;
+  input.terminalEvidence.runConclusion = 'success';
+  input.terminalEvidence.deployStepConclusion = 'success';
+  input.terminalEvidence.pagesRequestAccepted = true;
+  const result = classifyRavScoreOperationalPagesRecovery(input);
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED);
+  assert.equal(result.reasonCode, 'CONTROLLER_PENDING_AFTER_SUCCESSFUL_RUN');
+}
+
+expectHardStop((input) => {
+  input.durableEvidence = true;
+}, /must not pretend/);
+
 for (const observationEndpoints of [
   ['target', 'target'],
   ['source', 'target', 'target']

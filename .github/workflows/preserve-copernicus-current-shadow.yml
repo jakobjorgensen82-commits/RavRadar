@@ -24,7 +24,9 @@ concurrency:
 
 jobs:
   preserve:
-    if: github.event_name != 'workflow_run' || github.event.action == 'requested'
+    # Permanently retired. Provider progress is now restored and saved only as
+    # an authenticated encrypted snapshot bound to protected production data.
+    if: (github.event_name != 'workflow_run' || github.event.action == 'requested') && false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -84,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Inspect production silence without reading private payloads
+      - name: Report public weather delays and inspect bounded production silence
         id: watchdog
         env:
           GH_TOKEN: ${{ github.token }}
@@ -103,6 +105,8 @@ jobs:
             --branch main \
             --manifest-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/manifest.json" \
             --maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES" \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --report "$RUNNER_TEMP/ravradar-production-watchdog-report.json" \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Reconfirm production silence immediately before dispatch

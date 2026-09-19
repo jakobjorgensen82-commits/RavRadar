@@ -113,7 +113,7 @@ function assertSame(left, right, label) {
   if (canonical(left) !== canonical(right)) throw new Error(`${label} mismatch`);
 }
 
-function assertProjectionEquivalent(liveValue, generatedValue, label) {
+export function assertProjectionEquivalent(liveValue, generatedValue, label) {
   assertSame(
     normalizeCodeOnlyProjection(liveValue),
     normalizeCodeOnlyProjection(generatedValue),
@@ -433,7 +433,12 @@ export async function prepareCodeOnlyPublicRuntime({
       'Code-only startup projection');
     assertProjectionEquivalent(detailsSource.value, generated.detailsDocument,
       'Code-only detail projection');
-    assertProjectionEquivalent(manifest, generated.manifest,
+    // Delivery files are a new deterministic partition, not changed weather or
+    // scores. The complete startup/detail semantic oracle is still compared
+    // immediately above; no other manifest field is exempt from equivalence.
+    const { detailDelivery: _previousDelivery, ...previousManifest } = manifest;
+    const { detailDelivery: _newDelivery, ...nextManifest } = generated.manifest;
+    assertProjectionEquivalent(previousManifest, nextManifest,
       'Code-only manifest projection');
   } else if (postCutoverRepair) {
     assertPostCutoverRepairProjection(

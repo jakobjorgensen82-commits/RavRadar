@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
 await import('./test-weather-operational-control-summary.mjs');
+await import('./test-pages-generation-and-reentry.mjs');
 
 import {
   PRODUCTION_WORKFLOW_INTERFACES,
@@ -25,7 +26,7 @@ const sources = Object.freeze(
     ]),
   ),
 );
-const { orchestrator, build, deploy } = sources;
+const { orchestrator, build, deploy, recovery } = sources;
 const gh = expression => '$' + '{{ ' + expression + ' }}';
 
 function indentedBody(sourceText, exactHeader) {
@@ -66,11 +67,12 @@ assert.deepEqual(PRODUCTION_WORKFLOW_SOURCES, {
   orchestrator: '.github/workflows/update-and-deploy.yml',
   build: '.github/workflows/reusable-weather-build.yml',
   deploy: '.github/workflows/reusable-pages-deploy.yml',
+  recovery: '.github/workflows/reusable-operational-reentry.yml',
 });
-assert.deepEqual(PRODUCTION_WORKFLOW_ROLES, ['orchestrator', 'build', 'deploy']);
+assert.deepEqual(PRODUCTION_WORKFLOW_ROLES, ['orchestrator', 'build', 'deploy', 'recovery']);
 assert.equal(
   concatenateProductionWorkflowSources(sources),
-  orchestrator + '\n' + build + '\n' + deploy,
+  orchestrator + '\n' + build + '\n' + deploy + '\n' + recovery,
   'role-aware concatenation order',
 );
 
@@ -111,8 +113,8 @@ for (const [role, sourceText, contract] of contracts) {
   for (const secret of contract.secrets) {
     assert.match(
       indentedBody(call, '      ' + secret + ':'),
-      /^        required: true$/m,
-      role + ' required secret: ' + secret,
+      contract.optionalSecrets?.includes(secret) ? /^        required: false$/m : /^        required: true$/m,
+      role + ' exact secret requirement: ' + secret,
     );
   }
   for (const output of contract.outputs) {
@@ -256,9 +258,9 @@ for (const input of [
 }
 for (const input of ['deployment_model', 'legacy_source_required', 'operational_action']) {
   assert.equal(
-    deployCaller.includes(input + ': ${{ needs.build-and-prepare.outputs.' + input + ' || '),
+    deployCaller.includes(input + ': ' + gh('needs.build-and-prepare.outputs.' + input)),
     true,
-    'deploy fallback remains explicitly bound to build output: ' + input,
+    'deploy uses exact build output without first-launch fallbacks: ' + input,
   );
 }
 assert.equal(deployCaller.includes('code_only_repair: false'), true,
@@ -316,7 +318,7 @@ for (const literal of [
 for (const [jobId, output] of [
   ['geometry-v2-national', 'geometry_v2_national'],
   ['geometry-v2-pilot', 'geometry_v2_pilot'],
-  ['reconcile-operational-pending', 'geometry_v2_pilot'],
+  ['operational-recovery-gate', 'geometry_v2_pilot'],
 ]) {
   assert.equal(
     jobBlock(orchestrator, jobId).includes('needs.validate-dispatch.outputs.' + output),

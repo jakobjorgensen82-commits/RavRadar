@@ -78,6 +78,8 @@ const componentContract = {
     collection: 'wam_dw',
     collectionFamily: 'wave',
     componentKind: 'wave-mobilisation-tuple',
+    wavePeriodSemantics: 'peak',
+    wavePeriodField: { shortName: 'pp1d', paramId: 231, indicatorOfParameter: null },
     fieldSet: ['significant-wave-height', 'dominant-wave-period'],
     optionalFieldSet: ['mean-wave-dir'],
     spatialSelection: 'nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation',
@@ -136,6 +138,10 @@ const dmiSourceFor = (component, time, overrides = {}) => {
     leadTimeHours,
     acquiredAt: '2026-08-29T00:05:00.000Z',
     optionalFieldSet,
+    ...(component === 'wave' ? {
+      wavePeriodSemantics: contract.wavePeriodSemantics,
+      wavePeriodField: { ...contract.wavePeriodField },
+    } : {}),
   }],
   ...overrides,
   };
@@ -796,6 +802,15 @@ const differentWaterRun = verifiedIntegratedPartHourly(
 );
 assert.equal(differentWaterRun[0].waterLevelTrendCm3h, null,
   'water-level trend must not mix separate DMI model runs');
+
+for (const provider of ['open-meteo', 'copernicus']) {
+  const reserveLevels = structuredClone(physicalRows);
+  for (const row of reserveLevels) row.sources.waterLevel.provider = provider;
+  const rejectedLevels = verifiedIntegratedPartHourly({ hourly: reserveLevels }, bulkCache, bulkId, partContext);
+  assert.ok(rejectedLevels.every(row => row.waterLevelCm === null && row.waterLevelTrendCm3h === null),
+    'old reserve level labels cannot enter the DMI-only model');
+  assert.equal(rejectedLevels[0].waveHeightM, physical[0].waveHeightM, 'independent wave survives');
+}
 
 const rejected = verifiedIntegratedPartHourly({
   hourly: [{

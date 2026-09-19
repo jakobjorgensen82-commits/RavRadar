@@ -884,6 +884,7 @@ def select_source_order_admissible_records(
     *,
     positive_admissions: list[dict[str, Any]] | None = None,
     admission_attempts: list[dict[str, Any]] | None = None,
+    aged_dmi_challenge_plan: dict[str, Any] | None = None,
 ) -> tuple[
     list[dict[str, Any]],
     list[dict[str, str]],
@@ -916,6 +917,7 @@ def select_source_order_admissible_records(
             acquisitions,
             eligible_records,
             production_reference_at,
+            aged_dmi_challenge_plan=aged_dmi_challenge_plan,
         )
         newly_excluded: list[dict[str, str]] = []
         for ref in record_refs:
@@ -1079,6 +1081,7 @@ def _validate_source_stage_progress(
         reference,
         targets,
         attempts,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         **stage_positive_evidence(stage),
     )
     if (
@@ -1311,6 +1314,7 @@ def validate_source_stage(
         reference,
         targets,
         attempts,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         **stage_positive_evidence(stage),
     )
     if (
@@ -1452,6 +1456,7 @@ def build_source_stage(
         reference,
         targets,
         canonical_attempts,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         **stage_positive_evidence(positive),
     )
     products = _derive_products(required_pairs, targets, canonical_attempts)
@@ -1558,6 +1563,7 @@ def _build_source_stage_progress(
         reference,
         targets,
         canonical_attempts,
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         **stage_positive_evidence(positive),
     )
     value: dict[str, Any] = {

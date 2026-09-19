@@ -127,8 +127,8 @@ const [app, serviceWorker, dataService] = await Promise.all([
   fs.readFile('js/services/data-service.js', 'utf8'),
 ]);
 assert.match(app,/state\.conditions\?\.nationalForecast\?\.modes\?\.\[state\.mode\]/);
-assert.match(app,/function ensureConditionDetails\(\)/);
-assert.match(app,/detailsRequired:\(\)=>conditionDetailsPromise!==null/);
+assert.match(app,/function ensureConditionDetails\(zoneId=/);
+assert.match(app,/detailsRequired:\(\)=>!activeManifest\?\.detailDelivery&&conditionDetailsPromise!==null/);
 assert.match(app,/map\.getZoom\(\)>=9/);
 const startupBlock = app.slice(app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')"), app.indexOf('// Vind- og strømpile'));
 assert.ok(!startupBlock.includes('loadConditionDetails('), 'Normal opstart henter stadig detaljepakken.');

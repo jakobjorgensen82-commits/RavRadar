@@ -29,6 +29,10 @@ import {
 } from './lib/ravscore-public-browser-closure.mjs';
 import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
   './lib/ravscore-known-public-source-repair.mjs';
+import {
+  publicDeliveryEntries,
+  assertPublicDeliveryDocument,
+} from '../js/core/public-delivery-contract.js';
 
 export const RAVSCORE_OPERATIONAL_PAGES_VERIFICATION_SCHEMA =
   'ravscore-operational-pages-verification-v1';
@@ -110,12 +114,13 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
     || profile.rollbackModelId !== expected.rollbackModelId
     || profile.memoryReferenceScope !== 'CURRENT_COMMON_ZONE_REFERENCE'
     || profile.activationState !== expected.activationState
-    || profile.publicAvailabilityPolicy !== expected.publicAvailabilityPolicy
-    || profile.modelMigrationReady !== true) {
+    || profile.publicAvailabilityPolicy !== expected.publicAvailabilityPolicy) {
     throw new Error(`${label} has incompatible operational controls`);
   }
   if (mode === 'candidate-g') {
-    if (profile.modelMemoryReady !== true || profile.advisories.length !== 0) {
+    if (profile.modelMigrationReady !== true
+      || profile.modelMemoryReady !== true
+      || profile.advisories.length !== 0) {
       throw new Error(`${label} has incompatible Candidate G operational controls`);
     }
     return;
@@ -123,12 +128,18 @@ function assertOperationalProfileControls(profile, mode, availability, label) {
   assertIntegratedOperationalAvailability(availability, `${label} availability`);
   const historyIncomplete = availability.historyIncompleteModeCount > 0;
   const localUnavailable = availability.unavailableZoneCount > 0;
-  const expectedCoverageReady = !localUnavailable;
+  const migrationUnavailable = profile.modelMigrationReady === false;
   const expectedAdvisories = [
     ...(profile.modelCoverageReady === false ? ['LOCAL_MODEL_COVERAGE_INCOMPLETE'] : []),
     ...(profile.modelMemoryReady === false ? ['LOCAL_MODEL_MEMORY_INCOMPLETE'] : []),
+    ...(migrationUnavailable ? ['MODEL_STATE_NOT_CONTINUED_OR_MIGRATED'] : []),
   ];
-  if (profile.modelCoverageReady !== expectedCoverageReady
+  if (![true, false].includes(profile.modelMigrationReady)
+    || ![true, false].includes(profile.modelCoverageReady)
+    || ![true, false].includes(profile.modelMemoryReady)
+    // Coverage is an ALL-PARTS statement, availability an ANY-USABLE-PART
+    // statement per zone. Partial zones can be usable without complete coverage.
+    || (profile.modelCoverageReady === true && localUnavailable)
     || (historyIncomplete && profile.modelMemoryReady !== false)
     || JSON.stringify(profile.advisories) !== JSON.stringify(expectedAdvisories)) {
     throw new Error(`${label} has incompatible integrated history controls`);
@@ -549,6 +560,27 @@ async function verifyOnce({
     coastalParts: parsed['data/live/coastal-parts-v2.json'],
     zoneRegistry: parsed['data/zones.geojson'],
   }, expectedModel, expectedBinding);
+
+  // A manifest can promise bounded detail delivery while the four legacy
+  // documents are all valid. Verify the promised files too, without retaining
+  // the complete sharded payload in memory or serializing hundreds of requests.
+  const deliveryEntries = publicDeliveryEntries(manifest);
+  let deliveryIndex = 0;
+  await Promise.all(Array.from({ length: Math.min(8, deliveryEntries.length) }, async () => {
+    while (deliveryIndex < deliveryEntries.length) {
+      const entry = deliveryEntries[deliveryIndex++];
+      const relative = `data/live/${entry.path.replace(/^\.\//, '')}`;
+      const bytes = await fetchBytes(fetchImpl,
+        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative);
+      if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
+        throw new Error(`Deployed public delivery digest mismatch for ${relative}`);
+      }
+      let document;
+      try { document = JSON.parse(bytes.toString('utf8')); }
+      catch { throw new Error(`Deployed public delivery is not JSON: ${relative}`); }
+      assertPublicDeliveryDocument(document, manifest, entry);
+    }
+  }));
 
   const closureVerification = await verifyPublicImplementationClosure({
     baseUrl,

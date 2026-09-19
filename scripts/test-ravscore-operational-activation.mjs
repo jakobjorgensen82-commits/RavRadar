@@ -298,7 +298,8 @@ function terminalEvidence(
     requestedPublicManifestSha256: pendingRow.payload.requestedPublicManifestSha256,
     attemptId: pendingRow.payload.deploymentId,
     status,
-    pagesRequestAccepted: false,
+    pagesRequestAccepted: status === 'TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY'
+      ? null : false,
     observedSourcePublicManifestSha256: sha256(sourceManifest),
     checkedAt,
     evidenceSource: 'github-actions-pages-terminal-readback',
@@ -377,6 +378,21 @@ assert.deepEqual(operationalCentralProfileForTransition({
   currentProfile: integratedProfile,
   integratedProfile,
 }), integratedProfile, 'runner B must preserve the source profile while aborting head A');
+const expiredArtifactSourceAbort = operationalPendingReconciliationTransition({
+  currentRow: rollbackPendingRow,
+  expectedVersion: 1,
+  publicManifest: integratedH0,
+  observations: observations(integratedH0, integratedH0),
+  publicVerification: integratedH0Verification,
+  terminalEvidence: terminalEvidence(
+    rollbackPendingRow,
+    integratedH0,
+    'TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY',
+  ),
+  failureCode: 'EXPIRED_ARTIFACT_TERMINAL_SOURCE_RECONCILED',
+  now: '2026-08-29T13:06:00.000Z',
+});
+assert.equal(expiredArtifactSourceAbort.document.status, RAVSCORE_OPERATIONAL_STATUSES.integrated);
 assert.throws(() => operationalActivationTransition({
   action: 'abort',
   currentRow: rollbackPendingRow,

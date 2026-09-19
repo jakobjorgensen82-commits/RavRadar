@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from .current_aged_dmi_challenge import build_challenge_plan, challenge_pairs, eligible_challenge_record
 
 from .copernicus_current import (
     canonical_sha256,
@@ -342,6 +343,7 @@ def _copernicus_state(
             list(cache.get("acquisitions") or []),
             list(cache.get("records") or []),
             reference,
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         )
         advisory_refs, advisory_missing_pairs = select_required_records(
             registry["advisoryHistoryRequiredPairs"],
@@ -390,6 +392,7 @@ def _copernicus_state(
             reference,
             list(target_by_id.values()),
             list(validated_stage.get("attempts") or []),
+            aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
             **stage_positive_evidence(validated_stage),
         )
         return refs, residual
@@ -669,6 +672,12 @@ def _validate_assignment_shape(assignment: Any) -> tuple[str, str]:
         OPEN_METEO_COMBINED_CURRENT: _OPEN_METEO_FIELDS,
         MISSING: _MISSING_FIELDS,
     }.get(classification)
+    replacement = assignment.get("agedDmiReplacement")
+    if replacement is not None:
+        if classification not in {COPERNICUS_BALTIC, COPERNICUS_AMM15}:
+            _fail("ASSIGNMENT_INVALID")
+        expected_fields = expected_fields | {"agedDmiReplacement"}
+        _validate_aged_replacement(replacement)
     if expected_fields is None or set(assignment) != expected_fields:
         _fail("ASSIGNMENT_INVALID")
     part_id = str(assignment.get("partId") or "").strip()
@@ -815,8 +824,21 @@ def _private_without_id(value: dict[str, Any]) -> dict[str, Any]:
     return {key: item for key, item in value.items() if key != "closureId"}
 
 
+def _validate_aged_replacement(value: Any) -> None:
+    if not isinstance(value, dict) or set(value) != {"productionReferenceAt", "protectedModelRun",
+            "protectedSourceAssetSha256", "selectedModelRun", "modelReferenceSha256"}:
+        _fail("AGED_DMI_REPLACEMENT_INVALID")
+    _, reference = _exact_hour(value["productionReferenceAt"], "AGED_DMI_REPLACEMENT_INVALID")
+    _, protected = _exact_hour(value["protectedModelRun"], "AGED_DMI_REPLACEMENT_INVALID")
+    _, selected = _exact_hour(value["selectedModelRun"], "AGED_DMI_REPLACEMENT_INVALID")
+    if (reference - protected < timedelta(hours=96) or not protected < selected <= reference
+            or not valid_sha256(value["protectedSourceAssetSha256"])
+            or not valid_sha256(value["modelReferenceSha256"])):
+        _fail("AGED_DMI_REPLACEMENT_INVALID")
+
+
 def _validate_private_structure(value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict) or set(value) != PRIVATE_FIELDS:
+    if not isinstance(value, dict) or set(value) != PRIVATE_FIELDS | ({"agedDmiSelection"} if "agedDmiSelection" in value else set()):
         _fail("CLOSURE_INVALID")
     if (
         value.get("schemaVersion") != SCHEMA_VERSION
@@ -936,6 +958,23 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
     assignments = value.get("assignments")
     if not isinstance(assignments, list) or len(assignments) != EXPECTED_TOTAL_PAIR_COUNT:
         _fail("CLOSURE_CARDINALITY_INVALID")
+    replaced = [row for row in assignments if "agedDmiReplacement" in row]
+    selection = value.get("agedDmiSelection")
+    if selection is not None:
+        if (not isinstance(selection, dict) or set(selection) != {"challengePlanSha256", "rawDmiVerifiedPairCount",
+                "challengedPairCount", "replacedPairCount", "retainedPairCount", "replacementAssignmentsSha256"}
+                or any(type(selection.get(field)) is not int or selection[field] < 0 for field in (
+                    "rawDmiVerifiedPairCount", "challengedPairCount", "replacedPairCount", "retainedPairCount"))
+                or not valid_sha256(selection["challengePlanSha256"])
+                or selection["rawDmiVerifiedPairCount"] != value["dmiVerifiedPairCount"] + len(replaced)
+                or selection["replacedPairCount"] != len(replaced)
+                or selection["challengedPairCount"] != len(replaced) + selection["retainedPairCount"]
+                or selection["challengedPairCount"] > selection["rawDmiVerifiedPairCount"]
+                or selection["replacementAssignmentsSha256"] != canonical_sha256([row["assignmentSha256"] for row in replaced])
+                or any(row["agedDmiReplacement"]["productionReferenceAt"] != value["productionReferenceAt"] for row in replaced)):
+            _fail("AGED_DMI_SELECTION_INVALID")
+    elif replaced:
+        _fail("AGED_DMI_SELECTION_INVALID")
     seen: set[tuple[str, str]] = set()
     times_by_part: dict[str, set[str]] = {}
     previous: tuple[str, str] | None = None
@@ -1044,8 +1083,10 @@ def safe_current_operational_closure(private_proof: Any) -> dict[str, Any]:
         "partIdsIncluded": False,
         "pairRefsIncluded": False,
     })
+    if "agedDmiSelection" in private_proof:
+        safe["agedDmiSelection"] = private_proof["agedDmiSelection"]
     safe["safeProjectionSha256"] = canonical_sha256(safe)
-    if set(safe) != SAFE_FIELDS:
+    if set(safe) != SAFE_FIELDS | ({"agedDmiSelection"} if "agedDmiSelection" in private_proof else set()):
         _fail("SAFE_CLOSURE_INVALID")
     return safe
 
@@ -1089,7 +1130,7 @@ def build_current_operational_closure(
         _fail("COPERNICUS_REGISTRY_INVALID")
     if (
         registry.get("schemaVersion") != 3
-        or registry.get("selectionMode") != "dmi-gaps-only"
+        or registry.get("selectionMode") not in {"dmi-gaps-only", "dmi-gaps-and-aged-challenges"}
         or registry.get("productionReferenceAt") != reference_text
         or registry.get("operationalRangeEndAt") != end_text
         or registry.get("operationalHourCount") != OPERATIONAL_HOUR_COUNT
@@ -1108,7 +1149,14 @@ def build_current_operational_closure(
         registry.get("advisoryHistoryRequiredPairs"),
         "COPERNICUS_ADVISORY_REQUIRED_MATRIX_INVALID",
     )
-    if complement != required or required_pairs_sha256(required) != registry.get("operationalRequiredPairsSha256"):
+    challenge_plan = registry.get("agedDmiChallengePlan")
+    challenges = challenge_pairs(challenge_plan)
+    if challenge_plan is not None and challenge_plan != build_challenge_plan(attestation=dmi_attestation,
+            ledger=ledger, dmi_input_sha256=dmi_current_input_sha256, production_reference_at=reference_text):
+        _fail("DMI_CHALLENGE_INPUT_BINDING_INVALID")
+    expected_required = sorted([*complement, *({"partId": key[0], "validTime": key[1]} for key in challenges)],
+                               key=lambda row: (row["validTime"], row["partId"]))
+    if expected_required != required or required_pairs_sha256(required) != registry.get("operationalRequiredPairsSha256"):
         _fail("DMI_COPERNICUS_PARTITION_INVALID")
     if (
         len(advisory_required) != registry.get("advisoryHistoryRequiredPairCount")
@@ -1140,7 +1188,32 @@ def build_current_operational_closure(
         reference=reference,
     )
     cop_assignments = _copernicus_assignments(cop_refs)
+    records_by_id = {row["recordId"]: row for row in copernicus_shadow.get("records", [])}
+    acquisitions_by_id = {row["acquisitionId"]: row for row in copernicus_shadow.get("acquisitions", [])}
+    replaced_keys = set()
+    for assignment in cop_assignments:
+        key = (assignment["partId"], assignment["validTime"])
+        challenge = challenges.get(key)
+        if challenge is None:
+            continue
+        record = records_by_id[assignment["recordId"]]
+        if not eligible_challenge_record(record, acquisitions_by_id[assignment["acquisitionId"]], challenge, reference):
+            _fail("DMI_CHALLENGE_REPLACEMENT_INVALID")
+        assignment["agedDmiReplacement"] = {
+            "productionReferenceAt": reference_text,
+            "protectedModelRun": challenge["protectedModelRun"],
+            "protectedSourceAssetSha256": challenge["protectedSourceAssetSha256"],
+            "selectedModelRun": record["modelReference"]["modelRun"],
+            "modelReferenceSha256": canonical_sha256(record["modelReference"]),
+        }
+        assignment["assignmentSha256"] = _assignment_sha256({key: value for key, value in assignment.items() if key != "assignmentSha256"})
+        replaced_keys.add(key)
+    raw_dmi_count = len(dmi_assignments)
+    dmi_assignments = [row for row in dmi_assignments if (row["partId"], row["validTime"]) not in replaced_keys]
     advisory_assignments = _advisory_assignments(advisory_refs)
+    # No response-bound original model reference exists in the current OM API
+    # contract. Unanswered challenges retain DMI, never become regional/OM gaps.
+    residual_pairs = [row for row in residual_pairs if (row["partId"], row["validTime"]) not in challenges]
     residual_plan = build_regional_residual_plan(
         residual_pairs=residual_pairs,
         regional_policy=regional_policy,
@@ -1205,7 +1278,7 @@ def build_current_operational_closure(
         or regional_keys & open_meteo_keys
         or regional_keys & missing_keys
         or open_meteo_keys & missing_keys
-        or cop_keys | regional_keys | open_meteo_keys | missing_keys
+        or (cop_keys - replaced_keys) | regional_keys | open_meteo_keys | missing_keys
             != complement_keys
         or regional_keys | open_meteo_keys | missing_keys != residual_keys
         or open_meteo_keys | missing_keys != open_meteo_required_keys
@@ -1314,6 +1387,15 @@ def build_current_operational_closure(
         "publicRuntime": False,
     }
     proof["closureId"] = canonical_sha256(proof)
+    if challenge_plan is not None:
+        proof["agedDmiSelection"] = {
+            "challengePlanSha256": challenge_plan["planSha256"],
+            "rawDmiVerifiedPairCount": raw_dmi_count,
+            "challengedPairCount": len(challenges), "replacedPairCount": len(replaced_keys),
+            "retainedPairCount": len(challenges) - len(replaced_keys),
+            "replacementAssignmentsSha256": canonical_sha256([row["assignmentSha256"] for row in assignments if "agedDmiReplacement" in row]),
+        }
+        proof["closureId"] = canonical_sha256(_private_without_id(proof))
     proof = _validate_private_structure(proof)
     return {
         "privateProof": proof,

@@ -153,6 +153,8 @@ def native_source(
         "collectionFamily": "wave",
         "component": "wave",
         "componentKind": "wave-mobilisation-tuple",
+        "wavePeriodSemantics": "peak",
+        "wavePeriodField": {"shortName": "pp1d", "paramId": 231, "indicatorOfParameter": 231},
         "fieldSet": ["significant-wave-height", "dominant-wave-period"],
         "optionalFieldSet": ["mean-wave-dir"] if direction_available else [],
         "modelRun": model_run,

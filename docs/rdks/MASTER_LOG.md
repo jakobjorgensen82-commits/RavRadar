@@ -1,4 +1,143 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.429 gemt vejr og HARMONIE
+# NYESTE IMPLEMENTERINGSDELTA – 2026-09-19 – samlet afslutningskrydstjek
+
+Version 4.0.430 er synkroniseret på tværs af kode, workflows, RDKS, begge
+håndbøger, releasekontrakt, warmup-migration og begge modelbundles. Den sidste
+målrettede krydskontrol fandt tre forældede forbrugere, ikke tre nye
+runtimefejl: den aktive håndbog bar gamle bundle-/continuation-hashes,
+code-only-testen forventede fire særskilte source-repair-led, selv om observe,
+restore og holdbar backfill nu er fælles trin, og readiness-testen forventede
+gammel eksakt reference-lighed i stedet for den afgrænsede tre-timers målte
+warmupregel. De aktive beskrivelser og tests er rettet til faktisk kode.
+Alle tre måltests samt version, RDKS og release-metadata er grønne. Commit,
+exact-head-CI, merge, central genoptagelse, deploy og normaldriftsbevis udestår.
+
+Første exact-head-kildegate `35446226062` fortsatte som aftalt gennem hele
+listen og samlede to fejl. Begge var forældede testforventninger: moderne
+schema-4 restore er med vilje fælles for alle relevante operationer og ikke
+kun første cutover; privat runtime har fortsat ni faste basisfiler, men må
+desuden have præcis den ene autentificerede komponentpakke. Testene er rettet
+til at kontrollere den faktiske snævre kontrakt, ikke blot nye tekster.
+Da generator-testen er sekventiel, blev hele dens resterende workflowmatrix
+derefter sammenholdt maskinelt med alle aktuelle trinnavne. Fire gamle
+plaintext DMI active/candidate restore/save-forventninger er erstattet af
+kontrol af én autentificeret krypteret restore, exact-baseline binding,
+READY-only promotion og efterfølgende krypteret save. Ingen andre manglende
+workflowtrinnavne blev fundet.
+
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – spontan genstart
+
+Senere samlet implementeringsdelta for 4.0.430: alle fund fra den sidste vejrkørsel,
+helhedsanalysen og krydstjekket er nu med i én lokal ændring. Krypteret
+failed-run-progress er udvidet til DMI/CP/OM/staging, bruger 256 MiB og en
+domæneadskilt nøgle fra eksisterende service-role-secret. Aktive rå private
+Actions-cachewriters er fjernet/deaktiveret. Holdbar krypteret terminalevidens
+i eksisterende privat Storage understøtter PENDING-reentry efter 14-dages
+artifactudløb. Kildegaten er reduceret til 24 direkte produktionskritiske
+kommandoer. Versionsløftet fangede og rettede også, at recovery-workflowet
+manglede i releasekontrakten, og at bindingsfixturen ikke kopierede den nye
+warmup-migration. Måltests og statiske checks er grønne; ingen commit,
+providerkørsel eller produktionspublicering endnu.
+
+Senere samme dag præciserede ejeren vandstand til kun DMI. Dette gælder
+også tre-timers ændring og erstatter CP/OM-datumopgaven. Gyldig gammel DMI
+bevares ved huller; reservekæden for andre vejrtypekomponenter er uændret.
+Beslutningen er skrevet i DEC-0210, aktive krav og begge roadmaps. Den
+konkrete runtimeafgrænsning er i gang, ikke deployet.
+
+Derudover er privat Storage-read genprøvning ved afbrudt responsebody
+rettet lokalt. Seks små testcases og eksisterende storage/retention/
+rollbackkontrakt består. Isoleret providerfri diagnosticbranch forberedes
+til faktiske gemte GRIB-/lageroptællinger; det er ikke en produktionsrelease.
+
+Seneste ejerkrav: cron/GitHub skal være så vedligeholdelsesfrit som muligt
+uden løbende Codex-kontrol/licens; ejeren kan måske købe licens én gang om
+året. Kravet er gemt i DEC-0210, aktive krav og begge roadmaps. Ingen ny
+Codex-automation eller betalt driftsafhængighed er oprettet. Automatisk
+retry/genoptagelse, bevarede gyldige data, få forståelige fejlmeldinger og
+en kort driftsvejledning er acceptkrav; årlig service er ikke garanteret
+mod eksterne leverandørændringer.
+
+Ejeren bestilte den samlede grundige rettelse efter helhedsanalysen og
+valgte Astra Ultra. Efter spontan genstart bad ejeren om at genfinde præcis
+hvor langt arbejdet var nået og gentog, at ALLE analysens fund skal med i
+den rettelse, der var i gang. Det er ikke en ny bestilling på en smal patch.
+
+[Genstartscheckpoint](../ai/WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md)
+registrerer bevaret implementering, alle 13 fundgrupper og ekstra tværgående
+fund, måltestbevis og afbrudte integrationspunkter. Gemte filer når frem til
+09.33.12 dansk før boot09.33.28. Tidligere analyse-only-topnoter er historik.
+Ingen ny commit, version, push, merge, deploy eller providerkørsel.
+Efterfølgende er den samlede implementering fortsat: DMI-horizon/LF-støtte,
+komponentfriskhed/bevaring, warmup/recovery/kø/publicering og browser-
+levering er rettet lokalt og dækket af afgrænsede grænsetests. CP's faktiske
+kilde-/feltkontrakter er dokumenteret; fuld fallback, datum og model/input-
+migration er fortsat åbne. Den aktive checkpointmatrix skelner helperbevis
+fra virkelig produktion. Ingen kilde- eller fuld releasegate er genkørt.
+
+Fortsættelse omkring kl. 11.20 dansk: OM-best-match-fund er rettet i både
+PART- og normal zoneproducer, faste modeller/låst tidsakse og uafhængige
+fejl. Privat bounded transport er lokalt klar. Valgt reserveinput føres
+videre til rette kortpil, kildealder bruger responsbundet modelreference,
+og komponentbehov adskiller huller, aged-DMI og DMI-upgrade. CP-spatial/
+transport, current96-normalintegration og migrationskompatibel privat
+bank/originals-inventory er aktive samlingsopgaver, ikke produktionsbevis.
+
+# HISTORISK EJER- OG ANALYSEDELTA – 2026-09-19 – 4.0.429 helhed og fuld fallback
+
+Efterfølgende udtrykkelig ejerkorrektion: fortsæt krydstjek af ALLE fund,
+ikke blot 96-timersreglen. [Samlet krydstjek](../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md)
+er nu skrevet med fire indbyrdes afhængige arbejdspakker, konkrete
+migrationsrisici og afgrænset tværgående verifikation. Nyt kodebevist fund:
+DMI-wave-alias sammenblander peak og mean; produktionsomfang er ikke bevist.
+Privat støtteaksetab rammer de sidste tre trends. Små offentlige pakker er
+størrelsesundersøgt på et ældre gemt artifact, ikke live mobilvalideret.
+Ingen runtimekode, providerkørsel, commit, merge eller deploy i dette afsnit.
+
+Seneste efterfølgende ejerforslag: brug fire døgns DMI-alder i stedet for
+prognosens sidste døgn til reserveundtagelsen. Anbefalet afgrænsning er 96
+timer fra komponentens beviste modelrun til låst vurderingstid; nyere gyldig
+reserve kan da overtage, men ingen gyldig DMI slettes uden erstatning.
+Ny DMI vinder igen. DEC-0210's topafsnit bevarer status som diskussion/design,
+ikke implementering. Tidligere sidste-døgn-noter nedenfor er forløbshistorik.
+
+4.0.429 er merged gennem PR #374 som `4bee5b0d`; exact-head `35420912328`
+bestod. Saved-weather `35421108551` deployede Pages, men verifieren fejlede
+og central PENDING blokerede næste normalrun `35421627495` før providerne.
+Det tidligere topcheckpoint beskrev derfor ikke længere faktisk status.
+
+Ejeren kræver en grundig krydskontrol af hele systemet, ikke endnu en lokal
+rettelse. Den er dokumenteret i [helhedsanalysen](../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md):
+vindplan og horizon, component retention, statepersistens, national readiness,
+central genindgang, samtidige runs, retry samt browserens fastlåste H0-visning.
+Analysefakta er holdt adskilt fra observerede produktionsårsager. Den brede
+forklaring om, at strøm kræver en helt dækket donorcache, er afvist.
+
+Ejerens udtrykkelige korrektion er registreret som DEC-0210: Copernicus og
+Open-Meteo skal udfylde alle huller i alle nødvendige vejrtyper efter DMI,
+ikke kun strøm eller yderste timer. Gyldig DMI, inklusive gyldig gemt DMI,
+bevares. Den nuværende nye models afvisning af øvrige reservedata er en
+implementeringsmangel. Scoreformel og geometri ændres ikke selvstændigt.
+
+Efterfølgende ejerpræcisering: Når DMI har overskud og er med, skal DMI
+kunne overtage gyldige vejrkomponenter fra Copernicus/Open-Meteo for samme
+sted/time. Fuld reservedækning må ikke blokere videre DMI-planlægning.
+DEC-0210 skelner derfor hullukning/fornyelse fra kildeopgradering og kræver,
+at reserven bevares, indtil et kvalificeret gyldigt DMI-input faktisk er klar.
+
+Ejeren tilføjede først en undtagelse "meget tæt på udløb" og foreslog derefter
+en konkret afgrænsning: prognosens sidste døgn, hvis DMI endnu ikke er kommet
+med nye data. Den meddelte fortolkning er de sidste 24 viste timer,
+H94..H117. DEC-0210 erstatter nu den uklare udløbsformulering med dette
+forslag: ny gyldig DMI overtager igen; uden gyldig reserve beholdes gammel
+DMI. Registreret, ikke implementeret. Ingen ny alders-TTL eller generel
+reserve-refresh følger af det; reelle huller må fortsat udfyldes overalt.
+
+Kun analysedokumentation er ændret i denne runde; ingen ny release,
+providerkørsel eller produktionsændring. Den tidligere lokale snævre
+verifierpatch er stadig ufærdig. Normal cron er disabled. Drift er ikke
+komplet eller stabil. Se rapportens bevis- og næste-trin-afsnit.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.429 gemt vejr og HARMONIE
 
 4.0.428 bestod exact-head `35416314162`, PR #373 og main `a2d03d95`.
 Normalrun `35416641052` gennemførte og gemte providerarbejdet, men gammel

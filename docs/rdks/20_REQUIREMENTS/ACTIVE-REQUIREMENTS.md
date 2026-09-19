@@ -1,4 +1,67 @@
-# Aktuelt ejerdelta – 2026-09-19 – saved-weather og reel HARMONIE-tid
+# Aktuelt ejerdelta – 2026-09-19 – fuld komponentfallback og helhed
+
+- **REQ-WEATHER-LOW-MAINTENANCE – BINDENDE EJERPRÆCISERING:** Cron/GitHub
+  skal vedligeholde, genoptage og publicere uden Codex, løbende AI-licens
+  eller ejerens computer. Ejeren kan højst forvente et omtrent årligt
+  Codex-eftersyn. Automatisk bounded retry, gemt fremgang/rotation, ren
+  runner-restore og forståelige meldinger ved vedvarende fejl er del af
+  rettelsen. Undgå nye driftslag/abonnementer uden konkret nødvendighed.
+  Kort dansk driftsvejledning og selvkørende fler-runs-bevis kræves.
+  Årlig service er et designmål, ikke garanti mod eksterne leverandørændringer.
+- **REQ-RECOVERY-WITHOUT-EXPIRING-ARTIFACTS – BINDENDE EJERPRÆCISERING:**
+  Udløb af de midlertidige 14-dages hjælpefiler må ikke gøre genoptagelse
+  afhængig af Codex eller manuel redning. Bevar nødvendige private beviser
+  under en uafsluttet overgang eller genskab dem fra betroede varige kilder;
+  forlænget retention og ignorering af manglende bevis er ikke løsninger.
+  Bevis målrettet genoptagelse ved manglende/udløbne artifacts på ren runner,
+  inklusive korrekt afslutning og efterfølgende afgrænset oprydning.
+  Den varige private terminalkvittering er implementeret lokalt og måltestet;
+  dette er endnu ikke en leveret eller produktionsbevist garanti.
+- **REQ-WEATHER-ALL-COMPONENT-FALLBACK – BINDENDE EJERKORREKTION:**
+  Copernicus/Open-Meteo skal udfylde alle huller i nødvendige vejrtyper,
+  undtagen vandstand efter ejerens nyere DMI-only-beslutning,
+  efter hver DMI-kørsel, ikke kun strøm eller de yderste prognosetimer.
+  Gyldig DMI, herunder gyldig gemt DMI for samme sted/tid, bevares. Herefter
+  vælges gyldig Copernicus og derefter Open-Meteo, hvor de kan levere feltet.
+  Gyldig kilde-/tids-/sted-/enhedsproveniens kræves fortsat. Manglende støtte
+  i nuværende adapter er en implementeringsmangel, ikke ændret produktmål.
+- **REQ-WATER-LEVEL-DMI-ONLY – SENESTE EJERBESLUTNING 19/9:** Vandstand
+  og tre-timers ændring må kun bruge kvalificeret DMI, også i cache,
+  scoreinput og offentlig visning. CP/OM-vandstand og 96-timers-reservevalg
+  er udelukket. Gyldig gammel DMI for præcis samme sted/tid bevares ved hul;
+  ellers MISSING med resten af siden brugbar. Nødvendige DMI-støttetimer
+  bevares, og fuld DMI-dækning tilstræbes. Ingen CP/OM-datumomregning kræves.
+- **REQ-WEATHER-DMI-RECLAIMS-FALLBACK – BINDENDE EJERPRÆCISERING:** Når DMI
+  er med og har kapacitet, skal den også søge gyldige data til komponenter,
+  som allerede er udfyldt af reservekilder. Gyldig DMI overtager samme
+  sted/time/komponent fra Copernicus/Open-Meteo. Reservedækning må ikke
+  permanent fjerne opgaven fra DMI-planen; mislykket/ugyldigt DMI-forsøg må
+  ikke tømme eller forringe den gyldige reserve. Kildeopgradering må ikke
+  fortrænge nødvendig hullukning/fornyelse. Nyeste kvalificerede revision
+  vælges inden for samme kilde, ikke på tværs imod DMI-først-prioriteten.
+- **REQ-WEATHER-DMI-NEAR-EXPIRY-EXCEPTION – SENESTE FORSLAG 96 TIMER:**
+  Ejerens seneste forslag er reserveovertagelse, når DMI er fire døgn gammel,
+  frem for sidste døgn af prognosen. Anbefalet definition: mindst 96 timer
+  fra komponentens beviste DMI-modelrun til kørslens låste vurderingstid.
+  Ikke hentetid, kalenderdøgn, forecastlead eller hele cachefilens alder.
+  Nyere gyldig CP/OM kan overtage; uden erstatning bevares gyldig DMI.
+  Ny gyldig DMI vinder igen. Faktisk udløb og databevaring er uændret.
+  Afgrænsningen er registreret i DEC-0210. Efter samlet rettelsesordre er
+  valghelper og produktionskæde implementeret/måltestet; produktionsdrift er
+  endnu ikke bevist.
+  Den tidligere H94..H117-fortolkning må ikke implementeres sideløbende.
+- **REQ-WEATHER-CHAIN-REVIEW – BINDENDE:** Hele data-, state-, deployment- og
+  browserkæden krydstjekkes før samlet rettelse. Fuld numerisk dækning og
+  stabil normal vedligeholdelse skal bevises særskilt fra grøn installation
+  og strukturel 210/673-komplethed. Scoreformel ændres ikke selvstændigt.
+  Ejeren har senest understreget, at ALLE fund skal med; 96-timersreglen må
+  ikke indsnævre arbejdet. Rettelsernes indbyrdes konsekvenser og migration
+  af gemte data skal gennemgås før levering, ikke opdages én release ad gangen.
+
+Beslutning: DEC-0210. Evidens og rester:
+[helhedsanalysen](../../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md).
+
+# Historisk ejerdelta – 2026-09-19 – saved-weather og reel HARMONIE-tid
 
 - **REQ-4.0.429-SAVED-DIAGNOSTIC-001 – BINDENDE:** Saved-weather-fortsættelse
   må rapportere en diagnostisk runtimeaudit og fortsætte, mens privacy,

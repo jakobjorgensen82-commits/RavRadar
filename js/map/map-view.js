@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.429";
+import { t } from "../i18n.js?v=4.0.430";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
@@ -383,7 +383,7 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
       });
     }
     const windSource = flowPoints?.sources?.wind;
-    if (sharesZoneReference && validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {
+    if (sharesZoneReference && validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid', 'open-meteo-wind-grid'].includes(windSource)) {
       const point = pointCoordinates(flowPoints.wind);
       if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:windSource });
     }
@@ -457,5 +457,6 @@ export function installFlowArrows(map, featureCollection, conditionForZone, coas
 
   map.on("zoomend moveend resize", render);
   render();
-  return { layer, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }) };
+  return { layer, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }),
+    destroy:()=>{map.off('zoomend moveend resize',render);map.removeLayer(layer);layer.clearLayers();} };
 }

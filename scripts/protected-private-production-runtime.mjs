@@ -19,11 +19,13 @@ import {
 import {
   buildSupabaseAdminHeaders,
   createSupabaseAdminRequester,
+  readSupabaseBodyTransport,
 } from './lib/supabase-admin-rest.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { assertPrivateRuntimeInventory } from './lib/private-weather-component-inventory.mjs';
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -916,7 +918,6 @@ function exactBundleFileMap(manifest, label) {
     || manifest.privacyClass !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass
     || !Array.isArray(manifest.files)
     || manifest.fileCount !== manifest.files.length
-    || manifest.fileCount !== 9
     || manifest.zoneCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount
     || manifest.partCount !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount
     || !SHA256_PATTERN.test(String(manifest.bundleContentSha256 ?? ''))
@@ -924,6 +925,7 @@ function exactBundleFileMap(manifest, label) {
     throw new Error(`${label} is invalid`);
   }
   const files = new Map();
+  assertPrivateRuntimeInventory(manifest.files);
   for (const descriptor of manifest.files) {
     exactKeys(descriptor, ['id', 'relativePath', 'bytes', 'sha256', 'privacyClass'], `${label} file`);
     if (typeof descriptor.id !== 'string'
@@ -958,7 +960,9 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   const changedBindingFields = predecessorBindingKeys.filter(
     key => predecessorManifest.modelBinding[key] !== successorManifest.modelBinding[key],
   );
-  const bindingMigration = migrationReport.transitionKind === 'MODEL_BINDING_MIGRATION';
+  const bindingOnly = migrationReport.transitionKind === 'MODEL_BINDING_METADATA_ONLY';
+  const bindingMigration = bindingOnly
+    || migrationReport.transitionKind === 'MODEL_BINDING_MIGRATION';
   const contractOnlyRebind = migrationReport.transitionKind === 'CONTRACT_ONLY_REBIND';
   if (!isPlainObject(existingDescriptor)
     || !isPlainObject(successorDescriptor)
@@ -1003,8 +1007,8 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   }
   if (bindingMigration) {
     if (JSON.stringify(changedBindingFields) !== JSON.stringify(['modelBundleSha256'])
-      || migrationReport.previousCandidateBundleSha256
-        === migrationReport.currentCandidateBundleSha256
+      || (!bindingOnly && migrationReport.previousCandidateBundleSha256
+        === migrationReport.currentCandidateBundleSha256)
       || migrationReport.changedBindingFieldCount
         < PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount) {
       throw new Error('Same-reference model-binding migration evidence is invalid');
@@ -1584,16 +1588,21 @@ export function createProtectedPrivateRuntimeClients({
   const bucketEndpoint = `${url}/storage/v1/bucket`;
   const objectEndpoint = `${url}/storage/v1/object`;
 
-  async function retryableFetch(target, options, label) {
+  async function retryableFetch(target, options, label, consume = null) {
     for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let response;
       try {
-        const response = await fetchImpl(target, options);
+        response = await fetchImpl(target, options);
         if (attempt === 1 && [429, 502, 503, 504].includes(response.status)) {
+          await response.body?.cancel?.().catch(() => {});
           await delayImpl(retryDelayMs);
           continue;
         }
-        return response;
+        return consume ? await consume(response) : response;
       } catch (error) {
+        // Once headers arrived, retry interrupted transport only. A malformed,
+        // oversized or incompatible object is not a transient network fault.
+        if (response && error?.code !== 'SUPABASE_RESPONSE_BODY_TRANSPORT') throw error;
         if (attempt === 1) {
           await delayImpl(retryDelayMs);
           continue;
@@ -1607,15 +1616,18 @@ export function createProtectedPrivateRuntimeClients({
   }
 
   async function responseText(response) {
-    const text = await response.text();
+    const text = await readSupabaseBodyTransport(() => response.text());
     let json = null;
     try { json = text ? JSON.parse(text) : null; } catch { /* safe generic error below */ }
     return { text, json };
   }
-  async function ensurePrivateBucket() {
-    let response = await retryableFetch(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
+  async function readBucket() {
+    return retryableFetch(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
       headers,
-    }, 'bucket read');
+    }, 'bucket read', async response => ({ response, parsed: await responseText(response) }));
+  }
+  async function ensurePrivateBucket() {
+    let { response, parsed } = await readBucket();
     if (response.status === 404) {
       response = await retryableFetch(bucketEndpoint, {
         method: 'POST',
@@ -1631,11 +1643,8 @@ export function createProtectedPrivateRuntimeClients({
       if (!response.ok && response.status !== 409) {
         throw new Error('Protected private runtime bucket creation failed closed');
       }
-      response = await retryableFetch(`${bucketEndpoint}/${encodeURIComponent(policy.bucketId)}`, {
-        headers,
-      }, 'bucket readback');
+      ({ response, parsed } = await readBucket());
     }
-    const parsed = await responseText(response);
     const bucket = parsed.json;
     const limit = Number(bucket?.file_size_limit);
     if (!response.ok
@@ -1651,7 +1660,7 @@ export function createProtectedPrivateRuntimeClients({
     return true;
   }
   async function uploadImmutable(objectPath, bytes) {
-    const response = await retryableFetch(
+    const { response, parsed } = await retryableFetch(
       `${objectEndpoint}/${encodeURIComponent(policy.bucketId)}/${encodeObjectPath(objectPath)}`,
       {
         method: 'POST',
@@ -1663,9 +1672,9 @@ export function createProtectedPrivateRuntimeClients({
         body: bytes,
       },
       'immutable upload',
+      async response => ({ response, parsed: response.ok ? null : await responseText(response) }),
     );
     if (response.ok) return { created: true };
-    const parsed = await responseText(response);
     if ([400, 409].includes(response.status)
       && /duplicate|already exists|resource already exists/i.test(
         String(parsed.json?.message ?? parsed.json?.error ?? parsed.text),
@@ -1675,21 +1684,46 @@ export function createProtectedPrivateRuntimeClients({
     throw new Error('Protected private runtime immutable upload failed closed');
   }
   async function download(objectPath) {
-    const response = await retryableFetch(
+    return retryableFetch(
       `${objectEndpoint}/authenticated/${encodeURIComponent(policy.bucketId)}/${encodeObjectPath(objectPath)}`,
       { headers },
       'download',
+      async response => {
+        const length = Number(response.headers?.get?.('content-length'));
+        if (!response.ok
+          || (Number.isFinite(length) && length > policy.maximumArchiveBytes)) {
+          await response.body?.cancel?.().catch(() => {});
+          throw new Error('Protected private runtime download failed closed');
+        }
+        // Read inside the retry boundary: HTTP 200 is not evidence that the
+        // object arrived. Limit chunked responses as well as Content-Length.
+        const chunks = [];
+        let total = 0;
+        if (response.body?.getReader) {
+          const reader = response.body.getReader();
+          try {
+            for (;;) {
+              const { value, done } = await readSupabaseBodyTransport(() => reader.read());
+              if (done) break;
+              total += value.byteLength;
+              if (total > policy.maximumArchiveBytes) {
+                await reader.cancel().catch(() => {});
+                throw new Error('Protected private runtime download exceeds its bound');
+              }
+              chunks.push(Buffer.from(value));
+            }
+          } finally { reader.releaseLock(); }
+        } else {
+          const bytes = Buffer.from(await readSupabaseBodyTransport(() => response.arrayBuffer()));
+          total = bytes.length;
+          chunks.push(bytes);
+        }
+        if (total > policy.maximumArchiveBytes) {
+          throw new Error('Protected private runtime download exceeds its bound');
+        }
+        return Buffer.concat(chunks, total);
+      },
     );
-    const length = Number(response.headers?.get?.('content-length'));
-    if (!response.ok
-      || (Number.isFinite(length) && length > policy.maximumArchiveBytes)) {
-      throw new Error('Protected private runtime download failed closed');
-    }
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (bytes.length > policy.maximumArchiveBytes) {
-      throw new Error('Protected private runtime download exceeds its bound');
-    }
-    return bytes;
   }
   async function removeExact(objectPath) {
     const response = await retryableFetch(

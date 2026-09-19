@@ -499,6 +499,7 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
         datetime.fromisoformat(reference.replace("Z", "+00:00")),
         targets,
         list(stage.get("attempts") or []),
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
         positive_admissions=stage.get("positiveAdmissions", []),
         admission_attempts=stage.get("admissionAttempts", []),
     )
@@ -513,8 +514,10 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
     ):
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_INVALID")
     try:
+        challenge_keys = {(row["partId"], row["validTime"]) for row in (registry.get("agedDmiChallengePlan") or {}).get("challengePairs", [])}
+        gap_residual = [row for row in copernicus_residual if (row["partId"], row["validTime"]) not in challenge_keys]
         plan = build_regional_residual_plan(
-            residual_pairs=copernicus_residual,
+            residual_pairs=gap_residual,
             regional_policy=policy,
             targets=targets,
             regional_shadow=regional,

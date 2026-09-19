@@ -724,7 +724,7 @@ as $$
       -- this predecessor automatically after maintenance completion.
       and p_calibration_features ->> 'modelBundleSha256' in (
         '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01',
-        'b114d226425eefd6b7a3c8280fb19982c312f0d88d2f9351c7dc6cbc4ece8c38'
+        '8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -743,7 +743,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
-      and p_calibration_features ->> 'modelBundleSha256' = '2a0cba46ea1bb625f655ee3c58a07c90e3b6d169812f569643d0f2d924c4c09e'
+      and p_calibration_features ->> 'modelBundleSha256' = 'd740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
       p_model_version,p_calibration_features,p_calibration_eligible,
@@ -1770,7 +1770,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from 'b114d226425eefd6b7a3c8280fb19982c312f0d88d2f9351c7dc6cbc4ece8c38'
+      is distinct from '8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2510,6 +2510,14 @@ declare
   v_boundary timestamptz;
   v_first_time timestamptz;
   v_second_time timestamptz;
+  v_item jsonb;
+  v_time timestamptz;
+  v_previous timestamptz;
+  v_suffix_start timestamptz;
+  v_contains_missing boolean := false;
+  v_gap boolean := false;
+  v_status text;
+  v_coverage numeric;
 begin
   if jsonb_typeof(p_state) is distinct from 'object'
     or (select pg_catalog.count(*) from pg_catalog.jsonb_object_keys(p_state)) <> 15
@@ -2539,15 +2547,20 @@ begin
     or not public.ravradar_ravscore_checkpoint_canonical_time(
       p_state ->> 'transportReferenceAt'
     )
-    or p_state ->> 'transportReferenceAt' is distinct from p_reference_text
+    or (p_state ->> 'transportReferenceAt')::timestamptz > p_reference_text::timestamptz
+    or p_reference_text::timestamptz - (p_state ->> 'transportReferenceAt')::timestamptz > interval '3 hours'
     or jsonb_typeof(p_state -> 'transportPotential') is distinct from 'number'
     or (p_state ->> 'transportPotential')::numeric not between 0 and 100
     or jsonb_typeof(p_state -> 'outboundEpisodeEffectiveHours') is distinct from 'number'
     or (p_state ->> 'outboundEpisodeEffectiveHours')::numeric < 0
-    or p_state -> 'transportMemoryReady' is distinct from 'true'::jsonb
-    or p_state ->> 'transportMemoryStatus' is distinct from 'READY'
+    or jsonb_typeof(p_state -> 'transportMemoryReady') is distinct from 'boolean'
     or p_state -> 'transportMemoryWindowHours' is distinct from '48'::jsonb
-    or p_state -> 'transportMemoryCoverageHours' is distinct from '48'::jsonb
+    or jsonb_typeof(p_state -> 'transportMemoryCoverageHours') is distinct from 'number'
+    or (p_state ->> 'transportMemoryCoverageHours')::numeric not between 0 and 48
+    or (p_state -> 'transportMemoryReady' = 'true'::jsonb and (
+      p_state ->> 'transportMemoryStatus' is distinct from 'READY'
+      or p_state -> 'transportMemoryCoverageHours' is distinct from '48'::jsonb
+    ))
     or jsonb_typeof(p_state -> 'mobilisationPotential') is distinct from 'number'
     or (p_state ->> 'mobilisationPotential')::numeric not between 0 and 100
     or jsonb_typeof(p_state -> 'transportEvidence') is distinct from 'array'
@@ -2572,6 +2585,47 @@ begin
     or public.ravradar_ravscore_checkpoint_has_forbidden_key(p_state)
   then
     return false;
+  end if;
+
+  -- Non-READY progress is private measured continuation, never rollback READY.
+  -- Derive its status/coverage from the ordered, bounded evidence, not labels.
+  if p_state -> 'transportMemoryReady' = 'false'::jsonb then
+    v_reference := (p_state ->> 'transportReferenceAt')::timestamptz;
+    v_boundary := v_reference - interval '48 hours';
+    for v_item in select value from pg_catalog.jsonb_array_elements(p_state -> 'transportEvidence') loop
+      if not public.ravradar_ravscore_checkpoint_canonical_time(v_item ->> 'time') then
+        return false;
+      end if;
+      v_time := (v_item ->> 'time')::timestamptz;
+      if v_time < v_boundary or v_time > v_reference
+        or (v_previous is not null and v_time <= v_previous) then
+        return false;
+      end if;
+      if v_first_time is null then v_first_time := v_time; end if;
+      if v_previous is not null and v_time - v_previous > interval '3 hours' then
+        v_gap := true;
+        v_suffix_start := null;
+      end if;
+      if jsonb_typeof(v_item -> 'strength') = 'null' then
+        v_contains_missing := true;
+        v_suffix_start := null;
+      elsif v_suffix_start is null then
+        v_suffix_start := v_time;
+      end if;
+      v_previous := v_time;
+    end loop;
+    if v_previous is distinct from v_reference then return false; end if;
+    v_coverage := case when v_suffix_start is null then 0
+      else extract(epoch from (v_reference - v_suffix_start)) / 3600 end;
+    v_status := case
+      when jsonb_typeof(v_item -> 'strength') = 'null' then 'LATEST_SAMPLE_MISSING'
+      when v_contains_missing then 'WINDOW_HAS_MISSING_EVIDENCE'
+      when v_first_time > v_boundary then 'WINDOW_INCOMPLETE'
+      when v_gap then 'WINDOW_HAS_TIME_GAP'
+      else 'READY' end;
+    return v_status <> 'READY'
+      and p_state ->> 'transportMemoryStatus' = v_status
+      and abs((p_state ->> 'transportMemoryCoverageHours')::numeric - v_coverage) <= 0.000000001;
   end if;
 
   if pg_catalog.jsonb_array_length(p_state -> 'transportEvidence') not between 2 and 49
@@ -2603,12 +2657,12 @@ begin
     )
     or p_state -> 'transportEvidence'
       -> (pg_catalog.jsonb_array_length(p_state -> 'transportEvidence') - 1)
-      ->> 'time' is distinct from p_reference_text
+      ->> 'time' is distinct from p_state ->> 'transportReferenceAt'
   then
     return false;
   end if;
 
-  v_reference := p_reference_text::timestamptz;
+  v_reference := (p_state ->> 'transportReferenceAt')::timestamptz;
   v_boundary := v_reference - interval '48 hours';
   v_first_time := (
     p_state -> 'transportEvidence' -> 0 ->> 'time'
@@ -2672,9 +2726,9 @@ begin
         'stateSha256','states','candidateGRollbackCompanion','privacy'
       ]::text[]))
     )
-    or p_payload -> 'schemaVersion' is distinct from '4'::jsonb
+    or p_payload -> 'schemaVersion' is distinct from '5'::jsonb
     or p_payload ->> 'status'
-      is distinct from 'ravscore-schema6-with-candidate-g-rollback-companion'
+      is distinct from 'ravscore-schema6-with-measured-candidate-g-continuation'
     or jsonb_typeof(p_payload -> 'datasetId') is distinct from 'string'
     or jsonb_typeof(p_payload -> 'productionReferenceAt') is distinct from 'string'
     or jsonb_typeof(p_payload -> 'continuationStateContractSha256')
@@ -2685,7 +2739,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '91251f6b38835040250cd5283d2b701aab38bb23f2a4a0014baa1128d59c78f4'
+      '3d4e51b9dca15bafac98cf5c1e69f0b60d6ca354d3aa9e05bf9302d8622c8f77'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2734,7 +2788,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "b114d226425eefd6b7a3c8280fb19982c312f0d88d2f9351c7dc6cbc4ece8c38"
+    "modelBundleSha256": "8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26"
   }'::jsonb then
     return false;
   end if;
@@ -2752,8 +2806,8 @@ begin
         'stateSha256','states','privacy'
       ]::text[]))
     )
-    or v_companion -> 'schemaVersion' is distinct from '1'::jsonb
-    or v_companion ->> 'status' is distinct from 'candidate-g-rollback-ready-companion'
+    or v_companion -> 'schemaVersion' is distinct from '2'::jsonb
+    or v_companion ->> 'status' is distinct from 'candidate-g-measured-continuation-companion'
     or jsonb_typeof(v_companion -> 'datasetId') is distinct from 'string'
     or jsonb_typeof(v_companion -> 'productionReferenceAt') is distinct from 'string'
     or not public.ravradar_ravscore_checkpoint_canonical_time(
@@ -2815,7 +2869,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "2a0cba46ea1bb625f655ee3c58a07c90e3b6d169812f569643d0f2d924c4c09e"
+    "modelBundleSha256": "d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27"
   }'::jsonb then
     return false;
   end if;
@@ -2846,14 +2900,28 @@ begin
   if p_payload is null
     or p_target_reference is null
     or p_current_implementation_sha256 is null
-    or p_payload ->> 'continuationStateContractSha256' is distinct from
-      '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91'
+    or p_payload ->> 'continuationStateContractSha256' not in (
+      '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91',
+      '91251f6b38835040250cd5283d2b701aab38bb23f2a4a0014baa1128d59c78f4'
+    )
+    or p_payload -> 'schemaVersion' is distinct from '4'::jsonb
+    or p_payload ->> 'status' is distinct from 'ravscore-schema6-with-candidate-g-rollback-companion'
+    or p_payload #> '{candidateGRollbackCompanion,schemaVersion}' is distinct from '1'::jsonb
+    or p_payload #>> '{candidateGRollbackCompanion,status}' is distinct from 'candidate-g-rollback-ready-companion'
+    or exists (select 1 from pg_catalog.jsonb_each(
+      p_payload #> '{candidateGRollbackCompanion,states}'
+    ) as state(part_id,value) where state.value -> 'transportMemoryReady' is distinct from 'true'::jsonb
+      or state.value ->> 'transportReferenceAt' is distinct from p_payload ->> 'productionReferenceAt')
   then
     return false;
   end if;
   return public.ravradar_ravscore_checkpoint_payload_valid(
     pg_catalog.jsonb_set(
-      p_payload,
+      pg_catalog.jsonb_set(pg_catalog.jsonb_set(pg_catalog.jsonb_set(pg_catalog.jsonb_set(
+        p_payload, '{schemaVersion}', '5'::jsonb, false),
+        '{status}', '"ravscore-schema6-with-measured-candidate-g-continuation"'::jsonb, false),
+        '{candidateGRollbackCompanion,schemaVersion}', '2'::jsonb, false),
+        '{candidateGRollbackCompanion,status}', '"candidate-g-measured-continuation-companion"'::jsonb, false),
       '{continuationStateContractSha256}',
       pg_catalog.to_jsonb(p_current_implementation_sha256),
       false
@@ -2952,11 +3020,19 @@ begin
       and v_central_reference = p_target_reference
       and (
         v_payload
+          #- '{schemaVersion}'
+          #- '{status}'
+          #- '{candidateGRollbackCompanion,schemaVersion}'
+          #- '{candidateGRollbackCompanion,status}'
           #- '{continuationStateContractSha256}'
           #- '{generationSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}'
       ) = (
         p_payload
+          #- '{schemaVersion}'
+          #- '{status}'
+          #- '{candidateGRollbackCompanion,schemaVersion}'
+          #- '{candidateGRollbackCompanion,status}'
           #- '{continuationStateContractSha256}'
           #- '{generationSha256}'
           #- '{candidateGRollbackCompanion,generationSha256}'
@@ -3108,8 +3184,8 @@ begin
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20260919010000'
-    ) then '20260919010000' else null end,
+      where m.version::text = '20260919020000'
+    ) then '20260919020000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',
       'definition', v_checkpoint_definition

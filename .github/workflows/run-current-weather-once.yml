@@ -10,14 +10,28 @@ permissions:
   pages: write
   id-token: write
 
-# This queue is intentionally separate from the disabled scheduled workflow.
-# It cannot awaken or wait behind historical update-and-deploy queue entries.
+# Current production entrances share a new queue, never the disabled historical
+# queue. Reusable workflows do not acquire this caller-held lock.
 concurrency:
-  group: ravradar-current-weather-once
+  group: ravradar-weather-production-v2
+  queue: max
   cancel-in-progress: false
 
 jobs:
+  operational-recovery-gate:
+    name: Finish an interrupted generation before new work
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/reusable-operational-reentry.yml
+    secrets:
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+
   current-main-target:
+    needs: operational-recovery-gate
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -40,18 +54,6 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
-
-      - name: Restore private Copernicus current cache for target-hour lock
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            .cache/copernicus-current-shadow.json
-            .cache/copernicus-current-source-stage.json
-          key: copernicus-current-progress-v3-manual-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            copernicus-current-progress-v3-
-            copernicus-current-shadow-v1-
-            copernicus-current-range-v2-
 
       - name: Lock the canonical UTC production hour
         id: cache-state

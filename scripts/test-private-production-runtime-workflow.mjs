@@ -886,7 +886,7 @@ try {
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(restored, descriptor.relativePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });
-    await fs.writeFile(destination, `restored-${descriptor.id}\n`);
+    await fs.writeFile(destination, descriptor.id === 'full-conditions' ? '{"legacy":true}\n' : `restored-${descriptor.id}\n`);
   }
   const installed = await installRestoredPrivateRuntime({
     restoredRoot: restored,
@@ -899,7 +899,7 @@ try {
   });
   assert.equal(
     await fs.readFile(path.join(repository, PRIVATE_RUNTIME_FILES[0].relativePath), 'utf8'),
-    `restored-${PRIVATE_RUNTIME_FILES[0].id}\n`,
+    '{"legacy":true}\n',
   );
 
   const rollbackSource = path.join(temp, 'private', 'rollback-source');
@@ -907,7 +907,7 @@ try {
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const source = path.join(rollbackSource, descriptor.relativePath);
     await fs.mkdir(path.dirname(source), { recursive: true });
-    await fs.writeFile(source, `next-${descriptor.id}\n`);
+    await fs.writeFile(source, descriptor.id === 'full-conditions' ? '{"legacy":"next"}\n' : `next-${descriptor.id}\n`);
     const destination = path.join(repository, descriptor.relativePath);
     beforeFailedInstall.set(descriptor.relativePath, await fs.readFile(destination));
   }

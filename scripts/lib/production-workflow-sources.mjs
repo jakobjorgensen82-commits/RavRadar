@@ -5,6 +5,7 @@ export const PRODUCTION_WORKFLOW_SOURCES = Object.freeze({
   orchestrator: '.github/workflows/update-and-deploy.yml',
   build: '.github/workflows/reusable-weather-build.yml',
   deploy: '.github/workflows/reusable-pages-deploy.yml',
+  recovery: '.github/workflows/reusable-operational-reentry.yml',
 });
 
 const freezeList = values => Object.freeze([...values]);
@@ -37,6 +38,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'SUPABASE_URL',
       'TRIP_GATEWAY_SHARED_SECRET',
     ]),
+    optionalSecrets: freezeList([]),
     outputs: freezeList([
       'should_deploy',
       'preflight_should_run',

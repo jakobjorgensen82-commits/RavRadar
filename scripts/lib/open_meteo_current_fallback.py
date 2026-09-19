@@ -689,6 +689,8 @@ def merge_records(*groups: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], 
 def live_record_projection_payload(entry: dict[str, Any]) -> dict[str, Any]:
     if entry.get("recordProjectionContractId") != LIVE_RECORD_PROJECTION_CONTRACT_ID:
         _fail("OPEN_METEO_LIVE_RECORD_INVALID")
+    if entry.get("modelRun") is not None or entry.get("modelReference") is not None:
+        _fail("OPEN_METEO_LIVE_MODEL_REFERENCE_UNBOUND")
     sampling = _point(entry.get("samplingPoint"))
     grid = _point(entry.get("gridPoint"))
     if sampling is None or grid is None:

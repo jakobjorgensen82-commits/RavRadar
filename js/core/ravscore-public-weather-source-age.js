@@ -50,7 +50,19 @@ function comparableSourceReference(provenance, selectedReferenceAt) {
   const isDirectDmi = provenance.provider === 'dmi';
   const isDerivedDmi = provenance.provider === 'ravradar-derived'
     && provenance.upstreamProvider === 'dmi';
-  if (!isDirectDmi && !isDerivedDmi) return null;
+  if (!isDirectDmi && !isDerivedDmi) {
+    // Producer admission already bound this source to its selected input.
+    // Only original subset/response forecast-reference metadata is comparable
+    // with DMI modelRun. Download time or an API model name never is.
+    const proof = provenance.modelReference;
+    const payload = provenance.provider === 'copernicus'
+      && proof?.kind === 'subset-forecast-reference-time' ? provenance.subsetSha256
+      : provenance.provider === 'open-meteo'
+        && proof?.kind === 'response-forecast-reference-time' ? provenance.sourceResponseSha256 : null;
+    if (typeof payload !== 'string' || !/^(?:sha256:)?[0-9a-f]{64}$/.test(payload)
+      || proof.payloadSha256 !== payload || proof.modelRun !== provenance.modelRun
+      || exactUtcHour(proof.validTime) !== selectedReferenceAt) return null;
+  }
   const modelRun = canonicalTimestamp(provenance.modelRun);
   if (!modelRun || Date.parse(modelRun) > Date.parse(selectedReferenceAt)) return null;
   return modelRun;

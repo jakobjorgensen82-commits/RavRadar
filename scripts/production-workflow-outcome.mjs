@@ -59,6 +59,7 @@ const JOB_RESULTS = new Set(['success', 'failure', 'cancelled', 'skipped']);
 const STEP_OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped']);
 const CHECKPOINT_DISPOSITIONS = new Set([
   'READY_PUBLISHED',
+  'MEASURED_WARMUP_PUBLISHED',
   'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
 ]);
 const EVENTS = new Set(['push', 'schedule', 'workflow_dispatch']);
@@ -252,7 +253,7 @@ function checkpointProofHasExactBinding(proof) {
 
 function checkpointProofIsDeploymentReady(proof) {
   if (!checkpointProofHasExactBinding(proof)) return false;
-  if (proof.checkpointDisposition === 'READY_PUBLISHED') {
+  if (['READY_PUBLISHED', 'MEASURED_WARMUP_PUBLISHED'].includes(proof.checkpointDisposition)) {
     return proof.checkpointBuildOutcome === 'success'
       && proof.checkpointSaveOutcome === 'success'
       && proof.checkpointPublishOutcome === 'success';
@@ -265,7 +266,7 @@ function checkpointProofIsDeploymentReady(proof) {
 
 function checkpointProofIsDryRunComplete(proof) {
   if (!checkpointProofHasExactBinding(proof)) return false;
-  if (proof.checkpointDisposition === 'READY_PUBLISHED') {
+  if (['READY_PUBLISHED', 'MEASURED_WARMUP_PUBLISHED'].includes(proof.checkpointDisposition)) {
     return proof.checkpointBuildOutcome === 'success'
       && proof.checkpointSaveOutcome === 'skipped'
       && proof.checkpointPublishOutcome === 'skipped';

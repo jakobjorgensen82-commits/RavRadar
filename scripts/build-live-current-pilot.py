@@ -21,6 +21,7 @@ from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     OPERATIONAL_SEAL_CONTRACT_ID,
     RECORD_PROJECTION_CONTRACT_ID,
+    MODEL_REFERENCE_PROJECTION_CONTRACT_ID,
     SELECTION_POLICY_ID,
     canonical_sha256,
     file_sha256,
@@ -260,6 +261,15 @@ def runtime_times_by_part(
     return times
 
 
+def copernicus_model_reference_fields(record: dict, acquisition: dict) -> dict:
+    proof = record.get("modelReference")
+    if proof is None:
+        return {}
+    return {"recordProjectionContractId": MODEL_REFERENCE_PROJECTION_CONTRACT_ID,
+            "modelRun": proof["modelRun"], "modelReference": proof,
+            "subsetSha256": acquisition["subsetSha256"]}
+
+
 def copernicus_entries(
     document: dict[str, Any],
     targets: dict[str, dict[str, Any]],
@@ -325,6 +335,8 @@ def copernicus_entries(
         depth = float(row["verticalLayerM"])
         entry = {
             "recordProjectionContractId": RECORD_PROJECTION_CONTRACT_ID,
+            **copernicus_model_reference_fields(row, acquisition),
+            **({"agedDmiReplacement": assignment["agedDmiReplacement"]} if "agedDmiReplacement" in assignment else {}),
             "recordId": row["recordId"],
             "acquisitionId": acquisition["acquisitionId"],
             "collectionId": closure_proof["closureId"],
@@ -388,6 +400,7 @@ def copernicus_entries(
             depth = float(row["verticalLayerM"])
             entry = {
                 "recordProjectionContractId": RECORD_PROJECTION_CONTRACT_ID,
+                **copernicus_model_reference_fields(row, acquisition),
                 "recordId": row["recordId"],
                 "acquisitionId": acquisition["acquisitionId"],
                 "collectionId": closure_proof["closureId"],

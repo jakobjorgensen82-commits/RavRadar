@@ -1,5 +1,5 @@
 const HOUR_MS = 3600000;
-export const OPEN_METEO_FUTURE_HOURS = 120;
+export const OPEN_METEO_FUTURE_HOURS = 121;
 
 export function openMeteoPastHours(referenceAt, buildAt = new Date()) {
   const referenceMs = Date.parse(referenceAt);

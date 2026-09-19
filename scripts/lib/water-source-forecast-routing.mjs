@@ -1,4 +1,4 @@
-import { buildDmiForecastHourly, canonicalForecastHour } from './dmi-forecast-store.mjs';
+import { buildDmiForecastHourly, canonicalForecastHour, DMI_FORECAST_HOURS } from './dmi-forecast-store.mjs';
 import { recommendWaterStationBracket } from '../../js/core/water-station-routing.js';
 
 const finite=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
@@ -14,7 +14,7 @@ function sourceRecordFromBulk(source, bulk, generatedAt){
     step:r.time,
     'sea-mean-deviation':finite(r['sea-mean-deviation']),
     provenance:{waterLevel:r?.sources?.waterLevel??null}
-  })),generatedAt,startAt:canonicalForecastHour(generatedAt),hours:118,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
+  })),generatedAt,startAt:canonicalForecastHour(generatedAt),hours:DMI_FORECAST_HOURS,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
   const hourly=built.hourly.filter(r=>finite(r.waterLevelCm)!==null);
   if(!hourly.length)return null;
   return {sourceKey:sourceKey(source),stationId:String(source.stationId),name:source.name,sourceType:source.sourceType,point:source.point,hourly,generatedAt:bulk.generatedAt??generatedAt,validUntil:hourly.at(-1)?.time??null,horizonHours:Math.max(0,Math.round((Date.parse(hourly.at(-1).time)-Date.parse(generatedAt))/3600000))};
@@ -103,12 +103,18 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
         const values=sourceRows.map(sourceRow=>finite(sourceRow?.waterLevelCm));
         if(values.some(v=>v===null))return row;
         const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0);
-        return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,route?.method)}};
+        const futureTime=new Date(Date.parse(row.time)+3*3600000).toISOString();
+        const futureValues=timeMaps.map(map=>finite(map.get(futureTime)?.waterLevelCm));
+        // The source builder already requires comparable DMI series for T+3.
+        // Use its proof plus the exact private support hour, not row position
+        // or a neighbouring public row from a different retained source.
+        const trendKnown=sourceRows.every(sourceRow=>finite(sourceRow?.waterLevelTrendCm3h)!==null)
+          &&futureValues.every(v=>v!==null);
+        const futureValue=trendKnown?futureValues.reduce((sum,v,i)=>sum+v*rows[i].weight,0):null;
+        return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),
+          waterLevelTrendCm3h:futureValue===null?null:round(futureValue,0)-round(value,0),
+          waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,route?.method)}};
       });
-      for(let i=0;i<routed.length;i++){
-        const future=routed[i+3];
-        routed[i].waterLevelTrendCm3h=finite(routed[i].waterLevelCm)!==null&&finite(future?.waterLevelCm)!==null?round(future.waterLevelCm-routed[i].waterLevelCm,0):null;
-      }
       return routed;
     };
     // Den offentlige serie kan indeholde komponentvis fallback, som ikke findes i
@@ -125,7 +131,12 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
     }
     if(zone.forecast?.hourly)zone.forecast.hourly=updated;
     const current=updated.find(r=>Date.parse(r.time)>=Date.parse(generatedAt)-30*60000)??updated[0];
-    if(current&&finite(current.waterLevelCm)!==null)zone.current.waterLevelCm=current.waterLevelCm;
+    if(current&&finite(current.waterLevelCm)!==null){
+      zone.current.waterLevelCm=current.waterLevelCm;
+      zone.current.waterLevelTrendCm3h=current.waterLevelTrendCm3h;
+      zone.current.waterLevelSource=current.waterLevelSource;
+      zone.current.sources={...(zone.current.sources??{}),waterLevel:current.sources?.waterLevel};
+    }
     zone.waterLevel={...(zone.waterLevel??{}),source:'dmi-water-source-interpolation',reference:'DMI DKSS-prognose ved valgte vandstandskilder',interpolation:meta,diagnostic:{...(zone.waterLevel?.diagnostic??{}),waterSourceRouting:meta,displayValueCm:current?.waterLevelCm??zone.current?.waterLevelCm}};
   }
   return {audit,notifications};

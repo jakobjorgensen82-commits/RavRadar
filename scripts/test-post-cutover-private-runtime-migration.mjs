@@ -305,7 +305,9 @@ for (const marker of [
   "'CONTRACT_ONLY_REBIND'",
   'migratedConditionsBytes:',
   'migratedConditionsSha256:',
-  'Private runtime inventory is not the exact nine-file allowlist',
+  'const allowed = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE]',
+  'assertPrivateRuntimeInventory(actual)',
+  'Private runtime component marker requires its preserved input pack',
   'Private runtime migration changed forbidden paths',
   'Current continuation repair changed forbidden paths',
   'reconcileIntegratedCurrentPartProjection',
@@ -319,4 +321,4 @@ for (const marker of [
 
 assert.doesNotMatch(source, /Archived-source contract hashes mismatch/);
 
-console.log('Post-cutover private runtime rebind: exact current predecessor, model migration or byte-exact contract-only reuse, nine-file allowlist and payload-free report.');
+console.log('Post-cutover private runtime rebind: exact current predecessor, model migration or byte-exact contract-only reuse, nine base files plus one sealed component pack and payload-free report.');

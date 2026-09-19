@@ -23,12 +23,46 @@ permissions:
 # Code-only-rettelser og normal vejrhentning deler produktionslåsen, men
 # deler aldrig providertrin eller providercredentials.
 concurrency:
-  group: ravradar-weather-production
+  group: ravradar-weather-production-v2
   queue: max
   cancel-in-progress: false
 
 jobs:
+  validate-authority:
+    name: Validate manual authority before any recovery writes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require the exact dispatch purpose on main
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          SAVED_WEATHER: ${{ inputs.publish_newest_saved_weather }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_REF" = "refs/heads/main"
+          if test "$SAVED_WEATHER" = "true"; then
+            test "$CONFIRMATION" = "DEPLOY-SAVED-WEATHER-REPAIR"
+          else
+            test "$CONFIRMATION" = "DEPLOY-CODE-ONLY-REPAIR"
+          fi
+
+  operational-recovery-gate:
+    name: Finish an interrupted generation before new work
+    needs: validate-authority
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/reusable-operational-reentry.yml
+    secrets:
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+
   build-code-only:
+    needs: operational-recovery-gate
     name: Reuse exact runtime and build code-only artifact
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -621,6 +655,7 @@ jobs:
             mode=saved-weather-continuation
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
             case "$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)" in
+              MODEL_BINDING_METADATA_ONLY) mode=code-only-reuse ;;
               MODEL_BINDING_MIGRATION) mode=post-cutover-last-mile-repair ;;
               CONTRACT_ONLY_REBIND) mode=post-cutover-contract-rebind ;;
               *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
@@ -637,15 +672,18 @@ jobs:
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
             transition_kind="$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)"
             case "$transition_kind" in
+              MODEL_BINDING_METADATA_ONLY)
+                jq -e '.mode == "code-only-reuse" and .scoresChanged == false' .geometry-v2-work/code-only-public-runtime-reuse.json
+                ;;
               MODEL_BINDING_MIGRATION)
-                jq -e '.mode == "post-cutover-last-mile-repair" and .scoresChanged == true' .geometry-v2-work/code-only-public-runtime-reuse.json
+                jq -e '.mode == "post-cutover-last-mile-repair" and .scoresChanged == true and .savedProtectedRuntimeReused == true' .geometry-v2-work/code-only-public-runtime-reuse.json
                 ;;
               CONTRACT_ONLY_REBIND)
-                jq -e '.mode == "post-cutover-contract-rebind" and .scoresChanged == false' .geometry-v2-work/code-only-public-runtime-reuse.json
+                jq -e '.mode == "post-cutover-contract-rebind" and .scoresChanged == false and .savedProtectedRuntimeReused == true' .geometry-v2-work/code-only-public-runtime-reuse.json
                 ;;
               *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
             esac
-            jq -e '.providerRequestsPerformed == false and .savedProtectedRuntimeReused == true and .publicRuntimeAdvanced == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
+            jq -e '.providerRequestsPerformed == false and .publicRuntimeAdvanced == false and .weatherValuesChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           else
             jq -e '.providerRequestsPerformed == false and .weatherValuesChanged == false and .scoresChanged == false and .geometryChanged == false and .privatePayloadIncluded == false and .zoneCount == 210 and .coastalPartCount == 673' .geometry-v2-work/code-only-public-runtime-reuse.json
           fi
@@ -715,7 +753,7 @@ jobs:
           rollback_activation_ready="${{ steps.runtime-audit.outputs.rollback_activation_ready }}"
           case "$rollback_status:$rollback_activation_ready" in
             READY:true) disposition=READY_PUBLISHED; checkpoint_required=true ;;
-            BUILDING_MEASURED_ONLY:false) disposition=NOT_APPLICABLE_DURING_MEASURED_WARMUP; checkpoint_required=false ;;
+            BUILDING_MEASURED_ONLY:false) disposition=MEASURED_WARMUP_PUBLISHED; checkpoint_required=true ;;
             *) exit 1 ;;
           esac
           dataset_id="$(jq -er '.datasetId | select(type == "string" and length > 0)' data/live/manifest.json)"
@@ -739,26 +777,26 @@ jobs:
           echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"
           echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"
 
-      - name: Build continuation checkpoint only when already applicable
+      - name: Build measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-build
-        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        if: steps.runtime-audit.outputs.rollback_status == 'READY' || steps.runtime-audit.outputs.rollback_status == 'BUILDING_MEASURED_ONLY'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
           --save
           --source data/live/conditions.json
           --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
 
-      - name: Save continuation checkpoint only when already applicable
+      - name: Save measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-save
-        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        if: steps.runtime-audit.outputs.rollback_status == 'READY' || steps.runtime-audit.outputs.rollback_status == 'BUILDING_MEASURED_ONLY'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
           key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}-code-only
 
-      - name: Publish continuation checkpoint only when already applicable
+      - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: steps.runtime-audit.outputs.rollback_activation_ready == 'true'
+        if: steps.runtime-audit.outputs.rollback_status == 'READY' || steps.runtime-audit.outputs.rollback_status == 'BUILDING_MEASURED_ONLY'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -821,6 +859,7 @@ jobs:
           install -m 0644 data/live/public-conditions.json _site/data/live/public-conditions.json
           install -m 0644 data/live/public-condition-details.json _site/data/live/public-condition-details.json
           install -m 0644 data/live/coastal-parts-v2.json _site/data/live/coastal-parts-v2.json
+          node scripts/copy-public-delivery-shards.mjs --source data/live --target _site/data/live
 
       - name: Preflight complete Pages artifact for private runtime material
         id: pages-preflight-privacy

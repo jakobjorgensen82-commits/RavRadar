@@ -2391,7 +2391,11 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                 patch.object(
                     producer,
                     "field_signature",
-                    side_effect=lambda gid: {"shortName": parameters[gid]},
+                    side_effect=lambda gid: (
+                        {"shortName": "pp1d", "paramId": 231, "indicatorOfParameter": 231}
+                        if parameters[gid] == "dominant-wave-period"
+                        else {"shortName": parameters[gid]}
+                    ),
                 ),
                 patch.object(
                     producer,
@@ -3592,7 +3596,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
         gate_start = workflow.index(
-            "- name: Inspect operational WAM handoff before first integrated cutover"
+            "- name: Inspect operational WAM handoff before state initialization"
         )
         gate_end = workflow.index("- name: Report DMI bulk result", gate_start)
         gate = workflow[gate_start:gate_end]
@@ -3617,7 +3621,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("--production-target-hour", gate)
         self.assertIn("--forecast-hour-count 118", gate)
         final_gate = workflow.index(
-            "- name: Require complete operational WAM after provider progress for first cutover"
+            "- name: Require complete operational WAM after provider progress for state initialization"
         )
         open_meteo = workflow.index(
             "- name: Fill only the exact remaining current gaps from Open-Meteo"
@@ -3727,17 +3731,22 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         dmi_start = workflow.index("- name: Update DMI bulk model cache")
         dmi_end = workflow.index("\n      - name:", dmi_start + 1)
         dmi = workflow[dmi_start:dmi_end]
-        extended_guard = f"(inputs.extended_provider_bootstrap == true || ({cutover_guard}))"
+        transition_guard = "steps.historical-wave-transition.outputs.required == 'true'"
+        extended_guard = (
+            f"(inputs.extended_provider_bootstrap == true || {transition_guard} || ({cutover_guard}))"
+        )
         for marker in (
             f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {extended_guard} && '4096' || '2048' }}}}",
-            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ inputs.extended_provider_bootstrap == true && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ (inputs.extended_provider_bootstrap == true || {transition_guard}) && '3600' || ({cutover_guard}) && '3000' || '1500' }}}}",
             f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {extended_guard} && '180' || '120' }}}}",
-            f"DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}}}",
+            "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ "
+            f"({cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode) || "
+            f"({transition_guard} && steps.historical-wave-transition.outputs.mode) || 'none' }}}}",
         ):
             self.assertIn(marker, dmi)
         self.assertIn(
             "DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || "
-            f"({cutover_guard}) }}}}",
+            f"{transition_guard} || ({cutover_guard}) }}}}",
             dmi,
         )
 
@@ -3769,35 +3778,40 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("id: point-candidate-readiness", point)
         self.assertIn("steps.dmi-bulk.outcome == 'success'", point)
         self.assertIn("continue-on-error: true", point)
-        for step_name in (
-            "Save progressed DMI GRIB download cache",
-            "Save private seven-day current-field research cache",
-        ):
-            start = workflow.index(f"- name: {step_name}")
-            end = workflow.index("\n      - name:", start + 1)
-            self.assertIn("if: always()", workflow[start:end])
+        grib_position, grib_save = workflow_step(
+            workflow, "Save progressed DMI GRIB download cache"
+        )
+        self.assertIn("if: always()", grib_save)
+        self.assertIn("path: .cache/dmi-grib", grib_save)
+        self.assertIn("key: dmi-grib-v4-", grib_save)
 
         self.assertNotIn("- name: Save progressive private DMI zone cache", workflow)
-        self.assertNotIn("dmi-zone-cache-v1-${{ runner.os }}", workflow)
+        for retired_prefix in (
+            "dmi-zone-cache-v1-${{ runner.os }}",
+            "dmi-zone-active-v1-",
+            "dmi-zone-candidate-v1-",
+            "current-field-shadow-v1-",
+        ):
+            self.assertNotIn(retired_prefix, workflow)
         normal_names = (
-            "Restore last complete active DMI generation",
+            "Select encrypted active DMI generation when available",
             "Strictly bind and materialize the active DMI generation",
-            "Reconfirm exact main before materialized legacy DMI cache",
-            "Save materialized legacy active DMI generation",
-            "Restore isolated DMI candidate progress for normal maintenance",
             "Update DMI bulk model cache",
-            "Save isolated DMI candidate progress before any terminal decision",
             "Classify DMI readiness before current supplement",
             "Strictly snapshot the maintained READY active DMI generation",
-            "Save the maintained complete active DMI generation",
+            "Encrypt newly saved private weather progress before later production steps",
+            "Save only the authenticated encrypted private weather snapshot",
         )
         normal = {name: workflow_step(workflow, name) for name in normal_names}
         normal_positions = [normal[name][0] for name in normal_names]
         self.assertEqual(normal_positions, sorted(normal_positions))
+        self.assertLess(normal[normal_names[2]][0], grib_position)
+        self.assertLess(grib_position, normal[normal_names[3]][0])
 
         active_restore = normal[normal_names[0]][1]
-        self.assertIn("path: .cache/dmi-active-complete.json", active_restore)
-        self.assertIn("key: dmi-zone-active-v1-", active_restore)
+        self.assertIn("test -s .cache/dmi-active-complete.json", active_restore)
+        self.assertIn('echo "available=true"', active_restore)
+        self.assertNotIn("actions/cache", active_restore)
 
         active_materialize = normal[normal_names[1]][1]
         self.assertIn(
@@ -3822,31 +3836,12 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             active_materialize,
         )
-
-        materialized_authority = normal[normal_names[2]][1]
-        self.assertIn("steps.dmi-active-restore.outputs.cache-matched-key == ''", materialized_authority)
-        self.assertIn("steps.dmi-active-legacy-bootstrap.outcome == 'success'", materialized_authority)
-        self.assertIn("continue-on-error: true", materialized_authority)
-        self.assertIn('test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"', materialized_authority)
-
-        materialized_save = normal[normal_names[3]][1]
-        self.assertIn("steps.dmi-legacy-materialized-write-authority.outcome == 'success'", materialized_save)
-        self.assertIn("continue-on-error: true", materialized_save)
-        self.assertIn("path: .cache/dmi-active-complete.json", materialized_save)
-        self.assertIn("-legacy-materialized-${{ github.run_id }}-${{ github.run_attempt }}", materialized_save)
-        self.assertNotIn("candidate_promoted", materialized_save)
-
-        candidate_restore = normal[normal_names[4]][1]
-        self.assertIn("path: .cache/dmi-candidate-progress.json", candidate_restore)
-        self.assertIn("key: dmi-zone-candidate-v1-", candidate_restore)
-        self.assertIn("restore-keys:", candidate_restore)
-
         self.assertNotIn(
             "Inspect isolated DMI candidate progress for normal maintenance",
             workflow,
         )
 
-        dmi = normal[normal_names[5]][1]
+        dmi = normal[normal_names[2]][1]
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
@@ -3856,18 +3851,11 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         ):
             self.assertIn(marker, dmi)
 
-        candidate = normal[normal_names[6]][1]
-        self.assertIn("if: always()", candidate)
-        self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", candidate)
-        self.assertIn("path: .cache/dmi-candidate-progress.json", candidate)
-        self.assertIn("key: dmi-zone-candidate-v1-", candidate)
-        self.assertNotIn("dmi-zone-cache-v1-", candidate)
-
-        terminal = normal[normal_names[7]][1]
+        terminal = normal[normal_names[3]][1]
         self.assertIn('test "$code" = "DMI_READY"', terminal)
         self.assertIn('test "$STRICT_CURRENT_ANCHOR_READY" = "true"', terminal)
 
-        snapshot = normal[normal_names[8]][1]
+        snapshot = normal[normal_names[4]][1]
         self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", snapshot)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", snapshot)
         self.assertIn("python scripts/check-dmi-bulk-operational-ready.py", snapshot)
@@ -3877,13 +3865,18 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("--require-strict-dmi-ledger", snapshot)
         self.assertIn("--at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"", snapshot)
 
-        active = normal[normal_names[9]][1]
-        self.assertNotIn("if: always()", active)
-        self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", active)
-        self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", active)
-        self.assertIn("path: .cache/dmi-active-complete.json", active)
-        self.assertIn("key: dmi-zone-active-v1-", active)
-        self.assertNotIn("dmi-zone-cache-v1-", active)
+        encrypted_seal = normal[normal_names[5]][1]
+        self.assertIn("if: always()", encrypted_seal)
+        self.assertIn("weather-component-progress-cache.mjs save", encrypted_seal)
+        self.assertIn("steps.component-progress-restore.outputs.captured == 'true'", encrypted_seal)
+        encrypted_save = normal[normal_names[6]][1]
+        self.assertIn("path: .cache/weather-private-progress.encrypted", encrypted_save)
+        self.assertIn("weather-private-progress-encrypted-v2-", encrypted_save)
+        inventory = (
+            ROOT / "scripts" / "lib" / "private-weather-component-inventory.mjs"
+        ).read_text("utf-8")
+        for marker in ("dmiActive:", "dmiCandidate:", "currentFieldShadow:"):
+            self.assertIn(marker, inventory)
 
         oneoff = (
             ROOT
@@ -4047,6 +4040,8 @@ const at = hours => new Date(Date.parse(target) + hours * 3600000).toISOString()
 const provenance = (step, modelRun) => ({ wave: {
   provider: 'dmi', fallback: false, collection: 'wam_dw', collectionFamily: 'wave',
   component: 'wave', componentKind: 'wave-mobilisation-tuple',
+  wavePeriodSemantics: 'peak',
+  wavePeriodField: { shortName: 'pp1d', paramId: 231, indicatorOfParameter: 231 },
   fieldSet: ['significant-wave-height', 'dominant-wave-period'],
   optionalFieldSet: ['mean-wave-dir'], modelRun, nativeValidTime: step,
   leadTimeHours: (Date.parse(step) - Date.parse(modelRun)) / 3600000,

@@ -255,6 +255,13 @@ assert.ok(verifiedLivePilotSource(
   part,
   { requireStatus: true },
 ), 'the runtime projection must retain an old-but-future-valid Open-Meteo row');
+for (const unbound of [
+  { modelRun: merged.hourly[0].currentProvenance.acquisitionAt },
+  { modelReference: { kind: 'response-forecast-reference-time', modelRun: '2026-09-02T00:00:00Z' } },
+]) {
+  assert.equal(verifiedLivePilotSource({ ...merged.hourly[0].currentProvenance, ...unbound }, part), null,
+    'Legacy current projections cannot gain model age from unbound metadata or acquisition time');
+}
 assert.equal(integratedInputCalibrationEligible(merged.hourly[0]), false);
 const sanitized = verifiedIntegratedPartHourly(
   merged,

@@ -34,6 +34,7 @@ const COPERNICUS_SELECTION_POLICY_ID = 'per-native-time-nearest-shared-uv-column
 const COPERNICUS_REQUEST_CONTRACT_ID = 'copernicus-current-multitime-bounded-spatial-shards-v1';
 const COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID = 'copernicus-current-schema1-history-migration-v1';
 const COPERNICUS_RECORD_PROJECTION_CONTRACT_ID = 'copernicus-live-current-record-fixed-decimal-v1';
+const COPERNICUS_MODEL_REFERENCE_PROJECTION_CONTRACT_ID = 'copernicus-live-current-record-fixed-decimal-model-reference-v2';
 const COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID = 'copernicus-required-part-time-pairs-v1';
 const COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID = 'copernicus-current-operational118-advisory-history48-seal-v1';
 const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID =
@@ -308,8 +309,33 @@ function exactString(value) {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function currentModelReferenceBinding(entry) {
+  const proof = entry?.modelReference;
+  const fields = ['kind', 'payloadSha256', 'modelRun', 'validTime', 'referenceVariable',
+    'referenceIndex', 'forecastPeriodVariable', 'forecastPeriodChecked', 'leadSeconds'];
+  if (!exactObjectFields(proof, fields)
+    || proof.kind !== 'subset-forecast-reference-time'
+    || !SHA256_PATTERN.test(entry.subsetSha256 ?? '') || proof.payloadSha256 !== entry.subsetSha256
+    || proof.modelRun !== entry.modelRun || !exactUtcHour(proof.modelRun)
+    || proof.validTime !== entry.validTime || !exactUtcHour(proof.validTime)
+    || exactString(proof.referenceVariable) === null
+    || (proof.referenceIndex !== null && (!Number.isInteger(proof.referenceIndex) || proof.referenceIndex < 0))
+    || (proof.forecastPeriodVariable !== null && exactString(proof.forecastPeriodVariable) === null)
+    || proof.forecastPeriodChecked !== (proof.forecastPeriodVariable !== null)
+    || !Number.isFinite(proof.leadSeconds) || proof.leadSeconds < 0
+    || proof.leadSeconds !== (Date.parse(proof.validTime) - Date.parse(proof.modelRun)) / 1000
+    || !canonicalTime(entry.acquisitionAt) || Date.parse(proof.modelRun) > Date.parse(entry.acquisitionAt)) return null;
+  return { modelRun: proof.modelRun, subsetSha256: entry.subsetSha256, modelReferenceSha256: canonicalSha256(proof) };
+}
+
 function copernicusRecordProjectionPayload(entry) {
-  if (!entry || entry.recordProjectionContractId !== COPERNICUS_RECORD_PROJECTION_CONTRACT_ID) return null;
+  const contract = entry?.recordProjectionContractId;
+  if (![COPERNICUS_RECORD_PROJECTION_CONTRACT_ID, COPERNICUS_MODEL_REFERENCE_PROJECTION_CONTRACT_ID].includes(contract)) return null;
+  // v1 binds acquisition time, not a response forecast-reference time. Do not
+  // admit appended, unbound metadata as authority to replace aged valid DMI.
+  const modelBinding = contract === COPERNICUS_MODEL_REFERENCE_PROJECTION_CONTRACT_ID ? currentModelReferenceBinding(entry) : {};
+  if (!modelBinding || (contract === COPERNICUS_RECORD_PROJECTION_CONTRACT_ID
+    && (entry.modelRun != null || entry.modelReference != null))) return null;
   const samplingPoint = exactPoint(entry.samplingPoint);
   const gridPoint = exactPoint(entry.gridPoint);
   const sharedLayerCount = entry.sharedLayerCount;
@@ -340,7 +366,8 @@ function copernicusRecordProjectionPayload(entry) {
     || entry.interpolation !== false
     || entry.vectorSemanticsVersion !== 4) return null;
   return {
-    contractId: COPERNICUS_RECORD_PROJECTION_CONTRACT_ID,
+    contractId: contract,
+    ...modelBinding,
     recordId: entry.recordId,
     acquisitionId: entry.acquisitionId,
     collectionId: entry.collectionId,
@@ -386,6 +413,7 @@ function verifiedCopernicusRecordProjection(entry) {
 
 function openMeteoRecordProjectionPayload(entry) {
   if (!entry || entry.recordProjectionContractId !== OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID) return null;
+  if (entry.modelRun != null || entry.modelReference != null) return null;
   const samplingPoint = exactPoint(entry.samplingPoint);
   const gridPoint = exactPoint(entry.gridPoint);
   if (!samplingPoint || !gridPoint) return null;
@@ -731,7 +759,23 @@ function closureAssignmentIdentity(entry) {
       || entry.recordRefSha256 !== canonicalSha256({
         contractId: 'current-operational-copernicus-record-ref-v1', recordRef: ref,
       })) return null;
-    return { ...ref, classification: entry.classification, recordRefSha256: entry.recordRefSha256 };
+    let replacement = {};
+    if (entry.agedDmiReplacement != null) {
+      const decision = entry.agedDmiReplacement;
+      const binding = currentModelReferenceBinding(entry);
+      if (!binding || !exactObjectFields(decision, ['productionReferenceAt', 'protectedModelRun',
+        'protectedSourceAssetSha256', 'selectedModelRun', 'modelReferenceSha256'])
+        || decision.productionReferenceAt !== entry.productionReferenceAt
+        || !exactUtcHour(decision.productionReferenceAt) || !exactUtcHour(decision.protectedModelRun)
+        || decision.selectedModelRun !== binding.modelRun
+        || decision.modelReferenceSha256 !== binding.modelReferenceSha256
+        || !SHA256_PATTERN.test(decision.protectedSourceAssetSha256 ?? '')
+        || Date.parse(decision.productionReferenceAt) - Date.parse(decision.protectedModelRun) < 96 * 3600000
+        || Date.parse(decision.selectedModelRun) <= Date.parse(decision.protectedModelRun)
+        || Date.parse(decision.selectedModelRun) > Date.parse(decision.productionReferenceAt)) return null;
+      replacement = { agedDmiReplacement: decision };
+    }
+    return { ...ref, classification: entry.classification, recordRefSha256: entry.recordRefSha256, ...replacement };
   }
   if (entry.classification === OPEN_METEO_CLASSIFICATION) {
     const acquiredAt = canonicalTime(entry.acquiredAt);
@@ -818,7 +862,9 @@ function closureAssignmentIdentity(entry) {
 function buildOperationalClosureDocumentProof(document) {
   if (!basicControlledLiveDocument(document)) return null;
   const value = document.operationalClosure;
-  if (!exactObjectFields(value, CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS)
+  const safeFields = [...CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS,
+    ...(value?.agedDmiSelection != null ? ['agedDmiSelection'] : [])];
+  if (!exactObjectFields(value, safeFields)
     || value.schemaVersion !== 3
     || value.contractId !== CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID
     || !['READY', 'READY_WITH_MISSING'].includes(value.status)
@@ -902,6 +948,7 @@ function buildOperationalClosureDocumentProof(document) {
   const entriesByPartId = new Map();
   const entryByPartAndTime = new Map();
   const assignmentHashes = [];
+  const replacementHashes = [];
   const seenPairs = new Set();
   const classCounts = new Map([
     [COPERNICUS_BALTIC_CLASSIFICATION, 0],
@@ -931,6 +978,7 @@ function buildOperationalClosureDocumentProof(document) {
     seenPairs.add(key);
     classCounts.set(entry.classification, (classCounts.get(entry.classification) ?? -1) + 1);
     assignmentHashes.push(assignmentSha);
+    if (identity.agedDmiReplacement) replacementHashes.push(assignmentSha);
     entryMembership.add(entry);
     entrySha256ByObject.set(entry, canonicalSha256(entry));
     assignmentShaByObject.set(entry, assignmentSha);
@@ -942,6 +990,19 @@ function buildOperationalClosureDocumentProof(document) {
     partTimes.set(entry.validTime, entry);
     entryByPartAndTime.set(entry.partId, partTimes);
   }
+  const selection = value.agedDmiSelection;
+  if (selection != null) {
+    if (!exactObjectFields(selection, ['challengePlanSha256', 'rawDmiVerifiedPairCount',
+      'challengedPairCount', 'replacedPairCount', 'retainedPairCount', 'replacementAssignmentsSha256'])
+      || ['rawDmiVerifiedPairCount', 'challengedPairCount', 'replacedPairCount', 'retainedPairCount']
+        .some(field => !Number.isInteger(selection[field]) || selection[field] < 0)
+      || !SHA256_PATTERN.test(selection.challengePlanSha256 ?? '')
+      || selection.rawDmiVerifiedPairCount !== value.dmiVerifiedPairCount + replacementHashes.length
+      || selection.replacedPairCount !== replacementHashes.length
+      || selection.challengedPairCount !== replacementHashes.length + selection.retainedPairCount
+      || selection.challengedPairCount > selection.rawDmiVerifiedPairCount
+      || selection.replacementAssignmentsSha256 !== canonicalSha256(replacementHashes)) return null;
+  } else if (replacementHashes.length) return null;
   if (classCounts.get(COPERNICUS_BALTIC_CLASSIFICATION) !== value.copernicusBalticPairCount
     || classCounts.get(COPERNICUS_AMM15_CLASSIFICATION) !== value.copernicusAmm15PairCount
     || classCounts.get(REGIONAL_NATIVE_CLASSIFICATION) !== value.regionalNativePairCount

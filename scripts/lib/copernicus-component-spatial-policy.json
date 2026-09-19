@@ -1,0 +1,19 @@
+{
+  "policyId": "cp-exact-part-static-wet-cell-v1",
+  "schemaVersion": 1,
+  "selection": "same-nearest-native-cell-no-wet-search",
+  "maximumDistanceKm": "2",
+  "maskVariable": "mask",
+  "maskStandardName": "sea_binary_mask",
+  "depthVariable": "deptho",
+  "depthStandardName": "sea_floor_depth_below_geoid",
+  "staticPart": "bathy",
+  "contracts": {
+    "nws-wave": {"staticDatasetId": "cmems_mod_nws_wav_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "10", "depthComparison": ">=", "surfaceMaskDepth": null},
+    "baltic-wave": {"staticDatasetId": "cmems_mod_bal_wav_anfc_static", "staticVersion": "202311", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": null},
+    "nws-level": {"staticDatasetId": "cmems_mod_nws_phy_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "at-most-0.5"},
+    "nws-temperature": {"staticDatasetId": "cmems_mod_nws_phy_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "at-most-0.5"},
+    "baltic-level": {"staticDatasetId": "cmems_mod_bal_phy_anfc_static", "staticVersion": "202411", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "exact-0.5"},
+    "baltic-temperature": {"staticDatasetId": "cmems_mod_bal_phy_anfc_static", "staticVersion": "202411", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "exact-0.5"}
+  }
+}

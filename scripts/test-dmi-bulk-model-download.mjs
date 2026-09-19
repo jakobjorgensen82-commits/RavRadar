@@ -503,12 +503,10 @@ for (const marker of [
 ]) {
   assert.ok(terminalGateBlock.includes(marker), `DMI-terminalgaten mangler ${marker}`);
 }
-const directInstallContinuePolicy = "continue-on-error: ${{ env.RAVRADAR_DIRECT_INTEGRATED_INSTALL == 'true' }}";
-assert.ok(terminalGateBlock.includes(directInstallContinuePolicy));
 assert.doesNotMatch(
-  terminalGateBlock.replace(directInstallContinuePolicy, ''),
+  terminalGateBlock,
   /continue-on-error/,
-  'DMI-terminalgaten må kun fortsætte i den udtrykkeligt godkendte direkte first-cutover-vej.',
+  'DMI-terminalgaten må ikke genaktivere den udløbne direkte first-cutover-undtagelse.',
 );
 const selectorBlock = build.slice(
   copernicusSelector,

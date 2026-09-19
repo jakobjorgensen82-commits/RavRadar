@@ -28,6 +28,10 @@ const native = (component, collection, step, modelRun = generatedAt, overrides =
     provider: 'dmi', fallback: false, collection, collectionFamily: collectionFamily(collection),
     component, componentKind: componentKind[component], fieldSet: componentFields[component],
     optionalFieldSet: component === 'wave' ? ['mean-wave-dir'] : [],
+    ...(component === 'wave' ? {
+      wavePeriodSemantics: 'peak',
+      wavePeriodField: { shortName: 'pp1d', paramId: 231, indicatorOfParameter: null },
+    } : {}),
     modelRun, nativeValidTime: step,
     leadTimeHours: (Date.parse(step) - Date.parse(modelRun)) / 3600000,
     entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
@@ -411,11 +415,12 @@ assert.equal(normalized[0].windSpeedMps, 4);
 assert.equal(normalized[0].waveHeightM, 0.5);
 
 const record = createDmiForecastRecord({ zoneId: 'test-zone', point: [10, 56], generatedAt, hourly: built.hourly });
-assert.equal(record.horizonHours, 120);
-assert.ok(Date.parse(record.validUntil) - Date.parse(record.validFrom) >= 119 * 3600000);
+assert.equal(record.horizonHours, DMI_FORECAST_HOURS);
+assert.equal(Date.parse(record.validUntil) - Date.parse(record.validFrom), 120 * 3600000,
+  'private forecast retains T+120 for the public T+117 three-hour trend');
 assert.equal(selectDmiForecastAt(record, '2026-07-26T12:00:00.000Z').waterLevelCm, 15);
 assert.equal(selectDmiForecastAt(record, '2026-07-30T12:00:00.000Z'), null, 'udløbet DMI-cache må ikke bruges');
-assert.equal(dmiForecastCoverage(record, generatedAt).totalHours, 120);
+assert.equal(dmiForecastCoverage(record, generatedAt).totalHours, DMI_FORECAST_HOURS);
 
 const stations = [
   { stationId: 'A', name: 'A', point: [0, 0] },

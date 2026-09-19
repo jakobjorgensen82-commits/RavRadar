@@ -1,0 +1,69 @@
+# Open-Meteo: komponent, model og gitterbevis
+
+Status: lokal implementeringskontrakt, 2026-09-19. Officiel kode er undersøgt; ingen vejrdata er hentet, og denne note er ikke produktionsbevis. Undersøgt Open-Meteo-commit: `e669e6293ce2f0c70646fd61af8fe0c529fc0c53`. Noten supplerer DEC-0210 og ændrer hverken central geometri, tilladt afstand, DMI-first eller vandstandsdatum.
+
+## Konkret kildefejl og rettelse
+
+Et samlet `best_match`-svar beviser ikke én model eller ét gitterpunkt for alle felter. Reader-mixeren kan udfylde manglende værdier fra lavere prioriterede modeller, mens koordinatet følger sidste tilgængelige reader. Derfor må bølgehøjde, peakperiode og retning ikke optages som én kildebevist tuple fra et sådant svar. Det samme problem gælder fælles koordinat på tværs af bølger, vandstand og SST. [Controller](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Controllers/ForecastapiController.swift), [readermixer](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Helper/Reader/GenericReaderMulti.swift).
+
+Den normale native-policy er nu eksplicit `OPEN_METEO_NATIVE_NEAREST_POLICIES`. PART-requests er adskilt efter komponent:
+
+| Komponent | Eksplicit API-model | Felter | Cellevalg |
+| --- | --- | --- | --- |
+| Vind | `ecmwf_ifs` | `wind_speed_10m,wind_direction_10m` | exact O1280 `nearest` |
+| Bølger | `ecmwf_wam` | `wave_height,wave_peak_period,wave_direction` | exact O1280 `nearest` |
+| Vandstand | ikke optaget til normal modelinput | datumafklaring mangler | ingen normal native-request |
+| Vandtemperatur | `meteofrance_currents` | `sea_surface_temperature` | eksplicit godkendt `nearest` |
+
+Det er en præcis native-centerregel, ikke en kilometersøgeradius. Et andet returneret punkt afvises; null/masket center må ikke medføre søgning efter en anden vådcelle. IFS-native har én vindbærende ECPDS-reader; dens supplerende sandsynlighedsreader leverer ikke vind. WAM-native går til én ECPDS-reader. Native O1280-modellernes H144/H360 og deres skift fra native timer til tre-timerstrin fremgår af [ECPDS-domænet](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/EcmwfEcpds/EcmwfEcpdsDomain.swift). API-timer er derfor mærket `supplierInterpolationPossible:true` og `nativeTimeExact:false`; ukendt modelkørsel må ikke blive til verificeret native DMI-historik.
+
+Den første lokale request-v2 med 0,25°-modeller og eksplicit maxafstand bevares som en særskilt legacykontrakt. `OPEN_METEO_COMPONENT_MODELS` beskriver fortsat netop denne v2. Den kan læse sine eksisterende bankbytes med samme oprindelige policy, men kan ikke relabeles som O1280-native. V3 kræver den nye eksplicitte `spatialPolicy`; et forsøg på at læse en v2-bank under v3-policy afvises tydeligt. Der er ikke kørt en generel migration eller slettet gamle data.
+
+IFS025 leverer vindfart og -retning fra samme readers U/V-par; dens ekstra sandsynlighedsreader indeholder ikke vind. IFS025 og WAM025 har mindst 144 timers prognose i de korte modelkørsler og 360 timer i de lange. Det giver plads til udgivelseslag før vores H120-støttetime; det lover ikke fejlfri leverandørdækning. ICON-EU er fravalgt som eneste model, fordi de lange kørsler slutter ved 120 timer og de korte ved 30 timer. ICON-global har også 120-timers delkørsler. [ECMWF-reader](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Ecmwf/EcmwfReader.swift), [ECMWF-horisont](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Ecmwf/EcmwfDomain.swift), [ICON-horisont](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Icon/Icon.swift).
+
+Total `wave_peak_period` er et reelt ECMWF WAM-felt, ikke en omdøbning af middelperiode eller swell-only peak. Météo-France wave-reader har ikke dette totale peakfelt, så blot at skifte best_match til den ville skabe et nyt permanent hul. [ECMWF-felter](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Ecmwf/EcmwfVariable.swift), [MF-felter](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/MfWave/MfWaveVariable.swift), [officiel marine OpenAPI](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/openapi/marine.yml).
+
+## SST: hvorfor nearest skal være eksplicit
+
+API'en eksponerer SST gennem `meteofrance_currents`-selectorens supplerende SST-reader. Den faktiske kilde registreres derfor som `meteofrance_sea_surface_temperature`, mens `requestedModel` forbliver `meteofrance_currents`. Current-reader står sidst og bestemmer koordinatet, hvis begge readers findes. Vandstand kommer kun fra current-reader, så dens separate `sea`-request har et entydigt koordinat. SST kommer kun fra SST-reader. [Controller og reader-rækkefølge](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Controllers/ForecastapiController.swift), [komponentfelter](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/MfWave/MfWaveVariable.swift).
+
+MF current og SST bruger samme native 1/12-graders gitter, men forskellige land-/havmasker. `sea` kan derfor flytte de to readers til forskellige celler. `nearest` vælger samme native center uden at søge videre ved en maskeret celle. SST-admission kræver derfor både eksplicit `cellSelection: 'nearest'` i callerens komponentpolicy og et returneret koordinat, der matcher det beregnede native center. Det er et transport-/beviskrav, ikke en udvidelse af tilladt afstand. Null og en afvist/maskeret celle forbliver manglende data. [MF-gitter og masker](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/MfWave/MfWaveDomain.swift), [cellevalg](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Domains/Gridable.swift).
+
+Centerkontrollen gengiver upstreams Float32-beregning og sammenligner koordinater ved samme præcision. Den bruger ingen ny afstandstolerance. JSON-writeren skriver koordinatet med Floats round-trip-tekst. [RegularGrid](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Domains/RegularGrid.swift), [JSON-writer](https://github.com/open-meteo/open-meteo/blob/e669e6293ce2f0c70646fd61af8fe0c529fc0c53/Sources/App/Helper/Writer/JsonWriter.swift).
+
+## Integrationskontrakt og begrænsninger
+
+- `openMeteoComponentRequestParts(component, { spatialPolicy: OPEN_METEO_NATIVE_NEAREST_POLICIES[component] })` giver `{ channel, endpoint, query }` uden falsk PART-identitet. Den kan genbruges af legacy-zonehentningen. Uden native-policy bevares den tidligere v2-request, ikke en implicit nativeopgradering.
+- `buildOpenMeteoPartRequest(part, { component, productionReferenceAt, spatialPolicy })` tilføjer præcis central PART-identitet og låst H0..H120-vindue. V3 binder model og exact-native-policy i requesthash; begge versioner afviser kombinerede best_match-requestbeviser.
+- Svaret optages kun for requestens komponent. Hver komponent genvalideres mod egne responsebytes, requesthash, enheder, klokkeslæt og afstandspolicy. Uopfordrede søskendefelter er ikke donorbevis.
+- `openMeteoComponentGridMatches(component, samplingPoint, returnedGridPoint, policy)` genbruges af den native legacy-zonecaller. Den vælger O1280- eller MF-native-centerkontrol efter den præcise policy. Separate HTTP-svar må ikke efterfølgende få kopieret ét fælles koordinat. Den tidligere `openMeteoSstGridMatches` er bevaret.
+- Producenten henter kun komponenter med et udækket krævet PART/time-par og højst to ad gangen. En fejl i bølgesvaret kasserer ikke vind, vandstand eller SST. Checkpoint og hele låste retentioninterval bevares.
+- `modelRun` og `modelReference` er stadig ukendte/null. Et navngivet API-modelvalg er ikke bevis for en bestemt modelkørsel eller for samme upstream-version i den offentlige API. `acquiredAt` må ikke omdøbes til modelalder.
+- Vandstand er fortsat Open-Meteos native globale middelhavsreference; den giver ikke automatisk DMI-kompatibel absolut vandstand eller trend. Ingen datumomregning er opfundet.
+- Native-policy kræver det eksakte native-center og ingen afstandsudvidelse. Den særskilte legacy-policy kræver stadig udtrykkelig maxafstand. Ingen implicit best_match eller anden modelreserve træder til, hvis en navngivet model giver null.
+
+## Privat runtime-adapter
+
+`scripts/lib/open-meteo-part-runtime.mjs` forbinder den selvstændige producent med filcache og HTTP-transport. `runOpenMeteoPartRuntime` kræver `privateCacheRoot`, `bankPath`, aktuelle `parts`, `productionReferenceAt`, eksplicitte `spatialPolicies`, `requiredPairs`, hele `retentionStartAt`/`retentionEndAt` og `budgetMs`. Retur er `{ bank, index, summary }`; `index` er genvalideret og ikke et flag, som en caller selv kan fabrikere. `loadOpenMeteoPartRuntime` udfører samme read-only cachegenbrug uden hentning eller filsletning/-overskrivning.
+
+HTTP bruger kun den kanoniske komponentrequest, HTTPS og ingen redirects. Hvert forsøg har timeout over både headers og body, højst 16 MiB original UTF8-response og højst tre ekstra forsøg. Kun netfejl, afbrudt transport, timeout, HTTP429 og HTTP5xx kan genforsøges. Retry-After må ikke overskride det samlede monotone budget; budget nul starter ingen requests. Parse-/enheds-/gitterfejl fremstilles ikke som vellykket dækning. Uafhængige komponenter og tidligere gyldige svar bevares.
+
+Cache skrives til midlertidig privat fil, synkroniseres og omdøbes atomisk. Calleren skal placere den inde i den udtrykkelige private rod; udbrud gennem undermappens symlink afvises. Korrupt eksisterende cache erstattes ikke med tom cache. Workflow/caller ejer fortsat single-writer-serialisering og privat upload/restore. En flyttet central PART-parent pensionerer kun gammel identitet for den PART; historisk `sourceZoneId` spærrer ikke nyt gyldigt `zoneId`.
+
+Runtime gemmer desuden `.cache/weather-component-fallback-cursor.json`. Næste kørsel begynder efter sidst forsøgte PART, også når forsøget fejlede. Tidlige leverandørfejl må ikke sulte de senere dele af kysten. Cursoren er kun planlægning, aldrig bevis for dækning.
+
+Målrettet offlinebevis: `node --test scripts/test-open-meteo-part-bank.mjs scripts/test-weather-reserve-part-admission.mjs scripts/test-open-meteo-part-runtime.mjs` består 25 scenarier, inkl. SST-policy/center, manglende peak, afvisning af best_match-relabeling, uafhængige marinefejl, faktisk PART-adapter, parent-rebase, atomisk cache, timeout/retry, rotation og byte-/budgetgrænser. Dette er ikke bevis for komplet livevejr eller normaldrift.
+
+Native-udvidelsen er særskilt måltestet med `test-open-meteo-native-policy.mjs` og `test-open-meteo-o1280-grid.mjs`: ni scenarier for native center/model/policy, forkert celle, manglende bølger, virkelig PART-adapter, unqualified-level-skip og uændret legacybank. De ni scenarier supplerer de 25 ovenfor; de er ikke en ny stor driftsgate. O1280-helperen indgår nu i runtime-kildeinventaret.
+
+## Private generationer med reservebanker
+
+Den faste historiske private runtime-inventarliste på ni filer bevares. En nyere generation kan tilføje præcis én `.cache/weather-component-inputs.pack`; den er ikke en rekursiv kopi af `.cache`. Den indeholder kun de to faste komponentbanker, CP-progress, OM-rotationscursor, valgt-kildehistorik og CP-inventoryens udtrykkeligt refererede originale objekter, receipts og statiske pointere. CP-inventory kører uden credentials/providersti og kræver statisk originalbevis for en positiv dynamisk bankreference.
+
+`conditions.weatherComponentInputs` kræver pakken og matcher OM-/CP-bankhash samt `selectedComponentsSha256`, som er SHA256 af den præcist gemte `.cache/weather-component-selection-history.json`. En ny markeret modelinputgeneration kan derfor ikke gemmes uden den kildehistorik eller de originaler, den bygger på. En gammel generation uden markør bliver ikke bagefter omfortolket som en ny fuld inputgeneration. Allerede hentet ubrugt privat fremskridt kan godt pakkes og bevares med eksplicit tilstedeværelsesliste.
+
+Packen streamer originale bytes og kontrollerer deres hash før installering. Den bruger eksisterende 768 MiB-grænse pr. privat fil; de eksisterende 2 GiB samlede rådata- og 350 MB archivegrænser er uændrede. Faktisk fuld produktionsstørrelse er endnu ikke målt; en syntetisk roundtrip er ikke et kapacitetsbevis. `test-private-weather-component-pack.mjs` består ni målscenarier, herunder faktisk create-spec, legacy-restore, transactional install/rollback, valgt-kildehistorik og positiv statisk/dynamisk NetCDF-roundtrip. Ingen stor releasegate eller providerkørsel er startet.
+
+Den afgrænsede kode-/bindingsmigration bevarer nu det faktisk gemte, præcise inventar: ni gamle filer eller de samme ni plus den ene pakke. Pakken kopieres og SHA256-kontrolleres uændret med streaming, så to store kopier ikke indlæses i hukommelsen samtidig. Kilde- og målinventar skal være identiske og matche det beskyttede manifest; rapportens kopierede antal er derfor ni eller ti. Migrationen tilføjer ikke efterfølgende nye vejrinput til en gammel ni-filsgeneration og ændrer ikke model-/state-routing.
+
+`test-private-runtime-extension-migration.mjs` består fire små scenarier for ni/ti-fils kopiering, manglende krævet pakke, forbudte ekstrastier og utilsigtet udeladelse. Den eksisterende lille routingtest beviser desuden ti-fils bindingsmigration og afviser ændret eller fjernet pakke. Begge måltest har selvstændige npm-aliaser; de er ikke føjet til normaldriftens faste artifactgate. Nye aktive OM-/CP-/valg- og privatepackhelpers er optaget i det private runtime-kildeinventar; endelige bindingshashes og SQL er ikke genereret her.

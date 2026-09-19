@@ -1,4 +1,141 @@
-# Aktuel implementeringsstatus – lokal 4.0.429, saved-weather og HARMONIE-tid
+# Aktuel implementeringsstatus – 2026-09-19, samlet lokal rettelse før levering
+
+- [x] Alle fund fra kørslen, den første helhedsanalyse og efterfølgende
+  krydstjek er samlet i én lukningsmatrix; ingen enkeltfejlspatch er scope.
+- [x] DMI-plan/rotation/horizon, per-komponent bevaring, CP/OM-reserve,
+  DMI-first/96 timer, DMI-only-vandstand, PP1D/peak, privat H118–H120,
+  historik/checkpoint, reentry, Pages-rækkefølge, Supabase-retry,
+  public/browser, vagthund og selvkørende drift er implementeret lokalt.
+- [x] Krypteret privat progress bruger den eksisterende service-role-secret,
+  256 MiB cap og omfatter DMI/CP/OM/staging. Vellykket privat runtime bærer
+  fremskridtet holdbart; gamle rå private cachewriters er fjernet/deaktiveret.
+- [x] Holdbar payloadfri PENDING-terminalkvittering fjerner den funktionelle
+  afhængighed af udløbne 14-dages GitHub-artifacts.
+- [x] Den nye recovery-workflowrolle er med i releasekontrakten, og den nye
+  warmup-migration kopieres/verificeres i bindingsfixture og releasegate.
+- [x] Måltests, Node-syntaks, Python-AST, YAML-parse og diffcheck er grønne.
+- [x] Version 4.0.430, RDKS, begge håndbøger, migrationsbinding og to
+  afledte modelbundles er synkroniseret; de korte målchecks er grønne.
+- [x] Første exact-head-run `35446226062` kørte hele den samlede sourcegate
+  og fandt kun to forældede testforventninger: restore var ikke længere
+  cutover-only, og privat inventory var ikke længere ubetinget ni filer.
+  Begge kontroller er tilpasset de strengere faktiske kontrakter. Den
+  sekventielle generator-tests resterende trinnavne/rækkefølge er derefter
+  krydstjekket samlet mod hele workflowet og beviser nu den krypterede
+  progresskæde uden de fjernede plaintext DMI-cachefamilier.
+- [ ] Commit/push og én fuld sourcegate på eksakt PR-head.
+- [ ] Merge, genoptag den aktuelle centrale overgang uden ny provider,
+  deploy og bevis derefter med almindelige vejrkørsler, browser/Safari,
+  fuld numerisk dækning, kildeprioritet og selvkørende vedligeholdelse.
+
+Nedenstående punkter er arbejdshistorik. Hvor de siger 64 MiB, særskilt
+progress-secret, ni filer, uimplementeret 14-dagesreentry eller manglende
+fuld komponentkæde, er de erstattet af status ovenfor.
+
+- [x] Gem seneste ejerbeslutning: DMI-only vandstand/T+3. CP/OM-datumopgaven
+  er erstattet, ikke løst ved omregning. Runtimeafgrænsning er implementeret
+  lokalt. Historik/T+3-krydstjek rettede tab ved public118-trim og routing
+  samt ubevist gammel trend ved rent niveaumatch; 30 målchecks består.
+- [x] Vandstandsfjernelse kan klassificeres snævert som state-neutral via
+  faktisk PART-sanitizer. Begge states bevares; public skal genbygges,
+  bølgeændring får stadig replay og øvrige inputændringer afvises.
+- [x] Protected Storage retry dækker nu afbrudt responsebody, også efter
+  HTTP 200; faste størrelsesgrænser håndhæves også under chunked download.
+  Seks målrettede lokale cases og eksisterende storage/retentiontest består.
+- [x] Read-only run `35437186403`: faktisk Storage 95,2 MB, ingen ekstra
+  objekter; gemt wave-cache viser gammel MWP/PP1D-forskel. Produktions-
+  scope/stateeffekt kræver særskilt protected-generationbevis.
+- [x] Krypteret komponentprogress og normalworkflow lokalt implementeret:
+  eksakt bundle+conditionsbinding, fuld autentificering før brug, rollback,
+  256 MiB ciphertextcap og bevaret gammel fil ved overbudget.
+- [ ] Bevis faktisk normal save/restore; lokal grøn test er ikke aktiv
+  produktion eller cachegaranti. Ingen særskilt ny secret kræves.
+
+- [x] Gennemgå gemte filer og GitHub efter spontan Windows-genstart; ingen
+  ny commit/deploy/weather. Aktiv main er stadig `4bee5b0d`, 4.0.429.
+- [x] Kobl ALLE 13 oprindelige fundgrupper og krydstjekkets ekstra fund til
+  [gemt kode og konkret restarbejde](../../ai/WEATHER_CHAIN_IMPLEMENTATION_CHECKPOINT_2026-09-19.md).
+- [x] Genfind delvis implementering i DMI/peakproof, komponentmerge/OM,
+  checkpoint/retry/readiness og hashbundet public/browserlevering.
+- [x] Afgrænsede lokale syntax-/kontraktchecks efter genstart er bestået;
+  de dækker ikke den endnu ufærdige integration og ingen produktion.
+- [x] DMI-katalog→horizon og LF/resume-støtte rettet og kontrolleret lokalt.
+- [x] Nyere DMI-komponent og gyldig gammel værdi/tail ved nyt filhul bevares
+  gennem faktisk merge og adapter; værdi og kilde skifter samlet.
+- [ ] Wave-inputmigration og faktisk driftsbevis.
+- [x] Afgrænset wave-input/replayhelper: uændret/fremtidigt input beholder
+  state; historisk korrektion kræver state før ændring og verificeret suffix
+  eller ærlig lokal cold replay. Endnu ikke tilsluttet gammel faktisk cache.
+- [ ] Fælles kvalificeret komponentvalg og fuld PART-fallback, inklusive
+  dokumenteret modelreference/96 timer, vandstandsreference og temperatur.
+- [x] CP/OM komponentbank-helpers, fysisk værdi/kildebinding og OM's
+  lokale adaptersnit; det er ikke normal provider/workflow-integration.
+- [x] Fjern OM best-match-mix med særskilte navngivne modeller og låst
+  H0..H120 i både PART- og legacy210-ruten; spatial/datum er stadig åbent.
+- [x] CP originalbytes/staticproof→opaque index→faktisk PART-adapter,
+  direkte Feggesund-bevis og korrekt reserveflowpunkt lokalt måltestet.
+- [x] Current96-plan→producer→closure→live-adapter er koblet lokalt;
+  rå gyldig DMI-ledger bevares. Ikke produktionsafprøvet.
+- [x] Privat 9+1-komponentpakke med ægte CP-originaler/receipts samt
+  OM-bank og sourcevalg gennem restore; migrationinventory færdiggøres.
+- [x] Normal koordinatorhelper: CP først, genberegnet OM-rest, providerfri
+  budget0 og ægte diskgeneration efter delvist mislykket refresh.
+- [x] Tilslut koordinatoren til normal topcaller/workflow og gemt valgledger;
+  native-nearest IFS/WAM/SST. Actualcaller og legacyforecast måltestet lokalt.
+- [x] DMI-only vandstand/T+3, målt kapacitet, privat failed-run-progress og
+  holdbar langtids-reentry er lokalt implementeret; intet tælles endnu som
+  driftsbevist.
+- [x] Warmup-workflow og fælles genoptagelse, failed-complete, køer samt
+  monoton Pages-generation rettet lokalt.
+- [ ] Endelig checkpoint/SQL-binding og korrekt overgang for bevaret eller
+  ændret historisk input/modelstate; draft er ikke slutregenereret.
+- [x] Public artifactkopi, mobil-resume og bevaring af verificeret visning
+  ved netfejl rettet; uindlæste timer får ikke falsk nutidsstempel.
+- [x] Udløben direkte first-cutover-nødvej fjernet; alle normale advisorytrin
+  bevaret. Ren kodebinding routes ikke længere som en påstået scorereparation.
+- [x] CP-komponentreader med responsbundet metadata/units/native datum og
+  OM-felt-/unit-/timeakseisolation; kun læserbevis, ikke fuld PART-fallback.
+- [ ] Faktisk browser-/størrelsesbevis og tidskorrekte nye PART-detaljer.
+- [ ] Privat inventory/kapacitet, relevante testforventninger og samlet
+  versions-/RDKS-/håndbogs-/leveringsarbejde; derefter normaldriftsbevis.
+- [ ] Ejerkrav: bevis flere selvkørende cron/GitHub-forløb på ren runner,
+  inklusive retry/genoptagelse/vinduesskift, uden Codex-håndgreb imellem.
+
+Workflows er nu ændret. Ingen fund erklæres produktionsløst.
+Bevar gemt fremgang; den store analyse skal ikke gentages fra begyndelsen.
+
+# Historisk implementeringsstatus – 2026-09-19, helhedsanalyse på 4.0.429
+
+- [x] Exact-head `35420912328`, PR #374 og main `4bee5b0d`.
+- [x] Providerfri Pages-publicering i `35421108551`; offentlig verifikation
+  og central afslutning fejlede. Ikke et fuldt grønt driftsforløb.
+- [x] Afgræns `35421627495` til central admin-sync før providerne.
+- [x] Krydstjek hele kæden og dokumentér kode-, offline-, live- og upstream-
+  evidens i [helhedsanalysen](../../ai/WEATHER_CHAIN_REVIEW_2026-09-19.md).
+- [x] Uafhængigt helhedskrydstjek af ALLE fund og reparationsafhængigheder;
+  se [samlet rettelsesplan](../../ai/WEATHER_CHAIN_CROSSCHECK_2026-09-19.md).
+- [ ] Ret peak/mean-wave-decoder og afgræns påvirkede gamle wave-input;
+  ingen blind efterstempling eller hel-cache-nulstilling.
+- [ ] Bevar privat H118–H120 gennem merge/adapter til sidste tre trends.
+- [ ] Afklar responsbundet CP/OM-modelreference og absolut vandstandsdatum;
+  hentetid og legacy-continuity er ikke tilstrækkeligt bevis.
+- [ ] Samlet rettelse af readiness/recovery/serialisering og transportretry.
+- [ ] Bevar gyldig modelhistorik under warmup og ved acquisition-rettelser.
+- [ ] Fælles komponentplan og fallback til alle nødvendige vejrtyper;
+  gyldig DMI bevares, derefter Copernicus og Open-Meteo.
+- [ ] DMI-opgradering af allerede reservedækkede komponenter med ledig
+  kapacitet; bevis både fortsat planlægning og faktisk overtagelse uden tab.
+- [ ] Afslut seneste forslag om CP/OM-overtagelse ved DMI-modelalder mindst
+  96 timer; tidligere H94..H117-forslag er ikke længere den anbefalede regel.
+  Ny DMI overtager igen, gammel DMI bevares uden gyldig erstatning.
+- [ ] Gyldig komponentfriskhed ved sammenlægning af active/progress-cache.
+- [ ] Små, tidskorrekte offentlige datapakker og atomisk browseropdatering.
+- [ ] Fuldt gyldige felter samt normal drift gennem flere providercyklusser.
+
+Kun analysedokumentation ændret i denne runde. Tidligere lokal verifierpatch
+er ikke releaseklar. Cron forbliver disabled; ingen ny oneoff/providerkørsel.
+
+# Historisk implementeringsstatus – lokal 4.0.429, saved-weather og HARMONIE-tid
 
 - [x] Lever 4.0.428 gennem exact-head `35416314162`, PR #373 og main
   `a2d03d95`.

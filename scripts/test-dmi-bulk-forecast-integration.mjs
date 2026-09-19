@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
+import { buildDmiForecastHourly, DMI_FORECAST_HOURS } from './lib/dmi-forecast-store.mjs';
+import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
 
 const source = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 const productionAdapter = fs.readFileSync('scripts/lib/ravscore-production-adapters.mjs', 'utf8');
+const openMeteoPartBank = fs.readFileSync('scripts/lib/open-meteo-part-bank.mjs', 'utf8');
 const bulkConverter = source.slice(
   source.indexOf('function bulkZoneToForecastRecord('),
   source.indexOf('function mergeBulkCacheIntoForecastStore('),
@@ -26,8 +28,10 @@ const tupleSelectorSource = source.slice(
 );
 const { selectAtomicComponentTuple } = Function(
   'ravScoreNumber',
+  'preferQualifiedDmiComponentSource',
   `${tupleSelectorSource}; return { selectAtomicComponentTuple };`,
-)(value => typeof value === 'number' && Number.isFinite(value) ? value : null);
+)(value => typeof value === 'number' && Number.isFinite(value) ? value : null,
+  preferQualifiedDmiComponentSource);
 const atomicMergeSource = source.slice(
   source.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
   source.indexOf('function componentForecastHorizonHours('),
@@ -44,6 +48,8 @@ const {
   'SHORT_DMI_WATER_GAP_HOURS',
   'WATER_LEVEL_JUMP_WARN_CM',
   'ACCEPTED_FORECAST_HOURS',
+  'DMI_FORECAST_HOURS',
+  'preferQualifiedDmiComponentSource',
   `${atomicMergeSource}; return {
     mergeHourlyPreferDmi,
     mergeDmiWithFallback,
@@ -60,6 +66,8 @@ const {
   2,
   25,
   118,
+  DMI_FORECAST_HOURS,
+  preferQualifiedDmiComponentSource,
 );
 
 assert.deepEqual(selectAtomicComponentTuple(
@@ -114,8 +122,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
   [hourlyDomainValidated.currentSpeedMps, hourlyDomainValidated.currentDirectionDeg],
-  [0.3, 45],
-  'hourly retention must reject direction 360 and retain one complete valid current tuple',
+  [0.2, 0],
+  'hourly retention canonicalises north at 360 without discarding the complete DMI tuple',
 );
 
 const exactHorizonReference = '2026-09-08T14:00:00.000Z';
@@ -184,6 +192,8 @@ const zoneDomainValidated = mergeDmiWithFallbackForTest({
     windDirectionDeg: -1,
     currentSpeedMps: -0.2,
     currentDirectionDeg: 90,
+    waterLevelCm: 12,
+    waterLevelTrendCm3h: -3,
   },
 }, {
   provider: 'open-meteo',
@@ -193,6 +203,8 @@ const zoneDomainValidated = mergeDmiWithFallbackForTest({
     windDirectionDeg: 270,
     currentSpeedMps: 0.4,
     currentDirectionDeg: 135,
+    waterLevelCm: 20,
+    waterLevelTrendCm3h: 7,
   },
 });
 assert.deepEqual(
@@ -205,6 +217,8 @@ assert.deepEqual(
   [0.4, 135],
   'zone fallback must reject a negative current speed and take the fallback tuple atomically',
 );
+assert.equal(zoneDomainValidated.current.waterLevelTrendCm3h, -3,
+  'legacy display must retain the existing trend from its selected level row, never borrow another source trend');
 
 const emptyHorizon = buildDmiForecastHourly({
   generatedAt: '2026-09-08T10:12:00.000Z',
@@ -258,8 +272,8 @@ assert.match(productionAdapter, /export function verifiedBulkCurrent/,
   'bulk-konverteringen skal afvise strøm uden semantik v3, aktuelt samplingpunkt, fælles lag og højst 5 km');
 assert.match(productionAdapter, /haversineKm\(expectedSamplingPoint, gridPoint\) > maximum \+ 0\.01/,
   'den faktiske koordinatafstand skal efterkontrolleres uafhængigt af cachemetadata');
-assert.match(source, /const safeRecord = withOnlyVerifiedCurrent\(record, zonePoint\(feature\)\)/,
-  'en gammel forecastcache må ikke føre udokumenteret strøm videre til scoring');
+assert.match(source, /const qualifiedRecord = newerDmiRecord\(record, null,[\s\S]*?const safeRecord = withOnlyVerifiedCurrent\(qualifiedRecord, point\)/,
+  'en gammel forecastcache skal kontrollere alle komponenter og bevare det særskilte vandkolonne-/lagbevis');
 const directDmi = source.slice(source.indexOf('async function fromDmi('), source.indexOf('function mergeHourlyPreferDmi('));
 assert.doesNotMatch(directDmi, /\['sea-mean-deviation', 'current-u'/,
   'ForecastEDR-positionstjenesten må ikke levere strøm uden fælles vandkolonne- og lagbevis');
@@ -267,8 +281,8 @@ assert.match(directDmi, /withoutCurrent\(createDmiForecastRecord\(/,
   'ForecastEDR-resultatet skal lukkes fail-closed for strøm før scoring');
 assert.match(hourlyMerge, /row\?\.sources\?\.\[component\][\s\S]*?wave: selectedWave\?\.attestation/,
   'den endelige merge skal føre den valgte bølgetuples egen verificerede proveniens videre');
-assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 2,
-  'missing-horizon materialization is limited to Feggesund preflight and the primary integrated part runtime');
+assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 3,
+  'missing-horizon materialization is limited to component planning, Feggesund preflight and the primary integrated part runtime');
 assert.match(integratedRuntime, /preflightFeggesundOperationalWaveReadiness\([\s\S]*?const nearestIndex/,
   'Feggesund readiness must be checked before the main scoring loop');
 assert.match(source, /direct \+ proxy \+ missing !== expected/,
@@ -320,11 +334,11 @@ const atmosphereReadiness = source.slice(
 );
 assert.match(atmosphereReadiness, /atomicComponentForecastHorizonHours\(record, generatedAt, 'wave'\)/,
   'generic acquisition readiness must not false-green on wave height alone');
-assert.match(source, /timezone: 'GMT'/,
+assert.match(openMeteoPartBank, /timezone: 'GMT'/,
   'Open-Meteo fallback skal levere entydige UTC-tider');
 assert.doesNotMatch(source, /ocean_current_(?:velocity|direction)/,
   'Open-Meteos overfladestrøm må hverken hentes eller kunne bruges som reserve for aktiv strøm');
-assert.match(source, /const result = withoutZoneCurrent\(await provider\(feature, generatedAt\)\)/,
+assert.match(source, /const result = withoutZoneCurrent\(await provider\(feature, generatedAt, forecast\)\)/,
   'alle eksterne fallbackresultater skal lukkes fail-closed for strøm før merge og scoring');
 assert.match(source, /return withoutZoneCurrent\(\{ \.\.\.result, forecast, stale: false, fallback: true, attempts \}\)/,
   'fallbackprognosen skal også renses for tidligere eller indirekte strømfelter');

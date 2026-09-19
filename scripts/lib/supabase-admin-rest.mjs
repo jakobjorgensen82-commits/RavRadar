@@ -32,6 +32,16 @@ export function isRetryableTransientRead({method,status}){
     && [429,502,503,504].includes(Number(status));
 }
 
+// Wrap only the transport operation, never JSON parsing or a size/integrity
+// check. A successful HTTP status does not mean the response body arrived.
+export async function readSupabaseBodyTransport(read){
+  try{return await read();}catch{
+    const error=new Error('Supabase response body transport was interrupted');
+    error.code='SUPABASE_RESPONSE_BODY_TRANSPORT';
+    throw error;
+  }
+}
+
 export function createSupabaseAdminRequester({
   endpoint,
   key,
@@ -58,7 +68,19 @@ export function createSupabaseAdminRequester({
         }
         throw new Error(`Supabase ${operation} (${method}) kunne ikke nås: ${compact(error?.message||error)}`);
       }
-      const body=await response.text();
+      let body;
+      try{
+        body=await readSupabaseBodyTransport(()=>response.text());
+      }catch(error){
+        if(attempt===1&&['GET','HEAD'].includes(String(method).toUpperCase())){
+          logger(`Supabase ${operation} (${method}) response body was interrupted; retrying once after ${retryDelayMs} ms`);
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        // An ordinary write may already have committed. Its owner must use
+        // its exact read-back/CAS protocol instead of repeating it blindly.
+        throw error;
+      }
       if(response.ok){
         if(!body)return null;
         const parsed=parseJson(body);

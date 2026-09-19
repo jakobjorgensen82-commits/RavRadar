@@ -1,4 +1,6 @@
 import { verifiedLivePilotSource } from './live-current-pilot.mjs';
+import { verifiedDmiForecastSource } from './dmi-forecast-store.mjs';
+import { verifiedSelectedWeatherReserve } from './weather-reserve-admission.mjs';
 
 function coordinate(value) {
   if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return null;
@@ -88,17 +90,51 @@ function validFallback(value) {
   return longitude === null || latitude === null ? null : [longitude, latitude];
 }
 
-export function flowPointsFromForecastRecord(record, fallbackPoint, at = null, part = null) {
+export function flowPointsFromForecastRecord(record, fallbackPoint, at = null, part = null, componentInputs = {}) {
   const fallback = validFallback(fallbackPoint);
   const grid = record?.model?.completeness?.gridPoints ?? {};
   const currentGrid = exactCurrentGrid(record, fallback, at, part);
-  const primaryWindGrid = exactGridPair(grid, 'wind-u-10m', 'wind-v-10m');
-  const marineWindGrid = primaryWindGrid ? null : exactGridPair(grid, 'wind-tail-u-10m', 'wind-tail-v-10m');
-  const windGrid = primaryWindGrid || marineWindGrid;
+  const targetMs = Date.parse(at ?? '');
+  const exactRow = Number.isFinite(targetMs)
+    ? (record?.hourly ?? []).find(row => Date.parse(row?.time ?? '') === targetMs)
+    : null;
+  const exactSource = component => {
+    const source = exactRow?.sources?.[component];
+    const identity = part ? {
+      entityId: `PART::${part.partId}`, parentZoneId: part.zoneId ?? part.parentZoneId,
+      entityType: 'coastal-part', samplingContext: 'coastal-part-water-point',
+      samplingPoint: fallback,
+    } : {
+      entityId: record?.zoneId, parentZoneId: record?.zoneId,
+      entityType: 'parent-zone', samplingContext: 'parent-zone-water-point', samplingPoint: fallback,
+    };
+    const dmi = verifiedDmiForecastSource(source, component === 'wind' ? source?.component : component,
+      exactRow?.time, identity);
+    if (dmi) return dmi;
+    if (!part) return null;
+    const reserve = verifiedSelectedWeatherReserve(exactRow, componentInputs, {
+      part, validTime: exactRow?.time, component,
+    });
+    return reserve?.source ?? null;
+  };
+  const windSource = exactSource('wind');
+  const waveSource = exactSource('wave');
+  // Global cache metadata can describe a different time/model/grid. Use it
+  // only for the legacy untimed view, never to locate a selected-hour arrow.
+  const primaryWindGrid = Number.isFinite(targetMs)
+    ? windSource?.provider === 'dmi' && windSource.component === 'wind' ? validFallback(windSource.gridPoint) : null
+    : exactGridPair(grid, 'wind-u-10m', 'wind-v-10m');
+  const marineWindGrid = Number.isFinite(targetMs)
+    ? windSource?.component === 'windTail' ? validFallback(windSource.gridPoint) : null
+    : primaryWindGrid ? null : exactGridPair(grid, 'wind-tail-u-10m', 'wind-tail-v-10m');
+  const reserveWindGrid = windSource?.provider === 'open-meteo' ? validFallback(windSource.gridPoint) : null;
+  const windGrid = primaryWindGrid || marineWindGrid || reserveWindGrid;
   const waveRow = grid?.['significant-wave-height'];
   const waveLon = coordinate(waveRow?.longitude);
   const waveLat = coordinate(waveRow?.latitude);
-  const waveGrid = waveLon !== null && waveLat !== null ? [waveLon, waveLat] : null;
+  const waveGrid = Number.isFinite(targetMs)
+    ? validFallback(waveSource?.gridPoint)
+    : waveLon !== null && waveLat !== null ? [waveLon, waveLat] : null;
   const sourceMetadata = currentGrid ? {
     current: {
       source: currentGrid.source,
@@ -112,8 +148,10 @@ export function flowPointsFromForecastRecord(record, fallbackPoint, at = null, p
     wave: waveGrid || fallback,
     sources: {
       current: currentGrid?.source || 'zone-marine-anchor',
-      wind: primaryWindGrid ? 'dmi-atmospheric-grid' : marineWindGrid ? 'dmi-marine-wind-grid' : 'zone-marine-anchor',
-      wave: waveGrid ? 'dmi-wave-grid' : 'zone-marine-anchor'
+      wind: primaryWindGrid ? 'dmi-atmospheric-grid' : marineWindGrid ? 'dmi-marine-wind-grid'
+        : reserveWindGrid ? 'open-meteo-wind-grid' : 'zone-marine-anchor',
+      wave: waveGrid ? ['open-meteo', 'copernicus'].includes(waveSource?.provider)
+        ? `${waveSource.provider}-wave-grid` : 'dmi-wave-grid' : 'zone-marine-anchor'
     },
     ...(currentGrid ? { sourceMetadata } : {}),
   };
