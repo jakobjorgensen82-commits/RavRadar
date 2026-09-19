@@ -1,3 +1,20 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.434
+
+- [x] 4.0.433 exact-head `35451524450`, PR #378 og merge `b6afcdca`.
+- [x] Providerfri `35451791985` passerede sekskodeauditen uden providers.
+- [x] Afgræns eneste nye reelle stop til Candidate G-checkpoint ved measured
+  warmup; den samlede prewrite-fejl var et forventet følgeudfald.
+- [x] Map `BUILDING_MEASURED_ONLY:false` til hashbundet checkpoint-N/A i både
+  code-only og normal weather.
+- [x] Kør checkpoint build/save/publish kun ved `READY`; kræv tre `skipped`
+  under N/A og bevar privat integreret runtime uafhængigt.
+- [x] Måltest code-only, Pages/reentry, workflowrækkefølge, outcome og reusable
+  produktionskontrakter.
+- [ ] Versions-/RDKS-/geodatabevis, én exact-head, PR/merge og providerfri
+  code-only-deploy.
+- [ ] Almindelig weather og offentligt bevis for lokal vind, score og stabil
+  cachevedligeholdelse; 0/673 er fortsat det senest målte udgangspunkt.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.433
 
 - [x] 4.0.432 exact-head, PR #377 og merge `0d2fd78a`.

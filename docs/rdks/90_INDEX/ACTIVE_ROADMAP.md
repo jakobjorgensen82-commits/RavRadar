@@ -1,3 +1,19 @@
+# Aktiv roadmap – 2026-09-19, 4.0.434 checkpoint-N/A og lokal vind
+
+1. [x] Lever 4.0.433 via exact-head `35451524450`, PR #378 og main
+   `b6afcdca`.
+2. [x] Bevis i providerfri `35451791985`, at den afgrænsede sekskodeaudit nu
+   passerer uden DMI/Copernicus/Open-Meteo.
+3. [x] Afgræns næste stop til et Candidate G-checkpoint, der fejlagtigt blev
+   krævet under `BUILDING_MEASURED_ONLY`; den anden fejl var kun følgefejl.
+4. [x] Genindfør N/A-disposition og tre skipped checkpointudfald i både
+   code-only og normal weather; bevar privat integreret runtime uændret.
+5. [ ] Bestå målrettede slutchecks og én exact-head, merge 4.0.434 og kør én
+   providerfri code-only til verificeret Pages og central afslutning.
+6. [ ] Kør derefter almindelig weather. Mål lokal vind fra 0/673 mod 673/673,
+   aktuelle scorevisninger, DMI→Copernicus→Open-Meteo, Feggesund og cache.
+7. [ ] Stop og analysér ved manglende reel fremgang; ingen blind oneoff.
+
 # Aktiv roadmap – 2026-09-19, 4.0.433 fra kendt diagnostik til normal weather
 
 4.0.432 er merged som `0d2fd78a`. Providerfri `35449470349` bestod hele den

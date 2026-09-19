@@ -1,6 +1,26 @@
 # DEC-0213 – Én integreret model og afgrænset diagnostisk kodelevering
 
-**Status:** Aktiv; implementeret lokalt i 4.0.433, produktionsbevis mangler
+## Bindende tillæg 2026-09-19 – Candidate G-checkpoint er N/A under warmup
+
+4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.
+Providerfri `35451791985` passerede den afgrænsede sekskodeaudit, men stoppede
+før artifact på et efterfølgende Candidate G-checkpoint. Det var en regression
+mod DEC-0114: `BUILDING_MEASURED_ONLY` var fejlagtigt blevet gjort til et krav
+om build/save/publish af netop det checkpoint, som kræver en READY companion.
+
+Ved `BUILDING_MEASURED_ONLY` skal både code-only og normal weather derfor
+udstede den eksisterende hashbundne disposition
+`NOT_APPLICABLE_DURING_MEASURED_WARMUP` med `checkpointRequired=false`.
+Checkpoint-build, cache-save og beskyttet publish skal alle være `skipped` og
+kontrolleres som sådan i handoff, Pages, reentry og slutstatus. Den integrerede
+private runtime forbliver obligatorisk og bevarer conditions, integreret state
+og private vejrcacher gennem sine uændrede privacy-/integritetsgates.
+
+Et strengt checkpoint må fortsat kun bygges ved auditstatus `READY`. Dette
+tillæg ændrer ingen vejr-, score-, geometri-, modelbundle- eller
+providerkontrakt og gør ikke den manglende lokale vind acceptabel.
+
+**Status:** Aktiv; 4.0.433 merged, 4.0.434 lokalt, produktionsbevis mangler
 
 **Dato:** 2026-09-19
 

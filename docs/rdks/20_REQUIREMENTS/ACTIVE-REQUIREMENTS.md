@@ -1,3 +1,13 @@
+# Aktuelt checkpointkrav – 2026-09-19
+
+- **REQ-MEASURED-WARMUP-CHECKPOINT-NOT-APPLICABLE-0213 – BINDENDE:** Ved
+  auditstatus `BUILDING_MEASURED_ONLY` skal code-only og normal weather bruge
+  den hashbundne disposition `NOT_APPLICABLE_DURING_MEASURED_WARMUP` med
+  `checkpointRequired=false`. Build, save og protected publish skal alle være
+  `skipped` og valideres samlet. Den integrerede private runtime er fortsat
+  obligatorisk og bevarer conditions, integreret state og private vejrcacher.
+  Kun faktisk `READY` må udløse det strikte checkpoint. DEC-0114/0213.
+
 # Aktuelt model- og deploydelta – 2026-09-19
 
 - **REQ-ONE-PUBLIC-INTEGRATED-MODEL-0213 – BINDENDE:** RavRadar har kun én

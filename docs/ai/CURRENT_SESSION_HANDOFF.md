@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.434 warmup-checkpoint N/A
+
+Main er `b6afcdca` / 4.0.433 efter PR #378 og exact-head `35451524450`.
+Providerfri `35451791985` passerede den gamle sekskodeaudit uden providers,
+men stoppede før artifact, fordi `BUILDING_MEASURED_ONLY` fejlagtigt udløste
+Candidate G-checkpointbyggeren. Den kræver en READY companion og fejlede.
+
+Lokal 4.0.434 retter både code-only og normal weather til den allerede
+besluttede N/A-kontrakt: dispositionen er hashbundet, checkpointRequired=false
+og build/save/publish skal alle være skipped. Privat integreret runtime og
+dens conditions/state/cache gemmes fortsat. Måltests er grønne.
+
+Næste: slutdocs/version/RDKS, exact-head, PR/merge, providerfri code-only og
+derefter normal weather med konkret vind-/scoremåling. `.tmp-420/` er privat.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.433 diagnostisk code-only
 
 Main er `0d2fd78a` / 4.0.432 efter PR #377. Providerfri `35449470349`

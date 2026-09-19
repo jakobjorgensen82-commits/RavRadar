@@ -1693,8 +1693,9 @@ for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
   'READY_PUBLISHED',
-  'MEASURED_WARMUP_PUBLISHED',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
   'checkpoint_required="true"',
+  'checkpoint_required="false"',
   'dataset_id="$(jq -er \'.datasetId | select(type == "string" and length > 0)\' data/live/manifest.json)"',
   'runtime_audit_sha256=',
   'sha256CanonicalJson',
@@ -1718,7 +1719,6 @@ for(const marker of [
 }
 ok(!checkpointDispositionSection.includes('continue-on-error'),
   'Checkpointdispositionen må ikke skjule en kontraktfejl');
-ok(!checkpointDispositionSection.includes('checkpoint_required="false"'),'Nye measured-warmup-kørsler skal gemme checkpoint');
 ok(!buildWorkflow.includes('ravscore-continuation-checkpoint-applicability'),
   'Den valgfri applicability-ghostfil må ikke længere findes i produktionsworkflowet');
 const checkpointSaveSection=buildWorkflow.slice(workflowPositions.checkpointBuild,workflowPositions.preflightStateBuild);
@@ -1747,8 +1747,10 @@ for(const name of [
   const start=buildWorkflow.indexOf(`name: ${name}`);
   const end=buildWorkflow.indexOf('\n      - name:',start+1);
   const block=buildWorkflow.slice(start,end<0?buildWorkflow.length:end);
-  ok(block.includes("steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY' || steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'BUILDING_MEASURED_ONLY')"),
-    `${name} skal gemme både READY og measured-warmup efter vellykket vejrbygning`);
+  ok(block.includes("steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY'"),
+    `${name} må kun skrive det strikte checkpoint, når rollbackkilden faktisk er READY`);
+  ok(!block.includes("rollback_status == 'BUILDING_MEASURED_ONLY'"),
+    `${name} må ikke kræve Candidate G-checkpoint under measured warmup`);
 }
 const preflightStateSaveSection=buildWorkflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
@@ -1828,7 +1830,7 @@ for(const marker of [
   'recomputed_runtime_audit_sha256=',
   'Checkpoint disposition binding mismatch',
   'READY_PUBLISHED)',
-  'MEASURED_WARMUP_PUBLISHED)',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP)',
   'test "$checkpoint_build_outcome" = "success"',
   'test "$checkpoint_save_outcome" = "success"',
   'test "$checkpoint_publish_outcome" = "success"',

@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.434 checkpoint-N/A
+
+4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.
+Providerfri code-only `35451791985` passerede den tidligere sekskodeaudit og
+startede ingen providers. Den stoppede før artifact, fordi workflowet
+fejlagtigt krævede et Candidate G-checkpoint ved `BUILDING_MEASURED_ONLY`.
+
+Lokal 4.0.434 genindfører DEC-0114's eksisterende disposition
+`NOT_APPLICABLE_DURING_MEASURED_WARMUP` i både code-only og normal weather.
+Checkpoint-build/save/publish skal da alle være `skipped`; Pages, reentry og
+outcome validerer allerede denne eksakte kombination. Den integrerede private
+runtime gemmes fortsat og bærer conditions, state og private vejrcacher.
+
+Måltests er grønne. Næste: versions-/RDKS-slutkontrol, én exact-head, PR/merge
+og providerfri code-only. Derefter normal weather og måling af lokal vind fra
+0/673 mod 673/673 samt score. `.tmp-420/` er privat og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – 4.0.433 lokal code-only-kant
 
 Main er 4.0.432 / `0d2fd78a` efter PR #377. Providerfri `35449470349`

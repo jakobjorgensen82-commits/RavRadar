@@ -1,3 +1,16 @@
+# Nyeste prioritering – 2026-09-19, 4.0.434 korteste vej til online kode
+
+4.0.433 er merged som `b6afcdca`; exact-head `35451524450` var grøn.
+Providerfri `35451791985` passerede den tidligere auditkant, men stoppede på
+et Candidate G-checkpoint under measured warmup. 4.0.434 gør checkpointet
+eksplicit N/A i både code-only og normal weather og bevarer den integrerede
+private runtime som den egentlige fortsættelse.
+
+Næste rækkefølge: målrettede slutchecks, én exact-head, merge, providerfri
+code-only og offentlig verifikation. Derefter én almindelig vejrkørsel og
+måling af lokal vind/score. Hvis 0/673 ikke vokser, analyseres kæden før en ny
+kørsel; ingen oneoff eller blind gentagelse.
+
 # Nyeste prioritering – 2026-09-19, 4.0.433 lokal vind efter code-only
 
 4.0.432 er merged som `0d2fd78a`. Providerfri `35449470349` bestod restore,

@@ -1,3 +1,14 @@
+## 4.0.434 – pensioneret checkpoint blokerer ikke integreret drift (2026-09-19)
+
+- 4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.
+- Providerfri `35451791985` passerede den gamle auditblokering, men stoppede
+  på et Candidate G-checkpoint, selv om Candidate G kun var measured warmup.
+- Code-only og normal weather følger nu igen den eksisterende N/A-kontrakt:
+  checkpoint-build/save/publish er eksplicit sprunget over under warmup, mens
+  den integrerede private runtime fortsat gemmes og kontrolleres strengt.
+- Ingen vejr-, score-, geometri- eller modelbundleændring. Se
+  CHANGELOG-4.0.434.md og DEC-0213's 4.0.434-tillæg.
+
 ## 4.0.433 – afgrænset kodelevering før lokal vind genhentes (2026-09-19)
 
 - Providerfri `35449470349` bestod restore, migration og 210/673-genbygning,
