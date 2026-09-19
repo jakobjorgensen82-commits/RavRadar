@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.433 diagnostisk code-only
+
+Main er `0d2fd78a` / 4.0.432 efter PR #377. Providerfri `35449470349`
+bestod migration, forgænger-restore, importkontrol, privat installation og
+210/673-genbygning uden providerkald. Auditen stoppede før artifact/deploy på
+seks kendte følgefund. Den gemte runtime har zonevind 210/210, men 0/673
+lokale kystdele har vind, så alle 420 aktuelle scorevisninger er utilgængelige.
+
+Lokal 4.0.433 fortsætter kun ved eksakt historical integrated maintenance,
+metadata-only, de seks koder med tæller 1, 210/673, 1.346 modes, 420
+utilgængelige, nul replay/privacy/continuationfejl og uændret vejr. Enhver
+afvigelse stopper. Timeout er 60 minutter. Candidate G er pensioneret i den
+offentlige dispatcher; inert historisk kode røres ikke nu. DEC-0213.
+
+Næste: version/docs/målchecks, én exact-head, PR/merge, providerfri code-only,
+så normal weather og konkret måling af lokal vind/score. `.tmp-420/` er privat
+og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.432 importlukning
 
 Main er `686ebec4` / 4.0.431 efter PR #376 og exact-head `35448032367`.

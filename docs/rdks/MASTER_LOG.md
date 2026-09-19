@@ -1,3 +1,19 @@
+# 2026-09-19 – 4.0.433 afgrænset code-only og Candidate G pensioneret
+
+4.0.432 blev merged som `0d2fd78a`. Providerfri `35449470349` bestod central
+ACTIVE-readback, migration, forgænger-restore, importkontrol og 210/673-
+genbygning uden providerkald, men stoppede ved auditen før artifact/deploy.
+
+Livekrydset viser samme integrerede model med zonevind 210/210, men lokal
+kystdelsvind 0/673 og derfor 420 utilgængelige aktuelle scorevisninger.
+4.0.433 tillader kun det eksakte sekskodesæt under metadata-only og kræver
+fortsat uændret vejr, 210/673, 1.346 rekonstruerede modes, nul replayfejl,
+privacy og intakt continuation. Ukendt diagnostik stopper. Tidsgrænsen er
+60 minutter. Candidate G er pensioneret i produktionsdispatch. DEC-0213.
+
+Efter code-only skal normal weather hente lokal vind; det er fortsat et åbent
+datakrav og ikke accepteret som komplethed.
+
 # 2026-09-19 – 4.0.432 komplet importlukning efter central ACTIVE31
 
 4.0.431 bestod exact-head `35448032367`, PR #376 og merge `686ebec4`.

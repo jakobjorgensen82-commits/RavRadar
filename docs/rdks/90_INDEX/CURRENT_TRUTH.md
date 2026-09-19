@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.433 kodeleveringskant
+
+Main er 4.0.432 / `0d2fd78a` efter PR #377. Providerfri `35449470349`
+bestod central ACTIVE-readback, migration, forgænger-restore, importkontrol,
+privat installation og deterministisk 210/673-genbygning uden providers.
+Den stoppede ved auditen før artifact/deploy.
+
+Den samme integrerede model kører offentligt; der findes ikke en gammel og
+ny offentlig model. Den gemte runtime er blot produceret af ældre kode. Den
+har zonevind 210/210, men lokal vind 0/673, hvilket gør alle 420 aktuelle
+scorevisninger utilgængelige. 4.0.433 fortsætter kun på præcis de seks kendte
+følgefund under metadata-only og kræver fortsat eksakt 210/673, 1.346 modes,
+420 utilgængelige, nul replayfejl, privacy og intakt continuation. Jobgrænsen
+er 60 minutter. Candidate G er pensioneret som produktionsvalg. DEC-0213.
+
+Næste er målchecks, exact-head, merge og providerfri code-only. Derefter én
+almindelig weather på aktuelle kode og flere normale runs som kompletheds-,
+kildeprioritets-, cache-, Feggesund- og browserbevis. Manglende vind er åbent.
+
 # NYESTE SANDHED – 2026-09-19 – ACTIVE31, lokal 4.0.432 importlukning
 
 Main er 4.0.431 / `686ebec4`; exact-head `35448032367` var grøn. Providerfri

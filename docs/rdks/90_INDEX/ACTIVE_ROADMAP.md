@@ -1,3 +1,17 @@
+# Aktiv roadmap – 2026-09-19, 4.0.433 fra kendt diagnostik til normal weather
+
+4.0.432 er merged som `0d2fd78a`. Providerfri `35449470349` bestod hele den
+beskyttede restore-/migrations-/genbygningskæde med 210/673, men stoppede før
+artifact på seks følgefund fra den gemte runtimes 0/673 lokale vind og 420
+utilgængelige aktuelle modes. 4.0.433 tillader kun det eksakte kendte sæt
+under metadata-only, nul replay/privacy/continuationfejl og uændret vejr.
+
+RavRadar har én offentlig model: integreret RavScore. Candidate G er
+pensioneret som produktionsvalg. Næste rækkefølge er målchecks, én exact-head,
+merge, providerfri code-only, derefter én almindelig weather på den aktuelle
+kode. Hvis lokal vind/score stadig ikke vokser, stoppes og analyseres hele
+kæden før gentagelse. Flere normale runs skal derefter bevise punkt 8–10.
+
 # Aktiv roadmap – 2026-09-19, 4.0.432 fra ACTIVE31 til code-only deploy
 
 4.0.431 er merged (`686ebec4`), og providerfri `35448284914` har afsluttet

@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.432
+**Håndbogsversion:** 4.0.433
+
+## 89.38 4.0.433 – Én model, og koden leveres før vinden genhentes
+
+RavRadar bruger kun én offentlig scoremodel: den integrerede RavScore. Når vi
+taler om en gemt ældre kørsel og den aktuelle kode, er det ikke to modeller.
+Det er samme model, men den gemte pakke blev lavet af en ældre kodeversion.
+Candidate G er pensioneret og kan ikke længere vælges i produktionskørslen.
+
+Den seneste kørsel kunne læse og genbygge den gemte pakke med alle 210 zoner
+og 673 kystdele. Den hentede ikke vejr. Pakken har vind for zonerne, men den
+mangler vind for hver enkelt lokal kystdel. Derfor kan de 420 aktuelle
+scorevisninger endnu ikke beregnes.
+
+Kørslen stoppede på seks kontrolmeldinger, som alle følger af præcis denne
+kendte mangel. 4.0.433 må kun fortsætte, når det er nøjagtig de samme seks
+meldinger, data stadig er 210/673 og uændrede, ingen genafspilning fejler, og
+ingen private oplysninger er kommet med. En ny eller anderledes fejl stopper
+stadig. Tidsgrænsen hæves, så den cirka 20 minutter lange genbygning ikke
+efterlader for lidt tid til at lægge siden online.
+
+Det gør ikke de manglende vinddata acceptable. Formålet er at få den aktuelle
+kode online, så næste almindelige vejrkørsel faktisk kan hente lokal vind,
+beregne score og derefter bevise stabil vedligeholdelse gennem flere kørsler.
 
 ## 89.37 4.0.432 – Den gamle vejrpakke får alle nødvendige læsefiler
 
@@ -14,8 +37,8 @@ med. Derfor stoppede den allerede ved indlæsning. Den nåede ikke kontrollen
 af offentlig adgang, så fejlen betyder ikke, at private data var offentlige.
 
 4.0.432 samler nu læseren og begge nødvendige hjælpefiler som én pakke og
-prøver at indlæse hele pakken, før den fortsætter. Den gamle scoremodel og
-kontrollen af den gamle private vejrpakke bevares urørte. Det er også låst i
+prøver at indlæse hele pakken, før den fortsætter. Den historiske
+modelbinding og kontrollen af den gamle private vejrpakke bevares urørte. Det er også låst i
 en test, så en ny hjælpefil ikke senere kan blive overset og først opdages i
 produktion.
 
@@ -65,9 +88,9 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.432 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.433 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
-Den private Candidate G-rollback er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer.
+Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 
 Koden blev merged i 4.0.430. 4.0.431's providerfri genoptagelse afsluttede den
 centrale status, men stoppede før deploy på den historiske importfejl beskrevet

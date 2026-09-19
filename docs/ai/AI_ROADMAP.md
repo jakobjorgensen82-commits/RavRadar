@@ -1,3 +1,16 @@
+# Nyeste prioritering – 2026-09-19, 4.0.433 lokal vind efter code-only
+
+4.0.432 er merged som `0d2fd78a`. Providerfri `35449470349` bestod restore,
+migration og 210/673-genbygning, men stoppede før artifact på seks kendte
+følgefund fra manglende lokal vind. 4.0.433 gør kun dette eksakte metadata-
+only-sæt ikke-blokerende med uændret vejr, nul replay/privacy/continuationfejl
+og præcis 420 utilgængelige modes. Ukendt diagnostik stopper fortsat.
+
+Der er én offentlig model, integreret RavScore. Candidate G er pensioneret og
+kan ikke vælges i produktionsdispatch. Efter exact-head, merge og providerfri
+code-only køres normal weather. Mål konkret 0/673 lokal vind før og vækst mod
+673/673 efter providerfaserne; ingen blind gentagelse, hvis det ikke vokser.
+
 # Nyeste prioritering – 2026-09-19, 4.0.432 code-only fra ACTIVE31
 
 4.0.431 er merged som `686ebec4` efter exact-head `35448032367`.

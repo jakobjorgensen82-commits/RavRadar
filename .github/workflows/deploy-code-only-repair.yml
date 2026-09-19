@@ -65,7 +65,7 @@ jobs:
     needs: operational-recovery-gate
     name: Reuse exact runtime and build code-only artifact
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     outputs:
       active_deployment_id: ${{ steps.public-source.outputs.deployment_id }}
       central_version: ${{ steps.operational-model.outputs.central_version }}
@@ -706,6 +706,8 @@ jobs:
         env:
           SOURCE_REPAIR_ID: ${{ steps.public-source.outputs.repair_id }}
           SAVED_WEATHER_CONTINUATION: ${{ inputs.publish_newest_saved_weather }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          MIGRATED_PRIVATE_INSTALL_OUTCOME: ${{ steps.migrated-private-install.outcome }}
         run: |
           set -euo pipefail
           audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
@@ -719,6 +721,75 @@ jobs:
           if test "$runtime_audit_outcome" = "failure"; then
             if test "$SAVED_WEATHER_CONTINUATION" = "true"; then
               echo "::warning title=Saved-weather RavScore diagnostic retained::The regenerated saved-weather target retains its payload-free model/state findings; protected runtime, privacy, artifact and deployment checks continue."
+            elif test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance" \
+                && test "$MIGRATED_PRIVATE_INSTALL_OUTCOME" = "success" \
+                && test -z "$SOURCE_REPAIR_ID"; then
+              AUDIT_PATH="$audit_path" \
+              MIGRATION_PATH=.geometry-v2-work/post-cutover-private-runtime-migration.json \
+              node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+          const audit = read(process.env.AUDIT_PATH);
+          const migration = read(process.env.MIGRATION_PATH);
+          const expectedErrors = [
+            'MIXED_STATE_LINEAGE_COHORT',
+            'MIXED_STATE_TRANSITION_COHORT',
+            'PUBLIC_MANIFEST_NOT_CANONICAL',
+            'PUBLIC_PROFILE_ADVISORIES_MISMATCH',
+            'PUBLIC_PROFILE_MIGRATION_MISMATCH',
+            'PUBLIC_PROFILE_MIGRATION_NOT_READY',
+          ].sort();
+          const exactKnownErrors = JSON.stringify(audit.errors) === JSON.stringify(expectedErrors)
+            && JSON.stringify(audit.errorCounts) === JSON.stringify(Object.fromEntries(
+              expectedErrors.map(code => [code, 1]),
+            ));
+          const exactCoverage = audit.coverage?.expectedZoneCount === 210
+            && audit.coverage?.zoneCount === 210
+            && audit.coverage?.expectedPartCount === 673
+            && audit.coverage?.partCount === 673
+            && audit.coverage?.reconstructedModeCount === 1346
+            && audit.history?.currentUnavailableModeCount === 420;
+          const replaySafe = audit.continuation
+            && Object.keys(audit.continuation.stateReplayFailureCounts ?? {}).length === 0;
+          const payloadSafe = audit.payload?.privacyContractPassed === true
+            && audit.payload?.publicStateOrEvidenceIncluded === false
+            && audit.payload?.publicRawVectorIncluded === false
+            && audit.payload?.publicUnapprovedCoordinateIncluded === false
+            && audit.payload?.publicShadowIncluded === false;
+          const continuationSafe = audit.rollback?.descriptorValid === true
+            && audit.rollback?.generationReferenceBound === true
+            && audit.rollback?.runtimePartCount === 673
+            && audit.rollback?.evidenceLimitExceededPartCount === 0
+            && audit.rollback?.reconstructionFailurePartCount === 0
+            && audit.rollback?.stateContractMismatchPartCount === 0
+            && audit.rollback?.oracleMismatchPartCount === 0;
+          const expectedProfile = audit.profile?.declared?.modelCoverageReady === false
+            && audit.profile?.declared?.modelMemoryReady === false
+            && audit.profile?.declared?.modelMigrationReady === false
+            && JSON.stringify(audit.profile?.declared?.advisories) === JSON.stringify([
+              'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+              'LOCAL_MODEL_MEMORY_INCOMPLETE',
+              'MODEL_STATE_NOT_CONTINUED_OR_MIGRATED',
+            ])
+            && audit.profile?.expected?.modelCoverageReady === false
+            && audit.profile?.expected?.modelMemoryReady === false
+            && audit.profile?.expected?.modelMigrationReady === true
+            && JSON.stringify(audit.profile?.expected?.advisories) === JSON.stringify([
+              'LOCAL_MODEL_COVERAGE_INCOMPLETE',
+              'LOCAL_MODEL_MEMORY_INCOMPLETE',
+            ]);
+          if (migration.transitionKind !== 'MODEL_BINDING_METADATA_ONLY'
+            || audit.status !== 'failed'
+            || !exactKnownErrors
+            || !exactCoverage
+            || !replaySafe
+            || !payloadSafe
+            || !continuationSafe
+            || !expectedProfile) {
+            throw new Error('Historical integrated maintenance has unknown or unsafe runtime diagnostics');
+          }
+          NODE
+              echo "::warning title=Known historical RavScore diagnostic retained::The unchanged 210/673 runtime still lacks all 420 current score modes because its saved local wind is absent. Current source deployment continues so the next normal weather run can acquire the missing input."
             else
               test -n "$SOURCE_REPAIR_ID"
               AUDIT_PATH="$audit_path" \
