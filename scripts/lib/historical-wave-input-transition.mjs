@@ -44,14 +44,23 @@ function exactKeys(value, expected, label) {
 }
 
 function canonicalHour(value, label) {
-  const milliseconds = Date.parse(value);
   if (typeof value !== 'string'
-    || !Number.isFinite(milliseconds)
-    || value !== new Date(milliseconds).toISOString()
+    || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value)) {
+    throw new Error(`${label} must be a canonical exact UTC hour`);
+  }
+  const milliseconds = Date.parse(value);
+  const normalized = Number.isFinite(milliseconds)
+    ? new Date(milliseconds).toISOString()
+    : '';
+  const normalizedInput = value.endsWith(':00Z')
+    ? `${value.slice(0, -1)}.000Z`
+    : value;
+  if (!Number.isFinite(milliseconds)
+    || normalizedInput !== normalized
     || milliseconds % HOUR_MS !== 0) {
     throw new Error(`${label} must be a canonical exact UTC hour`);
   }
-  return value;
+  return normalized;
 }
 
 function canonicalTime(value, label) {

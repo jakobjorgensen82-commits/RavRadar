@@ -1435,3 +1435,10 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
 - Normalrun 35205052150 gennemførte alle provider-, cache-, closure-, historik-, runtimeaudit- og 52+3-led og gemte runtime for 09Z beskyttet.
 - Adminsynkroniseringen stoppede derefter på den udefinerede stableDigest, før Pages.
 - 4.0.403 retter readback og tilføjer en streng providerfri fortsættelse af præcis den nyere gemte runtime. DEC-0185.
+# 2026-09-19 – 4.0.437 tidsformatkant før providerstart
+
+- 4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.
+- Normalrun `35462863128` stoppede før providers på gyldig `...:00Z` mod
+  validatorens eneste testede `.000Z`-form.
+- 4.0.437 normaliserer begge eksakte UTC-heltimeformer og bevarer alle øvrige
+  exact-matchkrav. DEC-0216.

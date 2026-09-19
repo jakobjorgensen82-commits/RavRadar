@@ -36,7 +36,8 @@ function fixture() {
       expectedPartCount: 673,
       privatePayloadIncluded: false,
     },
-    targetReferenceAt: '2026-09-19T18:00:00.000Z',
+    // Production workflow output intentionally uses the canonical no-millis form.
+    targetReferenceAt: '2026-09-19T18:00:00Z',
     currentBinding: structuredClone(ravScoreModelBinding()),
     currentReleaseVersion:
       BOUNDED_CONDITIONS_PREDECESSOR_POLICY.releaseVersion,
@@ -55,7 +56,7 @@ assert.deepEqual(expectation.contractHashes,
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceContractHashes);
 assert.equal(expectation.productionReferenceAt,
   valid.sourceDescription.productionReferenceAt);
-assert.equal(expectation.targetReferenceAt, valid.targetReferenceAt);
+assert.equal(expectation.targetReferenceAt, '2026-09-19T18:00:00.000Z');
 
 for (const mutate of [
   value => { value.sourceDescription.sourceHead = 'a'.repeat(40); },
@@ -63,7 +64,7 @@ for (const mutate of [
   value => { value.sourceDescription.contractHashes.fullRuntimeContractSha256 = 'c'.repeat(64); },
   value => { value.sourceDescription.expectedPartCount = 672; },
   value => { value.sourceDescription.privatePayloadIncluded = true; },
-  value => { value.currentReleaseVersion = '4.0.437'; },
+  value => { value.currentReleaseVersion = '4.0.438'; },
   value => { value.currentBinding.modelBundleSha256 = 'd'.repeat(64); },
 ]) {
   const changed = fixture();
@@ -79,6 +80,14 @@ assert.throws(() => buildBoundedConditionsPredecessorRestoreExpectation({
   targetReferenceAt: '2026-09-19T17:00:00.000Z',
   currentContractHashes,
 }), /genuinely newer/);
+for (const targetReferenceAt of [
+  '2026-02-30T18:00:00Z',
+  '2026-09-19T18:00:00.001Z',
+]) assert.throws(() => buildBoundedConditionsPredecessorRestoreExpectation({
+  ...fixture(),
+  targetReferenceAt,
+  currentContractHashes,
+}), /canonical exact UTC hour/);
 
 const unchangedContracts = structuredClone(
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceContractHashes,
@@ -135,4 +144,4 @@ try {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Bounded conditions predecessor transition: 15 focused cases passed.');
+console.log('Bounded conditions predecessor transition: 17 focused cases passed.');

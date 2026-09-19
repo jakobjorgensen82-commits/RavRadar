@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.436
+**Håndbogsversion:** 4.0.437
+
+## 89.42 4.0.437 – Samme hele UTC-time skal forstås ens
+
+Den første almindelige kørsel efter 4.0.436 stoppede, før nogen
+vejrleverandør blev startet. Workflowet leverede den korrekte hele time som
+`2026-09-19T18:00:00Z`, mens den nye overgangskontrol kun havde været testet
+med den helt tilsvarende skrivemåde `2026-09-19T18:00:00.000Z`.
+
+4.0.437 accepterer præcis disse to skrivemåder og omskriver dem straks til
+samme interne form. Minutter, andre sekunder, andre brøkdele, tidszoner eller
+ugyldige datoer bliver stadig afvist. Begge overgangsveje er rettet, så den
+samme skjulte fejl ikke dukker op senere i den historiske nabovej.
+
+Ingen vejrdata eller scorer blev ændret af den korte fejlede kørsel. Den
+gemte krypterede fremgang findes fortsat, og næste almindelige kørsel skal
+fortsætte den gennem den store private fil, artifact og offentlig side.
 
 ## 89.41 4.0.436 – Den store vejrpakke gemmes uden at samle én kæmpestreng
 
@@ -154,7 +170,7 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.436 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.437 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 

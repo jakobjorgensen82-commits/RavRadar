@@ -1,3 +1,15 @@
+## 4.0.437 – workflowets hele UTC-time accepteres i overgangen (2026-09-19)
+
+- 4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.
+- Normalrun `35462863128` stoppede før alle providers, fordi den nye
+  overgangskontrol kun accepterede `.000Z`, mens workflowet korrekt leverer
+  samme hele UTC-time som `...:00Z`.
+- Begge eksakte overgangsveje accepterer nu kun de to ækvivalente heltime-
+  former, normaliserer til `.000Z` og afviser fortsat andre tidsformer.
+- Engangsovergangen er flyttet til exact release 4.0.437 uden ændring af dens
+  faste source-, bundle-, binding-, 210/673- eller hashkrav. Se
+  CHANGELOG-4.0.437.md og DEC-0216.
+
 ## 4.0.436 – stor privat conditions skrives uden én kæmpestreng (2026-09-19)
 
 - 4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.

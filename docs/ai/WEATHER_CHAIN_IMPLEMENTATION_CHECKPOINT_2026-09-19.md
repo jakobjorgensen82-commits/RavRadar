@@ -7,6 +7,16 @@ store analyse følger med i rettelsen, som var i gang før genstarten**.
 
 ## NYESTE efter almindelig 4.0.435-kørsel
 
+### Opfølgning efter 4.0.436-merge
+
+4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.
+Normalrun `35462863128` stoppede før alle providers, fordi overgangens nye
+heltimevalidator kun accepterede `.000Z`, mens produktionsworkflowet korrekt
+leverede den ækvivalente `...:00Z`-form. Lokal 4.0.437 accepterer kun disse
+to eksakte UTC-heltimeformer, normaliserer til `.000Z` og retter samme
+fejlmønster i begge forgængerovergange. Den fejlede kørsel ændrede ingen
+vejrdata og publicerede intet. DEC-0216.
+
 4.0.435 bestod exact-head `35457292220` og blev merged som `725068be`.
 Normalrun `35457642258` fortsatte den gemte DMI-kandidat og gennemførte DMI,
 Copernicus, Open-Meteo, DMI-first-samling, syvdageshistorik og scorebygning.

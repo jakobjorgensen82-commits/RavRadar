@@ -1,4 +1,21 @@
-# NYESTE SANDHED – 2026-09-19 – lokal 4.0.436 efter fuld 673-scorebygning
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.437 efter tidsformatstop
+
+4.0.436 bestod exact-head `35462534974`, PR #381 og blev merged som
+`0d72ce41`. Den efterfølgende almindelige weather `35462863128` låste korrekt
+produktionen til `2026-09-19T18:00:00Z`, men stoppede før DMI, Copernicus og
+Open-Meteo. Den nye engangsovergang havde kun været testet med JavaScripts
+ækvivalente form `2026-09-19T18:00:00.000Z` og afviste derfor fejlagtigt
+workflowets gyldige form.
+
+Lokal 4.0.437 accepterer kun disse to eksakte hele UTC-timeformer og
+normaliserer straks til `.000Z`; andre tidsformer og ugyldige datoer afvises.
+Samme fejlmønster er rettet i begge forgængerovergange. Den aktive overgang
+er flyttet til exact release 4.0.437, mens dens faste gamle source, bundle,
+modelbinding, 210/673 og tre kontrakthashes er uændrede. Run `35462863128`
+foretog ingen providerkald og publicerede intet. Exact-head, merge og nyt
+normalrun med genbrugt krypteret fremgang mangler. DEC-0216.
+
+# Historisk sandhed – 2026-09-19 – lokal 4.0.436 efter fuld 673-scorebygning
 
 4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.
 Normalrun `35457642258` fortsatte den delvise DMI-kandidat, gennemførte DMI,

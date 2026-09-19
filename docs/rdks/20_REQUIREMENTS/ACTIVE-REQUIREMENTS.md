@@ -1,3 +1,11 @@
+# Aktuelt krav til produktionstimens overgang – 2026-09-19
+
+- **REQ-CANONICAL-PRODUCTION-HOUR-TRANSITION-0216 – BINDENDE:** Den låste
+  hele UTC-time fra workflowet må angives som enten `...:00Z` eller den
+  ækvivalente `...:00.000Z`; begge normaliseres til `.000Z` før privat
+  restore. Alle andre tidszoner, minutter, sekunder, brøkdele og ugyldige
+  datoer afvises. Kravet gælder begge forgængerovergange. DEC-0216.
+
 # Aktuelt krav til stor privat conditions – 2026-09-19
 
 - **REQ-BOUNDED-ATOMIC-PRIVATE-CONDITIONS-0215 – BINDENDE:** Den komplette
@@ -8,9 +16,9 @@
   destination. Samlet byteantal og største topfelter må logges uden private
   værdier. Ingen time, kystdel, state eller provenance må fjernes som genvej.
   Writeren skal indgå i privat fuldruntimekontrakt. DEC-0215.
-- **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – BINDENDE:** 4.0.436 skal
+- **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – BINDENDE:** 4.0.437 skal
   genbruge den krypterede fremgang gennem den eksakte baseline, den er bundet
-  til. Kun release 4.0.436, source `d4e8844e`, bundle `ad2337ab…`, samme
+  til. Kun release 4.0.437, source `d4e8844e`, bundle `ad2337ab…`, samme
   modelbinding, 210/673 og de tre dokumenterede forgængerkontrakthashes må
   åbne den gamle reader. Det er en engangsovergang, ikke en generel lempelse;
   ukendt eller senere forgænger skal afvises.

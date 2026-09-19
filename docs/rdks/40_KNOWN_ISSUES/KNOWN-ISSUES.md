@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-19 – gyldig produktionstime blev afvist
+
+- **ISSUE-TRANSITION-HOUR-NO-MILLISECONDS – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** 4.0.436 bestod exact-head og blev merged, men almindelig weather
+  `35462863128` stoppede før providers. Workflowet leverede den korrekte hele
+  UTC-time `2026-09-19T18:00:00Z`; overgangens test havde kun dækket den
+  ækvivalente `.000Z`-form. 4.0.437 accepterer præcis begge former,
+  normaliserer til `.000Z` og bevarer alle øvrige exact-matchkrav. DEC-0216.
+- **ISSUE-PRIVATE-PROGRESS-BASELINE-REENTRY – FORTSAT DRIFTSBEVIS ÅBENT:**
+  Den fejlede kørsel nåede ingen provider, ændrede ingen vejrdata og
+  publicerede intet. Den gemte krypterede fremgang er derfor fortsat kilden,
+  som næste normale kørsel skal genbruge og føre gennem artifact/deploy.
+
 # NYESTE CHECKPOINT – 2026-09-19 – stor privat JSON efter fuld scorebygning
 
 - **ISSUE-PRIVATE-CONDITIONS-V8-STRING-LIMIT – RETTET LOKALT / DRIFTSBEVIS

@@ -1,3 +1,13 @@
+# 2026-09-19 – 4.0.437 normaliserer workflowets hele UTC-time
+
+4.0.436 bestod exact-head `35462534974`, PR #381 og merge `0d72ce41`.
+Normalrun `35462863128` stoppede før providers, fordi overgangens validator
+kun accepterede `.000Z`, mens workflowet korrekt leverede den ækvivalente
+`...:00Z`. 4.0.437 accepterer kun de to eksakte heltimeformer, normaliserer
+til `.000Z` og retter begge overgangsveje. Engangsovergangen er exact-release-
+flyttet uden at ændre gammel source, bundle, binding, 210/673 eller hashes.
+Se DEC-0216 og CHANGELOG-4.0.437.md.
+
 # 2026-09-19 – 4.0.436 bounded atomisk conditions efter 673/673
 
 4.0.435 bestod exact-head `35457292220`, PR #380 og merge `725068be`.
