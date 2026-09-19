@@ -1171,13 +1171,16 @@ function assertSealedIntegratedReadiness(readiness, currentDocument) {
     || readiness.modelBundleSha256 !== expectedBinding?.modelBundleSha256
     || readiness.publicImplementationClosureSha256
       !== currentDocument?.requestedImplementationClosureSha256
+    || !Array.isArray(readiness.migrationIds)
+    || readiness.migrationIds.length < 1
+    || readiness.migrationIds.length > 128
+    || new Set(readiness.migrationIds).size !== readiness.migrationIds.length
+    || readiness.migrationIds.some(id => !SAFE_ID_PATTERN.test(String(id ?? '')))
     || readiness.tripSchemaVersion !== 3
-    || readiness.tripBindingPolicyId !== TRIP_BINDING_POLICY_ID
+    || !SAFE_ID_PATTERN.test(String(readiness.tripBindingPolicyId ?? ''))
     || !SHA256_PATTERN.test(String(readiness.tripBindingPolicySha256 ?? ''))
-    || readiness.tripActiveAdmissionPolicyId !== TRIP_ACTIVE_ADMISSION_POLICY_ID
+    || !SAFE_ID_PATTERN.test(String(readiness.tripActiveAdmissionPolicyId ?? ''))
     || !SHA256_PATTERN.test(String(readiness.tripActiveAdmissionPolicySha256 ?? ''))
-    || JSON.stringify(readiness.migrationIds)
-      !== JSON.stringify(REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id))
     || !exactKeys(readiness.assistantBinding, [
       'modelId', 'stateSchemaVersion', 'modelContractSha256', 'modelBundleSha256',
       'knowledgeSchema', 'knowledgeSha256',
@@ -1254,10 +1257,30 @@ function integratedPublicAuditCalibrationEligible(publicAudit) {
 
 function assertSealedIntegratedPublicAudit(publicAudit, currentDocument, {
   allowMeasuredWarmup = false,
+  allowDiagnosticFindings = false,
+  publicManifest = null,
 } = {}) {
   const expectedBinding = currentDocument?.requestedModelBinding;
+  const auditErrors = Array.isArray(publicAudit?.errors) ? publicAudit.errors : null;
+  const boundedDiagnosticErrors = auditErrors !== null
+    && auditErrors.length <= 128
+    && new Set(auditErrors).size === auditErrors.length
+    && auditErrors.every(code => SAFE_ID_PATTERN.test(String(code ?? '')))
+    && exactKeys(publicAudit?.errorCounts, auditErrors)
+    && auditErrors.every(code => Number.isSafeInteger(Number(publicAudit.errorCounts[code]))
+      && Number(publicAudit.errorCounts[code]) > 0);
+  const auditDispositionValid = boundedDiagnosticErrors
+    && (publicAudit?.status === 'passed'
+      ? auditErrors.length === 0
+      : allowDiagnosticFindings
+        && publicAudit?.status === 'failed'
+        && auditErrors.length > 0);
   if (!publicAudit || publicAudit.schemaVersion !== 1
-    || publicAudit.status !== 'passed'
+    || !auditDispositionValid
+    || (publicAudit.datasetId !== undefined
+      && publicAudit.datasetId !== publicManifest?.datasetId)
+    || (publicAudit.productionReferenceAt !== undefined
+      && publicAudit.productionReferenceAt !== publicManifest?.productionReferenceAt)
     || publicAudit.model?.modelId !== expectedBinding?.modelId
     || publicAudit.model?.stateSchemaVersion !== expectedBinding?.stateSchemaVersion
     || publicAudit.model?.modelContractSha256 !== expectedBinding?.modelContractSha256
@@ -1271,8 +1294,6 @@ function assertSealedIntegratedPublicAudit(publicAudit, currentDocument, {
     || publicAudit.payload?.publicRawVectorIncluded !== false
     || publicAudit.payload?.publicUnapprovedCoordinateIncluded !== false
     || publicAudit.payload?.publicShadowIncluded !== false
-    || !Array.isArray(publicAudit.errors)
-    || publicAudit.errors.length !== 0
     || sha256(publicAudit) !== currentDocument?.integratedPublicAuditSha256) {
     throw new Error('Pending integrated reconciliation public audit differs from its sealed evidence');
   }
@@ -3736,7 +3757,9 @@ function assertIntegratedReturnPendingPlan(plan, currentRow, {
       });
     } else {
       assertSealedIntegratedReadiness(readiness, currentRow.payload);
-      assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload);
+      assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload, {
+        publicManifest,
+      });
       if (sha256(publicManifest) !== plan.integratedManifestSha256
         || plan.calibrationEligibleAfterVerifiedActivation
           !== integratedPublicAuditCalibrationEligible(publicAudit)) {
@@ -4430,6 +4453,9 @@ export function operationalPendingReconciliationTransition({
     assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload, {
       allowMeasuredWarmup: historicalIntegrated
         && integratedPlan.calibrationEligibleAfterVerifiedActivation === false,
+      allowDiagnosticFindings: historicalIntegrated
+        && integratedPlan.calibrationEligibleAfterVerifiedActivation === false,
+      publicManifest,
     });
   } else {
     assertCandidatePlanForPendingReconciliation(candidatePlan, currentRow);

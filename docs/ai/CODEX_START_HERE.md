@@ -1,3 +1,28 @@
+# NYESTE CHECKPOINT – 2026-09-19 – 4.0.431 historisk reentry
+
+4.0.430 bestod exact-head `35446765316`, PR #375 og blev merged som
+`f7c954fe`. Providerfri code-only `35447099504` startede ingen providers og
+lavede intet deploy. Reentry fandt det allerede offentlige 4.0.429-target,
+verificerede 210/673 og backfillede holdbar source-/targetevidens, men central
+PENDING version 30 er fortsat åben.
+
+Den konkrete fejl havde to kanter, som er rettet samlet i lokal 4.0.431:
+historisk readiness blev fejlagtigt sammenlignet med 4.0.430's nyere
+migrationsliste, og den oprindeligt tilladte diagnostiske warmup-audit ville
+bagefter være blevet krævet grøn. Historisk genoptagelse følger nu sin eksakte
+forseglede hash/plan; nye overgange følger fortsat dagens fulde krav.
+Diagnostiske fund kan kun fortsætte med forseglet calibration=false. Hash,
+head, binding, closure, 210/673, privacy, history/warmup og central CAS er
+uændret strenge. Se DEC-0211 og CHANGELOG-4.0.431.md.
+
+Regressionen efterligner de tre faktiske auditkoder og forgængerens kortere
+migrationsliste. Activation, Pages-generation/reentry, protected evidence,
+workflow-outcome, terminal, version, RDKS, håndbog og modelbinding er grønne.
+Næste: én exact-head-sourcegate, merge og samme providerfri reentry. Start
+ikke weather før PENDING og code-only deploy er afsluttet. `.tmp-420/` må
+aldrig stages. Derefter almindelige vejrkørsler som produktionsbevis for hele
+4.0.430-kæden; den er ikke endnu erklæret stabil eller komplet.
+
 # NYESTE CHECKPOINT – 2026-09-19 – hele helkæderettelsen samlet før levering
 
 Den ucommittede rettelse omfatter alle aktuelle vejr-, cache-, historik-,

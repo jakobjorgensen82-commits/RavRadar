@@ -1,3 +1,26 @@
+# NYESTE SANDHED – 2026-09-19 – 4.0.430 merged, 4.0.431 reentry lokal
+
+Main er 4.0.430 / `f7c954fe` efter PR #375 og grøn exact-head
+`35446765316`. Providerfri `35447099504` startede ingen vejrleverandør og
+deployede intet. Den verificerede det allerede offentlige target som
+integrated 210/673 og backfillede holdbar privat source-/targetevidens.
+Central status er fortsat PENDING version 30.
+
+Reentry stoppede på to sekventielle historiske kontraktfejl. Først blev den
+korrekt forseglede 4.0.429-readiness afvist, fordi 4.0.430 havde tilføjet en
+senere migration. Dernæst ville den forseglede diagnostiske warmup-audit med
+tre kendte koder være blevet krævet helt grøn, selv om immutable plan allerede
+havde calibration=false. Lokal 4.0.431 retter begge samlet efter DEC-0211.
+Nye transitions kræver stadig dagens fulde migrationsliste; historisk reentry
+kræver fortsat eksakt hash, head, model/closure, unik bounded migrationliste,
+profil, 210/673, privacy, warmup/historik, stabilt target og central CAS.
+
+Måltests for activation, Pages-reentry, holdbar evidens og workflowterminal er
+grønne. Næste er én exact-head-sourcegate, merge og samme providerfri
+reentry/code-only. Først derefter køres almindelig weather som faktisk bevis
+for 4.0.430's samlede vejrrettelse. Den er endnu ikke produktionsbevist;
+komplethed, DMI-first, fallback, cachefortsættelse og browser skal måles.
+
 # NYESTE SANDHED – 2026-09-19 – samlet lokal helkæderettelse før levering
 
 Produktion/main er fortsat 4.0.429 / `4bee5b0d`; cron er deaktiveret, og der

@@ -1,5 +1,27 @@
 # Tværgående krydstjek og samlet rettelsesplan
 
+## NYESTE leveringshændelse – 4.0.430 merged, 4.0.431 historisk reentry
+
+4.0.430 bestod exact-head `35446765316` og blev merged som `f7c954fe`.
+Den providerfri kørsel `35447099504` startede ingen vejrleverandører og
+deployede intet. Den fandt og verificerede det allerede offentlige target
+210/673 samt gemte holdbar source-/targetevidens, men central PENDING version
+30 forblev åben.
+
+To sekventielle reentry-fejl blev fundet samlet: den gamle forseglede
+readiness blev fejlagtigt målt mod 4.0.430's senere migrationsliste, og den
+næste kontrol ville have krævet den kendte diagnostiske warmup-rapport helt
+grøn, selv om dens immutable plan allerede havde calibration=false. Lokal
+4.0.431 validerer derfor historisk evidens mod dens egne hashes og plan, mens
+nye transitions stadig kræver dagens fulde migrations- og policykrav.
+
+Artifactkrydstjek af sidste rigtige providerkørsel `35416641052` viser ingen
+ny overset fejlkategori: H0-vind med nul accepterede rækker, otte direkte
+strømhuller, 420 utilgængelige modes, de tre auditkoder, reserve-/budgetfund
+og den forældede strømkontrol er alle dækket af matricen nedenfor. Det er
+stadig ikke et produktionsbevis for rettelserne; det kræver først providerfri
+central afslutning/deploy og derefter almindelige vejrkørsler.
+
 ## NYESTE samlede lukningsmatrix – 2026-09-19
 
 Dette afsnit går forud for alle ældre statusafsnit i dokumentet. Den samlede

@@ -5,6 +5,21 @@ Dette er genfundet implementeringsstatus, ikke en ny release eller et
 produktionsbevis. Ejeren har udtrykkeligt krævet, at **alle fund fra den
 store analyse følger med i rettelsen, som var i gang før genstarten**.
 
+## NYESTE efter 4.0.430-merge og providerfri reentry
+
+4.0.430 er merged som `f7c954fe` efter grøn exact-head `35446765316`.
+Providerfri `35447099504` kaldte ingen providers og deployede intet; den
+verificerede det eksisterende offentlige target 210/673 og gemte holdbar
+evidens, men stoppede med central PENDING version 30 åben.
+
+Lokal 4.0.431 retter begge sekventielle historiske stop samlet: senere
+migrationskrav eftermonteres ikke på en korrekt hashforseglet gammel
+readiness, og en gammel diagnostisk audit kan kun fortsætte, når dens
+immutable plan allerede har calibration=false. Nye transitions, hash/head,
+model/closure, profil, 210/673, privacy, historik/warmup og central CAS er
+fortsat strenge. Sidste providerartifacts er krydstjekket mod hele matricen;
+ingen af de tidligere fund er fjernet eller erklæret løst uden livebevis.
+
 ## NYESTE implementeringsstatus efter genoptagelsen
 
 ### Afgørende nyere status – går forud for alle ældre "åbent"-afsnit

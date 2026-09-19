@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-19 – PENDING-reentry 4.0.431
+
+- **ISSUE-HISTORICAL-PENDING-CURRENT-READINESS – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Reentry af det allerede offentlige 4.0.429-target blev afvist, fordi
+  en senere 4.0.430-migration ikke fandtes i den gamle forseglede readiness.
+  Historisk evidens følger nu sin eksakte hash og bounded kontrakt; nye
+  transitions følger fortsat hele den aktuelle migrationsliste.
+- **ISSUE-HISTORICAL-DIAGNOSTIC-AUDIT-REENTRY – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Den historiske plan havde lovligt calibration=false og tre bounded
+  diagnostiske fund, men reentry krævede fejlagtigt status passed. Kun
+  historisk integrated maintenance med samme forseglede calibration=false
+  kan nu fortsætte; fejlkoder/tællere, audit-hash, 210/673 og privacy kræves.
+
+Run `35447099504` foretog ingen providers eller deploy. PENDING30 er fortsat
+åben, indtil 4.0.431 er merged og providerfri reentry består. DEC-0211.
+
 # NYESTE CHECKPOINT – 2026-09-19 – samlet lokal rettelse, driftsbevis åbent
 
 Alle fund fra vejrkørslen og helhedsanalysen er nu med i samme lokale

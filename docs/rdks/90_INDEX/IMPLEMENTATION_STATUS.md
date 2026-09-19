@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.431 reentry
+
+- [x] 4.0.430 exact-head `35446765316`, PR #375 og merge `f7c954fe`.
+- [x] Providerfri `35447099504` verificerede det offentlige integrated-target
+  210/673 og backfillede holdbar source-/targetevidens uden weather/deploy.
+- [x] Afgræns begge sekventielle reentry-fejl: senere migrationsliste og den
+  forseglede diagnostiske calibration=false-warmup-audit.
+- [x] Ret historisk validering uden at lempe nye transitions, hash/head,
+  binding/closure, 210/673, privacy, historik/warmup eller central CAS.
+- [x] Regression med de tre faktiske auditkoder og kortere forgængermigration;
+  tilstødende Pages/evidence/outcome/terminal-tests er grønne.
+- [x] Synkronisér 4.0.431-dokumenter/version og kør målrettede slutchecks.
+- [ ] Én exact-head-sourcegate, merge og providerfri reentry/code-only.
+- [ ] Derefter almindelig weather/browser og flere runs som faktisk bevis for
+  hele den samlede vejrkæde. Central PENDING30 er fortsat åben nu.
+
 # Aktuel implementeringsstatus – 2026-09-19, samlet lokal rettelse før levering
 
 - [x] Alle fund fra kørslen, den første helhedsanalyse og efterfølgende
