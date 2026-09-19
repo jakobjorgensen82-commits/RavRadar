@@ -116,7 +116,8 @@ function fixture() {
     protectedConditionsBytes,
     manifest,
     sourceDescription,
-    targetReferenceAt: '2026-09-19T03:00:00.000Z',
+    // Production workflow output intentionally uses the canonical no-millis form.
+    targetReferenceAt: '2026-09-19T03:00:00Z',
   };
 }
 
@@ -161,7 +162,12 @@ assert.equal(restoreExpectation.minimumReferenceAt,
   HISTORICAL_WAVE_INPUT_TRANSITION_POLICY.sourceProductionReferenceAt);
 assert.equal(restoreExpectation.minimumGeneratedAt,
   valid.sourceDescription.generatedAt);
-assert.equal(restoreExpectation.targetReferenceAt, valid.targetReferenceAt);
+assert.equal(restoreExpectation.targetReferenceAt, '2026-09-19T03:00:00.000Z');
+assert.throws(() => buildHistoricalWavePredecessorRestoreExpectation({
+  sourceDescription: valid.sourceDescription,
+  targetReferenceAt: '2026-02-30T03:00:00Z',
+  currentBinding: valid.currentBinding,
+}), /canonical exact UTC hour/);
 
 for (const mutate of [
   value => { value.sourceDescription.sourceHead = 'a'.repeat(40); },
@@ -248,4 +254,4 @@ try {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Historical wave input transition: 11 focused cases passed.');
+console.log('Historical wave input transition: 12 focused cases passed.');

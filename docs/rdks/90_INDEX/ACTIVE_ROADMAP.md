@@ -1,4 +1,20 @@
-# Aktiv roadmap – 2026-09-19, 4.0.436 fra beregnet data til offentlig drift
+# Aktiv roadmap – 2026-09-19, 4.0.437 fra tidsformatstop til offentlig drift
+
+1. [x] Lever 4.0.436 via exact-head `35462534974`, PR #381 og main
+   `0d72ce41`.
+2. [x] Afgræns normalrun `35462863128` til den gyldige `...:00Z`-form, som
+   den nye overgangstest ikke havde dækket; ingen provider blev startet.
+3. [x] Ret begge overgangsveje til eksakt `...:00Z`/`...:00.000Z` og én
+   normaliseret intern værdi; flyt den faste engangsregel til 4.0.437.
+4. [ ] Bestå målrettede slutchecks og én exact-head, merge uden ny
+   providerfri genbygning eller gentagelse af allerede beviste datafaser.
+5. [ ] Kør almindelig weather og kræv genbrug af gemt krypteret fremgang,
+   komplet privat runtime, artifact, deploy, offentlig aktuel time og 673
+   lokale scoreinput.
+6. [ ] Følg næste almindelige cron og fortsæt helhedsbeviset for DMI-first,
+   fallback, rotation, komplethed og vedligeholdelsesfri drift.
+
+# Historisk roadmap – 2026-09-19, 4.0.436 fra beregnet data til offentlig drift
 
 1. [x] Lever 4.0.435 via exact-head `35457292220`, PR #380 og main
    `725068be`.
@@ -9,7 +25,7 @@
 4. [x] Ret med kompakt, løbende, atomisk, parsebar og runtimebundet writer.
 5. [x] Tilføj eksakt engangsgendannelse af den tidligere baseline, som den
    krypterede fremgang er bundet til; afvis alle andre forgængere.
-6. [ ] Afslut PR #381 exact-head, merge og fortsæt normalrun med den gemte
+6. [x] Afslut PR #381 exact-head, merge og fortsæt normalrun med den gemte
    fremgang frem for blind providerstart.
 7. [ ] Bevis artifact, deploy, aktuel time, alle 673 lokale scoreinput og
    Safari/browser. Kør derefter mindst næste almindelige cron som driftbevis.

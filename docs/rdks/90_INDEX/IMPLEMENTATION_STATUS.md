@@ -1,4 +1,17 @@
-# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.436
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.437
+
+- [x] 4.0.436 exact-head `35462534974`, PR #381 og merge `0d72ce41`.
+- [x] Afgræns normalrun `35462863128`: stop før providers på gyldig
+  `...:00Z`, fordi den nye validator kun dækkede ækvivalent `.000Z`.
+- [x] Ret begge forgængerovergange til to eksakte heltimeformer med én
+  normaliseret intern `.000Z`-form; bevar dato-, heltime- og UTC-krav.
+- [x] Flyt den faste engangsovergang til exact release 4.0.437 uden at ændre
+  dens source-, bundle-, model-, 210/673- eller kontrakthashbindinger.
+- [ ] Bestå målchecks, versions-/RDKS-kontrol og én exact-head; merge.
+- [ ] Fortsæt almindelig weather fra krypteret fremgang og bevis privat
+  runtime, artifact, Pages, offentlig aktuel time og næste normale cron.
+
+# Historisk implementeringsstatus – 2026-09-19, lokal 4.0.436
 
 - [x] 4.0.435 exact-head `35457292220`, PR #380 og merge `725068be`.
 - [x] Normalrun `35457642258` startede alle tre providerfaser og bevarede
@@ -13,7 +26,7 @@
   reader, så cachen kan genbruges uden at åbne en generel gammel-kodevej.
 - [x] Synkronisér version/RDKS/begge håndbøger og bestå writer-, weather-,
   private-runtime-, releasekontrakt-, RDKS- og versionmålchecks.
-- [ ] PR #381 exact-head og merge.
+- [x] PR #381 exact-head `35462534974` og merge `0d72ce41`.
 - [ ] Fortsæt almindelig weather fra gemt krypteret fremgang. Bevis privat
   runtime, artifact, Pages, offentlig aktuel time og stabil næste cron.
 

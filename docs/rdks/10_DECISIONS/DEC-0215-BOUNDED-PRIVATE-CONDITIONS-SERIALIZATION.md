@@ -1,6 +1,7 @@
 # DEC-0215 – Stor privat conditions skrives løbende og atomisk
 
-**Status:** Besluttet og implementeret lokalt i 4.0.436; produktionsbevis åbent
+**Status:** Writeren er leveret i 4.0.436; overgangens versions-/tidskant er
+erstattet af DEC-0216 og 4.0.437; samlet produktionsbevis åbent
 **Dato:** 2026-09-19
 
 ## Observeret problem
@@ -32,12 +33,18 @@ grænse: alle senere private læsere skal fortsat kunne parse dokumentet.
 6. Writeren indgår i private runtimes fulde implementeringshash, så gammel
    kode ikke kan behandles som samme produktionskontrakt.
 7. Den krypterede fremgang fra det fejlede run er bundet til bundle
-   `ad2337ab…`, som blev publiceret fra `d4e8844e`. 4.0.436 må derfor én gang
+   `ad2337ab…`, som blev publiceret fra `d4e8844e`. Den aktuelle exact-release
+   må derfor én gang
    gendanne netop denne baseline med netop dens gamle reader, før fremgangen
    åbnes. Releaseversion, source head, bundlehash, modelbinding, zone-/delantal
    og alle tre gamle kontrakthashes skal matche eksakt. Alle andre
-   forgængere afvises. Når en ny 4.0.436-runtime er publiceret, matcher
+   forgængere afvises. Når en ny runtime er publiceret, matcher
    engangsovergangen ikke længere og kan ikke genbruges.
+
+**Tillæg:** 4.0.436 blev merged, men første almindelige run stoppede før
+providers på forskellen mellem de ækvivalente UTC-former `...:00Z` og
+`...:00.000Z`. DEC-0216 flytter derfor den uændrede eksakte overgang til
+4.0.437 og normaliserer de to tilladte heltimeformer.
 
 ## Konsekvens
 

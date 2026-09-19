@@ -11,7 +11,7 @@ const CONTRACT_KEYS = Object.freeze([
 ]);
 
 export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
-  releaseVersion: '4.0.436',
+  releaseVersion: '4.0.437',
   sourceDescriptionKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
   sourceDescriptionSchemaVersion: '1.0.0',
   sourceHead: 'd4e8844ece6bfa46447b762a662cac0d7f1da385',
@@ -39,13 +39,23 @@ function same(left, right) {
 }
 
 function canonicalHour(value, label) {
+  if (typeof value !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(value)) {
+    throw new Error(`${label} must be a canonical exact UTC hour`);
+  }
   const milliseconds = Date.parse(value);
-  if (typeof value !== 'string' || !Number.isFinite(milliseconds)
-    || value !== new Date(milliseconds).toISOString()
+  const normalized = Number.isFinite(milliseconds)
+    ? new Date(milliseconds).toISOString()
+    : '';
+  const normalizedInput = value.endsWith(':00Z')
+    ? `${value.slice(0, -1)}.000Z`
+    : value;
+  if (!Number.isFinite(milliseconds)
+    || normalizedInput !== normalized
     || milliseconds % HOUR_MS !== 0) {
     throw new Error(`${label} must be a canonical exact UTC hour`);
   }
-  return value;
+  return normalized;
 }
 
 function canonicalTime(value, label) {
