@@ -1,3 +1,18 @@
+# Aktuelt model- og deploydelta – 2026-09-19
+
+- **REQ-ONE-PUBLIC-INTEGRATED-MODEL-0213 – BINDENDE:** RavRadar har kun én
+  offentlig scoremodel, den integrerede RavScore. Candidate G er pensioneret
+  som produkt- og rollbackvalg og må ikke tilbydes i produktionsdispatch.
+  Historisk inert kompatibilitetskode kan fjernes senere uden at forsinke
+  stabil drift. En gemt ældre runtime må ikke omtales som en anden model.
+- **REQ-BOUNDED-HISTORICAL-DIAGNOSTIC-DEPLOY-0213 – BINDENDE:** Code-only må
+  kun fortsætte på den kendte manglende-kystdelsvind-diagnostik ved eksakt
+  historical integrated maintenance, metadata-only, eksakt sekskodesæt,
+  210/673, 1.346 rekonstruerede modes, 420 utilgængelige aktuelle modes,
+  nul replayfejl, fuld public privacy og intakt generationsbundet continuation.
+  Dette leverer kode til efterfølgende normal vejrhentning; det gør ikke
+  manglende vind komplet. Ukendt eller ændret diagnostik stopper. DEC-0213.
+
 # Aktuelt restore-delta – 2026-09-19
 
 - **REQ-PREDECESSOR-RESTORE-COMPATIBILITY-CLOSURE-0212 – BINDENDE:** Når en

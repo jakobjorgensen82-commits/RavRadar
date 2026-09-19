@@ -9,6 +9,7 @@ const { orchestrator, build } = workflows;
 const pkg = JSON.parse(read('package.json'));
 const releaseGate = read('scripts/release-gate.mjs');
 const decision = read('docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md');
+const updateAndDeploy = read('.github/workflows/update-and-deploy.yml');
 
 for (const retiredPath of [
   'scripts/one-time-candidate-g-gap-reconstruction.mjs',
@@ -94,11 +95,18 @@ assert.match(updateWeather, /refuses Candidate G schema 2\.1 or reconstructed tr
 assert.match(tripMigration, /ravscore-reconstructed-derived-evidence/);
 assert.equal(fs.existsSync('supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql'), true);
 
-// These are separate, still-authorized safety paths and must not be removed by
-// retirement of the abandoned incident.
+// Historical compatibility code may remain inert while it is removed in a
+// later bounded cleanup, but the public production dispatcher must no longer
+// offer or accept Candidate G rollback activation.
 assert.match(orchestrator, /ravscore_candidate_g_rollback_mode/);
 assert.match(build, /ravscore_candidate_g_rollback_mode/);
 assert.match(build, /Resolve the one-time Candidate G bootstrap gate/);
+assert.match(updateAndDeploy, /description: "Candidate G er pensioneret; rollback kan ikke v\u00e6lges"/);
+assert.match(updateAndDeploy, /case "\$ROLLBACK_MODE" in none\) ;; \*\) echo "Candidate G rollback is retired\."/);
+const rollbackInputStart = updateAndDeploy.indexOf('      ravscore_candidate_g_rollback_mode:');
+const rollbackInputEnd = updateAndDeploy.indexOf('      ravscore_candidate_g_rollback_confirmation:', rollbackInputStart);
+const rollbackInput = updateAndDeploy.slice(rollbackInputStart, rollbackInputEnd);
+assert.doesNotMatch(rollbackInput, /- dry-run|- execute/);
 assert.match(decision, /Historisk, tilbagetrukket uden anvendelse og erstattet af DEC-0111/);
 assert.match(decision, /må ikke eksekveres/i);
 

@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-19 – 4.0.433 lokal code-only-kant
+
+Main er 4.0.432 / `0d2fd78a` efter PR #377. Providerfri `35449470349`
+bestod central ACTIVE-readback, migration, forgænger-restore, importkontrol,
+privat runtimeinstallation og deterministisk 210/673-genbygning uden
+providerkald eller ændrede vejrdata. Den stoppede før artifact/deploy på seks
+auditfølgefund.
+
+Der er én offentlig model: integreret RavScore. Den gemte runtime kommer fra
+ældre kode, men er ikke en anden model. Den har zonevind 210/210 og lokal
+kystdelsvind 0/673; derfor er alle 420 aktuelle scorevisninger utilgængelige.
+Lokal 4.0.433 fortsætter kun på præcis de seks koder ved metadata-only,
+210/673, 1.346 modes, 420 utilgængelige, nul replay/privacy/continuationfejl
+og uændret vejr. Ukendt diagnostik stopper. Candidate G er pensioneret i
+produktionsdispatch; inert historisk kode røres ikke nu. DEC-0213.
+
+Næste: korte målchecks, én exact-head-sourcegate, PR/merge, providerfri
+code-only og derefter normal weather med konkret måling af lokal vind/score.
+`.tmp-420/` er privat og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – 4.0.432 komplet forgænger-restore
 
 Main er 4.0.431 / `686ebec4` efter PR #376 og grøn exact-head

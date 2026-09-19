@@ -284,7 +284,15 @@ for (const marker of [
   'Download exact known public source audit evidence',
   'runtime_audit_outcome=failure',
   'SAVED_WEATHER_CONTINUATION: ${{ inputs.publish_newest_saved_weather }}',
+  'OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}',
+  'MIGRATED_PRIVATE_INSTALL_OUTCOME: ${{ steps.migrated-private-install.outcome }}',
   'Saved-weather RavScore diagnostic retained',
+  'Known historical RavScore diagnostic retained',
+  "migration.transitionKind !== 'MODEL_BINDING_METADATA_ONLY'",
+  "audit.history?.currentUnavailableModeCount === 420",
+  "audit.payload?.privacyContractPassed === true",
+  "Object.keys(audit.continuation.stateReplayFailureCounts ?? {}).length === 0",
+  "throw new Error('Historical integrated maintenance has unknown or unsafe runtime diagnostics')",
   'Code-only runtime audit differs from the exact known public source audit',
   'Exact known RavScore diagnostic retained',
   'steps.public-source.outputs.deployment_id',
@@ -319,12 +327,23 @@ const runtimeAuditStart = workflow.indexOf('- name: Audit regenerated integrated
 const runtimeAuditEnd = workflow.indexOf('\n      - name:', runtimeAuditStart + 1);
 const runtimeAudit = workflow.slice(runtimeAuditStart, runtimeAuditEnd);
 for (const marker of [
+  "test \"$OPERATIONAL_ACTION\" = \"integrated-historical-maintenance\"",
+  "test \"$MIGRATED_PRIVATE_INSTALL_OUTCOME\" = \"success\"",
+  "test -z \"$SOURCE_REPAIR_ID\"",
+  "'MIXED_STATE_LINEAGE_COHORT'",
+  "'MIXED_STATE_TRANSITION_COHORT'",
+  "'PUBLIC_MANIFEST_NOT_CANONICAL'",
+  "'PUBLIC_PROFILE_ADVISORIES_MISMATCH'",
+  "'PUBLIC_PROFILE_MIGRATION_MISMATCH'",
+  "'PUBLIC_PROFILE_MIGRATION_NOT_READY'",
   'sha256CanonicalJson(sourceAudit) !== expected',
   'sha256CanonicalJson(sourceCheckpointAudit) !== expected',
   'sha256CanonicalJson(targetAudit) !== expected',
   'process.env.SOURCE_REPAIR_ID !== policy.id',
 ]) assert.ok(runtimeAudit.includes(marker),
   `Code-only-auditens sn\u00e6vre undtagelse mangler ${marker}`);
+assert.match(workflow, /build-code-only:[\s\S]*?timeout-minutes: 60/,
+  'Code-only deploy skal have tid til den observerede cirka 20 minutters runtimegenbygning og efterfølgende gates.');
 assert.ok(runtimeAudit.includes('throw new Error('),
   'Code-only-auditen skal fortsat stoppe p\u00e5 ukendt eller \u00e6ndret diagnostik');
 const savedWeatherBindingStart = workflow.indexOf(

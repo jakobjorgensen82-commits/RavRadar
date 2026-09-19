@@ -38,16 +38,14 @@ on:
         default: false
         type: boolean
       ravscore_candidate_g_rollback_mode:
-        description: "Candidate G-rollback: sikker dry-run eller eksplicit samlet execute"
+        description: "Candidate G er pensioneret; rollback kan ikke vælges"
         required: false
         default: none
         type: choice
         options:
           - none
-          - dry-run
-          - execute
       ravscore_candidate_g_rollback_confirmation:
-        description: "Kun execute: skriv EXECUTE-CANDIDATE-G-ROLLBACK"
+        description: "Pensioneret; skal være tom"
         required: false
         default: ""
         type: string
@@ -160,7 +158,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/validate-ravscore-dispatch.mjs
-          case "$ROLLBACK_MODE" in none|dry-run|execute) ;; *) echo "Unsupported Candidate G rollback mode." >&2; exit 1 ;; esac
+          case "$ROLLBACK_MODE" in none) ;; *) echo "Candidate G rollback is retired." >&2; exit 1 ;; esac
           geometry=false
           if [ "$GEOMETRY_PILOT" = "true" ] || [ "$GEOMETRY_NATIONAL" = "true" ]; then geometry=true; fi
           operation_count=0

@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal kystdelsvind og code-only
+
+- **ISSUE-LOCAL-PART-WIND-ABSENT – ÅBENT / RODÅRSAG AFGRÆNSET:** Den
+  offentlige gemte runtime har zonens vind i 210/210 zoner, men 0/673 lokale
+  kystdele har vindhastighed eller -retning. Bølge findes på 673/673 og strøm
+  på 665/673. Derfor er 420/420 aktuelle scorevisninger utilgængelige. En
+  providerfri genbygning kan ikke udfylde dette; næste almindelige kørsel på
+  den aktuelle komponentkode skal hente lokal vind og bevise forbedringen.
+- **ISSUE-CODE-ONLY-KNOWN-DIAGNOSTIC-BLOCK – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** `35449470349` bestod hele genbygningen, men stoppede før artifact
+  på seks kendte følgefejl. 4.0.433 tillader kun dette eksakte sæt med
+  metadata-only, 210/673, 420 utilgængelige modes, nul replay-/privacy- og
+  continuationfejl. Ukendte afvigelser stopper fortsat. DEC-0213.
+- **ISSUE-CANDIDATE-G-PRODUCTION-RETIREMENT – RETTET LOKALT / OPRYDNING
+  SENERE:** Candidate G kan ikke længere vælges i produktionsdispatch. Inert
+  historisk kompatibilitetskode er ikke et driftsmål og fjernes senere i en
+  afgrænset oprydning, som ikke forsinker integreret drift.
+
 # NYESTE CHECKPOINT – 2026-09-19 – forgænger-restores importlukning
 
 - **ISSUE-PREDECESSOR-RESTORE-IMPORT-CLOSURE – RETTET LOKALT / DRIFTSBEVIS

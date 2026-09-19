@@ -1,3 +1,13 @@
+## 4.0.433 – afgrænset kodelevering før lokal vind genhentes (2026-09-19)
+
+- Providerfri `35449470349` bestod restore, migration og 210/673-genbygning,
+  men stoppede på seks følgefund fra manglende lokal kystdelsvind.
+- Code-only må nu kun fortsætte ved det eksakte kendte fejlsæt, metadata-only,
+  nul replay-/privacy-/continuationfejl og de observerede 420 manglende modes.
+- Jobgrænsen er 60 minutter. Candidate G er pensioneret som produktionsvalg;
+  RavRadar har kun den integrerede RavScore-model.
+- Se CHANGELOG-4.0.433.md og DEC-0213. Normal weather/livebevis er åbent.
+
 ## 4.0.432 – komplet forgænger-restore før ny kørsel (2026-09-19)
 
 - 4.0.431 bestod exact-head `35448032367`, PR #376 og merge `686ebec4`.

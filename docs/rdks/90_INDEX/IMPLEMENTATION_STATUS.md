@@ -1,3 +1,19 @@
+# Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.433
+
+- [x] 4.0.432 exact-head, PR #377 og merge `0d2fd78a`.
+- [x] Providerfri `35449470349` bestod restore, migration og 210/673-
+  genbygning uden providers eller ændrede vejrdata.
+- [x] Afgræns stop til eksakt seks kendte auditfølgefund fra 0/673 lokal vind
+  og 420 utilgængelige aktuelle modes; nul replay/privacy/continuationfejl.
+- [x] Gør fortsættelsen metadata-only og fail-closed på enhver afvigelse.
+- [x] Hæv code-only-jobgrænsen til 60 minutter efter observeret 20-minutters
+  runtimegenbygning.
+- [x] Pensionér Candidate G i produktionsdispatch; bevar kun inert historisk
+  kompatibilitet indtil særskilt sikker oprydning.
+- [ ] Exact-head-sourcegate, PR/merge og providerfri code-only-deploy.
+- [ ] Almindelig weather skal hente lokal kystdelsvind og bevise score; flere
+  normale runs skal derefter bevise komplet og selvkørende drift.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.432 importlukning
 
 - [x] 4.0.431 exact-head `35448032367`, PR #376 og merge `686ebec4`.
