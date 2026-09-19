@@ -2,6 +2,10 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { PUBLIC_DELIVERY_MAX_BYTES, publicDeliveryEntries, assertPublicDeliveryEquivalence } from '../js/core/public-delivery-contract.js';
+import {
+  materializePrivatePublicHourDeliveryPack,
+  privatePublicHourDeliveryMarker,
+} from './lib/public-hour-delivery-pack.mjs';
 import { selectLatestLocalScoreRowAtOrBefore } from './lib/local-current-reference.mjs';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { forecastDateKeyInTimeZone } from '../js/core/forecast-calendar.js';
@@ -944,6 +948,11 @@ export function buildPublicNationalForecast(full, { now = 0 } = {}) {
   return { schemaVersion: 2, modelBinding: binding, dates, modes };
 }
 
+export function resolvePublicNationalForecast(full) {
+  const retained = privatePublicHourDeliveryMarker(full)?.startupNationalForecast;
+  return retained ?? buildPublicNationalForecast(full);
+}
+
 export function sha256Text(text) { return crypto.createHash('sha256').update(text).digest('hex'); }
 
 function bindDocument(body, kind, binding) {
@@ -991,7 +1000,7 @@ export function buildPublicConditions(full) {
     source: 'RavRadar public runtime projection',
     ravScoreEvidenceTrust: evidenceTrust,
     weatherSourceAge,
-    nationalForecast: buildPublicNationalForecast(full),
+    nationalForecast: resolvePublicNationalForecast(full),
     zones,
     coastalParts: buildStartupCoastalParts(full),
   };
@@ -1088,13 +1097,34 @@ export function buildPublicDeliveryDocument(full, details, manifest, kind, key) 
   return document;
 }
 
-export async function writePublicDelivery(full, details, manifest, liveDirectory) {
+export async function writePublicDelivery(full, details, manifest, liveDirectory, {
+  hourDeliveryPackPath = null,
+} = {}) {
   const times = Object.values(details.zones)[0].forecast.hourly.map(row => row.time);
   const delivery = { schemaVersion: 1, forecastHours: times.length,
     sourceDetailsSha256: manifest.publicConditionDetailsSha256, hours: {}, zones: {} };
   await fs.mkdir(path.join(liveDirectory, 'forecast'), { recursive: true });
-  for (const [kind, keys, descriptors] of [['hour', times, delivery.hours],
-    ['zone', Object.keys(details.zones), delivery.zones]]) {
+  if (hourDeliveryPackPath) {
+    const restored = await materializePrivatePublicHourDeliveryPack({
+      packPath: hourDeliveryPackPath,
+      conditions: full,
+      liveDirectory,
+    });
+    if (restored.manifest.datasetId !== manifest.datasetId
+      || restored.manifest.productionReferenceAt !== manifest.productionReferenceAt
+      || restored.manifest.sourceDetailsSha256 !== manifest.publicConditionDetailsSha256
+      || canonicalPublicRuntimeJson(restored.manifest.modelBinding)
+        !== canonicalPublicRuntimeJson(manifest.ravScoreModelBinding)
+      || JSON.stringify(Object.keys(restored.hours).sort()) !== JSON.stringify([...times].sort())) {
+      throw new Error('Private public-hour pack is incompatible with the regenerated public runtime');
+    }
+    delivery.hours = restored.hours;
+  }
+  const groups = [
+    ...(hourDeliveryPackPath ? [] : [['hour', times, delivery.hours]]),
+    ['zone', Object.keys(details.zones), delivery.zones],
+  ];
+  for (const [kind, keys, descriptors] of groups) {
     for (const key of keys) {
       const document = buildPublicDeliveryDocument(full, details, manifest, kind, key);
       const text = compactJson(document);
@@ -1382,6 +1412,7 @@ export async function writePublicRuntimeFromFull(full, {
   manifestPath = 'data/live/manifest.json',
   coastalPartsPath = 'data/live/coastal-parts-v2.json',
   zoneRegistryPath = 'data/zones.geojson',
+  hourDeliveryPackPath = null,
 } = {}) {
   if (!full?.datasetId) throw new Error('conditions.json mangler datasetId.');
   const publicDocument = buildPublicConditions(full);
@@ -1393,7 +1424,9 @@ export async function writePublicRuntimeFromFull(full, {
   JSON.parse(coastalPartsText);
   JSON.parse(zoneRegistryText);
   const manifest = buildPublicManifest(full, publicText, detailsText, coastalPartsText, zoneRegistryText);
-  await writePublicDelivery(full, detailsDocument, manifest, path.dirname(manifestPath));
+  await writePublicDelivery(full, detailsDocument, manifest, path.dirname(manifestPath), {
+    hourDeliveryPackPath,
+  });
   await fs.writeFile(publicPath, publicText);
   await fs.writeFile(detailsPath, detailsText);
   await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

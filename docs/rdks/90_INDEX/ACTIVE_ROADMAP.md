@@ -1,3 +1,21 @@
+# Aktiv roadmap – 2026-09-19, 4.0.438 fra færdige scorer til Pages
+
+1. [x] Lever 4.0.437 som main `65bda6a9` og genbrug gemt krypteret fremgang.
+2. [x] Normalrun `35463989289` gennemførte alle providers og byggede
+   vind/bølger/brugbar strøm/score 673/673; det stoppede først ved privat save.
+3. [x] Afgræns rodårsagen til dobbelte 673 × 118 timedata i en monolitisk
+   privat JSON, som alle senere læsere fortsat skulle parse samlet.
+4. [x] Implementér privat hashbundet timepakke, kompakt conditions, atomisk
+   parinstallation, byte-identisk public materialisering og slutproveniens.
+5. [x] Bind eksakt forgængerovergang og append-only backendmigration; bevis
+   faktisk kapacitet og de berørte kontrakter målrettet.
+6. [ ] Afslut dokumentation og slutchecks; kør én exact-head sourcegate,
+   merge 4.0.438 og anvend/læs den nye backendbinding tilbage.
+7. [ ] Kør én almindelig continuation fra gemt fremgang. Kræv komplet privat
+   save, artifact, Pages, offentlig aktuel time og samlet restdiagnostik.
+8. [ ] Følg næste cron som selvkørende bevis. Luk især de fire resterende
+   DMI-only-vandstandsfelter; MISSING er robusthed, ikke komplethed.
+
 # Aktiv roadmap – 2026-09-19, 4.0.437 fra tidsformatstop til offentlig drift
 
 1. [x] Lever 4.0.436 via exact-head `35462534974`, PR #381 og main

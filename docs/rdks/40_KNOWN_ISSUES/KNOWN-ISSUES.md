@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-19 – monolitisk privat conditions er erstattet
+
+- **ISSUE-PRIVATE-CONDITIONS-MONOLITHIC-HOURLY – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Normalrun `35463989289` gennemførte providers og scorebygning med
+  vind, bølger, brugbar strøm og score 673/673, men stoppede ved den endelige
+  private conditions-skrivning. Streaming alene var utilstrækkelig, fordi
+  læserne stadig krævede én samlet streng, og 673 × 118 timedata lå dobbelt.
+  4.0.438 pakker de eksakte public timefiler separat, fjerner kun den
+  redundante private kopi og installerer begge filer atomisk. DEC-0217.
+- **ISSUE-PUBLIC-HOUR-PACK-PRODUCTION-PROOF – ÅBENT:** Lokale tests beviser
+  byte-identisk materialisering, hash-/størrelsesbinding og rollback. En
+  merged normal continuation skal stadig bevise protected save, restore,
+  artifact, Pages og browser på den faktiske produktion.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – ÅBENT:** Samme run målte vandstand
+  669/673. Det forhindrede ikke de 673 scorer, men fire manglende DMI-only-
+  felter er ikke komplethed og skal lukkes gennem normal drift.
+
 # NYESTE CHECKPOINT – 2026-09-19 – gyldig produktionstime blev afvist
 
 - **ISSUE-TRANSITION-HOUR-NO-MILLISECONDS – RETTET LOKALT / DRIFTSBEVIS

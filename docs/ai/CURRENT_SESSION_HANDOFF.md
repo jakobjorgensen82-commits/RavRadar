@@ -1,3 +1,26 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.438 efter fuld datakæde
+
+Main er `65bda6a9` / 4.0.437. Normalrun `35463989289` fortsatte den gemte
+fremgang og nåede gennem DMI, Copernicus, Open-Meteo, strømclosure, historik
+og score. Vind og bølger var 673/673, brugbar strøm 673/673 og både vade- og
+strandscore beregnelige 673/673. Vandstand var 669/673 og er fortsat et
+åbent DMI-only-datamål; det var ikke årsagen til stoppet.
+
+Stoppet kom i `Update central weather cache`, da den private conditions igen
+blev for stor for Node/V8's samlede streng-/parsevej. Branch
+`codex/4.0.438-sharded-score-hours` bevarer de præcise 118 offentlige
+timefiler i en privat autentificeret gzip-pakke og fjerner kun deres dobbelte
+`parts[*].hourly`-kopi fra conditions. Parret installeres atomisk; publicering
+materialiserer timefilerne byte-for-byte. Strømproveniens og startsidens
+nationale oversigt forsegles før pakken. Faktisk audit er 203.510.947 rå
+bytes og 9.331.534 pakkede bytes.
+
+Eksakt overgang er bundet fra den gamle source/model/continuation til den nye
+model- og public-projection-kontrakt. Migration
+`20260919231000_public_hour_delivery_binding.sql` er append-only. Måltests er
+grønne. Næste: docs/RDKS/version, exact-head, PR/merge, backendbinding og én
+normal continuation; ingen blind providerstart. `.tmp-420/` må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.436 bounded conditions
 
 Main er `725068be` / 4.0.435 efter PR #380 og exact-head `35457292220`.

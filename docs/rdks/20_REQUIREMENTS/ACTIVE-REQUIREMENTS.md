@@ -1,3 +1,27 @@
+# Aktuelt krav til privat timelevering – 2026-09-19
+
+- **REQ-PRIVATE-PUBLIC-HOUR-DELIVERY-PACK-0217 – BINDENDE:** Alle 118
+  offentlige timefiler skal bevares nøjagtigt. De må ligge i en separat,
+  privat, autentificeret og bounded leveringspakke, når den monolitiske
+  conditions ellers overskrider den reelle læse-/parsegrænse. Pakken skal
+  være bundet til dataset, produktionstime, detaljehash, modelbinding,
+  per-post-hash og størrelser. Conditions og pakke installeres atomisk;
+  publicering materialiserer de samme timebytes og må ikke genberegne dem fra
+  en ufuldstændig privat projektion. Startsidens færdigberegnede nationale
+  ranking skal bevares og hashbindes; den må ikke blive tom efter restore,
+  blot fordi den dobbelte private hourly-kopi er fjernet. DEC-0217.
+- **REQ-PROVENANCE-BEFORE-PUBLIC-SEAL-0217 – BINDENDE:** Strømproveniens og
+  øvrige data, der påvirker offentlige timefiler, færdiggøres før pakken
+  forsegles. Senere enrichment skal være byte-idempotent og stoppe ved en
+  afvigelse. Ingen efterfølgende mutation må gøre manifest, conditions og
+  timepakke uenige.
+- **REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217 – BINDENDE:** Kun release
+  4.0.438 må genbruge den kendte forgænger. Den skal matche source
+  `d4e8844e`, bundle `ad2337ab…`, den gamle modelbinding, 210/673 og de tre
+  gamle kontrakthashes. Den aktuelle kode skal samtidig matche den eksakte
+  nye modelbinding `0e1c6625…`, public-projection-kontrakt `6b4ad463…` og
+  uændret continuationkontrakt. Ukendt forgænger eller mål afvises.
+
 # Aktuelt krav til produktionstimens overgang – 2026-09-19
 
 - **REQ-CANONICAL-PRODUCTION-HOUR-TRANSITION-0216 – BINDENDE:** Den låste
@@ -9,19 +33,18 @@
 # Aktuelt krav til stor privat conditions – 2026-09-19
 
 - **REQ-BOUNDED-ATOMIC-PRIVATE-CONDITIONS-0215 – BINDENDE:** Den komplette
-  private `conditions.json` skal bevares, men må ikke kræve én samlet
-  outputstreng. Den skal skrives kompakt og løbende til en ny fil, være
-  bounded under de efterfølgende læseres reelle parsegrænse og først erstatte
-  den gamle fil efter fuld skrivning og sync. Fejl må ikke efterlade en halv
-  destination. Samlet byteantal og største topfelter må logges uden private
-  værdier. Ingen time, kystdel, state eller provenance må fjernes som genvej.
-  Writeren skal indgå i privat fuldruntimekontrakt. DEC-0215.
-- **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – BINDENDE:** 4.0.437 skal
-  genbruge den krypterede fremgang gennem den eksakte baseline, den er bundet
-  til. Kun release 4.0.437, source `d4e8844e`, bundle `ad2337ab…`, samme
-  modelbinding, 210/673 og de tre dokumenterede forgængerkontrakthashes må
-  åbne den gamle reader. Det er en engangsovergang, ikke en generel lempelse;
-  ukendt eller senere forgænger skal afvises.
+  private datamængde skal bevares bounded og atomisk uden at kræve én samlet
+  outputstreng. DEC-0217 erstatter kun antagelsen om, at den redundante
+  offentlige hourly-projektion skal ligge i samme JSON: den bevares nu
+  byte-eksakt i den tilhørende private leveringspakke. Conditions skrives
+  fortsat kompakt, løbende og atomisk, og ingen kystdel, state, provenance
+  eller offentlig time må forsvinde. Begge filer indgår i privat
+  fuldruntimekontrakt. DEC-0215/0217.
+- **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – ERSTATTET AF
+  REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217:** Den tidligere 4.0.437-
+  formulering er historisk. Den aktuelle 4.0.438-bro kræver både eksakt gammel
+  source/model og eksakt ny model/public projection; det er fortsat en
+  engangsovergang og aldrig en generel lempelse.
 
 # Aktuelt DMI-genindtrædelseskrav – 2026-09-19
 

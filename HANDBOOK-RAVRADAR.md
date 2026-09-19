@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.437
+**Håndbogsversion:** 4.0.438
+
+## 89.43 4.0.438 – Alle offentlige timer bevares uden en privat kæmpefil
+
+Den almindelige kørsel kom denne gang hele vejen gennem DMI, Copernicus,
+Open-Meteo og scoreberegningen. Vind, bølger, brugbar strøm og scorer fandtes
+for alle 673 kyststrækninger. Fejlen kom til sidst, da den private fil stadig
+indeholdt en ekstra kopi af 118 timers detaljer for hver kyststrækning.
+
+Det hjælper ikke bare at sætte en større grænse. Senere trin skal læse hele
+filen ind som én tekst og forstå den på én gang, så fejlen ville blot flytte
+sig. 4.0.438 bygger derfor først alle de offentlige timedata færdige og gemmer
+de 118 præcise timefiler i en separat, komprimeret privat pakke. Den private
+hovedfil beholder score, strøm, state, metadata og kildebeviser, men ikke den
+samme timekopi endnu en gang.
+
+De to filer hører uløseligt sammen gennem hashes, dataset, klokkeslæt og
+modelbinding. Startsidens færdigberegnede nationale oversigt bindes også, så
+den ikke genberegnes tom, når de dobbelte private hourly-rækker er væk. Filerne
+udskiftes samlet, så en fejl ikke kan blande gammel og ny generation. Når
+siden skal offentliggøres, genskabes timefilerne nøjagtigt byte for byte fra
+pakken. Den faktiske generation fyldte cirka 203,5 MB råt og 9,3 MB pakket;
+ingen timer eller felter blev smidt væk.
+
+RavScore, DMI-first, reservekilder, DMI-only-vandstand og geometri er
+uændret. Rettelsen er lokalt testet, men skal stadig merged og bevises i den
+almindelige produktionskørsel og næste cron.
 
 ## 89.42 4.0.437 – Samme hele UTC-time skal forstås ens
 
@@ -170,16 +196,15 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.437 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
-Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Scoreformlen og vægtene er uændrede. 4.0.438 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er bundet med `modelBundleSha256=0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a` over 67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 
-Koden blev merged i 4.0.430. 4.0.431's providerfri genoptagelse afsluttede den
-centrale status, men stoppede før deploy på den historiske importfejl beskrevet
-i 89.37. Derfor er vejrkæden stadig ikke produktionsbevist. Efter 4.0.432's
-providerfri kodelevering skal flere almindelige produktionskørsler bevise
-komplethed, korrekt kildeprioritet, browservisning og automatisk fortsættelse
-uden Codex eller ejerens computer, før cron genaktiveres.
+Normalrun 35463989289 har siden bevist provider- og scorekæden til 673/673,
+men stoppede ved den private kæmpefil før artifact og Pages. 4.0.438's
+timeleveringspakke skal derfor først bestå normal continuation. Derefter skal
+næste almindelige cron stadig bevise komplethed, korrekt kildeprioritet,
+browservisning og automatisk fortsættelse uden Codex eller ejerens computer.
 
 ## 89.34 Beslutning 19. september – Vandstand kommer kun fra DMI
 

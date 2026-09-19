@@ -10,7 +10,8 @@ import { copyPublicDeliveryShards } from './copy-public-delivery-shards.mjs';
 
 const deliveryModule = 'js/core/public-delivery-contract.js';
 const copyHelper = 'scripts/copy-public-delivery-shards.mjs';
-for (const file of [deliveryModule, copyHelper]) {
+const privateHourPack = 'scripts/lib/public-hour-delivery-pack.mjs';
+for (const file of [deliveryModule, copyHelper, privateHourPack]) {
   assert.ok(PRIVATE_RUNTIME_CONTRACT_FILES.publicProjectionContractSha256.includes(file),
     `${file} must be bound by the private public-projection contract.`);
 }

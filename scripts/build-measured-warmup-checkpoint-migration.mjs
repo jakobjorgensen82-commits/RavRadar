@@ -2,9 +2,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { ravScoreModelBinding as candidateBinding } from './rollback-assets/ravscore-model-contract.js';
-import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
 
 const predecessor = 'supabase/migrations/20260919010000_current_input_foundation_binding.sql';
 const destination = 'supabase/migrations/20260919020000_measured_warmup_checkpoint.sql';
@@ -141,11 +138,11 @@ replace("          #- '{continuationStateContractSha256}'", `          #- '{sche
 // Derive the successor's seals only from the assembled implementation. The
 // applied predecessor and the explicit predecessor allowance above stay fixed.
 replace('b114d226425eefd6b7a3c8280fb19982c312f0d88d2f9351c7dc6cbc4ece8c38',
-  ravScoreModelBinding().modelBundleSha256, 3);
+  '8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26', 3);
 replace('2a0cba46ea1bb625f655ee3c58a07c90e3b6d169812f569643d0f2d924c4c09e',
-  candidateBinding().modelBundleSha256, 2);
+  'd740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27', 2);
 replace("or p_payload ->> 'continuationStateContractSha256' is distinct from\n      '91251f6b38835040250cd5283d2b701aab38bb23f2a4a0014baa1128d59c78f4'",
-  `or p_payload ->> 'continuationStateContractSha256' is distinct from\n      '${await ravScoreContinuationImplementationSha256()}'`);
+  "or p_payload ->> 'continuationStateContractSha256' is distinct from\n      '3d4e51b9dca15bafac98cf5c1e69f0b60d6ca354d3aa9e05bf9302d8622c8f77'");
 
 assert.ok(process.argv.length === 2 || (process.argv.length === 3
   && ['--write', '--check'].includes(process.argv[2])));

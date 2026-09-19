@@ -14,6 +14,8 @@ import {
 } from '../js/core/ravscore-model-contract.js';
 import { assertBindingUpgrade } from './migrate-post-cutover-private-runtime.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
+import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
 
 export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
   manifest: 'manifest.json',
@@ -424,6 +426,9 @@ export async function prepareCodeOnlyPublicRuntime({
     manifestPath: path.join(repository, 'data/live/manifest.json'),
     coastalPartsPath: path.join(repository, 'data/live/coastal-parts-v2.json'),
     zoneRegistryPath: path.join(repository, 'data/zones.geojson'),
+    hourDeliveryPackPath: privatePublicHourDeliveryMarker(fullSource.value)
+      ? path.join(repository, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath)
+      : null,
   });
   assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
   assertPublicRuntimePrivacy(generated.detailsDocument, 'details');

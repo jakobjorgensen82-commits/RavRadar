@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory } from './lib/private-weather-component-inventory.mjs';
 import { installRestoredPrivateRuntime, buildPrivateRuntimeCreateSpec, PRIVATE_RUNTIME_CONTRACT_FILES } from './private-production-runtime-workflow.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -54,9 +55,13 @@ async function seed(root) {
     { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
 }
 
-test('fixed inventory accepts old nine or new ten only, never arbitrary files', () => {
+test('fixed inventory accepts the two independent sealed extensions, never arbitrary files', () => {
   assert.equal(assertPrivateRuntimeInventory(PRIVATE_RUNTIME_BASE_FILES), false);
   assert.equal(assertPrivateRuntimeInventory([...PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE]), true);
+  assert.equal(assertPrivateRuntimeInventory([...PRIVATE_RUNTIME_BASE_FILES,
+    PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE]), false);
+  assert.equal(assertPrivateRuntimeInventory([...PRIVATE_RUNTIME_BASE_FILES,
+    PRIVATE_WEATHER_COMPONENT_PACK_FILE, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE]), true);
   assert.throws(() => assertPrivateRuntimeInventory([...PRIVATE_RUNTIME_BASE_FILES, { id: 'credentials', relativePath: '.env' }]), /inventory is incompatible/);
   assert.throws(() => assertPrivateRuntimeInventory(PRIVATE_RUNTIME_BASE_FILES.slice(1)), /inventory is incompatible/);
 });

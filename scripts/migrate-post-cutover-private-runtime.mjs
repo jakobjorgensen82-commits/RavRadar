@@ -9,10 +9,12 @@ import {
   privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
 import {
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   assertPrivateRuntimeInventory,
   privateWeatherComponentMarker,
 } from './lib/private-weather-component-inventory.mjs';
+import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
 import {
   assertIntegratedCoastalPointContinuation,
   assertCandidateGCoastalPointRollbackContinuation,
@@ -567,7 +569,8 @@ async function importPredecessorModules(predecessorRoot, sourceHead) {
 }
 
 export async function assertExactRuntimeInventory(sourceRoot) {
-  const allowed = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE];
+  const allowed = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+    PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE];
   const byPath = new Map(allowed.map(item => [item.relativePath, item]));
   const directories = new Set(allowed.flatMap(({ relativePath }) => {
     const segments = relativePath.split('/');
@@ -596,6 +599,11 @@ export async function assertExactRuntimeInventory(sourceRoot) {
   const conditions = await readJson(path.join(sourceRoot, 'data/live/conditions.json'), 'Private runtime conditions inventory');
   if (privateWeatherComponentMarker(conditions) && !hasExtension) {
     throw new Error('Private runtime component marker requires its preserved input pack');
+  }
+  const hasPublicHourDelivery = actual.some(item =>
+    item.id === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id);
+  if (Boolean(privatePublicHourDeliveryMarker(conditions)) !== hasPublicHourDelivery) {
+    throw new Error('Private runtime public-hour marker requires its preserved pack');
   }
   return allowed.filter(item => actual.includes(item));
 }

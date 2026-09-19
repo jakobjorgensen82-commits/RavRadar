@@ -28,7 +28,9 @@ function fixture() {
         BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceBundleContentSha256,
       productionReferenceAt: '2026-09-19T17:00:00.000Z',
       generatedAt: '2026-09-19T17:10:00.000Z',
-      modelBinding: structuredClone(ravScoreModelBinding()),
+      modelBinding: structuredClone(
+        BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceModelBinding,
+      ),
       contractHashes: structuredClone(
         BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceContractHashes,
       ),
@@ -64,7 +66,8 @@ for (const mutate of [
   value => { value.sourceDescription.contractHashes.fullRuntimeContractSha256 = 'c'.repeat(64); },
   value => { value.sourceDescription.expectedPartCount = 672; },
   value => { value.sourceDescription.privatePayloadIncluded = true; },
-  value => { value.currentReleaseVersion = '4.0.438'; },
+  value => { value.currentReleaseVersion = '4.0.439'; },
+  value => { value.sourceDescription.modelBinding.modelBundleSha256 = 'e'.repeat(64); },
   value => { value.currentBinding.modelBundleSha256 = 'd'.repeat(64); },
 ]) {
   const changed = fixture();
@@ -95,6 +98,13 @@ const unchangedContracts = structuredClone(
 assert.equal(buildBoundedConditionsPredecessorRestoreExpectation({
   ...fixture(),
   currentContractHashes: unchangedContracts,
+}), null);
+
+const wrongTargetProjection = structuredClone(currentContractHashes);
+wrongTargetProjection.publicProjectionContractSha256 = 'f'.repeat(64);
+assert.equal(buildBoundedConditionsPredecessorRestoreExpectation({
+  ...fixture(),
+  currentContractHashes: wrongTargetProjection,
 }), null);
 
 assert.equal(JSON.stringify(expectation).includes('weatherComponentInputs'), false);

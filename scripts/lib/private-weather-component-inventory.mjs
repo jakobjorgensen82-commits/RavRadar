@@ -1,5 +1,6 @@
-// Fixed production inventory. Legacy generations remain exactly nine files;
-// new component inputs add one bounded, internally allowlisted private pack.
+// Fixed production inventory. Legacy generations remain exactly nine files.
+// Component inputs and the derived public-hour continuation are independent,
+// bounded, internally allowlisted private packs.
 export const PRIVATE_RUNTIME_BASE_FILES = Object.freeze([
   { id: 'full-conditions', relativePath: 'data/live/conditions.json' },
   { id: 'dmi-forecast-cache', relativePath: 'data/live/dmi-forecast-cache.json' },
@@ -13,6 +14,9 @@ export const PRIVATE_RUNTIME_BASE_FILES = Object.freeze([
 ].map(Object.freeze));
 export const PRIVATE_WEATHER_COMPONENT_PACK_FILE = Object.freeze({
   id: 'weather-component-inputs', relativePath: '.cache/weather-component-inputs.pack',
+});
+export const PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE = Object.freeze({
+  id: 'public-hour-delivery', relativePath: '.cache/public-hour-delivery.pack',
 });
 export const PRIVATE_WEATHER_COMPONENT_FILES = Object.freeze({
   openMeteoBank: '.cache/open-meteo-part-component-bank.json',
@@ -42,11 +46,17 @@ export const PRIVATE_WEATHER_COMPONENT_FILES = Object.freeze({
 export function assertPrivateRuntimeInventory(files) {
   const actual = files.map(({ id, relativePath }) => `${id}:${relativePath}`).sort();
   const base = PRIVATE_RUNTIME_BASE_FILES.map(({ id, relativePath }) => `${id}:${relativePath}`).sort();
-  const extended = [...base, `${PRIVATE_WEATHER_COMPONENT_PACK_FILE.id}:${PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath}`].sort();
-  if (JSON.stringify(actual) !== JSON.stringify(base) && JSON.stringify(actual) !== JSON.stringify(extended)) {
+  const weather = `${PRIVATE_WEATHER_COMPONENT_PACK_FILE.id}:${PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath}`;
+  const publicHours = `${PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id}:${PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath}`;
+  const allowed = [base, [...base, weather].sort(), [...base, publicHours].sort(),
+    [...base, weather, publicHours].sort()];
+  if (!allowed.some(expected => JSON.stringify(actual) === JSON.stringify(expected))) {
     throw new Error('Private runtime production inventory is incompatible');
   }
-  return actual.length === extended.length;
+  // Preserve the historical boolean return value: callers use it to decide
+  // whether the weather-component pack must be unpacked. The independently
+  // validated public-hour pack is discovered by its exact descriptor.
+  return actual.includes(weather);
 }
 export function privateWeatherComponentMarker(conditions) {
   if (!Object.hasOwn(conditions, 'weatherComponentInputs')) return null;

@@ -25,8 +25,13 @@ import {
 } from './ravscore-continuation-checkpoint.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory, privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import {
+  inspectPrivatePublicHourDeliveryPack,
+  privatePublicHourDeliveryMarker,
+} from './lib/public-hour-delivery-pack.mjs';
 
 export const PRIVATE_RUNTIME_FILES = PRIVATE_RUNTIME_BASE_FILES;
 
@@ -39,6 +44,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/update-dmi-bulk.py',
     'scripts/run-dmi-bulk-supervised.py',
     'scripts/update-weather.mjs',
+    'scripts/enrich-current-provenance.mjs',
     'scripts/check-weather-update.py',
     'scripts/build-copernicus-target-registry.py',
     'scripts/build-weather-acquisition-plan.py',
@@ -96,6 +102,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/bounded-json-writer.mjs',
     'scripts/lib/private-weather-component-inventory.mjs',
     'scripts/lib/private-weather-component-pack.mjs',
+    'scripts/lib/public-hour-delivery-pack.mjs',
     'scripts/produce-open-meteo-part-components.mjs',
     'scripts/lib/open-meteo-forecast-window.mjs',
     'scripts/lib/flow-points-from-forecast-record.mjs',
@@ -121,6 +128,8 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'js/core/local-zone-score.js',
     'scripts/public-conditions-lib.mjs',
     'scripts/copy-public-delivery-shards.mjs',
+    'scripts/lib/private-weather-component-inventory.mjs',
+    'scripts/lib/public-hour-delivery-pack.mjs',
   ]),
 });
 
@@ -170,7 +179,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.437',
+  releaseVersion: '4.0.438',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -184,7 +193,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.437',
+  releaseVersion: '4.0.438',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -555,6 +564,16 @@ export async function buildPrivateRuntimeCreateSpec({
   }
   const componentPack = await buildPrivateWeatherComponentPack({ repositoryRoot: root, conditions });
   if (componentPack) files.push({ ...componentPack, privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass });
+  if (privatePublicHourDeliveryMarker(conditions)) {
+    const publicHourPackPath = path.resolve(root, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath);
+    if (!inside(root, publicHourPackPath)) throw new Error('Private public-hour pack path escapes repository');
+    await inspectPrivatePublicHourDeliveryPack({ packPath: publicHourPackPath, conditions });
+    files.push({
+      ...PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
+      sourcePath: publicHourPackPath,
+      privacyClass: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.privacyClass,
+    });
+  }
   assertPrivateRuntimeInventory(files);
   return {
     metadata: {
@@ -1453,12 +1472,25 @@ export async function installRestoredPrivateRuntime({
     throw new Error('Restored private runtime must remain outside the repository tree');
   }
   const actual = (await collectFiles(sourceRoot)).sort(compareText);
-  const allowedDescriptors = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE];
+  const allowedDescriptors = [...PRIVATE_RUNTIME_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+    PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE];
   const descriptors = actual.map(relativePath => allowedDescriptors.find(file => file.relativePath === relativePath)
     ?? { id: 'unknown', relativePath });
   const hasExtension = assertPrivateRuntimeInventory(descriptors);
+  const hasPublicHourDelivery = descriptors.some(descriptor =>
+    descriptor.id === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id
+    && descriptor.relativePath === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath);
   const conditions = JSON.parse(await fs.readFile(path.join(sourceRoot, 'data/live/conditions.json'), 'utf8'));
   if (privateWeatherComponentMarker(conditions) && !hasExtension) throw new Error('Private runtime component inputs pack is missing');
+  if (Boolean(privatePublicHourDeliveryMarker(conditions)) !== hasPublicHourDelivery) {
+    throw new Error('Private runtime public-hour pack inventory does not match conditions');
+  }
+  if (hasPublicHourDelivery) {
+    await inspectPrivatePublicHourDeliveryPack({
+      packPath: path.join(sourceRoot, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
+      conditions,
+    });
+  }
   const componentStage = hasExtension ? `${sourceRoot}.weather-components-${crypto.randomUUID()}` : null;
   let componentFiles = [];
   if (hasExtension) {
