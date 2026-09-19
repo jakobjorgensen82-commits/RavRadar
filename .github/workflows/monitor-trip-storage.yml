@@ -1,20 +1,26 @@
-name: Monitor RavRadar trip storage
+name: Read-only saved weather evidence (diagnostic branch only)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "37 6 * * *"
+    inputs:
+      confirmation:
+        description: "READ-ONLY-SAVED-WEATHER-20260919"
+        required: true
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: ravradar-trip-storage-monitor
-  cancel-in-progress: true
+  group: ravradar-readonly-weather-evidence
+  cancel-in-progress: false
 
+# Diagnostic branch only: no provider requests, database/storage writes,
+# cache saves, private uploads, production jobs or Pages permissions.
 jobs:
-  monitor-trip-storage:
-    name: Audit D1 capacity without reading trips
+  storage-capacity:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/readonly-weather-evidence-20260919' && inputs.confirmation == 'READ-ONLY-SAVED-WEATHER-20260919'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -24,8 +30,34 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check aggregate and largest-shard headroom
-        run: node scripts/audit-cloudflare-trip-storage.mjs
+      - name: Read only protected runtime metadata and aggregate object sizes
+        run: node scripts/audit-private-runtime-storage-capacity.mjs --output "$RUNNER_TEMP/private-runtime-capacity-safe.json"
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_AUDIT_API_TOKEN: ${{ secrets.CLOUDFLARE_AUDIT_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  saved-wave-evidence:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/readonly-weather-evidence-20260919' && inputs.confirmation == 'READ-ONLY-SAVED-WEATHER-20260919'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install pinned original GRIB reader
+        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
+      - name: Restore only the exact saved candidate cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W38-normal-35416641052-1
+          fail-on-cache-miss: true
+      - name: Restore only the exact saved original GRIB cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-Linux-2026-W38-35416641052-1
+          fail-on-cache-miss: true
+      - name: Report only saved-wave identity and period aggregates
+        run: python scripts/audit-dmi-wave-period-evidence.py --candidate .cache/dmi-candidate-progress.json --raw-dir .cache/dmi-grib --stage grib --max-seconds 480 --output "$RUNNER_TEMP/wave-period-safe.json"
