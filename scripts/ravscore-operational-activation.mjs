@@ -2436,12 +2436,14 @@ export function assertIntegratedHistoricalMaintenancePlan(plan, {
       sourceHead: plan.sourceHead,
       datasetId: plan.datasetId,
       allowMeasuredWarmup: plan.sourceCalibrationEligible === false,
+      allowDiagnosticFindings: true,
     });
     if (sha256(publicManifest) !== plan.integratedManifestSha256
       || sha256(publicAudit) !== plan.integratedPublicAuditSha256
       || publicManifest.productionReferenceAt !== plan.productionReferenceAt
       || plan.calibrationEligibleAfterVerifiedActivation
-        !== integratedPublicAuditCalibrationEligible(publicAudit)) {
+        !== (publicAudit.status === 'passed'
+          && integratedPublicAuditCalibrationEligible(publicAudit))) {
       throw new Error('Historical integrated maintenance public evidence digest mismatch');
     }
   }
@@ -2486,6 +2488,7 @@ export function prepareIntegratedHistoricalMaintenance({
   assertIntegratedPublicEvidence(publicManifest, publicAudit, {
     sourceHead,
     allowMeasuredWarmup: currentRow.payload.calibrationEligible === false,
+    allowDiagnosticFindings: true,
   });
   const unsealed = {
     schemaVersion: RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.schemaVersion,
@@ -2509,7 +2512,8 @@ export function prepareIntegratedHistoricalMaintenance({
     automaticActivationAllowed: false,
     schedulerActivationAllowed: false,
     calibrationEligibleAfterVerifiedActivation:
-      integratedPublicAuditCalibrationEligible(publicAudit),
+      publicAudit.status === 'passed'
+        && integratedPublicAuditCalibrationEligible(publicAudit),
     privatePayloadLogged: false,
   };
   const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });

@@ -1,3 +1,25 @@
+# Aktuel implementeringsstatus – lokal 4.0.428, H0-cooldown og deployfortsættelse
+
+- [x] Lever 4.0.427 gennem exact-head `35410861514`, PR #372 og main
+  `abf0274f`; backend `35411487128` er grøn.
+- [x] Gennemfør normalrun `35411701055` gennem alle providere, offentlig
+  runtime og 52+3 kontroller; afgræns det sene stop før Pages.
+- [x] Bevis 4.0.427-currentrettelsen: 665/673 dele i scoreinput mod 56 før.
+- [x] Afgræns manglende HARMONIE til en arvet cooldown før kritisk H0-valg.
+- [x] Omgå kun cooldown for ét nødvendigt H0-asset; bevar alle admissionkrav.
+- [x] Lad historical maintenance fortsætte med afgrænsede diagnostiske fund,
+  men blokér kalibrering uden helt grøn audit og fuld historik.
+- [x] Ret strømaudittens fejlagtige rapportvariabel og måltest kontrakterne.
+- [x] Afslut version/RDKS/geodatabevis og målrettede scheduler-, activation-,
+  workflow-, sikkerheds- og modelbindingskontroller.
+- [ ] Commit/push og bestå én exact-head sourcegate.
+- [ ] Merge og kør én almindelig weather; kræv HARMONIE-forsøg, Pages, aktuel
+  score og samlet rapport over alle resterende datamangler.
+- [ ] Luk 2.334/79.414 providerpar og Feggesunds 153/354 bølgehuller; bevis
+  derefter stabil normal cachevedligeholdelse før scheduler genaktiveres.
+
+Ingen oneoff. `MISSING` er robusthed, aldrig komplethed. DEC-0208.
+
 # Aktuel implementeringsstatus – lokal 4.0.427, strøm- og DMI-recovery
 
 - [x] Lever 4.0.426 gennem exact-head `35404863947`, PR #371 og main

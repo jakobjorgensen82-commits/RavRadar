@@ -1,3 +1,22 @@
+# Aktuelt ejerdelta – 2026-09-19 – H0-cooldown og diagnostisk deploy
+
+- **REQ-4.0.428-H0-COOLDOWN-001 – BINDENDE:** Manglende eksakt H0-vind skal
+  udløse ét afgrænset HARMONIE-forsøg, selv om collectionen har en arvet
+  cooldown. Alle datavaliderings- og provenienskrav består uændret.
+- **REQ-4.0.428-DEPLOY-CONTINUE-002 – BINDENDE:** En afgrænset diagnostisk
+  public-audit-fejl må ikke alene stoppe et ellers sikkert frisk artifact før
+  Pages. Target/main, privacy, artifact og deploy er fortsat hårde krav.
+- **REQ-4.0.428-NO-CALIBRATION-003 – BINDENDE:** En runtime med diagnostisk
+  fejlet audit er aldrig kalibreringsegnet; det kræver grøn audit og fuld
+  historik.
+- **REQ-4.0.428-COMPLETE-004 – ÅBEN P0:** 2.334 manglende providerpar og 153
+  Feggesund-bølgedeltimer er ikke acceptabel sluttilstand. Normal drift skal
+  fortsat nå gyldige data i alle nødvendige felter.
+- **REQ-4.0.428-NORMAL-PROOF-005 – ÅBEN P0:** Én almindelig weather skal
+  bevise HARMONIE-forsøg, aktuelle scorer, Pages og samlet restdiagnostik.
+
+DEC-0208.
+
 # Aktuelt ejerdelta – 2026-09-19 – strøm- og DMI-recovery
 
 - **REQ-4.0.427-OPERATIONAL-TRUST-001 – BINDENDE:** En fuldt valideret

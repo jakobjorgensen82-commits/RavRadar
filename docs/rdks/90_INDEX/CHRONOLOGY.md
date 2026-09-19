@@ -1,3 +1,14 @@
+# 2026-09-19 – 4.0.428 sikrer H0-forsøg og fortsætter sikkert til deploy
+
+- 4.0.427 bestod exact-head `35410861514`, PR #372, main `abf0274f` og grøn
+  backend `35411487128`.
+- Normalrun `35411701055` beviste 665/673 aktuelle strømdele i scoreinputtet,
+  men ingen HARMONIE på grund af arvet cooldown og intet Pages på grund af en
+  for snæver historisk seal-regel.
+- 4.0.428 omgår kun cooldown for ét nødvendigt H0-asset og bruger den
+  afgrænsede diagnostiske deploykontrakt uden at åbne kalibrering. De reelle
+  datamangler forbliver åbne. DEC-0208.
+
 # 2026-09-19 – 4.0.427 bevarer operationel strøm og lukker tidligste DMI-hul
 
 - 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.

@@ -1,3 +1,22 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.428 H0 og deploy
+
+4.0.427 bestod exact-head `35410861514`, PR #372 og main `abf0274f`;
+backend `35411487128` var grøn. Normalrun `35411701055` gennemførte hele
+provider-, build- og 52+3-kontrolkæden, men stoppede før Pages, fordi den sene
+historical-maintenance-seal ikke brugte den allerede vedtagne tilladelse til
+afgrænsede diagnostiske auditfund.
+
+Stageoversigten beviser, at currentrettelsen virkede: 665/673 dele nåede
+scoreinputtet. HARMONIE blev ikke forsøgt, fordi en arvet cooldown blev brugt
+før det kritiske H0-valg. 4.0.428 giver netop ét H0-asset adgang trods denne
+ventetid og ændrer ikke admission. Seal kan fortsætte med diagnostiske fund,
+men runtime bliver ikke kalibreringsegnet uden grøn audit og fuld historik.
+Audit-scriptets forkerte rapportvariabel er også rettet.
+
+2.334/79.414 providerpar og 153/354 Feggesund-bølgedeltimer manglede fortsat.
+Det er åbent P0, ikke accepteret drift. Næste bevis er én almindelig weather.
+DEC-0208.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – 4.0.427 strøm- og DMI-recovery
 
 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.

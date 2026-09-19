@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-19 – lokal 4.0.428, H0-cooldown og deployfortsættelse
+
+4.0.427 bestod exact-head `35410861514`, PR #372 og main `abf0274f`.
+Backendrun `35411487128` var grønt. Normalrun `35411701055` gennemførte DMI,
+Copernicus, Open-Meteo, offentlig runtime, 52 artifactkontroller og tre
+releasekontroller, men stoppede før Pages i den sene historical-maintenance-
+seal. Den samme diagnostiske public-audit, som resten af kæden måtte fortsætte
+med efter DEC-0193, blev dér fejlagtigt krævet helt grøn.
+
+4.0.427 beviste samtidig fremgang: 665/673 aktuelle strømdele nåede
+scoreinputtet mod 56 før rettelsen. HARMONIE blev slet ikke forsøgt, fordi en
+arvet collection-cooldown blev anvendt før det kritiske H0-valg. 4.0.428 lader
+kun ét nødvendigt H0-asset omgå denne planlægningsventetid; datavalideringen er
+uændret. Historical maintenance kan fortsætte med afgrænsede diagnostiske
+fund, men bliver ikke kalibreringsegnet uden helt grøn audit og fuld historik.
+
+Datasættet er fortsat ufuldstændigt: 2.334/79.414 providerpar og 153/354
+Feggesund-bølgedeltimer manglede. Næste bevis er én almindelig weather med
+HARMONIE-forsøg, Pages, aktuel score og samlet restanalyse. DEC-0208.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.427, strøm- og DMI-recovery
 
 4.0.426 bestod exact-head `35404863947`, PR #371 og main `41a39bbc`.

@@ -356,6 +356,24 @@ planned,plan_diag=module.operational_collection_plan(
 assert planned[:2]==['dkss_nsbs','wam_dw'], planned
 assert 'wam_nsb' not in planned, planned
 assert plan_diag['retryDeferredCollections']==['wam_nsb'], plan_diag
+# A stale collection-wide cooldown must not hide the exact H0 wind foundation.
+# The override only grants one bounded attempt; provenance/admission still
+# decides whether any returned tuple is usable.
+wind_cooldown_state={
+ 'harmonie_dini_sf':{
+  'nextEligibleAt':'2099-01-01T00:00:00Z',
+  'failureClass':'transient',
+ }
+}
+planned,plan_diag=module.operational_collection_plan(
+ mixed_schedule,wind_cooldown_state,True,wave_residual,600,now_epoch=1,
+ atmosphere_foundation_needed=True,
+)
+assert planned[0]=='harmonie_dini_sf', planned
+assert 'harmonie_dini_sf' not in plan_diag['retryDeferredCollections'], plan_diag
+assert plan_diag['criticalAtmosphereCollections']==['harmonie_dini_sf'], plan_diag
+assert plan_diag['criticalAtmosphereCooldownOverride'] is True, plan_diag
+assert plan_diag['criticalAtmosphereAssetAttemptLimit']==1, plan_diag
 cutover_complete={
  collection:{'requiredPairCount':118,'missingPairCount':0}
  for collection in ('wam_dw','wam_nsb')
