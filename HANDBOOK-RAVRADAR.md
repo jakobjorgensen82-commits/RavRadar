@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.430
+**Håndbogsversion:** 4.0.431
+
+## 89.36 4.0.431 – En afbrudt offentliggørelse følger sit gamle bevis
+
+4.0.430 fandt den allerede offentliggjorte vejr- og scorepakke, kontrollerede
+210 zoner og 673 kystdele og gemte de nødvendige afslutningsbeviser holdbart.
+Den centrale status blev alligevel ikke afsluttet, fordi den gamle pakke blev
+bedømt efter en databaseændring, der først kom i den nye kode.
+
+4.0.431 retter denne overgang. En gammel, uafsluttet offentliggørelse skal
+bestå præcis de krav og hashes, som blev forseglet sammen med den. Nye
+offentliggørelser skal stadig bestå alle nutidige krav. Kendte diagnostiske
+fund kan kun afsluttes med kalibrering slået fra, sådan som den gamle plan
+allerede bestemte; de må ikke omskrives eller skjules.
+
+Rettelsen ændrer ingen scoreformel, vejrprioritet eller geometri. Den næste
+kørsel er providerfri og skal først afslutte den centrale status og levere
+koden. Derefter skal almindelige vejrkørsler bevise hele 4.0.430-kæden i
+virkelig drift. Den er derfor endnu ikke erklæret komplet eller stabil.
 
 ## 89.35 Samlet vejrkæde – bevar gyldige data og fortsæt automatisk
 
@@ -25,14 +43,16 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.430 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.431 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den private Candidate G-rollback er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer.
 
-Dette er lokalt implementeret og måltestet, men ikke endnu bevist gennem
-merge, deploy og flere almindelige produktionskørsler. Cron genaktiveres
-først efter bevis for komplethed, korrekt kildeprioritet, browservisning og
-automatisk fortsættelse uden Codex eller ejerens computer.
+Koden blev merged i 4.0.430, men den første providerfri genoptagelse stoppede
+før deploy på den historiske reentry-fejl beskrevet i 89.36. Derfor er
+vejrkæden stadig ikke produktionsbevist. Efter 4.0.431's providerfri
+afslutning skal flere almindelige produktionskørsler bevise komplethed,
+korrekt kildeprioritet, browservisning og automatisk fortsættelse uden Codex
+eller ejerens computer, før cron genaktiveres.
 
 ## 89.34 Beslutning 19. september – Vandstand kommer kun fra DMI
 

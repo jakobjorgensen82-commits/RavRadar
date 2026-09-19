@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-19 – merged 4.0.430, lokal 4.0.431 reentry
+
+Main er `f7c954fe` / 4.0.430 efter PR #375 og grøn exact-head
+`35446765316`. Providerfri `35447099504` lavede ingen weather/deploy, men
+beviste target 210/673 og gemte holdbar source-/targetevidens. Central status
+er stadig PENDING30. Reentry fejlede, fordi gammel readiness blev målt mod en
+senere migrationsliste; samme gennemløb ville derefter have afvist den
+forseglede diagnostiske warmup-audit.
+
+Lokal branch `codex/4.0.431-historical-reentry` retter begge kanter uden at
+lempe nye transitions eller eksakte hash/head/binding/closure/210/673/privacy/
+history/CAS-krav. Måltests, version, RDKS, håndbog og modelbinding er grønne.
+Næste er én exact-head-gate, merge og samme providerfri reentry/code-only.
+Ingen provider før central afslutning. Derefter almindelig weather og
+browserbevis for hele den samlede kæde. `.tmp-420/` er privat og må ikke
+stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – hele fundlisten samlet før levering
 
 Rettelsen på disk dækker nu alle fund fra sidste vejrkørsel, den første

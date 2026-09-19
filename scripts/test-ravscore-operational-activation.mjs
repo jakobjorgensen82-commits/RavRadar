@@ -970,6 +970,118 @@ assert.doesNotThrow(() => assertIntegratedHistoricalMaintenancePlan(
     publicAudit: historicalDiagnosticAudit,
   },
 ));
+
+// Reentry must validate an already sealed historical target against its own
+// immutable evidence. A later main may add a required migration, and the
+// historical maintenance target may deliberately carry bounded diagnostics
+// with calibration disabled. Neither condition may make the deployed target
+// impossible to complete after the original Pages verifier loses its result.
+const historicalDiagnosticWarmupAudit = Object.freeze({
+  ...integratedWarmupAudit,
+  status: 'failed',
+  errors: Object.freeze([
+    'MIXED_STATE_LINEAGE_COHORT',
+    'MIXED_STATE_TRANSITION_COHORT',
+    'PUBLIC_PROFILE_MIGRATION_NOT_READY',
+  ]),
+  errorCounts: Object.freeze({
+    MIXED_STATE_LINEAGE_COHORT: 1,
+    MIXED_STATE_TRANSITION_COHORT: 1,
+    PUBLIC_PROFILE_MIGRATION_NOT_READY: 1,
+  }),
+});
+const historicalDiagnosticWarmupPlan = prepareIntegratedHistoricalMaintenance({
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  sourceHead,
+  publicManifest: integratedH3,
+  publicAudit: historicalDiagnosticWarmupAudit,
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: 'schedule',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+});
+const historicalDiagnosticWarmupBegin =
+  operationalIntegratedHistoricalMaintenanceTransition({
+    action: 'integrated-historical-maintenance-begin',
+    currentRow: historicalIntegratedSourceRow,
+    currentProfileRow: historicalIntegratedSourceProfileRow,
+    expectedVersion: 40,
+    plan: historicalDiagnosticWarmupPlan,
+    readiness,
+    publicManifest: integratedH3,
+    publicAudit: historicalDiagnosticWarmupAudit,
+    sourceManifest: historicalIntegratedSource,
+    sourceVerification: historicalIntegratedSourceVerification,
+    deploymentId: 'run-historical-diagnostic-warmup',
+  });
+const predecessorReadiness = Object.freeze({
+  ...readiness,
+  migrationIds: Object.freeze(readiness.migrationIds.slice(0, -1)),
+});
+const {
+  planSha256: ignoredHistoricalDiagnosticWarmupPlanSha256,
+  ...historicalDiagnosticWarmupPlanBody
+} = historicalDiagnosticWarmupPlan;
+const sealedPredecessorPlanBody = Object.freeze({
+  ...historicalDiagnosticWarmupPlanBody,
+  integratedReadinessSha256: sha256(predecessorReadiness),
+});
+const sealedPredecessorPlan = Object.freeze({
+  ...sealedPredecessorPlanBody,
+  planSha256: sha256(sealedPredecessorPlanBody),
+});
+const sealedPredecessorPendingRow = Object.freeze({
+  version: 41,
+  payload: Object.freeze({
+    ...historicalDiagnosticWarmupBegin.document,
+    returnPlanSha256: sealedPredecessorPlan.planSha256,
+    integratedReadinessSha256: sha256(predecessorReadiness),
+  }),
+});
+const sealedPredecessorReconciliation = operationalPendingReconciliationTransition({
+  currentRow: sealedPredecessorPendingRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 41,
+  publicManifest: integratedH3,
+  observations: observations(
+    historicalIntegratedSource,
+    integratedH3,
+    integratedH3,
+  ),
+  publicVerification: integratedH3Verification,
+  readiness: predecessorReadiness,
+  publicAudit: historicalDiagnosticWarmupAudit,
+  integratedPlan: sealedPredecessorPlan,
+  deploymentId: 'pages-historical-diagnostic-warmup-reconciled',
+});
+assert.equal(sealedPredecessorReconciliation.document.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integrated);
+assert.equal(sealedPredecessorReconciliation.document.calibrationEligible, false);
+assert.deepEqual(sealedPredecessorReconciliation.centralTargetProfile,
+  predecessorReadiness.centralProfile);
+assert.throws(() => operationalPendingReconciliationTransition({
+  currentRow: sealedPredecessorPendingRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 41,
+  publicManifest: integratedH3,
+  observations: observations(
+    historicalIntegratedSource,
+    integratedH3,
+    integratedH3,
+  ),
+  publicVerification: integratedH3Verification,
+  readiness: {
+    ...predecessorReadiness,
+    migrationIds: [...predecessorReadiness.migrationIds, predecessorReadiness.migrationIds[0]],
+  },
+  publicAudit: historicalDiagnosticWarmupAudit,
+  integratedPlan: sealedPredecessorPlan,
+  deploymentId: 'pages-historical-diagnostic-warmup-duplicate-migration',
+}), /readiness differs from its sealed evidence/,
+'historical reentry must still reject malformed or hash-divergent readiness');
 assert.throws(() => prepareIntegratedHistoricalMaintenance({
   currentRow: historicalIntegratedSourceRow,
   currentProfileRow: historicalIntegratedSourceProfileRow,

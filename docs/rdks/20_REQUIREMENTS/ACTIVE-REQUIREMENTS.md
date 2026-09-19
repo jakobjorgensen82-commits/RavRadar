@@ -1,3 +1,14 @@
+# Aktuelt reentry-delta – 2026-09-19
+
+- **REQ-HISTORICAL-SEALED-REENTRY-0211 – BINDENDE:** En allerede PENDING
+  overgang skal afsluttes eller rulles sikkert tilbage ud fra sit eksakte
+  forseglede bevis. Senere migrationer må ikke eftermonteres som krav til en
+  gammel readiness. Diagnostiske fund må kun accepteres, når immutable plan
+  allerede forsegler calibration=false; eksakt audit-hash, bounded positive
+  tællere, 210/673, privacy, model/closure, history/warmup og CAS består.
+  Dette lemper ikke readiness for nye overgange. Providerfri reentry skal
+  afslutte den aktuelle PENDING før en ny almindelig vejrkørsel. DEC-0211.
+
 # Aktuelt ejerdelta – 2026-09-19 – fuld komponentfallback og helhed
 
 - **REQ-WEATHER-LOW-MAINTENANCE – BINDENDE EJERPRÆCISERING:** Cron/GitHub

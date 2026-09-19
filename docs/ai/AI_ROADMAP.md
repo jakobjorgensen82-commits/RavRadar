@@ -1,4 +1,20 @@
-# Nyeste prioritering – 2026-09-19, samlet vejrkædeanalyse på 4.0.429
+# Nyeste prioritering – 2026-09-19, 4.0.431 historisk reentry
+
+4.0.430 bestod exact-head og blev merged som `f7c954fe`. Den første
+providerfri genoptagelse `35447099504` nåede ingen provider eller deploy,
+men verificerede 210/673 og gemte holdbar evidens. To sekventielle historiske
+reentry-fejl er nu rettet samlet i lokal 4.0.431: gammel evidens følger sin
+egen forseglede migrationsliste, og kendte auditfund kan kun fortsætte, når
+den gamle immutable plan allerede har calibration=false.
+
+Næste rækkefølge er målrettet slutvalidering, én exact-head sourcegate, merge
+og providerfri central afslutning/code-only. Derefter skal almindelige
+vejrkørsler bevise hele 4.0.430-kæden: komplethed, DMI-first, reservekilder,
+bevaring af gyldige gamle komponenter, browser og automatisk genoptagelse.
+Cron forbliver lukket indtil det bevis. Ingen fejl fra den samlede matrix er
+fjernet, og ingen vejrrettelse kaldes produktionsbevist endnu.
+
+# Tidligere prioritering – 2026-09-19, samlet vejrkædeanalyse på 4.0.429
 
 Den samlede helkæderettelse er nu implementeret lokalt på tværs af alle
 fundgrupper. Det næste arbejde er ikke flere isolerede patches: afslut
@@ -23,10 +39,9 @@ Undgå nye driftsabonnementer og unødige lag; slutleverancen skal have en
 kort dansk vejledning og forståelige beskeder ved reelle vedvarende fejl.
 
 Ejeren har særskilt fastholdt de midlertidige 14-dages hjælpefiler:
-genoptagelse må ikke blive manuel, når de udløber. Nødvendig evidens skal
-bevares under en uafsluttet overgang eller genskabes fra betroede varige
-kilder. Implementering og udløbsscenarie på ren runner er stadig åbne;
-længere retention alene løser ikke kravet. Se DEC-0210 og roadmap punkt 10.
+genoptagelse må ikke blive manuel, når de udløber. Dette var åbent på dette
+tidspunkt; 4.0.430 implementerede senere holdbar krypteret terminalevidens.
+Se DEC-0210, det nyere checkpoint og roadmap punkt 10.
 
 Ejerens fallbackaftale gælder alle nødvendige vejrtyper og alle huller,
 undtagen vandstand: seneste ejerbeslutning kræver kun DMI til både niveau

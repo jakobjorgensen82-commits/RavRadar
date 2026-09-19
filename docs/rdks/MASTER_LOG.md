@@ -1,3 +1,17 @@
+# 2026-09-19 – 4.0.431 historisk reentry efter merged 4.0.430
+
+4.0.430 bestod exact-head `35446765316`, PR #375 og merge `f7c954fe`.
+Providerfri run `35447099504` verificerede det offentlige target 210/673 og
+backfillede holdbar source-/targetevidens uden provider eller deploy. Central
+PENDING30 blev ikke afsluttet: den gamle readiness blev fejlagtigt målt mod
+4.0.430's senere migrationsliste. Helhedskrydset viste, at næste kant ville
+være den forseglede diagnostiske warmup-audit.
+
+4.0.431 validerer historisk readiness mod dens egen centrale hash og bounded
+indhold og tillader kun historiske diagnostiske maintenance-fund, når planen
+allerede forsegler calibration=false. Nye transitions og alle identitets-,
+privacy-, 210/673-, history/warmup- og CAS-krav er uændrede. Se DEC-0211.
+
 # NYESTE IMPLEMENTERINGSDELTA – 2026-09-19 – samlet afslutningskrydstjek
 
 Version 4.0.430 er synkroniseret på tværs af kode, workflows, RDKS, begge

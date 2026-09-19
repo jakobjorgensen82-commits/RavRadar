@@ -1,3 +1,15 @@
+## 4.0.431 – historisk PENDING følger sit forseglede bevis (2026-09-19)
+
+- 4.0.430 bestod exact-head `35446765316`, PR #375 og merge `f7c954fe`.
+- Providerfri reentry `35447099504` verificerede det allerede offentlige
+  target og backfillede holdbar source-/targetevidens, men stoppede før CAS,
+  deploy og providers på to historiske kontraktkanter.
+- Reentry kræver ikke længere, at en forseglet forgænger-readiness indeholder
+  senere migrationer. En forseglet diagnostisk maintenance-audit accepteres
+  kun med calibration=false og fortsat eksakte hashes, positive bounded
+  fejltællere, 210/673, privacy, binding og warmup/historik.
+- Se CHANGELOG-4.0.431.md og DEC-0211.
+
 ## 4.0.430 – samlet vejrkæde og holdbar automatisk fremgang (2026-09-19)
 
 - DMI-plan/rotation, per-komponent databevaring, fuld CP/OM-reserve,
@@ -10,8 +22,9 @@
 - Kildegaten er reduceret til 24 direkte produktionskritiske kommandoer.
 - Recovery-workflow og warmup-migration er bundet til releasekontrakt,
   bindingsfixture og releasegate.
-- Det er endnu lokal kode: exact-head, merge, deploy og almindelige
-  produktionskørsler skal bevise komplethed og selvkørende drift.
+- Koden blev merged som `f7c954fe` efter exact-head `35446765316`; providerfri
+  central afslutning/deploy og almindelige produktionskørsler mangler fortsat
+  som bevis for komplethed og selvkørende drift.
   Se CHANGELOG-4.0.430.md og DEC-0210.
 
 ## 4.0.429 – gemt vejr fortsætter og HARMONIE får reel tid (2026-09-19)

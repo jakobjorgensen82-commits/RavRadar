@@ -1,3 +1,11 @@
+# Aktiv roadmap – 2026-09-19, 4.0.431 reentry og stabil drift
+
+Aktuel leveringskant: 4.0.430 er merged (`f7c954fe`), men PENDING30 er ikke
+afsluttet. 4.0.431 retter samlet forgængerens kortere readiness og dens
+forseglede diagnostics/calibration=false. Næste er én exact-head-gate, merge
+og providerfri reentry/code-only. Ingen ny weather før central afslutning.
+Derefter fortsætter punkt 8–10 nedenfor som almindeligt produktionsbevis.
+
 # Aktiv roadmap – 2026-09-19, sammenhængende komplet og stabil drift
 
 Udgangspunkt: merged 4.0.429, Pages publiceret, central afslutning og næste
@@ -17,7 +25,8 @@ Alle punkter bevares; 96-timers-reglen erstatter ikke helhedsgennemgangen.
    Se DEC-0210's topafsnit; produktionsbevis mangler.
 3. [x] Ret lokalt readiness, fælles genindgang, jobidentitet, komplette slutudfald,
    serialisering, body-retry og komponentfriskhed samlet.
-4. [ ] Afslut allerede publiceret target uden at hente samme vejr igen efter merge.
+4. [ ] Merge 4.0.431 og afslut allerede publiceret target providerfrit; den
+   første 4.0.430-reentry backfillede holdbar evidens, men stoppede før CAS.
 5. [x] Bevar modelhistorik under warmup og ved kode-only-levering lokalt.
 6. [x] Ret acquisitionplan, cache/proveniens og PART-adapter som én kæde.
    Medtag peak/mean-wave-decoder, sidste tre trends, atomisk normalisering,
