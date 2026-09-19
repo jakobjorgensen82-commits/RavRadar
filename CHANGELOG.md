@@ -1,3 +1,17 @@
+## 4.0.435 – delvis DMI-fremgang kan genoptages (2026-09-19)
+
+- 4.0.434 bestod exact-head `35453677623`, PR #379 og merge `d4e8844e`;
+  providerfri `35454050404` deployede den integrerede kode uden providers.
+- Første almindelige run `35456148104` stoppede før providerarbejde, fordi en
+  gendannet delvis DMI-fil blev krævet strict READY før DMI-producenten.
+- Normalworkflowet skelner nu mellem strict aktiv donor og resumérbar kandidat.
+  Kun en valideret aktiv generation kan være fallback; en ikke-READY fil
+  bevares som kandidat, som DMI kan fortsætte og senere forfremme efter de
+  eksisterende READY- og registerkontroller.
+- Ingen score-, geometri-, providerprioritets- eller datakomplethedslempelse.
+  Lokal vind er fortsat 0/673 i senest publicerede runtime, indtil en almindelig
+  kørsel produktionsbeviser fremgang. Se CHANGELOG-4.0.435.md og DEC-0214.
+
 ## 4.0.434 – pensioneret checkpoint blokerer ikke integreret drift (2026-09-19)
 
 - 4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.

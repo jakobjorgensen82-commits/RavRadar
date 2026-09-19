@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.435 DMI-genoptagelse
+
+Main er `d4e8844e` / 4.0.434 efter PR #379 og exact-head `35453677623`.
+Providerfri `35454050404` deployede koden. Normalrun `35456148104` gendannede
+den private runtime, men startede ingen provider: den delvise deployed DMI-fil
+blev fejlagtigt krævet strict READY før producenten. Failed-run-progress blev
+fortsat gemt krypteret.
+
+Branch `codex/4.0.435-dmi-resumable-bootstrap` skelner strict aktiv donor fra
+resumérbar kandidat. Active forbliver hard strict; kandidat eller ikke-READY
+deployed base materialiseres til `.cache/dmi-candidate-progress.json` og får
+lov at fortsætte. Promotion efter producenten er uændret og kræver READY samt
+registerkontrol. Måltests er grønne. DEC-0214.
+
+Næste: docs/RDKS/versionchecks, exact-head, PR/merge og én normal weather.
+Mål lokal vind fra 0/673 og offentlig score. `.tmp-420/` er privat og må
+aldrig stages. Ingen providerfri code-only eller blind oneoff gentages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.434 warmup-checkpoint N/A
 
 Main er `b6afcdca` / 4.0.433 efter PR #378 og exact-head `35451524450`.

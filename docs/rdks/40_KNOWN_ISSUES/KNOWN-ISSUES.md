@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-19 – DMI stoppede før hentning
+
+- **ISSUE-DMI-PREPRODUCER-READY-DEADLOCK – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** Normalrun `35456148104` gendannede en delvis DMI-kandidat, men
+  krævede fejlagtigt strict READY-ledger før DMI-producenten. Ingen provider
+  blev startet. 4.0.435 bevarer strict aktive generationer fail-closed, men
+  seeder en ikke-READY deployed/candidate-fil som resumérbar kandidat. Kun
+  efterfølgende READY + register må promovere den. DEC-0214.
+- **ISSUE-LOCAL-PART-WIND-ABSENT – FORTSAT ÅBENT:** 4.0.434 er online, men
+  den senest publicerede runtime har stadig 0/673 lokal kystdelsvind og 420
+  utilgængelige aktuelle scorevisninger. 4.0.435 skal først merged og derefter
+  bevises i én almindelig vejrkørsel; kodeændringen alene er ikke databevis.
+
 # NYESTE CHECKPOINT – 2026-09-19 – Candidate G-checkpointblokering
 
 - **ISSUE-MEASURED-WARMUP-CHECKPOINT-BLOCK – RETTET LOKALT / DRIFTSBEVIS

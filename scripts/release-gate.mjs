@@ -1556,9 +1556,16 @@ ok((weatherSourceProducerWorkflow.match(/python scripts\/materialize-dmi-bulk-st
 'Pilot/oneoff-workflowet skal materialisere legacy-DMI præcis før pilot- og oneoff-readers');
 for(const marker of [
   'name: Select encrypted active DMI generation when available',
+  'name: Prepare strict active DMI donor or resumable candidate',
   'steps.dmi-active-restore.outputs.available',
   'source_path=.cache/dmi-active-complete.json',
+  'source_path=.cache/dmi-candidate-progress.json',
   'source_path=data/live/dmi-bulk-cache.json',
+  'if test "$source_kind" = "active"; then',
+  'elif test "$source_kind" = "deployed"; then',
+  'cp "$materialized_path" .cache/dmi-candidate-progress.json.tmp',
+  'strict_active_ready=false',
+  'candidate_seeded=true',
   'name: Encrypt newly saved private weather progress before later production steps',
 ]) ok(buildWorkflow.includes(marker),`Normalworkflowet mangler krypteret DMI-genindtræden: ${marker}`);
 for(const marker of ['dmiActive:','dmiCandidate:','currentFieldShadow:']){

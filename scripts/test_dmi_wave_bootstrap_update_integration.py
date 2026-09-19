@@ -3795,7 +3795,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             self.assertNotIn(retired_prefix, workflow)
         normal_names = (
             "Select encrypted active DMI generation when available",
-            "Strictly bind and materialize the active DMI generation",
+            "Prepare strict active DMI donor or resumable candidate",
             "Update DMI bulk model cache",
             "Classify DMI readiness before current supplement",
             "Strictly snapshot the maintained READY active DMI generation",
@@ -3836,6 +3836,20 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             active_materialize,
         )
+        self.assertIn(
+            "source_path=.cache/dmi-candidate-progress.json",
+            active_materialize,
+        )
+        self.assertIn(
+            'cp "$materialized_path" .cache/dmi-candidate-progress.json.tmp',
+            active_materialize,
+        )
+        self.assertIn('echo "strict_active_ready=false"', active_materialize)
+        self.assertIn('echo "candidate_seeded=true"', active_materialize)
+        self.assertIn('if test "$source_kind" = "active"; then', active_materialize)
+        self.assertIn('elif test "$source_kind" = "deployed"; then', active_materialize)
+        self.assertIn('2>/dev/null', active_materialize)
+        self.assertNotIn("continue-on-error", active_materialize)
         self.assertNotIn(
             "Inspect isolated DMI candidate progress for normal maintenance",
             workflow,

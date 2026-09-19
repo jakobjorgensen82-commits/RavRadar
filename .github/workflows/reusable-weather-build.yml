@@ -423,7 +423,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.434 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -817,7 +817,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.434 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -842,7 +842,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.434 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1003,30 +1003,55 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Strictly bind and materialize the active DMI generation
+      - name: Prepare strict active DMI donor or resumable candidate
+        id: dmi-generation-prepare
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
           if test "${{ steps.dmi-active-restore.outputs.available }}" = "true"; then
+            source_kind=active
             source_path=.cache/dmi-active-complete.json
+          elif test -s .cache/dmi-candidate-progress.json; then
+            source_kind=candidate
+            source_path=.cache/dmi-candidate-progress.json
           else
+            source_kind=deployed
             source_path=data/live/dmi-bulk-cache.json
           fi
           test -s "$source_path"
           materialized_path="$RUNNER_TEMP/dmi-active-proof/materialized.json"
           python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"
-          reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"
-          python scripts/build-copernicus-target-registry.py \
-            --require-strict-dmi-ledger \
-            --targets data/live/coastal-parts-v2.json \
-            --dmi "$materialized_path" \
-            --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
-            --at "$reference"
-          cp "$materialized_path" .cache/dmi-active-complete.json.tmp
-          mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
-          cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+          strict_ready=false
+          if test "$source_kind" = "active"; then
+            reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path")"
+            strict_ready=true
+          elif test "$source_kind" = "deployed"; then
+            if reference="$(python scripts/check-dmi-bulk-operational-ready.py --cache "$materialized_path" 2>/dev/null)"; then
+              strict_ready=true
+            fi
+          fi
+          if test "$strict_ready" = "true"; then
+            python scripts/build-copernicus-target-registry.py \
+              --require-strict-dmi-ledger \
+              --targets data/live/coastal-parts-v2.json \
+              --dmi "$materialized_path" \
+              --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
+              --at "$reference"
+            cp "$materialized_path" .cache/dmi-active-complete.json.tmp
+            mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
+            cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+            echo "strict_active_ready=true" >> "$GITHUB_OUTPUT"
+            echo "candidate_seeded=false" >> "$GITHUB_OUTPUT"
+            echo "A strict READY DMI donor is bound for maintenance."
+          else
+            cp "$materialized_path" .cache/dmi-candidate-progress.json.tmp
+            mv .cache/dmi-candidate-progress.json.tmp .cache/dmi-candidate-progress.json
+            echo "strict_active_ready=false" >> "$GITHUB_OUTPUT"
+            echo "candidate_seeded=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=DMI candidate resumed::The protected DMI cache is preserved as resumable work; it is not classified as READY before the DMI producer repairs and verifies it."
+          fi
 
       - name: Plan global current acquisition before DMI
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
@@ -1077,7 +1102,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.434 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1420,7 +1445,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.434 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.435 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Encrypt newly saved private weather progress before later production steps

@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.434
+**Håndbogsversion:** 4.0.435
+
+## 89.40 4.0.435 – En delvis DMI-hentning skal kunne fortsætte
+
+Den første almindelige vejrkørsel efter 4.0.434 fandt en gemt DMI-fil, som
+endnu ikke var komplet. Arbejdsgangen krævede fejlagtigt, at filen allerede
+skulle have det afsluttende komplethedsbevis, før DMI fik lov at hente resten.
+Kørslen stoppede derfor før DMI, Copernicus og Open-Meteo blev startet.
+
+4.0.435 skelner tydeligt mellem to ting. En **aktiv DMI-reserve** er allerede
+fuldt kontrolleret og kan bruges, hvis en ny hentning ikke bliver færdig. En
+**arbejdskopi** er delvis og må fortsættes af DMI, men må ikke kaldes komplet
+eller bruges som aktiv reserve. En ældre gemt fil bliver kun aktiv reserve,
+hvis den består både kompletheds- og registerkontrollen; ellers bliver den
+arbejdskopi.
+
+Efter hentningen gælder de samme strenge krav som før: først når den nye
+arbejdskopi er dokumenteret komplet, må den forfremmes til aktiv reserve.
+Rettelsen opfinder ingen vejrdata, skjuler ingen huller og ændrer ikke
+scoremodellen. Den fjerner en cirkelfejl, så den almindelige vejrkørsel kan
+fortsætte den gemte fremgang og faktisk hente lokal vind til de 673
+kyststrækninger.
 
 ## 89.39 4.0.434 – Den pensionerede reserve må ikke stoppe RavRadar
 
@@ -109,7 +130,7 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.434 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Scoreformlen og vægtene er uændrede. 4.0.435 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
 Den integrerede kode er bundet med `modelBundleSha256=8f0ef7800eee6adbb5cb620fed682c2c7900ad8748a86ba84085570e44fa9c26` over 65 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
 Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 

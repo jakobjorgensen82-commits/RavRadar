@@ -994,7 +994,7 @@ const activeDmiRestoreStep = workflowStep(
   'Select encrypted active DMI generation when available',
 );
 const activeDmiMaterializeStep = workflowStep(
-  'Strictly bind and materialize the active DMI generation',
+  'Prepare strict active DMI donor or resumable candidate',
 );
 const dmiTerminalGateStep = workflowStep(
   'Classify DMI readiness before current supplement',
@@ -1070,8 +1070,26 @@ assert.ok(
     )
     && activeDmiMaterializeStep.block.includes(
       'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'source_path=.cache/dmi-candidate-progress.json',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'cp "$materialized_path" .cache/dmi-candidate-progress.json.tmp',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'strict_active_ready=false',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'candidate_seeded=true',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'if test "$source_kind" = "active"; then',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'elif test "$source_kind" = "deployed"; then',
     ),
-  'the active donor must be READY, registry-valid and materialized as the working fallback before candidate continuation',
+  'a restored active donor must remain strict while a non-READY protected cache resumes only as a candidate',
 );
 assert.ok(
   !productionWorkflows.build.includes('name: Inspect isolated DMI candidate progress for normal maintenance'),

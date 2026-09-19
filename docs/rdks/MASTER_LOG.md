@@ -1,3 +1,18 @@
+# 2026-09-19 – 4.0.435 resumérbar DMI-kandidat før producenten
+
+4.0.434 bestod exact-head `35453677623`, PR #379, merge `d4e8844e` og
+providerfri deploy `35454050404`. Normalrun `35456148104` nåede ingen
+provider. Den gendannede deployed DMI-base var en delvis kandidat, men blev
+krævet strict READY før producenten og stoppede på
+`DMI_OPERATIONAL_READY_LEDGER_INVALID`.
+
+4.0.435 klassificerer kun en eksisterende aktiv generation som ubetinget
+strict. En deployed base kan bootstrappe aktiv efter strict READY + register;
+ellers seedes den som kandidat. Kandidaten fortsættes af producenten og kan
+først promoveres gennem den eksisterende efterfølgende READY-kæde. Rettelsen
+ændrer ikke score, geometri, providerprioritet eller komplethedskrav.
+Produktionsbevis er åbent. Se DEC-0214 og CHANGELOG-4.0.435.md.
+
 # 2026-09-19 – 4.0.434 measured-warmup-checkpoint er ikke relevant
 
 4.0.433 bestod exact-head `35451524450`, PR #378 og merge `b6afcdca`.

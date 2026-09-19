@@ -1,3 +1,18 @@
+# Aktiv roadmap – 2026-09-19, 4.0.435 fra delvis DMI til normal drift
+
+1. [x] Lever 4.0.434 via exact-head `35453677623`, PR #379, main `d4e8844e`
+   og providerfri deploy `35454050404`.
+2. [x] Kør én almindelig weather `35456148104` og stop på konkret evidens:
+   ingen provider startede, fordi delvis DMI-base blev krævet strict READY.
+3. [x] Ret hele klassifikationskanten: strict aktiv donor, resumérbar kandidat
+   og deployed legacy-base; promotion er stadig kun READY + register.
+4. [ ] Afslut 4.0.435-docs, målchecks og én exact-head; merge uden at gentage
+   providerfri code-only, fordi 4.0.434-koden allerede er online.
+5. [ ] Kør én almindelig weather. Kræv DMI-start og mål lokal vind fra 0/673,
+   derefter Copernicus/Open-Meteo-huller, score, Feggesund og cachebevaring.
+6. [ ] Ved manglende vækst: stop på det nye konkrete led og krydstjek hele
+   kæden; ingen blind oneoff eller genstart fra allerede beviste trin.
+
 # Aktiv roadmap – 2026-09-19, 4.0.434 checkpoint-N/A og lokal vind
 
 1. [x] Lever 4.0.433 via exact-head `35451524450`, PR #378 og main
