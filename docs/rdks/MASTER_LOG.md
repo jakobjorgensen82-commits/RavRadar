@@ -11,6 +11,19 @@ warmupregel. De aktive beskrivelser og tests er rettet til faktisk kode.
 Alle tre måltests samt version, RDKS og release-metadata er grønne. Commit,
 exact-head-CI, merge, central genoptagelse, deploy og normaldriftsbevis udestår.
 
+Første exact-head-kildegate `35446226062` fortsatte som aftalt gennem hele
+listen og samlede to fejl. Begge var forældede testforventninger: moderne
+schema-4 restore er med vilje fælles for alle relevante operationer og ikke
+kun første cutover; privat runtime har fortsat ni faste basisfiler, men må
+desuden have præcis den ene autentificerede komponentpakke. Testene er rettet
+til at kontrollere den faktiske snævre kontrakt, ikke blot nye tekster.
+Da generator-testen er sekventiel, blev hele dens resterende workflowmatrix
+derefter sammenholdt maskinelt med alle aktuelle trinnavne. Fire gamle
+plaintext DMI active/candidate restore/save-forventninger er erstattet af
+kontrol af én autentificeret krypteret restore, exact-baseline binding,
+READY-only promotion og efterfølgende krypteret save. Ingen andre manglende
+workflowtrinnavne blev fundet.
+
 # NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-19 – spontan genstart
 
 Senere samlet implementeringsdelta for 4.0.430: alle fund fra den sidste vejrkørsel,

@@ -38,6 +38,13 @@
 - Afsluttende krydskontrol rettede tre gamle forbrugere af den nye sandhed:
   aktive håndbogsbindinger/continuation-hash, code-only-testens gamle
   rækkefølge og cutover-testens erstattede tre-timers warmupregel.
+- Første exact-head-kildegate gennemførte hele listen og fandt yderligere to
+  forældede testforventninger. De beviser nu fælles holdbar restore for alle
+  moderne schema-4-forløb og den eksakte private inventory med ni basisfiler
+  plus højst én godkendt, autentificeret komponentpakke.
+- Den sekventielle generator-test er krydstjekket helt til slut og følger nu
+  den ene krypterede progresskæde i stedet for de fjernede separate plaintext-
+  cacher for DMI active/candidate; den bevarer stadig READY-only promotion.
 
 ## Leveringsstatus
 

@@ -16,6 +16,13 @@
 - [x] Måltests, Node-syntaks, Python-AST, YAML-parse og diffcheck er grønne.
 - [x] Version 4.0.430, RDKS, begge håndbøger, migrationsbinding og to
   afledte modelbundles er synkroniseret; de korte målchecks er grønne.
+- [x] Første exact-head-run `35446226062` kørte hele den samlede sourcegate
+  og fandt kun to forældede testforventninger: restore var ikke længere
+  cutover-only, og privat inventory var ikke længere ubetinget ni filer.
+  Begge kontroller er tilpasset de strengere faktiske kontrakter. Den
+  sekventielle generator-tests resterende trinnavne/rækkefølge er derefter
+  krydstjekket samlet mod hele workflowet og beviser nu den krypterede
+  progresskæde uden de fjernede plaintext DMI-cachefamilier.
 - [ ] Commit/push og én fuld sourcegate på eksakt PR-head.
 - [ ] Merge, genoptag den aktuelle centrale overgang uden ny provider,
   deploy og bevis derefter med almindelige vejrkørsler, browser/Safari,

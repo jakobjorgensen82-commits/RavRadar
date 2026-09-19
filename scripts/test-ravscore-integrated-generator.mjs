@@ -714,8 +714,13 @@ assert.match(
 const sourceRestoreStep = workflowStep('Restore the exact sealed active source implementation', 'deploy');
 assert.match(
   sourceRestoreStep.block,
-  /inputs\.operational_action == 'integrated-cutover' && inputs\.legacy_source_required != 'true'/,
-  'a modern schema-4 first-cutover source must restore its exact active deployment seal',
+  /if: inputs\.legacy_source_required != 'true'/,
+  'every modern schema-4 operation must restore its exact active deployment seal',
+);
+assert.doesNotMatch(
+  sourceRestoreStep.block,
+  /operational_action == 'integrated-cutover'/,
+  'durable modern source restoration must not be limited to first cutover',
 );
 const sourceObserveStep = workflowStep('Observe and seal the currently public source manifest', 'deploy');
 assert.match(
@@ -979,17 +984,17 @@ assert.ok(
   'the final WAM gate must fail closed after downstream progress without a historical bypass',
 );
 
+const encryptedProgressRestoreStep = workflowStep(
+  'Restore encrypted private weather progress only',
+);
+const encryptedProgressBindStep = workflowStep(
+  'Bind optional progress to the exact protected baseline',
+);
 const activeDmiRestoreStep = workflowStep(
-  'Restore last complete active DMI generation',
+  'Select encrypted active DMI generation when available',
 );
 const activeDmiMaterializeStep = workflowStep(
   'Strictly bind and materialize the active DMI generation',
-);
-const candidateDmiRestoreStep = workflowStep(
-  'Restore isolated DMI candidate progress for normal maintenance',
-);
-const candidateDmiSaveStep = workflowStep(
-  'Save isolated DMI candidate progress before any terminal decision',
 );
 const dmiTerminalGateStep = workflowStep(
   'Classify DMI readiness before current supplement',
@@ -997,8 +1002,14 @@ const dmiTerminalGateStep = workflowStep(
 const activeDmiSnapshotStep = workflowStep(
   'Strictly snapshot the maintained READY active DMI generation',
 );
-const activeDmiSaveStep = workflowStep(
-  'Save the maintained complete active DMI generation',
+const weatherStep = workflowStep(
+  'Update central weather cache',
+);
+const encryptedProgressSealStep = workflowStep(
+  'Encrypt newly saved private weather progress before later production steps',
+);
+const encryptedProgressSaveStep = workflowStep(
+  'Save only the authenticated encrypted private weather snapshot',
 );
 const copernicusSelectorStep = workflowStep(
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
@@ -1010,20 +1021,34 @@ const fullValidationStep = workflowStep(
   'Validate critical production artifact after fresh weather and current provenance',
 );
 assert.ok(
-  activeDmiRestoreStep.start < activeDmiMaterializeStep.start
-    && activeDmiMaterializeStep.start < candidateDmiRestoreStep.start
-    && candidateDmiRestoreStep.start < dmiBulkStep.start
-    && dmiBulkStep.start < candidateDmiSaveStep.start
-    && candidateDmiSaveStep.start < dmiTerminalGateStep.start
+  encryptedProgressRestoreStep.start < encryptedProgressBindStep.start
+    && encryptedProgressBindStep.start < activeDmiRestoreStep.start
+    && activeDmiRestoreStep.start < activeDmiMaterializeStep.start
+    && activeDmiMaterializeStep.start < dmiBulkStep.start
+    && dmiBulkStep.start < dmiTerminalGateStep.start
     && dmiTerminalGateStep.start < activeDmiSnapshotStep.start
-    && activeDmiSnapshotStep.start < activeDmiSaveStep.start
-    && activeDmiSaveStep.start < wamGateStep.start,
-  'normal maintenance must restore strict active, continue isolated candidate progress, then promote and save only READY active state',
+    && activeDmiSnapshotStep.start < wamGateStep.start
+    && wamGateStep.start < weatherStep.start
+    && weatherStep.start < encryptedProgressSealStep.start
+    && encryptedProgressSealStep.start < encryptedProgressSaveStep.start,
+  'normal maintenance must restore one encrypted baseline, promote only READY DMI and reseal all provider progress after the bounded chain',
 );
 assert.match(
-  activeDmiRestoreStep.block,
-  /path: \.cache\/dmi-active-complete\.json[\s\S]*key: dmi-zone-active-v1-/,
-  'normal maintenance must restore only the strict active family as its donor',
+  encryptedProgressRestoreStep.block,
+  /actions\/cache\/restore@v6[\s\S]*path: \.cache\/weather-private-progress\.encrypted[\s\S]*weather-private-progress-encrypted-v2-/,
+  'normal maintenance must restore only the authenticated encrypted progress family',
+);
+assert.ok(
+  encryptedProgressBindStep.block.includes('WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}')
+    && encryptedProgressBindStep.block.includes('privateRuntimeBundleContentSha256')
+    && encryptedProgressBindStep.block.includes('weather-component-progress-cache.mjs capture-base')
+    && encryptedProgressBindStep.block.includes('weather-component-progress-cache.mjs restore'),
+  'restored progress must authenticate against the exact protected baseline before any provider uses it',
+);
+assert.ok(
+  activeDmiRestoreStep.block.includes('test -s .cache/dmi-active-complete.json')
+    && !activeDmiRestoreStep.block.includes('actions/cache'),
+  'the active DMI donor must come from the authenticated restored inventory, never a separate plaintext cache',
 );
 assert.ok(
   activeDmiMaterializeStep.block.includes(
@@ -1048,11 +1073,6 @@ assert.ok(
     ),
   'the active donor must be READY, registry-valid and materialized as the working fallback before candidate continuation',
 );
-assert.match(
-  candidateDmiRestoreStep.block,
-  /path: \.cache\/dmi-candidate-progress\.json[\s\S]*key: dmi-zone-candidate-v1-[\s\S]*restore-keys:[\s\S]*dmi-zone-candidate-v1-/,
-  'normal maintenance must restore the shared isolated candidate-v1 family',
-);
 assert.ok(
   !productionWorkflows.build.includes('name: Inspect isolated DMI candidate progress for normal maintenance'),
   'normal maintenance must not derive native-run pinning from partial-ledger readiness',
@@ -1069,17 +1089,6 @@ for (const marker of [
     `normal candidate producer contract marker: ${marker}`,
   );
 }
-assert.ok(
-  candidateDmiSaveStep.block.includes('if: always()')
-    && candidateDmiSaveStep.block.includes("steps.dmi-bulk.outcome != 'cancelled'")
-    && candidateDmiSaveStep.block.includes("hashFiles('.cache/dmi-candidate-progress.json') != ''"),
-  'normal maintenance must persist every non-cancelled candidate checkpoint before its terminal gate',
-);
-assert.match(
-  candidateDmiSaveStep.block,
-  /path: \.cache\/dmi-candidate-progress\.json[\s\S]*key: dmi-zone-candidate-v1-/,
-  'normal partial progress must stay in the shared candidate-v1 family',
-);
 assert.ok(
   dmiTerminalGateStep.block.includes('test "$code" = "DMI_READY"')
     && dmiTerminalGateStep.block.includes('test "$STRICT_CURRENT_ANCHOR_READY" = "true"'),
@@ -1102,16 +1111,17 @@ assert.ok(
   'normal maintenance must snapshot active only after READY candidate promotion and exact registry validation',
 );
 assert.ok(
-  activeDmiSaveStep.block.includes(
-    "steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
-  )
-    && !activeDmiSaveStep.block.includes('if: always()'),
-  'normal maintenance must save active only after both DMI_READY and candidate promotion',
+  encryptedProgressSealStep.block.includes('if: always()')
+    && encryptedProgressSealStep.block.includes("steps.component-progress-restore.outcome == 'success'")
+    && encryptedProgressSealStep.block.includes("steps.component-progress-restore.outputs.captured == 'true'")
+    && encryptedProgressSealStep.block.includes('weather-component-progress-cache.mjs save')
+    && encryptedProgressSealStep.block.includes('continue-on-error: true'),
+  'partial or complete provider progress must be resealed after the chain without turning a cache miss into a deploy blocker',
 );
 assert.match(
-  activeDmiSaveStep.block,
-  /path: \.cache\/dmi-active-complete\.json[\s\S]*key: dmi-zone-active-v1-/,
-  'normal maintenance must publish only the validated READY snapshot under the active family',
+  encryptedProgressSaveStep.block,
+  /actions\/cache\/save@v6[\s\S]*path: \.cache\/weather-private-progress\.encrypted[\s\S]*weather-private-progress-encrypted-v2-/,
+  'normal maintenance must publish only the authenticated encrypted progress snapshot',
 );
 assert.ok(
   copernicusSelectorStep.block.includes("if: steps.preflight.outputs.should_run == 'true'")
@@ -1128,8 +1138,8 @@ for (const step of [provenanceStep, fullValidationStep]) {
 }
 assert.doesNotMatch(
   productionWorkflows.build,
-  /Save progressive private DMI zone cache|dmi-zone-cache-v1-\$\{\{\s*runner\.os\s*\}\}/,
-  'the old dynamic partial-active cache family must remain forbidden in normal maintenance',
+  /Save progressive private DMI zone cache|dmi-zone-cache-v1-\$\{\{\s*runner\.os\s*\}\}|dmi-zone-active-v1-|dmi-zone-candidate-v1-/,
+  'all old plaintext DMI progress cache families must remain forbidden in normal maintenance',
 );
 
 const pointCandidateStep = workflowStep(
