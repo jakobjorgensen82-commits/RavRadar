@@ -62,8 +62,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
     }
     assert deadline_marker.exists()
 
-    soft_seconds, hard_seconds, recovery_seconds = module.bounded_time_slices(360)
-    assert (soft_seconds, hard_seconds, recovery_seconds) == (288, 300, 60)
+    soft_seconds, hard_seconds, recovery_seconds = module.bounded_time_slices(420)
+    assert (soft_seconds, hard_seconds, recovery_seconds) == (286, 300, 120)
 
     bounded_result = module.run_bounded(
         [sys.executable, "-c", "raise SystemExit(75)"],
@@ -146,6 +146,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
         "from pathlib import Path\n"
         "marker = Path(sys.argv[sys.argv.index('--marker') + 1])\n"
         "if '--checkpoint-only' in sys.argv:\n"
+        "    assert '--reuse-baseline-on-checkpoint' in sys.argv\n"
         "    marker.write_text('checkpoint-only', encoding='utf-8')\n"
         "    raise SystemExit(0)\n"
         "time.sleep(2)\n",

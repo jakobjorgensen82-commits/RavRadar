@@ -36,7 +36,7 @@ def validate_budget(attempts: int, timeout_seconds: float, backoff_seconds: floa
 
 def bounded_time_slices(timeout_seconds: float) -> tuple[float, float, float]:
     """Reserve bounded time for an orderly stop and a no-network recovery."""
-    recovery_seconds = min(120.0, timeout_seconds / 6)
+    recovery_seconds = min(120.0, timeout_seconds / 3)
     checkpoint_grace_seconds = min(60.0, timeout_seconds / 30)
     provider_hard_seconds = timeout_seconds - recovery_seconds
     provider_soft_seconds = provider_hard_seconds - checkpoint_grace_seconds
@@ -186,6 +186,7 @@ def main() -> int:
         str(PILOT),
         *pilot_args,
         "--checkpoint-only",
+        "--reuse-baseline-on-checkpoint",
     ]
     result = run_bounded(
         [sys.executable, "-u", str(PILOT), *pilot_args],

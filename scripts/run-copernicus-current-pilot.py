@@ -102,6 +102,7 @@ OPERATIONAL_REFRESH_MAX_SHARDS = max(
     int(os.getenv("COPERNICUS_OPERATIONAL_REFRESH_MAX_SHARDS", "4")),
 )
 OPERATIONAL_REFRESH_MIN_REMAINING_SECONDS = 45.0
+OPERATIONAL_SHARD_START_MIN_REMAINING_SECONDS = 45.0
 QUARANTINE_MAX_FILES_PER_PATH = 2
 QUARANTINE_MAX_BYTES_PER_PATH = 1024 * 1024 * 1024
 RECOVERED_DONOR_BANKS: dict[Path, str] = {}
@@ -304,9 +305,20 @@ def arguments() -> argparse.Namespace:
             "source stage without provider or network work"
         ),
     )
+    parser.add_argument(
+        "--reuse-baseline-on-checkpoint",
+        action="store_true",
+        help=(
+            "During wrapper-owned timeout recovery, retain an already exact "
+            "bank/shadow/source-stage baseline and leave validated segment "
+            "receipts for the next ordinary consolidation"
+        ),
+    )
     parsed = parser.parse_args()
     if parsed.refresh_only and parsed.checkpoint_only:
         parser.error("--refresh-only and --checkpoint-only are mutually exclusive")
+    if parsed.reuse_baseline_on_checkpoint and not parsed.checkpoint_only:
+        parser.error("--reuse-baseline-on-checkpoint requires --checkpoint-only")
     if parsed.donor_bank is None:
         parsed.donor_bank = (DEFAULT_DONOR_BANK if parsed.shadow == DEFAULT_SHADOW else
                              parsed.shadow.with_name("copernicus-current-donor-bank.json"))
@@ -746,7 +758,9 @@ def atomic_write_text(path: Path, text: str) -> None:
             temporary.unlink()
 
 
-def require_operational_time_budget() -> None:
+def require_operational_time_budget(
+    *, minimum_remaining_seconds: float = 0.0,
+) -> None:
     """Stop only between shards while enough wrapper time remains to save state."""
     raw = os.getenv(SOFT_DEADLINE_EPOCH_ENV)
     if not raw:
@@ -757,7 +771,9 @@ def require_operational_time_budget() -> None:
         raise RuntimeError("Copernicus soft deadline is malformed") from error
     if not math.isfinite(deadline) or deadline <= 0:
         raise RuntimeError("Copernicus soft deadline is invalid")
-    if time.time() >= deadline:
+    if minimum_remaining_seconds < 0 or not math.isfinite(minimum_remaining_seconds):
+        raise RuntimeError("Copernicus minimum remaining time is invalid")
+    if time.time() + minimum_remaining_seconds >= deadline:
         raise CopernicusOperationalBudgetReached(
             "Copernicus bounded work stopped safely at a shard boundary; "
             "validated progress is available for the next run"
@@ -1244,6 +1260,35 @@ def consolidate_durable_segment_progress(
     )
     remove_segment_journal(segment_journal_path)
     return checkpoint
+
+
+def reusable_stage_matches_donor_projection(
+    *,
+    stage: dict[str, Any],
+    donor_state: dict[str, Any],
+    registry: dict[str, Any],
+    authoritative_targets: list[dict[str, Any]],
+    reference: datetime,
+) -> bool:
+    """Prove that a durable baseline remains exact without replaying receipts."""
+    projection = projected_donor_shadow(
+        donor_state,
+        targets=authoritative_targets,
+    )
+    record_refs, missing_pairs, _ = select_source_order_admissible_records(
+        registry["operationalRequiredPairs"],
+        projection["acquisitions"],
+        projection["records"],
+        reference,
+        authoritative_targets,
+        stage["attempts"],
+        aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
+        **stage_positive_evidence(donor_state),
+    )
+    return (
+        stage["selectedRecordRefsSha256"] == canonical_sha256(record_refs)
+        and stage["missingPairsSha256"] == required_pairs_sha256(missing_pairs)
+    )
 
 
 def journal_for_donor_projection(
@@ -2109,6 +2154,7 @@ def main() -> int:
 
     donor_state = None
     bank_invalid = False
+    reusable_baseline_available = False
     if operational_contract:
         try:
             donor_diagnostics: dict[str, Any] = {}
@@ -2193,6 +2239,31 @@ def main() -> int:
                     "segment journal",
                 )
                 restored_segment_journal = None
+        if (
+            args.checkpoint_only
+            and args.reuse_baseline_on_checkpoint
+            and reusable_stage is not None
+            and reusable_stage == original_stage
+            and reusable_stage_matches_donor_projection(
+                stage=reusable_stage,
+                donor_state=donor_state,
+                registry=registry,
+                authoritative_targets=authoritative_targets,
+                reference=reference,
+            )
+        ):
+            retained_receipt_count = (
+                len(restored_segment_journal["entries"])
+                if restored_segment_journal is not None
+                else 0
+            )
+            print(
+                "Copernicus timeout recovery retained the exact reusable "
+                "baseline; durable segment receipts remain for the next "
+                f"ordinary consolidation: entryCount={retained_receipt_count}.",
+                flush=True,
+            )
+            return 0
         journal_acquisitions: list[dict[str, Any]] = []
         journal_records: list[dict[str, Any]] = []
         if restored_segment_journal is not None:
@@ -2327,6 +2398,7 @@ def main() -> int:
             donor_bank_path=args.donor_bank,
             donor_state=donor_state,
         )
+        reusable_baseline_available = True
         if restored_segment_journal is not None:
             remove_segment_journal(args.segment_journal)
             print(
@@ -2479,7 +2551,11 @@ def main() -> int:
                     times_by_part.setdefault(pair["partId"], []).append(
                         parse_time(pair["validTime"], "required pair time")
                     )
-                require_operational_time_budget()
+                require_operational_time_budget(
+                    minimum_remaining_seconds=(
+                        OPERATIONAL_SHARD_START_MIN_REMAINING_SECONDS
+                    )
+                )
                 serviced_segment_in_pass = True
                 product_report_state[product["source"]]["executedShardCount"] += 1
                 shard_targets = [row for row in shard["targets"] if row["partId"] in times_by_part]
@@ -2757,29 +2833,37 @@ def main() -> int:
             } for product in PRODUCTS]
     except CopernicusOperationalBudgetReached:
         if operational_contract and pending_segment_count:
-            checkpoint = consolidate_durable_segment_progress(
-                shadow_path=args.shadow,
-                source_stage_path=args.source_stage,
-                segment_journal_path=args.segment_journal,
-                registry=registry,
-                target_identities=target_identities,
-                attempts=source_attempts,
-                updated_at=acquisition_at,
-                donor_bank_path=args.donor_bank,
-                donor_state=donor_state,
-                validated_donor_candidate=working_bank,
-                bank_changed=pending_bank_changed,
-            )
-            remaining = {
-                (row["partId"], row["validTime"])
-                for row in checkpoint.missing_pairs
-            }
-            print(
-                "Copernicus soft-boundary durable segment consolidation: "
-                f"segmentCount={pending_segment_count}, "
-                f"remainingOperationalPairs={len(remaining)}.",
-                flush=True,
-            )
+            if reusable_baseline_available:
+                print(
+                    "Copernicus soft boundary retained the exact reusable "
+                    "baseline; durable segment receipts remain for the next "
+                    f"ordinary consolidation: entryCount={pending_segment_count}.",
+                    flush=True,
+                )
+            else:
+                checkpoint = consolidate_durable_segment_progress(
+                    shadow_path=args.shadow,
+                    source_stage_path=args.source_stage,
+                    segment_journal_path=args.segment_journal,
+                    registry=registry,
+                    target_identities=target_identities,
+                    attempts=source_attempts,
+                    updated_at=acquisition_at,
+                    donor_bank_path=args.donor_bank,
+                    donor_state=donor_state,
+                    validated_donor_candidate=working_bank,
+                    bank_changed=pending_bank_changed,
+                )
+                remaining = {
+                    (row["partId"], row["validTime"])
+                    for row in checkpoint.missing_pairs
+                }
+                print(
+                    "Copernicus soft-boundary durable segment consolidation: "
+                    f"segmentCount={pending_segment_count}, "
+                    f"remainingOperationalPairs={len(remaining)}.",
+                    flush=True,
+                )
         raise
     finally:
         shutil.rmtree(temporary, ignore_errors=True)

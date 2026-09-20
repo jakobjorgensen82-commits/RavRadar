@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.442
+
+- [x] Begræns Copernicus nye shard-start til en sikker afslutningsmargin og
+  reserver 120 sekunder til lokal recovery.
+- [x] Gør timeout-recovery i stand til at beholde en eksakt bank/shadow/
+  source-stage-baseline uden dyr journalreplay; behold streng fallback, hvis
+  baseline ikke kan bevises.
+- [x] Opdater workflow, release-gate, bounded-retry-test og source-stage-test
+  til den nye kontrakt.
+- [x] Kør målrettede Python-/Node-kontrakter, segmentjournal-tamper-test,
+  workflowrækkefølge og versionskontroller grønt lokalt.
+- [ ] Kør exact-head sourcegate, PR/merge og én almindelig continuation fra
+  den gemte fremgang.
+- [ ] Nå Open-Meteo, afsluttende DMI-first-samling, score, private save,
+  artifact og deploy; først derefter kan driftsbaselinen vurderes.
+- [ ] Identificér/luk den resterende DMI-only-vandstandsrest og bevis næste
+  cron uden at kalde et delvist datasæt komplet.
+
 # Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.441
 
 - [x] Lever 4.0.440 via exact-head `35485303951`, PR #385 og main

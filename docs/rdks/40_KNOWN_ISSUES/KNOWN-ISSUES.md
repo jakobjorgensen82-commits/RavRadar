@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-20 – timeout-handoff rettet, driftsbevis åbent
+
+- **ISSUE-COPERNICUS-HARD-TIMEOUT-STAGE-HANDOFF – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** 4.0.442 reserverer afslutningstid, starter ikke nye shards for tæt
+  på deadline og beholder kun en strengt bevist eksakt baseline under fast
+  recovery. Segmentjournalen føres videre til næste almindelige run.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** `35486533929`
+  gennemførte DMI og nåede 6.501 Copernicus-par, men nåede ikke Open-Meteo,
+  score eller deploy. Næste almindelige continuation skal bevise hele kæden.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** DMI-only-vandstand
+  skal stadig identificeres og lukkes. Ingen lokale huller må kaldes komplette.
+
 # NYESTE CHECKPOINT – 2026-09-20 – bro pensioneret før efterfølger fandtes
 
 - **ISSUE-PREDECESSOR-RETIRED-BY-VERSION – RETTET LOKALT / DRIFTSBEVIS

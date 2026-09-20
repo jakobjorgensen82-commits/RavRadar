@@ -1,6 +1,21 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.441
+**Håndbogsversion:** 4.0.442
+
+## 89.47 4.0.442 – timeout-aflevering uden at ødelægge en gyldig baseline
+
+Copernicus skal have tid til at gemme sin fremgang. Den normale wrappergrænse
+er derfor 420 sekunder, hvor de sidste 120 sekunder er reserveret til lokal
+afslutning. Et nyt netværksshred startes kun, når der er mindst 45 sekunder
+tilbage. Ved timeout må recovery kun beholde en bank-, shadow- og
+source-stage-baseline, hvis den stadig matcher både den oprindelige stage og
+donorens beregnede valg. Ellers afvises den som READY og den strenge lokale
+consolidation anvendes.
+
+Validerede segmentkvitteringer slettes ikke af timeout-recovery. De bliver
+liggende, så næste almindelige vejrkørsel kan samle dem uden at hente dem igen.
+Dette ændrer ikke DMI-first-prioriteten eller reglen om, at et delvist datasæt
+ikke må kaldes komplet. Se DEC-0220.
 
 ## 89.46 4.0.441 – En overgang slutter først, når efterfølgeren er gemt
 

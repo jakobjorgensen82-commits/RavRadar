@@ -1,3 +1,12 @@
+# 2026-09-20 – 4.0.442 afleverer Copernicus-timeout sikkert
+
+- 4.0.441's almindelige run `35486533929` gennemførte DMI og gemte fremgang.
+  Copernicus nåede 6.501 verificerede par, men den korte timeout-recovery
+  nåede ikke at skabe et eksakt source-stage-bevis.
+- 4.0.442 reserverer 120 sekunder til afslutning, bruger 45 sekunders
+  shard-start-margin og kan beholde en eksakt baseline uden journalreplay.
+  Kvitteringerne bliver liggende til næste almindelige continuation.
+
 # 2026-09-20 – 4.0.441 holder genindgang åben til faktisk efterfølger
 
 - 4.0.440 bestod exact-head `35485303951`, PR #385 og main `c00e6c5a`.
