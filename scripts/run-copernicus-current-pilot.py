@@ -296,7 +296,17 @@ def arguments() -> argparse.Namespace:
         action="store_true",
         help="Refresh still-selectable records for the next run without delaying closure",
     )
+    parser.add_argument(
+        "--checkpoint-only",
+        action="store_true",
+        help=(
+            "Replay durable segment receipts and atomically refresh the reusable "
+            "source stage without provider or network work"
+        ),
+    )
     parsed = parser.parse_args()
+    if parsed.refresh_only and parsed.checkpoint_only:
+        parser.error("--refresh-only and --checkpoint-only are mutually exclusive")
     if parsed.donor_bank is None:
         parsed.donor_bank = (DEFAULT_DONOR_BANK if parsed.shadow == DEFAULT_SHADOW else
                              parsed.shadow.with_name("copernicus-current-donor-bank.json"))
@@ -2086,6 +2096,8 @@ def main() -> int:
             raise RuntimeError("Copernicus target registry contains a changed central target identity")
     target_identities = {row["partId"]: row for row in authoritative_targets}
     operational_contract = registry["schemaVersion"] == 3
+    if args.checkpoint_only and not operational_contract:
+        raise RuntimeError("Copernicus checkpoint-only requires the operational registry")
     required_pairs = (
         registry["operationalRequiredPairs"]
         if operational_contract
@@ -2323,6 +2335,13 @@ def main() -> int:
                 flush=True,
             )
         existing = initial_checkpoint.shadow
+        if args.checkpoint_only:
+            print(
+                "Copernicus durable timeout recovery completed without provider "
+                "or network work.",
+                flush=True,
+            )
+            return 0
     attempted_pairs_by_source = {
         product["source"]: current_reference_attempt_pairs(
             source_attempts,

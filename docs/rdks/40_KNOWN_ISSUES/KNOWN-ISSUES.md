@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-20 – Copernicus-timeout før fallback
+
+- **ISSUE-COPERNICUS-HARD-TIMEOUT-STAGE-HANDOFF – RETTET LOKALT /
+  DRIFTSBEVIS ÅBENT:** Normalrun `35482138050` gemte fem varige
+  Copernicus-segmenter/5.855 par, men et sjette netkald ramte hard timeout,
+  før journalen blev samlet til et genbrugeligt source-stage. Den strenge gate
+  stoppede derfor før Open-Meteo. 4.0.440 reserverer tid inden for samme
+  samlede budget til netværksfri journal→bank→shadow→stage-recovery. DEC-0218.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** 4.0.439's
+  forgængertilpasning er livebevist, men samme run nåede ikke Open-Meteo,
+  score, artifact eller deploy. Næste almindelige continuation skal bevise
+  hele kæden fra den gemte krypterede fremgang.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Seneste sikre
+  måling er 669/673 partfelter. Identiteterne skal udledes af den næste
+  komplette diagnostik; der gættes ikke på zoner.
+
 # NYESTE CHECKPOINT – 2026-09-20 – forgænger blev fundet, men ikke tilpasset
 
 - **ISSUE-BOUNDED-PREDECESSOR-REBIND-NOT-APPLIED – RETTET LOKALT /

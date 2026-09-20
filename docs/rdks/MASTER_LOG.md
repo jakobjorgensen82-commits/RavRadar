@@ -1,3 +1,16 @@
+# 2026-09-20 – 4.0.440 afleverer Copernicus-fremgang ved timeout
+
+4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
+Normalrun `35482138050` beviste den rettede private rebind og gennemførte DMI.
+Copernicus gemte fem fsync'ede segmenter/5.855 par, men et sjette netkald
+ramte hard timeout før samlet source-stage; den strenge gate stoppede før
+Open-Meteo. Krypteret fremgang blev gemt.
+
+4.0.440 holder tidsbudgettet uændret og reserverer en afsluttende netværksfri
+`--checkpoint-only`-vej. Kun valideret atomisk journal→bank→shadow→stage kan
+give `IN_PROGRESS`; ellers forbliver timeouten hård. Data, score, DMI-first,
+vandstand og geometri ændres ikke. Se DEC-0218 og CHANGELOG-4.0.440.md.
+
 # 2026-09-20 – 4.0.439 binder restore til den nødvendige rebind
 
 4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`.

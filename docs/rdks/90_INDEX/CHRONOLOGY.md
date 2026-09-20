@@ -1,3 +1,12 @@
+# 2026-09-20 – 4.0.440 bevarer Copernicus-timeoutfremgang i samme run
+
+- 4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
+- Normalrun `35482138050` beviste restore/rebind/install og gennemførte DMI.
+- Fem Copernicus-segmenter/5.855 par var fsync'et, men sjette netkald ramte
+  hard timeout før samlet stage; Open-Meteo blev derfor ikke nået.
+- 4.0.440 reserverer en netværksfri slutdel af samme budget til atomisk
+  journalreplay og bevarer den efterfølgende strenge gate. DEC-0218.
+
 # 2026-09-20 – 4.0.439 udfører den allerede genkendte overgang
 
 - 4.0.438 bestod exact-head `35471789111`, PR #383 og main `2fbfe3b2`;

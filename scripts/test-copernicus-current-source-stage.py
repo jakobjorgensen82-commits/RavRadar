@@ -329,6 +329,7 @@ def run_runner(
     reference: datetime = REFERENCE,
     acquisition_at: datetime | None = None,
     refresh_only: bool = False,
+    checkpoint_only: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     actual_acquisition_at = acquisition_at or (reference + timedelta(minutes=10))
     command = [
@@ -356,6 +357,8 @@ def run_runner(
         command.extend(["--fixture-directory", str(fixture_directory)])
     if refresh_only:
         command.append("--refresh-only")
+    if checkpoint_only:
+        command.append("--checkpoint-only")
     runner_env = dict(os.environ if env is None else env)
     # Fixture commits must never set outputs on the surrounding CI step.
     runner_env["GITHUB_OUTPUT"] = str(folder / "fixture-github-output.txt")
@@ -663,20 +666,29 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         records=[replay_record],
         attempt=replay_attempt,
     )
+    recovery_environment = dict(os.environ)
+    recovery_environment.pop("COPERNICUSMARINE_SERVICE_USERNAME", None)
+    recovery_environment.pop("COPERNICUSMARINE_SERVICE_PASSWORD", None)
     replayed_run = run_runner(
         segmented,
-        segmented_fixtures,
+        None,
         acquisition_at=replay_acquired_at + timedelta(minutes=1),
+        checkpoint_only=True,
+        env=recovery_environment,
     )
     assert replayed_run.returncode == 0, replayed_run.stdout + replayed_run.stderr
     assert "Replayed and consolidated durable Copernicus segment receipts: entryCount=1." in (
         replayed_run.stdout
     )
+    assert (
+        "Copernicus durable timeout recovery completed without provider or network work."
+        in replayed_run.stdout
+    )
     assert not replay_journal_path.exists()
     replayed_shadow = json.loads(
         (segmented / "shadow.json").read_text(encoding="utf-8")
     )
-    replayed_stage = validate_source_stage(
+    replayed_stage = validate_source_stage_progress(
         json.loads((segmented / "source-stage.json").read_text(encoding="utf-8")),
         registry=segmented_registry,
         shadow=replayed_shadow,
@@ -684,6 +696,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow_sha256=file_sha256(segmented / "shadow.json"),
     )
     assert replay_attempt in replayed_stage["attempts"]
+    recovery_check = run_checker(segmented, "--require-source-stage-reusable")
+    assert recovery_check.returncode == 0, (
+        recovery_check.stdout + recovery_check.stderr
+    )
 
     # Six independent spatial receipts take exactly one full consolidation.
     # This is the live throughput contract: five segments remain individually
@@ -2941,6 +2957,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     shim.mkdir(parents=True)
     prepare(timed_out)
     (shim / "copernicusmarine.py").write_text(
+        "class DatasetUpdating(Exception):\n    pass\n\n"
         "def subset(**kwargs):\n    raise TimeoutError('fixture timeout')\n",
         encoding="utf-8",
     )
@@ -2949,7 +2966,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     timeout_env["COPERNICUSMARINE_SERVICE_USERNAME"] = "fixture-user"
     timeout_env["COPERNICUSMARINE_SERVICE_PASSWORD"] = "fixture-password"
     timeout = run_runner(timed_out, None, env=timeout_env)
-    assert timeout.returncode == 75
+    assert timeout.returncode == 75, timeout.stdout + timeout.stderr
     assert "Copernicus shard failed safely" in timeout.stderr
     assert "failedShardCount=1" in timeout.stderr
     timeout_stage_document = json.loads(

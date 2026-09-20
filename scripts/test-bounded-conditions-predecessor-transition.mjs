@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import packageDocument from '../package.json' with { type: 'json' };
 
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
@@ -187,16 +188,28 @@ try {
     githubOutputPath,
     now: valid.now,
   });
-  assert.equal(prepared.required, true);
-  assert.equal(prepared.transitionKind, 'bounded-conditions-writer');
-  assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), expectation);
   const githubOutput = await fs.readFile(githubOutputPath, 'utf8');
-  assert.match(githubOutput, /required=true/);
-  assert.match(githubOutput,
-    new RegExp(`source_head=${BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead}`));
-  assert.match(githubOutput, /transition_kind=bounded-conditions-writer/);
+  if (packageDocument.version
+    === BOUNDED_CONDITIONS_PREDECESSOR_POLICY.releaseVersion) {
+    assert.equal(prepared.required, true);
+    assert.equal(prepared.transitionKind, 'bounded-conditions-writer');
+    assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), expectation);
+    assert.match(githubOutput, /required=true/);
+    assert.match(githubOutput,
+      new RegExp(`source_head=${BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead}`));
+    assert.match(githubOutput, /transition_kind=bounded-conditions-writer/);
+  } else {
+    // The production bridge was intentionally exact-release and succeeded in
+    // 4.0.439. Later releases must keep its validators but never reactivate it.
+    assert.equal(prepared.required, false);
+    assert.equal(prepared.transitionKind, null);
+    await assert.rejects(fs.access(outputPath), { code: 'ENOENT' });
+    assert.match(githubOutput, /required=false/);
+    assert.match(githubOutput, /source_head=\n/);
+    assert.match(githubOutput, /transition_kind=\n/);
+  }
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Bounded conditions predecessor transition: 38 focused cases passed.');
+console.log('Bounded conditions predecessor transition: 38 focused cases and exact-release retirement passed.');

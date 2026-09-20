@@ -1,3 +1,17 @@
+# Nyeste prioritering – 2026-09-20, 4.0.440 afslut providerhandoff
+
+4.0.439 er main `badf84e9`. Normalrun `35482138050` beviste, at restore og
+modelrebind virker, og DMI gennemførte. Copernicus' fem fsync'ede segmenter
+blev ikke samlet til source-stage, fordi et sjette netkald ramte hard timeout.
+Derfor stoppede stagegaten før Open-Meteo, selv om fremgangen blev gemt.
+
+4.0.440 bruger samme samlede Copernicus-tid, men reserverer sidste del til en
+ren lokal journalaflevering. Næste rækkefølge: målchecks, RDKS/version, én
+exact-head, PR/merge og én almindelig continuation fra krypteret fremgang.
+Kræv at Copernicus afleverer et genbrugeligt stage, Open-Meteo fortsætter,
+og score, fulde datagates, privat save, artifact og deploy nås. Ingen oneoff
+eller gentagelse af allerede beviste faser.
+
 # Nyeste prioritering – 2026-09-20, 4.0.439 anvend den fundne forgænger
 
 4.0.438 er main `2fbfe3b2`; exact-head og backend er grønne. Normalrun

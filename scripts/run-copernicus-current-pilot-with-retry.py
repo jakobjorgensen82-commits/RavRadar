@@ -34,22 +34,72 @@ def validate_budget(attempts: int, timeout_seconds: float, backoff_seconds: floa
         raise ValueError("Copernicus retry backoff must be between 0 and 120 seconds")
 
 
+def bounded_time_slices(timeout_seconds: float) -> tuple[float, float, float]:
+    """Reserve bounded time for an orderly stop and a no-network recovery."""
+    recovery_seconds = min(120.0, timeout_seconds / 6)
+    checkpoint_grace_seconds = min(60.0, timeout_seconds / 30)
+    provider_hard_seconds = timeout_seconds - recovery_seconds
+    provider_soft_seconds = provider_hard_seconds - checkpoint_grace_seconds
+    if not 0 < provider_soft_seconds < provider_hard_seconds < timeout_seconds:
+        raise ValueError("Copernicus timeout cannot be divided into safe bounded phases")
+    return provider_soft_seconds, provider_hard_seconds, recovery_seconds
+
+
+def run_timeout_recovery(
+    command: Sequence[str],
+    *,
+    timeout_seconds: float,
+) -> bool:
+    """Promote only already-fsynced receipts; this command must do no network work."""
+    recovery_environment = dict(os.environ)
+    recovery_environment.pop(SOFT_DEADLINE_EPOCH_ENV, None)
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=ROOT,
+            check=False,
+            timeout=timeout_seconds,
+            env=recovery_environment,
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            "Copernicus local timeout recovery exceeded its reserved budget.",
+            file=sys.stderr,
+        )
+        return False
+    if completed.returncode != 0:
+        print(
+            "Copernicus local timeout recovery rejected the durable receipts "
+            f"(exit-{completed.returncode}).",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
 def run_bounded(
     command: Sequence[str],
     *,
     attempts: int,
     timeout_seconds: float,
     backoff_seconds: float,
+    timeout_recovery_command: Sequence[str] | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, int | bool | str]:
     validate_budget(attempts, timeout_seconds, backoff_seconds)
+    provider_soft_seconds, provider_hard_seconds, recovery_seconds = (
+        bounded_time_slices(timeout_seconds)
+    )
     for attempt in range(1, attempts + 1):
-        print(f"Copernicus attempt {attempt}/{attempts} started with a {timeout_seconds:g}s hard timeout.")
-        reserve_seconds = min(120.0, max(0.05, timeout_seconds * 0.1))
-        soft_budget_seconds = max(0.01, timeout_seconds - reserve_seconds)
+        print(
+            f"Copernicus attempt {attempt}/{attempts} started with "
+            f"{provider_soft_seconds:g}s work, {provider_hard_seconds:g}s process "
+            f"and {recovery_seconds:g}s local recovery inside the "
+            f"{timeout_seconds:g}s total budget."
+        )
         child_environment = dict(os.environ)
         child_environment[SOFT_DEADLINE_EPOCH_ENV] = str(
-            time.time() + soft_budget_seconds
+            time.time() + provider_soft_seconds
         )
         child_environment["RAVRADAR_COPERNICUS_ATTEMPT_ORDINAL"] = str(
             attempt - 1
@@ -59,7 +109,7 @@ def run_bounded(
                 command,
                 cwd=ROOT,
                 check=False,
-                timeout=timeout_seconds,
+                timeout=provider_hard_seconds,
                 env=child_environment,
             )
             if completed.returncode == 0:
@@ -82,6 +132,16 @@ def run_bounded(
                 reason = f"exit-{completed.returncode}"
         except subprocess.TimeoutExpired:
             reason = "timeout"
+            if timeout_recovery_command is not None and run_timeout_recovery(
+                timeout_recovery_command,
+                timeout_seconds=recovery_seconds,
+            ):
+                return {
+                    "ok": True,
+                    "attempt": attempt,
+                    "reason": "timeout-recovered-progress",
+                    "boundedProgress": True,
+                }
         print(f"Copernicus attempt {attempt}/{attempts} ended safely ({reason}).", file=sys.stderr)
         if attempt < attempts:
             sleep(backoff_seconds)
@@ -116,14 +176,25 @@ def main() -> int:
         pilot_args = pilot_args[1:]
     if not pilot_args:
         raise ValueError("Pilot arguments are required after --")
+    refresh_mode = "--refresh-only" in pilot_args
+    checkpoint_only = "--checkpoint-only" in pilot_args
+    if checkpoint_only:
+        raise ValueError("The retry wrapper owns Copernicus checkpoint-only recovery")
+    timeout_recovery_command = None if refresh_mode else [
+        sys.executable,
+        "-u",
+        str(PILOT),
+        *pilot_args,
+        "--checkpoint-only",
+    ]
     result = run_bounded(
         [sys.executable, "-u", str(PILOT), *pilot_args],
         attempts=args.attempts,
         timeout_seconds=args.timeout_seconds,
         backoff_seconds=args.backoff_seconds,
+        timeout_recovery_command=timeout_recovery_command,
     )
     if result["ok"]:
-        refresh_mode = "--refresh-only" in pilot_args
         write_github_outputs(result, refresh_mode=refresh_mode)
         if refresh_mode:
             print(

@@ -1,3 +1,27 @@
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.440 Copernicus-timeout
+
+4.0.439 er main `badf84e9` efter exact-head `35481877393` og PR #384.
+Almindelig weather `35482138050` beviste den rettede private rebind og nåede
+gennem DMI. Copernicus gemte fem varige segmenter/5.855 par. Et sjette
+providerkald overskred hard timeout, så processen døde før journalen blev
+samlet til `IN_PROGRESS`. Stagegaten stoppede korrekt, Open-Meteo startede
+ikke, og den krypterede fremgang blev gemt.
+
+Branch `codex/4.0.440-copernicus-timeout-recovery` holder samme samlede
+budget, men reserverer afslutningen til en credential- og netværksfri
+`--checkpoint-only`-transaktion. Normal opdeling er 288/300/60 sekunder;
+extended er 3.120/3.180/120. Timeout bliver kun kontrolleret fremgang, hvis
+den atomiske journal→bank→shadow→stage-recovery er grøn. Source-stage-gaten
+er uændret. Den præcise timeouttest og realistiske journalreplay mod den
+faktiske checker er grønne. Næste: docs/versionchecks, exact-head, PR/merge
+og én almindelig continuation. `.tmp-420/` må aldrig stages. DEC-0218.
+
+PR #385's første exact-head `35484940998` fejlede kun i den gamle
+bounded-forgængertest: den forventede fejlagtigt, at 4.0.439's engangsbro
+stadig var aktiv i 4.0.440. Koden holdt broen korrekt lukket. Regressionen er
+rettet til at bevise exact-release-retirement og er grøn lokalt. Push og nyt
+exact-head afventer.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.439 exact rebind før install
 
 Main er `2fbfe3b2` / 4.0.438 efter PR #383, exact-head `35471789111` og
