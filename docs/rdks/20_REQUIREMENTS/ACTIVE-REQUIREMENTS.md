@@ -1,3 +1,18 @@
+# Aktuelt krav til forgængerbroens levetid – 2026-09-20
+
+- **REQ-PREDECESSOR-RETIRES-ON-SOURCE-SUCCESSION-0219 – BINDENDE:** Den
+  eksakte bounded-conditions-bro må ikke pensioneres alene ved versionsløft,
+  når den beskyttede pointer fortsat peger på den samme forseglede forgænger.
+  Den forbliver kun anvendelig under de eksisterende eksakte source-,
+  bundle-, binding-, kontrakt-, 210/673-, tids- og payloadfri krav og bliver
+  automatisk uanvendelig, når en kompatibel efterfølger ændrer pointerens
+  sourceidentitet. DEC-0219.
+- **REQ-PROGRESS-BASE-PRESERVATION-0219 – BINDENDE:** Den krypterede
+  providerfremgang må kun åbnes efter vellykket exact restore, rebind og
+  install mod dens beskyttede basispakke. En code-only-omvej må ikke bruges,
+  hvis den omskriver basisbindingen og dermed gør den allerede gemte fremgang
+  uanvendelig.
+
 # Aktuelt krav til Copernicus-timeout – 2026-09-20
 
 - **REQ-COPERNICUS-TIMEOUT-DURABLE-HANDOFF-0218 – BINDENDE:** En hård

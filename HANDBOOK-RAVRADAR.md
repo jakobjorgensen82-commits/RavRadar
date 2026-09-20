@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.440
+**Håndbogsversion:** 4.0.441
+
+## 89.46 4.0.441 – En overgang slutter først, når efterfølgeren er gemt
+
+4.0.440-kørslen stoppede, før DMI blev startet. Den kunne se den rå
+DMI-downloadcache, men ikke den færdige arbejdskopi eller den krypterede
+fremgang fra forrige kørsel. Årsagen var, at den gamle private vejrpakke
+stadig var aktiv, mens den kontrollerede overgangslæser var blevet slået fra,
+blot fordi versionsnummeret var steget fra 4.0.439 til 4.0.440.
+
+Det var for tidligt. 4.0.439 havde vist, at den gamle pakke kunne findes,
+kontrolleres og tilpasses korrekt, men kørslen stoppede senere ved
+Copernicus. Den nåede derfor aldrig at gemme den nye permanente pakke.
+
+4.0.441 bruger nu den faktiske beskyttede pakke som sandhed. Så længe den
+stadig er præcis den kendte gamle pakke, kan dens egen læser og den strenge
+tilpasning bruges. Alle hashes, modelbindinger, kontrakter, 210 zoner, 673
+kystdele og tider skal fortsat passe præcist. Når en ny pakke virkelig er
+gemt, ændres kildens identitet, og den gamle overgang lukker automatisk.
+
+Rettelsen ændrer ikke vejrdata eller score. Den sikrer kun, at et
+versionsnummer ikke spærrer adgangen til allerede gemt og fortsat gyldig
+fremgang, før den permanente efterfølger faktisk findes.
 
 ## 89.45 4.0.440 – Gemt Copernicus-arbejde afleveres før fallback
 

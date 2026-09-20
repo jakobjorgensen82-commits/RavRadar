@@ -1,3 +1,13 @@
+# 2026-09-20 – 4.0.441 holder genindgang åben til faktisk efterfølger
+
+- 4.0.440 bestod exact-head `35485303951`, PR #385 og main `c00e6c5a`.
+- Normalrun `35485561037` fandt rå DMI-cache, men stoppede før providers,
+  fordi 4.0.439-only-vagten lukkede den stadig nødvendige exact-source-bro.
+- 4.0.439 havde bevist broen, men stoppede senere og publicerede ingen
+  kompatibel efterfølger; versionen var derfor ikke pensionsbevis.
+- 4.0.441 pensionerer automatisk ved ændret beskyttet sourceidentitet og
+  bevarer alle eksakte restore/rebind/install-krav. DEC-0219.
+
 # 2026-09-20 – 4.0.440 bevarer Copernicus-timeoutfremgang i samme run
 
 - 4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.

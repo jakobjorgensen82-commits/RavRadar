@@ -16,7 +16,6 @@ import {
 import {
   privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
-import packageDocument from '../package.json' with { type: 'json' };
 
 function parseArguments(argv) {
   const result = {};
@@ -76,7 +75,6 @@ export async function prepareHistoricalWavePredecessorRestore(options) {
       targetReferenceAt: options.targetReferenceAt,
       currentBinding: ravScoreModelBinding(),
       currentContractHashes: await privateRuntimeContractHashes(),
-      currentReleaseVersion: packageDocument.version,
       now: options.now ?? new Date().toISOString(),
     });
   const expectation = historicalExpectation ?? boundedConditionsExpectation;

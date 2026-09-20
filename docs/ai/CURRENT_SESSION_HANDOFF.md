@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.441 sourcebundet genindgang
+
+4.0.440 er main `c00e6c5a` efter exact-head `35485303951` og PR #385.
+Normalrun `35485561037` stoppede før providers i DMI-kandidatforberedelsen.
+Rå DMI-GRIB-cache fra `35482138050` blev fundet, men den private runtime var
+kontraktinkompatibel, og 4.0.439-only-vagten forhindrede den allerede beviste
+exact-source-rebind. Derfor blev den dertil bundne krypterede fremgang ikke
+installeret. Ingen provider, score, write eller deploy kørte.
+
+Branch `codex/4.0.441-durable-bounded-reentry` bruger den beskyttede pointers
+eksakte sourceidentitet som levetidsregel. Så længe den fortsat er den
+forseglede `d4e8844e`/`ad2337ab…`-forgænger, må dens egen reader og hærdede
+rebind bruges. Når en efterfølger publiceres og source ændres, afviser samme
+kode automatisk broen. Alle øvrige fail-closed krav består. Næste er
+målchecks, docs/version, én exact-head, PR/merge og én normal continuation.
+Ingen code-only-omvej eller oneoff, fordi den gemte progressbinding skal
+bevares. `.tmp-420/` må aldrig stages. DEC-0219.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.440 Copernicus-timeout
 
 4.0.439 er main `badf84e9` efter exact-head `35481877393` og PR #384.

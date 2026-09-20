@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-09-20 – bro pensioneret før efterfølger fandtes
+
+- **ISSUE-PREDECESSOR-RETIRED-BY-VERSION – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** 4.0.440-run `35485561037` fandt rå DMI-cache, men stoppede før
+  providers, fordi den kontraktinkompatible private runtime stadig krævede
+  den eksakte gamle bro, mens broen var låst til 4.0.439. 4.0.441 bruger
+  faktisk beskyttet sourceafløsning som pensionssignal og bevarer alle
+  eksakte fail-closed krav. DEC-0219.
+- **ISSUE-COPERNICUS-HARD-TIMEOUT-STAGE-HANDOFF – RETTET I 4.0.440 /
+  DRIFTSBEVIS FORTSAT ÅBENT:** `35485561037` nåede ikke Copernicus, så den
+  nye netværksfri timeoutaflevering er fortsat ikke produktionsbevist.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Næste almindelige
+  run skal genbruge krypteret fremgang og nå DMI, Copernicus, Open-Meteo,
+  score, fulde gates, privat save, artifact og deploy.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Seneste sikre måling
+  er 669/673 partfelter. Zonerne udledes først af komplet diagnostik.
+
 # NYESTE CHECKPOINT – 2026-09-20 – Copernicus-timeout før fallback
 
 - **ISSUE-COPERNICUS-HARD-TIMEOUT-STAGE-HANDOFF – RETTET LOKALT /

@@ -1,3 +1,17 @@
+# Nyeste prioritering – 2026-09-20, 4.0.441 åbn gemt fremgang sikkert
+
+4.0.440 er main `c00e6c5a`. Normalrun `35485561037` fandt den rå DMI-cache,
+men stoppede før providers, fordi 4.0.439's exact-source-bro blev pensioneret
+af versionsnummeret, før en kompatibel privat efterfølger faktisk var gemt.
+
+4.0.441 lader i stedet den beskyttede sourceidentitet styre levetiden. Bevar
+alle eksakte hashes, bindinger, kontrakter, 210/673 og den hærdede rebind.
+Næste rækkefølge: målchecks, RDKS/version, én exact-head, PR/merge og én
+almindelig continuation med den gemte krypterede fremgang. Kræv derefter
+4.0.440's Copernicus-handoff, Open-Meteo, score, fulde gates, privat save,
+artifact og deploy. Ingen oneoff eller providerfri omvej, der bryder
+progressbindingen.
+
 # Nyeste prioritering – 2026-09-20, 4.0.440 afslut providerhandoff
 
 4.0.439 er main `badf84e9`. Normalrun `35482138050` beviste, at restore og

@@ -1,3 +1,18 @@
+# 2026-09-20 – 4.0.441 pensionerer broen på faktisk sourceafløsning
+
+4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.
+Normalrun `35485561037` fandt rå DMI-GRIB-cache, men stoppede før providers.
+Den aktuelle private runtime var kontraktinkompatibel, mens den exact-source-
+bro, der virkede i 4.0.439, var slukket alene af versionsnummeret. 4.0.439
+havde aldrig publiceret efterfølgeren, fordi den stoppede senere ved
+Copernicus. Derfor blev den bundne krypterede fremgang ikke installeret.
+
+4.0.441 bevarer broen kun, mens den beskyttede pointer fortsat beskriver den
+eksakte forseglede forgænger. Når en kompatibel runtime publiceres og source
+ændres, lukker broen automatisk. Alle hashes, bindinger, kontrakter, 210/673,
+tid og rebindkrav består. Providerlogik, data, score, vandstand og geometri er
+uændret. Se DEC-0219 og CHANGELOG-4.0.441.md.
+
 # 2026-09-20 – 4.0.440 afleverer Copernicus-fremgang ved timeout
 
 4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
