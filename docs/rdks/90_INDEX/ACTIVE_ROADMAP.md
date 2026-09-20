@@ -1,6 +1,6 @@
-# Aktiv roadmap – 2026-09-20, 4.0.444 fra source-stage-kontrol til helkæde
+# Aktiv roadmap – 2026-09-20, 4.0.445 fra challenge-kontrol til helkæde
 
-1. Kør exact-head sourcegate for 4.0.444 og merge kun den eksakte head.
+1. Kør exact-head sourcegate for 4.0.445 og merge kun den eksakte head.
 2. Kør én almindelig weather-continuation fra den gemte DMI/Copernicus-
    fremgang. Bekræft først at source-stage-kontrollen passerer, derefter
    Open-Meteo, afsluttende cache, artifact og deploy.

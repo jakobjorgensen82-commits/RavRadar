@@ -1,4 +1,15 @@
-# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.444 source-stage-kontrol
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.445 challenge-binding
+
+Run `35501561874` gennemførte DMI-kæden med `DMI_LOCALLY_SKIPPED_DKSS_ASSET`
+og gemte Copernicus-fremgang. Den strenge kontrol stoppede bagefter, fordi
+den brugte source-stage'ens forsøg, men ikke den samme `agedDmiChallengePlan`.
+Stage og kontrol kunne derfor få forskellige restlister.
+
+4.0.445 fører challenge-planen med i donorbank-sammenligningen og har en
+regressionstest for den konkrete binding. Målrettet kontrol er grøn. Næste
+trin er exact-head sourcegate, merge og én almindelig continuation fra den
+gemte private fremgang. Open-Meteo, score, artifact, deploy og komplet data er
+ikke bevist endnu.
 
 Run `35494495771` viste en ny, konkret fejl efter 4.0.443: Copernicus nåede
 7.811 verificerede operationelle par og afsluttede sin netværksfrie recovery,

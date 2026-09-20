@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.444
+**Håndbogsversion:** 4.0.445
+
+## 89.50 4.0.445 – Source-stage-kontrollen bruger også DMI’s challenge-plan
+
+Range-kontrollen skal bruge både stage'ens validerede forsøgsjournal og den
+samme DMI-challenge-plan, som stage'en brugte. Ellers kan en ældre, men endnu
+gyldig DMI-model blive vurderet forskelligt i stage og donorbank-kontrol, så
+Copernicus ser ud til at have en forkert rest, selv om dataene er gyldige.
+
+Run `35501561874` viste netop dette: DMI gav et ærligt fallback-signal,
+Copernicus gemte delresultater, men kontrollen stoppede før Open-Meteo. 4.0.445
+fører challenge-planen med i genberegningen og har en regressionstest for
+bindingen. Det er stadig ikke et bevis på komplet datasæt eller fuld drift;
+den næste almindelige continuation skal vise Open-Meteo, cache, score,
+artifact og deploy.
 
 ## 89.49 4.0.444 – Source-stage-kontrollen bruger den gemte forsøgsjournal
 

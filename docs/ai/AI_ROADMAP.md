@@ -1,4 +1,15 @@
-# Nyeste prioritering – 2026-09-20, 4.0.444 source-stage-kontrol
+# Nyeste prioritering – 2026-09-20, 4.0.445 helkæde-kontrol
+
+4.0.445 retter den næste konkrete kontrolfejl i run `35501561874`: den strenge
+Copernicus-kontrol brugte ikke DMI’s `agedDmiChallengePlan`, selv om stage-
+beregningen gjorde. Det kunne give en falsk projektion-mismatch og stoppe
+Open-Meteo før den reelle rest blev behandlet.
+
+Næste trin er exact-head sourcegate, merge og én almindelig continuation fra
+den gemte DMI/Copernicus-fremgang. Den skal bevise samme rækkefølge hele vejen:
+DMI → Copernicus → Open-Meteo → afsluttende cache/proveniens → score →
+artifact → deploy. Et nyt run må stadig ikke kaldes komplet, hvis der er
+reelle missing-felter.
 
 4.0.444 retter den konkrete tilbagegang i den seneste almindelige weather-
 kørsel: Copernicus-fremgang blev gemt, men range-kontrollen genberegnede den

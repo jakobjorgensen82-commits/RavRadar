@@ -1,5 +1,11 @@
 # NYESTE CHECKPOINT – 2026-09-20 – source-stage-kontrol rettet, driftsbevis åbent
 
+- **ISSUE-COPERNICUS-RANGE-CHECK-MISSING-CHALLENGE-PLAN – RETTET I 4.0.445 /
+  LIVE-BEVIS ÅBENT:** Run `35501561874` havde en DMI-aged-challenge-plan i
+  stage-beregningen, men ikke i den efterfølgende donorbank-kontrol. Det gav
+  en falsk rest-/projektion-mismatch og stoppede før Open-Meteo. Kontrollen
+  bruger nu samme plan; målrettet regression er grøn.
+
 - **ISSUE-COPERNICUS-RANGE-CHECK-IGNORED-ATTEMPTS – RETTET I 4.0.444 / LIVE-
   BEVIS ÅBENT:** Run `35494495771` gemte 7.811 Copernicus-par og gennemførte
   recovery, men checkerens donorbank-sammenligning brugte ingen af den gemte
