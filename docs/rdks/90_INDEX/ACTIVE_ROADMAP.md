@@ -1,4 +1,20 @@
-# Aktiv roadmap – 2026-09-20, 4.0.446 fra redundant fallback til live drift
+# Aktiv roadmap – 2026-09-20, 4.0.447 fra cacheflaskehals til live drift
+
+1. [x] Lever 4.0.446 og følg normalrun `35513058150` gennem alle leverandører,
+   closure og historik.
+2. [x] Brug 673/673-inputtracen til at afgrænse stoppet til lokal
+   `update-weather`-samling, ikke manglende providerdata.
+3. [x] Fjern gentagen genopbygning af samme regionale referencebevis og behold
+   udtrykkelig fuld genvalidering.
+4. [x] Tilføj sikre fasetider, så en eventuel ny langsom del kan udpeges i
+   samme run.
+5. [ ] Bestå målrettede checks, exact-head sourcegate og merge 4.0.447.
+6. [ ] Kør én almindelig continuation og bevis cache, score, private writes,
+   artifact og deploy. Ingen ny one-off uden konkret evidens.
+7. [ ] Luk DMI-only-vandstandsresten og følg næste normale cron som bevis for
+   selvkørende, vedligeholdelsesfri cache.
+
+# Historisk aktivt roadmap – 2026-09-20, 4.0.446 fra redundant fallback til live drift
 
 1. [x] Find den konkrete liveårsag: gyldig DMI-atmosfære udløste gentagne
    per-zone Open-Meteo-kald efter providerkæden og ramte cache-trinnets
@@ -6,9 +22,10 @@
 2. [x] Begræns fallback til reelle DMI-atmosfæriske huller; behold DMI-first,
    gamle gyldige værdier og ærlig MISSING-håndtering.
 3. [x] Tilføj målrettet regression, versionsløft og permanent dokumentation.
-4. [ ] Bestå exact-head sourcegate og merge 4.0.446.
-5. [ ] Kør én almindelig continuation på den mergede main og bevis afsluttende
-   cache, artifact, deploy og offentligt runtime-resultat.
+4. [x] Bestå exact-head sourcegate og merge 4.0.446.
+5. [x] Kør én almindelig continuation på den mergede main. Run `35513058150`
+   nåede 673/673 scoreinput, men afsluttede ikke cache/artifact/deploy; se
+   4.0.447-planen ovenfor.
 6. [ ] Vurder den faktiske leverandørdækning og genoptag kun relevant normal
    drift/roadmap efter dette livebevis. Ingen ny one-off uden konkret evidens.
 

@@ -1,11 +1,24 @@
-# NYESTE CHECKPOINT – 2026-09-20 – cache-timeout rettet lokalt, driftsbevis åbent
+# NYESTE CHECKPOINT – 2026-09-20 – gentaget regional kontrol rettet lokalt
+
+- **ISSUE-REGIONAL-REFERENCE-PROOF-REBUILT-PER-PART – RETTET LOKALT I
+  4.0.447 / LIVE-BEVIS ÅBENT:** Run `35513058150` havde 673/673 direkte
+  scoreklare kystdele, men `update:weather` ramte igen 25 minutter. Den samme
+  regionale referencekontrol blev bygget igen fra hele closure ved gentagne
+  kystdelskald. Beviset caches nu pr. indlæst dokument; eksplicit
+  genvalidering kontrollerer fortsat alle poster.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** 4.0.447 skal gennem
+  exact-head, merge og én normal continuation med cache, artifact og deploy.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Den lokale DMI-only-
+  vandstandsrest lukkes efter helkædens livebevis. Ingen huller kaldes komplette.
+
+# Historisk checkpoint – 2026-09-20 – cache-timeout delvist rettet
 
 - **ISSUE-NORMAL-CACHE-REDUNDANT-FALLBACK-35506992220 – RETTET LOKALT I
   4.0.446 / LIVE-BEVIS ÅBENT:** Den seneste almindelige kørsel gennemførte
   providerkæden, men afsluttende `update:weather` ramte 25-minuttersgrænsen.
-  Rodårsagen var gentagne Open-Meteo-kald efter gyldige DMI-atmosfæriske
-  data. Guard'en er rettet og har målrettet grøn regression; exact-head,
-  merge og live continuation mangler.
+  Den første fundne årsag var gentagne Open-Meteo-kald efter gyldige DMI-
+  atmosfæriske data. Guard'en blev rettet, exact-head-grøn og merged. Run
+  `35513058150` viste bagefter den yderligere regionale kontrolflaskehals.
 - **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** En ny continuation
   skal bevise afsluttende cache, artifact, deploy og efterfølgende normal drift.
 - **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** DMI-only-vandstand skal

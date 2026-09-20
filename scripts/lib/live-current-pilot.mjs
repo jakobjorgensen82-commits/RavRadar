@@ -222,6 +222,11 @@ const COPERNICUS_OPERATIONAL_RANGE_SEAL_FIELDS = Object.freeze([
 const COPERNICUS_DOCUMENT_PROOFS = new WeakMap();
 const CLOSURE_DOCUMENT_PROOFS = new WeakMap();
 const ADVISORY_DOCUMENT_PROOFS = new WeakMap();
+// The regional-reference proof is immutable for the lifetime of one loaded
+// live document. Keep it beside the other document proofs; rebuilding it for
+// every coastal part turned one bounded lookup into a national revalidation
+// loop during the weather build.
+const REGIONAL_REFERENCE_DOCUMENT_PROOFS = new WeakMap();
 const CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS = Object.freeze([
   'schemaVersion', 'contractId', 'closureId', 'safeProjectionSha256', 'status', 'productionReferenceAt',
   'operationalRangeEndAt', 'targetCount', 'operationalHourCount', 'totalPairCount',
@@ -1053,14 +1058,25 @@ function operationalClosureDocumentProof(document, { revalidate = false } = {}) 
   }
 }
 
-function buildRegionalReferenceDocumentProof(document, closureProof) {
+function buildRegionalReferenceDocumentProof(document, closureProof, { revalidate = false } = {}) {
   if (!basicControlledLiveDocument(document) || !closureProof) return null;
   const references = document.regionalReferenceEntries;
+  const cached = REGIONAL_REFERENCE_DOCUMENT_PROOFS.get(document);
+  if (cached
+    && cached.closureProof === closureProof
+    && cached.references === references
+    && cached.referenceCount === (Array.isArray(references) ? references.length : 0)
+    && (!revalidate || cached.entryOrder.every(
+      (entry, index) => references?.[index] === entry
+        && cached.entrySha256ByObject.get(entry) === canonicalSha256(entry),
+    ))) {
+    return cached.proof;
+  }
   if (references === undefined) {
     // Schema-1 documents produced before the boundary-reference extension stay
     // readable.  They simply cannot authorize a cold-start hold whose source
     // predates H0; every newly built document carries the explicit array.
-    return Object.freeze({
+    const proof = Object.freeze({
       entries: Object.freeze([]),
       entryMembership: new WeakSet(),
       entrySha256ByObject: new WeakMap(),
@@ -1068,6 +1084,15 @@ function buildRegionalReferenceDocumentProof(document, closureProof) {
       entriesByPartId: new Map(),
       entryByPartAndTime: new Map(),
     });
+    REGIONAL_REFERENCE_DOCUMENT_PROOFS.set(document, {
+      closureProof,
+      references,
+      referenceCount: 0,
+      entryOrder: proof.entries,
+      entrySha256ByObject: proof.entrySha256ByObject,
+      proof,
+    });
+    return proof;
   }
   if (!Array.isArray(references)) return null;
   const productionReferenceAt = exactUtcHour(
@@ -1200,7 +1225,7 @@ function buildRegionalReferenceDocumentProof(document, closureProof) {
   }
   if (references.length !== expectedByPartAndTime.size
     || seen.size !== expectedByPartAndTime.size) return null;
-  return Object.freeze({
+  const proof = Object.freeze({
     entries: references,
     entryMembership,
     entrySha256ByObject,
@@ -1208,6 +1233,15 @@ function buildRegionalReferenceDocumentProof(document, closureProof) {
     entriesByPartId,
     entryByPartAndTime,
   });
+  REGIONAL_REFERENCE_DOCUMENT_PROOFS.set(document, {
+    closureProof,
+    references,
+    referenceCount: references.length,
+    entryOrder: proof.entries,
+    entrySha256ByObject: proof.entrySha256ByObject,
+    proof,
+  });
+  return proof;
 }
 
 function advisoryClosureAssignmentIdentity(entry) {
@@ -1395,8 +1429,11 @@ function controlledDocumentProofs(document, { revalidate = false } = {}) {
   const regionalReferenceProof = buildRegionalReferenceDocumentProof(
     document,
     closureProof,
+    { revalidate },
   );
-  return { closureProof, advisoryProof, regionalReferenceProof };
+  return advisoryProof && regionalReferenceProof
+    ? { closureProof, advisoryProof, regionalReferenceProof }
+    : null;
 }
 
 function proofEntryStillBound(proof, entry) {

@@ -27,6 +27,7 @@ test('normal PART production plans on current central identity and passes the pr
     historicalWaveInputTransition: null,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
     COMPONENT_COPERNICUS_BUDGET_MS: 0, COMPONENT_OPEN_METEO_BUDGET_MS: 0,
+    reportWeatherBuildStage: () => {},
     feggesundNeighborSourcesByTime: () => new Map(),
     dmiExpectedIdentityForPart: target => {
       assert.equal(target.zoneId, 'CURRENT');

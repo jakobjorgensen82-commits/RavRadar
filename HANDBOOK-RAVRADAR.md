@@ -1,6 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.446
+**Håndbogsversion:** 4.0.447
+
+## 89.52 4.0.447 – Samme strømbevis kontrolleres ikke tusindvis af gange
+
+Normalrun `35513058150` gennemførte DMI, Copernicus, Open-Meteo, den samlede
+strømlukning og historikken. Alle 673 kystdele havde direkte scoreinput. Den
+afsluttende lokale vejr- og scorebygning brugte alligevel hele sin tidsgrænse.
+
+Årsagen var en gentaget kontrol, ikke nye datahuller: hver kystdel kunne få den
+samme regionale referencekontrol bygget igen fra hele det allerede validerede
+79.414-pars dokument. Fra 4.0.447 bygges dette bevis én gang pr. indlæst
+dokument og genbruges i samme proces. Et nyt dokument eller en ny closure får
+altid et nyt bevis, og en udtrykkelig genvalidering kontrollerer fortsat
+posternes identitet og hash.
+
+Cachebygningen skriver nu også sikre fasetider. Hvis et senere run igen bliver
+for langsomt, kan man se om tiden ligger i zoner, komponenter, score eller
+skrivning. Ingen vejrdata, RavScore, kildeprioritet, geometri eller MISSING-
+regel er ændret. Fordi live-current-koden indgår i den integrerede models
+transitive implementeringslukning, er bundle-hashen og dens eksisterende
+release-/Supabase-bindinger regenereret; scoreformel og modelparametre er
+uændrede.
 
 ## 89.51 4.0.446 – Gyldig DMI-atmosfære skal ikke hente fallback igen
 
