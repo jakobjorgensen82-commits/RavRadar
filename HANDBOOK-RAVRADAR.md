@@ -1,6 +1,21 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.445
+**Håndbogsversion:** 4.0.446
+
+## 89.51 4.0.446 – Gyldig DMI-atmosfære skal ikke hente fallback igen
+
+Run `35506992220` viste en systemisk driftsfejl: DMI, Copernicus, Open-Meteo
+og closure var gennemført, men den afsluttende cacheopdatering brugte over 25
+minutter, fordi cachevejen hentede Open-Meteo igen for zoner, der allerede
+havde gyldige DMI-atmosfæriske felter.
+
+4.0.446 bruger derfor `dmiRecordNeedsPublicFallback` i både den første og den
+cached DMI-vej. Open-Meteo kaldes kun, når DMI mangler de fallback-egnede
+atmosfæriske felter. DMI-only-vandstand og aktuelt niveau er ikke Open-Meteo-
+felter og må derfor ikke udløse et ekstra kald for hver zone. DMI-first,
+komposition af gyldige komponenter, gamle gyldige værdier og ærlig MISSING-
+håndtering er uændret. En live continuation skal stadig bevise afsluttende
+cache, artifact og deploy.
 
 ## 89.50 4.0.445 – Source-stage-kontrollen bruger også DMI’s challenge-plan
 

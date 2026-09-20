@@ -1,3 +1,14 @@
+# 2026-09-20 – 4.0.446 DMI-first-vagt mod redundant fallback-fanout
+
+Run `35506992220` gennemførte DMI, Copernicus, Open-Meteo og closure, men
+stoppede i `npm run update:weather` efter 25 minutter. Koden kaldte fallback
+igen for zoner med gyldige DMI-atmosfæriske felter; det skabte unødvendig
+leverandørtrafik og gjorde normal drift for langsom. 4.0.446 bruger nu
+`dmiRecordNeedsPublicFallback` i både initial cachevej og cached DMI-vej.
+DMI-only-vandstand/aktuelt niveau udløser ikke længere dette ekstra kald.
+Målrettede regressioner er grønne; sourcegate, merge og live continuation er
+åbne. Se `CHANGELOG-4.0.446.md` og DEC-0224.
+
 # 2026-09-20 – 4.0.445 DMI-challenge-binding i source-stage-kontrol
 
 4.0.445 retter den konkrete fejl i run `35501561874`: Copernicus-stage'en

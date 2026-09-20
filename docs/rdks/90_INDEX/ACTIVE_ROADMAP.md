@@ -1,4 +1,18 @@
-# Aktiv roadmap – 2026-09-20, 4.0.445 fra challenge-kontrol til helkæde
+# Aktiv roadmap – 2026-09-20, 4.0.446 fra redundant fallback til live drift
+
+1. [x] Find den konkrete liveårsag: gyldig DMI-atmosfære udløste gentagne
+   per-zone Open-Meteo-kald efter providerkæden og ramte cache-trinnets
+   25-minutters grænse.
+2. [x] Begræns fallback til reelle DMI-atmosfæriske huller; behold DMI-first,
+   gamle gyldige værdier og ærlig MISSING-håndtering.
+3. [x] Tilføj målrettet regression, versionsløft og permanent dokumentation.
+4. [ ] Bestå exact-head sourcegate og merge 4.0.446.
+5. [ ] Kør én almindelig continuation på den mergede main og bevis afsluttende
+   cache, artifact, deploy og offentligt runtime-resultat.
+6. [ ] Vurder den faktiske leverandørdækning og genoptag kun relevant normal
+   drift/roadmap efter dette livebevis. Ingen ny one-off uden konkret evidens.
+
+# Historisk aktivt roadmap – 2026-09-20, 4.0.445
 
 1. Kør exact-head sourcegate for 4.0.445 og merge kun den eksakte head.
 2. Kør én almindelig weather-continuation fra den gemte DMI/Copernicus-

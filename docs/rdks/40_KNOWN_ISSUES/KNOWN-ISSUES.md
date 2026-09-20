@@ -1,4 +1,17 @@
-# NYESTE CHECKPOINT – 2026-09-20 – source-stage-kontrol rettet, driftsbevis åbent
+# NYESTE CHECKPOINT – 2026-09-20 – cache-timeout rettet lokalt, driftsbevis åbent
+
+- **ISSUE-NORMAL-CACHE-REDUNDANT-FALLBACK-35506992220 – RETTET LOKALT I
+  4.0.446 / LIVE-BEVIS ÅBENT:** Den seneste almindelige kørsel gennemførte
+  providerkæden, men afsluttende `update:weather` ramte 25-minuttersgrænsen.
+  Rodårsagen var gentagne Open-Meteo-kald efter gyldige DMI-atmosfæriske
+  data. Guard'en er rettet og har målrettet grøn regression; exact-head,
+  merge og live continuation mangler.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** En ny continuation
+  skal bevise afsluttende cache, artifact, deploy og efterfølgende normal drift.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** DMI-only-vandstand skal
+  stadig identificeres og lukkes. Ingen lokale huller kaldes komplette.
+
+# Historisk checkpoint – 2026-09-20 – source-stage-kontrol rettet, driftsbevis åbent
 
 - **ISSUE-COPERNICUS-RANGE-CHECK-MISSING-CHALLENGE-PLAN – RETTET I 4.0.445 /
   LIVE-BEVIS ÅBENT:** Run `35501561874` havde en DMI-aged-challenge-plan i
