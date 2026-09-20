@@ -1,3 +1,23 @@
+# Aktiv roadmap – 2026-09-20, 4.0.439 fra genkendt overgang til Pages
+
+1. [x] Lever 4.0.438 via exact-head `35471789111`, PR #383, main
+   `2fbfe3b2` og backend `35472148224`.
+2. [x] Kør normal weather `35472299635`: providers og aktuel closure nåede
+   673/673 scoreklare kystdele; stoppet kom ved initial state-valget.
+3. [x] Afgræns rodårsagen til manglende anvendelse af den allerede byggede
+   bounded-forgængermigrering, ikke til providerdata eller scoreformel.
+4. [x] Indsæt exact-source-rebind mellem restore og install og begræns den
+   uafhængige historiske bølgevej til dens egen overgangstype.
+5. [x] Bevis målrettet workflowrækkefølge, migration og uændrede målinger/
+   Candidate G-state.
+6. [ ] Afslut dokumentation, version/modelchecks og én exact-head sourcegate;
+   PR/merge 4.0.439.
+7. [ ] Kør én almindelig continuation fra beskyttet runtime/fremgang. Kræv
+   scorebygning, privat save/timepakke, artifact, Pages og aktuel offentlig
+   time. Ingen blind oneoff.
+8. [ ] Identificér og luk de fire DMI-only-vandstandspartfelter; følg næste
+   almindelige run/cron og fortsæt derfra til næste aktuelle roadmap-punkt.
+
 # Aktiv roadmap – 2026-09-19, 4.0.438 fra færdige scorer til Pages
 
 1. [x] Lever 4.0.437 som main `65bda6a9` og genbrug gemt krypteret fremgang.

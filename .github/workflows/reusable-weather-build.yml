@@ -423,7 +423,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.438 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.439 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -713,17 +713,50 @@ jobs:
             --expected "$restore_expected" \
             --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
 
+      - name: Rebind the exact bounded-conditions predecessor before installation
+        id: bounded-conditions-predecessor-migration
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer'
+        shell: bash
+        env:
+          # The predecessor conditions file is intentionally large. Keep this
+          # one exact, validated transition out of Node's default heap ceiling.
+          NODE_OPTIONS: --max-old-space-size=6144
+          EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
+        run: |
+          set -euo pipefail
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/bounded-conditions-successor"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-current-source.json" \
+            --predecessor-root "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head "$EXPECTED_SOURCE_HEAD" \
+            --report "$RUNNER_TEMP/bounded-conditions-predecessor-migration.json"
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
+
       - name: Install only the allowlisted restored private runtime files
         id: private-runtime-install
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
-        run: >-
-          node scripts/private-production-runtime-workflow.mjs install
-          --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
-          --repository-root "$GITHUB_WORKSPACE"
+        shell: bash
+        env:
+          PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
+          MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
+        run: |
+          set -euo pipefail
+          restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+          if test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
+            test -n "$MIGRATED_RUNTIME_ROOT"
+            restored_root="$MIGRATED_RUNTIME_ROOT"
+          fi
+          node scripts/private-production-runtime-workflow.mjs install \
+            --restored "$restored_root" \
+            --repository-root "$GITHUB_WORKSPACE"
 
       - name: Classify the measured one-time historical wave-input transition
         id: historical-wave-transition
-        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.historical-wave-predecessor.outputs.transition_kind == 'historical-wave-input'
         run: >-
           node scripts/classify-historical-wave-input-transition.mjs
           --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -820,7 +853,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.438 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.439 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -845,7 +878,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.438 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.439 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1105,7 +1138,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.438 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.439 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1451,7 +1484,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.438 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.439 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Encrypt newly saved private weather progress before later production steps

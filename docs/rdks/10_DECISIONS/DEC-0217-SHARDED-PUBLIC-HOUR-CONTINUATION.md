@@ -1,7 +1,28 @@
 # DEC-0217 – Offentlige timefiler bevares i en privat leveringspakke
 
-**Status:** Besluttet og implementeret lokalt i 4.0.438; produktionsbevis åbent
+**Status:** Implementeret i 4.0.438; overgangskorrektion lokal i 4.0.439;
+produktionsbevis åbent
 **Dato:** 2026-09-19
+
+## Tillæg 2026-09-20 – genkendelse skal efterfølges af anvendelse
+
+4.0.438 bestod exact-head `35471789111`, PR #383, merge `2fbfe3b2` og
+backend `35472148224`. Normalrun `35472299635` gennemførte providerkæden og
+aktuel closure med 673/673 scoreklare kystdele, men stoppede før score-runtime.
+
+Den eksakte `bounded-conditions-writer`-forgænger blev genkendt og restored
+korrekt. Workflowet installerede den imidlertid uden først at føre den gennem
+den allerede eksisterende hærdede modelbindingstilpasning. Derfor beholdt
+alle 673 validerede integrerede fortsættelser forgængerens bundlehash og blev
+afvist af den aktuelle læser.
+
+4.0.439 kræver, at denne exact-match-overgang migreres før installation.
+Migreringen bruger forgængerens egen validerede læser og kræver eksakt source,
+source/targetbindinger, kontrakter, inventar og 210/673. Den ændrer kun det
+kendte bundlemærke i de integrerede fortsættelser. Målinger og Candidate
+G-state bevares uændret. Ukendte filer eller afvigelser stopper fortsat. Den
+uafhængige historical-wave-klassifikation køres kun for sin egen
+overgangstype. Beslutningens databevarelse og alle øvrige krav er uændrede.
 
 ## Observeret problem
 

@@ -1,3 +1,14 @@
+# 2026-09-20 – 4.0.439 udfører den allerede genkendte overgang
+
+- 4.0.438 bestod exact-head `35471789111`, PR #383 og main `2fbfe3b2`;
+  backend `35472148224` var grøn.
+- Normalrun `35472299635` gennemførte providers og aktuel closure med 673/673
+  scoreklare kystdele, men stoppede ved initial state-valget.
+- Bounded-forgængeren var korrekt genkendt/restored, men dens hærdede rebind
+  blev ikke anvendt før install. Alle 673 fortsættelser beholdt gammel hash.
+- 4.0.439 indsætter exact-source-migreringen før installation og bevarer
+  målinger og Candidate G-state. DEC-0217-tillæg.
+
 # 2026-09-19 – 4.0.438 pakker 118 offentlige timer separat
 
 - 4.0.437 blev merged som `65bda6a9`.

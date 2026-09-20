@@ -1,3 +1,17 @@
+# 2026-09-20 – 4.0.439 binder restore til den nødvendige rebind
+
+4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`.
+Backend `35472148224` var grøn. Normalrun `35472299635` gennemførte DMI,
+Copernicus, Open-Meteo og aktuel closure med 673/673 scoreklare kystdele.
+
+Kørslen genkendte og restored den eksakte bounded-conditions-forgænger, men
+workflowet installerede den uden den eksisterende hærdede rebind. Alle 673
+integrerede fortsættelser beholdt derfor forgængerens bundlehash og blev
+afvist af den aktuelle læser. 4.0.439 udfører exact-source-migreringen mellem
+restore og install. Den validerer gammel reader, begge bindinger, kontrakter,
+inventar og 210/673 og ændrer kun det kendte bundlemærke. Målinger, vejr og
+Candidate G-state er uændret. Se DEC-0217-tillæg og CHANGELOG-4.0.439.md.
+
 # 2026-09-19 – 4.0.438 bevarer 118 public timer uden monolitisk privat kopi
 
 4.0.437 blev merged som `65bda6a9`. Normalrun `35463989289` gendannede
