@@ -753,8 +753,13 @@ for(const marker of [
   'SOFT_DEADLINE_EPOCH_ENV',
   'BOUNDED_PROGRESS_EXIT_CODE = 75',
   '"reason": "bounded-progress"',
+  '"reason": "timeout-recovered-progress"',
+  'def bounded_time_slices(',
+  'def run_timeout_recovery(',
   'completed = subprocess.run(',
-  'timeout=timeout_seconds',
+  'timeout=provider_hard_seconds',
+  'timeout_recovery_command=timeout_recovery_command',
+  '"--checkpoint-only"',
   'env=child_environment',
 ]){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);

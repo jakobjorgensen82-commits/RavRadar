@@ -1,3 +1,20 @@
+# Aktiv roadmap – 2026-09-20, 4.0.440 fra Copernicus-timeout til helkæde
+
+1. [x] Lever 4.0.439 via exact-head `35481877393`, PR #384 og merge
+   `badf84e9`.
+2. [x] Kør normal weather `35482138050`; bevis restore/rebind/install og DMI.
+3. [x] Afgræns stop til fem varige Copernicus-segmenter, som ikke blev
+   samlet til source-stage før hard timeout; Open-Meteo startede derfor ikke.
+4. [x] Del samme budget i providerarbejde, hard processgrænse og netværksfri
+   recovery; bevar den strenge source-stage-gate.
+5. [x] Bevis timeoutrecovery og journalreplay målrettet uden providerlogin.
+6. [ ] Afslut RDKS/version/håndbøger, målchecks og én exact-head; PR/merge.
+7. [ ] Kør én almindelig continuation fra gemt fremgang. Kræv Copernicus-
+   handoff, Open-Meteo-rest, score, fulde gates, privat save, artifact og
+   deploy. Ingen oneoff.
+8. [ ] Identificér/luk DMI-only-vandstandsresten og følg næste cron som
+   selvkørende vedligeholdelsesbevis.
+
 # Aktiv roadmap – 2026-09-20, 4.0.439 fra genkendt overgang til Pages
 
 1. [x] Lever 4.0.438 via exact-head `35471789111`, PR #383, main

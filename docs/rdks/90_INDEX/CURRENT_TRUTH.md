@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.440 bevarer timeoutfremgang
+
+4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
+Normalrun `35482138050` beviste, at den eksakte bounded-forgænger nu bliver
+rebound og installeret korrekt. DMI gennemførte. Dette lukker 4.0.439's
+konkrete overgangsfejl.
+
+Copernicus gemte fem fsync'ede segmenter og nåede 5.855 operationelle par.
+Et sjette netkald overskred den hårde procesgrænse. Processen blev dræbt før
+de fem kvitteringer blev samlet til det genbrugelige `IN_PROGRESS`-stage.
+Den strenge stagegate stoppede derfor før Open-Meteo. Providerdata var ikke
+erklæret komplette, men den krypterede fremgang blev gemt.
+
+4.0.440 holder det samlede budget uændret og reserverer slutningen til en
+netværksfri, valideret journalaflevering. Kun grøn atomisk
+bank→shadow→source-stage-recovery kan gøre timeout til kontrolleret fremgang;
+ellers fejler den fortsat. DMI-first, Copernicus før Open-Meteo, vejrdata,
+RavScore, vandstand og geometri er uændret. Måltests er grønne; exact-head,
+merge, almindelig continuation, score, datagates og deploy er åbne. DEC-0218.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.439 anvender den fundne overgang
 
 4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`;

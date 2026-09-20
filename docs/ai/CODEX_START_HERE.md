@@ -1,3 +1,21 @@
+# AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.440 timeoutaflevering
+
+4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
+Normalrun `35482138050` beviste, at forgængerrestore, rebind og installation
+nu virker. DMI gennemførte og gemte fremgang. Copernicus gemte fem varige
+segmentkvitteringer og nåede 5.855 par, men et sjette netkald ramte den hårde
+tidsgrænse, før kvitteringerne blev samlet til et genbrugeligt stage. Den
+strenge stagegate stoppede derfor før Open-Meteo; krypteret fremgang blev gemt.
+
+Branch `codex/4.0.440-copernicus-timeout-recovery` reserverer den sidste del
+af samme eksisterende tidsbudget til en netværksfri `--checkpoint-only`-
+aflevering. Normal 360 s deles 288/300/60; extended 3.300 s deles
+3.120/3.180/120. Recovery genafspiller kun fsync'ede kvitteringer gennem den
+eksisterende atomiske bank/shadow/IN_PROGRESS-transaktion. Den strenge gate
+består. DMI-first, providerprioritet, data og score ændres ikke. Måltests er
+grønne. Næste: version/RDKS, exact-head, PR/merge og én almindelig
+fortsættelse fra den gemte fremgang. Ingen oneoff. DEC-0218.
+
 # AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.439 udfører forgængerovergangen
 
 4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`.

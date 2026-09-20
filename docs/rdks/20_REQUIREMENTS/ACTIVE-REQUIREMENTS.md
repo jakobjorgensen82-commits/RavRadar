@@ -1,3 +1,19 @@
+# Aktuelt krav til Copernicus-timeout – 2026-09-20
+
+- **REQ-COPERNICUS-TIMEOUT-DURABLE-HANDOFF-0218 – BINDENDE:** En hård
+  Copernicus-timeout må ikke efterlade allerede fsync'ede segmentkvitteringer
+  utilgængelige for den samme kørsels fallbackkæde. Inden for det uændrede
+  samlede budget skal en reserveret, netværksfri recovery validere og samle
+  dem atomisk til bank, shadow og genbrugeligt `IN_PROGRESS`-source-stage.
+  Kun grøn recovery må omsætte timeout til kontrolleret fremgang. Den strenge
+  source-stage-gate, DMI-first og rækkefølgen Copernicus før Open-Meteo
+  består. DEC-0218.
+- **REQ-COPERNICUS-CHECKPOINT-ONLY-NO-NETWORK-0218 – BINDENDE:** Den lokale
+  recovery må hverken bruge providercredentials eller foretage eksterne
+  provider-/netværkskald. Den må kun genafspille varige kvitteringer gennem
+  eksisterende target-, hash-, source-order-, mask- og friskhedsvalidatorer.
+  Forkert eller uvaliderbar evidens må aldrig blive positiv donoradgang.
+
 # Aktuelt krav til anvendelse af forgængerovergang – 2026-09-20
 
 - **REQ-APPLY-EXACT-PREDECESSOR-BEFORE-INSTALL-0217 – BINDENDE:** Det er ikke

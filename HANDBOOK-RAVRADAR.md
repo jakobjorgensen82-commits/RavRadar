@@ -1,6 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.439
+**Håndbogsversion:** 4.0.440
+
+## 89.45 4.0.440 – Gemt Copernicus-arbejde afleveres før fallback
+
+Den almindelige 4.0.439-kørsel viste først, at den forrige rettelse virkede:
+den private vejrpakke blev fundet, tilpasset og installeret, og DMI
+gennemførte. Copernicus nåede bagefter fem validerede delhentninger og gemte
+dem sikkert enkeltvis.
+
+Problemet opstod, da et sjette kald til Copernicus tog for lang tid. Den hårde
+tidsgrænse stoppede processen, før de fem allerede gemte dele blev samlet til
+den kvittering, som Open-Meteo-trinnet kræver. Den strenge kontrol stoppede
+derfor korrekt, men resten af leverandørkæden kom ikke videre.
+
+4.0.440 gør den samlede kørsel mere robust uden at give Copernicus længere
+tid. Af de normale 360 sekunder bruges 288 på almindeligt arbejde, processen
+stoppes senest efter 300 sekunder, og de sidste 60 sekunder er reserveret til
+en ren lokal aflevering. Den lokale del kontakter ingen leverandør og kræver
+intet login. Den læser kun de allerede gemte, hashkontrollerede kvitteringer
+og samler dem atomisk til den bank og det stage, som næste trin kan bruge.
+
+Lykkes denne aflevering, fortsætter Open-Meteo med den præcise rest. Mislykkes
+den, forbliver fejlen hård. Kontrollen er altså ikke fjernet. DMI-first,
+Copernicus før Open-Meteo, data, RavScore, vandstand og geometri er uændret.
 
 ## 89.44 4.0.439 – En fundet gammel vejrpakke skal også tilpasses
 
