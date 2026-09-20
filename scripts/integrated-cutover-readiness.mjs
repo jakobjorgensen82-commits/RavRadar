@@ -160,14 +160,14 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     filename: '20260919020000_measured_warmup_checkpoint.sql',
   }),
   Object.freeze({
-    version: '20260919231000',
-    id: '20260919231000_public_hour_delivery_binding',
-    filename: '20260919231000_public_hour_delivery_binding.sql',
+    version: '20260920220000',
+    id: '20260920220000_public_hour_pack_capacity_binding',
+    filename: '20260920220000_public_hour_pack_capacity_binding.sql',
   }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260919231000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

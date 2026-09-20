@@ -1,4 +1,19 @@
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.447
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.448
+
+- [x] Afgræns normalrun `35530859518` til den private public-hour-pakke;
+  DMI, fallback, offentlige zoner, komponentruntime og 673/673 scoredele
+  bestod.
+- [x] Find kontraktmismatchen mellem offentlig 16 MiB-timefilgrænse og
+  privat 8 MiB-enkeltfilgrænse.
+- [x] Lad privat pakke og kapacitetsaudit genbruge
+  `PUBLIC_DELIVERY_MAX_BYTES`; behold samlet 256 MiB-pakkeloft.
+- [x] Tilføj regression med en gyldig offentlig timefil over 8 MiB.
+- [ ] Bestå målchecks, versions-/RDKS-kontrol og én exact-head sourcegate;
+  PR/merge.
+- [ ] Kør én normal continuation og kræv privat save, artifact og deploy.
+  Først derefter genoptages normal vedligeholdelse og næste roadmap-punkt.
+
+# Historisk implementeringsstatus – 2026-09-20, lokal 4.0.447
 
 - [x] Lever 4.0.446 via exact-head sourcegate, PR #391 og merge `1d9b0946`.
 - [x] Afgræns normalrun `35513058150`: providers, closure og historik bestod,

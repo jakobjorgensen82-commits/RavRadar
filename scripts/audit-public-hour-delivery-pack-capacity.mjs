@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
+import { PUBLIC_DELIVERY_MAX_BYTES } from '../js/core/public-delivery-contract.js';
 
 async function fetchBytes(url, maximumBytes) {
   const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
@@ -41,7 +42,7 @@ export async function auditPublicHourDeliveryPackCapacity({ baseUrl } = {}) {
         cursor += 1;
         const descriptor = descriptors[index];
         const remotePath = String(descriptor.path ?? '').replace(/^\.\//, 'data/live/');
-        const bytes = await fetchBytes(`${normalizedBase}/${remotePath}?capacity=${Date.now()}-${index}`, 8 * 1024 * 1024);
+        const bytes = await fetchBytes(`${normalizedBase}/${remotePath}?capacity=${Date.now()}-${index}`, PUBLIC_DELIVERY_MAX_BYTES);
         if (bytes.length !== descriptor.bytes) throw new Error('PUBLIC_HOUR_CAPACITY_FILE_SIZE_MISMATCH');
         await fs.writeFile(path.join(forecast, path.basename(remotePath)), bytes);
       }

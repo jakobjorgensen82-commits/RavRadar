@@ -30,10 +30,13 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
     const originals = new Map();
     for (let index = 0; index < RAVSCORE_PUBLIC_FORECAST_HOURS; index += 1) {
       const time = new Date(start + index * 3_600_000).toISOString();
+      const repeatedPayload = index === 0
+        ? 'large-public-hour-shard-'.repeat(Math.ceil((9 * 1024 * 1024) / 25))
+        : 'same-public-hour-projection-value-'.repeat(64);
       const text = `${JSON.stringify({
         delivery: { schemaVersion: 1, kind: 'hour', key: time,
           sourceDetailsSha256, modelBinding },
-        repeatedPayload: 'same-public-hour-projection-value-'.repeat(64),
+        repeatedPayload,
       })}\n`;
       const sha256 = digest(text);
       const file = `${sha256}.json`;

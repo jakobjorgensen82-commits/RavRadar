@@ -185,7 +185,7 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260919231000_public_hour_delivery_binding.sql'),
+    .includes('20260920220000_public_hour_pack_capacity_binding.sql'),
   'Code-only migrationsplanen er ikke bundet til den præcise aktuelle successor.',
 );
 

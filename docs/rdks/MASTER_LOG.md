@@ -1,3 +1,16 @@
+# 2026-09-20 – 4.0.448 ensretter offentlig og privat public-hour-kapacitet
+
+Normalrun `35530859518` gennemførte providerkæde, offentlige zoner,
+komponentruntime og alle 673 scoredele. Det stoppede først ved den private
+public-hour-pakke med `Public hour delivery descriptor is invalid`.
+
+Den offentlige writer accepterer timefiler op til 16 MiB, mens den private
+pakke og kapacitetsauditten stadig havde en uafhængig 8 MiB-grænse. 4.0.448
+bruger den fælles `PUBLIC_DELIVERY_MAX_BYTES` i begge lag og har en regression
+for en gyldig 9 MiB-fil. Den samlede private pakkes 256 MiB-loft er uændret.
+Der blev ikke bygget artifact eller deployet fra det fejlede run. Se DEC-0226
+og `CHANGELOG-4.0.448.md`.
+
 # 2026-09-20 – 4.0.447 regional referencekontrol genbruges i samme proces
 
 4.0.446 bestod exact-head og blev merged som `1d9b0946`. Normalrun

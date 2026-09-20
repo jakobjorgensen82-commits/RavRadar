@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.447
+**Håndbogsversion:** 4.0.448
+
+## 89.53 4.0.448 – Public-hour-pakken følger den offentlige kontrakt
+
+Normalrun `35530859518` nåede 210/210 offentlige zoner og 673/673 scoredele,
+men stoppede ved den private timepakke. Den offentlige writer accepterer op
+til 16 MiB pr. timefil, mens den private pakke og kapacitetsauditten stadig
+brugte 8 MiB. 4.0.448 bruger nu `PUBLIC_DELIVERY_MAX_BYTES` i alle tre lag.
+
+Det ændrer ikke vejrprioritet, score, geometri eller MISSING-regler. Den
+samlede private pakkegrænse er fortsat 256 MiB. Exact-head, merge og en
+normal livekørsel, der når artifact og deploy, skal stadig bevise produktion.
+Den integrerede runtime er derfor genforseglet med
+`modelBundleSha256=14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904`;
+den inaktive Candidate G-rollbackbinding er samtidig synkroniseret til
+`modelBundleSha256=618b2b44c93316f6798a17fbbd020cdacda9aff73bfde4cbbbaa05d3fa197ace`.
+Det er kun et nødvendigt bindings-/versionsbevis for ændret leveringskode;
+scoreformel og aktiv model er uændret.
 
 ## 89.52 4.0.447 – Samme strømbevis kontrolleres ikke tusindvis af gange
 
@@ -360,9 +377,9 @@ runtime bærer fremskridtet videre, og en afbrudt central overgang kan
 genoptages fra en holdbar privat terminalkvittering, også efter at GitHubs
 midlertidige 14-dages artifact er udløbet.
 
-Scoreformlen og vægtene er uændrede. 4.0.438 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
-Den integrerede kode er bundet med `modelBundleSha256=0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a` over 67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
-Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=d740e2f74796971d1d60e1ab8e6a3365b0eb1dae0d674847ed9369c4a85c6a27` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
+Scoreformlen og vægtene er uændrede. 4.0.448 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode er bundet med `modelBundleSha256=14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904` over 67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere.
+Den historiske, nu inaktive Candidate G-kompatibilitet er særskilt bundet med `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=618b2b44c93316f6798a17fbbd020cdacda9aff73bfde4cbbbaa05d3fa197ace` over 65 transitive filer. Den kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen.
 
 Normalrun 35463989289 har siden bevist provider- og scorekæden til 673/673,
 men stoppede ved den private kæmpefil før artifact og Pages. 4.0.438's

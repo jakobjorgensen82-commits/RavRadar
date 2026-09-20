@@ -1,4 +1,22 @@
-# NYESTE SANDHED – 2026-09-20 – lokal 4.0.447 fjerner gentaget national kontrol
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.448 ensretter public-hour-pakken
+
+Normalrun `35530859518` nåede 210/210 offentlige zoner, komponentruntime og
+673/673 scoredele. Stoppet kom først ved den private public-hour-pakke, hvor
+en gyldig offentlig timefil blev afvist som `Public hour delivery descriptor is
+invalid`.
+
+Helkædeanalysen viste en ren kontraktmismatch: den offentlige writer tillader
+16 MiB pr. timefil, mens den private pakke og kapacitetsauditten stadig
+afviste filer over 8 MiB. 4.0.448 bruger nu den fælles
+`PUBLIC_DELIVERY_MAX_BYTES` begge steder og har en regression for en 9 MiB-
+timefil. Den samlede private pakkegrænse på 256 MiB er uændret.
+
+Providerdata, score, prioritet, geometri og MISSING-regler er ikke ændret.
+Målrettet pakketest er grøn; exact-head sourcegate, merge og en normal
+continuation, der når artifact og deploy, mangler. Se DEC-0226 og
+`CHANGELOG-4.0.448.md`.
+
+# Historisk sandhed – 2026-09-20 – lokal 4.0.447 fjerner gentaget national kontrol
 
 4.0.446 bestod exact-head sourcegate, blev merged som `1d9b0946` og kørte i
 normalrun `35513058150`. Providerkæden kom længere end før: DMI, Copernicus,
