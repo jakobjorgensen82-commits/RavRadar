@@ -91,6 +91,31 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
         "bounded_progress=true",
         "source_stage_disposition=IN_PROGRESS",
     ]
+    # A soft boundary must replay fsynced receipts through checkpoint-only
+    # consolidation before reusable progress is reported.  This path is
+    # intentionally distinct from timeout recovery's baseline shortcut.
+    bounded_recovery_marker = Path(raw) / "bounded-recovery"
+    bounded_recovery_result = module.run_bounded(
+        [sys.executable, "-c", "raise SystemExit(75)"],
+        attempts=1,
+        timeout_seconds=2,
+        backoff_seconds=0,
+        bounded_progress_recovery_command=[
+            sys.executable,
+            "-c",
+            "from pathlib import Path; import sys; "
+            "assert '--reuse-baseline-on-checkpoint' not in sys.argv; "
+            "Path(sys.argv[1]).write_text('consolidated', encoding='utf-8')",
+            str(bounded_recovery_marker),
+        ],
+    )
+    assert bounded_recovery_result == {
+        "ok": True,
+        "attempt": 1,
+        "reason": "bounded-progress-recovered",
+        "boundedProgress": True,
+    }
+    assert bounded_recovery_marker.read_text(encoding="utf-8") == "consolidated"
     github_output.write_text("", encoding="utf-8")
     os.environ["GITHUB_OUTPUT"] = str(github_output)
     try:

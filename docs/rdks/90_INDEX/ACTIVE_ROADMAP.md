@@ -1,3 +1,16 @@
+# Aktiv roadmap – 2026-09-20, 4.0.443 fra soft-boundary til helkæde
+
+1. [x] Find den konkrete livefejl: Copernicus exit-75 afleverede en løs
+   journal til source-stage-gaten efter ellers gyldigt DMI- og CP-fremskridt.
+2. [x] Gør soft-boundary-recovery netværksfri og atomisk: replay allerede
+   fsync'ede kvitteringer uden baseline-genvej før næste gate.
+3. [x] Tilføj målrettet wrapper-regression og dokumentér den nye overgang.
+4. [ ] Bestå exact-head sourcegate, PR/merge og én almindelig continuation.
+5. [ ] Nå Open-Meteo, closure, score, private save, artifact og deploy; mål
+   derefter komplethed ærligt, inklusive resterende DMI-vandstandshuller.
+6. [ ] Følg efterfølgende normal drift og genaktiver kun relevant cron efter
+   et reelt vedligeholdelsesbevis. Ingen ny one-off for denne rettelse.
+
 # Aktiv roadmap – 2026-09-20, 4.0.442 fra timeout-handoff til helkæde
 
 1. [x] Sikr Copernicus-shard-start og reserver 120 sekunder til afslutning.

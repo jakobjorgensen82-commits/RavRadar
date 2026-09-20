@@ -1,3 +1,10 @@
+# 2026-09-20 – 4.0.443 konsoliderer bounded Copernicus-fremgang
+
+- Normalrun `35489667755` gennemførte DMI og gemte CP-fremskridt, men exit 75
+  afleverede segmentjournalen uden at samle den før source-stage-gaten.
+- 4.0.443 tilføjer en netværksfri checkpoint-only-genindgang uden baseline-
+  genvej, så fsync'ede kvitteringer samles atomisk før næste kontrol. DEC-0221.
+
 # 2026-09-20 – 4.0.442 afleverer Copernicus-timeout sikkert
 
 - 4.0.441's almindelige run `35486533929` gennemførte DMI og gemte fremgang.

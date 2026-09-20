@@ -84,6 +84,7 @@ def run_bounded(
     timeout_seconds: float,
     backoff_seconds: float,
     timeout_recovery_command: Sequence[str] | None = None,
+    bounded_progress_recovery_command: Sequence[str] | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, int | bool | str]:
     validate_budget(attempts, timeout_seconds, backoff_seconds)
@@ -120,11 +121,48 @@ def run_bounded(
                     "boundedProgress": False,
                 }
             if completed.returncode == BOUNDED_PROGRESS_EXIT_CODE:
+                # A controlled soft boundary means the producer deliberately
+                # stopped after writing fsynced segment receipts.  Those
+                # receipts are durable evidence, but the ordinary checker
+                # must see the corresponding bank/shadow/source-stage
+                # transaction, not the pre-boundary baseline plus a journal.
+                # Re-enter the pilot in checkpoint-only mode without the
+                # baseline shortcut so it replays and atomically consolidates
+                # exactly those receipts before any retry or downstream gate.
+                if bounded_progress_recovery_command is not None:
+                    if run_timeout_recovery(
+                        bounded_progress_recovery_command,
+                        timeout_seconds=recovery_seconds,
+                    ):
+                        print(
+                            "Copernicus bounded-progress recovery consolidated "
+                            "the durable segment receipts before continuation."
+                        )
+                    else:
+                        reason = "bounded-progress-recovery-failed"
+                        print(
+                            "Copernicus bounded-progress recovery could not "
+                            "consolidate the durable receipts.",
+                            file=sys.stderr,
+                        )
+                        if attempt == attempts:
+                            return {
+                                "ok": False,
+                                "attempt": attempt,
+                                "reason": reason,
+                            }
+                        if attempt < attempts:
+                            sleep(backoff_seconds)
+                        continue
                 if attempt == attempts:
                     return {
                         "ok": True,
                         "attempt": attempt,
-                        "reason": "bounded-progress",
+                        "reason": (
+                            "bounded-progress-recovered"
+                            if bounded_progress_recovery_command is not None
+                            else "bounded-progress"
+                        ),
                         "boundedProgress": True,
                     }
                 reason = "bounded-progress"
@@ -188,12 +226,20 @@ def main() -> int:
         "--checkpoint-only",
         "--reuse-baseline-on-checkpoint",
     ]
+    bounded_progress_recovery_command = None if refresh_mode else [
+        sys.executable,
+        "-u",
+        str(PILOT),
+        *pilot_args,
+        "--checkpoint-only",
+    ]
     result = run_bounded(
         [sys.executable, "-u", str(PILOT), *pilot_args],
         attempts=args.attempts,
         timeout_seconds=args.timeout_seconds,
         backoff_seconds=args.backoff_seconds,
         timeout_recovery_command=timeout_recovery_command,
+        bounded_progress_recovery_command=bounded_progress_recovery_command,
     )
     if result["ok"]:
         write_github_outputs(result, refresh_mode=refresh_mode)

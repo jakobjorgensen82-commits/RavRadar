@@ -1,3 +1,21 @@
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.443 soft-boundary-konsolidering
+
+4.0.442 er main `792878867bb796dbb98a0d17839db08bec313773` efter PR #387.
+Den almindelige weather-kørsel `35489667755` gennemførte DMI og gemte både
+DMI-GRIB-fremgang og krypteret privat vejrfremskridt. Copernicus hentede 11
+shardfremskridt og nåede `6990/49548` operationelle DMI-gap-par. Wrapperen
+afsluttede kontrolleret ved sin soft-boundary, men afleverede bank/shadow-
+baseline sammen med en løs segmentjournal. Den efterfølgende strenge kontrol
+stoppede derfor før Open-Meteo, score, artifact og deploy.
+
+Lokal 4.0.443 ændrer kun denne overgang: exit 75 får en netværksfri
+`--checkpoint-only`-genindgang uden baseline-genvej, så allerede fsync'ede
+kvitteringer samles atomisk til bank, shadow og `IN_PROGRESS`-source-stage,
+før næste kontrol kører. Hard-timeout-baselinegenvejen og alle datakrav er
+uændrede. Målrettet wrapper-test er grøn. Næste: RDKS/version-slutkontrol,
+én exact-head sourcegate, PR/merge og én almindelig continuation fra den
+gemte fremgang. Ingen one-off.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.442 Copernicus-handoff
 
 Branch `codex/4.0.442-copernicus-timeout-handoff` bygger videre på main

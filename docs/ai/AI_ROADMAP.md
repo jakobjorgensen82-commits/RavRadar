@@ -1,3 +1,12 @@
+# Nyeste prioritering – 2026-09-20, 4.0.443 soft-boundary-konsolidering
+
+Lever først den afgrænsede wrapperrettelse gennem RDKS/version og exact-head.
+Den næste almindelige weather-continuation skal genbruge den gemte DMI/CP-
+fremgang, konsolidere exit-75-kvitteringer uden netværk, nå Open-Meteo,
+closure, score, private save, artifact og deploy eller give et nyt konkret
+fund. Ingen ny one-off og ingen gentaget kildekontrol ud over exact-head-
+beviset for denne release.
+
 # Nyeste prioritering – 2026-09-20, 4.0.442 aflever Copernicus sikkert
 
 Færdiggør først 4.0.442's RDKS/version og exact-head-kildebevis. Start derefter
