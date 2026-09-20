@@ -18,7 +18,10 @@ posternes identitet og hash.
 Cachebygningen skriver nu også sikre fasetider. Hvis et senere run igen bliver
 for langsomt, kan man se om tiden ligger i zoner, komponenter, score eller
 skrivning. Ingen vejrdata, RavScore, kildeprioritet, geometri eller MISSING-
-regel er ændret.
+regel er ændret. Fordi live-current-koden indgår i den integrerede models
+transitive implementeringslukning, er bundle-hashen og dens eksisterende
+release-/Supabase-bindinger regenereret; scoreformel og modelparametre er
+uændrede.
 
 ## 89.51 4.0.446 – Gyldig DMI-atmosfære skal ikke hente fallback igen
 

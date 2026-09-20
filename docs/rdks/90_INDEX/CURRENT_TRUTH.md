@@ -17,7 +17,9 @@ alle poster. Samtidig logger `update-weather` de store fasers tider.
 Ingen vejr-, score-, geometri- eller providerregel ændres. Målrettet
 live-current-regression er grøn. Exact-head, merge og én almindelig live
 continuation mangler; komplet cache, artifact og deploy er fortsat ikke
-bevist. DEC-0225.
+bevist. Den transitive RavScore-bundlehash er regenereret, fordi den ændrede
+live-current-fil indgår i lukningen; scoreformel og parametre er uændrede.
+DEC-0225.
 
 # Historisk sandhed – 2026-09-20 – lokal 4.0.446 retter redundant fallback-fanout
 

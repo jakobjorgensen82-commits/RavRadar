@@ -10,6 +10,10 @@
   bevis.
 - `update-weather` logger nu varigheden af sine store interne faser, så en
   eventuel ny tidsgrænse kan placeres præcist uden endnu en blind rettelse.
+- Fordi `live-current-pilot` indgår i RavScore-modellens transitive
+  implementeringslukning, er modelbundle-hashen regenereret og synkroniseret i
+  de eksisterende maskinlæsbare bindinger. Scoreformel og modelparametre er
+  uændrede.
 
 ## Livegrundlag
 

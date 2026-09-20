@@ -724,7 +724,7 @@ as $$
       -- this predecessor automatically after maintenance completion.
       and p_calibration_features ->> 'modelBundleSha256' in (
         '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01',
-        '0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a'
+        '315525d0e00d336660791fe32f4f5a6b2eb6962081aae4aa914f65590d8c7030'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -1770,7 +1770,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a'
+      is distinct from '315525d0e00d336660791fe32f4f5a6b2eb6962081aae4aa914f65590d8c7030'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -2788,7 +2788,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a"
+    "modelBundleSha256": "315525d0e00d336660791fe32f4f5a6b2eb6962081aae4aa914f65590d8c7030"
   }'::jsonb then
     return false;
   end if;

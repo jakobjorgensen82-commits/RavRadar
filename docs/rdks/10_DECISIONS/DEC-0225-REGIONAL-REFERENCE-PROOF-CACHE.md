@@ -40,6 +40,11 @@ Beslutningen ændrer ingen kildeadmission, værdi, scoreformel, fallbackregel,
 vandstandsregel, geometri eller privat/offentlig payload. Den fjerner kun
 gentagen validering af samme allerede godkendte dokument i samme Node-proces.
 
+Da `live-current-pilot` er en del af den integrerede RavScore-implementerings-
+lukning, er den genererede bundle-hash og dens eksisterende release-/Supabase-
+bindinger regenereret samtidigt. Det er en integritetsbinding, ikke en ændring
+af scoreformel eller modelparametre.
+
 ## Kontrol
 
 Den eksisterende `test-current-operational-live-adapter.mjs` kører nu i den

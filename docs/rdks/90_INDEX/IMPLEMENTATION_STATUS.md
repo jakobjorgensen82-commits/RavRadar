@@ -10,6 +10,9 @@
   indholdsgenvalidering ved udtrykkelig kontrol.
 - [x] Tilføj payloadfri fasetid til den normale cachebygning og før den
   eksisterende funktionelle live-current-test ind i den kritiske vejrmatrix.
+- [x] Regenerér den transitive RavScore-bundlehash og synkronisér de
+  eksisterende JSON-, Edge-, SQL-, admin- og releasebindinger; scoreformel og
+  modelparametre er uændrede.
 - [ ] Bestå målchecks, versions-/RDKS-kontrol og én exact-head sourcegate;
   PR/merge.
 - [ ] Kør én normal continuation og kræv cache, score, fulde gates, privat
