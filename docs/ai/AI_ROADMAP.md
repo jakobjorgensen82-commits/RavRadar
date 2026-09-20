@@ -1,3 +1,12 @@
+# Nyeste prioritering – 2026-09-20, 4.0.442 aflever Copernicus sikkert
+
+Færdiggør først 4.0.442's RDKS/version og exact-head-kildebevis. Start derefter
+én almindelig weather-continuation fra den eksisterende DMI/Copernicus-
+fremgang. Den skal nå Open-Meteo, samling, score, private save, artifact og
+deploy, eller give et nyt konkret rodårsagsfund. Ingen ny oneoff og ingen
+providerfri genstart. Et run med 6.501 Copernicus-par er ikke et komplet
+datasæt.
+
 # Nyeste prioritering – 2026-09-20, 4.0.441 åbn gemt fremgang sikkert
 
 4.0.440 er main `c00e6c5a`. Normalrun `35485561037` fandt den rå DMI-cache,

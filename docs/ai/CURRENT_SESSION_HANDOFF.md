@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.442 Copernicus-handoff
+
+Branch `codex/4.0.442-copernicus-timeout-handoff` bygger videre på main
+`f2c4ad964d2c933e47177971824c459d41f684ed` (4.0.441). Den seneste almindelige
+kørsel `35486533929` gennemførte DMI, men Copernicus stoppede efter 6.501
+verificerede par, før Open-Meteo og de afsluttende produktionsled. Den viste
+fejl var manglende timeout-handoff, ikke bevis på komplet datasæt.
+
+Rettelsen reserverer 120 sekunder til recovery, kræver 45 sekunders margin før
+nyt shard og beholder en eksakt bank/shadow/source-stage-baseline uden dyr
+journalreplay. Segmentkvitteringerne gemmes til næste normale continuation.
+Måltestene er grønne; docs/version skal valideres, derefter exact-head sourcegate,
+PR/merge og én almindelig continuation. `.tmp-420/` er lokal diagnostik og må
+aldrig stages. DEC-0220.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.441 sourcebundet genindgang
 
 4.0.440 er main `c00e6c5a` efter exact-head `35485303951` og PR #385.

@@ -1,3 +1,19 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.442 afleverer Copernicus-baseline
+
+4.0.442 er en lokal rettelse til Copernicus-timeout-handoff. Den normale
+providergrænse er 420 sekunder, 120 sekunder er reserveret til afslutning, og
+et nyt shard startes kun med mindst 45 sekunders afslutningsmargin. Ved hard
+timeout genbruger recovery kun en bank/shadow/source-stage-baseline, som både
+er byte-identisk med den oprindelige stage og passer til donorprojektionen.
+Segmentkvitteringerne bevares til næste almindelige kørsel; ukendt state er
+stadig fail-closed.
+
+Seneste live-run `35486533929` beviste DMI og gemte DMI-fremgang. Copernicus
+nåede 6.501 verificerede par, men runnet stoppede før Open-Meteo, afsluttende
+samling, score, artifact og deploy. Datasættet er derfor ikke dokumenteret
+komplet. Den nødvendige næste handling er én almindelig continuation fra den
+gemte fremgang, ikke en ny oneoff.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.441 pensionerer på faktisk source
 
 4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.

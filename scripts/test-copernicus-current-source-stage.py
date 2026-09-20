@@ -330,6 +330,7 @@ def run_runner(
     acquisition_at: datetime | None = None,
     refresh_only: bool = False,
     checkpoint_only: bool = False,
+    reuse_baseline_on_checkpoint: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     actual_acquisition_at = acquisition_at or (reference + timedelta(minutes=10))
     command = [
@@ -359,6 +360,8 @@ def run_runner(
         command.append("--refresh-only")
     if checkpoint_only:
         command.append("--checkpoint-only")
+    if reuse_baseline_on_checkpoint:
+        command.append("--reuse-baseline-on-checkpoint")
     runner_env = dict(os.environ if env is None else env)
     # Fixture commits must never set outputs on the surrounding CI step.
     runner_env["GITHUB_OUTPUT"] = str(folder / "fixture-github-output.txt")
@@ -605,20 +608,6 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         "partId": TARGET["partId"],
         "validTime": replay_valid_time.isoformat().replace("+00:00", "Z"),
     }
-    segmented_registry["operationalRequiredPairs"].append(replay_pair)
-    segmented_registry["operationalRequiredPairs"] = sorted(
-        segmented_registry["operationalRequiredPairs"],
-        key=lambda row: (row["validTime"], row["partId"]),
-    )
-    segmented_registry.update({
-        "operationalRequiredPairsSha256": required_pairs_sha256(
-            segmented_registry["operationalRequiredPairs"]
-        ),
-        "operationalRequiredPairCount": 4,
-        "operationalDmiVerifiedPairCount": 114,
-        "dmiVerifiedPairCount": 161,
-    })
-    write(segmented / "registry.json", segmented_registry)
     replay_acquired_at = REFERENCE + timedelta(minutes=20)
     replay_acquisition = make_acquisition(
         source=segmented_baltic_product["source"],
@@ -666,9 +655,51 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         records=[replay_record],
         attempt=replay_attempt,
     )
+    baseline_bank = (segmented / "copernicus-current-donor-bank.json").read_bytes()
+    baseline_shadow = (segmented / "shadow.json").read_bytes()
+    baseline_stage = (segmented / "source-stage.json").read_bytes()
     recovery_environment = dict(os.environ)
     recovery_environment.pop("COPERNICUSMARINE_SERVICE_USERNAME", None)
     recovery_environment.pop("COPERNICUSMARINE_SERVICE_PASSWORD", None)
+    fast_recovery = run_runner(
+        segmented,
+        None,
+        acquisition_at=replay_acquired_at + timedelta(seconds=30),
+        checkpoint_only=True,
+        reuse_baseline_on_checkpoint=True,
+        env=recovery_environment,
+    )
+    assert fast_recovery.returncode == 0, (
+        fast_recovery.stdout + fast_recovery.stderr
+    )
+    assert "timeout recovery retained the exact reusable baseline" in (
+        fast_recovery.stdout
+    )
+    assert replay_journal_path.exists()
+    assert (segmented / "copernicus-current-donor-bank.json").read_bytes() == baseline_bank
+    assert (segmented / "shadow.json").read_bytes() == baseline_shadow
+    assert (segmented / "source-stage.json").read_bytes() == baseline_stage
+    fast_recovery_check = run_checker(
+        segmented,
+        "--require-source-stage-reusable",
+    )
+    assert fast_recovery_check.returncode == 0, (
+        fast_recovery_check.stdout + fast_recovery_check.stderr
+    )
+    segmented_registry["operationalRequiredPairs"].append(replay_pair)
+    segmented_registry["operationalRequiredPairs"] = sorted(
+        segmented_registry["operationalRequiredPairs"],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    segmented_registry.update({
+        "operationalRequiredPairsSha256": required_pairs_sha256(
+            segmented_registry["operationalRequiredPairs"]
+        ),
+        "operationalRequiredPairCount": 4,
+        "operationalDmiVerifiedPairCount": 114,
+        "dmiVerifiedPairCount": 161,
+    })
+    write(segmented / "registry.json", segmented_registry)
     replayed_run = run_runner(
         segmented,
         None,

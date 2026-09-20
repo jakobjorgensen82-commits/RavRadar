@@ -1,3 +1,16 @@
+# Aktiv roadmap – 2026-09-20, 4.0.442 fra timeout-handoff til helkæde
+
+1. [x] Sikr Copernicus-shard-start og reserver 120 sekunder til afslutning.
+2. [x] Bevar en eksakt, allerede gyldig baseline ved timeout og lad
+   segmentjournalen afvente næste almindelige consolidation.
+3. [x] Kør målrettede kode-, workflow-, journal- og versionskontroller.
+4. [ ] Exact-head sourcegate, PR/merge og én almindelig weather-continuation.
+5. [ ] Gennemfør Open-Meteo, samling, score, private save, artifact og deploy;
+   mål derefter reel komplethed og manglende vandstandsfelter.
+6. [ ] Følg næste cron og dokumentér, at normal drift vedligeholder cachen.
+7. [ ] Fortsæt kun med roadmap-punkter, som stadig er relevante efter live-
+   beviset; ingen ny oneoff for denne timeoutrettelse.
+
 # Aktiv roadmap – 2026-09-20, 4.0.441 fra sikker genindgang til helkæde
 
 1. [x] Lever 4.0.440 via exact-head `35485303951`, PR #385 og merge

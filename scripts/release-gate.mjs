@@ -741,7 +741,7 @@ for(const marker of [
 for(const marker of [
   'python scripts/run-copernicus-current-pilot-with-retry.py',
   '--attempts 1',
-  "--timeout-seconds ${{ inputs.extended_provider_bootstrap == true && '3300' || '360' }}",
+  "--timeout-seconds ${{ inputs.extended_provider_bootstrap == true && '3300' || '420' }}",
   '--backoff-seconds 20',
 ]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);

@@ -1,3 +1,14 @@
+# 2026-09-20 – 4.0.442 gør Copernicus-timeout genindgang sikker
+
+Normalrun `35486533929` gennemførte DMI og gemte DMI-fremgang. Copernicus
+gemte fire durable segmenter og nåede 6.501 verificerede par, men den tidligere
+recovery brugte sin korte frist på fuld consolidation og efterlod ikke et
+entydigt source-stage-bevis. 4.0.442 reserverer nu afslutningstid, starter ikke
+et nyt shard for tæt på deadline og genbruger kun en eksakt bank/shadow/stage-
+baseline. Journalen afspilles først i næste almindelige run. Open-Meteo,
+score, artifact og deploy er endnu ikke bevist i denne continuation.
+Se DEC-0220 og CHANGELOG-4.0.442.md.
+
 # 2026-09-20 – 4.0.441 pensionerer broen på faktisk sourceafløsning
 
 4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.
