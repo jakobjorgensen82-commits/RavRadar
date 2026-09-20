@@ -1,6 +1,19 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.443
+**Håndbogsversion:** 4.0.444
+
+## 89.49 4.0.444 – Source-stage-kontrollen bruger den gemte forsøgsjournal
+
+Den strenge Copernicus-kontrol skal kontrollere den samme delvise fremgang,
+som source-stage'en allerede har valideret. Den må derfor bruge stage'ens
+forsøgsjournal, når donorbanken projekteres igen. En separat donorbank fra en
+anden generation bliver ikke godkendt; den markeres som en mismatch, der skal
+projekteres på ny. Det er en kontrolrettelse, ikke et krav om komplet data.
+
+I run `35494495771` var 7.811 Copernicus-par gemt korrekt, men kontrollen
+brugte tidligere en tom forsøgsjournal og stoppede før Open-Meteo. 4.0.444
+retter dette. Produktionskæden er først bevist, når en almindelig continuation
+og de efterfølgende cache- og deploytrin er grønne.
 
 ## 89.48 4.0.443 – Soft-boundary-fremgang samles før næste kontrol
 

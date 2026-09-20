@@ -1,3 +1,12 @@
+# 2026-09-20 – 4.0.444 source-stage-kontrol
+
+4.0.444 retter den efterfølgende Copernicus-range-kontrol. Run
+`35494495771` havde faktisk gemt 7.811 verificerede par og kørt recovery, men
+checkerens donorbank-sammenligning brugte en tom attempts-liste. Det gjorde en
+gyldig delvis stage usynlig. Kontrollen bruger nu stage'ens validerede forsøg;
+en anden bank-generation bliver kun afvist som mismatch. Se
+`CHANGELOG-4.0.444.md`.
+
 # 2026-09-20 – 4.0.443 soft-boundary-konsolidering
 
 Live-run `35489667755` beviste DMI og gemte CP-fremskridt, men stoppede ved

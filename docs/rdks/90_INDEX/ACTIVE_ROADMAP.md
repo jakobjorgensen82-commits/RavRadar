@@ -1,4 +1,13 @@
-# Aktiv roadmap – 2026-09-20, 4.0.443 fra soft-boundary til helkæde
+# Aktiv roadmap – 2026-09-20, 4.0.444 fra source-stage-kontrol til helkæde
+
+1. Kør exact-head sourcegate for 4.0.444 og merge kun den eksakte head.
+2. Kør én almindelig weather-continuation fra den gemte DMI/Copernicus-
+   fremgang. Bekræft først at source-stage-kontrollen passerer, derefter
+   Open-Meteo, afsluttende cache, artifact og deploy.
+3. Registrér leverandørmangler som MISSING, men kald ikke datasættet komplet,
+   før den faktiske komplethedskontrol er grøn.
+4. Efter livebevis: fortsæt med normal cachevedligeholdelse og de åbne
+   vandstands-/roadmap-punkter. Ingen ny one-off uden konkret evidens.
 
 1. [x] Find den konkrete livefejl: Copernicus exit-75 afleverede en løs
    journal til source-stage-gaten efter ellers gyldigt DMI- og CP-fremskridt.

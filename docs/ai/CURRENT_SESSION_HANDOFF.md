@@ -1,4 +1,15 @@
-# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.443 soft-boundary-konsolidering
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.444 source-stage-kontrol
+
+Run `35494495771` viste en ny, konkret fejl efter 4.0.443: Copernicus nåede
+7.811 verificerede operationelle par og afsluttede sin netværksfrie recovery,
+men range-kontrollen brugte en tom forsøgsjournal ved sammenligningen med
+donorbanken. Den kunne derfor ikke genkende den ellers validerede stage.
+
+4.0.444 bruger nu den gemte og allerede validerede forsøgsjournal. Hvis banken
+tilhører en anden generation, returneres en tydelig projektion-mismatch i stedet
+for et ukontrolleret checker-crash. Målrettede tests er grønne. Exact-head,
+merge og én almindelig continuation er næste trin; deploy og komplet datasæt er
+ikke bevist endnu.
 
 4.0.442 er main `792878867bb796dbb98a0d17839db08bec313773` efter PR #387.
 Den almindelige weather-kørsel `35489667755` gennemførte DMI og gemte både

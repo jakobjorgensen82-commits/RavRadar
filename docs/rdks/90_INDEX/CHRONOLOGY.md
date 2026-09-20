@@ -1,4 +1,12 @@
-# 2026-09-20 – 4.0.443 konsoliderer bounded Copernicus-fremgang
+# 2026-09-20 – 4.0.444 retter source-stage-kontrol efter 4.0.443
+
+- Run `35494495771` viste 7.811 gemte Copernicus-par efter soft-boundary-
+  recovery, men checkerens donorbank-sammenligning brugte ingen forsøg og
+  afviste derfor stage-statussen.
+- 4.0.444 bruger den validerede forsøgsjournal og håndterer anden bank-
+  generation som mismatch uden at crashe. Måltests er grønne.
+
+# Forrige kronologi – 2026-09-20 – 4.0.443 konsoliderer bounded Copernicus-fremgang
 
 - Normalrun `35489667755` gennemførte DMI og gemte CP-fremskridt, men exit 75
   afleverede segmentjournalen uden at samle den før source-stage-gaten.

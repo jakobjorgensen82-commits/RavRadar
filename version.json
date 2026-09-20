@@ -1,10 +1,10 @@
 {
-  "version": "4.0.443",
-  "releasedAt": "2026-09-20T05:50:24.357Z",
-  "minimumSupportedVersion": "4.0.443",
+  "version": "4.0.444",
+  "releasedAt": "2026-09-20T08:15:30.071Z",
+  "minimumSupportedVersion": "4.0.444",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.443",
+    "releaseVersion": "4.0.444",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
