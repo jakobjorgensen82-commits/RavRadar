@@ -1,4 +1,25 @@
-# NYESTE SANDHED – 2026-09-20 – lokal 4.0.446 retter redundant fallback-fanout
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.447 fjerner gentaget national kontrol
+
+4.0.446 bestod exact-head sourcegate, blev merged som `1d9b0946` og kørte i
+normalrun `35513058150`. Providerkæden kom længere end før: DMI, Copernicus,
+Open-Meteo, 79.414-pars closure og syvdageshistorik gennemførte. Den sikre
+inputtrace viste 673/673 direkte scoreklare kystdele. `npm run update:weather`
+ramte alligevel igen sin 25-minutters grænse; artifact og deploy blev ikke
+bygget. 4.0.446's forklaring var derfor kun en del af problemet.
+
+Helkædegennemgangen fandt den næste systemiske flaskehals: closure- og
+advisorybeviser var procescachede, men den regionale referencekontrol blev
+genopbygget fra den samme fulde closure ved gentagne kald for hver af de 673
+kystdele. 4.0.447 binder nu dette bevis til det indlæste live-dokument,
+closureobjektet og reference-arrayen. Udtrykkelig genvalidering hasher stadig
+alle poster. Samtidig logger `update-weather` de store fasers tider.
+
+Ingen vejr-, score-, geometri- eller providerregel ændres. Målrettet
+live-current-regression er grøn. Exact-head, merge og én almindelig live
+continuation mangler; komplet cache, artifact og deploy er fortsat ikke
+bevist. DEC-0225.
+
+# Historisk sandhed – 2026-09-20 – lokal 4.0.446 retter redundant fallback-fanout
 
 Run `35506992220` på main `203fbf36` gennemførte DMI, Copernicus, Open-Meteo,
 DMI-first-lukning og 7-dages historik. Det stoppede først i det afsluttende
@@ -12,8 +33,9 @@ allerede havde gyldige atmosfæriske felter. 4.0.446 indfører derfor en samlet
 DMI-first-vagt: fallback kaldes kun ved et reelt hul i DMI's fallback-egnede
 atmosfære. DMI-only-vandstand/aktuelt niveau udløser ikke en meningsløs
 Open-Meteo-genhentning. DMI-forrang, gamle gyldige værdier og MISSING-regler
-er uændrede. Målrettede regressioner er grønne; exact-head sourcegate,
-merge og en ny live continuation mangler stadig.
+er uændrede. Målrettede regressioner og exact-head sourcegate blev senere
+grønne, og rettelsen blev merged. Run `35513058150` viste derefter den
+dybere gentagne regionale referencekontrol, som 4.0.447 retter.
 
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.445 retter challenge-binding
 

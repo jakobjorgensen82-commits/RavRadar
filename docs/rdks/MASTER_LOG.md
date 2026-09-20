@@ -1,3 +1,17 @@
+# 2026-09-20 – 4.0.447 regional referencekontrol genbruges i samme proces
+
+4.0.446 bestod exact-head og blev merged som `1d9b0946`. Normalrun
+`35513058150` gennemførte hele providerkæden, 79.414-pars closure og historik;
+inputtracen viste 673/673 scoreklare kystdele. `update:weather` brugte stadig
+hele 25-minuttersgrænsen, så der kom intet artifact eller deploy.
+
+Helkædegennemgangen fandt, at live-current-adapteren cachede closure- og
+advisorybeviser, men genopbyggede den regionale referencekontrol fra hele
+closure ved gentagne kald for hver kystdel. 4.0.447 cacher det validerede
+bevis pr. indlæst dokument/closure/reference-array og bevarer fuld hashkontrol
+ved udtrykkelig genvalidering. Payloadfri fasetider gør næste livekørsel
+præcist diagnosticerbar. Se `CHANGELOG-4.0.447.md` og DEC-0225.
+
 # 2026-09-20 – 4.0.446 DMI-first-vagt mod redundant fallback-fanout
 
 Run `35506992220` gennemførte DMI, Copernicus, Open-Meteo og closure, men

@@ -3928,6 +3928,20 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
   };
 }
 
+const weatherBuildStartedAt = Date.now();
+let weatherBuildPreviousStageAt = weatherBuildStartedAt;
+function reportWeatherBuildStage(stage, details = {}) {
+  const now = Date.now();
+  console.log(JSON.stringify({
+    kind: 'weather-build-stage',
+    stage,
+    stageSeconds: round((now - weatherBuildPreviousStageAt) / 1000, 3),
+    totalSeconds: round((now - weatherBuildStartedAt) / 1000, 3),
+    ...details,
+  }));
+  weatherBuildPreviousStageAt = now;
+}
+
 const zonesFile = JSON.parse(await fs.readFile(ZONES_PATH, 'utf8'));
 const features = Array.isArray(zonesFile.features) ? zonesFile.features : [];
 if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
@@ -3950,6 +3964,11 @@ const ravScoreCheckpoint = await loadRavScoreContinuationCheckpointForTarget({
 const activeZoneIds = features.map(feature => feature.properties?.id).filter(Boolean);
 const nextDmiForecastStore = createPersistentDmiStore(dmiForecastStore, activeZoneIds, DMI_FORECAST_HOURS);
 const dmiBulkMergeStats = mergeBulkCacheIntoForecastStore(features, dmiBulkCache, nextDmiForecastStore, generatedAt);
+reportWeatherBuildStage('inputs-and-dmi-bulk-ready', {
+  zoneCount: features.length,
+  coastalPartCount: coastalPartsContract.partCount,
+  dmiZonesMerged: dmiBulkMergeStats.zonesMerged,
+});
 dmiPersistentRuntime = nextDmiForecastStore.runtime;
 // 4.0.10: Forecast EDR is controlled only by its channel-specific cooldown.
 // The legacy global cooldown is deleted so old state cannot block healthy EDR calls.
@@ -4006,6 +4025,10 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
   } catch (error) {
     output.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
   }
+});
+reportWeatherBuildStage('public-zone-forecast-ready', {
+  resolvedZoneCount: Object.keys(output.zones).length,
+  errorCount: output.errors.length,
 });
 
 const marineCacheCompleteAtStart = activeZoneIds.every(zoneId => !recordNeedsEdrMarineRepair(nextDmiForecastStore.zones?.[zoneId], generatedAt));
@@ -4401,6 +4424,9 @@ if (coastalPartsContract.enabled) {
   });
   planningRecords.clear();
   output.weatherEngine.componentFallback = weatherComponents.summary;
+  reportWeatherBuildStage('component-runtime-ready', {
+    remainingNeedCount: weatherComponents.summary?.remainingNeedCount ?? null,
+  });
 }
 const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
@@ -4422,6 +4448,9 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     historicalWaveInputTransition,
   )
   : null;
+reportWeatherBuildStage('coastal-score-runtime-ready', {
+  scoredPartCount: coastalPartScoreBuild?.integratedRuntime?.scoredPartCount ?? 0,
+});
 if (RAVSCORE_CURRENT_TRACE_PATH) {
   if (!coastalPartScoreBuild?.currentInputTrace
     || coastalPartScoreBuild.currentInputTrace.tracedPartCount
@@ -4522,6 +4551,9 @@ const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);
 await fs.writeFile(RUNTIME_DIAGNOSTICS_PATH, `${JSON.stringify(buildRuntimeDiagnostics(output, weatherHealth), null, 2)}\n`);
+reportWeatherBuildStage('public-artifacts-written', {
+  zoneCount: Object.keys(output.zones).length,
+});
 
 const counts = Object.values(output.zones).reduce((acc, zone) => {
   acc[zone.provider] = (acc[zone.provider] ?? 0) + 1; return acc;

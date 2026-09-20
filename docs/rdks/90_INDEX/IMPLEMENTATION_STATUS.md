@@ -1,4 +1,23 @@
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.446
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.447
+
+- [x] Lever 4.0.446 via exact-head sourcegate, PR #391 og merge `1d9b0946`.
+- [x] Afgræns normalrun `35513058150`: providers, closure og historik bestod,
+  og inputtrace viste 673/673 scoreklare kystdele; kun `update-weather`
+  ramte sin 25-minutters grænse.
+- [x] Find helkædefejlen i live-current-adapteren: den samme regionale
+  referencekontrol gennemløb hele closure igen ved gentagne kystdelskald.
+- [x] Cache det validerede regionale bevis pr. live-dokument og behold fuld
+  indholdsgenvalidering ved udtrykkelig kontrol.
+- [x] Tilføj payloadfri fasetid til den normale cachebygning og før den
+  eksisterende funktionelle live-current-test ind i den kritiske vejrmatrix.
+- [ ] Bestå målchecks, versions-/RDKS-kontrol og én exact-head sourcegate;
+  PR/merge.
+- [ ] Kør én normal continuation og kræv cache, score, fulde gates, privat
+  save, artifact og deploy. Brug fasetiderne ved enhver ny afvigelse.
+- [ ] Identificér/luk derefter den resterende DMI-only-vandstandsrest og bevis
+  næste almindelige cron som vedligeholdelsesfri drift.
+
+# Historisk implementeringsstatus – 2026-09-20, lokal 4.0.446
 
 - [x] Genskab den seneste livefejl: hele providerkæden og closure passerede,
   men `npm run update:weather` nåede sin 25-minutters grænse og forhindrede
@@ -7,10 +26,10 @@
   DMI-only-vandstand eller aktuelt niveau til et falsk fallbackbehov.
 - [x] Tilføj målrettet regression og synkronisér version, RDKS, håndbog og
   changelog.
-- [ ] Kør exact-head sourcegate, PR/merge og én almindelig continuation på den
+- [x] Kør exact-head sourcegate, PR/merge og én almindelig continuation på den
   eksakte 4.0.446-head.
-- [ ] Bevis at afsluttende cache, artifact og deploy kan gennemføres på den
-  mergede kode; mål derefter komplethed ærligt.
+- [ ] Bevis at afsluttende cache, artifact og deploy kan gennemføres. Run
+  `35513058150` viste en dybere lokal kontrolflaskehals; se 4.0.447 ovenfor.
 - [ ] Først efter livebevis: genoptag normal vedligeholdelse og de aktuelle
   vandstands-/roadmap-punkter.
 
