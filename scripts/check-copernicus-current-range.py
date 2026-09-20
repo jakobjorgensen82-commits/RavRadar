@@ -146,10 +146,16 @@ def inspect(
         if stage is None:
             return False
         projection = projected_donor_shadow(bank, targets=targets)
-        refs, missing, _ = select_source_order_admissible_records(
-            registry["operationalRequiredPairs"], projection["acquisitions"],
-            projection["records"], datetime.fromisoformat(reference.replace("Z", "+00:00")),
-            targets, [], **stage_positive_evidence(bank))
+        try:
+            refs, missing, _ = select_source_order_admissible_records(
+                registry["operationalRequiredPairs"], projection["acquisitions"],
+                projection["records"], datetime.fromisoformat(reference.replace("Z", "+00:00")),
+                targets, stage["attempts"], **stage_positive_evidence(bank))
+        except (KeyError, TypeError, ValueError, RuntimeError):
+            # A stage may be valid against its own shadow while a separately
+            # restored donor bank belongs to another generation.  That is a
+            # projection mismatch, not a checker crash or permission to reuse.
+            return False
         return (stage["selectedRecordRefsSha256"] == canonical_sha256(refs)
                 and stage["missingPairsSha256"] == required_pairs_sha256(missing))
 

@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.443';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.443';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.444';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.444';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertObservationTripQualityBinding,
   assertTripEvidencePrivacy,
   migrateLegacyUnattestedObservationColumns
-} from './trip-evidence-contract.js?v=4.0.443';
+} from './trip-evidence-contract.js?v=4.0.444';
 import {
   assertTripObservationNestedPrivacy,
   expectedCalibrationEligibility,
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
-} from './calibration-eligibility.js?v=4.0.443';
+} from './calibration-eligibility.js?v=4.0.444';
 import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding
-} from '../core/ravscore-model-contract.js?v=4.0.443';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.443';
+} from '../core/ravscore-model-contract.js?v=4.0.444';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.444';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';

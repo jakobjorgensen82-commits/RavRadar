@@ -5337,7 +5337,17 @@ Ingen oneoff. Den offentlige validator er ikke svækket.
 - [ ] Kør derefter næste almindelige vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo før scheduler genaktiveres.
 
 DEC-0185 er aktiv. Ingen oneoff eller gentaget providerarbejde.
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.443
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.444
+
+4.0.444 retter den konkrete checker-regression efter 4.0.443. Den seneste
+weather-kørsel havde gemt 7.811 verificerede Copernicus-par, men kontrollen
+genberegnede donorbankens projektion med en tom attempts-liste og afviste den
+validerede `IN_PROGRESS`-stage. Checkerens sammenligning bruger nu stage'ens
+validerede forsøg og returnerer tydelig mismatch ved anden bank-generation.
+
+Målrettede source-stage- og range-checker-tests er grønne. Production status er
+stadig uafklaret: Open-Meteo, afsluttende cache, artifact, deploy og fuld
+datakomplethed mangler livebevis.
 
 - [x] Afgræns live-run `35489667755` til en manglende soft-boundary-
   konsolidering efter ellers gyldigt DMI/CP-fremskridt.

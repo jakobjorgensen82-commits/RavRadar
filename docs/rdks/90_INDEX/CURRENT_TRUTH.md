@@ -1,4 +1,16 @@
-# NYESTE SANDHED – 2026-09-20 – lokal 4.0.443 konsoliderer soft-boundary
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.444 retter source-stage-kontrol
+
+Seneste almindelige run `35494495771` nåede DMI og Copernicus. Copernicus gemte
+7.811 verificerede operationelle par og gennemførte netværksfri recovery, men
+range-kontrollen brugte ikke den gemte forsøgsjournal i sin donorbank-
+sammenligning. Den afviste derfor den gyldige delvise stage før Open-Meteo.
+
+4.0.444 bruger source-stage'ens validerede forsøg i sammenligningen og behandler
+en anden donorbank-generation som en tydelig projektion-mismatch. Målrettede
+tests er grønne. Open-Meteo, afsluttende cache, artifact, deploy og komplet
+produktionsdatasæt mangler fortsat livebevis.
+
+# Forrige sandhed – 2026-09-20 – lokal 4.0.443 konsoliderer soft-boundary
 
 4.0.442 er main `792878867b` efter PR #387. Normalrun `35489667755`
 gennemførte DMI og gemte fremgang. Copernicus nåede `6990/49548` operationelle

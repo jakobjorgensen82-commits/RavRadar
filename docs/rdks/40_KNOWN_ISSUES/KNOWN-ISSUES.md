@@ -1,4 +1,16 @@
-# NYESTE CHECKPOINT – 2026-09-20 – soft-boundary-gate rettet, driftsbevis åbent
+# NYESTE CHECKPOINT – 2026-09-20 – source-stage-kontrol rettet, driftsbevis åbent
+
+- **ISSUE-COPERNICUS-RANGE-CHECK-IGNORED-ATTEMPTS – RETTET I 4.0.444 / LIVE-
+  BEVIS ÅBENT:** Run `35494495771` gemte 7.811 Copernicus-par og gennemførte
+  recovery, men checkerens donorbank-sammenligning brugte ingen af den gemte
+  forsøgsjournal. Den afviste derfor stage før Open-Meteo. Kontrollen bruger
+  nu den validerede journal og afviser kun reelle generationsmismatches.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Exact-head, merge og
+  én almindelig continuation skal stadig bevise hele kæden.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** DMI-only-vandstand skal
+  stadig identificeres og lukkes. Ingen lokale huller kaldes komplette.
+
+# Forrige checkpoint – 2026-09-20 – soft-boundary-gate rettet, driftsbevis åbent
 
 - **ISSUE-COPERNICUS-SOFT-BOUNDARY-CONSOLIDATION – RETTET LOKALT / DRIFTSBEVIS
   ÅBENT:** `35489667755` gemte fsync'ede segmentkvitteringer, men den

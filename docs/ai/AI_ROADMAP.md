@@ -1,4 +1,10 @@
-# Nyeste prioritering – 2026-09-20, 4.0.443 soft-boundary-konsolidering
+# Nyeste prioritering – 2026-09-20, 4.0.444 source-stage-kontrol
+
+4.0.444 retter den konkrete tilbagegang i den seneste almindelige weather-
+kørsel: Copernicus-fremgang blev gemt, men range-kontrollen genberegnede den
+uden den validerede forsøgsjournal og afviste derfor source-stage-statussen.
+Næste skridt er exact-head gate, merge og én almindelig continuation fra den
+gemte fremgang. Ingen ny one-off før denne continuation er forsøgt.
 
 Lever først den afgrænsede wrapperrettelse gennem RDKS/version og exact-head.
 Den næste almindelige weather-continuation skal genbruge den gemte DMI/CP-
