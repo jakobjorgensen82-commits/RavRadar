@@ -49,7 +49,7 @@ export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
     bestTimePolicyId: 'score-history-water-tie-earliest-v3',
     presentationPolicyId: 'score-bands-35-55-75-exceptional90-v1',
     modelContractSha256: 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b',
-    modelBundleSha256: '0e1c66256587844c179380488fc87e35bcd0703adf10b697fe028cc007730c7a',
+    modelBundleSha256: '315525d0e00d336660791fe32f4f5a6b2eb6962081aae4aa914f65590d8c7030',
   }),
   targetPublicProjectionContractSha256:
     '6b4ad46384194130cdbd3be1701ae1822831822801a9fcaea3b75d95b3bc77ec',

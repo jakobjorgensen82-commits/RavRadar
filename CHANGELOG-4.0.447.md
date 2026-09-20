@@ -14,6 +14,9 @@
   implementeringslukning, er modelbundle-hashen regenereret og synkroniseret i
   de eksisterende maskinlæsbare bindinger. Scoreformel og modelparametre er
   uændrede.
+- Den resumérbare bounded-conditions-overgang er samtidig bundet til den
+  aktuelle integrerede bundlehash, så en gammel mellemhash ikke længere
+  afviser en ellers korrekt overgang.
 
 ## Livegrundlag
 
