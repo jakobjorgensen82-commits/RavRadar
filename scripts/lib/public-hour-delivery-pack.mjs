@@ -6,6 +6,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { gzip, gunzip } from 'node:zlib';
 import { RAVSCORE_PUBLIC_FORECAST_HOURS } from '../../js/core/ravscore-model-contract.js';
+import { PUBLIC_DELIVERY_MAX_BYTES } from '../../js/core/public-delivery-contract.js';
 import { PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE } from './private-weather-component-inventory.mjs';
 
 const gzipAsync = promisify(gzip);
@@ -14,8 +15,12 @@ const MAGIC = Buffer.from('RR-PUBLIC-HOUR-DELIVERY-PACK-1\n');
 const SHA256 = /^[a-f0-9]{64}$/;
 const MAX_MANIFEST_BYTES = 1024 * 1024;
 const MAX_PACK_BYTES = 256 * 1024 * 1024;
-const MAX_RAW_ENTRY_BYTES = 8 * 1024 * 1024;
-const MAX_COMPRESSED_ENTRY_BYTES = 8 * 1024 * 1024;
+// The public delivery contract allows each hour shard up to 16 MiB.  The
+// private continuation pack must accept the same valid source files; the old
+// 8 MiB limit rejected a public shard after the public writer accepted it.
+// The aggregate pack bound remains the tighter safety limit for the archive.
+const MAX_RAW_ENTRY_BYTES = PUBLIC_DELIVERY_MAX_BYTES;
+const MAX_COMPRESSED_ENTRY_BYTES = PUBLIC_DELIVERY_MAX_BYTES;
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -113,7 +118,7 @@ function validatePackManifest(manifest, marker = null) {
     if (seenTimes.has(entry.time) || seenFiles.has(entry.file)
       || entry.file !== `${entry.sha256}.json` || !SHA256.test(entry.sha256)
       || !SHA256.test(entry.compressedSha256)
-      || !Number.isSafeInteger(entry.bytes) || entry.bytes < 2 || entry.bytes > MAX_RAW_ENTRY_BYTES
+      || !Number.isSafeInteger(entry.bytes) || entry.bytes < 1 || entry.bytes > MAX_RAW_ENTRY_BYTES
       || !Number.isSafeInteger(entry.compressedBytes) || entry.compressedBytes < 2
       || entry.compressedBytes > MAX_COMPRESSED_ENTRY_BYTES) {
       throw new Error('Private public-hour pack entry is invalid');
@@ -231,7 +236,7 @@ export async function buildPrivatePublicHourDeliveryPack({
       const descriptor = hours[time];
       if (!descriptor || descriptor.path !== `./forecast/${descriptor.sha256}.json`
         || !SHA256.test(descriptor.sha256) || !Number.isSafeInteger(descriptor.bytes)
-        || descriptor.bytes < 2 || descriptor.bytes > MAX_RAW_ENTRY_BYTES) {
+        || descriptor.bytes < 1 || descriptor.bytes > MAX_RAW_ENTRY_BYTES) {
         throw new Error('Public hour delivery descriptor is invalid');
       }
       const sourcePath = path.resolve(liveDirectory, descriptor.path.replace(/^\.\//, ''));

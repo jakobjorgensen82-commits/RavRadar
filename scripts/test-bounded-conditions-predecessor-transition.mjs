@@ -4,14 +4,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
   BOUNDED_CONDITIONS_PREDECESSOR_POLICY,
   buildBoundedConditionsPredecessorRestoreExpectation,
 } from './lib/bounded-conditions-predecessor-transition.mjs';
-import {
-  privateRuntimeContractHashes,
-} from './private-production-runtime-workflow.mjs';
 import {
   prepareHistoricalWavePredecessorRestore,
 } from './prepare-historical-wave-predecessor-restore.mjs';
@@ -40,12 +36,27 @@ function fixture() {
     },
     // Production workflow output intentionally uses the canonical no-millis form.
     targetReferenceAt: '2026-09-19T18:00:00Z',
-    currentBinding: structuredClone(ravScoreModelBinding()),
+    // This test exercises the one-time predecessor transition itself.  Its
+    // target is the exact sealed predecessor successor binding, not whichever
+    // active model bundle happens to be current in a later release.
+    currentBinding: structuredClone(
+      BOUNDED_CONDITIONS_PREDECESSOR_POLICY.targetModelBinding,
+    ),
     now: '2026-09-19T18:05:00.000Z',
   };
 }
 
-const currentContractHashes = await privateRuntimeContractHashes();
+// The transition test models the exact one-time handoff contract.  It must
+// not silently change meaning when the active release later gets a new
+// continuation or public-projection hash; those are separate releases, while
+// this fixture needs the predecessor's continuation and the successor's
+// changed full-runtime hash.
+const currentContractHashes = {
+  ...structuredClone(BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceContractHashes),
+  fullRuntimeContractSha256: 'f'.repeat(64),
+  publicProjectionContractSha256:
+    BOUNDED_CONDITIONS_PREDECESSOR_POLICY.targetPublicProjectionContractSha256,
+};
 const valid = fixture();
 const expectation = buildBoundedConditionsPredecessorRestoreExpectation({
   ...valid,
@@ -185,13 +196,16 @@ try {
     now: valid.now,
   });
   const githubOutput = await fs.readFile(githubOutputPath, 'utf8');
-  assert.equal(prepared.required, true);
-  assert.equal(prepared.transitionKind, 'bounded-conditions-writer');
-  assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), expectation);
-  assert.match(githubOutput, /required=true/);
-  assert.match(githubOutput,
-    new RegExp(`source_head=${BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead}`));
-  assert.match(githubOutput, /transition_kind=bounded-conditions-writer/);
+  // The synthetic builder above still proves the historical handoff contract.
+  // The real preparation helper must now retire it because the active release
+  // has a newer model/continuation binding; it must not resurrect the old
+  // predecessor during ordinary operation.
+  assert.equal(prepared.required, false);
+  assert.equal(prepared.transitionKind, null);
+  await assert.rejects(fs.access(outputPath), { code: 'ENOENT' });
+  assert.match(githubOutput, /required=false/);
+  assert.match(githubOutput, /source_head=\n/);
+  assert.match(githubOutput, /transition_kind=\n/);
 
   // The bridge retires from source identity, not from a calendar/version tick:
   // once the protected pointer no longer names the exact sealed predecessor,

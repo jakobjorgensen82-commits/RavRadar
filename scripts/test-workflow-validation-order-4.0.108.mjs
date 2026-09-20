@@ -1907,7 +1907,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260918190000_weather_input_resolution_binding.sql"',
   'test -f "$migrations_directory/20260919010000_current_input_foundation_binding.sql"',
   'test -f "$migrations_directory/20260919020000_measured_warmup_checkpoint.sql"',
-  'test -f "$migrations_directory/20260919231000_public_hour_delivery_binding.sql"',
+  'test -f "$migrations_directory/20260920220000_public_hour_pack_capacity_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

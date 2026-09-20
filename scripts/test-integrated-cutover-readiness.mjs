@@ -45,8 +45,8 @@ const CHECKPOINT_CONTINUATION_HASH =
 await inspectMigrationSources();
 assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 24,
   'The active backend must preserve every predecessor, storage security and the latest current-input binding');
-assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260919231000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260919231000');
+assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260920220000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -89,7 +89,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260919231000_public_hour_delivery_binding.sql',
+  'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -116,7 +116,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260919231000'",
+  "'20260920220000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -273,7 +273,7 @@ const unicodeList = `
  20260918190000    │                  │ 2026-09-18 19:00:00
  20260919010000    │                  │ 2026-09-19 01:00:00
  20260919020000    │                  │ 2026-09-19 02:00:00
- 20260919231000    │                  │ 2026-09-19 23:10:00
+  20260920220000    │                  │ 2026-09-20 22:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -300,7 +300,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260918190000', remote: null },
   { local: '20260919010000', remote: null },
   { local: '20260919020000', remote: null },
-  { local: '20260919231000', remote: null },
+  { local: '20260920220000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -336,7 +336,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260918190000\` | \` \`    | \`2026-09-18 19:00:00\`
    \`20260919010000\` | \` \`    | \`2026-09-19 01:00:00\`
    \`20260919020000\` | \` \`    | \`2026-09-19 02:00:00\`
-   \`20260919231000\` | \` \`    | \`2026-09-19 23:10:00\`
+   \`20260920220000\` | \` \`    | \`2026-09-20 22:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -448,7 +448,7 @@ await assert.rejects(
        20260918190000 | | pending
        20260919010000 | | pending
        20260919020000 | | pending
-       20260919231000 | | pending
+       20260920220000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -481,7 +481,7 @@ const appliedList = `
  20260918190000 | 20260918190000 | now
  20260919010000 | 20260919010000 | now
  20260919020000 | 20260919020000 | now
- 20260919231000 | 20260919231000 | now
+ 20260920220000 | 20260920220000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -614,7 +614,7 @@ try {
   20260918190000 │ │ pending
   20260919010000 │ │ pending
   20260919020000 │ │ pending
-  20260919231000 │ │ pending
+  20260920220000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -651,7 +651,7 @@ try {
  20260918190000 │ │ pending
  20260919010000 │ │ pending
  20260919020000 │ │ pending
- 20260919231000 │ │ pending
+  20260920220000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {

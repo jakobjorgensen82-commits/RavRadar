@@ -1,4 +1,17 @@
-# Aktiv roadmap – 2026-09-20, 4.0.447 fra cacheflaskehals til live drift
+# Aktiv roadmap – 2026-09-20, 4.0.448 fra public-hour-kontrakt til live drift
+
+1. [x] Find og ret den konkrete afvisning af en gyldig offentlig timefil i
+   run `35530859518`; providerkæde og 673/673 scoredele var allerede grønne.
+2. [x] Ensret privat pakke, kapacitetsaudit og offentlig writer til 16 MiB
+   pr. timefil; behold 256 MiB samlet privat pakkeloft.
+3. [x] Tilføj målrettet regression for en stor, men gyldig public-hour-fil.
+4. [ ] Bestå målchecks, exact-head sourcegate og merge 4.0.448.
+5. [ ] Kør én almindelig continuation og bevis privat cache-save, artifact,
+   deploy og offentlig manifest/runtime.
+6. [ ] Følg næste almindelige cron som bevis for vedligeholdelsesfri cache;
+   ingen ny one-off uden konkret evidens.
+
+# Historisk aktivt roadmap – 2026-09-20, 4.0.447 fra cacheflaskehals til live drift
 
 1. [x] Lever 4.0.446 og følg normalrun `35513058150` gennem alle leverandører,
    closure og historik.
