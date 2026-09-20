@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.443 konsoliderer soft-boundary
+
+4.0.442 er main `792878867b` efter PR #387. Normalrun `35489667755`
+gennemførte DMI og gemte fremgang. Copernicus nåede `6990/49548` operationelle
+DMI-gap-par og returnerede kontrolleret bounded progress, men den efterfølgende
+source-stage-kontrol afviste afleveringen, fordi soft-boundary-journalen ikke
+var samlet til den bank/shadow/stage-transaktion, som kontrollen kræver.
+
+4.0.443 ændrer wrapperen, så exit 75 straks bruger en netværksfri
+`--checkpoint-only`-genindgang uden baseline-genvej. Kun allerede fsync'ede
+kvitteringer afspilles; resultatet skal fortsat være gyldig `IN_PROGRESS`, ikke
+komplet data. Hard-timeout-genvejen, DMI-first, fallback, score og geometri er
+uændrede. Exact-head, merge og én almindelig continuation er åbne. DEC-0221.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.442 afleverer Copernicus-baseline
 
 4.0.442 er en lokal rettelse til Copernicus-timeout-handoff. Den normale

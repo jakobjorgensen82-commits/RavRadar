@@ -1,3 +1,11 @@
+# 2026-09-20 – 4.0.443 soft-boundary-konsolidering
+
+Live-run `35489667755` beviste DMI og gemte CP-fremskridt, men stoppede ved
+source-stage-gaten efter bounded exit 75. 4.0.443 gør den efterfølgende
+checkpoint-only-genindgang eksplicit og netværksfri, så fsync'ede journal-
+kvitteringer samles før næste gate. Ingen score-, geometri- eller provider-
+prioritetsændring. Se DEC-0221 og CHANGELOG-4.0.443.md.
+
 # 2026-09-20 – 4.0.442 gør Copernicus-timeout genindgang sikker
 
 Normalrun `35486533929` gennemførte DMI og gemte DMI-fremgang. Copernicus

@@ -1,6 +1,21 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.442
+**Håndbogsversion:** 4.0.443
+
+## 89.48 4.0.443 – Soft-boundary-fremgang samles før næste kontrol
+
+Når Copernicus rammer den normale, afgrænsede tidsgrænse efter at have gemt
+validerede segmentkvitteringer, er det ikke nok at lade journalen ligge løst til
+næste kørsel. Wrapperen kører nu først en kort, netværksfri checkpoint-recovery
+uden baseline-genbrugsgenvejen. Den afspiller kun de holdbare kvitteringer og
+skriver atomisk bank, shadow og `IN_PROGRESS` source-stage, før den strenge
+kontrol fortsætter.
+
+Det betyder, at et korrekt gemt Copernicus-fremskridt ikke fejlagtigt ser ud
+som manglende source-stage. Hard timeout-behandlingen er uændret: dér må den
+hurtige baseline-genvej kun genbruge en allerede bevist, eksakt kompatibel
+baseline. Et delvist datasæt er fortsat ikke et komplet datasæt, og DMI-first,
+fallback-prioritet og DMI-only-vandstand ændres ikke. Se DEC-0221.
 
 ## 89.47 4.0.442 – timeout-aflevering uden at ødelægge en gyldig baseline
 

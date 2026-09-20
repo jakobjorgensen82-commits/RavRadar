@@ -5337,3 +5337,17 @@ Ingen oneoff. Den offentlige validator er ikke svækket.
 - [ ] Kør derefter næste almindelige vedligeholdelse og mål DMI → Copernicus → regional DMI → Open-Meteo før scheduler genaktiveres.
 
 DEC-0185 er aktiv. Ingen oneoff eller gentaget providerarbejde.
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.443
+
+- [x] Afgræns live-run `35489667755` til en manglende soft-boundary-
+  konsolidering efter ellers gyldigt DMI/CP-fremskridt.
+- [x] Lad wrapperen genindgå netværksfrit i `--checkpoint-only` uden
+  baseline-genvej, når exit 75 betyder fsync'ede, men endnu ikke samlede,
+  segmentkvitteringer.
+- [x] Tilføj og bestå målrettet bounded-retry-regression for den nye gren.
+- [ ] Bestå RDKS/version/geodatabevis og én exact-head sourcegate.
+- [ ] Commit/push, PR/merge og én almindelig continuation fra gemt fremgang.
+- [ ] Gennemfør Open-Meteo, closure, score, artifact og deploy; dokumentér
+  derefter faktisk komplethed og de tilbageværende DMI-only-vandstandshuller.
+
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.442

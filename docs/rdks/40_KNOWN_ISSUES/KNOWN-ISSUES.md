@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-20 – soft-boundary-gate rettet, driftsbevis åbent
+
+- **ISSUE-COPERNICUS-SOFT-BOUNDARY-CONSOLIDATION – RETTET LOKALT / DRIFTSBEVIS
+  ÅBENT:** `35489667755` gemte fsync'ede segmentkvitteringer, men den
+  efterfølgende gate så ikke en samlet genbrugelig source-stage. 4.0.443
+  konsoliderer nu exit-75-fremgang netværksfrit før kontrollen.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Samme run nåede ikke
+  Open-Meteo, score eller deploy. Næste almindelige continuation skal bevise
+  hele kæden.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** DMI-only-vandstand
+  skal stadig identificeres og lukkes. Ingen lokale huller må kaldes komplette.
+
 # NYESTE CHECKPOINT – 2026-09-20 – timeout-handoff rettet, driftsbevis åbent
 
 - **ISSUE-COPERNICUS-HARD-TIMEOUT-STAGE-HANDOFF – RETTET LOKALT / DRIFTSBEVIS
