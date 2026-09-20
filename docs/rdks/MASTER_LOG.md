@@ -1,3 +1,12 @@
+# 2026-09-20 – 4.0.445 DMI-challenge-binding i source-stage-kontrol
+
+4.0.445 retter den konkrete fejl i run `35501561874`: Copernicus-stage'en
+brugte DMI’s aged-challenge-plan, men den efterfølgende donorbank-kontrol
+gjorde ikke. Derfor kunne en gyldig delvis stage få en anden restliste og blive
+afvist før Open-Meteo. Kontrollen bruger nu samme challenge-plan; en målrettet
+regression er grøn. Exact-head, continuation og livebevis mangler.
+Se `CHANGELOG-4.0.445.md` og DEC-0223.
+
 # 2026-09-20 – 4.0.444 source-stage-kontrol
 
 4.0.444 retter den efterfølgende Copernicus-range-kontrol. Run

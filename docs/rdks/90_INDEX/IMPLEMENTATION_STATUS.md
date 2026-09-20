@@ -1,4 +1,12 @@
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.442
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.445
+
+- [x] Før DMI’s aged-challenge-plan med i Copernicus-range-kontrollens
+  donorbank-sammenligning; stage og kontrol bruger nu samme restberegning.
+- [x] Tilføj og kør målrettet regression for challenge-planens binding.
+- [ ] Kør exact-head sourcegate, PR/merge og én almindelig continuation fra
+  run `35501561874`.
+- [ ] Nå Open-Meteo, afsluttende cache, score, private save, artifact og deploy;
+  mål derefter komplethed ærligt.
 
 - [x] Begræns Copernicus nye shard-start til en sikker afslutningsmargin og
   reserver 120 sekunder til lokal recovery.

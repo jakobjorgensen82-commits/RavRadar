@@ -150,7 +150,9 @@ def inspect(
             refs, missing, _ = select_source_order_admissible_records(
                 registry["operationalRequiredPairs"], projection["acquisitions"],
                 projection["records"], datetime.fromisoformat(reference.replace("Z", "+00:00")),
-                targets, stage["attempts"], **stage_positive_evidence(bank))
+                targets, stage["attempts"],
+                aged_dmi_challenge_plan=registry.get("agedDmiChallengePlan"),
+                **stage_positive_evidence(bank))
         except (KeyError, TypeError, ValueError, RuntimeError):
             # A stage may be valid against its own shadow while a separately
             # restored donor bank belongs to another generation.  That is a

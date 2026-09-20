@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -368,3 +369,82 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as r
     assert changed.returncode != 0 and "DMI input bytes" in changed.stdout
 
 print("OK: Copernicus range checker binds COMPLETE coverage to exact target/DMI inputs.")
+
+# The operational stage and the donor projection must be recomputed with the
+# same aged-DMI challenge plan.  This is a wiring regression: omitting that
+# keyword makes a valid partial stage look like a donor-generation mismatch
+# precisely when DMI has an old-but-still-usable model run under challenge.
+checker_spec = importlib.util.spec_from_file_location("copernicus_range_checker", CHECKER)
+checker_module = importlib.util.module_from_spec(checker_spec)
+assert checker_spec.loader is not None
+checker_spec.loader.exec_module(checker_module)
+with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-stage-") as raw_stage_folder:
+    stage_folder = Path(raw_stage_folder)
+    (stage_folder / "cache.json").write_text("{}", encoding="utf-8")
+    (stage_folder / "source-stage.json").write_text("{}", encoding="utf-8")
+    (stage_folder / "donor-bank.json").write_text("{}", encoding="utf-8")
+    (stage_folder / "dmi.json").write_text("dmi", encoding="utf-8")
+    (stage_folder / "targets.json").write_text("{}", encoding="utf-8")
+    reference_text = REFERENCE.isoformat().replace("+00:00", "Z")
+    challenge = {"challengePairCount": 1, "challengePairs": [{"partId": "p1"}]}
+    registry = {
+        "schemaVersion": 3,
+        "productionReferenceAt": reference_text,
+        "operationalRequiredPairCount": 0,
+        "operationalRequiredPairs": [],
+        "targetRegistrySha256": "target-fingerprint",
+        "dmiCurrentInputSha256": "dmi-input",
+        "agedDmiChallengePlan": challenge,
+    }
+    write(stage_folder / "registry.json", registry)
+    stage = {
+        "status": "IN_PROGRESS",
+        "attempts": [],
+        "selectedRecordRefsSha256": canonical_sha256([]),
+        "missingPairsSha256": required_pairs_sha256([]),
+        "selectedRecordRefCount": 0,
+        "missingPairCount": 0,
+    }
+    calls = []
+    original = {
+        name: getattr(checker_module, name)
+        for name in (
+            "validate_target_registry", "file_sha256", "load_targets",
+            "target_fingerprint", "load_copernicus_donor_bank", "validate_shadow",
+            "projected_donor_shadow", "validate_reusable_source_stage",
+            "stage_positive_evidence", "select_source_order_admissible_records",
+        )
+    }
+    try:
+        checker_module.validate_target_registry = lambda value: registry
+        checker_module.file_sha256 = lambda path: "dmi-input"
+        checker_module.load_targets = lambda path: [TARGET]
+        checker_module.target_fingerprint = lambda targets: "target-fingerprint"
+        checker_module.load_copernicus_donor_bank = lambda path, targets: {"bank": "valid"}
+        checker_module.validate_shadow = lambda value, target_identities, require_collection: {
+            "collections": [], "acquisitions": [], "records": [],
+        }
+        checker_module.projected_donor_shadow = lambda bank, targets: {
+            "acquisitions": [], "records": [],
+        }
+        checker_module.validate_reusable_source_stage = lambda value, **kwargs: stage
+        checker_module.stage_positive_evidence = lambda value: {}
+
+        def record_selection(*args, **kwargs):
+            calls.append(kwargs)
+            return [], [], []
+
+        checker_module.select_source_order_admissible_records = record_selection
+        state = checker_module.inspect(
+            stage_folder / "cache.json", stage_folder / "registry.json",
+            stage_folder / "dmi.json", stage_folder / "targets.json", reference_text,
+            source_stage_path=stage_folder / "source-stage.json",
+            donor_bank_path=stage_folder / "donor-bank.json",
+        )
+        assert state["sourceStageReusable"] is True
+        assert calls and calls[0].get("aged_dmi_challenge_plan") == challenge
+    finally:
+        for name, value in original.items():
+            setattr(checker_module, name, value)
+
+print("OK: Copernicus range checker carries the aged-DMI challenge plan into donor-stage comparison.")

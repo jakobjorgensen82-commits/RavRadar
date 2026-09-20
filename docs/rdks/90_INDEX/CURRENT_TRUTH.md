@@ -1,4 +1,13 @@
-# NYESTE SANDHED – 2026-09-20 – lokal 4.0.444 retter source-stage-kontrol
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.445 retter challenge-binding
+
+Seneste almindelige run `35501561874` gennemførte DMI-kæden med et ærligt
+`DMI_LOCALLY_SKIPPED_DKSS_ASSET`-signal og gemte Copernicus-fremgang. Den
+efterfølgende range-kontrol brugte ikke DMI’s `agedDmiChallengePlan`, selv om
+source-stage'en gjorde, og stoppede derfor før Open-Meteo.
+
+4.0.445 bruger nu samme challenge-plan i donorbank-sammenligningen som i
+stage-beregningen. Målrettet regression er grøn. Open-Meteo, afsluttende cache,
+artifact, deploy og komplet produktionsdatasæt mangler stadig livebevis.
 
 Seneste almindelige run `35494495771` nåede DMI og Copernicus. Copernicus gemte
 7.811 verificerede operationelle par og gennemførte netværksfri recovery, men

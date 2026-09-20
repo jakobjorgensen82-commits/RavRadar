@@ -1,3 +1,10 @@
+# 2026-09-20 – 4.0.445 retter DMI-challenge-binding efter 4.0.444
+
+- Run `35501561874` viste, at checkerens donorbank-sammenligning manglede
+  DMI’s `agedDmiChallengePlan`, selv om stage'en brugte den.
+- 4.0.445 fører planen med i samme beregning og tilføjer en målrettet
+  regressionstest. Live continuation er næste bevis.
+
 # 2026-09-20 – 4.0.444 retter source-stage-kontrol efter 4.0.443
 
 - Run `35494495771` viste 7.811 gemte Copernicus-par efter soft-boundary-
