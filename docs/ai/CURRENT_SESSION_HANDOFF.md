@@ -1,3 +1,23 @@
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.439 exact rebind før install
+
+Main er `2fbfe3b2` / 4.0.438 efter PR #383, exact-head `35471789111` og
+backend `35472148224`. Normalrun `35472299635` restored beskyttet runtime og
+fremgang, gennemførte DMI, Copernicus, Open-Meteo og aktuel closure og nåede
+673/673 scoreklare kystdele.
+
+Stoppet var `RAVSCORE_INITIAL_STATE_SOURCES_INVALID`: den eksakte
+bounded-conditions-forgænger blev genkendt/restored, men dens hærdede rebind
+blev ikke udført før install. De 673 validerede fortsættelser bar fortsat
+forgængerens bundlehash. Branch `codex/4.0.439-bounded-runtime-rebind`
+indsætter exact-source-migreringen mellem restore og install og begrænser
+historical-wave-klassifikationen til dens egen overgang. Målinger, vejr og
+Candidate G-state ændres ikke.
+
+Måltests for overgang, migration og workflow er grønne. Næste: RDKS/version/
+modelchecks, én exact-head, PR/merge og én almindelig continuation til privat
+save/timepakke, artifact, Pages og offentlig aktuel time. Vandstandsresten
+669/673 er åben. `.tmp-420/` må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-19 – lokal 4.0.438 efter fuld datakæde
 
 Main er `65bda6a9` / 4.0.437. Normalrun `35463989289` fortsatte den gemte

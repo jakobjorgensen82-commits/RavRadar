@@ -1,3 +1,23 @@
+# AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.439 udfører forgængerovergangen
+
+4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`.
+Backend `35472148224` anvendte den nye binding. Normalrun `35472299635`
+gendannede beskyttet runtime og fremgang, gennemførte DMI, Copernicus,
+Open-Meteo og aktuel closure og nåede 673/673 scoreklare kystdele.
+
+Stoppet kom før score-runtime og deploy: workflowet genkendte den eksakte
+`bounded-conditions-writer`-forgænger, men installerede den uden først at
+udføre den eksisterende kontrollerede modelbindingstilpasning. Alle 673
+gyldige fortsættelser bar derfor forgængerens bundlehash og blev afvist.
+
+Branch `codex/4.0.439-bounded-runtime-rebind` fører kun denne eksakte,
+forseglede forgænger gennem den hærdede migrering før installation. Dens
+gamle læser, source/targetbindinger, kontrakter, inventar og 210/673 valideres.
+Kun det kendte integrerede bundlemærke tilpasses; vejr, målinger og Candidate
+G-state bevares. Ukendte afvigelser stopper. Næste er målchecks, RDKS/version,
+én exact-head, PR/merge og én almindelig continuation. `.tmp-420/` er privat
+og må aldrig stages.
+
 # AKTUELT CHECKPOINT – 2026-09-19 – lokal 4.0.438 timeleveringspakke
 
 Main er 4.0.437 / `65bda6a9`. Normalrun `35463989289` gendannede den

@@ -1,6 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.438
+**Håndbogsversion:** 4.0.439
+
+## 89.44 4.0.439 – En fundet gammel vejrpakke skal også tilpasses
+
+4.0.438 blev lagt på main, og den næste almindelige vejrkørsel kom gennem
+DMI, Copernicus og Open-Meteo. Den samlede aktuelle vejrpakkes 673
+kyststrækninger var alle klar til score. Fejlen lå altså ikke i den
+vejrhentning, der netop var gennemført.
+
+Systemet fandt korrekt den præcise gamle private vejrpakke og kontrollerede,
+at den var den forventede forgænger. Men det gik direkte videre til
+installation uden først at udføre den allerede byggede, kontrollerede
+tilpasning til den nye pakkeform. Derfor stod alle 673 fortsættelser stadig
+med den gamle pakkes mærke, og den nye læser afviste dem samlet.
+
+4.0.439 forbinder trinene rigtigt: find og kontrollér den gamle pakke, tilpas
+kun det kendte pakkemærke, kontrollér igen og installér derefter. Målinger og
+vejrdata ændres ikke, og Candidate G-state røres ikke. Hvis source, binding,
+kontrakt, antal kyststrækninger eller filer ikke matcher præcist, stopper
+overgangen stadig.
+
+RavScore, DMI-first, reservekilder, DMI-only-vandstand og geometri er
+uændret. En almindelig produktionskørsel skal fortsat bevise scorebygning,
+privat lagring, offentliggørelse og den aktuelle time. Der er ikke brug for
+en blind oneoff.
 
 ## 89.43 4.0.438 – Alle offentlige timer bevares uden en privat kæmpefil
 
@@ -25,8 +49,10 @@ pakken. Den faktiske generation fyldte cirka 203,5 MB råt og 9,3 MB pakket;
 ingen timer eller felter blev smidt væk.
 
 RavScore, DMI-first, reservekilder, DMI-only-vandstand og geometri er
-uændret. Rettelsen er lokalt testet, men skal stadig merged og bevises i den
-almindelige produktionskørsel og næste cron.
+uændret. 4.0.438 blev merged, men den første almindelige kørsel viste, at den
+genkendte forgænger ikke blev ført gennem sin tilpasning før installation.
+Det er overgangsfejlen, som 4.0.439 retter; selve timepakkens
+produktionsbevis mangler fortsat.
 
 ## 89.42 4.0.437 – Samme hele UTC-time skal forstås ens
 

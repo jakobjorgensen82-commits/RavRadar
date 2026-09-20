@@ -1,3 +1,17 @@
+# Nyeste prioritering – 2026-09-20, 4.0.439 anvend den fundne forgænger
+
+4.0.438 er main `2fbfe3b2`; exact-head og backend er grønne. Normalrun
+`35472299635` beviste 673/673 scoreklare aktuelle kystdele, men stoppede,
+fordi den korrekt genkendte/restored bounded-forgænger ikke blev ført gennem
+sin hærdede rebind før installation.
+
+4.0.439 forbinder restore, exact-source-migrering og install i den rigtige
+rækkefølge og kører kun historical-wave-vejen for dens egen overgangstype.
+Næste rækkefølge er målchecks, RDKS/version/modelchecks, én exact-head,
+PR/merge og én almindelig continuation. Den skal genbruge beskyttet fremgang
+og bevise score, privat save/timepakke, artifact, Pages og aktuel time. Ingen
+blind oneoff eller gentagelse af allerede beviste providerfaser.
+
 # Nyeste prioritering – 2026-09-19, 4.0.438 afslut den gemte generation
 
 4.0.437 er main `65bda6a9`. Normalrun `35463989289` beviste, at den samlede

@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.439 anvender den fundne overgang
+
+4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`;
+backend `35472148224` var grøn. Normalrun `35472299635` gennemførte DMI,
+Copernicus, Open-Meteo og aktuel closure med 673/673 scoreklare kystdele.
+Det er konkret bevis for, at stoppet ikke skyldtes manglende providerinput.
+
+Runnet genkendte og gendannede den eksakte bounded-conditions-forgænger, men
+workflowet sprang selve den allerede implementerede rebind over. De 673
+gyldige integrerede fortsættelser beholdt derfor forgængerens bundlehash og
+blev samlet afvist af den nye læser. 4.0.439 indsætter den hærdede migrering
+mellem restore og installation for netop denne forseglede overgang. Den
+validerer gammel source, begge bindinger, kontrakter, inventar og 210/673 og
+ændrer kun det kendte bundlemærke. Målinger, vejr og Candidate G-state er
+uændret. Ukendt afvigelse stopper.
+
+Public hour-pack, privat save, artifact, Pages, offentlig aktuel time og næste
+cron mangler fortsat produktionsbevis. Vandstand var senest 669/673; de fire
+manglende partfelter er åbne, og deres zoneidentiteter er ikke bevist endnu.
+Produktionssiden må derfor ikke kaldes stabil eller komplet endnu.
+
 # NYESTE SANDHED – 2026-09-19 – lokal 4.0.438 bevarer timer i separat pakke
 
 4.0.437 blev merged som `65bda6a9`. Normalrun `35463989289` gendannede den

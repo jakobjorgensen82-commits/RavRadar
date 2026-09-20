@@ -1,3 +1,21 @@
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.439
+
+- [x] 4.0.438 exact-head `35471789111`, PR #383, merge `2fbfe3b2` og grøn
+  backend `35472148224`.
+- [x] Normalrun `35472299635` gennemførte leverandører og aktuel closure med
+  673/673 scoreklare kystdele og isolerede stoppet til initial state-valget.
+- [x] Bevis rodårsagen: bounded-forgængeren blev genkendt og restored, men
+  dens kontrollerede rebind blev ikke udført før installation.
+- [x] Indsæt den hærdede exact-source-migrering mellem restore og install;
+  brug kun dens output for `bounded-conditions-writer`.
+- [x] Begræns historical-wave-klassifikationen til dens egen overgangstype.
+- [x] Måltest overgang, privat migration og workflowrækkefølge.
+- [ ] Afslut RDKS/version/modelchecks og én exact-head sourcegate; PR/merge.
+- [ ] Kør én almindelig continuation og bevis score, privat save/timepakke,
+  artifact, Pages, offentlig aktuel time og samlet restdiagnostik.
+- [ ] Identificér og luk de fire DMI-only-vandstandspartfelter og følg næste
+  almindelige run/cron som selvkørende driftsbevis.
+
 # Aktuel implementeringsstatus – 2026-09-19, lokal 4.0.438
 
 - [x] 4.0.437 merged som `65bda6a9`; normalrun `35463989289` gennemførte

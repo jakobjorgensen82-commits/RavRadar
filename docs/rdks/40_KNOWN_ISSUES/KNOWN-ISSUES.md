@@ -1,3 +1,19 @@
+# NYESTE CHECKPOINT – 2026-09-20 – forgænger blev fundet, men ikke tilpasset
+
+- **ISSUE-BOUNDED-PREDECESSOR-REBIND-NOT-APPLIED – RETTET LOKALT /
+  DRIFTSBEVIS ÅBENT:** Normalrun `35472299635` nåede 673/673 scoreklare
+  aktuelle kystdele. Den eksakte gamle private runtime blev genkendt og
+  restored, men workflowet installerede den uden den allerede eksisterende
+  kontrollerede rebind. De 673 gyldige fortsættelser beholdt derfor gammel
+  bundlehash. 4.0.439 udfører exact-source-migreringen før installation og
+  ændrer ikke målinger eller Candidate G-state. DEC-0217-tillæg.
+- **ISSUE-PUBLIC-HOUR-PACK-PRODUCTION-PROOF – FORTSAT ÅBENT:** Runnet nåede
+  ikke score-save, timepakke, artifact eller Pages. En merged almindelig
+  continuation skal stadig bevise hele denne del.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Seneste sikre måling
+  var 669/673 partfelter. Det kan være færre end fire zoner; identiteterne er
+  endnu ikke bevist og må ikke gættes.
+
 # NYESTE CHECKPOINT – 2026-09-19 – monolitisk privat conditions er erstattet
 
 - **ISSUE-PRIVATE-CONDITIONS-MONOLITHIC-HOURLY – RETTET LOKALT / DRIFTSBEVIS

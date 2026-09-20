@@ -1,3 +1,21 @@
+## 4.0.439 – den genkendte forgænger tilpasses før installation (2026-09-20)
+
+- 4.0.438 bestod exact-head `35471789111`, blev merged via PR #383 som
+  `2fbfe3b2` og fik den nye backendbinding anvendt i `35472148224`.
+- Normalrun `35472299635` gennemførte leverandørkæden og byggede 673/673
+  scoreklare aktuelle kystdele, men stoppede før score-runtime og deploy.
+- Runnet fandt og gendannede den eksakte gamle private runtime korrekt, men
+  udførte ikke den allerede eksisterende kontrollerede tilpasning af dens
+  modelbundlemærke. Alle 673 gyldige fortsættelser bar derfor forgængerens
+  hash og blev afvist af 4.0.438-læseren.
+- 4.0.439 fører kun den eksakt validerede bounded-conditions-forgænger gennem
+  den hærdede migrering før installation. Målinger og Candidate G-state
+  bevares uændret; ukendt source, binding, kontrakt, inventar eller datafejl
+  stopper fortsat.
+- Den historiske bølgeovergang køres nu kun for sin egen overgangstype.
+  RavScore, leverandørprioritet, vandstandsregel, vejrdata og geometri er
+  uændret. Se `CHANGELOG-4.0.439.md` og DEC-0217's 4.0.439-tillæg.
+
 ## 4.0.438 – public timer bevares i en privat leveringspakke (2026-09-19)
 
 - Normalrun `35463989289` på main `65bda6a9` gennemførte DMI, Copernicus,

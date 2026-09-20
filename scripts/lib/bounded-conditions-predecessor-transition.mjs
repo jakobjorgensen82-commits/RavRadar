@@ -11,7 +11,7 @@ const CONTRACT_KEYS = Object.freeze([
 ]);
 
 export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
-  releaseVersion: '4.0.438',
+  releaseVersion: '4.0.439',
   sourceDescriptionKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
   sourceDescriptionSchemaVersion: '1.0.0',
   sourceHead: 'd4e8844ece6bfa46447b762a662cac0d7f1da385',

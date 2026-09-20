@@ -1,3 +1,18 @@
+# Aktuelt krav til anvendelse af forgængerovergang – 2026-09-20
+
+- **REQ-APPLY-EXACT-PREDECESSOR-BEFORE-INSTALL-0217 – BINDENDE:** Det er ikke
+  nok at genkende og gendanne en eksakt forgænger. Når den forseglede
+  overgang kræver modelbindingstilpasning, skal den hærdede migrering lykkes,
+  før den aktuelle læser eller installation må bruge resultatet. Migreringen
+  skal validere forgængeren med dens egen reader, source/targetbindinger,
+  kontrakter, inventar og 210/673. Kun det på forhånd kendte integrerede
+  bundlemærke må ændres; målinger og Candidate G-state skal bevares. Ukendt
+  overgang eller afvigelse stopper. DEC-0217's 4.0.439-tillæg.
+- **REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217 – 4.0.439-KORREKTION:** Den
+  eksakte engangsbro leveres i 4.0.439, fordi 4.0.438 kun genkendte og
+  restored forgængeren uden at anvende rebind før installation. Alle faste
+  source-, bundle-, binding-, 210/673- og kontraktkrav er uændrede.
+
 # Aktuelt krav til privat timelevering – 2026-09-19
 
 - **REQ-PRIVATE-PUBLIC-HOUR-DELIVERY-PACK-0217 – BINDENDE:** Alle 118
@@ -15,8 +30,10 @@
   forsegles. Senere enrichment skal være byte-idempotent og stoppe ved en
   afvigelse. Ingen efterfølgende mutation må gøre manifest, conditions og
   timepakke uenige.
-- **REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217 – BINDENDE:** Kun release
-  4.0.438 må genbruge den kendte forgænger. Den skal matche source
+- **REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217 – HISTORISK 4.0.438-
+  FORMULERING; KORRIGERET OVENFOR:** 4.0.438 skulle genbruge den kendte
+  forgænger, men genkendte/restored den kun. Alle faste krav består i
+  4.0.439-korrektionen. Forgængeren skal matche source
   `d4e8844e`, bundle `ad2337ab…`, den gamle modelbinding, 210/673 og de tre
   gamle kontrakthashes. Den aktuelle kode skal samtidig matche den eksakte
   nye modelbinding `0e1c6625…`, public-projection-kontrakt `6b4ad463…` og
@@ -42,7 +59,7 @@
   fuldruntimekontrakt. DEC-0215/0217.
 - **REQ-EXACT-BOUNDED-CONDITIONS-PREDECESSOR-0215 – ERSTATTET AF
   REQ-EXACT-SHARDED-CONDITIONS-PREDECESSOR-0217:** Den tidligere 4.0.437-
-  formulering er historisk. Den aktuelle 4.0.438-bro kræver både eksakt gammel
+  formulering er historisk. Den aktuelle 4.0.439-bro kræver både eksakt gammel
   source/model og eksakt ny model/public projection; det er fortsat en
   engangsovergang og aldrig en generel lempelse.
 
