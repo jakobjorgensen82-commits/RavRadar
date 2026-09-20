@@ -1,5 +1,22 @@
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.448 ensretter public-hour-pakken
 
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.449 bevarer append-only migrationshistorik
+
+4.0.448 blev merged som `91f386d56fb350ed29d91403997a75a81df96917` efter grøn
+exact-head sourcegate. Den første normale kørsel `35542886759` stoppede ved
+DMI-bootstrap, fordi ingen privat DMI-cache blev gendannet. Saved-weather
+recovery `35543214442` fandt derefter den konkrete historikfejl: Supabase har
+allerede `20260919231000_public_hour_delivery_binding.sql`, men den aktive
+liste havde kun successoren `20260920220000`.
+
+4.0.449 føjer den gamle migration tilbage før successoren. Begge migrationer
+er nu lokale, navngivne og kronologiske; ingen remote historik normaliseres
+væk. Se DEC-0227 og `CHANGELOG-4.0.449.md`.
+
+Næste trin er målchecks, exact-head sourcegate, merge og at genoptage saved-
+weather recoveryen uden nye providerkald. Først derefter skal en normal
+vejrkørsel bevise DMI-cache, fallback, privat save, artifact og deploy.
+
 Normalrun `35530859518` nåede 210/210 offentlige zoner, komponentruntime og
 673/673 scoredele. Stoppet kom først ved den private public-hour-pakke, hvor
 en gyldig offentlig timefil blev afvist som `Public hour delivery descriptor is

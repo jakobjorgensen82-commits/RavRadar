@@ -160,6 +160,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     filename: '20260919020000_measured_warmup_checkpoint.sql',
   }),
   Object.freeze({
+    version: '20260919231000',
+    id: '20260919231000_public_hour_delivery_binding',
+    filename: '20260919231000_public_hour_delivery_binding.sql',
+  }),
+  Object.freeze({
     version: '20260920220000',
     id: '20260920220000_public_hour_pack_capacity_binding',
     filename: '20260920220000_public_hour_pack_capacity_binding.sql',
