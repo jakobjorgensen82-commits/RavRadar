@@ -1,5 +1,15 @@
 # NYESTE CHECKPOINT – 2026-09-20 – gentaget regional kontrol rettet lokalt
 
+- **ISSUE-APPEND-ONLY-MIGRATION-HISTORY – RETTET LOKALT / LIVE-BEVIS ÅBENT:**
+  Saved-weather recovery `35543214442` stoppede korrekt, fordi den allerede
+  anvendte `20260919231000` ikke længere stod i 4.0.448's aktive allowlist.
+  4.0.449 bevarer nu både gammel og ny public-hour-migration i rækkefølge.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** 4.0.449 skal gennem
+  exact-head, merge, saved-weather recovery og én normal continuation med
+  DMI-cache, artifact og deploy.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Ingen lokale huller
+  kaldes komplette, før den faktiske produktionskontrol viser det.
+
 - **ISSUE-REGIONAL-REFERENCE-PROOF-REBUILT-PER-PART – RETTET LOKALT I
   4.0.447 / LIVE-BEVIS ÅBENT:** Run `35513058150` havde 673/673 direkte
   scoreklare kystdele, men `update:weather` ramte igen 25 minutter. Den samme

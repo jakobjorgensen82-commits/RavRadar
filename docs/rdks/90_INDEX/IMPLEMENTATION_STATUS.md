@@ -1,4 +1,22 @@
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.448
+# Historisk implementeringsstatus – 2026-09-20, lokal 4.0.448
+
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.449
+
+- [x] Lever 4.0.448 til main efter grøn PR-gate og afgræns normalrun
+  `35542886759` til manglende privat DMI-bootstrap.
+- [x] Find, at saved-weather recovery `35543214442` fejlede, fordi den
+  allerede anvendte `20260919231000` var fjernet fra den aktive allowlist.
+- [x] Gør migrationsrækkefølgen append-only igen: gammel public-hour-
+  migration efterfølges af `20260920220000`; opdater recovery, trip-storage-
+  gate og målfixtures til 25 migrationer.
+- [x] Kør målrettede migrations-, release- og workflowkontroller grønt.
+- [ ] Kør RDKS-/versionsslutkontrol og exact-head sourcegate for 4.0.449;
+  derefter merge.
+- [ ] Genoptag saved-weather recovery uden providerkald. Hvis den er grøn,
+  kør én normal vedligeholdelseskørsel og kræv cache, score, privat save,
+  artifact, deploy og offentlig runtime.
+
+# Historisk implementeringsstatus – 2026-09-20, lokal 4.0.448
 
 - [x] Afgræns normalrun `35530859518` til den private public-hour-pakke;
   DMI, fallback, offentlige zoner, komponentruntime og 673/673 scoredele

@@ -1,4 +1,19 @@
-# Aktiv roadmap – 2026-09-20, 4.0.448 fra public-hour-kontrakt til live drift
+# Historisk aktivt roadmap – 2026-09-20, 4.0.448 fra public-hour-kontrakt til live drift
+
+# Aktiv roadmap – 2026-09-20, 4.0.449 fra migrationshistorik til live drift
+
+1. [x] Bevar både `20260919231000_public_hour_delivery_binding.sql` og den
+   nye `20260920220000_public_hour_pack_capacity_binding.sql` i den aktive,
+   kronologiske allowlist.
+2. [x] Ret recovery-, trip-storage- og testforventninger fra 24 til 25
+   migrationer uden at ændre allerede anvendt SQL.
+3. [x] Kør målrettede readiness-, install-, release- og workflowkontroller.
+4. [ ] Bestå versions-/RDKS-slutkontrol og exact-head sourcegate; merge
+   4.0.449.
+5. [ ] Genoptag saved-weather recovery fra den allerede gemte private runtime
+   uden providerkald.
+6. [ ] Kør derefter én normal vejrkørsel og bevis DMI-cachevedligeholdelse,
+   fallback, privat save, artifact, deploy og offentlig runtime.
 
 1. [x] Find og ret den konkrete afvisning af en gyldig offentlig timefil i
    run `35530859518`; providerkæde og 673/673 scoredele var allerede grønne.

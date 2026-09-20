@@ -1,8 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.448
+**Håndbogsversion:** 4.0.449
 
 ## 89.53 4.0.448 – Public-hour-pakken følger den offentlige kontrakt
+
+## 89.54 4.0.449 – Migrationshistorikken er append-only
+
+Når en ny SQL-migration bygger videre på en allerede anvendt migration, skal
+begge stå i den aktive rækkefølge. Den gamle public-hour-migration
+`20260919231000_public_hour_delivery_binding.sql` må ikke fjernes, når
+`20260920220000_public_hour_pack_capacity_binding.sql` tilføjes.
+
+Det blev synligt i saved-weather recovery `35543214442`: Supabase havde den
+gamle migration, men recoveryens nye liste kaldte den ukendt og stoppede. Det
+var en historikfejl, ikke en vejr- eller scorefejl. 4.0.449 kræver begge
+migrationer og bruger fortsat kun midlertidige placeholders for ældre historik.
+Scoreformlen og vægtene er uændrede. 4.0.449 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`.
+Den integrerede kode bruger samme verificerede bundle som 4.0.448:
+`modelBundleSha256=14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904`.
 
 Normalrun `35530859518` nåede 210/210 offentlige zoner og 673/673 scoredele,
 men stoppede ved den private timepakke. Den offentlige writer accepterer op

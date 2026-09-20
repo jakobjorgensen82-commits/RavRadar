@@ -1,5 +1,16 @@
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.445 challenge-binding
 
+# NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.449 migrationshistorik
+
+4.0.448 er merged som `91f386d56fb350ed29d91403997a75a81df96917` efter grøn
+PR-gate. Normalrun `35542886759` stoppede ved manglende privat DMI-bootstrap.
+Saved-weather recovery `35543214442` fandt derefter, at den aktive allowlist
+havde erstattet allerede anvendt migration `20260919231000` med
+`20260920220000`. 4.0.449 bevarer nu begge append-only i rækkefølge;
+målrettede migrations-, release- og workflowtests er grønne. Næste: versions-/
+RDKS-slutkontrol, exact-head sourcegate, PR/merge, saved-weather recovery og
+derefter normal vejrvedligeholdelse.
+
 Run `35501561874` gennemførte DMI-kæden med `DMI_LOCALLY_SKIPPED_DKSS_ASSET`
 og gemte Copernicus-fremgang. Den strenge kontrol stoppede bagefter, fordi
 den brugte source-stage'ens forsøg, men ikke den samme `agedDmiChallengePlan`.

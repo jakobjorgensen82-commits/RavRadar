@@ -1,5 +1,20 @@
 # 2026-09-20 – 4.0.448 ensretter offentlig og privat public-hour-kapacitet
 
+# 2026-09-20 – 4.0.449 gendanner append-only migrationshistorik
+
+PR #393 blev merged som `91f386d56fb350ed29d91403997a75a81df96917` efter grøn
+exact-head sourcegate. Normalrun `35542886759` stoppede ved DMI-bootstrap, da
+ingen privat DMI-cache blev gendannet. Saved-weather recovery `35543214442`
+stoppede før runtime-restore, fordi Supabase allerede havde
+`20260919231000_public_hour_delivery_binding`, mens 4.0.448's allowlist kun
+havde successoren `20260920220000`.
+
+4.0.449 gendanner den gamle migration i den aktive liste før successoren og
+opdaterer recovery-/trip-storage-gater til 25 migrationer. SQL-filerne er ikke
+ændret. Målrettede readiness-, install-, release- og workflowkontroller er
+grønne. Næste trin er exact-head sourcegate, merge og saved-weather recovery.
+Se DEC-0227 og `CHANGELOG-4.0.449.md`.
+
 Normalrun `35530859518` gennemførte providerkæde, offentlige zoner,
 komponentruntime og alle 673 scoredele. Det stoppede først ved den private
 public-hour-pakke med `Public hour delivery descriptor is invalid`.

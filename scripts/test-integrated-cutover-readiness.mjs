@@ -43,7 +43,7 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 24,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 25,
   'The active backend must preserve every predecessor, storage security and the latest current-input binding');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
 assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260920220000');
@@ -273,6 +273,7 @@ const unicodeList = `
  20260918190000    │                  │ 2026-09-18 19:00:00
  20260919010000    │                  │ 2026-09-19 01:00:00
  20260919020000    │                  │ 2026-09-19 02:00:00
+  20260919231000    │                  │ 2026-09-19 23:10:00
   20260920220000    │                  │ 2026-09-20 22:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
@@ -300,6 +301,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260918190000', remote: null },
   { local: '20260919010000', remote: null },
   { local: '20260919020000', remote: null },
+  { local: '20260919231000', remote: null },
   { local: '20260920220000', remote: null },
 ]);
 
@@ -336,6 +338,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260918190000\` | \` \`    | \`2026-09-18 19:00:00\`
    \`20260919010000\` | \` \`    | \`2026-09-19 01:00:00\`
    \`20260919020000\` | \` \`    | \`2026-09-19 02:00:00\`
+   \`20260919231000\` | \` \`    | \`2026-09-19 23:10:00\`
    \`20260920220000\` | \` \`    | \`2026-09-20 22:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
@@ -448,6 +451,7 @@ await assert.rejects(
        20260918190000 | | pending
        20260919010000 | | pending
        20260919020000 | | pending
+       20260919231000 | | pending
        20260920220000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
@@ -481,6 +485,7 @@ const appliedList = `
  20260918190000 | 20260918190000 | now
  20260919010000 | 20260919010000 | now
  20260919020000 | 20260919020000 | now
+ 20260919231000 | 20260919231000 | now
  20260920220000 | 20260920220000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
@@ -496,7 +501,7 @@ assert.deepEqual(assertSupabaseMigrationsApplied(currentAppliedList).appliedVers
 assert.throws(() => assertSupabaseMigrationsApplied(unicodeList), /was not recorded remotely/);
 
 // Every applied prefix must resume at its exact suffix, and a retry after all
-// twenty-four required migrations must be a no-op.
+// twenty-five required migrations must be a no-op.
 for (let appliedCount = 0; appliedCount <= REQUIRED_CUTOVER_MIGRATIONS.length; appliedCount += 1) {
   const appliedPrefix = REQUIRED_CUTOVER_MIGRATIONS.slice(0, appliedCount);
   const pendingSuffix = REQUIRED_CUTOVER_MIGRATIONS.slice(appliedCount);
@@ -612,9 +617,10 @@ try {
  20260917001500 │ │ pending
   20260918125600 │ │ pending
   20260918190000 │ │ pending
-  20260919010000 │ │ pending
-  20260919020000 │ │ pending
-  20260920220000 │ │ pending
+ 20260919010000 │ │ pending
+ 20260919020000 │ │ pending
+ 20260919231000 │ │ pending
+ 20260920220000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -651,7 +657,8 @@ try {
  20260918190000 │ │ pending
  20260919010000 │ │ pending
  20260919020000 │ │ pending
-  20260920220000 │ │ pending
+ 20260919231000 │ │ pending
+ 20260920220000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
