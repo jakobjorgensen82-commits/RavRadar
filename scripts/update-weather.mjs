@@ -3403,6 +3403,15 @@ function recordHasAtmosphere(record, generatedAt) {
     && windHours >= 96 && waveHours >= 24;
 }
 
+// Fallback providers are only needed when DMI's fallback-capable atmospheric
+// components are actually incomplete. A valid DMI marine record may still
+// have a locally missing water level/current (those fields are DMI-only in the
+// public contract); that must not trigger a second Open-Meteo request for every
+// zone. The provider chain has already handled exact residual acquisition.
+function dmiRecordNeedsPublicFallback(record, generatedAt) {
+  return !recordHasAtmosphere(record, generatedAt);
+}
+
 function waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt, fromCache = false } = {}) {
   const modelCm = num(currentForecast?.waterLevelModelCm ?? currentForecast?.waterLevelCm);
   const observedCm = num(stationWaterLevel?.valueCm);
@@ -3797,7 +3806,9 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
       const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt, feature);
       return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'dmi-cache-only', remainingHours: existingCoverage.remainingHours } };
     }
-    const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
+    const fallback = dmiRecordNeedsPublicFallback(existingRecord, generatedAt)
+      ? await fallbackForZone(feature, generatedAt, previous, attempts)
+      : null;
     const merged = fallback
       ? mergeDmiWithFallback(healthyCachedDmi, fallback, generatedAt)
       : healthyCachedDmi;
@@ -3828,7 +3839,9 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
   const cachedDmi = zoneFromDmiForecastCache(feature, dmiForecastStore?.zones?.[zoneId], generatedAt);
   if (cachedDmi) {
     nextDmiForecastStore.zones[zoneId] = { ...dmiForecastStore.zones[zoneId], hourly: normalizeForecastHourly(dmiForecastStore.zones[zoneId]?.hourly ?? []) };
-    const fallback = dmiOnly ? null : await fallbackForZone(feature, generatedAt, previous, attempts);
+    const fallback = dmiOnly || !dmiRecordNeedsPublicFallback(dmiForecastStore?.zones?.[zoneId], generatedAt)
+      ? null
+      : await fallbackForZone(feature, generatedAt, previous, attempts);
     const merged = fallback
       ? mergeDmiWithFallback(cachedDmi, fallback, generatedAt)
       : cachedDmi;

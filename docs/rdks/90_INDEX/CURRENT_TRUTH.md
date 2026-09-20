@@ -1,3 +1,20 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.446 retter redundant fallback-fanout
+
+Run `35506992220` på main `203fbf36` gennemførte DMI, Copernicus, Open-Meteo,
+DMI-first-lukning og 7-dages historik. Det stoppede først i det afsluttende
+`npm run update:weather`-trin efter den eksplicitte 25-minutters tidsgrænse;
+der blev derfor ikke bygget artifact eller deployet. Den operationelle kontrol
+var grøn med `CONTINUE_WITH_VALID_WEATHER`, så der er ikke belæg for at kalde
+run'et et komplet datasæt.
+
+Fejlen var, at den normale cachevej kaldte Open-Meteo igen for zoner, hvor DMI
+allerede havde gyldige atmosfæriske felter. 4.0.446 indfører derfor en samlet
+DMI-first-vagt: fallback kaldes kun ved et reelt hul i DMI's fallback-egnede
+atmosfære. DMI-only-vandstand/aktuelt niveau udløser ikke en meningsløs
+Open-Meteo-genhentning. DMI-forrang, gamle gyldige værdier og MISSING-regler
+er uændrede. Målrettede regressioner er grønne; exact-head sourcegate,
+merge og en ny live continuation mangler stadig.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.445 retter challenge-binding
 
 Seneste almindelige run `35501561874` gennemførte DMI-kæden med et ærligt

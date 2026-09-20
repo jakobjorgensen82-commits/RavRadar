@@ -1,4 +1,20 @@
-# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.445
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.446
+
+- [x] Genskab den seneste livefejl: hele providerkæden og closure passerede,
+  men `npm run update:weather` nåede sin 25-minutters grænse og forhindrede
+  artifact/deploy.
+- [x] Ret redundant Open-Meteo-fanout efter gyldig DMI-cache, uden at gøre
+  DMI-only-vandstand eller aktuelt niveau til et falsk fallbackbehov.
+- [x] Tilføj målrettet regression og synkronisér version, RDKS, håndbog og
+  changelog.
+- [ ] Kør exact-head sourcegate, PR/merge og én almindelig continuation på den
+  eksakte 4.0.446-head.
+- [ ] Bevis at afsluttende cache, artifact og deploy kan gennemføres på den
+  mergede kode; mål derefter komplethed ærligt.
+- [ ] Først efter livebevis: genoptag normal vedligeholdelse og de aktuelle
+  vandstands-/roadmap-punkter.
+
+# Historisk implementeringsstatus – 2026-09-20, lokal 4.0.445
 
 - [x] Før DMI’s aged-challenge-plan med i Copernicus-range-kontrollens
   donorbank-sammenligning; stage og kontrol bruger nu samme restberegning.
