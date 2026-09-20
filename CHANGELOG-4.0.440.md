@@ -35,3 +35,8 @@ Copernicus før Open-Meteo, vejrdata, RavScore, DMI-only-vandstand, geometri
 og gyldighedsregler er uændrede. Produktionsbeviset er én almindelig kørsel,
 som skal fortsætte fra den allerede gemte private fremgang gennem
 Copernicus, Open-Meteo, score, fulde datagates og deploy.
+
+Den tidligere bounded-conditions-bro forbliver med vilje låst til den exact
+4.0.439-release, hvor den nu er produktionsbevist. Dens regression kontrollerer
+fra 4.0.440, at broen er inaktiv, i stedet for fejlagtigt at kræve, at den
+midlertidige engangsundtagelse genaktiveres i hver ny version.

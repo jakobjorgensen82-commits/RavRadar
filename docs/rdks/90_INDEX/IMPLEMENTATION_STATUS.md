@@ -12,6 +12,8 @@
   eksisterende validatorer og den atomiske bank/shadow/stage-transaktion.
 - [x] Bevis ægte proces-timeout → bounded progress samt recovery uden
   credentials/fixtures og grøn `--require-source-stage-reusable`-gate.
+- [x] Bevar 4.0.439's allerede produktionsbeviste forgængerbro exact-release-
+  låst; senere releases tester eksplicit, at den ikke genaktiveres.
 - [ ] Synkronisér version/RDKS/håndbøger og bestå målchecks samt én
   exact-head sourcegate; PR/merge.
 - [ ] Kør én almindelig continuation fra gemt krypteret fremgang. Kræv

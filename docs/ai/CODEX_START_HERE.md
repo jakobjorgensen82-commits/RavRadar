@@ -16,6 +16,12 @@ består. DMI-first, providerprioritet, data og score ændres ikke. Måltests er
 grønne. Næste: version/RDKS, exact-head, PR/merge og én almindelig
 fortsættelse fra den gemte fremgang. Ingen oneoff. DEC-0218.
 
+Første exact-head `35484940998` gennemførte alle tidligere sourcechecks og
+fandt én forældet regression: den krævede, at 4.0.439's allerede anvendte
+exact-release-engangsbro fortsat var aktiv i 4.0.440. Produktionskoden var
+korrekt inaktiv. Testen beviser nu både 4.0.439-aktivering og senere
+deaktivering; næste exact-head afventer.
+
 # AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.439 udfører forgængerovergangen
 
 4.0.438 bestod exact-head `35471789111`, PR #383 og merge `2fbfe3b2`.

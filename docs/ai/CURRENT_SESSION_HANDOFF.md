@@ -16,6 +16,12 @@ er uændret. Den præcise timeouttest og realistiske journalreplay mod den
 faktiske checker er grønne. Næste: docs/versionchecks, exact-head, PR/merge
 og én almindelig continuation. `.tmp-420/` må aldrig stages. DEC-0218.
 
+PR #385's første exact-head `35484940998` fejlede kun i den gamle
+bounded-forgængertest: den forventede fejlagtigt, at 4.0.439's engangsbro
+stadig var aktiv i 4.0.440. Koden holdt broen korrekt lukket. Regressionen er
+rettet til at bevise exact-release-retirement og er grøn lokalt. Push og nyt
+exact-head afventer.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.439 exact rebind før install
 
 Main er `2fbfe3b2` / 4.0.438 efter PR #383, exact-head `35471789111` og
