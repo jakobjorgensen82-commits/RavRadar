@@ -11,7 +11,7 @@ const CONTRACT_KEYS = Object.freeze([
 ]);
 
 export const BOUNDED_CONDITIONS_PREDECESSOR_POLICY = Object.freeze({
-  releaseVersion: '4.0.439',
+  introducedInRelease: '4.0.439',
   sourceDescriptionKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
   sourceDescriptionSchemaVersion: '1.0.0',
   sourceHead: 'd4e8844ece6bfa46447b762a662cac0d7f1da385',
@@ -107,11 +107,9 @@ export function boundedConditionsPredecessorApplies({
   sourceDescription,
   currentBinding,
   currentContractHashes,
-  currentReleaseVersion,
 } = {}) {
   if (!isObject(sourceDescription)
     || !isObject(currentBinding)
-    || currentReleaseVersion !== BOUNDED_CONDITIONS_PREDECESSOR_POLICY.releaseVersion
     || sourceDescription.schemaVersion
       !== BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceDescriptionSchemaVersion
     || sourceDescription.kind
@@ -149,14 +147,12 @@ export function buildBoundedConditionsPredecessorRestoreExpectation({
   targetReferenceAt,
   currentBinding,
   currentContractHashes,
-  currentReleaseVersion,
   now = new Date().toISOString(),
 } = {}) {
   if (!boundedConditionsPredecessorApplies({
     sourceDescription,
     currentBinding,
     currentContractHashes,
-    currentReleaseVersion,
   })) return null;
 
   const sourceReferenceAt = canonicalHour(

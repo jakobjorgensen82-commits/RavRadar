@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-20 – lokal 4.0.441 pensionerer på faktisk source
+
+4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.
+Almindelig weather `35485561037` stoppede efter cirka 83 sekunder, før DMI
+eller andre providers. Den beskyttede runtime var kontraktinkompatibel, og
+den bounded-forgænger, som 4.0.439 havde bevist, blev ikke genkendt, fordi
+broens levetid fejlagtigt var bundet til releaseversion 4.0.439.
+
+Runnet gendannede rå DMI-GRIB-cache fra `35482138050`, men uden exact private
+restore/rebind/install blev hverken struktureret DMI-kandidat eller den
+25.310.795-byte krypterede providerfremgang gjort tilgængelig. Fejlen lå før
+providerarbejde, score, writes og deploy. 4.0.440's Copernicus-rettelse blev
+derfor ikke prøvet i produktion.
+
+4.0.441 lader den beskyttede pointers eksakte sourceidentitet styre broens
+levetid. Source-head, bundle, sourcekontrakter, source-/targetbindinger,
+210/673, payloadfri descriptor, targetkontrakter og nyere heltime er fortsat
+eksakte krav. Når en efterfølger faktisk publiceres, ændres sourceidentiteten,
+og broen lukker automatisk. Versionsløft alene er ikke længere positivt eller
+negativt bevis. Målregressionen er grøn. Exact-head, merge og én almindelig
+continuation fra gemt fremgang er åbne. DEC-0219.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.440 bevarer timeoutfremgang
 
 4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.

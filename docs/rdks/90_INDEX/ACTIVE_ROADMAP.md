@@ -1,3 +1,21 @@
+# Aktiv roadmap – 2026-09-20, 4.0.441 fra sikker genindgang til helkæde
+
+1. [x] Lever 4.0.440 via exact-head `35485303951`, PR #385 og merge
+   `c00e6c5a`.
+2. [x] Afgræns `35485561037` til for tidlig bro-pensionering før providers;
+   bevis at rå DMI-cache fortsat findes og at ingen produktion blev ændret.
+3. [x] Bind broens levetid til den beskyttede exact source og bevar hele den
+   eksisterende fail-closed restore/rebind/install-kæde.
+4. [x] Måltest både fortsat exact-source-adgang og automatisk pensionering
+   ved sourceændring.
+5. [ ] Afslut RDKS/version/håndbøger og relevante målchecks; kør én
+   exact-head sourcegate, PR og merge.
+6. [ ] Kør én almindelig continuation med gemt krypteret fremgang. Kræv
+   Copernicus-handoff, Open-Meteo, score, fulde gates, privat save, artifact
+   og deploy. Ingen oneoff eller code-only-progressbrud.
+7. [ ] Identificér/luk DMI-only-vandstandsresten og følg næste cron som
+   selvkørende vedligeholdelsesbevis.
+
 # Aktiv roadmap – 2026-09-20, 4.0.440 fra Copernicus-timeout til helkæde
 
 1. [x] Lever 4.0.439 via exact-head `35481877393`, PR #384 og merge

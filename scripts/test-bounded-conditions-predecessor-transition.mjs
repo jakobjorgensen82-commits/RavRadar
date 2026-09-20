@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import packageDocument from '../package.json' with { type: 'json' };
 
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
@@ -42,8 +41,6 @@ function fixture() {
     // Production workflow output intentionally uses the canonical no-millis form.
     targetReferenceAt: '2026-09-19T18:00:00Z',
     currentBinding: structuredClone(ravScoreModelBinding()),
-    currentReleaseVersion:
-      BOUNDED_CONDITIONS_PREDECESSOR_POLICY.releaseVersion,
     now: '2026-09-19T18:05:00.000Z',
   };
 }
@@ -67,7 +64,6 @@ for (const mutate of [
   value => { value.sourceDescription.contractHashes.fullRuntimeContractSha256 = 'c'.repeat(64); },
   value => { value.sourceDescription.expectedPartCount = 672; },
   value => { value.sourceDescription.privatePayloadIncluded = true; },
-  value => { value.currentReleaseVersion = '4.0.438'; },
   value => { value.sourceDescription.modelBinding.modelBundleSha256 = 'e'.repeat(64); },
   value => { value.currentBinding.modelBundleSha256 = 'd'.repeat(64); },
 ]) {
@@ -189,27 +185,39 @@ try {
     now: valid.now,
   });
   const githubOutput = await fs.readFile(githubOutputPath, 'utf8');
-  if (packageDocument.version
-    === BOUNDED_CONDITIONS_PREDECESSOR_POLICY.releaseVersion) {
-    assert.equal(prepared.required, true);
-    assert.equal(prepared.transitionKind, 'bounded-conditions-writer');
-    assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), expectation);
-    assert.match(githubOutput, /required=true/);
-    assert.match(githubOutput,
-      new RegExp(`source_head=${BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead}`));
-    assert.match(githubOutput, /transition_kind=bounded-conditions-writer/);
-  } else {
-    // The production bridge was intentionally exact-release and succeeded in
-    // 4.0.439. Later releases must keep its validators but never reactivate it.
-    assert.equal(prepared.required, false);
-    assert.equal(prepared.transitionKind, null);
-    await assert.rejects(fs.access(outputPath), { code: 'ENOENT' });
-    assert.match(githubOutput, /required=false/);
-    assert.match(githubOutput, /source_head=\n/);
-    assert.match(githubOutput, /transition_kind=\n/);
-  }
+  assert.equal(prepared.required, true);
+  assert.equal(prepared.transitionKind, 'bounded-conditions-writer');
+  assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), expectation);
+  assert.match(githubOutput, /required=true/);
+  assert.match(githubOutput,
+    new RegExp(`source_head=${BOUNDED_CONDITIONS_PREDECESSOR_POLICY.sourceHead}`));
+  assert.match(githubOutput, /transition_kind=bounded-conditions-writer/);
+
+  // The bridge retires from source identity, not from a calendar/version tick:
+  // once the protected pointer no longer names the exact sealed predecessor,
+  // the same current code must refuse to create a restore expectation.
+  const supersededSource = structuredClone(valid.sourceDescription);
+  supersededSource.sourceHead = 'a'.repeat(40);
+  await fs.writeFile(sourceDescriptionPath,
+    `${JSON.stringify(supersededSource)}\n`);
+  await fs.writeFile(githubOutputPath, '');
+  await fs.rm(outputPath, { force: true });
+  const retired = await prepareHistoricalWavePredecessorRestore({
+    sourceDescriptionPath,
+    targetReferenceAt: valid.targetReferenceAt,
+    outputPath,
+    githubOutputPath,
+    now: valid.now,
+  });
+  const retiredOutput = await fs.readFile(githubOutputPath, 'utf8');
+  assert.equal(retired.required, false);
+  assert.equal(retired.transitionKind, null);
+  await assert.rejects(fs.access(outputPath), { code: 'ENOENT' });
+  assert.match(retiredOutput, /required=false/);
+  assert.match(retiredOutput, /source_head=\n/);
+  assert.match(retiredOutput, /transition_kind=\n/);
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });
 }
 
-console.log('Bounded conditions predecessor transition: 38 focused cases and exact-release retirement passed.');
+console.log('Bounded conditions predecessor transition: 38 focused cases and source-identity retirement passed.');

@@ -1,3 +1,23 @@
+# Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.441
+
+- [x] Lever 4.0.440 via exact-head `35485303951`, PR #385 og main
+  `c00e6c5a`.
+- [x] Afgræns normalrun `35485561037` til DMI-kandidatforberedelsen før
+  providers: rå GRIB-cache fandtes, men private runtime/progress blev ikke
+  installeret på grund af den for tidligt pensionerede bro.
+- [x] Bevis, at 4.0.439's rebind virkede, men at samme run aldrig publicerede
+  efterfølgeren; versionsskifte er derfor ikke et gyldigt pensionsbevis.
+- [x] Fjern releasevagten og behold alle eksakte source-, bundle-, binding-,
+  kontrakt-, 210/673-, tids- og payloadfri krav.
+- [x] Bevis i samme måltest: uændret exact source giver overgang; ændret
+  source-head giver `required=false` og intet forventningsdokument.
+- [ ] Synkronisér RDKS/håndbøger, bestå målrettede kontrakter og én exact-head
+  sourcegate; PR/merge.
+- [ ] Kør én almindelig continuation fra gemt krypteret fremgang og kræv
+  DMI, Copernicus-timeoutaflevering, Open-Meteo, score, fulde gates, privat
+  save, artifact og deploy eller et nyt konkret uafhængigt fund.
+- [ ] Identificér/luk DMI-only-vandstandsresten og bevis næste cron.
+
 # Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.440
 
 - [x] Lever 4.0.439 via exact-head `35481877393`, PR #384 og main

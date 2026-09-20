@@ -1,3 +1,21 @@
+# AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.441 varig genindgang
+
+4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.
+Normalrun `35485561037` stoppede før providers: den aktuelle private runtime
+var kontraktinkompatibel, og den eksakte forgængerbro var blevet slukket af
+versionsnummeret 4.0.440. 4.0.439 havde bevist broen, men stoppede senere ved
+Copernicus og nåede aldrig at publicere en kompatibel efterfølger. Derfor
+fandt runnet rå DMI-cache, men ingen installeret struktureret DMI-kandidat
+eller dekrypteret providerfremgang.
+
+Branch `codex/4.0.441-durable-bounded-reentry` pensionerer broen på faktisk
+sourceafløsning, ikke versionsløft. Alle eksakte source-, bundle-, binding-,
+kontrakt-, 210/673-, tids- og payloadfri krav består. Når den beskyttede
+pointer ændrer source, bliver broen automatisk uanvendelig. Måltesten beviser
+både fortsat exact-source-adgang og sourceændring → ingen overgang. Næste:
+RDKS/version/målchecks, én exact-head, PR/merge og én almindelig continuation
+fra den gemte fremgang. Ingen oneoff. `.tmp-420/` må aldrig stages. DEC-0219.
+
 # AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.440 timeoutaflevering
 
 4.0.439 bestod exact-head `35481877393`, PR #384 og merge `badf84e9`.
