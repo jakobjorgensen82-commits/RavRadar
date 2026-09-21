@@ -1,16 +1,38 @@
-# Aktivt roadmap – 2026-09-21, 4.0.450 fra cache-timeout til normal drift
+# Aktivt roadmap – 2026-09-21, 4.0.451 fra cache-timeout til stabil normal drift
 
-1. [x] Find den konkrete årsag i run `35546109889`: den centrale cache-
+0. [x] Afgræns normalrun `35625011723`: providerkæde og central cache blev
+   færdige; deploy stoppede kun på en readiness-markør, der stadig pegede på
+   den foregående main-head. Annullér gentagelsen `35627623336`.
+1. [x] Sørg for at hver efterfølgende integreret vejrkørsel efter samme eksakte
+   backend-/Edge-readback idempotent publicerer readiness for sin aktuelle
+   main-head. En reel binding-, backend- eller deployfejl er fortsat
+   blokerende; vejrdata skal ikke genhentes på grund af denne metadatafejl.
+2. [x] Gennemfør saved-weather recovery fra `35625011723` uden providerkald og
+   bekræft Pages, offentlig manifest/runtime og cachebevis. Recovery `#76`
+   blev grøn og satte datasættet `rr-20260921170645-210` offentligt.
+
+3. [x] Find den konkrete årsag i run `35546109889`: den centrale cache-
    opdatering blev dræbt efter 25 minutter, ikke af en datakontraktfejl.
-2. [x] Sammenhold den målte 21-minutters providerfri runtimeforsegling med
+4. [x] Sammenhold den målte 21-minutters providerfri runtimeforsegling med
    den normale scorebygning og hæv kun den bounded workflowgrænse til 45 min.
-3. [ ] Bestå målchecks, exact-head sourcegate og merge 4.0.450.
-4. [ ] Kør én normal vedligeholdelseskørsel fra den gemte fremgang og kræv
+5. [ ] Bestå målchecks, exact-head sourcegate og merge 4.0.451.
+6. [ ] Kør én normal vedligeholdelseskørsel fra den gemte fremgang og kræv
    privat cache-save, artifact, deploy og offentlig manifest/runtime.
-5. [ ] Følg næste almindelige cron som bevis for vedligeholdelsesfri cache.
+7. [ ] Følg næste almindelige cron som bevis for vedligeholdelsesfri cache.
    Ingen ny one-off uden konkret ny evidens.
-6. [ ] Når livekæden er bevist, luk den resterende DMI-only-vandstand og gå
+8. [ ] Når livekæden er bevist, luk den resterende DMI-only-vandstand og gå
    videre med de relevante roadmap-punkter.
+9. [ ] Gennemgå al brugersynlig tekst i prognose- og scoredelen fra ende til
+   anden. Omskriv forklaringer, statusser, advarsler og feltnavne til klart,
+   almindeligt dansk, så en almindelig bruger kan forstå dem. Den tekniske
+   forklaring må gerne blive liggende i et særskilt, valgfrit teknisk lag;
+   denne opgave ændrer ikke scorematematik eller datakontrakter uden en
+   særskilt faglig beslutning.
+10. [ ] Indtil vejrgrundlaget er komplet og stabilt, prioriteres analyse af
+   leverandørernes dækning, DMI-først-prioriteringen, huludfyldning, cache-
+   fremgang og bevarelse af gamle gyldige værdier. Scorematematik vurderes kun
+   ved tydelige fejl i denne fase; en bred modelrevision skal først ske på et
+   komplet datagrundlag.
 
 # Historisk aktivt roadmap – 2026-09-20, 4.0.448 fra public-hour-kontrakt til live drift
 

@@ -1,6 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.450
+**Håndbogsversion:** 4.0.451
+
+## 4.0.451 – Revideret DMI-værdi i samme modelkørsel
+
+Hvis den progressive DMI-cache og den gamle deployede runtime har samme DMI-
+modelkørsel, må den progressive værdi kun erstatte den gamle, når den har et
+nyere officiel revision for alle ændrede underliggende timer. Samme type
+officielt tidsstempel skal bruges på begge sider; den fælles DMI-vælger
+kontrollerer dette. En nyere deployet revision bevares mod en ældre arbejdscache.
+Strøm og bølger vurderes hver for sig. Uden et sammenligneligt nyere tidspunkt
+er forskellen fortsat en fejl, så systemet ikke skjuler modstridende data.
 
 ## 89.55 4.0.450 – Cacheforseglingen må ikke afbryde en sund kørsel for tidligt
 

@@ -1,3 +1,11 @@
+# Aktuel revisionspræcisering – 2026-09-21 – 4.0.451
+
+DEC-0229 præciserer REQ-4.0.409-EQUAL-RUN-CONFLICT-004: samme modelRun
+kan opdateres i det kendte deployed/progressive-DMI-forløb, når den eksisterende
+DMI-vælger beviser en nyere officiel revision for alle ændrede native endepunkter
+og samme provider, sted, collection, gitter og lag. Kildenavn og hentetid alene
+er utilstrækkelige. Alle øvrige konflikter skal fortsat være synlige.
+
 # Aktuelt krav til forgængerbroens levetid – 2026-09-20
 
 - **REQ-PREDECESSOR-RETIRES-ON-SOURCE-SUCCESSION-0219 – BINDENDE:** Den

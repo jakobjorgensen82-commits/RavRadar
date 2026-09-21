@@ -1,3 +1,44 @@
+# NYESTE CHECKPOINT – 2026-09-21 – readiness-rebind og saved-weather recovery
+
+Normalrun `35625011723` (main `8a5c188849f9c22aaefe5c536cb7266e42bdcc05`)
+gennemførte leverandørkæden, 673/673-produktionsbygningen og den centrale
+weather-cache på cirka 36 minutter. Den blev rød først i Pages-deployets
+`integrated-maintenance`, hvor det beskyttede readiness-dokument stadig bar
+den tidligere source-head `77e0a3c3835007fb0be1f4af52a47727ed3f7ea9`.
+Der er ikke bevis på provider-timeout eller tab af den byggede vejrpakke.
+
+Den efterfølgende planlagte kørsel `35627623336` blev annulleret, så samme
+stale-binding ikke blev gentaget. Normal integreret vejrproduktion er lokalt
+ændret fra read-only `check` til den idempotente `publish` efter de samme
+eksakte model-, database- og Edge-readbacks; reelle mismatch stopper fortsat.
+Målrettet workflowtest er grøn. Saved-weather recovery `35636540548` / run
+`#76` blev gennemført med `35625011723` som eksplicit kilde uden nye
+providerkald. Artifact, Pages og offentlig runtime er grønne; manifestet er
+`rr-20260921170645-210` med 210 zoner og 673 kystdele. Næste arbejde er at
+levere readiness-rebindet på exact-head, så hver efterfølgende normal kørsel
+genbruger den foregående beskyttede generation og derefter skriver sig selv
+som næste led.
+
+## 4.0.451 – forudgående checkpoint
+
+PR #396 / kodecommit `98709208` bestod CI `35585254446`. Den er ikke merged.
+Alle lokale versionsændringer stammer fra vores `set-version.mjs 4.0.451` i
+denne session, ikke fra urelateret brugerarbejde. Auto-review afviste den samlede
+commit, fordi den ikke kunne skelne versionssynkronisering fra anden kode.
+Bevis derfor fil for fil, at ikke-funktionelle ændringer kun er versioner.
+
+Efterfølgende review fandt, at første rettelse kun sammenlignede topniveauets
+revisionstid. Lokalt genbruges nu `preferQualifiedDmiComponentSource` med
+samme kildekontekst, gitter og lag, så alle native endepunkter kontrolleres.
+Nyere deployed revision vinder også over ældre progressiv. Negative tests for
+manglende, regresseret, fremmed og generisk kildebevis er tilføjet og grønne.
+Modelbundle er uændret/grøn. Dokumentationen præciserer nu, at loggen beviser
+konflikt, men ikke same-run revision som rodårsag. Produktiosbevis mangler.
+
+Næste: færdiggør versions-/dokumentationssynkronisering og konkret diffbevis,
+opdater PR, kræv grøn eksakt CI og undersøg den oprindelige konflikt med private
+eller payloadfri beviser før det hævdes, at normal drift er løst.
+
 # NYESTE CHECKPOINT – 2026-09-21 – lokal 4.0.450 cache-timeout
 
 Normalrun `35546109889` gennemførte DMI, Copernicus, Open-Meteo, closure,

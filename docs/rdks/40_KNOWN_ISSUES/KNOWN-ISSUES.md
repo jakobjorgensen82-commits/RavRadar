@@ -1,4 +1,35 @@
-# Aktuelle issues – 2026-09-21, 4.0.450
+# Aktuelle issues – 2026-09-21, 4.0.451
+
+- **ISSUE-INTEGRATED-READINESS-STALE-MAIN-35625011723 – RECOVERY LIVE /
+  NORMAL RETTELSE LIVEBEVIS ÅBENT:** Normalrun `35625011723` gennemførte providerkæde,
+  673/673-produktionsbygning og central cache, men Pages-deployet blev afvist,
+  fordi det beskyttede readiness-dokument stadig var bundet til den tidligere
+  main-head `77e0a3c3`, mens runnet byggede `8a5c1888`. Fejlen var derfor ikke
+  timeout eller datatab. Providerfri recovery `#76` publicerede den gemte
+  vejrpakke korrekt. Normal integreret produktion er lokalt ændret til at
+  publicere den eksakte aktuelle readiness-binding efter de samme read-only
+  backend-/Edge-kontroller; publicering er idempotent og fail-closed ved reel
+  mismatch. Exact-head sourcegate/merge mangler stadig før livebevis.
+
+- **ISSUE-PROGNOSIS-SCORE-PLAIN-LANGUAGE-REVIEW – ÅBEN:** Den offentlige
+  prognose- og scoredel indeholder nu forklaringer og tekniske statusfelter,
+  som er svære at forstå for almindelige brugere. Hele den brugersynlige
+  tekst skal gennemgås samlet og omskrives til klart dansk. Tekniske detaljer
+  skal fortsat være tilgængelige i et særskilt teknisk lag, og omskrivningen
+  må ikke ændre scoreberegningen eller skjule manglende data.
+
+- **ISSUE-HOURLY-COASTAL-PART-WIND-COVERAGE – ÅBEN:** Den senest offentlige
+  timepakke havde 275/673 kystdele uden lokalt vindinput kl. 18.00. Det gjorde
+  52 zoner helt sorte og 9 zoner delvist sorte, selv om starttimens samlede
+  status kun viste tre utilgængelige zoner. Kontrollerne skal derfor måle
+  dækning pr. leveringstime og pr. kystdel, ikke kun starttimen. Den normale
+  leverandørkørsel #4121 skal afgøre, om DMI/fallback nu fylder disse felter.
+
+- **ISSUE-RECOVERY-CURRENT-CONFLICT-35567119842 – ÅBEN:** Den normale
+  kørsel stoppede i replay efter komponent-runtime. Officiel same-run revision
+  håndteres lokalt med fælles DMI-vælger og regressionsbevis. Loggen afslører
+  ikke hvilke kildefelter der var forskellige; produktionsårsag og livebevis
+  er fortsat åbne. Ingen ny vejrindsamling er startet under denne rettelse.
 
 - **ISSUE-NORMAL-CACHE-TIMEOUT-35546109889 – RETTET LOKALT / LIVEBEVIS
   ÅBENT:** Run `35546109889` nåede alle leverandører og 673/673 scoredele,

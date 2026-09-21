@@ -1,3 +1,20 @@
+## 4.0.451 – officielle DMI-revisioner i recovery (2026-09-21)
+
+- Recovery genbruger DMI-vælgerens bevis for alle ændrede native endepunkter
+  ved samme modelRun. Nyeste beviste revision vinder i det kendte kildepar.
+- Kildenavne alene accepteres ikke som bevis. Årsagen til produktionskonflikten
+  i `35567119842` er fortsat ikke bevist; se `CHANGELOG-4.0.451.md`.
+- Normal integreret vedligeholdelse opdaterer nu det beskyttede readiness-
+  dokument til den eksakte aktuelle main-head efter gennemført model-,
+  database- og Edge-kontrol. Det forhindrer, at en ny vejrkørsel afvises i
+  deploy, fordi markøren stadig peger på den foregående commit. En reel
+  binding-/backendfejl er fortsat blokerende.
+- Hver normal kørsel beskriver og gendanner først den senest beskyttede
+  runtime fra den foregående kørsel. Først derefter bygges næste generation,
+  og den atomiske protected-runtime-pointer flytter den gamle `current` til
+  `previous`. Det gør fortsættelsen eksplicit og forhindrer uafhængige,
+  forældede cachekæder.
+
 ## 4.0.439 – den genkendte forgænger tilpasses før installation (2026-09-20)
 
 - 4.0.438 bestod exact-head `35471789111`, blev merged via PR #383 som
