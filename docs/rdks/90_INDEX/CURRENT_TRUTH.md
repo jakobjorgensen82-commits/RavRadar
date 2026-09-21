@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-21 – lokal 4.0.450 retter cachetrinnets tidsgrænse
+
+Run `35546109889` gennemførte DMI, Copernicus, Open-Meteo, closure, historik
+og 673/673 scoredele. Det eneste stop var workflowets `Update central weather
+cache`, som blev afbrudt præcist efter 25 minutter, mens den afsluttende
+public-hour/runtimeforsegling stadig arbejdede. Det var derfor en for snæver
+workflowgrænse, ikke en provider- eller scorefejl.
+
+4.0.450 hæver grænsen for normal produktion og den tilsvarende kapacitets-
+fortsættelse til 45 minutter. En providerfri genbygning brugte 21 minutter på
+forseglingen alene. Næste almindelige kørsel skal bevise privat save, artifact,
+deploy og offentlig runtime; der er ikke startet en ny one-off.
+
+Se DEC-0228 og `CHANGELOG-4.0.450.md`.
+
 # NYESTE SANDHED – 2026-09-20 – lokal 4.0.448 ensretter public-hour-pakken
 
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.449 bevarer append-only migrationshistorik

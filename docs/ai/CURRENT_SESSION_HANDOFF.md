@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-21 – lokal 4.0.450 cache-timeout
+
+Normalrun `35546109889` gennemførte DMI, Copernicus, Open-Meteo, closure,
+historik og 673/673 scoredele. Stoppet var ikke en data- eller modelafvisning:
+`Update central weather cache` blev afbrudt præcist af workflowets
+25-minuttersgrænse under den afsluttende forsegling af 118 offentlige timer.
+
+4.0.450 hæver kun den bounded grænse til 45 minutter i normalproduktionen og
+den tilsvarende private kapacitetsfortsættelse. Code-only-run `35544581922`
+brugte 21 minutter på forseglingen alene. Målrettet workflowtest og
+dokumentation er tilføjet. Næste trin er målchecks, exact-head sourcegate,
+merge og én normal kørsel fra den gemte fremgang; ingen ny one-off.
+
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.445 challenge-binding
 
 # NYESTE CHECKPOINT – 2026-09-20 – lokal 4.0.449 migrationshistorik

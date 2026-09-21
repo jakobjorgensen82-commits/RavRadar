@@ -426,6 +426,12 @@ for (const stepName of [
     'verified handoff retains rebuild/gate step: ' + stepName,
   );
 }
+const weatherCacheStep = indentedBody(build, '      - name: Update central weather cache');
+assert.match(
+  weatherCacheStep,
+  /timeout-minutes:\s*45/,
+  'normal weather cache sealing has enough bounded time for the measured 118-hour public build',
+);
 assert.equal(
   build.indexOf('name: Install exact verified weather sources atomically')
     < build.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),

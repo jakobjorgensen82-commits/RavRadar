@@ -1923,3 +1923,15 @@ Se `CHANGELOG-4.0.330.md`.
   runtime efter alder-, kilde-, model-, 210/673-, privacy- og Pages-kontrol.
 - Standard-code-only er uændret. Ingen scoreformel, vejrdata, geometri eller
   providerprioritet ændres. Se CHANGELOG-4.0.403.md og DEC-0185.
+## 4.0.450 – normal cacheforsegling får realistisk bounded tid (2026-09-21)
+
+- Run `35546109889` gennemførte leverandørkæden og 673/673 scoredele, men
+  blev afbrudt præcist ved 25 minutter i `Update central weather cache`.
+- 4.0.450 hæver kun denne bounded grænse til 45 minutter og anvender samme
+  grænse i den private kapacitetsfortsættelse. Score, prioritet, dataregler og
+  providerbudgetter er uændrede. Se `CHANGELOG-4.0.450.md` og DEC-0228.
+
+## 4.0.449 – append-only migrationshistorik (2026-09-20)
+
+- Den allerede anvendte public-hour-migration bevares før sin append-only
+  successor i recovery- og testlisten. Se `CHANGELOG-4.0.449.md`.

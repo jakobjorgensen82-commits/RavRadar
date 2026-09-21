@@ -1,5 +1,19 @@
 # Historisk implementeringsstatus – 2026-09-20, lokal 4.0.448
 
+# Aktuel implementeringsstatus – 2026-09-21, lokal 4.0.450
+
+- [x] Afgræns normalrun `35546109889`: DMI, Copernicus, Open-Meteo, closure,
+  historik og 673/673 scoredele bestod; stoppet var præcist cachetrinnets
+  25-minuttersgrænse.
+- [x] Sammenhold med code-only-run `35544581922`, der brugte 21 minutter på
+  den samme runtimeforsegling uden providerarbejde.
+- [x] Hæv den bounded cachegrænse til 45 minutter i normal produktion og
+  kapacitetsfortsættelsen; tilføj workflowregression og dokumentation.
+- [ ] Kør målrettede kontroller, exact-head sourcegate, PR/merge og derefter
+  én normal vedligeholdelseskørsel. Kræv privat save, artifact, deploy og
+  offentlig runtime før næste roadmap-punkt.
+- [ ] Vurder efter livebevis den resterende DMI-only-vandstandsrest.
+
 # Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.449
 
 - [x] Lever 4.0.448 til main efter grøn PR-gate og afgræns normalrun
