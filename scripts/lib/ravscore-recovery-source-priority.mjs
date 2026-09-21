@@ -43,6 +43,18 @@ function componentRevisionSource(row, component) {
     : row?.sources?.wave;
 }
 
+function componentProvider(row, component) {
+  return componentRevisionSource(row, component)?.provider ?? null;
+}
+
+function isControlledLiveReserve(row, component) {
+  const source = componentRevisionSource(row, component);
+  return source?.provider !== 'dmi'
+    && source?.controlledLivePilot === true
+    && source?.vectorSemanticsVersion === 4
+    && source?.sourceClass === 'supplemental-local-current';
+}
+
 function comparableDmiRevision(left, right) {
   return left?.provider === 'dmi' && right?.provider === 'dmi'
     && ['entityId', 'parentZoneId', 'entityType', 'samplingContext', 'collection',
@@ -111,7 +123,7 @@ function componentPreference(
   fallbackRow,
   preferredRow,
   component,
-  { allowPreferredEqualModelRun = false } = {},
+  { allowPreferredEqualModelRun = false, productionReferenceAt = null } = {},
 ) {
   const hasFallback = component === 'current'
     ? hasVerifiedCurrent(fallbackRow)
@@ -123,6 +135,33 @@ function componentPreference(
 
   const fallbackModelRun = componentModelRun(fallbackRow, component);
   const preferredModelRun = componentModelRun(preferredRow, component);
+
+  // DMI is the authoritative current-data source. A controlled live reserve
+  // can legitimately overlap a later DMI rebuild, but it must not win merely
+  // because it has no comparable model-run timestamp. Allow the reserve to
+  // replace DMI only when it carries a newer bound model run and the DMI run
+  // is at least the established four-day challenge age.
+  const fallbackProvider = componentProvider(fallbackRow, component);
+  const preferredProvider = componentProvider(preferredRow, component);
+  if (fallbackProvider !== preferredProvider
+    && (fallbackProvider === 'dmi' || preferredProvider === 'dmi')
+    && (isControlledLiveReserve(fallbackRow, component)
+      || isControlledLiveReserve(preferredRow, component))) {
+    const dmiIsPreferred = preferredProvider === 'dmi';
+    const dmiModelRun = dmiIsPreferred ? preferredModelRun : fallbackModelRun;
+    const otherModelRun = dmiIsPreferred ? fallbackModelRun : preferredModelRun;
+    const referenceMs = Date.parse(productionReferenceAt ?? '');
+    const dmiAgeHours = Number.isFinite(referenceMs) && Number.isFinite(dmiModelRun)
+      ? (referenceMs - dmiModelRun) / 3_600_000
+      : null;
+    const staleDmiMayYield = Number.isFinite(dmiAgeHours)
+      && dmiAgeHours >= 96
+      && Number.isFinite(otherModelRun)
+      && otherModelRun > dmiModelRun
+      && otherModelRun <= referenceMs;
+    if (staleDmiMayYield) return dmiIsPreferred ? 'fallback' : 'preferred';
+    return dmiIsPreferred ? 'preferred' : 'fallback';
+  }
   if (!Number.isFinite(fallbackModelRun) || !Number.isFinite(preferredModelRun)) return null;
   if (fallbackModelRun === preferredModelRun) {
     if (!allowPreferredEqualModelRun) return null;
@@ -159,6 +198,7 @@ function withoutComponent(row, component) {
 export function buildNewestValidRavScoreRecoverySources({
   fallbackSource = null,
   preferredSource = null,
+  productionReferenceAt = null,
 } = {}) {
   if (!fallbackSource && !preferredSource) return [];
   if (!fallbackSource) return [preferredSource];
@@ -177,9 +217,11 @@ export function buildNewestValidRavScoreRecoverySources({
     decisions.set(time, {
       current: componentPreference(fallbackRow, preferredRow, 'current', {
         allowPreferredEqualModelRun,
+        productionReferenceAt,
       }),
       wave: componentPreference(fallbackRow, preferredRow, 'wave', {
         allowPreferredEqualModelRun,
+        productionReferenceAt,
       }),
     });
   }

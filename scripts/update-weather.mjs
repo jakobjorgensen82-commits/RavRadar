@@ -2445,6 +2445,7 @@ function scoreCoastalPartsRuntime(
       const recoverySources = buildNewestValidRavScoreRecoverySources({
         fallbackSource: deployedRecoverySource,
         preferredSource: progressiveRecoverySource,
+        productionReferenceAt: generatedAt,
       });
       const {
         recovery,
