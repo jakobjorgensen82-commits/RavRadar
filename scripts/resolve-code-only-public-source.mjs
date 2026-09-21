@@ -7,6 +7,7 @@ import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as REPAIR } from
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const DEPLOYMENT_PATTERN = /^pages-[1-9][0-9]*-[1-9][0-9]*$/;
+const HEAD_PATTERN = /^[a-f0-9]{40}$/;
 const canonical = value => Array.isArray(value)
   ? value.map(canonical)
   : value && typeof value === 'object'
@@ -32,6 +33,62 @@ function assertCommonCentralSource(current, publicManifest) {
     || !publicManifest.ravScoreModelBinding) {
     throw new Error('Code-only public source is not an exact active integrated deployment');
   }
+}
+
+function assertFailedIntegratedMaintenanceEvidence({
+  current,
+  publicManifest,
+  handoff,
+  seal,
+  targetBinding,
+  expectedRunId,
+  expectedRunAttempt,
+  expectedRepository = process.env.GITHUB_REPOSITORY,
+}) {
+  if (!handoff || typeof handoff !== 'object' || Array.isArray(handoff)
+    || handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2'
+    || handoff.action !== 'integrated'
+    || handoff.legacySourceRequired !== false
+    || handoff.privatePayloadIncluded !== false
+    || handoff.sourceHead !== seal?.headSha
+    || handoff.centralVersion !== Number(current.centralVersion)
+    || handoff.checkpointDatasetId !== publicManifest.datasetId
+    || handoff.checkpointBuildOutcome !== 'skipped'
+    || handoff.checkpointSaveOutcome !== 'skipped'
+    || handoff.checkpointPublishOutcome !== 'skipped') {
+    throw new Error('Failed integrated maintenance handoff is not an exact public-only source proof');
+  }
+  if (!seal || typeof seal !== 'object' || Array.isArray(seal)
+    || seal.schemaVersion !== 'ravscore-operational-pages-artifact-seal-v1'
+    || seal.repository !== expectedRepository
+    || seal.runId !== Number(expectedRunId)
+    || seal.runAttempt !== Number(expectedRunAttempt)
+    || !HEAD_PATTERN.test(String(seal.headSha ?? ''))
+    || seal.ref !== 'refs/heads/main'
+    || seal.attemptId !== `pages-${seal.runId}-${seal.runAttempt}`
+    || seal.artifactName !== 'github-pages'
+    || seal.privatePayloadIncluded !== false
+    || seal.targetPublicManifestSha256 !== sha256(publicManifest)
+    || !SHA256_PATTERN.test(String(seal.targetImplementationClosureSha256 ?? ''))
+    || !seal.targetModelBinding
+    || !targetBinding) {
+    throw new Error('Failed integrated maintenance artifact seal is not an exact public-only source proof');
+  }
+  if (!same(seal.targetModelBinding, targetBinding)
+    || !same(targetBinding, current.modelBinding)
+    || !same(publicManifest.ravScoreModelBinding, targetBinding)) {
+    throw new Error('Failed integrated maintenance source has a conflicting model binding');
+  }
+  return Object.freeze({
+    schemaVersion: 'ravscore-code-only-public-source-v1',
+    status: 'FAILED_INTEGRATED_MAINTENANCE_PUBLIC_SOURCE',
+    deploymentId: seal.attemptId,
+    implementationClosureSha256: seal.targetImplementationClosureSha256,
+    repairId: null,
+    sourceHead: seal.headSha,
+    publicManifestSha256: seal.targetPublicManifestSha256,
+    privatePayloadRead: false,
+  });
 }
 
 export function resolveCodeOnlyPublicSource({ current, publicManifest } = {}) {
@@ -76,6 +133,33 @@ export function resolveCodeOnlyPublicSource({ current, publicManifest } = {}) {
   });
 }
 
+export function resolveFailedIntegratedMaintenancePublicSource({
+  current,
+  publicManifest,
+  handoff,
+  seal,
+  targetBinding,
+  expectedRunId,
+  expectedRunAttempt,
+  expectedRepository,
+} = {}) {
+  assertCommonCentralSource(current, publicManifest);
+  if (!/^[1-9][0-9]{0,19}$/.test(String(expectedRunId ?? ''))
+    || !/^[1-9][0-9]{0,3}$/.test(String(expectedRunAttempt ?? ''))) {
+    throw new Error('Failed integrated maintenance recovery requires a valid run and attempt');
+  }
+  return assertFailedIntegratedMaintenanceEvidence({
+    current,
+    publicManifest,
+    handoff,
+    seal,
+    targetBinding,
+    expectedRunId,
+    expectedRunAttempt,
+    expectedRepository,
+  });
+}
+
 function argumentValue(argv, name) {
   const index = argv.indexOf(name);
   if (index < 0 || !argv[index + 1] || argv[index + 1].startsWith('--')) {
@@ -103,7 +187,25 @@ async function main() {
     fs.readFile(argumentValue(argv, '--current'), 'utf8').then(JSON.parse),
     fs.readFile(argumentValue(argv, '--manifest'), 'utf8').then(JSON.parse),
   ]);
-  const result = resolveCodeOnlyPublicSource({ current, publicManifest });
+  const recoveryHandoff = argv.includes('--handoff')
+    ? await Promise.all([
+      fs.readFile(argumentValue(argv, '--handoff'), 'utf8').then(JSON.parse),
+      fs.readFile(argumentValue(argv, '--seal'), 'utf8').then(JSON.parse),
+      fs.readFile(argumentValue(argv, '--binding'), 'utf8').then(JSON.parse),
+    ])
+    : null;
+  const result = recoveryHandoff
+    ? resolveFailedIntegratedMaintenancePublicSource({
+      current,
+      publicManifest,
+      handoff: recoveryHandoff[0],
+      seal: recoveryHandoff[1],
+      targetBinding: recoveryHandoff[2],
+      expectedRunId: argumentValue(argv, '--expected-run-id'),
+      expectedRunAttempt: argumentValue(argv, '--expected-run-attempt'),
+      expectedRepository: process.env.GITHUB_REPOSITORY,
+    })
+    : resolveCodeOnlyPublicSource({ current, publicManifest });
   await atomicWriteJson(argumentValue(argv, '--output'), result);
   console.log(`Code-only public source resolved: ${result.status}; private payload read: false.`);
 }
