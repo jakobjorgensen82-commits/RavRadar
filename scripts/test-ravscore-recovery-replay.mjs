@@ -195,6 +195,20 @@ function withVerifiedWave(row) {
   };
 }
 
+function withCurrentRevision(row, itemUpdatedAt) {
+  return {
+    ...row,
+    currentProvenance: {
+      ...row.currentProvenance,
+      itemUpdatedAt,
+      nativeSteps: row.currentProvenance.nativeSteps.map(step => ({
+        ...step,
+        itemUpdatedAt,
+      })),
+    },
+  };
+}
+
 function controlledLiveWeather(hour, overrides = {}) {
   const row = weather(hour);
   const at = row.time;
@@ -675,17 +689,33 @@ const olderProgressiveHour = olderProgressiveRecovery.hourly
   .find(row => row.time === time(2));
 assert.equal(olderProgressiveHour.waveHeightM, 1.4,
   'a cache position may not override a genuinely newer DMI model run');
-assert.throws(() => replayForAge(4, buildNewestValidRavScoreRecoverySources({
+const equalRunProgressiveRevision = buildNewestValidRavScoreRecoverySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
-    record: record([weather(2, { modelRun: time(-48), waveHeight: 1.2 })]),
+    record: record([withCurrentRevision(
+      weather(2, { modelRun: time(-48), speed: 0.09, rawU: 0.09 }),
+      time(-2),
+    )]),
   },
   preferredSource: {
     source: 'progressive-private-dmi',
-    record: record([weather(2, { modelRun: time(-48), waveHeight: 1.3 })]),
+    record: record([withCurrentRevision(
+      weather(2, { modelRun: time(-48), speed: 0.11, rawU: 0.11 }),
+      time(-1),
+    )]),
   },
-})), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
-'different values from the same model run must remain a hard conflict');
+});
+const equalRunProgressiveRevisionRecovery = replayForAge(4, equalRunProgressiveRevision);
+assert.equal(
+  equalRunProgressiveRevisionRecovery.hourly.find(row => row.time === time(2)).currentSpeedMps,
+  0.11,
+  'the accepted progressive DMI revision may replace the deployed current at the same model run',
+);
+assert.throws(() => replayForAge(4, [
+  { source: 'deployed', record: record([weather(2, { modelRun: time(-48), waveHeight: 1.2 })]) },
+  { source: 'progressive', record: record([weather(2, { modelRun: time(-48), waveHeight: 1.3 })]) },
+]), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+'different values from the same generic model run must remain a hard conflict');
 assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { modelRun: time(-53) })]) },

@@ -33,6 +33,16 @@ function componentModelRun(row, component) {
   return modelRun === null ? null : Date.parse(modelRun);
 }
 
+function componentRevisionTime(row, component) {
+  const source = component === 'current'
+    ? (row?.currentProvenance?.status === 'verified'
+      ? row.currentProvenance
+      : row?.sources?.current)
+    : row?.sources?.wave;
+  const revision = canonicalTime(source?.itemUpdatedAt ?? source?.itemCreatedAt);
+  return revision === null ? null : Date.parse(revision);
+}
+
 function withoutSourceComponent(sources, component) {
   if (!sources || typeof sources !== 'object' || Array.isArray(sources)) return sources;
   const next = { ...sources };
@@ -86,7 +96,12 @@ function uniqueRowsByTime(source) {
   return rows;
 }
 
-function componentPreference(fallbackRow, preferredRow, component) {
+function componentPreference(
+  fallbackRow,
+  preferredRow,
+  component,
+  { allowPreferredEqualModelRun = false } = {},
+) {
   const hasFallback = component === 'current'
     ? hasVerifiedCurrent(fallbackRow)
     : hasVerifiedWave(fallbackRow);
@@ -97,9 +112,23 @@ function componentPreference(fallbackRow, preferredRow, component) {
 
   const fallbackModelRun = componentModelRun(fallbackRow, component);
   const preferredModelRun = componentModelRun(preferredRow, component);
-  if (!Number.isFinite(fallbackModelRun) || !Number.isFinite(preferredModelRun)
-    || fallbackModelRun === preferredModelRun) return null;
+  if (!Number.isFinite(fallbackModelRun) || !Number.isFinite(preferredModelRun)) return null;
+  if (fallbackModelRun === preferredModelRun) {
+    if (!allowPreferredEqualModelRun) return null;
+    const fallbackRevision = componentRevisionTime(fallbackRow, component);
+    const preferredRevision = componentRevisionTime(preferredRow, component);
+    return Number.isFinite(fallbackRevision)
+      && Number.isFinite(preferredRevision)
+      && preferredRevision > fallbackRevision
+      ? 'preferred'
+      : null;
+  }
   return preferredModelRun > fallbackModelRun ? 'preferred' : 'fallback';
+}
+
+function isAcceptedProgressiveDmiRevision(fallbackSource, preferredSource) {
+  return fallbackSource?.source === 'deployed-private-runtime'
+    && preferredSource?.source === 'progressive-private-dmi';
 }
 
 function withoutComponent(row, component) {
@@ -113,8 +142,9 @@ function withoutComponent(row, component) {
  * maintenance is different: two valid values can be revisions from different
  * DMI model runs. For each component and exact time, retain the value from the
  * newest proved model run. If the newer run lacks that component, the older
- * valid value remains. Equal or uncomparable model runs are deliberately left
- * to the downstream fail-closed conflict gate.
+ * valid value remains. An equal modelRun is accepted only for the explicit
+ * progressive-DMI revision pair when its official update time is newer;
+ * otherwise it is left to the downstream fail-closed conflict gate.
  */
 export function buildNewestValidRavScoreRecoverySources({
   fallbackSource = null,
@@ -127,12 +157,20 @@ export function buildNewestValidRavScoreRecoverySources({
   const fallbackByTime = uniqueRowsByTime(fallbackSource);
   const preferredByTime = uniqueRowsByTime(preferredSource);
   const decisions = new Map();
+  const allowPreferredEqualModelRun = isAcceptedProgressiveDmiRevision(
+    fallbackSource,
+    preferredSource,
+  );
   for (const [time, fallbackRow] of fallbackByTime) {
     const preferredRow = preferredByTime.get(time);
     if (!preferredRow) continue;
     decisions.set(time, {
-      current: componentPreference(fallbackRow, preferredRow, 'current'),
-      wave: componentPreference(fallbackRow, preferredRow, 'wave'),
+      current: componentPreference(fallbackRow, preferredRow, 'current', {
+        allowPreferredEqualModelRun,
+      }),
+      wave: componentPreference(fallbackRow, preferredRow, 'wave', {
+        allowPreferredEqualModelRun,
+      }),
     });
   }
 
