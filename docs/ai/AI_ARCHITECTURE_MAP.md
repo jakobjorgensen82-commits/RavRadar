@@ -135,7 +135,7 @@
 ## 2026-09-15 lokal 4.0.373 – manifestbundet offentlig detailruntime
 
 - `prepare-code-only-public-runtime.mjs` læser schema-4-manifestet før detailfilen og kræver 210/673.
-- `publicConditionDetailsBytes` bliver den eksakte læsegrænse under `CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES` på 192 MiB.
+- `publicConditionDetailsBytes` bliver den eksakte læsegrænse under `CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES` på 512 MiB. Grænsen er fortsat eksplicit og bundet til manifestet; den er ikke en ubegrænset storfilslæsning.
 - Eksakt filhash/byteantal, payloadhash, binding, datasæt, projektion og privacy valideres fortsat efter læsning.
 
 ## 2026-09-15 lokal 4.0.372 – hydreret cacheattestation
