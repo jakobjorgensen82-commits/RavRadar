@@ -312,6 +312,7 @@ export async function prepareCodeOnlyPublicRuntime({
   snapshotRoot,
   reportPath,
   mode: requestedMode,
+  allowEqualSavedWeatherReference = false,
 } = {}) {
   const semantics = runtimeReuseSemantics(requestedMode);
   const {
@@ -396,7 +397,8 @@ export async function prepareCodeOnlyPublicRuntime({
     if (!fullSource.value?.datasetId
         || !Number.isFinite(liveReference)
         || !Number.isFinite(savedReference)
-        || savedReference <= liveReference) {
+        || savedReference < liveReference
+        || savedReference === liveReference && !allowEqualSavedWeatherReference) {
       throw new Error('Saved weather continuation must strictly advance the public production hour');
     }
   }
@@ -505,6 +507,10 @@ function optionalArgument(argv, name) {
   return argv[index + 1];
 }
 
+function hasFlag(argv, name) {
+  return argv.includes(name);
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const report = await prepareCodeOnlyPublicRuntime({
@@ -512,6 +518,7 @@ async function main() {
     snapshotRoot: argument(argv, '--snapshot-root'),
     reportPath: argument(argv, '--report'),
     mode: optionalArgument(argv, '--mode'),
+    allowEqualSavedWeatherReference: hasFlag(argv, '--allow-equal-saved-weather-reference'),
   });
   const status = {
     [RUNTIME_REUSE_MODES.CODE_ONLY]: 'code-only-runtime-reused',

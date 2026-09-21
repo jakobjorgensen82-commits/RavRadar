@@ -745,7 +745,17 @@ jobs:
               *) echo "Unknown private runtime migration kind." >&2; exit 1 ;;
             esac
           fi
-          node scripts/prepare-code-only-public-runtime.mjs --repository-root "$GITHUB_WORKSPACE" --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" --report .geometry-v2-work/code-only-public-runtime-reuse.json --mode "$mode"
+          exact_public_recovery_flag=()
+          if test -n "${{ inputs.recover_public_run_id }}"; then
+            test "$mode" = "saved-weather-continuation"
+            exact_public_recovery_flag+=(--allow-equal-saved-weather-reference)
+          fi
+          node scripts/prepare-code-only-public-runtime.mjs \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --snapshot-root "$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT" \
+            --report .geometry-v2-work/code-only-public-runtime-reuse.json \
+            --mode "$mode" \
+            "${exact_public_recovery_flag[@]}"
 
       - name: Require exact code-only reuse invariants
         shell: bash
