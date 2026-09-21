@@ -81,6 +81,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'legacy_source_required',
       'operational_action',
       'source_repair_id',
+      'exact_public_recovery',
     ]),
     secrets: freezeList([
       'SUPABASE_SERVICE_ROLE_KEY',

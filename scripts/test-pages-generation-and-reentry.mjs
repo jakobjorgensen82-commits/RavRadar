@@ -33,6 +33,12 @@ for (const mutation of [{ sourcePublicManifestSha256: 'f'.repeat(64) },
 }
 assert.equal(assertMonotonicPagesGeneration({ ...input, recoverySourceSha256: sha256CanonicalJson(previous) }), 'EXACT_RECOVERY_GENERATION');
 assert.throws(() => assertMonotonicPagesGeneration({ ...input, recoverySourceSha256: 'f'.repeat(64) }), /sealed public predecessor/);
+const sameHourRecovery = { ...previous, releaseVersion: 'exact-recovery-successor' };
+const sameHourRecoveryReuse = { ...reuse, generatedPublicManifestSha256: hash(text(sameHourRecovery)),
+  datasetId: sameHourRecovery.datasetId, productionReferenceAt: sameHourRecovery.productionReferenceAt,
+  publicRuntimeAdvanced: true };
+assert.equal(assertMonotonicPagesGeneration({ targetText: text(sameHourRecovery), publicText: text(previous),
+  reuseReport: sameHourRecoveryReuse, recoverySourceSha256: sha256CanonicalJson(previous) }), 'EXACT_RECOVERY_GENERATION');
 
 const identity = { runId: 123, runAttempt: 2, headSha: 'a'.repeat(40) };
 const job = name => ({ name, run_id: 123, run_attempt: 2, head_sha: identity.headSha,
@@ -74,6 +80,8 @@ for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
 const deploy = await read('reusable-pages-deploy');
 assert.doesNotMatch(deploy, /^concurrency:/m);
 assert.equal(deploy.match(/check-pages-generation-order.mjs/g).length, 2);
+assert.match(deploy, /exact_public_recovery/);
+assert.match(deploy, /--recovery-source-sha256/);
 assert.ok(deploy.indexOf('id: code-only-integrated-historical-maintenance-begin') < deploy.indexOf('id: deployment'));
 assert.match(deploy, /steps\.integrated-historical-maintenance-begin\.outcome == 'success' \|\| steps\.code-only-integrated-historical-maintenance-begin\.outcome == 'success'/);
 assert.match(deploy, /MEASURED_WARMUP_PUBLISHED/);

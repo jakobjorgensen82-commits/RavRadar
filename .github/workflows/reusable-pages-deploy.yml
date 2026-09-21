@@ -27,6 +27,9 @@ on:
       source_repair_id:
         required: true
         type: string
+      exact_public_recovery:
+        required: true
+        type: boolean
     secrets:
       SUPABASE_SERVICE_ROLE_KEY:
         required: true
@@ -127,10 +130,18 @@ jobs:
             --maximum-age-minutes 240
 
       - name: Require monotonic public generation before durable begin
-        run: >-
-          node scripts/check-pages-generation-order.mjs
-          --handoff "$RAVRADAR_OPERATIONAL_HANDOFF"
-          --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --handoff "$RAVRADAR_OPERATIONAL_HANDOFF"
+            --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+          )
+          if test "${{ inputs.exact_public_recovery }}" = "true"; then
+            recovery_source_sha256="$(jq -er '.sourcePublicManifestSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
+            args+=(--recovery-source-sha256 "$recovery_source_sha256")
+          fi
+          node scripts/check-pages-generation-order.mjs "${args[@]}"
 
       - name: Validate checkpoint disposition before any Pages begin CAS
         id: checkpoint-disposition-begin
@@ -563,10 +574,18 @@ jobs:
             --maximum-age-minutes 240
 
       - name: Require monotonic public generation immediately before Pages
-        run: >-
-          node scripts/check-pages-generation-order.mjs
-          --handoff "$RAVRADAR_OPERATIONAL_HANDOFF"
-          --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --handoff "$RAVRADAR_OPERATIONAL_HANDOFF"
+            --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+          )
+          if test "${{ inputs.exact_public_recovery }}" = "true"; then
+            recovery_source_sha256="$(jq -er '.sourcePublicManifestSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
+            args+=(--recovery-source-sha256 "$recovery_source_sha256")
+          fi
+          node scripts/check-pages-generation-order.mjs "${args[@]}"
 
       - name: Deploy to GitHub Pages
         id: deployment
