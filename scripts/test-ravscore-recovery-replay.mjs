@@ -711,6 +711,24 @@ assert.equal(
   0.11,
   'the accepted progressive DMI revision may replace the deployed current at the same model run',
 );
+
+const dmiMustBeatControlledLiveReserve = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: {
+    source: 'deployed-private-runtime',
+    record: record([controlledLiveWeather(2)]),
+  },
+  preferredSource: {
+    source: 'progressive-private-dmi',
+    record: record([weather(2, { speed: 0.12, rawU: 0.12 })]),
+  },
+  productionReferenceAt: time(4),
+});
+const dmiMustBeatControlledLiveRecovery = replayForAge(4, dmiMustBeatControlledLiveReserve);
+assert.equal(
+  dmiMustBeatControlledLiveRecovery.hourly.find(row => row.time === time(2)).currentSpeedMps,
+  0.12,
+  'a verified DMI current must replace an overlapping controlled-live reserve current',
+);
 const revisionRows = (oldRow, newRow, labels = ['deployed-private-runtime', 'progressive-private-dmi']) =>
   buildNewestValidRavScoreRecoverySources({
     fallbackSource: { source: labels[0], record: record([oldRow]) },
