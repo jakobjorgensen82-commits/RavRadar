@@ -432,6 +432,21 @@ assert.match(
   /timeout-minutes:\s*45/,
   'normal weather cache sealing has enough bounded time for the measured 118-hour public build',
 );
+const privateWeatherVerificationDependencies = indentedBody(
+  build,
+  '      - name: Install private weather-component verification dependencies',
+);
+assert.match(
+  privateWeatherVerificationDependencies,
+  /python -m pip install --disable-pip-version-check -r requirements-copernicus\.txt/,
+  'private weather verification dependencies are installed explicitly',
+);
+assert.equal(
+  build.indexOf('name: Install private weather-component verification dependencies')
+    < build.indexOf('name: Restore newest compatible private runtime from protected storage'),
+  true,
+  'private weather verification dependencies precede protected runtime restore',
+);
 assert.equal(
   build.indexOf('name: Install exact verified weather sources atomically')
     < build.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
