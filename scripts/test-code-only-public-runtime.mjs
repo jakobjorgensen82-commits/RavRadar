@@ -19,7 +19,10 @@ import {
 } from './prepare-code-only-public-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
-import { resolveCodeOnlyPublicSource } from './resolve-code-only-public-source.mjs';
+import {
+  resolveCodeOnlyPublicSource,
+  resolveFailedIntegratedMaintenancePublicSource,
+} from './resolve-code-only-public-source.mjs';
 import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
   './lib/ravscore-known-public-source-repair.mjs';
 
@@ -257,6 +260,13 @@ for (const marker of [
   'DEPLOY-CODE-ONLY-REPAIR',
   'DEPLOY-SAVED-WEATHER-REPAIR',
   'publish_newest_saved_weather:',
+  'recover_public_run_id:',
+  'recover_public_run_attempt:',
+  'Download exact public maintenance handoff',
+  '--handoff',
+  'git merge-base --is-ancestor',
+  'targetPublicManifestSha256',
+  'privatePayloadIncluded:false',
   'test -z "${{ steps.public-source.outputs.repair_id }}"',
   'Describe newest protected runtime for saved-weather continuation',
   'Bind saved-weather continuation to exact newer runtime',
@@ -690,5 +700,52 @@ assert.throws(() => resolveCodeOnlyPublicSource({
   current: { ...centralSource, status: 'INTEGRATED_PENDING' },
   publicManifest: sourceManifest,
 }), /not an exact active integrated deployment/);
+const failedMaintenanceSeal = {
+  schemaVersion: 'ravscore-operational-pages-artifact-seal-v1',
+  repository: 'test/repo',
+  runId: 123,
+  runAttempt: 1,
+  headSha: 'a'.repeat(40),
+  ref: 'refs/heads/main',
+  attemptId: 'pages-123-1',
+  artifactName: 'github-pages',
+  targetPublicManifestSha256: canonicalSha256(sourceManifest),
+  targetImplementationClosureSha256: 'e'.repeat(64),
+  targetModelBinding: sourceBinding,
+  privatePayloadIncluded: false,
+};
+const failedMaintenanceSource = resolveFailedIntegratedMaintenancePublicSource({
+  current: { ...centralSource, publicManifestSha256: 'd'.repeat(64) },
+  publicManifest: sourceManifest,
+  handoff: {
+    schemaVersion: 'ravscore-operational-deploy-handoff-v2',
+    action: 'integrated',
+    sourceHead: failedMaintenanceSeal.headSha,
+    centralVersion: 7,
+    legacySourceRequired: false,
+    checkpointDatasetId: sourceManifest.datasetId,
+    checkpointBuildOutcome: 'skipped',
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
+    privatePayloadIncluded: false,
+  },
+  seal: failedMaintenanceSeal,
+  targetBinding: sourceBinding,
+  expectedRunId: '123',
+  expectedRunAttempt: '1',
+  expectedRepository: 'test/repo',
+});
+assert.equal(failedMaintenanceSource.status, 'FAILED_INTEGRATED_MAINTENANCE_PUBLIC_SOURCE');
+assert.equal(failedMaintenanceSource.repairId, null);
+assert.throws(() => resolveFailedIntegratedMaintenancePublicSource({
+  current: { ...centralSource, publicManifestSha256: 'd'.repeat(64) },
+  publicManifest: sourceManifest,
+  handoff: { action: 'integrated' },
+  seal: failedMaintenanceSeal,
+  targetBinding: sourceBinding,
+  expectedRunId: '123',
+  expectedRunAttempt: '1',
+  expectedRepository: 'test/repo',
+}), /exact public-only source proof/);
 
 console.log('Code-only public runtime reuse contract passed.');
