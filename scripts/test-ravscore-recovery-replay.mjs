@@ -711,6 +711,50 @@ assert.equal(
   0.11,
   'the accepted progressive DMI revision may replace the deployed current at the same model run',
 );
+const revisionRows = (oldRow, newRow, labels = ['deployed-private-runtime', 'progressive-private-dmi']) =>
+  buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: labels[0], record: record([oldRow]) },
+    preferredSource: { source: labels[1], record: record([newRow]) },
+  });
+const oldRevision = withCurrentRevision(weather(2, { modelRun: time(-48) }), time(-2));
+const newRevision = withCurrentRevision(
+  weather(2, { modelRun: time(-48), speed: 0.11, rawU: 0.11 }), time(-1),
+);
+const reversedRevision = replayForAge(4, revisionRows(newRevision, oldRevision));
+assert.equal(reversedRevision.hourly.find(row => row.time === time(2)).currentSpeedMps, 0.11,
+  'a newer deployed revision must survive an older progressive cache');
+for (const labels of [['deployed', 'progressive'], ['progressive-private-dmi', 'deployed-private-runtime']]) {
+  assert.throws(() => replayForAge(4, revisionRows(oldRevision, newRevision, labels)),
+    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+}
+const endpoints = (row, firstAt, secondAt) => ({
+  ...row,
+  currentProvenance: {
+    ...row.currentProvenance,
+    nativeSteps: [1, 3].map((hour, index) => ({
+      ...row.currentProvenance.nativeSteps[0], nativeValidTime: time(hour),
+      itemUpdatedAt: index === 0 ? firstAt : secondAt,
+    })),
+  },
+});
+const oldEndpoints = endpoints(oldRevision, time(-2), time(-2));
+for (const invalidRevision of [
+  endpoints(newRevision, time(-1), time(-3)),
+  endpoints(newRevision, time(-1), undefined),
+  { ...newRevision, currentProvenance: {
+    ...newRevision.currentProvenance, provider: 'copernicus',
+  } },
+]) {
+  const sources = revisionRows(oldEndpoints, invalidRevision);
+  assert.notEqual(sources[0].record.hourly[0].currentUMps, null,
+    'regressed, incomplete or foreign revision proof cannot erase the deployed component');
+  assert.notEqual(sources[1].record.hourly[0].currentUMps, null,
+    'unresolved evidence remains visible to the strict replay validator');
+}
+assert.throws(() => replayForAge(4, revisionRows(
+  weather(2), weather(2, { speed: 0.11, rawU: 0.11 }),
+)), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+'source labels alone never prove a same-run revision');
 assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(2, { modelRun: time(-48), waveHeight: 1.2 })]) },
   { source: 'progressive', record: record([weather(2, { modelRun: time(-48), waveHeight: 1.3 })]) },

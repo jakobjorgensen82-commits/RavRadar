@@ -1,3 +1,5 @@
+import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';
+
 function finite(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -33,14 +35,23 @@ function componentModelRun(row, component) {
   return modelRun === null ? null : Date.parse(modelRun);
 }
 
-function componentRevisionTime(row, component) {
-  const source = component === 'current'
+function componentRevisionSource(row, component) {
+  return component === 'current'
     ? (row?.currentProvenance?.status === 'verified'
       ? row.currentProvenance
       : row?.sources?.current)
     : row?.sources?.wave;
-  const revision = canonicalTime(source?.itemUpdatedAt ?? source?.itemCreatedAt);
-  return revision === null ? null : Date.parse(revision);
+}
+
+function comparableDmiRevision(left, right) {
+  return left?.provider === 'dmi' && right?.provider === 'dmi'
+    && ['entityId', 'parentZoneId', 'entityType', 'samplingContext', 'collection',
+      'component', 'gridDefinitionSha256', 'verticalLayer', 'verticalLayerRankM'].every(key =>
+      left[key] === right[key])
+    && ['samplingPoint', 'gridPoint'].every(key =>
+      Array.isArray(left[key]) && left[key].length === 2
+      && Array.isArray(right[key]) && right[key].length === 2
+      && left[key].every((value, index) => finite(value) && value === right[key][index]));
 }
 
 function withoutSourceComponent(sources, component) {
@@ -115,13 +126,12 @@ function componentPreference(
   if (!Number.isFinite(fallbackModelRun) || !Number.isFinite(preferredModelRun)) return null;
   if (fallbackModelRun === preferredModelRun) {
     if (!allowPreferredEqualModelRun) return null;
-    const fallbackRevision = componentRevisionTime(fallbackRow, component);
-    const preferredRevision = componentRevisionTime(preferredRow, component);
-    return Number.isFinite(fallbackRevision)
-      && Number.isFinite(preferredRevision)
-      && preferredRevision > fallbackRevision
-      ? 'preferred'
-      : null;
+    const fallbackRevision = componentRevisionSource(fallbackRow, component);
+    const preferredRevision = componentRevisionSource(preferredRow, component);
+    if (!comparableDmiRevision(fallbackRevision, preferredRevision)) return null;
+    if (preferQualifiedDmiComponentSource(fallbackRevision, preferredRevision, component)) return 'preferred';
+    if (preferQualifiedDmiComponentSource(preferredRevision, fallbackRevision, component)) return 'fallback';
+    return null;
   }
   return preferredModelRun > fallbackModelRun ? 'preferred' : 'fallback';
 }
