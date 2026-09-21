@@ -41,6 +41,14 @@ export function assertMonotonicPagesGeneration({ targetText, publicText, reuseRe
   const target = JSON.parse(targetText), current = JSON.parse(publicText);
   const nextTime = reference(target), priorTime = reference(current);
   if (nextTime < priorTime) throw new Error('Pages target is older than the public weather generation');
+  if (recoverySourceSha256 !== null) {
+    if (!/^[a-f0-9]{64}$/.test(recoverySourceSha256)
+      || (sha256CanonicalJson(current) !== recoverySourceSha256
+        && sha256CanonicalJson(current) !== sha256CanonicalJson(target))) {
+      throw new Error('Recovery no longer has its sealed public predecessor or target');
+    }
+    return 'EXACT_RECOVERY_GENERATION';
+  }
   if (reuseReport) {
     if (reuseReport.sourcePublicManifestSha256 !== hash(publicText)
       || reuseReport.generatedPublicManifestSha256 !== hash(targetText)
@@ -55,14 +63,6 @@ export function assertMonotonicPagesGeneration({ targetText, publicText, reuseRe
       throw new Error('Saved weather must advance the production hour');
     }
     return 'EXACT_REUSE_PREDECESSOR';
-  }
-  if (recoverySourceSha256 !== null) {
-    if (!/^[a-f0-9]{64}$/.test(recoverySourceSha256)
-      || (sha256CanonicalJson(current) !== recoverySourceSha256
-        && sha256CanonicalJson(current) !== sha256CanonicalJson(target))) {
-      throw new Error('Recovery no longer has its sealed public predecessor or target');
-    }
-    return 'EXACT_RECOVERY_GENERATION';
   }
   if (nextTime === priorTime) {
     const nextGenerated = Date.parse(target.generatedAt), priorGenerated = Date.parse(current.generatedAt);

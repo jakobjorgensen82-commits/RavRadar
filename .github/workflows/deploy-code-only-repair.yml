@@ -1263,6 +1263,7 @@ jobs:
       legacy_source_required: 'false'
       operational_action: ${{ needs.build-code-only.outputs.operational_action }}
       source_repair_id: ${{ needs.build-code-only.outputs.source_repair_id }}
+      exact_public_recovery: ${{ inputs.recover_public_run_id != '' }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
