@@ -1056,6 +1056,12 @@ jobs:
             source_kind=deployed
             source_path=data/live/dmi-bulk-cache.json
           fi
+          if ! test -s "$source_path"; then
+            source_kind=empty
+            source_path="$RUNNER_TEMP/dmi-active-proof/empty.json"
+            printf '%s\n' '{"zones":{}}' > "$source_path"
+            echo "::notice title=DMI cache bootstrap::No prior DMI cache was available; starting from an empty resumable candidate so fallback providers can continue."
+          fi
           test -s "$source_path"
           materialized_path="$RUNNER_TEMP/dmi-active-proof/materialized.json"
           python scripts/materialize-dmi-bulk-storage.py --input "$source_path" --output "$materialized_path"
