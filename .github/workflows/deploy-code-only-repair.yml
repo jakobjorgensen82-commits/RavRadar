@@ -467,7 +467,6 @@ jobs:
         shell: bash
         env:
           PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
-          RECOVER_PUBLIC_RUN_ID: ${{ inputs.recover_public_run_id }}
         run: |
           set -euo pipefail
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$PUBLIC_REFERENCE" >> "$GITHUB_ENV"
@@ -487,6 +486,7 @@ jobs:
         shell: bash
         env:
           PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
+          RECOVER_PUBLIC_RUN_ID: ${{ inputs.recover_public_run_id }}
         run: |
           set -euo pipefail
           case "${{ steps.operational-action.outputs.action }}" in
