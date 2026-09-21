@@ -214,7 +214,7 @@ assert.throws(() => assertPostCutoverRepairProjection(
   changedRepairTime,
 ), /score-zone time axes/);
 
-const observedProductionDetailsBytes = 117_820_378;
+const observedProductionDetailsBytes = 297_468_317;
 assert.equal(
   manifestBoundedPublicDetailsBytes(observedProductionDetailsBytes),
   observedProductionDetailsBytes,

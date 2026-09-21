@@ -17,7 +17,8 @@ havde et fast 64 MiB-loft. Det levende, hashbundne manifest oplyser eksakt
 - Manifestet læses og valideres før den store detailfil.
 - Manifestets `publicConditionDetailsBytes` er den eksakte læsegrænse.
 - Den deklarerede størrelse skal være et sikkert heltal på mindst 2 bytes og
-  højst 192 MiB.
+  højst 512 MiB. Det giver plads til den aktuelle komplette detailpakke på
+  cirka 297 MiB uden at åbne for en ubegrænset storfilslæsning.
 - Den eksisterende efterfølgende kontrol af eksakt byteantal, filhash,
   payloadhash, modelbinding, datasæt og privacy bevares.
 - Der indføres ingen generel ubegrænset storfilslæsning.

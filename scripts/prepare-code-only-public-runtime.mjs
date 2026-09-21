@@ -26,7 +26,11 @@ export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
   waterLevelRouting: 'water-level-station-routing.json',
 });
 
-export const CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES = 192 * 1024 * 1024;
+// The complete 210/673 production detail package is currently just under
+// 300 MiB. Keep an explicit bounded read rather than an unbounded fetch, but
+// leave headroom for the same public contract to grow without rejecting a
+// valid, manifest-bound production package.
+export const CODE_ONLY_MAXIMUM_PUBLIC_DETAILS_BYTES = 512 * 1024 * 1024;
 // The protected restore has already verified the exact file bytes and SHA-256
 // from its sealed bundle manifest before the runtime is installed atomically.
 // Reuse the same per-file safety policy when that installed runtime is parsed;
