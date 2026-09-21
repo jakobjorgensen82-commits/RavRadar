@@ -467,6 +467,7 @@ jobs:
         shell: bash
         env:
           PUBLIC_REFERENCE: ${{ steps.public-snapshot.outputs.target_reference }}
+          RECOVER_PUBLIC_RUN_ID: ${{ inputs.recover_public_run_id }}
         run: |
           set -euo pipefail
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$PUBLIC_REFERENCE" >> "$GITHUB_ENV"
@@ -500,11 +501,20 @@ jobs:
             *) target_reference="$target_reference_raw" ;;
           esac
           source_head="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$descriptor")"
-          SAVED_REFERENCE="$target_reference" node --input-type=module <<'NODE'
+          SAVED_REFERENCE="$target_reference" RECOVER_PUBLIC_RUN_ID="$RECOVER_PUBLIC_RUN_ID" node --input-type=module <<'NODE'
           const publicMs = Date.parse(process.env.PUBLIC_REFERENCE);
           const savedMs = Date.parse(process.env.SAVED_REFERENCE);
-          if (!Number.isFinite(publicMs) || !Number.isFinite(savedMs) || savedMs <= publicMs) {
-            throw new Error('Saved protected runtime does not strictly advance the public production hour');
+          const exactFailedMaintenanceRecovery = /^[1-9][0-9]{0,19}$/.test(
+            process.env.RECOVER_PUBLIC_RUN_ID ?? '',
+          );
+          if (!Number.isFinite(publicMs) || !Number.isFinite(savedMs)
+            || savedMs < publicMs
+            || (savedMs === publicMs && !exactFailedMaintenanceRecovery)) {
+            throw new Error(
+              exactFailedMaintenanceRecovery
+                ? 'Saved protected runtime is older than the exact public recovery target'
+                : 'Saved protected runtime does not strictly advance the public production hour',
+            );
           }
           NODE
           git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
