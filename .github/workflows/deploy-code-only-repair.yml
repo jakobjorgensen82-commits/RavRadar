@@ -133,6 +133,21 @@ jobs:
         with:
           node-version: 22
 
+      # The saved private weather-component pack is revalidated during
+      # restore.  That credential-free check imports the same Copernicus
+      # reader stack as the normal weather workflow, even though it makes no
+      # provider calls.  Keep the code-only recovery path self-contained so a
+      # valid sealed pack is not rejected merely because Python dependencies
+      # were absent on this fresh runner.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Install private weather-component verification dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
       - name: Seal exact integrated implementation identity
         id: integrated-implementation
         shell: bash
