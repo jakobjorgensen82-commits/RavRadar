@@ -1,3 +1,14 @@
+# 2026-09-21 – 4.0.451 accepterer dokumenteret DMI-revision i samme modelkørsel
+
+Normalrun `35567119842` gennemførte leverandørkæden og komponent-runtime, men
+stoppede ved en RavScore-konflikt mellem den gamle deployede runtime og den
+progressive DMI-cache. 4.0.451 accepterer kun den progressive række, når den
+er gyldig, kommer fra det kendte DMI-handoff og den fælles DMI-vælger beviser
+nyere officiel revision for alle ændrede native endepunkter. Nyere deployet
+revision vinder mod ældre progressiv. Loggen beviser endnu ikke revision som
+den præcise produktionsårsag. Generiske konflikter forbliver fail-closed.
+Se DEC-0229 og `CHANGELOG-4.0.451.md`.
+
 # 2026-09-21 – 4.0.450 retter bounded cache-timeout
 
 Run `35546109889` nåede DMI, Copernicus, Open-Meteo, closure, historik og

@@ -1386,6 +1386,7 @@ const positions = {
   publicPreflightManifest: text.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
   preflight: text.indexOf('name: Decide whether weather needs updating before private runtime download'),
   privateRuntimeExpected: text.indexOf('name: Build current private-runtime restore expectation'),
+  protectedPredecessorDescribe: text.indexOf('name: Describe the exact protected predecessor generation'),
   privateRuntimeRestore: text.indexOf('name: Restore newest compatible private runtime from protected storage'),
   privateRuntimeInspect: text.indexOf('name: Inspect private production runtime availability'),
   privateRuntimeVerify: text.indexOf('name: Verify and restore the private production runtime bundle'),
@@ -1454,6 +1455,21 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
+const protectedPredecessorSection = text.slice(
+  positions.protectedPredecessorDescribe,
+  positions.privateRuntimeRestore,
+);
+for (const marker of [
+  '--describe-current',
+  '--output "$RUNNER_TEMP/private-runtime-current-source.json"',
+  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
+  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+]) {
+  assert.ok(
+    protectedPredecessorSection.includes(marker),
+    `Normalkørslen skal beskrive den foregående beskyttede runtime før restore: ${marker}`,
+  );
+}
 const expected = [
   'preflightCache',
   'publicPreflightManifest',
@@ -1461,6 +1477,7 @@ const expected = [
   'continuationRestore',
   'protectedCheckpointRestore',
   'privateRuntimeExpected',
+  'protectedPredecessorDescribe',
   'privateRuntimeRestore',
   'privateRuntimeInspect',
   'privateRuntimeVerify',
@@ -1567,6 +1584,25 @@ for (const [label, start, end] of [
     `Normal weather skal samle ${label} som et fund uden at blokere gyldige friske prognoser.`,
   );
 }
+const integratedReadinessStart = text.indexOf(
+  'name: Require exact integrated backend and Edge readiness before integrated Pages',
+);
+assert.ok(integratedReadinessStart >= 0, 'Normal weather mangler den integrerede readiness-gate.');
+const integratedReadinessEnd = text.indexOf('\n      - name:', integratedReadinessStart + 1);
+const integratedReadinessBlock = text.slice(
+  integratedReadinessStart,
+  integratedReadinessEnd < 0 ? text.length : integratedReadinessEnd,
+);
+assert.match(
+  integratedReadinessBlock,
+  /readiness_command=publish/,
+  'Efterfølgende integrerede vejrkørsler skal opdatere readiness-bindingen til deres eksakte main-head.',
+);
+assert.doesNotMatch(
+  integratedReadinessBlock,
+  /continue-on-error:/,
+  'En stale eller ugyldig backend-/Edge-binding må ikke skjules før Pages-deploy.',
+);
 const operationalControlSummarySection = text.slice(
   positions.operationalControlSummary,
   positions.pagesUpload,

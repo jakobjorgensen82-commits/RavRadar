@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-21 – lokal 4.0.451 DMI-revision i RavScore-replay
+
+Normalrun `35567119842` gennemførte leverandørkæden og komponent-runtime, men
+stoppede ved en strømkonflikt mellem den gamle deployede runtime og den nye
+progressive DMI-cache. Loggen beviser ikke same-run revision som årsag.
+4.0.451 håndterer den lokalt reproducerede revisionskant med den fælles DMI-
+vælger, samme kildekontekst og alle native endepunkter i netop dette kildepar. Generiske
+ens-modelkørselskonflikter forbliver hårde fejl. Målrettede replay-, vejr- og
+versionskontroller er grønne; første kodehead bestod CI `35585254446`, men den
+samlede reviderede release, merge og en normal continuation
+mangler stadig.
+
+Se DEC-0229 og `CHANGELOG-4.0.451.md`.
+
 # NYESTE SANDHED – 2026-09-21 – lokal 4.0.450 retter cachetrinnets tidsgrænse
 
 Run `35546109889` gennemførte DMI, Copernicus, Open-Meteo, closure, historik

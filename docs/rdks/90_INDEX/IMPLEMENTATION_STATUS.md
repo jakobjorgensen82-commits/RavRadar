@@ -1,3 +1,27 @@
+# Aktuel implementeringsstatus – 2026-09-21, lokal 4.0.451
+
+- [x] Normalrun `35625011723` gennemførte leverandørkæden og den centrale
+  cache på ca. 36 minutter; stoppet kom først i Pages-deployets readiness-
+  forsegling, fordi Supabase-markøren stadig var bundet til den tidligere
+  main-head `77e0a3c3` i stedet for runnets `8a5c1888`.
+- [x] Annullér den efterfølgende planlagte gentagelse `35627623336`, så den
+  ikke genkører samme stale-binding uden ny evidens.
+- [x] Ret normal integreret vejrproduktion, så den efter de samme eksakte
+  model-, database- og Edge-kontroller publicerer readiness for den aktuelle
+  main-head; en stale eller ugyldig binding må fortsat stoppe deploy.
+- [x] Færdiggør saved-weather recovery fra `35625011723` uden providerkald og
+  bekræft Pages, manifest og cachebevis. Recovery-run `#76` (`35636540548`)
+  blev grøn; manifestet er `rr-20260921170645-210` med 210 zoner og 673
+  kystdele.
+
+- [x] Afgræns normalrun `35567119842` til en RavScore-replay-konflikt mellem
+  gammel deployet runtime og progressiv DMI-cache.
+- [x] Implementér snæver same-run revision med nyere officiel række-
+  opdateringstid; behold fail-closed for generiske konflikter.
+- [x] Kør replay-, vejrkomponent- og versionskontroller målrettet grønt.
+- [ ] Kør exact-head sourcegate, PR/merge og én normal continuation fra den
+  gemte fremgang. Kræv privat save, artifact, deploy og offentlig runtime.
+
 # Historisk implementeringsstatus – 2026-09-20, lokal 4.0.448
 
 # Aktuel implementeringsstatus – 2026-09-21, lokal 4.0.450
