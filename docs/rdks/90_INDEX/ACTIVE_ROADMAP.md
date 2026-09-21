@@ -1,3 +1,17 @@
+# Aktivt roadmap – 2026-09-21, 4.0.450 fra cache-timeout til normal drift
+
+1. [x] Find den konkrete årsag i run `35546109889`: den centrale cache-
+   opdatering blev dræbt efter 25 minutter, ikke af en datakontraktfejl.
+2. [x] Sammenhold den målte 21-minutters providerfri runtimeforsegling med
+   den normale scorebygning og hæv kun den bounded workflowgrænse til 45 min.
+3. [ ] Bestå målchecks, exact-head sourcegate og merge 4.0.450.
+4. [ ] Kør én normal vedligeholdelseskørsel fra den gemte fremgang og kræv
+   privat cache-save, artifact, deploy og offentlig manifest/runtime.
+5. [ ] Følg næste almindelige cron som bevis for vedligeholdelsesfri cache.
+   Ingen ny one-off uden konkret ny evidens.
+6. [ ] Når livekæden er bevist, luk den resterende DMI-only-vandstand og gå
+   videre med de relevante roadmap-punkter.
+
 # Historisk aktivt roadmap – 2026-09-20, 4.0.448 fra public-hour-kontrakt til live drift
 
 # Aktiv roadmap – 2026-09-20, 4.0.449 fra migrationshistorik til live drift

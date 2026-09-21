@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.449
+**Håndbogsversion:** 4.0.450
+
+## 89.55 4.0.450 – Cacheforseglingen må ikke afbryde en sund kørsel for tidligt
+
+Run `35546109889` kom gennem DMI, Copernicus, Open-Meteo, closure, historik og
+alle 673 scoredele. Det stoppede først, fordi workflowet afbrød
+`Update central weather cache` efter 25 minutter under den afsluttende
+forsegling af 118 offentlige timer. Det var ikke en fejl i leverandørdata,
+score eller prioritet.
+
+4.0.450 bruger derfor 45 minutter som fast, bounded grænse for både normal
+vejrproduktion og den tilsvarende kapacitetsfortsættelse. En providerfri
+genbygning brugte 21 minutter på forseglingen alene, så den gamle grænse havde
+ikke tilstrækkelig plads til den normale scorebygning oveni. Dataregler,
+DMI-first, fallback, score, geometri og MISSING-regler er uændrede.
 
 ## 89.53 4.0.448 – Public-hour-pakken følger den offentlige kontrakt
 

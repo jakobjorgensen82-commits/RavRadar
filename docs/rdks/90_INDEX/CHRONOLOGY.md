@@ -1,3 +1,10 @@
+# 2026-09-21 – 4.0.450 giver public-hour-forseglingen realistisk bounded tid
+
+Run `35546109889` gennemførte leverandørkæde og 673/673 scoredele, men blev
+afbrudt ved 25 minutter i cachetrinnet. 4.0.450 hæver kun den relevante
+workflowgrænse til 45 minutter, understøttet af 21 minutters målt providerfri
+forsegling i `35544581922`. Live artifact/deploy-bevis mangler fortsat.
+
 # 2026-09-20 – 4.0.445 retter DMI-challenge-binding efter 4.0.444
 
 - Run `35501561874` viste, at checkerens donorbank-sammenligning manglede

@@ -1,3 +1,18 @@
+# Aktuelle issues – 2026-09-21, 4.0.450
+
+- **ISSUE-NORMAL-CACHE-TIMEOUT-35546109889 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** Run `35546109889` nåede alle leverandører og 673/673 scoredele,
+  men `Update central weather cache` blev afbrudt af workflowets faste
+  25-minuttersgrænse under den afsluttende 118-timersforsegling. 4.0.450
+  hæver kun grænsen til 45 minutter i normal produktion og den tilsvarende
+  kapacitetsfortsættelse. Næste normale kørsel skal bevise cache, artifact,
+  deploy og offentlig runtime.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Den normale kørsel
+  skal stadig bevise, at den gemte fremgang kan vedligeholde cachen uden ny
+  one-off.
+- **ISSUE-DMI-ONLY-WATER-LEVEL-REST – FORTSAT ÅBENT:** Lokale vandstandshuller
+  må ikke kaldes komplette, før den faktiske produktionskontrol er grøn.
+
 # NYESTE CHECKPOINT – 2026-09-20 – gentaget regional kontrol rettet lokalt
 
 - **ISSUE-APPEND-ONLY-MIGRATION-HISTORY – RETTET LOKALT / LIVE-BEVIS ÅBENT:**

@@ -1,3 +1,13 @@
+# 2026-09-21 – 4.0.450 retter bounded cache-timeout
+
+Run `35546109889` nåede DMI, Copernicus, Open-Meteo, closure, historik og
+673/673 scoredele. `Update central weather cache` blev afbrudt præcist efter
+25 minutter under den afsluttende 118-timers public/runtimeforsegling.
+Code-only-run `35544581922` brugte 21 minutter på samme forsegling alene.
+4.0.450 hæver derfor kun den faste grænse til 45 minutter i normal workflow
+og den tilsvarende kapacitetsfortsættelse. Se DEC-0228 og
+`CHANGELOG-4.0.450.md`.
+
 # 2026-09-20 – 4.0.448 ensretter offentlig og privat public-hour-kapacitet
 
 # 2026-09-20 – 4.0.449 gendanner append-only migrationshistorik
