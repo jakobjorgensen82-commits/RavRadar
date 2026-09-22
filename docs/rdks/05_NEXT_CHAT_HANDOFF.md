@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-22 – lokal 4.0.461 target-bundet predecessor
+
+4.0.461-arbejdet bygger på merged main `06cb5f0e`. Run `35740940791` viste,
+at current pointergenerationen var `19:00`, mens restore korrekt valgte
+previous `16:00` til det offentlige mål. Migrationen brugte den forkerte
+current-descriptor.
+
+Rettelsen beskriver nu den protected generation, hvis
+`productionReferenceAt` matcher `RAVRADAR_PRODUCTION_TARGET_HOUR`, med
+current-først ved same-reference successor. Målrettede tests er grønne.
+Næste trin er exact-head/sourcegate, merge og én providerfri code-only-kørsel;
+ingen vejrkørsel må startes før den er grøn.
+
 # NYESTE CHECKPOINT – 2026-09-22 – lokal 4.0.460 predecessor-diagnose
 
 Branchen `codex/4.0.460-predecessor-mismatch` er baseret på merged main

@@ -60,6 +60,7 @@ export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   maximumFileCount: 33,
   currentSourceSchemaVersion: '1.0.0',
   currentSourceKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+  targetSourceKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE',
 });
 
 const POINTER_KEYS = Object.freeze(['schemaVersion', 'kind', 'current', 'previous']);
@@ -1345,6 +1346,23 @@ function safeRestoreRejectionCode(error, stage) {
   return `UNKNOWN_${String(stage).toUpperCase().replace(/[^A-Z0-9]+/g, '_')}`;
 }
 
+function protectedPrivateRuntimeSourceIdentity(descriptor, kind, policy) {
+  return Object.freeze({
+    schemaVersion: policy.currentSourceSchemaVersion,
+    kind,
+    sourceHead: descriptor.sourceHead,
+    datasetId: descriptor.datasetId,
+    bundleContentSha256: descriptor.bundleContentSha256,
+    productionReferenceAt: descriptor.productionReferenceAt,
+    generatedAt: descriptor.generatedAt,
+    modelBinding: structuredClone(descriptor.modelBinding),
+    contractHashes: structuredClone(descriptor.contractHashes),
+    expectedZoneCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount,
+    expectedPartCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount,
+    privatePayloadIncluded: false,
+  });
+}
+
 export async function describeCurrentProtectedPrivateProductionRuntime({
   request,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
@@ -1356,21 +1374,34 @@ export async function describeCurrentProtectedPrivateProductionRuntime({
     // when its model bundle belongs to the preceding release.
     allowHistoricalCurrentModelBinding: true,
   });
-  const current = row.payload.current;
-  return Object.freeze({
-    schemaVersion: policy.currentSourceSchemaVersion,
-    kind: policy.currentSourceKind,
-    sourceHead: current.sourceHead,
-    datasetId: current.datasetId,
-    bundleContentSha256: current.bundleContentSha256,
-    productionReferenceAt: current.productionReferenceAt,
-    generatedAt: current.generatedAt,
-    modelBinding: structuredClone(current.modelBinding),
-    contractHashes: structuredClone(current.contractHashes),
-    expectedZoneCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount,
-    expectedPartCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount,
-    privatePayloadIncluded: false,
+  return protectedPrivateRuntimeSourceIdentity(
+    row.payload.current,
+    policy.currentSourceKind,
+    policy,
+  );
+}
+
+export async function describeTargetProtectedPrivateProductionRuntime({
+  request,
+  targetReferenceAt,
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+} = {}) {
+  const target = canonicalTime(
+    targetReferenceAt,
+    'Protected private runtime target source reference',
+  );
+  const row = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
   });
+  const selected = [row.payload.current, row.payload.previous]
+    .filter(Boolean)
+    .find(descriptor => descriptor.productionReferenceAt === target);
+  if (!selected) {
+    throw new Error('No protected private runtime generation matches the exact target reference');
+  }
+  return protectedPrivateRuntimeSourceIdentity(selected, policy.targetSourceKind, policy);
 }
 
 export async function restoreProtectedPrivateProductionRuntime({
@@ -1756,7 +1787,7 @@ function parseArguments(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--audit-anon', '--describe-current'].includes(argument)) {
+    if (['--publish', '--restore', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one protected private runtime mode');
       result.mode = argument.slice(2);
       continue;
@@ -1770,6 +1801,7 @@ function parseArguments(argv) {
     else if (argument === '--source-head') result.sourceHead = value;
     else if (argument === '--now') result.now = value;
     else if (argument === '--output') result.outputPath = value;
+    else if (argument === '--target-reference') result.targetReferenceAt = value;
     else if (argument === '--same-reference-migration-report') {
       result.sameReferenceMigrationReportPath = value;
     } else if (argument === '--same-reference-predecessor-manifest') {
@@ -1777,16 +1809,21 @@ function parseArguments(argv) {
     }
     else throw new Error(`Unknown argument: ${argument}`);
   }
-  if (!result.mode) throw new Error('Use --publish, --restore, --audit-anon or --describe-current');
-  if (!['audit-anon', 'describe-current'].includes(result.mode)
+  if (!result.mode) {
+    throw new Error('Use --publish, --restore, --audit-anon, --describe-current or --describe-target');
+  }
+  if (!['audit-anon', 'describe-current', 'describe-target'].includes(result.mode)
     && (!result.privateRoot || !result.bundlePath || !result.expectedPath)) {
     throw new Error('Protected private runtime mode requires root, bundle and expectation');
   }
   if (result.mode === 'publish' && !result.sourceHead) {
     throw new Error('Protected private runtime publish requires --source-head');
   }
-  if (result.mode === 'describe-current' && !result.outputPath) {
-    throw new Error('Protected private runtime current description requires --output');
+  if (['describe-current', 'describe-target'].includes(result.mode) && !result.outputPath) {
+    throw new Error('Protected private runtime source description requires --output');
+  }
+  if (result.mode === 'describe-target' && !result.targetReferenceAt) {
+    throw new Error('Protected private runtime target description requires --target-reference');
   }
   const hasSameReferenceReport = Boolean(result.sameReferenceMigrationReportPath);
   const hasSameReferenceManifest = Boolean(result.sameReferencePredecessorManifestPath);
@@ -1810,10 +1847,15 @@ async function main() {
       request: clients.documentRequest,
       storage: clients.storage,
     });
-  } else if (options.mode === 'describe-current') {
-    result = await describeCurrentProtectedPrivateProductionRuntime({
-      request: clients.documentRequest,
-    });
+  } else if (['describe-current', 'describe-target'].includes(options.mode)) {
+    result = options.mode === 'describe-current'
+      ? await describeCurrentProtectedPrivateProductionRuntime({
+        request: clients.documentRequest,
+      })
+      : await describeTargetProtectedPrivateProductionRuntime({
+        request: clients.documentRequest,
+        targetReferenceAt: options.targetReferenceAt,
+      });
     const output = path.resolve(options.outputPath);
     const temporary = `${output}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
     await fs.mkdir(path.dirname(output), { recursive: true });
@@ -1858,6 +1900,8 @@ async function main() {
   console.log(JSON.stringify({
     status: options.mode === 'describe-current'
       ? 'protected-private-runtime-current-described'
+      : options.mode === 'describe-target'
+        ? 'protected-private-runtime-target-described'
       : result.reason ?? 'anonymous-read-denied',
     restored: result.restored,
     published: result.published,

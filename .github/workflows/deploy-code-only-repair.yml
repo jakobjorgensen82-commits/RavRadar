@@ -598,11 +598,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Describe exact current private runtime source for bounded migration
-        if: steps.current-private-install.outcome != 'success' && inputs.publish_newest_saved_weather != true
+      - name: Describe exact target private runtime source for bounded migration
+        if: steps.current-private-install.outcome != 'success'
         run: >-
-          node scripts/protected-private-production-runtime.mjs --describe-current
-          --output "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+          node scripts/protected-private-production-runtime.mjs --describe-target
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -612,7 +613,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          predecessor="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"
+          predecessor="$(jq -er '.sourceHead | select(type == "string" and test("^[a-f0-9]{40}$"))' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")"
           case "${{ steps.operational-action.outputs.action }}" in
             integrated|integrated-historical-maintenance) ;;
             *) echo "Private runtime contract rebind requires active integrated maintenance." >&2; exit 1 ;;
@@ -708,10 +709,10 @@ jobs:
           --source "$RAVRADAR_PREDECESSOR_PRIVATE_RESTORE"
           --output "$RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE"
           --bundle-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
-          --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"
+          --predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json"
           --predecessor-root "$RAVRADAR_PREDECESSOR_SOURCE_ROOT"
           --repository-root "$GITHUB_WORKSPACE"
-          --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"
+          --expected-source-head "$(jq -er '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")"
           --report .geometry-v2-work/post-cutover-private-runtime-migration.json
 
       - name: Install migrated saved private runtime atomically

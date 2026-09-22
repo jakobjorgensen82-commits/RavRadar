@@ -5601,3 +5601,16 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [x] Bevar eksisterende mobil- og tabletlayout samt alle kort-/scoredata.
 - [ ] Kør exact-head sourcegate, merge og den efterfølgende Pages-publicering.
 - [ ] Bekræft visuelt den offentlige desktopforside efter publicering.
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.461
+
+- [x] Afgræns run `35740940791` til pointer/current-versus-previous-
+  forvekslingen: expected `19:00`, restored manifest `16:00`.
+- [x] Tilføj target-reference-bundet protected-runtime descriptor med
+  current-først ved same-reference successor.
+- [x] Brug den samme descriptor til predecessor-source, manifest og migration;
+  måltests og workflow-rækkefølge består.
+- [ ] Bestå exact-head-kontrol og ny providerfri code-only-kørsel på main.
+- [ ] Først når den er grøn: genoptag én almindelig vejrkørsel fra gemt
+  fremgang og verificér cache-save/deploy.
+
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.460

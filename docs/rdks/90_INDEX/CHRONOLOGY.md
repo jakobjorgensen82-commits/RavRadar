@@ -1,3 +1,9 @@
+# 2026-09-22 – 4.0.461 target-bundet predecessor
+
+Run `35740940791` bekræftede, at pointerens current `19:00` og restorets
+previous `16:00` blev blandet sammen. 4.0.461 binder descriptoren til den
+eksakte produktionstime og bevarer current-først ved same-reference successor.
+
 # 2026-09-22 – 4.0.460 feltdiagnose før predecessor-rettelse
 
 Code-only-run `35738220142` bestod source, migration, readback, restore og

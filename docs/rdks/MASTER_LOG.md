@@ -1,3 +1,13 @@
+# 2026-09-22 – 4.0.461 vælger den faktiske protected predecessor
+
+Code-only-run `35740940791` kom gennem source, migration-readback, restore og
+unpack, men viste den konkrete bindingfejl: protected pointerens current var
+`19:00`, mens restore korrekt valgte previous `16:00` til det offentlige mål.
+4.0.461 tilføjer en target-reference-bundet descriptor, som vælger samme
+pointergeneration, som restore forventes at vælge; current vinder ved en
+ægte same-reference successor. Fail-closed kontrol og alle dataforløb er
+uændrede. Ingen providerkald blev foretaget.
+
 # 2026-09-22 – 4.0.460 gør predecessor-mismatch synlig
 
 Code-only-run `35738220142` kom gennem source, migration, database-readback,
