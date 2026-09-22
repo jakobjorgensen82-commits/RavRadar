@@ -1,3 +1,14 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
+
+- [x] Afgræns code-only-run `35749000940` til den hashbundne
+  public-hour/startprognose efter grøn bounded JSON-skrivning.
+- [x] Rebind atomisk alle 118 timefiler, delivery-/details-binding,
+  national forecast, manifest og checksums; tilføj materialiseringsregression.
+- [ ] Bestå exact-head-kontrol og merge 4.0.464.
+- [ ] Kør én ny providerfri code-only migration/readback på main.
+- [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+  artifact, deploy og offentlig runtime.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.463
 
 - [x] Afgræns code-only-run `35746937526` til den anden V8-strenggrænse i

@@ -1,3 +1,11 @@
+# Aktuelle issues – 2026-09-22, 4.0.464
+
+- **ISSUE-POST-CUTOVER-PUBLIC-HOUR-BINDING-35749000940 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Efter den bounded writer-rettelse blev den gamle
+  modelbinding opdaget i den hashbundne startprognose og alle 118 private
+  timefiler. 4.0.464 rebinder hele pakken atomisk og tester materialiseringen.
+  Exact-head, merge og en ny providerfri code-only-kørsel mangler stadig.
+
 # Aktuelle issues – 2026-09-22, 4.0.463
 
 - **ISSUE-POST-CUTOVER-MIGRATION-V8-STRING-35746937526 – RETTET LOKALT /

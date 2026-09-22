@@ -14,7 +14,16 @@ import {
   assertPrivateRuntimeInventory,
   privateWeatherComponentMarker,
 } from './lib/private-weather-component-inventory.mjs';
-import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
+import {
+  privatePublicHourDeliveryMarker,
+  rebindPrivatePublicHourDeliveryPack,
+} from './lib/public-hour-delivery-pack.mjs';
+import {
+  buildPublicConditionDetails,
+  compactJson,
+  sha256Text,
+} from './public-conditions-lib.mjs';
+import { canonicalPublicRuntimeJson } from '../js/core/ravscore-public-runtime-contract.js';
 import {
   assertIntegratedCoastalPointContinuation,
   assertCandidateGCoastalPointRollbackContinuation,
@@ -502,6 +511,11 @@ function collectBundleHashPaths(root, hashes) {
   return paths;
 }
 
+function isBindingMetadataPath(pathValue) {
+  return pathValue.endsWith('.modelBundleSha256')
+    || /^publicHourDelivery\.(sourceDetailsSha256|startupNationalForecastSha256|rawBytes|packBytes|packSha256)$/.test(pathValue);
+}
+
 export function allowedChange(pathValue, exactAllowedPaths = []) {
   const allowed = exactAllowedPaths instanceof Set
     ? exactAllowedPaths : new Set(exactAllowedPaths);
@@ -522,7 +536,7 @@ export function classifyVerifiedRuntimeMigration({
   }
   const bindingPaths = new Set(bindingMetadataPaths);
   const allowedPaths = new Set(verifiedChangedPaths);
-  if ([...bindingPaths].some(value => !value.endsWith('.modelBundleSha256'))) {
+  if ([...bindingPaths].some(value => !isBindingMetadataPath(value))) {
     throw new Error('Runtime migration binding proof contains a non-binding path');
   }
   const changedPaths = collectChangedPaths(source, migrated);
@@ -650,10 +664,14 @@ async function digestPrivateRuntimeFile(filePath) {
   return { bytes, sha256: hash.digest('hex') };
 }
 
-export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, inventory) {
+export async function copyPrivateRuntimeInventory(sourceRoot, outputRoot, inventory, {
+  skipRelativePaths = [],
+} = {}) {
   assertPrivateRuntimeInventory(inventory);
   assertSame(await assertExactRuntimeInventory(sourceRoot), inventory, 'Private runtime copy inventory');
+  const skipped = new Set(skipRelativePaths);
   for (const descriptor of inventory) {
+    if (skipped.has(descriptor.relativePath)) continue;
     const from = path.join(sourceRoot, descriptor.relativePath);
     const to = path.join(outputRoot, descriptor.relativePath);
     await fs.mkdir(path.dirname(to), { recursive: true });
@@ -698,7 +716,7 @@ export function validatePredecessorManifest(
   assertSame(manifest.contractHashes, predecessor.contractHashes, 'Protected bundle contract hashes');
 }
 
-function validateAndMigrateConditions({
+async function validateAndMigrateConditions({
   source,
   predecessor,
   oldStaging,
@@ -706,6 +724,8 @@ function validateAndMigrateConditions({
   oldCandidateBinding,
   currentIntegratedBinding,
   currentCandidateBinding,
+  publicHourPackSourcePath,
+  publicHourPackTargetPath,
 }) {
   if (!isPlainObject(source)
       || source.datasetId !== predecessor.datasetId
@@ -963,6 +983,49 @@ function validateAndMigrateConditions({
       `Private runtime migration rejected ${errors.length} independent error(s): ${summarizeIndependentErrors(errors)}`,
     );
   }
+  let publicHourDeliveryRebound = false;
+  const sourcePublicHourMarker = privatePublicHourDeliveryMarker(source);
+  if (sourcePublicHourMarker
+      && sourcePublicHourMarker.modelBinding.modelBundleSha256
+        !== currentIntegratedBinding.modelBundleSha256) {
+    if (typeof publicHourPackSourcePath !== 'string'
+        || typeof publicHourPackTargetPath !== 'string') {
+      throw new Error('Private public-hour pack rebind paths are missing');
+    }
+    const targetMarker = structuredClone(sourcePublicHourMarker);
+    targetMarker.modelBinding = structuredClone(currentIntegratedBinding);
+    targetMarker.startupNationalForecast = {
+      ...targetMarker.startupNationalForecast,
+      modelBinding: structuredClone(currentIntegratedBinding),
+    };
+    targetMarker.startupNationalForecastSha256 = sha256Text(
+      canonicalPublicRuntimeJson(targetMarker.startupNationalForecast),
+    );
+    const targetDetailsSha256 = sha256Text(
+      compactJson(buildPublicConditionDetails(migrated)),
+    );
+    targetMarker.sourceDetailsSha256 = targetDetailsSha256;
+    migrated.publicHourDelivery = targetMarker;
+    const rebound = await rebindPrivatePublicHourDeliveryPack({
+      sourcePackPath: publicHourPackSourcePath,
+      sourceConditions: source,
+      targetConditions: migrated,
+      targetDetailsSha256,
+      outputPath: publicHourPackTargetPath,
+    });
+    Object.assign(migrated.publicHourDelivery, rebound);
+    for (const pathValue of [
+      'publicHourDelivery.sourceDetailsSha256',
+      'publicHourDelivery.startupNationalForecastSha256',
+      'publicHourDelivery.rawBytes',
+      'publicHourDelivery.packBytes',
+      'publicHourDelivery.packSha256',
+    ]) {
+      exactAllowedPaths.add(pathValue);
+      bindingMetadataPaths.add(pathValue);
+    }
+    publicHourDeliveryRebound = true;
+  }
   const [candidateRootName, candidateBindingName] = candidateRoots[0];
   const requiredMetadataPaths = [
     ...(predecessorIntegratedBinding.modelBundleSha256
@@ -1019,6 +1082,7 @@ function validateAndMigrateConditions({
     repairedContinuationCount,
     recomputedModeCount,
     recomputedZoneCount,
+    publicHourDeliveryRebound,
     transitionKind: classifyVerifiedRuntimeMigration({
       source,
       migrated,
@@ -1080,21 +1144,27 @@ export async function migratePostCutoverPrivateRuntime({
       || conditions.generatedAt !== manifest.generatedAt) {
     throw new Error('Predecessor conditions do not match the protected bundle timestamps');
   }
-  const result = validateAndMigrateConditions({
-    source: conditions,
-    predecessor: predecessorIdentity,
-    oldStaging: modules.staging,
-    oldIntegratedBinding: modules.integrated,
-    oldCandidateBinding: modules.candidate,
-    currentIntegratedBinding: currentIntegrated,
-    currentCandidateBinding: currentCandidate,
-  });
-
   const temporary = `${output}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   let migratedConditionsDigest;
+  let migrationResult;
   try {
     await fs.mkdir(temporary, { recursive: false });
-    await copyPrivateRuntimeInventory(source, temporary, runtimeFiles);
+    const result = await validateAndMigrateConditions({
+      source: conditions,
+      predecessor: predecessorIdentity,
+      oldStaging: modules.staging,
+      oldIntegratedBinding: modules.integrated,
+      oldCandidateBinding: modules.candidate,
+      currentIntegratedBinding: currentIntegrated,
+      currentCandidateBinding: currentCandidate,
+      publicHourPackSourcePath: path.join(source, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
+      publicHourPackTargetPath: path.join(temporary, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath),
+    });
+    await copyPrivateRuntimeInventory(source, temporary, runtimeFiles, {
+      skipRelativePaths: result.publicHourDeliveryRebound
+        ? [PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath]
+        : [],
+    });
     if (result.transitionKind !== 'CONTRACT_ONLY_REBIND') {
       migratedConditionsDigest = await atomicWriteJson(
         path.join(temporary, 'data/live/conditions.json'),
@@ -1105,6 +1175,7 @@ export async function migratePostCutoverPrivateRuntime({
     }
     assertSame(await assertExactRuntimeInventory(temporary), runtimeFiles, 'Migrated runtime preserved file inventory');
     await fs.rename(temporary, output);
+    migrationResult = result;
   } catch (error) {
     await fs.rm(temporary, { recursive: true, force: true }).catch(() => {});
     throw error;
@@ -1113,7 +1184,7 @@ export async function migratePostCutoverPrivateRuntime({
   const report = {
     schemaVersion: 1,
     kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
-    transitionKind: result.transitionKind,
+    transitionKind: migrationResult.transitionKind,
     predecessorSourceHead: predecessorIdentity.sourceHead,
     datasetId: predecessorIdentity.datasetId,
     sourceBundleContentSha256: predecessorIdentity.bundleContentSha256,
@@ -1123,9 +1194,9 @@ export async function migratePostCutoverPrivateRuntime({
     currentCandidateBundleSha256: currentCandidate.modelBundleSha256,
     previousContractHashes: predecessorIdentity.contractHashes,
     currentContractHashes,
-    candidateRuntimeKind: result.candidateRoot,
-    migratedPartCount: result.partCount,
-    changedBindingFieldCount: result.changedPaths.length,
+    candidateRuntimeKind: migrationResult.candidateRoot,
+    migratedPartCount: migrationResult.partCount,
+    changedBindingFieldCount: migrationResult.changedPaths.length,
     copiedPrivateFileCount: runtimeFiles.length,
     migratedConditionsBytes: migratedConditionsDigest.bytes,
     migratedConditionsSha256: migratedConditionsDigest.sha256,
@@ -1136,9 +1207,9 @@ export async function migratePostCutoverPrivateRuntime({
   await atomicWriteJson(reportPath, report);
   return {
     ...report,
-    repairedContinuationCount: result.repairedContinuationCount,
-    recomputedModeCount: result.recomputedModeCount,
-    recomputedZoneCount: result.recomputedZoneCount,
+    repairedContinuationCount: migrationResult.repairedContinuationCount,
+    recomputedModeCount: migrationResult.recomputedModeCount,
+    recomputedZoneCount: migrationResult.recomputedZoneCount,
   };
 }
 

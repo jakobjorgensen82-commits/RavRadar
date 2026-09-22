@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 public-hour-rebind
+
+Code-only-run `35749000940` bekræftede, at den bounded migreringswriter nu
+skrev det store conditions-dokument, men den næste kontrol fandt en gammel
+startup-national-forecast-digest i den bevarede 118-timerspakke.
+
+4.0.464 rebinder hele pakken atomisk, når modelhashen skifter: timefiler,
+delivery-binding, details-digest, national forecast, manifest og alle rå/
+komprimerede checksums følger samme aktuelle identitet. Testen materialiserer
+pakken igen og verificerer alle timefiler. Ingen provider, cache, score,
+geometri eller public data ændres.
+
+Næste trin er exact-head/sourcegate, merge og én providerfri code-only-kørsel
+på main.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.463 bounded migreringsskrivning
 
 Code-only-run `35746937526` bekræftede, at 4.0.462's iterative

@@ -1,3 +1,19 @@
+## 4.0.464 – samlet rebind af public-hour-pakken (2026-09-22)
+
+Code-only-run `35749000940` viste, at den bounded migreringswriter fra 4.0.463
+nu kom igennem. Den næste kontrol afviste derefter den bevarede 118-timerspakke:
+startprognosens digest var stadig beregnet med forgængerens modelbinding.
+
+4.0.464 rebinder derfor den komplette private public-hour-pakke som ét
+atomisk artefakt ved modelhash-migration: hver timefil, dens delivery-binding,
+details-digest, startprognose, manifest og alle rå/komprimerede SHA-256-værdier
+opdateres samlet. Målinger og vejrindhold ændres ikke. En måltest materialiserer
+den nye pakke igen og kontrollerer alle bindinger.
+
+Ingen providerkald, scoreformel, geometri, prioritet eller MISSING-regel
+ændres. Næste trin er exact-head sourcegate, PR/merge og en ny providerfri
+code-only-kørsel.
+
 ## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
 
 Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store
