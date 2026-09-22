@@ -2964,3 +2964,20 @@ indarbejdet. Grønne måltest: recovery replay, production adapters, syntax og
 diff-check. Næste trin: exact-head sourcegate, merge, én normal continuation
 fra gemt progression og derefter live cache/runtime/deploybevis. Start ikke
 oneoff eller ny blind providerindsamling.
+# 4.0.461 checkpoint – target-bundet predecessor-genbinding
+
+Code-only-run `35740940791` gav det konkrete mismatch efter den grønne
+diagnostik: descriptoren forventede pointerens current-generation
+`rr-20260921195052-210` (`19:00`), men restore havde korrekt valgt den
+foregående `rr-20260921170645-210` (`16:00`) til det offentlige mål.
+
+4.0.461 tilføjer `--describe-target --target-reference`. Den læser den
+centrale pointer og vælger den generation, hvis måltid matcher præcist; current
+står først ved same-reference successor. Code-only-workflowet bruger nu denne
+descriptor til source-head, predecessor-archive, manifest og migration.
+
+Målrettede protected-runtime-, migration-, code-only- og workflowtests er
+grønne lokalt. Næste trin er exact-head/sourcegate, merge og én ny providerfri
+code-only-kørsel. Ingen vejrkørsel må startes før den er grøn.
+
+# 4.0.460 checkpoint – feltdiagnose for dynamisk predecessor-mismatch

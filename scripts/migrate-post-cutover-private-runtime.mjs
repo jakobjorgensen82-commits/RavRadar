@@ -136,7 +136,7 @@ export function validatePredecessorIdentity(value, expectedSourceHead) {
     'Current private runtime source model binding');
   const contractKeys = Object.keys(value.contractHashes ?? {});
   if (value.schemaVersion !== '1.0.0'
-      || value.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE'
+      || value.kind !== 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE'
       || !SOURCE_HEAD.test(String(expectedSourceHead ?? ''))
       || value.sourceHead !== expectedSourceHead
       || !DATASET_ID.test(String(value.datasetId ?? ''))

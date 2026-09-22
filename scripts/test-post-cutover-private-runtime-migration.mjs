@@ -85,7 +85,7 @@ assert.throws(
 
 const dynamicPredecessorIdentity = {
   schemaVersion: '1.0.0',
-  kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_CURRENT_SOURCE',
+  kind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE',
   sourceHead: POST_CUTOVER_PREDECESSOR.sourceHead,
   datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
   bundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,

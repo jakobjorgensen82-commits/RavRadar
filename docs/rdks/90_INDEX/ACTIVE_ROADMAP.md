@@ -2815,3 +2815,15 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 2. [ ] Bekræft visuelt desktoplayoutet og fortsæt derefter den igangværende
    normale vejrcachekørsel uden at genstarte den på grund af CSS-ændringen.
 3. [ ] Fortsæt de allerede åbne vejrdata- og plain-language-roadmap-punkter.
+# Aktivt roadmap – 2026-09-22, 4.0.461 target-bundet predecessor før selvstændig drift
+
+0. [x] Afgræns run `35740940791`: current pointer var `19:00`, restore valgte
+   korrekt previous `16:00`, men migration fik current-descriptoren.
+1. [x] Bind descriptorvalg til præcis target-reference og genbrug samme
+   generation i source-archive, restore-manifest og migration.
+2. [ ] Bestå exact-head-kontrol og ny providerfri code-only-genbinding på main.
+3. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+
+# Aktivt roadmap – 2026-09-22, 4.0.460 feltdiagnose før selvstændig drift

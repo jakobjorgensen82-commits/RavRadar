@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.460";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.461";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;

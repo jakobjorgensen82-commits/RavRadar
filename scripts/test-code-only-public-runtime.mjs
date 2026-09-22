@@ -311,9 +311,10 @@ for (const marker of [
   'sourceRepairId:',
   'if has($field) then .[$field] else "" end',
   'Prove the current-compatible runtime is no longer client-readable',
-  'Describe exact current private runtime source for bounded migration',
-  '--describe-current',
-  'current-private-runtime-source.json',
+  'Describe exact target private runtime source for bounded migration',
+  '--describe-target',
+  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'target-private-runtime-source.json',
   'compare/$predecessor...$GITHUB_SHA',
   'Install and import-check the exact predecessor restore compatibility closure',
   'Prove the saved predecessor runtime is no longer client-readable',
@@ -321,8 +322,8 @@ for (const marker of [
   'Protected current restore attempt $attempt of 3 failed.',
   'if node "$RAVRADAR_PREDECESSOR_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs" --restore',
   'Protected predecessor restore attempt $attempt of 3 failed.',
-  '--predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json"',
-  '--expected-source-head "$(jq -er \'\.sourceHead\' "$RAVRADAR_OPERATIONAL_WORK/current-private-runtime-source.json")"',
+  '--predecessor-descriptor "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json"',
+  '--expected-source-head "$(jq -er \'\.sourceHead\' "$RAVRADAR_OPERATIONAL_WORK/target-private-runtime-source.json")"',
   'Prebuild lean GitHub Pages artifact before production writes',
   'Decide all independent prewrite checks together',
   'supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"',
@@ -508,7 +509,7 @@ const predecessorPreparationStart = workflow.indexOf(
 );
 const predecessorPreparationEnd = workflow.indexOf('\n      - name:', predecessorPreparationStart + 1);
 const predecessorPreparation = workflow.slice(predecessorPreparationStart, predecessorPreparationEnd);
-assert.ok(predecessorPreparation.includes('current-private-runtime-source.json'));
+assert.ok(predecessorPreparation.includes('target-private-runtime-source.json'));
 for (const marker of [
   'case "${{ steps.operational-action.outputs.action }}" in',
   'integrated|integrated-historical-maintenance) ;;',

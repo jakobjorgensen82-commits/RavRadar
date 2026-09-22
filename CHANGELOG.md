@@ -1,3 +1,12 @@
+## 4.0.461 – bind migration til valgt protected generation (2026-09-22)
+
+Code-only-run `35740940791` viste, at pointerens current-generation var
+`19:00`, mens restore korrekt valgte previous-generationen `16:00` til det
+offentlige mål. Migrationen sammenlignede fejlagtigt med current-descriptoren.
+4.0.461 bruger en målbaseret descriptor, så source-archive, restore-manifest
+og migration altid identificerer samme generation. Ingen providerkald eller
+vejrdata ændres. Se `CHANGELOG-4.0.461.md`.
+
 ## 4.0.460 – synlig predecessor-identitetsmismatch (2026-09-22)
 
 Code-only-run `35738220142` kom gennem source, migration, readback, restore og

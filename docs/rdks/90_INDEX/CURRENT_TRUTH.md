@@ -4843,3 +4843,19 @@ datakompletheds- eller deploybevis.
 plads over forklaringen. Mobil- og tabletreglerne, kortdata, score, markører
 og ranglisteindhold er uændrede. Der er ikke startet en ny vejropdatering for
 denne CSS-ændring; den igangværende normale kørsel fortsætter uafhængigt.
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.461 target-bundet predecessor
+
+Code-only-run `35740940791` viste en reel workflowfejl, ikke en forkert cache:
+protected pointerens current-generation var datasættet fra `19:00`, mens
+restore valgte previous-generationen fra `16:00`, fordi det offentlige mål
+stadig var `16:00`. Migrationen fik current-descriptoren og afviste derfor
+den pakke, som restore faktisk havde valgt.
+
+4.0.461 beskriver nu den protected pointergeneration, hvis
+`productionReferenceAt` præcist matcher det aktuelle mål. Ved same-reference
+successor vælges current først, ligesom restore gør. Den samme target-bundne
+descriptor bruges til source-archive, predecessor-manifest og migration.
+Fail-closed identitetskontrol er bevaret. Ingen vejrleverandør eller cache er
+startet eller ændret.
+
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.460 predecessor-diagnostik

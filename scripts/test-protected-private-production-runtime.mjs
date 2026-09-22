@@ -24,6 +24,7 @@ import {
   buildProtectedPrivateRuntimeArchive,
   createProtectedPrivateRuntimeClients,
   describeCurrentProtectedPrivateProductionRuntime,
+  describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
   validateSameReferencePrivateRuntimeSuccessor,
@@ -744,6 +745,27 @@ try {
     documents.row().payload.current.bundleContentSha256);
   assert.equal(currentDescription.privatePayloadIncluded, false);
   assert.doesNotMatch(JSON.stringify(currentDescription), /objectPath|objects|privacyClass|bucketId/);
+  const pointerBeforeTargetSelection = documents.row();
+  const targetDescription = await describeTargetProtectedPrivateProductionRuntime({
+    request: documents.request,
+    targetReferenceAt: documents.row().payload.previous.productionReferenceAt,
+  });
+  assert.equal(targetDescription.kind,
+    'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE');
+  assert.equal(targetDescription.sourceHead, SOURCE_HEADS[1],
+    'equal-time target selection must prefer the current protected generation');
+  const splitReferenceRow = documents.row();
+  splitReferenceRow.payload.current.productionReferenceAt = '2026-08-29T11:00:00.000Z';
+  splitReferenceRow.payload.current.generatedAt = '2026-08-29T11:05:00.000Z';
+  documents.setRow(splitReferenceRow);
+  const previousTargetDescription = await describeTargetProtectedPrivateProductionRuntime({
+    request: documents.request,
+    targetReferenceAt: splitReferenceRow.payload.previous.productionReferenceAt,
+  });
+  assert.equal(previousTargetDescription.bundleContentSha256,
+    splitReferenceRow.payload.previous.bundleContentSha256,
+    'an older exact target must select the previous protected generation');
+  documents.setRow(pointerBeforeTargetSelection);
 
   const restoreBundle = path.join(restoreRoot, 'bundle-first');
   const downloadsBeforeCurrentRestore = storage.downloads();
