@@ -2817,3 +2817,9 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** En grøn almindelig kørsel,
   offentlig deploy og efterfølgende selvkørende vedligeholdelse er endnu ikke
   bevist efter den nye rettelse.
+# Aktuelle issues – 2026-09-22, 4.0.454
+
+- **ISSUE-DESKTOP-MAP-EMPTY-SPACE – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Desktopforsiden havde ubrugt lodret plads under kortet, fordi kortets højde
+  var fast, selv om ranglistepanelet var højere. 4.0.454 gør kun desktop-
+  kortkolonnen fleksibel fra 881 px. Offentlig visuel kontrol mangler.

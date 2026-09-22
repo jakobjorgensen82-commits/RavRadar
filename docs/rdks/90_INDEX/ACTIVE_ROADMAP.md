@@ -2718,3 +2718,11 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 6. [ ] Verificér central cache, runtime, gates, artifact, Pages og offentlig
    prognose. Mål derefter providerfremgang og mangler på et sammenligneligt
    tidspunkt.
+# Aktivt roadmap – 2026-09-22, 4.0.454 desktopkort
+
+0. [x] Ret desktopforsidens kortkolonne, så kortet fylder den ledige højde
+   ved siden af “Bedste områder”; mobil- og tabletlayout er urørt.
+1. [ ] Bestå målchecks, exact-head sourcegate, merge og Pages-publicering.
+2. [ ] Bekræft visuelt desktoplayoutet og fortsæt derefter den igangværende
+   normale vejrcachekørsel uden at genstarte den på grund af CSS-ændringen.
+3. [ ] Fortsæt de allerede åbne vejrdata- og plain-language-roadmap-punkter.

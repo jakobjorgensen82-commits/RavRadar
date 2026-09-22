@@ -1971,3 +1971,9 @@ komponent-record og godkendt provenance i normal integreret recovery. Den
 historiske Candidate G-wave-bridge forbliver direkte DMI-only.
 
 Se `CHANGELOG-4.0.453.md` og `DEC-0231`.
+## 4.0.454 – højere desktopkort ved siden af ranglisten (2026-09-22)
+
+Desktopforsiden bruger nu den ledige højde i kortkolonnen, så kortet fylder
+ned langs “Bedste områder” i stedet for at efterlade et stort tomt felt.
+Ændringen er begrænset til skærme på mindst 881 px; mobil- og tabletlayout,
+kortdata, score og ranglisteindhold er uændret. Se `CHANGELOG-4.0.454.md`.
