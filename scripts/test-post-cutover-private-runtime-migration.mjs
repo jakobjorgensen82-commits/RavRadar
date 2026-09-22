@@ -7,6 +7,7 @@ import {
   migrateExactModelBindingMetadata,
   migratePostCutoverPrivateRuntime,
   reconcileIntegratedContinuation,
+  sameStructuredValue,
   summarizeIndependentErrors,
   validatePredecessorIdentity,
   validatePredecessorManifest,
@@ -28,6 +29,36 @@ assert.equal(POST_CUTOVER_PREDECESSOR.generatedAt, '2026-09-21T17:06:45.191Z');
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedZoneCount, 210);
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedPartCount, 673);
 assert.equal(PRIVATE_RUNTIME_FILES.length, 9);
+
+// The real private runtime contains 673 Candidate G part states.  Keep a
+// representative large shape in the regression suite so the migration guard
+// remains streaming/structural and cannot regress to one giant JSON string.
+const largeContinuation = {
+  parts: Object.fromEntries(Array.from({ length: 673 }, (_, partIndex) => [
+    `part-${partIndex + 1}`,
+    {
+      currentState: {
+        hours: Array.from({ length: 118 }, (_, hourIndex) => ({
+          time: `2026-09-${String((hourIndex % 28) + 1).padStart(2, '0')}T00:00:00.000Z`,
+          state: hourIndex % 4,
+          modelBundleSha256: 'a'.repeat(64),
+        })),
+      },
+    },
+  ])),
+};
+assert.equal(
+  sameStructuredValue(largeContinuation, structuredClone(largeContinuation)),
+  true,
+  'Large private continuation state must compare without a giant serialization string',
+);
+const changedLargeContinuation = structuredClone(largeContinuation);
+changedLargeContinuation.parts['part-673'].currentState.hours[117].state = 99;
+assert.equal(
+  sameStructuredValue(largeContinuation, changedLargeContinuation),
+  false,
+  'Large private continuation comparison must still detect a changed measurement/state',
+);
 
 const previous = POST_CUTOVER_PREDECESSOR.modelBinding;
 const current = ravScoreModelBinding();

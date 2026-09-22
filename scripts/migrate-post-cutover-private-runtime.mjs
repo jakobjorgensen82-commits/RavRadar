@@ -46,6 +46,9 @@ import {
   assertRavScoreModelBinding as assertCandidateBinding,
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
+import { assertRuntimeBindingRegistry } from './runtime-binding-registry.mjs';
+
+assertRuntimeBindingRegistry();
 
 // Exact protected predecessor currently referenced by the central runtime
 // pointer.  This is intentionally pinned to the sealed non-sensitive
@@ -107,16 +110,44 @@ function isPlainObject(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
-function canonical(value) {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+export function sameStructuredValue(left, right) {
+  // Do not serialize the whole runtime to one comparison string.  The
+  // Candidate G continuation contains 673 part states and can be larger
+  // than V8's maximum string length even though the JSON itself is valid.
+  // Compare the canonical object shape directly instead; keys are sorted so
+  // this preserves the old order-independent contract without allocating a
+  // potentially unbounded intermediate string.
+  const pending = [[left, right]];
+  while (pending.length) {
+    const [currentLeft, currentRight] = pending.pop();
+    if (Object.is(currentLeft, currentRight)) continue;
+    if (currentLeft === null || currentRight === null
+        || typeof currentLeft !== typeof currentRight) return false;
+    if (typeof currentLeft !== 'object') return false;
+
+    const leftIsArray = Array.isArray(currentLeft);
+    if (leftIsArray !== Array.isArray(currentRight)) return false;
+    if (leftIsArray) {
+      if (currentLeft.length !== currentRight.length) return false;
+      for (let index = 0; index < currentLeft.length; index += 1) {
+        pending.push([currentLeft[index], currentRight[index]]);
+      }
+      continue;
+    }
+
+    const leftKeys = Object.keys(currentLeft).sort();
+    const rightKeys = Object.keys(currentRight).sort();
+    if (leftKeys.length !== rightKeys.length) return false;
+    for (let index = 0; index < leftKeys.length; index += 1) {
+      if (leftKeys[index] !== rightKeys[index]) return false;
+      pending.push([currentLeft[leftKeys[index]], currentRight[rightKeys[index]]]);
+    }
   }
-  return JSON.stringify(value);
+  return true;
 }
 
 function same(left, right) {
-  return canonical(left) === canonical(right);
+  return sameStructuredValue(left, right);
 }
 
 function assertSame(left, right, label) {

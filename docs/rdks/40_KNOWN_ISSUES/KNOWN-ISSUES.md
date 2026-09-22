@@ -2823,3 +2823,16 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   Desktopforsiden havde ubrugt lodret plads under kortet, fordi kortets højde
   var fast, selv om ranglistepanelet var højere. 4.0.454 gør kun desktop-
   kortkolonnen fleksibel fra 881 px. Offentlig visuel kontrol mangler.
+# Aktuelle issues – 2026-09-22, 4.0.462
+
+- **ISSUE-PRIVATE-RUNTIME-LARGE-COMPARISON-35743282510 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** Code-only-runnet nåede korrekt protected predecessor, men
+  migratorens Candidate G-kontrol byggede én canonical tekststreng af den
+  store 673-dels state og ramte `Invalid string length`. Det er samme
+  underliggende V8-grænse som 4.0.436's tidligere skrivefejl, men en separat
+  kontrolsti. 4.0.462 bruger direkte struktursammenligning og har en stor
+  regressionstest. Exact-head, merge og ny code-only-kørsel mangler.
+- **ISSUE-RUNTIME-IDENTITY-CENTRALIZATION – ROADMAP:** Binding-inventaret og
+  det additive registerdesign er dokumenteret. Den egentlige fælles
+  runtime-manifestkilde er endnu ikke fuldt implementeret; nye bindinger må
+  derfor ikke kaldes automatisk dækket af dokumentationen alene.

@@ -4859,3 +4859,22 @@ Fail-closed identitetskontrol er bevaret. Ingen vejrleverandør eller cache er
 startet eller ændret.
 
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.460 predecessor-diagnostik
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.462 stor state-sammenligning
+
+Code-only-run `35743282510` kom forbi den tidligere pointer-/targetfejl og
+valgte den korrekte protected predecessor. Den stoppede derefter i den
+eksisterende fail-closed Candidate G-kontrol, fordi migratoren kanoniserede
+hele den store 673-dels runtime til én tekststreng og ramte V8's
+`Invalid string length`.
+
+Det er relateret til 4.0.436's tidligere strengoverløb, men ikke samme
+funktion: 4.0.436 rettede skrivningen af den store private JSON-fil; 4.0.462
+retter sammenligningen af store stateobjekter. Den nye kontrol gennemløber
+strukturen direkte, sorterer objektfelter ved hvert niveau og stopper stadig
+ved enhver forskel. Ingen vejr, score, geometri eller providerkald er ændret.
+
+Binding-identiteten er fortsat tænkt som én udvidelig autoritet. Hvis vi finder
+en glemt binding, skal den tilføjes som én registerpost med klasse, scope,
+producent, consumers, source-of-truth og validator; den skal ikke kopieres til
+flere workflows. Den konkrete manifestcentralisering er stadig et særskilt
+roadmappunkt og må ikke erklæres færdig på baggrund af dokumentationen alene.

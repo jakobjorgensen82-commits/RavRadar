@@ -2827,3 +2827,15 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 4. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
 
 # Aktivt roadmap – 2026-09-22, 4.0.460 feltdiagnose før selvstændig drift
+# Aktivt roadmap – 2026-09-22, 4.0.462 stor runtimekontrol
+
+0. [x] Afgræns code-only-run `35743282510` til en V8-strenggrænse i
+   Candidate G-state-sammenligningen efter grøn target/predecessor-binding.
+1. [x] Gør stor state-sammenligning iterativ og nøglesorteret uden at opgive
+   fail-closed kontrol af alle state- og målefelter.
+2. [x] Bevar det additive bindingregisterdesign for senere fund.
+3. [ ] Kør RDKS-/versionskontrol og exact-head sourcegate.
+4. [ ] Merge og kør providerfri code-only continuation på samme mål.
+5. [ ] Genoptag først derefter én almindelig vejrkørsel fra gemt fremgang.
+6. [ ] Efter grøn drift: følg cacheopbygning, offentlig side og næste cron uden
+   Codex-overvågning.
