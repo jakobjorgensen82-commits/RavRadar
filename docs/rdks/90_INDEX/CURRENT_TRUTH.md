@@ -13,6 +13,18 @@ punkt-, komponent-/proveniens-, current-/interpolations-, score/state-, UI-,
 trip-, database- og Pages-relationer. Centraliseringen er ikke kørt endnu;
 designets to lag er beskrevet i `BINDING_IDENTITY_CENTRALIZATION_DESIGN_4.0.459.md`.
 
+Den tredje helikopterkontrol er nu også gennemført. Den fandt ikke en ny live-
+produktionsfejl, men fandt en vigtig afgrænsning: aktive runtimebindinger må
+ikke blandes sammen med immutable migrationer, eksakte historiske recovery-
+forløb eller test-/researchfixtures. Inventory og centraliseringsdesign
+klassificerer derfor alle fire klasser særskilt. De historiske
+`fa418f43...`-/`ca2735af...`-recoverymål og de begrænsede gamle wave-reader-
+heads må ikke fjernes eller bruges som normal runtime-default; en fremtidig
+linter skal i stedet afvise uklassificerede literals i mutable live paths.
+Designet kræver også et additivt register, hvor senere fund kan tilføjes som
+én klassificeret post med producent, consumers og validator uden nye spredte
+konstanter. Dette er dokumentation og design, ikke en ny produktionskørsel.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.458 skjult predecessor-sti
 
 Code-only-run `35732235540` bekræftede migration og restore af den beskyttede

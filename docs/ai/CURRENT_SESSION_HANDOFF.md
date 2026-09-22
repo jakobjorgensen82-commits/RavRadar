@@ -6,6 +6,14 @@ fordi `productionReferenceAt` og `generatedAt` manglede. 4.0.459 tilføjer de
 verificerede tider fra `rr-20260921170645-210`. Næste trin er exact-head/
 code-only-kørsel på main.
 
+Den tredje helikopterkontrol af bindingerne er også dokumenteret. Den skelner
+nu mellem den aktuelle runtime-identitet, immutable migrationshistorik, lukkede
+historiske recoverymål og fixtures/research. De gamle recovery-SHA'er må derfor
+ikke fjernes mekanisk eller bruges som normal weather-default; en fremtidig
+linter skal i stedet finde uklassificerede literals i mutable live paths.
+Centraliseringsdesignet har nu et additivt register, så en senere glemt binding
+kan tilføjes som én post plus én måltest uden nye spredte kopier.
+
 # 4.0.458 checkpoint – neutral predecessor-workspace
 
 Code-only-run `35732235540` kom gennem migration, database-readback og

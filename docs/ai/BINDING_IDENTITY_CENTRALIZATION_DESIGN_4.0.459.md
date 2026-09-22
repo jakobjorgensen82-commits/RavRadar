@@ -17,6 +17,36 @@ generation have rigtige hashes, men stadig vise fx en zones vejr under en
 anden kystdel. Det fulde felt- og procesinventar står i
 `BINDING_IDENTITY_INVENTORY_4.0.459.md`.
 
+Centralisering må ikke forveksles med at omskrive historien. Før et felt
+flyttes skal det klassificeres som `LIVE_RUNTIME`, `IMMUTABLE_HISTORY`,
+`EXACT_RECOVERY` eller `FIXTURE_OR_RESEARCH`. Kun den første klasse må være
+normal producent for den aktuelle runtime. Append-only migrationer, historiske
+missed-cutover-forløb og private test-/researchfixtures skal fortsat kunne
+bevises med deres egen lukkede identitet, men må ikke fungere som skjult
+fallback for den aktuelle generation.
+
+## Udvideligt bindingregister
+
+Registeret skal være data-drevet og additivt, ikke en ny samling af spredte
+konstanter. Hver binding registreres med en stabil nøgle og mindst:
+
+`key`, `class`, `scope`, `producer`, `consumers`, `sourceOfTruth`,
+`validator`, `requiredWhen`, `sensitivity` og `historicalPolicy`.
+
+En ny binding tilføjes derfor som én ny registerpost og én målrettet fixture/
+validator. Det eksisterende manifest ændres kun, hvis bindingen faktisk er en
+del af den aktive `LIVE_RUNTIME`-identitet. Historie, recovery og research kan
+tilføjes uden at røre den aktuelle produktionsmanifeststruktur. Registeret
+skal validere, at hver nøgle har præcis én producent, at alle consumers er
+navngivne, og at en ny post ikke utilsigtet ændrer en eksisterende hash.
+
+Registerets schema skal tillade nye bindingstyper og optional extensions med
+egen schema-version. Ukendte felter må ikke ignoreres i en live manifestpost,
+men et ukendt register-key skal give en klar diagnostik med scope og proces,
+så den kan tilføjes uden at vi må gætte eller køre hele systemet om. En
+registreret binding uden consumer eller validator er en dokumentationsfejl;
+den må ikke silently blive en ny runtime-default.
+
 ## Foreslået kontrakt
 
 Indfør et lille rent modul, eksempelvis
@@ -129,20 +159,25 @@ Konkret rækkefølge:
 1. Behold de nuværende fail-closed kontroller og udgiv kun inventar/design.
 2. Tilføj manifestgeneratoren og få den til at producere en side-by-side
    identitet; sammenlign med alle nuværende outputs uden at ændre drift.
-3. Flyt én consumergruppe ad gangen: private runtime → checkpoint/DB → Pages →
+3. Tilføj bindingregisteret og klassificér først alle eksisterende forekomster;
+   nye fund kan derefter registreres additivt med én post og én regression.
+4. Flyt én consumergruppe ad gangen: private runtime → checkpoint/DB → Pages →
    browser. Hver gruppe har sin målrettede regression.
-4. Når en hel normal vejrkørsel og den næste cron har bevist samme identity-
+5. Når en hel normal vejrkørsel og den næste cron har bevist samme identity-
    hash gennem hele kæden, fjernes de gamle duplikatkonstanter.
-5. Opdater RDKS og changelog med den konkrete field mapping. Hvis en binding
+6. Opdater RDKS og changelog med den konkrete field mapping. Hvis en binding
    ikke kan udledes entydigt, stopper centraliseringen og dokumenterer feltet;
    der må ikke gættes.
 
 Før trin 2 skal en statisk audit klassificere hver forekomst af
 `sourceHead`/dataset/tid/model-/bundle-/contract-hash, zone/part/point,
 component/provenance, deployment og migration som producer, consumer eller
-lokalt evidensfelt. Procesmatrixen i inventaret dækker også pilot-, admin-,
-trip-, assistant-, recovery- og testflows; de må ikke ved et uheld blive
-fortolket som public production identity.
+lokalt evidensfelt, og samtidig tildele bindingklasse. Procesmatrixen i
+inventaret dækker også pilot-, admin-, trip-, assistant-, recovery- og
+testflows; de må ikke ved et uheld blive fortolket som public production
+identity. Linteren skal afvise uklassificerede historiske SHA-literals i
+mutable live paths, men må ikke omskrive eller slette immutable migrationer og
+eksakte recoverymål.
 
 ## Det må vi ikke gøre
 

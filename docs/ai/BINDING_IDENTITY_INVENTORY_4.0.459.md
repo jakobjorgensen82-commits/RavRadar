@@ -238,6 +238,88 @@ Et enkelt `version`- eller `bindingCurrent`-felt kan ikke erstatte lag 2.
 Denne opdeling forhindrer, at fx en pilotkørsel, en testfixture eller en
 recoveryattempt bliver behandlet som en ny offentlig vejr-generation.
 
+## Tredje helikopterkontrol: fire slags bindinger, som ikke må blandes
+
+Den anden gennemgang fandt en vigtig afgrænsning, som den første inventory
+stadig manglede: en SHA eller et tidsstempel er ikke nødvendigvis en aktiv
+produktionsbinding. Hver forekomst skal derfor også have en **bindingklasse**.
+
+| Klasse | Eksempler | Regel |
+| --- | --- | --- |
+| `LIVE_RUNTIME` | den nuværende protected runtime, vejrbygningens target, public manifest og browserens identitets-view | Må kun produceres ét sted og skal læses af alle consumers via manifest/view. En gammel literal her er en fejl. |
+| `IMMUTABLE_HISTORY` | append-only Supabase-migrationer, `schema.sql`'s historiske funktioner og gamle releaseposter | Må ikke omskrives for at få nutiden til at passe. Historien valideres som historik og får sin egen migrations-/funktionsidentitet. |
+| `EXACT_RECOVERY` | `recover-live-ravscore-central.yml` og missed-cutover-grenen i `deploy-code-only-repair.yml` | Må godt indeholde en gammel SHA, men kun når den er en eksplicit, navngiven og uforanderlig recovery-måldokumentation med artifact-, run-, manifest- og offentlighedsbevis. Den må aldrig blive normal runtime-default. |
+| `FIXTURE_OR_RESEARCH` | måltests, Candidate G/private research og pilot-artefakter | Skal være tydeligt mærket som fixture/research, have `scoreImpact=false` hvor det er relevant og må ikke kunne levere public production identity. |
+
+Den konkrete kontrol fandt derfor ikke en ny produktionsfejl i de historiske
+SHA'er alene. Den fandt i stedet to steder, der skal klassificeres eksplicit
+før en fremtidig centralisering:
+
+1. `deploy-code-only-repair.yml` bruger `fa418f43...` i den eksakte missed-
+   cutover-verifikation. Det er en `EXACT_RECOVERY`-binding til den allerede
+   offentlige 4.0.410-generation, ikke den aktuelle main-head. Den skal blive
+   stående, men kun sammen med recovery-run/artifact/manifest-beviset; den må
+   ikke flyttes ind i den normale predecessor- eller weather-path.
+2. `recover-live-ravscore-central.yml` bruger `ca2735af...` og de tilhørende
+   artifact-id'er, run-id'er, størrelser og digests til én historisk
+   maintenance-recovery. Det er ligeledes `EXACT_RECOVERY` og skal testes som
+   en lukket historisk operation, ikke behandles som en live identitet.
+
+Det samme princip gælder de begrænsede forgænger-heads i
+`reusable-weather-build.yml` (`4bee5b0d...`/`d4e8844e...`): de er kun lovlige
+som en eksakt, auditerebar gammel reader under den målte wave-overgang. En
+statisk linter må derfor ikke blot forbyde alle SHA-literals; den skal afvise
+u-klassificerede literals i live paths og kræve en eksplicit klasse for
+historie, recovery og fixtures.
+
+### Processer, der også skal med i bindingstabellen
+
+For at undgå at centraliseringen kun dækker de synlige weather-/deploytrin
+skal den endelige tabel også have en række for hver af disse processer:
+
+- normal scheduler, watchdog, concurrency-lås, target registry og rotation;
+- DMI HARMONIE/IFS, marine-reserve, Copernicus og Open-Meteo med deres egne
+  modelrun-, collection-, celle-, lag- og retry-identiteter;
+- private cachejournaler, durable checkpoint, bank/shadow/IN_PROGRESS og
+  terminal READY, inklusive resume efter timeout eller netværksfejl;
+- geometry/admin-hydrering, water-/land-point-par, 210/673-closure og den
+  lokale Feggesund-3×118 disposition;
+- component merge/retention, old-valid-data preservation, DMI-first og
+  fallback-gap-only for hver vejrkomponent;
+- current U/V-valg, interpolation, bundlag, kortpil, display-context,
+  historik/state og lokal unavailable/partial-zone-status;
+- Supabase migration/function/RLS/readback, Edge/auth/assistant og trip-
+  snapshots, som har separate security-/schemaidentiteter men samme aktive
+  runtime identity hvor de viser produktionsdata;
+- public runtime, Pages upload/terminal readback, service worker, browser-
+  cache, version-/manifest-synkronisering og mobil/desktop-data service;
+- code-only repair, operational reentry, missed-cutover recovery, Copernicus-
+  pilot, geometry/admin-run, private research og sourcegate som separate
+  procesidentiteter.
+
+Hvis en af disse rækker både producerer og læser sin egen historiske identitet,
+skal den enten flyttes til manifest/view-modellen eller mærkes som en af de
+fire klasser ovenfor. Ellers kan en korrekt runtime stadig blive afvist af en
+forældet kontrol, eller en gammel recoveryværdi blive brugt som om den var
+aktuel.
+
+### Sådan tilføjes en binding, som vi opdager senere
+
+Inventaret skal være udvideligt. Et nyt fund får en ny stabil register-nøgle,
+fx `weather.current.interpolationPolicy`, og registreres med:
+
+1. bindingklasse og scope;
+2. præcis producent og alle consumers;
+3. source-of-truth og identitet, som den skal arve;
+4. den målrettede validator/fixture og den proces, hvor den kører;
+5. om den er påkrævet for live runtime, recovery, historie eller kun research.
+
+Først når den post er klassificeret, må den kobles til manifestet. Det gør det
+muligt at udvide listen uden at kopiere en ny literal til 10–20 workflows.
+En ny post må heller ikke automatisk ændre den aktive model- eller
+dataset-hash; den skal enten være en separat view-binding eller have en
+eksplicit schema-/manifestændring med sin egen måltest.
+
 ## Konkret kontrol mod de kendte fejlklasser
 
 Før centralisering skal en statisk audit finde og klassificere alle forekomster
