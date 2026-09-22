@@ -5,10 +5,9 @@ import { evaluateDirectionAnchors, angularDifference } from '../js/core/directio
 import { calculateRavScore } from '../js/core/score-engine.js?v=4.0.233';
 
 const updateWeatherSource = await fs.readFile('scripts/update-weather.mjs', 'utf8');
-assert.equal(
-  (updateWeatherSource.match(/localPartRuntimeProperties\(parent\.properties, part,/g) ?? []).length,
-  3,
-  'Feggesunds bølgekontrol, delens vejfeature og scorezone skal alle bygges med den isolerede lokale retning'
+assert.ok(
+  (updateWeatherSource.match(/localPartRuntimeProperties\(parent\.properties, part,/g) ?? []).length >= 4,
+  'Alle lokale vejrbærere, bulk-projektioner og scorezoner skal bygges med den isolerede lokale retning'
 );
 
 const parent = {

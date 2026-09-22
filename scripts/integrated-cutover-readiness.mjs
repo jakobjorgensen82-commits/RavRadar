@@ -169,10 +169,17 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260920220000_public_hour_pack_capacity_binding',
     filename: '20260920220000_public_hour_pack_capacity_binding.sql',
   }),
+  Object.freeze({
+    version: '20260922100000',
+    id: '20260922100000_integrated_trip_binding_repair',
+    filename: '20260922100000_integrated_trip_binding_repair.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
+export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260922100000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -195,7 +202,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    LATEST_RAVSCORE_BINDING_MIGRATION.filename,
+    TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,

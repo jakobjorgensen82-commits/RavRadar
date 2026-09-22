@@ -28,7 +28,7 @@ const SQL_BINDING_PATHS = Object.freeze([
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);
 const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
-  'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql';
+  'supabase/migrations/20260922100000_integrated_trip_binding_repair.sql';
 const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
 const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
   'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
@@ -194,6 +194,24 @@ function replaceGeneratedBlock(source, marker, replacement, label) {
   return `${source.slice(0, block.start)}${replacement}${source.slice(block.end)}`;
 }
 
+function exactFunctionDefinition(source, functionName, label) {
+  const escaped = escapeRegExp(functionName);
+  const matches = [...source.matchAll(new RegExp(
+    `create or replace function ${escaped}\\([\\s\\S]*?\\)\\s*returns [\\s\\S]*?as \\$\\$[\\s\\S]*?\\$\\$;`,
+    'gi',
+  ))];
+  if (matches.length !== 1) {
+    throw new Error(`${label}: expected exactly one function definition, found ${matches.length}`);
+  }
+  return Object.freeze({ start: matches[0].index, end: matches[0].index + matches[0][0].length, text: matches[0][0] });
+}
+
+function replaceFunctionDefinition(source, canonicalMigration, functionName, label) {
+  const canonical = exactFunctionDefinition(canonicalMigration, functionName, `${label} canonical`);
+  const current = exactFunctionDefinition(source, functionName, label);
+  return `${source.slice(0, current.start)}${canonical.text}${source.slice(current.end)}`;
+}
+
 function assertMutableSqlBindingPath(relative) {
   const normalized = relative.replace(/\\/g, '/');
   if (normalized.startsWith('supabase/migrations/')) {
@@ -203,6 +221,18 @@ function assertMutableSqlBindingPath(relative) {
 
 function expectedMigration(source, canonicalMigration) {
   let synchronized = source;
+  for (const functionName of [
+    'public.ravradar_trip_v3_score_quality_allowed',
+    'public.ravradar_trip_v3_calibration_truth_allowed',
+    'public.ravradar_trip_v3_binding_allowed',
+  ]) {
+    synchronized = replaceFunctionDefinition(
+      synchronized,
+      canonicalMigration,
+      functionName,
+      `${functionName} mutable SQL consumer`,
+    );
+  }
   for (const marker of [
     'RAVSCORE_INTEGRATED_BINDING',
     'RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING',

@@ -1,3 +1,19 @@
+## 4.0.455 – Selvstændig backend-forhåndskontrol og robust vejrkæde (2026-09-22)
+
+- Tilføj append-only repair-migration for den dokumenterede Supabase-drift i
+  de tre integrerede trip-policy-funktioner. Historikken ændres ikke, og den
+  forventede policy-hash er uændret.
+- Kør backend-readback før leverandørhentning, så en kørsel ikke bruger lang
+  tid på DMI/Copernicus/Open-Meteo, hvis den ikke kan afsluttes korrekt.
+- Bring migrationsplan, gates og code-only-plan i samme rækkefølge.
+- Opdater forældede statiske UI-kontroller og adskil statisk manifest fra den
+  dynamiske leveringsoversigt, så en kendt falsk rød kontrol ikke stopper en
+  ellers gyldig kørsel.
+- Gør driftsmålet eksplicit: GitHub/cron skal kunne køre hele kæden uden Codex
+  som overvågning eller manuel reparation.
+
+Se `CHANGELOG-4.0.455.md`.
+
 ## 4.0.452 – Node-hukommelse til normal cachebygning (2026-09-22)
 
 Run `35662538047` nåede leverandørkæden og komponent-runtime, men

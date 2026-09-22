@@ -1,3 +1,36 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.455 backend-drift før providerkæden
+
+Normalrun `35703630226` gennemførte DMI-cache, provider-fallback, closure og
+cacheforsegling, men stoppede i den afsluttende integrerede backend-readback.
+Code-only-run `35706883724` reproducerede samme fejl uden vejrdata: Supabase'
+trip-binding-policy havde hash `fbf5e5e1...`, mens repositoryets eksakte
+binding kræver `94f05cd9...`. Det er derfor en reel database-/migrationsdrift,
+ikke en ny DMI- eller cachefejl.
+
+4.0.455 tilføjer den append-only migration
+`20260922100000_integrated_trip_binding_repair.sql`, der genindsætter de tre
+kendte funktioner byte-for-byte efter den eksisterende binding. Den forventede
+hash er verificeret lokalt. Den integrerede workflow laver nu readback før
+providerarbejde, så en tilsvarende drift fremover opdages tidligt og ikke
+bruger næsten en hel vejrkørsel forgæves.
+
+Den samme successor bærer den aktuelle checkpoint-CAS/continuation-binding.
+Efter den fælles recovery-ændring er både den integrerede bundle (`dafee019…`)
+og den inaktive Candidate G-bundle (`6bdae434…`) regenereret og synkroniseret;
+Candidate G-reserven har den fælles 118-timers horisont som lokal eksport, så
+rollback-stage ikke afhænger af en integreret-only modelimport. Historiske
+migrationsfiler er ikke omskrevet.
+
+Tre statiske kontroller var samtidig forældede i forhold til den aktuelle UI-
+kode, og public-manifestkontrollen sammenlignede fejlagtigt den dynamiske
+`detailDelivery` med den statiske manifestbygger. De er rettet uden ændring af
+score, vejrdata eller privacy-kontrakter.
+
+Næste bevis er målchecks, exact-head sourcegate, merge, code-only migration
+med database-readback og derefter én normal kørsel fra gemt fremgang. Først
+den kørsel kan bevise cache, artifact, deploy og offentlig runtime. Den skal
+kunne køre selvstændigt i GitHub/cron; Codex er ikke en driftsforudsætning.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.452 Node-heap i normal cachetrin
 
 Normalrun `35662538047` nåede DMI/fallback-kæden, `public-zone-forecast-ready`

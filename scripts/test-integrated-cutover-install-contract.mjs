@@ -26,11 +26,15 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql',
+  'supabase/migrations/20260922100000_integrated_trip_binding_repair.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
+  'utf8',
+);
+const currentTripMigration = await fs.readFile(
+  'supabase/migrations/20260922100000_integrated_trip_binding_repair.sql',
   'utf8',
 );
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
@@ -140,9 +144,9 @@ for (const [label, source] of Object.entries({
     `${label} does not grant the operational CAS to service_role`);
 }
 for (const [functionName, migrationSource] of [
-  ['public.ravradar_trip_v3_score_quality_allowed', documents.migration],
-  ['public.ravradar_trip_v3_calibration_truth_allowed', documents.migration],
-  ['public.ravradar_trip_v3_binding_allowed', documents.migration],
+  ['public.ravradar_trip_v3_score_quality_allowed', currentTripMigration],
+  ['public.ravradar_trip_v3_calibration_truth_allowed', currentTripMigration],
+  ['public.ravradar_trip_v3_binding_allowed', currentTripMigration],
   ['public.ravradar_trip_v3_active_binding_admitted', documents.migration],
   ['public.ravradar_observation_require_active_v3_binding', stableTripMigration],
   ['public.ravradar_trip_payload_has_sensitive_key', stableTripMigration],

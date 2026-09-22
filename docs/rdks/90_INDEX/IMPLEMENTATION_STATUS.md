@@ -1,3 +1,29 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.455
+
+- [x] Afgræns normalrun `35703630226` og code-only-run `35706883724` til den
+  samme reelle Supabase-drift i trip-binding-policyens funktioner.
+- [x] Verificér, at den nye append-only repair-migration har den forventede
+  policy-hash og ikke ændrer scoreformel, providerprioritet eller dataregler.
+- [x] Flyt backend-readback frem før DMI/Copernicus/Open-Meteo i den
+  integrerede workflow, så selvstændige cron/GitHub-kørsler stopper tidligt
+  ved forkert databasebinding.
+- [x] Opdater migrationsplan, release-gate, source-gate, workflowtest og
+  code-only-plan til 26 kronologiske migrationer.
+- [x] Ret tre forældede UI-kontroller og den falske statiske
+  `PUBLIC_MANIFEST_NOT_CANONICAL`-sammenligning.
+- [x] Ret Candidate G-stagefejlen, hvor den fælles public-hour-pakke krævede
+  en integreret-only prognoseeksport; Candidate G-kontrakten eksporterer nu
+  den samme 118-timers horisont, og rollback-bundlen er regenereret.
+- [x] Opdater cutover-readiness-fixtures, så den nye append-only migration er
+  med i den midlertidige lokale migrationsvisning ved code-only readback.
+- [ ] Kør målchecks, RDKS-/versionsslutkontrol og exact-head sourcegate;
+  opret og merge PR.
+- [ ] Kør code-only repair-migrationen og bekræft database-readback.
+- [ ] Genoptag én normal vejrkørsel fra den gemte fremgang og kræv privat save,
+  artifact, deploy og offentlig runtime.
+- [ ] Følg derefter almindelig cron som bevis på selvstændig,
+  vedligeholdelsesfri drift uden Codex.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.452
 
 - [x] Afgræns normalrun `35662538047`: leverandørkæde, 210/210 offentlige

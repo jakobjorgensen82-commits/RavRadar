@@ -185,8 +185,8 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260920220000_public_hour_pack_capacity_binding.sql'),
-  'Code-only migrationsplanen er ikke bundet til den præcise aktuelle successor.',
+    .includes('20260922100000_integrated_trip_binding_repair.sql'),
+  'Code-only migrationsplanen er ikke bundet til den præcise aktuelle trip-binding-reparation.',
 );
 
 for (const file of [...browserSources, 'package.json', '.github/workflows/update-and-deploy.yml',

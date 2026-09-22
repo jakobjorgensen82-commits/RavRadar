@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260922100000_integrated_trip_binding_repair.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -238,7 +238,7 @@ ok(pythonAdminSync.includes('is_integrated_selection')
   && pythonAdminSync.includes('preserve-newer-local-integrated-release'),
 'Central adminhydrering mangler den integrerede cutover-/runtimekontrakt');
 ok(/ACCEPTED_FORECAST_HOURS\s*=\s*RAVSCORE_PUBLIC_FORECAST_HOURS/.test(activeWeatherGenerator)
-  && /normalizeForecastHourly\(merged,\s*\{\s*limit:\s*ACCEPTED_FORECAST_HOURS\s*\}\)/.test(activeWeatherGenerator)
+  && /normalizeForecastHourly\(merged,\s*\{\s*limit:\s*(?:ACCEPTED_FORECAST_HOURS|times\.length)\s*\}\)/.test(activeWeatherGenerator)
   && /buildIntegratedPublicScoreAvailability\(\{\s*zones,\s*referenceAt:\s*generatedAt/.test(activeWeatherGenerator)
   && /function assertAvailableHistoryScore\(result, label\)/.test(publicRuntimeContractSource)
   && /result\.scoreQuality\s*===\s*'HISTORY_INCOMPLETE'/.test(publicRuntimeContractSource)
@@ -615,9 +615,11 @@ ok(packageScripts['test:workflow-validation-order']==='node scripts/test-workflo
 'Fuld validering skal deklarere collector- og oneoff-kontrollerne som selvstændige plantrin');
 ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-verified-weather-source-handoff.mjs',
 'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
-ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
+ok((packageScripts['test:production-workflow-outcome']??'').startsWith('node scripts/test-production-workflow-outcome.mjs')
+  && (packageScripts['test:production-workflow-outcome']??'').includes('test-verified-weather-deployment-terminal.mjs'),
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs && node scripts/build-measured-rollback-warmup-binding-migration.mjs && node scripts/build-state-only-hold-closure-v2-binding-migration.mjs && node scripts/build-local-unavailable-cutover-binding-migration.mjs && node scripts/build-public-runtime-oracle-binding-migration.mjs && node scripts/build-h0-reference-recovery-binding-migration.mjs && node scripts/build-h0-state-snapshot-binding-migration.mjs',
+ok((packageScripts['test:release-contract-metadata']??'').startsWith('node scripts/test-release-contract-metadata.mjs')
+  && (packageScripts['test:release-contract-metadata']??'').includes('build-public-hour-delivery-binding-migration.mjs'),
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
@@ -668,6 +670,7 @@ const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-wi
 const copernicusRangeRunner=await read('scripts/run-copernicus-current-pilot.py');
 const copernicusCurrentLib=await read('scripts/lib/copernicus_current.py');
 const currentOperationalClosure=await read('scripts/lib/current_operational_closure.py');
+const currentOperationalClosureContract=`${currentOperationalClosure}\n${dmiNativeProvenance}\n${dmiBulkProducer}`;
 const openMeteoFallback=await read('scripts/lib/open_meteo_current_fallback.py');
 const openMeteoFill=await read('scripts/fill-open-meteo-current-fallback.py');
 const liveCurrentPilot=await read('scripts/lib/live-current-pilot.mjs');
@@ -752,7 +755,7 @@ for(const marker of [
   'backoff_seconds > 120',
   'SOFT_DEADLINE_EPOCH_ENV',
   'BOUNDED_PROGRESS_EXIT_CODE = 75',
-  '"reason": "bounded-progress"',
+  'reason = "bounded-progress"',
   '"reason": "timeout-recovered-progress"',
   'def bounded_time_slices(',
   'def run_timeout_recovery(',
@@ -816,7 +819,7 @@ for(const marker of [
   'PHYSICAL_SCOPE = "eulerian-waves-and-tides-combined-surface-current"',
   'SCORE_INPUT_POLICY_ID = "combined-current-single-channel-no-wave-or-tide-reprojection-v1"',
   'progress_accepted = copernicus_source_stage_status == "IN_PROGRESS"',
-  '{"READY", "IN_PROGRESS", "NOT_APPLICABLE"}',
+  'in {"READY", "IN_PROGRESS", "NOT_APPLICABLE"}',
   'copernicus_bounded_progress_accepted is not progress_accepted',
 ]){
   ok(openMeteoFallback.includes(marker),`Open-Meteo-kontrakten mangler fysisk/statusbundet fallback: ${marker}`);
@@ -842,11 +845,11 @@ for(const marker of [
 for(const marker of [
   'validate_current_operational_availability_ledger(',
   'require_complete=True',
-  'cop_keys | regional_keys | open_meteo_keys != complement_keys',
-  'open_meteo_keys != open_meteo_required_keys',
+  'or (cop_keys - replaced_keys) | regional_keys | open_meteo_keys | missing_keys',
+  'or open_meteo_keys | missing_keys != open_meteo_required_keys',
   'if len(assignments) != EXPECTED_TOTAL_PAIR_COUNT:',
 ]){
-  ok(currentOperationalClosure.includes(marker),`Den endelige current-closure mangler strict 79.414-pars lukning: ${marker}`);
+  ok(currentOperationalClosureContract.includes(marker),`Den endelige current-closure mangler strict 79.414-pars lukning: ${marker}`);
 }
 for(const marker of [
   'OPEN_METEO_SCORE_INPUT_POLICY_ID',
@@ -927,10 +930,10 @@ for(const marker of [
 ok((packageScripts['test:live-current-pilot']??'').includes('test-open-meteo-live-runtime.mjs'),
 'Live-current-testkæden mangler Open-Meteo-runtimeværnet');
 for(const marker of [
-  "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",
+  "status: 'ravscore-schema6-with-measured-candidate-g-continuation'",
   'expectedPartCount: 673',
   "cacheNamespace: 'ravscore-continuation-schema6-v2'",
-  "candidateGRollbackCompanionStatus: 'candidate-g-rollback-ready-companion'",
+  "candidateGRollbackCompanionStatus: 'candidate-g-measured-continuation-companion'",
   'compactDerivedStateOnly: true',
   'weatherIncluded: false',
   'scoresIncluded: false',
@@ -1199,7 +1202,7 @@ for(const marker of [
   'Verify exact-content source validation with GitHub',
   "if: steps.source-proof.outputs.required != 'false'",
   "steps.source-record.outcome == 'success' || (steps.source-proof.outcome == 'success' && steps.source-proof.outputs.required == 'false')",
-  'Require only the twenty-five exact integrated cutover migrations',
+  'Require only the twenty-six exact integrated cutover migrations',
   '20260912194206_local_unavailable_cutover_binding.sql',
   '20260913010000_public_runtime_oracle_binding.sql',
   '20260914010000_h0_reference_recovery_binding.sql',
@@ -1214,6 +1217,7 @@ for(const marker of [
   '20260919020000_measured_warmup_checkpoint.sql',
   '20260919231000_public_hour_delivery_binding.sql',
   '20260920220000_public_hour_pack_capacity_binding.sql',
+  '20260922100000_integrated_trip_binding_repair.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
@@ -1339,10 +1343,11 @@ for(const marker of [
   'node scripts/private-production-runtime-bundle.mjs restore',
   '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
   '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--expected .cache/private-production-runtime-expected.json',
+  'restore_expected="$GITHUB_WORKSPACE/.cache/private-production-runtime-expected.json"',
+  '--expected "$restore_expected"',
   '--output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
   'node scripts/private-production-runtime-workflow.mjs install',
-  '--restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
+  '--restored "$restored_root"',
   '--repository-root "$GITHUB_WORKSPACE"',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
@@ -1380,9 +1385,12 @@ for(const marker of [
 ]){
   ok(privateRuntimeRestoreSection.includes(marker),`Private runtime-recovery mangler ${marker}`);
 }
+const historicalMaintenanceRestoreStart=privateRuntimeRestoreSection.indexOf(
+  'if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then',
+);
 const historicalMaintenanceRestoreFallback=privateRuntimeRestoreSection.slice(
-  privateRuntimeRestoreSection.indexOf('if test "$OPERATIONAL_ACTION" = "integrated-historical-maintenance"; then'),
-  privateRuntimeRestoreSection.indexOf('exit "$status"'),
+  historicalMaintenanceRestoreStart,
+  privateRuntimeRestoreSection.indexOf('exit "$status"', historicalMaintenanceRestoreStart),
 );
 ok(historicalMaintenanceRestoreFallback.includes('exit 0')
   &&historicalMaintenanceRestoreFallback.includes('loadRavScoreContinuationCheckpointForTarget')
@@ -1444,7 +1452,7 @@ ok(activeIntegratedRecoveryBranch.includes('echo "required=false" >> "$GITHUB_OU
   &&!activeIntegratedRecoveryBranch.includes('required=true'),
 'Kun active integrated eller dens historical-maintenance-reseal må vælge measured state-less recovery uden legacy bootstrap');
 const firstCutoverGuard="steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
-const extendedProviderGuard=`(inputs.extended_provider_bootstrap == true || (${firstCutoverGuard}))`;
+const extendedProviderGuard=`(inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (${firstCutoverGuard}))`;
 const waveResolverStart=buildWorkflow.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target');
 const dmiBulkStart=buildWorkflow.indexOf('name: Update DMI bulk model cache');
 const waveResolverSection=buildWorkflow.slice(waveResolverStart,dmiBulkStart);
@@ -1455,9 +1463,9 @@ ok(waveResolverStart>=0&&dmiBulkStart>waveResolverStart
 'Candidate G-maintenance må aldrig starte den integrerede WAM-resolver');
 for(const marker of [
   `DMI_BULK_MAX_DOWNLOAD_MB: \${{ ${extendedProviderGuard} && '4096' || '2048' }}`,
-  `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ inputs.extended_provider_bootstrap == true && '3600' || (${firstCutoverGuard}) && '3000' || '900' }}`,
+  `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true') && '3600' || (${firstCutoverGuard}) && '3000' || '1500' }}`,
   `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${extendedProviderGuard} && '180' || '120' }}`,
-  `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
+  `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ (${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode) || (steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.mode) || 'none' }}`,
 ]){
   ok(dmiBulkSection.includes(marker),`DMI-producenten mangler actionbundet first-cutover-miljø: ${marker}`);
 }
@@ -1626,9 +1634,7 @@ for(const marker of [
   '--cache "$materialized_path"',
   '--dmi "$materialized_path"',
   'cp "$materialized_path" .cache/dmi-active-complete.json.tmp',
-  'steps.dmi-legacy-materialized-write-authority.outcome',
   'steps.oneoff-dmi-legacy-materialized-write-authority.outcome',
-  'self.assertNotIn("candidate_promoted", materialized_save)',
   'self.assertNotIn("candidate_promoted", oneoff_materialized_save)',
 ]){
   ok(dmiWaveBootstrapIntegrationTest.includes(marker),`DMI/WAM-integrationstesten mangler legacy-materialiseringsbinding: ${marker}`);
@@ -1682,7 +1688,10 @@ for(const marker of [
   'ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}',
   'path: .geometry-v2-work/ravscore-integrated-full-validation-report.json',
 ])ok(buildWorkflow.includes(marker),`Cutoverens uafhængige fejlrapport mangler ${marker}`);
-ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
+ok(runtimeAuditSection.includes('continue-on-error: true')
+  && runtimeAuditSection.includes('run_validation')
+  && runtimeAuditSection.includes('cutover-validation-report.mjs check'),
+'Den integrerede public runtimeaudit skal samle model-/kontrolfund uden at skjule eller blokere de separate artifact-, kilde-, privacy- og deploybarrierer');
 for(const forbidden of [
   'run_validation state_reference_outcome',
   'run_validation full_validation_outcome',

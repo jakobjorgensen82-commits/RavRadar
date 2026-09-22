@@ -8,10 +8,10 @@ const required=[
   'if(renderId!==state.forecastRenderId)return false;',
   "t('forecast.calculating',{progress})",
   'state.conditions?.nationalForecast?.modes?.[state.mode]',
-  'function ensureConditionDetails()',
-  'pending=loadConditionDetails({manifest:activeManifest,conditions:state.conditions})'
 ];
 for(const token of required)if(!app.includes(token))throw new Error(`Manglende nonblocking-prognoseværn: ${token}`);
+if(!/function ensureConditionDetails\s*\([^)]*\)/.test(app))throw new Error('Manglende nonblocking-prognoseværn: fælles behovsstyret detaljeindgang');
+if(!/pending=loadConditionDetails\(\{manifest:activeManifest,conditions:state\.conditions(?:,zoneId:[^}]*)?\}\)/.test(app))throw new Error('Manglende nonblocking-prognoseværn: manifestbundet detaljeindlæsning');
 if(!i18n.includes("'forecast.calculating'")||!i18n.includes('Beregner 5-dages prognose… {progress} %'))throw new Error('Manglende oversat prognosestatus.');
 const startup=app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')",app.indexOf('try {'));
 const firstYield=app.indexOf('await yieldToBrowser();',startup);
