@@ -219,6 +219,50 @@ have to lag:
 
 Et enkelt `version`- eller `bindingCurrent`-felt kan ikke erstatte lag 2.
 
+## Procesmatrix – også de processer der ikke må blandes ind i production identity
+
+| Proces | Skal bindes til runtime identity | Skal have separat identity |
+| --- | --- | --- |
+| `run-current-weather-once.yml` / `update-and-deploy.yml` | main-head, targettime, checkpoint, provider-plan, runtime, artifact, deploy | run/attempt og scheduler-watchdog evidence |
+| `deploy-code-only-repair.yml` | current public target, predecessor identity, model/DB/Pages views | code-only purpose, repair-id og no-provider proof |
+| `reusable-weather-build.yml` | component plan, source/provenance, cache ledger, full/partial disposition | provider request IDs, retry attempt og per-provider logs |
+| `validate-copernicus-current-pilot.yml` | centralt geometry-/pointfingeraftryk og targettime | pilot purpose, private credentials scope og 168-timers cache |
+| national geometry/admin workflows | godkendt geometri-version når inputtet bliver produktionsaktivt | candidate source-run, QA-artifact og owner-review |
+| `reusable-operational-reentry.yml` / Pages recovery | public manifest, sealed target, source-head, run/attempt | reconciliation attempt og terminal recovery evidence |
+| `deploy-trip-storage.yml` / observations | aktiv schema- og RLS-kontrakt | migration/run identity for tabellen; aldrig score-datahash |
+| assistant Edge og auth | aktiv public modelbinding, API contract og user/RLS context | provider request/response, rate-limit og secret scope |
+| browser/data-service | public identity view, display-context, zone/part/time | browser session, locale og local UI state |
+| private research/legacy Candidate G | eksplicit source/geometry/target og `scoreImpact=false` | research candidate/rollback identity; må ikke blive production identity |
+| tests/sourcegate | exact commit og kontraktfixture | test-run/fixture identity; testfejl må ikke ændre runtime-manifest |
+
+Denne opdeling forhindrer, at fx en pilotkørsel, en testfixture eller en
+recoveryattempt bliver behandlet som en ny offentlig vejr-generation.
+
+## Konkret kontrol mod de kendte fejlklasser
+
+Før centralisering skal en statisk audit finde og klassificere alle forekomster
+af disse felter:
+
+`sourceHead`, `datasetId`, `productionReferenceAt`, `generatedAt`,
+`modelContractSha256`, `modelBundleSha256`, `bundleContentSha256`,
+`candidateBundleSha256`, `contractHashes`, `implementationClosureSha256`,
+`deploymentId`, `repairId`, `publicManifestSha256`, `currentReferenceAt`,
+`zoneId`, `partId`, `waterPoint`, `landPoint`, `gridDefinitionSha256`,
+`collection`, `modelRun`, `validTime`, `level`, `u/v`, `source`, `status`,
+`identitySha256`, `migrationHash`, `checkpointDispositionSha256` og
+`requestedModelBinding`.
+
+For hver forekomst skal auditten markere én af tre roller:
+
+1. **Producer:** må sætte feltet én gang og skal skrive det til manifest/view.
+2. **Consumer:** må kun læse feltet fra manifest/view og validere det.
+3. **Local evidence:** må have lokal værdi, men skal være eksplicit bundet til
+   parent identity (`identitySha256`, zone/part/time eller provider asset).
+
+En forekomst uden rolle er en fejl i selve centraliseringsarbejdet. En
+forekomst med samme felt som både producer og consumer er et potentielt stale
+bindingpunkt og skal have en konkret overgangstest.
+
 ## Plan for oprydningen
 
 1. Kortlæg hver producent og consumer ovenfor til konkrete felter og hash-

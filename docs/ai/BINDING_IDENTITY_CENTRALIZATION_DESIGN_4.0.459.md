@@ -137,6 +137,13 @@ Konkret rækkefølge:
    ikke kan udledes entydigt, stopper centraliseringen og dokumenterer feltet;
    der må ikke gættes.
 
+Før trin 2 skal en statisk audit klassificere hver forekomst af
+`sourceHead`/dataset/tid/model-/bundle-/contract-hash, zone/part/point,
+component/provenance, deployment og migration som producer, consumer eller
+lokalt evidensfelt. Procesmatrixen i inventaret dækker også pilot-, admin-,
+trip-, assistant-, recovery- og testflows; de må ikke ved et uheld blive
+fortolket som public production identity.
+
 ## Det må vi ikke gøre
 
 - Ikke erstatte alle kontroller med én løs `version`-streng.
