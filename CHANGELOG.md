@@ -30,6 +30,14 @@ details-, startprognose- og pakkehash skal fortsat beviseligt skifte. Hele
 public-hour-identiteten er samtidig tilføjet som én post i det additive
 bindingregister. Der er ikke startet providerkald eller ændret vejrdata.
 
+Den næste providerfri kørsel `35757878823` livebeviste hele rebindningen og
+den atomiske private installation. Det efterfølgende offentlige rebuild blev
+dræbt ved Nodes standardheap omkring 4 GiB, før artifact eller deploy. Samme
+210/673/118-produktionsform bruger allerede en afgrænset 8 GiB heap i den
+normale vejrkørsel. Code-only-jobbet arver nu den samme ramme på jobniveau,
+så også efterfølgende Node-bundle- og sealingtrin er dækket. Ingen
+datakontrakt eller provideradfærd er ændret.
+
 ## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
 
 Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store

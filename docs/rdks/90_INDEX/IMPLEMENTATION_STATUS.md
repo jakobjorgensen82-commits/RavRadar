@@ -1,5 +1,11 @@
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
+- [x] Livebevis rebind, atomisk privat install og eksakt runtime i
+  code-only-run `35757878823`.
+- [x] Afgræns næste stop til Node standardheap (~4 GiB) i den offentlige
+  runtimegenbygning før artifact/deploy.
+- [x] Giv hele code-only-jobbet samme afgrænsede 8 GiB Node-heap som den
+  normale integrerede produktionsbygger, med workflowregression.
 - [x] Merge PR #421 som `912a1f67`; exact-head sourcegate er grøn.
 - [x] Afgræns code-only-run `35754548745`: migration, database-readback,
   restore og import var grønne; den eksakte metadataændringsliste krævede

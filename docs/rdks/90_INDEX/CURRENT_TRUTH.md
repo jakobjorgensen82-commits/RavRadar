@@ -1,3 +1,16 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 code-only Node-kapacitet
+
+Providerfri run `35757878823` livebeviste den nye public-hour-rebind og den
+atomiske private installation. Den offentlige runtimegenbygning stoppede
+bagefter ved Nodes standardheap omkring 4 GiB. Det var ikke en bindings-,
+vejr- eller datakvalitetsfejl, og intet artifact/deploy blev lavet.
+
+Den normale produktionsbygger bruger allerede 8 GiB Node-heap til samme
+integrerede 210/673/118-runtime. Code-only-jobbet får nu samme afgrænsede
+jobniveaukapacitet, så både public rebuild og efterfølgende private bundle-/
+sealingtrin arver den. Næste trin er exact-head, merge og én ny providerfri
+fortsættelse. Ingen vejrleverandør skal genstartes.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 faktisk public-hour-metadata
 
 PR #421 er merged som `912a1f67`, og exact-head-kontrollen bestod.

@@ -1,3 +1,11 @@
+# Aktivt roadmap – 2026-09-22, 4.0.464 code-only Node-kapacitet
+
+0. [x] Livebevis rebind og privat installation i run `35757878823`.
+1. [x] Afgræns efterfølgende stop til 4 GiB Node-heap i public rebuild.
+2. [x] Spejl normal produktionens 8 GiB heap på hele code-only-jobbet.
+3. [ ] Bestå exact-head, merge og fortsæt providerfrit til artifact/deploy.
+4. [ ] Genoptag derefter én normal vejrkørsel fra gemt fremgang.
+
 # Aktivt roadmap – 2026-09-22, 4.0.464 public-hour-metadata
 
 0. [x] Merge PR #421 og afgræns providerfri run `35754548745` efter grøn

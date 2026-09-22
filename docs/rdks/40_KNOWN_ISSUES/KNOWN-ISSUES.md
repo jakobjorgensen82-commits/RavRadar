@@ -1,5 +1,11 @@
 # Aktuelle issues – 2026-09-22, 4.0.464
 
+- **ISSUE-CODE-ONLY-PUBLIC-REBUILD-HEAP-35757878823 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Rebind og privat install bestod. Det efterfølgende
+  public rebuild ramte Nodes standardheap omkring 4 GiB før artifact/deploy.
+  Hele code-only-jobbet arver nu den samme afgrænsede 8 GiB heap som normal
+  integreret produktion. Ingen provider eller vejrdata blev berørt.
+
 - **ISSUE-PUBLIC-HOUR-UNCHANGED-RAW-BYTES-35754548745 – RETTET LOKALT /
   LIVEBEVIS ÅBENT:** Den providerfri kørsel bestod alle tidligere trin, men
   den eksakte metadataændringsliste krævede, at `rawBytes` skulle ændre tal.

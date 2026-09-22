@@ -93,6 +93,13 @@ jobs:
       operational_action: ${{ steps.operational-action.outputs.action }}
       source_repair_id: ${{ steps.public-source.outputs.repair_id }}
     env:
+      # Rebuilding the public 210/673/118 runtime temporarily retains the
+      # restored private conditions, the current public comparison oracle and
+      # the newly generated projection.  The normal production builder already
+      # uses this bounded heap for the same integrated runtime shape.  Keep it
+      # at job scope so every later Node sealing/bundle step inherits the same
+      # capacity instead of moving the 4 GiB failure one step downstream.
+      NODE_OPTIONS: --max-old-space-size=8192
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
       RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle
       RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored

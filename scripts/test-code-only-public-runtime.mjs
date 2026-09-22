@@ -356,6 +356,11 @@ for (const marker of [
   `Code-only-auditens sn\u00e6vre undtagelse mangler ${marker}`);
 assert.match(workflow, /build-code-only:[\s\S]*?timeout-minutes: 60/,
   'Code-only deploy skal have tid til den observerede cirka 20 minutters runtimegenbygning og efterfølgende gates.');
+assert.match(
+  workflow,
+  /build-code-only:[\s\S]*?env:[\s\S]*?NODE_OPTIONS:\s*--max-old-space-size=8192/,
+  'Code-only-jobbet skal give hele runtimegenbygningens Node-led samme heap som normal produktion',
+);
 assert.ok(runtimeAudit.includes('throw new Error('),
   'Code-only-auditen skal fortsat stoppe p\u00e5 ukendt eller \u00e6ndret diagnostik');
 const checkpointDispositionStart = workflow.indexOf(
