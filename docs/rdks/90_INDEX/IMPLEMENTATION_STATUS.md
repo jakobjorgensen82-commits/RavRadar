@@ -1,4 +1,14 @@
-# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.455
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.456
+
+- [x] Afgræns code-only-run `35728472112` til en forkert lokal checkpoint-
+  readback-kilde; Supabase havde den nye successor korrekt anvendt.
+- [x] Ret `expectedCheckpointCasContract()` til at bruge
+  `20260922100000_integrated_trip_binding_repair.sql`, mens trip-politikken
+  bevarer sin separate historiske kilde.
+- [ ] Kør den nye code-only readback på exact `main` og bekræft alle database-,
+  artifact- og Pages-trin.
+- [ ] Genoptag én normal vejrkørsel fra gemt fremgang og kræv privat save,
+  artifact, deploy og offentlig runtime.
 
 - [x] Afgræns normalrun `35703630226` og code-only-run `35706883724` til den
   samme reelle Supabase-drift i trip-binding-policyens funktioner.

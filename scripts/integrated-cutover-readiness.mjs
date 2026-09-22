@@ -238,7 +238,12 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    LATEST_RAVSCORE_BINDING_MIGRATION.filename,
+    // The trip-policy readback still uses the last full binding migration,
+    // but the checkpoint contract is explicitly reasserted by the append-only
+    // repair successor.  Reading the older source here made a live database
+    // that correctly applied 20260922100000 look drifted even though its
+    // checkpoint RPC matched the successor exactly.
+    TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],

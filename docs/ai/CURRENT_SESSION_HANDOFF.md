@@ -1,3 +1,17 @@
+# 4.0.456 – checkpoint-readback bruger den faktiske successor-kilde
+
+PR #411 (`e25785fd`) er merged til `main`. Den gamle planlagte vejrkørsel
+`35726539361` er annulleret. Code-only-run `35728472112` nåede migrationen,
+men stoppede ved `database checkpoint CAS contract definition hash drifted`.
+Readbacken sammenlignede med den gamle `20260920220000`-fil, mens den nye
+append-only migration `20260922100000` korrekt genindsatte kontrakten og
+Supabase returnerede successorens hash. 4.0.456 retter kun denne lokale
+forventningskilde; trip-policyen og checkpoint-CAS holdes adskilt.
+
+Næste trin er en ny kort code-only readback på exact `main`, derefter én
+normal vejrkørsel fra gemt fremgang. Ingen ny one-off eller ny providerkæde
+skal startes før readbacken er grøn.
+
 # 4.0.452 – Node-heap ved central cachebygning
 
 Seneste normale run er `35662538047`. DMI/fallback-kæden nåede 210/210

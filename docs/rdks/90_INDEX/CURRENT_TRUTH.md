@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.456 checkpoint-readback efter repair
+
+Code-only-run `35728472112` bekræftede, at den nye migration blev registreret
+og anvendt, men readbacken stoppede, fordi kontrolkoden sammenlignede
+checkpoint-CAS med den gamle `20260920220000`-fil. Den append-only successor
+`20260922100000` genindsætter netop checkpoint-kontrakten, og Supabase'
+tilbage-læste hash matchede successoren. Det var en lokal readback-fejl, ikke
+en ny vejr- eller cachefejl.
+
+4.0.456 læser derfor checkpoint-kontrakten fra successoren, mens trip-
+politikken fortsat læses fra den seneste fulde binding. Historiske migrationer
+er ikke ændret. Den gamle planlagte vejrkørsel er annulleret; næste skridt er
+en ny kort code-only readback og derefter én normal kørsel fra gemt fremgang.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.455 backend-drift før providerkæden
 
 Normalrun `35703630226` gennemførte DMI-cache, provider-fallback, closure og
