@@ -1,10 +1,10 @@
 {
-  "version": "4.0.452",
-  "releasedAt": "2026-09-22T06:20:27.699Z",
-  "minimumSupportedVersion": "4.0.452",
+  "version": "4.0.453",
+  "releasedAt": "2026-09-22T07:47:53.098Z",
+  "minimumSupportedVersion": "4.0.453",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.452",
+    "releaseVersion": "4.0.453",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904"
+        "modelBundleSha256": "c495e63d32cf2578296a945ef0f289a0212b5a664efdcb33602f777eb3bc7ed1"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",

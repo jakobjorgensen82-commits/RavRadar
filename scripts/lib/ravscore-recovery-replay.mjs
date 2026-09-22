@@ -28,6 +28,7 @@ import {
   verifiedControlledLiveCurrentSource,
   verifiedDmiForecastComponentSource,
 } from './ravscore-production-adapters.mjs';
+import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
 
 export const RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_COLD_START_REPLAY_HOURS =
@@ -67,6 +68,12 @@ const CURRENT_PROVENANCE_KEYS = Object.freeze([
 ]);
 const WAVE_PROVENANCE_KEYS = Object.freeze([
   'provider',
+  'sourceClass',
+  'componentRecordId',
+  'validTime',
+  'entityId',
+  'parentZoneId',
+  'samplingContext',
   'collection',
   'modelRun',
   'leadTimeHours',
@@ -280,7 +287,63 @@ function currentComponent(row, part) {
   };
 }
 
-function waveComponent(row, part) {
+const SHA256 = /^(?:sha256:)?[0-9a-f]{64}$/;
+
+/**
+ * Component reserves are already admitted by the opaque CP/Open-Meteo bank
+ * before they reach this private replay.  Keep a second, small structural
+ * proof here so a reserve row cannot become replay evidence merely by saying
+ * `verified`; Candidate G's migration bridge remains DMI-only below.
+ */
+function verifiedReserveWaveSource(row, part) {
+  const source = row?.sources?.wave;
+  const provenance = row?.waveProvenance;
+  const parentZoneId = part?.sourceZoneId ?? part?.parentZoneId ?? part?.zoneId;
+  const expectedEntityId = `PART::${part?.partId ?? ''}`;
+  let sourceTime = null;
+  let rowTime = null;
+  try {
+    sourceTime = canonicalHour(source?.validTime);
+    rowTime = canonicalHour(row?.time);
+  } catch {
+    return null;
+  }
+  if (provenance?.status !== 'verified'
+    || !source || typeof source !== 'object' || Array.isArray(source)
+    || !['copernicus', 'open-meteo'].includes(source.provider)
+    || source.fallback !== true
+    || source.component !== 'wave'
+    || source.sourceClass !== 'response-bound-official-component'
+    || !SHA256.test(String(source.componentRecordId ?? ''))
+    || source.entityId !== expectedEntityId
+    || source.parentZoneId !== parentZoneId
+    || source.entityType !== 'coastal-part'
+    || source.samplingContext !== 'coastal-part-water-point'
+    || !samePoint(source.samplingPoint, part?.waterPoint)
+    || sourceTime !== rowTime) return null;
+  return source;
+}
+
+function verifiedFeggesundWaveProxy(row, part) {
+  const source = row?.sources?.wave;
+  const parentZoneId = part?.sourceZoneId ?? part?.parentZoneId ?? part?.zoneId;
+  if (row?.waveProvenance?.status !== 'verified-derived'
+    || source?.sourceClass !== 'owner-approved-neighbor-wave-proxy') return null;
+  const targetEntityId = `PART::${part?.partId ?? ''}`;
+  return verifyCompactFeggesundWaveProxy({
+    targetEntityId,
+    targetParentZoneId: parentZoneId,
+    time: row?.time,
+    projection: {
+      waveHeightM: row?.waveHeightM,
+      wavePeriodS: row?.wavePeriodS,
+      waveDirectionDeg: row?.waveDirectionDeg,
+      proxy: source,
+    },
+  }) ? source : null;
+}
+
+function waveComponent(row, part, { allowVerifiedFallback = false } = {}) {
   const physicalWave = classifyWavePhysicalTuple({
     waveHeightM: row?.waveHeightM,
     wavePeriodS: row?.wavePeriodS,
@@ -298,14 +361,27 @@ function waveComponent(row, part) {
     'wave',
     dmiExpectedIdentityForPart(part),
   );
-  if (!verifiedProvenance) return null;
-  const directionAttested = Array.isArray(verifiedProvenance.optionalFieldSet)
+  const reserveProvenance = !verifiedProvenance && allowVerifiedFallback
+    ? verifiedReserveWaveSource(row, part)
+    : null;
+  const proxyProvenance = !verifiedProvenance && allowVerifiedFallback
+    ? verifiedFeggesundWaveProxy(row, part)
+    : null;
+  const acceptedProvenance = verifiedProvenance ?? reserveProvenance ?? proxyProvenance;
+  if (!acceptedProvenance) return null;
+  const directionAttested = Array.isArray(verifiedProvenance?.optionalFieldSet)
     && verifiedProvenance.optionalFieldSet.length === 1
     && verifiedProvenance.optionalFieldSet[0] === 'mean-wave-dir';
+  const reserveDirectionAttested = Boolean(reserveProvenance || proxyProvenance);
   if (waveDirectionDeg === null) {
-    if (physicalWave.active || verifiedProvenance.optionalFieldSet.length !== 0) return null;
-  } else if (!directionAttested) return null;
-  const projectedProvenance = provenanceProjection(provenance, WAVE_PROVENANCE_KEYS);
+    if (physicalWave.active
+      || (!reserveDirectionAttested
+        && (verifiedProvenance?.optionalFieldSet?.length ?? 0) !== 0)) return null;
+  } else if (!directionAttested && !reserveDirectionAttested) return null;
+  const projectedProvenance = provenanceProjection(
+    acceptedProvenance,
+    WAVE_PROVENANCE_KEYS,
+  );
   return {
     signature: digest({
       waveHeightM: Number(row.waveHeightM),
@@ -886,7 +962,14 @@ export function buildRavScoreRecoveryReplay({
           'RavScore recovery replay contains current without exact verified provenance',
         );
       }
-      const wave = needsReplay || needsMigrationWave ? waveComponent(row, part) : null;
+      const wave = needsReplay || needsMigrationWave
+        ? waveComponent(row, part, {
+          // A normal integrated continuation may use a separately admitted
+          // CP/Open-Meteo wave reserve.  The one-time Candidate G bridge is
+          // intentionally stricter: its 40-hour history must be direct DMI.
+          allowVerifiedFallback: needsReplay && !needsMigrationWave,
+        })
+        : null;
       const hasWavePayload = [
         row?.waveHeightM,
         row?.wavePeriodS,

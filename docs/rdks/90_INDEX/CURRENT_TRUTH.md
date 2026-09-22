@@ -4700,3 +4700,23 @@ strengt nyere og højst 240 minutter gammel runtime, forfaderbinding til main,
 aktiv integreret model, 210/673, privacy og normal Pages-kontrol. Ingen ny
 vejrindsamling eller oneoff. Exact-head, merge og live deploy afventer.
 Scheduler er pauset. DEC-0185.
+# NYESTE SANDHED – 2026-09-22 – 4.0.453 retter reservebølge i recovery
+
+Normalrun `35695267017` på main `1c58f52` gennemførte DMI, Copernicus,
+Open-Meteo, closure og den offentlige syvdøgnshistorik, men stoppede i
+`Update central weather cache` med
+`RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED`. 4.0.452's heapforøgelse var
+ikke årsagen til dette stop.
+
+Rodårsagen er nu afgrænset til en kontraktfejl: component-admission havde
+allerede godkendt en reservebølge fra Copernicus/Open-Meteo, mens replay-
+forbrugeren kun genkendte direkte DMI-bølger. 4.0.453 accepterer kun en
+reserve med præcis kystdel, time, komponent-record-id og bankens
+`response-bound-official-component`-bevis. Feggesund-proxyen bruger sit
+eksisterende proxybevis. Candidate G's historiske wave-bridge er fortsat
+DMI-only.
+
+Målrettede replay-, adapter-, syntax- og diff-kontroller er grønne. Ingen ny
+vejrkørsel er startet endnu; den gemte private progression skal genbruges,
+når 4.0.453 er exact-head-valideret og merged. Der er stadig intet nyt
+datakompletheds- eller deploybevis.

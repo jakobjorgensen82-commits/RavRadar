@@ -276,6 +276,27 @@ function withoutWaveDirectionAttestation(row) {
   };
 }
 
+function openMeteoWaveReserve(row) {
+  const source = {
+    provider: 'open-meteo',
+    fallback: true,
+    component: 'wave',
+    sourceClass: 'response-bound-official-component',
+    componentRecordId: `sha256:${'c'.repeat(64)}`,
+    entityId: `PART::${part.partId}`,
+    parentZoneId: part.parentZoneId,
+    entityType: 'coastal-part',
+    samplingContext: 'coastal-part-water-point',
+    samplingPoint: [...part.waterPoint],
+    validTime: row.time,
+  };
+  return {
+    ...row,
+    sources: { ...row.sources, wave: source },
+    waveProvenance: { status: 'verified', ...source },
+  };
+}
+
 const radians = degrees => degrees * Math.PI / 180;
 const regionalGridPoint = [8.1, 55];
 const regionalDistanceKm = (() => {
@@ -437,6 +458,13 @@ assert.equal(Object.hasOwn(union.hourly[0], 'currentUMps'), false);
 assert.equal(Object.hasOwn(union.hourly[0], 'currentVMps'), false);
 assert.equal(Object.hasOwn(union.hourly[0], 'sources'), false,
   'private sampling and model-run provenance must be consumed by verification, not retained in replay state rows');
+
+const reserveWaveReplay = replayForAge(4, [{
+  source: 'verified-open-meteo-wave-reserve',
+  record: record([weather(1), openMeteoWaveReserve(weather(2)), weather(3)]),
+}]);
+assert.equal(reserveWaveReplay.replayedHourCount, 3,
+  'a separately admitted CP/Open-Meteo wave reserve must remain usable in normal integrated recovery');
 
 const controlledLiveBridge = replayForAge(4, [{
   source: 'controlled-live-current',

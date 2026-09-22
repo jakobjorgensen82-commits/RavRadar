@@ -2706,3 +2706,15 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 10. [ ] Genaktivér scheduler efter bevist normal vedligeholdelse; gennemgå derefter hele sitet og de resterende roadmap-punkter.
 
 DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrindsamling.
+# Aktiv topprioritet – 4.0.453 reservebølge-recovery
+
+1. [x] Afgræns `35695267017` til replayets fejlagtige afvisning af en
+   allerede godkendt reservebølge.
+2. [x] Ret normal recovery med kystdel-, time-, komponent- og recordbinding.
+3. [x] Bevar Candidate G-wave-bridge som direkte DMI-only.
+4. [ ] Bestå exact-head sourcegate og merge 4.0.453.
+5. [ ] Fortsæt én normal vejrkørsel fra de gemte DMI/Copernicus/Open-Meteo-
+   cacher; ingen ny oneoff.
+6. [ ] Verificér central cache, runtime, gates, artifact, Pages og offentlig
+   prognose. Mål derefter providerfremgang og mangler på et sammenligneligt
+   tidspunkt.

@@ -2806,3 +2806,14 @@ Ingen oneoff. Scheduler er pauset.
 - **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** Scheduler forbliver pauset til offentlig prognose og næste almindelige vedligeholdelse er bevist.
 
 DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
+# NYESTE ÅBNE ISSUE – 2026-09-22
+
+- **ISSUE-4.0.453-RESERVE-WAVE-RECOVERY – RETTET LOKALT / LIVEBEVIS MANGLER:**
+  Normalrun `35695267017` stoppede i cachebygningen, fordi replay kun
+  accepterede direkte DMI-bølger, selv om reservebanken havde leveret en
+  gyldig CP/OM-bølge. 4.0.453 binder reservebeviset præcist og holder
+  Candidate G-migrationen DMI-only. Exact-head, merge og ny normal
+  continuation mangler.
+- **ISSUE-NORMAL-MAINTENANCE-PROOF – ÅBEN:** En grøn almindelig kørsel,
+  offentlig deploy og efterfølgende selvkørende vedligeholdelse er endnu ikke
+  bevist efter den nye rettelse.

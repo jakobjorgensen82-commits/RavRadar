@@ -5491,3 +5491,19 @@ datakomplethed mangler livebevis.
   derefter faktisk komplethed og de tilbageværende DMI-only-vandstandshuller.
 
 # Aktuel implementeringsstatus – 2026-09-20, lokal 4.0.442
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.453
+
+4.0.453 retter den konkrete livefejl i normal integreret recovery. Den
+forrige kørsel `35695267017` nåede leverandørkæden, men cachebygningen
+afviste en allerede bank-godkendt reservebølge, fordi replay stadig var
+snævert DMI-only uden for Candidate G-migrationsbroen.
+
+- [x] Afgræns stoppet til `RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED`.
+- [x] Tillad kun strukturelt fuldt bundet CP/OM-bølgebevis i normal recovery.
+- [x] Bevar direkte DMI-only-kravet i Candidate G-wave-bridge.
+- [x] Tilføj regression for gyldig reservebølge og fortsat migration-stop.
+- [x] Versionsløft til 4.0.453 og opdater RDKS/changelog/håndbog.
+- [ ] Kør exact-head sourcegate, merge og én normal continuation fra gemt
+      progression.
+- [ ] Verificér cachebygning, runtime, releasegate, artifact, Pages og
+      offentlig prognose efter rettelsen.
