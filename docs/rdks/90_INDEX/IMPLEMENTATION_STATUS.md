@@ -1,5 +1,18 @@
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
+- [x] Livebevis i `35759861916`, at metadatarebind, 8 GiB public rebuild,
+  runtimeaudit, private bundle og Pages-preflight nu består.
+- [x] Bevar det korrekte monotone stop mod at publicere den ældre offentlige
+  16:00-generation over den nyere centrale 19:00-generation.
+- [x] Afgræns saved-weather-run `35761693070` til én historisk
+  `status=FRESH`-grep efter klassifikatorens gyldige `STALE_TARGET_VALID`.
+- [x] Accepter begge horizon-gyldige statusser uden at lempe fremtidig/
+  udløbet target, source-forgænger, completeness, privacy eller bindingsgates.
+- [x] Registrér den centrale saved-weather-pointer som
+  `runtime.protectedCurrentIdentity` i det additive bindingsregister.
+- [ ] Bestå exact-head, merge og providerfri saved-weather-deploy.
+- [ ] Kør derefter én almindelig vejropdatering på samme main og bevis frisk
+  cache, artifact, deploy og offentlig runtime.
 - [x] Livebevis rebind, atomisk privat install og eksakt runtime i
   code-only-run `35757878823`.
 - [x] Afgræns næste stop til Node standardheap (~4 GiB) i den offentlige

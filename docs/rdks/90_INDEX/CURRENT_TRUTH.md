@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 horizon-gyldig saved-weather
+
+Code-only-run `35759861916` bestod public-hour-rebind, 8 GiB-rebuild, samlet
+runtimeaudit, private bundle og Pages-preflight. Den stoppede først ved den
+beskyttede publicering, fordi dens offentlige 16:00-target var ældre end den
+centrale 19:00-generation. Det var et korrekt værn mod tilbagerulning.
+
+Saved-weather-run `35761693070` valgte derefter den nyere centrale generation,
+men en efterladt `grep status=FRESH` gjorde dens alder på cirka 22,6 timer til
+en hård gate. Klassifikatoren gav samtidig korrekt `STALE_TARGET_VALID`; den
+bindende DEC-0119/REQ-WEATHER-AGE-WARNING-NOT-GATE-001 siger, at alder alene
+ikke må stoppe, mens target+117-horisonten stadig er gyldig.
+
+Workflowet accepterer nu både `FRESH` og `STALE_TARGET_VALID`, efter at samme
+klassifikator allerede har stoppet fremtidige og udløbne targets. Monotoni,
+source-forgænger, fuld 210/673/118-identitet, privacy og alle artifactgates er
+uændrede. Den centrale saved-weather-pointer er samtidig registreret som
+`runtime.protectedCurrentIdentity`. Næste trin er exact-head, merge, samme
+providerfri saved-weather-deploy og derefter en almindelig vejropdatering.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 code-only Node-kapacitet
 
 Providerfri run `35757878823` livebeviste den nye public-hour-rebind og den

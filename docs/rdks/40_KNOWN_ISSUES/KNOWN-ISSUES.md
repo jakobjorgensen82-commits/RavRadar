@@ -1,10 +1,17 @@
 # Aktuelle issues – 2026-09-22, 4.0.464
 
+- **ISSUE-SAVED-WEATHER-AGE-GATE-35761693070 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** Den nyere centrale 19:00-generation var cirka 22,6 timer gammel,
+  men stadig inden for sin 118-timershorisont. Klassifikatoren returnerede
+  korrekt `STALE_TARGET_VALID`; en efterladt testliteral krævede alligevel
+  `FRESH`. Saved-weather accepterer nu begge horizon-gyldige statusser og
+  stopper fortsat på fremtidig/udløbet, ikke-monoton eller forkert bundet data.
+
 - **ISSUE-CODE-ONLY-PUBLIC-REBUILD-HEAP-35757878823 – RETTET LOKALT /
-  LIVEBEVIS ÅBENT:** Rebind og privat install bestod. Det efterfølgende
-  public rebuild ramte Nodes standardheap omkring 4 GiB før artifact/deploy.
-  Hele code-only-jobbet arver nu den samme afgrænsede 8 GiB heap som normal
-  integreret produktion. Ingen provider eller vejrdata blev berørt.
+  LIVEBEVIST RETTET:** Rebind og privat install bestod. Det efterfølgende
+  public rebuild ramte tidligere Nodes standardheap omkring 4 GiB.
+  Run `35759861916` kom igennem rebuild, audit, bundle og Pages-preflight med
+  den afgrænsede 8 GiB heap. Ingen provider eller vejrdata blev berørt.
 
 - **ISSUE-PUBLIC-HOUR-UNCHANGED-RAW-BYTES-35754548745 – RETTET LOKALT /
   LIVEBEVIS ÅBENT:** Den providerfri kørsel bestod alle tidligere trin, men

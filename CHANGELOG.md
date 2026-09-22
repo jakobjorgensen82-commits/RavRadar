@@ -38,6 +38,16 @@ normale vejrkørsel. Code-only-jobbet arver nu den samme ramme på jobniveau,
 så også efterfølgende Node-bundle- og sealingtrin er dækket. Ingen
 datakontrakt eller provideradfærd er ændret.
 
+Run `35759861916` beviste derefter også 8 GiB-rebuild, runtimeaudit, private
+bundle og Pages-preflight. Dets gamle offentlige target blev korrekt afvist
+som regression mod en nyere central generation. Saved-weather-run
+`35761693070` valgte denne nyere generation, men afslørede en gammel
+`status=FRESH`-grep, som stred mod DEC-0119: klassifikatorens
+`STALE_TARGET_VALID` er horizon-gyldig og må kun advare. Workflowet accepterer
+nu begge gyldige statusser, mens fremtidig/udløbet horizon, monotoni,
+source-forgænger, completeness, privacy og bindinger forbliver hårde. Den
+centrale pointer er registreret som `runtime.protectedCurrentIdentity`.
+
 ## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
 
 Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store

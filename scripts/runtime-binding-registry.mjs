@@ -57,6 +57,22 @@ export const RUNTIME_BINDING_REGISTRY = Object.freeze([
     historicalPolicy: 'exact-target-only',
   }),
   freezeEntry({
+    key: 'runtime.protectedCurrentIdentity',
+    class: 'LIVE_RUNTIME',
+    scope: 'saved-weather-code-only-continuation',
+    producer: 'scripts/protected-private-production-runtime.mjs#describeCurrentProtectedPrivateProductionRuntime',
+    consumers: [
+      '.github/workflows/deploy-code-only-repair.yml',
+      'scripts/private-production-runtime-workflow.mjs',
+      'scripts/protected-private-production-runtime.mjs',
+    ],
+    sourceOfTruth: 'newest central protected runtime pointer selected before saved-weather continuation',
+    validator: 'monotonicTarget+horizonValidity+sourceAncestor',
+    requiredWhen: 'saved-weather-continuation',
+    sensitivity: 'payload-free-private-metadata',
+    historicalPolicy: 'newest-horizon-valid-monotonic-successor',
+  }),
+  freezeEntry({
     key: 'runtime.targetReferenceAt',
     class: 'LIVE_RUNTIME',
     scope: 'scheduler-provider-cache-and-public-runtime',
