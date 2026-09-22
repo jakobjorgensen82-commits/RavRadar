@@ -4,9 +4,10 @@
   faste predecessor-identitet efter grøn source-, migration- og restore-kontrol.
 - [x] Tilføj de verificerede `productionReferenceAt`-/`generatedAt`-felter til
   identiteten og måltesten.
-- [x] Saml første binding-inventar med konkrete producenter, forbrugere og
-  tidligere stale-binding-fejl; central runtime-manifestkilde er fortsat
-  næste særskilte stabilitetsopgave.
+- [x] Gennemgå binding-inventaret igen og medtag både identitetsfelter og
+  semantiske relationer mellem scheduler, target, cache/retry, geometri,
+  komponent/proveniens, current/interpolation, score/state, UI/trips, database
+  og Pages; central runtime-manifestkilde er fortsat næste særskilte opgave.
 - [ ] Bestå exact-head-kontrol og ny code-only genbinding på main.
 - [ ] Genoptag én normal vejrkørsel fra gemt fremgang og kræv privat save,
   artifact, deploy og offentlig runtime.

@@ -11,6 +11,12 @@ kontrollerne. En consumer skal stadig afvise en forkert identitet; forskellen
 er, at den sammenligner med den aktuelle manifestfil i stedet for sin egen
 historiske konstant.
 
+Manifestet alene er ikke nok: det skal suppleres af validerede views for
+komponent/proveniens, geometri/punktpar og display-kontekst. Ellers kan en
+generation have rigtige hashes, men stadig vise fx en zones vejr under en
+anden kystdel. Det fulde felt- og procesinventar står i
+`BINDING_IDENTITY_INVENTORY_4.0.459.md`.
+
 ## Foreslået kontrakt
 
 Indfør et lille rent modul, eksempelvis
@@ -79,6 +85,11 @@ Konkret rækkefølge:
    konstruktioner.
 6. Browserkontrakter og `data-service`: valider public manifestets identity
    view mod de fire offentlige filer; browseren skal ikke kende private hashes.
+
+7. Vejr-/score-/UI-koblinger: indfør eksplicitte `componentView`,
+   `geometryView` og `displayContext` med `zoneId`, `partId`, reference-time,
+   provider/provenance og modelbinding. De skal følge samme identity hash og
+   gøre parent-/nabofallback synlig i stedet for at lade felter glide sammen.
 
 ## Fejlscenarier designet væk
 

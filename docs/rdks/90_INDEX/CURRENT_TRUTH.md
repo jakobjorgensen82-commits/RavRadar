@@ -7,9 +7,11 @@ fordi de to obligatoriske tider manglede. 4.0.459 tilføjer den verificerede
 `generatedAt=2026-09-21T17:06:45.191Z` for datasættet
 `rr-20260921170645-210`.
 
-Binding-inventaret i `docs/ai/BINDING_IDENTITY_INVENTORY_4.0.459.md` samler
-nu de konkrete identitetsgrupper, forbrugere og de historiske fejl, der skal
-bruges til en senere centralisering. Centraliseringen er ikke kørt endnu.
+Binding-inventaret i `docs/ai/BINDING_IDENTITY_INVENTORY_4.0.459.md` er efter
+anden gennemgang udvidet med scheduler-/target-, cache-/retry-, geometri-/
+punkt-, komponent-/proveniens-, current-/interpolations-, score/state-, UI-,
+trip-, database- og Pages-relationer. Centraliseringen er ikke kørt endnu;
+designets to lag er beskrevet i `BINDING_IDENTITY_CENTRALIZATION_DESIGN_4.0.459.md`.
 
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.458 skjult predecessor-sti
 

@@ -80,6 +80,145 @@ De første fire er samme arkitekturproblem i forskellige former: én identitet
 er blevet kopieret manuelt til flere lag. De sidste to viser, at database- og
 deploy-readiness også skal være afledt af den samme manifestkilde.
 
+## Semantiske bindinger, som den første liste ikke dækkede godt nok
+
+Disse er ikke blot hashfelter. De skal enten ligge direkte i manifestets
+komponent-/geometri-view eller valideres som en eksplicit relation til det.
+
+### 1. Scheduler, måltime og cacheforløb
+
+- Scheduler/run → `productionReferenceAt` → target registry → alle provider-
+  requests. Et UTC-skifte eller et nyt vægur må ikke vælge en anden time midt i
+  samme kørsel.
+- Forrige checkpoint → samme target, source-head, run-attempt og cachepolicy.
+  En continuation må kun gå fremad eller være en dokumenteret same-time
+  successor med CAS.
+- DMI-rotation → konkret collection/modelRun/område og resterende par. Rotation
+  skal måle reelt forsøgt, retained, missing og ikke-forsøgt; den må ikke gøre
+  en delvist prøvet leverandør til komplet eller springe et ubearbejdet hul
+  over.
+- Timeout/retry → samme target og samme durable checkpoint. Et retry må ikke
+  starte en ny generation, blande attempts eller overskrive bedre retained
+  data med tomme værdier.
+
+### 2. Geometri og lokal identitet
+
+- `zoneId` → `partId` → centralt godkendt landpunkt/vandpunkt →
+  hav→land-retning → DMI-samplinganker. Alle fem skal være samme generation og
+  samme fingeraftryk af punktbestanden.
+- `partId` må aldrig arve parentzonens eller nabodelens point, retning,
+  forecast eller state. En lokal del med manglende punkt er `MISSING`, ikke en
+  skjult parentfallback.
+- Geometriændring → cache/provenance/history/state invalidation for præcis den
+  flyttede del; uændrede dele skal kunne genbruges.
+- DMI-gridpoint → faktiske kystdelspunkter → afstand/celle/lagsbevis. En
+  geometry- eller pointrevision må aldrig læse gamle data som om de var målt på
+  det nye punkt.
+
+### 3. Vejrkomponenter og leverandørkæde
+
+- Hver komponent (`wind`, `wave`, `current`, `waterLevel`, `waterTemperature`)
+  har sin egen kilde, modelrun, collection, lag, grid/celle, validTime,
+  forecast lead, friskhed og fallbackstatus. Et skalarvalg må ikke rydde eller
+  omskrive strøm; strøm må ikke rydde bølger/vandstand.
+- DMI → Copernicus → Open-Meteo er en komponentvis prioritet. Fallback må kun
+  fylde et reelt hul eller udløbet data efter policy; gyldig DMI må ikke
+  overskrives af en sekundær leverandør.
+- Nye gyldige rækker erstatter gamle; ved hul beholdes gammel række så længe
+  dens egen gyldighed ikke er udløbet; først derefter bliver feltet
+  `MISSING`. Denne relation skal følge hver komponentrække, ikke kun hele
+  zoner.
+- Strøm-U og strøm-V bindes atomisk til samme collection/modelRun/time/celle/
+  lag. De må ikke sammensættes fra forskellige kilder eller dybder.
+- Vandstand er en særskilt DMI-only-komponent i den nuværende policy; dens
+  routing må ikke erstatte andre komponenter eller gøre hele zonen missing.
+- Feggesunds direkte/proxy/missing-disposition er en lokal binding på præcis
+  tre dele × 118 timer; dens lokale `MISSING` må ikke blive national datatab,
+  men må heller ikke tælles som fuld dækning.
+
+### 4. Current, interpolation og pile
+
+- Strømvælgeren prioriterer nærmeste gyldige fælles U/V-kolonne før dybeste
+  lag; laget vælges selvstændigt pr. native time.
+- Interpolation er kun gyldig mellem samme collection, modelRun, punkt,
+  gitterkoordinat og lag. Skift i en af dem binder perioden til `MISSING`.
+- UI-pilens tid, celle og retning skal komme fra den valgte score-/visningstime
+  for den samme lokale del. Byggetid, parentzone eller en anden forecasts celle
+  må ikke bruges.
+
+### 5. Score, state og lokale resultater
+
+- Weather row → integreret input → state-6 → score bounds/reasons →
+  presentation. Hvert led skal bære samme modelbinding, reference-time og
+  zone/part-kontekst.
+- Historik bruger `productionReferenceAt`/valgt sampletime, ikke senere
+  `generatedAt`. `HISTORY_INCOMPLETE` er en legitim kvalitetstilstand; den må
+  ikke blive til `UNAVAILABLE`, og missing må ikke opfindes som historik.
+- `FULL_HISTORY`, `HISTORY_INCOMPLETE`, `UNAVAILABLE`, `partial-zone` og
+  `READY` er forskellige tilstande. De må ikke bindes sammen via et enkelt
+  boolfelt eller en gammel scoreprofil.
+- En local-zone-score skal føre `status`, score spread, valid/expected part
+  count, unavailable parts og aktiv modelbinding samlet til forecast, ranking,
+  forklaring og debug.
+- Integrated og Candidate G må aldrig blandes på tværs af zoner, timer,
+  jagtformer eller filer. Candidate G er privat reserve/orakel, ikke en skjult
+  offentlig fallback.
+
+### 6. UI, data-service og brugerkontekst
+
+- Den valgte lokale del, tidspunkt, score, forklaring, debug, vejr og kort-
+  fremhævning skal komme fra én display-context. `condition.current` fra
+  hovedzonen må ikke vises under en lokal vinder.
+- Femdøgnsvisningens `bestForDay`, score, tid, pil og vejr skal genbruge samme
+  lokale valg som national prognose; en ny generisk best-time-selector må ikke
+  splitte konteksten.
+- Public manifest, conditions, detailpakke og coastal-parts-filer skal dele
+  dataset, production time, model binding og identity hash. Data-service må
+  ikke blande gamle filer fra en anden generation.
+- Trip/observation → zone → part → valgt tidspunkt → snapshot/provenance. RLS-
+  ejer (`user_id`) er separat fra faglig modelidentitet og må aldrig bruges som
+  scorebevis.
+- Auth, assistant og Edge headers skal referere til den aktive modelbinding,
+  men må ikke eksponere private payloads eller hemmelige kontrakter.
+
+### 7. Database, migrations og drift
+
+- Repository migration → linked Supabase migration → faktisk funktionshash →
+  readback. En ny append-only migration skal være canonical kilde for netop
+  de funktioner, den genindsætter; en gammel migration må ikke fortsat være
+  forventningskilde.
+- Trip-policy, checkpoint-CAS, public-hour delivery, current-input,
+  fallback-, local-unavailable- og privacyfunktioner har hver deres kontrakt-
+  identitet, men skal bindes til samme runtime identity hash.
+- Edge/function deployment, central active RavScore og browserens modelheaders
+  skal referere til samme model- og source-head. En grøn function deploy med
+  gammel modelbinding er ikke produktionsbevis.
+
+### 8. Artifact, Pages og versionskæde
+
+- Private runtime → generated public files → manifest → Pages upload → Pages
+  terminal readback. Alle skal bære samme `identitySha256`, source-head,
+  dataset, targettime og implementation closure.
+- Run ID, attempt, deployment ID, repair ID og public manifest hash er
+  operationelle bindinger; de må ikke blandes mellem retries eller recovery-
+  runs.
+- Versionen skal være ens i releasefelt, datafiler, service worker, admin-
+  konfiguration, changelog, RDKS og bundle metadata. Versionssynkronisering må
+  ikke ændre geometri eller datapayload.
+
+## Konklusion efter anden gennemgang
+
+Den første liste manglede især relationerne mellem datafelter og processer.
+Den udvidede liste dækker nu både identiteter og de semantiske koblinger, som
+kan give en forkert, men formelt gyldig, prognose. Centraliseringen skal derfor
+have to lag:
+
+1. ét hashbundet runtime-manifest for generationens identitet; og
+2. validerede component-/geometry-/display-views, som beviser at data er
+   koblet rigtigt til sted, tid, leverandør og brugerflade.
+
+Et enkelt `version`- eller `bindingCurrent`-felt kan ikke erstatte lag 2.
+
 ## Plan for oprydningen
 
 1. Kortlæg hver producent og consumer ovenfor til konkrete felter og hash-
