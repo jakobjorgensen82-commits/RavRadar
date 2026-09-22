@@ -272,7 +272,7 @@ for (const marker of [
   'Bind saved-weather continuation to exact newer runtime',
   'Saved protected runtime does not strictly advance the public production hour',
   '--allow-equal-saved-weather-reference',
-  'target_reference="${target_reference_raw%.000Z}Z"',
+  'T[0-9]{2}:00:00[.]000Z$',
   "grep -Eq '^status=(FRESH|STALE_TARGET_VALID)$' \"$freshness_output\"",
   '--mode "$mode"',
   'mode=post-cutover-last-mile-repair',
@@ -399,6 +399,12 @@ for (const marker of [
   `Saved-weather-fortsættelsen mangler integreret vedligeholdelsesgrænse: ${marker}`);
 assert.ok(!savedWeatherBinding.includes("grep -Fxq 'status=FRESH'"),
   'Saved-weather må ikke gøre targetalder til en hård gate, når horisonten stadig er gyldig');
+assert.ok(!savedWeatherBinding.includes('target_reference_raw'),
+  'Saved-weather må ikke omskrive den centrale protected-runtime-identitet');
+assert.ok(!savedWeatherBinding.includes('${target_reference_raw%.000Z}Z'),
+  'Saved-weather må ikke forkorte canonical UTC fra .000Z til Z');
+assert.ok(savedWeatherBinding.includes('T[0-9]{2}:00:00[.]000Z$'),
+  'Saved-weather skal kræve descriptorens canonical UTC-format uændret');
 for (const forbiddenAction of [
   'candidate-execute',
   'candidate-maintenance',

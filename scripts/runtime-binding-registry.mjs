@@ -67,7 +67,7 @@ export const RUNTIME_BINDING_REGISTRY = Object.freeze([
       'scripts/protected-private-production-runtime.mjs',
     ],
     sourceOfTruth: 'newest central protected runtime pointer selected before saved-weather continuation',
-    validator: 'monotonicTarget+horizonValidity+sourceAncestor',
+    validator: 'canonicalUtcTarget+monotonicTarget+horizonValidity+sourceAncestor',
     requiredWhen: 'saved-weather-continuation',
     sensitivity: 'payload-free-private-metadata',
     historicalPolicy: 'newest-horizon-valid-monotonic-successor',
