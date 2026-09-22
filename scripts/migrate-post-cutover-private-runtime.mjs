@@ -47,10 +47,15 @@ import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 
+// Exact protected predecessor currently referenced by the central runtime
+// pointer.  This is intentionally pinned to the sealed non-sensitive
+// identity of the last successful integrated generation; it must move only
+// when a later protected runtime is actually published and its identity is
+// reviewed together with the migration.
 export const POST_CUTOVER_PREDECESSOR = Object.freeze({
-  sourceHead: 'fa418f43bbd070c446ed19b6587541b93af89599',
-  datasetId: 'rr-20260914180039-210',
-  bundleContentSha256: '033fd85bf79776256083da4e5bca8e8164c8056350b2bb9b1acb7b57cac5ef6b',
+  sourceHead: 'a6d89798c76a5218c5d699961474f4259835dfb9',
+  datasetId: 'rr-20260921170645-210',
+  bundleContentSha256: '4e2cc7ab3e5fa7fdb26cb243c9f1847e964c2a67c6c991445ab3ec3d215dd37d',
   modelBinding: Object.freeze({
     modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
     stateSchemaVersion: '6.0.0',
@@ -62,13 +67,13 @@ export const POST_CUTOVER_PREDECESSOR = Object.freeze({
     bestTimePolicyId: 'score-history-water-tie-earliest-v3',
     presentationPolicyId: 'score-bands-35-55-75-exceptional90-v1',
     modelContractSha256: 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b',
-    modelBundleSha256: '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01',
+    modelBundleSha256: '14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904',
   }),
-  candidateBundleSha256: '1ccbb10ed3e89f9c8336539a2c566d7ab6efd099bf3e9d1598dbb31e84d5c3a1',
+  candidateBundleSha256: '618b2b44c93316f6798a17fbbd020cdacda9aff73bfde4cbbbaa05d3fa197ace',
   contractHashes: Object.freeze({
-    continuationStateContractSha256: 'e272bd48de768e593904a362df92f40b5e5ab2c3dac0263216518d04b8bf4ea1',
-    fullRuntimeContractSha256: '8de96f0a37a0411a8e65173f864f297eb8ea02108c5261ab3e073219562d74f9',
-    publicProjectionContractSha256: '0c31005b572bb9e3cf93e83e055bc6976e83e0bb9be5a2a3c7c11284dc172ab5',
+    continuationStateContractSha256: '9702630e114ab4cd09b185b397b302afcaf4a81881f6aae3ec0b6995419525e0',
+    fullRuntimeContractSha256: 'c3bc7a5f3bc0e1c6129a3d9decb1d354698007b22063c804a3e367e0b8424328',
+    publicProjectionContractSha256: '21deee2a5a93b17057af94b02a2ca228ad475c6cd4870004fc4d0bbf1a3b24be',
   }),
   expectedZoneCount: 210,
   expectedPartCount: 673,

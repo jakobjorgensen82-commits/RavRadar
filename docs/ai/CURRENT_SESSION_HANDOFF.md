@@ -1,3 +1,17 @@
+# 4.0.457 – predecessor-genbinding bruger den faktiske beskyttede runtime
+
+PR #413 (`aba3de43`) er merged til `main`. Code-only-run `35730421484` kom
+igennem migration og database-readback, men stoppede i den beskyttede private
+runtime-genbinding: den centrale pointer leverede den verificerede generation
+`rr-20260921170645-210` fra source `a6d89798`, mens migrationen stadig var
+låst til den ældre 14. september-forgænger. 4.0.457 opdaterer samlet source-,
+dataset-, bundle- og contract-identiteten. Kontrollen er fortsat fastlåst og
+fail-closed; den accepterer ikke ukendte forgængere.
+
+Næste trin er exact-head-kontrol, ny code-only readback/genbinding og derefter
+én normal vejrkørsel fra gemt fremgang. Ingen ny one-off eller providerkæde
+skal startes før dette er grønt.
+
 # 4.0.456 – checkpoint-readback bruger den faktiske successor-kilde
 
 PR #411 (`e25785fd`) er merged til `main`. Den gamle planlagte vejrkørsel

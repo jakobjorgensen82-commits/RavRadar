@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.456
+**Håndbogsversion:** 4.0.457
 
 ## 89.60 4.0.455 – Vejrkørslen skal kunne reparere og fortsætte selv
 

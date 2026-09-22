@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.457 predecessor-genbinding efter readback
+
+Code-only-run `35730421484` kom igennem den nye migration og database-
+readback. Den stoppede derefter i genbindingen, fordi den beskyttede runtime
+var den verificerede generation `rr-20260921170645-210` fra source `a6d89798`,
+mens koden stadig forventede den ældre 14. september-forgænger. Det var et
+forældet identitetsstempel, ikke en provider- eller cachefejl.
+
+4.0.457 opdaterer samlet den faste predecessor-identitet med den faktiske
+source, dataset-, bundle- og contract-identitet. Kontrollen er fortsat fast og
+fail-closed; ukendte runtime-forgængere accepteres ikke. Næste skridt er
+exact-head-kontrol, code-only readback/genbinding og derefter normal vejr-
+fortsættelse fra gemt fremgang.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.456 checkpoint-readback efter repair
 
 Code-only-run `35728472112` bekræftede, at den nye migration blev registreret

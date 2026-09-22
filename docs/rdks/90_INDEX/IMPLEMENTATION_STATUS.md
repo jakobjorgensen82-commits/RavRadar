@@ -1,4 +1,12 @@
-# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.456
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.457
+
+- [x] Afgræns code-only-run `35730421484` til en forældet fast predecessor-
+  identitet efter grøn migration- og database-readback.
+- [x] Opdater predecessor-identiteten samlet til den aktuelt beskyttede
+  runtime `a6d89798` / `rr-20260921170645-210`, inklusive tre contract-hashes.
+- [ ] Bestå exact-head-kontrol og en ny code-only readback/genbinding på main.
+- [ ] Genoptag én normal vejrkørsel fra gemt fremgang og kræv privat save,
+  artifact, deploy og offentlig runtime.
 
 - [x] Afgræns code-only-run `35728472112` til en forkert lokal checkpoint-
   readback-kilde; Supabase havde den nye successor korrekt anvendt.

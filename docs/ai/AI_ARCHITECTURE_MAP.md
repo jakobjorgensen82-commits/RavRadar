@@ -180,7 +180,7 @@
 
 - `.github/workflows/deploy-code-only-repair.yml` er en manuel exact-main-vej. Den downloader de seks aktuelle offentlige runtimefiler, gendanner de ni tilladte private filer, udfører kun den gennemgåede bindingsovergang, bygger et nyt privacy-kontrolleret Pages-artifact og kalder den eksisterende Pages-deployer med `code_only_repair:true`.
 - `prepare-code-only-public-runtime.mjs` beviser samme dataset, vejrreference, 210/673-struktur, hashes og projektion. Provider-, weather-, score- og geometriændring skal alle være falske i rapporten.
-- `migrate-post-cutover-private-runtime.mjs` accepterer kun den eksakte forgænger `fa418f43`/`rr-20260914180039-210` og ændrer alene de udpegede bindinger. Alle ni private filer, målinger og states bevares.
+- `migrate-post-cutover-private-runtime.mjs` accepterer kun den eksakte forgænger fra den aktuelt beskyttede runtime-pointer: `a6d89798`/`rr-20260921170645-210`. Den ændrer alene de udpegede bindinger. Alle ni private filer, målinger og states bevares.
 - Allerede installeret `20260914020000_h0_state_snapshot_binding.sql` er immutable. `20260914234500_post_cutover_current_hold_binding.sql` er et reproducerbart binding-only-led. Supabase-planen må være tom eller indeholde præcis dette ene led.
 - Rettelsesdeploy og normal providerkørsel er to atomiske forløb. Kun den senere normale vejrkørsel må ændre vejrdata. DEC-0148.
 
