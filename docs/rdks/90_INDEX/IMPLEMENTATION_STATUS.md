@@ -1,5 +1,12 @@
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
+- [x] Merge PR #421 som `912a1f67`; exact-head sourcegate er grøn.
+- [x] Afgræns code-only-run `35754548745`: migration, database-readback,
+  restore og import var grønne; den eksakte metadataændringsliste krævede
+  fejlagtigt, at et legitimt uændret `rawBytes`-tal skulle skifte.
+- [x] Registrér kun faktiske public-hour-metadataændringer, behold de tre
+  obligatoriske hashskift, og tilføj hele pakkeidentiteten til det additive
+  bindingregister med målrettet regression.
 - [x] Afgræns code-only-run `35749000940` til den hashbundne
   public-hour/startprognose efter grøn bounded JSON-skrivning.
 - [x] Rebind atomisk alle 118 timefiler, delivery-/details-binding,
@@ -9,8 +16,8 @@
   `20260922100000` urørt og tilføj append-only successor
   `20260922170000_integrated_model_binding_successor.sql`; synkronisér alle
   mutable consumers til `2c26b855…`.
-- [ ] Bestå exact-head-kontrol og merge 4.0.464.
-- [ ] Kør én ny providerfri code-only migration/readback på main.
+- [ ] Bestå exact-head-kontrol og merge metadatarettelsen.
+- [ ] Kør én ny providerfri code-only fortsættelse på main.
 - [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
   artifact, deploy og offentlig runtime.
 

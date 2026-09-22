@@ -1,5 +1,12 @@
 # Aktuelle issues – 2026-09-22, 4.0.464
 
+- **ISSUE-PUBLIC-HOUR-UNCHANGED-RAW-BYTES-35754548745 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Den providerfri kørsel bestod alle tidligere trin, men
+  den eksakte metadataændringsliste krævede, at `rawBytes` skulle ændre tal.
+  Hashfelter med samme længde kan ændre indhold uden at ændre samlet
+  byteantal. Listen er nu baseret på den faktiske difference, mens details-,
+  startprognose- og pakkehash fortsat skal skifte. Ingen provider blev startet.
+
 - **ISSUE-POST-CUTOVER-PUBLIC-HOUR-BINDING-35749000940 – RETTET LOKALT /
   LIVEBEVIS ÅBENT:** Efter den bounded writer-rettelse blev den gamle
   modelbinding opdaget i den hashbundne startprognose og alle 118 private

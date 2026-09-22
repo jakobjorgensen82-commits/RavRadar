@@ -21,6 +21,18 @@ hash. Det er rettet uden at omskrive historien med
 `20260922170000_integrated_model_binding_successor.sql`; alle mutable SQL- og
 runtimeforbrugere bruger nu `2c26b855…` fra den nye successor.
 
+PR #421 er merged som `912a1f67`, og dens exact-head gate er grøn.
+Providerfri code-only-run `35754548745` kom gennem database-readback,
+predecessor-restore og importkontrol, men stoppede før installationen på
+`publicHourDelivery.rawBytes`: rebindningen ændrede indhold og hashes, men det
+samlede rå byteantal var identisk. Kontrollen havde fejlagtigt krævet, at alle
+mulige metadatafelter skulle ændre værdi. Den lokale opfølgning registrerer i
+stedet den faktiske feltvise difference og kræver fortsat ændret details-,
+startprognose- og pakkehash. Den samlede public-hour-identitet er tilføjet
+`runtime-binding-registry.mjs` som én udvidelig sandhed. Næste trin er
+exact-head, merge og samme providerfri code-only-kæde; ingen vejrhentning skal
+gentages.
+
 # 4.0.463 checkpoint – migreringens anden V8-strenggrænse
 
 Code-only-run `35746937526` kom forbi alle tidligere identitets-, database-,

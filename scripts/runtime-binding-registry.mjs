@@ -73,6 +73,23 @@ export const RUNTIME_BINDING_REGISTRY = Object.freeze([
     sensitivity: 'public-timestamp',
     historicalPolicy: 'monotonic-or-explicit-successor',
   }),
+  freezeEntry({
+    key: 'runtime.public-hour-delivery.identity',
+    class: 'LIVE_RUNTIME',
+    scope: 'private-public-hour-pack-and-public-hour-files',
+    producer: 'scripts/lib/public-hour-delivery-pack.mjs#build/rebindPrivatePublicHourDeliveryPack',
+    consumers: [
+      'scripts/lib/public-hour-delivery-pack.mjs#inspectPrivatePublicHourDeliveryPack',
+      'scripts/migrate-post-cutover-private-runtime.mjs',
+      'scripts/private-production-runtime-workflow.mjs',
+      'scripts/public-conditions-lib.mjs',
+    ],
+    sourceOfTruth: 'one publicHourDelivery marker bound to the complete 118-hour pack',
+    validator: 'privatePublicHourDeliveryMarker+inspectPrivatePublicHourDeliveryPack',
+    requiredWhen: 'preserved-or-new-public-hour-delivery',
+    sensitivity: 'public-digests-and-private-pack-sizes',
+    historicalPolicy: 'rebuild-or-rebind-as-one-atomic-identity',
+  }),
 ]);
 
 const REQUIRED_FIELDS = Object.freeze([

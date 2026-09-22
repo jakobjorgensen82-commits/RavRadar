@@ -1,3 +1,14 @@
+# 2026-09-22 – 4.0.464 registrerer faktisk public-hour-metadataændring
+
+PR #421 blev merged som `912a1f67`. Providerfri code-only-run
+`35754548745` bestod migration, database-readback, restore og import, men
+stoppede før installationen, fordi `rawBytes` stod i en liste over felter,
+som ubetinget skulle ændre værdi. En rebinding med SHA-256-strenge af samme
+længde kan bevare det samlede rå byteantal. Migreringen registrerer nu kun
+de faktiske feltforskelle og kræver fortsat nyt details-, startprognose- og
+pakkehash. Hele identiteten er tilføjet bindingregisteret; ingen provider eller
+vejrdata blev berørt.
+
 # 2026-09-22 – 4.0.464 rebinder den bevarede public-hour-pakke
 
 Code-only-run `35749000940` kom gennem 4.0.463's bounded migreringsskrivning,

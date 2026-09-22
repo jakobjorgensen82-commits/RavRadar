@@ -82,10 +82,19 @@ samme SHA'er, tider eller IDs.
    migration stadig bar forgængerens hash. Den gamle migration måtte ikke
    redigeres; et append-only successor-led blev den nye producent, og schema,
    installer, Edge, admin, fixtures og gates blev synkroniseret.
+8. **Public-hour metadata-antagelse (4.0.464):** en rebinding kunne ændre
+   alle 118 timefiler og deres hashes uden at ændre det samlede `rawBytes`,
+   fordi de udskiftede SHA-256-værdier har samme tekstlængde. Kontrollen
+   blandede dermed "feltet indgår i identiteten" sammen med "feltets tal skal
+   altid ændres". `runtime.public-hour-delivery.identity` samler nu markørens
+   modelbinding, details-/startprognosehash, rå/pakket størrelse og pakkehash
+   med producent, consumers og validator i det additive register.
 
 De første fire er samme arkitekturproblem i forskellige former: én identitet
-er blevet kopieret manuelt til flere lag. De sidste to viser, at database- og
-deploy-readiness også skal være afledt af den samme manifestkilde.
+er blevet kopieret manuelt til flere lag. De sidste fund viser, at database-,
+deploy- og pakkemetadata også skal være afledt af den samme manifestkilde, og
+at identitetsfelter kun må stå i en eksakt ændringsliste, når værdien faktisk
+er ændret.
 
 ## Semantiske bindinger, som den første liste ikke dækkede godt nok
 
