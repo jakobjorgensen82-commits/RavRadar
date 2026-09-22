@@ -648,7 +648,9 @@ export async function verifyRavScoreOperationalPagesDeployment({
   expectedPublicClosure = null,
   observationNonce = null,
   fetchImpl = globalThis.fetch,
-  attempts = 12,
+  // Pages may report a successful deploy before every edge serves the new
+  // manifest. Keep the exact sealed-artifact check, but allow propagation.
+  attempts = 36,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,
 } = {}) {
@@ -662,7 +664,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
     || typeof fetchImpl !== 'function'
     || !Number.isSafeInteger(attempts)
     || attempts < 1
-    || attempts > 12) {
+    || attempts > 36) {
     throw new Error('Operational Pages verification inputs are incompatible');
   }
   assertExactPublicRavScoreModelBindingShape(sealedBinding,

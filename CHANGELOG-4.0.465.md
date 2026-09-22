@@ -21,3 +21,12 @@ Lokalt er fejlen reproduceret på en faktisk offentlig timefil. En kontrolleret
 metadataopdatering rettede 3.244 indre felter i den fil uden at ændre
 målinger. Måltests, modelbundlekontrol og RDKS-/versionskontrol følger denne
 release; produktionsbevis kræver stadig en frisk kørsel.
+
+Normal vejrkørsel `35778530384` gennemførte DMI, Copernicus, Open-Meteo,
+cache, runtime, produktionskontrol og Pages-deploy. Den offentlige side viser
+igen rangliste og femdøgnsprognose. Workflowet blev alligevel rødt, fordi
+Pages endnu serverede det forrige manifest under den første cirka 56 sekunder
+lange slutkontrol. Den samme eksakte 210/673-kontrol bestod bagefter mod den
+forseglede pakke, og offentligt manifest var identisk med handoffet. Den
+begrænsede ventetid udvides derfor fra cirka ét til tre minutter; kontrol af
+hash, model, artefakt og private data lempes ikke.

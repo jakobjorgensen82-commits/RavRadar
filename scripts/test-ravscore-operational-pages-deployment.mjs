@@ -596,6 +596,34 @@ for (const [mode, baseBinding] of [
   assert.equal(result.coastalPartCount, 673);
   assert.equal(result.privatePayloadRead, false);
   assert.deepEqual(result.modelBinding, binding);
+  if (mode === 'integrated') {
+    const fetchCurrent = mockFetch(fixture.files);
+    let staleManifestReads = 0;
+    const delayedPagesFetch = async url => {
+      if (new URL(url).pathname === '/data/live/manifest.json'
+        && staleManifestReads++ < 12) {
+        return response(Buffer.from('{"datasetId":"previous-generation"}'));
+      }
+      return fetchCurrent(url);
+    };
+    const delayedResult = await verifyRavScoreOperationalPagesDeployment({
+      baseUrl: 'https://ravradar.example.test/',
+      sourceHead,
+      expectedManifest: fixture.manifest,
+      expectedModel: mode,
+      expectedBinding: binding,
+      expectedContractText: contractText,
+      expectedBundleText: bundleText,
+      expectedPublicClosure: publicClosure,
+      observationNonce: 'fixture-delayed-pages',
+      fetchImpl: delayedPagesFetch,
+      attempts: 13,
+      retryDelayMs: 0,
+    });
+    assert.equal(delayedResult.status, 'passed');
+    assert.equal(staleManifestReads, 13,
+      'a valid sealed artifact must survive Pages serving an old manifest for twelve checks');
+  }
   const predeployIdentity = computeSealedPublicImplementationClosureIdentity({
     expectedModel: mode,
     expectedBinding: binding,

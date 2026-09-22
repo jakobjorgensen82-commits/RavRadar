@@ -2149,3 +2149,12 @@ migrering genbinder nu også disse indre metadata, og Pages-audit afviser
 uforenelige filer før deploy. Score, vejrdata og modelbundle er uændrede.
 Den annullerede normale kørsel `35773937409` hentede eller gemte intet; en
 frisk almindelig kørsel efter merge skal bevise opbygning og offentlig visning.
+## 4.0.465 – offentlig timebinding og Pages-udbredelse (2026-09-22)
+
+Den nyere vejrpakke mistede prognose/rangliste, fordi indre modelmærker i
+timefilerne stadig var gamle. Migreringen genbinder nu også dem, og Pages-
+auditen afviser en blandet pakke. Normalrun `35778530384` byggede og
+deployede et nyt datasæt; begge visninger er igen synlige. Kørslen blev
+alligevel rød, fordi Pages brugte mere end det gamle minut på at servere
+det nye manifest. Den samme eksakte slutkontrol bestod bagefter; dens
+begrænsede ventetid er derfor øget til cirka tre minutter uden lempede krav.

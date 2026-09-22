@@ -13,7 +13,11 @@ Rettelsen opdaterer også de indre modelmærker, når en kendt, gemt pakke
 føres frem. Før offentliggørelse kontrolleres alle timefiler for samme
 modelmærke. Vejrmålinger, scoretal og beregningsregler ændres ikke. Den
 allerede gemte pakke omskrives ikke uden særskilt bevis; næste almindelige
-vejrkørsel skal bygge en ny, samlet pakke, hvorefter siden kontrolleres.
+vejrkørsel skulle bygge en ny, samlet pakke. Det gjorde kørsel
+`35778530384`, og prognose og rangliste er igen synlige. GitHub markerede
+alligevel kørslen rød, fordi Pages var længere end ét minut om at vise det
+nye manifest. Slutkontrollen venter nu højst cirka tre minutter, men kræver
+fortsat præcis samme gyldige pakke og model.
 
 ## 89.60 4.0.455 – Vejrkørslen skal kunne reparere og fortsætte selv
 

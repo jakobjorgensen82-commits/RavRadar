@@ -3132,3 +3132,13 @@ kør én almindelig vejropdatering, som bygger en frisk atomisk timepakke, og
 bevis protected cache-save, artifact, Pages, rangliste og prognose i browser.
 Hvis vejrkørslen fejler, undersøg hele kæden uden at gentage allerede grønne
 trin blindt. Anbefalet model/Indsats: Sol/Ekstra høj.
+# 4.0.465 – offentlig side genoprettet, Pages-retry afventer PR #427
+
+Normalrun `35778530384` lykkedes med hele leverandør-, cache-, build- og
+Pages-kæden. Den røde status var den efterfølgende cirka 56 sekunders
+live-verifikation, der stadig fik gammel manifest fra Pages. Browseren viser
+igen rangliste og femdøgnsprognose. Handoffets og live-sidens manifest er
+identiske, og samme 210/673-verifier bestod efter udbredelse. PR #427 har nu
+et snævert tre-minutters retry og regression for 12 gamle læsninger. Kør
+måltests/version/RDKS, commit/push, exact-head, merge og følg næste cron.
+Ingen ekstra oneoff eller gentaget providerarbejde kun for rød status.

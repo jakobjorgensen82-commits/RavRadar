@@ -5726,3 +5726,14 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   lad én almindelig vejrkørsel bygge et nyt gyldigt timepakkepar.
 - [ ] Verificér beskyttet cache-save, artifact, deploy samt synlig prognose og
   rangliste i browseren. Følg derefter normal cron-vedligeholdelse.
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.465 Pages-retry
+
+- [x] Normalrun `35778530384`: alle leverandører, cache, 210/673-runtime,
+  artifact og Pages-deploy gennemført; rangliste og prognose synlige.
+- [x] Den røde slutkontrol afgrænset til Pages-udbredelse: forventet og live
+  manifest blev identiske, og præcis samme verifier bestod bagefter.
+- [x] Forlæng kun manifest-/artifactpolling til højst cirka tre minutter og
+  test 12 gamle manifestlæsninger før det nye vises.
+- [ ] Bestå PR #427 på nyt exact head og merge uden at gentage vejrleverandører.
+- [ ] Følg næste almindelige cron-kørsel på ny main og kontrollér slutstatus,
+  cache, data og offentlig side før stabil drift erklæres.

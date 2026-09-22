@@ -2907,3 +2907,12 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   metadata; Pages-audit afviser en uforenelig timefil før deploy. Den allerede
   centralt gemte pakke er ikke omskrevet. Først en ny almindelig kørsel og
   offentlig browserkontrol kan lukke issuet.
+# Aktuelt issue – 2026-09-22, 4.0.465 Pages-slutkontrol
+
+- **ISSUE-PAGES-PROPAGATION-35778530384 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Normalrunnet deployede en gyldig ny vejrpakke og genskabte prognose og
+  rangliste. GitHub sluttede rødt, fordi Pages stadig serverede forgængerens
+  manifest i de første cirka 56 sekunders eksakte slutkontrol. Bagefter var
+  live manifest byte-/feltidentisk med det forseglede, og samme 210/673-
+  verifier bestod. Kun retryvinduet udvides; mismatch og ukendt deploy må
+  fortsat ikke godkendes. PR #427 afventer nyt exact-head-bevis.

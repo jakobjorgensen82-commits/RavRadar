@@ -5025,3 +5025,18 @@ leverandører, cacheskrivning og deploy. Efter exact-head/merge skal én
 almindelig kørsel skabe et nyt atomisk par og bevise cache, artifact, Pages
 og browser. Indtil da er offentlig prognose/rangliste ikke verificeret som
 genoprettet.
+# NYESTE SANDHED – 2026-09-22 – 4.0.465 live vejr og Pages-forsinkelse
+
+Normalrun `35778530384` gennemførte alle tre leverandører, central cache,
+privat runtime, produktionskontroller og Pages-deploy på main `90256510`.
+Offentligt dataset `rr-20260922210147-210` viser igen rangliste og fem dages
+prognose i Chrome. Den efterfølgende GitHub-slutkontrol blev rød, fordi den
+stadig læste det forrige offentlige manifest under sit cirka 56 sekunders
+retryvindue. Efter udbredelsen matchede hele manifestet det forseglede
+handoff, og samme eksakte verifier bestod 210/673 uden privat payload.
+
+Den lokale 4.0.465-PR #427 omfatter nu også et højst tre minutters afgrænset
+Pages-retry med måltest for 12 forældede manifestlæsninger før korrekt
+generation. Ingen datakrav lempes. PR-head skal revalideres før merge; den
+aktuelle offentlige side fungerer, men rød runklassifikation og fortsat
+normaldrift er endnu ikke lukket som stabile.

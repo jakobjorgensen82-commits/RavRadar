@@ -1897,3 +1897,18 @@ post-cutover-migration og stopper mismatch i Pages-preflight. Bundlen er
 uændret. Næste: målrettede versions-/RDKS-kontroller, exact-head PR, merge,
 én almindelig vejropdatering og offentlig 118-timers/browserkontrol. Den
 centrale 19:00-pakke er endnu ikke repareret; påstå ikke at siden er hel.
+# AKTUELT CHECKPOINT – 2026-09-22 – 4.0.465 live genopretning
+
+Arbejd i indlejret `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.465-public-hour-nested-binding`, PR #427. Normalrun
+`35778530384` på gammel main gennemførte tre leverandører, cache, runtime,
+artifact og Pages. Browseren viser igen prognose og rangliste. Runnet blev
+rødt alene ved den umiddelbare offentlige slutkontrol: Pages serverede endnu
+forgængerens manifest. Det offentlige manifest matcher nu det forseglede
+handoff, og præcis samme verifier bestod 210/673 efter udbredelse.
+
+Lokal PR-rettelse forlænger det afgrænsede Pages-retry til cirka tre minutter
+og tester forsinket manifest. Bevar alle eksakte hash-/model-/privacykrav.
+Næste: målrettet RDKS/version, commit/push, én ny exact-head-PR-kontrol,
+merge, og følg næste normale cron uden at genhente vejret kun for denne
+statusfejl. Untracked `.tmp-420/` og `.tmp-run-*` må ikke stages.
