@@ -1,3 +1,15 @@
+# Aktivt roadmap – 2026-09-22, 4.0.457 fra predecessor-drift til selvstændig drift
+
+0. [x] Afgræns code-only-run `35730421484`: migration og database-readback var
+   grønne, men den gemte runtime matchede ikke den forældede predecessor-
+   identitet.
+1. [x] Opdater den faste predecessor-identitet samlet til `a6d89798` /
+   `rr-20260921170645-210` med korrekt bundle- og contract-bevis.
+2. [ ] Bestå exact-head-kontrol og ny code-only readback/genbinding på main.
+3. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+
 # Aktivt roadmap – 2026-09-22, 4.0.456 fra readback-drift til selvstændig drift
 
 0. [x] Afgræns code-only-run `35728472112`: migrationen blev anvendt, men

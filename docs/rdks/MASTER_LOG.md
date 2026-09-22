@@ -1,3 +1,12 @@
+# 2026-09-22 – 4.0.457 retter predecessor-genbindingens identitet
+
+Code-only-run `35730421484` bestod migration og database-readback, men
+genbindingen af den gemte private runtime stoppede korrekt: den centrale
+runtime-pointer leverede `a6d89798` / `rr-20260921170645-210`, mens koden var
+låst til den ældre 14. september-forgænger. 4.0.457 opdaterer den faste,
+ikke-dynamiske predecessor-identitet med den verificerede bundle- og
+contract-identitet. Ukendte forgængere afvises fortsat.
+
 # 2026-09-22 – 4.0.456 retter checkpoint-readbackens migrationskilde
 
 Code-only-run `35728472112` gennemførte den nye migration, men stoppede i

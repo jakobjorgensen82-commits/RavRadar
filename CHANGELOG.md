@@ -1,3 +1,13 @@
+## 4.0.457 – Genbinding af den faktiske beskyttede runtime (2026-09-22)
+
+- Opdater den faste predecessor-identitet til den runtime, som den centrale
+  protected-runtime-pointer faktisk leverer: `a6d89798…` /
+  `rr-20260921170645-210`.
+- Medtag den korrekte integrated-/Candidate G-binding og contract-hashes, så
+  code-only kan genbruge den gemte runtime uden at acceptere ukendte forgængere.
+- Ingen ændring af score, vejrdata, cache, fallback, MISSING-semantik eller
+  historiske migrationsfiler. Se `CHANGELOG-4.0.457.md`.
+
 ## 4.0.456 – Korrekt checkpoint-readback efter append-only repair (2026-09-22)
 
 - Ret readback-kilden for checkpoint-CAS: trip-politikken læses fortsat fra

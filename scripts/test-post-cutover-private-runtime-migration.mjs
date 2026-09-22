@@ -21,8 +21,8 @@ import {
   candidateGRollbackScoreProfile,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
-assert.equal(POST_CUTOVER_PREDECESSOR.sourceHead, 'fa418f43bbd070c446ed19b6587541b93af89599');
-assert.equal(POST_CUTOVER_PREDECESSOR.datasetId, 'rr-20260914180039-210');
+assert.equal(POST_CUTOVER_PREDECESSOR.sourceHead, 'a6d89798c76a5218c5d699961474f4259835dfb9');
+assert.equal(POST_CUTOVER_PREDECESSOR.datasetId, 'rr-20260921170645-210');
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedZoneCount, 210);
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedPartCount, 673);
 assert.equal(PRIVATE_RUNTIME_FILES.length, 9);
@@ -31,7 +31,7 @@ const previous = POST_CUTOVER_PREDECESSOR.modelBinding;
 const current = ravScoreModelBinding();
 assert.deepEqual(previous, {
   ...current,
-  modelBundleSha256: '327b989b731e6e84bf05bdb6bd54707d47c04d5bdf80038d437332e84a4c8e01',
+  modelBundleSha256: '14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904',
 }, 'The sealed predecessor must equal the real current 11-field contract except its old bundle hash');
 assert.doesNotThrow(() => assertBindingUpgrade(previous, current, 'fixture'));
 assert.throws(() => assertBindingUpgrade(previous, { ...current, modelId: 'changed' }, 'fixture'),
@@ -77,8 +77,8 @@ const dynamicPredecessorIdentity = {
   sourceHead: POST_CUTOVER_PREDECESSOR.sourceHead,
   datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
   bundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,
-  productionReferenceAt: '2026-09-14T18:00:00.000Z',
-  generatedAt: '2026-09-14T18:10:00.000Z',
+  productionReferenceAt: '2026-09-21T16:00:00.000Z',
+  generatedAt: '2026-09-21T17:06:45.191Z',
   modelBinding: POST_CUTOVER_PREDECESSOR.modelBinding,
   contractHashes: POST_CUTOVER_PREDECESSOR.contractHashes,
   expectedZoneCount: 210,
