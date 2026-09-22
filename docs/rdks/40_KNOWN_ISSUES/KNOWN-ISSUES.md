@@ -1,3 +1,14 @@
+# Aktuelle issues – 2026-09-22, 4.0.452
+
+- **ISSUE-NORMAL-CACHE-NODE-HEAP-35662538047 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** Normalrunnet gennemførte providerkæden og komponent-runtime, men
+  Node/V8 løb tør for heap omkring 4 GB under den centrale forsegling.
+  Krypteret privat fremgang blev gemt. 4.0.452 sætter cachetrinnet til 8192
+  MB; næste normale continuation skal vise, om det er tilstrækkeligt.
+- **ISSUE-NORMAL-WEATHER-MAINTENANCE – FORTSAT ÅBENT:** Cache, artifact,
+  deploy og offentlig runtime skal stadig bevises i en normal kørsel efter
+  rettelsen. Ingen ny one-off er nødvendig uden ny evidens.
+
 # Aktuelle issues – 2026-09-21, 4.0.451
 
 - **ISSUE-INTEGRATED-READINESS-STALE-MAIN-35625011723 – RECOVERY LIVE /

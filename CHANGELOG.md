@@ -1,3 +1,13 @@
+## 4.0.452 – Node-hukommelse til normal cachebygning (2026-09-22)
+
+Run `35662538047` nåede leverandørkæden og komponent-runtime, men
+`Update central weather cache` blev afsluttet af Node/V8's cirka 4 GB
+heapgrænse under den integrerede runtimeforsegling. Den krypterede private
+vejr-fremgang blev gemt, og en midlertidig DMI 429 blev håndteret af fallback.
+4.0.452 sætter derfor kun cachetrinnets `NODE_OPTIONS` til 8192 MB og har en
+målrettet workflow-regression. Næste normale kørsel skal genbruge fremgangen
+og bevise resten af kæden. Se `CHANGELOG-4.0.452.md`.
+
 ## 4.0.451 – officielle DMI-revisioner i recovery (2026-09-21)
 
 - Recovery genbruger DMI-vælgerens bevis for alle ændrede native endepunkter

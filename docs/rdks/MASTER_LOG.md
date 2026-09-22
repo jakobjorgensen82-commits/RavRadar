@@ -1,3 +1,12 @@
+# 2026-09-22 – 4.0.452 hæver Node-heap i normal cachebygning
+
+Normalrun `35662538047` gennemførte leverandørkæden og gemte sin krypterede
+private fremgang, men `Update central weather cache` stoppede ved Node/V8
+`heap out of memory` omkring 4 GB under den integrerede runtimeforsegling.
+4.0.452 sætter kun dette cachetrin til 8192 MB og tilføjer en målrettet
+workflow-regression. Næste normale continuation skal genbruge fremgangen og
+bevise resten af kæden. Se DEC-0230 og `CHANGELOG-4.0.452.md`.
+
 # 2026-09-21 – 4.0.451 accepterer dokumenteret DMI-revision i samme modelkørsel
 
 Normalrun `35567119842` gennemførte leverandørkæden og komponent-runtime, men
