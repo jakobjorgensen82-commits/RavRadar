@@ -1,3 +1,12 @@
+# 2026-09-22 – 4.0.456 retter checkpoint-readbackens migrationskilde
+
+Code-only-run `35728472112` gennemførte den nye migration, men stoppede i
+readbacken, fordi kontrolkoden læste checkpoint-CAS fra den gamle fulde
+binding i stedet for append-only successoren `20260922100000`. Supabase'
+faktiske hash matchede successoren. 4.0.456 retter kun denne kildeopdeling:
+trip-policyen bevarer sin historiske kilde, checkpoint-kontrakten bruger den
+successor, der faktisk genindsætter den. Ingen providerkald eller dataændring.
+
 # 2026-09-22 – 4.0.455 gør backend- og vejrkæden selvkørende
 
 Normalrun `35703630226` og code-only-run `35706883724` reproducerede den
