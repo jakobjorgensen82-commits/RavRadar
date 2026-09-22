@@ -1,3 +1,19 @@
+# 4.0.464 checkpoint – protected public-hour-par
+
+PR #425 er merged som `e88309b9`; exact-head `35766972202` er grøn.
+Saved-weather-run `35767690294` beviste canonical targetrettelsen, restored
+central 19:00, genbandt runtime og kom gennem public rebuild, audit, privat
+bundle og Pages-preflight. Det stoppede kun i sidste protected publish med
+`Same-reference migration changed a non-conditions private file`.
+
+Den eneste bevidst ikke-kopierede fil er `public-hour-delivery.pack`, som
+4.0.464 genbinder atomisk sammen med conditions til den aktuelle model. Lokal
+opfølgning bruger migrationsrapport schema 2 med pakkens eksakte byteantal og
+SHA-256. Protected validator accepterer kun denne fil, kun ved modelmigration
+og kun ved eksakt successor-digest; contract-only og alle øvrige filer er
+fortsat bytebeskyttet. Bindingregisteret har fået protected validatoren som
+consumer. Næste: måltests, exact-head, merge og samme providerfri continuation.
+
 # 4.0.464 checkpoint – canonical saved-weather-identitet
 
 PR #424 er merged som `6f6c5111`; exact-head `35762844871` er grøn.

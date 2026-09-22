@@ -1,5 +1,14 @@
 ## 4.0.464 – samlet rebind af public-hour-pakken (2026-09-22)
 
+Run `35767690294` livebeviste canonical targetrettelsen og kom gennem restore,
+rebind, offentlig genopbygning, runtimeaudit, privat bundle og Pages-preflight.
+Den sidste protected-publicering afviste derefter den med vilje genbundne
+`public-hour-delivery.pack`, fordi dens successor-kontrol stadig antog, at kun
+`conditions.json` måtte ændre sig. Migrationsrapporten er nu schema 2 og
+binder pakkens eksakte byteantal/hash. Protected-publicering tillader kun den
+matchende afledte pakke sammen med conditions ved modelmigration; alle øvrige
+private filer, contract-only-rebind og forkerte digests forbliver afvist.
+
 Saved-weather-run `35763572487` livebeviste først, at den nyere centrale
 generation nu passerer aldersklassifikationen. Det efterfølgende protected-
 runtime-led afviste derefter workflowets omskrivning af canonical

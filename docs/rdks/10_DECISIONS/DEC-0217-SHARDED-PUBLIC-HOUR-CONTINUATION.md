@@ -4,6 +4,23 @@
 produktionsbevis åbent
 **Dato:** 2026-09-19
 
+## Tillæg 2026-09-22 – modelrebind omfatter det atomiske par
+
+Saved-weather-run `35767690294` kom gennem targetbinding, restore, migration,
+offentlig genopbygning, runtimeaudit, privat bundle og Pages-preflight. Den
+sidste private publicering afviste derefter den ændrede
+`public-hour-delivery.pack` som en ukendt ikke-conditions-fil. Migreringen
+havde imidlertid med vilje genbundet både `conditions.json` og den tilhørende
+118-timerspakke til samme aktuelle modelbinding, sådan som denne beslutnings
+atomiske par kræver.
+
+Ved en verificeret modelbindingsovergang må derfor præcis disse to afledte
+filer ændres sammen. Migrationsrapport schema 2 skal binde den nye pakkes
+eksakte byteantal og SHA-256 til successor-manifestet. Forgængerens pakke skal
+beviseligt have en anden hash, mens alle øvrige private filer fortsat er
+byteidentiske. Contract-only rebind må fortsat ikke ændre hverken conditions
+eller pakken. Ukendt fil, manglende rapportfelt eller forkert digest stopper.
+
 ## Tillæg 2026-09-20 – genkendelse skal efterfølges af anvendelse
 
 4.0.438 bestod exact-head `35471789111`, PR #383, merge `2fbfe3b2` og

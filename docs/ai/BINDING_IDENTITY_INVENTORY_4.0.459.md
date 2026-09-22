@@ -88,7 +88,12 @@ samme SHA'er, tider eller IDs.
    blandede dermed "feltet indgår i identiteten" sammen med "feltets tal skal
    altid ændres". `runtime.public-hour-delivery.identity` samler nu markørens
    modelbinding, details-/startprognosehash, rå/pakket størrelse og pakkehash
-   med producent, consumers og validator i det additive register.
+   med producent, consumers og validator i det additive register. Run
+   `35767690294` viste, at den sidste protected-publicering manglede som
+   consumer: migreringen genbandt korrekt conditions og den afledte pakke,
+   mens den sidste validator kun tillod conditions at ændre sig. Consumeren
+   er nu registreret, og migrationsrapport schema 2 fører pakkens eksakte
+   byteantal/hash til successor-manifestets snævre allowlist.
 9. **Central saved-weather-identitet (4.0.464):** code-only-run
    `35759861916` viste, at den offentlige 16:00-pakke ikke måtte overskrive
    den nyere centrale 19:00-pakke. Saved-weather-run `35761693070` valgte

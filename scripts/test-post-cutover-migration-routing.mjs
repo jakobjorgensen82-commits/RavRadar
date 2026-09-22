@@ -7,7 +7,10 @@ import {
 } from './prepare-code-only-public-runtime.mjs';
 import { validateSameReferencePrivateRuntimeSuccessor } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES } from './private-production-runtime-workflow.mjs';
-import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
+import {
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
+  PRIVATE_WEATHER_COMPONENT_PACK_FILE,
+} from './lib/private-weather-component-inventory.mjs';
 import { PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY, privateRuntimeBundleContentSha256 } from './private-production-runtime-bundle.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
@@ -84,7 +87,7 @@ const oldManifest = makeManifest({ ...ravScoreModelBinding(), modelBundleSha256:
 const descriptor = manifest => ({ sourceHead: '1'.repeat(40), datasetId: manifest.datasetId,
   productionReferenceAt: manifest.productionReferenceAt, modelBinding: manifest.modelBinding,
   contractHashes: manifest.contractHashes, bundleContentSha256: manifest.bundleContentSha256 });
-const report = { schemaVersion: 1, kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
+const report = { schemaVersion: 2, kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
   transitionKind: 'MODEL_BINDING_METADATA_ONLY', predecessorSourceHead: '1'.repeat(40),
   datasetId: oldManifest.datasetId, sourceBundleContentSha256: oldManifest.bundleContentSha256,
   previousIntegratedBundleSha256: oldManifest.modelBinding.modelBundleSha256,
@@ -94,6 +97,8 @@ const report = { schemaVersion: 1, kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_
   candidateRuntimeKind: 'ravScoreCandidateGWarmup', migratedPartCount: 673,
   changedBindingFieldCount: 673, copiedPrivateFileCount: 9, migratedConditionsBytes: 2,
   migratedConditionsSha256: 'f'.repeat(64), measurementsChanged: false,
+  publicHourDeliveryRebound: false, migratedPublicHourPackBytes: null,
+  migratedPublicHourPackSha256: null,
   candidateStatesChanged: false, privatePayloadIncluded: false };
 const successor = { existingDescriptor: descriptor(oldManifest), successorDescriptor: descriptor(nextManifest),
   predecessorManifest: oldManifest, successorManifest: nextManifest, migrationReport: report };
@@ -132,6 +137,39 @@ assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...extendedSu
   successorManifest: changedPack, successorDescriptor: descriptor(changedPack) }), /non-conditions private file/);
 assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...extendedSuccessor,
   successorManifest: nextManifest, successorDescriptor: descriptor(nextManifest) }));
+
+const withPublicHourPack = (manifest, sha256) => {
+  const result = structuredClone(manifest);
+  result.files.push({ ...PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE, bytes: 321, sha256,
+    privacyClass: policy.privacyClass });
+  result.fileCount = result.files.length;
+  result.bundleContentSha256 = privateRuntimeBundleContentSha256(result);
+  return result;
+};
+const publicHourOld = withPublicHourPack(oldManifest, '4'.repeat(64));
+const publicHourNext = withPublicHourPack(nextManifest, '5'.repeat(64));
+const publicHourReport = { ...report, copiedPrivateFileCount: 10,
+  sourceBundleContentSha256: publicHourOld.bundleContentSha256,
+  publicHourDeliveryRebound: true, migratedPublicHourPackBytes: 321,
+  migratedPublicHourPackSha256: '5'.repeat(64) };
+const publicHourSuccessor = { existingDescriptor: descriptor(publicHourOld),
+  successorDescriptor: descriptor(publicHourNext), predecessorManifest: publicHourOld,
+  successorManifest: publicHourNext, migrationReport: publicHourReport };
+assert.equal(validateSameReferencePrivateRuntimeSuccessor(publicHourSuccessor), true,
+  'the exactly proven rebound 118-hour pack may change with its conditions binding');
+assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...publicHourSuccessor,
+  migrationReport: { ...publicHourReport, migratedPublicHourPackSha256: '6'.repeat(64) } }),
+/public-hour pack/);
+const movedPublicHourPack = structuredClone(publicHourNext);
+movedPublicHourPack.files.at(-1).relativePath = '.cache/moved-public-hour-delivery.pack';
+movedPublicHourPack.bundleContentSha256 = privateRuntimeBundleContentSha256(movedPublicHourPack);
+assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...publicHourSuccessor,
+  successorManifest: movedPublicHourPack,
+  successorDescriptor: descriptor(movedPublicHourPack) }), /inventory is incompatible|public-hour pack/);
+assert.throws(() => validateSameReferencePrivateRuntimeSuccessor({ ...publicHourSuccessor,
+  migrationReport: { ...publicHourReport, publicHourDeliveryRebound: false,
+    migratedPublicHourPackBytes: null, migratedPublicHourPackSha256: null } }),
+/non-conditions private file/);
 
 const migration = await fs.readFile('scripts/migrate-post-cutover-private-runtime.mjs', 'utf8');
 assert.match(migration, /transitionKind: classifyVerifiedRuntimeMigration\(/);

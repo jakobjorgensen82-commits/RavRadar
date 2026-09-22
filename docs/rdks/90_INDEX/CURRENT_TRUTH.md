@@ -1,4 +1,26 @@
-# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 canonical saved-weather-identitet
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 atomisk public-hour-rebind
+
+PR #425 er merged som `e88309b9`, exact-head `35766972202` er grøn, og
+saved-weather-run `35767690294` livebeviste canonical targetrettelsen: den kom
+gennem bindingen og det tidligere fejlede descriptortrin. Den gendannede den
+centrale 19:00-generation, genbandt den, byggede den offentlige runtime,
+bestod runtimeaudit, privat bundle og Pages-preflight.
+
+Runnet stoppede først ved den sidste beskyttede private publicering. Den gamle
+successor-validator tillod kun `conditions.json` at ændre sig, selv om
+4.0.464's verificerede migration med vilje også genbinder den atomisk
+tilhørende `public-hour-delivery.pack` med alle 118 timer. Ingen anden privat
+fil kan ændres, fordi migreringen kopierer dem byte-for-byte.
+
+Migrationsrapporten er nu schema 2 og binder eksplicit pakkens nye byteantal
+og SHA-256. Protected-publicering tillader kun netop denne pakkefil sammen
+med conditions ved en modelbindingsovergang; forkert digest, uændret
+forgængerhash, contract-only ændring eller enhver anden privat fil afvises.
+`runtime.public-hour-delivery.identity` registrerer nu også den sidste
+protected validator som consumer. Næste trin er exact-head, merge og samme
+providerfri continuation; ingen leverandørkald skal genstartes.
+
+# NYESTE SANDHED – 2026-09-22 – 4.0.464 canonical saved-weather-identitet
 
 PR #424 er merged som `6f6c5111`, og exact-head-kontrollen bestod. Den nye
 saved-weather-kørsel `35763572487` kom dermed gennem den tidligere hårde

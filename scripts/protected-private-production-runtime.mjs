@@ -25,7 +25,10 @@ import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
-import { assertPrivateRuntimeInventory } from './lib/private-weather-component-inventory.mjs';
+import {
+  PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
+  assertPrivateRuntimeInventory,
+} from './lib/private-weather-component-inventory.mjs';
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -137,6 +140,9 @@ const SAME_REFERENCE_MIGRATION_REPORT_KEYS = Object.freeze([
   'copiedPrivateFileCount',
   'migratedConditionsBytes',
   'migratedConditionsSha256',
+  'publicHourDeliveryRebound',
+  'migratedPublicHourPackBytes',
+  'migratedPublicHourPackSha256',
   'measurementsChanged',
   'candidateStatesChanged',
   'privatePayloadIncluded',
@@ -967,7 +973,7 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   const contractOnlyRebind = migrationReport.transitionKind === 'CONTRACT_ONLY_REBIND';
   if (!isPlainObject(existingDescriptor)
     || !isPlainObject(successorDescriptor)
-    || migrationReport.schemaVersion !== 1
+    || migrationReport.schemaVersion !== 2
     || migrationReport.kind !== 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND'
     || migrationReport.predecessorSourceHead !== existingDescriptor.sourceHead
     || migrationReport.sourceBundleContentSha256 !== existingDescriptor.bundleContentSha256
@@ -1001,6 +1007,10 @@ export function validateSameReferencePrivateRuntimeSuccessor({
     || !Number.isSafeInteger(migrationReport.changedBindingFieldCount)
     || migrationReport.copiedPrivateFileCount !== predecessorFiles.size
     || migrationReport.copiedPrivateFileCount !== successorFiles.size
+    || typeof migrationReport.publicHourDeliveryRebound !== 'boolean'
+    || (!migrationReport.publicHourDeliveryRebound
+      && (migrationReport.migratedPublicHourPackBytes !== null
+        || migrationReport.migratedPublicHourPackSha256 !== null))
     || migrationReport.measurementsChanged !== false
     || migrationReport.candidateStatesChanged !== false
     || migrationReport.privatePayloadIncluded !== false) {
@@ -1025,6 +1035,15 @@ export function validateSameReferencePrivateRuntimeSuccessor({
   } else {
     throw new Error('Same-reference private runtime transition kind is invalid');
   }
+  if (migrationReport.publicHourDeliveryRebound
+    && (!bindingMigration
+      || !predecessorFiles.has(PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id)
+      || !successorFiles.has(PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id)
+      || !Number.isSafeInteger(migrationReport.migratedPublicHourPackBytes)
+      || migrationReport.migratedPublicHourPackBytes < 1
+      || !SHA256_PATTERN.test(String(migrationReport.migratedPublicHourPackSha256 ?? '')))) {
+    throw new Error('Same-reference public-hour pack migration evidence is invalid');
+  }
   if (predecessorFiles.size !== successorFiles.size
     || [...predecessorFiles.keys()].some(id => !successorFiles.has(id))) {
     throw new Error('Same-reference private runtime inventories differ');
@@ -1045,8 +1064,18 @@ export function validateSameReferencePrivateRuntimeSuccessor({
       if (contractOnlyRebind && !same(predecessorFile, successorFile)) {
         throw new Error('Same-reference contract-only rebind changed private conditions');
       }
+    } else if (id === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id
+      && migrationReport.publicHourDeliveryRebound) {
+      if (successorFile.relativePath !== predecessorFile.relativePath
+        || successorFile.relativePath !== PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath
+        || successorFile.privacyClass !== predecessorFile.privacyClass
+        || successorFile.bytes !== migrationReport.migratedPublicHourPackBytes
+        || successorFile.sha256 !== migrationReport.migratedPublicHourPackSha256
+        || predecessorFile.sha256 === successorFile.sha256) {
+        throw new Error('Same-reference migrated public-hour pack evidence is invalid');
+      }
     } else if (!same(predecessorFile, successorFile)) {
-      throw new Error('Same-reference migration changed a non-conditions private file');
+      throw new Error(`Same-reference migration changed a non-conditions private file: ${id}`);
     }
   }
   return true;

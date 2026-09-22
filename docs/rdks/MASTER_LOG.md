@@ -1,3 +1,20 @@
+# 2026-09-22 – 4.0.464 beviser det atomiske public-hour-par
+
+PR #425 blev merged som `e88309b9`, og run `35767690294` passerede både den
+rettede canonical targetbinding og hele det tidligere stop. Det gendannede
+central 19:00, genbandt den private runtime, genbyggede den offentlige
+118-timersruntime og bestod audit, bundle og Pages-preflight. Sidste protected
+publish afviste dog `public-hour-delivery.pack` som en ændret ikke-conditions-
+fil.
+
+Helkæden viste, at denne ene ændring er obligatorisk og afledt: modelrebindet
+opdaterer både conditions-markøren og dens atomisk tilhørende 118-timerspakke.
+Alle andre private filer kopieres byte-for-byte. Migrationsrapport schema 2
+fører nu pakkens eksakte byteantal/hash frem til protected successor-
+validatoren. Kun matchende pack-digest ved modelmigration tillades;
+contract-only og andre filændringer afvises fortsat. Consumerrelationen er
+tilføjet `runtime.public-hour-delivery.identity`.
+
 # 2026-09-22 – 4.0.464 bevarer canonical saved-weather-identitet
 
 PR #424 blev merged som `6f6c5111`, og run `35763572487` beviste, at den

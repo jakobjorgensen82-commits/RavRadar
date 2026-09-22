@@ -1,11 +1,20 @@
 # Aktuelle issues – 2026-09-22, 4.0.464
 
+- **ISSUE-SAVED-WEATHER-PUBLIC-HOUR-PROOF-35767690294 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Canonical targetrettelsen virkede, og runnet kom gennem
+  public rebuild, audit, bundle og preflight. Protected-publiceringen kendte
+  ikke den legitime atomiske genbinding af `public-hour-delivery.pack` og
+  afviste den som en vilkårlig privat filændring. Rapport schema 2 binder nu
+  pakkens eksakte byteantal/hash; kun denne afledte pakke må ændres sammen med
+  conditions, mens alle andre private filer fortsat skal være byteidentiske.
+
 - **ISSUE-SAVED-WEATHER-CANONICAL-TIME-35763572487 – RETTET LOKALT /
-  LIVEBEVIS ÅBENT:** Aldersrettelsen virkede, men saved-weather forkortede
+  LIVEBEVIST RETTET:** Aldersrettelsen virkede, men saved-weather forkortede
   derefter descriptorens canonical `.000Z` til `Z`. Tidspunktet var det samme,
   men protected-runtime-identiteten er med vilje eksakt og afviste den ændrede
   tekst. Workflowet bevarer nu descriptorens streng uændret, og bindingen
-  kræver canonical UTC gennem alle consumers. Ingen vejrdata gik tabt.
+  kræver canonical UTC gennem alle consumers. Run `35767690294` kom gennem
+  begge tidligere fejlede tidsbindingstrin. Ingen vejrdata gik tabt.
 
 - **ISSUE-SAVED-WEATHER-AGE-GATE-35761693070 – RETTET LOKALT / LIVEBEVIS
   ÅBENT:** Den nyere centrale 19:00-generation var cirka 22,6 timer gammel,
