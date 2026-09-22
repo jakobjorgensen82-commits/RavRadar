@@ -1,4 +1,19 @@
-# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 horizon-gyldig saved-weather
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 canonical saved-weather-identitet
+
+PR #424 er merged som `6f6c5111`, og exact-head-kontrollen bestod. Den nye
+saved-weather-kørsel `35763572487` kom dermed gennem den tidligere hårde
+aldersgate, men stoppede før restore: workflowet forkortede den centrale
+descriptors kanoniske target `2026-09-21T19:00:00.000Z` til den tidsmæssigt
+samme `2026-09-21T19:00:00Z`. Protected-runtime-kontrakten kræver med rette
+én eksakt identitet og afviste omskrivningen. Vejrdataene var ikke fejlramte.
+
+Saved-weather læser nu `.productionReferenceAt` i canonical `.000Z` direkte
+fra den centrale descriptor og fører strengen uændret til freshness,
+expected-specifikation, restore og publicering. Bindingregisteret kræver nu
+også `canonicalUtcTarget`. Næste trin er måltests, exact-head, merge og samme
+providerfri saved-weather-deploy; ingen leverandørkald skal genstartes.
+
+# NYESTE SANDHED – 2026-09-22 – 4.0.464 horizon-gyldig saved-weather
 
 Code-only-run `35759861916` bestod public-hour-rebind, 8 GiB-rebuild, samlet
 runtimeaudit, private bundle og Pages-preflight. Den stoppede først ved den

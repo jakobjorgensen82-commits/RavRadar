@@ -1,5 +1,12 @@
 # Aktuelle issues – 2026-09-22, 4.0.464
 
+- **ISSUE-SAVED-WEATHER-CANONICAL-TIME-35763572487 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Aldersrettelsen virkede, men saved-weather forkortede
+  derefter descriptorens canonical `.000Z` til `Z`. Tidspunktet var det samme,
+  men protected-runtime-identiteten er med vilje eksakt og afviste den ændrede
+  tekst. Workflowet bevarer nu descriptorens streng uændret, og bindingen
+  kræver canonical UTC gennem alle consumers. Ingen vejrdata gik tabt.
+
 - **ISSUE-SAVED-WEATHER-AGE-GATE-35761693070 – RETTET LOKALT / LIVEBEVIS
   ÅBENT:** Den nyere centrale 19:00-generation var cirka 22,6 timer gammel,
   men stadig inden for sin 118-timershorisont. Klassifikatoren returnerede

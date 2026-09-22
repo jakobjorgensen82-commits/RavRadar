@@ -97,7 +97,10 @@ samme SHA'er, tider eller IDs.
    gyldig. `runtime.protectedCurrentIdentity` registrerer nu pointerens target,
    source-forgænger og horizon-validitet som én live binding. Alder er warning;
    fremtidig, udløbet, ikke-monoton eller ikke-forgængerbundet identitet
-   stopper fortsat.
+   stopper fortsat. Run `35763572487` viste desuden, at identiteten ikke blot
+   er samme tidspunkt: descriptorens kanoniske `.000Z`-streng skal føres
+   uændret til expected-specifikation, restore og publicering. Workflowet må
+   ikke forkorte den til den tidsmæssigt tilsvarende `Z`-form.
 
 De første fire er samme arkitekturproblem i forskellige former: én identitet
 er blevet kopieret manuelt til flere lag. De sidste fund viser, at database-,

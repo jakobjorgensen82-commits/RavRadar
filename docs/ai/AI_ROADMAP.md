@@ -1,14 +1,15 @@
 # Nyeste prioritering – 2026-09-22, 4.0.464 saved-weather-deploy
 
-1. [x] Livebevis public-hour-rebind og 8 GiB runtimegenbygning i
-   `35759861916`; bevar det korrekte stop mod central tilbagerulning.
-2. [x] Afgræns `35761693070` til den gamle hårde `FRESH`-grep, selv om
-   targetet var `STALE_TARGET_VALID` og inden for 118-timershorisonten.
-3. [x] Ret saved-weather til at acceptere begge horizon-gyldige statusser og
-   registrér `runtime.protectedCurrentIdentity` i bindingsregisteret.
-4. [ ] Bestå måltests, RDKS/version/diff, én exact-head, PR og merge.
-5. [ ] Kør providerfri saved-weather til deploy og offentlig verifikation.
-6. [ ] Start derefter én normal weather på samme main og kræv frisk cache,
+1. [x] Livebevis public-hour-rebind, 8 GiB runtimegenbygning og korrekt stop
+   mod central tilbagerulning i `35759861916`.
+2. [x] Ret den hårde aldersgate og merge PR #424 som `6f6c5111`.
+3. [x] Livebevis i `35763572487`, at horizon-gyldig saved-weather passerer,
+   og afgræns næste stop til omskrivning af canonical `.000Z` til `Z`.
+4. [x] Bevar den centrale descriptors canonical target uændret gennem alle
+   consumers, og bind formatet i register og regression.
+5. [ ] Bestå måltests, RDKS/version/diff, én exact-head, PR og merge.
+6. [ ] Kør providerfri saved-weather til deploy og offentlig verifikation.
+7. [ ] Start derefter én normal weather på samme main og kræv frisk cache,
    artifact, deploy samt trinvis DMI → Copernicus → Open-Meteo-evidens.
 
 # Nyeste prioritering – 2026-09-20, 4.0.445 helkæde-kontrol

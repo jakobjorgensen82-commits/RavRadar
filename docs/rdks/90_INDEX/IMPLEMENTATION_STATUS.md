@@ -1,5 +1,17 @@
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
+- [x] Merge PR #424 som `6f6c5111`; exact-head-kontrollen er grøn.
+- [x] Livebevis i `35763572487`, at horizon-gyldig saved-weather nu passerer
+  aldersklassifikationen.
+- [x] Afgræns næste stop til workflowets omskrivning af canonical
+  `2026-09-21T19:00:00.000Z` til den ækvivalente, men ikke identiske `...00Z`.
+- [x] Bevar descriptorens canonical `.000Z` uændret gennem freshness,
+  expected-specifikation, protected restore og publicering; registrér
+  formatkravet i bindingen og regressionstesten.
+- [ ] Bestå exact-head, merge og providerfri saved-weather-deploy med den
+  canonical centrale identitet.
+- [ ] Kør derefter én almindelig vejropdatering på samme main og bevis frisk
+  cache, artifact, deploy og offentlig runtime.
 - [x] Livebevis i `35759861916`, at metadatarebind, 8 GiB public rebuild,
   runtimeaudit, private bundle og Pages-preflight nu består.
 - [x] Bevar det korrekte monotone stop mod at publicere den ældre offentlige

@@ -1,5 +1,14 @@
 ## 4.0.464 – samlet rebind af public-hour-pakken (2026-09-22)
 
+Saved-weather-run `35763572487` livebeviste først, at den nyere centrale
+generation nu passerer aldersklassifikationen. Det efterfølgende protected-
+runtime-led afviste derefter workflowets omskrivning af canonical
+`2026-09-21T19:00:00.000Z` til den tidsmæssigt identiske, men tekstligt
+anderledes `2026-09-21T19:00:00Z`. Workflowet bevarer nu descriptorens
+canonical streng uændret, regressionen forbyder omskrivningen, og bindingen
+registrerer canonical UTC som en del af runtime-identiteten. Ingen vejrdata,
+score eller provideradfærd ændres.
+
 Code-only-run `35749000940` viste, at den bounded migreringswriter fra 4.0.463
 nu kom igennem. Den næste kontrol afviste derefter den bevarede 118-timerspakke:
 startprognosens digest var stadig beregnet med forgængerens modelbinding.

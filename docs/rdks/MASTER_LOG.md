@@ -1,3 +1,16 @@
+# 2026-09-22 – 4.0.464 bevarer canonical saved-weather-identitet
+
+PR #424 blev merged som `6f6c5111`, og run `35763572487` beviste, at den
+horizon-gyldige centrale generation nu passerer alderskontrollen. Næste trin
+stoppede, fordi workflowet omskrev descriptorens
+`2026-09-21T19:00:00.000Z` til den ækvivalente `2026-09-21T19:00:00Z`.
+Protected-runtime-kontrakten afviste korrekt den tekstligt ændrede identitet.
+
+Saved-weather fører nu descriptorens canonical `.000Z` uændret gennem
+freshness, expected-specifikation, restore og publicering. Regressionen
+forbyder den tidligere omskrivning, og `runtime.protectedCurrentIdentity`
+kræver nu `canonicalUtcTarget`. Vejrmålinger og leverandørkald er uændrede.
+
 # 2026-09-22 – 4.0.464 horizon-gyldig saved-weather må fortsætte
 
 Run `35759861916` livebeviste både public-hour-metadatarettelsen og 8 GiB-

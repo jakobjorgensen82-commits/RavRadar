@@ -1,3 +1,17 @@
+# 4.0.464 checkpoint – canonical saved-weather-identitet
+
+PR #424 er merged som `6f6c5111`; exact-head `35762844871` er grøn.
+Saved-weather-run `35763572487` passerede dermed den rettede alderskontrol,
+men workflowet forkortede derefter central descriptors canonical target fra
+`.000Z` til `Z`. Protected-runtime-kontrakten afviste korrekt omskrivningen,
+før restore, private writes eller deploy. Dataene er intakte.
+
+Lokal opfølgning læser nu kun canonical `.000Z` og sender samme streng
+uændret gennem freshness, expected-specifikation, restore og publicering.
+Regressionen forbyder den gamle omskrivning; bindingsregisteret kræver
+`canonicalUtcTarget`. Næste: måltests, exact-head, merge og providerfri
+saved-weather-deploy. Først derefter én normal weather på samme main.
+
 # 4.0.464 checkpoint – saved-weather-alder er warning, ikke gate
 
 PR #423 er merged som main `f2524aed`; exact-head `35759212340` er grøn.
