@@ -21,6 +21,15 @@ historiske migration stadig bandt `dafee019…`. Den gamle migration er bevaret
 urørt; successor-migrationen gør `2c26b855…` til den aktuelle integrerede
 modelbundlebinding i checkpoint-CAS, schema, installer og release/readback.
 
+Den første providerfri main-kørsel `35754548745` kom derefter gennem
+migration, database-readback, predecessor-restore og importkontrol. Den
+stoppede i pakkens eksakte metadataændringsliste, fordi `rawBytes` med rette
+havde samme tal før og efter en hash-/bindingsændring af samme længde. Listen
+registrerer nu kun metadatafelter, hvis deres faktiske værdi er ændret;
+details-, startprognose- og pakkehash skal fortsat beviseligt skifte. Hele
+public-hour-identiteten er samtidig tilføjet som én post i det additive
+bindingregister. Der er ikke startet providerkald eller ændret vejrdata.
+
 ## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
 
 Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store

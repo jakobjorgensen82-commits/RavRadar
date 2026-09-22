@@ -1,3 +1,20 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 faktisk public-hour-metadata
+
+PR #421 er merged som `912a1f67`, og exact-head-kontrollen bestod.
+Providerfri code-only-run `35754548745` bestod migration, database-readback,
+predecessor-restore og importkontrol. Den stoppede før privat installation,
+fordi kontrollen krævede ændret `publicHourDelivery.rawBytes`, selv om en
+hash-/bindingsudskiftning af samme tekstlængde legitimt kan bevare det samlede
+byteantal.
+
+Den lokale opfølgning registrerer nu kun de public-hour-metadatafelter, hvis
+værdi faktisk er ændret. Details-hash, startprognose-hash og pakke-hash skal
+fortsat ændres; målinger, vejrindhold og bindingsbeskyttelse er ikke lempet.
+`runtime.public-hour-delivery.identity` er tilføjet det additive register som
+samlet sandhed for modelbinding, hashes og byteantal. Ingen provider blev
+startet, og ingen vejrdata blev ændret. Næste trin er exact-head, merge og en
+ny providerfri code-only-fortsættelse.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 public-hour-rebind
 
 Code-only-run `35749000940` bekræftede, at den bounded migreringswriter nu

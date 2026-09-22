@@ -250,6 +250,43 @@ function addExactChangedPaths(allowed, before, after, prefix) {
   return changed;
 }
 
+export function registerChangedBindingMetadata({
+  exactAllowedPaths,
+  bindingMetadataPaths,
+  before,
+  after,
+  prefix,
+  fields,
+} = {}) {
+  if (!(exactAllowedPaths instanceof Set)
+      || !(bindingMetadataPaths instanceof Set)
+      || !isPlainObject(before)
+      || !isPlainObject(after)
+      || typeof prefix !== 'string'
+      || !prefix
+      || !Array.isArray(fields)
+      || fields.length === 0) {
+    throw new Error('Changed binding metadata registration is invalid');
+  }
+  const changed = [];
+  for (const field of fields) {
+    if (typeof field !== 'string' || !field) {
+      throw new Error('Changed binding metadata field is invalid');
+    }
+    const fieldPath = joinedPath(prefix, field);
+    const fieldChanges = collectChangedPaths(before[field], after[field], fieldPath);
+    for (const pathValue of fieldChanges) {
+      if (!isBindingMetadataPath(pathValue)) {
+        throw new Error(`Changed binding metadata path is not classified: ${pathValue}`);
+      }
+      exactAllowedPaths.add(pathValue);
+      bindingMetadataPaths.add(pathValue);
+      changed.push(pathValue);
+    }
+  }
+  return changed;
+}
+
 function scoreAvailabilitySignature(value) {
   return {
     available: value?.available === true,
@@ -1014,15 +1051,28 @@ async function validateAndMigrateConditions({
       outputPath: publicHourPackTargetPath,
     });
     Object.assign(migrated.publicHourDelivery, rebound);
-    for (const pathValue of [
+    const publicHourDeliveryMetadataChanges = new Set(registerChangedBindingMetadata({
+      exactAllowedPaths,
+      bindingMetadataPaths,
+      before: sourcePublicHourMarker,
+      after: migrated.publicHourDelivery,
+      prefix: 'publicHourDelivery',
+      fields: [
+        'sourceDetailsSha256',
+        'startupNationalForecastSha256',
+        'rawBytes',
+        'packBytes',
+        'packSha256',
+      ],
+    }));
+    for (const requiredPath of [
       'publicHourDelivery.sourceDetailsSha256',
       'publicHourDelivery.startupNationalForecastSha256',
-      'publicHourDelivery.rawBytes',
-      'publicHourDelivery.packBytes',
       'publicHourDelivery.packSha256',
     ]) {
-      exactAllowedPaths.add(pathValue);
-      bindingMetadataPaths.add(pathValue);
+      if (!publicHourDeliveryMetadataChanges.has(requiredPath)) {
+        throw new Error(`Private public-hour pack rebind did not change ${requiredPath}`);
+      }
     }
     publicHourDeliveryRebound = true;
   }

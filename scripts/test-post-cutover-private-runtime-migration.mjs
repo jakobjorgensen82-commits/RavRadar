@@ -11,6 +11,7 @@ import {
   migrateExactModelBindingMetadata,
   migratePostCutoverPrivateRuntime,
   reconcileIntegratedContinuation,
+  registerChangedBindingMetadata,
   sameStructuredValue,
   summarizeIndependentErrors,
   validatePredecessorIdentity,
@@ -187,6 +188,45 @@ for (const pathValue of [
   'datasetId',
 ]) assert.equal(allowedChange(pathValue, exactAllowedPaths), false,
   `Privat måle-/statefelt blev tilladt: ${pathValue}`);
+
+const publicHourExactPaths = new Set();
+const publicHourBindingPaths = new Set();
+const publicHourMetadataChanges = registerChangedBindingMetadata({
+  exactAllowedPaths: publicHourExactPaths,
+  bindingMetadataPaths: publicHourBindingPaths,
+  before: {
+    sourceDetailsSha256: 'a'.repeat(64),
+    startupNationalForecastSha256: 'b'.repeat(64),
+    rawBytes: 1234,
+    packBytes: 567,
+    packSha256: 'c'.repeat(64),
+  },
+  after: {
+    sourceDetailsSha256: 'd'.repeat(64),
+    startupNationalForecastSha256: 'e'.repeat(64),
+    rawBytes: 1234,
+    packBytes: 568,
+    packSha256: 'f'.repeat(64),
+  },
+  prefix: 'publicHourDelivery',
+  fields: [
+    'sourceDetailsSha256',
+    'startupNationalForecastSha256',
+    'rawBytes',
+    'packBytes',
+    'packSha256',
+  ],
+});
+assert.deepEqual(publicHourMetadataChanges, [
+  'publicHourDelivery.sourceDetailsSha256',
+  'publicHourDelivery.startupNationalForecastSha256',
+  'publicHourDelivery.packBytes',
+  'publicHourDelivery.packSha256',
+]);
+assert.equal(publicHourExactPaths.has('publicHourDelivery.rawBytes'), false,
+  'An unchanged byte count is identity metadata, but not an actual changed path');
+assert.deepEqual(publicHourBindingPaths, publicHourExactPaths,
+  'Changed public-hour metadata must have one shared binding/change inventory');
 
 const continuationBeforeRepair = {
   modelBundleSha256: 'a'.repeat(64),

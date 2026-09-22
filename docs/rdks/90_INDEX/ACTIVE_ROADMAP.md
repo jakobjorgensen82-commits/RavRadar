@@ -1,3 +1,13 @@
+# Aktivt roadmap – 2026-09-22, 4.0.464 public-hour-metadata
+
+0. [x] Merge PR #421 og afgræns providerfri run `35754548745` efter grøn
+   migration/readback/restore/import til den eksakte metadataændringsliste.
+1. [x] Gør `rawBytes`/`packBytes` værdibaserede i ændringslisten, behold
+   obligatorisk hashskift og registrér hele public-hour-identiteten centralt.
+2. [ ] Bestå exact-head og merge den målrettede opfølgning.
+3. [ ] Kør providerfri code-only-kæde til privat install, artifact og deploy.
+4. [ ] Genoptag derefter én almindelig vejrkørsel fra gemt fremgang.
+
 # Aktivt roadmap – 2026-09-22, 4.0.464 public-hour-rebind
 
 0. [x] Afgræns code-only-run `35749000940` til den gamle digest/modelbinding
