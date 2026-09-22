@@ -867,7 +867,14 @@ function addPublicPackageChecks({
         coastalPartsText,
         zoneRegistryText,
       );
-      collector.add(sameCanonical(manifest, expectedManifest), 'PUBLIC_MANIFEST_NOT_CANONICAL');
+      // `writePublicDelivery` adds the deterministic hour/zone descriptor
+      // index after the static manifest has been built. Compare the static
+      // manifest contract separately; the delivery index is validated by the
+      // delivery-pack and privacy audits below. Treating the two phases as one
+      // object caused every otherwise valid runtime to report a false
+      // PUBLIC_MANIFEST_NOT_CANONICAL failure.
+      const { detailDelivery: _actualDelivery, ...actualStaticManifest } = manifest ?? {};
+      collector.add(sameCanonical(actualStaticManifest, expectedManifest), 'PUBLIC_MANIFEST_NOT_CANONICAL');
     }
   } catch {
     collector.fail('PUBLIC_PROJECTION_FAILED');

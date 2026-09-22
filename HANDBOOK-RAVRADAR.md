@@ -1,6 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.454
+**Håndbogsversion:** 4.0.455
+
+## 89.60 4.0.455 – Vejrkørslen skal kunne reparere og fortsætte selv
+
+4.0.455 retter en konkret backend-drift i Supabase, hvor de tre integrerede
+trip-policy-funktioner ikke længere havde samme indhold som den version, der
+er bundet i repositoryets migrationskæde. Rettelsen er en ny append-only
+migration: den ændrer ikke scoreformlen eller vejret, men lægger de kendte
+funktioner tilbage og kontrollerer hash før leverandørkæden starter.
+
+En almindelig GitHub/cron-kørsel skal kunne stå alene. Den laver derfor den
+tidlige backendkontrol selv, gemmer checkpoints og fortsætter gennem de
+definerede provider- og cachetrin uden Codex. Hvis backend-kontrakten er
+forkert, stopper den før dyr DMI/Copernicus/Open-Meteo-hentning og giver en
+entydig fejl, som kan genkøres efter migrationen. Når kontrollen er grøn,
+fortsætter kørselens eksisterende retry-, checkpoint- og fallbacklogik.
+
+Tre gamle statiske UI-kontroller er samtidig bragt i overensstemmelse med den
+aktuelle kode, og public-manifestkontrollen skelner nu mellem den statiske
+manifestdel og den dynamisk tilføjede leveringsoversigt. Det fjerner en falsk
+rød kontrol uden at slække på privacy-, artifact- eller dataintegritetskrav.
+
+Scorematematik, DMI-first-prioritet, gamle gyldige værdier og ærlig MISSING-
+håndtering er uændret. En fuld normal kørsel efter merge er fortsat det, der
+skal bevise, at cache, artifact, deploy og offentlig runtime fungerer samlet.
 
 ## 89.59 4.0.454 – Desktopkortet fylder den ledige højde
 

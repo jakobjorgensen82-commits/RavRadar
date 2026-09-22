@@ -9,7 +9,8 @@ const arrows = app.indexOf('const installArrows=()=>');
 const scheduled = app.indexOf('setTimeout(installArrows,0)', arrows);
 if ([ranking,paintYield,ready,forecast,arrows,scheduled].some(value=>value<0)) throw new Error('Opstartsmarkører, kompakt femdøgnsvisning eller deterministisk pilinstallation mangler.');
 if (!(ranking < paintYield && paintYield < ready && ready < forecast && forecast < arrows && arrows < scheduled)) throw new Error('Kort/rangliste skal være klar før den kompakte femdøgnsvisning; pile skal planlægges sidst.');
-if(!app.includes('function ensureConditionDetails()')||!app.includes('pending=loadConditionDetails({manifest:activeManifest,conditions:state.conditions})'))throw new Error('Den store detaljepakke har ikke en fælles behovsstyret indgang.');
+if(!/function ensureConditionDetails\s*\([^)]*\)/.test(app)
+  || !/pending=loadConditionDetails\(\{manifest:activeManifest,conditions:state\.conditions(?:,zoneId:[^}]*)?\}\)/.test(app))throw new Error('Den store detaljepakke har ikke en fælles behovsstyret indgang.');
 const startupBlock=app.slice(app.indexOf('try {',app.indexOf('let logoTaps')),app.indexOf('// Vind- og strømpile'));
 if(startupBlock.includes('loadConditionDetails('))throw new Error('Normal opstart må ikke hente den store detaljepakke.');
 if (app.includes('requestIdleCallback(installArrows')) throw new Error('Pileinstallationen må ikke igen afhænge af requestIdleCallback.');

@@ -1,3 +1,18 @@
+# 2026-09-22 – 4.0.455 gør backend- og vejrkæden selvkørende
+
+Normalrun `35703630226` og code-only-run `35706883724` reproducerede den
+samme Supabase-drift i de tre integrerede trip-policy-funktioner. 4.0.455
+tilføjer en append-only repair-migration med den verificerede aktuelle
+binding, opdaterer den mutable schema-/installer-kæde og gør den nye migration
+til canonical source for både trip-policy og checkpoint-CAS.
+
+Den integrerede workflow læser nu backendbindingen tilbage før DMI,
+Copernicus og Open-Meteo starter. En almindelig GitHub/cron-kørsel kan derfor
+selv stoppe tidligt ved reel backenddrift og ellers fortsætte gennem retry,
+checkpoint, cache, artifact og deploy uden Codex-overvågning. Statiske UI-
+kontroller og manifest-auditens falske dynamiske sammenligning er også rettet.
+Se `DEC-0232` og `CHANGELOG-4.0.455.md`.
+
 # 2026-09-22 – 4.0.452 hæver Node-heap i normal cachebygning
 
 Normalrun `35662538047` gennemførte leverandørkæden og gemte sin krypterede

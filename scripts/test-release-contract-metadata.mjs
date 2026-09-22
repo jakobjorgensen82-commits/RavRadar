@@ -71,7 +71,7 @@ const RELEASE_METADATA_TEST_COMMAND = [
   PUBLIC_HOUR_DELIVERY_BINDING_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql';
+  'supabase/migrations/20260922100000_integrated_trip_binding_repair.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';

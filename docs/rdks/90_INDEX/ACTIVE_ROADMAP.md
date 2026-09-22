@@ -1,3 +1,25 @@
+# Aktivt roadmap – 2026-09-22, 4.0.455 fra backend-drift til selvstændig drift
+
+0. [x] Afgræns gentaget policy-hashdrift til Supabase/migrationskæden, ikke
+   til leverandørdata eller scorebygning.
+1. [x] Tilføj append-only repair-migration og tidlig database-readback før
+   providerhentning; behold checkpoints, retry og fallback i workflowet.
+2. [x] Ret forældede UI-testforventninger og manifest-auditens statiske/dynamiske
+   sammenligning.
+3. [x] Gør den fælles 118-timers public-hour-horisont tilgængelig i den
+   isolerede Candidate G-reserve, så stage-/rollback-læseren ikke fejler på en
+   integreret-only eksport.
+4. [ ] Bestå målchecks, versions-/RDKS-slutkontrol og exact-head sourcegate;
+   merge 4.0.455.
+5. [ ] Kør code-only migration/readback uden providerkald.
+6. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+7. [ ] Følg mindst den næste cron-kørsel. Den skal kunne gennemføre uden
+   Codex-overvågning og dokumentere DMI-first, fallback, cachefremgang og
+   bevarelse af gamle gyldige værdier.
+8. [ ] Når driften er stabil, revider prognose- og scoretekster til almindeligt
+   dansk; ændr ikke matematikken som del af denne driftrettelse.
+
 # Aktivt roadmap – 2026-09-22, 4.0.452 fra heap-stop til normal continuation
 
 0. [x] Afgræns run `35662538047` til Node/V8 heap-OOM efter

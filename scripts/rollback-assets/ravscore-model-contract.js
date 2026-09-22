@@ -29,6 +29,11 @@ export const RAVSCORE_PRESENTATION_POLICY_ID = 'score-bands-35-55-75-exceptional
 export const RAVSCORE_MIGRATION_ID = null;
 export const RAVSCORE_ROLLBACK_ID = 'integrated-schema5-to-candidate-g-schema2-v2';
 export const RAVSCORE_CALIBRATION_ELIGIBLE = false;
+// The public delivery/runtime contract is shared by both the active
+// integrated model and the isolated rollback reader. Keeping the horizon in
+// the rollback contract lets the candidate stage build the same 118-hour
+// public pack without importing an integrated-only export.
+export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
 
 export const RAVSCORE_WEIGHTS = deepFreeze({
   huntability: 0.20,
