@@ -4720,3 +4720,10 @@ Målrettede replay-, adapter-, syntax- og diff-kontroller er grønne. Ingen ny
 vejrkørsel er startet endnu; den gemte private progression skal genbruges,
 når 4.0.453 er exact-head-valideret og merged. Der er stadig intet nyt
 datakompletheds- eller deploybevis.
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.454 desktopkort-layout
+
+4.0.454 ændrer kun desktopforsidens layout: ved mindst 881 px strækkes
+`.map-column` efter højden på ranglistepanelet, og kortet fylder den ledige
+plads over forklaringen. Mobil- og tabletreglerne, kortdata, score, markører
+og ranglisteindhold er uændrede. Der er ikke startet en ny vejropdatering for
+denne CSS-ændring; den igangværende normale kørsel fortsætter uafhængigt.

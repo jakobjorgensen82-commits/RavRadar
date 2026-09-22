@@ -1,6 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.453
+**Håndbogsversion:** 4.0.454
+
+## 89.59 4.0.454 – Desktopkortet fylder den ledige højde
+
+På større skærme strækkes kortkolonnen sammen med panelet **Bedste områder**.
+Selve kortet bruger den ekstra lodrette plads, mens kortforklaringen stadig
+står under kortet. Det fjerner den tomme flade på pc-forsiden uden at ændre
+kortdata, markører, score eller rangliste.
+
+Reglen gælder kun fra 881 px skærmbredde. Mobil- og tabletlayoutets faste,
+mere kompakte kortregler er uændrede.
 
 ## 89.58 4.0.453 – Godkendte reservebølger bruges i normal recovery
 

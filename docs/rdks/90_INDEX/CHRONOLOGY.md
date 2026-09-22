@@ -1522,3 +1522,9 @@ Almindelige rettelser leveres fremover som kode-only med senest gyldige data. Pr
   validatorens eneste testede `.000Z`-form.
 - 4.0.437 normaliserer begge eksakte UTC-heltimeformer og bevarer alle øvrige
   exact-matchkrav. DEC-0216.
+# 2026-09-22 – 4.0.454 fylder desktopkortet ved siden af ranglisten
+
+Brugerens desktopskærmbilleder viste et stort tomt område under kortet, mens
+“Bedste områder” fortsatte længere ned. CSS’en gør nu kortkolonnen fleksibel
+og lader kortet fylde den ekstra højde fra 881 px og opefter. Mobil og tablet
+beholder de eksisterende højder.

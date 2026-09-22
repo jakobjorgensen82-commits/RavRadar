@@ -5507,3 +5507,11 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
       progression.
 - [ ] Verificér cachebygning, runtime, releasegate, artifact, Pages og
       offentlig prognose efter rettelsen.
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.454
+
+- [x] Afgræns desktoplayoutændringen til skærme på mindst 881 px.
+- [x] Lad kortkolonnen strække sig til samme rækkehøjde som “Bedste områder”
+  og lad kortet bruge den ekstra plads.
+- [x] Bevar eksisterende mobil- og tabletlayout samt alle kort-/scoredata.
+- [ ] Kør exact-head sourcegate, merge og den efterfølgende Pages-publicering.
+- [ ] Bekræft visuelt den offentlige desktopforside efter publicering.

@@ -4689,3 +4689,10 @@ Open-Meteo-bølge. 4.0.453 accepterer nu kun et fuldt strukturelt bundet
 reservebevis i normal recovery; Candidate G's migrationsbro er fortsat
 DMI-only. Se DEC-0231. Målrettede tests er grønne; exact-head og live
 continuation mangler.
+# 2026-09-22 – 4.0.454 fylder desktopkortet ved siden af ranglisten
+
+Brugerens pc-skærmbilleder viste et stort tomt område under kortet, mens
+“Bedste områder” fortsatte længere ned. 4.0.454 gør kun `.map-column`
+fleksibel fra 881 px og lader kortet bruge den ekstra højde over forklaringen.
+Mobil/tablet, kortdata, score og ranglisteindhold er uændret. Se
+`CHANGELOG-4.0.454.md`.
