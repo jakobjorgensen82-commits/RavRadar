@@ -1,3 +1,11 @@
+## 4.0.458 – Neutral predecessor-workspace i code-only workflow (2026-09-22)
+
+Code-only-run `35732235540` stoppede korrekt, fordi workflowet stadig havde en
+historisk SHA i predecessor-arbejdsstien, selv om den levende runtime-pointer
+leverede en anden forgænger. 4.0.458 gør stien neutral og lader kun den
+validerede descriptor bestemme source-indholdet. Se `DEC-0235` og
+`CHANGELOG-4.0.458.md`.
+
 ## 4.0.457 – Genbinding af den faktiske beskyttede runtime (2026-09-22)
 
 - Opdater den faste predecessor-identitet til den runtime, som den centrale

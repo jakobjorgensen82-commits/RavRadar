@@ -96,7 +96,10 @@ jobs:
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
       RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle
       RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored
-      RAVRADAR_PREDECESSOR_SOURCE_ROOT: /tmp/ravradar-private-production-runtime/source-fa418f43
+      # The predecessor is resolved from the live protected-runtime descriptor
+      # during the run.  Keep the workspace path neutral so a historical source
+      # SHA can never leak into the workflow environment as a stale binding.
+      RAVRADAR_PREDECESSOR_SOURCE_ROOT: /tmp/ravradar-private-production-runtime/source-predecessor
       RAVRADAR_PREDECESSOR_PRIVATE_ROOT: /tmp/ravradar-private-production-runtime/predecessor
       RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE: /tmp/ravradar-private-production-runtime/predecessor/bundle
       RAVRADAR_PREDECESSOR_PRIVATE_RESTORE: /tmp/ravradar-private-production-runtime/predecessor/restored

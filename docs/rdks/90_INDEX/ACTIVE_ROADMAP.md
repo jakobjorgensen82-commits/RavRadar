@@ -1,3 +1,16 @@
+# Aktivt roadmap – 2026-09-22, 4.0.458 fra skjult stale binding til selvstændig drift
+
+0. [x] Afgræns code-only-run `35732235540`: den levende predecessor blev
+   fundet korrekt, men en gammel SHA stod stadig i workflowets arbejdssti.
+1. [x] Gør predecessor-stien neutral og behold descriptor-/ancestor-/hash-
+   kontrollerne som de reelle sikkerhedsbarrierer.
+2. [ ] Bestå exact-head-kontrol og ny code-only genbinding på main.
+3. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+5. [ ] Efter stabil drift: samle gentagne identitetsbindinger i én versioneret
+   runtime-manifestkilde; fjern ikke reelle integritetsbarrierer.
+
 # Aktivt roadmap – 2026-09-22, 4.0.457 fra predecessor-drift til selvstændig drift
 
 0. [x] Afgræns code-only-run `35730421484`: migration og database-readback var

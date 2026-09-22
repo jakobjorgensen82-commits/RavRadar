@@ -1,3 +1,13 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.458
+
+- [x] Afgræns code-only-run `35732235540` til en skjult historisk source-sti i
+  workflowmiljøet efter grøn migration, readback og predecessor-restore.
+- [x] Gør predecessor-arbejdsstien neutral, så den levende descriptor alene
+  bestemmer den validerede forgænger.
+- [ ] Bestå exact-head-kontrol og ny code-only genbinding på main.
+- [ ] Genoptag én normal vejrkørsel fra gemt fremgang og kræv privat save,
+  artifact, deploy og offentlig runtime.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.457
 
 - [x] Afgræns code-only-run `35730421484` til en forældet fast predecessor-
