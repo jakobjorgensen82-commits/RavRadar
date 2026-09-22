@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.465
+**Håndbogsversion:** 4.0.466
 
 ## 89.61 4.0.465 – Timefiler skal have samme modelmærke hele vejen igennem
 
@@ -5616,3 +5616,18 @@ RavRadar accepterer DMI-vind, når det fulde kildebevis korrekt kalder komponent
 Ved første skift til den integrerede model gennemføres fem kontroller: selve den offentlige modelpakke, faste referencezoner, hele projektets validering, releasekontrollen og vejrdatakontrollen. Alle fem får lov at afslutte, så eventuelle fejl kan ses samlet. Hvis én fejler, stoppes der før database og offentlig side ændres. Hvis alle består, fortsætter skiftet automatisk.
 
 Den almindelige vejrdrift ændres ikke af denne samlede cutoverkontrol. Efter en verificeret offentlig lancering genaktiveres den kontrolleret, så kommende vind- og strømdata samt DMI-rotationen kan bevises i en normal kørsel.
+# Når en offentlig opdatering vises før den registreres centralt – 4.0.466
+
+**Kort fortalt:** En vejrpakke kan være synlig på hjemmesiden, selv om den
+sidste bekræftelse af opdateringen mislykkes. I så fald må næste udgivelse
+kun fortsætte fra den præcist beviste offentlige pakke og den gemte private
+vejrpakke. Den må ikke gætte på, hvilken cache der er nyest.
+
+Efter vejrkørslen `35778530384` kom prognose og rangliste tilbage, men
+GitHubs hurtige slutkontrol så endnu den gamle Pages-version. En senere
+providerfri fortsættelse genbrugte korrekt den gemte vejrpakke, men en
+kontrol fik et hash af filens indrykkede tekst, hvor den ventede et hash af
+selve JSON-indholdet. 4.0.466 holder de to hashes adskilt. Den offentlige
+rækkefølgekontrol accepterer kun den forseglede forgænger eller målpakke;
+en ældre eller ukendt pakke afvises fortsat. Ingen vejr- eller scoretal
+ændres af denne rettelse.

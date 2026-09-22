@@ -5040,3 +5040,24 @@ Pages-retry med måltest for 12 forældede manifestlæsninger før korrekt
 generation. Ingen datakrav lempes. PR-head skal revalideres før merge; den
 aktuelle offentlige side fungerer, men rød runklassifikation og fortsat
 normaldrift er endnu ikke lukket som stabile.
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.466 eksakt Pages-recovery
+
+PR #427/4.0.465 er merged som `0f7b2ed0`. Normalrun `35778530384`
+gemte vejr og deployede det offentlige dataset
+`rr-20260922210147-210`; browseren viser igen rangliste og prognose.
+Slutkontrollen fik kun gammelt Pages-manifest i sit oprindelige korte
+retryvindue, så central aktivering af den nye offentlige identitet blev
+ikke fuldført. Senere bestod samme forseglede 210/673-verifikation.
+
+Standard-code-only `35791092708` stoppede korrekt på forskellig central og
+offentlig manifestidentitet. Eksakt saved-weather-recovery `35791637412`
+med handoff fra `35778530384` accepterede kildebevis, genbrugte den
+beskyttede vejrpakke, byggede artifact og udgav runtime uden providerkald.
+Den stoppede før Pages-begin, fordi genbrugsrapportens rå bytehash af
+manifestet blev sendt til en kanonisk JSON-hashkontrol. 4.0.466 bevarer
+begge hashformer tydeligt adskilt og sender den kanoniske kildehash til
+begge monotonic Pages-kontroller. Ukendt forgænger og reel tilbagegang
+afvises fortsat. Exact-head og live deploy mangler endnu. To private
+state-replay-afvigelser og ufuldstændig direkte strømforsyning i 51 af
+673 dele fra normalrunnet er åbne diagnostiske fund, ikke dokumenteret
+løst af denne rettelse.

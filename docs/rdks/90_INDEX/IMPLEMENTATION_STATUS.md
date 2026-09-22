@@ -5737,3 +5737,17 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Bestå PR #427 på nyt exact head og merge uden at gentage vejrleverandører.
 - [ ] Følg næste almindelige cron-kørsel på ny main og kontrollér slutstatus,
   cache, data og offentlig side før stabil drift erklæres.
+# Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.466
+
+- [x] PR #427 merged som `0f7b2ed0`; offentlig prognose og rangliste
+  genoprettet af normalrun `35778530384`.
+- [x] Afgrænset `35791092708` til offentlig/central identitetsforskel og
+  `35791637412` til rå bytehash sendt til kanonisk Pages-kontrol. Sidste
+  run passerede build, cachegenbrug og beskyttet runtime, men deployede ikke.
+- [x] Adskil rå og kanonisk kildehash; brug kun kanonisk hash i begge eksakte
+  Pages-rækkefølgekontroller og test forskellig JSON-formatteringsform.
+- [ ] Bestå målrettet version/RDKS, exact-head PR og merge 4.0.466.
+- [ ] Kør én providerfri eksakt saved-weather-recovery fra `35778530384`;
+  verificér central completion, Pages, offentligt manifest og browser.
+- [ ] Følg næste almindelige vejrkørsel og afklar de åbne strøm-/statefund;
+  fuld cache og stabil autonom drift er endnu ikke bevist.

@@ -39,6 +39,12 @@ const sameHourRecoveryReuse = { ...reuse, generatedPublicManifestSha256: hash(te
   publicRuntimeAdvanced: true };
 assert.equal(assertMonotonicPagesGeneration({ targetText: text(sameHourRecovery), publicText: text(previous),
   reuseReport: sameHourRecoveryReuse, recoverySourceSha256: sha256CanonicalJson(previous) }), 'EXACT_RECOVERY_GENERATION');
+const formattedPredecessor = `${JSON.stringify(previous, null, 2)}\n`;
+assert.notEqual(hash(formattedPredecessor), sha256CanonicalJson(previous));
+assert.equal(assertMonotonicPagesGeneration({ targetText: text(sameHourRecovery), publicText: formattedPredecessor,
+  recoverySourceSha256: sha256CanonicalJson(previous) }), 'EXACT_RECOVERY_GENERATION');
+assert.throws(() => assertMonotonicPagesGeneration({ targetText: text(sameHourRecovery), publicText: formattedPredecessor,
+  recoverySourceSha256: hash(formattedPredecessor) }), /sealed public predecessor/);
 
 const identity = { runId: 123, runAttempt: 2, headSha: 'a'.repeat(40) };
 const job = name => ({ name, run_id: 123, run_attempt: 2, head_sha: identity.headSha,
@@ -82,6 +88,8 @@ assert.doesNotMatch(deploy, /^concurrency:/m);
 assert.equal(deploy.match(/check-pages-generation-order.mjs/g).length, 2);
 assert.match(deploy, /exact_public_recovery/);
 assert.match(deploy, /--recovery-source-sha256/);
+assert.equal(deploy.match(/\.sourcePublicManifestCanonicalSha256/g)?.length, 2);
+assert.doesNotMatch(deploy, /jq -er '\.sourcePublicManifestSha256/);
 assert.ok(deploy.indexOf('id: code-only-integrated-historical-maintenance-begin') < deploy.indexOf('id: deployment'));
 assert.match(deploy, /steps\.integrated-historical-maintenance-begin\.outcome == 'success' \|\| steps\.code-only-integrated-historical-maintenance-begin\.outcome == 'success'/);
 assert.match(deploy, /MEASURED_WARMUP_PUBLISHED/);

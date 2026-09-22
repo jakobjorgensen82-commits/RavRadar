@@ -1912,3 +1912,27 @@ og tester forsinket manifest. Bevar alle eksakte hash-/model-/privacykrav.
 Næste: målrettet RDKS/version, commit/push, én ny exact-head-PR-kontrol,
 merge, og følg næste normale cron uden at genhente vejret kun for denne
 statusfejl. Untracked `.tmp-420/` og `.tmp-run-*` må ikke stages.
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.466 Pages-hash
+
+Arbejd i indlejret `node_modules/RavRadar-4.0.396`. 4.0.465/PR #427 er
+merged som main `0f7b2ed0`. Normalrun `35778530384` gemte vejr, deployede
+offentligt dataset `rr-20260922210147-210` og genskabte rangliste og
+prognose. Det blev rødt, fordi Pages endnu serverede forgængerens manifest
+under kort slutretry; senere bestod samme eksakte offentlige verifier.
+
+Providerfri standardrun `35791092708` stoppede på korrekt observeret
+offentlig/central identitetsforskel. Eksakt saved-weather-recovery
+`35791637412` fra handoffet kom gennem kildebevis, beskyttet runtime,
+genopbygning og artifact uden leverandørkald, men stoppede før Pages-begin.
+Rodårsag: workflowet sendte råbyte-SHA-256 fra `code-only-reuse.json` til
+`assertMonotonicPagesGeneration`, som kræver kanonisk JSON-SHA-256. Faktiske
+hashes for den samme offentlige pakke var henholdsvis `a3568136…` og
+`75985e1e…`; det nye target var `544358de…` kanonisk. Lokal 4.0.466
+gemmer begge kildehashes og bruger den kanoniske i begge Pages-gates. Bevar
+rå bytekontrol, source/target-binding og stop ved ukendt/ældre pakke.
+
+Næste: måltests, version/RDKS, exact-head PR, merge; kør så én providerfri
+`DEPLOY-SAVED-WEATHER-REPAIR` med `recover_public_run_id=35778530384` og
+attempt 1. Følg Pages og central completion, derefter næste normale cron.
+To state-replay-afvigelser og 51/673 dele uden direkte strøm i sidste
+normalrun er åbne fund. Untracked `.tmp-420/` og `.tmp-run-*` må ikke stages.

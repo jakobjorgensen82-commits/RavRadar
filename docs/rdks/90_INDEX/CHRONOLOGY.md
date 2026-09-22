@@ -1541,3 +1541,10 @@ Brugerens desktopskærmbilleder viste et stort tomt område under kortet, mens
 “Bedste områder” fortsatte længere ned. CSS’en gør nu kortkolonnen fleksibel
 og lader kortet fylde den ekstra højde fra 881 px og opefter. Mobil og tablet
 beholder de eksisterende højder.
+# 2026-09-23 – 4.0.466 eksakt Pages-recovery
+
+Efter 4.0.465-merge `0f7b2ed0` var den nyere vejrpakke synlig, men den
+centrale slutbekræftelse fra `35778530384` manglede. Providerfri recovery
+`35791637412` passerede build og beskyttet runtime, men stoppede før Pages
+på sammenblanding af rå filhash og kanonisk manifesthash. 4.0.466 retter
+denne hashbinding; produktionsbevis mangler.

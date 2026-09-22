@@ -138,7 +138,7 @@ jobs:
             --base-url "$RAVRADAR_PUBLIC_BASE_URL"
           )
           if test "${{ inputs.exact_public_recovery }}" = "true"; then
-            recovery_source_sha256="$(jq -er '.sourcePublicManifestSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
+            recovery_source_sha256="$(jq -er '.sourcePublicManifestCanonicalSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
             args+=(--recovery-source-sha256 "$recovery_source_sha256")
           fi
           node scripts/check-pages-generation-order.mjs "${args[@]}"
@@ -582,7 +582,7 @@ jobs:
             --base-url "$RAVRADAR_PUBLIC_BASE_URL"
           )
           if test "${{ inputs.exact_public_recovery }}" = "true"; then
-            recovery_source_sha256="$(jq -er '.sourcePublicManifestSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
+            recovery_source_sha256="$(jq -er '.sourcePublicManifestCanonicalSha256 | select(test("^[a-f0-9]{64}$"))' "$RAVRADAR_OPERATIONAL_HANDOFF/code-only-reuse.json")"
             args+=(--recovery-source-sha256 "$recovery_source_sha256")
           fi
           node scripts/check-pages-generation-order.mjs "${args[@]}"
