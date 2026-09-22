@@ -2046,3 +2046,12 @@ Desktopforsiden bruger nu den ledige højde i kortkolonnen, så kortet fylder
 ned langs “Bedste områder” i stedet for at efterlade et stort tomt felt.
 Ændringen er begrænset til skærme på mindst 881 px; mobil- og tabletlayout,
 kortdata, score og ranglisteindhold er uændret. Se `CHANGELOG-4.0.454.md`.
+## 4.0.462 – stor runtime-sammenligning uden V8-strengoverløb (2026-09-22)
+
+Code-only-run `35743282510` kom forbi den tidligere predecessor-/target-
+binding, men stoppede i migratorens Candidate G-sammenligning med
+`RangeError: Invalid string length`. Det er samme V8-strenggrænse som i
+4.0.436, men denne gang i en kontrol og ikke i skrivningen af
+`conditions.json`. 4.0.462 sammenligner den store 673-dels state direkte og
+iterativt, så integritetskontrollen bevares uden at samle hele runtime i én
+streng. En stor regressionstest er tilføjet. Se `CHANGELOG-4.0.462.md`.

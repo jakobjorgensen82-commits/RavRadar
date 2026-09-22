@@ -4766,3 +4766,17 @@ Brugerens pc-skærmbilleder viste et stort tomt område under kortet, mens
 fleksibel fra 881 px og lader kortet bruge den ekstra højde over forklaringen.
 Mobil/tablet, kortdata, score og ranglisteindhold er uændret. Se
 `CHANGELOG-4.0.454.md`.
+# 2026-09-22 – 4.0.462 fjerner ny helstrengsgrænse i runtime-migration
+
+Providerfri run `35743282510` kom forbi den tidligere målbaserede protected-
+predecessor-binding, men stoppede ved Candidate G-statekontrollen med
+`RangeError: Invalid string length`. Den tidligere 4.0.436-rettelse dækkede
+skrivning af den store private `conditions.json`; denne nye forekomst var en
+separat lighedskontrol, som byggede én canonical tekststreng af de samme store
+strukturer. 4.0.462 bruger en iterativ struktursammenligning med sorteret
+nøgleorden og beholder fail-closed ændringskontrol. Ingen providerkald,
+vejrdata eller publicering fandt sted i runnet.
+
+Binding-inventarets additive registerdesign er fortsat autoritativt for senere
+fund: én klassificeret post, én producent, navngivne consumers og målrettet
+validator; ingen spredte historiske kopier.

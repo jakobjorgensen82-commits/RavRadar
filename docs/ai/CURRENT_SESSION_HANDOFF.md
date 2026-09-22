@@ -2981,3 +2981,22 @@ grønne lokalt. Næste trin er exact-head/sourcegate, merge og én ny providerfr
 code-only-kørsel. Ingen vejrkørsel må startes før den er grøn.
 
 # 4.0.460 checkpoint – feltdiagnose for dynamisk predecessor-mismatch
+# NYESTE CHECKPOINT – 2026-09-22 – lokal 4.0.462 stor state-sammenligning
+
+Code-only-run `35743282510` kom gennem source, target/predecessor-descriptor,
+migration-readback, restore og unpack. Den stoppede i
+`migrate-post-cutover-private-runtime.mjs` ved Candidate G-statekontrollen:
+`RangeError: Invalid string length`. Fejlen skyldes ikke en ny binding-
+mismatch; hele den store 673-dels state blev først samlet til én canonical
+tekststreng.
+
+Det er samme V8-strenggrænse som 4.0.436, men en anden operation. Den lokale
+4.0.462-rettelse sammenligner strukturen direkte med en iterativ, sorteret
+nøglekontrol og beholder fuld ændringsdetektion. Regressionstesten dækker en
+repræsentativ 673 × 118 state og en bevidst ændring. Ingen providerkald,
+vejrdata, cache eller deploy blev udført i det fejlede run.
+
+Binding-inventaret fra 4.0.459 er stadig styrende: senere fund skal kunne
+tilføjes som én klassificeret registerpost med producent, consumers og
+validator. Den faktiske runtime-manifestcentralisering er endnu et åbent
+roadmappunkt.

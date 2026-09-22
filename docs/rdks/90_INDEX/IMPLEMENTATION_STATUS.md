@@ -5614,3 +5614,20 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   fremgang og verificér cache-save/deploy.
 
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.460
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.462
+
+- [x] Afgræns code-only-run `35743282510`: target/predecessor-identiteten var
+  nu korrekt; stoppet lå i Candidate G-statekontrollens store canonical
+  tekststreng (`Invalid string length`).
+- [x] Bekræft at dette er samme underliggende V8-strenggrænse som 4.0.436,
+  men i en anden sti: nu sammenligningen, dengang skrivningen af
+  `conditions.json`.
+- [x] Erstat helstrengssammenligningen med en iterativ, nøglesorteret
+  struktursammenligning uden at svække kontrollen af state, målinger eller
+  vejr; tilføj regression for 673 dele × 118 timer.
+- [x] Bevar binding-inventarets additive registerdesign, så senere fund kan
+  tilføjes som én klassificeret post med producent, consumers og validator.
+- [ ] Bestå RDKS-/versionskontrol og exact-head-kontrol.
+- [ ] Merge og kør én ny providerfri code-only continuation på main.
+- [ ] Først når den er grøn: genoptag én almindelig vejrkørsel fra gemt
+  fremgang og verificér cache-save, artifact, deploy og offentlig runtime.
