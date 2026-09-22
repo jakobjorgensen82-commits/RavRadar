@@ -1,3 +1,16 @@
+# Nyeste prioritering – 2026-09-22, 4.0.464 saved-weather-deploy
+
+1. [x] Livebevis public-hour-rebind og 8 GiB runtimegenbygning i
+   `35759861916`; bevar det korrekte stop mod central tilbagerulning.
+2. [x] Afgræns `35761693070` til den gamle hårde `FRESH`-grep, selv om
+   targetet var `STALE_TARGET_VALID` og inden for 118-timershorisonten.
+3. [x] Ret saved-weather til at acceptere begge horizon-gyldige statusser og
+   registrér `runtime.protectedCurrentIdentity` i bindingsregisteret.
+4. [ ] Bestå måltests, RDKS/version/diff, én exact-head, PR og merge.
+5. [ ] Kør providerfri saved-weather til deploy og offentlig verifikation.
+6. [ ] Start derefter én normal weather på samme main og kræv frisk cache,
+   artifact, deploy samt trinvis DMI → Copernicus → Open-Meteo-evidens.
+
 # Nyeste prioritering – 2026-09-20, 4.0.445 helkæde-kontrol
 
 4.0.445 retter den næste konkrete kontrolfejl i run `35501561874`: den strenge

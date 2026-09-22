@@ -273,7 +273,7 @@ for (const marker of [
   'Saved protected runtime does not strictly advance the public production hour',
   '--allow-equal-saved-weather-reference',
   'target_reference="${target_reference_raw%.000Z}Z"',
-  "grep -Fxq 'status=FRESH' \"$freshness_output\"",
+  "grep -Eq '^status=(FRESH|STALE_TARGET_VALID)$' \"$freshness_output\"",
   '--mode "$mode"',
   'mode=post-cutover-last-mile-repair',
   'mode=post-cutover-contract-rebind',
@@ -394,8 +394,11 @@ for (const marker of [
   'case "${{ steps.operational-action.outputs.action }}" in',
   'integrated|integrated-historical-maintenance) ;;',
   'Saved-weather continuation requires active integrated maintenance.',
+  "grep -Eq '^status=(FRESH|STALE_TARGET_VALID)$' \"$freshness_output\"",
 ]) assert.ok(savedWeatherBinding.includes(marker),
   `Saved-weather-fortsættelsen mangler integreret vedligeholdelsesgrænse: ${marker}`);
+assert.ok(!savedWeatherBinding.includes("grep -Fxq 'status=FRESH'"),
+  'Saved-weather må ikke gøre targetalder til en hård gate, når horisonten stadig er gyldig');
 for (const forbiddenAction of [
   'candidate-execute',
   'candidate-maintenance',

@@ -1,3 +1,19 @@
+# 4.0.464 checkpoint – saved-weather-alder er warning, ikke gate
+
+PR #423 er merged som main `f2524aed`; exact-head `35759212340` er grøn.
+Code-only-run `35759861916` beviste metadatarebind, 8 GiB public rebuild,
+runtimeaudit, private bundle og Pages-preflight. Det stoppede korrekt, fordi
+offentlig 16:00 ikke måtte overskrive central 19:00.
+
+Saved-weather-run `35761693070` valgte central 19:00, men stoppede på en
+historisk `grep status=FRESH`, efter at klassifikatoren korrekt havde givet
+`STALE_TARGET_VALID` for cirka 22,6 timer gammel, stadig horizon-gyldig data.
+Lokal opfølgning accepterer nu `FRESH|STALE_TARGET_VALID` og registrerer den
+centrale pointer som `runtime.protectedCurrentIdentity`. Fremtidig/udløbet
+horizon, monotoni, source-forgænger, 210/673/118, privacy og øvrige gates er
+uændrede. Næste: måltests, exact-head, merge, providerfri saved-weather og
+derefter normal weather på samme main.
+
 # 4.0.464 checkpoint – public-hour-pakken følger modelbindingen
 
 Code-only-run `35749000940` kom igennem 4.0.463's bounded JSON-writer, men

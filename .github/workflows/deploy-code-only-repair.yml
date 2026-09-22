@@ -546,7 +546,10 @@ jobs:
           freshness_output="$RUNNER_TEMP/saved-weather-freshness.txt"
           : > "$freshness_output"
           node scripts/check-production-target-freshness.mjs --target "$target_reference" --maximum-age-minutes 240 --github-output "$freshness_output"
-          grep -Fxq 'status=FRESH' "$freshness_output"
+          # Target age is a quality warning, not an availability gate.  The
+          # classifier has already failed closed above for a future or expired
+          # horizon; accept both of its horizon-valid outcomes here.
+          grep -Eq '^status=(FRESH|STALE_TARGET_VALID)$' "$freshness_output"
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target_reference" >> "$GITHUB_ENV"
           node scripts/private-production-runtime-workflow.mjs expected --repository-root "$GITHUB_WORKSPACE" --target-reference "$target_reference" --output .cache/private-production-runtime-expected.json
 

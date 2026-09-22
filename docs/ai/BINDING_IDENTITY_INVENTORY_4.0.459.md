@@ -89,6 +89,15 @@ samme SHA'er, tider eller IDs.
    altid ændres". `runtime.public-hour-delivery.identity` samler nu markørens
    modelbinding, details-/startprognosehash, rå/pakket størrelse og pakkehash
    med producent, consumers og validator i det additive register.
+9. **Central saved-weather-identitet (4.0.464):** code-only-run
+   `35759861916` viste, at den offentlige 16:00-pakke ikke måtte overskrive
+   den nyere centrale 19:00-pakke. Saved-weather-run `35761693070` valgte
+   derefter korrekt den centrale generation, men en historisk firetimersgate
+   afviste dens `STALE_TARGET_VALID`-status, selv om horisonten stadig var
+   gyldig. `runtime.protectedCurrentIdentity` registrerer nu pointerens target,
+   source-forgænger og horizon-validitet som én live binding. Alder er warning;
+   fremtidig, udløbet, ikke-monoton eller ikke-forgængerbundet identitet
+   stopper fortsat.
 
 De første fire er samme arkitekturproblem i forskellige former: én identitet
 er blevet kopieret manuelt til flere lag. De sidste fund viser, at database-,

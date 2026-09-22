@@ -1,3 +1,18 @@
+# 2026-09-22 – 4.0.464 horizon-gyldig saved-weather må fortsætte
+
+Run `35759861916` livebeviste både public-hour-metadatarettelsen og 8 GiB-
+rebuildet, men blev korrekt afvist fra at overskrive en nyere central
+generation med den ældre offentlige 16:00-cache. Saved-weather-run
+`35761693070` valgte den centrale 19:00-generation og afslørede den egentlige
+restfejl: en gammel workflowgrep krævede `FRESH`, selv om klassifikatoren gav
+`STALE_TARGET_VALID` og prognosehorisonten var gyldig.
+
+Den gamle hårde aldersgate er fjernet i overensstemmelse med DEC-0119.
+Saved-weather accepterer nu `FRESH|STALE_TARGET_VALID`; fremtidig eller
+udløbet horizon, ikke-monoton target, forkert source-forgænger, ufuldstændig
+210/673/118-pakke, privacy- eller bindingfejl stopper fortsat. Den centrale
+pointerrelation er registreret som `runtime.protectedCurrentIdentity`.
+
 # 2026-09-22 – 4.0.464 code-only public rebuild får produktionsheap
 
 Run `35757878823` bestod rebindningen, atomisk privat installation og eksakt
