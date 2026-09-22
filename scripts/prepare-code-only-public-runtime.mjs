@@ -16,6 +16,7 @@ import { assertBindingUpgrade } from './migrate-post-cutover-private-runtime.mjs
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
+import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 
 export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
   manifest: 'manifest.json',
@@ -478,6 +479,7 @@ export async function prepareCodeOnlyPublicRuntime({
     zoneCount: manifest.zoneCount,
     coastalPartCount: manifest.coastalPartCount,
     sourcePublicManifestSha256: sha256Text(manifestSource.text),
+    sourcePublicManifestCanonicalSha256: sha256CanonicalJson(manifestSource.value),
     generatedPublicManifestSha256: sha256Text(`${JSON.stringify(generated.manifest, null, 2)}\n`),
     waterLevelRoutingSha256: sha256Text(routingSource.text),
     publicRuntimeAdvanced: semantics.publicRuntimeAdvanced,

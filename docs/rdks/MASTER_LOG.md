@@ -4886,3 +4886,19 @@ ikke et valg af den ældre 16:00-cache. Den annullerede almindelige kørsel
 genbinder nu indre metadata, og Pages-audit kræver ens binding før publicering.
 Måltest og faktisk offentlig timefil er lokalt bevis; ny almindelig kørsel og
 browserkontrol er fortsat åbne.
+# 2026-09-23 – 4.0.466 adskiller filhash og indholdshash ved recovery
+
+PR #427/4.0.465 blev merged som `0f7b2ed0`. Normalrun `35778530384`
+gemte og offentliggjorde vejr, men Pages-slutkontrollen så endnu det
+forrige manifest; central completion blev derfor ikke registreret. Den
+offentlige prognose og rangliste er igen synlige. Standard-code-only
+`35791092708` afviste korrekt central/offentlig forskel. Eksakt
+saved-weather-recovery `35791637412` genbrugte samme beskyttede pakke uden
+providerkald og byggede artifact, men stoppede før Pages-begin: råbytehash
+fra den downloadede manifestfil blev sendt til en kanonisk JSON-hashkontrol.
+
+4.0.466 fører begge hashes eksplicit i genbrugsrapporten. De to Pages-
+rækkefølgekontroller bruger kanonisk kildehash; den separate bytekontrol,
+ukendt forgænger og ikke-monoton generation afvises fortsat. Regressionen
+viser forskellig formattering med identisk JSON. Exact-head PR, merge og
+live recovery mangler; denne kodeændring berører ikke score eller vejr.

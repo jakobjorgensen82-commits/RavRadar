@@ -3142,3 +3142,20 @@ identiske, og samme 210/673-verifier bestod efter udbredelse. PR #427 har nu
 et snævert tre-minutters retry og regression for 12 gamle læsninger. Kør
 måltests/version/RDKS, commit/push, exact-head, merge og følg næste cron.
 Ingen ekstra oneoff eller gentaget providerarbejde kun for rød status.
+# 4.0.466 – eksakt recovery stoppede på rå kontra kanonisk hash
+
+Main er `0f7b2ed0` (4.0.465). Normalrun `35778530384` gemte og deployede
+dataset `rr-20260922210147-210`; offentlig prognose/rangliste virker, men
+Pages-slutkontrollen blev rød under udbredelse. Standard code-only
+`35791092708` afviste forskellig central/offentlig identitet. Eksakt
+providerfri saved-weather-recovery `35791637412` beviste kilde, brugte
+beskyttet runtime, byggede artifact og publicerede privat runtime, men
+Pages stoppede før begin med `Recovery no longer has its sealed public
+predecessor or target`: reportens råbytehash blev behandlet som kanonisk.
+
+Branch `codex/4.0.466-canonical-recovery-hash` fra mergede main retter
+kun hashbindingen i begge Pages-kontroller og tilføjer test med formatteret
+manifest. Version og dokumentation er løftet. Næste: måltests, RDKS/version,
+exact-head PR, merge, derpå samme recovery-input uden leverandørkald.
+Ingen ny oneoff. De to state-replay-fejl og 51/673 strømhuller undersøges
+separat efter offentlig genopretning. Bevar untracked `.tmp-*`.

@@ -462,6 +462,7 @@ for (const marker of [
   "assertPublicRuntimePrivacy(generated.publicDocument, 'startup')",
   "assertPublicRuntimePrivacy(generated.detailsDocument, 'details')",
   "assertPublicRuntimePrivacy(generated.manifest, 'manifest')",
+  'sourcePublicManifestCanonicalSha256: sha256CanonicalJson(manifestSource.value)',
 ]) assert.ok(preparationSource.includes(marker),
   `Code-only privacykontrollen mangler sin kanoniske rodsti: ${marker}`);
 assert.ok(!preparationSource.includes("assertPublicRuntimePrivacy(generated.publicDocument, 'Code-only"),

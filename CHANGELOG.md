@@ -2158,3 +2158,12 @@ deployede et nyt datasæt; begge visninger er igen synlige. Kørslen blev
 alligevel rød, fordi Pages brugte mere end det gamle minut på at servere
 det nye manifest. Den samme eksakte slutkontrol bestod bagefter; dens
 begrænsede ventetid er derfor øget til cirka tre minutter uden lempede krav.
+## 4.0.466 – kanonisk kildehash i eksakt Pages-genopretning (2026-09-23)
+
+Efter den vellykkede vejrdeploy `35778530384` nåede Pages-slutkontrollen
+ikke at se den nye offentlige pakke. Providerfri genopretning
+`35791637412` nåede artifact og beskyttet runtime, men blev afvist før
+Pages, fordi den sendte et hash af manifestfilens rå bytes til en kontrol,
+som kræver kanonisk JSON-hash. Begge Pages-kontroller får nu det korrekte
+kanoniske hash; den rå bytekontrol bevares. Regression dækker samme indhold
+med forskellig formattering. Vejr og score ændres ikke.

@@ -2916,3 +2916,16 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   live manifest byte-/feltidentisk med det forseglede, og samme 210/673-
   verifier bestod. Kun retryvinduet udvides; mismatch og ukendt deploy må
   fortsat ikke godkendes. PR #427 afventer nyt exact-head-bevis.
+# Aktuelle issues – 2026-09-23, lokal 4.0.466
+
+- **ISSUE-EXACT-RECOVERY-HASH-35791637412 – LOKALT RETTET / LIVEBEVIS
+  ÅBENT:** Den providerfri recovery havde korrekt gemt vejr, bygget
+  artifact og udgivet beskyttet runtime, men den første Pages-gate
+  sammenlignede kanonisk JSON med rå filbytehash. Begge Pages-gates får nu
+  kanonisk kildehash; råbytehashen forbliver en separat, streng filkontrol.
+- **ISSUE-NORMAL-CURRENT-AND-STATE-35778530384 – ÅBENT:** Den offentlige
+  side virker, men den private audit rapporterede to `STATE_REPLAY_MISMATCH`,
+  og den sikre inputrapport viste 51 af 673 dele uden direkte strøm. Den
+  rumlige videnskabelige audit fejlede. 4.0.466 ændrer ikke disse forhold;
+  de kræver særskilt evidens og rettelse uden at forveksle dem med
+  Pages-hashfejlen.
