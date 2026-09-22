@@ -7,9 +7,13 @@
    og afgræns næste stop til omskrivning af canonical `.000Z` til `Z`.
 4. [x] Bevar den centrale descriptors canonical target uændret gennem alle
    consumers, og bind formatet i register og regression.
-5. [ ] Bestå måltests, RDKS/version/diff, én exact-head, PR og merge.
-6. [ ] Kør providerfri saved-weather til deploy og offentlig verifikation.
-7. [ ] Start derefter én normal weather på samme main og kræv frisk cache,
+5. [x] Merge PR #425 og livebevis i `35767690294` canonical target, restore,
+   rebind, public rebuild, audit, bundle og Pages-preflight.
+6. [x] Afgræns protected-publish-stoppet til den legitimt genbundne
+   public-hour-pakke; bind dens eksakte digest i migrationsrapport schema 2.
+7. [ ] Bestå måltests, RDKS/version/diff, én exact-head, PR og merge.
+8. [ ] Kør providerfri saved-weather til deploy og offentlig verifikation.
+9. [ ] Start derefter én normal weather på samme main og kræv frisk cache,
    artifact, deploy samt trinvis DMI → Copernicus → Open-Meteo-evidens.
 
 # Nyeste prioritering – 2026-09-20, 4.0.445 helkæde-kontrol

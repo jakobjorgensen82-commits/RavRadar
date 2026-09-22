@@ -613,7 +613,7 @@ try {
   };
   const successorConditions = successorManifest.files.find(file => file.id === 'full-conditions');
   const migrationReport = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
     transitionKind: 'MODEL_BINDING_MIGRATION',
     predecessorSourceHead: predecessorDescriptor.sourceHead,
@@ -631,6 +631,9 @@ try {
     copiedPrivateFileCount: 9,
     migratedConditionsBytes: successorConditions.bytes,
     migratedConditionsSha256: successorConditions.sha256,
+    publicHourDeliveryRebound: false,
+    migratedPublicHourPackBytes: null,
+    migratedPublicHourPackSha256: null,
     measurementsChanged: false,
     candidateStatesChanged: false,
     privatePayloadIncluded: false,

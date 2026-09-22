@@ -1,5 +1,18 @@
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
+- [x] Merge PR #425 som `e88309b9`; exact-head `35766972202` er grøn.
+- [x] Livebevis i `35767690294`, at canonical target, restore, rebind, public
+  rebuild, runtimeaudit, privat bundle og Pages-preflight består.
+- [x] Afgræns sidste stop til den forældede antagelse, at kun conditions må
+  ændres, selv om 118-timerspakken er dens atomisk genbundne afledning.
+- [x] Udvid migrationsrapporten til schema 2 med eksakt pakke-byteantal/hash,
+  og tillad kun den beviste public-hour-pakke ved modelbindingsovergang.
+- [x] Bevar byteidentitet for alle øvrige private filer og afvis fortsat
+  public-hour-ændringer ved contract-only rebind.
+- [ ] Bestå exact-head, merge og providerfri continuation gennem protected
+  publish, Edge/readiness, Pages artifact og deploy.
+- [ ] Kør derefter én normal vejropdatering på samme main og bevis frisk
+  cache, artifact, deploy og offentlig runtime.
 - [x] Merge PR #424 som `6f6c5111`; exact-head-kontrollen er grøn.
 - [x] Livebevis i `35763572487`, at horizon-gyldig saved-weather nu passerer
   aldersklassifikationen.

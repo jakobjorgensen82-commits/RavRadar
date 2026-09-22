@@ -64,6 +64,14 @@ er utilstrækkelige. Alle øvrige konflikter skal fortsat være synlige.
   en ufuldstændig privat projektion. Startsidens færdigberegnede nationale
   ranking skal bevares og hashbindes; den må ikke blive tom efter restore,
   blot fordi den dobbelte private hourly-kopi er fjernet. DEC-0217.
+- **REQ-PRIVATE-PUBLIC-HOUR-REBIND-PAIR-0217 – BINDENDE PRÆCISERING
+  2026-09-22:** Når en eksakt same-reference-modelmigration ændrer
+  modelbindingen, skal `conditions.json` og den tilhørende
+  `public-hour-delivery.pack` genbindes som ét atomisk par. Migrationsrapport
+  schema 2 skal angive pakkens eksakte nye byteantal og SHA-256; successor-
+  manifestet skal matche dem, forgængerpakken skal have en anden hash, og alle
+  andre private filer skal være byteidentiske. Contract-only rebind må ikke
+  ændre pakken. DEC-0217's tillæg 2026-09-22.
 - **REQ-PROVENANCE-BEFORE-PUBLIC-SEAL-0217 – BINDENDE:** Strømproveniens og
   øvrige data, der påvirker offentlige timefiler, færdiggøres før pakken
   forsegles. Senere enrichment skal være byte-idempotent og stoppe ved en

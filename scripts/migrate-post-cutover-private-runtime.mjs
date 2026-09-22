@@ -1232,7 +1232,7 @@ export async function migratePostCutoverPrivateRuntime({
   }
 
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'RAVRADAR_POST_CUTOVER_PRIVATE_RUNTIME_REBIND',
     transitionKind: migrationResult.transitionKind,
     predecessorSourceHead: predecessorIdentity.sourceHead,
@@ -1250,6 +1250,13 @@ export async function migratePostCutoverPrivateRuntime({
     copiedPrivateFileCount: runtimeFiles.length,
     migratedConditionsBytes: migratedConditionsDigest.bytes,
     migratedConditionsSha256: migratedConditionsDigest.sha256,
+    publicHourDeliveryRebound: migrationResult.publicHourDeliveryRebound,
+    migratedPublicHourPackBytes: migrationResult.publicHourDeliveryRebound
+      ? privatePublicHourDeliveryMarker(migrationResult.migrated).packBytes
+      : null,
+    migratedPublicHourPackSha256: migrationResult.publicHourDeliveryRebound
+      ? privatePublicHourDeliveryMarker(migrationResult.migrated).packSha256
+      : null,
     measurementsChanged: false,
     candidateStatesChanged: false,
     privatePayloadIncluded: false,
