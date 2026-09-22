@@ -1962,3 +1962,12 @@ Se `CHANGELOG-4.0.330.md`.
 
 - Den allerede anvendte public-hour-migration bevares før sin append-only
   successor i recovery- og testlisten. Se `CHANGELOG-4.0.449.md`.
+## 4.0.453 – verificeret reservebølge i normal recovery (2026-09-22)
+
+Normalrun `35695267017` gennemførte leverandørkæden, men cachetrinnet
+afviste en gyldig reservebølge som `RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED`.
+4.0.453 binder nu Copernicus/Open-Meteo-reserven til kystdel, præcis time,
+komponent-record og godkendt provenance i normal integreret recovery. Den
+historiske Candidate G-wave-bridge forbliver direkte DMI-only.
+
+Se `CHANGELOG-4.0.453.md` og `DEC-0231`.

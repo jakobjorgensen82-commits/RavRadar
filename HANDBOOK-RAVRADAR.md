@@ -1,6 +1,24 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.452
+**Håndbogsversion:** 4.0.453
+
+## 89.58 4.0.453 – Godkendte reservebølger bruges i normal recovery
+
+Den normale integrerede recovery må bruge en allerede bank-godkendt
+Copernicus- eller Open-Meteo-bølge, når den er bundet til præcis kystdel,
+tidspunkt og målepunkt. Det er netop den samme reserve, som først er optaget
+af den officielle komponentbank; replayet må ikke afvise den bagefter som om
+den var en ukendt bølge.
+
+Rettelsen kræver verificeret status, officiel komponentklasse, gyldig
+komponentidentitet og fuld sted-/tidsbinding. Feggesund-nabobølgen må kun
+bruges gennem den eksisterende eksplicitte proxykontrol. Den historiske
+Candidate G-migrationsbro er fortsat DMI-only og accepterer ikke reserve- eller
+rekonstruerede bølger. Scoreformel, DMI-first-prioritet og MISSING-regler er
+uændrede.
+
+4.0.453 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904` over 67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Candidate G-rollbackbindingen er fortsat `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=618b2b44c93316f6798a17fbbd020cdacda9aff73bfde4cbbbaa05d3fa197ace` over 65 transitive filer.
 
 ## 4.0.451 – Revideret DMI-værdi i samme modelkørsel
 

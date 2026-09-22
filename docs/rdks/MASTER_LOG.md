@@ -4678,3 +4678,14 @@ fortsætte gennem normal Pages-kontrol. Ingen provider kaldes. DEC-0185.
   stoppede før deploy på en falsk historisk-actionantagelse.
 - DEC-0205 tillader aktiv `integrated` og kræver samtidig komplet source-
   manifest-, seal-, 79/79- og evidensverifikation før strict targetdeploy.
+# 4.0.453 – reservebølge må ikke afvises i normal recovery (2026-09-22)
+
+Normalrun `35695267017` nåede alle tre leverandører og closure, men
+`Update central weather cache` stoppede med
+`RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED`. 4.0.452's Node-heapændring var
+ikke tilstrækkelig, fordi den konkrete fejl var en forkert klassifikation:
+normal recovery kunne ikke bruge en allerede bank-godkendt Copernicus/
+Open-Meteo-bølge. 4.0.453 accepterer nu kun et fuldt strukturelt bundet
+reservebevis i normal recovery; Candidate G's migrationsbro er fortsat
+DMI-only. Se DEC-0231. Målrettede tests er grønne; exact-head og live
+continuation mangler.

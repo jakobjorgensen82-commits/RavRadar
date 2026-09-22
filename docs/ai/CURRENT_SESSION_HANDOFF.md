@@ -2879,3 +2879,19 @@ Run `32479158213` paa merge `34ed1dbc39c18aaefcb77aac89028ebb29c45468` sprang pr
 - Lokal 4.0.322 bruger en fælles supervisor i normal drift og engangsopfyldning. Kun tiden inde i ét HARMONIE-asset er bounded til 180 sekunder. Ved stop finaliserer den eksisterende producent den sidste atomiske cache uden nye assets og genbygger strict current-ledger inden for 420 sekunder. Downstream kræver fortsat reel DMI_READY; blanke outputs erstattes af bounded fejloutput ved finalizer-timeout.
 - Fem supervisortests og berørte oneoff-/DMI-workflow-/rækkefølge-/private-runtimekontrakter er grønne. Runtimehashen omfatter supervisoren. Ingen private payloads, koordinater eller rå U/V er læst; `.cache` er urørt. Score, model-id/state, DMI-first, Copernicus, historik, geometri og punkter er uændrede.
 - Næste rækkefølge: dokumentations-/versionslukning, måltests, én exact-head-kildegate, sikker merge og ny samlet main-opfyldning. Først ved fuld 210/673/118 fortsættes kapacitet, Fase B, frisk produktion og offentlig kontrol.
+# Checkpoint – 2026-09-22 – 4.0.453 reserve-wave recovery
+
+Den seneste main-kørsel `35695267017` fejlede i `Update central weather
+cache` med `RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED` efter DMI/Copernicus/
+Open-Meteo/closure. Det var ikke længere en heapfejl. Component-admission
+havde accepteret en CP/OM-reservebølge, men recovery replay afviste alt andet
+end direkte DMI. 4.0.453 accepterer nu kun bank-godkendt CP/OM-proveniens med
+præcis part/time/record-binding i normal recovery; Feggesund-proxyen kræver
+sit eksisterende bevis; Candidate G-wave-bridge er fortsat DMI-only.
+
+Ændrede produktionsfiler: `scripts/lib/ravscore-recovery-replay.mjs` og den
+tilhørende replay-regression. Versionsløft og RDKS/changelog/håndbog er
+indarbejdet. Grønne måltest: recovery replay, production adapters, syntax og
+diff-check. Næste trin: exact-head sourcegate, merge, én normal continuation
+fra gemt progression og derefter live cache/runtime/deploybevis. Start ikke
+oneoff eller ny blind providerindsamling.
