@@ -1,3 +1,30 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.459 ufuldstændig predecessor-identitet
+
+Code-only-run `35734072736` brugte den korrekte live descriptor og den
+neutrale predecessor-sti, men manifestkontrollen afviste den faste identitet,
+fordi de to obligatoriske tider manglede. 4.0.459 tilføjer den verificerede
+`productionReferenceAt=2026-09-21T16:00:00.000Z` og
+`generatedAt=2026-09-21T17:06:45.191Z` for datasættet
+`rr-20260921170645-210`.
+
+Binding-inventaret i `docs/ai/BINDING_IDENTITY_INVENTORY_4.0.459.md` er efter
+anden gennemgang udvidet med scheduler-/target-, cache-/retry-, geometri-/
+punkt-, komponent-/proveniens-, current-/interpolations-, score/state-, UI-,
+trip-, database- og Pages-relationer. Centraliseringen er ikke kørt endnu;
+designets to lag er beskrevet i `BINDING_IDENTITY_CENTRALIZATION_DESIGN_4.0.459.md`.
+
+Den tredje helikopterkontrol er nu også gennemført. Den fandt ikke en ny live-
+produktionsfejl, men fandt en vigtig afgrænsning: aktive runtimebindinger må
+ikke blandes sammen med immutable migrationer, eksakte historiske recovery-
+forløb eller test-/researchfixtures. Inventory og centraliseringsdesign
+klassificerer derfor alle fire klasser særskilt. De historiske
+`fa418f43...`-/`ca2735af...`-recoverymål og de begrænsede gamle wave-reader-
+heads må ikke fjernes eller bruges som normal runtime-default; en fremtidig
+linter skal i stedet afvise uklassificerede literals i mutable live paths.
+Designet kræver også et additivt register, hvor senere fund kan tilføjes som
+én klassificeret post med producent, consumers og validator uden nye spredte
+konstanter. Dette er dokumentation og design, ikke en ny produktionskørsel.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.458 skjult predecessor-sti
 
 Code-only-run `35732235540` bekræftede migration og restore af den beskyttede

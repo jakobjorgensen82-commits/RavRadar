@@ -55,6 +55,8 @@ import {
 export const POST_CUTOVER_PREDECESSOR = Object.freeze({
   sourceHead: 'a6d89798c76a5218c5d699961474f4259835dfb9',
   datasetId: 'rr-20260921170645-210',
+  productionReferenceAt: '2026-09-21T16:00:00.000Z',
+  generatedAt: '2026-09-21T17:06:45.191Z',
   bundleContentSha256: '4e2cc7ab3e5fa7fdb26cb243c9f1847e964c2a67c6c991445ab3ec3d215dd37d',
   modelBinding: Object.freeze({
     modelId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
