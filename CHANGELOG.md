@@ -1,3 +1,20 @@
+## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
+
+Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store
+strengbyggeri fra lighedskontrollen, men migreringen derefter stadig skrev den
+samlede `conditions.json` med `JSON.stringify(value, null, 2)`. Den samme V8-
+grænse udløste derfor igen `Invalid string length` før nogen provider eller
+public deploy blev startet.
+
+4.0.463 bruger nu den eksisterende bounded, kompakte og atomiske JSON-writer i
+selve migreringsfunktionen og hasher filen efter skrivning. En målrettet test
+skriver den fulde 673-dele × 118-timers form uden at bygge en forventet samlet
+streng. Bindingregisteret og den tidligere iterative sammenligning er uændret.
+
+Ingen vejrdata, scoreformel, prioritet, geometri eller fallbackregel ændres.
+Næste trin er exact-head sourcegate, PR/merge og én ny providerfri code-only-
+kørsel; vejrleverandører startes først efter grøn migration/readback.
+
 ## 4.0.461 – bind migration til valgt protected generation (2026-09-22)
 
 Code-only-run `35740940791` viste, at pointerens current-generation var

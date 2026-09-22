@@ -1,3 +1,12 @@
+# Aktuelle issues – 2026-09-22, 4.0.463
+
+- **ISSUE-POST-CUTOVER-MIGRATION-V8-STRING-35746937526 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Code-only-runnet kom forbi alle tidligere beskyttede trin,
+  men migreringens egen `JSON.stringify(value, null, 2)` ramte V8's
+  strenggrænse. 4.0.463 bruger den fælles bounded/atomiske writer og har en
+  stor regressionstest. Exact-head, merge og én providerfri code-only-kørsel
+  mangler stadig.
+
 # Aktuelle issues – 2026-09-22, 4.0.452
 
 - **ISSUE-NORMAL-CACHE-NODE-HEAP-35662538047 – RETTET LOKALT / LIVEBEVIS

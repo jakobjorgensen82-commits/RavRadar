@@ -1,3 +1,15 @@
+# Aktivt roadmap – 2026-09-22, 4.0.463 bounded migreringsskrivning
+
+0. [x] Afgræns code-only-run `35746937526` til den resterende samlede
+   `JSON.stringify` i post-cutover-migreringens writer.
+1. [x] Brug den fælles bounded/atomiske writer og dæk den med en stor
+   parse-/digest-regressionstest uden samlet forventningsstreng.
+2. [ ] Bestå exact-head-kontrol og merge 4.0.463.
+3. [ ] Kør én providerfri code-only migration/readback på main.
+4. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og følg cache,
+   artifact, deploy og offentlig runtime.
+5. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+
 # Aktivt roadmap – 2026-09-22, 4.0.460 feltdiagnose før selvstændig drift
 
 0. [x] Afgræns code-only-run `35738220142`: alle trin til og med importkontrol

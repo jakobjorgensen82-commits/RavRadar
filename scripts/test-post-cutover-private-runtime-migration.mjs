@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {
+  atomicWriteJson,
   POST_CUTOVER_PREDECESSOR,
   allowedChange,
   assertBindingUpgrade,
@@ -52,6 +56,22 @@ assert.equal(
   true,
   'Large private continuation state must compare without a giant serialization string',
 );
+
+// The same large shape must also be writable by the migration path without
+// first becoming one giant V8 string.  Do not build an expected JSON string
+// here: that would hide the regression this test is meant to catch.
+const migrationWriterRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'rr-migration-json-'));
+try {
+  const migrationWriterPath = path.join(migrationWriterRoot, 'conditions.json');
+  const migrationWriterResult = await atomicWriteJson(migrationWriterPath, largeContinuation);
+  assert.ok(migrationWriterResult.bytes > 0);
+  assert.match(migrationWriterResult.sha256, /^[0-9a-f]{64}$/);
+  const migrationWriterReadback = JSON.parse(await fsp.readFile(migrationWriterPath, 'utf8'));
+  assert.equal(Object.keys(migrationWriterReadback.parts).length, 673);
+  assert.equal(migrationWriterReadback.parts['part-673'].currentState.hours.length, 118);
+} finally {
+  await fsp.rm(migrationWriterRoot, { recursive: true, force: true });
+}
 const changedLargeContinuation = structuredClone(largeContinuation);
 changedLargeContinuation.parts['part-673'].currentState.hours[117].state = 99;
 assert.equal(

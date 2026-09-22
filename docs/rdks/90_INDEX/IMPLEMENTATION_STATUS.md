@@ -1,3 +1,15 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.463
+
+- [x] Afgræns code-only-run `35746937526` til den anden V8-strenggrænse i
+  migreringens JSON-writer efter grønne identitets-, database-, restore- og
+  importtrin.
+- [x] Genbrug den eksisterende bounded/atomiske JSON-writer i migreringen,
+  behold digest efter skrivning og tilføj en stor 673 × 118 regressionstest.
+- [ ] Bestå exact-head-kontrol og merge 4.0.463.
+- [ ] Kør én ny providerfri code-only migration/readback på main.
+- [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+  artifact, deploy og offentlig runtime.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.460
 
 - [x] Afgræns code-only-run `35738220142`: source, migration, readback,
