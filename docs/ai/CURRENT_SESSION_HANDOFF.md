@@ -1,3 +1,21 @@
+# 4.0.452 – Node-heap ved central cachebygning
+
+Seneste normale run er `35662538047`. DMI/fallback-kæden nåede 210/210
+offentlige zoner og `component-runtime-ready`; en kortvarig DMI 429 blev
+håndteret af fallback. Stoppet var derefter Node/V8 `heap out of memory` ved
+cirka 4 GB i `Update central weather cache`. Den krypterede private
+vejr-fremgang blev gemt i samme run.
+
+Rettelsen er lokal 4.0.452: cachetrinnet får
+`NODE_OPTIONS=--max-old-space-size=8192`, og
+`scripts/test-reusable-production-workflows.mjs` kræver indstillingen.
+Providerprioritet, scoreformel, geometri og komplethedskrav er uændrede.
+
+Næste konkrete trin er målrettede kontroller, exact-head sourcegate, merge og
+én normal continuation, der genbruger den gemte fremgang. Først når cache,
+artifact, deploy og offentlig runtime er grønne, kaldes normal vedligeholdelse
+bevist. Gentagne identiske runs uden ændring er ikke en løsning.
+
 # NYESTE CHECKPOINT – 2026-09-21 – readiness-rebind og saved-weather recovery
 
 Normalrun `35625011723` (main `8a5c188849f9c22aaefe5c536cb7266e42bdcc05`)

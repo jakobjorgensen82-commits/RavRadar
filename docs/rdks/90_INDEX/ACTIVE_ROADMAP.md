@@ -1,3 +1,18 @@
+# Aktivt roadmap – 2026-09-22, 4.0.452 fra heap-stop til normal continuation
+
+0. [x] Afgræns run `35662538047` til Node/V8 heap-OOM efter
+   `component-runtime-ready`; gemt privat vejr-fremgang er intakt.
+1. [x] Hæv kun cachetrinnets Node-heap til 8192 MB og beskyt det med en
+   målrettet workflow-regression. Providerbudgetter og datakontrakter er
+   uændrede.
+2. [ ] Bestå målchecks, exact-head sourcegate og merge 4.0.452.
+3. [ ] Kør én normal continuation fra den gemte fremgang; kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg næste almindelige cron og mål leverandørdækning, cachefremgang og
+   bevarelse af gamle gyldige værdier. Ingen ny one-off uden konkret evidens.
+5. [ ] Når normal drift er bevist, gennemgå de brugersynlige prognose- og
+   scoreforklaringer i klart dansk uden at ændre matematikken.
+
 # Aktivt roadmap – 2026-09-21, 4.0.451 fra cache-timeout til stabil normal drift
 
 0. [x] Afgræns normalrun `35625011723`: providerkæde og central cache blev

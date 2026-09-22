@@ -1,3 +1,17 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.452 Node-heap i normal cachetrin
+
+Normalrun `35662538047` nåede DMI/fallback-kæden, `public-zone-forecast-ready`
+med 210/210 zoner og `component-runtime-ready` uden fejl. En midlertidig
+DMI 429 blev håndteret af den eksisterende fallback. Stoppet kom først i
+`Update central weather cache`, hvor Node/V8 løb tør for heap omkring 4 GB
+under den integrerede runtimeforsegling. Det er ikke bevis på manglende
+leverandørdata. Trinnets krypterede private fremgang blev gemt efter stoppet.
+
+4.0.452 sætter kun cachetrinnets `NODE_OPTIONS` til
+`--max-old-space-size=8192` og har en målrettet workflow-regression. Næste
+normale kørsel skal genbruge den gemte fremgang og bevise privat save,
+artifact, deploy og offentlig runtime. Ingen ny one-off er startet.
+
 # NYESTE SANDHED – 2026-09-21 – lokal 4.0.451 DMI-revision i RavScore-replay
 
 Normalrun `35567119842` gennemførte leverandørkæden og komponent-runtime, men

@@ -432,6 +432,11 @@ assert.match(
   /timeout-minutes:\s*45/,
   'normal weather cache sealing has enough bounded time for the measured 118-hour public build',
 );
+assert.match(
+  weatherCacheStep,
+  /NODE_OPTIONS:\s*--max-old-space-size=8192/,
+  'normal weather cache sealing has a sufficient Node heap for the integrated runtime build',
+);
 const privateWeatherVerificationDependencies = indentedBody(
   build,
   '      - name: Install private weather-component verification dependencies',

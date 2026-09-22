@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.452
+
+- [x] Afgræns normalrun `35662538047`: leverandørkæde, 210/210 offentlige
+  zoner og komponent-runtime bestod; DMI 429 blev håndteret af fallback.
+- [x] Dokumentér at stoppet var Node/V8 heap-OOM omkring 4 GB i den centrale
+  cacheforsegling, ikke et provider- eller datatab.
+- [x] Gem den krypterede private vejr-fremgang efter det afbrudte cachetrin.
+- [x] Hæv kun Node-heapgrænsen for `Update central weather cache` til 8192 MB
+  og tilføj en målrettet workflow-regression.
+- [ ] Bestå exact-head sourcegate, merge og én normal continuation fra den
+  gemte fremgang. Kræv privat save, artifact, deploy og offentlig runtime.
+- [ ] Følg næste normale cron som bevis for vedligeholdelsesfri cache.
+
 # Aktuel implementeringsstatus – 2026-09-21, lokal 4.0.451
 
 - [x] Normalrun `35625011723` gennemførte leverandørkæden og den centrale

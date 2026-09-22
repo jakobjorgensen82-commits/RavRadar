@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.451
+**Håndbogsversion:** 4.0.452
 
 ## 4.0.451 – Revideret DMI-værdi i samme modelkørsel
 
