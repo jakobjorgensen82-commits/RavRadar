@@ -1,3 +1,14 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.458 skjult predecessor-sti
+
+Code-only-run `35732235540` bekræftede migration og restore af den beskyttede
+runtime, men genbindingen stoppede, fordi workflowets miljø stadig navngav
+arbejdsstien efter en gammel source-SHA (`fa418f43`). Den levende descriptor
+var korrekt; det var den permanente sti, der var en skjult stale binding.
+
+4.0.458 gør predecessor-stien neutral. Den faktiske source bestemmes fortsat
+af descriptoren, ancestor-kontrollen og `git archive`, så fail-closed-
+beskyttelsen er bevaret uden at hardkode historiske stinavne.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.457 predecessor-genbinding efter readback
 
 Code-only-run `35730421484` kom igennem den nye migration og database-

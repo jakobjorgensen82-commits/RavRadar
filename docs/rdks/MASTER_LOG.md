@@ -1,3 +1,12 @@
+# 2026-09-22 – 4.0.458 neutral predecessor-workspace
+
+Code-only-run `35732235540` stoppede efter grøn database-readback og restore,
+fordi `.github/workflows/deploy-code-only-repair.yml` stadig brugte den gamle
+SHA i `RAVRADAR_PREDECESSOR_SOURCE_ROOT`. 4.0.458 erstatter den skjulte
+historiske sti med `source-predecessor`; den validerede descriptor bestemmer
+fortsat source-head og arkiveret indhold. Det er en binding-forenkling, ikke en
+svækkelse af source-, model-, bundle-, database- eller dataintegriteten.
+
 # 2026-09-22 – 4.0.457 retter predecessor-genbindingens identitet
 
 Code-only-run `35730421484` bestod migration og database-readback, men

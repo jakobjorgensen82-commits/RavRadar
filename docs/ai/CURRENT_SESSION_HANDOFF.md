@@ -1,3 +1,11 @@
+# 4.0.458 checkpoint – neutral predecessor-workspace
+
+Code-only-run `35732235540` kom gennem migration, database-readback og
+predecessor-restore, men stoppede i genbindingen. Den levende protected-runtime
+descriptor var korrekt; workflowets faste `source-fa418f43`-sti var en skjult
+stale binding. Rettelsen ændrer kun stinavnet til den neutrale
+`source-predecessor`. Næste trin er exact-head/code-only-kørsel på main.
+
 # 4.0.457 – predecessor-genbinding bruger den faktiske beskyttede runtime
 
 PR #413 (`aba3de43`) er merged til `main`. Code-only-run `35730421484` kom
