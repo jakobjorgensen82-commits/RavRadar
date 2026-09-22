@@ -1,3 +1,17 @@
+# Aktivt roadmap – 2026-09-22, 4.0.456 fra readback-drift til selvstændig drift
+
+0. [x] Afgræns code-only-run `35728472112`: migrationen blev anvendt, men
+   checkpoint-readbacken brugte den gamle kildefil og afviste den korrekte
+   successor-hash.
+1. [x] Ret readbacken til at bruge successoren som checkpoint-kilde, uden at
+   ændre trip-policyens separate kilde eller historiske migrationer.
+2. [ ] Bestå en ny kort code-only readback på exact `main`.
+3. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg mindst den næste cron-kørsel. Den skal kunne gennemføre uden
+   Codex-overvågning og dokumentere DMI-first, fallback, cachefremgang og
+   bevarelse af gamle gyldige værdier.
+
 # Aktivt roadmap – 2026-09-22, 4.0.455 fra backend-drift til selvstændig drift
 
 0. [x] Afgræns gentaget policy-hashdrift til Supabase/migrationskæden, ikke

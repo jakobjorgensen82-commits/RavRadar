@@ -1,3 +1,13 @@
+## 4.0.456 – Korrekt checkpoint-readback efter append-only repair (2026-09-22)
+
+- Ret readback-kilden for checkpoint-CAS: trip-politikken læses fortsat fra
+  den seneste fulde binding, mens checkpoint-kontrakten læses fra den nye
+  append-only successor `20260922100000`, som faktisk genindsætter den.
+- Forhindr, at en korrekt deployet database afvises som hashdrift, fordi
+  readbacken sammenligner med den forkerte historiske migrationsfil.
+- Ingen ændring af score, vejrdata, cache, fallback, MISSING-semantik eller
+  historiske migrationsfiler. Se `CHANGELOG-4.0.456.md`.
+
 ## 4.0.455 – Selvstændig backend-forhåndskontrol og robust vejrkæde (2026-09-22)
 
 - Tilføj append-only repair-migration for den dokumenterede Supabase-drift i
