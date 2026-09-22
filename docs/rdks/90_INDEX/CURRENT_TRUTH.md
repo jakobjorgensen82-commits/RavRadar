@@ -1,3 +1,20 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.460 predecessor-diagnostik
+
+Code-only-run `35738220142` kom gennem sourcekontrol, migration,
+database-readback, private-runtime-restore, importkontrol og unpack, men
+stoppede i predecessor-genbindingen. Den aktuelle kontrol gav kun den
+generiske besked `Protected predecessor bundle identity is not exact`.
+
+4.0.460 ændrer kun fejlmeddelelsen: hvis et af de seks flade felter
+(`datasetId`, `bundleContentSha256`, `productionReferenceAt`, `generatedAt`,
+`zoneCount` eller `partCount`) ikke matcher, vises præcis felt-, forventet- og
+faktisk værdi. Kontrollen forbliver fail-closed. Der er ikke startet nogen
+vejrleverandør eller ændret cache, score, geometri eller public data.
+
+Næste trin er en ny code-only-kørsel på main, hvor de allerede grønne trin
+genbruges, så den konkrete dynamiske predecessor-mismatch kan rettes uden at
+gætte eller starte forfra med vejrhentning.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.459 ufuldstændig predecessor-identitet
 
 Code-only-run `35734072736` brugte den korrekte live descriptor og den

@@ -1,3 +1,15 @@
+# Aktivt roadmap – 2026-09-22, 4.0.460 feltdiagnose før selvstændig drift
+
+0. [x] Afgræns code-only-run `35738220142`: alle trin til og med importkontrol
+   var grønne; predecessor-genbindingen gav kun en generisk flad mismatch.
+1. [x] Gør mismatch på de seks flade identitetsfelter synlig uden at svække
+   fail-closed-kontrollen, og tilføj målrettet regressionstest.
+2. [ ] Bestå exact-head-kontrol og ny code-only-genbinding på main.
+3. [ ] Ret den konkrete dynamiske predecessor-identitet ud fra run-evidens.
+4. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+5. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+
 # Aktivt roadmap – 2026-09-22, 4.0.459 fra komplet predecessor-identitet til selvstændig drift
 
 0. [x] Afgræns code-only-run `35734072736`: source og sti var korrekte, men

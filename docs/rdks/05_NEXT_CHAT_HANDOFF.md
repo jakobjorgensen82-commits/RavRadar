@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-22 – lokal 4.0.460 predecessor-diagnose
+
+Branchen `codex/4.0.460-predecessor-mismatch` er baseret på merged main
+`190bb0d1668c09fa1140ed4c787b600314ab19a4`. Code-only-run `35738220142`
+gennemførte sourcekontrol, migration, readback, private-runtime-restore og
+importkontrol, men stoppede i predecessor-genbindingen med en generisk flad
+identitetsfejl. 4.0.460 gør de seks flade felter diagnostiske, men stopper
+fortsat ved mismatch. Måltesten og RDKS er opdateret.
+
+Næste arbejde er exact-head/sourcegate, merge og én code-only-kørsel, som skal
+genbruge de grønne trin og vise den konkrete dynamiske mismatch. Ingen vejr-
+eller cachekørsel må startes før den er afklaret.
+
 # NYESTE CHECKPOINT – 2026-09-18 – lokal 4.0.419 kontraktombinding
 
 Arbejd i `RavRadar-4.0.396`, branch

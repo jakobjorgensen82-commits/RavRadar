@@ -1,3 +1,11 @@
+## 4.0.460 – synlig predecessor-identitetsmismatch (2026-09-22)
+
+Code-only-run `35738220142` kom gennem source, migration, readback, restore og
+importkontrol, men stoppede i predecessor-genbindingen med en generisk
+identitetsfejl. 4.0.460 tilføjer en begrænset feltdiagnose for de seks flade
+identitetsfelter, mens den fail-closed kontrol er uændret. Ingen vejrkørsel,
+cache eller public artifact ændres. Se `CHANGELOG-4.0.460.md`.
+
 ## 4.0.459 – Komplet predecessor-manifestidentitet (2026-09-22)
 
 Code-only-run `35734072736` brugte den korrekte predecessor-source, men den

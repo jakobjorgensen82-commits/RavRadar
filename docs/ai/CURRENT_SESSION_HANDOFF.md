@@ -1,3 +1,20 @@
+# 4.0.460 checkpoint – feltdiagnose for dynamisk predecessor-mismatch
+
+Code-only-run `35738220142` kom gennem source, migration, database-readback,
+private-runtime-restore og importkontrol, men stoppede i
+`validatePredecessorManifest()` med den generiske fejl
+`Protected predecessor bundle identity is not exact`.
+
+4.0.460 ændrer kun diagnostikken. Ved mismatch sammenlignes nu de seks flade
+identitetsfelter én for én, og fejlmeddelelsen viser felt samt forventet/faktisk
+ikke-følsom værdi. Fail-closed-reglen, modelbindingen og contract-hashene er
+uændrede. En regressionstest kræver, at `productionReferenceAt` nævnes ved en
+bevidst flad mismatch.
+
+Næste trin: exact-head/sourcegate, merge og én ny code-only-kørsel, der skal
+genbruge de grønne trin og vise den konkrete dynamiske mismatch. Ingen ny
+vejrkørsel eller cacheændring må startes i dette checkpoint.
+
 # 4.0.459 checkpoint – komplet predecessor-manifestidentitet
 
 Code-only-run `35734072736` kom gennem source, migration, readback, restore og
