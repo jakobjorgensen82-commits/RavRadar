@@ -370,6 +370,127 @@ export async function materializePrivatePublicHourDeliveryPack({
   return { manifest, hours };
 }
 
+/**
+ * Rebind a preserved public-hour pack when a code-only runtime migration
+ * changes only the model bundle hash.  The weather/score rows stay byte-
+ * equivalent apart from their public binding envelope; every transformed row
+ * is rehashed and the binary pack is written atomically as one new artifact.
+ */
+export async function rebindPrivatePublicHourDeliveryPack({
+  sourcePackPath,
+  sourceConditions,
+  targetConditions,
+  targetDetailsSha256,
+  outputPath,
+} = {}) {
+  if (typeof sourcePackPath !== 'string' || typeof outputPath !== 'string'
+    || !SHA256.test(String(targetDetailsSha256 ?? ''))) {
+    throw new Error('PUBLIC_HOUR_PACK_REBIND_ARGUMENTS_INVALID');
+  }
+  const sourceMarker = privatePublicHourDeliveryMarker(sourceConditions);
+  const targetMarker = privatePublicHourDeliveryMarker(targetConditions);
+  if (!sourceMarker || !targetMarker) throw new Error('PUBLIC_HOUR_PACK_REBIND_MARKER_MISSING');
+  const targetManifestContract = {
+    publicConditionDetailsSha256: targetDetailsSha256,
+    ravScoreModelBinding: targetMarker.modelBinding,
+  };
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-public-hour-rebind-'));
+  try {
+    const restored = await materializePrivatePublicHourDeliveryPack({
+      packPath: sourcePackPath,
+      conditions: sourceConditions,
+      liveDirectory: temporaryRoot,
+    });
+    const entries = [];
+    let rawBytes = 0;
+    let compressedBytes = 0;
+    for (const sourceEntry of restored.manifest.entries) {
+      const sourceFile = path.join(temporaryRoot, 'forecast', sourceEntry.file);
+      let document;
+      try {
+        document = JSON.parse(await fs.readFile(sourceFile, 'utf8'));
+      } catch {
+        throw new Error('PUBLIC_HOUR_PACK_REBIND_SOURCE_JSON_INVALID');
+      }
+      if (!document?.delivery || document.delivery.key !== sourceEntry.time) {
+        throw new Error('PUBLIC_HOUR_PACK_REBIND_SOURCE_DELIVERY_INVALID');
+      }
+      const rebound = {
+        ...document,
+        delivery: {
+          ...document.delivery,
+          sourceDetailsSha256: targetDetailsSha256,
+          modelBinding: structuredClone(targetMarker.modelBinding),
+        },
+      };
+      if (rebound.nationalForecast && typeof rebound.nationalForecast === 'object'
+          && !Array.isArray(rebound.nationalForecast)) {
+        rebound.nationalForecast = {
+          ...rebound.nationalForecast,
+          modelBinding: structuredClone(targetMarker.modelBinding),
+        };
+      }
+      validatePublicHourDocument(rebound, sourceEntry.time, targetManifestContract);
+      const raw = Buffer.from(`${JSON.stringify(rebound)}\n`, 'utf8');
+      const compressed = await gzipAsync(raw, { level: 9 });
+      if (raw.length > MAX_RAW_ENTRY_BYTES || compressed.length > MAX_COMPRESSED_ENTRY_BYTES) {
+        throw new Error('PUBLIC_HOUR_PACK_REBIND_ENTRY_SIZE_LIMIT');
+      }
+      const rawSha256 = sha256(raw);
+      const compressedSha256 = sha256(compressed);
+      entries.push({
+        time: sourceEntry.time,
+        file: `${rawSha256}.json`,
+        bytes: raw.length,
+        sha256: rawSha256,
+        compressedBytes: compressed.length,
+        compressedSha256,
+        compressed,
+      });
+      rawBytes += raw.length;
+      compressedBytes += compressed.length;
+    }
+    const manifest = {
+      schemaVersion: 1,
+      kind: 'PRIVATE_PUBLIC_HOUR_DELIVERY_PACK',
+      datasetId: targetMarker.datasetId,
+      productionReferenceAt: targetMarker.productionReferenceAt,
+      sourceDetailsSha256: targetDetailsSha256,
+      modelBinding: structuredClone(targetMarker.modelBinding),
+      forecastHours: targetMarker.forecastHours,
+      startupNationalForecastSha256: targetMarker.startupNationalForecastSha256,
+      rawBytes,
+      entries: entries.map(({ compressed: _compressed, ...entry }) => entry),
+    };
+    validatePackManifest(manifest);
+    if (compressedBytes + Buffer.byteLength(JSON.stringify(manifest)) + MAGIC.length + 4 > MAX_PACK_BYTES) {
+      throw new Error('PUBLIC_HOUR_PACK_REBIND_SIZE_LIMIT');
+    }
+    const destination = path.resolve(outputPath);
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    const temporary = `${destination}.tmp-${process.pid}-${crypto.randomUUID()}`;
+    const manifestBuffer = Buffer.from(JSON.stringify(manifest), 'utf8');
+    const handle = await fs.open(temporary, 'wx', 0o600);
+    try {
+      const length = Buffer.alloc(4);
+      length.writeUInt32BE(manifestBuffer.length);
+      await handle.writeFile(Buffer.concat([MAGIC, length, manifestBuffer]));
+      for (const entry of entries) await handle.writeFile(entry.compressed);
+      await handle.sync();
+      await handle.close();
+      await fs.rename(temporary, destination);
+    } catch (error) {
+      await handle.close().catch(() => {});
+      await fs.rm(temporary, { force: true }).catch(() => {});
+      throw error;
+    }
+    const digest = await digestFile(destination);
+    return { rawBytes, packBytes: digest.bytes, packSha256: digest.sha256 };
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
 export function compactPrivateConditionsForPersistence(full, publicHourDelivery) {
   validateMarker(publicHourDelivery);
   const parts = Object.fromEntries(Object.entries(full?.coastalParts?.parts ?? {}).map(([partId, part]) => {

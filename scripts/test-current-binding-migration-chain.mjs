@@ -9,6 +9,7 @@ const generators = [
   'scripts/build-current-input-foundation-binding-migration.mjs',
   'scripts/build-measured-warmup-checkpoint-migration.mjs',
   'scripts/build-public-hour-delivery-binding-migration.mjs',
+  'scripts/build-integrated-model-binding-successor.mjs',
 ];
 
 for (const generator of generators) {

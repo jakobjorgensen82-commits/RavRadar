@@ -51,6 +51,8 @@ const MEASURED_WARMUP_CHECKPOINT_CHECK =
   'node scripts/build-measured-warmup-checkpoint-migration.mjs';
 const PUBLIC_HOUR_DELIVERY_BINDING_CHECK =
   'node scripts/build-public-hour-delivery-binding-migration.mjs';
+const INTEGRATED_MODEL_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-integrated-model-binding-successor.mjs --check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -69,9 +71,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   CURRENT_INPUT_FOUNDATION_BINDING_CHECK,
   MEASURED_WARMUP_CHECKPOINT_CHECK,
   PUBLIC_HOUR_DELIVERY_BINDING_CHECK,
+  INTEGRATED_MODEL_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260922100000_integrated_trip_binding_repair.sql';
+  'supabase/migrations/20260922170000_integrated_model_binding_successor.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';

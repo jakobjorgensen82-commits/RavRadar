@@ -185,7 +185,7 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260922100000_integrated_trip_binding_repair.sql'),
+    .includes('20260922170000_integrated_model_binding_successor.sql'),
   'Code-only migrationsplanen er ikke bundet til den præcise aktuelle trip-binding-reparation.',
 );
 

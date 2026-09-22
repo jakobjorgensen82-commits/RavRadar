@@ -1,3 +1,26 @@
+# 4.0.464 checkpoint – public-hour-pakken følger modelbindingen
+
+Code-only-run `35749000940` kom igennem 4.0.463's bounded JSON-writer, men
+stoppede ved `Private public-hour startup national forecast digest is invalid`.
+Den bevarede 118-timerspakke og dens startprognose var stadig bundet til
+forgængerens modelhash/details-digest, selv om conditions-migreringen var
+begyndt at bruge den aktuelle binding.
+
+4.0.464 rebinder nu hele pakken atomisk: alle timefilers delivery-binding,
+details-digest og eventuel national forecast, derefter manifestets model- og
+startup-hash, rå/komprimerede hashes, byteantal og conditions-markør. En
+regression materialiserer den nye pakke igen og verificerer hver timefil.
+
+Ingen provider, cache, score, geometri eller public data er ændret i dette
+checkpoint. Næste trin er målrettede tests, exact-head/sourcegate, merge og én
+ny providerfri code-only-kørsel på main.
+
+PR-gaten fandt den samme spredte bindingstype som tidligere: modelbundlekoden
+var opdateret, men den seneste historiske migration bandt stadig forgængerens
+hash. Det er rettet uden at omskrive historien med
+`20260922170000_integrated_model_binding_successor.sql`; alle mutable SQL- og
+runtimeforbrugere bruger nu `2c26b855…` fra den nye successor.
+
 # 4.0.463 checkpoint – migreringens anden V8-strenggrænse
 
 Code-only-run `35746937526` kom forbi alle tidligere identitets-, database-,

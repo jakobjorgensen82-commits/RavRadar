@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260922100000_integrated_trip_binding_repair.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260922170000_integrated_model_binding_successor.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -1217,7 +1217,7 @@ for(const marker of [
   '20260919020000_measured_warmup_checkpoint.sql',
   '20260919231000_public_hour_delivery_binding.sql',
   '20260920220000_public_hour_pack_capacity_binding.sql',
-  '20260922100000_integrated_trip_binding_repair.sql',
+  '20260922170000_integrated_model_binding_successor.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

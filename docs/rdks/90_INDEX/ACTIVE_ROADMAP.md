@@ -1,3 +1,18 @@
+# Aktivt roadmap – 2026-09-22, 4.0.464 public-hour-rebind
+
+0. [x] Afgræns code-only-run `35749000940` til den gamle digest/modelbinding
+   i den bevarede public-hour-pakke.
+1. [x] Rebind atomisk timefiler, startprognose, manifest og alle checksums;
+   verificér materialisering af alle 118 timer.
+2. [x] Gennemfør bindinginventaret igen efter PR-gatens stale-hashfund;
+   opret append-only `20260922170000`-successor og synkronisér alle aktuelle
+   consumers uden at ændre den immutable forgængermigration.
+3. [ ] Bestå exact-head-kontrol og merge 4.0.464.
+4. [ ] Kør én providerfri code-only migration/readback på main.
+5. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og følg cache,
+   artifact, deploy og offentlig runtime.
+6. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+
 # Aktivt roadmap – 2026-09-22, 4.0.463 bounded migreringsskrivning
 
 0. [x] Afgræns code-only-run `35746937526` til den resterende samlede

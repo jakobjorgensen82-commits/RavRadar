@@ -1,3 +1,27 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 public-hour-rebind
+
+Code-only-run `35749000940` bekræftede, at den bounded migreringswriter nu
+skrev det store conditions-dokument, men den næste kontrol fandt en gammel
+startup-national-forecast-digest i den bevarede 118-timerspakke.
+
+4.0.464 rebinder hele pakken atomisk, når modelhashen skifter: timefiler,
+delivery-binding, details-digest, national forecast, manifest og alle rå/
+komprimerede checksums følger samme aktuelle identitet. Testen materialiserer
+pakken igen og verificerer alle timefiler. Ingen provider, cache, score,
+geometri eller public data ændres.
+
+Næste trin er exact-head/sourcegate, merge og én providerfri code-only-kørsel
+på main.
+
+PR-gaten viste samtidig den kendte fejltype med spredt identitet: 4.0.464's
+nye runtimekode ændrede den transitive modelbundlehash, men den tidligere
+`20260922100000`-migration var historisk og måtte ikke omskrives. Den aktuelle
+sandhed er derfor det append-only successor-led
+`20260922170000_integrated_model_binding_successor.sql` med integreret
+`modelBundleSha256=2c26b855fc0e93754c5f0ba586f6d2a2864c6de17880717ab6cd6c8cbc3bcad7`.
+Schema, installer, Edge, admin, fixtures og gates er synkroniseret til samme
+binding; forgængermigrationen er fortsat uændret historik.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.463 bounded migreringsskrivning
 
 Code-only-run `35746937526` bekræftede, at 4.0.462's iterative

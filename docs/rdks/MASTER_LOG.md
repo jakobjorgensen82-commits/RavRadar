@@ -1,3 +1,22 @@
+# 2026-09-22 – 4.0.464 rebinder den bevarede public-hour-pakke
+
+Code-only-run `35749000940` kom gennem 4.0.463's bounded migreringsskrivning,
+men stoppede i den hashbundne startprognose. Den gamle modelbinding var også
+indlejret i alle 118 private timefiler, deres details-digest og pakkens
+manifest.
+
+4.0.464 skriver derfor en ny public-hour-pakke atomisk ved modelhash-
+migration: timefilernes delivery-envelope, eventuel national forecast,
+manifest, rå/komprimerede hashes og conditions-markøren opdateres samlet.
+Materialiseringstesten verificerer den nye binding på alle poster. Ingen
+provider- eller scoredata ændres.
+
+PR-gaten fandt derefter en stale modelbundlebinding i den historiske
+`20260922100000`-migration. Den er ikke ændret. 4.0.464 tilføjer i stedet
+`20260922170000_integrated_model_binding_successor.sql` og synkroniserer alle
+aktuelle SQL-/runtimeforbrugere til den nye transitive bundlehash
+`2c26b855…`.
+
 # 2026-09-22 – 4.0.463 bounded skrivning i post-cutover-migreringen
 
 Code-only-run `35746937526` kom forbi identitets-, database-, restore- og

@@ -364,7 +364,7 @@ for (const marker of [
   'measurementsChanged: false',
   'candidateStatesChanged: false',
   'privatePayloadIncluded: false',
-  "transitionKind: result.transitionKind",
+  'transitionKind: migrationResult.transitionKind',
   "'CONTRACT_ONLY_REBIND'",
   'migratedConditionsBytes:',
   'migratedConditionsSha256:',

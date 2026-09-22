@@ -11,10 +11,16 @@ import {
   inspectPrivatePublicHourDeliveryPack,
   installPrivateConditionsAndHourPack,
   materializePrivatePublicHourDeliveryPack,
+  rebindPrivatePublicHourDeliveryPack,
 } from './lib/public-hour-delivery-pack.mjs';
 import { resolvePublicNationalForecast } from './public-conditions-lib.mjs';
 
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+const canonical = value => Array.isArray(value)
+  ? `[${value.map(canonical).join(',')}]`
+  : value && typeof value === 'object'
+    ? `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`
+    : JSON.stringify(value);
 
 test('public hour delivery is compacted, authenticated and restored byte-for-byte', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-public-hour-pack-test-'));
@@ -93,7 +99,49 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
     for (const [time, descriptor] of Object.entries(restored.hours)) {
       const text = await fs.readFile(path.join(restoredRoot, descriptor.path.replace(/^\.\//, '')), 'utf8');
       assert.equal(text, originals.get(time));
-      assert.equal(digest(text), descriptor.sha256);
+    assert.equal(digest(text), descriptor.sha256);
+    }
+
+    const targetBinding = { ...modelBinding, modelBundleSha256: 'c'.repeat(64) };
+    const targetStartupNationalForecast = {
+      ...startupNationalForecast,
+      modelBinding: targetBinding,
+    };
+    const targetConditions = structuredClone(compact);
+    targetConditions.publicHourDelivery = {
+      ...targetConditions.publicHourDelivery,
+      sourceDetailsSha256: 'b'.repeat(64),
+      modelBinding: targetBinding,
+      startupNationalForecast: targetStartupNationalForecast,
+      startupNationalForecastSha256: digest(canonical(targetStartupNationalForecast)),
+    };
+    const reboundPath = path.join(root, '.cache', 'rebound.pack');
+    const rebound = await rebindPrivatePublicHourDeliveryPack({
+      sourcePackPath: outputPath,
+      sourceConditions: compact,
+      targetConditions,
+      targetDetailsSha256: 'b'.repeat(64),
+      outputPath: reboundPath,
+    });
+    Object.assign(targetConditions.publicHourDelivery, rebound);
+    const reboundInspection = await inspectPrivatePublicHourDeliveryPack({
+      packPath: reboundPath,
+      conditions: targetConditions,
+    });
+    assert.equal(reboundInspection.manifest.sourceDetailsSha256, 'b'.repeat(64));
+    assert.deepEqual(reboundInspection.manifest.modelBinding, targetBinding);
+    const reboundRoot = path.join(root, 'rebound-restored');
+    const reboundRestored = await materializePrivatePublicHourDeliveryPack({
+      packPath: reboundPath,
+      conditions: targetConditions,
+      liveDirectory: reboundRoot,
+    });
+    for (const entry of reboundRestored.manifest.entries) {
+      const document = JSON.parse(await fs.readFile(
+        path.join(reboundRoot, 'forecast', entry.file), 'utf8',
+      ));
+      assert.equal(document.delivery.sourceDetailsSha256, 'b'.repeat(64));
+      assert.deepEqual(document.delivery.modelBinding, targetBinding);
     }
     const tampered = Buffer.from(await fs.readFile(outputPath));
     tampered[tampered.length - 1] ^= 1;
