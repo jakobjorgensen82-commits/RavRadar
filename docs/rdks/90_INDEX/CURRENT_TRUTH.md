@@ -1,3 +1,18 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.463 bounded migreringsskrivning
+
+Code-only-run `35746937526` bekræftede, at 4.0.462's iterative
+struktur-sammenligning virkede, men migreringen stoppede bagefter, fordi den
+stadig byggede hele private `conditions.json` som én indrykket JSON-streng.
+Det er samme V8-grænse som tidligere, blot i writer-trinnet.
+
+4.0.463 bruger nu den fælles bounded, kompakte og atomiske JSON-writer i
+migreringen og beregner digest efter skrivningen. Måltesten skriver den fulde
+673-dele × 118-timers struktur uden en samlet forventningsstreng.
+
+Ingen provider, cache, score, geometri eller public artifact er ændret. Næste
+trin er exact-head/sourcegate, merge og én providerfri code-only-kørsel på
+main; normal vejrkørsel må først genoptages efter grøn migration/readback.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.460 predecessor-diagnostik
 
 Code-only-run `35738220142` kom gennem sourcekontrol, migration,

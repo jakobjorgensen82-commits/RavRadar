@@ -1,3 +1,21 @@
+# 4.0.463 checkpoint – migreringens anden V8-strenggrænse
+
+Code-only-run `35746937526` kom forbi alle tidligere identitets-, database-,
+restore- og importtrin, men stoppede i den private post-cutover-migrering med
+`Invalid string length`. 4.0.462 havde fjernet det samme problem fra den
+iterative lighedskontrol, men selve migreringen brugte stadig
+`JSON.stringify(value, null, 2)` ved skrivning af det store `conditions.json`.
+
+4.0.463 kobler migreringen på den eksisterende
+`scripts/lib/bounded-json-writer.mjs`. Den skriver kompakt og atomisk i
+begrænsede stykker, og migreringen hasher først efter en vellykket rename.
+Den store regressionstest dækker 673 dele × 118 timer. Ingen provider eller
+public artifact er ændret i dette checkpoint.
+
+Næste trin: målrettede tests, versions-/RDKS-validering, exact-head sourcegate,
+PR/merge og én providerfri code-only-kørsel på main. Først hvis migrering,
+readback, restore og deploy er grønne, genoptages almindelig vejrkørsel.
+
 # 4.0.460 checkpoint – feltdiagnose for dynamisk predecessor-mismatch
 
 Code-only-run `35738220142` kom gennem source, migration, database-readback,

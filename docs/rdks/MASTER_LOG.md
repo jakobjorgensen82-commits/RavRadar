@@ -1,3 +1,17 @@
+# 2026-09-22 – 4.0.463 bounded skrivning i post-cutover-migreringen
+
+Code-only-run `35746937526` kom forbi identitets-, database-, restore- og
+importtrinene, men stoppede i migreringen med `Invalid string length`. Den
+iterative sammenligning fra 4.0.462 var grøn; den resterende fejl var den
+separate writer, der stadig byggede hele private `conditions.json` med
+`JSON.stringify(value, null, 2)`.
+
+4.0.463 kobler migreringen på den eksisterende bounded, kompakte og atomiske
+JSON-writer og hasher først efter vellykket skrivning. Den store måltest
+dækker 673 dele × 118 timer uden en samlet forventningsstreng. Ingen provider,
+cache, score, geometri eller public artifact er ændret. Næste trin er
+exact-head/sourcegate, merge og én providerfri code-only-kørsel.
+
 # 2026-09-22 – 4.0.461 vælger den faktiske protected predecessor
 
 Code-only-run `35740940791` kom gennem source, migration-readback, restore og

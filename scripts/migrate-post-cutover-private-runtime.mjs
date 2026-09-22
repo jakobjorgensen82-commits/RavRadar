@@ -47,6 +47,7 @@ import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import { assertRuntimeBindingRegistry } from './runtime-binding-registry.mjs';
+import { writeBoundedJsonAtomic } from './lib/bounded-json-writer.mjs';
 
 assertRuntimeBindingRegistry();
 
@@ -566,22 +567,15 @@ async function readJson(file, label) {
   }
 }
 
-async function atomicWriteJson(file, value) {
+export async function atomicWriteJson(file, value) {
   const target = path.resolve(file);
-  await fs.mkdir(path.dirname(target), { recursive: true });
-  const temporary = `${target}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
-  const text = `${JSON.stringify(value, null, 2)}\n`;
-  try {
-    await fs.writeFile(temporary, text, { flag: 'wx' });
-    await fs.rename(temporary, target);
-    return {
-      bytes: Buffer.byteLength(text),
-      sha256: crypto.createHash('sha256').update(text).digest('hex'),
-    };
-  } catch (error) {
-    await fs.rm(temporary, { force: true }).catch(() => {});
-    throw error;
-  }
+  // The migrated conditions document can contain all 673 parts and the full
+  // continuation history.  JSON.stringify(value, null, 2) creates one V8
+  // string for that entire document and is the exact source of the recurring
+  // `Invalid string length` failure.  Reuse the bounded writer used by the
+  // normal weather path so this migration has the same streaming guarantee.
+  await writeBoundedJsonAtomic(target, value);
+  return digestPrivateRuntimeFile(target);
 }
 
 async function importPredecessorModules(predecessorRoot, sourceHead) {
