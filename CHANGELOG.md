@@ -1,3 +1,11 @@
+## 4.0.459 – Komplet predecessor-manifestidentitet (2026-09-22)
+
+Code-only-run `35734072736` brugte den korrekte predecessor-source, men den
+fail-closed manifestkontrol fandt, at den faste identitet manglede
+`productionReferenceAt` og `generatedAt`. 4.0.459 tilføjer de verificerede
+tider fra `rr-20260921170645-210`; ingen data eller model ændres. Se
+`DEC-0236` og `CHANGELOG-4.0.459.md`.
+
 ## 4.0.458 – Neutral predecessor-workspace i code-only workflow (2026-09-22)
 
 Code-only-run `35732235540` stoppede korrekt, fordi workflowet stadig havde en

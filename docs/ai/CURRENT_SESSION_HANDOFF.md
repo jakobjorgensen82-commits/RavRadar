@@ -1,3 +1,11 @@
+# 4.0.459 checkpoint – komplet predecessor-manifestidentitet
+
+Code-only-run `35734072736` kom gennem source, migration, readback, restore og
+den neutrale workspace, men manifestkontrollen afviste den faste identitet,
+fordi `productionReferenceAt` og `generatedAt` manglede. 4.0.459 tilføjer de
+verificerede tider fra `rr-20260921170645-210`. Næste trin er exact-head/
+code-only-kørsel på main.
+
 # 4.0.458 checkpoint – neutral predecessor-workspace
 
 Code-only-run `35732235540` kom gennem migration, database-readback og

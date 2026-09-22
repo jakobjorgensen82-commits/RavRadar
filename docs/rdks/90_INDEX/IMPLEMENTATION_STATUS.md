@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.459
+
+- [x] Afgræns code-only-run `35734072736` til de manglende manifesttider i den
+  faste predecessor-identitet efter grøn source-, migration- og restore-kontrol.
+- [x] Tilføj de verificerede `productionReferenceAt`-/`generatedAt`-felter til
+  identiteten og måltesten.
+- [x] Saml første binding-inventar med konkrete producenter, forbrugere og
+  tidligere stale-binding-fejl; central runtime-manifestkilde er fortsat
+  næste særskilte stabilitetsopgave.
+- [ ] Bestå exact-head-kontrol og ny code-only genbinding på main.
+- [ ] Genoptag én normal vejrkørsel fra gemt fremgang og kræv privat save,
+  artifact, deploy og offentlig runtime.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.458
 
 - [x] Afgræns code-only-run `35732235540` til en skjult historisk source-sti i

@@ -1,3 +1,19 @@
+# Aktivt roadmap – 2026-09-22, 4.0.459 fra komplet predecessor-identitet til selvstændig drift
+
+0. [x] Afgræns code-only-run `35734072736`: source og sti var korrekte, men
+   predecessor-identiteten manglede manifestets to tidsfelter.
+1. [x] Tilføj de verificerede tider og behold den eksakte fail-closed kontrol.
+2. [ ] Bestå exact-head-kontrol og ny code-only genbinding på main.
+3. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,
+   artifact, deploy og offentlig runtime.
+4. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+5. [ ] Efter stabil drift: samle gentagne identitetsbindinger i én versioneret
+   runtime-manifestkilde; fjern ikke reelle integritetsbarrierer.
+
+6. [x] Start binding-inventaret i
+   `docs/ai/BINDING_IDENTITY_INVENTORY_4.0.459.md` med fejlspor fra
+   4.0.451–4.0.459.
+
 # Aktivt roadmap – 2026-09-22, 4.0.458 fra skjult stale binding til selvstændig drift
 
 0. [x] Afgræns code-only-run `35732235540`: den levende predecessor blev

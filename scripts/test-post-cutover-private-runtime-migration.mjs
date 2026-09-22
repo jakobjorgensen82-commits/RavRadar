@@ -23,6 +23,8 @@ import {
 
 assert.equal(POST_CUTOVER_PREDECESSOR.sourceHead, 'a6d89798c76a5218c5d699961474f4259835dfb9');
 assert.equal(POST_CUTOVER_PREDECESSOR.datasetId, 'rr-20260921170645-210');
+assert.equal(POST_CUTOVER_PREDECESSOR.productionReferenceAt, '2026-09-21T16:00:00.000Z');
+assert.equal(POST_CUTOVER_PREDECESSOR.generatedAt, '2026-09-21T17:06:45.191Z');
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedZoneCount, 210);
 assert.equal(POST_CUTOVER_PREDECESSOR.expectedPartCount, 673);
 assert.equal(PRIVATE_RUNTIME_FILES.length, 9);
@@ -54,6 +56,8 @@ assert.deepEqual(unchangedBindingCarrier, unchangedBindingCarrierBefore);
 const protectedManifest = {
   datasetId: POST_CUTOVER_PREDECESSOR.datasetId,
   bundleContentSha256: POST_CUTOVER_PREDECESSOR.bundleContentSha256,
+  productionReferenceAt: POST_CUTOVER_PREDECESSOR.productionReferenceAt,
+  generatedAt: POST_CUTOVER_PREDECESSOR.generatedAt,
   zoneCount: POST_CUTOVER_PREDECESSOR.expectedZoneCount,
   partCount: POST_CUTOVER_PREDECESSOR.expectedPartCount,
   modelBinding: POST_CUTOVER_PREDECESSOR.modelBinding,

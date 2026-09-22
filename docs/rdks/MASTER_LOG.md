@@ -1,3 +1,11 @@
+# 2026-09-22 – 4.0.459 komplet predecessor-manifestidentitet
+
+Code-only-run `35734072736` brugte korrekt source og neutral workspace, men
+stoppede i den eksisterende fail-closed manifestkontrol, fordi predecessor-
+identiteten manglede `productionReferenceAt` og `generatedAt`. 4.0.459 tilføjer
+de verificerede tider fra `rr-20260921170645-210`; der er ingen data-, score-
+eller runtimeændring.
+
 # 2026-09-22 – 4.0.458 neutral predecessor-workspace
 
 Code-only-run `35732235540` stoppede efter grøn database-readback og restore,

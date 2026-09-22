@@ -1,3 +1,16 @@
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.459 ufuldstændig predecessor-identitet
+
+Code-only-run `35734072736` brugte den korrekte live descriptor og den
+neutrale predecessor-sti, men manifestkontrollen afviste den faste identitet,
+fordi de to obligatoriske tider manglede. 4.0.459 tilføjer den verificerede
+`productionReferenceAt=2026-09-21T16:00:00.000Z` og
+`generatedAt=2026-09-21T17:06:45.191Z` for datasættet
+`rr-20260921170645-210`.
+
+Binding-inventaret i `docs/ai/BINDING_IDENTITY_INVENTORY_4.0.459.md` samler
+nu de konkrete identitetsgrupper, forbrugere og de historiske fejl, der skal
+bruges til en senere centralisering. Centraliseringen er ikke kørt endnu.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.458 skjult predecessor-sti
 
 Code-only-run `35732235540` bekræftede migration og restore af den beskyttede
