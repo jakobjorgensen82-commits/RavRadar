@@ -33,6 +33,14 @@ startprognose- og pakkehash. Den samlede public-hour-identitet er tilføjet
 exact-head, merge og samme providerfri code-only-kæde; ingen vejrhentning skal
 gentages.
 
+Live-run `35757878823` bekræftede derefter, at metadatarettelsen virker:
+rebind, atomisk installation og eksakt privat runtime var grønne. Næste trin,
+offentlig runtimegenbygning, ramte Nodes standardheap på cirka 4 GiB og
+stoppede før artifact/deploy. Den normale produktionsbygger bruger allerede
+`--max-old-space-size=8192` for samme 210/673/118-form. Den lokale opfølgning
+sætter samme afgrænsede heap på hele code-only-jobbet, så senere Node-trin
+ikke rammer den samme grænse. Ingen provider blev startet.
+
 # 4.0.463 checkpoint – migreringens anden V8-strenggrænse
 
 Code-only-run `35746937526` kom forbi alle tidligere identitets-, database-,

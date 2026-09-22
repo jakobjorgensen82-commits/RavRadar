@@ -1,3 +1,11 @@
+# 2026-09-22 – 4.0.464 code-only public rebuild får produktionsheap
+
+Run `35757878823` bestod rebindningen, atomisk privat installation og eksakt
+runtimekontrol. Public rebuild ramte derefter Nodes cirka 4 GiB standardheap
+før artifact/deploy. Den normale 210/673/118-bygger bruger allerede 8 GiB.
+Code-only-jobbet får samme afgrænsede heap på jobniveau, så alle tunge
+efterfølgende Node-trin arver den. Ingen provider eller vejrdata blev berørt.
+
 # 2026-09-22 – 4.0.464 registrerer faktisk public-hour-metadataændring
 
 PR #421 blev merged som `912a1f67`. Providerfri code-only-run
