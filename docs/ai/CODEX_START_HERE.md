@@ -1885,3 +1885,15 @@ source-ancestry, 210/673, privacy og normal Pages-kontrol.
 Næste: slut dokumentation/måltests/geodatabevis → én exact-head → merge →
 saved-weather-continuation → levende prognose- og scorekontrol. Ingen
 providergentagelse eller oneoff. Scheduler pauset. DEC-0185. Sol/Ekstra høj.
+# AKTUELT CHECKPOINT – 2026-09-22 – lokal 4.0.465 timefilbinding
+
+Main `90256510`/4.0.464 deployede grøn providerfri kørsel `35771214115`,
+men offentlig prognose/rangliste forsvandt. Det valgte datasæt var den nyere
+centrale 19:00-generation, ikke den tidligere offentlige 16:00-generation.
+Timefilens ydre modelbinding var aktuel; indre scorefelter bar gammel bundle.
+Browseren afviste den korrekt. Normalrun `35773937409` blev annulleret før
+leverandører og deploy. Lokal 4.0.465 genbinder indre metadata i eksakt
+post-cutover-migration og stopper mismatch i Pages-preflight. Bundlen er
+uændret. Næste: målrettede versions-/RDKS-kontroller, exact-head PR, merge,
+én almindelig vejropdatering og offentlig 118-timers/browserkontrol. Den
+centrale 19:00-pakke er endnu ikke repareret; påstå ikke at siden er hel.

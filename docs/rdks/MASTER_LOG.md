@@ -4877,3 +4877,12 @@ vejrdata eller publicering fandt sted i runnet.
 Binding-inventarets additive registerdesign er fortsat autoritativt for senere
 fund: én klassificeret post, én producent, navngivne consumers og målrettet
 validator; ingen spredte historiske kopier.
+# 2026-09-22 – 4.0.465 indre modelbinding i public-hour-pakken
+
+Deploy `35771214115` var grønt, men browseren afviste timefilerne: ydre
+19:00-binding var aktuel, indre scorebinding var fra forgængeren. Det var
+ikke et valg af den ældre 16:00-cache. Den annullerede almindelige kørsel
+`35773937409` nåede ikke leverandører eller deploy. Den eksakte migration
+genbinder nu indre metadata, og Pages-audit kræver ens binding før publicering.
+Måltest og faktisk offentlig timefil er lokalt bevis; ny almindelig kørsel og
+browserkontrol er fortsat åbne.

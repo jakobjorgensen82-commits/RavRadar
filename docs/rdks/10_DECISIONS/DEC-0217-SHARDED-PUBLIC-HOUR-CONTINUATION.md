@@ -1,5 +1,21 @@
 # DEC-0217 – Offentlige timefiler bevares i en privat leveringspakke
 
+## Tillæg 2026-09-22 – indre modelbinding er del af samme atomiske par
+
+Det grønne providerfri deploy `35771214115` publicerede den nyere centrale
+19:00-generation, men dens 118 timefiler havde stadig forgængerens
+modelbundlehash i indre scorefelter. Browseren afviste dem, selv om manifest,
+pakke og ydre delivery-binding var aktuelle. Den ydre binding alene er derfor
+ikke tilstrækkeligt bevis.
+
+Ved eksakt post-cutover-rebind skal alle genkendte indre modelbærere i hver
+timefil føres til samme aktuelle binding, før filerne hashbindes og pakkes.
+Pages-preflight skal selv kontrollere dette i de endelige offentlige filer.
+Ukendt metadata, anden scoreværdi eller andre vejrdata må ikke omskrives som
+en skjult del af genbindingen. Den allerede beskyttede 19:00-pakke ændres
+ikke af denne regel alene; normal vejrhentning må bygge et nyt atomisk par.
+
+
 **Status:** Implementeret i 4.0.438; overgangskorrektion lokal i 4.0.439;
 produktionsbevis åbent
 **Dato:** 2026-09-19

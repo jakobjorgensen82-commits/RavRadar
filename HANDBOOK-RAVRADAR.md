@@ -1,6 +1,19 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.464
+**Håndbogsversion:** 4.0.465
+
+## 89.61 4.0.465 – Timefiler skal have samme modelmærke hele vejen igennem
+
+En teknisk vellykket opdatering gjorde den nyere vejrpakke offentlig, men
+prognosen og ranglisten forsvandt. Pakken havde det nye modelmærke udenpå,
+mens scorefelterne inde i timefilerne stadig havde det gamle. Browseren
+afviste derfor oplysningerne i stedet for at vise en blanding af to modeller.
+
+Rettelsen opdaterer også de indre modelmærker, når en kendt, gemt pakke
+føres frem. Før offentliggørelse kontrolleres alle timefiler for samme
+modelmærke. Vejrmålinger, scoretal og beregningsregler ændres ikke. Den
+allerede gemte pakke omskrives ikke uden særskilt bevis; næste almindelige
+vejrkørsel skal bygge en ny, samlet pakke, hvorefter siden kontrolleres.
 
 ## 89.60 4.0.455 – Vejrkørslen skal kunne reparere og fortsætte selv
 

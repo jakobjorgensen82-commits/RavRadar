@@ -5004,3 +5004,24 @@ en glemt binding, skal den tilføjes som én registerpost med klasse, scope,
 producent, consumers, source-of-truth og validator; den skal ikke kopieres til
 flere workflows. Den konkrete manifestcentralisering er stadig et særskilt
 roadmappunkt og må ikke erklæres færdig på baggrund af dokumentationen alene.
+# NYESTE SANDHED – 2026-09-22 – lokal 4.0.465 indre public-hour-binding
+
+Det providerfri main-run `35771214115` var grønt og deployede en nyere,
+centralt gemt 19:00-generation over den tidligere offentlige 16:00-generation.
+Det var ikke en gammel cache. Den ydre delivery- og pakkeidentitet blev
+genbundet til den aktuelle integrerede model `2c26b855…`, mens indre
+scorefelter i timefilerne fortsat bar `14f3f0c9…`. Browserens egen
+modelkontrol afviste dem; derfor forsvandt prognose og rangliste. En faktisk
+offentlig timefil reproducerer fejlen, og eksakt metadataopdatering af dens
+3.244 indre felter består den samme kontrol. Ingen målinger blev ændret.
+
+4.0.465 fører den eksakte forgængermigration gennem hver pakket timefils
+kendte indre modelbærere og forsegler hele 118-timerspakken igen. En særskilt
+Pages-audit kræver nu samme modelbinding hele vejen ind i hver offentlig
+leveringsfil. Ændringen ligger uden for den integrerede scorebundle; dens
+hash, formel, scoretal og vejrprioritet er uændrede. Den allerede beskyttede
+19:00-pakke er ikke omskrevet. Normalrun `35773937409` blev annulleret før
+leverandører, cacheskrivning og deploy. Efter exact-head/merge skal én
+almindelig kørsel skabe et nyt atomisk par og bevise cache, artifact, Pages
+og browser. Indtil da er offentlig prognose/rangliste ikke verificeret som
+genoprettet.

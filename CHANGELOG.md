@@ -2140,3 +2140,12 @@ binding, men stoppede i migratorens Candidate G-sammenligning med
 `conditions.json`. 4.0.462 sammenligner den store 673-dels state direkte og
 iterativt, så integritetskontrollen bevares uden at samle hele runtime i én
 streng. En stor regressionstest er tilføjet. Se `CHANGELOG-4.0.462.md`.
+## 4.0.465 – offentlige timefiler får én gennemgående modelbinding (2026-09-22)
+
+Det vellykkede providerfri deploy `35771214115` publicerede en nyere gemt
+generation, men indre scorefelter i dens 118 timefiler bar stadig den gamle
+modelhash. Browseren afviste derfor prognose og rangliste. Post-cutover-
+migrering genbinder nu også disse indre metadata, og Pages-audit afviser
+uforenelige filer før deploy. Score, vejrdata og modelbundle er uændrede.
+Den annullerede normale kørsel `35773937409` hentede eller gemte intet; en
+frisk almindelig kørsel efter merge skal bevise opbygning og offentlig visning.

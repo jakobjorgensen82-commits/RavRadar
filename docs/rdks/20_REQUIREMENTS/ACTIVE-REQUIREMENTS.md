@@ -2200,3 +2200,10 @@ lokalisolationskrav består.
 - **REQ-4.0.403-ONE-SOURCE-GATE-007 – BINDENDE:** 4.0.403 kører én exact-head sourcegate før merge; den gemte fortsættelse genbruger dette bevis.
 
 DEC-0185. Scheduler forbliver pauset til offentlig prognose og efterfølgende normal vedligeholdelse er bevist.
+# Aktuel præcisering 2026-09-22 – 4.0.465 indre timefilbinding
+
+- **REQ-PUBLIC-HOUR-NESTED-BINDING-0465 – BINDENDE:** Ved eksakt
+  modelmetadataovergang skal alle genkendte indre scorebindinger i samtlige
+  118 timefiler følge den ydre aktuelle binding. Pages-preflight afviser en
+  fil med ældre eller ukendt indre binding, selv om dens hash og ydre manifest
+  er gyldige. Målinger og scoretal bevares. Se DEC-0217's tillæg 2026-09-22.

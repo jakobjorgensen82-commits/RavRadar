@@ -2897,3 +2897,13 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   det additive registerdesign er dokumenteret. Den egentlige fælles
   runtime-manifestkilde er endnu ikke fuldt implementeret; nye bindinger må
   derfor ikke kaldes automatisk dækket af dokumentationen alene.
+# Aktuelle issues – 2026-09-22, lokal 4.0.465
+
+- **ISSUE-PUBLIC-HOUR-NESTED-BINDING-35771214115 – LOKALT RETTET /
+  PRODUKTIONSBEVIS ÅBENT:** Den nyere 19:00-cache blev faktisk deployet, men
+  timefilernes indre scorebinding var `14f3f0c9…`, mens ydre manifest og
+  modelbinding var `2c26b855…`. Browseren afviste korrekt prognose og
+  rangliste. Eksakt post-cutover-migrering genbinder nu alle kendte indre
+  metadata; Pages-audit afviser en uforenelig timefil før deploy. Den allerede
+  centralt gemte pakke er ikke omskrevet. Først en ny almindelig kørsel og
+  offentlig browserkontrol kan lukke issuet.
