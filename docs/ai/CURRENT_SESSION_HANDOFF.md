@@ -3107,3 +3107,38 @@ Binding-inventaret fra 4.0.459 er stadig styrende: senere fund skal kunne
 tilføjes som én klassificeret registerpost med producent, consumers og
 validator. Den faktiske runtime-manifestcentralisering er endnu et åbent
 roadmappunkt.
+# Aktuelt handoff – 2026-09-22 – lokal 4.0.465
+
+Main `90256510223eb3bbfba875610d4cc7a3bfec97a8` deployede grønt i
+`35771214115`, men siden mistede prognose/rangliste. Nyeste gemte 19:00-
+generation blev faktisk brugt; den var ikke blevet forvekslet med den ældre
+16:00-cache. Den offentlige timefils ydre binding er `2c26b855…`, men indre
+scorebinding er `14f3f0c9…`, hvilket browseren afviser. En kopi af den
+faktiske offentlige timefil reproducerede fejlen. Eksakt metadataopdatering
+af 3.244 indre felter består samme kontrol uden at ændre score/målinger.
+Normalrun `35773937409` blev annulleret før providers, cache og deploy.
+
+Worktree `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.465-public-hour-nested-binding`, har lokale, endnu ikke
+committede ændringer. Post-cutover-migreringen genbinder nu indre timefelter
+før pakning; Pages-audit afviser uforenelige indre bindinger. Modelbundle
+forbliver `2c26b855…`; ingen SQL- eller scoreformelændring. Måltests for
+timepakke, Pages, migration og modelbundle er grønne. Version 4.0.465 er
+løftet, dokumentation opdateres. Den centrale 19:00-pakke er ikke omskrevet.
+
+Næste trin: synkronisér webhåndbogens installationskopi; kør målrettet
+version/RDKS og relevant sourcekontrol; commit/push, exact-head PR, merge;
+kør én almindelig vejropdatering, som bygger en frisk atomisk timepakke, og
+bevis protected cache-save, artifact, Pages, rangliste og prognose i browser.
+Hvis vejrkørslen fejler, undersøg hele kæden uden at gentage allerede grønne
+trin blindt. Anbefalet model/Indsats: Sol/Ekstra høj.
+# 4.0.465 – offentlig side genoprettet, Pages-retry afventer PR #427
+
+Normalrun `35778530384` lykkedes med hele leverandør-, cache-, build- og
+Pages-kæden. Den røde status var den efterfølgende cirka 56 sekunders
+live-verifikation, der stadig fik gammel manifest fra Pages. Browseren viser
+igen rangliste og femdøgnsprognose. Handoffets og live-sidens manifest er
+identiske, og samme 210/673-verifier bestod efter udbredelse. PR #427 har nu
+et snævert tre-minutters retry og regression for 12 gamle læsninger. Kør
+måltests/version/RDKS, commit/push, exact-head, merge og følg næste cron.
+Ingen ekstra oneoff eller gentaget providerarbejde kun for rød status.

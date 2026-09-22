@@ -5710,3 +5710,30 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Merge og kør én ny providerfri code-only continuation på main.
 - [ ] Først når den er grøn: genoptag én almindelig vejrkørsel fra gemt
   fremgang og verificér cache-save, artifact, deploy og offentlig runtime.
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.465
+
+- [x] Afgræns den grønne kode-only-kørsel `35771214115`: nyere beskyttet
+  19:00-data blev deployet, men indre timefilbindinger var gamle og afvist i
+  browseren. Det var ikke en 16:00-cache eller manglende timefiler.
+- [x] Annullér normalrun `35773937409` før providerarbejde og deploy.
+- [x] Reproducér fejlen i en faktisk offentlig timefil og bevis, at eksakt
+  genbinding af 3.244 indre metadatafelter løser modelkontrollen.
+- [x] Genbind indre scoremetadata ved eksakt post-cutover-migration; tilføj
+  nested-modelkontrol til Pages-audit og måltest for den ydre-only-fejl.
+- [x] Bevar den aktuelle integrerede modelbundle `2c26b855…` og uændrede
+  vejr-/scoreværdier.
+- [ ] Bestå versions-/RDKS-kontrol og én exact-head sourcegate, merge og
+  lad én almindelig vejrkørsel bygge et nyt gyldigt timepakkepar.
+- [ ] Verificér beskyttet cache-save, artifact, deploy samt synlig prognose og
+  rangliste i browseren. Følg derefter normal cron-vedligeholdelse.
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.465 Pages-retry
+
+- [x] Normalrun `35778530384`: alle leverandører, cache, 210/673-runtime,
+  artifact og Pages-deploy gennemført; rangliste og prognose synlige.
+- [x] Den røde slutkontrol afgrænset til Pages-udbredelse: forventet og live
+  manifest blev identiske, og præcis samme verifier bestod bagefter.
+- [x] Forlæng kun manifest-/artifactpolling til højst cirka tre minutter og
+  test 12 gamle manifestlæsninger før det nye vises.
+- [ ] Bestå PR #427 på nyt exact head og merge uden at gentage vejrleverandører.
+- [ ] Følg næste almindelige cron-kørsel på ny main og kontrollér slutstatus,
+  cache, data og offentlig side før stabil drift erklæres.

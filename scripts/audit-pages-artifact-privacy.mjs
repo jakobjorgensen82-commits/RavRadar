@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { publicDeliveryEntries, assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
+import { assertPublicDeliveryNestedBinding } from './lib/public-delivery-nested-binding.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -631,6 +632,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
       try {
         if (Buffer.byteLength(text) !== delivery.bytes || sha256(text) !== delivery.sha256) throw new Error('hash');
         assertPublicDeliveryDocument(document, deliveryManifest, delivery);
+        assertPublicDeliveryNestedBinding(document, deliveryManifest.ravScoreModelBinding);
       } catch { issues.push(`invalid public delivery binding at ${safePath(file.relative)}`); }
       // Do not hold all 328 projections (or duplicate texts) in memory.
     } else {

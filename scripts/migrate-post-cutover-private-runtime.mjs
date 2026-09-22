@@ -16,8 +16,8 @@ import {
 } from './lib/private-weather-component-inventory.mjs';
 import {
   privatePublicHourDeliveryMarker,
-  rebindPrivatePublicHourDeliveryPack,
 } from './lib/public-hour-delivery-pack.mjs';
+import { rebindPublicHourPackExact } from './lib/rebind-public-hour-pack-exact.mjs';
 import {
   buildPublicConditionDetails,
   compactJson,
@@ -1029,7 +1029,10 @@ async function validateAndMigrateConditions({
         || typeof publicHourPackTargetPath !== 'string') {
       throw new Error('Private public-hour pack rebind paths are missing');
     }
-    const targetMarker = structuredClone(sourcePublicHourMarker);
+    // The main metadata pass already upgraded every recognized nested model
+    // carrier in this marker. Do not clone the predecessor again here: that
+    // would silently put an old binding back into the retained forecast.
+    const targetMarker = structuredClone(migrated.publicHourDelivery);
     targetMarker.modelBinding = structuredClone(currentIntegratedBinding);
     targetMarker.startupNationalForecast = {
       ...targetMarker.startupNationalForecast,
@@ -1043,12 +1046,23 @@ async function validateAndMigrateConditions({
     );
     targetMarker.sourceDetailsSha256 = targetDetailsSha256;
     migrated.publicHourDelivery = targetMarker;
-    const rebound = await rebindPrivatePublicHourDeliveryPack({
+    const rebound = await rebindPublicHourPackExact({
       sourcePackPath: publicHourPackSourcePath,
       sourceConditions: source,
       targetConditions: migrated,
       targetDetailsSha256,
       outputPath: publicHourPackTargetPath,
+      rebindDocumentMetadata: (document, time) => {
+        const changed = migrateExactModelBindingMetadata(
+          document,
+          predecessorIntegratedBinding,
+          currentIntegratedBinding,
+          { label: `Public hour ${time} model metadata` },
+        );
+        if (!changed.some(path => path === 'coastalParts.modelBinding.modelBundleSha256')) {
+          throw new Error(`Public hour ${time} did not rebind its nested coastal model`);
+        }
+      },
     });
     Object.assign(migrated.publicHourDelivery, rebound);
     const publicHourDeliveryMetadataChanges = new Set(registerChangedBindingMetadata({

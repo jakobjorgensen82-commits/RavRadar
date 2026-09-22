@@ -13,6 +13,12 @@ import {
   materializePrivatePublicHourDeliveryPack,
   rebindPrivatePublicHourDeliveryPack,
 } from './lib/public-hour-delivery-pack.mjs';
+import {
+  POST_CUTOVER_PREDECESSOR,
+  migrateExactModelBindingMetadata,
+} from './migrate-post-cutover-private-runtime.mjs';
+import { rebindPublicHourPackExact } from './lib/rebind-public-hour-pack-exact.mjs';
+import { assertPublicDeliveryNestedBinding } from './lib/public-delivery-nested-binding.mjs';
 import { resolvePublicNationalForecast } from './public-conditions-lib.mjs';
 
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -30,7 +36,7 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
     const outputPath = path.join(root, '.cache', 'public-hour-delivery.pack');
     await fs.mkdir(forecast, { recursive: true });
     const start = Date.parse('2026-09-19T02:00:00.000Z');
-    const modelBinding = { modelId: 'test-model', stateSchemaVersion: '1' };
+    const modelBinding = structuredClone(POST_CUTOVER_PREDECESSOR.modelBinding);
     const sourceDetailsSha256 = 'a'.repeat(64);
     const hours = {};
     const originals = new Map();
@@ -42,6 +48,13 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
       const text = `${JSON.stringify({
         delivery: { schemaVersion: 1, kind: 'hour', key: time,
           sourceDetailsSha256, modelBinding },
+        coastalParts: { modelBinding, current: {
+          modelId: modelBinding.modelId,
+          modelVersion: modelBinding.modelId,
+          modelContractSha256: modelBinding.modelContractSha256,
+          modelBundleSha256: modelBinding.modelBundleSha256,
+          modelBinding,
+        } },
         repeatedPayload,
       })}\n`;
       const sha256 = digest(text);
@@ -116,12 +129,36 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
       startupNationalForecastSha256: digest(canonical(targetStartupNationalForecast)),
     };
     const reboundPath = path.join(root, '.cache', 'rebound.pack');
-    const rebound = await rebindPrivatePublicHourDeliveryPack({
+    const badReboundPath = path.join(root, '.cache', 'outer-only-rebound.pack');
+    const badRebound = await rebindPrivatePublicHourDeliveryPack({
+      sourcePackPath: outputPath,
+      sourceConditions: compact,
+      targetConditions,
+      targetDetailsSha256: 'b'.repeat(64),
+      outputPath: badReboundPath,
+    });
+    const badConditions = structuredClone(targetConditions);
+    Object.assign(badConditions.publicHourDelivery, badRebound);
+    const badRestored = await materializePrivatePublicHourDeliveryPack({
+      packPath: badReboundPath,
+      conditions: badConditions,
+      liveDirectory: path.join(root, 'bad-rebound'),
+    });
+    const badTime = Object.keys(badRestored.hours)[0];
+    const badDocument = JSON.parse(await fs.readFile(
+      path.join(root, 'bad-rebound', badRestored.hours[badTime].path), 'utf8',
+    ));
+    assert.throws(() => assertPublicDeliveryNestedBinding(badDocument, targetBinding),
+      /different model bundle/, 'an outer-only rebind must be rejected before publication');
+    const rebound = await rebindPublicHourPackExact({
       sourcePackPath: outputPath,
       sourceConditions: compact,
       targetConditions,
       targetDetailsSha256: 'b'.repeat(64),
       outputPath: reboundPath,
+      rebindDocumentMetadata: document => migrateExactModelBindingMetadata(
+        document, modelBinding, targetBinding, { label: 'Packed public hour metadata' },
+      ),
     });
     Object.assign(targetConditions.publicHourDelivery, rebound);
     const reboundInspection = await inspectPrivatePublicHourDeliveryPack({
@@ -142,6 +179,10 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
       ));
       assert.equal(document.delivery.sourceDetailsSha256, 'b'.repeat(64));
       assert.deepEqual(document.delivery.modelBinding, targetBinding);
+      assert.deepEqual(document.coastalParts.modelBinding, targetBinding);
+      assert.deepEqual(document.coastalParts.current.modelBinding, targetBinding);
+      assert.equal(document.coastalParts.current.modelBundleSha256,
+        targetBinding.modelBundleSha256);
     }
     const tampered = Buffer.from(await fs.readFile(outputPath));
     tampered[tampered.length - 1] ^= 1;

@@ -2884,3 +2884,11 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Genoptag først derefter én almindelig vejrkørsel fra gemt fremgang.
 6. [ ] Efter grøn drift: følg cacheopbygning, offentlig side og næste cron uden
    Codex-overvågning.
+# Aktivt roadmap – 2026-09-22, 4.0.465 offentlig timebinding
+
+1. [x] Reproducér hvorfor nyere 19:00-data gav tom prognose/rangliste.
+2. [x] Ret eksakt indre genbinding og stop uforenelige timefiler før Pages.
+3. [ ] Bestå målrettet version/RDKS og én exact-head PR-kontrol; merge.
+4. [ ] Kør én almindelig vejropdatering, ikke oneoff, og verificér cache-save,
+   118 timer, artifact, deploy og synlig prognose/rangliste.
+5. [ ] Følg mindst næste cron-kørsel og fortsæt derefter øvrige åbne roadmap.

@@ -1885,3 +1885,30 @@ source-ancestry, 210/673, privacy og normal Pages-kontrol.
 Næste: slut dokumentation/måltests/geodatabevis → én exact-head → merge →
 saved-weather-continuation → levende prognose- og scorekontrol. Ingen
 providergentagelse eller oneoff. Scheduler pauset. DEC-0185. Sol/Ekstra høj.
+# AKTUELT CHECKPOINT – 2026-09-22 – lokal 4.0.465 timefilbinding
+
+Main `90256510`/4.0.464 deployede grøn providerfri kørsel `35771214115`,
+men offentlig prognose/rangliste forsvandt. Det valgte datasæt var den nyere
+centrale 19:00-generation, ikke den tidligere offentlige 16:00-generation.
+Timefilens ydre modelbinding var aktuel; indre scorefelter bar gammel bundle.
+Browseren afviste den korrekt. Normalrun `35773937409` blev annulleret før
+leverandører og deploy. Lokal 4.0.465 genbinder indre metadata i eksakt
+post-cutover-migration og stopper mismatch i Pages-preflight. Bundlen er
+uændret. Næste: målrettede versions-/RDKS-kontroller, exact-head PR, merge,
+én almindelig vejropdatering og offentlig 118-timers/browserkontrol. Den
+centrale 19:00-pakke er endnu ikke repareret; påstå ikke at siden er hel.
+# AKTUELT CHECKPOINT – 2026-09-22 – 4.0.465 live genopretning
+
+Arbejd i indlejret `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.465-public-hour-nested-binding`, PR #427. Normalrun
+`35778530384` på gammel main gennemførte tre leverandører, cache, runtime,
+artifact og Pages. Browseren viser igen prognose og rangliste. Runnet blev
+rødt alene ved den umiddelbare offentlige slutkontrol: Pages serverede endnu
+forgængerens manifest. Det offentlige manifest matcher nu det forseglede
+handoff, og præcis samme verifier bestod 210/673 efter udbredelse.
+
+Lokal PR-rettelse forlænger det afgrænsede Pages-retry til cirka tre minutter
+og tester forsinket manifest. Bevar alle eksakte hash-/model-/privacykrav.
+Næste: målrettet RDKS/version, commit/push, én ny exact-head-PR-kontrol,
+merge, og følg næste normale cron uden at genhente vejret kun for denne
+statusfejl. Untracked `.tmp-420/` og `.tmp-run-*` må ikke stages.
