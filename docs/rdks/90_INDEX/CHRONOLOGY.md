@@ -1,3 +1,10 @@
+# 2026-09-22 – 4.0.460 feltdiagnose før predecessor-rettelse
+
+Code-only-run `35738220142` bestod source, migration, readback, restore og
+importkontrol, men stoppede ved den dynamiske predecessor-identitet. 4.0.460
+navngiver nu et konkret mismatching fladt felt med forventet/faktisk værdi,
+uden at svække fail-closed-adfærden eller starte ny vejrhentning.
+
 # 2026-09-21 – 4.0.450 giver public-hour-forseglingen realistisk bounded tid
 
 Run `35546109889` gennemførte leverandørkæde og 673/673 scoredele, men blev

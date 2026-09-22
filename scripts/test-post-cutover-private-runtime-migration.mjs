@@ -67,6 +67,14 @@ assert.doesNotThrow(() => validatePredecessorManifest(protectedManifest, previou
 assert.throws(
   () => validatePredecessorManifest({
     ...protectedManifest,
+    productionReferenceAt: '2026-09-21T15:00:00.000Z',
+  }, previous),
+  /productionReferenceAt/,
+  'A flat predecessor-identity mismatch must name the exact field',
+);
+assert.throws(
+  () => validatePredecessorManifest({
+    ...protectedManifest,
     contractHashes: {
       ...protectedManifest.contractHashes,
       fullRuntimeContractSha256: '0'.repeat(64),

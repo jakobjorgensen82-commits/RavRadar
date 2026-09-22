@@ -1,3 +1,16 @@
+# Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.460
+
+- [x] Afgræns code-only-run `35738220142`: source, migration, readback,
+  restore og importkontrol var grønne; predecessor-genbindingen stoppede med
+  en generisk flad identitetsfejl.
+- [x] Tilføj en begrænset feltvis diagnose for de seks flade predecessorfelter
+  uden at svække fail-closed-adfærden.
+- [x] Tilføj målrettet regressionstest, der kræver feltnavnet ved mismatch.
+- [ ] Bestå exact-head-kontrol og ny code-only-kørsel på main, og registrér den
+  konkrete dynamiske mismatch.
+- [ ] Ret den konkrete identitet på baggrund af run-evidens; start ikke vejr,
+  før code-only-kæden er grøn.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.459
 
 - [x] Afgræns code-only-run `35734072736` til de manglende manifesttider i den

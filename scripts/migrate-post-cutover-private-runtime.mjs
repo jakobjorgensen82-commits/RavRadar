@@ -646,14 +646,27 @@ export function validatePredecessorManifest(
   oldIntegratedBinding,
   predecessor = POST_CUTOVER_PREDECESSOR,
 ) {
-  if (!isPlainObject(manifest)
-      || manifest.datasetId !== predecessor.datasetId
-      || manifest.bundleContentSha256 !== predecessor.bundleContentSha256
-      || manifest.productionReferenceAt !== predecessor.productionReferenceAt
-      || manifest.generatedAt !== predecessor.generatedAt
-      || manifest.zoneCount !== predecessor.expectedZoneCount
-      || manifest.partCount !== predecessor.expectedPartCount) {
-    throw new Error('Protected predecessor bundle identity is not exact');
+  const expected = {
+    datasetId: predecessor?.datasetId,
+    bundleContentSha256: predecessor?.bundleContentSha256,
+    productionReferenceAt: predecessor?.productionReferenceAt,
+    generatedAt: predecessor?.generatedAt,
+    zoneCount: predecessor?.expectedZoneCount,
+    partCount: predecessor?.expectedPartCount,
+  };
+  const actual = isPlainObject(manifest)
+    ? Object.fromEntries(Object.keys(expected).map(key => [key, manifest[key]]))
+    : null;
+  const mismatches = actual === null
+    ? ['manifest']
+    : Object.keys(expected).filter(key => actual[key] !== expected[key]);
+  if (mismatches.length) {
+    const details = mismatches.map(key => ({
+      field: key,
+      expected: expected[key] ?? null,
+      actual: actual?.[key] ?? null,
+    }));
+    throw new Error(`Protected predecessor bundle identity is not exact: ${JSON.stringify(details)}`);
   }
   assertSame(manifest.modelBinding, predecessor.modelBinding, 'Protected bundle model binding');
   assertSame(manifest.modelBinding, oldIntegratedBinding, 'Archived-source model binding');

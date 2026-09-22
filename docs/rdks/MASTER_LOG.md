@@ -1,3 +1,13 @@
+# 2026-09-22 – 4.0.460 gør predecessor-mismatch synlig
+
+Code-only-run `35738220142` kom gennem source, migration, database-readback,
+private-runtime-restore og importkontrol, men stoppede i predecessor-
+genbindingen med den generiske besked `Protected predecessor bundle identity
+is not exact`. 4.0.460 tilføjer kun en begrænset feltdiagnose for de seks
+flade identitetsfelter og bevarer fail-closed-kontrollen. Ingen vejrleverandør,
+cache, score, geometri eller public artifact ændres. Næste code-only-kørsel
+skal vise den konkrete dynamiske mismatch, før den endelige identitet ændres.
+
 # 2026-09-22 – 4.0.459 komplet predecessor-manifestidentitet
 
 Code-only-run `35734072736` brugte korrekt source og neutral workspace, men
