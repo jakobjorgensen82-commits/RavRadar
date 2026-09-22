@@ -11,6 +11,12 @@ manifest, rå/komprimerede hashes og conditions-markøren opdateres samlet.
 Materialiseringstesten verificerer den nye binding på alle poster. Ingen
 provider- eller scoredata ændres.
 
+PR-gaten fandt derefter en stale modelbundlebinding i den historiske
+`20260922100000`-migration. Den er ikke ændret. 4.0.464 tilføjer i stedet
+`20260922170000_integrated_model_binding_successor.sql` og synkroniserer alle
+aktuelle SQL-/runtimeforbrugere til den nye transitive bundlehash
+`2c26b855…`.
+
 # 2026-09-22 – 4.0.463 bounded skrivning i post-cutover-migreringen
 
 Code-only-run `35746937526` kom forbi identitets-, database-, restore- og

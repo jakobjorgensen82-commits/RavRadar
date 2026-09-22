@@ -15,6 +15,12 @@ Ingen provider, cache, score, geometri eller public data er ændret i dette
 checkpoint. Næste trin er målrettede tests, exact-head/sourcegate, merge og én
 ny providerfri code-only-kørsel på main.
 
+PR-gaten fandt den samme spredte bindingstype som tidligere: modelbundlekoden
+var opdateret, men den seneste historiske migration bandt stadig forgængerens
+hash. Det er rettet uden at omskrive historien med
+`20260922170000_integrated_model_binding_successor.sql`; alle mutable SQL- og
+runtimeforbrugere bruger nu `2c26b855…` fra den nye successor.
+
 # 4.0.463 checkpoint – migreringens anden V8-strenggrænse
 
 Code-only-run `35746937526` kom forbi alle tidligere identitets-, database-,

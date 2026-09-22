@@ -13,6 +13,15 @@ geometri eller public data ændres.
 Næste trin er exact-head/sourcegate, merge og én providerfri code-only-kørsel
 på main.
 
+PR-gaten viste samtidig den kendte fejltype med spredt identitet: 4.0.464's
+nye runtimekode ændrede den transitive modelbundlehash, men den tidligere
+`20260922100000`-migration var historisk og måtte ikke omskrives. Den aktuelle
+sandhed er derfor det append-only successor-led
+`20260922170000_integrated_model_binding_successor.sql` med integreret
+`modelBundleSha256=2c26b855fc0e93754c5f0ba586f6d2a2864c6de17880717ab6cd6c8cbc3bcad7`.
+Schema, installer, Edge, admin, fixtures og gates er synkroniseret til samme
+binding; forgængermigrationen er fortsat uændret historik.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.463 bounded migreringsskrivning
 
 Code-only-run `35746937526` bekræftede, at 4.0.462's iterative

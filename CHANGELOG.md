@@ -14,6 +14,13 @@ Ingen providerkald, scoreformel, geometri, prioritet eller MISSING-regel
 ændres. Næste trin er exact-head sourcegate, PR/merge og en ny providerfri
 code-only-kørsel.
 
+4.0.464 indeholder også det append-only migrationsled
+`20260922170000_integrated_model_binding_successor.sql`. PR-gaten viste, at
+den nye runtimekode ændrede den transitive modelpakke, mens den tidligere
+historiske migration stadig bandt `dafee019…`. Den gamle migration er bevaret
+urørt; successor-migrationen gør `2c26b855…` til den aktuelle integrerede
+modelbundlebinding i checkpoint-CAS, schema, installer og release/readback.
+
 ## 4.0.463 – bounded skrivning i post-cutover-migreringen (2026-09-22)
 
 Code-only-run `35746937526` viste, at 4.0.462 korrekt fjernede det store

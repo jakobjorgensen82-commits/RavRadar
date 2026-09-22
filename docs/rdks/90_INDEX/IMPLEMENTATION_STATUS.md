@@ -4,6 +4,11 @@
   public-hour/startprognose efter grøn bounded JSON-skrivning.
 - [x] Rebind atomisk alle 118 timefiler, delivery-/details-binding,
   national forecast, manifest og checksums; tilføj materialiseringsregression.
+- [x] Afgræns PR-gatens tilbagevendende versions-/bindingfejl: den nye
+  transitive modelpakke var ikke indsat i den aktuelle SQL-kilde. Bevar
+  `20260922100000` urørt og tilføj append-only successor
+  `20260922170000_integrated_model_binding_successor.sql`; synkronisér alle
+  mutable consumers til `2c26b855…`.
 - [ ] Bestå exact-head-kontrol og merge 4.0.464.
 - [ ] Kør én ny providerfri code-only migration/readback på main.
 - [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og kræv cache-save,

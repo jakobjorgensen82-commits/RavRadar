@@ -6,6 +6,14 @@
   timefiler. 4.0.464 rebinder hele pakken atomisk og tester materialiseringen.
   Exact-head, merge og en ny providerfri code-only-kørsel mangler stadig.
 
+- **ISSUE-POST-CUTOVER-MODEL-BUNDLE-BINDING-35750921110 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** PR-gaten fandt den tilbagevendende spredte bindingfejl:
+  den nye runtimekode gav modelbundlehashen
+  `2c26b855fc0e93754c5f0ba586f6d2a2864c6de17880717ab6cd6c8cbc3bcad7`, mens
+  den immutable `20260922100000`-migration stadig brugte `dafee019…`.
+  4.0.464 tilføjer append-only successor `20260922170000` og synkroniserer
+  alle aktuelle consumers. Exact-head, merge og code-only-livebevis mangler.
+
 # Aktuelle issues – 2026-09-22, 4.0.463
 
 - **ISSUE-POST-CUTOVER-MIGRATION-V8-STRING-35746937526 – RETTET LOKALT /

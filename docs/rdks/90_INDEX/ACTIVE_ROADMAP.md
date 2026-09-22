@@ -4,11 +4,14 @@
    i den bevarede public-hour-pakke.
 1. [x] Rebind atomisk timefiler, startprognose, manifest og alle checksums;
    verificér materialisering af alle 118 timer.
-2. [ ] Bestå exact-head-kontrol og merge 4.0.464.
-3. [ ] Kør én providerfri code-only migration/readback på main.
-4. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og følg cache,
+2. [x] Gennemfør bindinginventaret igen efter PR-gatens stale-hashfund;
+   opret append-only `20260922170000`-successor og synkronisér alle aktuelle
+   consumers uden at ændre den immutable forgængermigration.
+3. [ ] Bestå exact-head-kontrol og merge 4.0.464.
+4. [ ] Kør én providerfri code-only migration/readback på main.
+5. [ ] Genoptag én almindelig vejrkørsel fra gemt fremgang og følg cache,
    artifact, deploy og offentlig runtime.
-5. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
+6. [ ] Følg mindst den næste cron-kørsel uden Codex-overvågning.
 
 # Aktivt roadmap – 2026-09-22, 4.0.463 bounded migreringsskrivning
 

@@ -54,7 +54,9 @@ samme SHA'er, tider eller IDs.
   `js/core/ravscore-public-runtime-contract.js` er browserens modtagere. De
   skal kun acceptere en public pakke, hvis manifestets samlede identitet passer.
 - Supabase-migrationerne fra `20260829020000` til
-  `20260922100000_integrated_trip_binding_repair.sql` er databaseproducenter;
+  `20260922170000_integrated_model_binding_successor.sql` er database-
+  producenter; `20260922100000_integrated_trip_binding_repair.sql` bevares som
+  immutable historik;
   `schema.sql`, `supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql` og workflowets
   readback er deres forbrugere.
 
@@ -74,7 +76,12 @@ samme SHA'er, tider eller IDs.
    anden hash end repositoryets binding og krævede en append-only repair-
    migration.
 6. **Readiness-head-drift (4.0.451):** et beskyttet readiness-dokument bar en
-   tidligere main-head efter en ellers færdig vejrproduktion.
+  tidligere main-head efter en ellers færdig vejrproduktion.
+7. **Modelbundle-drift (4.0.464):** PR-gaten fandt, at ny runtimekode havde
+   fået en ny transitive `modelBundleSha256`, mens den seneste historiske SQL-
+   migration stadig bar forgængerens hash. Den gamle migration måtte ikke
+   redigeres; et append-only successor-led blev den nye producent, og schema,
+   installer, Edge, admin, fixtures og gates blev synkroniseret.
 
 De første fire er samme arkitekturproblem i forskellige former: én identitet
 er blevet kopieret manuelt til flere lag. De sidste to viser, at database- og
