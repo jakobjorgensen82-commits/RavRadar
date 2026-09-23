@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 import {
   controlledLiveCurrentEnabled,
+  controlledLiveCurrentProofStatus,
   flattenCoastalPartsWithParentZoneId,
   latestVerifiedNativeCadenceSampleForPart,
   mergeLiveCurrentPilotIntoRecord,
@@ -706,6 +707,8 @@ for (const optionalHistoryPoisonedDocument of [
   );
   assert.equal(retained.hourly[1].currentUMps, 0.3,
     'a broken optional history seal must not disable the independent operational closure');
+  assert.equal(retained.hourly[3].currentUMps, -0.12,
+    'a broken optional history seal must not erase the closure at the far forecast horizon');
 }
 for (const poisonedDocument of [
   { ...live, entries: [{ ...copernicusEntry, uMps: 0.31 }, futureCopernicusEntry] },
@@ -728,6 +731,11 @@ const invalidOptionalAdvisory = {
   ...live,
   advisoryEntries: [{ malformed: true }],
 };
+assert.deepEqual(controlledLiveCurrentProofStatus(invalidOptionalAdvisory), {
+  operationalClosureValid: true,
+  advisoryHistoryValid: false,
+  regionalReferenceValid: true,
+}, 'safe diagnostics must identify the optional failure without mislabeling the closure');
 assert.equal(controlledLiveCurrentEnabled(invalidOptionalAdvisory), true,
   'invalid optional history must not disable an independently sealed operational closure');
 assert.equal(mergeLiveCurrentPilotIntoRecord(
@@ -737,6 +745,13 @@ assert.equal(mergeLiveCurrentPilotIntoRecord(
   { primaryCurrentVerified: () => false },
 ).hourly[1].currentUMps, 0.3,
 'invalid optional history must be ignored without discarding valid operational current');
+assert.equal(mergeLiveCurrentPilotIntoRecord(
+  record,
+  part,
+  invalidOptionalAdvisory,
+  { primaryCurrentVerified: () => false },
+).hourly[3].currentUMps, -0.12,
+'invalid optional history must not erase future operational current');
 const invalidOptionalRegionalReference = {
   ...live,
   regionalReferenceEntries: [{ malformed: true }],

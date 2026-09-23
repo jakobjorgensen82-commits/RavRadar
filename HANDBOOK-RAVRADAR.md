@@ -7,14 +7,29 @@
 To almindelige kørsler hentede vejr og gemte den private fremgang, men
 GitHub afbrød dem ved 90 minutter, før kontrol og levering var færdig. Det
 var fælles tidsgrænse for hele jobbet, ikke en fejl i strømopgørelsen.
-Normaljobbet får nu op til 180 minutter. Hver leverandør og cacheopbygningen
-har fortsat sine egne kortere grænser, og alle krav før offentliggørelse
-gælder fortsat. En sund kørsel afslutter så snart arbejdet er færdigt.
+Normaljobbet får nu op til 180 minutter. Leverandørerne har fortsat deres
+egne kortere grænser. Cache- og scorebygningen tog næsten 39 af sine 45
+minutter og får nu 60, fordi den rettede strøm også skal med gennem score.
+Alle krav før offentliggørelse gælder fortsat, og en sund kørsel afslutter
+så snart arbejdet er færdigt.
 
 De cirka 5.600 tomme par i den seneste rapport er strøm for bestemte
 kystdele og prognosetimer. De dækker ikke alle vejrtyper, og de er ikke
 blevet fyldt ved at ændre tidsgrænsen. Vi undersøger særskilt, hvorfor alle
 tre leverandører efterlader dem.
+
+Vi fandt også en anden fejl mellem vejrhentning og score: Et problem i
+ekstra historik kunne få RavRadar til at overse gyldig strøm fra Copernicus
+og Open-Meteo. Den sidste viste prognose brugte derfor kun DMI-strøm og
+mistede strøm helt efter cirka 36 timer. Nu holdes kontrollen af de
+supplerende prognosedata adskilt fra kontrollen af ekstra historik. Ugyldige
+data afvises stadig, men en fejl i valgfri historik får ikke lov at slette
+en gyldig prognose. Den første nye kørsel skal vise, at det også virker live.
+
+Tidligere scoretilstand var gemt og blev genbrugt for alle 673 kystdele.
+Det betyder ikke, at historikken allerede var komplet: ingen aktuel zone
+havde fuld 48-timers evidens. Vi følger, om gyldige timer nu bygges op og
+faktisk indgår i beregningen af mobilisering.
 
 ## 89.61 4.0.465 – Timefiler skal have samme modelmærke hele vejen igennem
 

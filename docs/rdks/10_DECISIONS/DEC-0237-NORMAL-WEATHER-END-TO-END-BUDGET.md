@@ -11,11 +11,15 @@ afbrudt i den efterfølgende runtimekontrol. Begge ramte buildjobbets fælles
 offentligt artifact eller deploy kom ud af disse to kørsler.
 
 Normaljobbets loft er 180 minutter; eksplicit providerbootstrap beholder 240.
-De enkelte leverandørers og cachetrinnets særskilte tidsgrænser er uændrede.
+Leverandørernes særskilte tidsgrænser er uændrede. Den seneste cache- og
+scorebygning varede næsten 39 af 45 tilladte minutter, mens supplerende
+strøm ved en separat fejl slet ikke nåede score. Cachetrinnets loft hæves
+derfor til 60 minutter, så den korrigerede projektion ikke afbrydes på en
+for snæver margin. Trinnets faktiske varighed måles fortsat.
 Et større fælles loft giver kun plads til kontrol, artifact og deploy efter en
 lang, men sund indsamling; det pålægger ikke kørslen at bruge tiden.
 Regressionen kræver plads til DMI (55 min), Copernicus (7), Open-Meteo (15),
-central cache (45) og mindst 30 minutter til øvrige trin. Target-, privat-,
+central cache (60) og mindst 30 minutter til øvrige trin. Target-, privat-,
 data-, release-, privacy- og artifactgates er uændrede.
 
 De cirka 5.600 resterende par i de seneste rapporter er **strøm for en

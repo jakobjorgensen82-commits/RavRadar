@@ -1,16 +1,29 @@
 # Aktuelle issues – 2026-09-23, 4.0.467
 
+- **ISSUE-CURRENT-CLOSURE-NOT-PROJECTED-35778530384 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** Sidste offentlige score brugte kun DMI-strøm ved T0
+  og ingen strøm ved T+36, selv om den private closure indeholdt gyldige
+  supplerende par. Valgfri historik kunne afvise hele operational closure.
+  Kontrakten og måltestene er rettet; ny produktion skal bevise udfaldet.
+- **ISSUE-SCORE-HISTORY-INCOMPLETE-35778530384 – ÅBENT:** Privat tilstand
+  blev videreført for 673/673 kystdele, men ingen aktuel zone-mode havde
+  fuld 48-timershistorik. Ved T0 havde 590 kystdele 33 timer, 32 havde 12,
+  og 51 var utilgængelige. Kontroller om gyldig historik nu ophobes og
+  bruges i mobilisering efter supplerende strøm når score.
 - **ISSUE-NORMAL-WEATHER-JOB-TIMEOUT-35804736772 – RETTET LOKALT /
   LIVEBEVIS ÅBENT:** To normale kørsler ramte det fælles 90-minuttersloft
   efter leverandørkæden. Sidste kørsel nåede at fuldføre central cache og
   gemme privat fremgang, men runtimekontrol/artifact/deploy blev afbrudt.
-  Fælles loft er 180 minutter; trinenes egne lofter og gates er uændrede.
+  Fælles loft er 180 minutter; central cache får 60 minutter efter målt
+  39/45, mens leverandørlofter og gates er uændrede.
 - **ISSUE-PERSISTENT-CURRENT-RESIDUAL-35804736772 – ÅBENT:** 5.711 og 5.640
   strøm-kystdel×time-par var stadig tomme i to efterfølgende målhorisonter.
   Open-Meteo returnerede mange null-værdier og enkelte for fjerne gitterceller
   uden budgetstop. Det er endnu ikke bevist, om de samme eksakte par går igen,
   eller hvorfor DMI/Copernicus ikke dækker dem. Ingen regel eller sikkerheds-
-  afstand ændres uden krydsleverandørbevis.
+  afstand ændres uden krydsleverandørbevis. En direkte prøve ved Hanklit
+  viste en Open-Meteo-havcelle cirka 19 km væk; den må ikke godkendes under
+  den nuværende 15 km-regel. Det beviser ét sted, ikke hele resten.
 
 # Aktuelle issues – 2026-09-22, 4.0.464
 

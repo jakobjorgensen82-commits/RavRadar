@@ -3690,8 +3690,14 @@ if (dmiStepTimeoutMinutes * 60 < bootstrapRuntimeSeconds + 300) {
 if (buildTimeoutMinutes < dmiStepTimeoutMinutes + 30) {
   throw new Error('Buildjobbet skal rumme hele DMI-steppet plus mindst 30 minutter til forudgående og efterfølgende gates.');
 }
-if (buildTimeoutMinutes < 55 + 7 + 15 + 45 + 30) {
+if (buildTimeoutMinutes < 55 + 7 + 15 + 60 + 30) {
   throw new Error('Normal buildjob-timeout skal rumme DMI, Copernicus, Open-Meteo, central cache og mindst 30 minutter til øvrige trin.');
+}
+const centralCacheTimeoutMinutes = Number(buildSection.match(
+  /- name: Update central weather cache[\s\S]*?timeout-minutes: (\d+)/,
+)?.[1]);
+if (centralCacheTimeoutMinutes !== 60) {
+  throw new Error('Den centrale cache skal have 60 minutter til den fulde scoreprojektion.');
 }
 if (buildSection.includes('environment:\n      name: github-pages')) throw new Error('Det tunge buildjob må ikke holde github-pages-miljøet.');
 if (!deploySection.includes('environment:\n      name: github-pages')) throw new Error('Kun deployjobbet skal eje github-pages-miljøet.');

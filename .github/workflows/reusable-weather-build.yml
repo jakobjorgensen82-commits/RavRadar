@@ -1484,7 +1484,10 @@ jobs:
         # provider-free production rebuild has measured at about 21 minutes;
         # normal runs also spend time in the score build before sealing, so
         # 25 minutes can terminate a healthy build before it writes its cache.
-        timeout-minutes: 45
+        # The last ordinary run measured nearly 39 minutes with supplemental
+        # current silently rejected. Allow the corrected score projection
+        # headroom without changing the provider acquisition budgets.
+        timeout-minutes: 60
         run: npm run update:weather
         env:
           # The integrated score/runtime builder retains the DMI-first public

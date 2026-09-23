@@ -5,7 +5,9 @@
   Copernicus, Open-Meteo og central cache samt mindst 30 minutter til
   indledende og efterfølgende arbejde. En kørsel må ikke afbrydes af
   jobloftet, mens et sundt cache-/kontrol-/artifactforløb stadig arbejder.
-  Trinenes egne budgetter, datakvalitetskrav og gates ændres ikke. DEC-0237.
+  Leverandørernes egne budgetter, datakvalitetskrav og gates ændres ikke.
+  Central cache-/scorebygning har 60 minutters trinloft efter målt 39/45.
+  DEC-0237.
 
 # Aktuel revisionspræcisering – 2026-09-21 – 4.0.451
 
@@ -2216,3 +2218,12 @@ DEC-0185. Scheduler forbliver pauset til offentlig prognose og efterfølgende no
   118 timefiler følge den ydre aktuelle binding. Pages-preflight afviser en
   fil med ældre eller ukendt indre binding, selv om dens hash og ydre manifest
   er gyldige. Målinger og scoretal bevares. Se DEC-0217's tillæg 2026-09-22.
+# REQ-OPERATIONAL-CURRENT-CLOSURE-INDEPENDENCE-0238 – BINDENDE
+
+En korrekt verificeret strøm-closure for target..T+117 må ikke afvises,
+fordi valgfri advisory-historik eller privat regional reference er ugyldig.
+Disse ekstra kilder må kun bruges med egne beviser. Fuld dokument-/privat
+historikgodkendelse skal fortsat afvise en påstået, men ugyldig kilde. En
+normal kørsel skal rapportere dataminimeret særskilt bevisstatus og må ikke
+kalde vejrdata fulde alene fordi en privat closure findes; de anvendte
+scoreinput og den historiske mobilisering skal også kontrolleres. DEC-0238.

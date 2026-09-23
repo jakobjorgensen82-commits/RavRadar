@@ -1431,9 +1431,7 @@ function controlledDocumentProofs(document, { revalidate = false } = {}) {
     closureProof,
     { revalidate },
   );
-  return advisoryProof && regionalReferenceProof
-    ? { closureProof, advisoryProof, regionalReferenceProof }
-    : null;
+  return { closureProof, advisoryProof, regionalReferenceProof };
 }
 
 function proofEntryStillBound(proof, entry) {
@@ -1524,7 +1522,24 @@ function haversineKm(first, second) {
 }
 
 export function controlledLiveCurrentEnabled(document) {
-  return controlledDocumentProofs(document, { revalidate: true }) !== null;
+  const proofs = controlledDocumentProofs(document, { revalidate: true });
+  // The full-document gate still rejects a broken private regional reference
+  // or claimed advisory history. Operational projection below is narrower:
+  // neither optional proof may erase an independently sealed closure row.
+  return proofs !== null
+    && proofs.regionalReferenceProof !== null
+    && (proofs.advisoryProof !== null
+      || document?.operationalClosure?.advisoryHistoryAssignmentCount === 0);
+}
+
+export function controlledLiveCurrentProofStatus(document) {
+  const proofs = controlledDocumentProofs(document, { revalidate: true });
+  return {
+    operationalClosureValid: proofs !== null,
+    advisoryHistoryValid: proofs?.advisoryProof !== null && proofs?.advisoryProof !== undefined,
+    regionalReferenceValid: proofs?.regionalReferenceProof !== null
+      && proofs?.regionalReferenceProof !== undefined,
+  };
 }
 
 /**

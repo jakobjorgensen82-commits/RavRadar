@@ -56,6 +56,7 @@ import {
 } from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import {
+  controlledLiveCurrentProofStatus,
   latestVerifiedNativeCadenceSampleForPart,
   mergeLiveCurrentPilotIntoRecord,
   nativeCadenceHoldHoursForPart,
@@ -3969,6 +3970,7 @@ reportWeatherBuildStage('inputs-and-dmi-bulk-ready', {
   zoneCount: features.length,
   coastalPartCount: coastalPartsContract.partCount,
   dmiZonesMerged: dmiBulkMergeStats.zonesMerged,
+  currentPilotProofStatus: controlledLiveCurrentProofStatus(liveCurrentPilot),
 });
 dmiPersistentRuntime = nextDmiForecastStore.runtime;
 // 4.0.10: Forecast EDR is controlled only by its channel-specific cooldown.

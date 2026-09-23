@@ -1,10 +1,21 @@
 # 2026-09-23 – 4.0.467 normal vejrkørsel får plads til efterkontrol
 
+Efterfølgende helkædekontrol fandt en anden, uafhængig fejl: Den sidste
+offentlige runtime brugte kun DMI-strøm ved T0 og ingen ved T+36 trods
+supplerende closure-rækker. Valgfri historik afviste ved en programfejl
+hele den operationelle strøm-closure. Cachebygningen tog knap 39 minutter
+uden at anvende den supplerende strøm; dens trinloft er derfor 60 minutter,
+mens det fælles jobloft er 180. Den eksisterende regression fejlede
+på main og består efter rettelsen. Privat scoretilstand var videreført for
+alle 673 kystdele, men historikdækningen var fortsat ufuldstændig. En
+dataminimeret bevisstatus og første nye live-run skal afgøre, om rettelsen
+får fallback og historik helt frem i score. DEC-0238.
+
 Normalkørslerne `35794859378` og `35804736772` gemte leverandørfremgang,
 men buildjobbet blev afbrudt ved 90 minutter: først under central cache,
 dernæst efter cacheopbygning i den næste kontrol. 4.0.467 ændrer kun det
-fælles normaljobloft til 180 minutter og tester summen af de eksisterende
-trinbudgetter. Den tilbagevendende rest på cirka 5.600 strømpar er særskilt
+fælles normaljobloft til 180 minutter og tester summen af trinbudgetterne.
+Den tilbagevendende rest på cirka 5.600 strømpar er særskilt
 åben; Open-Meteos dokumenterede null-/gitterafvisninger er ikke i sig selv
 en bevist rodårsag på tværs af DMI og Copernicus. DEC-0237.
 
