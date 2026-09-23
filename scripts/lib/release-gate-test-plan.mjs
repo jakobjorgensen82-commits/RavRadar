@@ -25,6 +25,8 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-ravscore-profile-transition.mjs',
   'scripts/test-ravscore-continuation-checkpoint.mjs',
   'scripts/test-protected-ravscore-continuation-checkpoint.mjs',
+  'scripts/build-checkpoint-rejection-diagnostic.mjs',
+  'scripts/test-checkpoint-rejection-diagnostic.mjs',
   'scripts/test-private-production-runtime-bundle.mjs',
   'scripts/test-private-production-runtime-workflow.mjs',
   'scripts/test-public-hour-delivery-pack.mjs',

@@ -5011,3 +5011,15 @@ privat Candidate G-fortsættelse. Lokal 4.0.472 retter dem i append-only
 `20260923120000` med uændrede READY-/dataintegritetskrav og summeret
 privatlivssikker fejldiagnose. Produktion og vejrdækning er stadig åbne;
 se DEC-0243 og aktivt roadmap.
+# 2026-09-23 – 4.0.473 måler SQL-stop og fastholder helkædekrav
+
+PR #434/4.0.472 bestod `35858302147` og blev merged som `9b29183c`.
+Providerfri `35858910881` genbrugte aktuel privat cache og installerede
+migrationen, men stoppede endnu en gang på checkpoint `INPUT_INVALID`
+før private writes og Pages. 673 integrerede dele havde alle en seneste
+evidensrække; den hidtidige livehypotese var forkert. Lokal 4.0.473
+tilføjer derfor kun en skrivefri, sikker regel-/antaldiagnose i ny
+append-only migration. Samme cache genbruges ved næste korte forsøg;
+ingen leverandørhentning, scoreformel, CAS-gate eller geometri ændres.
+Først derefter rettes den beviste rodårsag og normal weather måles for
+alle komponenter. Se DEC-0244 og aktivt roadmap.

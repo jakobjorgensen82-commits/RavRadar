@@ -2014,3 +2014,25 @@ observeret: 5.201 havstrømspar mangler, CP har 0 anvendte par,
 Open-Meteo har 47.996. Cron forbliver pauset; bevis stabil autonom
 vedligeholdelse over flere normale kørsler før genaktivering. Usporede
 `.tmp-*` er analysefiler, ikke releaseindhold.
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.473, præcis stopårsag søges
+
+4.0.472/PR #434 bestod exact-head `35858302147` og blev merged som
+`9b29183c`. Providerfrit main-run `35858910881` genbrugte den aktuelle
+private vejrpakke og anvendte migration `20260923120000`, men stoppede
+igen før beskyttede writes og Pages på checkpoint-RPC'ens `INPUT_INVALID`.
+Sikker formdiagnose viste 673 integrerede tilstande med nul tomme
+evidensrækker og nul seneste målinger før referencen. 4.0.472's
+manglende-sidste-time-hypotese var altså ikke den udløsende livefejl.
+Ingen nye vejrdata eller Pages blev publiceret af denne kørsel.
+
+Lokal 4.0.473/DEC-0244 tilføjer en isoleret, skrivefri og kun service-role-
+tilgængelig diagnose-RPC. Den er en eksakt semantisk kopi af de anvendte
+SQL-validatorer, men returnerer kun faste regelkoder og summerede antal;
+ingen ID, tider, vejrvektorer eller payload vises. Den eksisterende CAS,
+dens afvisning og datakrav ændres ikke. Næste: målrettet kontrol, én
+exact-head CI, merge, providerfri genbrug af samme private vejrpakke for
+præcis regelkode; ret først derefter den beviste kontraktfejl. Ingen ny
+normal vejrkørsel før denne leveringsbarriere er afklaret. Sidste
+normale havstrømsopgørelse: DMI 25.793, regional DMI 424, Copernicus 0,
+Open-Meteo 47.996, manglende 5.201 af 79.414. Vindhalens og de øvrige
+vejrtypehullers fremgang er endnu ikke livebevist. Cron er pauset.

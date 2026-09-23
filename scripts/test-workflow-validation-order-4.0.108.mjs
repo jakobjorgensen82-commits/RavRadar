@@ -1951,6 +1951,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260923100000_integrated_checkpoint_part_identity_binding.sql"',
   'test -f "$migrations_directory/20260923110000_integrated_checkpoint_warmup_status_binding.sql"',
   'test -f "$migrations_directory/20260923120000_integrated_checkpoint_missing_state_binding.sql"',
+  'test -f "$migrations_directory/20260923130000_checkpoint_rejection_diagnostic.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

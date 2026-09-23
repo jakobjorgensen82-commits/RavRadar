@@ -644,6 +644,72 @@ export function createProtectedRavScoreCheckpointRpcRequester({
   };
 }
 
+// Called only after an INPUT_INVALID CAS rejection. The private payload is
+// sent to the same protected database, but neither the response nor errors
+// may echo any field of it into GitHub logs.
+export function createProtectedRavScoreCheckpointDiagnosticRequester({
+  supabaseUrl = process.env.SUPABASE_URL,
+  serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const { url, key } = requiredProtectedSupabaseConnection({
+    supabaseUrl, serviceRoleKey,
+  });
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('Protected checkpoint diagnostic transport is invalid');
+  }
+  return async function diagnose(payload, targetReference) {
+    if (!isPlainObject(payload)
+      || typeof targetReference !== 'string'
+      || payload.productionReferenceAt !== targetReference) {
+      throw new Error('Protected checkpoint diagnostic input is invalid');
+    }
+    let response;
+    try {
+      response = await fetchImpl(
+        `${url}/rest/v1/rpc/ravradar_ravscore_checkpoint_rejection_diagnostic`,
+        {
+          method: 'POST',
+          headers: buildSupabaseAdminHeaders(key),
+          body: JSON.stringify({ p_payload: payload, p_target_reference: targetReference }),
+        },
+      );
+      const body = await readResponseTextBounded(
+        response, PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+        'Protected checkpoint diagnostic response',
+      );
+      if (!response.ok) throw new Error('Diagnostic RPC rejected');
+      const result = parseRemoteJson(body);
+      const keys = [
+        'candidateReasons', 'integratedReasons', 'normalizedBytes',
+        'payloadReason', 'schemaVersion',
+      ];
+      if (!isPlainObject(result)
+        || JSON.stringify(Object.keys(result).sort()) !== JSON.stringify(keys)
+        || result.schemaVersion !== '1.0.0'
+        || !Number.isSafeInteger(result.normalizedBytes)
+        || result.normalizedBytes < 0 || result.normalizedBytes > 25_000_000
+        || !/^(?:P\d{2}|PASS|DIAGNOSTIC_EXCEPTION)$/.test(result.payloadReason)) {
+        throw new Error('Diagnostic RPC response is invalid');
+      }
+      for (const [field, prefix] of [
+        ['integratedReasons', 'I'], ['candidateReasons', 'C'],
+      ]) {
+        if (!isPlainObject(result[field])
+          || Object.keys(result[field]).length > 99
+          || Object.entries(result[field]).some(([reason, count]) =>
+            !new RegExp(`^${prefix}\\d{2}$`).test(reason)
+            || !Number.isSafeInteger(count) || count < 1 || count > 673)) {
+          throw new Error('Diagnostic RPC reason counts are invalid');
+        }
+      }
+      return result;
+    } catch {
+      throw new Error('Protected checkpoint diagnostic unavailable');
+    }
+  };
+}
+
 function validateCheckpointRpcMetadata(value, { local, expectedVersion }) {
   const expectedKeys = [
     'candidatePartCount',
@@ -718,6 +784,7 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
   targetReference,
   request,
   rpcRequest,
+  diagnosticRequest,
   temporaryRoot,
 } = {}) {
   checkpointPath = assertProtectedCheckpointTarget(checkpointPath);
@@ -755,6 +822,13 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
   } catch (error) {
     if (error?.safeDiagnostic === 'HTTP_400_22023_INPUT_INVALID') {
       error.safeShapeSummary = summarizeCheckpointStateShape(payload);
+      if (typeof diagnosticRequest === 'function') {
+        try {
+          error.safeRejectionReasons = await diagnosticRequest(payload, local.checkpointAt);
+        } catch {
+          error.safeRejectionReasons = { diagnostic: 'UNAVAILABLE' };
+        }
+      }
     }
     throw error;
   }
@@ -906,11 +980,15 @@ async function main() {
   const rpcRequest = options.mode === 'publish'
     ? createProtectedRavScoreCheckpointRpcRequester()
     : null;
+  const diagnosticRequest = options.mode === 'publish'
+    ? createProtectedRavScoreCheckpointDiagnosticRequester()
+    : null;
   const result = options.mode === 'publish'
     ? await publishProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
       request,
       rpcRequest,
+      diagnosticRequest,
     })
     : await restoreProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
@@ -924,6 +1002,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error(error.safeDiagnostic
       ? `${error.message} [${error.safeDiagnostic}]` : error.message);
     if (error.safeShapeSummary) console.error(JSON.stringify(error.safeShapeSummary));
+    if (error.safeRejectionReasons) console.error(JSON.stringify(error.safeRejectionReasons));
     process.exitCode = 1;
   });
 }

@@ -5881,3 +5881,17 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Ret kun dokumenterede rester og bevis stabil autonom normaldrift
   før cron genaktiveres. 100 % gyldig dækning er målet, men endnu ikke
   et bevist resultat.
+# 2026-09-23 – lokal 4.0.473, målbart stop før vejroprydning
+
+- [x] Merge 4.0.472/PR #434 efter grøn exact-head `35858302147`.
+- [x] Afklar providerfri `35858910881`: aktuel cache bevaret, migration
+  anvendt, men checkpoint afvist før beskyttede writes/Pages. 673/673
+  integrerede dele havde seneste måling; 4.0.472-hypotesen afkræftet.
+- [x] Byg append-only, skrivefri regel-/antaldiagnose fra de uændrede
+  anvendte SQL-validatorer; CAS-accept og scoreformel uændrede.
+- [ ] Bestå målrettede kontrakter, RDKS/version og én exact-head CI; merge.
+- [ ] Providerfrit genbrug af samme private pakke: få præcis regelkode,
+  ret den dokumenterede årsag samlet og bevis checkpoint samt Pages.
+- [ ] Én normal vejrkørsel fra samme cache: mål DMI, Copernicus,
+  Open-Meteo og mangler for hver vejrtype/time, cacheidentitet, historik
+  og deploy. Bevis vedvarende fremgang før cron genaktiveres.

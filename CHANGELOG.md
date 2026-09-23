@@ -2191,3 +2191,13 @@ afvisning logges kun summerede antal og statusser. Ingen vejrdata,
 scoreformel, kildeprioritet eller geometri ændres. 5.201 havstrømspar,
 vindhalen og skæv DMI/CP/OM-fordeling er fortsat åbne, indtil en
 normal produktionskørsel måler dem. Se DEC-0243.
+## 4.0.473 – mål præcis databaseafvisning uden ny vejrhentning (2026-09-23)
+
+Providerfri 4.0.472-kørsel `35858910881` genbrugte den aktuelle private
+vejrpakke, men stoppede før Pages ved checkpoint `INPUT_INVALID`.
+Alle 673 integrerede dele havde seneste evidens, så sidste hypotese var
+ikke den udløsende fejl. En ny append-only, skrivefri og kun
+service-role-tilgængelig diagnose viser faste SQL-regelkoder og antal
+ved afvisning uden private data. CAS, score, leverandørvalg og data
+er uændrede. Efter præcis diagnose følger bevis for deploy og én normal
+kørsel med komponent- og leverandøropdelt før/efter. Se DEC-0244.
