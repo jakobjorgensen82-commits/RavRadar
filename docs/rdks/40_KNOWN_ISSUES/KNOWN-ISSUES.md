@@ -1,3 +1,22 @@
+# Aktuelle issues – 2026-09-23, lokal 4.0.478
+
+- **SPATIAL-HOLD-AUDIT-35887652848 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Én af 54 diagnostiske efterkontroller fejlede, fordi otte
+  verificerede Limfjord-fastholdelser havde ærligt ufuldstændig
+  historik (`WINDOW_HAS_MISSING_EVIDENCE`). 4.0.478 genkender kun
+  producentens tilladte statusser og bevarer eksakt kilde-, vektor-
+  og tretimersbevis. Næste artifact skal bestå kontrollen i produktion.
+- **DMI-FAMILY-STARVATION-35887652848 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  WAM brugte størstedelen af normalrunnets DMI-tid; IDW nåede ét,
+  LF otte forecasttrin. To undersøgte områder havde fortsat kun
+  2/118 DMI-vandstandstimer. Proportional tidsdeling skal måles i
+  næste run før den kaldes en faktisk forbedring.
+- **WEATHER-RESIDUAL-35887652848 – ÅBEN P0:** Copernicus var fortsat
+  `IN_PROGRESS`, og Open-Meteo efterlod 5.531 uløste havstrømspar i
+  57 dele. Vind, bølger, vandstand og temperatur har egne nævnere og
+  kan ikke afledes af havstrømstallet. Næste run kræver feltvis,
+  leverandørvis sammenligning og verificeret cachelineage.
+
 # Aktuelle issues – 2026-09-23, lokal 4.0.477
 
 - **CHECKPOINT-P04-35878951916 – ÅBEN P0:** 4.0.476 fjernede de otte

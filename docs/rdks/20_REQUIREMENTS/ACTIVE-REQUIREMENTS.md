@@ -1,3 +1,17 @@
+# Aktuel præcisering af normal DMI-drift – 2026-09-23
+
+- **REQ-FAIR-CRITICAL-DMI-SERVICE-0248 – BINDENDE:** Inden for det
+  normale afgrænsede DMI-budget skal kritiske WAM-bølgefamilier og
+  DKSS-havfamilier alle have en reel startmulighed. En længere
+  bølgepassage må ikke gentagne gange udsulte DMI-only-vandstand
+  og havstrøm. Tidsfordeling ændrer ikke kildeprioritet,
+  godkendte afstande, officielle assets, gyldighed eller gemning.
+- **REQ-HONEST-NATIVE-HOLD-AUDIT-0248 – BINDENDE:** En vektorfri,
+  eksakt dokumenteret regional tretimersfastholdelse kan have
+  ufuldstændig historik uden at blive en ny måling. Kontrol og
+  model skal acceptere samme tilladte historikstatusser og
+  afvise ukendte, for gamle eller kildeubundne tilstande.
+
 # Aktuelt krav til normal vejrkørsels samlede tid – 2026-09-23
 
 - **REQ-NORMAL-WEATHER-END-TO-END-BUDGET-0237 – BINDENDE:** Det fælles

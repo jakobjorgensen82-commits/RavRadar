@@ -1,3 +1,22 @@
+# 2026-09-23 – lokal 4.0.478, to påviste barrierer
+
+- [x] Run `35887652848` på `main` byggede, gemte cache/checkpoint og
+  deployede `rr-20260923170622-210`; efterkontrol DEGRADED pga. én
+  rumlig audit af otte verificerede native holds.
+- [x] Krydstjek integreret producent, privat validator, offentlig
+  vektorfri visning og eksakt regional kilde; ret kun auditens tilladte
+  historikstatusser og afvis ukendte statusser.
+- [x] Mål DMI-tidsfordeling: WAM dominerede, LF nåede otte timer,
+  IDW én; Dokkedal/Udbyhøj stadig 2/118 vandstandstimer.
+- [x] Fordel overskydende DMI-tid proportionalt mellem alle ventende
+  kritiske WAM/DKSS-familier uden ændrede kilde- eller datakrav.
+- [x] Målrettede Node- og Python-kontrakter består lokalt.
+- [ ] Bestå RDKS/version/geodatabevis og én exact-head-kildekontrol.
+- [ ] Merge, kør én almindelig vejrkørsel på ny main uden overlap,
+  og bevis cachelineage, DMI/CP/OM, feltvise huller, offentlig visning,
+  efterkontrol og deploy. Stop ved stagnation/regression; ingen oneoff
+  uden dokumenteret behov. Cron fortsat pauset.
+
 # 2026-09-23 – 4.0.471 samlet checkpoint- og leveringsrettelse
 
 `main` er 4.0.470. `35849255295` installerede og læste de manglende

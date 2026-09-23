@@ -1,3 +1,13 @@
+# 2026-09-23 – lokal 4.0.478 efter normalrun 35887652848
+
+4.0.477 blev deployet på aktuel main med gemt cache og scorecheckpoint.
+Én rumlig audit fejlede på otte kildebundne Limfjord-fastholdelser med
+ufuldstændig historik; den offentlige prognose blev udgivet. DMI's
+bølgearbejde lod IDW nå ét og LF otte prognosetrin; to undersøgte
+områder havde fortsat 2/118 vandstandstimer. 4.0.478 retter
+auditklassifikation og fordeler kritisk DMI-tid proportionalt.
+Liveforbedring og fuld vejrdækning afventer. DEC-0248.
+
 # 2026-09-23 – 4.0.471 checkpointets tomme sidste time
 
 Grøn trip-storage `35849255295` anvendte 4.0.469/470's migrationer.

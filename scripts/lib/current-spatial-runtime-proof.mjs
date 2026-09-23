@@ -138,8 +138,19 @@ export function verifyCoastalPartNativeCadenceHold({
   }
   const memoryReady = state?.currentMemoryReady ?? state?.transportMemoryReady;
   const memoryStatus = state?.currentMemoryStatus ?? state?.transportMemoryStatus;
-  if (!((memoryReady === true && memoryStatus === 'READY')
-    || (memoryReady === false && memoryStatus === 'WINDOW_INCOMPLETE'))) {
+  const integratedMemoryValid = integratedState && (
+    (memoryReady === true && ['READY', 'READY_NATIVE_HOLD'].includes(memoryStatus))
+    || (memoryReady === false && [
+      'WINDOW_INCOMPLETE',
+      'WINDOW_HAS_MISSING_EVIDENCE',
+      'WINDOW_HAS_TIME_GAP',
+    ].includes(memoryStatus))
+  );
+  const historicalMemoryValid = !integratedState && (
+    (memoryReady === true && memoryStatus === 'READY')
+    || (memoryReady === false && memoryStatus === 'WINDOW_INCOMPLETE')
+  );
+  if (!integratedMemoryValid && !historicalMemoryValid) {
     return fail('native-cadence-fastholdelsen mangler en tilladt hukommelsestilstand');
   }
   const currentAt = canonicalTime(runtimePart?.current?.time);

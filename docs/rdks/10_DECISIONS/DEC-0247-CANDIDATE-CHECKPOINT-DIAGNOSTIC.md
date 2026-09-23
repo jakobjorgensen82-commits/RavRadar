@@ -1,7 +1,12 @@
 # DEC-0247 – Ret ledsagerens checkpoint-id uden at fjerne Limfjord-fastholdelsen
 
 **Dato:** 2026-09-23
-**Status:** Implementeret lokalt i 4.0.477; produktionsbevis afventer
+**Status:** 4.0.477 produktionsverificeret i run 35887652848; vejrdækning åben
+
+**Efterfølgende bevis 2026-09-23:** Normalrun `35887652848` passerede
+checkpointgemning, beskyttede writes og Pages. Den tidligere P04-spærre
+er dermed fjernet. Kørslens ene fejlede diagnostiske efterkontrol og
+de fortsatte vejrhuller behandles separat i DEC-0248.
 
 4.0.476/PR #438 bestod exact-head `35876784322` og blev merged som
 `76801468`. Den første providerfri fortsættelse `35877663757` blev

@@ -575,6 +575,38 @@ assert.equal(integratedHoldProof.ok, true,
   'the spatial audit must read the integrated hold from the real publicContext shape');
 assert.equal(integratedHoldProof.referenceAt, new Date(SOURCE_TIME).toISOString());
 assert.equal(integratedHoldProof.ageHours, 1);
+for (const memoryStatus of [
+  'WINDOW_INCOMPLETE',
+  'WINDOW_HAS_MISSING_EVIDENCE',
+  'WINDOW_HAS_TIME_GAP',
+]) {
+  assert.equal(verifyCoastalPartNativeCadenceHold({
+    part: regionalPart,
+    runtimePart: {
+      current: { time: coldHoldScore.time, weather: coldHoldScore.weather },
+      ravScoreModel: {
+        ...coldHoldScore.ravScoreModel,
+        currentMemoryReady: false,
+        currentMemoryStatus: memoryStatus,
+      },
+    },
+    pilotHistory: liveWithRegionalReference,
+  }).ok, true, `a verified integrated hold may have incomplete ${memoryStatus} history`);
+}
+for (const memoryStatus of ['LATEST_SAMPLE_MISSING', 'UNKNOWN']) {
+  assert.equal(verifyCoastalPartNativeCadenceHold({
+    part: regionalPart,
+    runtimePart: {
+      current: { time: coldHoldScore.time, weather: coldHoldScore.weather },
+      ravScoreModel: {
+        ...coldHoldScore.ravScoreModel,
+        currentMemoryReady: false,
+        currentMemoryStatus: memoryStatus,
+      },
+    },
+    pilotHistory: liveWithRegionalReference,
+  }).ok, false, `a hold cannot excuse ${memoryStatus}`);
+}
 assert.equal(verifyCoastalPartNativeCadenceHold({
   part: regionalPart,
   runtimePart: {
