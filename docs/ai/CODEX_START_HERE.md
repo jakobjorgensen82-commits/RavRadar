@@ -2036,3 +2036,24 @@ normal vejrkørsel før denne leveringsbarriere er afklaret. Sidste
 normale havstrømsopgørelse: DMI 25.793, regional DMI 424, Copernicus 0,
 Open-Meteo 47.996, manglende 5.201 af 79.414. Vindhalens og de øvrige
 vejrtypehullers fremgang er endnu ikke livebevist. Cron er pauset.
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.474, diagnose i afgrænsede portioner
+
+4.0.473/PR #435 bestod exact-head `35862513968` og blev merged som
+`4e7a9c71`. Providerfri main-kørsel `35863417067` installerede og
+læste den skrivefri diagnosemigration tilbage, genbrugte præcis samme
+private vejrpakke og genbyggede offentlig runtime. Den beskyttede CAS
+afviste igen checkpointet med `INPUT_INVALID`; den nye diagnose
+returnerede blot `UNAVAILABLE` efter cirka 10 sekunders samlet trin.
+Årsagen til diagnosens manglende svar er endnu ukendt. Ingen nye
+vejrdata, private checkpointwrites eller Pages blev publiceret.
+
+Lokal 4.0.474/DEC-0245 ændrer kun diagnoseklienten: den sender de
+allerede lokalt validerede 673 integrerede og private ledsagertilstande
+i højst 32 kystdele pr. skrivefrit RPC-kald og summerer kun faste
+regelkoder. Delmængden afvises bevidst som *hel* pakke (P02), mens
+SQL-helperen uafhængigt klassificerer dens enkelte tilstande. En
+eventuel HTTP-/transport-/svarfejl får nu en ufølsom klasse i stedet
+for blot `UNAVAILABLE`. CAS, databaseaccept, vejr, scoreformel og
+geometri ændres ikke. Næste: målrettede kontroller, exact-head CI,
+merge, én providerfri kørsel på samme cache. Ingen normal weather før
+checkpoint-/leveringsstop er forklaret og rettet. Cron er pauset.

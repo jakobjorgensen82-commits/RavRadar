@@ -5267,3 +5267,22 @@ Dette er ikke totaler for vind, bølger, vandstand eller temperatur.
 Copernicus' nul, DMI's begrænsede tur, Open-Meteos negative rest og
 vindhalens huller er åbne, ikke bortforklaret med én timeout. Cron er
 fortsat pauset. Målet er komplette gyldige data og stabil drift uden Codex.
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.474; fuld drift ikke bevist
+
+4.0.473/PR #435 er på `main` (`4e7a9c71`). Providerfri `35863417067`
+anvendte og læste den skrivefri SQL-diagnose tilbage og genbrugte
+den aktuelle private cache. Checkpoint-CAS afviste igen `INPUT_INVALID`
+før beskyttede writes og Pages. Diagnosekaldet gav kun `UNAVAILABLE`;
+timeout, rettighed, transport og svarform er endnu ikke skilt ad.
+Vejrdata blev ikke hentet eller slettet af denne kørsel.
+
+Lokal 4.0.474/DEC-0245 opdeler nu det skrivefri diagnosekald i højst
+32 kystdele ad gangen og tæller regelkoder over alle 673. Også fejl i
+selve diagnosen får en sikker HTTP-/transport-/svarformsklasse. Dette
+ændrer ikke databasen, score, kildevalg eller geometri. Først når den
+præcise afvisning er målt og rettet, fortsætter providerfri levering
+og én normal vejropdatering med før/efter for alle vejrtypefelter.
+Sidste normale **havstrøms**tal er fortsat 25.793 DMI, 424 regional
+DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201 huller af 79.414.
+Vind, bølger, vandstand og temperatur har særskilte uafklarede huller.
+Cron forbliver pauset; stabil autonom drift er ikke bevist.

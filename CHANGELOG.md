@@ -2201,3 +2201,12 @@ service-role-tilgængelig diagnose viser faste SQL-regelkoder og antal
 ved afvisning uden private data. CAS, score, leverandørvalg og data
 er uændrede. Efter præcis diagnose følger bevis for deploy og én normal
 kørsel med komponent- og leverandøropdelt før/efter. Se DEC-0244.
+## 4.0.474 – checkpointdiagnose i små portioner (2026-09-23)
+
+4.0.473's providerfri run anvendte den nye skrivefri SQL-funktion,
+men diagnosen gav kun `UNAVAILABLE`, mens den oprindelige
+checkpointafvisning bestod. Diagnosen kontrollerer nu højst 32
+kystdele pr. kald og summerer faste regelkoder på tværs af alle 673.
+En fejl i selve diagnosekaldet får en sikker HTTP-/netværks-/svar-
+klasse. CAS, score, vejrdata, kildeprioritet og geometri er uændrede.
+Samme cache genbruges ved næste korte forsøg. Se DEC-0245.

@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.473",
+  "handbookVersion": "4.0.474",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-23",
   "sections": [
+    {
+      "id": "bounded-checkpoint-diagnostic-4-0-474",
+      "chapter": "89.71",
+      "title": "Vi gennemgår kontrollen i små portioner",
+      "summary": "Den gemte historik undersøges i afgrænsede dele, uden at private målinger vises i loggen.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Databasen blev opdateret med en sikker fejldiagnose, men et kald med hele historikken gav ikke et brugbart svar. Nu får diagnosen højst 32 kystdele ad gangen.</div><div class=\"handbook-stack\"><p>For hver portion viser databasen kun faste koder for de kontrolregler, der afviser data, samt antal. Klienten lægger tallene sammen for alle 673 kystdele. Kystdelene, vejrdata og private oplysninger vises ikke i loggen. Det ændrer ikke kravene til gyldige data.</p><p>Vi prøver igen med den samme gemte vejrpakke og uden nye leverandørkald. Når stopårsagen er bevist og rettet, måler vi almindelig vejrhentning for hver vejrtype og leverandør. De seneste 5.201 mangler gælder kun havstrøm.</p></div>"
+    },
     {
       "id": "exact-checkpoint-rejection-evidence-4-0-473",
       "chapter": "89.70",
@@ -1064,7 +1071,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.473 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.474 er samlet og kryptografisk bundet",
       "summary": "Den integrerede model og Candidate G-rollbackpakken er regenereret i korrekt rækkefølge og synkroniseret til alle model- og releaseforbrugere.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.464 ændrer ikke scoreformlen eller vægtene; versionen retter den private levering af allerede beregnede offentlige timedata.</div><div class=\"handbook-stack\"><p><strong>Aktuel rettelse:</strong> Ny gyldig data erstatter gammel pr. sted, time og vejrdel. Et hul bevarer en stadig gyldig gammel værdi. DMI er førstevalg, Copernicus og Open-Meteo udfylder resterende huller, og vandstand forbliver DMI-only. Privat providerfremgang gemmes autentificeret og krypteret.</p><p><strong>Driftsgenopretning:</strong> En uafsluttet central overgang kan genoptages fra en holdbar privat terminalkvittering, også efter GitHubs midlertidige artifact er udløbet. Normalrun 35463989289 gennemførte alle providers og scorebygning 673/673, men stoppede ved den dobbelte 673 × 118-timeprojektion i én privat JSON. 4.0.438 bevarer de eksakte offentlige timefiler og startsidens nationale ranking hashbundet, og installerer leveringspakken atomisk sammen med den kompakte hovedfil; artifact og offentlig drift mangler fortsat som livebevis.</p><p><strong>Integreret binding:</strong> 4.0.464 er låst med <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=2c26b855fc0e93754c5f0ba586f6d2a2864c6de17880717ab6cd6c8cbc3bcad7</code> over 67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den immutable `20260922100000`-migration bevares, mens append-only successor `20260922170000_integrated_model_binding_successor.sql` er den aktuelle SQL-binding.</p><p><strong>Historisk kompatibilitet:</strong> Candidate G's inaktive binding er <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=618b2b44c93316f6798a17fbbd020cdacda9aff73bfde4cbbbaa05d3fa197ace</code> over 65 transitive filer. Candidate G kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop.</div></div>"
     },

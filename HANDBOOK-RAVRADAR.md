@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.473
+**Håndbogsversion:** 4.0.474
+
+## 89.71 4.0.474 – Vi gennemgår kontrollen i små portioner
+
+Den nye fejldiagnose blev installeret, men den gav ikke et brugbart
+svar, da den fik hele den gemte historik på én gang.
+Den deles nu op i små portioner. For hver portion fortæller databasen
+kun, hvilke kontrolregler der afviser data, og hvor mange kystdele
+det gælder. Svarene lægges sammen, uden at vejrdata eller steder
+vises i loggen. Selve kravene til gyldige data er ikke ændret.
+
+Vi genbruger den samme vejrpakke til næste korte forsøg. Først når
+den præcise afvisning er rettet, kører vi almindelig vejrhentning
+og måler fremgang for hver vejrtype og leverandør. De senest målte
+5.201 mangler gælder kun havstrøm.
 
 ## 89.70 4.0.473 – Vi måler fejlen, før vejrhentningen ændres igen
 

@@ -3010,3 +3010,18 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Ret sammenhængende rodårsager i grupper og verificér flere normale
    kørsler uden Codex; genaktivér først da cron. 100 % gyldig dækning
    er målet, ikke et allerede opnået resultat.
+# Aktivt roadmap – 2026-09-23, 4.0.474 afgrænset fejldiagnose
+
+0. [x] Slå fast at 4.0.473's SQL-migration blev installeret, mens
+   fuldpakkediagnosen kun gav `UNAVAILABLE` ved samme CAS-stop.
+1. [x] Gør diagnosen let nok til højst 32 tilstande pr. læsning og
+   sum alle 673 tilstandsregler; udskriv sikker fejlklasse, hvis et
+   delkald ikke virker. Ingen databasedata eller acceptregler ændres.
+2. [ ] Målrettede kontroller, én exact-head CI og merge. Genbrug
+   samme private vejrpakke én gang providerfrit; følg regelkoderne.
+3. [ ] Ret den dokumenterede rodårsag, bevis checkpoint, beskyttede
+   writes, Pages og synlig prognose uden ny vejrhentning.
+4. [ ] Kør én normal vedligeholdelse. Mål hver vejrtype, time og
+   leverandør før/efter, cache- og historikbevaring samt deploy.
+5. [ ] Luk resthuller samlet og bevis flere selvstændige normale kørsler
+   før cron. 100 % gyldige data er målet, endnu ikke resultatet.

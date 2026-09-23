@@ -5023,3 +5023,14 @@ append-only migration. Samme cache genbruges ved næste korte forsøg;
 ingen leverandørhentning, scoreformel, CAS-gate eller geometri ændres.
 Først derefter rettes den beviste rodårsag og normal weather måles for
 alle komponenter. Se DEC-0244 og aktivt roadmap.
+# 2026-09-23 – 4.0.474 afgrænser checkpointdiagnosen
+
+4.0.473/PR #435 bestod exact-head `35862513968`, blev merged som
+`4e7a9c71`, og providerfri `35863417067` installerede diagnose-SQL
+og genbrugte samme private vejrpakke. Den gamle CAS-afvisning bestod;
+diagnosen gav kun `UNAVAILABLE`. Lokal 4.0.474 sender derfor højst
+32 tilstande pr. skrivefri læsning, summerer kun regelkoder/antal og
+viser en sikker fejlklasse ved manglende svar. Ingen SQL-accept,
+vejrdata, score eller geometri ændres. Først efter konkret regelbevis
+rettes stopårsagen; derefter følger normal vejrkørsel pr. komponent.
+Se DEC-0245 og aktivt roadmap.
