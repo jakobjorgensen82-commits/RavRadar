@@ -1,3 +1,31 @@
+# Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.467
+
+- [x] Bevis, at `35804736772` gendannede krypteret fremgang fra
+  `35794859378-1` og samme beskyttede produktionsgrundlag; ikke tilfældig
+  gammel cache.
+- [x] Find og ret fejlen, der lod ugyldig valgfri historik kassere gyldige
+  supplerende strømrækker; lås både T+1 og T+117 samt fail-closed beviser i
+  måltest. DEC-0238.
+- [x] Log dataminimeret særskilt status for strøm-closure, advisory og
+  regional reference i central vejrbygning.
+- [x] Gør rumlig runtimekontrol uafhængig af valgfri historik, men behold
+  eksakt closure- og kildebevis for hver vist supplerende strømrække.
+- [x] Genforsegl aktiv model, inaktiv rollback og continuation med append-only
+  SQL-successor `20260923052100`; lad alle ældre migrationer være uændrede.
+- [ ] Bevis i produktion, at Copernicus/Open-Meteo-strøm faktisk når score
+  efter DMI's horizon, og at tidligere scoreevidens vokser mod 48 timer.
+- [x] Afgræns `35794859378` og `35804736772` til fælles 90-minutters
+  buildtimeout efter vellykket providerfremgang; anden kørsel fuldførte central
+  cache før afbrydelsen i den efterfølgende runtimekontrol.
+- [x] Giv normale buildjobs 180 minutter og central cache-/scorebygning
+  60 minutter efter målt 39/45; behold providerbudgetter og efterkontrol.
+- [x] Tilføj workflowregression for hele normalbudgettet.
+- [ ] Bestå exact-head-kildegate, merge og én normal ende-til-ende-kørsel med
+  frisk cache, efterkontrol, artifact og deploy.
+- [ ] Afgræns de tilbagevendende 5.640 strøm-kystdel×time-huller på eksakte
+  par og leverandørårsager; behold dem som åbent datadækningsissue, indtil
+  årsagen er bevist og løst.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
 - [x] Merge PR #425 som `e88309b9`; exact-head `35766972202` er grøn.

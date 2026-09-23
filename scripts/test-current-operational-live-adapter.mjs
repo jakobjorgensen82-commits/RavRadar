@@ -364,6 +364,10 @@ const tamperedRegionalReference = structuredClone(liveWithRegionalReference);
 tamperedRegionalReference.regionalReferenceEntries[0].uMps += 0.01;
 assert.equal(controlledLiveCurrentEnabled(tamperedRegionalReference), false,
   'a changed private regional vector must invalidate the controlled document');
+assert.ok(buildOperationalCurrentEntryIndex(tamperedRegionalReference),
+  'a changed optional regional reference must not invalidate independently sealed operational rows');
+assert.equal(buildOperationalCurrentEntryIndex({ ...live, operationalClosure: null }), null,
+  'the spatial index must still reject a missing operational closure');
 const unboundRegionalReference = structuredClone(liveWithRegionalReference);
 unboundRegionalReference.regionalReferenceEntries[0].authorizedHoldAssignmentSha256s = [
   sha256({ unbound: true }),
@@ -819,6 +823,8 @@ assert.equal(controlledLiveCurrentEnabled(acquisitionAfterSeal), false,
 const advisoryTamper = structuredClone(pastModelHistoryLive);
 advisoryTamper.advisoryEntries[0].uMps = 0.08;
 assert.equal(controlledLiveCurrentEnabled(advisoryTamper), false);
+assert.ok(buildOperationalCurrentEntryIndex(advisoryTamper),
+  'a changed optional advisory row must not invalidate independently sealed operational rows');
 const interpolatedAdvisory = structuredClone(pastModelHistoryLive);
 interpolatedAdvisory.advisoryEntries[0].interpolation = true;
 interpolatedAdvisory.advisoryEntries[0].recordProjectionSha256 =

@@ -429,7 +429,7 @@ for (const stepName of [
 const weatherCacheStep = indentedBody(build, '      - name: Update central weather cache');
 assert.match(
   weatherCacheStep,
-  /timeout-minutes:\s*45/,
+  /timeout-minutes:\s*60/,
   'normal weather cache sealing has enough bounded time for the measured 118-hour public build',
 );
 assert.match(

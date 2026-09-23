@@ -1946,6 +1946,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260919231000_public_hour_delivery_binding.sql"',
   'test -f "$migrations_directory/20260920220000_public_hour_pack_capacity_binding.sql"',
   'test -f "$migrations_directory/20260922170000_integrated_model_binding_successor.sql"',
+  'test -f "$migrations_directory/20260923052100_integrated_current_projection_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -2579,8 +2580,8 @@ for (const forbidden of [
 ]) {
   assert.ok(!publicAuditBlock.includes(forbidden), `First-cutover må ikke gentage den brede kontrol: ${forbidden}`);
 }
-assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
-  'Kun first-cutover eller eksplicit providerbootstrap skal have det udvidede jobloft');
+assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 180 }}'),
+  'Normal vejrkørsel skal rumme leverandører, central cache og efterfølgende kontroller; providerbootstrap har fortsat sit særskilte loft');
 assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
   'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
 for (const marker of [
@@ -3665,8 +3666,9 @@ if (!orchestratorWorkflow.includes('needs: build-and-prepare')) throw new Error(
 const buildSection = buildWorkflow.slice(buildWorkflow.indexOf('\n  build-and-prepare:'));
 const deploySection = deployWorkflow.slice(deployWorkflow.indexOf('\n  deploy-pages:'));
 const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
-const buildTimeoutMinutes = buildTimeoutContract
-  === '${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}' ? 240 : Number(buildTimeoutContract);
+const expectedBuildTimeoutContract = '${{ inputs.extended_provider_bootstrap && 240 || 180 }}';
+const buildTimeoutMinutes = buildTimeoutContract === expectedBuildTimeoutContract
+  ? 180 : Number(buildTimeoutContract);
 const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
 const dmiBulkSection = buildWorkflow.slice(
   positions.dmiBulk,
@@ -3688,6 +3690,15 @@ if (dmiStepTimeoutMinutes * 60 < bootstrapRuntimeSeconds + 300) {
 }
 if (buildTimeoutMinutes < dmiStepTimeoutMinutes + 30) {
   throw new Error('Buildjobbet skal rumme hele DMI-steppet plus mindst 30 minutter til forudgående og efterfølgende gates.');
+}
+if (buildTimeoutMinutes < 55 + 7 + 15 + 60 + 30) {
+  throw new Error('Normal buildjob-timeout skal rumme DMI, Copernicus, Open-Meteo, central cache og mindst 30 minutter til øvrige trin.');
+}
+const centralCacheTimeoutMinutes = Number(buildSection.match(
+  /- name: Update central weather cache[\s\S]*?timeout-minutes: (\d+)/,
+)?.[1]);
+if (centralCacheTimeoutMinutes !== 60) {
+  throw new Error('Den centrale cache skal have 60 minutter til den fulde scoreprojektion.');
 }
 if (buildSection.includes('environment:\n      name: github-pages')) throw new Error('Det tunge buildjob må ikke holde github-pages-miljøet.');
 if (!deploySection.includes('environment:\n      name: github-pages')) throw new Error('Kun deployjobbet skal eje github-pages-miljøet.');

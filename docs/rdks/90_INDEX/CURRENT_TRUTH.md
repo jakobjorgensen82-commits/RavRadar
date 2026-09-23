@@ -1,3 +1,44 @@
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.467 tidsbudget og strøm til score
+
+Den sidste offentlige 4.0.466-prognose havde verificeret strøm på 622/673
+kystdele ved T0, alle fra DMI, og 0/673 ved T+36. Det var ikke blot de cirka
+5.600 ægte strømparhuller i de private closure-rapporter. En eksisterende
+måltest fejlede på main: en valgfri historikkontrol kunne afvise den ellers
+selvstændigt verificerede 118-timers strøm-closure. Lokal 4.0.467 retter
+adskillelsen og logger tre dataminimerede bevisstatusser. Måltestene er
+grønne; livebevis af Copernicus/Open-Meteo-strøm i score afventer. DEC-0238.
+Den rumlige efterkontrol bruger nu også kun det selvstændige closure-bevis.
+Kodeændringen genforsegles med en ny append-only SQL-migration
+`20260923052100`; den anvendte `20260922170000` ændres ikke.
+
+Den beskyttede produktionsruntime i `35794859378` og `35804736772` havde
+samme indholdshash, fordi den første kørsel ikke publicerede ny runtime.
+`35804736772` gendannede derudover præcis den krypterede fremgang fra
+`35794859378-1` og bandt den til det beskyttede grundlag. Det er den
+korrekte fortsættelse, ikke et tavst skift til en anden cache. Offentlig
+runtimeaudit fra `35778530384` viser fortsat scoretilstand for 673/673
+kystdele, men 0 zoner med fuld 48-timers historik. Ved T0 havde 590 kystdele
+33 timer, 32 havde 12 timer og 51 var utilgængelige. Gemning og genbrug
+er bevist; fuld historisk evidens er ikke.
+
+Main er 4.0.466 / `46bf069a`. Den offentlige providerfri recovery
+`35793805396` er grøn; prognose og rangliste var igen synlige. De efterfølgende
+normalkørsler `35794859378` og `35804736772` hentede fra DMI, Copernicus og
+Open-Meteo og gemte krypteret privat fremgang. Førstnævnte blev afbrudt i
+central cache, sidstnævnte efter færdig central cache i runtimekontrollen:
+det fælles 90-minutters buildloft udløb. Ingen af de to lavede nyt offentligt
+artifact/deploy. 4.0.467 hæver normaljobbets fælles loft til 180 minutter
+og central cache-/scorebygning fra 45 til 60 minutter efter en målt varighed
+på næsten 39 minutter. Providerlofter og sikkerhedsgates bevares. DEC-0237.
+
+Aktuel strøm-closure i sidstnævnte run havde 5.640 manglende kystdel×time-par
+ud af 79.414; 56 kystdele var berørt. Forrige run havde 5.711/57. Forskellige
+produktionstimer betyder, at dette ikke i sig selv viser nettoopfyldning.
+Open-Meteo-rapporten har 9.136 null-par, 22 gitterafvisninger og intet
+overskredet runtimebudget. Rodårsagen til den tilbagevendende præcise rest på
+tværs af alle leverandører er endnu ikke fastslået. Ingen datakvalitetsregel
+eller prioritet er lempet; restanalysen er et åbent issue.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 atomisk public-hour-rebind
 
 PR #425 er merged som `e88309b9`, exact-head `35766972202` er grøn, og

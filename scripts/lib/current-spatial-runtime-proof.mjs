@@ -1,6 +1,6 @@
 import { directionFromComponents } from '../../js/core/current-direction-audit.js';
 import {
-  controlledLiveCurrentEnabled,
+  operationalLiveCurrentClosureEnabled,
   verifiedLivePilotSource,
   verifiedNativeCadenceReferenceForPart,
 } from './live-current-pilot.mjs';
@@ -205,12 +205,13 @@ export function verifyCoastalPartMissingCurrent({
 }
 
 /**
- * Validate the complete closure once and index only its operational entries.
+ * Validate the independent operational closure once and index only its entries.
+ * Optional history has separate proofs and cannot invalidate these rows.
  * Consumers can then prove 673 displayed parts without repeatedly hashing the
  * full 79,414-pair document.
  */
 export function buildOperationalCurrentEntryIndex(pilotHistory) {
-  if (!controlledLiveCurrentEnabled(pilotHistory)) return null;
+  if (!operationalLiveCurrentClosureEnabled(pilotHistory)) return null;
   const entriesByPair = new Map();
   for (const entry of pilotHistory.entries ?? []) {
     const key = pairKey(entry?.partId, entry?.validTime);
