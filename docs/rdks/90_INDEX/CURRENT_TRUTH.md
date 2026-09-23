@@ -5217,3 +5217,32 @@ afvises fortsat. Exact-head og live deploy mangler endnu. To private
 state-replay-afvigelser og ufuldstændig direkte strømforsyning i 51 af
 673 dele fra normalrunnet er åbne diagnostiske fund, ikke dokumenteret
 løst af denne rettelse.
+# NYESTE SANDHED – 2026-09-23 – 4.0.472 lokal, samlet helkæde endnu åben
+
+4.0.471 er på `main` (`9927d09c`). Providerfri `35855497915` anvendte
+og læste `20260923110000` tilbage, genbrugte den aktuelle private
+vejrpakke og byggede 673-del-checkpointet, men databasen afviste selve
+indholdet med `HTTP_400_22023_INPUT_INVALID`. Ingen ny Pages-udgivelse
+skete. 4.0.471's sidste-time-null-rettelse var ikke hele forklaringen.
+
+Lokal 4.0.472/DEC-0243 samordner SQL med den verificerede models ærlige
+ikke-READY-tilstande ved manglende seneste måling eller helt tom
+historik. Den inaktive private Candidate G-fortsættelse får samme
+afgrænsede regel. READY kræver fortsat reel, tidsordnet evidens og
+fuld 48-timershistorik; ingen score eller vejrdata opfindes. En ny
+append-only migration `20260923120000` er den eneste ændring af den
+anvendte databasekontrakt. Ved ny afvisning viser loggen kun summerede
+antal, aldrig private målinger eller kystdel-ID'er. Lokal grøn test
+er endnu ikke driftsbevis. Næste trin er én exact-head-kildekontrol,
+merge, én providerfri levering og én kontrolleret normal vejrkørsel.
+
+Helkædens særskilte, stadig åbne vejrproblem er skæv leverandørfordeling
+og reelle huller: `35823773587` havde 25.793 direkte DMI-, 424 regional
+DMI-, 0 Copernicus-, 47.996 Open-Meteo- og 5.201 manglende
+*havstrømspar* ud af 79.414. Før DMI var ingen providerbank installeret
+for samme target; efter DMI var 53.197 par åbne. Open-Meteo havde
+8.284 null-værdier, 24 gitterafvisninger og syv timeouter, men havde
+ikke brugt hele totalbudgettet. Det kan ikke generelt løses med mere
+tid eller kaldes komplet. Vind, bølger, vandstand og temperatur skal
+opgøres særskilt. Cron forbliver pauset, og gyldige gamle data må ikke
+erstattes af tomme nye værdier.

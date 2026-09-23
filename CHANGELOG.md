@@ -2177,3 +2177,17 @@ anvender og læser nu nye præcise migrationer tilbage, og en eventuel
 RPC-afvisning får en ufølsom fejlklasse i loggen. Ingen vejrdata,
 scoreformel, kystgeometri eller kildeprioritet ændres. Livebevis,
 Copernicus-fremgang og fuld datadækning afventer.
+## 4.0.472 – ærlig manglende scorehistorik kan gemmes (2026-09-23)
+
+Main `9927d09c`/4.0.471 installerede seneste migration i providerfri
+`35855497915`, men den beskyttede database afviste stadig et lokalt
+valideret 673-dels checkpoint med `INPUT_INVALID`; intet nyt Pages-
+artifact blev udgivet. 4.0.472 retter to yderligere JS/SQL-afvigelser:
+integreret ikke-READY må have tom/ældre evidens ved faktisk manglende
+måling, og privat Candidate G-ikke-READY må markere fravær af sidste
+række. Append-only `20260923120000` bevarer alle tidligere migrationer;
+READY, 48 timer, proveniens, privatliv og fail-closed består. Ved ny
+afvisning logges kun summerede antal og statusser. Ingen vejrdata,
+scoreformel, kildeprioritet eller geometri ændres. 5.201 havstrømspar,
+vindhalen og skæv DMI/CP/OM-fordeling er fortsat åbne, indtil en
+normal produktionskørsel måler dem. Se DEC-0243.

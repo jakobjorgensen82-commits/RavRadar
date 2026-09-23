@@ -2974,3 +2974,20 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 4. [ ] Kør én almindelig vejropdatering, ikke oneoff, og verificér cache-save,
    118 timer, artifact, deploy og synlig prognose/rangliste.
 5. [ ] Følg mindst næste cron-kørsel og fortsæt derefter øvrige åbne roadmap.
+# Aktivt roadmap – 2026-09-23, 4.0.472 helkædebevis
+
+0. [x] Afklar den præcise fejl efter 4.0.471: den gemte cache blev
+   genbrugt, migrationen blev installeret, men checkpointets indhold
+   blev afvist med `INPUT_INVALID` før Pages.
+1. [x] Sammenhold scoreproducent, lokal replay og SQL for både aktiv
+   integreret historik og privat ikke-READY-fortsættelse; ret kun de
+   beviste manglende-tilstande i append-only migration.
+2. [ ] Målrettede checks, RDKS/version og én exact-head CI; merge.
+3. [ ] Én providerfri levering fra senest gemte private vejrpakke med
+   migration, checkpoint, beskyttede writes og Pages.
+4. [ ] Én kontrolleret almindelig kørsel; mål faktisk fremgang for alle
+   vejrtyper og DMI/Copernicus/Open-Meteo hver for sig, cachelineage,
+   historik og resthuller. Stop ved ukendt datatab, ikke ved en tom
+   valgfri historiktæller.
+5. [ ] Saml dokumenterede restårsager og ret dem i grupper. Genaktivér
+   cron først efter bevist vedligeholdelse over flere normale kørsler.

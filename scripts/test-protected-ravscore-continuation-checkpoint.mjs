@@ -22,6 +22,7 @@ import {
   createProtectedRavScoreCheckpointVersionRequester,
   publishProtectedRavScoreContinuationCheckpoint,
   restoreProtectedRavScoreContinuationCheckpoint,
+  summarizeCheckpointStateShape,
 } from './protected-ravscore-continuation-checkpoint.mjs';
 import {
   RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS,
@@ -48,6 +49,33 @@ const sha256 = value => crypto.createHash('sha256')
   .digest('hex');
 const CURRENT_CONTINUATION_IMPLEMENTATION_SHA256 =
   await ravScoreContinuationImplementationSha256();
+const safeShape = summarizeCheckpointStateShape({
+  states: {
+    secretPartA: {
+      currentReferenceAt: '2026-09-23T05:00:00.000Z',
+      currentEvidence: [],
+      currentMemoryStatus: 'WINDOW_INCOMPLETE',
+    },
+    secretPartB: {
+      currentReferenceAt: '2026-09-23T05:00:00.000Z',
+      currentEvidence: [{ time: '2026-09-23T04:00:00.000Z', strength: 0.2 }],
+      currentMemoryStatus: 'LATEST_SAMPLE_MISSING',
+    },
+  },
+  candidateGRollbackCompanion: { states: {
+    secretPartA: {
+      transportReferenceAt: '2026-09-23T05:00:00.000Z',
+      transportEvidence: [{ time: '2026-09-23T04:00:00.000Z', strength: null }],
+      transportMemoryStatus: 'LATEST_SAMPLE_MISSING',
+    },
+  } },
+});
+assert.equal(safeShape.integratedEmptyEvidence, 1);
+assert.equal(safeShape.integratedLastBeforeReference, 1);
+assert.equal(safeShape.candidateLastBeforeReference, 1);
+assert.equal(safeShape.candidateNullLast, 1);
+assert.doesNotMatch(JSON.stringify(safeShape), /secretPart|2026-|0\.2/,
+  'safe rejection diagnostics must not expose private IDs, times or evidence');
 
 const samples = Array.from({ length: 51 }, (_, hour) => ({
   time: atHour(hour),

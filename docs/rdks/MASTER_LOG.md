@@ -5001,3 +5001,13 @@ scoreformel og vejrdata er urørte. Livebevis og normal kørsel mangler.
 DMI, 424 regional DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201
 missing. Det er ikke et komplet datasæt og er ikke tal for andre
 vejrtyper. Se DEC-0242 og åbent provider-issue.
+# 2026-09-23 – 4.0.472 manglende checkpointtilstande og helkædebevis
+
+4.0.471 blev merged som `9927d09c`; providerfri `35855497915`
+installerede den nyeste migration og genbrugte privat vejr, men
+stoppede før Pages på `HTTP_400_22023_INPUT_INVALID`. JS/SQL-krydskontrol
+fandt yderligere manglende-tilstandsafvigelser i aktiv historik og
+privat Candidate G-fortsættelse. Lokal 4.0.472 retter dem i append-only
+`20260923120000` med uændrede READY-/dataintegritetskrav og summeret
+privatlivssikker fejldiagnose. Produktion og vejrdækning er stadig åbne;
+se DEC-0243 og aktivt roadmap.
