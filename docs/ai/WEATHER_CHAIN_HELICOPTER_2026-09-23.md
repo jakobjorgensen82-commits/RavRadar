@@ -30,3 +30,33 @@ Kilder i repositoryet: `docs/rdks/40_KNOWN_ISSUES/PROVIDER-PRIORITY-AND-RESIDUAL
 `.tmp-audit-358237/open-meteo-current-fetch.json`, DEC-0243/0244 og
 GitHub-runs `35823773587`, `35858302147`, `35858910881`. Private
 `.tmp-*`-filer er ikke releaseindhold og må ikke stages.
+
+## Udvidet fejlmønster efter run 35866710973
+
+Den providerfri 4.0.474-kørsel genbrugte igen `rr-20260923063008-210`,
+byggede 673 tilstande og stoppede ved samme `INPUT_INVALID` før Pages.
+Databasens skrivefri diagnose blev kaldt, men klienten kasserede dens
+årsagskort som `RESPONSE_REASON_SHAPE`. Dette er en fejl i vores eget
+diagnoseled; hverken en ny leverandørfejl eller bevis for ødelagt cache.
+Den konkrete SQL-afvisning er fortsat ukendt. 4.0.475 lader derfor et
+skrivefrit fuldpakkekald vise den faktiske payloadregel, og falder ved
+ufuldstændigt svar tilbage til 32-delsklassifikation. Kun kendte faste
+regelkoder og begrænsede antal logges; alt uventet bliver et anonymt
+afvigelsesantal. CAS-kravene ændres ikke.
+
+På tværs af nyere normale kørsler lå fejlene ikke ét sted: `35506992220`,
+`35513058150`, `35530859518`, `35668407035`, `35677283276` og
+`35695267017` stoppede i afsluttende central cache; `35703630226`
+stoppede ved backend-klarhed; `35778530384` blev rød efter Pages i
+kontrollen af eksakt deploy; `35823773587` gennemførte, men med for lav
+DMI/Copernicus-andel og resthuller. Flere tidligere runs blev annulleret
+og må ikke tælles som succes. Dette er et systemisk driftsproblem i
+acquisition → konsolidering → gemning → scorehistorik → publicering,
+ikke blot et spørgsmål om at give DMI flere minutter.
+
+Forenkling, som skal vurderes efter den konkrete stopårsag: én eksakt
+generation/manifest gennem alle led, én deterministisk komponentvælger,
+holdbar leverandørfremgang adskilt fra deploy og kun datatab, korrupt
+artifact, reel scorefejl eller sikkerhed som hårde stop. Rapportering og
+diagnose må ikke selv blive nye datagates. Ingen af disse større ændringer
+er implementeret i 4.0.475, og cron må ikke genaktiveres på et løfte om dem.

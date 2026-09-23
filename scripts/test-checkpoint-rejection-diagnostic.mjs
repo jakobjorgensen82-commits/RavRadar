@@ -44,23 +44,33 @@ const request = createProtectedRavScoreCheckpointDiagnosticRequester({
   },
 });
 assert.deepEqual(await request(payload, reference), {
-  schemaVersion: '1.1.0', diagnosticMode: 'BOUNDED_STATE_BATCHES',
-  checkedPartCount: 3, batchCount: 2,
-  payloadReason: 'FULL_PAYLOAD_STILL_REJECTED',
-  payloadBatchReasons: { P02: 2 },
+  schemaVersion: '1.2.0', diagnosticMode: 'FULL_PAYLOAD',
+  checkedPartCount: 3, batchCount: 1,
+  payloadReason: 'P02',
   integratedReasons: { I14: 3 }, candidateReasons: { C03: 3 },
+  diagnosticAnomalies: {},
 });
-assert.equal(calls.length, 2);
+assert.equal(calls.length, 1);
 for (const call of calls) {
   assert.match(call.url, /\/rest\/v1\/rpc\/ravradar_ravscore_checkpoint_rejection_diagnostic$/);
   assert.equal(call.options.method, 'POST');
   const sent = JSON.parse(call.options.body).p_payload;
   assert.equal(sent.privateCanary, 'do-not-log-me');
-  assert.ok(Object.keys(sent.states).length <= 2,
-    'the private checkpoint must never be sent to the expensive diagnostic in full');
+  assert.equal(Object.keys(sent.states).length, 3);
   assert.deepEqual(Object.keys(sent.states).sort(),
     Object.keys(sent.candidateGRollbackCompanion.states).sort());
 }
+
+const apparentlyValid = createProtectedRavScoreCheckpointDiagnosticRequester({
+  supabaseUrl: 'https://example.supabase.co',
+  serviceRoleKey: 'sb_secret_test_only',
+  fetchImpl: async () => new Response(JSON.stringify({
+    schemaVersion: '1.0.0', payloadReason: 'PASS', normalizedBytes: 100,
+    integratedReasons: {}, candidateReasons: {},
+  }), { status: 200 }),
+});
+assert.equal((await apparentlyValid(payload, reference)).payloadReason, 'PASS',
+  'A validator/CAS disagreement must be visible rather than hidden');
 
 const allIds = Array.from({ length: 673 }, (_, index) => `private-${index}`);
 const allStates = Object.fromEntries(allIds.map(id => [id, {}]));
@@ -70,6 +80,7 @@ const largeRequest = createProtectedRavScoreCheckpointDiagnosticRequester({
   serviceRoleKey: 'sb_secret_test_only',
   fetchImpl: async (_url, options) => {
     const count = Object.keys(JSON.parse(options.body).p_payload.states).length;
+    if (count > 32) return new Response(JSON.stringify({ code: '57014' }), { status: 500 });
     assert.ok(count >= 1 && count <= 32);
     largeBatchCount += 1;
     return new Response(JSON.stringify({
@@ -84,15 +95,22 @@ const largeResult = await largeRequest({
 }, reference);
 assert.equal(largeBatchCount, 22);
 assert.equal(largeResult.checkedPartCount, 673);
+assert.equal(largeResult.expectedPartCount, 673);
+assert.equal(largeResult.batchFailure, null);
+assert.equal(largeResult.diagnosticMode, 'FULL_THEN_BOUNDED_STATE_BATCHES');
+assert.equal(largeResult.payloadReason, 'UNAVAILABLE');
+assert.equal(largeResult.fullPayloadDiagnostic, 'HTTP_500_57014_UNCLASSIFIED');
 assert.equal(largeResult.integratedReasons.I14, 673);
 assert.deepEqual(largeResult.payloadBatchReasons, { P02: 22 });
 assert.deepEqual(largeResult.candidateReasons, {});
+assert.deepEqual(largeResult.diagnosticAnomalies, {});
 
 const forbiddenSubsetRequest = createProtectedRavScoreCheckpointDiagnosticRequester({
   supabaseUrl: 'https://example.supabase.co',
   serviceRoleKey: 'sb_secret_test_only',
   fetchImpl: async (_url, options) => {
     const count = Object.keys(JSON.parse(options.body).p_payload.states).length;
+    if (count > 32) return new Response(JSON.stringify({ code: '57014' }), { status: 500 });
     return new Response(JSON.stringify({
       schemaVersion: '1.0.0', payloadReason: 'P01', normalizedBytes: 20_000,
       integratedReasons: { I01: count }, candidateReasons: {},
@@ -106,11 +124,24 @@ const forbiddenSubset = await forbiddenSubsetRequest({
 assert.deepEqual(forbiddenSubset.payloadBatchReasons, { P01: 22 });
 assert.deepEqual(forbiddenSubset.integratedReasons, { I01: 673 });
 
+const anomalous = createProtectedRavScoreCheckpointDiagnosticRequester({
+  supabaseUrl: 'https://example.supabase.co',
+  serviceRoleKey: 'sb_secret_test_only',
+  batchSize: 2,
+  fetchImpl: async () => new Response(JSON.stringify({
+    schemaVersion: '1.0.0', payloadReason: 'P02', normalizedBytes: 100,
+    integratedReasons: { I14: 1, privateZoneId: 'do-not-log-me' },
+    candidateReasons: { C03: 1 },
+  }), { status: 200 }),
+});
+const anomalousResult = await anomalous(payload, reference);
+assert.deepEqual(anomalousResult.integratedReasons, { I14: 2 });
+assert.deepEqual(anomalousResult.candidateReasons, { C03: 2 });
+assert.deepEqual(anomalousResult.diagnosticAnomalies,
+  { integratedReasonsUnexpectedEntries: 2 });
+assert.doesNotMatch(JSON.stringify(anomalousResult), /privateZoneId|do-not-log-me/);
+
 for (const [response, safeDiagnostic] of [
-  [new Response(JSON.stringify({ schemaVersion: '1.0.0', payloadReason: 'P02',
-    normalizedBytes: 1_234_567,
-    integratedReasons: { secretZone: 1 }, candidateReasons: {} }), { status: 200 }),
-  'RESPONSE_REASON_SHAPE'],
   [new Response(JSON.stringify({ code: 'SECRET', message: 'do-not-log-me' }), { status: 400 }),
   'HTTP_400_UNKNOWN_UNCLASSIFIED'],
   [new Response(JSON.stringify({ code: '57014', message: 'statement timeout' }), { status: 500 }),
@@ -120,13 +151,13 @@ for (const [response, safeDiagnostic] of [
     supabaseUrl: 'https://example.supabase.co',
     serviceRoleKey: 'sb_secret_test_only',
     batchSize: 2,
-    fetchImpl: async () => response,
+    fetchImpl: async () => response.clone(),
   });
-  await assert.rejects(failing(payload, reference), error => {
-    assert.equal(error.message, 'Protected checkpoint diagnostic unavailable');
-    assert.equal(error.safeDiagnostic, safeDiagnostic);
-    assert.doesNotMatch(error.message, /secretZone|do-not-log-me|SECRET/);
-    return true;
-  });
+  const result = await failing(payload, reference);
+  assert.equal(result.fullPayloadDiagnostic, safeDiagnostic);
+  assert.equal(result.batchFailure, safeDiagnostic);
+  assert.equal(result.checkedPartCount, 0);
+  assert.equal(result.expectedPartCount, 3);
+  assert.doesNotMatch(JSON.stringify(result), /secretZone|do-not-log-me|SECRET/);
 }
 console.log('Protected checkpoint rejection diagnostic contract passed.');

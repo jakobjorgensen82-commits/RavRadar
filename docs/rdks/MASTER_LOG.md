@@ -5034,3 +5034,17 @@ viser en sikker fejlklasse ved manglende svar. Ingen SQL-accept,
 vejrdata, score eller geometri ændres. Først efter konkret regelbevis
 rettes stopårsagen; derefter følger normal vejrkørsel pr. komponent.
 Se DEC-0245 og aktivt roadmap.
+
+# 2026-09-23 – 4.0.475: diagnoseklienten må ikke skjule SQL-svaret
+
+4.0.474/PR #436 bestod exact-head `35865765502` og blev merged.
+Providerfri `35866710973` genbrugte aktuel cache, men stoppede igen
+ved checkpoint `INPUT_INVALID`; diagnosen selv gav
+`RESPONSE_REASON_SHAPE`. Lokal 4.0.475 ændrer kun den skrivefri
+klient: fuld payloadregel prøves først, afgrænsede delmængder er
+fallback, og et uventet svar bliver anonyme antal i stedet for at
+skjule alle kendte årsagskoder. Ingen rå private data logges.
+En tværgående run-gennemgang viser tidligere stop i central cache,
+backend-klarhed og post-deploy-kontrol. Vejrhullerne og lave
+DMI/Copernicus-andel er åbne selv hvis checkpointet bliver rettet.
+Se DEC-0245, helkæderapporten og aktivt roadmap.

@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.474
+**Håndbogsversion:** 4.0.475
+
+## 89.72 4.0.475 – Find den rigtige stopårsag uden nye vejrkald
+
+Den seneste korte kørsel brugte den gemte vejrpakke korrekt, men blev
+igen standset, da scorehistorikken skulle gemmes. Vores egen
+fejlrapportering kasserede databasens svar. Derfor kender vi endnu
+ikke den præcise regel, som sagde nej.
+
+Fejlrapporteringen bevarer nu de sikre årsagskoder, selv hvis en del
+af svaret er uventet. Den prøver den samlede pakke i en skrivefri
+kontrol og kan derefter undersøge den i mindre dele. Private steder
+og vejrdata vises ikke. Vi ændrer ikke kravene til gyldige data.
+
+Dette er ikke en rettelse af vejrhullerne. Først når den gemte pakke
+er publiceret, måles en almindelig vejrkørsel for vind, havstrøm,
+bølger, vandstand og temperatur hver for sig. De seneste 5.201
+manglende sted-og-time-par gjaldt alene havstrøm.
 
 ## 89.71 4.0.474 – Vi gennemgår kontrollen i små portioner
 

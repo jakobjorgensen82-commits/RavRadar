@@ -2057,3 +2057,21 @@ for blot `UNAVAILABLE`. CAS, databaseaccept, vejr, scoreformel og
 geometri ændres ikke. Næste: målrettede kontroller, exact-head CI,
 merge, én providerfri kørsel på samme cache. Ingen normal weather før
 checkpoint-/leveringsstop er forklaret og rettet. Cron er pauset.
+
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.475, diagnosefejl afgrænset
+
+4.0.474/PR #436 blev merged efter grøn exact-head `35865765502`.
+Providerfri main-run `35866710973` genbrugte samme aktuelle private
+vejrpakke, byggede checkpoint med 673 tilstande og stoppede igen på
+beskyttet CAS `INPUT_INVALID` før Pages. Diagnose-RPC'ens svar blev
+forkastet af *vores klient* som `RESPONSE_REASON_SHAPE`; SQL-årsagen
+er altså stadig ukendt. Ingen nye vejrdata eller offentligt deploy.
+
+4.0.475 ændrer kun denne skrivefri diagnoseklient: den faktiske
+673-delsregel prøves først, en ikke-kanonisk respons får afgrænset
+32-delsfallback, og kun godkendte faste fejlkoder/antal logges.
+Ukendte svarfelter tælles anonymt. CAS-accept, datakrav, score,
+vejrdata og geometri er uændrede. Lever næste korte forsøg fra samme
+cache, ret den beviste SQL-kontraktfejl og mål først derefter normal
+vejrhentning for alle felter. 5.201 er kun sidst observeret havstrøm;
+DMI/CP-fordeling og autonom stabilitet er fortsat åbne. Cron er pauset.

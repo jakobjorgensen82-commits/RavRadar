@@ -5909,3 +5909,20 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   diagnosefejlklasse. Ret derpå den beviste årsag samlet og få Pages ud.
 - [ ] Én normal weather med cachelineage, DMI/CP/OM og huller pr.
   vejrtype og time; gentaget autonom bevis før cron genaktiveres.
+
+# 2026-09-23 – lokal 4.0.475, fejl i diagnosens svarbehandling
+
+- [x] Merge 4.0.474/PR #436 efter exact-head `35865765502`.
+- [x] Afklar `35866710973`: aktuel cache genbrugt, 673-dels checkpoint
+  bygget, men CAS stadig `INPUT_INVALID`; diagnosen selv kasserede
+  SQL-svaret som `RESPONSE_REASON_SHAPE`. Ingen ny vejrhentning/Pages.
+- [x] Ret kun den skrivefri klient: faktisk fuld payloadregel først,
+  afgrænset tilstandsfallback, sikre kendte kodeantal og anonymt
+  afvigelsesantal. SQL/CAS/datavalidering lempes ikke.
+- [ ] Målrettede tests, versions-/RDKS-validering og én exact-head CI;
+  merge og providerfri fortsættelse på samme pakke.
+- [ ] Ret dokumenteret SQL-kontraktfejl samlet; bevis private writes,
+  Pages og synlig prognose/rangliste uden ny vejrindsamling.
+- [ ] Normal drift: mål hver vejrtype og kilde, eksakt cachelineage,
+  DMI/CP/OM-prioritet, resthuller og historik over gentagne kørsler.
+  Først da kan cron genaktiveres.

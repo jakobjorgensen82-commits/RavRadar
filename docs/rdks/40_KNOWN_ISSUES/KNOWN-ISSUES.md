@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-09-23, 4.0.471
+# Aktuelle issues – 2026-09-23, lokal 4.0.475
+
+- **CHECKPOINT-CAS-35866710973 – ÅBEN P0:** Aktuel privat cache blev
+  genbrugt og 673 tilstande blev bygget, men SQL-CAS afviste stadig
+  `INPUT_INVALID` før Pages. 4.0.474's diagnoseklient afviste selv
+  SQL-svaret som `RESPONSE_REASON_SHAPE`, så den konkrete regel er
+  endnu ikke kendt. Lokal 4.0.475 bevarer faste årsagskoder og
+  klassificerer uventet svar anonymt uden at lempe CAS. Livebevis
+  og samlet rodårsagsrettelse mangler.
+- **NORMAL-WEATHER-STABILITY – ÅBEN P0:** Tidligere normalrun er
+  stoppet i central cache, backend-klarhed og post-deploy-kontrol;
+  sidst fuldførte run havde 0 Copernicus- og 5.201 manglende
+  havstrømspar. Siden må ikke kaldes fuldt dækket, og cron er pauset.
+  Se helkæderapporten 2026-09-23.
+
+# Historisk issueliste – 2026-09-23, 4.0.471
 
 - **CHECKPOINT-WARMUP-STATUS-35849615112 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
   En anvendt migration fjernede ikke checkpoint-RPC-afvisningen. Scorekode
