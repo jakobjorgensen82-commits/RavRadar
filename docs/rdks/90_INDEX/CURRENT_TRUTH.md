@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-23 – 4.0.478 lokal efter 4.0.477-deploy
+
+`main` `2bafe6c6`/4.0.477 er publiceret af normalrun `35887652848`.
+Kørslen gemte nyeste private cache/checkpoint, gennemførte artifact,
+Pages og terminal. Den samlede efterkontrol var dog DEGRADED: én af
+54 diagnostiske kommandoer afviste otte eksakt dokumenterede regionale
+strømfastholdelser med ufuldstændig historik. Det var en snæver
+auditklassifikation, ikke bevis for manglende kildereference. 4.0.478
+retter den mod integreret model/validator og bevarer vektorfrihed,
+eksakt kildebevis og højst tre timer. Ingen scoreformel ændres.
+
+DMI dækkede 19.303 af 79.414 havstrømspar før reserveleddene; WAM
+brugte det meste af DMI-tiden, mens IDW nåede én og LF otte timer.
+Dokkedal/Udbyhøj havde stadig kun 2/118 vandstandstimer. Fair
+proportional reserve til ventende WAM/DKSS er lokal, ikke endnu
+produktionsbevist. Copernicus-stagen var `IN_PROGRESS`, og Open-Meteo
+sluttede med 5.531 uløste havstrømspar i 57 dele. De tal er ikke en
+optælling af vind, bølger, vandstand eller temperatur. Komplet gyldig
+dækning og autonom stabil drift er åbne mål; cron forbliver pauset.
+DEC-0248 og CHANGELOG-4.0.478 er gældende for næste leverance.
+
 # NYESTE SANDHED – 2026-09-23 – 4.0.471 lokal, vejrdata endnu ikke stabilt komplette
 
 4.0.470 er på `main`. Trip-storage-run `35849255295` anvendte og

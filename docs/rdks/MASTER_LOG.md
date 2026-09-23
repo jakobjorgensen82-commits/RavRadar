@@ -1,3 +1,21 @@
+# 2026-09-23 – 4.0.478 fair DMI-tid og retvisende rumlig kontrol
+
+Normalrun `35887652848` på `main` `2bafe6c6` gemte cache,
+scorecheckpoint og privat runtime, deployede ny offentlig prognose
+og sluttede grønt. Én af 54 diagnostiske artifactkontroller fejlede
+på otte regionale native holds med ærligt manglende historie. Den
+integrerede producent og beskyttede validator tillader denne tilstand;
+den rumlige kontrol gjorde ikke. 4.0.478 retter kun klassifikationen
+med uændret kilde-, vektor- og tretimersbevis.
+
+Kørslens DMI-budget blev ulige fordelt: WAM fik hovedparten, LF otte
+prognosetrin, IDW ét. Dokkedal/Udbyhøj havde stadig 2/118
+vandstandstimer. Kritiske WAM/DKSS-familier får lokalt proportional
+resttid. CP-stagen var `IN_PROGRESS`, OM efterlod 5.531
+havstrømspar i 57 dele; ingen af disse huller kaldes lukket.
+Måltests er grønne lokalt; exact-head, merge og livekørsel afventer.
+DEC-0248. Cron er fortsat pauset.
+
 # 2026-09-23 – 4.0.470 retter checkpointets kystdel-identitet
 
 4.0.469/PR #431 bestod exact-head `35843681490` og blev merged som

@@ -1117,32 +1117,35 @@ def atmosphere_horizon_runtime_reserve(
     return min(ATMOSPHERE_HORIZON_TURN_RESERVE_SECONDS, slack) if slack >= 95.0 else 0.0
 
 
-def fair_nonlead_strict_current_runtime_reserve(
-    pending_collections: list[str],
+def fair_pending_critical_runtime_reserve(
+    pending_wam: list[str],
+    pending_current: list[str],
     remaining_work_seconds: float,
-    minimum_reserve_by_collection: dict[str, float],
+    minimum_wam_reserve: dict[str, float],
+    minimum_current_reserve: dict[str, float],
 ) -> float:
-    """Protect a fair share for DKSS families still waiting in this run.
+    """Share slack across all critical wave and marine families still waiting.
 
-    The single lead attempt and the critical WAM turns remain unchanged.  Once
-    those turns are behind us, the first non-lead DKSS family may otherwise use
-    all slack while the final family receives only its 120-second start
-    reserve.  Freeze the pending families' proportional share at collection
-    start; unused time naturally rolls forward when the current family has no
-    more work.
+    A WAM family cannot consume almost the entire run while DKSS-only water
+    level and current are still waiting. Freeze the pending families' share at
+    collection start; unused time rolls forward when a family has no work.
     """
-    pending = [
-        collection for collection in pending_collections
-        if collection in MARINE_COLLECTIONS
-    ]
-    if not pending:
+    wave = [collection for collection in pending_wam
+            if collection in WAVE_BOOTSTRAP_COLLECTIONS]
+    marine = [collection for collection in pending_current
+              if collection in MARINE_COLLECTIONS]
+    pending_count = len(wave) + len(marine)
+    if not pending_count:
         return 0.0
     minimum = sum(
-        max(0.0, float(minimum_reserve_by_collection.get(collection, 0.0)))
-        for collection in pending
+        max(0.0, float(minimum_wam_reserve.get(collection, 0.0)))
+        for collection in wave
+    ) + sum(
+        max(0.0, float(minimum_current_reserve.get(collection, 0.0)))
+        for collection in marine
     )
     fair_share = max(0.0, float(remaining_work_seconds)) * (
-        len(pending) / (len(pending) + 1)
+        pending_count / (pending_count + 1)
     )
     return max(minimum, fair_share)
 
@@ -12008,15 +12011,19 @@ def main() -> int:
             atmosphere_horizon_reserve if pending_atmosphere_horizon else 0.0
         )
         if (
-            collection_is_critical_current
-            and collection != strict_current_lead_collection
-            and not pending_critical_wam
+            collection_is_critical_wam
+            or (
+                collection_is_critical_current
+                and collection != strict_current_lead_collection
+            )
         ):
             reserve_for_pending_critical = max(
                 reserve_for_pending_critical,
-                fair_nonlead_strict_current_runtime_reserve(
+                fair_pending_critical_runtime_reserve(
+                    pending_critical_wam,
                     pending_critical_current,
                     runtime_remaining(),
+                    critical_wam_reserve,
                     strict_current_reserve,
                 ),
             )

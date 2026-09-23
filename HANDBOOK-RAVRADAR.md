@@ -1,14 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.477
+**Håndbogsversion:** 4.0.478
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.477 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.478 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.74 4.0.478 – Alle vigtige DMI-opgaver skal få tid
+
+Den seneste almindelige vejrkørsel gemte data og opdaterede siden.
+Den fandt også to problemer. En efterkontrol kaldte otte kortvarigt
+fastholdte, ægte Limfjordsmålinger for fejl, fordi den tilhørende
+historik endnu har huller. Det var kontrollen, der var for snæver:
+ingen ny strømretning eller strømstyrke blev opdigtet. Kontrollen
+genkender nu kun sådanne fastholdelser, når den præcise DMI-kilde og
+højst tre timers alder kan bevises.
+
+Dernæst brugte DMI meget af sin begrænsede tid på bølger, så andre
+DMI-opgaver nåede meget lidt. Dokkedal og Udbyhøj havde stadig kun
+vandstand for to af de 118 prognosetimer. Fremover deles den
+tilbageværende tid mere ligeligt mellem de vigtige bølge- og
+havopgaver. Det skaber ikke vejrdata i sig selv; næste almindelige
+kørsel skal vise, om de manglende timer faktisk bliver fyldt.
+
+Copernicus og Open-Meteo har fortsat egne uløste huller for
+havstrøm. Siden kan bruges med tydeligt markerede mangler, men
+målet er stadig gyldige data i alle nødvendige felter.
 
 ## 89.73 4.0.476 – En tom time er ikke en ny strømmåling
 

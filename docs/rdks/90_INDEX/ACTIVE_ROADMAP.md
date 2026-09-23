@@ -1,3 +1,21 @@
+# Aktivt roadmap – 2026-09-23, 4.0.478 normal vejrstabilisering
+
+1. [x] Afklar `35887652848`: cache, checkpoint, Pages og terminal grøn;
+   én forkert rumlig audit af otte eksakt dokumenterede Limfjord-hold.
+2. [x] Ret audit og DMI's skæve tidsfordeling samlet med målrettede
+   kontrakter; behold streng kilde-, hold- og datavalidering.
+3. [ ] Bestå version/RDKS, én exact-head sourcegate og merge.
+4. [ ] Kør én almindelig weather på aktuel main/cache uden overlap.
+   Mål vind, bølger, havstrøm, DMI-only-vandstand og temperatur pr.
+   time/kystdel før/efter og pr. DMI/CP/OM-led. Verificér historik,
+   offentlig prognose, cachegemning, fuld efterkontrol og deploy.
+5. [ ] Ved stagnation: stop nye runs og afklar hver kildes restårsag.
+   Copernicus `IN_PROGRESS` og Open-Meteos 57-del-rest er selvstændige
+   åbne barrierer. Ingen data kaldes komplet, fordi siden deployer.
+6. [ ] Genaktivér først cron efter gentagen autonom normaldrift.
+   Derefter de øvrige aktuelle roadmap-punkter, herunder almindeligt
+   forståeligt prognose-/scoresprog og kritisk funktionel sitekontrol.
+
 # Aktivt roadmap – 2026-09-23, 4.0.471 checkpoint og ærlig vejrdækning
 
 0. [x] Anvend 4.0.469/470-migrationer i godkendt trip-storage-run

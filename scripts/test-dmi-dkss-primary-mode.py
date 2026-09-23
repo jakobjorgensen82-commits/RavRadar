@@ -302,6 +302,16 @@ assert classify(STRIDE_VALID, full_stride_zone, collection="wam_dw")["deferValid
 # Maintenance-only DKSS collections are deterministically moved behind every
 # potentially critical collection. Within the maintenance group the existing
 # collection order is preserved, and covered hours remain oldest-first.
+assert producer.fair_pending_critical_runtime_reserve(
+    ["wam_nsb"], ["dkss_lf", "dkss_idw"], 1200.0,
+    {"wam_nsb": 120.0}, {"dkss_lf": 120.0, "dkss_idw": 120.0},
+) == 900.0
+assert producer.fair_pending_critical_runtime_reserve(
+    [], ["dkss_idw"], 300.0, {}, {"dkss_idw": 120.0},
+) == 150.0
+assert producer.fair_pending_critical_runtime_reserve(
+    [], [], 300.0, {}, {},
+) == 0.0
 assert producer.order_dkss_primary_refresh_collections(
     ["dkss_idw", "harmonie_dini_sf", "dkss_lf", "wam_dw"],
     {"dkss_idw", "dkss_lf"},

@@ -1,3 +1,24 @@
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.478 efter normalrun
+
+`main` er 4.0.477 / `2bafe6c6`. Normalrun `35887652848` sluttede grønt:
+nyeste private cache/checkpoint blev gemt, 210/673-runtime bygget og
+`rr-20260923170622-210` deployet ved 16:00 UTC. Én af 54 diagnostiske
+artifactkontroller fejlede: rumlig revision læste otte gyldige regionale
+native holds med `WINDOW_HAS_MISSING_EVIDENCE` som almindelig MISSING.
+Den integrerede producent/tilstandsvalidator tillader denne ærlige
+ikke-klare historie. Lokal 4.0.478 retter kun revisionens klassifikation;
+eksakt regional kilderække, vektorfrihed og tre-timersgrænse består.
+
+DMI behandlede 98 assets på 1.499 sekunder, men nåede kun én IDW-time
+efter bølgekørslerne og otte LF-timer. Dokkedal/Udbyhøj havde fortsat
+kun 2/118 vandstandstimer. Lokal 4.0.478 reserverer proportional tid
+til alle ventende kritiske WAM/DKSS-familier. Copernicus var stadig
+`IN_PROGRESS`; Open-Meteo efterlod 5.531 havstrømspar i 57 dele.
+Ingen af disse rester kaldes løst. Cron er pauset. Næste: målrettede
+kontroller, version/RDKS, én exact-head CI, merge, én almindelig
+ikke-overlappende kørsel fra gemt cache og feltvis/offentlig måling.
+Se DEC-0248. De ældre topafsnit er historiske, når de modsiges her.
+
 # AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.471, normalplan pauset
 
 4.0.470 er på `main` (`76f235be`). Godkendt trip-storage-run `35849255295`
