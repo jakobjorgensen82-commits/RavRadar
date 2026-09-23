@@ -1,5 +1,11 @@
 # 2026-09-23 – 4.0.469 afgrænset tur for fremtidig DMI-vind
 
+PR #431's første exact-head-kildekontrol fejlede på to tests med én fælles
+årsag: checkpointkodens nye hash manglede i den gamle, allerede installerede
+migration. Append-only successor `20260923091500` er nu lokal, med bevaret
+forgænger og grønne målrettede migrationskontroller. CI/merge/livebevis
+afventer fortsat; dette må ikke tælles som en vejrforbedring.
+
 Den systemiske gennemgang af `35823773587` viste, at HARMONIE-kataloget
 havde 23 valgte prognosetrin, mens kun én fil for den aktuelle time blev
 behandlet. Senere vindpassage tabte arbejdstiden til DKSS/WAM og var

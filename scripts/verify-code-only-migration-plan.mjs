@@ -16,8 +16,8 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
-assert.equal(latest.version, '20260923052100');
-assert.equal(latest.filename, '20260923052100_integrated_current_projection_binding.sql');
+assert.equal(latest.version, '20260923091500');
+assert.equal(latest.filename, '20260923091500_integrated_native_hold_continuation_binding.sql');
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),

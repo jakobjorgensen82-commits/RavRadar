@@ -19,6 +19,12 @@ reservekilder skal stadig udfylde resten. Vi kalder først problemet
 løst, når en rigtig kørsel viser flere gyldige lokale vindtimer uden
 at forringe havstrøm, bølger eller bevaret cache.
 
+En kontrol af kodeleveringen fandt også, at databasen stadig var bundet
+til den tidligere checkpointkode. En ny, selvstændig databaseopdatering
+følger rettelsen; den allerede anvendte opdatering ændres ikke. Først
+efter godkendt kodelevering og en rigtig vejrkørsel kan vi måle, om
+andelen fra DMI faktisk vokser.
+
 ## 89.65 4.0.469 – Gem historik også ved kortvarigt fastholdt havstrøm
 
 En kodeopdatering genbrugte den gemte vejrpakke uden at hente vejr på ny.

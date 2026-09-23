@@ -3,6 +3,12 @@
 **Dato:** 2026-09-23
 **Status:** Implementeret lokalt i 4.0.469; livebevis afventer
 
+**Installationspræcisering:** Den første PR-kontrol viste, at
+checkpointrettelsen ændrer implementeringshashen, som den allerede anvendte
+`20260923052100`-migration binder. Den migration ændres ikke.
+`20260923091500` er den append-only efterfølger med den nye hash; schema,
+installer, readiness og kode-only-planen følger samme migrationsrækkefølge.
+
 Kode-only-run `35835042039` på 4.0.468 blev med vilje standset før
 beskyttede writes og deploy. Den aktuelle private runtime blev verificeret
 og genbrugt, og offentlig runtime blev genbygget fra gemte data. Det nye

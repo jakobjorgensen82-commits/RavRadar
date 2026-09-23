@@ -1,5 +1,11 @@
 # Aktuelle issues – 2026-09-23, 4.0.469
 
+- **PROVIDER-PRIORITY-AND-RESIDUAL – ÅBENT:** Sidste normalrun endte med
+  25.793 DMI- og 0 Copernicus-havstrømspar mod 47.996 Open-Meteo-par
+  og 5.201 huller. DMI-samlingerne fik meget ulige arbejdstid, og
+  Copernicus-kvitteringer nåede ikke den udgivne stage. Bevis genindgang
+  og en bedre kildefordeling i næste normale run. Se
+  `PROVIDER-PRIORITY-AND-RESIDUAL-4.0.469.md`.
 - **DMI-WIND-HORIZON-STARVATION-35823773587 – RETTET LOKALT / LIVEBEVIS
   ÅBENT:** HARMONIE havde 23 officielle forecasttrin, men normalrunnet
   nåede kun én aktuel-times-fil. Den senere vindpassage fik hverken en

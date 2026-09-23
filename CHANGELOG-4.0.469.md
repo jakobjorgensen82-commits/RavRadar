@@ -1,5 +1,10 @@
 # 4.0.469 – gem gyldig historik og giv vindhuller en egen tur
 
+- Første PR-kontrol fandt en reel installationsbinding: den allerede anvendte
+  database-migration kendte kun checkpointets gamle implementeringshash.
+  Den gamle migration ændres ikke. Et nyt, append-only migrationsled
+  `20260923091500` binder den rettede checkpointkode i database, schema,
+  installer og releasekontrol. Det kræver ny exact-head-kontrol før merge.
 - Kode-only-run `35835042039` genbrugte den aktuelle private vejrpakke og
   byggede offentlig runtime, men stoppede før deploy ved checkpointbygning.
   Ingen ny vejrpakke eller offentlig ændring blev skrevet.

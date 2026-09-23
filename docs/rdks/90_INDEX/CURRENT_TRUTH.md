@@ -1,5 +1,20 @@
 # NYESTE SANDHED – 2026-09-23 – 4.0.469 lokal, to forskellige barrierer rettet
 
+PR #431's første kildekontrol fandt, at den rettede checkpointkode ikke
+matchede den allerede anvendte databases gamle implementeringshash. Et nyt
+append-only migrationsled `20260923091500` er derfor tilføjet; den gamle
+migration er bevaret uændret. Målrettede migrationskontroller er grønne
+lokalt; ny exact-head-CI, merge, kode-only-deploy og normal vejrkørsel
+afventer. Dette er en installationsbarriere, ikke tegn på nye vejrdata.
+
+Den særskilte havstrømsfordeling er fortsat alvorligt skæv: 25.793
+DMI-, 0 Copernicus- og 47.996 Open-Meteo-par i sidste normalrun, plus
+5.201 huller. DMI's tre DKSS-samlinger fik kun 1/43/51 behandlede trin.
+Copernicus hentede noget, men varige segmenter blev ikke til offentlig
+source-stage inden timeout. Årsagen til DMI-faldet og om segmenterne
+overlever næste targetskift er åbent; se
+`../40_KNOWN_ISSUES/PROVIDER-PRIORITY-AND-RESIDUAL-4.0.469.md`.
+
 Ud over scorecheckpointets gyldige Limfjord-fastholdelse har
 helkædegennemgangen fundet en selvstændig DMI-planlægningsbarriere.
 Normalrun `35823773587` havde 23 officielle HARMONIE-prognosetrin,

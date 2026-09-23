@@ -193,6 +193,7 @@ jobs:
           test -f "$migrations_directory/20260922100000_integrated_trip_binding_repair.sql"
           test -f "$migrations_directory/20260922170000_integrated_model_binding_successor.sql"
           test -f "$migrations_directory/20260923052100_integrated_current_projection_binding.sql"
+          test -f "$migrations_directory/20260923091500_integrated_native_hold_continuation_binding.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

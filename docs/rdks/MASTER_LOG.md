@@ -1,5 +1,11 @@
 # 2026-09-23 – 4.0.469 giver DMI-vind en selvstændig horisonttur
 
+PR #431's første exact-head-CI fandt samme checkpoint-hashmismatch i to
+bindingskontroller. Den anvendte migration `20260923052100` er immutable;
+lokal 4.0.469 tilføjer derfor `20260923091500` som append-only successor og
+opdaterer alle aktive migrationspejle. Målrettede lokale kontroller er grønne;
+ny CI og drift mangler. Dette ændrer ikke den endnu åbne leverandørfordeling.
+
 Helkædegennemgang af normalrun `35823773587` viste, at det officielle
 HARMONIE-katalog tilbød 23 trin, men kun H0-filen blev behandlet; den
 senere vindpassage mistede al arbejdstid efter marine opgaver. Når H0
