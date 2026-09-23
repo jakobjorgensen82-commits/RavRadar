@@ -1,7 +1,16 @@
 # DEC-0240 – gyldig native fastholdelse skal kunne checkpointes under warmup
 
 **Dato:** 2026-09-23
-**Status:** Implementeret lokalt i 4.0.469; livebevis afventer
+**Status:** 4.0.469 merged; 4.0.470-identitetsrettelse og livebevis afventer
+
+**Tillæg 2026-09-23:** Providerfri `35844441095` kom forbi native hold,
+men afslørede næste kontraktfejl før deploy. Den offentlige kystdel
+har sit ID som map-nøgle; checkpointets private state-key-verifikation
+forventede et gentaget indre `partId`. 4.0.470 bruger den allerede
+validerede nøgle, bevarer punkt/retning/state-key-kontrollen og afviser
+et modstridende indre ID. Testdata mister det kunstige indre ID. Ny
+implementeringshash bindes i append-only `20260923100000`, ikke ved at
+omskrive den anvendte `20260923091500`. Vejrdata og model ændres ikke.
 
 **Installationspræcisering:** Den første PR-kontrol viste, at
 checkpointrettelsen ændrer implementeringshashen, som den allerede anvendte

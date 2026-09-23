@@ -163,7 +163,11 @@ const partsFor = (template, { reverse = false } = {}) => Object.fromEntries(
   [...partIds]
     .sort((left, right) => reverse ? right.localeCompare(left) : left.localeCompare(right))
     .map(partId => [partId, {
-      ...partFor(partId),
+      // Match the real public projection: partId is the map key, not a field.
+      zoneId: 'fixture-zone',
+      landPoint: [10, 56],
+      waterPoint: [10.01, 56.01],
+      onshoreDirectionDeg: 90,
       label: `safe-${partId}`,
       ravScoreModel: {
         currentState: stateFor(template, partId),
@@ -1026,6 +1030,19 @@ try {
   await assert.rejects(
     saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath }),
     /ASCII token of at most 100 characters/,
+  );
+
+  const conflictingNestedIdSource = documentFor({
+    datasetId: 'rr-schema6-conflicting-nested-part-id',
+    productionReferenceAt: atHour(49),
+    template: checkpointStateTemplate,
+  });
+  conflictingNestedIdSource.coastalParts.parts[partIds[0]].partId = partIds[1];
+  await writeJson(sourcePath, conflictingNestedIdSource);
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath }),
+    /source part identity disagrees/,
+    'a nested identity must not override the real part-map key',
   );
 
   const incompleteCompanionSource = documentFor({

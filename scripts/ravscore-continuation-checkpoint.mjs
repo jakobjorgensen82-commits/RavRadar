@@ -674,8 +674,14 @@ function candidateRowsFromSource(document, integratedRows, productionReferenceAt
     if (!state) {
       throw new Error(`Candidate G rollback runtime has no companion state for ${partId}`);
     }
+    const sourcePart = sourceParts[partId];
+    if (Object.hasOwn(sourcePart, 'partId') && sourcePart.partId !== partId) {
+      throw new Error(`RavScore checkpoint source part identity disagrees with ${partId}`);
+    }
     return [partId, compactCandidateGRollbackState(state, partId, {
-      part: sourceParts[partId],
+      // The public projection stores the part ID as its map key, not as a field.
+      // Supply that verified key only for the private continuation identity check.
+      part: { ...sourcePart, partId },
       productionReferenceAt,
       requireReady: !warmup,
     })];

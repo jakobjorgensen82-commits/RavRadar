@@ -57,6 +57,8 @@ const CURRENT_PROJECTION_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-current-projection-binding-successor.mjs --check';
 const NATIVE_HOLD_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-native-hold-binding-successor.mjs --check';
+const PART_IDENTITY_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-checkpoint-part-identity-binding-successor.mjs --check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -78,9 +80,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   INTEGRATED_MODEL_BINDING_SUCCESSOR_CHECK,
   CURRENT_PROJECTION_BINDING_SUCCESSOR_CHECK,
   NATIVE_HOLD_BINDING_SUCCESSOR_CHECK,
+  PART_IDENTITY_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql';
+  'supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';

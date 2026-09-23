@@ -1,6 +1,19 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.469
+**Håndbogsversion:** 4.0.470
+
+## 89.67 4.0.470 – Gem modelhistorik med kystdelens rigtige ID
+
+En kodeopdatering kunne genbruge den gemte vejrpakke og beregne prognosen,
+men stoppede, da modelhistorikken skulle gemmes. Kystdelens ID står som
+nøglen til dens data; den ekstra kopi inde i data findes ikke i den
+virkelige fil. Kontrollen brugte ved en fejl kun den manglende kopi.
+
+Kontrollen bruger nu den allerede godkendte nøgle og afviser en eventuel
+modstridende kopi. Score, vejrdata og geometri ændres ikke. Rettelsen er
+først bekræftet i drift, når en providerfri udrulning gemmer historikken
+og publicerer siden. Derefter skal en almindelig vejrkørsel vise, om
+DMI og Copernicus faktisk overtager mere fra Open-Meteo og lukker hullerne.
 
 ## 89.66 4.0.469 – Vindens fremtidige timer må ikke glemmes
 

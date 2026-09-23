@@ -1,4 +1,18 @@
-# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.469, normalplan pauset
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.470, normalplan pauset
+
+PR #431/4.0.469 bestod exact-head-kildekontrol `35843681490` og blev merged
+som `a6ec7c9b`. Providerfrit run `35844441095` genbrugte den aktuelle
+private vejrpakke, byggede runtime og bestod dens audit, men stoppede før
+beskyttede writes/deploy ved historikcheckpoint: den virkelige kystdel har
+sit ID som map-nøgle, mens checkpointkontrollen forventede det samme ID
+gentaget som felt. Lokal 4.0.470 bruger den verificerede map-nøgle til
+tilstandsidentiteten og afviser et eventuelt modstridende indre ID.
+Måltesten bruger nu den virkelige projektion uden indre ID. Ingen vejrdata,
+scoreformel eller geometri ændres. Næste: målrettede kontroller, én
+exact-head-CI, merge, providerfrit deploy og derefter én normal vejrkørsel
+med målt DMI/Copernicus/Open-Meteo- og komponentfremgang. Cron er pauset.
+
+# HISTORISK CHECKPOINT – 2026-09-23 – lokal 4.0.469
 
 Arbejd i den indlejrede Git-rod `node_modules/RavRadar-4.0.396`.
 4.0.468 er på main (`9f9553c4`), mens offentlig side stadig bruger
