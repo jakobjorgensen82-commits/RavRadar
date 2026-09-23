@@ -47,6 +47,7 @@ assert.deepEqual(await request(payload, reference), {
   schemaVersion: '1.1.0', diagnosticMode: 'BOUNDED_STATE_BATCHES',
   checkedPartCount: 3, batchCount: 2,
   payloadReason: 'FULL_PAYLOAD_STILL_REJECTED',
+  payloadBatchReasons: { P02: 2 },
   integratedReasons: { I14: 3 }, candidateReasons: { C03: 3 },
 });
 assert.equal(calls.length, 2);
@@ -84,7 +85,26 @@ const largeResult = await largeRequest({
 assert.equal(largeBatchCount, 22);
 assert.equal(largeResult.checkedPartCount, 673);
 assert.equal(largeResult.integratedReasons.I14, 673);
+assert.deepEqual(largeResult.payloadBatchReasons, { P02: 22 });
 assert.deepEqual(largeResult.candidateReasons, {});
+
+const forbiddenSubsetRequest = createProtectedRavScoreCheckpointDiagnosticRequester({
+  supabaseUrl: 'https://example.supabase.co',
+  serviceRoleKey: 'sb_secret_test_only',
+  fetchImpl: async (_url, options) => {
+    const count = Object.keys(JSON.parse(options.body).p_payload.states).length;
+    return new Response(JSON.stringify({
+      schemaVersion: '1.0.0', payloadReason: 'P01', normalizedBytes: 20_000,
+      integratedReasons: { I01: count }, candidateReasons: {},
+    }), { status: 200 });
+  },
+});
+const forbiddenSubset = await forbiddenSubsetRequest({
+  productionReferenceAt: reference, states: allStates,
+  candidateGRollbackCompanion: { states: allStates },
+}, reference);
+assert.deepEqual(forbiddenSubset.payloadBatchReasons, { P01: 22 });
+assert.deepEqual(forbiddenSubset.integratedReasons, { I01: 673 });
 
 for (const [response, safeDiagnostic] of [
   [new Response(JSON.stringify({ schemaVersion: '1.0.0', payloadReason: 'P02',

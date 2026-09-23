@@ -703,7 +703,7 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
         || result.schemaVersion !== '1.0.0'
         || !Number.isSafeInteger(result.normalizedBytes)
         || result.normalizedBytes < 0 || result.normalizedBytes > 25_000_000
-        || result.payloadReason !== 'P02') {
+        || !/^(?:P\d{2}|DIAGNOSTIC_EXCEPTION)$/.test(result.payloadReason)) {
         throw unavailable('RESPONSE_SHAPE_OR_PAYLOAD_REASON');
       }
       for (const [field, prefix] of [
@@ -740,6 +740,7 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
     }
     const integratedReasons = {};
     const candidateReasons = {};
+    const payloadBatchReasons = {};
     let batchCount = 0;
     // The SQL helper is read-only but its full 673-state scan did not return
     // usable live diagnostics. Each subset deliberately fails the full-payload
@@ -755,6 +756,8 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
         },
       };
       const result = await requestBatch(batchPayload, targetReference, ids.length);
+      payloadBatchReasons[result.payloadReason] =
+        (payloadBatchReasons[result.payloadReason] ?? 0) + 1;
       for (const [field, accumulator] of [
         ['integratedReasons', integratedReasons],
         ['candidateReasons', candidateReasons],
@@ -768,7 +771,7 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
     return {
       schemaVersion: '1.1.0', diagnosticMode: 'BOUNDED_STATE_BATCHES',
       checkedPartCount: partIds.length, batchCount,
-      integratedReasons, candidateReasons,
+      integratedReasons, candidateReasons, payloadBatchReasons,
       payloadReason: 'FULL_PAYLOAD_STILL_REJECTED',
     };
   };
