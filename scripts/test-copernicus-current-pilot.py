@@ -262,8 +262,8 @@ assert runner.current_reference_attempt_pairs(
     [old_attempt], source="copernicus-baltic-nemo", reference=reference,
 ) == set()
 
-# Provider envelopes split only when at least 24 whole native hours are absent.
-# Small sparse gaps stay coalesced, and no exact part/time pair is changed.
+# Provider envelopes split across large gaps or at 24 hours. No exact
+# part/time pair changes and the segment order remains deterministic.
 def pair(part_id: str, offset_hours: int) -> tuple[str, str]:
     return (
         part_id,
@@ -279,7 +279,14 @@ small_gap_pairs = {
     pair("baltic-only-a", 4),
     pair("overlap-a", 24),
 }
-assert len(runner.operational_request_segments(small_gap_pairs)) == 1
+assert [len(segment) for segment in runner.operational_request_segments(small_gap_pairs)] == [3, 1]
+continuous_pairs = {pair("overlap-a", hour) for hour in range(118)}
+continuous_segments = runner.operational_request_segments(continuous_pairs)
+assert [len(segment) for segment in continuous_segments] == [24, 24, 24, 24, 22]
+assert {
+    (row["partId"], row["validTime"])
+    for segment in continuous_segments for row in segment
+} == continuous_pairs
 threshold_pairs = {
     pair("overlap-a", 0),
     pair("baltic-only-a", 0),

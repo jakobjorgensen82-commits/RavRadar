@@ -1,3 +1,19 @@
+# Aktuel vejrfortsættelse og fremtidig databaseadgang – 2026-09-23
+
+- **REQ-EXACT-WEATHER-PREDECESSOR-0249 – BINDENDE:** En ændret
+  scheduler må ikke stiltiende nulstille den senest gyldige private
+  vejrpakkes fremgang. En undtagelse kræver eksakt forgængeridentitet,
+  model-/kontraktlighed, byteintegritet og tid; derefter anvendes
+  den normale krypterede fremdriftsgemning. Ukendt forskel afvises.
+- **REQ-BOUNDED-CP-PROGRESS-0249 – BINDENDE:** Et enkelt
+  operationelt Copernicus-kald må ikke spænde over hele 118-timers
+  prognosen og forbruge hele run-budgettet uden checkpointmulighed.
+  Opdeling må ikke ændre efterspurgte par eller datavalidering.
+- **REQ-EXPLICIT-FUTURE-PUBLIC-GRANTS-0249 – BINDENDE:** Fra
+  Supabases ændring 2026-10-30 får nye `public`-tabeller kun Data API-
+  adgang via eksplicitte, mindst mulige grants i *samme migration*.
+  Eksisterende tabelrettigheder ændres ikke som del af denne rettelse.
+
 # Aktuel præcisering af normal DMI-drift – 2026-09-23
 
 - **REQ-FAIR-CRITICAL-DMI-SERVICE-0248 – BINDENDE:** Inden for det

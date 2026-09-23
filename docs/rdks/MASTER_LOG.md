@@ -1,3 +1,18 @@
+# 2026-09-23 – lokal 4.0.479, cache/CP/checkpoint samlet
+
+Normalrun `35903476784` gav ingen ny deployet pakke. Den afviste
+4.0.477's aktuelle private cache på et scheduler-relateret bredt
+fingerprint, brugte Copernicus' 286-sekunders arbejdsbudget på
+første kald uden kvittering og ramte derefter `57014` ved beskyttet
+scorecheckpoint to gange. 4.0.479 tillader kun den eksakte 4.0.477-
+forgænger med fuld verifikation, opdeler operationelle CP-kald i
+højst 24 timer og giver kun checkpoint-CAS 30 sekunder via en ny
+append-only migration. Måltests er lokale; kildegate, migration,
+live-cache, DMI/CP/OM, gemning og offentlig visning afventer.
+Supabases kommende adgangsændring kræver eksplicitte grants for
+fremtidige `public`-tabeller, ikke for de eksisterende i dette run.
+DEC-0249. Cron fortsat pauset.
+
 # 2026-09-23 – 4.0.478 fair DMI-tid og retvisende rumlig kontrol
 
 Normalrun `35887652848` på `main` `2bafe6c6` gemte cache,

@@ -1,3 +1,28 @@
+# Aktivt roadmap – 2026-09-23, 4.0.479 cache og leverandørfremdrift
+
+1. [x] Afklar `35903476784`: forkert afvist tidligere privat cache,
+   Copernicus-førstekald uden gemt par og checkpoint-timeout; ingen
+   ny offentlig pakke blev leveret.
+2. [x] Ret eksakt cachegenbrug, kortere Copernicus-forespørgsler og
+   snæver checkpoint-timeout samlet. Bevar fuldt integritetsbevis,
+   DMI-first, DMI-only-vandstand og gamle gyldige felter.
+3. [ ] Bestå version/RDKS og én exact-head-kildegate, merge, anvend
+   og læs den ene append-only migration tilbage.
+4. [ ] Kør kun én almindelig kørsel ad gangen. Sammenlign eksakt
+   produktions-target og nyeste private pakke før/efter; opgør vind,
+   bølger, havstrøm, vandstand og temperatur hver for sig. Mål DMI,
+   Copernicus, Open-Meteo, 5.501 havstrømsrester, gemt cache,
+   checkpoint, efterkontrol, deploy og offentlig prognose.
+5. [ ] Ved nul/stagnerende Copernicus, DMI eller OM-rest: stop nye
+   runs og find konkret leverandør-/tids-/stedårsag. Ingen oneoff
+   uden dokumenteret behov. Cron først efter gentagen stabil drift.
+6. [ ] Først derefter små, uafhængige roadmap-forbedringer med lav
+   regressionsrisiko. Prognose- og scoretekster skal gøres forståelige,
+   men ingen model-/vejrændring alene af sprogarbejde.
+7. [ ] Ved næste nye `public`-tabel efter Supabases 30. oktober-skift:
+   giv kun nødvendige Data API-rollegrants i samme migration. Ændr
+   ikke eksisterende tabelrettigheder alene på grund af varslet.
+
 # Aktivt roadmap – 2026-09-23, 4.0.478 normal vejrstabilisering
 
 1. [x] Afklar `35887652848`: cache, checkpoint, Pages og terminal grøn;

@@ -1,3 +1,11 @@
+## 4.0.479 – vejrcache og afgrænset Copernicus-fremgang (2026-09-23)
+
+Run `35903476784` viste afvist privat forgængercache, nul nye
+Copernicus-par efter ét langt kald og timeout ved beskyttet checkpoint.
+Den eksakte cacheovergang, 24-timers Copernicus-segmenter og en snæver
+30-sekunders checkpointgrænse er rettet lokalt. Se
+`CHANGELOG-4.0.479.md` og DEC-0249; livebevis afventer.
+
 ## 4.0.464 – samlet rebind af public-hour-pakken (2026-09-22)
 
 Run `35767690294` livebeviste canonical targetrettelsen og kom gennem restore,

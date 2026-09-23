@@ -33,6 +33,34 @@ import {
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
+// 4.0.478 changed only DMI's time-sharing, not the persisted weather format.
+// That producer file is included in the broad full-runtime source fingerprint,
+// so the last 4.0.477 generation needs one exact, expiring transition. Never
+// extend this to a model, continuation, public projection or arbitrary cache.
+export const DMI_SCHEDULER_ONLY_PREDECESSOR = Object.freeze({
+  sourceHead: '2bafe6c6e92f3531b802785b3fc8d3237c88d4e8',
+  datasetId: 'rr-20260923170622-210',
+  productionReferenceAt: '2026-09-23T16:00:00.000Z',
+  fullRuntimeContractSha256: 'cf7517e3ed5c5dc7cf4894a434809ea796dffb32a09ed9c9eb49aebeffbb115c',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
+export function isExactDmiSchedulerPredecessor(descriptor, expected) {
+  const approved = DMI_SCHEDULER_ONLY_PREDECESSOR;
+  const contracts = descriptor?.contractHashes;
+  const current = expected?.contractHashes;
+  return descriptor?.sourceHead === approved.sourceHead
+    && descriptor?.datasetId === approved.datasetId
+    && descriptor?.productionReferenceAt === approved.productionReferenceAt
+    && contracts?.fullRuntimeContractSha256 === approved.fullRuntimeContractSha256
+    && contracts?.continuationStateContractSha256 === approved.continuationStateContractSha256
+    && contracts?.publicProjectionContractSha256 === approved.publicProjectionContractSha256
+    && contracts?.continuationStateContractSha256 === current?.continuationStateContractSha256
+    && contracts?.publicProjectionContractSha256 === current?.publicProjectionContractSha256
+    && same(descriptor?.modelBinding, expected?.modelBinding);
+}
+
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   schemaVersion: '2.0.0',
   legacySchemaVersion: '1.0.0',
@@ -1481,8 +1509,10 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
+      const exactSchedulerPredecessor = isExactDmiSchedulerPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
-        || !same(descriptor.contractHashes, expected.contractHashes)) {
+        || (!same(descriptor.contractHashes, expected.contractHashes)
+          && !exactSchedulerPredecessor)) {
         const error = new Error('Protected private runtime generation is incompatible with this consumer');
         error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
         rejections.push({
@@ -1514,7 +1544,11 @@ export async function restoreProtectedPrivateProductionRuntime({
           privateRoot: context.root,
           bundlePath: candidate,
           repositoryRoot: context.repository,
-          expected,
+          // Verify the archive against its own exact predecessor fingerprint.
+          // Its age, model, identity and immutable bytes remain fully checked.
+          expected: exactSchedulerPredecessor
+            ? { ...expected, contractHashes: descriptor.contractHashes }
+            : expected,
           now,
         });
         rejectionStage = 'descriptor-readback';
@@ -1524,7 +1558,7 @@ export async function restoreProtectedPrivateProductionRuntime({
         // validation as a generation that could actually be restored.
         rejectionStage = 'time-bounds';
         assertRestoreTime(descriptor, expected, now, policy);
-        selected = { descriptor, candidate, verified };
+        selected = { descriptor, candidate, verified, exactSchedulerPredecessor };
         // Pointer validation already proves current >= previous and rejects
         // conflicting equal-time generations. Normal restore therefore reads
         // current once; previous is downloaded only for genuine rollback.
@@ -1574,6 +1608,7 @@ export async function restoreProtectedPrivateProductionRuntime({
       rollbackSelected,
       currentGenerationRejected: rollbackSelected,
       rejectedGenerationCount: rejections.length,
+      exactSchedulerPredecessor: selected.exactSchedulerPredecessor,
       privatePayloadLogged: false,
     };
   } finally {

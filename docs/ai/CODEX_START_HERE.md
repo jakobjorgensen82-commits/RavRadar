@@ -1,3 +1,31 @@
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.479 efter fejlet normalrun
+
+4.0.478 er merged som `693f4789`. Normalrun `35903476784` hentede vejr og
+bestod artifactgates, men deployede ikke: beskyttet scorecheckpoint ramte
+database-timeout (`57014`) to gange. Dets nye private vejrpakke blev ikke
+gemt. Den offentlige 16:00-pakke fra `35887652848` er fortsat sidst
+bevist deployet. Ingen ny normalrun før rettelsen er på main.
+
+Den seneste private pakke blev allerede ved runstart afvist som
+inkompatibel, fordi DMI's nye tidsfordeling ændrede et bredt
+kildeaftryk. Model, scorestate og offentlig projektion var uændrede.
+4.0.479 giver kun eksakt 4.0.477-pakke en afgrænset genbrugsvej med
+fuldt arkiv-/tids-/integritetsbevis; det aktiverer også den eksisterende
+krypterede fremdriftsgemning. Checkpoint-RPC alene får 30 sekunder via
+append-only migration `20260923210000`.
+
+Copernicus-nul er særskilt: første leverandørkald brugte alle 286
+arbejdssekunder uden kvittering. Operationelle kald opdeles nu i
+højst 24 timer og logger sikre startmål. Open-Meteo efterlod 5.501
+havstrømspar i 57 dele, herunder mange null-svar; DMI dækkede 19.893
+af 79.414 direkte havstrømspar. Begge restårsager og alle øvrige
+vejrtypehuller er åbne. Næste normale, ikke-overlappende kørsel skal
+bevise korrekt cache, leverandørfremgang pr. vejrtype, checkpoint,
+gemt pakke og offentlig side; stop ved stagnation. Cron er pauset.
+Se DEC-0249 og roadmap. Supabases 30. oktober-ændring berører ikke
+eksisterende tabeller; fremtidige `public`-tabeller kræver eksplicitte
+mindst mulige Data API-grants i samme migration.
+
 # AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.478 efter normalrun
 
 `main` er 4.0.477 / `2bafe6c6`. Normalrun `35887652848` sluttede grønt:

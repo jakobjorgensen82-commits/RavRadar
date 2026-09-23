@@ -272,6 +272,7 @@ ADVISORY_HISTORY_MAX_SECONDS = max(
     int(os.getenv("COPERNICUS_ADVISORY_HISTORY_MAX_SECONDS", "180")),
 )
 REQUEST_SEGMENT_SPLIT_MINIMUM_MISSING_HOURS = 24
+REQUEST_SEGMENT_MAX_ENVELOPE_HOURS = 24
 # Every completed segment is first fsync'ed as a small immutable receipt.  The
 # full bank -> shadow -> source-stage transaction remains mandatory, but is
 # amortized across this bounded number of already durable receipts.
@@ -472,11 +473,12 @@ def operational_source_required_pairs(
 def operational_request_segments(
     pairs: set[tuple[str, str]],
 ) -> list[list[dict[str, str]]]:
-    """Split exact pairs only across a large empty native-time interval.
+    """Bound each provider call while preserving every exact requested pair.
 
-    This changes the provider request envelope, never the exact requested-pair
-    set or any admission/validity rule. A gap of 24 whole missing hours means
-    adjacent requested timestamps are at least 25 hours apart.
+    A large empty interval or a 24-hour request envelope starts a new segment.
+    This changes no source admission, validity rule or part/time pair; it lets
+    an ordinary run durably checkpoint work before a slow 118-hour subset can
+    consume its entire bounded provider budget.
     """
     rows_by_time: dict[datetime, list[dict[str, str]]] = {}
     for part_id, valid_time in pairs:
@@ -494,6 +496,7 @@ def operational_request_segments(
         })
     segments: list[list[dict[str, str]]] = []
     previous_time: datetime | None = None
+    segment_start: datetime | None = None
     for valid_time in sorted(rows_by_time):
         missing_hours = (
             int((valid_time - previous_time).total_seconds() // 3600) - 1
@@ -502,8 +505,11 @@ def operational_request_segments(
         )
         if previous_time is None or (
             missing_hours >= REQUEST_SEGMENT_SPLIT_MINIMUM_MISSING_HOURS
-        ):
+        ) or (segment_start is not None and (
+            valid_time - segment_start
+        ).total_seconds() >= REQUEST_SEGMENT_MAX_ENVELOPE_HOURS * 3600):
             segments.append([])
+            segment_start = valid_time
         segments[-1].extend(sorted(
             rows_by_time[valid_time],
             key=lambda row: (row["validTime"], row["partId"]),
@@ -2564,6 +2570,14 @@ def main() -> int:
                 request_envelope_hour_count = int(
                     (end - start).total_seconds() // 3600
                 ) + 1
+                print(
+                    "Copernicus provider segment started: "
+                    f"source={product['source']}, shardIndex={shard_index}, "
+                    f"requestedPairCount={len(requested_pairs)}, "
+                    f"nativeUniqueHourCount={len(native_times)}, "
+                    f"requestEnvelopeHourCount={request_envelope_hour_count}.",
+                    flush=True,
+                )
                 acquire_started = time.monotonic()
                 acquire_elapsed: float | None = None
                 try:

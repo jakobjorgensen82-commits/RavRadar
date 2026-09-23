@@ -1,3 +1,23 @@
+# Opfølgning 2026-09-23 / 4.0.479 – nul Copernicus er egen fejl
+
+Normalrun `35903476784` afviste ved opstart tidligere privat cache på
+et for bredt kildeaftryk. Det forklarer tab af *genbrug*, ikke i sig
+selv nul **nye** Copernicus-par. Loggen viste, at første providerkald
+begyndte, men ikke gav en kvittering inden 286 sekunders arbejdsvindue.
+Forrige run `35887652848` nåede fire kald og 2.141 par. 4.0.479
+opdeler operationelle kald i højst 24 timer og logger hvert kalds
+omfang før netværksarbejde; al eksakt par- og kildevalidering består.
+Det er endnu ikke livebevist, at segmenteringen giver flere par.
+
+Den fejlede kørsels nye target 18:00 UTC havde 19.893 DMI-, 344
+regional DMI-, 0 Copernicus-, 53.676 Open-Meteo-par og 5.501
+resterende havstrømspar. Open-Meteo havde 8.744 null-værdier,
+24 gitterafstandafvisninger og syv transporttimeouter uden nået
+totalbudget. 57 kystdele stod tilbage. Dette er ikke deploystatus og
+ikke en samlet vejrtypeopgørelse. Næste run skal måle reel DMI-/CP-
+fremgang og klassificere de samme rester pr. sted/time/årsag uden at
+slække på gyldighed eller lade fallback overskrive gyldig DMI.
+
 # Åbent: DMI/Copernicus fylder for lidt i havstrømsprognosen
 
 **Helkædeafgrænsning 2026-09-23 / 4.0.472:** Kode-only-run
