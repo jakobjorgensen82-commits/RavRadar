@@ -851,7 +851,7 @@ def test_null_run_catalog_outage_reaches_open_meteo_residual() -> None:
         targets,
         document,
         REFERENCE,
-        "a" * 64,
+        "sha256:" + "a" * 64,
         full_coast=False,
     )
     gaps = registry["operationalRequiredPairs"]

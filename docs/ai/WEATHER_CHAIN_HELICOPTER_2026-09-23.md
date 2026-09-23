@@ -60,3 +60,27 @@ holdbar leverandørfremgang adskilt fra deploy og kun datatab, korrupt
 artifact, reel scorefejl eller sikkerhed som hårde stop. Rapportering og
 diagnose må ikke selv blive nye datagates. Ingen af disse større ændringer
 er implementeret i 4.0.475, og cron må ikke genaktiveres på et løfte om dem.
+
+## Målt I04-stop og stærk JS/SQL-hypotese – 4.0.476
+
+Providerfri `35871154038` nåede samme gemte pakke og alle 673
+checkpointtilstande. Skrivefri SQL-diagnose returnerede `P02`, med
+otte integrerede `I04` og ingen andre kanoniske integrerede årsager.
+`I04` dækker flere historikregler; den konkrete underbetingelse for
+de otte private dele er ikke logget. Én påvist modstrid er, at SQL
+forbyder enhver evidenstime efter en fastholdt reference, mens JS-modellen lovligt kan
+bevare senere **null**-evidens ved en eksakt autoriseret fastholdelse;
+den time er stadig MISSING, ikke en ny havstrømsmåling. En målrettet
+modelreplay reproducerer `WINDOW_HAS_MISSING_EVIDENCE` og afviser en
+senere numerisk styrke. De otte afvisninger og otte regionalt tilladte
+dele giver en stærk, men endnu ikke livebekræftet, sammenhæng.
+Append-only 4.0.476 retter begge SQL-kontroller
+til netop denne sondring og bevarer alle øvrige stopkrav. De otte
+private kystdel-ID'er og selve evidensværdierne er ikke logget.
+
+Diagnosen viste desuden `candidateReasonsUnexpectedEntries: 22` i
+diagnosekortet for det gamle reserve-checkpoint; dette er ikke
+udløsende for `P02`. 4.0.476 opdeler kun den anonyme diagnoseklasse,
+så en eventuel senere P04 kan afklares i samme gennemløb. Ingen
+ændring af Candidate G som scoremodel eller fallback er autoriseret.
+Normal vejrhentning, kildeandele og resthuller er fortsat åbne.

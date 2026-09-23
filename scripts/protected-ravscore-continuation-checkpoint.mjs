@@ -724,8 +724,17 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
             const number = /^.[0-9]{2}$/.test(reason)
               && reason[0] === prefix ? Number(reason.slice(1)) : NaN;
             if (!Number.isSafeInteger(number) || number < 1
-              || number > maximumReason || !Number.isSafeInteger(count)
-              || count < 1 || count > expectedCount) {
+              || number > maximumReason) {
+              normalized.diagnosticAnomalies[`${field}UnknownCodes`] =
+                (normalized.diagnosticAnomalies[`${field}UnknownCodes`] ?? 0) + 1;
+              unexpectedEntries += 1;
+              continue;
+            }
+            if (!Number.isSafeInteger(count) || count < 1
+              || count > expectedCount) {
+              // The SQL reason key is canonical, but its count is not. Its
+              // fixed code is still useful and cannot reveal a private ID.
+              normalized.diagnosticAnomalies[`${field}Rejected${reason}`] = 1;
               unexpectedEntries += 1;
               continue;
             }

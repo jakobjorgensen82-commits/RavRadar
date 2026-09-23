@@ -5306,3 +5306,22 @@ Sidste normale **havstrøms**resultat er stadig 25.793 direkte DMI,
 424 regional DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201 huller.
 Dette siger ikke, at vind, bølger, vandstand eller temperatur er komplette.
 Cron er pauset; 100 % korrekte og stabile vejrdata er endnu ikke bevist.
+
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.476; I04 målt, livefix åbent
+
+4.0.475/PR #437 bestod exact-head `35870444432` og blev merged som
+`af5fd84e`. Providerfri `35871154038` genbrugte samme private cache
+`rr-20260923063008-210` og byggede 673 scoretilstande. CAS afviste
+stadig `INPUT_INVALID`, men den skrivefri diagnose gav nu konkret
+`P02` med otte `I04`-afviste integrerede tilstande. Ingen private
+checkpointwrites, Pages eller ny vejrhentning skete.
+
+Lokal 4.0.476/DEC-0246 retter den påviste JS/SQL-uoverensstemmelse:
+en eksakt autoriseret regional fastholdelse må beholde en senere
+**tom** evidenstime frem til tilstandstiden. En senere talværdi uden
+verificeret ny måling forbliver forbudt. Append-only SQL opdaterer
+validator og sikker fejlkode; anvendte migrationer røres ikke.
+En særskilt anomali i det gamle Candidate G-diagnosekort er endnu
+ikke vist som CAS-årsag. Efter exact-head og én providerfri levering
+skal normal vejrkørsel stadig måle DMI/CP/OM og alle komponenter.
+Sidst målte havstrømsrest er fortsat 5.201 af 79.414; cron er pauset.

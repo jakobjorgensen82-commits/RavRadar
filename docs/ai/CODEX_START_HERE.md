@@ -2075,3 +2075,21 @@ vejrdata og geometri er uændrede. Lever næste korte forsøg fra samme
 cache, ret den beviste SQL-kontraktfejl og mål først derefter normal
 vejrhentning for alle felter. 5.201 er kun sidst observeret havstrøm;
 DMI/CP-fordeling og autonom stabilitet er fortsat åbne. Cron er pauset.
+
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.476, SQL I04 målt
+
+4.0.475/PR #437 er på `main` efter exact-head `35870444432`.
+Providerfri `35871154038` genbrugte samme private vejrpakke,
+byggede 673 tilstande og stoppede fortsat før Pages, men diagnosen
+viste nu `P02`/otte `I04`. Kode/SQL-krydstjek viser, at den anvendte
+SQL forbyder en senere **null**-evidenstime under dokumenteret
+regional DMI-fastholdelse. JS-replay bevarer korrekt den time som
+MISSING, ikke som ny strøm. Lokal 4.0.476/DEC-0246 tilføjer kun
+append-only validator- og diagnosekorrektion; en senere numerisk
+værdi uden ny verificeret måling er stadig forbudt.
+
+Næste: målrettede checks, én exact-head CI, merge og én kort
+providerfri fortsættelse fra samme cache. Hvis checkpoint og Pages
+lykkes, kør normal weather med særskilt DMI/Copernicus/Open-Meteo-
+og komponentopgørelse. 5.201 er stadig kun sidste havstrømsrest;
+vindhalens og øvrige vejrfelters dækning er ikke bevist. Cron pauset.

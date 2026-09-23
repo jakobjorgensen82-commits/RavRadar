@@ -209,12 +209,19 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923130000_checkpoint_rejection_diagnostic',
     filename: '20260923130000_checkpoint_rejection_diagnostic.sql',
   }),
+  Object.freeze({
+    version: '20260923140000',
+    id: '20260923140000_checkpoint_native_hold_null_evidence',
+    filename: '20260923140000_checkpoint_native_hold_null_evidence.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923120000');
+export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -280,6 +287,10 @@ export async function expectedCheckpointCasContract({
     // checkpoint RPC matched the successor exactly.
     TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
+  const nativeHoldSuccessor = await fs.readFile(path.join(
+    migrationsDirectory,
+    CHECKPOINT_NATIVE_HOLD_MIGRATION.filename,
+  ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -290,7 +301,11 @@ export async function expectedCheckpointCasContract({
       'exact predecessor payload validator'],
     ['public.ravradar_ravscore_checkpoint_cas', 'checkpoint CAS'],
     ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
-  ].map(([functionName, label]) => sqlFunctionBody(migration, functionName, label));
+  ].map(([functionName, label]) => sqlFunctionBody(
+    functionName === 'public.ravradar_ravscore_checkpoint_integrated_state_valid'
+      ? nativeHoldSuccessor : migration,
+    functionName, label,
+  ));
   const definition = definitions[0]
     + `\n-- forbidden-key-validator --\n${definitions[1]}`
     + `\n-- integrated-state-validator --\n${definitions[2]}`

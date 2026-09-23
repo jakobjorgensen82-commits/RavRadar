@@ -198,6 +198,7 @@ jobs:
           test -f "$migrations_directory/20260923110000_integrated_checkpoint_warmup_status_binding.sql"
           test -f "$migrations_directory/20260923120000_integrated_checkpoint_missing_state_binding.sql"
           test -f "$migrations_directory/20260923130000_checkpoint_rejection_diagnostic.sql"
+          test -f "$migrations_directory/20260923140000_checkpoint_native_hold_null_evidence.sql"
           node scripts/integrated-cutover-readiness.mjs plan \
             --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
             --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \

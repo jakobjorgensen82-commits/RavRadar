@@ -3043,3 +3043,21 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Saml de faktiske restårsager i én rettelse pr. sammenhængende
    led. Overvej forenklet fælles generation/manifest og færre
    ikke-databærende stop. Bevis flere selvstændige kørsler før cron.
+
+# Aktivt roadmap – 2026-09-23, 4.0.476 målt I04-rodårsag
+
+0. [x] Den samme gemte pakke gav `P02` og otte `I04` i run
+   `35871154038`; cacheidentitet og 673-delsbygning er bevist.
+1. [x] Sammenhold producent/replay, SQL-validator, sikker årsagskode,
+   regional autorisation og efterfølgende regler. Ret kun senere null
+   ved dokumenteret fastholdelse; afvis senere numerisk evidens.
+2. [ ] Målrettede kontroller, version/RDKS, én exact-head CI, merge.
+   Fortsæt én gang providerfrit fra samme aktuelle cache.
+3. [ ] Bevis gemt checkpoint, private writes, Pages og synlig side.
+   Hvis der er flere årsager, saml alle sikre koder i ét gennemløb.
+4. [ ] Normal vedligeholdelse: DMI/CP/OM-kvittering → anvendt par,
+   vind/havstrøm/bølger/vandstand/temperatur pr. time, cachelineage,
+   48-timershistorik og alle resttyper. Skel mellem provider-null,
+   afvisning, tidsbudget og ægte upstream-fravær.
+5. [ ] Ret sammenhængende rester i grupper og bevis gentagen autonom
+   drift, før cron genaktiveres. Ingen grøn status uden databevis.
