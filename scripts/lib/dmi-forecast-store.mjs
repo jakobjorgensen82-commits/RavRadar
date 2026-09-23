@@ -451,12 +451,15 @@ function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {})
   return best?.bracket ?? null;
 }
 
-function safeWindSeriesBracket(items, targetMs, component, options = {}) {
-  if (!['wind', 'windTail'].includes(component)) return null;
+function safeRunSeriesBracket(items, targetMs, component, options = {}) {
+  if (!['wind', 'windTail', 'current', 'waterLevel', 'waterTemperature'].includes(component)) return null;
   const groups = new Map();
   for (const item of items ?? []) {
     const source = provenanceAt(item, component);
     if (!source) continue;
+    if (component === 'current' && (finite(item['current-u']) === null || finite(item['current-v']) === null)
+      || component === 'waterLevel' && finite(item['sea-mean-deviation']) === null
+      || component === 'waterTemperature' && finite(item['water-temperature']) === null) continue;
     const key = JSON.stringify([
       source.collection,
       source.modelRun,
@@ -465,6 +468,8 @@ function safeWindSeriesBracket(items, targetMs, component, options = {}) {
       source.samplingContext,
       source.gridDefinitionSha256,
       source.gridPoint,
+      source.verticalLayer ?? null,
+      source.verticalLayerRankM ?? null,
     ]);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
@@ -512,7 +517,7 @@ function componentBracket(items, targetMs, component, options) {
     ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
     : options;
   const bracket = timeBracket(items, targetMs, componentOptions);
-  if (sameNativeSeries(bracket, component)) {
+  if (bracket && sameNativeSeries(bracket, component)) {
     if (component === 'wave' && !safeWaveInterpolation(bracket)) {
       // Retain the existing partial tuple if no complete alternative exists;
       // missing direction must not masquerade as a wholly absent local wave.
@@ -520,9 +525,15 @@ function componentBracket(items, targetMs, component, options) {
     }
     return bracket;
   }
-  const beforeSource = provenanceAt(bracket?.before, component);
-  const afterSource = provenanceAt(bracket?.after, component);
-  const windRunSeamOnly = ['wind', 'windTail'].includes(component)
+  // A newly acquired native hour from another model run must not make a
+  // previously valid, bounded edge hour disappear. Prove the seam without
+  // broadening the candidate bracket's interpolation or edge limits.
+  const seamBracket = bracket ?? timeBracket(items, targetMs, {
+    maxGapMs: Number.POSITIVE_INFINITY, edgeToleranceMs: 0,
+  });
+  const beforeSource = provenanceAt(seamBracket?.before, component);
+  const afterSource = provenanceAt(seamBracket?.after, component);
+  const runSeamOnly = ['wind', 'windTail', 'current', 'waterLevel', 'waterTemperature'].includes(component)
     && beforeSource && afterSource
     && beforeSource.modelRun !== afterSource.modelRun
     && sameNativeIdentity(
@@ -532,8 +543,8 @@ function componentBracket(items, targetMs, component, options) {
     );
   return component === 'wave'
     ? safeWaveSeriesBracket(items, targetMs, componentOptions)
-    : windRunSeamOnly
-      ? safeWindSeriesBracket(items, targetMs, component, componentOptions)
+    : runSeamOnly
+      ? safeRunSeriesBracket(items, targetMs, component, componentOptions)
       : null;
 }
 

@@ -1,4 +1,25 @@
-# NYESTE SANDHED – 2026-09-23 – 4.0.479 lokal, tre åbne driftspunkter
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.480, ærlig delvis fremgang
+
+4.0.479 er merged (`888d3c04`). `35920484428` genbrugte korrekt privat
+vejrpakke, gemte cache/checkpoint og deployede et fungerende offentligt
+`rr-20260923215727-210`. Det forrige afsnits cache-/checkpoint-
+leveringsbarriere er dermed løst live; ikke alle vejrdata er komplette.
+
+På 113 eksakt fælles timer og 673 dele mistede vind/bølger nul gyldige
+positioner, men havstrøm 22, DMI-only-vandstand 41 og temperatur 41.
+Alle tab lå ved `2026-09-25T07Z` i Limfjorden: en gammel, stadig
+gyldig DMI-native 06-værdi blev tabt, da en nyere modelkørsel bidrog
+kl. 09. Lokal 4.0.480 reparerer kun denne modelrunskant med gammel
+tidsgrænse og uændret kildebevis. En eksakt bro til 4.0.479's aktuelle
+private generation er måltestet; produktion afventer. DEC-0250.
+
+Sidste runs rest pr. 79.414 positioner var vind 9.073, bølger 5.352,
+havstrøm 5.620, vandstand 64.525 og temperatur 34.563. DMI, Copernicus
+og Open-Meteo skal fortsat opgøres særskilt. Vandstand forbliver
+DMI-only; gyldige gamle data må ikke erstattes med tomme. Cron pauset;
+ingen ny overlappende kørsel eller oneoff.
+
+# HISTORISK SANDHED – 2026-09-23 – 4.0.479 lokal, tre åbne driftspunkter
 
 4.0.478 blev merged som `693f4789`. Normalrun `35903476784` bestod
 vejrbygning og artifactgate, men sluttede rødt før cache-/Pages-

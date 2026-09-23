@@ -46,8 +46,19 @@ export const DMI_SCHEDULER_ONLY_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
-export function isExactDmiSchedulerPredecessor(descriptor, expected) {
-  const approved = DMI_SCHEDULER_ONLY_PREDECESSOR;
+// 4.0.480 changes only derivation across adjacent DKSS-LF model runs. The
+// 4.0.479 production generation remains a valid native-weather donor. Admit
+// that one immutable generation, never a general version/hash mismatch.
+export const DMI_MARINE_SEAM_PREDECESSOR = Object.freeze({
+  sourceHead: '888d3c045e0a567db2d348f26837451b2118a9df',
+  datasetId: 'rr-20260923215727-210',
+  productionReferenceAt: '2026-09-23T21:00:00.000Z',
+  fullRuntimeContractSha256: 'ba83fcc2049f3ec8ef624f86f9651fc96372de0cc556f80f6e72cddaef313c0a',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
+function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
   return descriptor?.sourceHead === approved.sourceHead
@@ -59,6 +70,14 @@ export function isExactDmiSchedulerPredecessor(descriptor, expected) {
     && contracts?.continuationStateContractSha256 === current?.continuationStateContractSha256
     && contracts?.publicProjectionContractSha256 === current?.publicProjectionContractSha256
     && same(descriptor?.modelBinding, expected?.modelBinding);
+}
+
+export function isExactDmiSchedulerPredecessor(descriptor, expected) {
+  return isExactDmiPredecessor(descriptor, expected, DMI_SCHEDULER_ONLY_PREDECESSOR);
+}
+
+export function isExactDmiMarineSeamPredecessor(descriptor, expected) {
+  return isExactDmiPredecessor(descriptor, expected, DMI_MARINE_SEAM_PREDECESSOR);
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1509,10 +1528,11 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
-      const exactSchedulerPredecessor = isExactDmiSchedulerPredecessor(descriptor, expected);
+      const exactDmiPredecessor = isExactDmiSchedulerPredecessor(descriptor, expected)
+        || isExactDmiMarineSeamPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
         || (!same(descriptor.contractHashes, expected.contractHashes)
-          && !exactSchedulerPredecessor)) {
+          && !exactDmiPredecessor)) {
         const error = new Error('Protected private runtime generation is incompatible with this consumer');
         error.code = 'PROTECTED_PRIVATE_RUNTIME_INELIGIBLE';
         rejections.push({
@@ -1546,7 +1566,7 @@ export async function restoreProtectedPrivateProductionRuntime({
           repositoryRoot: context.repository,
           // Verify the archive against its own exact predecessor fingerprint.
           // Its age, model, identity and immutable bytes remain fully checked.
-          expected: exactSchedulerPredecessor
+          expected: exactDmiPredecessor
             ? { ...expected, contractHashes: descriptor.contractHashes }
             : expected,
           now,
@@ -1558,7 +1578,7 @@ export async function restoreProtectedPrivateProductionRuntime({
         // validation as a generation that could actually be restored.
         rejectionStage = 'time-bounds';
         assertRestoreTime(descriptor, expected, now, policy);
-        selected = { descriptor, candidate, verified, exactSchedulerPredecessor };
+        selected = { descriptor, candidate, verified, exactDmiPredecessor };
         // Pointer validation already proves current >= previous and rejects
         // conflicting equal-time generations. Normal restore therefore reads
         // current once; previous is downloaded only for genuine rollback.
@@ -1608,7 +1628,7 @@ export async function restoreProtectedPrivateProductionRuntime({
       rollbackSelected,
       currentGenerationRejected: rollbackSelected,
       rejectedGenerationCount: rejections.length,
-      exactSchedulerPredecessor: selected.exactSchedulerPredecessor,
+      exactDmiPredecessor: selected.exactDmiPredecessor,
       privatePayloadLogged: false,
     };
   } finally {

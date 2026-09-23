@@ -1,4 +1,29 @@
-# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.479 efter fejlet normalrun
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.480 efter grøn normalrun
+
+4.0.479 blev merged som `888d3c04`; kode-only `35919418385` og normalrun
+`35920484428` var grønne. Normalrun genbrugte korrekt privat cache,
+gemte ny cache/checkpoint og deployede `rr-20260923215727-210`.
+Hjemmesiden viste prognose/rangliste og alle fem felttyper i et
+kontrolleret browserudsnit. Det er **ikke** bevis for komplet dækning.
+
+Eksakt sammenligning af 113 fælles timer med forrige deploy afslørede
+22 tabte strøm-, 41 vandstands- og 41 temperaturpositioner, alle ved
+én Limfjordstime 25. september kl. 07 UTC. Den gamle gyldige DMI-
+kantværdi blev tabt, da et nyt modelrun kom til. Lokal 4.0.480 bevarer
+den inden for den eksisterende tids- og proveniensgrænse uden at
+interpolere på tværs af modelruns. En eksakt forgængerbro bevarer
+muligheden for at genbruge 4.0.479's nyeste private pakke; anden
+runtime er ikke godkendt. Måltests grønne, exact-head/livebevis mangler.
+
+Sidste run sluttede med 5.620 manglende havstrømspar, 9.073 vind-,
+5.352 bølge-, 64.525 vandstands- og 34.563 temperaturpositioner i
+79.414 forecast-positioner pr. felt. Copernicus-segmenter kørte, men
+Baltic NEMO var ofte under opdatering; Open-Meteo bar stadig for
+meget, DMI's horisonter var korte. Disse er særskilte åbne barrierer.
+Ingen ny normalrun før 4.0.480 er sikkert leveret og den seneste
+cachelineage er bekræftet. Cron pauset. Se DEC-0250 og roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-23 – lokal 4.0.479 efter fejlet normalrun
 
 4.0.478 er merged som `693f4789`. Normalrun `35903476784` hentede vejr og
 bestod artifactgates, men deployede ikke: beskyttet scorecheckpoint ramte
