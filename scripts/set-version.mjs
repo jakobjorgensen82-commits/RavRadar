@@ -109,6 +109,8 @@ await synchronizeReleaseContractMetadata({write:true});
 {
  let text=await fs.readFile('HANDBOOK-RAVRADAR.md','utf8');
  text=text.replace(/(\*\*Håndbogsversion:\*\*\s*)\d+\.\d+\.\d+/,(_match,prefix)=>`${prefix}${version}`);
+ text=text.replace(/(scoreformlen er uændret\. )\d+\.\d+\.\d+( er låst med)/,
+   (_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
  text=text.replace(/(Aktuel status – RavScore )\d+\.\d+\.\d+( first-cutover-kandidat)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
  text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(-cutoverkandidat, ikke produktion)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
  text=text.replace(/(Status for det aktuelle modelarbejde – lokal )\d+\.\d+\.\d+(, exact-head og cutover afventer)/,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
@@ -125,6 +127,11 @@ await synchronizeReleaseContractMetadata({write:true});
      }
      if(typeof section.body==='string'){
        section.body=section.body.replace(/Den lokale \d+\.\d+\.\d+-kandidat/,`Den lokale ${version}-kandidat`);
+       section.body=section.body
+         .replace(/(RavScore )\d+\.\d+\.\d+( ændrer ikke scoreformlen)/,
+           (_match,prefix,suffix)=>`${prefix}${version}${suffix}`)
+         .replace(/(Integreret binding:<\/strong> )\d+\.\d+\.\d+( er låst med)/,
+           (_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
      }
    }
  }

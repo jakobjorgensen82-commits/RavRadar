@@ -1,7 +1,8 @@
 # DEC-0246 – En dokumenteret fastholdelse må bevare en senere tom time
 
 **Dato:** 2026-09-23
-**Status:** Implementeret lokalt i 4.0.476; produktionsbevis afventer
+**Status:** Implementeret i 4.0.476; I04-afvisningen er væk i livekæden,
+men samlet checkpoint afventer separat P04
 
 ## Bevis
 
@@ -53,3 +54,8 @@ uændret.
 Dette løser alene leveringsblokkeringen, hvis live-CAS bekræfter det.
 De 5.201 manglende havstrømspar og vindhalens huller kræver stadig
 normal vejrhentning og feltvis bevis. Cron forbliver pauset.
+
+**Efterfølgende måling:** 4.0.476/PR #438 blev merged, og korrekt
+code-only `35878951916` viste nul I04. CAS afviste derefter P04 i
+den private Candidate G-ledsager, før checkpoint og Pages. Denne
+beslutnings smalle fastholdelsesregel bevares; se DEC-0247.

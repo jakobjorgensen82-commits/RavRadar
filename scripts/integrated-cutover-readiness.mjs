@@ -214,6 +214,16 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923140000_checkpoint_native_hold_null_evidence',
     filename: '20260923140000_checkpoint_native_hold_null_evidence.sql',
   }),
+  Object.freeze({
+    version: '20260923150000',
+    id: '20260923150000_checkpoint_candidate_diagnostic_correction',
+    filename: '20260923150000_checkpoint_candidate_diagnostic_correction.sql',
+  }),
+  Object.freeze({
+    version: '20260923160000',
+    id: '20260923160000_checkpoint_candidate_companion_id',
+    filename: '20260923160000_checkpoint_candidate_companion_id.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -222,6 +232,8 @@ export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923120000');
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
+export const CHECKPOINT_COMPANION_ID_MIGRATION =
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923160000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -291,6 +303,10 @@ export async function expectedCheckpointCasContract({
     migrationsDirectory,
     CHECKPOINT_NATIVE_HOLD_MIGRATION.filename,
   ), 'utf8');
+  const companionIdSuccessor = await fs.readFile(path.join(
+    migrationsDirectory,
+    CHECKPOINT_COMPANION_ID_MIGRATION.filename,
+  ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -303,7 +319,9 @@ export async function expectedCheckpointCasContract({
     ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
   ].map(([functionName, label]) => sqlFunctionBody(
     functionName === 'public.ravradar_ravscore_checkpoint_integrated_state_valid'
-      ? nativeHoldSuccessor : migration,
+      ? nativeHoldSuccessor
+      : functionName === 'public.ravradar_ravscore_checkpoint_payload_valid'
+        ? companionIdSuccessor : migration,
     functionName, label,
   ));
   const definition = definitions[0]

@@ -2093,3 +2093,23 @@ providerfri fortsættelse fra samme cache. Hvis checkpoint og Pages
 lykkes, kør normal weather med særskilt DMI/Copernicus/Open-Meteo-
 og komponentopgørelse. 5.201 er stadig kun sidste havstrømsrest;
 vindhalens og øvrige vejrfelters dækning er ikke bevist. Cron pauset.
+
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.477, P04-id-rettelse
+
+4.0.476 er merged som `76801468`. `35878951916` genbrugte den
+aktuelle private pakke uden providerkald: de otte I04 er væk,
+men privat Candidate G-ledsager afvises som P04 før checkpoint/Pages.
+Den anvendte skrivefri Candidate G-diagnose returnerede ved
+ikke-READY et boolsk udtryk i stedet for en fast C-kode; derfor
+blev 22 delrapporter anonyme »ukendte koder«. Lokal 4.0.477
+retter dette til C07/C08 i append-only SQL. Yderligere krydstjek
+påviste, at privat ledsager bruger den frosne Candidate G-pakkes
+v2-id, men anvendt SQL fejlagtigt krævede det integrerede controller-
+overgangs-id v3. Ny append-only `20260923160000` retter kun denne
+id-sammenligning i validator og diagnose. Alle andre CAS-krav,
+score, kildevalg, vejrdata og tre-timers Limfjord-hold bevares.
+
+Næste: målrettede tests, én exact-head, merge og ét providerfrit
+run fra samme private pakke. Bevis checkpoint/Pages og saml eventuelle
+andre sikre C-koder for 673 dele, og
+fortsæt derpå normal vejrhentning felt for felt. Cron pauset.

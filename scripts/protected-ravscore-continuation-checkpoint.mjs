@@ -711,7 +711,7 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
       // another aggregate is malformed. Never expose an unknown key or value:
       // report only its existence and retain canonical bounded reason counts.
       for (const [field, prefix, maximumReason] of [
-        ['integratedReasons', 'I', 33], ['candidateReasons', 'C', 6],
+        ['integratedReasons', 'I', 33], ['candidateReasons', 'C', 8],
       ]) {
         const map = result[field];
         const safe = {};

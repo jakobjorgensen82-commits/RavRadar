@@ -1,9 +1,9 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.476
+**Håndbogsversion:** 4.0.477
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.476 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.477 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
@@ -5840,6 +5840,25 @@ RavRadar accepterer DMI-vind, når det fulde kildebevis korrekt kalder komponent
 Ved første skift til den integrerede model gennemføres fem kontroller: selve den offentlige modelpakke, faste referencezoner, hele projektets validering, releasekontrollen og vejrdatakontrollen. Alle fem får lov at afslutte, så eventuelle fejl kan ses samlet. Hvis én fejler, stoppes der før database og offentlig side ændres. Hvis alle består, fortsætter skiftet automatisk.
 
 Den almindelige vejrdrift ændres ikke af denne samlede cutoverkontrol. Efter en verificeret offentlig lancering genaktiveres den kontrolleret, så kommende vind- og strømdata samt DMI-rotationen kan bevises i en normal kørsel.
+
+## Når en DMI-strømmåling gælder i flere timer – 4.0.477
+
+Nogle bestemte Limfjordskyster får ikke en ny DMI-strømmåling hver
+time. RavRadar må derfor beholde en **faktisk målt** værdi som
+reference i højst tre timer på otte godkendte kystdele, når
+målepunktet ligger højst 15 km væk. Det betyder ikke, at vi
+har fået tre nye målinger. Timerne uden ny måling står fortsat som
+huller i historikken, giver ingen ny strømpil og tæller ikke som
+ny transport. Så snart DMI leverer en ny gyldig måling, bruges den.
+
+En databasekontrol af denne ærlige fastholdelse er blevet rettet.
+Den efterfølgende afvisning lå i et privat ledsageled, hvor databasen
+forlangte et andet model-id end ledsagerens uændrede, frosne pakke
+faktisk bruger. 4.0.477 retter den præcise sammenligning og gør
+fejlrapporten læsbar. Den ændrer ikke, hvilke vejrdata eller scorer
+brugeren får. Vi kalder først vejrkæden
+stabil, når checkpoint, offentlig side og almindelige efterfølgende
+vejropdateringer er bevist i drift.
 # Når en offentlig opdatering vises før den registreres centralt – 4.0.466
 
 **Kort fortalt:** En vejrpakke kan være synlig på hjemmesiden, selv om den

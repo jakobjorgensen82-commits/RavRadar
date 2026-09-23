@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.476",
+  "version": "4.0.477",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -58,7 +58,7 @@
     "test:ravscore-integrated-public": "node scripts/test-ravscore-public-runtime-contract.mjs && node scripts/test-ravscore-public-data-service-binding.mjs && node scripts/test-ravscore-integrated-public-runtime-audit.mjs && node scripts/test-ravscore-integrated-public-consumers.mjs && npm run test:ravscore-public-browser-closure",
     "test:ravscore-integrated-profile": "node scripts/test-ravscore-profile-transition.mjs && python scripts/test_sync_admin_config_activation.py && node scripts/test-admin-active-ravscore-runtime.mjs && node scripts/test-integrated-cutover-install-contract.mjs && node scripts/test-ravscore-checkpoint-case-syntax.mjs && npm run test:integrated-cutover-readiness",
     "test:ravscore-continuation-checkpoint": "node scripts/test-ravscore-continuation-checkpoint.mjs",
-    "test:protected-ravscore-checkpoint": "node scripts/test-protected-ravscore-continuation-checkpoint.mjs && node scripts/build-checkpoint-rejection-diagnostic.mjs && node scripts/test-checkpoint-rejection-diagnostic.mjs && node scripts/build-checkpoint-native-hold-null-successor.mjs --check && node scripts/test-checkpoint-native-hold-null-successor.mjs",
+    "test:protected-ravscore-checkpoint": "node scripts/test-protected-ravscore-continuation-checkpoint.mjs && node scripts/build-checkpoint-rejection-diagnostic.mjs && node scripts/test-checkpoint-rejection-diagnostic.mjs && node scripts/build-checkpoint-native-hold-null-successor.mjs --check && node scripts/test-checkpoint-native-hold-null-successor.mjs && node scripts/build-checkpoint-candidate-diagnostic-successor.mjs --check && node scripts/test-checkpoint-candidate-diagnostic-successor.mjs && node scripts/build-checkpoint-candidate-companion-id-successor.mjs --check && node scripts/test-checkpoint-candidate-companion-id-successor.mjs",
     "test:private-production-runtime": "node scripts/test-private-production-runtime-bundle.mjs && node scripts/test-private-production-runtime-workflow.mjs && node scripts/test-protected-private-production-runtime.mjs && node scripts/test-protected-storage-body-retry.mjs && node scripts/test-tracked-runtime-privacy.mjs && node scripts/audit-tracked-runtime-privacy.mjs",
     "test:pages-artifact-privacy": "node scripts/test-pages-artifact-privacy.mjs",
     "test:legacy-bootstrap-hydration": "node scripts/test-hydrated-atomic-dataset-4.0.67.mjs && node scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs",

@@ -5325,3 +5325,29 @@ En særskilt anomali i det gamle Candidate G-diagnosekort er endnu
 ikke vist som CAS-årsag. Efter exact-head og én providerfri levering
 skal normal vejrkørsel stadig måle DMI/CP/OM og alle komponenter.
 Sidst målte havstrømsrest er fortsat 5.201 af 79.414; cron er pauset.
+
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.477; P04-id rettes uden at fjerne fastholdelse
+
+4.0.476/PR #438 er på `main` som `76801468` efter grøn exact-head
+`35876784322`. Providerfri `35878951916` brugte den samme aktuelle
+private pakke og fjernede alle otte tidligere I04-afvisninger.
+Checkpointet blev dog stadig afvist som P04 i den private Candidate G-
+ledsagetilstand, før private writes og Pages. Den tidligere
+`35877663757` var min forkerte valg af »nyere gemt vejr« ved samme
+referencetime og stoppede tidligt; ingen data blev ændret.
+
+Den hidtidige skrivefri Candidate G-diagnose returnerede fejlagtigt
+boolsk tekst i stedet for faste årsagskoder for ikke-READY-historik.
+Lokal 4.0.477/DEC-0247 retter diagnosen med C07 for status og
+C08 for beregnet dækning. Statisk producent/SQL-krydstjek påviste
+dernæst den konkrete P04-spærre: Den forseglede private Candidate G-
+ledsager producerer v2-rollback-id, mens SQL forlangte den aktive
+integrerede controllers separate v3-overgangs-id. Append-only
+`20260923160000` ændrer kun ledsager-id-sammenligningen i checkpointets
+validator og skrivefri diagnose til den eksakte frosne v2-identitet.
+Alle andre CAS-betingelser forbliver. Otte autoriserede Limfjord-dele må stadig holde en verificeret
+DMI-måling højst tre timer; tomme timer markeres fortsat som huller,
+ikke nye strømvektorer. Efter én exact-head og providerfri fortsættelse
+skal faktisk checkpoint/Pages og eventuelle yderligere C-koder bevises.
+5.201 havstrømspar og de øvrige vejrtypers dækning er stadig åbne;
+cron er pauset.
