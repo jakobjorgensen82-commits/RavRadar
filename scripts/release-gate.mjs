@@ -1226,6 +1226,7 @@ for(const marker of [
   '20260923130000_checkpoint_rejection_diagnostic.sql',
   '20260923140000_checkpoint_native_hold_null_evidence.sql',
   '20260923150000_checkpoint_candidate_diagnostic_correction.sql',
+  '20260923160000_checkpoint_candidate_companion_id.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',

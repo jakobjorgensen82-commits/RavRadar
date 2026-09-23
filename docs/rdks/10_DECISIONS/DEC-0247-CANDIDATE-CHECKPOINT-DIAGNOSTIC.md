@@ -1,4 +1,4 @@
-# DEC-0247 – Mål den resterende checkpointafvisning uden at fjerne Limfjord-fastholdelsen
+# DEC-0247 – Ret ledsagerens checkpoint-id uden at fjerne Limfjord-fastholdelsen
 
 **Dato:** 2026-09-23
 **Status:** Implementeret lokalt i 4.0.477; produktionsbevis afventer
@@ -30,13 +30,30 @@ En senere tom evidenstime er fortsat MISSING, og næste ægte måling
 overtager. Vi må ikke gøre et legitimt kort hold ulovligt for at få
 en grøn databasekontrol.
 
-4.0.477 retter kun den skrivefri årsagsfunktion append-only:
+Et efterfølgende statisk krydstjek af den præcise checkpointproducent og
+SQL-accept viste også den faktiske P04-spærre: Den private ledsager får
+`rollbackId=integrated-schema5-to-candidate-g-schema2-v2` fra den
+frosne Candidate G-pakke, mens den anvendte SQL kræver
+`integrated-schema6-to-candidate-g-schema2-v3`, som er den aktive
+integrerede controllers **separate overgangs-id**. Begge id'er er
+konstante, så denne uoverensstemmelse afviser pakken før nogen
+tilstandsvalidering. Den må ikke løses ved at ommærke den frosne pakke
+eller fjerne feltet.
+
+4.0.477 retter først den skrivefri årsagsfunktion append-only:
 `C07` betyder afvigende ikke-READY-status; `C08` betyder afvigende
-beregnet dækning. Den eksisterende validator, CAS-accept,
-tre-timers-/15-km-grænser, scorematematik, vejrdata og offentlige
-felter ændres ikke. Alle 673 tilstande klassificeres i ét
-providerfrit gennemløb, før en eventuel rettelse af selve
-årsagen besluttes. Ingen privat del-ID, måling eller payload logges.
+beregnet dækning. En anden append-only migration retter dernæst
+**kun** checkpointets to sammenligninger af ledsager-id til den
+eksakte, allerede hashbundne v2-pakke. CAS-funktionen, integreret
+controller-id, Candidate G-pakken, alle tilstands-, generations-,
+del-, tids-, privatlivs- og modelbindingskrav, tre-timers-/15-km-
+grænser, scorematematik og vejrdata forbliver uændrede. Den separate
+manuelle returvej til Candidate G ændres ikke. Ingen privat del-ID,
+måling eller payload logges.
+
+P04-id-mismatchen er bevist i kode og anvendt SQL, men en ny faktisk
+checkpointskrivning er endnu ikke bevist. C07/C08 kan vise eventuelle
+yderligere tilstandsafvisninger i ét providerfrit gennemløb.
 
 Først når checkpoint og Pages faktisk er bevist, fortsættes normal
 vejrhentning med feltvis DMI/Copernicus/Open-Meteo- og cachemåling.

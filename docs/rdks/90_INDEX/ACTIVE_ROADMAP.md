@@ -3062,17 +3062,18 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Ret sammenhængende rester i grupper og bevis gentagen autonom
    drift, før cron genaktiveres. Ingen grøn status uden databevis.
 
-# Aktivt roadmap – 2026-09-23, 4.0.477 P04 efter bevaret Limfjord-hold
+# Aktivt roadmap – 2026-09-23, 4.0.477 præcis P04-id-rettelse
 
 0. [x] Bevis at 4.0.476 fjernede de otte I04 i faktisk code-only-run
    `35878951916`; notér P04 før checkpoint/Pages.
 1. [x] Bevar verificeret regional DMI-fastholdelse op til tre timer.
-   Ret den skrivefri Candidate G-diagnoses boolske retur til C07/C08;
-   ændr ikke acceptreglen på gæt.
+   Ret skrivefri Candidate G-diagnose til C07/C08, og ret den konkret
+   påviste ledsager-id-fejl fra integreret v3-overgangs-id til frosset
+   Candidate G-v2-pakke uden at løsne øvrige acceptkrav.
 2. [ ] Målrettet lokal kontrol, én exact-head CI, merge og én
    providerfri fortsættelse fra præcis samme aktuelle vejrpakke.
-3. [ ] Saml alle sikre C-årsager fra 673 dele i det gennemløb; ret
-   den faktiske JS/SQL-uoverensstemmelse uden at miste ærlige huller.
+3. [ ] Saml eventuelle øvrige sikre C-årsager fra 673 dele i samme
+   gennemløb; ret kun påvist rest uden at miste ærlige huller.
 4. [ ] Bevis checkpoint, beskyttede writes, Pages og synlig prognose.
    Derefter én normal vedligeholdelse med før/efter for hver vejrtype,
    DMI/CP/OM, historik, resthuller og cachelineage.

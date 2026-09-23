@@ -1605,5 +1605,7 @@ valgt saved-weather-fortsættelse stoppede tidligt, fordi offentlig
 og privat referencetime var identisk. Korrekt code-only-kørsel
 `35878951916` viste nul af de tidligere otte I04, men P04 stoppede
 den private Candidate G-ledsager før checkpoint/Pages. 4.0.477
-retter kun dens skrivefri, boolsk-tekst fejlrapport til faste C07/C08.
+retter dens skrivefri, boolsk-tekst fejlrapport til faste C07/C08 og
+den påviste id-forveksling: SQL krævede integreret v3-overgangs-id af
+en privat ledsager, hvis frosne Candidate G-pakke har v2-id.
 Den autoriserede tre-timers DMI-fastholdelse i Limfjorden bevares.

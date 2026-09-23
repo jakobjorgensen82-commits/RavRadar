@@ -5955,10 +5955,13 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [x] Krydstjek Candidate G-producent, den nøjagtige regionale
   tre-timersregel, SQL-validator og diagnose. En boolsk retur i
   tekst-diagnosen forklarer de 22 ukendte svarportioner.
-- [x] Lokal append-only `20260923150000` retter kun skrivefri C07/C08;
-  SQL-validator, CAS, score og vejrdata uændrede.
+- [x] Lokal append-only `20260923150000` retter skrivefri C07/C08.
+- [x] Krydstjekket faktisk ledsager-id mod SQL: frosset Candidate G-v2
+  blev afvist af SQL-krav om separat integreret v3-overgangs-id.
+  Append-only `20260923160000` retter kun de to id-sammenligninger;
+  øvrig CAS, hold, score og vejrdata er uændrede.
 - [ ] Slut måltest, RDKS/version, én exact-head CI og merge.
-- [ ] Én providerfri fortsættelse på den samme pakke; mål alle sikre
-  Candidate G-årsagskoder samlet og ret kun den beviste mismatch.
+- [ ] Én providerfri fortsættelse på den samme pakke; bevis checkpoint
+  og Pages, og saml eventuelle øvrige sikre årsagskoder samlet.
 - [ ] Bevis checkpoint/Pages, derefter normal drift med før/efter
   pr. vejrtype, kilde og cachelineage. Cron stadig pauset.

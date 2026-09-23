@@ -5851,10 +5851,12 @@ har fået tre nye målinger. Timerne uden ny måling står fortsat som
 huller i historikken, giver ingen ny strømpil og tæller ikke som
 ny transport. Så snart DMI leverer en ny gyldig måling, bruges den.
 
-En databasekontrol af denne ærlige fastholdelse er blevet rettet,
-men den næste afvisning ligger i et privat ledsageled. 4.0.477
-gør kun fejlrapporten fra det led læsbar. Den ændrer ikke, hvilke
-vejrdata eller scorer brugeren får. Vi kalder først vejrkæden
+En databasekontrol af denne ærlige fastholdelse er blevet rettet.
+Den efterfølgende afvisning lå i et privat ledsageled, hvor databasen
+forlangte et andet model-id end ledsagerens uændrede, frosne pakke
+faktisk bruger. 4.0.477 retter den præcise sammenligning og gør
+fejlrapporten læsbar. Den ændrer ikke, hvilke vejrdata eller scorer
+brugeren får. Vi kalder først vejrkæden
 stabil, når checkpoint, offentlig side og almindelige efterfølgende
 vejropdateringer er bevist i drift.
 # Når en offentlig opdatering vises før den registreres centralt – 4.0.466

@@ -5075,7 +5075,10 @@ Korrekt code-only `35878951916` byggede 673+673 tilstande fra samme
 pakke og viste nul I04, men `P04` afviste den private Candidate G-
 ledsager før checkpoint og Pages. Dens skrivefri årsagsfunktion
 returnerede boolsk tekst i stedet for en fast kode. Append-only
-4.0.477 retter kun denne diagnose til C07/C08; ingen acceptregel,
-score, vejrdata eller regional tre-timersfastholdelse ændres. Den
-samlede sikre klassifikation i ét kort providerfrit run skal afgøre
-næste rettelse. Se DEC-0247.
+4.0.477 retter denne diagnose til C07/C08. Et efterfølgende krydstjek
+af producent, frosset modelpakke og anvendt SQL beviste, at P04 også
+skyldes et forkert id-krav: SQL forventede integreret v3-overgangs-id
+på Candidate G-ledsagerens frosne v2-pakke. En særskilt append-only
+successor retter kun de to ledsager-id-sammenligninger. Øvrig CAS,
+score, vejrdata og regional tre-timersfastholdelse ændres ikke.
+Live checkpoint og Pages afventer. Se DEC-0247.

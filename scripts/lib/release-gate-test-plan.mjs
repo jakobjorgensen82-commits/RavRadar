@@ -29,6 +29,8 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-checkpoint-rejection-diagnostic.mjs',
   'scripts/build-checkpoint-candidate-diagnostic-successor.mjs',
   'scripts/test-checkpoint-candidate-diagnostic-successor.mjs',
+  'scripts/build-checkpoint-candidate-companion-id-successor.mjs',
+  'scripts/test-checkpoint-candidate-companion-id-successor.mjs',
   'scripts/test-private-production-runtime-bundle.mjs',
   'scripts/test-private-production-runtime-workflow.mjs',
   'scripts/test-public-hour-delivery-pack.mjs',

@@ -5,8 +5,11 @@
   blev afvist som P04 før checkpoint og Pages. Dens skrivefri
   årsagsfunktion returnerede boolsk tekst i stedet for faste koder;
   22 portionssvar blev derfor kun anonyme anomalier. 4.0.477
-  retter diagnosen append-only til C07/C08. Den faktiske P04-
-  underårsag måles i næste providerfri run, før en acceptregel ændres.
+  retter diagnosen append-only til C07/C08. Statisk krydstjek beviste
+  desuden en P04-årsag: Den forseglede private ledsager har v2-id,
+  mens SQL krævede det separate v3-overgangs-id. Append-only
+  `20260923160000` retter kun denne sammenligning. Om andre P04-
+  årsager findes, og om checkpoint/Pages lykkes, afventer livebevis.
 - **LIMFJORD-TRETIMERSFASTHOLDELSE – BEVARET:** Verificeret regional
   DMI-strøm må fortsat bruges for otte godkendte dele højst tre timer
   og højst 15 km. Det er ikke nye målinger eller komplet historik.
