@@ -4987,3 +4987,17 @@ rækkefølgekontroller bruger kanonisk kildehash; den separate bytekontrol,
 ukendt forgænger og ikke-monoton generation afvises fortsat. Regressionen
 viser forskellig formattering med identisk JSON. Exact-head PR, merge og
 live recovery mangler; denne kodeændring berører ikke score eller vejr.
+# 2026-09-23 – 4.0.471 checkpointstatus og migrationsvej
+
+Efter anvendte 4.0.469/470-migrationer i `35849255295` stoppede
+providerfri `35849615112` igen på checkpoint-RPC før Pages. Den
+observerede fejl var maskeret; hypotesen "migration manglede" er
+erstattet af en kontrolleret JS/SQL-uoverensstemmelse om den sidste
+times tomme måling. 4.0.471 retter den i append-only `20260923110000`,
+installerer præcis ny migration også ved normal kode-only, og logger
+kun sikker RPC-fejlklasse ved ny afvisning. Tidligere migrationer,
+scoreformel og vejrdata er urørte. Livebevis og normal kørsel mangler.
+79.414 havstrømspar i seneste normalrun fordelte sig 25.793 direkte
+DMI, 424 regional DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201
+missing. Det er ikke et komplet datasæt og er ikke tal for andre
+vejrtyper. Se DEC-0242 og åbent provider-issue.

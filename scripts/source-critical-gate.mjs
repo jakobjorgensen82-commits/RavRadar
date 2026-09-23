@@ -185,8 +185,8 @@ assert.equal(
 );
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
-    .includes('20260923100000_integrated_checkpoint_part_identity_binding.sql'),
-  'Code-only migrationsplanen er ikke bundet til den præcise aktuelle trip-binding-reparation.',
+    .includes('LATEST_REQUIRED_CUTOVER_MIGRATION'),
+  'Code-only migrationsplanen er ikke bundet til den præcise aktuelle migration.',
 );
 
 for (const file of [...browserSources, 'package.json', '.github/workflows/update-and-deploy.yml',

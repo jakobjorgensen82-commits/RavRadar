@@ -2167,3 +2167,13 @@ Pages, fordi den sendte et hash af manifestfilens rå bytes til en kontrol,
 som kræver kanonisk JSON-hash. Begge Pages-kontroller får nu det korrekte
 kanoniske hash; den rå bytekontrol bevares. Regression dækker samme indhold
 med forskellig formattering. Vejr og score ændres ikke.
+## 4.0.471 – checkpointets sidste time og sikker kodelevering (2026-09-23)
+
+En providerfri 4.0.470-levering stoppede på checkpoint-RPC, selv efter
+de manglende migrationer var installeret. Lokal 4.0.471 samordner SQL
+med scorekodens klassifikation af en tilstedeværende, men tom sidste
+time. Den nye migration er append-only. Normal kode-only-levering
+anvender og læser nu nye præcise migrationer tilbage, og en eventuel
+RPC-afvisning får en ufølsom fejlklasse i loggen. Ingen vejrdata,
+scoreformel, kystgeometri eller kildeprioritet ændres. Livebevis,
+Copernicus-fremgang og fuld datadækning afventer.

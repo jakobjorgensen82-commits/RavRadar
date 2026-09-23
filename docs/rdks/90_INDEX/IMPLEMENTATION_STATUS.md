@@ -1,4 +1,17 @@
-# 2026-09-23 – 4.0.470 checkpoint-identitet efter faktisk kode-only-stop
+# 2026-09-23 – 4.0.471 samlet checkpoint- og leveringsrettelse
+
+`main` er 4.0.470. `35849255295` installerede og læste de manglende
+Supabase-migrationer tilbage. `35849615112` genbrugte privat vejr,
+byggede runtime/checkpoint, men fik stadig RPC-afvisning før deploy.
+Lokal 4.0.471 samordner SQL med scorekodens status for tilstedeværende
+sidste time med tom værdi, tilføjer append-only `20260923110000`,
+får normal kode-only-handling til at anvende den, og logger kun en
+ufølsom fejlklasse ved ny afvisning. Måltest er grøn; exact-head,
+merge, providerfri deploy og normal vejrhentning mangler endnu.
+Ingen scoreformel eller rå vejrdata ændres. Providerprioritet og 5.201
+havstrømspar er åbne særskilte problemer, ikke løst af checkpointet.
+
+# HISTORISK STATUS – 2026-09-23 – 4.0.470 checkpoint-identitet
 
 PR #431 bestod exact-head `35843681490` og blev merged som `a6ec7c9b`.
 Kode-only-run `35844441095` genbrugte aktuel privat vejrpakke og bestod

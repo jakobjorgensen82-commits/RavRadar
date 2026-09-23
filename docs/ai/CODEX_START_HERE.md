@@ -1,4 +1,28 @@
-# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.470, normalplan pauset
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.471, normalplan pauset
+
+4.0.470 er på `main` (`76f235be`). Godkendt trip-storage-run `35849255295`
+anvendte og læste migrationerne `20260923091500` og `20260923100000`
+tilbage uden fejl. Providerfrit kode-only-run `35849615112` genbrugte
+samme private vejrpakke, byggede 210/673-runtime og checkpoint for 673
+dele, men stoppede igen før beskyttede writes/Pages: checkpoint-RPC'en
+afviste indholdet, mens wrapperen skjulte den præcise fejl. Den forrige
+forklaring om manglende migration var derfor utilstrækkelig.
+
+Lokal 4.0.471 retter en konkret uenighed: et målepunkt, der findes på
+sidste time med tom styrke, klassificeres af JavaScript som
+`WINDOW_HAS_MISSING_EVIDENCE`, men SQL klassificerede det som
+`LATEST_SAMPLE_MISSING`. Ny append-only migration `20260923110000`
+retter SQL; kode-only-workflowet anvender nu også migrationer ved den
+normale integrerede handling. En sikker fejlklasse logges ved næste
+afvisning uden privat payload. Dette er en stærk, men endnu ikke
+produktionsbevist forklaring på stoppet. Næste: målrettede kontroller,
+én exact-head-CI, merge, én providerfri deploy fra den aktuelle private
+pakke og derpå én normal vejrkørsel med særskilt DMI/CP/OM- og
+komponentmåling. Sidste normalrun havde 25.793 direkte DMI-, 0 CP-,
+47.996 OM-havstrømspar og 5.201 huller. Det er ikke tilfredsstillende;
+cron forbliver pauset.
+
+# HISTORISK CHECKPOINT – 2026-09-23 – lokal 4.0.470
 
 PR #431/4.0.469 bestod exact-head-kildekontrol `35843681490` og blev merged
 som `a6ec7c9b`. Providerfrit run `35844441095` genbrugte den aktuelle

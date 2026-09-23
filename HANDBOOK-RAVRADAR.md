@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.470
+**Håndbogsversion:** 4.0.471
+
+## 89.68 4.0.471 – Gem historik også når en måling mangler
+
+En ny vejrpakke kan godt indeholde en time, hvor leverandøren ikke
+kunne levere en brugbar værdi. Den time er ikke det samme som en time,
+der slet ikke findes. Siden må vise det lokale datahul, mens den
+bevarer andre gyldige data. Historikkontrollen skal forstå forskellen
+på samme måde som scoreberegningen.
+
+En databasekontrol brugte en anden betegnelse end scorekoden for den
+tomme sidste time. Derfor kunne den afvise hele historikpakken, før
+den nye side blev offentliggjort. En ny, selvstændig databaseopdatering
+samordner de to. Den korte kodelevering installerer fremover selv en
+ny godkendt databasebinding og kontrollerer den bagefter. Hvis
+databasen stadig afviser, vises en sikker fejlklasse uden private
+vejrdata. Dette er først bevist i drift, når en providerfri levering
+har gemt historikken og faktisk opdateret siden.
+
+Problemet siger ikke, at vejrdækningen nu er komplet. Seneste normale
+kørsel havde stadig 5.201 havstrømspar uden gyldig værdi, for lidt
+DMI og ingen anvendte Copernicus-par. De tal gælder kun havstrøm;
+vind, bølger, vandstand og temperatur følges hver for sig.
 
 ## 89.67 4.0.470 – Gem modelhistorik med kystdelens rigtige ID
 

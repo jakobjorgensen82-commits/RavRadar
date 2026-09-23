@@ -1268,9 +1268,28 @@ try {
     error => {
       assert.equal(error.message.includes(secretErrorText), false);
       assert.match(error.message, /HTTP 401 AUTH_FAILED/);
+      assert.equal(error.safeDiagnostic, 'HTTP_401_AUTH_FAILED_UNCLASSIFIED');
       return true;
     },
   );
+
+  const invalidCheckpointRpc = createProtectedRavScoreCheckpointRpcRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async () => new Response(JSON.stringify({
+      code: '22023',
+      message: 'invalid protected RavScore checkpoint CAS input',
+      details: secretErrorText,
+    }), { status: 400 }),
+    retryDelayMs: 0,
+    delayImpl: async () => {},
+    logger: () => {},
+  });
+  await assert.rejects(invalidCheckpointRpc(rpcBody, 'publish'), error => {
+    assert.equal(error.safeDiagnostic, 'HTTP_400_22023_INPUT_INVALID');
+    assert.equal(error.message.includes(secretErrorText), false);
+    return true;
+  });
 
   const symlinkRealTarget = checkpointPathFor('symlink-real');
   const symlinkExposedTarget = checkpointPathFor('symlink-exposed');

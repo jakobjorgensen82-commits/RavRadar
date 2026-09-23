@@ -269,6 +269,22 @@ const parseRemoteJson = text => {
   }
 };
 
+const SAFE_RPC_FAILURE_REASONS = Object.freeze({
+  'invalid protected RavScore checkpoint CAS input': 'INPUT_INVALID',
+  'protected RavScore checkpoint central row is invalid': 'CENTRAL_INVALID',
+  'protected RavScore checkpoint conflicts at the same reference': 'SAME_REFERENCE_CONFLICT',
+  'protected RavScore checkpoint would regress central state': 'CENTRAL_NEWER',
+  'protected RavScore checkpoint CAS version mismatch': 'VERSION_MISMATCH',
+});
+
+function safeRpcFailureDiagnostic(status, parsedResponse) {
+  const code = typeof parsedResponse?.code === 'string'
+    && /^[A-Z0-9_]{1,16}$/i.test(parsedResponse.code)
+    ? parsedResponse.code.toUpperCase() : 'UNKNOWN';
+  const reason = SAFE_RPC_FAILURE_REASONS[parsedResponse?.message] ?? 'UNCLASSIFIED';
+  return `HTTP_${Number.isSafeInteger(status) ? status : 'UNKNOWN'}_${code}_${reason}`;
+}
+
 async function readResponseTextBounded(response, maximumBytes, label) {
   const contentLength = Number(response?.headers?.get?.('content-length'));
   if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
@@ -581,10 +597,12 @@ export function createProtectedRavScoreCheckpointRpcRequester({
         await delayImpl(retryDelayMs);
         continue;
       }
-      throw new Error(
+      const failure = new Error(
         `Protected RavScore checkpoint RPC ${operation} failed: HTTP ${response.status}`
         + `${parsedResponse?.code ? ` ${String(parsedResponse.code).slice(0, 32)}` : ''}`,
       );
+      failure.safeDiagnostic = safeRpcFailureDiagnostic(response.status, parsedResponse);
+      throw failure;
     }
     throw new Error('Protected RavScore checkpoint RPC failed after its bounded retry');
   };
@@ -652,6 +670,9 @@ async function invokeProtectedCheckpointRpc(rpcRequest, body) {
     const wrapped = new Error('Protected RavScore checkpoint RPC publish failed closed');
     wrapped.code = 'PROTECTED_RAVSCORE_CHECKPOINT_REMOTE_ERROR';
     wrapped.cause = error;
+    wrapped.safeDiagnostic = typeof error?.safeDiagnostic === 'string'
+      && /^HTTP_[0-9]{3}_[A-Z0-9_]{1,16}_[A-Z0-9_]+$/.test(error.safeDiagnostic)
+      ? error.safeDiagnostic : 'REQUEST_FAILED';
     throw wrapped;
   }
 }
@@ -855,7 +876,8 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => {
-    console.error(error.message);
+    console.error(error.safeDiagnostic
+      ? `${error.message} [${error.safeDiagnostic}]` : error.message);
     process.exitCode = 1;
   });
 }

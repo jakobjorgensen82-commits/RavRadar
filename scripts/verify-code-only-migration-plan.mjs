@@ -16,8 +16,7 @@ function argument(name) {
 }
 
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
-assert.equal(latest.version, '20260923100000');
-assert.equal(latest.filename, '20260923100000_integrated_checkpoint_part_identity_binding.sql');
+assert.equal(latest, REQUIRED_CUTOVER_MIGRATIONS.at(-1));
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: await fs.readFile(argument('--migration-list'), 'utf8'),
   dryRunText: await fs.readFile(argument('--dry-run'), 'utf8'),
@@ -26,10 +25,10 @@ const plan = await assertSupabaseMigrationPlan({
 assert.ok(
   plan.pendingVersions.length === 0
     || (plan.pendingVersions.length === 1 && plan.pendingVersions[0] === latest.version),
-  'Code-only deployment may apply only the approved integrated trip-binding repair successor',
+  'Code-only deployment may apply only the exact latest required integrated migration',
 );
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : 'Code-only migration dry-run contains exactly the one expected integrated trip-binding repair successor.',
+    : `Code-only migration dry-run contains exactly ${latest.filename}.`,
 );
