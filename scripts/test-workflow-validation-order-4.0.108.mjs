@@ -1948,6 +1948,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260922170000_integrated_model_binding_successor.sql"',
   'test -f "$migrations_directory/20260923052100_integrated_current_projection_binding.sql"',
   'test -f "$migrations_directory/20260923091500_integrated_native_hold_continuation_binding.sql"',
+  'test -f "$migrations_directory/20260923100000_integrated_checkpoint_part_identity_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

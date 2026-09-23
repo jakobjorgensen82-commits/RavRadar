@@ -1,4 +1,19 @@
-# NYESTE SANDHED – 2026-09-23 – 4.0.469 lokal, to forskellige barrierer rettet
+# NYESTE SANDHED – 2026-09-23 – 4.0.470 lokal, providerfri deploy endnu ikke fuldført
+
+PR #431/4.0.469 er merged (`a6ec7c9b`), men er endnu ikke publiceret.
+Providerfrit run `35844441095` bestod genbrug af den aktuelle private
+vejrpakke og offentlig runtime-audit for 210 zoner/673 kystdele, men
+stoppede før beskyttede writes og Pages på historikcheckpointets
+kystdel-identitet. Den virkelige offentlige projektion gemmer ID som
+map-nøgle; kontrollen krævede fejlagtigt et gentaget indre ID, som kun
+test-fixturen havde. Lokal 4.0.470 retter den fælles checkpointkontrol
+med valideret nøgle og afviser modstrid. Det er ikke et vejrdatabevis.
+Den krævede nye databasebinding ligger i append-only `20260923100000`;
+den allerede anvendte forgænger er urørt.
+DMI/Copernicus/Open-Meteo-fordelingen og 5.201 åbne havstrømspar fra
+sidste normalrun er fortsat det målbare udgangspunkt. Cron er pauset.
+
+# HISTORISK SANDHED – 2026-09-23 – 4.0.469 lokal, to barrierer rettet
 
 PR #431's første kildekontrol fandt, at den rettede checkpointkode ikke
 matchede den allerede anvendte databases gamle implementeringshash. Et nyt

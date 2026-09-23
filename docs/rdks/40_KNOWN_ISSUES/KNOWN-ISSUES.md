@@ -1,4 +1,13 @@
-# Aktuelle issues – 2026-09-23, 4.0.469
+# Aktuelle issues – 2026-09-23, 4.0.470
+
+- **CHECKPOINT-PART-IDENTITY-35844441095 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Providerfri 4.0.469-udrulning bestod score-runtime-audit, men gemningen
+  af historie krævede et indre kystdel-ID, som produktionens projektion
+  ikke har. ID findes som den validerede map-nøgle. 4.0.470 bruger nøglen
+  i den private continuation-kontrol, bevarer geometri-/state-key-kravene
+  og afviser modstridende indre ID. Ny providerfri udrulning skal bevise det.
+
+# Tidligere 4.0.469-issues – fortsat åbne hvor angivet
 
 - **PROVIDER-PRIORITY-AND-RESIDUAL – ÅBENT:** Sidste normalrun endte med
   25.793 DMI- og 0 Copernicus-havstrømspar mod 47.996 Open-Meteo-par

@@ -1,4 +1,17 @@
-# Aktuelt fokus – 2026-09-23, 4.0.469
+# Aktuelt fokus – 2026-09-23, 4.0.470
+
+1. [x] Merge 4.0.469; afklar providerfrit run `35844441095` til manglende
+   indre kystdel-ID i checkpointkontrollen, ikke manglende vejrdata.
+2. [ ] Lever 4.0.470 med produktionsformet checkpointtest, append-only
+   migrationsbinding `20260923100000`, én exact-head-kildekontrol og merge.
+3. [ ] Kør providerfri udrulning på den seneste private vejrpakke til
+   checkpoint, beskyttede writes og Pages faktisk er gennemført.
+4. [ ] Kør én almindelig vejrkørsel og mål leverandørandele, rester og
+   komponentdækning før/efter. DMI-first betyder både fuld dækning og
+   faktisk DMI-overtagelse; Copernicus 0 er ikke acceptabelt som stabilt
+   slutresultat. Genaktivér ikke cron før robust, autonom drift er bevist.
+
+# Tidligere fokus – 2026-09-23, 4.0.469
 
 1. [ ] Få PR #431's append-only checkpointbinding gennem exact-head CI,
    merge og providerfri kode-only-deploy på den aktuelle private vejrpakke.

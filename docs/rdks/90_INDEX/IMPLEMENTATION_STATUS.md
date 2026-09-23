@@ -1,3 +1,17 @@
+# 2026-09-23 – 4.0.470 checkpoint-identitet efter faktisk kode-only-stop
+
+PR #431 bestod exact-head `35843681490` og blev merged som `a6ec7c9b`.
+Kode-only-run `35844441095` genbrugte aktuel privat vejrpakke og bestod
+offentlig runtime-audit, men stoppede før beskyttede writes/Pages ved
+historikcheckpoint med `Candidate G state context is incomplete`. Producenten
+lægger kystdelens ID i `coastalParts.parts`-nøglen, ikke som indre felt;
+test-fixturen havde fejlagtigt begge. Lokal 4.0.470 anvender den allerede
+validerede nøgle i den private state-key-kontrol og afviser modstridende
+indre ID. Ingen model, vejrdata, geometri eller leverandørregel ændres.
+Måltest er undervejs; CI/livebevis mangler. Automatisk vejrplan er pauset.
+Den ændrede implementeringshash følger append-only migration
+`20260923100000`; anvendt `20260923091500` ændres ikke.
+
 # 2026-09-23 – 4.0.469 afgrænset tur for fremtidig DMI-vind
 
 PR #431's første exact-head-kildekontrol fejlede på to tests med én fælles

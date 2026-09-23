@@ -1,4 +1,17 @@
-# Aktivt roadmap – 2026-09-23, 4.0.469 sikker scorehistorik og vindhorisont
+# Aktivt roadmap – 2026-09-23, 4.0.470 sikker checkpoint-identitet
+
+0. [x] Merge 4.0.469 efter grøn exact-head-kildekontrol.
+1. [x] Afklar `35844441095`: offentlig projektion har ID som nøgle, ikke
+   indre felt; korrigér checkpoint og produktionsformet test samlet.
+2. [ ] Måltest/version/RDKS, én exact-head-kildekontrol og merge 4.0.470.
+3. [ ] Fortsæt providerfrit med den aktuelle private vejrpakke; bevis gemt
+   checkpoint, beskyttede writes og faktisk Pages-deploy.
+4. [ ] Kør én almindelig vejrkørsel. Mål DMI/CP/OM før og efter for hver
+   vejrtype, samt 5.201 særskilte havstrømspar, historik og cachebinding.
+5. [ ] Find og ret resterende kilde- og geografiske barrierer samlet før
+   cron genaktiveres. Grøn deploy er ikke lig fuldt datasæt.
+
+# Tidligere 4.0.469-plan – afløst efter run 35844441095
 
 0. [x] Afgræns de to barrierer i samme version: checkpointets forkerte
    fastholdelsesregel og DMI's udsultede, H0-afhængige vindhorisont.

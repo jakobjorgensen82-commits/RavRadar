@@ -1,3 +1,13 @@
+# 2026-09-23 – 4.0.470 lokal identitet i historikcheckpoint
+
+4.0.469/PR #431 bestod exact-head `35843681490` og blev merged som
+`a6ec7c9b`. Providerfrit run `35844441095` genbrugte gemt vejr,
+byggede og auditerede integreret runtime, men checkpointgemning stoppede
+før protected writes og deploy. Kystdel-ID lå kun som map-nøgle i den
+virkelige projektion; testdata havde også et indre ID. 4.0.470 bruger
+den validerede nøgle og afviser et modstridende indre felt. Ny liveprøve
+afventer. Leverandørandele er fortsat ubekræftet forbedret.
+
 # 2026-09-23 – 4.0.469 lokal vindhorisont efter helkædegennemgang
 
 DMI-loggen for `35823773587` viste 23 officielle HARMONIE-prognosetrin,

@@ -1,3 +1,16 @@
+# 2026-09-23 – 4.0.470 retter checkpointets kystdel-identitet
+
+4.0.469/PR #431 bestod exact-head `35843681490` og blev merged som
+`a6ec7c9b`. Providerfri `35844441095` genbrugte den aktuelle private
+vejrpakke, genbyggede og auditerede 210/673-runtime, men stoppede før
+beskyttede writes og deploy: checkpointet krævede indre `partId`, mens
+den virkelige projektion kun har ID som map-nøgle. Lokal 4.0.470 bruger
+den validerede nøgle til den private state-key-kontrol og afviser et
+modstridende indre felt. Testdata afspejler nu producentens form.
+Implementeringshashen kræver append-only efterfølger `20260923100000`;
+den anvendte `20260923091500` røres ikke. Ingen vejrfremgang er bevist
+af denne rettelse; DMI/CP/OM-andelen og 5.201 havstrømspar er åbne.
+
 # 2026-09-23 – 4.0.469 giver DMI-vind en selvstændig horisonttur
 
 PR #431's første exact-head-CI fandt samme checkpoint-hashmismatch i to
