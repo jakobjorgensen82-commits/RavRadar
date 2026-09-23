@@ -5048,3 +5048,20 @@ En tværgående run-gennemgang viser tidligere stop i central cache,
 backend-klarhed og post-deploy-kontrol. Vejrhullerne og lave
 DMI/Copernicus-andel er åbne selv hvis checkpointet bliver rettet.
 Se DEC-0245, helkæderapporten og aktivt roadmap.
+
+# 2026-09-23 – 4.0.476: I04 målt, underbetingelse endnu ikke livebekræftet
+
+PR #437/4.0.475 bestod exact-head `35870444432` og blev merged.
+Providerfri `35871154038` genbrugte den aktuelle private pakke og
+gav for første gang en konkret SQL-afvisning: `P02` med otte
+integrerede `I04`. I04 dækker flere regler; den præcise underbetingelse
+for disse private dele er ikke logget. En påvist modstrid er, at anvendt
+SQL forbød null-evidens efter en regionalt fastholdt måling, selv om
+den verificerede JS-model beholder timen som MISSING uden at opfinde
+transport. Lokal 4.0.476
+tilføjer en append-only successor, der kun tillader denne senere
+null inden tilstandstiden, mens senere numerisk evidens fortsat
+afvises. Begge SQL-funktioner, migrationsliste og readback følger.
+Copernicus-nul, DMI-andel, vindhuller og 5.201 havstrømsrestpar er
+fortsat åbne; ingen vejrdata ændres af denne checkpointrettelse.
+Se DEC-0246 og helkæderapporten.

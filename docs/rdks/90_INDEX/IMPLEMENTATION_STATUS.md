@@ -5926,3 +5926,21 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Normal drift: mål hver vejrtype og kilde, eksakt cachelineage,
   DMI/CP/OM-prioritet, resthuller og historik over gentagne kørsler.
   Først da kan cron genaktiveres.
+
+# 2026-09-23 – lokal 4.0.476, påvist I04-fastholdelseskant
+
+- [x] Merge 4.0.475/PR #437 efter exact-head `35870444432`.
+- [x] Providerfri `35871154038`: eksakt gemt cache og 673 tilstande;
+  CAS `INPUT_INVALID`, skrivefri diagnose `P02`/otte `I04`.
+- [x] Krydstjek JS-replay mod anvendt SQL: senere null ved verificeret
+  regional fastholdelse er ufuldstændig historik, ikke opdigtet strøm.
+- [x] Lokal append-only `20260923140000` opdaterer kun integreret
+  validator og dens årsagskode; readback og migrationsliste følger.
+  Måltest af null versus senere numerisk styrke er grøn lokalt.
+- [ ] Slut måltests, RDKS/version, exact-head CI og merge.
+- [ ] Én providerfri fortsættelse på samme pakke: bevis checkpoint,
+  beskyttede writes, Pages og synlige prognoser. Ved ny regelkode,
+  analysér alle sikre årsager samlet før næste ændring.
+- [ ] Én normal weather fra aktuelle cache med før/efter for hver
+  vejrtype, kilde, time, historik og restårsag; gentag uden Codex
+  før cron genaktiveres. 100 % gyldige data er ikke opnået endnu.

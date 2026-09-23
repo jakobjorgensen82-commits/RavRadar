@@ -1,12 +1,28 @@
-# Aktuelle issues – 2026-09-23, lokal 4.0.475
+# Aktuelle issues – 2026-09-23, lokal 4.0.476
 
-- **CHECKPOINT-CAS-35866710973 – ÅBEN P0:** Aktuel privat cache blev
+- **CHECKPOINT-I04-35871154038 – LOKALT RETTET / LIVEBEVIS ÅBENT P0:**
+  Den samme gemte pakke gav `P02` med otte `I04` i 673 tilstande.
+  I04 dækker flere historikbetingelser. En konkret påvist JS/SQL-
+  modstrid er, at anvendt SQL afviser senere null-evidens ved eksakt
+  regional fastholdelse, selv om modellen korrekt markerer timen
+  MISSING. At netop den underbetingelse forklarer alle otte private
+  afvisninger er sandsynligt, men ikke livebekræftet.
+  Append-only `20260923140000` tillader kun senere null frem til
+  tilstandstiden; senere talværdi forbliver afvist. Exact-head,
+  merge, CAS, private writes og Pages mangler livebevis.
+- **CANDIDATE-DIAGNOSTIC-RESPONSE – ÅBEN OBSERVATION:** Runnet viste
+  22 anonyme anomalier i det gamle reserve-checkpoints diagnosekort.
+  De var ikke udløsende for `P02`. Ingen Candidate G-score/fallback
+  ændres. Kun hvis næste CAS giver en relevant P04, analyseres den
+  eksakte sikre klasse uden at genindføre gammel model.
+
+- **CHECKPOINT-CAS-35866710973 – DIAGNOSE LIVE, I04-RETTELSE ÅBEN:** Aktuel privat cache blev
   genbrugt og 673 tilstande blev bygget, men SQL-CAS afviste stadig
   `INPUT_INVALID` før Pages. 4.0.474's diagnoseklient afviste selv
   SQL-svaret som `RESPONSE_REASON_SHAPE`, så den konkrete regel er
-  endnu ikke kendt. Lokal 4.0.475 bevarer faste årsagskoder og
-  klassificerer uventet svar anonymt uden at lempe CAS. Livebevis
-  og samlet rodårsagsrettelse mangler.
+  endnu ikke kendt i det run. 4.0.475 bevarede faste årsagskoder og
+  klassificerede uventet svar anonymt uden at lempe CAS; næste run
+  `35871154038` målte `P02`/otte `I04`. Se det aktuelle issue ovenfor.
 - **NORMAL-WEATHER-STABILITY – ÅBEN P0:** Tidligere normalrun er
   stoppet i central cache, backend-klarhed og post-deploy-kontrol;
   sidst fuldførte run havde 0 Copernicus- og 5.201 manglende

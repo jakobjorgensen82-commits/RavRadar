@@ -138,8 +138,23 @@ const anomalousResult = await anomalous(payload, reference);
 assert.deepEqual(anomalousResult.integratedReasons, { I14: 2 });
 assert.deepEqual(anomalousResult.candidateReasons, { C03: 2 });
 assert.deepEqual(anomalousResult.diagnosticAnomalies,
-  { integratedReasonsUnexpectedEntries: 2 });
+  { integratedReasonsUnknownCodes: 2, integratedReasonsUnexpectedEntries: 2 });
 assert.doesNotMatch(JSON.stringify(anomalousResult), /privateZoneId|do-not-log-me/);
+
+const impossibleCount = createProtectedRavScoreCheckpointDiagnosticRequester({
+  supabaseUrl: 'https://example.supabase.co',
+  serviceRoleKey: 'sb_secret_test_only',
+  batchSize: 2,
+  fetchImpl: async () => new Response(JSON.stringify({
+    schemaVersion: '1.0.0', payloadReason: 'P04', normalizedBytes: 100,
+    integratedReasons: {}, candidateReasons: { C03: 700 },
+  }), { status: 200 }),
+});
+const impossibleResult = await impossibleCount(payload, reference);
+assert.deepEqual(impossibleResult.candidateReasons, {});
+assert.deepEqual(impossibleResult.diagnosticAnomalies,
+  { candidateReasonsRejectedC03: 2, candidateReasonsUnexpectedEntries: 2 });
+assert.equal(impossibleResult.payloadReason, 'P04');
 
 for (const [response, safeDiagnostic] of [
   [new Response(JSON.stringify({ code: 'SECRET', message: 'do-not-log-me' }), { status: 400 }),
