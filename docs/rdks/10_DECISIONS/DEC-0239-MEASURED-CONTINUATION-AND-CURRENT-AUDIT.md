@@ -47,3 +47,9 @@ havstrøm-closure har 5.201 uafklarede kystdel×time-par i 57 dele. Kilden
 til de to restgrupper skal undersøges hver for sig. At DMI har vind på
 mindst én time for 669 dele beviser ikke vind ved T+117. Den normale
 rotation og dens gemte markør skal måles ved næste kørsel, ikke antages.
+
+**Efterfølgende 4.0.469-korrektion:** 4.0.468 blev merged, men det første
+providerfri kode-only-run `35835042039` nåede ikke deploy. Checkpointets
+replay af en gyldig regional fastholdelse under ufuldstændig historik
+afveg fra modellens egen regel. DEC-0240 beskriver den målrettede rettelse;
+checkpointpubliceringen er fortsat ikke livebevist.

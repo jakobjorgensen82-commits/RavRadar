@@ -1,3 +1,29 @@
+# 2026-09-23 – 4.0.469 afgrænset tur for fremtidig DMI-vind
+
+Den systemiske gennemgang af `35823773587` viste, at HARMONIE-kataloget
+havde 23 valgte prognosetrin, mens kun én fil for den aktuelle time blev
+behandlet. Senere vindpassage tabte arbejdstiden til DKSS/WAM og var
+også fejlagtigt betinget af et hul i den aktuelle time. Lokal 4.0.469
+planlægger nu den roterende horisontpassage selvstændigt ved fremtidige
+vindhuller og beskytter højst 120 sekunder af slack efter marine reserver.
+Højst fire vindassets pr. normalrun, marine prioritet, finaliseringsreserve
+og datavalidering består. Måltest for tur uden H0-hul og reserve uden
+marine fortrængning er grøn. Live fremgang er endnu ikke bevist; CP/OM's
+faktiske fyldning af vindhalen og den separate havstrømsrest er åbne.
+DEC-0241.
+
+# 2026-09-23 – 4.0.469 checkpoint for regional fastholdelse
+
+PR #430/4.0.468 er merged på `9f9553c4`. Providerfri kode-only-kørsel
+`35835042039` gendannede den aktuelle private pakke og genbyggede den
+offentlige runtime, men checkpointbygning fejlede før beskyttede writes og
+deploy. Den krævede fejlagtigt fuld historik for en godkendt regional
+havstrømsfastholdelse. Lokal 4.0.469 bruger samme kausale reference og
+autorisationsbevis som den integrerede models tilstandsvalidator.
+Produktionsformet måltest er grøn; eksakt-head CI og livebevis mangler.
+Automatisk vejrplan er deaktiveret. Vind- og havstrømsrester er særskilt
+åbne. DEC-0240.
+
 # Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.468
 
 - [x] Gennemfør normal 4.0.467-weather `35823773587`: alle tre

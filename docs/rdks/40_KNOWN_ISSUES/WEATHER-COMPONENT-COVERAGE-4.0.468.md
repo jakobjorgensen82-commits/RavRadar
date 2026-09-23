@@ -1,5 +1,15 @@
 # Åbent: lokal dækning for flere vejrtyper
 
+**Tilføjelse 2026-09-23 / lokal 4.0.469:** DMI-loggen fra
+`35823773587` viser et officielt HARMONIE-katalog med 23 valgte
+prognosetrin og cirka 57 timers vindhorisont. Kun H0-filen blev
+behandlet; den senere vindpassage ramte arbejdsbudgettet efter DKSS/WAM.
+Den var også fejlagtigt koblet til et H0-hul. DEC-0241 retter
+planlægning og beskytter højst 120 sekunders ekstra tid uden at tage
+de eksisterende marine reserver. Det løser ikke automatisk den sidste
+del af 118-timersprognosen eller de særskilte 5.201 havstrømspar;
+først næste kontrollerede normalrun kan måle reel fremgang.
+
 **Status:** Åbent, 2026-09-23. DEC-0239.
 
 Offentlig 4.0.467-prognose `rr-20260923063008-210` viser ved T0 lokal
@@ -18,6 +28,17 @@ Rå DMI-sporet angiver 669 dele med vind på *mindst én* prognosetime,
 ikke 669 ved T+117. Første 4.0.467-run kunne ikke gendanne den ældre
 private runtime og dens reserve-rotationsmarkør; om den gemte markør
 fører til geografisk komplet opfyldning skal bevises i næste normale run.
+
+Offentlig timefil viser et konkret tidsmønster for
+`dk-b07-26-national-part-01-orientation-03`: T0 har 3,7 m/s lokal vind
+fra DMI's atmosfæriske gitter; fra T+12 til T+117 er både lokal
+vindhastighed og -retning tomme, og kildemarkøren falder tilbage til
+zonens anker. Havstrøm er samtidig til stede. Det afgrænser fejlen til
+lokal vinds tids-/sted-/reservekæde; det beviser endnu ikke, om årsagen
+er rå leverandørdækning, spatial afvisning eller den korte komponentkø.
+Copernicus- og Open-Meteo-komponenter har hver 90 sekunders budget og
+gemte rotationsmarkører. At markørerne findes i koden er ikke bevis for,
+at de faktisk får alle manglende kystdele med over flere kørsler.
 
 Den separate havstrøm-rest er 5.201 kystdel×time-par i 57 dele efter
 Open-Meteo. Den rapporterede hverken global leverandørfejl eller udløbet

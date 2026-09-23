@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-20 – lokal 4.0.441 varig genindgang
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.469, normalplan pauset
+
+Arbejd i den indlejrede Git-rod `node_modules/RavRadar-4.0.396`.
+4.0.468 er på main (`9f9553c4`), mens offentlig side stadig bruger
+4.0.467-datasættet. Providerfrit kode-only-run `35835042039` genbrugte
+aktuel privat vejrpakke, men stoppede før deploy, fordi checkpointet
+fejllæste et gyldigt kort Limfjord-hold uden fuld historik. Lokal
+4.0.469 retter checkpointet (DEC-0240) og DMI's separate vindbarriere:
+`35823773587` havde 23 officielle fremtidstrin, men nåede kun H0,
+og fremtidig vind havde ingen egen tur ved allerede dækket H0.
+En afgrænset vindtur får nu højst 120 sekunders slack efter de bevarede
+DKSS/WAM-reserver (DEC-0241). Ingen datakomplethed er endnu bevist.
+
+Næste: målrettet version/RDKS, eksakt-head CI, merge, providerfri
+checkpoint/deploy, derefter én kontrolleret normal vejrhentning på
+aktuel cache med komponentoptællinger før/efter. Scheduler-workflowet
+er deaktiveret, og det gamle queued run blev annulleret. Genaktivér
+ikke automatisk drift før stabil gemning, fuld kæde og faktisk fremgang
+er bevist. `.tmp-420/` og øvrige `.tmp-run-*` må ikke stages.
+
+# HISTORISK CHECKPOINT – 2026-09-20 – lokal 4.0.441 varig genindgang
 
 4.0.440 bestod exact-head `35485303951`, PR #385 og merge `c00e6c5a`.
 Normalrun `35485561037` stoppede før providers: den aktuelle private runtime

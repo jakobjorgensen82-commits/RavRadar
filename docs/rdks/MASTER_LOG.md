@@ -1,3 +1,25 @@
+# 2026-09-23 – 4.0.469 giver DMI-vind en selvstændig horisonttur
+
+Helkædegennemgang af normalrun `35823773587` viste, at det officielle
+HARMONIE-katalog tilbød 23 trin, men kun H0-filen blev behandlet; den
+senere vindpassage mistede al arbejdstid efter marine opgaver. Når H0
+allerede var dækket, blev den særskilte passage slet ikke planlagt.
+Lokal 4.0.469 retter begge kanter med en afgrænset, roterende tur og
+højst 120 sekunders slack efter DKSS/WAM-reserver. 118-timersperiodens
+senere vind, komponentvis reservestatus og 5.201 særskilte havstrømspar
+forbliver åbne indtil rigtig normal kørsel. DEC-0241.
+
+# 2026-09-23 – 4.0.469 retter checkpoint under kort regional fastholdelse
+
+Den grønne PR #430 blev merged som `9f9553c4`. Providerfrit kode-only-run
+`35835042039` genbrugte den aktuelle private vejrpakke, men stoppede før
+deploy ved et checkpoint, der afviste en gyldig Limfjord-fastholdelse uden
+fuld scorehistorik. Checkpointets replay fulgte ikke modellens egen
+tids-/kilderegel. Lokal 4.0.469 gør de to ens og tester netop denne
+produktionsformede situation. Automatisk vejrplan er fortsat pauset;
+udrulning, historikgenbrug og vejrtypers dækning afventer livebevis.
+DEC-0240.
+
 # 2026-09-23 – 4.0.468 målt videreførelse og retvisende havstrømskontrol
 
 Normalrun `35823773587` gemte cache og deployede, men alle 673 kystdeles

@@ -1,3 +1,21 @@
+# 2026-09-23 – 4.0.469 lokal vindhorisont efter helkædegennemgang
+
+DMI-loggen for `35823773587` viste 23 officielle HARMONIE-prognosetrin,
+men kun én behandlet fil for aktuel time. Vindens senere passage mistede
+arbejdstiden efter DKSS/WAM og var også fejlagtigt betinget af H0-hul.
+4.0.469 giver fremtidig vind egen roterende tur og højst 120 sekunders
+startmulighed af slack efter marine reserver. En normal produktionskørsel
+skal stadig bevise reel forbedring. DEC-0241.
+
+# 2026-09-23 – 4.0.469 lokal efter checkpointstop i kode-only
+
+Grøn PR #430 blev merged som `9f9553c4`. Kode-only-run `35835042039`
+verificerede og genbrugte den aktuelle private vejrpakke uden providerkald.
+Det byggede runtime, men afviste en gyldig kort Limfjord-fastholdelse ved
+nyt historikcheckpoint, før nogen beskyttet write eller deploy. 4.0.469
+retter checkpointets afvigelse fra modellens egen tids-/kilderegel;
+produktionsformet regression er grøn. Scheduler er fortsat pauset.
+
 # 2026-09-23 – 4.0.468 lokal efter første grønne 4.0.467-normalrun
 
 `35823773587` gennemførte cache og Pages. Offentlig score fik

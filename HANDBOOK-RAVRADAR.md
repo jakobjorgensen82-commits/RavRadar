@@ -1,6 +1,37 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.468
+**Håndbogsversion:** 4.0.469
+
+## 89.66 4.0.469 – Vindens fremtidige timer må ikke glemmes
+
+Den seneste almindelige kørsel fandt DMI-vind for den aktuelle time,
+men nåede ikke den senere del af DMI's tilgængelige vindprognose.
+Havstrøm og bølger havde brug for deres reserverede arbejdstid, og
+vindens fremtidige timer havde ingen egen beskyttet tur. En dækket
+aktuel time kunne også få den særskilte vindtur til at forsvinde.
+
+RavRadar giver nu fremtidig DMI-vind en afgrænset tur i hver relevant
+kørsel. Den kommer efter de vigtige havopgaver, prøver normalt højst fire
+officielle prognosefiler og får kun lidt af den tid, der er til overs
+efter havopgavernes reserver. Den roterer videre i senere kørsler.
+DMI's vindprognose dækker ikke hele RavRadars fem døgn, så de gyldige
+reservekilder skal stadig udfylde resten. Vi kalder først problemet
+løst, når en rigtig kørsel viser flere gyldige lokale vindtimer uden
+at forringe havstrøm, bølger eller bevaret cache.
+
+## 89.65 4.0.469 – Gem historik også ved kortvarigt fastholdt havstrøm
+
+En kodeopdatering genbrugte den gemte vejrpakke uden at hente vejr på ny.
+Den stoppede, før noget blev lagt online, fordi gemningen af scorehistorik
+afviste en kystdel ved Limfjorden. Her må en tidligere målt havstrøm bruges
+kortvarigt, når kilden og tidsgrænsen er dokumenteret. Det er stadig
+muligt, selv om RavRadar endnu ikke har samlet 48 timers historik.
+
+Gemningen tog fejl af de to krav. Den følger nu samme regel som selve
+scoreberegningen og kontrollerer fortsat både den faktiske måletime og
+kilden. Rettelsen opfinder ingen strøm eller andre vejrdata. Den
+automatiske vejrhentning er fortsat pauset, indtil den rettede gemning er
+prøvet i drift, og vi har undersøgt de tilbageværende vejrdatahuller.
 
 ## 89.64 4.0.468 – Vejr og historik skal følge med fra kørsel til kørsel
 
