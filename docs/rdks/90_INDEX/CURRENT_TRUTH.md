@@ -1,4 +1,29 @@
-# NYESTE SANDHED – 2026-09-23 – 4.0.470 lokal, providerfri deploy endnu ikke fuldført
+# NYESTE SANDHED – 2026-09-23 – 4.0.471 lokal, vejrdata endnu ikke stabilt komplette
+
+4.0.470 er på `main`. Trip-storage-run `35849255295` anvendte og
+verificerede de to seneste Supabase-migrationer. Kode-only-run
+`35849615112` genbrugte den nyeste private vejrpakke og byggede
+checkpointet for 673 kystdele, men databasens beskyttede RPC afviste
+det før Pages-deploy. Dermed var "manglende migration" ikke hele
+forklaringen. Den konkrete JS/SQL-uoverensstemmelse om en sidste time,
+der er til stede med tom værdi, rettes lokalt i 4.0.471 med append-only
+`20260923110000`; anvendt historik røres ikke. Normal kode-only-levering
+skal fremover både installere og læse den præcise migration tilbage.
+En payloadfri fejlkode bevarer diagnosen, hvis et andet problem står
+tilbage. Livebevis for checkpoint, beskyttede writes og Pages mangler.
+
+Sidste normalrun `35823773587` sluttede med 25.793 direkte DMI-, 424
+regional DMI-, 0 Copernicus- og 47.996 Open-Meteo-havstrømspar samt
+5.201 huller ud af 79.414 par. Før DMI var ingen af providerbankerne
+installeret for præcis target; dette er ikke bevis for, at en lille
+vedligeholdelsesgrænse alene forklarer fordelingen. Copernicus' nul og
+Open-Meteos mange tomme/gitterafviste rester kræver kilde- og
+komponentopdelt måling i næste normale kørsel. Ingen af disse tal må
+bruges som status for vind, bølger, vandstand eller temperatur. Målet
+er fortsat gyldige data overalt; cron er pauset indtil en korrekt,
+stabil fuldkæde er bevist.
+
+# HISTORISK SANDHED – 2026-09-23 – 4.0.470 lokal
 
 PR #431/4.0.469 er merged (`a6ec7c9b`), men er endnu ikke publiceret.
 Providerfrit run `35844441095` bestod genbrug af den aktuelle private

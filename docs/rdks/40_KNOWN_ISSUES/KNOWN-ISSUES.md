@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-09-23, 4.0.470
+# Aktuelle issues – 2026-09-23, 4.0.471
+
+- **CHECKPOINT-WARMUP-STATUS-35849615112 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  En anvendt migration fjernede ikke checkpoint-RPC-afvisningen. Scorekode
+  og SQL var uenige om status, når sidste time fandtes med tom værdi.
+  4.0.471 retter SQL append-only, installerer den også i normal
+  kode-only-levering og bevarer en sikker fejlklasse til næste forsøg.
+  Selve produktionsårsagen er endnu ikke bevist af RPC-loggen; ny
+  providerfri levering afgør det uden at hente vejr igen.
+- **PROVIDER-PRIORITY-AND-RESIDUAL – ÅBENT:** Sidste normalrun havde
+  25.793 direkte DMI-, 0 Copernicus-, 47.996 Open-Meteo-par og 5.201
+  huller for *havstrøm*. Vind, bølger, vandstand og temperatur kræver
+  hver sin optælling. CP's nul og de vedvarende rester må ikke kaldes
+  acceptabel drift; næste normalrun skal dokumentere årsagerne.
+
+# Historisk 4.0.470-issueliste
 
 - **CHECKPOINT-PART-IDENTITY-35844441095 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
   Providerfri 4.0.469-udrulning bestod score-runtime-audit, men gemningen

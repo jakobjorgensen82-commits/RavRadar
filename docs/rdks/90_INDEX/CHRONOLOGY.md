@@ -1,3 +1,15 @@
+# 2026-09-23 – 4.0.471 checkpointets tomme sidste time
+
+Grøn trip-storage `35849255295` anvendte 4.0.469/470's migrationer.
+Alligevel stoppede providerfri `35849615112` igen på checkpoint-RPC,
+før Pages eller ny vejrhentning. I scorekoden er en tilstedeværende,
+tom sidste time en målt mangel; SQL kaldte den en fraværende time.
+4.0.471 samordner status i en ny append-only migration og gør
+migrationsinstallationen til del af den almindelige kode-only-vej.
+Sikker RPC-diagnose gør en eventuel ny afvisning konkret. Hypotesen er
+endnu ikke bevist i produktion. DMI/CP/OM og 5.201 havstrømspar er
+fortsat åbne og skal måles ved næste normale kørsel.
+
 # 2026-09-23 – 4.0.470 lokal identitet i historikcheckpoint
 
 4.0.469/PR #431 bestod exact-head `35843681490` og blev merged som

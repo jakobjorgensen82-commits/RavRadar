@@ -395,7 +395,7 @@ jobs:
 
       - name: Prepare isolated post-cutover migration view
         id: migration-view
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
@@ -410,7 +410,7 @@ jobs:
             --output "$migration_workdir"
 
       - name: Read linked migration history without changing Supabase
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -425,14 +425,14 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/code-only-migrations-before.txt"
 
       - name: Hydrate only already-applied migration identities
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         run: >-
           node scripts/integrated-cutover-readiness.mjs hydrate-history
           --workdir "${{ steps.migration-view.outputs.workdir }}"
           --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
 
-      - name: Dry-run and require only the one post-cutover successor
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+      - name: Dry-run and require only the latest exact integrated migration
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -449,7 +449,7 @@ jobs:
             --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
 
       - name: Reconfirm current main before the database binding write
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -460,7 +460,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Apply exact dry-run-verified post-cutover binding
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -471,7 +471,7 @@ jobs:
           supabase db push --linked --skip-vault
 
       - name: Read back migration and database binding
-        if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
+        if: steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance'
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

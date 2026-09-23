@@ -1,4 +1,24 @@
-# Aktivt roadmap – 2026-09-23, 4.0.470 sikker checkpoint-identitet
+# Aktivt roadmap – 2026-09-23, 4.0.471 checkpoint og ærlig vejrdækning
+
+0. [x] Anvend 4.0.469/470-migrationer i godkendt trip-storage-run
+   `35849255295`; fastslå at kode-only `35849615112` stadig stopper
+   på RPC før deploy uden ny vejrhentning.
+1. [x] Ret JS/SQL-uoverensstemmelsen om tom sidste time i append-only
+   migration, aktiver migration også i normal kode-only-levering og
+   gør en eventuel ny RPC-fejl payloadfrit diagnosticerbar.
+2. [ ] Målrettet RDKS/version/kontrakt, én exact-head-kildekontrol og
+   merge 4.0.471.
+3. [ ] Én providerfri levering fra den senest gemte private vejrpakke:
+   migration, checkpoint, beskyttede writes, Pages og offentlig runtime.
+4. [ ] Én normal vejrkørsel med før/efter pr. vejrtype og DMI/CP/OM;
+   dokumentér hver DKSS-samlings fremdrift, CP-kvittering til anvendt
+   stage, OM's restårsager, bevaret cache og 48-timershistorik.
+5. [ ] Løs geografiske og tidslige restbarrierer ud fra målingerne og
+   gentag kun den relevante del af kæden. Genaktivér først cron, når
+   normal drift og vedvarende fremgang er bevist; komplet gyldig data
+   er målet, men tomme felter tæller aldrig som dækket.
+
+# Tidligere 4.0.470-plan – erstattet efter run 35849615112
 
 0. [x] Merge 4.0.469 efter grøn exact-head-kildekontrol.
 1. [x] Afklar `35844441095`: offentlig projektion har ID som nøgle, ikke

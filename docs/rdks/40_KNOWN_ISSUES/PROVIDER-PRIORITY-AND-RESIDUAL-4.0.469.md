@@ -1,5 +1,21 @@
 # Åbent: DMI/Copernicus fylder for lidt i havstrømsprognosen
 
+**Helkæde-opfølgning 2026-09-23 / 4.0.471:** Den sikre plan før DMI
+for `35823773587` viste ingen installeret DMI-, CP- eller OM-bank
+for netop dette target. Grænsen på to DMI-vedligeholdelsesassets ved
+allerede dækket fallback kan derfor ikke forklare dette runs lave
+DMI-tal; den er en mulig barriere i senere runs, som måles særskilt.
+Copernicus' `IN_PROGRESS`-stage kan ifølge kildekontrollen være
+genbrugelig med nul valgte poster. En grøn stagegate beviser altså
+ikke Copernicus-dækning. 4.0.471 gemmer derfor stage-status samt
+valgte og resterende par i den payloadfri normalrun-diagnose. Det
+ændrer ikke kildevalg eller adgang til rå data. Open-Meteo-rapporten
+sluttede med 5.201
+restpar, 8.284 null i hastighed/retning, 24 gitterafvisninger og syv
+transporttimeouter uden udløbet totalbudget. Nyeste cachelineage,
+target, faktisk valgte kilde og hver vejrtype skal følges ved næste
+normale run. Der ændres ikke prioritet eller gyldighed på gæt.
+
 **Status 2026-09-23:** Observeret i normalrun `35823773587`; årsager og
 rettelsens effekt er endnu ikke fuldt livebevist. Dette handler om de
 79.414 kystdel×time-par for havstrøm, ikke om lokal vind, bølger eller

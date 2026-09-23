@@ -33,6 +33,7 @@ import {
 import {
   ravScoreContinuationImplementationSha256,
 } from './lib/ravscore-continuation-implementation-contract.mjs';
+import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-memory.js';
 
 const SOURCE_HEAD = 'a'.repeat(40);
 const PUBLIC_IMPLEMENTATION_CLOSURE_SHA256 = 'c'.repeat(64);
@@ -43,10 +44,10 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 30,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 31,
   'The active backend must preserve every predecessor, storage security and the trip-binding repair successor');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260923100000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260923110000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -89,7 +90,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql',
+  'supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -116,7 +117,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260923100000'",
+  "'20260923110000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -129,6 +130,18 @@ for (const marker of [
   'commit;',
 ]) assert.ok(checkpointMigration.includes(marker),
   `checkpoint metadata-CAS migration is missing ${marker}`);
+const measuredMissingAtReference = buildBoundedCurrentTransportMemory([
+  { time: '2026-09-23T04:00:00.000Z', strength: 0.2 },
+  { time: '2026-09-23T05:00:00.000Z', strength: null },
+], { referenceTime: '2026-09-23T05:00:00.000Z' });
+assert.equal(measuredMissingAtReference.status, 'WINDOW_HAS_MISSING_EVIDENCE');
+assert.equal(measuredMissingAtReference.memoryReady, false);
+assert.ok(checkpointMigration.includes(
+  "when v_contains_missing then 'WINDOW_HAS_MISSING_EVIDENCE'",
+));
+assert.ok(!checkpointMigration.includes(
+  "when jsonb_typeof(v_item -> 'strength') = 'null' then 'LATEST_SAMPLE_MISSING'",
+), 'a present but null final hour must not be misclassified as an absent hour');
 
 const privateRuntimeStorageMigration = await fs.readFile(
   'supabase/migrations/20260915020000_private_runtime_storage_deny.sql',
@@ -280,6 +293,7 @@ const unicodeList = `
  20260923052100    │                  │ 2026-09-23 05:21:00
  20260923091500    │                  │ 2026-09-23 09:15:00
  20260923100000    │                  │ 2026-09-23 10:00:00
+ 20260923110000    │                  │ 2026-09-23 11:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -313,6 +327,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260923052100', remote: null },
   { local: '20260923091500', remote: null },
   { local: '20260923100000', remote: null },
+  { local: '20260923110000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -355,6 +370,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260923052100\` | \` \`    | \`2026-09-23 05:21:00\`
    \`20260923091500\` | \` \`    | \`2026-09-23 09:15:00\`
    \`20260923100000\` | \` \`    | \`2026-09-23 10:00:00\`
+   \`20260923110000\` | \` \`    | \`2026-09-23 11:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -473,6 +489,7 @@ await assert.rejects(
        20260923052100 | | pending
        20260923091500 | | pending
        20260923100000 | | pending
+       20260923110000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -512,6 +529,7 @@ const appliedList = `
  20260923052100 | 20260923052100 | now
  20260923091500 | 20260923091500 | now
  20260923100000 | 20260923100000 | now
+ 20260923110000 | 20260923110000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -573,10 +591,11 @@ try {
     '--dry-run', dryRunPath,
     '--migrations-directory', path.resolve('supabase/migrations'),
   ], { encoding: 'utf8' });
-  assert.equal(helperRun.status, 0, helperRun.stderr || helperRun.stdout);
+  assert.equal(helperRun.status, 0,
+    helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly the one expected integrated trip-binding repair successor/,
+    /exactly 20260923110000_integrated_checkpoint_warmup_status_binding.sql/,
     'the live code-only helper must admit exactly the current binding successor',
   );
 } finally {
@@ -651,6 +670,7 @@ try {
  20260923052100 │ │ pending
  20260923091500 │ │ pending
  20260923100000 │ │ pending
+ 20260923110000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -694,6 +714,7 @@ try {
  20260923052100 │ │ pending
  20260923091500 │ │ pending
  20260923100000 │ │ pending
+ 20260923110000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
