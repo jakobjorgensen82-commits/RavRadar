@@ -5246,3 +5246,24 @@ ikke brugt hele totalbudgettet. Det kan ikke generelt løses med mere
 tid eller kaldes komplet. Vind, bølger, vandstand og temperatur skal
 opgøres særskilt. Cron forbliver pauset, og gyldige gamle data må ikke
 erstattes af tomme nye værdier.
+# NYESTE SANDHED – 2026-09-23 – 4.0.473 lokal; vejrhentning ikke stabilt bevist
+
+4.0.472/PR #434 er på `main` (`9b29183c`). Providerfri `35858910881`
+anvendte den nye migration og genbrugte aktuel privat cache, men stoppede
+stadig før Pages ved `INPUT_INVALID` i den beskyttede scorehistorik.
+Alle 673 integrerede kystdele havde en måling på seneste time; den
+seneste hypotese om tom/for tidlig evidens forklarer derfor ikke den
+faktiske afvisning. Ingen ny vejrhentning eller offentliggørelse skete.
+Lokal 4.0.473/DEC-0244 indfører alene en skrivefri, privatlivssikker
+regel- og antaldiagnose på den allerede anvendte SQL-kontrol. Dens
+resultat mangler endnu. CAS og acceptregler lempes ikke.
+
+Helkæden har to åbne beviskrav: få den aktuelle gemte pakke sikkert
+gennem scorehistorik og deploy uden genhentning; mål dernæst én normal
+vejropdatering komponent for komponent og leverandør for leverandør.
+Sidste normale havstrømskørsel dækkede 25.793 direkte DMI + 424 regional
+DMI + 0 Copernicus + 47.996 Open-Meteo og manglede 5.201 af 79.414.
+Dette er ikke totaler for vind, bølger, vandstand eller temperatur.
+Copernicus' nul, DMI's begrænsede tur, Open-Meteos negative rest og
+vindhalens huller er åbne, ikke bortforklaret med én timeout. Cron er
+fortsat pauset. Målet er komplette gyldige data og stabil drift uden Codex.

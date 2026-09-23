@@ -1,6 +1,23 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.472
+**Håndbogsversion:** 4.0.473
+
+## 89.70 4.0.473 – Vi måler fejlen, før vejrhentningen ændres igen
+
+Den gemte vejrpakke blev brugt ved den seneste korte levering, men
+databasen afviste igen den tilhørende scorehistorik. Den tidligere
+forklaring om en manglende måling på sidste time passede ikke på denne
+kørsel. Derfor har vi lavet en sikker diagnose, som ved næste forsøg
+viser hvilken kontrolregel der siger nej, og hvor mange kystdele der
+rammes. Den ændrer ikke data eller reglerne og viser ingen private
+målinger i loggen.
+
+Når den præcise stopårsag er rettet og pakken er offentliggjort,
+undersøger vi den almindelige vejrhentning. Vi måler vind, havstrøm,
+bølger, vandstand og temperatur hver for sig, og hvor meget DMI,
+Copernicus og Open-Meteo faktisk bidrager med. De seneste 5.201 huller
+var kun en opgørelse for havstrøm; alle felter skal kontrolleres, før
+vejrhentningen kan kaldes stabil.
 
 ## 89.69 4.0.472 – Manglende målinger må ikke stoppe nye prognoser
 

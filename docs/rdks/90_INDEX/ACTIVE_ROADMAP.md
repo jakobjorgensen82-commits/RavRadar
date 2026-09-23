@@ -2991,3 +2991,22 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    valgfri historiktæller.
 5. [ ] Saml dokumenterede restårsager og ret dem i grupper. Genaktivér
    cron først efter bevist vedligeholdelse over flere normale kørsler.
+# Aktivt roadmap – 2026-09-23, 4.0.473 præcis diagnose før normal drift
+
+0. [x] Sammenhold 4.0.472's providerfri run med hypotesen: den aktuelle
+   private cache blev genbrugt, men alle 673 integrerede dele havde en
+   seneste måling; `INPUT_INVALID` er en anden SQL-kontraktfejl.
+1. [x] Gør SQL-afvisningen målelig med skrivefri, service-role-only
+   regelkoder og antal. Bevar uændret CAS, strenge READY-krav og privacy.
+2. [ ] Målrettet kontrol og én exact-head CI; merge. Kør én kort
+   providerfri genbrugskørsel; ret kun dokumenteret afvisning, uden
+   ny leverandørhentning eller gentagen bred kontrol.
+3. [ ] Bevis gemt checkpoint, beskyttede writes, Pages og offentlig
+   prognose/rangliste på den aktuelle cache.
+4. [ ] Kør én normal weather og mål for *hver vejrtype* før/efter,
+   DMI/Copernicus/Open-Meteo, planlagt/behandlet, restårsager,
+   cachelineage og scorehistorik. Den sidst målte 5.201-rest er kun
+   havstrøm; ingen grøn status må kaldes komplet uden feltbevis.
+5. [ ] Ret sammenhængende rodårsager i grupper og verificér flere normale
+   kørsler uden Codex; genaktivér først da cron. 100 % gyldig dækning
+   er målet, ikke et allerede opnået resultat.

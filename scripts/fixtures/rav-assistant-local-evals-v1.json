@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-local-evals-v1",
-  "releaseVersion": "4.0.472",
+  "releaseVersion": "4.0.473",
   "phrasingCases": [
     {
       "id": "da-origin-formed",

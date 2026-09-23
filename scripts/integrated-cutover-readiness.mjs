@@ -204,6 +204,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923120000_integrated_checkpoint_missing_state_binding',
     filename: '20260923120000_integrated_checkpoint_missing_state_binding.sql',
   }),
+  Object.freeze({
+    version: '20260923130000',
+    id: '20260923130000_checkpoint_rejection_diagnostic',
+    filename: '20260923130000_checkpoint_rejection_diagnostic.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
