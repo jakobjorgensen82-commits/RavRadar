@@ -7,6 +7,9 @@ måltest fejlede på main: en valgfri historikkontrol kunne afvise den ellers
 selvstændigt verificerede 118-timers strøm-closure. Lokal 4.0.467 retter
 adskillelsen og logger tre dataminimerede bevisstatusser. Måltestene er
 grønne; livebevis af Copernicus/Open-Meteo-strøm i score afventer. DEC-0238.
+Den rumlige efterkontrol bruger nu også kun det selvstændige closure-bevis.
+Kodeændringen genforsegles med en ny append-only SQL-migration
+`20260923052100`; den anvendte `20260922170000` ændres ikke.
 
 Den beskyttede produktionsruntime i `35794859378` og `35804736772` havde
 samme indholdshash, fordi den første kørsel ikke publicerede ny runtime.

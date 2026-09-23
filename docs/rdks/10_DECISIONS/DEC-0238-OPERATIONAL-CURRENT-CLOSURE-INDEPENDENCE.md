@@ -35,6 +35,13 @@ gyldige operationelle rækker, og at en manglende operationel closure fortsat
 afvises. Hver vist supplerende strømvektor bevises stadig mod sin eksakte
 private closure-række, sted, tid, kilde og afstand.
 
+Ændringen rammer den transitive model- og continuation-binding. Den allerede
+anvendte SQL-migration `20260922170000` forbliver uændret; append-only
+successor `20260923052100_integrated_current_projection_binding.sql`
+genindsætter kun de aktuelle model-, rollback- og continuation-hashes i de
+eksisterende kontraktfunktioner. Forgængerhashen forbliver i den snævre
+overgangsliste, så eksisterende gyldig scoretilstand kan videreføres.
+
 Historisk scoretilstand blev videreført for alle 673 kystdele i sidste
 offentlige runtimeaudit, men nul aktuelle zonetilstande havde fuldt
 48-timershistorik. Offentlige kystdele havde ved T0 590×33 timer,

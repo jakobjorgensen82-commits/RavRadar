@@ -28,6 +28,8 @@ en gyldig prognose. Den første nye kørsel skal vise, at det også virker live.
 Den efterfølgende kontrol af kortets og scorens strøm bruger samme regel:
 Den accepterer kun beviste prognoserækker, men lader ikke en fejl i ekstra
 historik få alle gyldige supplerende rækker til at forsvinde.
+Den tilhørende databasebinding leveres som en ny migrationspost; den gamle
+historik og de tidligere anvendte migrationsfiler ændres ikke.
 
 Tidligere scoretilstand var gemt og blev genbrugt for alle 673 kystdele.
 Det betyder ikke, at historikken allerede var komplet: ingen aktuel zone

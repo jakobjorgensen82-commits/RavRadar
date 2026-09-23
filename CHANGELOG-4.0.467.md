@@ -10,6 +10,9 @@ blev godkendt. Livebevis af fallback i score afventer næste normale run.
 Den efterfølgende rumlige kontrol bruger samme afgrænsning: valgfri
 historik kan ikke annullere en godkendt operationel closure, mens en defekt
 closure fortsat bliver afvist.
+Fordi strømrettelsen ændrer modelens kodefingeraftryk, følger en ny
+append-only databasebinding med. Allerede anvendte migrationer ændres ikke,
+og tidligere gyldig scoretilstand kan fortsætte.
 
 De normale kørsler `35794859378` og `35804736772` gemte vejrleverandørernes
 fremgang, men blev afbrudt ved buildjobbets fælles 90-minuttersloft. Den

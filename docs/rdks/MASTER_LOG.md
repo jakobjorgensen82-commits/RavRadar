@@ -1,3 +1,11 @@
+# 2026-09-23 – 4.0.467 strømrettelse genforsegles uden at ændre anvendt migration
+
+Efterkontrollen brugte fortsat fuld-dokument-gaten og kunne derfor afvise
+korrekt supplerende strøm ved en fejl i valgfri historik. Den kontrollerer
+nu den uafhængige operationelle closure og beviser stadig hver vist række.
+Model-, rollback- og continuation-hashes opdateres via append-only successor
+`20260923052100`; `20260922170000` forbliver byte-uændret.
+
 # 2026-09-23 – 4.0.467 normal vejrkørsel får plads til efterkontrol
 
 Efterfølgende helkædekontrol fandt en anden, uafhængig fejl: Den sidste
