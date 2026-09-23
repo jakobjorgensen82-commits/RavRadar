@@ -1,20 +1,33 @@
-# Aktuelle issues – 2026-09-23, lokal 4.0.476
+# Aktuelle issues – 2026-09-23, lokal 4.0.477
 
-- **CHECKPOINT-I04-35871154038 – LOKALT RETTET / LIVEBEVIS ÅBENT P0:**
+- **CHECKPOINT-P04-35878951916 – ÅBEN P0:** 4.0.476 fjernede de otte
+  tidligere I04 i livekæden, men den private Candidate G-ledsager
+  blev afvist som P04 før checkpoint og Pages. Dens skrivefri
+  årsagsfunktion returnerede boolsk tekst i stedet for faste koder;
+  22 portionssvar blev derfor kun anonyme anomalier. 4.0.477
+  retter diagnosen append-only til C07/C08. Den faktiske P04-
+  underårsag måles i næste providerfri run, før en acceptregel ændres.
+- **LIMFJORD-TRETIMERSFASTHOLDELSE – BEVARET:** Verificeret regional
+  DMI-strøm må fortsat bruges for otte godkendte dele højst tre timer
+  og højst 15 km. Det er ikke nye målinger eller komplet historik.
+  Ingen del af 4.0.477 lukker denne mulighed.
+
+- **CHECKPOINT-I04-35871154038 – RETTET OG LIVE-BEKRÆFTET:**
   Den samme gemte pakke gav `P02` med otte `I04` i 673 tilstande.
   I04 dækker flere historikbetingelser. En konkret påvist JS/SQL-
   modstrid er, at anvendt SQL afviser senere null-evidens ved eksakt
   regional fastholdelse, selv om modellen korrekt markerer timen
   MISSING. At netop den underbetingelse forklarer alle otte private
-  afvisninger er sandsynligt, men ikke livebekræftet.
+  afvisninger var dengang sandsynligt, men ikke bevist.
   Append-only `20260923140000` tillader kun senere null frem til
-  tilstandstiden; senere talværdi forbliver afvist. Exact-head,
-  merge, CAS, private writes og Pages mangler livebevis.
-- **CANDIDATE-DIAGNOSTIC-RESPONSE – ÅBEN OBSERVATION:** Runnet viste
+  tilstandstiden; senere talværdi forbliver afvist. Exact-head og
+  merge er gennemført, og næste code-only-run viste nul I04.
+  CAS/Pages blev dog stoppet af en separat P04, som står ovenfor.
+- **CANDIDATE-DIAGNOSTIC-RESPONSE – RETTET LOKALT / LIVEBEVIS ÅBENT:** Runnet viste
   22 anonyme anomalier i det gamle reserve-checkpoints diagnosekort.
-  De var ikke udløsende for `P02`. Ingen Candidate G-score/fallback
-  ændres. Kun hvis næste CAS giver en relevant P04, analyseres den
-  eksakte sikre klasse uden at genindføre gammel model.
+  De var ikke udløsende for `P02`, men næste run gav netop `P04`.
+  Årsagen til de ukendte koder er nu påvist som boolsk retur i en
+  tekst-diagnose. Ingen Candidate G-score/fallback ændres.
 
 - **CHECKPOINT-CAS-35866710973 – DIAGNOSE LIVE, I04-RETTELSE ÅBEN:** Aktuel privat cache blev
   genbrugt og 673 tilstande blev bygget, men SQL-CAS afviste stadig

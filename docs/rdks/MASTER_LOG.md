@@ -5065,3 +5065,17 @@ afvises. Begge SQL-funktioner, migrationsliste og readback følger.
 Copernicus-nul, DMI-andel, vindhuller og 5.201 havstrømsrestpar er
 fortsat åbne; ingen vejrdata ændres af denne checkpointrettelse.
 Se DEC-0246 og helkæderapporten.
+
+# 2026-09-23 – 4.0.477: P04 efter at I04 forsvandt i livekæden
+
+PR #438/4.0.476 bestod exact-head `35876784322` og blev merged.
+`35877663757` blev fejlagtigt startet som saved-weather, selv om den
+gemte og offentlige reference var ens; det stoppede før writes.
+Korrekt code-only `35878951916` byggede 673+673 tilstande fra samme
+pakke og viste nul I04, men `P04` afviste den private Candidate G-
+ledsager før checkpoint og Pages. Dens skrivefri årsagsfunktion
+returnerede boolsk tekst i stedet for en fast kode. Append-only
+4.0.477 retter kun denne diagnose til C07/C08; ingen acceptregel,
+score, vejrdata eller regional tre-timersfastholdelse ændres. Den
+samlede sikre klassifikation i ét kort providerfrit run skal afgøre
+næste rettelse. Se DEC-0247.

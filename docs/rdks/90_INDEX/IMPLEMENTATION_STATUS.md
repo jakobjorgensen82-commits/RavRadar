@@ -5944,3 +5944,21 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Én normal weather fra aktuelle cache med før/efter for hver
   vejrtype, kilde, time, historik og restårsag; gentag uden Codex
   før cron genaktiveres. 100 % gyldige data er ikke opnået endnu.
+
+# 2026-09-23 – lokal 4.0.477, P04 og Candidate G-diagnosens boolske svar
+
+- [x] Merge 4.0.476/PR #438 efter exact-head `35876784322`.
+- [x] Afklar `35877663757` som forkert saved-weather-dispatch ved
+  identisk referencetime; ingen provider, cachewrite eller deploy.
+- [x] Korrekt code-only `35878951916` fjernede I04, men viste P04 før
+  checkpointskrivning/Pages. 673+673 tilstande blev bygget.
+- [x] Krydstjek Candidate G-producent, den nøjagtige regionale
+  tre-timersregel, SQL-validator og diagnose. En boolsk retur i
+  tekst-diagnosen forklarer de 22 ukendte svarportioner.
+- [x] Lokal append-only `20260923150000` retter kun skrivefri C07/C08;
+  SQL-validator, CAS, score og vejrdata uændrede.
+- [ ] Slut måltest, RDKS/version, én exact-head CI og merge.
+- [ ] Én providerfri fortsættelse på den samme pakke; mål alle sikre
+  Candidate G-årsagskoder samlet og ret kun den beviste mismatch.
+- [ ] Bevis checkpoint/Pages, derefter normal drift med før/efter
+  pr. vejrtype, kilde og cachelineage. Cron stadig pauset.

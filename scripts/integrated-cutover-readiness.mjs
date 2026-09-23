@@ -214,6 +214,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923140000_checkpoint_native_hold_null_evidence',
     filename: '20260923140000_checkpoint_native_hold_null_evidence.sql',
   }),
+  Object.freeze({
+    version: '20260923150000',
+    id: '20260923150000_checkpoint_candidate_diagnostic_correction',
+    filename: '20260923150000_checkpoint_candidate_diagnostic_correction.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
