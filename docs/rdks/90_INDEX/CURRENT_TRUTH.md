@@ -1,3 +1,22 @@
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.467 samlet tidsbudget
+
+Main er 4.0.466 / `46bf069a`. Den offentlige providerfri recovery
+`35793805396` er grøn; prognose og rangliste var igen synlige. De efterfølgende
+normalkørsler `35794859378` og `35804736772` hentede fra DMI, Copernicus og
+Open-Meteo og gemte krypteret privat fremgang. Førstnævnte blev afbrudt i
+central cache, sidstnævnte efter færdig central cache i runtimekontrollen:
+det fælles 90-minutters buildloft udløb. Ingen af de to lavede nyt offentligt
+artifact/deploy. 4.0.467 hæver kun normaljobbets fælles loft til 180 minutter;
+individuelle provider-/cachelofter og sikkerhedsgates bevares. DEC-0237.
+
+Aktuel strøm-closure i sidstnævnte run havde 5.640 manglende kystdel×time-par
+ud af 79.414; 56 kystdele var berørt. Forrige run havde 5.711/57. Forskellige
+produktionstimer betyder, at dette ikke i sig selv viser nettoopfyldning.
+Open-Meteo-rapporten har 9.136 null-par, 22 gitterafvisninger og intet
+overskredet runtimebudget. Rodårsagen til den tilbagevendende præcise rest på
+tværs af alle leverandører er endnu ikke fastslået. Ingen datakvalitetsregel
+eller prioritet er lempet; restanalysen er et åbent issue.
+
 # NYESTE SANDHED – 2026-09-22 – lokal 4.0.464 atomisk public-hour-rebind
 
 PR #425 er merged som `e88309b9`, exact-head `35766972202` er grøn, og

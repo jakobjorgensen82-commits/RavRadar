@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.466
+**Håndbogsversion:** 4.0.467
+
+## 89.63 4.0.467 – Hele vejrkørslen skal nå sine sluttrin
+
+To almindelige kørsler hentede vejr og gemte den private fremgang, men
+GitHub afbrød dem ved 90 minutter, før kontrol og levering var færdig. Det
+var fælles tidsgrænse for hele jobbet, ikke en fejl i strømopgørelsen.
+Normaljobbet får nu op til 180 minutter. Hver leverandør og cacheopbygningen
+har fortsat sine egne kortere grænser, og alle krav før offentliggørelse
+gælder fortsat. En sund kørsel afslutter så snart arbejdet er færdigt.
+
+De cirka 5.600 tomme par i den seneste rapport er strøm for bestemte
+kystdele og prognosetimer. De dækker ikke alle vejrtyper, og de er ikke
+blevet fyldt ved at ændre tidsgrænsen. Vi undersøger særskilt, hvorfor alle
+tre leverandører efterlader dem.
 
 ## 89.61 4.0.465 – Timefiler skal have samme modelmærke hele vejen igennem
 

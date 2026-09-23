@@ -1,5 +1,15 @@
 # Weather Pipeline 1.0
 
+## 4.0.467 – normal build får tid til cache, kontrol og levering
+
+To normale runs (`35794859378`, `35804736772`) blev afbrudt af jobbets
+fælles 90-minuttersloft efter providerfasen. I det sidste var central cache
+færdig og krypteret fremgang gemt; runtimekontrollen blev afbrudt før
+artifact og deploy. Det normale buildloft er nu 180 minutter, bootstrap 240.
+Individuelle leverandør-/cachelofter, data-, privacy- og releasegates er
+uændrede. Ca. 5.640 manglende strøm-kystdel×time-par er et separat åbent
+dækningsissue; et længere buildjob udfylder dem ikke i sig selv. DEC-0237.
+
 ## 4.0.422 – aktiv integrated source-repair gennem Pages
 
 Providerfri `35383989821` gennemførte 4.0.421-buildjobbet med eksakt audit,

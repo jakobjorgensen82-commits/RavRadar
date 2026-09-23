@@ -1,3 +1,17 @@
+# Aktuelle issues – 2026-09-23, 4.0.467
+
+- **ISSUE-NORMAL-WEATHER-JOB-TIMEOUT-35804736772 – RETTET LOKALT /
+  LIVEBEVIS ÅBENT:** To normale kørsler ramte det fælles 90-minuttersloft
+  efter leverandørkæden. Sidste kørsel nåede at fuldføre central cache og
+  gemme privat fremgang, men runtimekontrol/artifact/deploy blev afbrudt.
+  Fælles loft er 180 minutter; trinenes egne lofter og gates er uændrede.
+- **ISSUE-PERSISTENT-CURRENT-RESIDUAL-35804736772 – ÅBENT:** 5.711 og 5.640
+  strøm-kystdel×time-par var stadig tomme i to efterfølgende målhorisonter.
+  Open-Meteo returnerede mange null-værdier og enkelte for fjerne gitterceller
+  uden budgetstop. Det er endnu ikke bevist, om de samme eksakte par går igen,
+  eller hvorfor DMI/Copernicus ikke dækker dem. Ingen regel eller sikkerheds-
+  afstand ændres uden krydsleverandørbevis.
+
 # Aktuelle issues – 2026-09-22, 4.0.464
 
 - **ISSUE-SAVED-WEATHER-PUBLIC-HOUR-PROOF-35767690294 – RETTET LOKALT /

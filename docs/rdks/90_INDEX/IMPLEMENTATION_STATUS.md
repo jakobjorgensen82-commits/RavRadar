@@ -1,3 +1,17 @@
+# Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.467
+
+- [x] Afgræns `35794859378` og `35804736772` til fælles 90-minutters
+  buildtimeout efter vellykket providerfremgang; anden kørsel fuldførte central
+  cache før afbrydelsen i den efterfølgende runtimekontrol.
+- [x] Giv normale buildjobs 180 minutter, uden at udvide provider- eller
+  cachetrinnenes individuelle budgetter eller springe efterkontrol over.
+- [x] Tilføj workflowregression for hele normalbudgettet.
+- [ ] Bestå exact-head-kildegate, merge og én normal ende-til-ende-kørsel med
+  frisk cache, efterkontrol, artifact og deploy.
+- [ ] Afgræns de tilbagevendende 5.640 strøm-kystdel×time-huller på eksakte
+  par og leverandørårsager; behold dem som åbent datadækningsissue, indtil
+  årsagen er bevist og løst.
+
 # Aktuel implementeringsstatus – 2026-09-22, lokal 4.0.464
 
 - [x] Merge PR #425 som `e88309b9`; exact-head `35766972202` er grøn.

@@ -1,3 +1,12 @@
+# Aktuelt krav til normal vejrkørsels samlede tid – 2026-09-23
+
+- **REQ-NORMAL-WEATHER-END-TO-END-BUDGET-0237 – BINDENDE:** Det fælles
+  buildjob skal kunne rumme de eksisterende maksimale tidsbudgetter for DMI,
+  Copernicus, Open-Meteo og central cache samt mindst 30 minutter til
+  indledende og efterfølgende arbejde. En kørsel må ikke afbrydes af
+  jobloftet, mens et sundt cache-/kontrol-/artifactforløb stadig arbejder.
+  Trinenes egne budgetter, datakvalitetskrav og gates ændres ikke. DEC-0237.
+
 # Aktuel revisionspræcisering – 2026-09-21 – 4.0.451
 
 DEC-0229 præciserer REQ-4.0.409-EQUAL-RUN-CONFLICT-004: samme modelRun

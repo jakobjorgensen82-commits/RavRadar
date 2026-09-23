@@ -1679,8 +1679,8 @@ for(const marker of [
 ]){
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
-ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || inputs.ravscore_integrated_first_cutover && 180 || 90 }}'),
-'Providerbootstrap og first-cutover skal have hver sit afgrænsede større loft uden at ændre normaldriften');
+ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 180 }}'),
+'Normalt buildjob skal rumme hele kæden gennem efterkontrol; providerbootstrap beholder et særskilt loft');
 ok((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g)||[]).length===2,
 'Begge boolske rollbackudtræk skal bevare gyldigt false som tekst');
 for(const marker of [

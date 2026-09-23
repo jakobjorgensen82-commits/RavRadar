@@ -1,3 +1,13 @@
+# 2026-09-23 – 4.0.467 normal vejrkørsel får plads til efterkontrol
+
+Normalkørslerne `35794859378` og `35804736772` gemte leverandørfremgang,
+men buildjobbet blev afbrudt ved 90 minutter: først under central cache,
+dernæst efter cacheopbygning i den næste kontrol. 4.0.467 ændrer kun det
+fælles normaljobloft til 180 minutter og tester summen af de eksisterende
+trinbudgetter. Den tilbagevendende rest på cirka 5.600 strømpar er særskilt
+åben; Open-Meteos dokumenterede null-/gitterafvisninger er ikke i sig selv
+en bevist rodårsag på tværs af DMI og Copernicus. DEC-0237.
+
 # 2026-09-22 – 4.0.464 beviser det atomiske public-hour-par
 
 PR #425 blev merged som `e88309b9`, og run `35767690294` passerede både den
