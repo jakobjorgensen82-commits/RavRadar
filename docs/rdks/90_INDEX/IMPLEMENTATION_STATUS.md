@@ -5895,3 +5895,17 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Én normal vejrkørsel fra samme cache: mål DMI, Copernicus,
   Open-Meteo og mangler for hver vejrtype/time, cacheidentitet, historik
   og deploy. Bevis vedvarende fremgang før cron genaktiveres.
+# 2026-09-23 – lokal 4.0.474, diagnoseportioner uden nye SQL-regler
+
+- [x] Merge 4.0.473/PR #435 efter grøn exact-head `35862513968`.
+- [x] `35863417067`: migration/readback og genbrug af samme vejrpakke
+  bestod, men checkpoint afvist igen; diagnose gav `UNAVAILABLE`.
+  Ingen Pages eller nye providerdata.
+- [x] Opdel den eksisterende skrivefri diagnose i portioner på højst
+  32 tilstande og summer sikre regelantal over alle 673. Klassificér
+  særskilt HTTP, netværk, svargrænse og svarform ved diagnosefejl.
+- [ ] Målrettede tests, version/RDKS, én exact-head CI, merge.
+- [ ] Én providerfri kørsel på samme cache; få SQL-regel eller sikker
+  diagnosefejlklasse. Ret derpå den beviste årsag samlet og få Pages ud.
+- [ ] Én normal weather med cachelineage, DMI/CP/OM og huller pr.
+  vejrtype og time; gentaget autonom bevis før cron genaktiveres.

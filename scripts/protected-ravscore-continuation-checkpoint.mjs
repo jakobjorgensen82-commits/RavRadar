@@ -651,35 +651,49 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
   supabaseUrl = process.env.SUPABASE_URL,
   serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
   fetchImpl = globalThis.fetch,
+  batchSize = 32,
 } = {}) {
   const { url, key } = requiredProtectedSupabaseConnection({
     supabaseUrl, serviceRoleKey,
   });
-  if (typeof fetchImpl !== 'function') {
+  if (typeof fetchImpl !== 'function'
+    || !Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 64) {
     throw new Error('Protected checkpoint diagnostic transport is invalid');
   }
-  return async function diagnose(payload, targetReference) {
-    if (!isPlainObject(payload)
-      || typeof targetReference !== 'string'
-      || payload.productionReferenceAt !== targetReference) {
-      throw new Error('Protected checkpoint diagnostic input is invalid');
-    }
+  const unavailable = diagnostic => {
+    const error = new Error('Protected checkpoint diagnostic unavailable');
+    error.safeDiagnostic = diagnostic;
+    return error;
+  };
+  const endpoint = `${url}/rest/v1/rpc/ravradar_ravscore_checkpoint_rejection_diagnostic`;
+  const headers = buildSupabaseAdminHeaders(key);
+  async function requestBatch(batchPayload, targetReference, expectedCount) {
     let response;
     try {
-      response = await fetchImpl(
-        `${url}/rest/v1/rpc/ravradar_ravscore_checkpoint_rejection_diagnostic`,
-        {
-          method: 'POST',
-          headers: buildSupabaseAdminHeaders(key),
-          body: JSON.stringify({ p_payload: payload, p_target_reference: targetReference }),
-        },
-      );
-      const body = await readResponseTextBounded(
+      response = await fetchImpl(endpoint, {
+        method: 'POST', headers,
+        body: JSON.stringify({ p_payload: batchPayload, p_target_reference: targetReference }),
+      });
+    } catch {
+      throw unavailable('NETWORK_UNAVAILABLE');
+    }
+    let body;
+    try {
+      body = await readResponseTextBounded(
         response, PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
         'Protected checkpoint diagnostic response',
       );
-      if (!response.ok) throw new Error('Diagnostic RPC rejected');
-      const result = parseRemoteJson(body);
+    } catch {
+      throw unavailable('RESPONSE_BOUND_OR_TRANSPORT');
+    }
+    const result = parseRemoteJson(body);
+    if (!response.ok) {
+      const code = ['57014', 'PGRST202', 'PGRST303', '42501', '22023']
+        .includes(result?.code) ? result.code : 'UNKNOWN';
+      throw unavailable(`HTTP_${Number.isSafeInteger(response.status)
+        ? response.status : 'UNKNOWN'}_${code}_UNCLASSIFIED`);
+    }
+    try {
       const keys = [
         'candidateReasons', 'integratedReasons', 'normalizedBytes',
         'payloadReason', 'schemaVersion',
@@ -689,8 +703,8 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
         || result.schemaVersion !== '1.0.0'
         || !Number.isSafeInteger(result.normalizedBytes)
         || result.normalizedBytes < 0 || result.normalizedBytes > 25_000_000
-        || !/^(?:P\d{2}|PASS|DIAGNOSTIC_EXCEPTION)$/.test(result.payloadReason)) {
-        throw new Error('Diagnostic RPC response is invalid');
+        || result.payloadReason !== 'P02') {
+        throw unavailable('RESPONSE_SHAPE_OR_PAYLOAD_REASON');
       }
       for (const [field, prefix] of [
         ['integratedReasons', 'I'], ['candidateReasons', 'C'],
@@ -700,13 +714,63 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
           || Object.entries(result[field]).some(([reason, count]) =>
             !new RegExp(`^${prefix}\\d{2}$`).test(reason)
             || !Number.isSafeInteger(count) || count < 1 || count > 673)) {
-          throw new Error('Diagnostic RPC reason counts are invalid');
+          throw unavailable('RESPONSE_REASON_SHAPE');
         }
+        if (Object.values(result[field]).reduce((sum, count) => sum + count, 0)
+          > expectedCount) throw unavailable('RESPONSE_REASON_COUNT');
       }
       return result;
-    } catch {
-      throw new Error('Protected checkpoint diagnostic unavailable');
+    } catch (error) {
+      throw error?.safeDiagnostic ? error : unavailable('RESPONSE_UNEXPECTED');
     }
+  }
+  return async function diagnose(payload, targetReference) {
+    const integrated = payload?.states;
+    const candidate = payload?.candidateGRollbackCompanion?.states;
+    if (!isPlainObject(payload) || !isPlainObject(integrated)
+      || !isPlainObject(candidate)
+      || typeof targetReference !== 'string'
+      || payload.productionReferenceAt !== targetReference) {
+      throw unavailable('INPUT_SHAPE');
+    }
+    const partIds = Object.keys(integrated).sort();
+    if (partIds.length === 0 || partIds.length !== Object.keys(candidate).length
+      || partIds.some(partId => !Object.hasOwn(candidate, partId))) {
+      throw unavailable('INPUT_STATE_KEYS');
+    }
+    const integratedReasons = {};
+    const candidateReasons = {};
+    let batchCount = 0;
+    // The SQL helper is read-only but its full 673-state scan did not return
+    // usable live diagnostics. Each subset deliberately fails the full-payload
+    // count check (P02), while the helper independently checks every state.
+    for (let index = 0; index < partIds.length; index += batchSize) {
+      const ids = partIds.slice(index, index + batchSize);
+      const batchPayload = {
+        ...payload,
+        states: Object.fromEntries(ids.map(id => [id, integrated[id]])),
+        candidateGRollbackCompanion: {
+          ...payload.candidateGRollbackCompanion,
+          states: Object.fromEntries(ids.map(id => [id, candidate[id]])),
+        },
+      };
+      const result = await requestBatch(batchPayload, targetReference, ids.length);
+      for (const [field, accumulator] of [
+        ['integratedReasons', integratedReasons],
+        ['candidateReasons', candidateReasons],
+      ]) {
+        for (const [reason, count] of Object.entries(result[field])) {
+          accumulator[reason] = (accumulator[reason] ?? 0) + count;
+        }
+      }
+      batchCount += 1;
+    }
+    return {
+      schemaVersion: '1.1.0', diagnosticMode: 'BOUNDED_STATE_BATCHES',
+      checkedPartCount: partIds.length, batchCount,
+      integratedReasons, candidateReasons,
+      payloadReason: 'FULL_PAYLOAD_STILL_REJECTED',
+    };
   };
 }
 
@@ -825,8 +889,13 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
       if (typeof diagnosticRequest === 'function') {
         try {
           error.safeRejectionReasons = await diagnosticRequest(payload, local.checkpointAt);
-        } catch {
-          error.safeRejectionReasons = { diagnostic: 'UNAVAILABLE' };
+        } catch (diagnosticError) {
+          error.safeRejectionReasons = {
+            diagnostic: typeof diagnosticError?.safeDiagnostic === 'string'
+              && /^(?:[A-Z_]+|HTTP_[0-9]{3}_[A-Z0-9_]{1,16}_[A-Z0-9_]+)$/.test(
+                diagnosticError.safeDiagnostic,
+              ) ? diagnosticError.safeDiagnostic : 'UNAVAILABLE',
+          };
         }
       }
     }
