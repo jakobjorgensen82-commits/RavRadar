@@ -1390,6 +1390,7 @@ jobs:
           --dmi .cache/dmi-candidate-progress.json
           --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --github-output data/diagnostics/copernicus-current-source-stage-safe.env
           --require-source-stage-reusable
 
       - name: Fill only the exact remaining current gaps from Open-Meteo
@@ -1415,6 +1416,7 @@ jobs:
           path: |
             data/diagnostics/weather-acquisition-plan-before-dmi.json
             data/diagnostics/weather-acquisition-plan-before-copernicus.json
+            data/diagnostics/copernicus-current-source-stage-safe.env
             data/diagnostics/open-meteo-current-fetch.json
 
       - name: Require verified Open-Meteo residual checkpoint before closure

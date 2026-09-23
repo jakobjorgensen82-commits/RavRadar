@@ -426,6 +426,18 @@ for (const stepName of [
     'verified handoff retains rebuild/gate step: ' + stepName,
   );
 }
+const copernicusStageGate = indentedBody(
+  build, '      - name: Require reusable Copernicus source stage before combined current closure',
+);
+const safeAcquisitionArtifact = indentedBody(
+  build, '      - name: Preserve safe weather acquisition diagnostics before terminal gates',
+);
+assert.match(copernicusStageGate,
+  /--github-output data\/diagnostics\/copernicus-current-source-stage-safe\.env/,
+  'normal Copernicus stage must record its safe selected/remaining pair counts');
+assert.match(safeAcquisitionArtifact,
+  /data\/diagnostics\/copernicus-current-source-stage-safe\.env/,
+  'normal acquisition artifact must retain the safe Copernicus stage counts');
 const weatherCacheStep = indentedBody(build, '      - name: Update central weather cache');
 assert.match(
   weatherCacheStep,

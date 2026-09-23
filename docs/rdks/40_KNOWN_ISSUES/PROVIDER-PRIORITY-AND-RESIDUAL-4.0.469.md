@@ -7,7 +7,10 @@ allerede dækket fallback kan derfor ikke forklare dette runs lave
 DMI-tal; den er en mulig barriere i senere runs, som måles særskilt.
 Copernicus' `IN_PROGRESS`-stage kan ifølge kildekontrollen være
 genbrugelig med nul valgte poster. En grøn stagegate beviser altså
-ikke Copernicus-dækning. Open-Meteo-rapporten sluttede med 5.201
+ikke Copernicus-dækning. 4.0.471 gemmer derfor stage-status samt
+valgte og resterende par i den payloadfri normalrun-diagnose. Det
+ændrer ikke kildevalg eller adgang til rå data. Open-Meteo-rapporten
+sluttede med 5.201
 restpar, 8.284 null i hastighed/retning, 24 gitterafvisninger og syv
 transporttimeouter uden udløbet totalbudget. Nyeste cachelineage,
 target, faktisk valgte kilde og hver vejrtype skal følges ved næste
