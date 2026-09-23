@@ -1,3 +1,17 @@
+# Aktuelt fokus – 2026-09-23, 4.0.469
+
+1. [ ] Få PR #431's append-only checkpointbinding gennem exact-head CI,
+   merge og providerfri kode-only-deploy på den aktuelle private vejrpakke.
+2. [ ] Kør én kontrolleret normal vejrhentning; bevis samme cachelineage,
+   faktisk DMI/Copernicus/Open-Meteo-fremgang, gemt historik og deploy.
+3. [ ] Afklar den skæve DMI-fordeling mellem IDW/NSBS/Limfjord, promover
+   Copernicus' varige segmenter til anvendt source-stage, og opdel de 5.201
+   restpar efter eksakt årsag. Se
+   `../rdks/40_KNOWN_ISSUES/PROVIDER-PRIORITY-AND-RESIDUAL-4.0.469.md`.
+4. [ ] Mål lokal vind, bølger, vandstand og temperatur hver for sig.
+   Genaktivér ikke automatisk drift før normalrun kan bevare og forbedre
+   gyldige data stabilt uden manuel Codex-indgriben.
+
 # Nyeste prioritering – 2026-09-22, 4.0.464 saved-weather-deploy
 
 1. [x] Livebevis public-hour-rebind, 8 GiB runtimegenbygning og korrekt stop

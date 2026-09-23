@@ -1,4 +1,37 @@
-# Aktivt roadmap – 2026-09-23, 4.0.468 målt vejr- og historikfortsættelse
+# Aktivt roadmap – 2026-09-23, 4.0.469 sikker scorehistorik og vindhorisont
+
+0. [x] Afgræns de to barrierer i samme version: checkpointets forkerte
+   fastholdelsesregel og DMI's udsultede, H0-afhængige vindhorisont.
+1. [x] Ret og måltest checkpoint samt selvstændig, roterende DMI-vindtur
+   med højst 120 sekunders slack efter de eksisterende marine reserver.
+2. [ ] Bestå version/RDKS, én exact-head-kildekontrol og merge 4.0.469.
+3. [ ] Bevis providerfrit, at aktuel privat vejrpakke og scorecheckpoint
+   gemmes og bliver online uden genhentning.
+4. [ ] Kør én kontrolleret normal vejrhentning. Mål pr. komponent før/efter
+   DMI, Copernicus og Open-Meteo, herunder den særskilte havstrømsrest,
+   og verificér gemt cache, scorehistorik og deploy.
+5. [ ] Afklar vedvarende geografiske eller tidslige huller samlet ud fra
+   de målte årsager, før cron genaktiveres. 100 % gyldig dækning er målet;
+   ingen tomme eller ubekræftede værdier må tælles som dækket.
+
+# Tidligere 4.0.469-plan – udvidet af DEC-0241
+
+0. [x] Merge 4.0.468 efter én grøn eksakt-head-kildekontrol; hold den
+   automatiske vejrplan pauset.
+1. [x] Afklar kode-only-stop `35835042039` til checkpointets forkerte
+   regel for gyldig regional fastholdelse uden fuld historik.
+2. [x] Ret replay efter modellens egen kausale regel og test kold
+   fastholdelse i et checkpoint for alle 673 kystdele.
+3. [ ] Bestå målrettet version/RDKS og eksakt-head CI; merge 4.0.469.
+4. [ ] Fortsæt providerfrit med præcis den gemte vejrpakke og bevis, at
+   checkpointet faktisk bliver gemt, runtime videreført og Pages opdateret.
+5. [ ] Kør én kontrolleret normal weather på samme cache. Mål
+   før-/efterhuller pr. vejrtype og leverandør, også den separate
+   havstrømsrest, og undersøg eventuel stilstand før næste genkørsel.
+6. [ ] Luk dokumenterede huller og bevis stabil autonom vedligeholdelse;
+   genaktivér først derefter den normale tidsplan.
+
+# Historisk 4.0.468-plan – erstattet efter kode-only-stop i DEC-0240
 
 0. [x] Lad `35823773587` køre færdigt; annullér ventende
    `35824420467` og pausér kun den normale scheduler.

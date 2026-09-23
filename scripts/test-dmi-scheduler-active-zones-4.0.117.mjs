@@ -35,6 +35,9 @@ assert.doesNotMatch(
   'HARMONIE må ikke kun starte for punkter, der aldrig har haft vind.',
 );
 assert.match(bulk,/"criticalAtmosphereAssetAttemptLimit": 1/);
+assert.match(bulk,/"atmosphereHorizonCollections": atmosphere_horizon/);
+assert.match(bulk,/atmosphere_horizon_needed=\([\s\S]{0,130}schedule_coverage\.get\("missingWind"\)/);
+assert.match(bulk,/reserve_for_pending_critical = sum\([\s\S]{0,330}atmosphere_horizon_reserve if pending_atmosphere_horizon/);
 assert.match(bulk,/ATMOSPHERE_FOUNDATION_ATTEMPT_LIMIT/);
 assert.match(
   bulk,
@@ -100,6 +103,29 @@ cost_controller.observe_asset_duration(200.0,cost_family='wam_dw')
 assert cost_controller.can_start_asset(cost_family='wam_dw') is False
 assert cost_controller.can_start_asset(cost_family='dkss_lf') is True
 module.runtime_remaining=real_runtime_remaining
+# A future-wind deficit gets its own bounded turn even if official H0 wind is
+# already present. Its slice comes only from slack after current/WAM reserves.
+turns=module.operational_collection_turns(
+ ['harmonie_dini_sf','dkss_idw','wam_dw'],
+ {'criticalAtmosphereCollections':[], 'atmosphereHorizonCollections':['harmonie_dini_sf']},
+ {}, primary_mode=False,
+)
+assert turns==[('dkss_idw','native'),('wam_dw','native'),('harmonie_dini_sf','horizon')], turns
+turns=module.operational_collection_turns(
+ ['harmonie_dini_sf','dkss_idw'],
+ {'criticalAtmosphereCollections':['harmonie_dini_sf'], 'atmosphereHorizonCollections':['harmonie_dini_sf']},
+ {}, primary_mode=False,
+)
+assert turns==[('harmonie_dini_sf','foundation'),('dkss_idw','native'),('harmonie_dini_sf','horizon')], turns
+assert module.atmosphere_horizon_runtime_reserve(['harmonie_dini_sf'],1380,marine_reserve_seconds=698)==120
+assert module.atmosphere_horizon_runtime_reserve(['harmonie_dini_sf'],790,marine_reserve_seconds=698)==0
+assert module.atmosphere_horizon_runtime_reserve([],1380,marine_reserve_seconds=698)==0
+_,horizon_plan=module.operational_collection_plan(
+ ['harmonie_dini_sf','dkss_idw'], {}, True, {}, 1380,
+ atmosphere_foundation_needed=False, atmosphere_horizon_needed=True,
+)
+assert horizon_plan['criticalAtmosphereCollections']==[], horizon_plan
+assert horizon_plan['atmosphereHorizonCollections']==['harmonie_dini_sf'], horizon_plan
 active=[
  {'id':'L1','coastType':'limfjord'}, {'id':'L2','coastType':'limfjord'}, {'id':'L3','coastType':'limfjord'},
  {'id':'W1','coastType':'west'}, {'id':'E1','coastType':'east'},

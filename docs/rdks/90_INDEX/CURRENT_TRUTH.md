@@ -1,3 +1,49 @@
+# NYESTE SANDHED – 2026-09-23 – 4.0.469 lokal, to forskellige barrierer rettet
+
+PR #431's første kildekontrol fandt, at den rettede checkpointkode ikke
+matchede den allerede anvendte databases gamle implementeringshash. Et nyt
+append-only migrationsled `20260923091500` er derfor tilføjet; den gamle
+migration er bevaret uændret. Målrettede migrationskontroller er grønne
+lokalt; ny exact-head-CI, merge, kode-only-deploy og normal vejrkørsel
+afventer. Dette er en installationsbarriere, ikke tegn på nye vejrdata.
+
+Den særskilte havstrømsfordeling er fortsat alvorligt skæv: 25.793
+DMI-, 0 Copernicus- og 47.996 Open-Meteo-par i sidste normalrun, plus
+5.201 huller. DMI's tre DKSS-samlinger fik kun 1/43/51 behandlede trin.
+Copernicus hentede noget, men varige segmenter blev ikke til offentlig
+source-stage inden timeout. Årsagen til DMI-faldet og om segmenterne
+overlever næste targetskift er åbent; se
+`../40_KNOWN_ISSUES/PROVIDER-PRIORITY-AND-RESIDUAL-4.0.469.md`.
+
+Ud over scorecheckpointets gyldige Limfjord-fastholdelse har
+helkædegennemgangen fundet en selvstændig DMI-planlægningsbarriere.
+Normalrun `35823773587` havde 23 officielle HARMONIE-prognosetrin,
+men behandlede kun den aktuelle times fil; den senere vindpassage
+startede ingen asset efter DKSS/WAM's tidsforbrug. Den passage blev
+hidtil desuden kun oprettet ved hul i aktuel-times-vind. Lokal 4.0.469
+giver fremtidig vind en selvstændig, roterende tur og højst 120 sekunders
+startmulighed fra tid *efter* de bevarede havstrøms-/bølgereserver.
+Ingen officiel vindværdi er endnu bevist hentet via rettelsen. DMI's
+cirka 57 timers vindhorisont kan ikke alene lukke 118 timer; de senere
+timer kræver faktisk fungerende reserver. Se DEC-0241.
+
+# NYESTE SANDHED – 2026-09-23 – 4.0.469 lokal, scheduler stadig pauset
+
+4.0.468 blev merged som `9f9553c4` efter grøn kildekontrol på præcis
+PR #430's head. Providerfrit kode-only-run `35835042039` verificerede og
+genbrugte den aktuelle private vejrpakke, men stoppede før writes/deploy,
+da checkpointet afviste en gyldig Limfjord-fastholdelse under opbygning
+af 48-timers scorehistorik. Den offentlige 4.0.467-prognose og private
+vejrpakke er uændrede. 4.0.469 lader checkpointet bruge præcis samme
+tids- og kildebevis som scoremodellens egen validator; regressionen dækker
+fastholdelse uden fuld historik. Livebevis afventer. Se DEC-0240.
+
+Den automatiske normale vejr-workflow er fortsat deaktiveret. En ny
+providerfri kode-only-udrulning skal først bevise gemt checkpoint;
+derefter skal én kontrolleret normal vejrhentning måle genbrugt historik,
+cache og fremgang for vind, bølger, vandtemperatur og havstrøm hver for sig.
+De åbne datahuller fra 4.0.467 er ikke løst af checkpointrettelsen.
+
 # NYESTE SANDHED – 2026-09-23 – 4.0.468 lokal, scheduler pauset
 
 4.0.467 blev merged som `c4450740`; normalrun `35823773587` gennemførte

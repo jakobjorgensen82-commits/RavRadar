@@ -3,7 +3,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  buildIntegratedRavScoreStateSeries,
+  RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+} from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_MIGRATION_ID,
@@ -71,6 +74,55 @@ const advancedStateTemplate = fixtureSeries.rows[50].continuationState;
 const futureStateTemplate = fixtureSeries.rows[52].continuationState;
 assert.equal(targetStateTemplate.currentMemoryReady, true);
 assert.equal(targetStateTemplate.waveMemoryReady, true);
+const regionalAuthorization = {
+  sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy',
+  collection: 'dkss_lf',
+  distanceKm: 6.2,
+};
+const nativeHoldSha256 = `sha256:${'b'.repeat(64)}`;
+const nativeHoldStateTemplate = buildIntegratedRavScoreStateSeries([{
+  ...samples[48],
+  currentProvenance: { status: 'verified', ...regionalAuthorization },
+}, {
+  time: atHour(49),
+  currentSpeedMps: null,
+  currentAlignment: null,
+  currentVerified: false,
+  currentStateOnlyHold: {
+    contractId: 'regional-dmi-exact-state-only-hold-v1',
+    status: 'verified-derived-state-only',
+    classification: 'REGIONAL_DMI_DERIVED_HOLD',
+    stateOnly: true,
+    partId: 'FIXTURE-REGIONAL',
+    parentZoneId: 'FIXTURE-ZONE',
+    targetIdentityFingerprint: contextFor('fixture'),
+    validTime: atHour(49),
+    sourceValidTime: atHour(48),
+    holdAgeHours: 1,
+    provider: 'dmi',
+    sourceClass: regionalAuthorization.sourceClass,
+    source: regionalAuthorization.source,
+    collection: regionalAuthorization.collection,
+    modelRun: atHour(0),
+    closureContractId: RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
+    closureId: nativeHoldSha256,
+    closureAssignmentSha256: nativeHoldSha256,
+    sourceAssetSha256: nativeHoldSha256,
+    sourceProofSha256: nativeHoldSha256,
+    vectorCommitmentSha256: nativeHoldSha256,
+  },
+  waveHeightM: 1.2,
+  wavePeriodS: 6,
+  waveDirectionDeg: 270,
+}], {
+  samplingContextKey: contextFor('fixture'),
+  onshoreDirectionDeg: 90,
+  nativeCadenceHoldHours: 3,
+}).rows.at(-1).continuationState;
+assert.equal(nativeHoldStateTemplate.currentReferenceAt, atHour(48));
+assert.notEqual(nativeHoldStateTemplate.currentMemoryStatus, 'READY_NATIVE_HOLD',
+  'the regression must cover a real native hold before 48-hour history is ready');
 
 const partIds = Array.from({ length: PART_COUNT }, (_, index) => `part-${String(index + 1).padStart(3, '0')}`);
 const partFor = partId => ({
@@ -193,9 +245,11 @@ function assertNoPrivateCheckpointFields(value) {
 
 const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-schema6-checkpoint-'));
 const sourcePath = path.join(tempRoot, 'source.json');
+const nativeHoldSourcePath = path.join(tempRoot, 'source-native-hold.json');
 const alternateSourcePath = path.join(tempRoot, 'source-alternate.json');
 const targetPath = path.join(tempRoot, 'target.json');
 const checkpointPath = path.join(tempRoot, 'checkpoint.json');
+const nativeHoldCheckpointPath = path.join(tempRoot, 'checkpoint-native-hold.json');
 const alternateCheckpointPath = path.join(tempRoot, 'checkpoint-alternate.json');
 const lineageCheckpointPath = path.join(tempRoot, 'checkpoint-lineage.json');
 const boundedCheckpointPath = path.join(tempRoot, 'checkpoint-bounded.json');
@@ -255,6 +309,16 @@ try {
   const continuationStateContractSha256 =
     await ravScoreContinuationImplementationSha256();
   const saved = await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
+  const nativeHoldSource = clone(source);
+  nativeHoldSource.datasetId = 'rr-schema6-native-hold-checkpoint-source';
+  nativeHoldSource.coastalParts.parts[partIds[0]].ravScoreModel.currentState =
+    stateFor(nativeHoldStateTemplate, partIds[0]);
+  await writeJson(nativeHoldSourcePath, nativeHoldSource);
+  const nativeHoldSaved = await saveRavScoreContinuationCheckpoint({
+    sourcePath: nativeHoldSourcePath, checkpointPath: nativeHoldCheckpointPath,
+  });
+  assert.equal(nativeHoldSaved.saved, true,
+    'a verified regional hold with incomplete history must be checkpointable');
   assert.equal(saved.saved, true);
   assert.equal(saved.datasetId, source.datasetId);
   assert.equal(saved.productionReferenceAt, atHour(49));
@@ -986,6 +1050,8 @@ try {
   const warmupIds = partIds.slice(0, 3);
   warmupSource.coastalParts.parts = Object.fromEntries(warmupIds.map(id =>
     [id, warmupSource.coastalParts.parts[id]]));
+  warmupSource.coastalParts.parts[warmupIds[0]].ravScoreModel.currentState =
+    stateFor(nativeHoldStateTemplate, warmupIds[0]);
   const measuredStates = Object.fromEntries(warmupIds.map((id, index) => {
     const samples = Array.from({ length: index === 2 ? 50 : 10 }, (_, hour) => ({
       time: atHour(index === 2 ? hour : 40 + hour), currentSpeedMps: 0.12, currentAlignment: 0.75,

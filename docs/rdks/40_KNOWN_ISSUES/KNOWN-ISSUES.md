@@ -1,3 +1,23 @@
+# Aktuelle issues – 2026-09-23, 4.0.469
+
+- **PROVIDER-PRIORITY-AND-RESIDUAL – ÅBENT:** Sidste normalrun endte med
+  25.793 DMI- og 0 Copernicus-havstrømspar mod 47.996 Open-Meteo-par
+  og 5.201 huller. DMI-samlingerne fik meget ulige arbejdstid, og
+  Copernicus-kvitteringer nåede ikke den udgivne stage. Bevis genindgang
+  og en bedre kildefordeling i næste normale run. Se
+  `PROVIDER-PRIORITY-AND-RESIDUAL-4.0.469.md`.
+- **DMI-WIND-HORIZON-STARVATION-35823773587 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** HARMONIE havde 23 officielle forecasttrin, men normalrunnet
+  nåede kun én aktuel-times-fil. Den senere vindpassage fik hverken en
+  beskyttet starttid eller egen tur, når H0 allerede var dækket. 4.0.469
+  giver en afgrænset, roterende tur fra slack efter havarbejdets reserver.
+  Om lokale vindhuller faktisk lukkes, skal måles i normal produktion.
+- **CP/OM-WIND-AND-CURRENT-RESIDUAL – ÅBENT:** DMI-vind rækker ikke hele
+  118-timersperioden. Reserveledernes faktiske fremgang for fremtidig
+  lokal vind og de 5.201 særskilte havstrømspar er ikke bevist af lokal
+  test. Nye komponentoptællinger og gemte rotationsmarkører skal
+  vurderes i næste kontrollerede normalrun, uden at lempe kildekrav.
+
 # Aktuelle issues – 2026-09-23, 4.0.468
 
 - **SCORE-HISTORY-RESET-35823773587 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
@@ -2977,3 +2997,15 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   rumlige videnskabelige audit fejlede. 4.0.466 ændrer ikke disse forhold;
   de kræver særskilt evidens og rettelse uden at forveksle dem med
   Pages-hashfejlen.
+# Aktuelle issues – 2026-09-23, 4.0.469
+
+- **NATIVE-HOLD-CHECKPOINT-35835042039 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  En gyldig kort Limfjord-fastholdelse kunne ikke gemmes, mens den øvrige
+  scorehistorik var ufuldstændig. Checkpointets replay bruger nu samme
+  kausale referencetid og kildeautorisation som scoremodellen. Runnet
+  stoppede før deploy; offentlig vejrpakke og private data er uændrede.
+- **WEATHER-COMPONENT-COVERAGE-35823773587 – FORTSAT ÅBENT:** Vindhuller
+  og havstrømshuller er selvstændige; hverken checkpoint- eller
+  kontrolrettelsen gør vejrdatasættet komplet. Se den særskilte issuefil.
+- **AUTOMATIC-WEATHER-SCHEDULE – FORTSAT PAUSET:** Først kode-only-bevis,
+  derefter kontrolleret normal kørsel og målt cache-/komponentfremgang.

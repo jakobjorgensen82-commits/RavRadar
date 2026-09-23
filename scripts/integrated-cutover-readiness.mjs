@@ -184,12 +184,17 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923052100_integrated_current_projection_binding',
     filename: '20260923052100_integrated_current_projection_binding.sql',
   }),
+  Object.freeze({
+    version: '20260923091500',
+    id: '20260923091500_integrated_native_hold_continuation_binding',
+    filename: '20260923091500_integrated_native_hold_continuation_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923052100');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923091500');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({

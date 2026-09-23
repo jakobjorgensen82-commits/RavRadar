@@ -470,11 +470,16 @@ function compactState(state, partId) {
     lineage,
   };
 
+  // A valid native hold can still have an incomplete 48-hour history. Derive
+  // the hold from its causal reference and authorization, exactly as the
+  // integrated state validator does, rather than from a READY-only status.
+  const nativeHold = currentReferenceAt !== time
+    && currentNativeHoldAuthorization !== null;
   const replayedCurrent = buildCurrentSupplyMemory(currentEvidence, {
     referenceTime: time,
-    nativeHold: state.currentMemoryStatus === 'READY_NATIVE_HOLD'
-      && currentNativeHoldAuthorization !== null,
+    nativeHold,
     nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
+    nativeHoldReferenceTime: nativeHold ? currentReferenceAt : null,
   });
   const currentPotentialMatches = replayedCurrent.supplyPotential === null
     ? compact.supplyPotential === null

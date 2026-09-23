@@ -245,6 +245,7 @@ DKSS_PRIMARY_REFRESH_MAX_ASSETS = max(
 ATMOSPHERE_HORIZON_MAX_ASSETS = max(
     1, min(16, int(os.getenv("DMI_BULK_ATMOSPHERE_HORIZON_MAX_ASSETS", "4"))),
 )
+ATMOSPHERE_HORIZON_TURN_RESERVE_SECONDS = 120.0
 RETAIN_PREFERRED_NATIVE_RUN = os.getenv(
     "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN", "false"
 ).lower() in {"1", "true", "yes", "on"}
@@ -1098,6 +1099,24 @@ def strict_current_runtime_reserve(
     )
 
 
+def atmosphere_horizon_runtime_reserve(
+    horizon_collections: list[str],
+    remaining_work_seconds: float,
+    *,
+    marine_reserve_seconds: float,
+) -> float:
+    """Protect one wind-horizon start only from time left after marine slices.
+
+    The 95-second margin is the controller's conservative first-asset plus
+    checkpoint estimate. A shorter leftover slice cannot admit a new asset and
+    must not take time away from the DKSS/WAM current foundations.
+    """
+    if "harmonie_dini_sf" not in horizon_collections:
+        return 0.0
+    slack = max(0.0, remaining_work_seconds - max(0.0, marine_reserve_seconds) - 95.0)
+    return min(ATMOSPHERE_HORIZON_TURN_RESERVE_SECONDS, slack) if slack >= 95.0 else 0.0
+
+
 def fair_nonlead_strict_current_runtime_reserve(
     pending_collections: list[str],
     remaining_work_seconds: float,
@@ -1138,6 +1157,7 @@ def operational_collection_plan(
     now_epoch: float | None = None,
     force_wam_collections: set[str] | None = None,
     atmosphere_foundation_needed: bool = False,
+    atmosphere_horizon_needed: bool = False,
 ) -> tuple[list[str], dict[str, Any]]:
     """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -1208,6 +1228,12 @@ def operational_collection_plan(
     critical_atmosphere = (
         ["harmonie_dini_sf"]
         if critical_atmosphere_requested
+        and "harmonie_dini_sf" in work_eligible
+        else []
+    )
+    atmosphere_horizon = (
+        ["harmonie_dini_sf"]
+        if atmosphere_horizon_needed
         and "harmonie_dini_sf" in work_eligible
         else []
     )
@@ -1286,6 +1312,7 @@ def operational_collection_plan(
         ),
         "criticalWamOutsideBaseCollectionQuota": True,
         "criticalAtmosphereCollections": critical_atmosphere,
+        "atmosphereHorizonCollections": atmosphere_horizon,
         "criticalAtmosphereOutsideBaseCollectionQuota": True,
         "criticalAtmosphereAssetAttemptLimit": 1,
         "criticalAtmosphereCooldownOverride": (
@@ -2403,8 +2430,13 @@ def operational_collection_turns(
     processed steps. Maintenance rotates independently of the critical lead.
     """
     atmosphere = set(coverage.get("criticalAtmosphereCollections") or [])
-    turns = [(collection, "foundation" if collection in atmosphere else "native") for collection in scheduled]
-    turns.extend((collection, "horizon") for collection in scheduled if collection in atmosphere)
+    horizon = set(coverage.get("atmosphereHorizonCollections") or []) | atmosphere
+    turns = [
+        (collection, "foundation" if collection in atmosphere else "native")
+        for collection in scheduled
+        if collection not in horizon or collection in atmosphere
+    ]
+    turns.extend((collection, "horizon") for collection in scheduled if collection in horizon)
     if primary_mode:
         turns.extend((collection, "maintenance") for collection in sorted(
             (value for value in scheduled if value in MARINE_COLLECTIONS),
@@ -11425,6 +11457,9 @@ def main() -> int:
         atmosphere_foundation_needed=(
             schedule_coverage.get("atmosphereFoundationNeeded") is True
         ),
+        atmosphere_horizon_needed=(
+            int(schedule_coverage.get("missingWind") or 0) > 0
+        ),
         force_wam_collections=(
             set(WAVE_BOOTSTRAP_COLLECTIONS)
             if wave_bootstrap_configuration is not None
@@ -11869,6 +11904,13 @@ def main() -> int:
         )
         if collection in scheduled
     ]
+    atmosphere_horizon_collections = [
+        collection
+        for collection in schedule_coverage.get(
+            "atmosphereHorizonCollections", []
+        )
+        if collection in scheduled
+    ]
     critical_atmosphere_attempt_limit = max(
         0,
         int(schedule_coverage.get(
@@ -11886,6 +11928,16 @@ def main() -> int:
         runtime_remaining(),
         lead_reserve_seconds=strict_current_reserve_total,
     )
+    atmosphere_horizon_reserve = atmosphere_horizon_runtime_reserve(
+        atmosphere_horizon_collections,
+        runtime_remaining(),
+        marine_reserve_seconds=(
+            strict_current_reserve_total + critical_wam_reserve_total
+        ),
+    )
+    schedule_coverage["atmosphereHorizonRuntimeReserveSeconds"] = round(
+        atmosphere_horizon_reserve, 3,
+    )
     schedule_coverage["criticalWamRuntimeReserveSeconds"] = round(
         critical_wam_reserve_total, 3,
     )
@@ -11902,6 +11954,7 @@ def main() -> int:
     }
     pending_critical_wam = list(critical_wam_collections)
     pending_critical_current = list(strict_current_collections)
+    pending_atmosphere_horizon = bool(atmosphere_horizon_collections)
     strict_current_lead_collection = schedule_coverage.get(
         "strictCurrentLeadCollection"
     )
@@ -11943,12 +11996,16 @@ def main() -> int:
             pending_critical_wam.remove(collection)
         if collection_is_critical_current:
             pending_critical_current.remove(collection)
+        if collection_is_horizon:
+            pending_atmosphere_horizon = False
         reserve_for_pending_critical = sum(
             critical_wam_reserve.get(pending, 0.0)
             for pending in pending_critical_wam
         ) + sum(
             strict_current_reserve.get(pending, 0.0)
             for pending in pending_critical_current
+        ) + (
+            atmosphere_horizon_reserve if pending_atmosphere_horizon else 0.0
         )
         if (
             collection_is_critical_current
@@ -14177,7 +14234,10 @@ def main() -> int:
                             {
                                 "reservedForCollections": list(
                                     pending_critical_wam
-                                ) + list(pending_critical_current),
+                                ) + list(pending_critical_current) + (
+                                    list(atmosphere_horizon_collections)
+                                    if pending_atmosphere_horizon else []
+                                ),
                                 "reservedSeconds": round(
                                     reserve_for_pending_critical, 3,
                                 ),
