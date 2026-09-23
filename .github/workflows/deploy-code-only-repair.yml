@@ -931,7 +931,7 @@ jobs:
           rollback_activation_ready="${{ steps.runtime-audit.outputs.rollback_activation_ready }}"
           case "$rollback_status:$rollback_activation_ready" in
             READY:true) disposition=READY_PUBLISHED; checkpoint_required=true ;;
-            BUILDING_MEASURED_ONLY:false) disposition=NOT_APPLICABLE_DURING_MEASURED_WARMUP; checkpoint_required=false ;;
+            BUILDING_MEASURED_ONLY:false) disposition=MEASURED_WARMUP_PUBLISHED; checkpoint_required=true ;;
             *) exit 1 ;;
           esac
           dataset_id="$(jq -er '.datasetId | select(type == "string" and length > 0)' data/live/manifest.json)"
@@ -957,7 +957,7 @@ jobs:
 
       - name: Build measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-build
-        if: steps.runtime-audit.outputs.rollback_status == 'READY'
+        if: steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
           --save
@@ -966,7 +966,7 @@ jobs:
 
       - name: Save measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-save
-        if: steps.runtime-audit.outputs.rollback_status == 'READY'
+        if: steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
@@ -974,7 +974,7 @@ jobs:
 
       - name: Publish measured continuation checkpoint without promoting rollback readiness
         id: checkpoint-publish
-        if: steps.runtime-audit.outputs.rollback_status == 'READY'
+        if: steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish

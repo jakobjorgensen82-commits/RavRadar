@@ -1,3 +1,24 @@
+# Aktuelle issues – 2026-09-23, 4.0.468
+
+- **SCORE-HISTORY-RESET-35823773587 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  4.0.467-runnet videreførte ingen af de 673 private scoretilstande efter
+  kontraktskiftet. 4.0.468 gemmer også målt warmup-tilstand, så efterfølgende
+  kørsler kan opbygge historik i stedet for at starte forfra.
+- **CURRENT-SPATIAL-HOLD-AUDIT-35823773587 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Otte gyldige regionale Limfjord-hold blev afvist af kontrollen, der slog
+  havstrømstilstand op uden for `publicContext`. Runtime-testen afspejler nu
+  den faktiske scorestruktur og afviser modstridende falske topfelter.
+- **WEATHER-COMPONENT-COVERAGE-35823773587 – ÅBENT:** Ved T+36 mangler lokal
+  vind i 289 kystdele; ved T+117 mangler den i 313. Efter alle leverandører
+  mangler 5.201 havstrøm-par i 57 kystdele. De to problemer er særskilte.
+  Følg rotation, cache-restaurering og præcis komponentdækning i kontrolleret
+  produktion før regler eller tidsbudgetter ændres. Se
+  `WEATHER-COMPONENT-COVERAGE-4.0.468.md`.
+- **AUTOMATIC-WEATHER-SCHEDULE – MIDLERTIDIGT SAT PÅ PAUSE:** Ventende run
+  `35824420467` blev annulleret. Kun den automatiske normale tidsplan er
+  deaktiveret, indtil 4.0.468 og efterfølgende kontrolleret vejrhentning
+  har vist bevaret cache, historik og relevant dækningsfremgang.
+
 # Aktuelle issues – 2026-09-23, 4.0.467
 
 - **ISSUE-CURRENT-CLOSURE-NOT-PROJECTED-35778530384 – RETTET LOKALT /

@@ -567,19 +567,29 @@ const integratedHoldProof = verifyCoastalPartNativeCadenceHold({
   part: regionalPart,
   runtimePart: {
     current: { time: coldHoldScore.time, weather: coldHoldScore.weather },
-    ravScoreModel: {
-      currentTransition: coldHoldScore.ravScoreModel.publicContext.currentTransition,
-      currentReferenceAt: coldHoldScore.ravScoreModel.currentReferenceAt,
-      currentMemoryReady: coldHoldScore.ravScoreModel.currentMemoryReady,
-      currentMemoryStatus: coldHoldScore.ravScoreModel.currentMemoryStatus,
-    },
+    ravScoreModel: coldHoldScore.ravScoreModel,
   },
   pilotHistory: liveWithRegionalReference,
 });
 assert.equal(integratedHoldProof.ok, true,
-  'the spatial audit must read an integrated native hold from ravScoreModel, not the retired Candidate G field');
+  'the spatial audit must read the integrated hold from the real publicContext shape');
 assert.equal(integratedHoldProof.referenceAt, new Date(SOURCE_TIME).toISOString());
 assert.equal(integratedHoldProof.ageHours, 1);
+assert.equal(verifyCoastalPartNativeCadenceHold({
+  part: regionalPart,
+  runtimePart: {
+    current: { time: coldHoldScore.time, weather: coldHoldScore.weather },
+    ravScoreModel: {
+      ...coldHoldScore.ravScoreModel,
+      publicContext: {
+        ...coldHoldScore.ravScoreModel.publicContext,
+        currentTransition: 'MISSING',
+      },
+      currentTransition: 'NATIVE_CADENCE_HOLD',
+    },
+  },
+  pilotHistory: liveWithRegionalReference,
+}).ok, false, 'a conflicting top-level legacy field cannot override the integrated public context');
 const missingRuntimePart = {
   flowPoints: {
     current: regionalPart.waterPoint,

@@ -128,8 +128,12 @@ export function verifyCoastalPartNativeCadenceHold({
   if (finite(weather?.currentSpeedMps) || finite(weather?.currentDirectionDeg)) {
     return fail('native-cadence-tilstanden indeholder en delvis eller fuld strømprojektion');
   }
-  const state = runtimePart?.ravScoreModel ?? runtimePart?.candidateG;
-  if (state?.currentTransition !== 'NATIVE_CADENCE_HOLD') {
+  const integratedState = runtimePart?.ravScoreModel;
+  const state = integratedState ?? runtimePart?.candidateG;
+  const currentTransition = integratedState
+    ? integratedState.publicContext?.currentTransition
+    : state?.currentTransition;
+  if (currentTransition !== 'NATIVE_CADENCE_HOLD') {
     return fail('den vektorfri scoretime er ikke markeret som native-cadence-fastholdelse');
   }
   const memoryReady = state?.currentMemoryReady ?? state?.transportMemoryReady;

@@ -428,7 +428,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.467 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.468 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -871,7 +871,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.467 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.468 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -896,7 +896,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.467 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.468 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1162,7 +1162,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.467 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.468 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1518,8 +1518,23 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.467 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.468 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Report counts for each weather component after central cache
+        if: steps.weather.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -ec '
+            .weatherEngine.componentFallback as $coverage
+            | if ($coverage | type) != "object" then error("component summary unavailable") else
+                {kind:"weather-component-coverage", before:$coverage.before,
+                 afterCopernicus:$coverage.afterCopernicus, after:$coverage.after,
+                 failureCodes:$coverage.failures}
+              end
+          ' data/live/conditions.json
 
       - name: Encrypt newly saved private weather progress before later production steps
         id: component-progress-seal
@@ -1699,8 +1714,8 @@ jobs:
               checkpoint_required="true"
               ;;
             BUILDING_MEASURED_ONLY:false)
-              disposition="NOT_APPLICABLE_DURING_MEASURED_WARMUP"
-              checkpoint_required="false"
+              disposition="MEASURED_WARMUP_PUBLISHED"
+              checkpoint_required="true"
               ;;
             *)
               echo "Runtime audit cannot produce an allowed checkpoint disposition." >&2
@@ -1912,7 +1927,7 @@ jobs:
 
       - name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates
         id: checkpoint-build
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED')
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
           --save
@@ -1921,14 +1936,14 @@ jobs:
 
       - name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates
         id: checkpoint-save
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
           key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reconfirm current main before protected RavScore write
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED')
         shell: bash
         run: |
           git fetch --no-tags origin main
@@ -1937,7 +1952,7 @@ jobs:
 
       - name: Publish atomic RavScore checkpoint to protected admin storage
         id: checkpoint-publish
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -2381,6 +2396,19 @@ jobs:
             READY_PUBLISHED)
               test "$(jq -er '.rollbackStatus' "$disposition_path")" = "READY"
               test "$(jq -er '.rollbackActivationReady' "$disposition_path")" = "true"
+              test "$(jq -er '.checkpointRequired' "$disposition_path")" = "true"
+              test "$checkpoint_build_outcome" = "success"
+              if [ "${{ steps.operational-action.outputs.action }}" = "candidate-dry-run" ]; then
+                test "$checkpoint_save_outcome" = "skipped"
+                test "$checkpoint_publish_outcome" = "skipped"
+              else
+                test "$checkpoint_save_outcome" = "success"
+                test "$checkpoint_publish_outcome" = "success"
+              fi
+              ;;
+            MEASURED_WARMUP_PUBLISHED)
+              test "$(jq -er '.rollbackStatus' "$disposition_path")" = "BUILDING_MEASURED_ONLY"
+              test "$(jq -er '.rollbackActivationReady' "$disposition_path")" = "false"
               test "$(jq -er '.checkpointRequired' "$disposition_path")" = "true"
               test "$checkpoint_build_outcome" = "success"
               if [ "${{ steps.operational-action.outputs.action }}" = "candidate-dry-run" ]; then

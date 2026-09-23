@@ -1,3 +1,19 @@
+# Aktivt roadmap – 2026-09-23, 4.0.468 målt vejr- og historikfortsættelse
+
+0. [x] Lad `35823773587` køre færdigt; annullér ventende
+   `35824420467` og pausér kun den normale scheduler.
+1. [x] Ret den rumlige kontrol af otte gyldige Limfjord-fastholdelser.
+2. [x] Kobl målt privat scorecheckpoint til almindelig weather og
+   kode-only, og log komponentvis dækning uden private værdier.
+3. [ ] Bestå målrettede slutchecks, version/RDKS og én exact-head-gate;
+   merge uden at genhente vejr før kodeleveringen.
+4. [ ] Kør providerfri kode-only for aktuel privat runtime og bevis
+   checkpoint, offentlig prognose og historikfortsættelse.
+5. [ ] Kør én normal weather fra samme cache. Mål særskilt DMI,
+   Copernicus, Open-Meteo, vind, bølger, vandstand, temperatur og havstrøm.
+6. [ ] Ret dokumenterede resthuller samlet; genaktivér cron først, når
+   pålidelig autonom vedligeholdelse og korrekt offentlig visning er bevist.
+
 # Aktivt roadmap – 2026-09-22, 4.0.464 code-only Node-kapacitet
 
 0. [x] Livebevis rebind og privat installation i run `35757878823`.

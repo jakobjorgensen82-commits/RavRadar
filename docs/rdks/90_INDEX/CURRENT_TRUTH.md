@@ -1,3 +1,32 @@
+# NYESTE SANDHED – 2026-09-23 – 4.0.468 lokal, scheduler pauset
+
+4.0.467 blev merged som `c4450740`; normalrun `35823773587` gennemførte
+cache, privat runtime, Pages og offentlig kontrol. Datasættet
+`rr-20260923063008-210` har score i 207/210 zoner. Gyldig
+Copernicus/Open-Meteo-havstrøm ses nu offentligt: ved T+117 har 616/673
+kystdele verificeret reservestrøm. Det er ikke et komplet vejrgrundlag:
+lokal vind mangler i 289 dele fra T+12 og 313 ved T+117; den særskilte
+havstrøm-rest er 5.201 kystdel×time-par. Se DEC-0239 og det åbne
+WEATHER-COMPONENT-COVERAGE-4.0.468-issue.
+
+Den fulde kontrolrapport fejlede på en forældet aflæsning af otte
+godkendte regionale strømfastholdelser, selv om deploy lykkedes.
+4.0.468 retter kontrollen mod den faktiske integrerede datamodel og
+bruger dens rigtige output i testen. Runnet genopbyggede 673/673
+scoretilstande koldt, fordi den ældre private runtime var inkompatibel og
+det særskilte checkpoint manglede; ingen af 420 aktuelle zone-/mode-
+visninger har fuld historik. Begge aktive workflows gemmer nu det
+eksisterende private *målte* fortsættelsescheckpoint under opbygning,
+uden at aktivere en anden offentlig model. Livebevis mangler.
+
+Et ekstra planlagt weather-run `35824420467` blev annulleret før jobstart,
+og kun den normale scheduler-workflow er midlertidigt deaktiveret.
+Engangskørsel og andre workflows er ikke deaktiveret. Genaktivering kræver
+bevis for genbrug af aktuel privat runtime, historikcheckpoint og
+leverandørernes videre rotation; ingen blind oneoff eller gentaget
+kildekontrol. Den tidligere påstand nedenfor om, at 4.0.467 beviste
+historikfortsættelse, er erstattet af det målte kolde replay.
+
 # NYESTE SANDHED – 2026-09-23 – lokal 4.0.467 tidsbudget og strøm til score
 
 Den sidste offentlige 4.0.466-prognose havde verificeret strøm på 622/673

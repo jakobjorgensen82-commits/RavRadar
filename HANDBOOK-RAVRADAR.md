@@ -1,6 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.467
+**Håndbogsversion:** 4.0.468
+
+## 89.64 4.0.468 – Vejr og historik skal følge med fra kørsel til kørsel
+
+Den seneste almindelige vejrkørsel blev gennemført og lagt online.
+RavRadar viser igen score i 207 af 210 zoner, og data fra
+reserveleverandørerne bruges nu også til havstrøm længere ude i
+prognosen. Det betyder ikke, at alle vejrdata er på plads: mange lokale
+kystdele mangler vind efter cirka 12 timer, og noget havstrøm mangler
+stadig. Kortet og prognosen skal vise lokale huller ærligt.
+
+En kontrol meldte fejl på otte Limfjord-kystdele, selv om den nye model
+havde gemt et gyldigt, kortvarigt fastholdt strømgrundlag for dem.
+Kontrollen læste et felt på den gamle placering. Den læser nu den nye
+models faktiske felt og kræver stadig dokumenteret kilde og tidsgrænse.
+
+Kørslen måtte begynde scorehistorikken forfra, fordi den ældre private
+pakke ikke kunne bruges, og et særskilt historikcheckpoint ikke var
+gemt. Almindelig vejrkørsel og kodeopdatering gemmer nu det målte
+checkpoint også mens historikken bygges op. Det gør ikke den gamle
+scoremodel aktiv. Næste kontrollerede kørsel skal bevise, at historikken
+faktisk fortsætter, og at vejrtyperne hver især bliver mere komplette.
+Den automatiske tidsplan er pauset imens.
 
 ## 89.63 4.0.467 – Hele vejrkørslen skal nå sine sluttrin
 

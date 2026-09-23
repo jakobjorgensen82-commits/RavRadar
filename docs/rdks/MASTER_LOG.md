@@ -1,3 +1,18 @@
+# 2026-09-23 – 4.0.468 målt videreførelse og retvisende havstrømskontrol
+
+Normalrun `35823773587` gemte cache og deployede, men alle 673 kystdeles
+scorehistorik startede forfra, fordi den forrige private runtime ikke kunne
+gendannes efter kontraktskiftet. Den nye offentlige runtime har fortsat
+lokale vindhuller, og 5.201 havstrøm-kystdel×time-par mangler ved
+118-timerslukningen. En rumlig kontrol afviste desuden fejlagtigt otte
+godkendte Limfjord-hold, fordi den læste havstrømstilstanden fra et forkert
+felt. 4.0.468 retter kontrollens felt, lader tests bruge den rigtige struktur
+og gemmer en målt videreførelsestilstand også under historikopbygning.
+Komponenternes mangler logges særskilt efter hver leverandør. Det planlagte
+run `35824420467` blev annulleret, og automatisk vejrhentning er midlertidigt
+deaktiveret, indtil rettelsen er live-verificeret. DEC-0239 og issue-filen
+`WEATHER-COMPONENT-COVERAGE-4.0.468.md` beskriver bevis og åbne spørgsmål.
+
 # 2026-09-23 – 4.0.467 strømrettelse genforsegles uden at ændre anvendt migration
 
 Efterkontrollen brugte fortsat fuld-dokument-gaten og kunne derfor afvise
