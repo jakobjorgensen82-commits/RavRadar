@@ -1,3 +1,20 @@
+# 2026-09-23 – lokal 4.0.479 efter run 35903476784
+
+- [x] Fastslået at 4.0.478-run byggede vejr og artifact, men stoppede
+  ved checkpoint-timeout før privat runtime og Pages. Ingen ny offentlig
+  pakke må tælles som leveret.
+- [x] Målt inkompatibel private-cache-fingerprint ved runstart;
+  afgrænset eksakt 4.0.477-genbrug og normal krypteret fremdrift.
+- [x] Målt Copernicus-førstekald uden kvittering i 286 sekunder;
+  begrænset operationelle forespørgsler til højst 24 timer.
+- [x] Snæver append-only database-timeout for checkpoint-CAS;
+  målrettede kontrakter bestået lokalt.
+- [ ] RDKS/version, exact-head-kildegate, merge og anvendt migration.
+- [ ] Én normalrun med ægte cachegenbrug, DMI/CP/OM og hver vejrtype,
+  beskyttet checkpoint/cache, deploy og offentlig prognose.
+- [ ] Afklar fortsat lave DMI-/Copernicus-andele og 5.501 OM-restpar
+  på faktiske nye målinger; ingen ny kørsel ved stagnation.
+
 # 2026-09-23 – lokal 4.0.478, to påviste barrierer
 
 - [x] Run `35887652848` på `main` byggede, gemte cache/checkpoint og

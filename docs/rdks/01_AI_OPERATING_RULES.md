@@ -19,6 +19,13 @@
 - Bevar kildesporbarhed og markér erstattede løsninger; overskriv ikke historien.
 - Kør `npm run validate:rdks` og relevante tests.
 
+## Nye Supabase-tabeller
+- Nye tabeller i `public`, som RavRadar skal bruge via Data API, skal
+  få eksplicitte og mindst mulige grants for de nødvendige roller i
+  samme migration. Giv aldrig automatisk `anon` skriveadgang eller
+  brede grants for at omgå en permission denied-fejl. Eksisterende
+  tabellers adgang ændres kun efter særskilt funktionel vurdering.
+
 ## Konflikter
 Stop og forklar konflikten før kodeændring, hvis et nyt ønske strider mod en aktiv beslutning. Aktuel brugerbeslutning kan ændre RDKS, men ændringen skal registreres med begrundelse.
 ## Bindende release-gate

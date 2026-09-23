@@ -19,6 +19,7 @@ import {
   privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
 import {
+  DMI_SCHEDULER_ONLY_PREDECESSOR,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
@@ -27,6 +28,7 @@ import {
   describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
+  isExactDmiSchedulerPredecessor,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
@@ -55,8 +57,12 @@ function syntheticConditions(index) {
   };
 }
 
-async function createGeneration(index, { largeStreamPayload = false } = {}) {
-  const conditions = syntheticConditions(index);
+async function createGeneration(index, {
+  largeStreamPayload = false,
+  metadataOverride = {},
+  contractHashesOverride,
+} = {}) {
+  const conditions = { ...syntheticConditions(index), ...metadataOverride };
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(repository, descriptor.relativePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });
@@ -76,6 +82,9 @@ async function createGeneration(index, { largeStreamPayload = false } = {}) {
     bundlePath,
     repositoryRoot: repository,
     ...spec,
+    metadata: contractHashesOverride
+      ? { ...spec.metadata, contractHashes: contractHashesOverride }
+      : spec.metadata,
   });
   const expected = await buildPrivateRuntimeExpectation({
     repositoryRoot: repository,
@@ -167,6 +176,39 @@ try {
   }
 
   const baselineContracts = await privateRuntimeContractHashes({ repositoryRoot: repository });
+  assert.equal(
+    baselineContracts.continuationStateContractSha256,
+    DMI_SCHEDULER_ONLY_PREDECESSOR.continuationStateContractSha256,
+    'the one-time predecessor may not cross a continuation change',
+  );
+  assert.equal(
+    baselineContracts.publicProjectionContractSha256,
+    DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
+    'the one-time predecessor may not cross a public projection change',
+  );
+  const schedulerPredecessor = {
+    ...DMI_SCHEDULER_ONLY_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: DMI_SCHEDULER_ONLY_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: DMI_SCHEDULER_ONLY_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  const schedulerExpected = {
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: baselineContracts,
+  };
+  assert.equal(isExactDmiSchedulerPredecessor(schedulerPredecessor, schedulerExpected), true);
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-other-generation' },
+    { productionReferenceAt: '2026-09-23T17:00:00.000Z' },
+    { contractHashes: { ...schedulerPredecessor.contractHashes, fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...schedulerPredecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isExactDmiSchedulerPredecessor({ ...schedulerPredecessor, ...change }, schedulerExpected), false);
+  }
   const workflowContractPath = path.join(repository, 'scripts/private-production-runtime-workflow.mjs');
   const scoreContractPath = path.join(repository, 'js/core/local-zone-score.js');
   const workflowContractSource = await fs.readFile(workflowContractPath, 'utf8');
@@ -191,6 +233,49 @@ try {
 
   const documents = fakeDocuments();
   const storage = fakeStorage();
+  const exactBridge = await createGeneration(6, {
+    metadataOverride: {
+      datasetId: DMI_SCHEDULER_ONLY_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-23T17:06:22.947Z',
+      productionReferenceAt: DMI_SCHEDULER_ONLY_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: schedulerPredecessor.contractHashes,
+  });
+  const bridgeDocuments = fakeDocuments();
+  const bridgeStorage = fakeStorage();
+  const bridgeOldExpected = {
+    ...(await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-23T18:00:00.000Z',
+      now: '2026-09-23T18:05:00.000Z',
+    })),
+    contractHashes: schedulerPredecessor.contractHashes,
+  };
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: exactBridge.bundlePath,
+    repositoryRoot: repository,
+    expected: bridgeOldExpected,
+    now: '2026-09-23T18:05:00.000Z',
+    sourceHead: DMI_SCHEDULER_ONLY_PREDECESSOR.sourceHead,
+    request: bridgeDocuments.request,
+    storage: bridgeStorage.client,
+  });
+  const bridgeRestored = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'exact-dmi-scheduler-bridge'),
+    repositoryRoot: repository,
+    expected: await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-23T18:00:00.000Z',
+      now: '2026-09-23T18:05:00.000Z',
+    }),
+    now: '2026-09-23T18:05:00.000Z',
+    request: bridgeDocuments.request,
+    storage: bridgeStorage.client,
+  });
+  assert.equal(bridgeRestored.restored, true);
+  assert.equal(bridgeRestored.exactSchedulerPredecessor, true);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);

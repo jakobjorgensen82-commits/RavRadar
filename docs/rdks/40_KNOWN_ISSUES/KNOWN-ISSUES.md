@@ -1,3 +1,21 @@
+# Aktuelle issues – 2026-09-23, lokal 4.0.479
+
+- **CACHE-LINEAGE-35903476784 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  4.0.478's DMI-planlægning ændrede bredt runtime-fingerprint og
+  afviste den aktuelle 4.0.477-private cache. Ny eksakt bro må kun
+  genbruge den identificerede pakke; fuld byte- og tidskontrol består.
+- **COPERNICUS-ZERO-35903476784 – AFBØDET LOKALT / ÅBEN P0:**
+  Første leverandørkald brugte 286 sekunder uden en gemt kvittering.
+  Højst 24-timers requests og startmåling skal bevises i næste run;
+  ikke blot tilskrives manglende cache.
+- **CHECKPOINT-TIMEOUT-35903476784 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  RPC ramte `57014` to gange efter grøn artifactgate. Kun denne
+  funktion får 30 sekunder via ny append-only migration.
+- **PROVIDER-REST – ÅBEN P0:** DMI 19.893 direkte havstrømspar,
+  Copernicus 0 og Open-Meteo 53.676; 5.501 af 79.414 par manglede
+  i det ikke-deployede target. De andre vejrtyper har egne nævnere.
+  Ingen af disse forhold er dokumenteret løst før ny normalrun.
+
 # Aktuelle issues – 2026-09-23, lokal 4.0.478
 
 - **SPATIAL-HOLD-AUDIT-35887652848 – RETTET LOKALT / LIVEBEVIS ÅBENT:**

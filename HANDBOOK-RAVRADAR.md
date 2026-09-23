@@ -1,14 +1,42 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.478
+**Håndbogsversion:** 4.0.479
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.478 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.479 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.75 4.0.479 – Vejrpakken skal fortsætte, og hvert kald skal nå at blive gemt
+
+Den sidste almindelige vejrkørsel hentede data, men opdaterede ikke
+hjemmesiden. Den fik ikke åbnet den senest gemte private vejrpakke,
+fordi en ændring af DMI's tidsfordeling blev forvekslet med en ændring
+af selve dataformatet. Kun den præcise tidligere pakke må nu genbruges,
+og dens indhold kontrolleres stadig fuldt. Det skal sikre, at nye
+gyldige data bygger videre på de gamle i stedet for at begynde tomt.
+
+Copernicus nåede nul nye havstrømspar, fordi det første netværkskald
+brugte hele den korte arbejdstid uden et gemt resultat. Fremover
+spørger hvert operationelt kald højst om 24 prognosetimer; alle
+oprindelige steder og timer bliver stadig efterspurgt. Det er endnu
+ikke bevist i drift, at leverandøren så svarer. Open-Meteo efterlod
+5.501 havstrømspar i 57 kystdele, og DMI's andel er stadig for lav.
+Vind, bølger, vandstand og temperatur skal opgøres hver for sig.
+
+Til sidst fik databasen for kort tid til at gemme scorehistorikken.
+Kun den konkrete gemmefunktion får nu op til 30 sekunder; intet
+dataindhold eller scoreberegning ændres. Først når en ny normal
+vejrkørsel har vist korrekt cachegenbrug, leverandørfremgang,
+gemning og faktisk opdateret hjemmeside, kalder vi problemet løst.
+
+Supabase ændrer efter varslet 30. oktober kun standardadgangen for
+*nye* offentlige databasetabeller. RavRadars eksisterende tabeller
+beholder deres adgang. Ved en fremtidig ny tabel angiver vi præcis
+de nødvendige adgangsrettigheder i samme databaseopdatering.
 
 ## 89.74 4.0.478 – Alle vigtige DMI-opgaver skal få tid
 

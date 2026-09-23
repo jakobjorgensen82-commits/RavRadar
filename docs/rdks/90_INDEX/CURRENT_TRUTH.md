@@ -1,3 +1,29 @@
+# NYESTE SANDHED – 2026-09-23 – 4.0.479 lokal, tre åbne driftspunkter
+
+4.0.478 blev merged som `693f4789`. Normalrun `35903476784` bestod
+vejrbygning og artifactgate, men sluttede rødt før cache-/Pages-
+publicering: checkpoint-RPC ramte `57014` to gange. Den nye private
+vejrpakke er ikke varigt gemt; sidste offentlige pakke er fortsat
+`rr-20260923170622-210` fra `35887652848`.
+
+Ved runstart afviste den brede kildefingerprint 4.0.477's seneste
+private vejrpakke på grund af 4.0.478's ændrede DMI-tidsfordeling.
+Modellen, continuation og offentlig projektion var uændrede. En
+eksakt, tidsbegrænset forgængerbro genbruger kun den kendte pakke
+med fuld integritetskontrol. En append-only migration giver kun
+checkpoint-CAS 30 sekunder; ingen global timeoutændring.
+
+Copernicus' nul nye par skyldtes ikke i sig selv den manglende cache:
+første aktuelle providerkald brugte 286 sekunder uden kvittering.
+4.0.479 deler operationelle kald i højst 24 timer og logger sikre
+startmål. Virkningen er kun lokal/testet, ikke bevist i drift.
+Open-Meteo efterlod 5.501 havstrømspar i 57 dele med 8.744 null-
+værdier, 24 gitterafvisninger og syv transporttimeouter uden
+udløbet totalbudget. DMI dækkede 19.893/79.414 direkte havstrømspar.
+Dette er kun havstrømstal; de øvrige fire vejrtyper måles særskilt.
+Cron pauset; næste run først efter merge og eksakt migration, uden
+overlap, og med før/efter-cache-, leverandør- og publicbevis. DEC-0249.
+
 # NYESTE SANDHED – 2026-09-23 – 4.0.478 lokal efter 4.0.477-deploy
 
 `main` `2bafe6c6`/4.0.477 er publiceret af normalrun `35887652848`.

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const workflow = await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8');
+const workflow = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
+  .replace(/\r\n/g, '\n');
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
   assert.ok(start >= 0, `missing ${name}`);
@@ -12,7 +13,7 @@ const install = workflow.indexOf('id: private-runtime-install');
 const capture = workflow.indexOf('id: component-progress-restore');
 const weather = workflow.indexOf('id: weather\n');
 const seal = workflow.indexOf('id: component-progress-seal');
-const gates = workflow.indexOf('- name: Audit runtime and collect');
+const gates = workflow.indexOf('- name: Validate critical production artifact after fresh weather and current provenance');
 assert.ok(install < capture && capture < weather && weather < seal && seal < gates);
 const restore = step('Restore encrypted private weather progress only');
 const bind = step('Bind optional progress to the exact protected baseline');

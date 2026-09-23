@@ -224,6 +224,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923160000_checkpoint_candidate_companion_id',
     filename: '20260923160000_checkpoint_candidate_companion_id.sql',
   }),
+  Object.freeze({
+    version: '20260923210000',
+    id: '20260923210000_checkpoint_cas_bounded_timeout',
+    filename: '20260923210000_checkpoint_cas_bounded_timeout.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
