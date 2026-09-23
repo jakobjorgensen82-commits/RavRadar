@@ -1994,3 +1994,23 @@ Næste: måltests, version/RDKS, exact-head PR, merge; kør så én providerfri
 attempt 1. Følg Pages og central completion, derefter næste normale cron.
 To state-replay-afvigelser og 51/673 dele uden direkte strøm i sidste
 normalrun er åbne fund. Untracked `.tmp-420/` og `.tmp-run-*` må ikke stages.
+# AKTUELT CHECKPOINT – 2026-09-23 – lokal 4.0.472, helkædebevis åbent
+
+4.0.471 er på `main` (`9927d09c`). Providerfri `35855497915` anvendte
+og læste `20260923110000` tilbage, genbrugte den nyeste private
+vejrpakke og byggede 673-dels checkpointet. Den beskyttede database
+afviste det med `HTTP_400_22023_INPUT_INVALID` før Pages; der blev
+ikke hentet nyt vejr. Lokal 4.0.472/DEC-0243 retter yderligere
+JS/SQL-modstrid for ærligt manglende scorehistorik i en append-only
+migration `20260923120000`, med uændret streng READY-regel og kun
+summeret sikker fejldiagnose. Ingen leverandør- eller datadækning er
+hermed bevist rettet.
+
+Næste: målrettet slutkontrol, én exact-head-CI, merge, én providerfri
+kodelevering fra senest gemte cache, derefter én normal vejrkørsel.
+Mål eksakt cachelineage og DMI/Copernicus/Open-Meteo for havstrøm,
+lokal vind, bølger, vandstand og temperatur hver for sig. Senest
+observeret: 5.201 havstrømspar mangler, CP har 0 anvendte par,
+Open-Meteo har 47.996. Cron forbliver pauset; bevis stabil autonom
+vedligeholdelse over flere normale kørsler før genaktivering. Usporede
+`.tmp-*` er analysefiler, ikke releaseindhold.

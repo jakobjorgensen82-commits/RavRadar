@@ -1,5 +1,15 @@
 # Åbent: DMI/Copernicus fylder for lidt i havstrømsprognosen
 
+**Helkædeafgrænsning 2026-09-23 / 4.0.472:** Kode-only-run
+`35855497915` genbrugte den aktuelle private vejrpakke og afviste
+checkpointet før Pages. Det producerede ingen nye leverandørdata og
+ændrer derfor ikke de sidst målte kildeandele. DEC-0243 retter kun
+checkpointets ærlige manglende historik. Næste normalrun skal vise
+om de gemte CP-kvitteringer faktisk bliver anvendte par, om DMI's
+DKSS-samlinger og HARMONIE-horisont rykker, samt hvorfor de 57 dele
+fortsat giver 5.201 restpar efter Open-Meteo. Ingen af disse må
+erklæres løst alene ved et grønt deploy.
+
 **Helkæde-opfølgning 2026-09-23 / 4.0.471:** Den sikre plan før DMI
 for `35823773587` viste ingen installeret DMI-, CP- eller OM-bank
 for netop dette target. Grænsen på to DMI-vedligeholdelsesassets ved

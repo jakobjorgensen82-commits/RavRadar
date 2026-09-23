@@ -33,6 +33,7 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-production-workflow-outcome.mjs',
   'scripts/test-release-contract-metadata.mjs',
   'scripts/build-checkpoint-warmup-status-successor.mjs',
+  'scripts/build-checkpoint-missing-state-successor.mjs',
   'scripts/test-harmonie-binding-migration.mjs',
   'scripts/test-open-meteo-binding-migration.mjs',
   'scripts/build-measured-rollback-warmup-binding-migration.mjs',

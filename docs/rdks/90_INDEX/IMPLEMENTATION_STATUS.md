@@ -5862,3 +5862,22 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   verificér central completion, Pages, offentligt manifest og browser.
 - [ ] Følg næste almindelige vejrkørsel og afklar de åbne strøm-/statefund;
   fuld cache og stabil autonom drift er endnu ikke bevist.
+# 2026-09-23 – lokal 4.0.472, checkpointets manglende tilstande
+
+- [x] Merge 4.0.471/PR #433 som `9927d09c` efter grøn exact-head
+  `35854732002`; providerfri `35855497915` installerede migration,
+  men stoppede på checkpointets `INPUT_INVALID` før Pages.
+- [x] Krydstjek JS-produktion, lokal replay, SQL, schema, installer og
+  workflow. Ret afgrænset ikke-READY med tom/seneste-manglende evidens
+  i append-only `20260923120000`, uden at lempe READY eller skjule
+  datamangler. Tilføj kun summeret, privatlivssikker fejldiagnose.
+- [ ] Bestå målrettede kontrakter, version/RDKS og én exact-head CI;
+  merge derefter 4.0.472.
+- [ ] Fortsæt providerfrit fra *aktuel* gemt cache og bevis migration,
+  checkpoint, private writes og faktisk Pages-deploy.
+- [ ] Kør én normal vejrkørsel fra samme cache. Sammenlign eksakt
+  target/lineage, DMI/CP/OM, hver vejrtype, 48-timershistorik, gemning
+  og de 5.201 senest observerede havstrømsrestpar.
+- [ ] Ret kun dokumenterede rester og bevis stabil autonom normaldrift
+  før cron genaktiveres. 100 % gyldig dækning er målet, men endnu ikke
+  et bevist resultat.

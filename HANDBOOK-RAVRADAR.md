@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.471
+**Håndbogsversion:** 4.0.472
+
+## 89.69 4.0.472 – Manglende målinger må ikke stoppe nye prognoser
+
+Den seneste korte kodelevering genbrugte den nyeste gemte vejrpakke,
+men databasen afviste den tilhørende scorehistorik før offentliggørelse.
+Årsagen er, at dens kontrol krævede en måling på sidste time, selv når
+modellen korrekt havde markeret timen som manglende. Også en helt tom
+historik kan være en ærlig, men endnu ikke scoreklar tilstand.
+
+Den nye databaseopdatering tillader kun disse dokumenterede manglende
+tilstande. Den gør ikke tomme værdier til vejrmålinger eller score.
+En score med fuld historik kræver stadig en virkelig, verificeret
+48-timersrække. Hvis databasen stadig afviser pakken, viser loggen
+kun summerede antal og statusser, aldrig private målinger eller
+kystdel-ID'er. Rettelsen mangler endnu bevis i en rigtig levering.
+
+Det særskilte vejrarbejde består: Sidste normale kørsel havde 5.201
+manglende havstrømspar, for lille DMI-andel og ingen anvendte
+Copernicus-par. Først efter en providerfri kodelevering følger en
+almindelig kørsel, som måler hver leverandør og vejrtype for sig.
 
 ## 89.68 4.0.471 – Gem historik også når en måling mangler
 

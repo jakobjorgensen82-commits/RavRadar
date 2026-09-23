@@ -285,6 +285,42 @@ function safeRpcFailureDiagnostic(status, parsedResponse) {
   return `HTTP_${Number.isSafeInteger(status) ? status : 'UNKNOWN'}_${code}_${reason}`;
 }
 
+// Counts only public contract states. Never log part IDs, times, evidence,
+// vectors or the private checkpoint payload when the database rejects it.
+export function summarizeCheckpointStateShape(payload) {
+  const integrated = Object.values(payload?.states ?? {});
+  const candidate = Object.values(payload?.candidateGRollbackCompanion?.states ?? {});
+  const integratedStatuses = [
+    'WINDOW_INCOMPLETE', 'WINDOW_HAS_MISSING_EVIDENCE', 'WINDOW_HAS_TIME_GAP',
+    'LATEST_SAMPLE_MISSING', 'LATEST_SAMPLE_GAP', 'EVIDENCE_LIMIT_EXCEEDED',
+    'READY', 'READY_NATIVE_HOLD',
+  ];
+  const candidateStatuses = [
+    'WINDOW_INCOMPLETE', 'WINDOW_HAS_MISSING_EVIDENCE', 'WINDOW_HAS_TIME_GAP',
+    'LATEST_SAMPLE_MISSING', 'READY',
+  ];
+  const countStatuses = (states, field, allowlist) => Object.fromEntries(
+    allowlist.map(status => [status, states.filter(state => state?.[field] === status).length]),
+  );
+  return {
+    integratedCount: integrated.length,
+    integratedEmptyEvidence: integrated.filter(state => state?.currentEvidence?.length === 0).length,
+    integratedLastBeforeReference: integrated.filter(state => {
+      const last = state?.currentEvidence?.at(-1)?.time;
+      return typeof last === 'string' && last < state.currentReferenceAt;
+    }).length,
+    integratedStatuses: countStatuses(integrated, 'currentMemoryStatus', integratedStatuses),
+    candidateCount: candidate.length,
+    candidateLastBeforeReference: candidate.filter(state => {
+      const last = state?.transportEvidence?.at(-1)?.time;
+      return typeof last === 'string' && last < state.transportReferenceAt;
+    }).length,
+    candidateNullLast: candidate.filter(state =>
+      state?.transportEvidence?.at(-1)?.strength === null).length,
+    candidateStatuses: countStatuses(candidate, 'transportMemoryStatus', candidateStatuses),
+  };
+}
+
 async function readResponseTextBounded(response, maximumBytes, label) {
   const contentLength = Number(response?.headers?.get?.('content-length'));
   if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
@@ -709,12 +745,21 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
     { allowMissing: true },
   );
   const expectedVersion = existingVersion?.version ?? 0;
-  const metadata = validateCheckpointRpcMetadata(
-    await invokeProtectedCheckpointRpc(rpcRequest, {
+  let rpcMetadata;
+  try {
+    rpcMetadata = await invokeProtectedCheckpointRpc(rpcRequest, {
       p_expected_version: expectedVersion,
       p_target_reference: local.checkpointAt,
       p_payload: payload,
-    }),
+    });
+  } catch (error) {
+    if (error?.safeDiagnostic === 'HTTP_400_22023_INPUT_INVALID') {
+      error.safeShapeSummary = summarizeCheckpointStateShape(payload);
+    }
+    throw error;
+  }
+  const metadata = validateCheckpointRpcMetadata(
+    rpcMetadata,
     { local, expectedVersion },
   );
   const changed = metadata.disposition !== 'unchanged';
@@ -878,6 +923,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   main().catch(error => {
     console.error(error.safeDiagnostic
       ? `${error.message} [${error.safeDiagnostic}]` : error.message);
+    if (error.safeShapeSummary) console.error(JSON.stringify(error.safeShapeSummary));
     process.exitCode = 1;
   });
 }

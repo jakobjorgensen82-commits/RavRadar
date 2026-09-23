@@ -199,12 +199,17 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923110000_integrated_checkpoint_warmup_status_binding',
     filename: '20260923110000_integrated_checkpoint_warmup_status_binding.sql',
   }),
+  Object.freeze({
+    version: '20260923120000',
+    id: '20260923120000_integrated_checkpoint_missing_state_binding',
+    filename: '20260923120000_integrated_checkpoint_missing_state_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923110000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923120000');
 export const LATEST_REQUIRED_CUTOVER_MIGRATION = REQUIRED_CUTOVER_MIGRATIONS.at(-1);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
