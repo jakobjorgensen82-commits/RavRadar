@@ -8,6 +8,8 @@
   måltest. DEC-0238.
 - [x] Log dataminimeret særskilt status for strøm-closure, advisory og
   regional reference i central vejrbygning.
+- [x] Gør rumlig runtimekontrol uafhængig af valgfri historik, men behold
+  eksakt closure- og kildebevis for hver vist supplerende strømrække.
 - [ ] Bevis i produktion, at Copernicus/Open-Meteo-strøm faktisk når score
   efter DMI's horizon, og at tidligere scoreevidens vokser mod 48 timer.
 - [x] Afgræns `35794859378` og `35804736772` til fælles 90-minutters

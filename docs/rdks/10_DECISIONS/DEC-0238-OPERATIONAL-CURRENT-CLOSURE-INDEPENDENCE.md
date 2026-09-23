@@ -26,6 +26,15 @@ advisory og regional reference blev godkendt hver for sig. Første normale
 produktionskørsel skal bevise, at fallback faktisk ses i score ved de timer,
 hvor DMI ikke leverer.
 
+Den efterfølgende rumlige runtimekontrol indekserer nu også alene den
+selvstændigt forseglede operationelle closure. Før rettelsen brugte denne
+kontrol fortsat den strengere fuld-dokument-gate og kunne derfor stoppe en
+korrekt supplerende score på grund af en ødelagt *valgfri* historikpost.
+Måltesten kræver både, at ugyldig advisory/regional reference ikke fjerner
+gyldige operationelle rækker, og at en manglende operationel closure fortsat
+afvises. Hver vist supplerende strømvektor bevises stadig mod sin eksakte
+private closure-række, sted, tid, kilde og afstand.
+
 Historisk scoretilstand blev videreført for alle 673 kystdele i sidste
 offentlige runtimeaudit, men nul aktuelle zonetilstande havde fuldt
 48-timershistorik. Offentlige kystdele havde ved T0 590×33 timer,

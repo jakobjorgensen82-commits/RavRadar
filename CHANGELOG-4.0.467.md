@@ -7,6 +7,9 @@ afvise hele den selvstændigt verificerede 118-timers strøm-closure. Den
 fejl er rettet; ugyldig historik bliver stadig afvist for sig selv. Et
 dataminimeret logfelt viser fremover, hvilke af de tre beviser der faktisk
 blev godkendt. Livebevis af fallback i score afventer næste normale run.
+Den efterfølgende rumlige kontrol bruger samme afgrænsning: valgfri
+historik kan ikke annullere en godkendt operationel closure, mens en defekt
+closure fortsat bliver afvist.
 
 De normale kørsler `35794859378` og `35804736772` gemte vejrleverandørernes
 fremgang, men blev afbrudt ved buildjobbets fælles 90-minuttersloft. Den

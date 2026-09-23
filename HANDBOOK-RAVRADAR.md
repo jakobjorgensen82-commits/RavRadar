@@ -25,6 +25,9 @@ mistede strøm helt efter cirka 36 timer. Nu holdes kontrollen af de
 supplerende prognosedata adskilt fra kontrollen af ekstra historik. Ugyldige
 data afvises stadig, men en fejl i valgfri historik får ikke lov at slette
 en gyldig prognose. Den første nye kørsel skal vise, at det også virker live.
+Den efterfølgende kontrol af kortets og scorens strøm bruger samme regel:
+Den accepterer kun beviste prognoserækker, men lader ikke en fejl i ekstra
+historik få alle gyldige supplerende rækker til at forsvinde.
 
 Tidligere scoretilstand var gemt og blev genbrugt for alle 673 kystdele.
 Det betyder ikke, at historikken allerede var komplet: ingen aktuel zone

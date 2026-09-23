@@ -1532,6 +1532,10 @@ export function controlledLiveCurrentEnabled(document) {
       || document?.operationalClosure?.advisoryHistoryAssignmentCount === 0);
 }
 
+export function operationalLiveCurrentClosureEnabled(document) {
+  return operationalClosureDocumentProof(document, { revalidate: true }) !== null;
+}
+
 export function controlledLiveCurrentProofStatus(document) {
   const proofs = controlledDocumentProofs(document, { revalidate: true });
   return {
