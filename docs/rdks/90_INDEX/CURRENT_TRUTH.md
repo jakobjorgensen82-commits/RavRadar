@@ -5286,3 +5286,23 @@ Sidste normale **havstrøms**tal er fortsat 25.793 DMI, 424 regional
 DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201 huller af 79.414.
 Vind, bølger, vandstand og temperatur har særskilte uafklarede huller.
 Cron forbliver pauset; stabil autonom drift er ikke bevist.
+
+# NYESTE SANDHED – 2026-09-23 – lokal 4.0.475; stopårsag fortsat ukendt
+
+4.0.474/PR #436 bestod exact-head `35865765502` og blev merged som
+`30521930`. Providerfri `35866710973` genbrugte den aktuelle private
+vejrpakke og byggede et 673-dels checkpoint, men beskyttet CAS afviste
+igen `INPUT_INVALID`. Diagnoseklienten forkastede selv SQL-svaret som
+`RESPONSE_REASON_SHAPE`, før den kunne logge sikre årsagskoder. Ingen
+nye vejrdata, private checkpointwrites eller Pages blev udgivet.
+
+Lokal 4.0.475/DEC-0245 retter alene dette diagnoseled: prøv den
+faktiske payload i den skrivefri SQL-helper; brug afgrænsede portioner
+som fallback; bevar kun kanoniske årsagskoder og bounded antal, mens
+alt uventet tælles anonymt. Databasens CAS-accept, score, vejrdata,
+cache og geometri ændres ikke. Først konkret SQL-rodårsag, derefter
+providerfri levering og normal vejrhentning med feltvis før/efter.
+Sidste normale **havstrøms**resultat er stadig 25.793 direkte DMI,
+424 regional DMI, 0 Copernicus, 47.996 Open-Meteo og 5.201 huller.
+Dette siger ikke, at vind, bølger, vandstand eller temperatur er komplette.
+Cron er pauset; 100 % korrekte og stabile vejrdata er endnu ikke bevist.

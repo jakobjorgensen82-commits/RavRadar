@@ -703,23 +703,45 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
         || result.schemaVersion !== '1.0.0'
         || !Number.isSafeInteger(result.normalizedBytes)
         || result.normalizedBytes < 0 || result.normalizedBytes > 25_000_000
-        || !/^(?:P\d{2}|DIAGNOSTIC_EXCEPTION)$/.test(result.payloadReason)) {
+        || !/^(?:P\d{2}|PASS|DIAGNOSTIC_EXCEPTION)$/.test(result.payloadReason)) {
         throw unavailable('RESPONSE_SHAPE_OR_PAYLOAD_REASON');
       }
-      for (const [field, prefix] of [
-        ['integratedReasons', 'I'], ['candidateReasons', 'C'],
+      const normalized = { ...result, diagnosticAnomalies: {} };
+      // A read-only diagnostic must not hide a valid reason merely because
+      // another aggregate is malformed. Never expose an unknown key or value:
+      // report only its existence and retain canonical bounded reason counts.
+      for (const [field, prefix, maximumReason] of [
+        ['integratedReasons', 'I', 33], ['candidateReasons', 'C', 6],
       ]) {
-        if (!isPlainObject(result[field])
-          || Object.keys(result[field]).length > 99
-          || Object.entries(result[field]).some(([reason, count]) =>
-            !new RegExp(`^${prefix}\\d{2}$`).test(reason)
-            || !Number.isSafeInteger(count) || count < 1 || count > 673)) {
-          throw unavailable('RESPONSE_REASON_SHAPE');
+        const map = result[field];
+        const safe = {};
+        let unexpectedEntries = 0;
+        let total = 0;
+        if (!isPlainObject(map) || Object.keys(map).length > 99) {
+          normalized.diagnosticAnomalies[`${field}Malformed`] = 1;
+        } else {
+          for (const [reason, count] of Object.entries(map)) {
+            const number = /^.[0-9]{2}$/.test(reason)
+              && reason[0] === prefix ? Number(reason.slice(1)) : NaN;
+            if (!Number.isSafeInteger(number) || number < 1
+              || number > maximumReason || !Number.isSafeInteger(count)
+              || count < 1 || count > expectedCount) {
+              unexpectedEntries += 1;
+              continue;
+            }
+            safe[reason] = count;
+            total += count;
+          }
+          if (unexpectedEntries > 0) {
+            normalized.diagnosticAnomalies[`${field}UnexpectedEntries`] = unexpectedEntries;
+          }
+          if (total > expectedCount) {
+            normalized.diagnosticAnomalies[`${field}ExcessTotal`] = 1;
+          }
         }
-        if (Object.values(result[field]).reduce((sum, count) => sum + count, 0)
-          > expectedCount) throw unavailable('RESPONSE_REASON_COUNT');
+        normalized[field] = safe;
       }
-      return result;
+      return normalized;
     } catch (error) {
       throw error?.safeDiagnostic ? error : unavailable('RESPONSE_UNEXPECTED');
     }
@@ -738,10 +760,36 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
       || partIds.some(partId => !Object.hasOwn(candidate, partId))) {
       throw unavailable('INPUT_STATE_KEYS');
     }
+    // First ask the installed read-only validator about the actual payload.
+    // Subsets can reveal bad states, but deliberately cannot reveal which
+    // full-payload rule rejected the original CAS request.
+    let fullPayloadReason = 'UNAVAILABLE';
+    let fullPayloadDiagnostic = null;
+    try {
+      const full = await requestBatch(payload, targetReference, partIds.length);
+      fullPayloadReason = full.payloadReason;
+      if (Object.keys(full.diagnosticAnomalies).length === 0
+        && full.payloadReason !== 'DIAGNOSTIC_EXCEPTION') {
+        return {
+          schemaVersion: '1.2.0', diagnosticMode: 'FULL_PAYLOAD',
+          checkedPartCount: partIds.length, batchCount: 1,
+          integratedReasons: full.integratedReasons,
+          candidateReasons: full.candidateReasons,
+          payloadReason: full.payloadReason,
+          diagnosticAnomalies: {},
+        };
+      }
+      fullPayloadDiagnostic = 'PARTIAL_RESPONSE';
+    } catch (error) {
+      fullPayloadDiagnostic = error?.safeDiagnostic ?? 'UNAVAILABLE';
+    }
     const integratedReasons = {};
     const candidateReasons = {};
     const payloadBatchReasons = {};
+    const diagnosticAnomalies = {};
     let batchCount = 0;
+    let checkedPartCount = 0;
+    let batchFailure = null;
     // The SQL helper is read-only but its full 673-state scan did not return
     // usable live diagnostics. Each subset deliberately fails the full-payload
     // count check (P02), while the helper independently checks every state.
@@ -755,7 +803,16 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
           states: Object.fromEntries(ids.map(id => [id, candidate[id]])),
         },
       };
-      const result = await requestBatch(batchPayload, targetReference, ids.length);
+      let result;
+      try {
+        result = await requestBatch(batchPayload, targetReference, ids.length);
+      } catch (error) {
+        batchFailure = error?.safeDiagnostic ?? 'UNAVAILABLE';
+        break;
+      }
+      for (const [name, count] of Object.entries(result.diagnosticAnomalies)) {
+        diagnosticAnomalies[name] = (diagnosticAnomalies[name] ?? 0) + count;
+      }
       payloadBatchReasons[result.payloadReason] =
         (payloadBatchReasons[result.payloadReason] ?? 0) + 1;
       for (const [field, accumulator] of [
@@ -767,12 +824,14 @@ export function createProtectedRavScoreCheckpointDiagnosticRequester({
         }
       }
       batchCount += 1;
+      checkedPartCount += ids.length;
     }
     return {
-      schemaVersion: '1.1.0', diagnosticMode: 'BOUNDED_STATE_BATCHES',
-      checkedPartCount: partIds.length, batchCount,
+      schemaVersion: '1.2.0', diagnosticMode: 'FULL_THEN_BOUNDED_STATE_BATCHES',
+      checkedPartCount, expectedPartCount: partIds.length, batchCount,
       integratedReasons, candidateReasons, payloadBatchReasons,
-      payloadReason: 'FULL_PAYLOAD_STILL_REJECTED',
+      diagnosticAnomalies,
+      payloadReason: fullPayloadReason, fullPayloadDiagnostic, batchFailure,
     };
   };
 }

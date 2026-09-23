@@ -3025,3 +3025,21 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    leverandør før/efter, cache- og historikbevaring samt deploy.
 5. [ ] Luk resthuller samlet og bevis flere selvstændige normale kørsler
    før cron. 100 % gyldige data er målet, endnu ikke resultatet.
+
+# Aktivt roadmap – 2026-09-23, 4.0.475 helkæde frem for enkeltfejl
+
+0. [x] Sammenhold nyere run: central cache, backend-klarhed, eksakt
+   deploy og nu scorehistorik har hver stoppet tidligere kørsler.
+   `35866710973` beviser desuden en fejl i vores egen diagnoseklient.
+1. [x] Gør den eksisterende skrivefri diagnose robust: fuld
+   payloadregel, afgrænset fallback og anonymiseret form-afvigelse.
+2. [ ] Én exact-head CI, merge og kort providerfri fortsættelse på
+   den aktuelle cache. Ret først derefter den målte SQL-rodårsag.
+3. [ ] Bevis beskyttet gemning, privat runtime, Pages og synlige
+   prognoser; ingen ny indsamling for at teste en kodelevering.
+4. [ ] Én normal vedligeholdelse med før/efter pr. vejrtype/time og
+   DMI, Copernicus og Open-Meteo; mål kvittering → stage → valgt par,
+   restårsag, cachelineage og 48-timers scorehistorik.
+5. [ ] Saml de faktiske restårsager i én rettelse pr. sammenhængende
+   led. Overvej forenklet fælles generation/manifest og færre
+   ikke-databærende stop. Bevis flere selvstændige kørsler før cron.
