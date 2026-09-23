@@ -1,5 +1,11 @@
 # 4.0.467 – normal vejrkørsel må nå helt til deploy
 
+Efterfølgende resultat: `35823773587` gennemførte cache og deploy, og
+reserve-havstrøm nåede offentlig prognose. Den ældre scoretilstand blev
+dog **ikke** videreført i denne kørsel; 673 dele blev genopbygget koldt.
+Dette er adresseret i 4.0.468's checkpoint-arbejde. Lokal vind og
+havstrøm er fortsat ufuldstændige på forskellige steder/timer.
+
 Den seneste offentlige prognose brugte kun DMI-strøm, selv om fallback havde
 hentet verificerede strømpar. Ved time 36 var ingen strøm tilbage i score.
 En eksisterende måltest afslørede årsagen: en fejl i valgfri historik kunne

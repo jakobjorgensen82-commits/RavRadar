@@ -1,7 +1,16 @@
 # DEC-0238 – verificeret strøm må ikke forsvinde ved fejl i valgfri historik
 
 **Dato:** 2026-09-23
-**Status:** Implementeret lokalt i 4.0.467; livebevis afventer
+**Status:** Implementeret live i 4.0.467; offentlig reservestrøm bevist, fuld historik åben
+
+**Efterfølgende livebevis 2026-09-23:** `35823773587` gennemførte deploy.
+Den offentlige T+117-prognose viser 616/673 verificerede
+reserve-strømvektorer. Dermed er overførslen til score bevist. Derimod
+blev 673 scoretilstande genopbygget koldt, fordi den ældre private
+runtime blev afvist og et separat checkpoint manglede. Den tidligere
+forventning nedenfor om fortsættelse var ikke et produktionsbevis;
+DEC-0239 retter checkpoint-kæden. De 5.201 resterende havstrømpar og
+lokale vindhuller er stadig åbne, adskilte problemer.
 
 Den offentlige 4.0.466-prognose viste ved starttimen verificeret strøm for
 622/673 kystdele, og alle 622 kom fra DMI. Ved prognosetime 36 var ingen

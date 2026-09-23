@@ -1,3 +1,27 @@
+# Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.468
+
+- [x] Gennemfør normal 4.0.467-weather `35823773587`: alle tre
+  leverandørled, central cache, privat runtime og Pages er grønne.
+- [x] Kontrollér offentlig score: 207/210 zoner aktive; verificeret
+  reservestrøm når T+117, men lokal vind og fuld scorehistorik mangler.
+- [x] Annullér kun det ventende run `35824420467` og deaktivér midlertidigt
+  den automatiske normale weather-workflow; ingen anden workflow er pauset.
+- [x] Ret den konkrete kontrolfejl for otte regionale strømfastholdelser,
+  og test den faktiske integrerede outputform.
+- [x] Kobl privat målt fortsættelsescheckpoint til weather og kode-only
+  under warmup, uden rollbackaktivering; målrettede kontroltests består.
+- [x] Tilføj dataminimeret før-/efterrapport for vind, bølger,
+  vandstand og vandtemperatur efter central cache.
+- [x] Bevis særskilt, at geodata kun ændrer topversionsfelt, og at de
+  tre private runtime-kontrakthashes er uændrede af 4.0.468.
+- [ ] Afslut versions-/RDKS-/håndbogskontrol, én exact-head-kildegate,
+  PR/merge og providerfri kode-only-fortsættelse på aktuel runtime.
+- [ ] Bevis at checkpointet faktisk gemmes og genbruges; kør derefter
+  én kontrolleret normal weather og mål komponentvis cachefremgang.
+- [ ] Afklar vindhullerne efter T+12 og de 5.201 uafklarede
+  havstrøm-kystdel×time-par. Genaktivér først cron, når selvstændig
+  vedligeholdelse er bevist.
+
 # Aktuel implementeringsstatus – 2026-09-23, lokal 4.0.467
 
 - [x] Bevis, at `35804736772` gendannede krypteret fremgang fra

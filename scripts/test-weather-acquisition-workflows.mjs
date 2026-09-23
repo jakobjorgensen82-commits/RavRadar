@@ -45,6 +45,14 @@ assert.match(seal, /steps\.component-progress-restore\.outputs\.captured == 'tru
 const save = step(normal, 'Save only the authenticated encrypted private weather snapshot');
 assert.match(save, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(save, /weather-private-progress-encrypted-v2-/);
+const coverage = step(normal, 'Report counts for each weather component after central cache');
+assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
+assert.match(coverage, /continue-on-error: true/);
+assert.match(coverage, /\.weatherEngine\.componentFallback/);
+for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes']) {
+  assert.match(coverage, new RegExp(field));
+}
+assert.ok(normal.indexOf(coverage) < normal.indexOf(seal));
 
 const dmiGribRestore = step(normal, 'Restore bounded DMI GRIB download cache');
 const dmiGribSave = step(normal, 'Save progressed DMI GRIB download cache');

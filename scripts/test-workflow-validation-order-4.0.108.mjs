@@ -3330,9 +3330,8 @@ for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
   'READY_PUBLISHED',
-  'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+  'MEASURED_WARMUP_PUBLISHED',
   'checkpoint_required="true"',
-  'checkpoint_required="false"',
   'dataset_id="$(jq -er \'.datasetId | select(type == "string" and length > 0)\' data/live/manifest.json)"',
   'runtime_audit_sha256=',
   'sha256CanonicalJson',
@@ -3371,8 +3370,10 @@ for (const name of [
   const start = text.indexOf(`name: ${name}`);
   const end = text.indexOf('\n      - name:', start + 1);
   const block = text.slice(start, end < 0 ? text.length : end);
-  if (!block.includes("steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_status == 'READY'")) {
-    throw new Error(`${name} må kun skrive det strikte checkpoint, når rollbackkilden faktisk er READY.`);
+  if (!block.includes("steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'")
+    || !block.includes("steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED'")
+    || !block.includes("steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'")) {
+    throw new Error(`${name} skal kun skrive et krævet checkpoint efter vellykket vejr og hashbundet disposition.`);
   }
   if (block.includes("rollback_status == 'BUILDING_MEASURED_ONLY'")) {
     throw new Error(`${name} må ikke kræve Candidate G-checkpoint under measured warmup.`);
@@ -3455,6 +3456,7 @@ for (const marker of [
   'recomputed_runtime_audit_sha256=',
   'Checkpoint disposition binding mismatch',
   'READY_PUBLISHED)',
+  'MEASURED_WARMUP_PUBLISHED)',
   'NOT_APPLICABLE_DURING_MEASURED_WARMUP)',
   'checkpointDisposition:$checkpointDisposition',
   'checkpointDispositionSha256:$checkpointDispositionSha256',

@@ -373,17 +373,17 @@ const checkpointDisposition = workflow.slice(
 );
 for (const marker of [
   'READY:true) disposition=READY_PUBLISHED; checkpoint_required=true',
-  'BUILDING_MEASURED_ONLY:false) disposition=NOT_APPLICABLE_DURING_MEASURED_WARMUP; checkpoint_required=false',
+  'BUILDING_MEASURED_ONLY:false) disposition=MEASURED_WARMUP_PUBLISHED; checkpoint_required=true',
 ]) assert.ok(checkpointDisposition.includes(marker),
   `Code-only checkpointdisposition mangler ${marker}`);
 for (const step of ['checkpoint-build', 'checkpoint-save', 'checkpoint-publish']) {
   const start = workflow.indexOf(`id: ${step}`);
   const end = workflow.indexOf('\n      - name:', start + 1);
   const block = workflow.slice(start, end);
-  assert.ok(block.includes("if: steps.runtime-audit.outputs.rollback_status == 'READY'"),
-    `${step} må kun køre for en faktisk READY rollbackkilde`);
-  assert.ok(!block.includes('BUILDING_MEASURED_ONLY'),
-    `${step} må ikke kræve det pensionerede Candidate G-checkpoint under measured warmup`);
+  assert.ok(block.includes("steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED'"),
+    `${step} skal fortsat kunne gemme en READY fortsættelse`);
+  assert.ok(block.includes("steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'"),
+    `${step} skal gemme målt fortsættelse uden at aktivere rollback`);
 }
 const savedWeatherBindingStart = workflow.indexOf(
   '- name: Bind saved-weather continuation to exact newer runtime',

@@ -1,3 +1,13 @@
+# 2026-09-23 – 4.0.468 lokal efter første grønne 4.0.467-normalrun
+
+`35823773587` gennemførte cache og Pages. Offentlig score fik
+reservestrøm, men ikke fuld lokal vind eller 48-timershistorik.
+Kontrolrapportens otte Limfjord-fejl skyldtes gammel aflæsning af den
+integrerede models fastholdelse. 4.0.468 retter aflæsningen og aktiverer
+det allerede understøttede private målte historikcheckpoint i aktive
+workflows. Den normale scheduler er midlertidigt pauset efter annullering
+af det ventende `35824420467`; livebevis af rettelsen afventer.
+
 # 2026-09-22 – 4.0.461 target-bundet predecessor
 
 Run `35740940791` bekræftede, at pointerens current `19:00` og restorets
