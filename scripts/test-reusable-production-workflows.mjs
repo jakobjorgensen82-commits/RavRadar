@@ -464,6 +464,14 @@ assert.equal(
   true,
   'private weather verification dependencies precede protected runtime restore',
 );
+const secondPrivateRestore = indentedBody(
+  build,
+  '      - name: Verify and restore the private production runtime bundle',
+);
+assert.match(secondPrivateRestore, /private-runtime-second-restore-expectation\.mjs/);
+assert.match(secondPrivateRestore, /--source-description "\$RUNNER_TEMP\/private-runtime-current-source\.json"/);
+assert.match(secondPrivateRestore, /--bundle-manifest "\$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\/manifest\.json"/);
+assert.match(secondPrivateRestore, /restore_expected="\$RUNNER_TEMP\/private-runtime-second-restore-expected\.json"/);
 assert.equal(
   build.indexOf('name: Install exact verified weather sources atomically')
     < build.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),

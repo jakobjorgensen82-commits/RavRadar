@@ -1,4 +1,16 @@
-# Aktuelt fokus – 2026-09-24, 4.0.481
+# Aktuelt fokus – 2026-09-24, 4.0.482
+
+4.0.481 bestod exact-head-kildekontrol og blev merged, men første
+normalrun `35952076841` stoppede før vejrhentning. Den aktuelle
+private 4.0.480-cache blev godkendt af beskyttet restore og derefter
+afvist af lokal bundle-restore på den brede hash. Lokal 4.0.482
+afstemmer kun den eksakte beskyttede forgænger med samme bundles
+manifest; ukendt cache afvises. Næste er én exact-head-gate, merge
+og én ikke-overlappende normalrun. Mål alle fem felter, tre kilder,
+cache/checkpoint, Pages og offentlig visning. Ingen blind oneoff;
+cron forbliver pauset. Se DEC-0252 og ACTIVE_ROADMAP.
+
+# Historisk fokus – 2026-09-24, 4.0.481
 
 4.0.480 er online efter grøn normalrun `35939353111`. Den eksakte
 fælles-targetkontrol fandt nul tabte gyldige felter, men alle fem

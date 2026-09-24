@@ -1,3 +1,12 @@
+## 2026-09-24 – 4.0.482 lokal rettelse af dobbelt cache-restore
+
+4.0.481 blev merged efter grøn kildegate. Normalrun `35952076841`
+hentede den senest godkendte private 4.0.480-pakke, men næste lokale
+restore afviste dens brede hash før vejrhentning. Der kom ingen ny
+cache eller deploy. Den præcise, beskyttede forgængerafgørelse bruges
+nu også i andet trin efter sammenhold med bundlets manifest. Måltest
+grøn, live afventer. DEC-0252.
+
 ## 2026-09-24 – 4.0.481 lokal kvalitet og rotationsrettelse
 
 Efter grøn 4.0.480-normalrun `35939353111` og nul fælles-time-

@@ -1,4 +1,18 @@
-# 2026-09-24 – lokal 4.0.481, systemisk DMI-/Copernicus-planlægning
+# 2026-09-24 – lokal 4.0.482, anden private-cache-restore
+
+- [x] 4.0.481 exact-head-sourcegate `35951509094` grøn og PR #443
+  merged som `64599ed4`.
+- [x] Normalrun `35952076841` stoppede før leverandørkald: første
+  beskyttede restore var grøn, anden lokale bundle-restore afviste
+  den eksakte 4.0.480-forgængers brede hash. Ingen ny cache/deploy.
+- [x] Lokal snæver afstemning af den beskyttede kildebeskrivelse og
+  bundlemanifest før anden restore; positive og afvisende måltests
+  grønne. Ukendte forgængere forbliver afvist.
+- [ ] Slut RDKS/version, én exact-head-kildegate, PR/merge og én
+  ikke-overlappende normalrun. Mål DMI/CP/OM, alle fem felter,
+  cache/checkpoint, Pages og offentlig prognose, før mere køres.
+
+# HISTORISK STATUS – 2026-09-24 – 4.0.481, systemisk DMI-/Copernicus-planlægning
 
 - [x] 4.0.480 merged; normalrun `35939353111` gemte cache/checkpoint,
   deployede 210/673 og bestod 29 operationelle kontroller.

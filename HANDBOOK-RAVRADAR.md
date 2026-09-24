@@ -1,14 +1,25 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.481
+**Håndbogsversion:** 4.0.482
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.481 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.482 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.78 4.0.482 – Fortsæt fra den rigtige gemte vejrpakke
+
+Den første kørsel efter 4.0.481 nåede ikke frem til DMI. Den fandt
+den rigtige, senest gemte private vejrpakke, men et efterfølgende trin
+afviste den på grund af versionsskiftet. Derfor blev ingen nye data
+gemt eller vist. Det er rettet, så begge trin genkender netop den
+samme godkendte pakke, mens fremmede eller ændrede pakker fortsat
+afvises. Næste normale kørsel skal vise, at DMI og Copernicus får
+arbejdet videre, og at vejrhullerne faktisk mindskes. Vi kalder ikke
+vejrdatasættet komplet endnu.
 
 ## 89.77 4.0.481 – Giv hele prognosen og Copernicus en reel tur
 

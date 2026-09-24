@@ -1,4 +1,15 @@
-# 2026-09-24 – lokal 4.0.481, kritisk timekø og krypteret kvalitet
+# 2026-09-24 – lokal 4.0.482, samme cachebevis i begge restore-trin
+
+4.0.481/`64599ed4` bestod exact-head-gate `35951509094`, men run
+`35952076841` stoppede før leverandørarbejde. Første beskyttede
+restore hentede og godkendte den seneste 4.0.480-pakke; anden lokale
+bundle-restore afviste dens gamle brede kodehash. Ingen ny cache,
+checkpoint eller Pages. Lokal 4.0.482 genbruger kun eksakt godkendt
+forgænger efter sammenhold af beskyttet kilde og verificeret manifest.
+Måltests grønne, exact-head/live afventer. DMI/CP-virkning og fem
+vejrtype-rester er derfor fortsat åbne. DEC-0252.
+
+# HISTORISK – 2026-09-24 – 4.0.481, kritisk timekø og krypteret kvalitet
 
 4.0.480/`38fa4c27` bestod normalrun `35939353111`: korrekt privat
 cachelineage, beskyttet gemning/checkpoint, 210/673 offentlig runtime,
