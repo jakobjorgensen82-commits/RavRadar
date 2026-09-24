@@ -511,21 +511,12 @@ function componentBracket(items, targetMs, component, options) {
   const componentOptions = component === 'wave'
     ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
     : options;
-  // DKSS stores current, water level and temperature in the same native-hour
-  // rows, although the parameters do not necessarily arrive at the same
-  // hours. An exact row for another parameter must never mask this
-  // component's verified neighbouring samples.
-  const marine = ['current', 'waterLevel', 'waterTemperature'].includes(component);
-  const componentItems = marine
-    ? (items ?? []).filter(item => COMPONENT_FIELD_SET[component]
-      .every(field => finite(item?.[field]) !== null))
-    : items;
-  const bracket = timeBracket(componentItems, targetMs, componentOptions);
+  const bracket = timeBracket(items, targetMs, componentOptions);
   if (sameNativeSeries(bracket, component)) {
     if (component === 'wave' && !safeWaveInterpolation(bracket)) {
       // Retain the existing partial tuple if no complete alternative exists;
       // missing direction must not masquerade as a wholly absent local wave.
-      return safeWaveSeriesBracket(componentItems, targetMs, componentOptions) ?? bracket;
+      return safeWaveSeriesBracket(items, targetMs, componentOptions) ?? bracket;
     }
     return bracket;
   }
@@ -540,9 +531,9 @@ function componentBracket(items, targetMs, component, options) {
       component,
     );
   return component === 'wave'
-    ? safeWaveSeriesBracket(componentItems, targetMs, componentOptions)
+    ? safeWaveSeriesBracket(items, targetMs, componentOptions)
     : windRunSeamOnly
-      ? safeWindSeriesBracket(componentItems, targetMs, component, componentOptions)
+      ? safeWindSeriesBracket(items, targetMs, component, componentOptions)
       : null;
 }
 

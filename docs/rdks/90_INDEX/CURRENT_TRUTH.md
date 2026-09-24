@@ -32,7 +32,10 @@ Lokal 4.0.485 retter aflæsningen og tester den faktiske projektion.
 En separat, før-rettelse-rød reproducer viser desuden, at en ny marin
 DMI-række uden temperatur kunne skygge for gyldige temperaturpunkter
 omkring den time. Timebyggeren filtrerer nu havstrøm, vandstand og
-temperatur hver for sig før sin uændrede tids- og kildekontrol.
+temperatur hver for sig i vejrproducenten, og kun verificerede værdier
+fylder reelle huller. Den låste scoremodel og dens bundling er uændret;
+en direkte ændring af modelbundlen blev forkastet efter exact-head-
+kildegatens fund. Tids- og kildekontrollen er uændret.
 Dette er en konkret mekanisme for den observerede regression; om alle
 274 er løst kræver næste live-normalrun. Kodeændringen ændrer det
 private runtime-fingeraftryk. Begge restore-trin tillader derfor kun

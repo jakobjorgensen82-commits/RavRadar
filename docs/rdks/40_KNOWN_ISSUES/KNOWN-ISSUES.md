@@ -10,7 +10,8 @@
   LIVEBEVIS ÅBENT:** Eksakt 77.395-pars offentlig sammenligning fandt
   274 tidligere gyldige temperaturpar tomme på fire timer. En ny
   strøm-/vandstandsrække uden temperatur kunne skygge for gyldige
-  temperaturmålinger ved timebygning. Komponentvis filtrering retter
+  temperaturmålinger ved timebygning. Komponentvis bygning i
+  vejrproducenten, også for kystdels-staging, retter
   den reproducerede fejl uden bredere tidsgrænse; alle 274 skal
   genmåles efter en normalrun. Kun eksakt 4.0.484 privat forgænger
   tillades i begge restore-trin.

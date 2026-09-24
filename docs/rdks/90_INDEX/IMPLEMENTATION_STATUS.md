@@ -16,8 +16,11 @@
   `publicContext`. Lokal rettelse og regressionstest mod den faktiske
   projektion er grøn.
 - [x] Rød-før/grøn-efter-reproducer for en ny strøm-only-række, der
-  skjulte gyldig DMI-temperatur. Marin timebygning bruger nu egne
-  komponentrækker uden bredere tidsvindue. Begge private restore-trin
+  skjulte gyldig DMI-temperatur. Vejrproducenten bygger nu separate
+  marine komponentrækker for normal drift og kystdels-staging, fylder
+  kun beviste huller og ændrer ikke den låste scoremodel eller
+  tidsvinduet. Den første direkte modelændring blev forkastet, efter
+  at exact-head-kildegaten påviste manglende modelbinding. Begge private restore-trin
   genkender kun den eksakte seneste 4.0.484-generation; syntetiske
   positive og negative tests er grønne.
 - [ ] Afslut dokumentation, RDKS-kontrol, eksakt geodatadiff, én ny

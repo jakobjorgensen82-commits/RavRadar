@@ -15,8 +15,10 @@ En eksakt offentlig sammenligning på 77.395 fælles par fandt desuden
 274 tabte temperaturværdier på fire timer og nul tab for de øvrige
 fire vejrtyper. En ny DMI-række for en anden marin vejrtype kunne
 maskere gyldig temperatur i timebyggeren. En rød-før/grøn-efter-
-reproducer bekræfter kodefejlen; marin komponentudvælgelse er rettet
-uden at udvide tidsvindue eller kildekrav. Den seneste private
+reproducer bekræfter kodefejlen; de marine vejrtyper bygges nu
+separat i vejrproducenten og staging uden at ændre den låste scoremodel,
+tidsvindue eller kildekrav. Den første direkte modelændring blev
+forkastet efter exact-head-kildegaten. Den seneste private
 4.0.484-pakke er eksakt allowlistet i både beskyttet og lokal restore.
 Auditten læser nu den rigtige produktionsform og afviser fortsat
 modstridende rå markør. Næste: exact-head, kode-only, én normalrun

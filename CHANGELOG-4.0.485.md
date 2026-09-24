@@ -13,8 +13,11 @@
   timer; vind, bølger, strøm og vandstand havde nul sådanne tab.
   En reproducerbar fejl i DMI's timebygger viste, at et nyt datapunkt
   for én vejrtype kunne skjule gyldige målinger for en anden. Hver af
-  de tre marine vejrtyper finder nu sine egne datapunkter, mens den
-  eksisterende tidsgrænse og kildekontrol bevares. Livebekræftelse af
+  vejrproducenten bygger nu de tre marine vejrtyper hver for sig, både
+  i normaldrift og kystdelens staging, og fylder kun beviste huller.
+  Den låste scoremodel, tidsgrænse og kildekontrol bevares. En tidligere
+  ændring direkte i modelbundlen blev forkastet efter exact-head-gaten.
+  Livebekræftelse af
   samtlige 274 afventer næste normale kørsel.
 - Ændringen skifter vejrcachens kodefingeraftryk. Begge restore-trin
   accepterer kun den præcise, senest deployede 4.0.484-generation som

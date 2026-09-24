@@ -7,8 +7,10 @@ blev læst fra rå scoreform i stedet for den færdige projektion.
 Eksakt overlap af 115 timer × 673 dele viste 274 tabte gyldige
 temperaturfelter på fire timer, nul tab af øvrige vejrtyper. En ny
 strøm-/vandstandstime kunne blokere DMI-temperaturens egne verificerede
-nabomålinger. 4.0.485 retter både kontrollen og komponentvis
-timeudvælgelse; tidsgrænserne bevares. Præcis seneste 4.0.484-cache
+nabomålinger. 4.0.485 retter kontrollen og bygger de marine
+vejrtyper separat i vejrproducenten og kystdels-staging; den låste
+scoremodel og tidsgrænserne bevares. En direkte modelændring blev
+forkastet efter exact-head-kildegaten. Præcis seneste 4.0.484-cache
 er tilladt som verificeret forgænger i begge restore-trin. Måltests
 grønne; livebevis afventer. Copernicus' `DatasetUpdating` og feltvise
 datamangler består. Cron pauset.

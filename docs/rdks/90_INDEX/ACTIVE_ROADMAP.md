@@ -19,6 +19,11 @@
    offentlig samme-time-fastholdelse inkl. de 274 temperaturpar.
    Start aldrig overlap eller blind oneoff. Cron forbliver pauset til
    gentagen stabil drift.
+7. [ ] Når næste normale vejrkørsel er startet, gennemgå score- og
+   prognosetekster i UI og skriv dem om til forståeligt dagligdansk.
+   Ændr ikke scorematematik, vejrværdier eller modelbinding som led i
+   sprogarbejdet. Gennemgå resultatet på desktop og mobil, mens
+   vejrkørslen fortsætter og bliver fulgt til cachegemning og deploy.
 
 # Aktivt roadmap – 2026-09-24, 4.0.482 fuldere og stabilt vejr
 

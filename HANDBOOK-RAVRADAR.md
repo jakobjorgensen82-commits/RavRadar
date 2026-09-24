@@ -32,9 +32,11 @@ En direkte sammenligning af samme 77.395 kystdel/time-par i to
 offentlige prognoser viste også 274 mistede temperaturværdier på fire
 timer. Årsagen kan genskabes: Kom der en ny strøm- eller
 vandstandsmåling på et tidspunkt uden temperatur, kunne den stå i
-vejen for gyldige temperaturmålinger omkring tidspunktet. DMI's
-timebygger finder nu målingerne særskilt for havstrøm, vandstand og
-vandtemperatur. Den udfylder ikke større tidsafstande end før og
+vejen for gyldige temperaturmålinger omkring tidspunktet. Vejr-
+producenten bygger nu havstrøm, vandstand og vandtemperatur hver for
+sig og udfylder kun huller med verificerede værdier. Det gælder også
+kystdelenes private staging. Den låste scoremodel er uændret. Rettelsen
+udfylder ikke større tidsafstande end før og
 opfinder ikke målinger. Den seneste private cache genbruges kun, når
 dens præcise identitet og indhold består kontrollen i begge trin.
 Først en ny normal kørsel kan vise, om alle 274 tab er væk i drift.

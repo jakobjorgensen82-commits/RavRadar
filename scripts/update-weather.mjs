@@ -33,7 +33,10 @@ import {
   interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
-import { recoverDmiMarineRunSeamHours } from './lib/dmi-marine-run-seam-recovery.mjs';
+import {
+  buildDmiMarineComponentwiseHourly,
+  recoverDmiMarineRunSeamHours,
+} from './lib/dmi-marine-run-seam-recovery.mjs';
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
@@ -1194,7 +1197,10 @@ function bulkZoneToForecastRecord(
     .some(key => row[key] !== null));
   const sourceStrideHours = ravScoreNumber(bulkCache?.timeStrideHours);
   const sourceCadenceMinutes = (sourceStrideHours ?? 3) * 60;
-  const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, startAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
+  const built = buildDmiMarineComponentwiseHourly({
+    wind, windTail, waves, ocean, generatedAt, startAt,
+    hours: DMI_FORECAST_HOURS, sourceCadenceMinutes, expectedIdentity: dmiIdentity,
+  });
   const currentAvailable = ocean.some(item => ravScoreNumber(item['current-u']) !== null && ravScoreNumber(item['current-v']) !== null);
   const marine = ocean.some(item => ravScoreNumber(item['sea-mean-deviation']) !== null && ravScoreNumber(item['current-u']) !== null && ravScoreNumber(item['current-v']) !== null);
   const windAvailable = wind.some(item => ravScoreNumber(item['wind-speed-10m']) !== null && ravScoreNumber(item['wind-dir-10m']) !== null);
