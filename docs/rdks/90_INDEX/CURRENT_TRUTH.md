@@ -1,4 +1,4 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og strømaudit
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
 
 4.0.484/PR #446 blev merged som `eec1f0d8`; kode-only
 `35971580803` bevarede præcis den offentlige 04:00-pakke.
@@ -15,8 +15,12 @@ nul: status `IN_PROGRESS`, 24 genforsøgelige forsøg, 50.328 behov
 tilbage. Dens operationelle strømled bevarede 3.120 valgte par;
 efter hele kæden manglede 5.649 af 79.414 strømpar i 57 dele.
 Copernicus-loggen viste gentagne `DatasetUpdatingDeferred` fra både
-Baltic NEMO og AMM15. Tallene fra 04:00 og 07:00 er forskudte
-vinduer, ikke en eksakt overlapssammenligning eller komplethedsbevis.
+Baltic NEMO og AMM15. Rå totaler fra 04:00 og 07:00 er forskudte
+vinduer og kan ikke bruges som direkte fremgang. Den efterfølgende
+eksakte sammenligning på 115 fælles timer × 673 dele = 77.395 par
+viste nul gyldig→tom for vind, bølger, strøm og vandstand, men 274
+gyldig→tom for vandtemperatur på fire timer (214 dele, 86 zoner).
+Det er en reel offentlig regression, ikke blot en forskudt horisont.
 
 Én af 54 diagnostiske kontroller, den rumlige strømaudit, fejlede på
 præcis otte ejer-godkendte Limfjord-holds. Producentens sikre spor
@@ -24,11 +28,18 @@ viste otte `NATIVE_CADENCE_HOLD`, alle med fundet ægte reference og
 tilgængelig score. Audit læste `publicContext` fra den rå score,
 men `buildIntegratedPartPublicProjection` gemmer markøren som
 topniveau-`currentTransition`; derfor så audit dem som MISSING.
-Lokal 4.0.485 retter kun aflæsningen og tester den faktiske
-projektion. Ingen ændring af model, tre-timersregel, data, geometri
-eller leverandør. Måltest er grøn; exact-head og kode-only levering
-afventer. Cron forbliver pauset; ingen ny normalrun ved uafklaret
-Copernicus-/reststagnation.
+Lokal 4.0.485 retter aflæsningen og tester den faktiske projektion.
+En separat, før-rettelse-rød reproducer viser desuden, at en ny marin
+DMI-række uden temperatur kunne skygge for gyldige temperaturpunkter
+omkring den time. Timebyggeren filtrerer nu havstrøm, vandstand og
+temperatur hver for sig før sin uændrede tids- og kildekontrol.
+Dette er en konkret mekanisme for den observerede regression; om alle
+274 er løst kræver næste live-normalrun. Kodeændringen ændrer det
+private runtime-fingeraftryk. Begge restore-trin tillader derfor kun
+den eksakte 4.0.484-kilde `eec1f0d8`/`rr-20260924084821-210`, mens
+modelbinding, continuation, public projection og arkivkontrol består.
+Måltests grønne; exact-head og kode-only levering afventer. Cron
+forbliver pauset. Ingen overlappende eller blind vejrkørsel.
 
 # NYESTE SANDHED – 2026-09-24 – lokal 4.0.482, cachefortsættelse i begge trin
 

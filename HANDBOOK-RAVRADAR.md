@@ -10,7 +10,7 @@ deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.81 4.0.485 – Kontrol af de otte Limfjordskyster
+## 89.81 4.0.485 – Kontrol af Limfjord og hver vejrtypes egne timer
 
 Normalrun `35972581225` gemte og viste en nyere vejrpakke. Den
 offentlige side har fortsat prognoser, men ikke komplette vejrdata.
@@ -27,6 +27,17 @@ fra det separate komponentled i denne kørsel. Open-Meteo udfyldte
 nogle huller, men vind, bølger, vandstand, temperatur og havstrøm
 har fortsat hver deres rest. Den automatiske tidsplan er pauset,
 indtil den normale drift og resternes årsager er afklaret.
+
+En direkte sammenligning af samme 77.395 kystdel/time-par i to
+offentlige prognoser viste også 274 mistede temperaturværdier på fire
+timer. Årsagen kan genskabes: Kom der en ny strøm- eller
+vandstandsmåling på et tidspunkt uden temperatur, kunne den stå i
+vejen for gyldige temperaturmålinger omkring tidspunktet. DMI's
+timebygger finder nu målingerne særskilt for havstrøm, vandstand og
+vandtemperatur. Den udfylder ikke større tidsafstande end før og
+opfinder ikke målinger. Den seneste private cache genbruges kun, når
+dens præcise identitet og indhold består kontrollen i begge trin.
+Først en ny normal kørsel kan vise, om alle 274 tab er væk i drift.
 
 ## 89.80 4.0.484 – Se hvorfor vejrhuller ikke bliver fyldt
 

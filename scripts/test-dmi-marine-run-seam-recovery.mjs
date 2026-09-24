@@ -93,4 +93,41 @@ const distantRecovered = repair([old, distant]);
 assert.equal(distantRecovered[2].currentUMps, null);
 assert.equal(distantRecovered[2].waterLevelCm, null,
   'the existing 95-minute edge limit must not be extended');
+
+// Native DKSS fields can arrive at different valid times. A current-only
+// sample between two verified temperature samples must not mask the
+// temperature pair when the public hourly forecast is materialized.
+const sameRunBefore = native(0, -6, 0.06, 0.04, 0.01, 13.8);
+const sameRunAfter = native(3, -6, 0.09, 0.06, 0.02, 14.1);
+const currentOnly = {
+  step: at(1), 'current-u': 0.05, 'current-v': 0.01,
+  provenance: { current: source('current', 1, -6) },
+};
+const oldTemperature = build([sameRunBefore, sameRunAfter])[1];
+const newTemperature = build([sameRunBefore, currentOnly, sameRunAfter])[1];
+assert.equal(oldTemperature.waterTemperatureC, 13.9);
+assert.equal(newTemperature.waterTemperatureC, oldTemperature.waterTemperatureC,
+  'a new current-only native row must not erase an unchanged valid temperature bracket');
+assert.ok(verifiedDmiForecastSource(
+  newTemperature.sources.waterTemperature, 'waterTemperature', at(1), identity,
+));
+const temperatureOnly = {
+  step: at(1), 'water-temperature': 13.9,
+  provenance: { waterTemperature: source('waterTemperature', 1, -6) },
+};
+const newCurrentAndLevel = build([sameRunBefore, temperatureOnly, sameRunAfter])[1];
+assert.equal(newCurrentAndLevel.currentUMps, oldTemperature.currentUMps,
+  'a new temperature-only native row must not mask a verified current bracket');
+assert.equal(newCurrentAndLevel.waterLevelCm, oldTemperature.waterLevelCm,
+  'a new temperature-only native row must not mask a verified water-level bracket');
+for (const component of ['current', 'waterLevel']) {
+  assert.ok(verifiedDmiForecastSource(
+    newCurrentAndLevel.sources[component], component, at(1), identity,
+  ));
+}
+const wideGap = build([
+  sameRunBefore, currentOnly, native(6, -6, 0.12, 0.06, 0.02, 14.4),
+])[1];
+assert.equal(wideGap.waterTemperatureC, null,
+  'component filtering must not widen the verified interpolation window');
 console.log('DMI marine run-seam weather-producer recovery passes.');

@@ -71,6 +71,18 @@ export const WEATHER_ROTATION_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// 4.0.485 changes only the hourly selection of already verified marine
+// components. The last deployed 4.0.484 generation is the sole approved
+// donor; its immutable archive and payload hashes are still checked in full.
+export const MARINE_COMPONENT_PREDECESSOR = Object.freeze({
+  sourceHead: 'eec1f0d8d56cc00d74c75a087efcb36191a56832',
+  datasetId: 'rr-20260924084821-210',
+  productionReferenceAt: '2026-09-24T07:00:00.000Z',
+  fullRuntimeContractSha256: 'd86a0b1b9e18ee1b3dc9cff56d85b5939f37dadc33b6c57a8fcca65491160640',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
@@ -95,6 +107,17 @@ export function isExactDmiMarineSeamPredecessor(descriptor, expected) {
 
 export function isExactWeatherRotationPredecessor(descriptor, expected) {
   return isExactDmiPredecessor(descriptor, expected, WEATHER_ROTATION_PREDECESSOR);
+}
+
+export function isExactMarineComponentPredecessor(descriptor, expected) {
+  return isExactDmiPredecessor(descriptor, expected, MARINE_COMPONENT_PREDECESSOR);
+}
+
+export function isApprovedExactWeatherPredecessor(descriptor, expected) {
+  return isExactDmiSchedulerPredecessor(descriptor, expected)
+    || isExactDmiMarineSeamPredecessor(descriptor, expected)
+    || isExactWeatherRotationPredecessor(descriptor, expected)
+    || isExactMarineComponentPredecessor(descriptor, expected);
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1545,9 +1568,7 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
-      const exactDmiPredecessor = isExactDmiSchedulerPredecessor(descriptor, expected)
-        || isExactDmiMarineSeamPredecessor(descriptor, expected)
-        || isExactWeatherRotationPredecessor(descriptor, expected);
+      const exactDmiPredecessor = isApprovedExactWeatherPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
         || (!same(descriptor.contractHashes, expected.contractHashes)
           && !exactDmiPredecessor)) {

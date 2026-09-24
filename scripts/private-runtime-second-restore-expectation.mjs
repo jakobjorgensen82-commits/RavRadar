@@ -4,9 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle.mjs';
 import {
-  isExactDmiSchedulerPredecessor,
-  isExactDmiMarineSeamPredecessor,
-  isExactWeatherRotationPredecessor,
+  isApprovedExactWeatherPredecessor,
 } from './protected-private-production-runtime.mjs';
 
 const same = (left, right) => canonicalPrivateRuntimeJson(left) === canonicalPrivateRuntimeJson(right);
@@ -27,11 +25,7 @@ export function secondRestoreExpectation({ expected, source, manifest }) {
     throw new Error('Second restore source contradicts the authenticated bundle');
   }
   if (same(manifest.contractHashes, expected.contractHashes)) return expected;
-  if (!(
-    isExactDmiSchedulerPredecessor(source, expected)
-    || isExactDmiMarineSeamPredecessor(source, expected)
-    || isExactWeatherRotationPredecessor(source, expected)
-  )) {
+  if (!isApprovedExactWeatherPredecessor(source, expected)) {
     throw new Error('Second restore source is not an approved exact predecessor');
   }
   return { ...expected, contractHashes: manifest.contractHashes };

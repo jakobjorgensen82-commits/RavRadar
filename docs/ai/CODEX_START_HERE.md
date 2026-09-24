@@ -3,10 +3,15 @@
 Normalrun `35972581225` på 4.0.484 gemte og deployede 07:00-pakken.
 Én rumlig strømaudit fejllæste otte autoriserede Limfjord-holds,
 fordi den søgte `currentTransition` under rå `publicContext` frem for
-produktionsprojektionens topniveau. Lokal 4.0.485 retter alene
-auditten; ingen score- eller vejrændring. Copernicus meldte
-datasætopdatering og gav nul komponenttilvækst; feltvise vejrhuller
-og præcist cacheoverlap er åbne. Cron pauset.
+produktionsprojektionens topniveau. Eksakt 115×673-overlap af to
+offentlige prognoser fandt 274 gyldig→tom for vandtemperatur, nul
+for de øvrige fire felter. En før-rettelse-rød reproducer viste, at en
+ny marin time uden temperatur kunne skygge for gyldig temperatur.
+Lokal 4.0.485 retter både audit og komponentvis DMI-timeudvælgelse
+uden bredere tidsgrænse. Kun den eksakte seneste private 4.0.484-cache
+er tilladt som forgænger i begge restore-trin. Copernicus meldte
+datasætopdatering og gav nul komponenttilvækst; feltvise vejrrester
+og livebekræftelse er åbne. Cron pauset.
 
 # AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.482 efter anden-restore-fejl
 

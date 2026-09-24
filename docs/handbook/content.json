@@ -7,9 +7,9 @@
     {
       "id": "native-hold-production-audit-4-0-485",
       "chapter": "89.81",
-      "title": "Kontrollen skal kende den færdige Limfjord-prognose",
-      "summary": "Otte godkendte korte fastholdelser blev fejlagtigt afvist af en kontrol, ikke af scoremodellen.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En almindelig kørsel gemte nyere vejr og opdaterede hjemmesiden. En af kontrollerne kunne dog ikke genkende otte lovlige Limfjord-fastholdelser, fordi den læste et felt på dets gamle plads.</div><p>Kontrollen bruger nu samme form som den færdige prognose. Den kræver stadig en virkelig DMI-måling, en præcis godkendt kystdel og højst tre timers fastholdelse. Timer uden ny måling bliver hverken nye strømvektorer eller nye transportpoint.</p><p>Copernicus svarede, at dets datasæt var under opdatering, så bølge- og temperaturleddet tilføjede ingen nye godkendte værdier denne gang. Vejrdata er fortsat ufuldstændige, og den automatiske plan er pauset.</p>"
+      "title": "Kontrol af Limfjord og hver vejrtypes egne timer",
+      "summary": "Otte godkendte korte fastholdelser blev fejlagtigt afvist af en kontrol; en anden fejl kunne skjule gyldig vandtemperatur.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En almindelig kørsel gemte nyere vejr og opdaterede hjemmesiden. En kontrol kunne ikke genkende otte lovlige Limfjord-fastholdelser, fordi den læste et felt på dets gamle plads. På samme sted og tidspunkt forsvandt desuden 274 tidligere gyldige temperaturværdier fra fire prognosetimer.</div><p>Kontrollen bruger nu samme form som den færdige prognose. Den kræver stadig en virkelig DMI-måling, den godkendte kystdel og højst tre timers fastholdelse. DMI's timebygger finder målinger særskilt for havstrøm, vandstand og vandtemperatur, så en måling af én vejrtype ikke skjuler en anden. Tidsgrænser og kildekrav er uændrede. Den nyeste private cache kan kun genbruges med præcis identitet og fuld indholdskontrol. En ny normal kørsel skal stadig bekræfte resultatet på hjemmesiden.</p><p>Copernicus svarede, at dets datasæt var under opdatering, så bølge- og temperaturleddet tilføjede ingen nye godkendte værdier denne gang. Vejrdata er fortsat ufuldstændige, og den automatiske plan er pauset.</p>"
     },
     {
       "id": "weather-component-safe-status-4-0-484",

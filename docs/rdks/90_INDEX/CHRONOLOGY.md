@@ -1,11 +1,17 @@
-## 2026-09-24 – 4.0.485 faktisk projektion og åbne vejrrester
+## 2026-09-24 – 4.0.485 faktisk projektion og marine timer
 
 4.0.484/PR #446 blev merged. Normalrun `35972581225` gemte
 `rr-20260924084821-210` og deployede 07:00-prognosen. Én af 54
 diagnostiske kontroller fejlede, fordi otte tilladte Limfjord-holds
 blev læst fra rå scoreform i stedet for den færdige projektion.
-4.0.485 retter kun kontrollen og har grøn måltest. Copernicus'
-`DatasetUpdating` og feltvise datamangler består. Cron pauset.
+Eksakt overlap af 115 timer × 673 dele viste 274 tabte gyldige
+temperaturfelter på fire timer, nul tab af øvrige vejrtyper. En ny
+strøm-/vandstandstime kunne blokere DMI-temperaturens egne verificerede
+nabomålinger. 4.0.485 retter både kontrollen og komponentvis
+timeudvælgelse; tidsgrænserne bevares. Præcis seneste 4.0.484-cache
+er tilladt som verificeret forgænger i begge restore-trin. Måltests
+grønne; livebevis afventer. Copernicus' `DatasetUpdating` og feltvise
+datamangler består. Cron pauset.
 
 ## 2026-09-24 – 4.0.482 lokal rettelse af dobbelt cache-restore
 

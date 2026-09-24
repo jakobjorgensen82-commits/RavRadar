@@ -2,18 +2,23 @@
 
 1. [x] 4.0.484/PR #446 leveret; normalrun `35972581225` gemte og
    deployede 07:00-pakken. Den offentlige side svarer med 210/673.
-2. [x] Afklar den ene diagnostiske fejl: otte godkendte Limfjord-holds
-   blev kun fejllæst af auditten. 4.0.485 retter produktionsformen
-   med måltest uden score-/vejrændring.
-3. [ ] Lever auditrettelsen med én exact-head-kildegate og kode-only-
+2. [x] Afklar den diagnostiske fejl: otte godkendte Limfjord-holds
+   blev kun fejllæst af auditten. 4.0.485 retter produktionsformen.
+3. [x] Mål præcist 115×673-overlap: 274 temperaturtab, nul tab for de
+   andre fire felter. En rød-før/grøn-efter-reproducer viser, at en
+   anden marin vejrtypes nye time kunne skjule gyldig DMI-temperatur.
+   Ret komponentvis timeudvælgelse og bind præcis den seneste private
+   4.0.484-cache i begge restore-trin.
+4. [ ] Lever 4.0.485 med én ny exact-head-kildegate og kode-only-
    deploy; ingen ny vejrhentning alene for kontrollen.
-4. [ ] Copernicus meldte gentaget datasætopdatering, komponenten gav
+5. [ ] Copernicus meldte gentaget datasætopdatering, komponenten gav
    nul; undersøg tilgængelighed og gemt fremgang før næste run.
    Analyser Open-Meteos 57 vedvarende strømdele og de fire øvrige
    vejrtypers rester separat, inkl. DMI-only-vandstand.
-5. [ ] Mål præcise fælles sted/time-overlap og cachelineage for hver
-   vejrtype før yderligere normal drift. Start aldrig overlap eller
-   blind oneoff. Cron forbliver pauset til gentagen stabil drift.
+6. [ ] Én normalrun: bevis præcis private cachelineage, felttal og
+   offentlig samme-time-fastholdelse inkl. de 274 temperaturpar.
+   Start aldrig overlap eller blind oneoff. Cron forbliver pauset til
+   gentagen stabil drift.
 
 # Aktivt roadmap – 2026-09-24, 4.0.482 fuldere og stabilt vejr
 

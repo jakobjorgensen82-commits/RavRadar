@@ -1,4 +1,4 @@
-# 2026-09-24 – lokal 4.0.485, faktisk produktionsprojektion
+# 2026-09-24 – lokal 4.0.485, faktisk projektion og marine timer
 
 - [x] 4.0.484/PR #446 merged og kode-only `35971580803` grønt.
 - [x] Normalrun `35972581225` gennemførte leverandører, beskyttet
@@ -7,16 +7,25 @@
 - [x] Feltvis samme-mål-rapport: Open-Meteo gav 2.806 vind, 800
   bølger og 851 temperatur; Copernicus-komponenten gav nul ved
   `DatasetUpdating` og 24 genforsøgelige forsøg. De fire rester
-  og 5.649 strømpar er åbne. Forskudte runs er ikke eksakt sammenlignet.
+  og 5.649 strømpar er åbne.
+- [x] Eksakt offentlig 115×673-overlap: nul tabte gyldige vind-,
+  bølge-, strøm- og vandstandsfelter; 274 temperaturfelter forsvandt
+  på fire timer. 214 kystdele/86 zoner berørt.
 - [x] Påvist auditfejl: otte tilladte `NATIVE_CADENCE_HOLD` ligger på
   topniveau i produktionsprojektionen, ikke kun under rå
   `publicContext`. Lokal rettelse og regressionstest mod den faktiske
   projektion er grøn.
-- [ ] Version/RDKS-kontrol, eksakt geodatadiff, én exact-head-kildegate,
-  PR/merge og kode-only-deploy uden leverandørkald.
+- [x] Rød-før/grøn-efter-reproducer for en ny strøm-only-række, der
+  skjulte gyldig DMI-temperatur. Marin timebygning bruger nu egne
+  komponentrækker uden bredere tidsvindue. Begge private restore-trin
+  genkender kun den eksakte seneste 4.0.484-generation; syntetiske
+  positive og negative tests er grønne.
+- [ ] Afslut dokumentation, RDKS-kontrol, eksakt geodatadiff, én ny
+  exact-head-kildegate på ændret PR, merge og kode-only-deploy.
 - [ ] Afklar Copernicus-opdatering og resthuller, mål eksakt overlap
-  mellem cachegenerationer, derefter næste ikke-overlappende normalrun.
-  Cron er pauset; ingen påstand om komplethed.
+  og cachelineage, derefter én ikke-overlappende normalrun, som skal
+  bevise ingen tab af tidligere gyldig temperatur. Cron pauset;
+  ingen påstand om komplethed.
 
 # 2026-09-24 – lokal 4.0.482, anden private-cache-restore
 

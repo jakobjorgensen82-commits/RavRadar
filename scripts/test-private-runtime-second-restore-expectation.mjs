@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
+import { MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
+import { privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
 
 const binding = ravScoreModelBinding();
@@ -40,6 +41,42 @@ assert.equal(selected.minimumGeneratedAt, expected.minimumGeneratedAt);
 assert.equal(secondRestoreExpectation({
   expected: { ...expected, contractHashes: oldHashes }, source, manifest,
 }).contractHashes, oldHashes);
+
+const marineOldHashes = {
+  continuationStateContractSha256: MARINE_COMPONENT_PREDECESSOR.continuationStateContractSha256,
+  fullRuntimeContractSha256: MARINE_COMPONENT_PREDECESSOR.fullRuntimeContractSha256,
+  publicProjectionContractSha256: MARINE_COMPONENT_PREDECESSOR.publicProjectionContractSha256,
+};
+const marineSource = {
+  ...MARINE_COMPONENT_PREDECESSOR,
+  generatedAt: '2026-09-24T08:48:21.314Z',
+  bundleContentSha256: 'b'.repeat(64),
+  modelBinding: binding,
+  contractHashes: marineOldHashes,
+};
+const marineManifest = {
+  datasetId: marineSource.datasetId,
+  productionReferenceAt: marineSource.productionReferenceAt,
+  generatedAt: marineSource.generatedAt,
+  bundleContentSha256: marineSource.bundleContentSha256,
+  modelBinding: binding,
+  contractHashes: marineOldHashes,
+};
+const marineExpected = {
+  ...expected,
+  contractHashes: await privateRuntimeContractHashes(),
+  targetReferenceAt: '2026-09-24T10:00:00.000Z',
+};
+assert.notEqual(marineExpected.contractHashes.fullRuntimeContractSha256,
+  marineOldHashes.fullRuntimeContractSha256);
+assert.deepEqual(secondRestoreExpectation({
+  expected: marineExpected, source: marineSource, manifest: marineManifest,
+}).contractHashes, marineOldHashes);
+assert.throws(() => secondRestoreExpectation({
+  expected: marineExpected,
+  source: { ...marineSource, datasetId: 'rr-other-generation' },
+  manifest: marineManifest,
+}));
 
 for (const changed of [
   { source: { ...source, sourceHead: 'c'.repeat(40) } },

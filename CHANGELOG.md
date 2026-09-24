@@ -2281,3 +2281,15 @@ objektform. Kontrollen følger nu den faktiske produktionsprojektion og
 er dækket af en måltest. Ingen score, kildeprioritet, vejrdata eller
 tretimersregel ændres. Copernicus' `DatasetUpdating` og de feltvise
 vejrrester er stadig åbne. Se `CHANGELOG-4.0.485.md`.
+## 4.0.485 – separate DMI-vejrtyper og korrekt Limfjord-kontrol (2026-09-24)
+
+To seneste offentlige prognoser blev sammenlignet på præcis de samme
+77.395 sted/time-par. 274 gyldige temperaturværdier forsvandt, mens
+ingen gyldige vind-, bølge-, strøm- eller vandstandsværdier forsvandt.
+En måltest genskabte en fejl, hvor en ny DMI-værdi for en anden
+vejrtype skjulte en gyldig temperatur mellem egne målinger. Hver marin
+vejrtype bruger nu kun sine egne tidspunkter; tids- og kildekrav er
+uændrede. Den eksakte sidste private cache er tilladt som forgænger i
+begge restore-trin. Desuden læser strømauditten otte godkendte
+Limfjord-fastholdelser fra den faktiske produktionsform. Livebevis
+afventer. Se `CHANGELOG-4.0.485.md`.
