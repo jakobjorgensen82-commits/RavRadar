@@ -5,8 +5,8 @@
 - [x] Sammenlignet præcist fælles 113×673-positioner mellem de sidste
   to offentlige pakker. Isoleret 22/41/41 tabte strøm/vandstand/
   temperatur ved én Limfjordstime; nul tab af vind og bølger.
-- [x] Rettet lokal DMI-udledning ved bevist modelrunskant uden at udvide
-  tidsgrænse eller blande native serier. Eksakt 4.0.479-forgængerbro
+- [x] Rettet lokal vejrproducent ved bevist DMI-modelrunskant uden at
+  udvide tidsgrænse eller ændre scorebinding. Eksakt 4.0.479-forgængerbro
   og målrettede tests er lokale.
 - [ ] Version/RDKS, exact-head sourcegate, PR/merge og live normalrun.
 - [ ] Kontroller alle fem vejrtype-rester, leverandørandele, korrekt

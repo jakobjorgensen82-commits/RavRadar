@@ -33,6 +33,7 @@ import {
   interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
+import { recoverDmiMarineRunSeamHours } from './lib/dmi-marine-run-seam-recovery.mjs';
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
@@ -1203,8 +1204,12 @@ function bulkZoneToForecastRecord(
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
   if (!marine && !windAvailable && !windTailAvailable && !waveAvailable
     && !materializeMissingHorizon) return null;
+  const marineContinuousHourly = recoverDmiMarineRunSeamHours({
+    hourly: built.hourly, ocean, generatedAt, startAt,
+    sourceCadenceMinutes, expectedIdentity: dmiIdentity,
+  });
   const mergedDmiHourly = mergeHourlyPreferDmi(
-    built.hourly,
+    marineContinuousHourly,
     compatiblePrevious?.hourly ?? [],
     { generatedAt, startAt, expectedIdentity: dmiIdentity },
   );

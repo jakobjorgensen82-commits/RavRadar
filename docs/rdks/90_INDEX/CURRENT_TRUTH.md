@@ -10,7 +10,8 @@ positioner, men havstrøm 22, DMI-only-vandstand 41 og temperatur 41.
 Alle tab lå ved `2026-09-25T07Z` i Limfjorden: en gammel, stadig
 gyldig DMI-native 06-værdi blev tabt, da en nyere modelkørsel bidrog
 kl. 09. Lokal 4.0.480 reparerer kun denne modelrunskant med gammel
-tidsgrænse og uændret kildebevis. En eksakt bro til 4.0.479's aktuelle
+tidsgrænse og uændret kildebevis i vejrproducenten. Scoremodellens
+binding er uændret. En eksakt bro til 4.0.479's aktuelle
 private generation er måltestet; produktion afventer. DEC-0250.
 
 Sidste runs rest pr. 79.414 positioner var vind 9.073, bølger 5.352,

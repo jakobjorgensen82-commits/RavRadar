@@ -90,6 +90,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/ravscore-recovery-replay.mjs',
     'scripts/lib/ravscore-sampling-context.mjs',
     'scripts/lib/dmi-forecast-store.mjs',
+    'scripts/lib/dmi-marine-run-seam-recovery.mjs',
     'scripts/lib/weather-component-selection.mjs',
     'scripts/lib/weather-component-runtime.mjs',
     'scripts/lib/weather-component-needs.mjs',

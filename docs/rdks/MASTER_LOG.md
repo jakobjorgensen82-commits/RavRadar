@@ -6,8 +6,9 @@ Eksakt 113×673-sammenligning med forrige deploy viste nul tab af
 vind/bølger og 22/41/41 tabte strøm/vandstand/temperatur ved én
 Limfjordstime. Den gamle 06-DMI-native værdi var endnu gyldig, men
 et nyt 09-modelrun skabte en kant, hvor 07 blev MISSING. Lokal
-4.0.480 bevarer samme native serie inden for oprindelig 95-minutters-
-grænse og fuldt proveniensbevis; anden grid/dybde/run-blanding
+4.0.480 bevarer samme native serie i vejrproducenten inden for
+oprindelig 95-minutters-grænse og fuldt proveniensbevis. Den
+67-filers scoremodelbinding ændres ikke; anden grid/dybde/run-blanding
 forbliver afvist. Kun den eksakte 4.0.479-private generation må
 genbruges over den ændrede producentfingerprint. Måltests grønne;
 CI/merge/livebevis mangler. Leverandørhuller består. DEC-0250.

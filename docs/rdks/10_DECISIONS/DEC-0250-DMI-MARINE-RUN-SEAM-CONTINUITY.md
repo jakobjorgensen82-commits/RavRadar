@@ -20,14 +20,18 @@ afviste korrekt interpolation mellem dem og prøvede ikke længere den
 stadig tidsmæssigt gyldige 06-kilde alene.
 
 Ved *kun* et bevist skift mellem ellers identiske DMI-native serier
-må hvert af felterne strøm, vandstand og overfladetemperatur nu vælge
-sin egen gamle eller nye native serie inden for den uændrede 95-minutters
-kantgrænse. Hver valgt værdi beholder eget modelrun, kilde, celle,
+må vejrbygningen for hvert af felterne strøm, vandstand og
+overfladetemperatur prøve den gamle og nye modelkørsel hver for sig.
+Kun en komplet, selvstændigt verificeret `nearest-edge`-værdi inden
+for den uændrede 95-minutters grænse udfylder et tidligere tomt felt.
+Hver valgt værdi beholder eget modelrun, kilde, celle,
 vertikallag, native tidspunkt og eksisterende proveniensvalidering.
 Der interpoleres aldrig mellem modelruns; forskellig celle, dybde,
 samplingskontekst eller længere afstand i tid forbliver `MISSING`.
 Bølgereglen, DMI-first, Copernicus/Open-Meteo-reserver og DMI-only-
-vandstand ændres ikke. Det er ikke den særskilte regionale Limfjord-
+vandstand ændres ikke. Den delte scoremodel-adapter og dens 67-filers
+modelbinding er uændret; rettelsen ligger i vejrproducenten og
+kontrolleres i både normal- og oneoff-indgangen. Det er ikke den særskilte regionale Limfjord-
 fastholdelse og skaber ingen ny native måling.
 
 Kildeændringen ville normalt afvise den seneste private pakke, fordi
