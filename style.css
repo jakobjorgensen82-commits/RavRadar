@@ -80,6 +80,7 @@ footer p { margin: 4px 0; }
 .rank { font-weight: 800; color: var(--muted); text-align: center; }
 .ranking-item strong, .ranking-item small { display: block; }
 .ranking-item small { color: var(--muted); margin-top: 2px; }
+.ranking-item .ranking-best-place, .national-zone-row .ranking-best-place { color: #36515b; font-size: .78rem; font-weight: 600; }
 .rank-score { min-width: 38px; padding: 8px 4px; border-radius: 9px; color: white; text-align: center; background: var(--unavailable); }
 .rank-score.good { background: var(--good); }.rank-score.fair { background: var(--fair); }.rank-score.weak { background: var(--weak); }.rank-score.poor { background: var(--poor); }
 .ranking-empty { color: var(--muted); }

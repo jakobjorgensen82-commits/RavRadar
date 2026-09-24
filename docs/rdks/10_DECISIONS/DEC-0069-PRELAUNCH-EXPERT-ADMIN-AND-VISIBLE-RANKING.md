@@ -40,6 +40,10 @@ Håndbogens nyeste afsnit beskrev Candidate G korrekt, men arbejdsplanen, kodeka
 
 Den foreløbige idé om at gøre bedste enkeltstræknings RavScore til primær sortering blev forkastet efter ejerens præcisering, fordi den ville genindføre flere lotterilodder for store områder. DEC-0049 bevares fuldt; i stedet gøres den hidtil skjulte områdescore synlig.
 
+## Præcisering 2026-09-24 – forklar begge tal
+
+Ejeren har godkendt, at det store tal i **Bedste områder** fortsat er den nuværende områdescore, mens **Bedste sted** og dets uændrede lokale RavScore vises mindre under områdenavnet. Den godkendte indledning er: “Et område kan have ét rigtig godt sted, selvom resten er mindre godt. Kortet viser det bedste sted. Denne liste vurderer hele området. Derfor kan tallene være forskellige.” Femdøgnslisten bruger tilsvarende tekst om dagens bedste sted, ikke om det aktuelle kort. Rangering, vejrdata og lokale scorer ændres ikke.
+
 
 ## Produktionsbevis
 

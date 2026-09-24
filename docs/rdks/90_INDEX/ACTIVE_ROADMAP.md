@@ -3159,3 +3159,18 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    Derefter én normal vedligeholdelse med før/efter for hver vejrtype,
    DMI/CP/OM, historik, resthuller og cachelineage.
 5. [ ] Bevis gentaget selvkørende normaldrift før cron genaktiveres.
+# Aktivt roadmap – 2026-09-24, 4.0.483 UI uden vejrrisiko
+
+1. [x] 4.0.482 på main; normalrun `35954069186` sluttede grønt med
+   DMI, Copernicus, Open-Meteo, cachegemning og Pages.
+2. [ ] Mål eksakt før/efter på fælles mål for vind, bølger, havstrøm,
+   DMI-only-vandstand og temperatur samt leverandørandele og cachelineage.
+   Stop nye runs ved stagnation eller datatab; cron er pauset.
+3. [x] Implementér kun den godkendte tydelige visning: stor
+   områdescore som nu, mindre bedste-sted-score og enkel forklaring.
+4. [ ] Bestå målrettede UI-/sprog- og versionskontroller, exact-head
+   CI, merge og offentlig desktop-/mobilkontrol uden en unødvendig
+   ny vejrindsamling alene for denne UI-ændring.
+5. [ ] Genoptag først kontrollerede normale kørsler, når feltvis
+   cachefremgang er afklaret; ingen blind oneoff. Resten af roadmap
+   vurderes, når vejrhentningen er pålidelig.
