@@ -5168,3 +5168,15 @@ som nr. 4. Tallene følger to aftalte scorer, men forklaringen var for
 svær. Ejeren godkendte en enkel tekst og mindre “Bedste sted”-tal i
 begge top-5-lister, uden at ændre områdescoren eller sorteringen.
 Måltests er lokalt grønne; exact-head/live UI afventer.
+# 2026-09-24 – lokal 4.0.484, årsagstal uden vejrændring
+
+4.0.482-normalrun `35954069186` gemte og deployede pakken
+`rr-20260924045351-210`. 4.0.483/PR #445 blev derefter merged som
+`b2518a7a`, og kode-only `35967586655` viste den nye rangliste på
+den offentlige desktopside uden ny vejrhentning. Copernicus'
+separate bølge-/temperaturled havde nul offentlig tilvækst, men den
+gamle sikre log skjulte forsøg og årsagsstatus. 4.0.484 tilføjer
+kun aggregerede CP-/OM-tal til den eksisterende GitHub-rapport;
+ingen score, datakildevalg eller cacheformat ændres. Måltest,
+exact-head/merge/kode-only og én normalrun med målt feltvis fremgang
+afventer. Cron pauset; vejrdata er fortsat ufuldstændige.

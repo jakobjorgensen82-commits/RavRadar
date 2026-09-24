@@ -2255,3 +2255,20 @@ RavScore mindre under området. Dagens forklaring er omskrevet med
 ejerens godkendte enkle ord; femdøgnslisten forklarer sin valgte dag.
 Ingen ændring af scoreberegning, vejrdata eller kildeprioritet. Se
 `CHANGELOG-4.0.483.md` og DEC-0069's tillæg.
+## 4.0.484 – vis hvorfor reserveleverandører ikke fylder hullerne (2026-09-24)
+
+Normalrun `35954069186` gemte cache og deployede, men Copernicus'
+særskilte bølge-/temperaturled tilføjede nul offentlige værdier, mens
+feltvise huller består. Den sikre log viser nu kun samlede forsøg,
+gyldige kandidater, rester, tids-/transportstatus og Open-Meteos
+samlede forsøg; ingen steder, rå værdier eller private fejlposter.
+Vejrhentning, score, kildeprioritet og cacheformat er uændrede.
+Næste almindelige kørsel skal vise den konkrete årsag og om den gemte
+Copernicus-kvalitetstur forbedrer havstrømmen. Se `CHANGELOG-4.0.484.md`.
+
+## 4.0.483 – forståelig områdescore og bedste sted (2026-09-24)
+
+Ranglisten bevarer områdescore og sortering og viser den bedste lokale
+RavScore mindre under områdenavnet. Score og vejrdata er uændrede.
+Kode-only-run `35967586655` deployede versionen med samme vejrpakke;
+offentlig desktopvisning er kontrolleret. Se `CHANGELOG-4.0.483.md`.

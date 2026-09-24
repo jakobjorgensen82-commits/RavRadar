@@ -3174,3 +3174,24 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Genoptag først kontrollerede normale kørsler, når feltvis
    cachefremgang er afklaret; ingen blind oneoff. Resten af roadmap
    vurderes, når vejrhentningen er pålidelig.
+# Aktivt roadmap – 2026-09-24, 4.0.484 målret de reelle vejrhuller
+
+1. [x] 4.0.483/PR #445 er merged; kode-only `35967586655` deployede
+   samme verificerede vejrpakke uden leverandørkald. Områdescore og
+   mindre “Bedste sted” ses på den offentlige desktopside.
+2. [x] Normalrun `35954069186` genbrugte og gemte privat cache, byggede
+   vejr og deployede. På dets eget 79.414-grid mangler 6.522 vind,
+   7.419 bølger, 68.798 DMI-only-vandstand og 31.855 temperatur.
+   Havstrøm opgøres særskilt; Open-Meteos 5.569 uløste egne strømpar
+   er ikke automatisk samme tal som offentlig slutrest. Et fire timer
+   forskudt vindue kan ikke sammenlignes råt med forrige run.
+3. [ ] Lever 4.0.484's sikre komponentstatus uden ændring af score,
+   leverandørlogik eller privat cacheformat; én exact-head-kildegate,
+   merge og kode-only-deploy. Ingen ny vejrkørsel for selve logændringen.
+4. [ ] Kør én almindelig, ikke-overlappende vejrkørsel på aktuel main.
+   Mål Copernicus-bølge/temperaturens faktiske forsøg og årsag til nul,
+   CP-havstrømmens kvalitetstur, DMI-familier, Open-Meteo-rester,
+   eksakt fælles grid pr. vejrtype, cachelineage, Pages og UI.
+5. [ ] Ved fortsat stagnation: stop nye runs og ret den dokumenterede
+   leverandør-, gitter-, plan- eller tidsårsag. Genaktivér først cron
+   efter gentagen autonom normaldrift; komplet gyldig data er stadig målet.

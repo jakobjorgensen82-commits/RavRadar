@@ -2233,3 +2233,15 @@ sprogtests er grønne. Næste: slut version/RDKS/geodatadiff, exact-head,
 merge og målrettet offentlig desktop-/mobilvisning. Ingen ny
 vejrindsamling alene for UI-ændringen. Fortsæt separat feltvis
 vejranalyse før næste normale run.
+# Aktuelt checkpoint 2026-09-24 – lokal 4.0.484
+
+4.0.483 er online efter kode-only `35967586655`, med uændret
+4.0.482-vejrpakke og verificerede to tal i “Bedste områder”.
+Normalrun `35954069186` gemte/deployede, men fire vejrtypehuller
+består og Copernicus' særskilte bølge-/temperaturled tilføjede nul.
+Det er ikke det samme som Copernicus' havstrømsled, som fik en
+fire minutters krypteret kvalitetstur til næste run. Lokal 4.0.484
+synliggør kun sikre årsagstal i GitHub-loggen. Først måltest, RDKS,
+exact-head, merge og kode-only; dernæst én normalrun uden overlap,
+eksakt feltvis før/efter og årsagsbestemt rettelse. Cron er pauset.
+Se CURRENT_TRUTH og ACTIVE_ROADMAP.

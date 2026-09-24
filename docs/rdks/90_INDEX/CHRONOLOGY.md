@@ -1638,3 +1638,12 @@ retter dens skrivefri, boolsk-tekst fejlrapport til faste C07/C08 og
 den påviste id-forveksling: SQL krævede integreret v3-overgangs-id af
 en privat ledsager, hvis frosne Candidate G-pakke har v2-id.
 Den autoriserede tre-timers DMI-fastholdelse i Limfjorden bevares.
+## 2026-09-24 – 4.0.484 sikker leverandørstatus
+
+4.0.483/PR #445 kom online i kode-only `35967586655` uden nye
+vejrdata. Den sidste normale kørsel `35954069186` gemte og deployede,
+men feltvise huller består. Copernicus' separate bølge-/temperaturled
+gav nul valgte værdier, og dets årsagsstatus blev ikke logget.
+4.0.484 tilføjer kun sikre samlede statusfelter; faktisk årsag og
+virkningen af Copernicus' krypterede næste-run-kvalitetstur skal
+måles i én ny normal kørsel efter exact-head og merge. Cron pauset.
