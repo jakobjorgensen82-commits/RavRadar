@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.480
+**Håndbogsversion:** 4.0.481
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.480 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.481 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.77 4.0.481 – Giv hele prognosen og Copernicus en reel tur
+
+4.0.480 kom online og bevarede alle gamle gyldige værdier på de timer,
+vi kunne sammenligne direkte. Men datasættet er endnu ikke komplet.
+DMI nåede kun de første 31 af 115 officielle Limfjordstimer i sidste
+kørsel. Når en ny prognose fra DMI kom, begyndte arbejdet forfra ved
+den første time, så de fjernere timer kunne blive ved med at vente.
+
+DMI skal stadig kontrollere de tre nærmeste timer først. Derefter
+fortsætter den fra den sidste faktisk forsøgte prognosetime og roterer
+gennem resten. Et mislykket forsøg tæller kun for turordenen, aldrig
+som gyldigt vejr. Gyldige gamle felter bevares, og vandstand kommer
+fortsat kun fra DMI.
+
+Copernicus udfylder som før faktiske huller før Open-Meteo. En kort
+ekstra tur efter dagens pakke er bygget forsøger også at forbedre
+allerede brugbare Open-Meteo-reserver. Den ændrer ikke dagens viste
+prognose og gemmes kun i den krypterede private cache til næste
+kørsel. Hvis kilden ikke svarer, vises dagens pakke stadig. Vi måler
+først i de næste rigtige kørsler, om DMI og Copernicus faktisk vokser;
+rettelsen alene er ikke et bevis for fuldt vejr.
 
 ## 89.76 4.0.480 – Et nyt DMI-svar må ikke fjerne en gyldig gammel time
 

@@ -1,4 +1,22 @@
-# 2026-09-24 – lokal 4.0.480, DMI-modelrunskant
+# 2026-09-24 – lokal 4.0.481, systemisk DMI-/Copernicus-planlægning
+
+- [x] 4.0.480 merged; normalrun `35939353111` gemte cache/checkpoint,
+  deployede 210/673 og bestod 29 operationelle kontroller.
+- [x] Eksakt 77.395-positioners sammenligning: nul gyldig→tom for alle
+  fem vejrtyper. Mål aktuelle 118-timers rester særskilt; 57 dele
+  har stadig 5.868 offentlige havstrømspar uden data.
+- [x] Afgræns DMI's 31/115 Limfjordstimer og den slukkede Copernicus-
+  kvalitetskø. Lav lokal kritisk DMI-rotation og bounded Copernicus-
+  kvalitet i den eksisterende krypterede normalpipeline.
+- [x] Bind præcis 4.0.480's nyeste private pakke til en testet
+  hash- og modelbundet forgængerbro; versionsløft/geodatadiff afgrænset.
+- [ ] Slut måltests, RDKS, én exact-head sourcegate, PR og merge.
+- [ ] Én normalrun uden overlap: bevis faktisk DMI/CP/OM-kildeovertagelse,
+  alle fem feltrester, 57 dele, Feggesund, beskyttet cache/checkpoint,
+  fuldt artifact og offentlig prognose. Gentag kun efter målt fremgang.
+- [ ] Stabil selvkørende normaldrift og aktuelt roadmap før cron aktiveres.
+
+# HISTORISK STATUS – 2026-09-24 – lokal 4.0.480, DMI-modelrunskant
 
 - [x] 4.0.479 merged; code-only og normalrun `35920484428` gennemførte
   cachegenbrug, ny cache/checkpoint og Pages-deploy.

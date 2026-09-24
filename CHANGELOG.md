@@ -1,3 +1,13 @@
+## 4.0.481 – rotér DMI's kritiske timer og giv Copernicus en krypteret kvalitetstur (2026-09-24)
+
+4.0.480 er online uden tab af gamle gyldige værdier på fælles timer,
+men fem vejrtype-rester består. DMI kan ikke længere begynde ved samme
+første Limfjordstime i hvert nyt modelrun uden at give prognosens hale
+en tur. Copernicus får bounded næste-run-forbedring af Open-Meteo-
+dækkede par gennem samme krypterede private cache. Den eksakte
+4.0.480-pakke kan genbruges med fuldt bevis. Lokal rettelse afventer
+exact-head og produktion. Se `CHANGELOG-4.0.481.md` og DEC-0251.
+
 ## 4.0.480 – behold gyldige DMI-timer ved modelrunskift (2026-09-24)
 
 Præcis sammenligning af de to seneste deployede vejrpakker afslørede

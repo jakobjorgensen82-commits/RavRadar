@@ -428,7 +428,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.480 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.481 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -871,7 +871,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.480 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.481 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -896,7 +896,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.480 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.481 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1162,7 +1162,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.480 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.481 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1520,7 +1520,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.480 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.481 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1537,6 +1537,39 @@ jobs:
                  failureCodes:$coverage.failures}
               end
           ' data/live/conditions.json
+
+      - name: Reclaim a bounded Copernicus quality slice for the next normal run
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success'
+        id: copernicus-next-run-refresh
+        continue-on-error: true
+        timeout-minutes: 7
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: >-
+          python scripts/run-copernicus-current-pilot-with-retry.py
+          --attempts 1
+          --timeout-seconds 360
+          --backoff-seconds 0
+          --
+          --refresh-only
+          --donor-bank .cache/copernicus-current-donor-bank.json
+          --segment-journal .cache/copernicus-current-segment-journal.json
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --targets .cache/copernicus-current-targets.json
+          --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Recheck reusable Copernicus evidence after optional quality work
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success'
+        run: >-
+          python scripts/check-copernicus-current-range.py
+          --shadow .cache/copernicus-current-shadow.json
+          --source-stage .cache/copernicus-current-source-stage.json
+          --registry .cache/copernicus-current-targets.json
+          --dmi .cache/dmi-candidate-progress.json
+          --targets data/live/coastal-parts-v2.json
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --require-source-stage-reusable
 
       - name: Encrypt newly saved private weather progress before later production steps
         id: component-progress-seal

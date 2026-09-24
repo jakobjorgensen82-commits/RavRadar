@@ -21,6 +21,7 @@ import {
 import {
   DMI_MARINE_SEAM_PREDECESSOR,
   DMI_SCHEDULER_ONLY_PREDECESSOR,
+  WEATHER_ROTATION_PREDECESSOR,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
@@ -31,6 +32,7 @@ import {
   restoreProtectedPrivateProductionRuntime,
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
+  isExactWeatherRotationPredecessor,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
@@ -192,6 +194,10 @@ try {
     DMI_MARINE_SEAM_PREDECESSOR.continuationStateContractSha256);
   assert.equal(baselineContracts.publicProjectionContractSha256,
     DMI_MARINE_SEAM_PREDECESSOR.publicProjectionContractSha256);
+  assert.equal(baselineContracts.continuationStateContractSha256,
+    WEATHER_ROTATION_PREDECESSOR.continuationStateContractSha256);
+  assert.equal(baselineContracts.publicProjectionContractSha256,
+    WEATHER_ROTATION_PREDECESSOR.publicProjectionContractSha256);
   const schedulerPredecessor = {
     ...DMI_SCHEDULER_ONLY_PREDECESSOR,
     modelBinding: ravScoreModelBinding(),
@@ -344,6 +350,67 @@ try {
   });
   assert.equal(seamRestored.restored, true);
   assert.equal(seamRestored.exactDmiPredecessor, true);
+  const rotationPredecessor = {
+    ...WEATHER_ROTATION_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: WEATHER_ROTATION_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: WEATHER_ROTATION_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: WEATHER_ROTATION_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  assert.equal(isExactWeatherRotationPredecessor(rotationPredecessor, schedulerExpected), true);
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-other-generation' },
+    { productionReferenceAt: '2026-09-24T01:00:00.000Z' },
+    { contractHashes: { ...rotationPredecessor.contractHashes, fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...rotationPredecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isExactWeatherRotationPredecessor({ ...rotationPredecessor, ...change }, schedulerExpected), false);
+  }
+  const rotationGeneration = await createGeneration(8, {
+    metadataOverride: {
+      datasetId: WEATHER_ROTATION_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-24T01:26:18.000Z',
+      productionReferenceAt: WEATHER_ROTATION_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: rotationPredecessor.contractHashes,
+  });
+  const rotationDocuments = fakeDocuments();
+  const rotationStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: rotationGeneration.bundlePath,
+    repositoryRoot: repository,
+    expected: {
+      ...(await buildPrivateRuntimeExpectation({
+        repositoryRoot: repository,
+        targetReferenceAt: '2026-09-24T02:00:00.000Z',
+        now: '2026-09-24T02:05:00.000Z',
+      })),
+      contractHashes: rotationPredecessor.contractHashes,
+    },
+    now: '2026-09-24T02:05:00.000Z',
+    sourceHead: WEATHER_ROTATION_PREDECESSOR.sourceHead,
+    request: rotationDocuments.request,
+    storage: rotationStorage.client,
+  });
+  const rotationRestored = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'exact-weather-rotation-bridge'),
+    repositoryRoot: repository,
+    expected: await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-24T02:00:00.000Z',
+      now: '2026-09-24T02:05:00.000Z',
+    }),
+    now: '2026-09-24T02:05:00.000Z',
+    request: rotationDocuments.request,
+    storage: rotationStorage.client,
+  });
+  assert.equal(rotationRestored.restored, true);
+  assert.equal(rotationRestored.exactDmiPredecessor, true);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);

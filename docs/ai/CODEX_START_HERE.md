@@ -1,4 +1,25 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.480 efter grøn normalrun
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.481 efter helkædeaudit
+
+4.0.480 er merged (`38fa4c27`); normalrun `35939353111` var grønt,
+genbrugte den aktuelle private cache, gemte ny pakke/checkpoint og
+deployede `rr-20260924012618-210`. På 77.395 fælles positioner blev
+ingen gyldige værdier tomme. Aktuelle 118-timers rester: vind 5.659,
+bølger 5.919, havstrøm 5.868 i 57 dele, DMI-only-vandstand 66.491 og
+temperatur 31.653, hver af 79.414. Open-Meteos egen rest 5.713 er et
+andet trin i kæden, ikke offentlig slutrest.
+
+DMI's `dkss_lf` nåede 31/115 native timer og startede ved tidligste
+time. Copernicus prioriterede kun ægte unionhuller, mens dens gamle
+post-build-kvalitetsjob er permanent slukket på grund af ukrypteret
+cache. Lokal 4.0.481 roterer DMI's kritiske native timer efter de tre
+nærmeste, giver Copernicus højst 360 s valgfri kvalitet i samme
+krypterede normaljob og genbruger kun den eksakte 4.0.480-private pakke
+med tre hashes. Måltests grønne, exact-head/produktion afventer.
+Start ingen overlappende run; cron pauset, ingen oneoff. Efter merge
+én normalrun og felt-/leverandørvis live-sammenligning. Se DEC-0251,
+CURRENT_TRUTH og ACTIVE_ROADMAP.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.480 efter grøn normalrun
 
 4.0.479 blev merged som `888d3c04`; kode-only `35919418385` og normalrun
 `35920484428` var grønne. Normalrun genbrugte korrekt privat cache,

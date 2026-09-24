@@ -352,6 +352,48 @@ assert [row["id"] for row in part_gap_before_parent_only] == [
     "global-part-current-hole", "parent-only-current-hole",
 ]
 
+# An actual critical attempt advances a durable cursor in the producer. On
+# the next model run, keep the first three hours close to now but serve the
+# as-yet-unreached tail before revisiting older critical native hours.
+rotating_hours = [
+    f"2026-09-24T{hour:02d}:00:00Z" for hour in range(8)
+]
+rotating_assets = [
+    {"valid": valid_time, "id": f"hour-{index}"}
+    for index, valid_time in enumerate(rotating_hours)
+]
+rotated_critical = producer.prioritize_marine_assets_for_current_gaps(
+    rotating_assets, [TARGET_ID], set(),
+    direct_valid_times=set(rotating_hours),
+    critical_cursor_valid_time=rotating_hours[5],
+)
+assert [row["valid"] for row in rotated_critical] == [
+    *rotating_hours[:3], *rotating_hours[6:], *rotating_hours[3:6],
+]
+rotated_next_reference = producer.prioritize_marine_assets_for_current_gaps(
+    rotating_assets[1:], [TARGET_ID], set(),
+    direct_valid_times=set(rotating_hours[1:]),
+    critical_cursor_valid_time=rotating_hours[5],
+)
+assert [row["valid"] for row in rotated_next_reference] == [
+    *rotating_hours[1:4], *rotating_hours[6:], *rotating_hours[4:6],
+]
+prior_processed = {
+    rotating_hours[index]: {"complete": True}
+    for index in range(6)
+}
+assert producer.critical_native_cursor_for_run(
+    {}, {"processedSteps": prior_processed}, set(rotating_hours[1:]),
+) == rotating_hours[5]
+assert producer.critical_native_cursor_for_run(
+    {"criticalNativeCursorValidTime": rotating_hours[6]},
+    {"processedSteps": prior_processed}, set(rotating_hours[1:]),
+) == rotating_hours[6]
+assert producer.critical_native_cursor_for_run(
+    {}, {"processedSteps": {rotating_hours[7]: {"complete": False}}},
+    set(rotating_hours),
+) is None
+
 # No configured plan preserves old callers; invalid planning input cannot
 # confer coverage or interrupt native cache preservation.
 planning_reference = producer.datetime(2026, 1, 1, tzinfo=producer.timezone.utc)

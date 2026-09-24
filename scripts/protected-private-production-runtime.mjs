@@ -58,6 +58,19 @@ export const DMI_MARINE_SEAM_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// 4.0.481 changes only native DMI acquisition order and adds an optional
+// Copernicus next-run cache refresh. The already deployed 4.0.480 weather
+// package is the sole approved predecessor, with unchanged model/state and
+// public projection contracts. This is not a general source-hash bypass.
+export const WEATHER_ROTATION_PREDECESSOR = Object.freeze({
+  sourceHead: '38fa4c27d8ac6b1c942b807f8a36886fa0a87a8a',
+  datasetId: 'rr-20260924012618-210',
+  productionReferenceAt: '2026-09-24T00:00:00.000Z',
+  fullRuntimeContractSha256: '2c9025dd13bed8dfd575ce09f354df579f3e9834dc82688691daf66f5bcd48f1',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
@@ -78,6 +91,10 @@ export function isExactDmiSchedulerPredecessor(descriptor, expected) {
 
 export function isExactDmiMarineSeamPredecessor(descriptor, expected) {
   return isExactDmiPredecessor(descriptor, expected, DMI_MARINE_SEAM_PREDECESSOR);
+}
+
+export function isExactWeatherRotationPredecessor(descriptor, expected) {
+  return isExactDmiPredecessor(descriptor, expected, WEATHER_ROTATION_PREDECESSOR);
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1529,7 +1546,8 @@ export async function restoreProtectedPrivateProductionRuntime({
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
       const exactDmiPredecessor = isExactDmiSchedulerPredecessor(descriptor, expected)
-        || isExactDmiMarineSeamPredecessor(descriptor, expected);
+        || isExactDmiMarineSeamPredecessor(descriptor, expected)
+        || isExactWeatherRotationPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
         || (!same(descriptor.contractHashes, expected.contractHashes)
           && !exactDmiPredecessor)) {

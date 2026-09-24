@@ -1,3 +1,13 @@
+## 2026-09-24 – 4.0.481 lokal kvalitet og rotationsrettelse
+
+Efter grøn 4.0.480-normalrun `35939353111` og nul fælles-time-
+regression viste 118-timersoptælling stadig betydelige huller i alle
+fem vejrtypefelter. DMI LF nåede 31/115 native timer; Copernicus
+blev planlagt bag Open-Meteo-banken uden aktiv kvalitetsopfriskning.
+4.0.481 indfører afgrænset kritisk DMI-timerotation og krypteret
+Copernicus-kvalitet efter dagens vejrbygning. Den eksakte seneste
+private pakke bevares. Production proof afventer. DEC-0251.
+
 # 2026-09-23 – lokal 4.0.478 efter normalrun 35887652848
 
 4.0.477 blev deployet på aktuel main med gemt cache og scorecheckpoint.
