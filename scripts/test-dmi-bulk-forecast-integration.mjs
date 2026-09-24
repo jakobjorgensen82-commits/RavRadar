@@ -10,6 +10,8 @@ const bulkConverter = source.slice(
   source.indexOf('function bulkZoneToForecastRecord('),
   source.indexOf('function mergeBulkCacheIntoForecastStore('),
 );
+assert.match(bulkConverter, /recoverDmiMarineRunSeamHours\(\{[\s\S]*?hourly: built\.hourly, ocean, generatedAt, startAt,[\s\S]*?expectedIdentity: dmiIdentity/,
+  'normal and one-off bulk conversion must run the same bounded marine seam repair');
 const integratedRuntime = source.slice(
   source.indexOf('function scoreCoastalPartsRuntime('),
   source.indexOf('function dmiCollections('),

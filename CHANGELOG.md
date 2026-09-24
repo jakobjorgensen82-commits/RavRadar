@@ -1,3 +1,12 @@
+## 4.0.480 – behold gyldige DMI-timer ved modelrunskift (2026-09-24)
+
+Præcis sammenligning af de to seneste deployede vejrpakker afslørede
+22 tabte havstrøm-, 41 vandstands- og 41 temperaturpositioner ved én
+Limfjordstime. En gyldig DMI-kantværdi bruges nu inden for den gamle
+tidsgrænse uden at blande modelruns. Den eksakte seneste private pakke
+kan genbruges med fuldt integritetsbevis. Lokal måltest er grøn;
+produktion afventer. Se `CHANGELOG-4.0.480.md` og DEC-0250.
+
 ## 4.0.479 – vejrcache og afgrænset Copernicus-fremgang (2026-09-23)
 
 Run `35903476784` viste afvist privat forgængercache, nul nye

@@ -1,4 +1,22 @@
-# Aktivt roadmap – 2026-09-23, 4.0.479 cache og leverandørfremdrift
+# Aktivt roadmap – 2026-09-24, 4.0.480 sikre gyldige vejrdata
+
+1. [x] 4.0.479 merged; normalrun `35920484428` genbrugte/gemte
+   rigtig privat cache og deployede offentlig prognose.
+2. [x] Mål sidste to offentlige pakker på eksakt fælles 113×673-grid;
+   find modelrunskanten bag 22/41/41 tabte havfelter.
+3. [ ] Lever snæver 4.0.480-rettelse og eksakt forgængerbro med
+   måltest, RDKS/version, exact-head sourcegate og sikker merge.
+4. [ ] Kør én normal vejrkørsel uden overlap. Bevis cachelineage,
+   Limfjordskanten, fem vejrtype-rester, DMI/CP/OM-fremgang,
+   checkpoint/cachegemning, deploy og offentlig prognose.
+5. [ ] Ved stadig stagnerende eller voksende huller: stop nye runs;
+   undersøg DMI's korte vind/marine horisont, Copernicus Baltic-
+   udsættelser, manglende CP-vindprodukt, og Open-Meteos 57-del-rest
+   særskilt. Ingen oneoff uden dokumenteret behov; cron først efter
+   gentagen autonom, korrekt drift.
+6. [ ] Derefter risikobegrænset UI-sprog og øvrige roadmap-punkter.
+
+# Historisk roadmap – 2026-09-23, 4.0.479 cache og leverandørfremdrift
 
 1. [x] Afklar `35903476784`: forkert afvist tidligere privat cache,
    Copernicus-førstekald uden gemt par og checkpoint-timeout; ingen

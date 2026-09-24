@@ -1,4 +1,23 @@
-# Aktuelle issues – 2026-09-23, lokal 4.0.479
+# Aktuelle issues – 2026-09-24, lokal 4.0.480
+
+- **DMI-MARINE-RUN-SEAM – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Sidste deploy tabte 22 strøm-, 41 vandstands- og 41 temperaturpar
+  ved én Limfjordstime, selv om gammel DMI-kantkilde stadig var gyldig.
+  4.0.480 må kun vælge samme native serie inden for gammel tidsgrænse;
+  ny normalrun og offentlig før/efter-måling mangler. DEC-0250.
+- **PRIVATE-4.0.479-LINEAGE – MÅLTESTET / LIVEBEVIS ÅBENT:**
+  Ny DMI-producentkode ændrer bredt runtime-aftryk. Kun den eksakte
+  seneste 4.0.479-pakke må genbruges med fuldt arkiv- og kontraktbevis.
+- **VEJRTYPE-REST – ÅBEN P0:** Sidste deploy havde 5.620 manglende
+  strømpar, 9.073 vind-, 5.352 bølge-, 64.525 DMI-only-vandstands-
+  og 34.563 temperaturpositioner af 79.414 hver. Copernicus var aktiv,
+  men Baltic NEMO blev ofte udsat under opdatering; Open-Meteo bar
+  fortsat en for høj andel. Hver rest kræver separat årsagsmåling.
+- **4.0.479-CACHE/CHECKPOINT/DEPLOY – LØST LIVE:** `35920484428`
+  genbrugte og gemte korrekt pakke, scorecheckpoint og Pages. De
+  historiske åbne punkter nedenfor er ikke fortsat leveringsstatus.
+
+# Historiske issues – 2026-09-23, lokal 4.0.479
 
 - **CACHE-LINEAGE-35903476784 – RETTET LOKALT / LIVEBEVIS ÅBENT:**
   4.0.478's DMI-planlægning ændrede bredt runtime-fingerprint og

@@ -19,6 +19,7 @@ import {
   privateRuntimeContractHashes,
 } from './private-production-runtime-workflow.mjs';
 import {
+  DMI_MARINE_SEAM_PREDECESSOR,
   DMI_SCHEDULER_ONLY_PREDECESSOR,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
@@ -28,6 +29,7 @@ import {
   describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreProtectedPrivateProductionRuntime,
+  isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
@@ -186,6 +188,10 @@ try {
     DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
     'the one-time predecessor may not cross a public projection change',
   );
+  assert.equal(baselineContracts.continuationStateContractSha256,
+    DMI_MARINE_SEAM_PREDECESSOR.continuationStateContractSha256);
+  assert.equal(baselineContracts.publicProjectionContractSha256,
+    DMI_MARINE_SEAM_PREDECESSOR.publicProjectionContractSha256);
   const schedulerPredecessor = {
     ...DMI_SCHEDULER_ONLY_PREDECESSOR,
     modelBinding: ravScoreModelBinding(),
@@ -275,7 +281,69 @@ try {
     storage: bridgeStorage.client,
   });
   assert.equal(bridgeRestored.restored, true);
-  assert.equal(bridgeRestored.exactSchedulerPredecessor, true);
+  assert.equal(bridgeRestored.exactDmiPredecessor, true);
+  const seamPredecessor = {
+    ...DMI_MARINE_SEAM_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: DMI_MARINE_SEAM_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: DMI_MARINE_SEAM_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: DMI_MARINE_SEAM_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  assert.equal(isExactDmiMarineSeamPredecessor(seamPredecessor, schedulerExpected), true);
+  assert.equal(isExactDmiSchedulerPredecessor(seamPredecessor, schedulerExpected), false);
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-other-generation' },
+    { productionReferenceAt: '2026-09-23T20:00:00.000Z' },
+    { contractHashes: { ...seamPredecessor.contractHashes, fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...seamPredecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isExactDmiMarineSeamPredecessor({ ...seamPredecessor, ...change }, schedulerExpected), false);
+  }
+  const seamGeneration = await createGeneration(7, {
+    metadataOverride: {
+      datasetId: DMI_MARINE_SEAM_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-23T21:57:27.000Z',
+      productionReferenceAt: DMI_MARINE_SEAM_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: seamPredecessor.contractHashes,
+  });
+  const seamDocuments = fakeDocuments();
+  const seamStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: seamGeneration.bundlePath,
+    repositoryRoot: repository,
+    expected: {
+      ...(await buildPrivateRuntimeExpectation({
+        repositoryRoot: repository,
+        targetReferenceAt: '2026-09-23T22:00:00.000Z',
+        now: '2026-09-23T22:05:00.000Z',
+      })),
+      contractHashes: seamPredecessor.contractHashes,
+    },
+    now: '2026-09-23T22:05:00.000Z',
+    sourceHead: DMI_MARINE_SEAM_PREDECESSOR.sourceHead,
+    request: seamDocuments.request,
+    storage: seamStorage.client,
+  });
+  const seamRestored = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'exact-dmi-marine-seam-bridge'),
+    repositoryRoot: repository,
+    expected: await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-23T22:00:00.000Z',
+      now: '2026-09-23T22:05:00.000Z',
+    }),
+    now: '2026-09-23T22:05:00.000Z',
+    request: seamDocuments.request,
+    storage: seamStorage.client,
+  });
+  assert.equal(seamRestored.restored, true);
+  assert.equal(seamRestored.exactDmiPredecessor, true);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);

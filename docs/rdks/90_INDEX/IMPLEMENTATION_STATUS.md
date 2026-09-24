@@ -1,4 +1,20 @@
-# 2026-09-23 – lokal 4.0.479 efter run 35903476784
+# 2026-09-24 – lokal 4.0.480, DMI-modelrunskant
+
+- [x] 4.0.479 merged; code-only og normalrun `35920484428` gennemførte
+  cachegenbrug, ny cache/checkpoint og Pages-deploy.
+- [x] Sammenlignet præcist fælles 113×673-positioner mellem de sidste
+  to offentlige pakker. Isoleret 22/41/41 tabte strøm/vandstand/
+  temperatur ved én Limfjordstime; nul tab af vind og bølger.
+- [x] Rettet lokal vejrproducent ved bevist DMI-modelrunskant uden at
+  udvide tidsgrænse eller ændre scorebinding. Eksakt 4.0.479-forgængerbro
+  og målrettede tests er lokale.
+- [ ] Version/RDKS, exact-head sourcegate, PR/merge og live normalrun.
+- [ ] Kontroller alle fem vejrtype-rester, leverandørandele, korrekt
+  private cachelineage, beskyttede saves, deploy og offentlig visning.
+- [ ] Løs særskilt CP-/OM-/DMI-restbarrierer før automatisk drift;
+  komplet vejrdata er ikke bevist. Cron pauset.
+
+# HISTORISK STATUS – 2026-09-23 – lokal 4.0.479 efter run 35903476784
 
 - [x] Fastslået at 4.0.478-run byggede vejr og artifact, men stoppede
   ved checkpoint-timeout før privat runtime og Pages. Ingen ny offentlig

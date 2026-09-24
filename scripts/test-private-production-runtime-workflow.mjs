@@ -138,6 +138,12 @@ try {
     ),
     'The native WAM owner policy imported by the producer and bootstrap validator must be bound by the full private runtime contract',
   );
+  assert.ok(
+    PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(
+      'scripts/lib/dmi-marine-run-seam-recovery.mjs',
+    ),
+    'The weather-only DMI seam repair must be bound by the full private runtime contract',
+  );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
   for (const relative of contractFiles) {
     const destination = path.join(repository, relative);
