@@ -3165,3 +3165,21 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   kontrolrettelsen gør vejrdatasættet komplet. Se den særskilte issuefil.
 - **AUTOMATIC-WEATHER-SCHEDULE – FORTSAT PAUSET:** Først kode-only-bevis,
   derefter kontrolleret normal kørsel og målt cache-/komponentfremgang.
+# Aktuelle issues – 2026-09-24, 4.0.484
+
+- **FELTVISE VEJRHULLER – ÅBEN P0:** Normalrun `35954069186` var grønt
+  og gemte/deployede, men det nye 118-timers grid mangler fortsat
+  6.522 vind-, 7.419 bølge-, 68.798 DMI-only-vandstands- og 31.855
+  temperaturpositioner af 79.414 pr. felt. Havstrøm kræver sin egen
+  offentlige slutopgørelse; Open-Meteos 5.569 uløste egne strømpar i
+  57 kystdele er ikke automatisk den offentlige rest. Rå før/efter-tal
+  på forskudte vinduer beviser ikke tab eller fremgang.
+- **COPERNICUS-KOMPONENT-NUL – ÅBEN:** Bølge-/temperaturleddet tilføjede
+  nul valgte værdier i `35954069186`; det operationelle havstrømsled
+  og den efterfølgende krypterede kvalitetstur er separate processer.
+  Den gamle log udelod komponentleddets status, forsøg og eventuel
+  transportfejl. 4.0.484 synliggør kun sikre aggregater; faktisk årsag
+  og liveeffekt skal afgøres i én normal kørsel før en datarettelse.
+- **AUTONOM DRIFT – ÅBEN:** Cron er pauset. Bevar seneste gyldige
+  cache, DMI-first og Limfjord-fastholdelse; kør ikke overlappende
+  eller blind oneoff ved uafklaret stagnation.

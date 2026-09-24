@@ -6064,3 +6064,21 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] RDKS/version/geodatadiff, exact-head-kildegate, PR/merge og
   målrettet offentlig desktop-/mobilvisning. Ingen ny vejrkørsel alene
   for denne tekstændring.
+# 2026-09-24 – lokal 4.0.484, sikker komponentstatus
+
+- [x] 4.0.483/PR #445 merged; kode-only-run `35967586655` er grønt,
+  og offentlig desktopside viser områdescore og mindre “Bedste sted”.
+  Vejrpakke og RavScore er uændrede.
+- [x] 4.0.482-normalrun `35954069186` bekræftet med korrekt privat
+  cachegenbrug, ny gemning, checkpoint og Pages. Fire komponentrester
+  og særskilt havstrømsrest er åbne; rå targetforskudte tal er ikke
+  en eksakt før/efter-sammenligning.
+- [x] Lokal 4.0.484 udvider kun GitHubs sikre komponentrapport med
+  samlede Copernicus-/Open-Meteo-årsagstal, ingen rå værdier eller ID'er.
+- [ ] Afslut måltest, separat geodataversionsdiff, RDKS, én exact-head-
+  kildegate, merge og kode-only-deploy.
+- [ ] Kør én normal weather uden overlap på nyeste main; aflæs
+  komponentstatus, DMI-timer, Copernicus-havstrøm og kvalitetstur,
+  Open-Meteo-rest, fem feltvise eksakte overlap, cachelineage og Pages.
+- [ ] Find og ret den dokumenterede restårsag før flere runs ved
+  stagnation; cron forbliver pauset og komplethed er ikke bevist.

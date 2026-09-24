@@ -49,9 +49,13 @@ const coverage = step(normal, 'Report counts for each weather component after ce
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
 assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);
-for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes']) {
+for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes',
+  'admittedCandidates', 'remainingNeeds', 'retryableAttempts', 'transportFailure',
+  'deferred', 'failureCount', 'componentsNotAdmitted']) {
   assert.match(coverage, new RegExp(field));
 }
+assert.doesNotMatch(coverage, /lastAttemptedPartId|\$coverage\.openMeteo\.failures(?!\s*\|\s*length)/,
+  'The safe component report must not print per-part cursor or raw failure rows');
 assert.ok(normal.indexOf(coverage) < normal.indexOf(seal));
 const cpQuality = step(normal, 'Reclaim a bounded Copernicus quality slice for the next normal run');
 const cpQualityCheck = step(normal, 'Recheck reusable Copernicus evidence after optional quality work');

@@ -5477,3 +5477,29 @@ godkendte enkle tekst; femdøgnslisten får en dagsspecifik variant.
 Lokal 4.0.483 har måltests grønne; exact-head, merge og offentlig
 visning afventer. Scoreformel, vejr, kystgeometri og kildevalg ændres
 ikke. Se DEC-0069's tillæg.
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.484, sikker leverandørdiagnose
+
+4.0.483/PR #445 er merged som `b2518a7a`; kode-only-run
+`35967586655` sluttede grønt uden leverandørkald og viste begge
+ranglistetal på den offentlige desktopside. Det fortsætter eksakt
+vejrpakken `rr-20260924045351-210` fra 4.0.482-normalrun
+`35954069186`. Ingen ny vejrdata kom fra UI-deployet.
+
+Normalrunnet gennemførte DMI, Copernicus, Open-Meteo, privat
+cachegemning, checkpoint og Pages. Alligevel mangler på dets eget
+79.414-grid 6.522 vind-, 7.419 bølge-, 68.798 DMI-only-vandstands-
+og 31.855 temperaturpositioner. Copernicus' særskilte komponentled
+tilføjede nul valgte bølge-/temperaturværdier. Dets operationelle
+havstrømsled og efterfølgende fire minutters krypterede kvalitetstur
+er separate; kvalitetsturen kan først virke i næste run. Open-Meteos
+5.569 uløste egne havstrømspar i 57 dele er ikke nødvendigvis den
+offentlige slutrest. Forskudte 118-timers vinduer må ikke sammenlignes
+råt som tab eller fremgang. Komplet data er ikke bevist; cron er pauset.
+
+Den hidtidige sikre log udelod komponentleddets årsagsstatus. Lokal
+4.0.484 føjer kun aggregerede Copernicus-/Open-Meteo-tal til loggen.
+Ingen producent, cacheformat, score eller kildevalg ændres. Næste trin
+er måltest, RDKS/version, én exact-head-kildegate, merge og kode-only-
+deploy, dernæst én ikke-overlappende normalrun med eksakt fælles
+felt-/leverandørsammenligning og konkret restårsag. Stop nye runs ved
+stagnation og ret årsagen før videre drift.
