@@ -8,7 +8,7 @@ import {
   movePoint,
   removePoint,
   validateCoastLine
-} from '../core/coastline-editor-model.js?v=4.0.480';
+} from '../core/coastline-editor-model.js?v=4.0.481';
 
 let editorMap = null;
 let mapLayers = [];

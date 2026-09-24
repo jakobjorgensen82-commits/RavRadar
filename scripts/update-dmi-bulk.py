@@ -2039,10 +2039,23 @@ def prioritize_marine_assets_for_current_gaps(
         str, set[tuple[str, str]]
     ] | None = None,
     verified_reusable_valid_times: set[str] | None = None,
+    critical_cursor_valid_time: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Process real current holes from the target hour forward, deterministically."""
-    def priority(asset: dict[str, Any]) -> tuple[int, int, float, int, int, str, str]:
+    """Serve real holes first, rotating their native-hour order across runs.
+
+    The first three target hours remain first within each critical class. The
+    persisted attempt cursor then gives later hours a turn even when a fresh
+    official model run reopens the same near-term native assets. Rotation is
+    scheduling only: it never confers DMI coverage or source admission.
+    """
+    cursor_epoch = epoch(critical_cursor_valid_time) if critical_cursor_valid_time else None
+    target_start_epoch = min(
+        (epoch(value) for value in direct_valid_times), default=None,
+    ) if direct_valid_times else None
+
+    def priority(asset: dict[str, Any]) -> tuple[int, int, int, int, float, int, int, str, str]:
         valid_time = str(canonical_time(asset.get("valid")) or "")
+        valid_epoch = epoch(valid_time)
         direct_missing_pairs = (
             {
                 (part_id, valid_time)
@@ -2067,7 +2080,12 @@ def prioritize_marine_assets_for_current_gaps(
             0 if regional_gap_count
                 and valid_time in (verified_reusable_valid_times or set())
                 else 1,
-            epoch(valid_time),
+            0 if cursor_epoch is None or (
+                target_start_epoch is not None
+                and target_start_epoch <= valid_epoch < target_start_epoch + 3 * 3600
+            ) else 1,
+            0 if cursor_epoch is None or valid_epoch > cursor_epoch else 1,
+            valid_epoch,
             -real_gap_count,
             -regional_gap_count,
             str(asset.get("id") or ""),
@@ -2075,6 +2093,31 @@ def prioritize_marine_assets_for_current_gaps(
         )
 
     return sorted(assets, key=priority)
+
+
+def critical_native_cursor_for_run(
+    state: dict[str, Any], previous_run: dict[str, Any],
+    required_valid_times: set[str],
+) -> str | None:
+    """Seed the first rotating run from actually processed old native hours.
+
+    Historical step receipts are only a scheduling hint here. They cannot
+    authorize a DMI value, suppress a new asset or cross a source gate.
+    """
+    persisted = canonical_time(state.get("criticalNativeCursorValidTime"))
+    if persisted is not None:
+        return persisted
+    steps = previous_run.get("processedSteps") or {}
+    if not isinstance(steps, dict):
+        return None
+    attempted = [
+        valid_time for value, step in steps.items()
+        for valid_time in [canonical_time(value)]
+        if valid_time in required_valid_times
+        and isinstance(step, dict)
+        and step.get("complete") is True
+    ]
+    return max(attempted, key=epoch, default=None)
 
 
 DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS = {
@@ -12092,6 +12135,13 @@ def main() -> int:
             # validated regional gain. Never mutate the prefetched official
             # catalog used by the immutable T..T+117 ledger.
             assets = list(assets)
+            critical_native_cursor = (
+                critical_native_cursor_for_run(
+                    state, previous_run, required_current_valid_times,
+                )
+                if DKSS_PRIMARY_MODE and collection in MARINE_COLLECTIONS
+                and not collection_is_maintenance else None
+            )
             if collection_is_maintenance:
                 assets = rotate_native_refresh_assets(
                     assets,
@@ -12349,6 +12399,10 @@ def main() -> int:
                     regional_gap_pairs_by_time=regional_gap_pairs_by_time,
                     verified_reusable_valid_times=(
                         verified_reusable_regional_times
+                    ),
+                    critical_cursor_valid_time=(
+                        critical_native_cursor
+                        if not collection_is_maintenance else None
                     ),
                 )
                 if collection_is_maintenance:
@@ -13037,6 +13091,13 @@ def main() -> int:
                             "assetsBoundedDkssRefreshAttempted"
                         ) or 0
                     ) + 1
+                elif DKSS_PRIMARY_MODE and collection in MARINE_COLLECTIONS and not collection_is_maintenance:
+                    # Advance on an actual native attempt, including an
+                    # upstream null/error. A failed first hour must not keep
+                    # the long-horizon critical queue at its head forever.
+                    state["criticalNativeCursorValidTime"] = asset["valid"]
+                    critical_native_cursor = asset["valid"]
+                    checkpoint_controller.mark_bulk_dirty()
                 try:
                     with supervised_asset_operation(supervised_identity):
                         path, reused = download_asset(
@@ -13782,6 +13843,10 @@ def main() -> int:
                                     ),
                                     verified_reusable_valid_times=(
                                         verified_reusable_regional_times
+                                    ),
+                                    critical_cursor_valid_time=(
+                                        critical_native_cursor
+                                        if not collection_is_maintenance else None
                                     ),
                                 )
                             )

@@ -1,4 +1,21 @@
-# Aktivt roadmap – 2026-09-24, 4.0.480 sikre gyldige vejrdata
+# Aktivt roadmap – 2026-09-24, 4.0.481 fuldere og stabilt vejr
+
+1. [x] Lever 4.0.480 og normalrun `35939353111`: korrekt privat cache,
+   checkpoint, Pages, nul tabte gyldige værdier på fælles target.
+2. [x] Afgræns 5.868 offentlige strømrester i 57 dele, korte DMI-
+   native horisonter og manglende Copernicus-kvalitetstur; mål fem
+   vejrtype-totaler særskilt. Se DEC-0251.
+3. [ ] Lever samlet 4.0.481 med DMI-rotation, krypteret CP-kvalitet,
+   eksakt cacheforgænger, måltests og én exact-head-sourcegate.
+4. [ ] Én normalrun på ny main uden overlap. Sammenlign eksakt fælles
+   mål, kilder pr. vejrtype, CP-donorbankens næste-run-fremgang,
+   vandstand, Limfjord, Feggesund, private saves og Pages.
+5. [ ] Ved stagnation: stop nye runs og undersøg leverandørsvar,
+   nærkystgitter, tidsbudget og kildevalg; ingen blind oneoff.
+   Først efter gentagen autonom vedligeholdelse kan cron genaktiveres.
+6. [ ] Derefter risikobegrænset UI-sprog og øvrige aktuelle punkter.
+
+# Historisk roadmap – 2026-09-24, 4.0.480 sikre gyldige vejrdata
 
 1. [x] 4.0.479 merged; normalrun `35920484428` genbrugte/gemte
    rigtig privat cache og deployede offentlig prognose.

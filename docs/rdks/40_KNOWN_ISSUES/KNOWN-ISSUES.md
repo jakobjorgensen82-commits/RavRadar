@@ -1,4 +1,25 @@
-# Aktuelle issues – 2026-09-24, lokal 4.0.480
+# Aktuelle issues – 2026-09-24, lokal 4.0.481
+
+- **DMI-KRITISK-HORISONT – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  `dkss_lf` nåede 31/115 officielle timer; næste modelrun begynder
+  ellers igen ved den første time. Ny vedvarende forsøgscursor roterer
+  den kritiske hale efter tre nærmeste timer. Vandstand er stadig
+  DMI-only, og et forsøg er ikke en gyldig værdi.
+- **COPERNICUS-KVALITET – RETTET LOKALT / LIVEBEVIS ÅBENT:**
+  Den aktive kø udelod Open-Meteo-dækkede par, mens det gamle
+  post-build-job var permanent slukket. Ny bounded kvalitetstur går
+  kun gennem samme jobs krypterede private cache. Dens faktiske
+  overtagelse er ikke endnu bevist.
+- **RESTHULLER – ÅBEN P0:** Offentligt 118-timers target efter run
+  `35939353111`: vind 5.659, bølger 5.919, strøm 5.868 i 57 dele,
+  DMI-only-vandstand 66.491 og temperatur 31.653 af 79.414 hver.
+  Open-Meteos særskilte 5.713 uløste strømspar er ikke identisk med
+  offentlig slutrest. Ingen af tallene er fuld dækning.
+- **4.0.480-LIVE – LØST:** Modelrunskant, eksakt forgængerrestore,
+  gemt checkpoint/privat pakke, Pages og nul gyldig→tom på fælles
+  target er bevist. Den nye 4.0.481-forgængerbro afventer livebevis.
+
+# Historiske issues – 2026-09-24, lokal 4.0.480
 
 - **DMI-MARINE-RUN-SEAM – RETTET LOKALT / LIVEBEVIS ÅBENT:**
   Sidste deploy tabte 22 strøm-, 41 vandstands- og 41 temperaturpar

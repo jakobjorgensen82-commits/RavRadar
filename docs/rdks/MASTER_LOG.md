@@ -1,4 +1,19 @@
-# 2026-09-24 – lokal 4.0.480, sammenligneligt produktionsgrid
+# 2026-09-24 – lokal 4.0.481, kritisk timekø og krypteret kvalitet
+
+4.0.480/`38fa4c27` bestod normalrun `35939353111`: korrekt privat
+cachelineage, beskyttet gemning/checkpoint, 210/673 offentlig runtime,
+29/29 operationelle kontroller og Pages. På 77.395 eksakt fælles
+positioner blev ingen gyldige af de fem vejrtyper tomme. Nyt 118h-
+vindue er stadig ufuldstændigt med 5.659/5.919/5.868/66.491/31.653
+vind/bølge/strøm/vandstand/temperaturhuller. DMI LF nåede 31/115
+native timer; Copernicus' aktive kø udelod OM-dækkede par, mens det
+gamle ukrypterede kvalitetsjob var slukket. Lokal 4.0.481 roterer
+DMI's faktiske kritiske timeforsøg efter de tre nærmeste og føjer
+bounded CP-kvalitet til samme krypterede normaljob. Kun eksakt nyeste
+4.0.480-privat pakke har måltestet forgængeradgang. Exact-head,
+merge og målt liveforbedring afventer. Cron pauset. DEC-0251.
+
+# HISTORISK – 2026-09-24 – lokal 4.0.480, sammenligneligt produktionsgrid
 
 4.0.479/`888d3c04` bestod code-only `35919418385` og normalrun
 `35920484428` med rigtig privat cache, nye saves, checkpoint og Pages.

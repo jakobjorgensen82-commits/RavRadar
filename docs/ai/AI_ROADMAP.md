@@ -1,4 +1,17 @@
-# Aktuelt fokus – 2026-09-23, 4.0.470
+# Aktuelt fokus – 2026-09-24, 4.0.481
+
+4.0.480 er online efter grøn normalrun `35939353111`. Den eksakte
+fælles-targetkontrol fandt nul tabte gyldige felter, men alle fem
+vejrtype-rester består. Lokal 4.0.481 adresserer to planlægnings-
+barrierer: DMI's kritiske native timekø får varig rotation efter
+tre nærmeste timer, og Copernicus får en kort forbedringstur gennem
+samme krypterede cache. Scoremodel og kildegyldighed ændres ikke.
+Næste er målrettede kontroller, RDKS/version, én exact-head, merge
+og én ikke-overlappende normalrun med målt cachelineage og faktisk
+forbedring i fem felter. Cron forbliver pauset. Se DEC-0251 og
+`../rdks/90_INDEX/ACTIVE_ROADMAP.md`.
+
+# Historisk fokus – 2026-09-23, 4.0.470
 
 1. [x] Merge 4.0.469; afklar providerfrit run `35844441095` til manglende
    indre kystdel-ID i checkpointkontrollen, ikke manglende vejrdata.

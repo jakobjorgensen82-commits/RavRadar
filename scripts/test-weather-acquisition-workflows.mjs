@@ -53,6 +53,17 @@ for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes']) {
   assert.match(coverage, new RegExp(field));
 }
 assert.ok(normal.indexOf(coverage) < normal.indexOf(seal));
+const cpQuality = step(normal, 'Reclaim a bounded Copernicus quality slice for the next normal run');
+const cpQualityCheck = step(normal, 'Recheck reusable Copernicus evidence after optional quality work');
+assert.match(cpQuality, /--refresh-only/);
+assert.match(cpQuality, /--timeout-seconds 360/);
+assert.match(cpQuality, /continue-on-error: true/);
+assert.match(cpQualityCheck, /--require-source-stage-reusable/);
+assert.ok(normal.indexOf(coverage) < normal.indexOf(cpQuality));
+assert.ok(normal.indexOf(cpQuality) < normal.indexOf(cpQualityCheck));
+assert.ok(normal.indexOf(cpQualityCheck) < normal.indexOf(seal));
+assert.doesNotMatch(cpQuality, /actions\/cache\/(?:save|restore)/,
+  'Copernicus quality work must use only the encrypted private progress path');
 
 const dmiGribRestore = step(normal, 'Restore bounded DMI GRIB download cache');
 const dmiGribSave = step(normal, 'Save progressed DMI GRIB download cache');

@@ -1,4 +1,27 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.480, ærlig delvis fremgang
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.481, DMI-rotation og Copernicus-kvalitet
+
+4.0.480 er merged (`38fa4c27`). Normalrun `35939353111` genbrugte den
+nyeste private 4.0.479-pakke, gemte ny pakke/checkpoint og deployede
+`rr-20260924012618-210`; offentligt kort, rangliste og prognose virker.
+På 77.395 fælles positioner med sidste deploy blev ingen gyldige vind-,
+bølge-, strøm-, vandstands- eller temperaturfelter tomme. Limfjords-
+modelrunskanten er dermed repareret i produktion. Det nye 118-timers
+vindue har fortsat 5.659 vind-, 5.919 bølge-, 5.868 strøm-, 66.491
+DMI-only-vandstands- og 31.653 temperaturhuller af 79.414 pr. felt.
+Ændret horisont gør rå før/efter-totaler uegnede som regressionstal.
+
+DMI nåede kun 31 af 115 officielle Limfjordstimer før tidsgrænsen og
+begynder normalt igen ved første time i et nyt modelrun. Copernicus
+arbejdede kun på huller, som Open-Meteo endnu ikke dækkede; det gamle
+post-build-kvalitetsjob er slukket på grund af ukrypteret cache. Lokal
+4.0.481 roterer faktiske kritiske DMI-forsøg efter de tre nærmeste
+timer og giver Copernicus en bounded, valgfri kvalitetstur i samme
+krypterede normaljob. Kun præcis den nuværende 4.0.480-private pakke
+har fuldt hashbundet forgængeradgang. Måltests er grønne, liveeffekten
+afventer. Ingen ny normalrun ved uafklaret stagnation; cron pauset,
+ingen oneoff. Se DEC-0251.
+
+# HISTORISK SANDHED – 2026-09-24 – lokal 4.0.480, ærlig delvis fremgang
 
 4.0.479 er merged (`888d3c04`). `35920484428` genbrugte korrekt privat
 vejrpakke, gemte cache/checkpoint og deployede et fungerende offentligt

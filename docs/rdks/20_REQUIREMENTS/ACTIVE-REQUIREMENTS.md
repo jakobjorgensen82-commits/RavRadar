@@ -1,3 +1,17 @@
+# Aktuel kildeplanlægning – 2026-09-24
+
+- **REQ-NATIVE-CRITICAL-ROTATION-0251 – BINDENDE:** Normal DMI-drift
+  skal give tre nærmeste targettimer første chance og derefter
+  rotere faktiske kritiske native-assetforsøg gennem prognosen på
+  tværs af modelruns. Markøren må aldrig tælle som vejrbevis.
+- **REQ-ENCRYPTED-CP-QUALITY-0251 – BINDENDE:** Efter reel
+  huludfyldning skal Copernicus kunne overtage kvalificerede
+  Open-Meteo-reserver i en kort, afgrænset normal kvalitetstur.
+  Den må ikke ændre dagens allerede byggede offentlige resultat,
+  ikke genåbne den pensionerede ukrypterede cache og ikke gøre en
+  ellers gyldig deploy afhængig af et leverandørsvar. En ugyldig
+  stage må ikke gemmes som gyldig fremdrift.
+
 # Aktuel vejrfortsættelse og fremtidig databaseadgang – 2026-09-23
 
 - **REQ-EXACT-WEATHER-PREDECESSOR-0249 – BINDENDE:** En ændret
