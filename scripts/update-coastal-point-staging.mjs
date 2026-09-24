@@ -10,7 +10,8 @@ import {
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
-import { buildDmiForecastHourly, createDmiForecastRecord, selectDmiForecastAt } from './lib/dmi-forecast-store.mjs';
+import { createDmiForecastRecord, selectDmiForecastAt } from './lib/dmi-forecast-store.mjs';
+import { buildDmiMarineComponentwiseHourly } from './lib/dmi-marine-run-seam-recovery.mjs';
 import {
   POINT_STAGE_READY,
   POINT_STAGE_SCHEMA_VERSION,
@@ -103,12 +104,19 @@ function forecastFromPrivateZone(
       waterTemperature: provenance(row).waterTemperature,
     },
   }));
-  const built = buildDmiForecastHourly({
+  const built = buildDmiMarineComponentwiseHourly({
     wind, windTail, waves, ocean,
     generatedAt: referenceAt,
     startAt,
     hours,
     sourceCadenceMinutes: Number(dmiDocument?.timeStrideHours ?? 3) * 60,
+    expectedIdentity: {
+      entityId: zone.entityId,
+      parentZoneId: zone.parentZoneId,
+      entityType: zone.entityType,
+      samplingContext: zone.samplingContext,
+      samplingPoint: zone.samplingPoint,
+    },
   });
   return createDmiForecastRecord({
     zoneId: `PART::${stage.partId}`,

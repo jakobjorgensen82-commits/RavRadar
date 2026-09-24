@@ -1,14 +1,45 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.484
+**Håndbogsversion:** 4.0.485
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.484 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.485 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.81 4.0.485 – Kontrol af Limfjord og hver vejrtypes egne timer
+
+Normalrun `35972581225` gemte og viste en nyere vejrpakke. Den
+offentlige side har fortsat prognoser, men ikke komplette vejrdata.
+Otte godkendte Limfjordskyster bruger en tidligere ægte DMI-måling
+som kort reference uden at opfinde en ny strømvektor. En af 54
+kontroller kaldte dem fejlagtigt manglende, fordi den læste
+fastholdelsesmarkøren på dens gamle plads. Kontrollen læser nu den
+form, som den færdige produktion faktisk gemmer. Reglen om højst tre
+timer, kildebeviset og scorens beregning er uændret.
+
+Copernicus svarede gentagne gange, at dets datasæt var under
+opdatering. Derfor kom ingen nye godkendte bølge-/temperaturværdier
+fra det separate komponentled i denne kørsel. Open-Meteo udfyldte
+nogle huller, men vind, bølger, vandstand, temperatur og havstrøm
+har fortsat hver deres rest. Den automatiske tidsplan er pauset,
+indtil den normale drift og resternes årsager er afklaret.
+
+En direkte sammenligning af samme 77.395 kystdel/time-par i to
+offentlige prognoser viste også 274 mistede temperaturværdier på fire
+timer. Årsagen kan genskabes: Kom der en ny strøm- eller
+vandstandsmåling på et tidspunkt uden temperatur, kunne den stå i
+vejen for gyldige temperaturmålinger omkring tidspunktet. Vejr-
+producenten bygger nu havstrøm, vandstand og vandtemperatur hver for
+sig og udfylder kun huller med verificerede værdier. Det gælder også
+kystdelenes private staging. Den låste scoremodel er uændret. Rettelsen
+udfylder ikke større tidsafstande end før og
+opfinder ikke målinger. Den seneste private cache genbruges kun, når
+dens præcise identitet og indhold består kontrollen i begge trin.
+Først en ny normal kørsel kan vise, om alle 274 tab er væk i drift.
 
 ## 89.80 4.0.484 – Se hvorfor vejrhuller ikke bliver fyldt
 

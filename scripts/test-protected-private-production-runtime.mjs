@@ -22,6 +22,7 @@ import {
   DMI_MARINE_SEAM_PREDECESSOR,
   DMI_SCHEDULER_ONLY_PREDECESSOR,
   WEATHER_ROTATION_PREDECESSOR,
+  MARINE_COMPONENT_PREDECESSOR,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
@@ -33,6 +34,8 @@ import {
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
   isExactWeatherRotationPredecessor,
+  isExactMarineComponentPredecessor,
+  isApprovedExactWeatherPredecessor,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
@@ -411,6 +414,70 @@ try {
   });
   assert.equal(rotationRestored.restored, true);
   assert.equal(rotationRestored.exactDmiPredecessor, true);
+  const marineComponentPredecessor = {
+    ...MARINE_COMPONENT_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: MARINE_COMPONENT_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: MARINE_COMPONENT_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: MARINE_COMPONENT_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  assert.equal(isExactMarineComponentPredecessor(marineComponentPredecessor, schedulerExpected), true);
+  assert.equal(isApprovedExactWeatherPredecessor(marineComponentPredecessor, schedulerExpected), true);
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-other-generation' },
+    { productionReferenceAt: '2026-09-24T08:00:00.000Z' },
+    { contractHashes: { ...marineComponentPredecessor.contractHashes, fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...marineComponentPredecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isApprovedExactWeatherPredecessor(
+      { ...marineComponentPredecessor, ...change }, schedulerExpected,
+    ), false);
+  }
+  const marineGeneration = await createGeneration(9, {
+    metadataOverride: {
+      datasetId: MARINE_COMPONENT_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-24T08:48:21.314Z',
+      productionReferenceAt: MARINE_COMPONENT_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: marineComponentPredecessor.contractHashes,
+  });
+  const marineDocuments = fakeDocuments();
+  const marineStorage = fakeStorage();
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: marineGeneration.bundlePath,
+    repositoryRoot: repository,
+    expected: {
+      ...(await buildPrivateRuntimeExpectation({
+        repositoryRoot: repository,
+        targetReferenceAt: '2026-09-24T10:00:00.000Z',
+        now: '2026-09-24T10:05:00.000Z',
+      })),
+      contractHashes: marineComponentPredecessor.contractHashes,
+    },
+    now: '2026-09-24T10:05:00.000Z',
+    sourceHead: MARINE_COMPONENT_PREDECESSOR.sourceHead,
+    request: marineDocuments.request,
+    storage: marineStorage.client,
+  });
+  const marineRestored = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'exact-marine-component-bridge'),
+    repositoryRoot: repository,
+    expected: await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-24T10:00:00.000Z',
+      now: '2026-09-24T10:05:00.000Z',
+    }),
+    now: '2026-09-24T10:05:00.000Z',
+    request: marineDocuments.request,
+    storage: marineStorage.client,
+  });
+  assert.equal(marineRestored.restored, true);
+  assert.equal(marineRestored.exactDmiPredecessor, true);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);

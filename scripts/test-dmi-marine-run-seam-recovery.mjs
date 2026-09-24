@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { buildDmiForecastHourly, verifiedDmiForecastSource } from './lib/dmi-forecast-store.mjs';
-import { recoverDmiMarineRunSeamHours } from './lib/dmi-marine-run-seam-recovery.mjs';
+import {
+  buildDmiMarineComponentwiseHourly,
+  recoverDmiMarineRunSeamHours,
+} from './lib/dmi-marine-run-seam-recovery.mjs';
 
 const generatedAt = '2026-09-25T06:00:00.000Z';
 const at = hour => new Date(Date.parse(generatedAt) + hour * 3_600_000).toISOString();
@@ -54,6 +57,10 @@ const newer = native(3, -3, -0.01, 0.02, 0.03, 13.2);
 const build = ocean => buildDmiForecastHourly({
   ocean, generatedAt, hours: 5, sourceCadenceMinutes: 180,
 }).hourly;
+const componentwise = ocean => buildDmiMarineComponentwiseHourly({
+  ocean, generatedAt, hours: 5, sourceCadenceMinutes: 180,
+  expectedIdentity: identity,
+}).hourly;
 const base = build([old, newer]);
 assert.equal(base[1].currentUMps, null);
 assert.equal(base[1].waterLevelCm, null);
@@ -93,4 +100,43 @@ const distantRecovered = repair([old, distant]);
 assert.equal(distantRecovered[2].currentUMps, null);
 assert.equal(distantRecovered[2].waterLevelCm, null,
   'the existing 95-minute edge limit must not be extended');
+
+// Native DKSS fields can arrive at different valid times. A current-only
+// sample between two verified temperature samples must not mask the
+// temperature pair when the public hourly forecast is materialized.
+const sameRunBefore = native(0, -6, 0.06, 0.04, 0.01, 13.8);
+const sameRunAfter = native(3, -6, 0.09, 0.06, 0.02, 14.1);
+const currentOnly = {
+  step: at(1), 'current-u': 0.05, 'current-v': 0.01,
+  provenance: { current: source('current', 1, -6) },
+};
+const oldTemperature = build([sameRunBefore, sameRunAfter])[1];
+assert.equal(build([sameRunBefore, currentOnly, sameRunAfter])[1].waterTemperatureC, null,
+  'the underlying mixed-row defect must remain visible to this producer regression');
+const newTemperature = componentwise([sameRunBefore, currentOnly, sameRunAfter])[1];
+assert.equal(oldTemperature.waterTemperatureC, 13.9);
+assert.equal(newTemperature.waterTemperatureC, oldTemperature.waterTemperatureC,
+  'a new current-only native row must not erase an unchanged valid temperature bracket');
+assert.ok(verifiedDmiForecastSource(
+  newTemperature.sources.waterTemperature, 'waterTemperature', at(1), identity,
+));
+const temperatureOnly = {
+  step: at(1), 'water-temperature': 13.9,
+  provenance: { waterTemperature: source('waterTemperature', 1, -6) },
+};
+const newCurrentAndLevel = componentwise([sameRunBefore, temperatureOnly, sameRunAfter])[1];
+assert.equal(newCurrentAndLevel.currentUMps, oldTemperature.currentUMps,
+  'a new temperature-only native row must not mask a verified current bracket');
+assert.equal(newCurrentAndLevel.waterLevelCm, oldTemperature.waterLevelCm,
+  'a new temperature-only native row must not mask a verified water-level bracket');
+for (const component of ['current', 'waterLevel']) {
+  assert.ok(verifiedDmiForecastSource(
+    newCurrentAndLevel.sources[component], component, at(1), identity,
+  ));
+}
+const wideGap = componentwise([
+  sameRunBefore, currentOnly, native(6, -6, 0.12, 0.06, 0.02, 14.4),
+])[1];
+assert.equal(wideGap.waterTemperatureC, null,
+  'component-specific construction must not widen the verified interpolation window');
 console.log('DMI marine run-seam weather-producer recovery passes.');

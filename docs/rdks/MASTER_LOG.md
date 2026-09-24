@@ -1,3 +1,29 @@
+# 2026-09-24 – lokal 4.0.485, strømaudit og marine timefelter
+
+4.0.484/PR #446 blev merged og kode-only-deploy verificeret. Den
+efterfølgende normale kørsel gemte ny privat cache, checkpoint og
+offentligt 07:00-dataset `rr-20260924084821-210`. Copernicus'
+komponentled forsøgte 24 gange uden optagne værdier, mens leverandøren
+meldte datasætopdatering. Open-Meteo fyldte nogle vind-, bølge- og
+temperaturhuller, men alle fem vejrtyper har rester.
+
+Én fuld diagnostisk kontrol fejlede på de otte autoriserede
+Limfjord-fastholdelser, som producent og offentlig score viste
+korrekt. Rodårsagen er auditens læsning af rå `publicContext` efter
+at produktionsadapteren har lagt `currentTransition` på topniveau.
+En eksakt offentlig sammenligning på 77.395 fælles par fandt desuden
+274 tabte temperaturværdier på fire timer og nul tab for de øvrige
+fire vejrtyper. En ny DMI-række for en anden marin vejrtype kunne
+maskere gyldig temperatur i timebyggeren. En rød-før/grøn-efter-
+reproducer bekræfter kodefejlen; de marine vejrtyper bygges nu
+separat i vejrproducenten og staging uden at ændre den låste scoremodel,
+tidsvindue eller kildekrav. Den første direkte modelændring blev
+forkastet efter exact-head-kildegaten. Den seneste private
+4.0.484-pakke er eksakt allowlistet i både beskyttet og lokal restore.
+Auditten læser nu den rigtige produktionsform og afviser fortsat
+modstridende rå markør. Næste: exact-head, kode-only, én normalrun
+og livekontrol af alle 274 tabte par før flere runs.
+
 # 2026-09-24 – lokal 4.0.482, samme cachebevis i begge restore-trin
 
 4.0.481/`64599ed4` bestod exact-head-gate `35951509094`, men run

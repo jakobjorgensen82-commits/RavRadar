@@ -1,3 +1,30 @@
+# Aktuelle issues – 2026-09-24, lokal 4.0.485
+
+- **RUMLIG STRØMAUDIT-35972581225 – LOKALT RETTET / LIVEBEVIS ÅBENT:**
+  Én af 54 diagnostiske kontroller fejllæste otte lovlige
+  Limfjord-fastholdelser efter produktionsprojektionens feltflytning.
+  Score og offentlig visning var tilgængelige, og producentens spor
+  dokumenterede alle otte. 4.0.485 læser den faktiske topniveau-markør
+  og tester den reelle projektion. Tre-timers- og kildekrav bevares.
+- **VANDTEMPERATUR-REGRESSION-35972581225 – LOKALT RETTET /
+  LIVEBEVIS ÅBENT:** Eksakt 77.395-pars offentlig sammenligning fandt
+  274 tidligere gyldige temperaturpar tomme på fire timer. En ny
+  strøm-/vandstandsrække uden temperatur kunne skygge for gyldige
+  temperaturmålinger ved timebygning. Komponentvis bygning i
+  vejrproducenten, også for kystdels-staging, retter
+  den reproducerede fejl uden bredere tidsgrænse; alle 274 skal
+  genmåles efter en normalrun. Kun eksakt 4.0.484 privat forgænger
+  tillades i begge restore-trin.
+- **COPERNICUS-DATASET-UPDATING – ÅBEN:** Både operationelt strømled
+  og særskilt komponentled fik gentagne svar om igangværende
+  datasætopdatering. Komponentleddet gav nul valgte værdier ved
+  24 genforsøgelige forsøg. Gemt gyldig fremgang bevares; ingen
+  ugyldige værdier må accepteres for at skjule dette.
+- **FELTVISE RESTER – ÅBEN:** På 07:00-målet mangler 5.488 vind,
+  7.969 bølger, 64.765 DMI-only-vandstand, 32.414 temperatur og
+  5.649 strømpar. Det er ikke komplet; rå tal på forskudte måltider må
+  ikke udlægges som en eksakt fremgang eller regression. Cron pauset.
+
 # Aktuelle issues – 2026-09-24, lokal 4.0.482
 
 - **PRIVATE-SECOND-RESTORE-35952076841 – RETTET LOKALT / LIVEBEVIS

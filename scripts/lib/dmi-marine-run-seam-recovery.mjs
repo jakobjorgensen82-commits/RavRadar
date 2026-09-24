@@ -47,6 +47,38 @@ function copyComponent(row, candidate, component) {
 }
 
 /**
+ * The DKSS cache combines marine parameters by native hour, but those
+ * parameters can have different native timestamps. Build each marine series
+ * independently before filling only genuinely missing values in the weather
+ * producer. The shared, model-bound forecast implementation is unchanged.
+ */
+export function buildDmiMarineComponentwiseHourly({ ocean = [], expectedIdentity, ...options } = {}) {
+  if (!expectedIdentity || !Array.isArray(ocean)) {
+    throw new Error('DMI marine componentwise build requires native rows and exact identity');
+  }
+  const built = buildDmiForecastHourly({ ...options, ocean });
+  const hourly = built.hourly.map(row => ({ ...row, sources: { ...(row.sources ?? {}) } }));
+  for (const component of MARINE_COMPONENTS) {
+    const native = ocean.filter(row => completeNative(row, component));
+    if (!native.length || hourly.every(row => completeHour(row, component))) continue;
+    const componentHourly = buildDmiForecastHourly({
+      ...options,
+      ocean: native.map(row => runOnlyRow(row, component)),
+    }).hourly;
+    for (let index = 0; index < hourly.length; index += 1) {
+      const row = hourly[index];
+      const candidate = componentHourly[index];
+      if (completeHour(row, component) || !completeHour(candidate, component)) continue;
+      if (!verifiedDmiForecastSource(
+        candidate.sources?.[component], component, row.time, expectedIdentity,
+      )) continue;
+      copyComponent(row, candidate, component);
+    }
+  }
+  return { ...built, hourly };
+}
+
+/**
  * Weather-producer-only repair for a DMI model-run boundary. The shared
  * forecast/model adapter remains unchanged. Rebuild each already-verified
  * native run independently, then admit only a bounded, fully verified edge
