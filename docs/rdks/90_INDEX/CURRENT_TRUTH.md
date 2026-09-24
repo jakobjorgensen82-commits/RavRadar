@@ -5586,3 +5586,27 @@ er måltest, RDKS/version, én exact-head-kildegate, merge og kode-only-
 deploy, dernæst én ikke-overlappende normalrun med eksakt fælles
 felt-/leverandørsammenligning og konkret restårsag. Stop nye runs ved
 stagnation og ret årsagen før videre drift.
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.487 bølgehistorik
+
+Normalrun `36009816840` på 4.0.485-main er afsluttet **rød**.
+DMI, Copernicus, Open-Meteo, strøm-lukning og strømhistorik lykkedes;
+beskyttet krypteret vejrprogress blev gemt. Den centrale cachebygning
+stoppede i RavScore-replay på to forskellige verificerede bølger for
+samme time. Ingen ny cache, artifact eller Pages fra dette run.
+Sidst offentligt beviste pakke er fortsat 11:00 UTC
+`rr-20260924122409-210` fra grøn `35993736090`. Det konkrete
+providerpar i konflikten findes ikke i den sikre log og er uafklaret.
+
+Lokal 4.0.487 fører replayets eksakte bølgebevis ind i valg mellem
+gammel og ny kilde og genbruger DEC-0210's DMI-first/96-timersregel.
+Tidligere valgt reserve bevares uden bevis for en nyere prognose;
+frisk verificeret DMI kan overtage. Ugyldige kandidater og
+uforklarede peers forbliver fail-closed. Strøm er uafhængig.
+RavScore-formel/bundle, geometri og vejrproducent er uændrede.
+Målrettet replay-, komponent- og Feggesund-test er grøn lokalt,
+men livebevis mangler. 4.0.486's forståelige DA/DE/EN-tekster følger
+med i 4.0.487. PR #448 kræver nyt exact-head bevis på den ændrede
+commit før merge. Derefter én normalrun uden overlap fra beskyttet
+fremgang og eksakt fem-feltssammenligning; cron fortsat pauset.
+Se DEC-0253. Det følgende 4.0.486-afsnits »aktive run« og
+mergevent er historisk og erstattet her.

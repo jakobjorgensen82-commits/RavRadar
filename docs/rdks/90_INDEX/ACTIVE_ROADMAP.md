@@ -3245,3 +3245,21 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Ved fortsat stagnation: stop nye runs og ret den dokumenterede
    leverandør-, gitter-, plan- eller tidsårsag. Genaktivér først cron
    efter gentagen autonom normaldrift; komplet gyldig data er stadig målet.
+# Aktivt roadmap – 2026-09-24, 4.0.487 efter fejlet normalrun
+
+1. [x] Stop nye vejrkørsler efter `36009816840`; ingen overlap.
+   Alle leverandører nåede igennem og privat fremgang blev gemt,
+   men score-replay stoppede før cache/artifact/Pages.
+2. [x] Ret kvalificeret bølgesamling efter DMI-first/96-timersreglen
+   uden at skjule ugyldige eller ukendte konflikter. Bevar gammel
+   gyldig strøm uafhængigt. Måltests grønne lokalt.
+3. [ ] Afslut 4.0.487-version, RDKS/håndbog, geodatabevis og én
+   exact-head sourcegate på den ændrede PR #448. Merge sikkert.
+4. [ ] Start én almindelig, ikke-overlappende kørsel på ny main fra
+   seneste krypterede cache. Bevis leverandører, alle fem resttyper,
+   score, cache-save, artifact, Pages og synlige zoner på fælles mål.
+5. [ ] Ved ny fejl: stop nye runs og afgræns sikker konkret årsag;
+   løs den uden at genhente unødigt eller lempe kildebevis. Ved grøn
+   kørsel: gentag normaldrift for at bevise autonom fortsættelse, før
+   cron genaktiveres. UI-sprog kontrolleres på desktop/mobil i
+   samme offentlige release. Intet oneoff uden målt behov.

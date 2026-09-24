@@ -7,8 +7,8 @@ strømscoren over flere timer. Teksten er ikke forkortet på bekostning
 af mening. Den oprindelige modelpræcise begrundelse kan fortsat åbnes
 under tekniske detaljer. Modellen, vejrdata, geometri og de numeriske
 scorer ændres ikke; bundlehash er fortsat `61ec5474…`. Release og
-offentlig kontrol afventer afslutningen af næste normalrun
-`36009816840`. Den forrige `35993736090` gemte privat cache og
+offentlig kontrol flyttes til 4.0.487, da næste normalrun
+`36009816840` stoppede i bølgehistorikken. Den forrige `35993736090` gemte privat cache og
 deployede 11:00 UTC-prognosen uden tabte gyldige felter på fælles mål.
 
 ## 4.0.485 – komponentvis DMI-marin time og korrekt rumlig audit (2026-09-24)
@@ -2309,3 +2309,12 @@ Den eksakte sidste private cache er tilladt som forgænger i
 begge restore-trin. Desuden læser strømauditten otte godkendte
 Limfjord-fastholdelser fra den faktiske produktionsform. Livebevis
 afventer. Se `CHANGELOG-4.0.485.md`.
+## 4.0.487 – sikker bølgeprioritet i historik (2026-09-24)
+
+Normalrun `36009816840` gemte vejrfremskridt fra alle tre leverandører,
+men scorehistorikken stoppede på en bølgekonflikt før artifact/Pages.
+Den lokale rettelse anvender den eksisterende DMI-first-regel ved
+samling af to verificerede bølgekomponenter, bevarer gyldig gammel
+reserve uden revisionsbevis og holder ukendte konflikter som fejl.
+Den forståelige DA/DE/EN-tekst fra 4.0.486 følger med. Kun lokal
+måltest er endnu bevist; se `CHANGELOG-4.0.487.md` og DEC-0253.

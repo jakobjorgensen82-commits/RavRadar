@@ -5223,3 +5223,16 @@ kun aggregerede CP-/OM-tal til den eksisterende GitHub-rapport;
 ingen score, datakildevalg eller cacheformat ændres. Måltest,
 exact-head/merge/kode-only og én normalrun med målt feltvis fremgang
 afventer. Cron pauset; vejrdata er fortsat ufuldstændige.
+# 2026-09-24 – lokal 4.0.487, luk almindeligt bølgeoverlap
+
+Normalrun `36009816840` hentede gennem DMI/CP/OM og gemte privat
+progress, men central scorehistorik stoppede på bølgekonflikt før
+artifact og Pages. Den konkrete konfliktende kildeparring er ikke
+offentligt identificeret. Recovery bruger nu samme kildeprioritet
+som vejrhentningen, men kun for replay-verificerede bølger. DMI
+overtager gyldig reserve; gammel gyldig reserve bevares uden
+revisionsbevis; 96-timersundtagelsen kræver responsbundet nyere
+modelrun. Generisk fail-closed, Feggesund og uafhængig strøm
+bevares. 4.0.486's forståelige UI-sprog følger med. Lokal test grøn;
+exact-head, merge, live cache/deploy og autonom gentagelse afventer.
+Se DEC-0253 og CHANGELOG-4.0.487.

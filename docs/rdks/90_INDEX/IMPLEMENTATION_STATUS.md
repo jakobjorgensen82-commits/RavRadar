@@ -6145,3 +6145,20 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   Open-Meteo-rest, fem feltvise eksakte overlap, cachelineage og Pages.
 - [ ] Find og ret den dokumenterede restårsag før flere runs ved
   stagnation; cron forbliver pauset og komplethed er ikke bevist.
+# 2026-09-24 – lokal 4.0.487, bølgeprioritet i recovery
+
+- [x] Afklar `36009816840`: alle tre leverandørtrin og beskyttet
+  progress-save lykkedes; scorehistorikken stoppede ved bølgekonflikt.
+  Intet nyt offentligt deploy eller produktionscache fra dette run.
+- [x] Bevar generic replay fail-closed, og brug streng bølgeadmission
+  samt eksisterende DMI-first/96-timersregel ved kvalificeret
+  tværleverandør-/reserveoverlap. Test gammel strøm + ny bølge.
+- [x] Målrettet lokal replay-, adapter-, komponent- og proxytest grøn.
+- [x] Medtag 4.0.486's almindeligt forståelige DA/DE/EN-tekster.
+- [ ] Afslut version/RDKS/håndbog og ren geodatadiff.
+- [ ] Bestå exact-head sourcegate på PR #448's **nye** head, merge og
+  én normalrun uden overlap fra sidst gemte private fremgang.
+- [ ] Bevis at samme normalrun gemmer cache, bygger score/artifact,
+  deployer Pages og bevarer/forbedrer fem vejrtyper på fælles grid.
+  Følg flere normale kørsler før cron genaktiveres. Større datahuller
+  og faktisk providerpar i denne konflikt er fortsat uafklarede.

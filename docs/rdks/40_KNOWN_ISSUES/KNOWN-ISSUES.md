@@ -3234,3 +3234,17 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **AUTONOM DRIFT – ÅBEN:** Cron er pauset. Bevar seneste gyldige
   cache, DMI-first og Limfjord-fastholdelse; kør ikke overlappende
   eller blind oneoff ved uafklaret stagnation.
+# Aktuelle issues – 2026-09-24, lokal 4.0.487
+
+- **BØLGE-REPLAY-36009816840 – LOKALT RETTET, LIVE ÅBEN:** Alle
+  leverandører gennemførte og privat progress blev gemt, men
+  scorehistorikken afviste to forskellige verificerede bølger for
+  samme kystdel/time. Det præcise providerpar blev ikke logget sikkert.
+  Kodeanalysen fandt, at recovery manglede fælles DMI-first-regel for
+  reserveoverlap. 4.0.487 bruger eksisterende kildepolitik efter
+  streng bølgeadmission. Måltest grøn; næste normalrun skal bevise
+  årsag og end-to-end-resultat. Ingen ny produktionscache/Pages i
+  `36009816840`, men krypteret vejrprogress er gemt.
+- **DATADÆKNING – ÅBEN:** Sidst offentligt mål har betydelige huller
+  i alle fem vejrtyper, især DMI-only-vandstand. Selvstændig normal
+  drift, flere grønne kørsler og fuld dækning er ikke bevist.

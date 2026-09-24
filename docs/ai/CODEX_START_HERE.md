@@ -2282,3 +2282,17 @@ synliggør kun sikre årsagstal i GitHub-loggen. Først måltest, RDKS,
 exact-head, merge og kode-only; dernæst én normalrun uden overlap,
 eksakt feltvis før/efter og årsagsbestemt rettelse. Cron er pauset.
 Se CURRENT_TRUTH og ACTIVE_ROADMAP.
+# NYESTE CHECKPOINT – 2026-09-24 – lokal 4.0.487
+
+4.0.486-UI-branchen/PR #448 er udvidet til 4.0.487, fordi næste
+normalrun `36009816840` på uændret 4.0.485-main fejlede før deploy.
+DMI, Copernicus, Open-Meteo, strøm-lukning og strømhistorik lykkedes;
+krypteret privat vejrprogress blev gemt. Scorehistorikkens to
+verificerede bølger for samme time havde forskellige signaturer,
+og replay stoppede. Eksakt providerpar er ukendt. Lokal rettelse bruger
+DEC-0210's DMI-first/96-timers kildevalg også her, men kun efter
+replayets præcise bølgebevis. Modelbundle og scoreformel er uændrede.
+Måltest grøn. Næste: dokumentation/version, exact-head PR #448, merge,
+én normal ikke-overlappende kørsel fra seneste beskyttede progress;
+kontroller fem felter, cache og Pages. Cron pauset. Det gamle
+4.0.486-afsnits »aktivt run« er erstattet af dette resultat.

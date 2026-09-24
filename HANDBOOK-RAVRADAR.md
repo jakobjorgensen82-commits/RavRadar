@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.486
+**Håndbogsversion:** 4.0.487
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.486 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.487 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.83 4.0.487 – Gammel og ny bølge uden stop ved almindelig kildeændring
+
+En almindelig vejrkørsel den 24. september hentede gennem alle tre
+leverandører, men stoppede, da scorehistorikken fik to forskellige
+godkendte bølgeværdier for samme kystdel og time. Vejrfremskridtet
+blev gemt privat; hjemmesiden beholdt den senest færdige prognose.
+Det er ikke bevis for fulde data eller en ny offentlig opdatering.
+
+Samlingen bruger nu den samme prioritet som den normale vejrhentning:
+en gyldig DMI-bølge kan overtage en gammel reservebølge. En reserve
+kan kun overtage gyldig DMI, hvis DMI-prognosen er mindst 96 timer
+gammel og reserven beviser en nyere prognose. Et nyt download alene
+er ikke nok. En tidligere gyldig reserve beholdes, hvis en ny
+reserve ikke kan bevise, at den er en nyere prognose. Bølge og strøm
+vurderes hver for sig. Før et valg kontrolleres den præcise kystdel,
+time, kilde og bølgepakke. En faktisk uafklaret modstrid stopper
+fortsat i stedet for at ændre data i blinde.
+
+Rettelsen og de forståelige score-/prognosetekster er endnu lokale.
+Først en ny, komplet normal vejrkørsel og en offentlig kontrol kan
+vise, om driften nu fungerer uden hjælp. Se DEC-0253.
 
 ## 89.82 4.0.486 – Forstå RavScore og prognosen uden fagord
 
@@ -32,7 +54,8 @@ modelbinding ændres. 4.0.485 er online; normalrun `35993736090`
 gennemførte DMI, Copernicus, Open-Meteo, privat cache og offentlig
 deploy. På 114×673 fælles vejrpar gik ingen gyldig værdi tabt, men
 de fem vejrtyper har fortsat betydelige huller. Næste normalrun
-`36009816840` følges på samme main, inden 4.0.486 merges.
+`36009816840` stoppede siden ved bølgesamling. 4.0.486 leveres
+derfor ikke særskilt; teksten følger med i 4.0.487.
 
 ## 89.81 4.0.485 – Kontrol af Limfjord og hver vejrtypes egne timer
 

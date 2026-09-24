@@ -1679,3 +1679,11 @@ gav nul valgte værdier, og dets årsagsstatus blev ikke logget.
 4.0.484 tilføjer kun sikre samlede statusfelter; faktisk årsag og
 virkningen af Copernicus' krypterede næste-run-kvalitetstur skal
 måles i én ny normal kørsel efter exact-head og merge. Cron pauset.
+## 2026-09-24 – 4.0.487 bølgesamling efter afbrudt weather
+
+`36009816840` gennemførte tre leverandører og gemte beskyttet
+progress, men stoppede i score-replay før cache/artifact/Pages.
+Lokal 4.0.487 bruger det eksisterende DMI-first/96-timersvalg ved
+verificerede overlappende bølger og medtager 4.0.486's læsbare
+DA/DE/EN-tekster. Generisk replaykonflikt bevares. Livebevis
+afventer. Se DEC-0253.

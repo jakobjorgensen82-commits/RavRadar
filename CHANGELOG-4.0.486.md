@@ -12,4 +12,5 @@
   på samme main gennemførte cachegemning og Pages. Ingen gyldige
   felter gik tabt på 114×673 fælles offentlige par, men alle fem
   vejrtyper har fortsat huller. Næste normalrun `36009816840` er
-  aktiv på samme main; ingen tekst-merge under dens main-lås.
+  siden afsluttet med bølgekonflikt før deploy. 4.0.486 blev ikke
+  leveret separat; teksten følger med i 4.0.487 sammen med DEC-0253.
