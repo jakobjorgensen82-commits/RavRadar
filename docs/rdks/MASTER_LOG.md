@@ -5156,3 +5156,15 @@ på Candidate G-ledsagerens frosne v2-pakke. En særskilt append-only
 successor retter kun de to ledsager-id-sammenligninger. Øvrig CAS,
 score, vejrdata og regional tre-timersfastholdelse ændres ikke.
 Live checkpoint og Pages afventer. Se DEC-0247.
+# 2026-09-24 – lokal 4.0.483, forklar bedste sted ved siden af områdescoren
+
+4.0.482 blev merged som `131f92f0`; normalrun `35954069186` gennemførte
+providerkæde, central cache, beskyttet gemning og Pages. Offentligt
+dataset `rr-20260924045351-210` har mål 04:00 UTC. Datafremgang
+og rester er endnu ikke feltvist sammenlignet med forgængeren.
+Fotos fra ejeren viste 79 lokal RavScore mod 73 områdescore for
+Ebeltoft/Ahl og 78 mod 72 for Fornæs/Grenaa; sidstnævnte stod faktisk
+som nr. 4. Tallene følger to aftalte scorer, men forklaringen var for
+svær. Ejeren godkendte en enkel tekst og mindre “Bedste sted”-tal i
+begge top-5-lister, uden at ændre områdescoren eller sorteringen.
+Måltests er lokalt grønne; exact-head/live UI afventer.

@@ -204,10 +204,13 @@ assert.ok(app.includes('compareNationalRankingRows') && app.includes('addNationa
 assert.match(app, /buildLocalZoneScore\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\?\.id,mode:state\.mode,time:referenceAt\}\)/, 'Den aktuelle liste skal sende den valgte jagtform til lokal RavScore.');
 assert.match(app, /selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\)/, '5-dages listen skal sende den valgte jagtform til dagens lokale RavScore.');
 assert.equal((app.match(/item\.rankingDisplayScore/g)||[]).length>=4,true,'Begge lister skal vise den samme områdescore, som de sorterer efter.');
+assert.equal((app.match(/ranking\.bestPlace/g)||[]).length,2,'Begge lister skal vise bedste steds RavScore mindre end områdescoren.');
+assert.equal((app.match(/ranking-best-place">\$\{t\('ranking\.bestPlace'\)\}: \$\{item\.result\.score\}/g)||[]).length,2,'Begge lister skal hente bedste steds tal fra den samme lokale RavScore som kortet.');
 assert.equal(
-  (index.match(/Højeste områdescore står øverst\./g) || []).length,
+  (index.match(/Et område kan have ét rigtig godt sted, selvom resten er mindre godt\./g) || []).length,
   2,
-  'Begge landslister skal forklare områdescoren med almindeligt brugersprog.',
+  'Begge landslister skal forklare forskellen mellem område og bedste sted.',
 );
+assert.match(index,/data-i18n="forecast\.rankingNote"/, 'Fremtidslisten må ikke beskrive dagens kort som sin egen scorekilde.');
 
 console.log('National broad-support-rangering: 210 zoner / 673 kystdele og UI-kontrakt er groen.');

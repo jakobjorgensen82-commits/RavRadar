@@ -6049,3 +6049,18 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   og Pages, og saml eventuelle øvrige sikre årsagskoder samlet.
 - [ ] Bevis checkpoint/Pages, derefter normal drift med før/efter
   pr. vejrtype, kilde og cachelineage. Cron stadig pauset.
+# 2026-09-24 – lokal 4.0.483, begge ranglistetal
+
+- [x] 4.0.482/PR #444 merged på `131f92f0`; normalrun `35954069186`
+  gennemførte alle tre leverandørled, cache, gemning og Pages-deploy.
+- [ ] Afslut separat måling af fem vejrtype-rester, leverandørandele,
+  eksakt cachelineage og offentlig før/efter; en grøn run betyder ikke
+  komplet dækning. Cron er pauset.
+- [x] Bevar den store områdescore og rangeringen; vis mindre “Bedste
+  sted” med den uændrede lokale RavScore i begge top-5-lister.
+- [x] Brug ejerens godkendte enkle forklaring i “Bedste områder” og
+  dagsspecifik forklaring i femdøgnslisten; målrettede ranking-/sprogtests
+  er grønne lokalt.
+- [ ] RDKS/version/geodatadiff, exact-head-kildegate, PR/merge og
+  målrettet offentlig desktop-/mobilvisning. Ingen ny vejrkørsel alene
+  for denne tekstændring.

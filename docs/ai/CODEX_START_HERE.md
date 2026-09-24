@@ -2218,3 +2218,18 @@ Næste: målrettede tests, én exact-head, merge og ét providerfrit
 run fra samme private pakke. Bevis checkpoint/Pages og saml eventuelle
 andre sikre C-koder for 673 dele, og
 fortsæt derpå normal vejrhentning felt for felt. Cron pauset.
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.483 tydelig rangliste
+
+4.0.482/PR #444 er merged som `131f92f0`. Normalrun `35954069186`
+gennemførte DMI, Copernicus, Open-Meteo, cachegemning og Pages med
+offentligt dataset `rr-20260924045351-210`. Feltvis sammenligning,
+leverandørandele og reel cachefremgang er endnu ikke afsluttet; grøn
+drift er ikke bevis for komplet vejr. Cron er pauset.
+
+Lokal 4.0.483 ændrer kun de to top-5-listers præsentation: den store
+områdescore og rækkefølgen bevares, og bedste lokale RavScore vises
+mindre med ejerens godkendte enkle forklaring. Målrettede ranking-/
+sprogtests er grønne. Næste: slut version/RDKS/geodatadiff, exact-head,
+merge og målrettet offentlig desktop-/mobilvisning. Ingen ny
+vejrindsamling alene for UI-ændringen. Fortsæt separat feltvis
+vejranalyse før næste normale run.

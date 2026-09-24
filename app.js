@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.482";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.482";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.482";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.482";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.482";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.482";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.482";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.482";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.482";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.482";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.482";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.482";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.482";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.482';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.482';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.482';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.482';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.483";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.483";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.483";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.483";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.483";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.483";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.483";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.483";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.483";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.483";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.483";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.483";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.483";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.483';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.483';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.483';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.483';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
@@ -150,7 +150,7 @@ function closeZone() {
 function renderRanking() {
   if(!state.zones)return;
   const rows=state.zones.features.map(feature=>nationalRankingRow({zone:feature.properties,result:currentScoreFor(feature.properties)})).filter(item=>item.result.available).sort(compareNationalRankingRows).slice(0,5);
-  ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('ranking.waiting')}</p>`;
+  ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('ranking.waiting')}</p>`;
   const snapshotReference=emergencySnapshotReferenceAt();
   if(snapshotReference)ranking.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${runtimeSnapshotText('ranking',{time:formatDateTime(snapshotReference)})}</p>`);
   ranking.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(item=>item.properties.id===button.dataset.zoneId).properties)));
@@ -250,7 +250,7 @@ async function renderNationalForecast() {
   if(renderId!==state.forecastRenderId)return false;
 
   const list=nationalForecast.querySelector(".national-forecast-list");
-  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?t('forecast.bestNow'):t('forecast.bestAt',{time:formatDateTime(item.hour.time,{hour:'2-digit',minute:'2-digit'})})):t('forecast.seeHourly')}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('forecast.noData')}</p>`; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties)));};
+  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?t('forecast.bestNow'):t('forecast.bestAt',{time:formatDateTime(item.hour.time,{hour:'2-digit',minute:'2-digit'})})):t('forecast.seeHourly')}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('forecast.noData')}</p>`; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties)));};
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
   return true;
 }

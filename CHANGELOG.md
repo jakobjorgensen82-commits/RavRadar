@@ -2247,3 +2247,11 @@ kystdele pr. kald og summerer faste regelkoder på tværs af alle 673.
 En fejl i selve diagnosekaldet får en sikker HTTP-/netværks-/svar-
 klasse. CAS, score, vejrdata, kildeprioritet og geometri er uændrede.
 Samme cache genbruges ved næste korte forsøg. Se DEC-0245.
+## 4.0.483 – forklar områdescore og bedste sted (2026-09-24)
+
+Begge nationale top-5-lister beholder den store områdescore og den
+hidtidige sortering, men viser også den bedste kyststræknings uændrede
+RavScore mindre under området. Dagens forklaring er omskrevet med
+ejerens godkendte enkle ord; femdøgnslisten forklarer sin valgte dag.
+Ingen ændring af scoreberegning, vejrdata eller kildeprioritet. Se
+`CHANGELOG-4.0.483.md` og DEC-0069's tillæg.

@@ -1,9 +1,9 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.482
+**Håndbogsversion:** 4.0.483
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.482 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.483 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
@@ -3583,6 +3583,8 @@ Fysik, aktiv RavRadar-kontrakt og praktisk felterfaring er skilt fra hinanden i 
 > **Historisk revisionsspor:** Dette er 4.0.270's leverancebeskrivelse. Candidate G- og 13-timersomtalen nedenfor er den daværende offentlige kontrakt, ikke den aktive integrerede sandhed.
 
 De to nationale lister viser nu den samme **områdescore**, som de sorterer efter. Områdescoren bevarer DEC-0049's beskyttelse mod, at områder med mange kyststrækninger får flere lodder i lotteriet: den tager både områdets bedste RavScore og støtten fra flere kyststrækninger med. Højeste viste områdescore står derfor altid øverst. Når et område åbnes, vises fortsat den bedste kyststræknings almindelige RavScore.
+
+Fra 4.0.483 vises begge tal samtidig: det store tal er fortsat områdescoren og bestemmer placeringen; **Bedste sted** og dets RavScore står mindre under områdenavnet. Teksten over dagens liste siger: “Et område kan have ét rigtig godt sted, selvom resten er mindre godt. Kortet viser det bedste sted. Denne liste vurderer hele området. Derfor kan tallene være forskellige.” Femdøgnslisten forklarer i stedet sin dags bedste sted. Beregning, sortering og lokale RavScore-tal er uændrede.
 
 Adminens første lagerkontrol omfatter nu også `coastline-overrides`, så en eksisterende kystoverstyring ikke vises som en falsk fejl. Ekspertens håndbog, rettigheder, reviewkø, kortfunktioner og centrale dokumentkontrakter er gennemgået målrettet. Eksperten kan læse og kommentere håndbogen med `admin_access`, `handbook_view` og `handbook_review` uden at få fuld ret til score, vejr eller kystdata.
 

@@ -5460,3 +5460,20 @@ ikke nye strømvektorer. Efter én exact-head og providerfri fortsættelse
 skal faktisk checkpoint/Pages og eventuelle yderligere C-koder bevises.
 5.201 havstrømspar og de øvrige vejrtypers dækning er stadig åbne;
 cron er pauset.
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.483, tydelig rangliste
+
+4.0.482 blev merged som `131f92f0`. Normalrun `35954069186` på præcis
+denne main gennemførte DMI, Copernicus, Open-Meteo, central cache,
+beskyttet gemning og Pages-deploy; terminalstatus var grøn. Den nye
+offentlige pakke er `rr-20260924045351-210` med 04:00 UTC som mål.
+Feltvise resttal, leverandørandele og eksakt før/efter-sammenligning
+skal stadig aflæses, før datafremgang eller komplethed kan påstås.
+Cron er fortsat pauset; start ikke overlappende runs.
+
+Ejeren har godkendt en afgrænset UI-præcisering: behold den store
+områdescore og sorteringen uændret, men vis den bedste kyststræknings
+RavScore mindre under området. Dagens indledning bruger ejerens
+godkendte enkle tekst; femdøgnslisten får en dagsspecifik variant.
+Lokal 4.0.483 har måltests grønne; exact-head, merge og offentlig
+visning afventer. Scoreformel, vejr, kystgeometri og kildevalg ændres
+ikke. Se DEC-0069's tillæg.
