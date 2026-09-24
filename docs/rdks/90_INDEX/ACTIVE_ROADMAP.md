@@ -3,14 +3,18 @@
 1. [x] Lever 4.0.485 efter grøn exact-head-kildegate; kode-only-
    deploy er grøn uden ny vejrhentning.
 2. [x] Start én normalrun `35993736090` på eksakt main `cc45e971`.
-   Den er endnu ikke afsluttet; ingen overlap eller ny oneoff.
+   DMI/Copernicus/Open-Meteo, privat cache, gates og Pages lykkedes.
+   Samme-timers-måling fandt nul tabte gyldige felter i fem vejrtyper.
 3. [x] Skriv score- og prognosetekster i almindeligt dansk, tysk og
    engelsk. Forklar historik, strøm, bølger, usikkerhed og bedste time
    uden at gøre dem kunstigt korte. Teknisk bevis forbliver valgfrit.
-4. [ ] Følg runnet til slut: DMI/Copernicus/Open-Meteo, nyeste
-   cachelineage, fem vejrtype-rester, 274 tidligere tabte temperaturpar
-   på eksakt overlap, checkpoint, deploy og offentlig zone/prognose.
-5. [ ] Først efter runslut: afslut 4.0.486's målrettede releasekontrol,
+4. [x] Mål offentlig `rr-20260924122409-210` mod 07:00-pakken på
+   114×673 fælles par: nul gyldig→tom; +966 vind, +625 bølger,
+   +624 strøm, +4.874 vandstand og +5.130 temperatur. 118-timers-
+   rester er stadig store. Offentlig rangliste, prognose og en zone
+   er browserkontrolleret. Start én næste normalrun `36009816840`
+   uden overlap på samme main; følg dens cache, fem felter og deploy.
+5. [ ] Først efter `36009816840`: afslut 4.0.486's målrettede releasekontrol,
    exact-head, merge og kode-only-deploy. Kontroller tekst på desktop
    og mobil. Ændr ikke modelbinding, score, vejrdata eller geometri.
 6. [ ] Ved fortsatte vejrrester: analyser årsag og prioriter DMI-first,

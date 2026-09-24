@@ -2,10 +2,14 @@
 
 4.0.485/PR #447 er merged som `cc45e971` efter grøn exact-head
 `35991803426`; providerfri kodelevering `35992546525` er grøn.
-Normalrun `35993736090` kører på denne præcise main. Ingen ny run,
-oneoff eller main-merge før den er afsluttet og cachelineage, fem
-vejrtype-rester, de 274 temperaturpositioner samt Pages er målt.
-Cron er fortsat pauset.
+Normalrun `35993736090` på samme main er grøn: seneste beskyttede
+private cache blev genbrugt og en ny blev gemt; 11:00 UTC-pakken
+`rr-20260924122409-210` blev deployet med 210 zoner/673 kystdele.
+På præcis 114 fælles timer × 673 dele blev ingen gyldige værdier
+tomme i nogen af de fem vejrtyper. Større resthuller består. Næste
+ikke-overlappende normalrun `36009816840` er startet på uændret main
+og skal følges til gemning og deploy. Ingen main-merge under denne
+lås. Cron er fortsat pauset.
 
 Lokal branch `codex/4.0.486-plain-score-prognosis` reviderer kun
 offentlige score- og prognoseforklaringer. De skal være forståelige for
@@ -14,7 +18,7 @@ forklarer strøm over tid, bølger, historikhuller og usikkerhed uden
 fagjargon; modelpræcise årsager kan stadig åbnes som teknisk detalje.
 Dansk, tysk og engelsk følges ad. Den aktive modelbundle er uændret
 (`61ec5474…`). Målrettede lokale tests er grønne; exact-head, merge,
-kode-only-deploy og visuel kontrol afventer runslut.
+kode-only-deploy og visuel kontrol afventer det aktive run.
 
 # HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.485
 

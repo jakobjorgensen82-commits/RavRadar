@@ -1,11 +1,18 @@
 # Aktuelle issues – 2026-09-24, lokal 4.0.486
 
-- **VEJRRUN-35993736090 – LIVEBEVIS ÅBENT:** Kører på den eksakte
-  4.0.485-main efter grøn kodelevering. DMI og Copernicus er
-  gennemført, Open-Meteo arbejder. Ny cache,
-  fem feltvise rester, de 274 tidligere tabte temperaturpositioner,
-  Copernicus og offentlig deploy er endnu ikke afklaret. Ingen
-  overlappende run eller tekst-merge, mens main-låsen er aktiv.
+- **VEJRRUN-36009816840 – AKTIV:** Ny normalrun på den samme
+  4.0.485-main. Ingen overlappende run eller 4.0.486-merge under
+  main-låsen. Følg DMI/Copernicus/Open-Meteo, den seneste private
+  cache, alle fem feltvise rester, gemning og offentlig deploy.
+- **FELTVISE RESTER – ÅBEN:** Grøn `35993736090` gav offentligt
+  `rr-20260924122409-210` med 210/673 og nul tabte gyldige felter
+  på 114×673 fælles par. Hele nye 118-timers-mål mangler dog 6.680
+  vind, 8.992 bølger, 5.302 strøm, 62.567 DMI-only-vandstand og
+  29.015 vandtemperaturpar af 79.414. Disse er offentlige komplette
+  feltpar; ældre cache-/trintal har anden definition. DMI's andel
+  steg tydeligt, Copernicus gav reel strømtilvækst, men datagrundlaget
+  er langt fra komplet. Ingen blind oneoff eller påstand om stabil
+  fuld dækning.
 - **UI-SPROG – LOKALT RETTET / OFFENTLIG KONTROL ÅBEN:** Teknisk
   score- og prognoseordlyd skjulte især forskellen på aktuel
   indadgående strøm og strømforløbet over tid. 4.0.486 giver
@@ -14,21 +21,24 @@
 
 # Historiske issues – 2026-09-24, lokal 4.0.485
 
-- **RUMLIG STRØMAUDIT-35972581225 – LOKALT RETTET / LIVEBEVIS ÅBENT:**
+- **RUMLIG STRØMAUDIT-35972581225 – RETTET OG LIVEBEVIST:**
   Én af 54 diagnostiske kontroller fejllæste otte lovlige
   Limfjord-fastholdelser efter produktionsprojektionens feltflytning.
   Score og offentlig visning var tilgængelige, og producentens spor
   dokumenterede alle otte. 4.0.485 læser den faktiske topniveau-markør
-  og tester den reelle projektion. Tre-timers- og kildekrav bevares.
-- **VANDTEMPERATUR-REGRESSION-35972581225 – LOKALT RETTET /
-  LIVEBEVIS ÅBENT:** Eksakt 77.395-pars offentlig sammenligning fandt
+  og tester den reelle projektion. `35993736090` gennemførte den
+  offentlige audit. Tre-timers- og kildekrav bevares.
+- **VANDTEMPERATUR-REGRESSION-35972581225 – RETTET / NYT OVERLAP GRØNT:**
+  Eksakt 77.395-pars offentlig sammenligning fandt
   274 tidligere gyldige temperaturpar tomme på fire timer. En ny
   strøm-/vandstandsrække uden temperatur kunne skygge for gyldige
   temperaturmålinger ved timebygning. Komponentvis bygning i
   vejrproducenten, også for kystdels-staging, retter
-  den reproducerede fejl uden bredere tidsgrænse; alle 274 skal
-  genmåles efter en normalrun. Kun eksakt 4.0.484 privat forgænger
-  tillades i begge restore-trin.
+  den reproducerede fejl uden bredere tidsgrænse. Næste normalrun
+  `35993736090` gav nul gyldig→tom temperatur på 114×673 nye fælles
+  par. De 274 gamle positioner kan ikke alle eftermåles, når
+  prognosevinduet har flyttet sig; det er et nyt, reelt driftsbevis.
+  Kun eksakt 4.0.484 privat forgænger var tilladt i begge restore-trin.
 - **COPERNICUS-DATASET-UPDATING – ÅBEN:** Både operationelt strømled
   og særskilt komponentled fik gentagne svar om igangværende
   datasætopdatering. Komponentleddet gav nul valgte værdier ved

@@ -7,14 +7,17 @@ strømscoren over flere timer. Teksten er ikke forkortet på bekostning
 af mening. Den oprindelige modelpræcise begrundelse kan fortsat åbnes
 under tekniske detaljer. Modellen, vejrdata, geometri og de numeriske
 scorer ændres ikke; bundlehash er fortsat `61ec5474…`. Release og
-offentlig kontrol afventer afslutningen af normalrun `35993736090`.
+offentlig kontrol afventer afslutningen af næste normalrun
+`36009816840`. Den forrige `35993736090` gemte privat cache og
+deployede 11:00 UTC-prognosen uden tabte gyldige felter på fælles mål.
 
 ## 4.0.485 – komponentvis DMI-marin time og korrekt rumlig audit (2026-09-24)
 
 PR #447 er merged som `cc45e971` efter grøn exact-head `35991803426`.
 Kode-only-run `35992546525` deployede uden ny vejrhentning. Én normal
-vejrkørsel `35993736090` er startet på denne main; liveeffekten på
-temperatur og de fem feltvise rester er endnu ikke kendt. Se
+vejrkørsel `35993736090` gennemførte på denne main med privat cache
+og Pages. Eksakt 114×673-overlap viste nul gyldig→tom i alle fem
+vejrtyper, herunder temperatur. Resterne er fortsat betydelige. Se
 `CHANGELOG-4.0.485.md`.
 
 ## 4.0.482 – samme præcise cachebevis i begge restore-trin (2026-09-24)

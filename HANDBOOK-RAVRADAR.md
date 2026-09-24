@@ -28,8 +28,11 @@ De grundige tekniske årsager kan fortsat åbnes, men er ikke nødvendige
 for at forstå hovedbudskabet. Teksterne er bevidst ikke gjort kortere,
 hvis det ville gøre dem mindre forståelige. De ligger uden for den
 låste scoremodel; ingen scoreværdi, vejrtype, geometri eller
-modelbinding ændres. 4.0.485 er online efter kode-only-deploy, mens
-normalrun `35993736090` endnu skal bevise ny cache og fuld vejrkæde.
+modelbinding ændres. 4.0.485 er online; normalrun `35993736090`
+gennemførte DMI, Copernicus, Open-Meteo, privat cache og offentlig
+deploy. På 114×673 fælles vejrpar gik ingen gyldig værdi tabt, men
+de fem vejrtyper har fortsat betydelige huller. Næste normalrun
+`36009816840` følges på samme main, inden 4.0.486 merges.
 
 ## 89.81 4.0.485 – Kontrol af Limfjord og hver vejrtypes egne timer
 

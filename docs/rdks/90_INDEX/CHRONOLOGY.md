@@ -2,12 +2,16 @@
 
 4.0.485/PR #447 bestod exact-head `35991803426`, blev merged som
 `cc45e971` og kode-only-deployet i `35992546525`. Normalrun
-`35993736090` er startet på samme main og er endnu ikke afsluttet.
+`35993736090` gennemførte på samme main med ny beskyttet privat
+cache og offentlig 11:00 UTC-pakke `rr-20260924122409-210`.
+114×673 fælles par viste nul gyldig→tom i alle fem vejrtyper;
+vandtemperaturens tidligere regression gentog sig ikke. En ny
+ikke-overlappende normalrun `36009816840` er startet på uændret main.
 Den lokale 4.0.486-branch reviderer score- og prognoseforklaringer på
 DA/DE/EN til dagligsprog uden krav om kortere tekst. Hovedvisningen
 forklarer strøm over tid, bølger og ufuldstændig historik; tekniske
 årsager kan stadig åbnes. Modelbundlen er uændret. Ingen merge eller
-ny vejrkørsel, før den aktive kørsels cache- og deployresultat er målt.
+main-merge, mens `36009816840` har en aktiv main-lås.
 
 ## 2026-09-24 – 4.0.485 faktisk projektion og marine timer
 

@@ -3,8 +3,14 @@
 - [x] 4.0.485/PR #447 exact-head `35991803426` grøn, merged som
   `cc45e971`; providerfri deploy `35992546525` grøn.
 - [x] Start præcis én normalrun `35993736090` på samme main uden overlap;
-  DMI og Copernicus-trin er gennemført, Open-Meteo arbejder, men
-  nye vejr-/cache-/Pages-resultater er endnu ukendte.
+  alle tre leverandørtrin, privat cachegemning, gates og Pages er grønne.
+  Offentlig pakke: `rr-20260924122409-210`, 11:00 UTC, 210/673.
+- [x] Eksakt 114×673 fælles offentligt mål: nul gyldig→tom i alle fem
+  vejrtyper; nye gyldige par +966 vind, +625 bølger, +624 strøm,
+  +4.874 vandstand, +5.130 temperatur. DMI overtog 12.866
+  tidligere Open-Meteo-strømpar; Copernicus fik reel tilvækst.
+- [x] Start næste ikke-overlappende normalrun `36009816840` på
+  uændret main. Følg den uden main-merge eller ny oneoff.
 - [x] Skriv læsbare DA/DE/EN-forklaringer til score, prognose,
   strøm over tid, bølger og manglende historik. Bevar grundige
   forklaringer, når de hjælper; fjern kun jargon fra hovedvisningen.
@@ -14,10 +20,10 @@
   sprog-/offentlige forbrugertests. Geodata er kun versionsfelter.
 - [ ] Afslut RDKS-/versionskontrol, én exact-head-kildegate og
   offentlig desktop-/mobilkontrol efter sikker merge. Vent med merge,
-  indtil `35993736090` har afsluttet sin main-låste kørsel.
-- [ ] Mål normalrunnets nyeste private cache, DMI/Copernicus/Open-Meteo,
-  alle fem vejrtyper, eksakt 274-temperaturoverlap, gemning og Pages.
-  Stop nye vejrkørsler ved regression eller uforklaret stagnation.
+  indtil `36009816840` har afsluttet sin main-låste kørsel.
+- [ ] Mål `36009816840` mod forrige eksakte mål, privat cachelineage,
+  leverandørbidrag, fem resttal, gemning, Pages og zoner. Stop nye
+  vejrkørsler ved regression eller uforklaret stagnation.
 
 # 2026-09-24 – lokal 4.0.485, faktisk projektion og marine timer
 

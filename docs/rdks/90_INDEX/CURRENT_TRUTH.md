@@ -3,11 +3,25 @@
 4.0.485/PR #447 blev merged som `cc45e971` efter grøn exact-head-
 kildegate `35991803426`. Providerfri kodelevering `35992546525`
 genbrugte den gemte vejrpakke og deployede 4.0.485 uden nye
-leverandørkald. Én almindelig, ikke-overlappende vejrkørsel
-`35993736090` er startet på præcis denne main; DMI og Copernicus-
-trinnene er gennemført, og Open-Meteo arbejder på strømresten.
-Den har endnu ikke bevist ny cachegemning, ingen temperaturtab,
-Copernicus-fremgang eller offentlig forbedring. Cron er fortsat pauset.
+leverandørkald. Normalrun `35993736090` på præcis denne main
+gennemførte DMI, Copernicus, Open-Meteo, beskyttet privat
+cachegemning, releasegates og Pages. Offentligt 11:00 UTC-mål er
+`rr-20260924122409-210`, 210 zoner og 673 dele. Seneste gyldige
+private cache blev gendannet, og den nye blev udgivet. På præcis 114
+fælles timer × 673 dele blev nul gyldige felter tomme i alle fem
+vejrtyper. De 274 tidligere tab lå i en ældre vinduessammenligning;
+det nye nul-tab-bevis dækker kun de nu fælles timer, ikke en ny
+måling af præcis de 274 gamle positioner. Nye
+gyldige par på dette fælles mål: +966 vind, +625 bølger, +624 strøm,
++4.874 vandstand og +5.130 temperatur. Hele nye 118-timers-mål har
+fortsat huller: 6.680 vind, 8.992 bølger, 5.302 strøm, 62.567
+DMI-only-vandstand og 29.015 temperatur af 79.414 par. Disse tal
+kræver både værdi og retning/periode, hvor relevant; rå totaler for
+forskudte mål er ikke direkte sammenlignelige. På fælles mål steg
+DMI's strømpar fra 13.450 til 26.916, Copernicus 3.120→3.144 og
+Open-Meteo faldt fra 54.374 til 41.508; 80 er godkendte regionale
+DMI-fastholdelser. Næste ikke-overlappende normalrun `36009816840`
+er startet på samme main. Cron er fortsat pauset.
 
 Brugerens præcisering af UI-opgaven er bindende: Forklaringerne skal
 være forståelige for mennesker uden meteorologisk/teknisk baggrund,
@@ -17,9 +31,9 @@ dansk, tysk og engelsk. Den præcise tekniske begrundelse bevares
 under et valgfrit detaljefelt. UI-ordlyden ligger uden for den låste
 modelbundle; RavScore-formel, vejrdata og modelbinding er uændrede.
 Målrettede sprog-/forbrugertests og bundle-check er grønne lokalt.
-Versions-/RDKS-aflevering, exact-head, offentlig visning og
-vejrkørslens slutresultat afventer. Merge ikke tekstændringen, mens
-`35993736090` stadig arbejder på den låste main.
+Versions-/RDKS-aflevering, exact-head og offentlig visning af 4.0.486
+afventer. Merge ikke tekstændringen, mens `36009816840` arbejder på
+den låste main.
 
 # HISTORISK SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
 
