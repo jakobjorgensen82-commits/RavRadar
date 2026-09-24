@@ -1,6 +1,7 @@
 performance.mark?.('ravradar:bootstrap-start');
 import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.483";
 import { initialiseI18n } from "./js/i18n.js?v=4.0.483";
+import "./js/ui/ranking-copy.js?v=4.0.483";
 
 let appImported = false;
 addEventListener('pageshow', event => {

@@ -199,7 +199,10 @@ assert.equal(dailyModeRanking('waders')[0].zone.id, 'zone-a', '5-dages waderslis
 assert.equal(dailyModeRanking('beach')[0].zone.id, 'zone-b', '5-dages strandlisten skal vælge dagens bedste strandscore.');
 
 const app = fs.readFileSync('app.js', 'utf8');
+const bootstrap = fs.readFileSync('bootstrap.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
+const releaseVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+assert.ok(bootstrap.includes(`import "./js/ui/ranking-copy.js?v=${releaseVersion}";`), 'Ranglistens offentlige tekst skal registreres før sprogene anvendes.');
 assert.ok(app.includes('compareNationalRankingRows') && app.includes('addNationalRanking'), 'Begge landslister skal bruge den faelles rangfunktion.');
 assert.match(app, /buildLocalZoneScore\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\?\.id,mode:state\.mode,time:referenceAt\}\)/, 'Den aktuelle liste skal sende den valgte jagtform til lokal RavScore.');
 assert.match(app, /selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\)/, '5-dages listen skal sende den valgte jagtform til dagens lokale RavScore.');

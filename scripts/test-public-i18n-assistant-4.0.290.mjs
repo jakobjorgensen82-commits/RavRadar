@@ -177,6 +177,7 @@ assert.match(indexHtml, /class="assistant-quota" data-i18n="assistant\.quota"/);
 assert.match(indexHtml, /Kvoten gælder kun Spørg RavRadar og har ingen indflydelse på kort, prognoser, RavScore eller øvrige funktioner\./);
 assert.match(i18n.t('assistant.quota', {}, 'de'), /Dieses Kontingent gilt nur für Frag RavRadar und hat keinen Einfluss auf Karte, Prognosen, BernsteinScore oder andere Funktionen\./);
 assert.match(i18n.t('assistant.quota', {}, 'en'), /This allowance applies only to Ask RavRadar and has no effect on the map, forecasts, AmberScore, or other features\./);
+await import('../js/ui/ranking-copy.js');
 assert.doesNotMatch(i18n.t('ranking.note', {}, 'de'), /RavScore/);
 assert.match(i18n.t('ranking.note', {}, 'de'), /Die Karte zeigt die beste Stelle/);
 assert.doesNotMatch(i18n.t('ranking.note', {}, 'en'), /RavScore/);
