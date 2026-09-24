@@ -54,7 +54,8 @@ for lange forsøg; de normale afgrænsede kørsler fortsætter imens.
 Denne tilstand gemmes i den private DMI-cache, så cron ikke behøver
 Codex. Vandstand og strøm opgøres særskilt;
 bred mangel på DMI-only-vandstand skal give de tre DKSS-familier en
-kritisk tur, også når strøm-leddet har en verificeret cache. Kritiske
+kritisk tur, også når strøm-leddet har en verificeret cache eller den
+rådgivende tværleverandørplan er midlertidigt utilgængelig. Kritiske
 native tider roterer, så første prognosetimer ikke altid spiser
 resten. Copernicus' efterfølgende kvalitetstur roterer spatial shard
 og højst 24-timers segment og gentager ikke samme shard i samme tur.

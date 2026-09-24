@@ -12385,6 +12385,11 @@ def main() -> int:
                             regional_gap_pairs_by_time,
                         )
                     )
+                # The cross-provider current plan is advisory. If it is
+                # unavailable, native DMI current *and* DMI-only water level
+                # still need their own critical classification. Otherwise a
+                # transient planning failure silently demotes water-level
+                # holes to refresh-only work for this entire DKSS turn.
                 acquisition_requirements = {
                     str(asset["valid"]): classify_dkss_primary_asset(
                         collection=collection,
@@ -12405,7 +12410,7 @@ def main() -> int:
                         ),
                     )
                     for asset in assets
-                } if global_current_planning_pairs is not None else {}
+                }
                 if acquisition_requirements:
                     acquisition_plan_diagnostics.setdefault(
                         "byCollection", {}
