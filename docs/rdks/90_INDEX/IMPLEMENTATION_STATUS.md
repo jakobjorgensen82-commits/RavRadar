@@ -1,3 +1,24 @@
+# 2026-09-24 – lokal 4.0.486, forståeligt offentligt sprog
+
+- [x] 4.0.485/PR #447 exact-head `35991803426` grøn, merged som
+  `cc45e971`; providerfri deploy `35992546525` grøn.
+- [x] Start præcis én normalrun `35993736090` på samme main uden overlap;
+  DMI og Copernicus-trin er gennemført, Open-Meteo arbejder, men
+  nye vejr-/cache-/Pages-resultater er endnu ukendte.
+- [x] Skriv læsbare DA/DE/EN-forklaringer til score, prognose,
+  strøm over tid, bølger og manglende historik. Bevar grundige
+  forklaringer, når de hjælper; fjern kun jargon fra hovedvisningen.
+- [x] Bevar modelpræcise årsager i et frivilligt teknisk felt, og lad
+  den modelbundne presenter kontrollere gyldighed før visning.
+- [x] Verificér lokalt uændret bundlehash `61ec5474…` og målrettede
+  sprog-/offentlige forbrugertests. Geodata er kun versionsfelter.
+- [ ] Afslut RDKS-/versionskontrol, én exact-head-kildegate og
+  offentlig desktop-/mobilkontrol efter sikker merge. Vent med merge,
+  indtil `35993736090` har afsluttet sin main-låste kørsel.
+- [ ] Mål normalrunnets nyeste private cache, DMI/Copernicus/Open-Meteo,
+  alle fem vejrtyper, eksakt 274-temperaturoverlap, gemning og Pages.
+  Stop nye vejrkørsler ved regression eller uforklaret stagnation.
+
 # 2026-09-24 – lokal 4.0.485, faktisk projektion og marine timer
 
 - [x] 4.0.484/PR #446 merged og kode-only `35971580803` grønt.

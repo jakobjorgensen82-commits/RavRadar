@@ -1,4 +1,23 @@
-# Aktivt roadmap – 2026-09-24, 4.0.485 efter faktisk normalrun
+# Aktivt roadmap – 2026-09-24, 4.0.486 normalrun og forståeligt UI
+
+1. [x] Lever 4.0.485 efter grøn exact-head-kildegate; kode-only-
+   deploy er grøn uden ny vejrhentning.
+2. [x] Start én normalrun `35993736090` på eksakt main `cc45e971`.
+   Den er endnu ikke afsluttet; ingen overlap eller ny oneoff.
+3. [x] Skriv score- og prognosetekster i almindeligt dansk, tysk og
+   engelsk. Forklar historik, strøm, bølger, usikkerhed og bedste time
+   uden at gøre dem kunstigt korte. Teknisk bevis forbliver valgfrit.
+4. [ ] Følg runnet til slut: DMI/Copernicus/Open-Meteo, nyeste
+   cachelineage, fem vejrtype-rester, 274 tidligere tabte temperaturpar
+   på eksakt overlap, checkpoint, deploy og offentlig zone/prognose.
+5. [ ] Først efter runslut: afslut 4.0.486's målrettede releasekontrol,
+   exact-head, merge og kode-only-deploy. Kontroller tekst på desktop
+   og mobil. Ændr ikke modelbinding, score, vejrdata eller geometri.
+6. [ ] Ved fortsatte vejrrester: analyser årsag og prioriter DMI-first,
+   Copernicus, Open-Meteo og DMI-only-vandstand særskilt. Gentag kun
+   normalrun efter målt og sikkert resultat. Cron først ved stabil drift.
+
+# Historisk roadmap – 2026-09-24, 4.0.485 efter faktisk normalrun
 
 1. [x] 4.0.484/PR #446 leveret; normalrun `35972581225` gemte og
    deployede 07:00-pakken. Den offentlige side svarer med 210/673.

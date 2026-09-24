@@ -1,4 +1,22 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.485
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.486
+
+4.0.485/PR #447 er merged som `cc45e971` efter grøn exact-head
+`35991803426`; providerfri kodelevering `35992546525` er grøn.
+Normalrun `35993736090` kører på denne præcise main. Ingen ny run,
+oneoff eller main-merge før den er afsluttet og cachelineage, fem
+vejrtype-rester, de 274 temperaturpositioner samt Pages er målt.
+Cron er fortsat pauset.
+
+Lokal branch `codex/4.0.486-plain-score-prognosis` reviderer kun
+offentlige score- og prognoseforklaringer. De skal være forståelige for
+almindelige brugere, ikke nødvendigvis kortere. Hovedvisningen
+forklarer strøm over tid, bølger, historikhuller og usikkerhed uden
+fagjargon; modelpræcise årsager kan stadig åbnes som teknisk detalje.
+Dansk, tysk og engelsk følges ad. Den aktive modelbundle er uændret
+(`61ec5474…`). Målrettede lokale tests er grønne; exact-head, merge,
+kode-only-deploy og visuel kontrol afventer runslut.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.485
 
 Normalrun `35972581225` på 4.0.484 gemte og deployede 07:00-pakken.
 Én rumlig strømaudit fejllæste otte autoriserede Limfjord-holds,

@@ -1,4 +1,18 @@
-# Aktuelle issues – 2026-09-24, lokal 4.0.485
+# Aktuelle issues – 2026-09-24, lokal 4.0.486
+
+- **VEJRRUN-35993736090 – LIVEBEVIS ÅBENT:** Kører på den eksakte
+  4.0.485-main efter grøn kodelevering. DMI og Copernicus er
+  gennemført, Open-Meteo arbejder. Ny cache,
+  fem feltvise rester, de 274 tidligere tabte temperaturpositioner,
+  Copernicus og offentlig deploy er endnu ikke afklaret. Ingen
+  overlappende run eller tekst-merge, mens main-låsen er aktiv.
+- **UI-SPROG – LOKALT RETTET / OFFENTLIG KONTROL ÅBEN:** Teknisk
+  score- og prognoseordlyd skjulte især forskellen på aktuel
+  indadgående strøm og strømforløbet over tid. 4.0.486 giver
+  forståelige DA/DE/EN-tekster og bevarer den eksakte begrundelse
+  som teknisk detalje. Scoreformel og modelbundle er uændrede.
+
+# Historiske issues – 2026-09-24, lokal 4.0.485
 
 - **RUMLIG STRØMAUDIT-35972581225 – LOKALT RETTET / LIVEBEVIS ÅBENT:**
   Én af 54 diagnostiske kontroller fejllæste otte lovlige

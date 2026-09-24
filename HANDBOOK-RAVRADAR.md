@@ -1,14 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.485
+**Håndbogsversion:** 4.0.486
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.485 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.486 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.82 4.0.486 – Forstå RavScore og prognosen uden fagord
+
+RavScore hjælper med at vælge tid og sted, men er ikke en beregnet
+chance for at finde rav. Hovedvisningen forklarer nu på dansk, tysk og
+engelsk, at scoren bygger på strømmen gennem flere timer, bølgernes
+mulighed for at flytte rav og hvor let det kan være at lede. Den
+forklarer også, hvorfor strøm ind mod kysten netop nu godt kan følges
+af en lavere strømscore: én time kan ikke alene opveje hele det
+tidligere forløb. Når tidligere vejr mangler, vises et forsigtigt
+minimum med tydelig forklaring; vejret for andre gyldige timer kan
+stadig bruges. Et lavt tal betyder ikke, at RavRadar ved, at der ikke
+ligger rav. Vandstand kan hjælpe med at vælge mellem lige gode timer
+for waders, men giver ikke selv scorepoint eller sikkerhedsgaranti.
+
+De grundige tekniske årsager kan fortsat åbnes, men er ikke nødvendige
+for at forstå hovedbudskabet. Teksterne er bevidst ikke gjort kortere,
+hvis det ville gøre dem mindre forståelige. De ligger uden for den
+låste scoremodel; ingen scoreværdi, vejrtype, geometri eller
+modelbinding ændres. 4.0.485 er online efter kode-only-deploy, mens
+normalrun `35993736090` endnu skal bevise ny cache og fuld vejrkæde.
 
 ## 89.81 4.0.485 – Kontrol af Limfjord og hver vejrtypes egne timer
 

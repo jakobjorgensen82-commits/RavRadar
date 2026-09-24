@@ -1,3 +1,17 @@
+# 2026-09-24 – lokal 4.0.486, almindeligt sprog i score og prognose
+
+4.0.485 blev merged som `cc45e971` efter grøn exact-head-kildegate;
+kode-only-run `35992546525` deployede samme gemte vejrpakke. Normalrun
+`35993736090` er startet på den præcise main og afventer leverandører,
+cachegemning, 274-temperaturoverlap og Pages. Sideløbende er
+4.0.486's offentlige score-/prognosetekster på DA/DE/EN omskrevet,
+så strøm nu versus tidligere timer, bølger, historikhuller og
+scorens begrænsning forklares uden fagsprog. Teksterne behøver ikke
+være korte, men skal være forståelige. Rå modelårsager er bevaret som
+frivillig teknisk detalje. Den integrerede scorebundle er uændret;
+ingen vejr-, score- eller geometriændring. Lokal måltest er grøn.
+Afvent runslut før merge og offentlig sprogkontrol.
+
 # 2026-09-24 – lokal 4.0.485, strømaudit og marine timefelter
 
 4.0.484/PR #446 blev merged og kode-only-deploy verificeret. Den

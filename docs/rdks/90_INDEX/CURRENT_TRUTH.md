@@ -1,4 +1,27 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
+
+4.0.485/PR #447 blev merged som `cc45e971` efter grøn exact-head-
+kildegate `35991803426`. Providerfri kodelevering `35992546525`
+genbrugte den gemte vejrpakke og deployede 4.0.485 uden nye
+leverandørkald. Én almindelig, ikke-overlappende vejrkørsel
+`35993736090` er startet på præcis denne main; DMI og Copernicus-
+trinnene er gennemført, og Open-Meteo arbejder på strømresten.
+Den har endnu ikke bevist ny cachegemning, ingen temperaturtab,
+Copernicus-fremgang eller offentlig forbedring. Cron er fortsat pauset.
+
+Brugerens præcisering af UI-opgaven er bindende: Forklaringerne skal
+være forståelige for mennesker uden meteorologisk/teknisk baggrund,
+ikke blot kortere. Lokal 4.0.486 omskriver de synlige tekster om
+score, strøm over tid, bølger, ufuldstændig historik og prognose på
+dansk, tysk og engelsk. Den præcise tekniske begrundelse bevares
+under et valgfrit detaljefelt. UI-ordlyden ligger uden for den låste
+modelbundle; RavScore-formel, vejrdata og modelbinding er uændrede.
+Målrettede sprog-/forbrugertests og bundle-check er grønne lokalt.
+Versions-/RDKS-aflevering, exact-head, offentlig visning og
+vejrkørslens slutresultat afventer. Merge ikke tekstændringen, mens
+`35993736090` stadig arbejder på den låste main.
+
+# HISTORISK SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
 
 4.0.484/PR #446 blev merged som `eec1f0d8`; kode-only
 `35971580803` bevarede præcis den offentlige 04:00-pakke.

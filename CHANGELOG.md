@@ -1,3 +1,22 @@
+## 4.0.486 – forståelige score- og prognoseforklaringer (2026-09-24)
+
+Offentlige forklaringer på dansk, tysk og engelsk bruger nu almindeligt
+sprog om strøm over tid, bølger, søgeforhold, historikhuller og bedste
+tidspunkt. En indadgående strøm lige nu forklares særskilt fra
+strømscoren over flere timer. Teksten er ikke forkortet på bekostning
+af mening. Den oprindelige modelpræcise begrundelse kan fortsat åbnes
+under tekniske detaljer. Modellen, vejrdata, geometri og de numeriske
+scorer ændres ikke; bundlehash er fortsat `61ec5474…`. Release og
+offentlig kontrol afventer afslutningen af normalrun `35993736090`.
+
+## 4.0.485 – komponentvis DMI-marin time og korrekt rumlig audit (2026-09-24)
+
+PR #447 er merged som `cc45e971` efter grøn exact-head `35991803426`.
+Kode-only-run `35992546525` deployede uden ny vejrhentning. Én normal
+vejrkørsel `35993736090` er startet på denne main; liveeffekten på
+temperatur og de fem feltvise rester er endnu ikke kendt. Se
+`CHANGELOG-4.0.485.md`.
+
 ## 4.0.482 – samme præcise cachebevis i begge restore-trin (2026-09-24)
 
 4.0.481 kom på main, men run `35952076841` stoppede før vejrhentning:
