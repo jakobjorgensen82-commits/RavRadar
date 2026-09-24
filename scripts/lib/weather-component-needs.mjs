@@ -14,7 +14,7 @@ const hour = value => {
   return ms;
 };
 
-function hasValue(row, component) {
+export function hasValue(row, component) {
   if (!row) return false;
   if (component === 'wind') return finite(row.windSpeedMps) && row.windSpeedMps >= 0
     && finite(row.windDirectionDeg) && row.windDirectionDeg >= 0 && row.windDirectionDeg < 360;
@@ -22,6 +22,9 @@ function hasValue(row, component) {
     && finite(row.wavePeriodS) && row.wavePeriodS >= 0 && (row.waveHeightM === 0 || row.wavePeriodS > 0)
     && (row.waveHeightM === 0 && row.waveDirectionDeg == null
       || finite(row.waveDirectionDeg) && row.waveDirectionDeg >= 0 && row.waveDirectionDeg < 360);
+  if (component === 'current') return finite(row.currentSpeedMps) && row.currentSpeedMps >= 0
+    && finite(row.currentDirectionDeg) && row.currentDirectionDeg >= 0
+    && row.currentDirectionDeg < 360;
   return finite(row[component === 'waterLevel' ? 'waterLevelCm' : 'waterTemperatureC']);
 }
 

@@ -312,6 +312,17 @@ assert producer.fair_pending_critical_runtime_reserve(
 assert producer.fair_pending_critical_runtime_reserve(
     [], [], 300.0, {}, {},
 ) == 0.0
+level_plan, level_diagnostics = producer.operational_collection_plan(
+    ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw"], {}, True, {}, 1500.0,
+    water_level_recovery_needed=True,
+)
+assert set(level_diagnostics["strictCurrentCollections"]) == set(producer.MARINE_COLLECTIONS)
+assert level_diagnostics["waterLevelRecoveryNeeded"] is True
+assert all(collection in level_plan[:3] for collection in producer.MARINE_COLLECTIONS)
+stable_plan, stable_diagnostics = producer.operational_collection_plan(
+    ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw"], {}, True, {}, 1500.0,
+)
+assert stable_diagnostics["strictCurrentCollections"] == []
 assert producer.order_dkss_primary_refresh_collections(
     ["dkss_idw", "harmonie_dini_sf", "dkss_lf", "wam_dw"],
     {"dkss_idw", "dkss_lf"},
@@ -340,16 +351,16 @@ other_component_critical = producer.prioritize_marine_assets_for_current_gaps(
 assert [row["id"] for row in other_component_critical] == [
     "covered-current-missing-water", "covered-refresh",
 ]
-part_gap_before_parent_only = producer.prioritize_marine_assets_for_current_gaps(
+critical_water_and_current_are_peers = producer.prioritize_marine_assets_for_current_gaps(
     [
-        {"valid": NON_STRIDE_VALID, "id": "parent-only-current-hole"},
+        {"valid": NON_STRIDE_VALID, "id": "dmi-only-water-level-hole"},
         {"valid": STRIDE_VALID, "id": "global-part-current-hole"},
     ],
     [TARGET_ID], {(TARGET_ID, NON_STRIDE_VALID)},
     critical_by_time={NON_STRIDE_VALID: True, STRIDE_VALID: True},
 )
-assert [row["id"] for row in part_gap_before_parent_only] == [
-    "global-part-current-hole", "parent-only-current-hole",
+assert [row["id"] for row in critical_water_and_current_are_peers] == [
+    "dmi-only-water-level-hole", "global-part-current-hole",
 ]
 
 # An actual critical attempt advances a durable cursor in the producer. On

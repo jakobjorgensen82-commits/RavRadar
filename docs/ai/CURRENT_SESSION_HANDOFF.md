@@ -1,4 +1,19 @@
-# 4.0.464 checkpoint – protected public-hour-par
+# Aktuel overdragelse – 2026-09-24 – lokal 4.0.488
+
+Den aktive Git-rod er `node_modules/RavRadar-4.0.396`; main er 4.0.487,
+og lokal branch er `codex/4.0.488-cache-lineage-guard`. Run
+`36022310055` deployede efter afvist fuld privat forgænger og tabte
+tidligere gyldige offentlige vejrpar. DEC-0254 og de øverste afsnit i
+CURRENT_TRUTH/IMPLEMENTATION_STATUS beskriver den samlede lokale
+rettelse. Den er endnu ikke merged eller livebevist. Næste trin:
+afslut målrettet verifikation og geodataversionsdiff, bestå én
+exact-head-kildegate, merge samme head, og kør derefter almindelig
+vejrindhentning uden overlap. Mål cachelineage, alle fem vejrfelter,
+DMI/Copernicus/Open-Meteo, gemning og Pages på fælles timegrid.
+Cron og Codex-overvågning er pauset; start ikke nye kørsler før
+rettelsen er leveret. Ældre overdragelser herunder er historiske.
+
+# Historisk 4.0.464-checkpoint – protected public-hour-par
 
 PR #425 er merged som `e88309b9`; exact-head `35766972202` er grøn.
 Saved-weather-run `35767690294` beviste canonical targetrettelsen, restored

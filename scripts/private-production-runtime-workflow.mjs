@@ -35,13 +35,14 @@ import {
 
 export const PRIVATE_RUNTIME_FILES = PRIVATE_RUNTIME_BASE_FILES;
 
-export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
+const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
   continuationStateContractSha256: Object.freeze([
     ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
   ]),
   fullRuntimeContractSha256: Object.freeze([
     'js/core/ravscore-model-contract.js',
     'scripts/update-dmi-bulk.py',
+    'scripts/plan-dmi-recovery.py',
     'scripts/run-dmi-bulk-supervised.py',
     'scripts/update-weather.mjs',
     'scripts/enrich-current-provenance.mjs',
@@ -54,6 +55,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/check-copernicus-current-range.py',
     'scripts/fill-open-meteo-current-fallback.py',
     'scripts/check-production-target-freshness.mjs',
+    'scripts/check-public-weather-continuity.mjs',
     'scripts/build-current-operational-closure.py',
     'scripts/build-live-current-pilot.py',
     'scripts/private-production-runtime-bundle.mjs',
@@ -134,6 +136,19 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
   ]),
 });
 
+// Producer source is still inventoried for review, but an implementation-only
+// change must not make an otherwise valid weather cache unreadable. The
+// persisted storage ABI below is the compatibility boundary; bundle bytes,
+// inventory, model binding and the two score/public contracts remain strict.
+export const PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES =
+  PRIVATE_RUNTIME_SOURCE_FILES.fullRuntimeContractSha256;
+export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
+  ...PRIVATE_RUNTIME_SOURCE_FILES,
+  fullRuntimeContractSha256: Object.freeze([
+    'scripts/lib/private-weather-storage-abi.json',
+  ]),
+});
+
 export const PRIVATE_RUNTIME_PREFLIGHT_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_PREFLIGHT_STATE',
@@ -180,7 +195,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.487',
+  releaseVersion: '4.0.488',
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -194,7 +209,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.487',
+  releaseVersion: '4.0.488',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -436,6 +451,18 @@ export async function privateRuntimeContractHashes({
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
 } = {}) {
   const root = path.resolve(repositoryRoot);
+  const storageAbi = JSON.parse(await fs.readFile(path.join(
+    root, 'scripts/lib/private-weather-storage-abi.json',
+  ), 'utf8'));
+  if (storageAbi.schemaVersion !== 1
+    || storageAbi.contractId !== 'ravradar-private-weather-storage-abi-v1'
+    || storageAbi.bundleSchemaVersion !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
+    || JSON.stringify(storageAbi.baseFileIds) !== JSON.stringify(PRIVATE_RUNTIME_BASE_FILES.map(file => file.id))
+    || storageAbi.componentPackSchemaVersion !== 1
+    || storageAbi.publicHourPackSchemaVersion !== 1
+    || storageAbi.dmiBulkDocumentSchemaVersion !== 2) {
+    throw new Error('Private weather storage ABI marker is inconsistent with the persisted inventory');
+  }
   const result = {};
   for (const [contract, files] of Object.entries(PRIVATE_RUNTIME_CONTRACT_FILES)) {
     const rows = [];
@@ -444,8 +471,8 @@ export async function privateRuntimeContractHashes({
       if (!inside(root, absolute)) throw new Error('Private runtime contract path escapes repository');
       const bytes = await fs.readFile(absolute);
       // App-version metadata and browser cache-busting queries do not change
-      // how the private weather payload is interpreted. All other source
-      // changes remain byte-sensitive.
+      // persisted semantics. Only listed compatibility contracts are hashed;
+      // producer source is separately inventoried for review.
       const normalized = Buffer.from(bytes.toString('utf8')
         .replace(/\r\n/g, '\n')
         .replace(/(releaseVersion\s*:\s*['"])\d+\.\d+\.\d+(['"])/g,

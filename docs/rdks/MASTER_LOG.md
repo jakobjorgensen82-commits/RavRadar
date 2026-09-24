@@ -1,4 +1,16 @@
-# 2026-09-24 – lokal 4.0.486, almindeligt sprog i score og prognose
+# 2026-09-24 – lokal 4.0.488, samlet vejrgenopretning
+
+Grøn `36022310055` deployede uden den fulde beskyttede forgænger og
+tabte gyldige felter i alle fem vejrfamilier. Lokal 4.0.488 kræver
+eksakt cache, udskifter den brede producentkodehash med en eksplicit
+lagrings-ABI og stopper enhver gyldig-til-tom-regression på fælles
+kystdele/timer før ny privat cache eller offentlig deploy. DMI's
+budget styres af faktisk 118-timers fem-komponentdækning; vandstand
+får særskilt plads. Copernicus' kvalitetsarbejde roterer i mindre
+segmenter. Måltests er grønne. PR-head-gate, merge, normalrun og
+flere autonome vinduesskift afventer; cron er pauset. Se DEC-0254.
+
+# Historik – 2026-09-24 – lokal 4.0.486, almindeligt sprog i score og prognose
 
 4.0.485 blev merged som `cc45e971` efter grøn exact-head-kildegate;
 kode-only-run `35992546525` deployede samme gemte vejrpakke. Normalrun

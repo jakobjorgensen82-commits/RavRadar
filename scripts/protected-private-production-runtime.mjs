@@ -83,6 +83,19 @@ export const MARINE_COMPONENT_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// 4.0.487 changed the weather builder without changing the persisted model,
+// continuation or public projection. Its first run could not restore this
+// complete 4.0.485 generation and published a thinner stateless replacement.
+// Only the exact, still-protected complete generation may bridge that mistake.
+export const COMPLETE_WEATHER_PREDECESSOR = Object.freeze({
+  sourceHead: 'cc45e97178a64406bdf3ab5401d8a3ae0f618891',
+  datasetId: 'rr-20260924122409-210',
+  productionReferenceAt: '2026-09-24T11:00:00.000Z',
+  fullRuntimeContractSha256: '70fbfd0722ae1cee58340b0112b51d2f661c1c4493a4e778ad8729edab525e9c',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
@@ -117,7 +130,8 @@ export function isApprovedExactWeatherPredecessor(descriptor, expected) {
   return isExactDmiSchedulerPredecessor(descriptor, expected)
     || isExactDmiMarineSeamPredecessor(descriptor, expected)
     || isExactWeatherRotationPredecessor(descriptor, expected)
-    || isExactMarineComponentPredecessor(descriptor, expected);
+    || isExactMarineComponentPredecessor(descriptor, expected)
+    || isExactDmiPredecessor(descriptor, expected, COMPLETE_WEATHER_PREDECESSOR);
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1500,6 +1514,8 @@ export async function describeCurrentProtectedPrivateProductionRuntime({
 export async function describeTargetProtectedPrivateProductionRuntime({
   request,
   targetReferenceAt,
+  datasetId = null,
+  bundleContentSha256 = null,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   const target = canonicalTime(
@@ -1513,9 +1529,12 @@ export async function describeTargetProtectedPrivateProductionRuntime({
   });
   const selected = [row.payload.current, row.payload.previous]
     .filter(Boolean)
-    .find(descriptor => descriptor.productionReferenceAt === target);
+    .find(descriptor => descriptor.productionReferenceAt === target
+      && (datasetId === null || descriptor.datasetId === datasetId)
+      && (bundleContentSha256 === null
+        || descriptor.bundleContentSha256 === bundleContentSha256));
   if (!selected) {
-    throw new Error('No protected private runtime generation matches the exact target reference');
+    throw new Error('No protected private runtime generation matches the exact target reference and dataset');
   }
   return protectedPrivateRuntimeSourceIdentity(selected, policy.targetSourceKind, policy);
 }
@@ -1925,6 +1944,8 @@ function parseArguments(argv) {
     else if (argument === '--now') result.now = value;
     else if (argument === '--output') result.outputPath = value;
     else if (argument === '--target-reference') result.targetReferenceAt = value;
+    else if (argument === '--dataset-id') result.datasetId = value;
+    else if (argument === '--bundle-content-sha256') result.bundleContentSha256 = value;
     else if (argument === '--same-reference-migration-report') {
       result.sameReferenceMigrationReportPath = value;
     } else if (argument === '--same-reference-predecessor-manifest') {
@@ -1978,6 +1999,8 @@ async function main() {
       : await describeTargetProtectedPrivateProductionRuntime({
         request: clients.documentRequest,
         targetReferenceAt: options.targetReferenceAt,
+        datasetId: options.datasetId ?? null,
+        bundleContentSha256: options.bundleContentSha256 ?? null,
       });
     const output = path.resolve(options.outputPath);
     const temporary = `${output}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;

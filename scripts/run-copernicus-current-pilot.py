@@ -525,6 +525,62 @@ def operational_request_segments(
     return segments
 
 
+def select_bounded_operational_refresh(
+    candidates: list[dict[str, Any]],
+    *,
+    acquisition_at: datetime,
+    touched_shards: set[tuple[str, str]],
+) -> tuple[dict[str, Any], set[tuple[str, str]]] | None:
+    """Rotate quality work by source/shard and request at most 24 hours.
+
+    A full 118-hour quality request could spend the entire bounded slice on
+    one slow subset, then repeat the same failed shard next run. The critical
+    hole pass retains its own scheduler; this is only post-closure work.
+    """
+    available = [
+        row for row in candidates
+        if (row["source"], row["shard"]["shardId"]) not in touched_shards
+    ]
+    if not available:
+        return None
+    priority = min(row["priority"] for row in available)
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in available:
+        if row["priority"] != priority:
+            continue
+        group_key = (row["source"], row["shard"]["shardId"])
+        group = groups.setdefault(group_key, {
+            "source": row["source"],
+            "shard": row["shard"],
+            "shardIndex": row["shardIndex"],
+            "pairs": set(),
+        })
+        group["pairs"].add((row["partId"], row["validTime"]))
+    product_queues = []
+    for product in PRODUCTS:
+        queue = sorted(
+            (group for group in groups.values()
+             if group["source"] == product["source"]),
+            key=lambda group: group["shardIndex"],
+        )
+        if queue:
+            slot = operational_rotation_slot(acquisition_at, shard_count=len(queue))
+            queue = queue[slot:] + queue[:slot]
+        product_queues.append(queue)
+    ordered = [
+        queue[index]
+        for index in range(max(map(len, product_queues), default=0))
+        for queue in product_queues
+        if index < len(queue)
+    ]
+    group = ordered[0] if ordered else None
+    if group is None:
+        return None
+    segments = operational_request_segments(group["pairs"])
+    segment = segments[operational_rotation_slot(acquisition_at, shard_count=len(segments))]
+    return group, {(row["partId"], row["validTime"]) for row in segment}
+
+
 def operational_segment_work_key(
     product: dict[str, Any],
     shard: dict[str, Any],
@@ -1697,6 +1753,7 @@ def run_bounded_operational_refresh(
     new_acquisitions: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
     blocked_shards: set[tuple[str, str]] = set()
+    touched_shards: set[tuple[str, str]] = set()
     attempted_shard_count = 0
     completed_shard_count = 0
     failed_shard_count = 0
@@ -1813,23 +1870,19 @@ def run_bounded_operational_refresh(
                 })
             if not candidates:
                 break
-            candidates.sort(key=lambda row: (
-                row["priority"],
-                row["acquisitionAt"],
-                row["validTime"],
-                row["partId"],
-                row["source"],
-            ))
-            source = candidates[0]["source"]
-            shard_index = candidates[0]["shardIndex"]
-            shard = candidates[0]["shard"]
+            selection = select_bounded_operational_refresh(
+                candidates,
+                acquisition_at=acquisition_at,
+                touched_shards=touched_shards,
+            )
+            if selection is None:
+                break
+            group, refresh_pairs = selection
+            source = group["source"]
+            shard_index = group["shardIndex"]
+            shard = group["shard"]
             product = product_by_source[source]
-            refresh_pairs = {
-                (row["partId"], row["validTime"])
-                for row in candidates
-                if row["source"] == source
-                and row["shard"]["shardId"] == shard["shardId"]
-            }
+            touched_shards.add((source, shard["shardId"]))
             if source == "copernicus-nws-amm15":
                 missing_prerequisite = {
                     pair for pair in refresh_pairs

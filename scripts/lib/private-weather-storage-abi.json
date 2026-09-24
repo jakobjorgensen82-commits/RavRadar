@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "contractId": "ravradar-private-weather-storage-abi-v1",
+  "bundleSchemaVersion": "1.0.0",
+  "baseFileIds": [
+    "full-conditions",
+    "dmi-forecast-cache",
+    "dmi-bulk-cache",
+    "copernicus-current-range-cache",
+    "open-meteo-current-fallback",
+    "current-pilot-history",
+    "weather-health",
+    "runtime-diagnostics",
+    "dmi-water-stations"
+  ],
+  "componentPackSchemaVersion": 1,
+  "publicHourPackSchemaVersion": 1,
+  "dmiBulkDocumentSchemaVersion": 2,
+  "incompatibleChangeRule": "Increment this ABI and perform an explicit audited migration before reading an incompatible saved cache."
+}

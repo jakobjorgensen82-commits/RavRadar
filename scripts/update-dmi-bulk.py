@@ -1161,6 +1161,7 @@ def operational_collection_plan(
     force_wam_collections: set[str] | None = None,
     atmosphere_foundation_needed: bool = False,
     atmosphere_horizon_needed: bool = False,
+    water_level_recovery_needed: bool = False,
 ) -> tuple[list[str], dict[str, Any]]:
     """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -1243,7 +1244,7 @@ def operational_collection_plan(
     strict_current = strict_current_collection_order(
         [
             collection for collection in work_eligible
-            if not strict_current_anchor_available
+            if (not strict_current_anchor_available or water_level_recovery_needed)
             and collection in MARINE_COLLECTIONS
         ],
         state,
@@ -1294,6 +1295,7 @@ def operational_collection_plan(
     )
     return planned, {
         "strictCurrentLeadCollection": lead_dkss,
+        "waterLevelRecoveryNeeded": water_level_recovery_needed,
         "strictCurrentLeadAttemptLimit": 1,
         "strictCurrentCollections": strict_current,
         "criticalCurrentOutsideBaseCollectionQuota": True,
@@ -2076,7 +2078,10 @@ def prioritize_marine_assets_for_current_gaps(
             or (critical_by_time or {}).get(valid_time)
         )
         return (
-            0 if real_gap_count else 1 if critical else 2,
+            # A fallback current gap must not outrank every missing DMI-only
+            # water-level hour for the whole 118-hour window. Both are real
+            # production deficits; rotate them on the same native-hour lane.
+            0 if critical or real_gap_count else 1,
             0 if regional_gap_count
                 and valid_time in (verified_reusable_valid_times or set())
                 else 1,
@@ -9145,7 +9150,21 @@ def collection_schedule(
             selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
         preferred_surface_temperature_demand[selected] += 1
     surface_temperature_recovery_active = bool(missing_surface_temperature_zone_ids)
-    marine_recovery_active = marine_recovery_active or surface_temperature_recovery_active
+    missing_water_level_zone_ids = [
+        zone_id for zone_id in active_ids
+        if component_horizon_hours(active_zones.get(zone_id, {}), ("sea-mean-deviation",)) < COMPLETE_HORIZON_HOURS
+    ]
+    preferred_water_level_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
+    for zone_id in missing_water_level_zone_ids:
+        cached_zone = active_zones.get(zone_id, {})
+        selected = ((cached_zone.get("marineSelection") or {}).get("collection"))
+        if selected not in MARINE_COLLECTIONS:
+            coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
+            penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
+            selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        preferred_water_level_demand[selected] += 1
+    water_level_recovery_needed = len(missing_water_level_zone_ids) >= max(1, math.ceil(zone_count * 0.15))
+    marine_recovery_active = marine_recovery_active or surface_temperature_recovery_active or water_level_recovery_needed
 
     lead_marine_collection = min(
         MARINE_COLLECTIONS,
@@ -9156,7 +9175,8 @@ def collection_schedule(
             # og Limfjorden aldrig bliver prøvet. Ikke-forsøgte/eldst
             # afbrudte modeller kommer derfor først under recovery.
             epoch((state.get(collection) or {}).get("lastBudgetInterruptedAt")),
-            -(preferred_wind_tail_demand.get(collection, 0) + preferred_surface_temperature_demand.get(collection, 0)),
+            -(preferred_water_level_demand.get(collection, 0) * (zone_count + 1)
+              + preferred_wind_tail_demand.get(collection, 0) + preferred_surface_temperature_demand.get(collection, 0)),
             -preferred_marine_demand.get(collection, 0),
             epoch((state.get(collection) or {}).get("lastAttemptAt")),
             COLLECTION_ORDER.index(collection),
@@ -9205,7 +9225,7 @@ def collection_schedule(
         elif balanced_foundation_recovery:
             marine_demand_rank = -preferred_wind_tail_demand.get(collection, 0)
         else:
-            marine_demand_rank = -(preferred_marine_demand.get(collection, 0) * (zone_count + 1)
+            marine_demand_rank = -((preferred_marine_demand.get(collection, 0) + preferred_water_level_demand.get(collection, 0)) * (zone_count + 1)
                                    + preferred_wind_tail_demand.get(collection, 0)
                                    + preferred_surface_temperature_demand.get(collection, 0))
         deficit_rank = -missing96.get(family, 0)
@@ -9238,6 +9258,9 @@ def collection_schedule(
         "missingWindTailZoneIds": missing_wind_tail_zone_ids,
         "preferredWindTailDemand": preferred_wind_tail_demand,
         "missingSurfaceTemperatureZoneIds": missing_surface_temperature_zone_ids,
+        "missingWaterLevelZoneIds": missing_water_level_zone_ids,
+        "preferredWaterLevelDemand": preferred_water_level_demand,
+        "waterLevelRecoveryNeeded": water_level_recovery_needed,
         "preferredSurfaceTemperatureDemand": preferred_surface_temperature_demand,
         "surfaceTemperatureRecoveryActive": surface_temperature_recovery_active,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
@@ -10432,12 +10455,18 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
         "wind": coverage_summary(coastal_part_zones, ("wind-speed-10m", "wind-dir-10m")),
         "wave": coverage_summary(coastal_part_zones, ("significant-wave-height",)),
         "marine": coverage_summary(coastal_part_zones, ("sea-mean-deviation", "current-u", "current-v")),
+        "waterLevel": coverage_summary(coastal_part_zones, ("sea-mean-deviation",)),
+        "current": coverage_summary(coastal_part_zones, ("current-u", "current-v")),
+        "waterTemperature": coverage_summary(coastal_part_zones, ("water-temperature",)),
     }
     component_coverage = {
         "wind": coverage_summary(production_zones, ("wind-speed-10m", "wind-dir-10m")),
         "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m", "wind-tail-dir-10m")),
         "wave": coverage_summary(production_zones, ("significant-wave-height",)),
         "marine": coverage_summary(production_zones, ("sea-mean-deviation", "current-u", "current-v")),
+        "waterLevel": coverage_summary(production_zones, ("sea-mean-deviation",)),
+        "current": coverage_summary(production_zones, ("current-u", "current-v")),
+        "waterTemperature": coverage_summary(production_zones, ("water-temperature",)),
     }
     diag["componentHorizonCoverage"] = component_coverage
     # Backwards-compatible names now mean sufficient forecast horizon, not merely one value.
@@ -11407,6 +11436,20 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
+    prior_adaptive_recovery = (previous.get("diagnostics") or {}).get("adaptiveRecovery")
+    if isinstance(prior_adaptive_recovery, dict):
+        result["diagnostics"]["adaptiveRecovery"] = copy.deepcopy(prior_adaptive_recovery)
+    if os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true":
+        before_counts = json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))
+        if not isinstance(before_counts, dict) or any(
+            type(before_counts.get(component)) is not int or before_counts[component] < 0
+            for component in ("wind", "wave", "current", "waterLevel", "waterTemperature")
+        ):
+            raise ValueError("DMI adaptive recovery needs the measured five-component baseline")
+        result["diagnostics"]["adaptiveRecovery"] = {
+            "lastExtendedAt": generated,
+            "missingDmiPairsAtStart": before_counts,
+        }
     cache_leaf_sanitization = (
         (previous.get("diagnostics") or {}).get("cacheLeafSanitization")
     )
@@ -11505,6 +11548,9 @@ def main() -> int:
         ),
         atmosphere_horizon_needed=(
             int(schedule_coverage.get("missingWind") or 0) > 0
+        ),
+        water_level_recovery_needed=(
+            schedule_coverage.get("waterLevelRecoveryNeeded") is True
         ),
         force_wam_collections=(
             set(WAVE_BOOTSTRAP_COLLECTIONS)

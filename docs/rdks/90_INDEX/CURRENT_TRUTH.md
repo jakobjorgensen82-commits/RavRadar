@@ -1,4 +1,30 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.488, samlet vejrrecovery
+
+Normalrun `36022310055` deployede, men startede uden den tidligere fulde
+private cache og tabte gyldige vejrdata. På 114 identiske offentlige
+timer × 673 dele blev 34.885 vind-, 32.646 bølge-, 530 strøm-, 4.864
+vandstands- og 24.513 temperaturpar tomme. Det er ikke en normal
+prognoseforskydning. Lokal 4.0.488 er **ikke** merged eller livebevist.
+
+Den samlede lokale rettelse kræver en verificeret fuld forgænger,
+genfinder den eksakte 4.0.485-generation fra `35993736090` og binder
+begge restore-trin til faktisk bundlesum. Fremtidige kodeændringer
+bevarer cachekompatibilitet via en eksplicit lagrings-ABI frem for en
+hash af alle producentfiler. En normal ny offentlig pakke kan ikke
+erstatte et gyldigt felt med tomt på samme kystdel og time. DMI får et
+afgrænset større budget ved bred mangel i en af fem vejrfamilier;
+vandstand tælles og prioriteres særskilt fra strøm. Copernicus'
+efterfølgende indhentning roterer og bruger højst 24-timers segmenter.
+Vandstand er stadig kun DMI; Limfjord-reglen og scoreformlen er uændrede.
+
+Dette er endnu ikke bevis på komplet dækning eller stabil normaldrift.
+Kildegate på PR'ens eksakte head, merge, cache-/leverandør-/public-bevis
+fra flere almindelige kørsler og derefter en kontrolleret genåbning af
+cron mangler. Den automatiske Codex-overvågning er pauset under arbejdet.
+Se DEC-0254 og aktivt roadmap. Historiske afsnit nedenfor erstattes af
+dette, hvor de beskriver 4.0.486/487 som aktuel status.
+
+# HISTORISK SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
 
 4.0.485/PR #447 blev merged som `cc45e971` efter grøn exact-head-
 kildegate `35991803426`. Providerfri kodelevering `35992546525`
@@ -5610,3 +5636,18 @@ commit før merge. Derefter én normalrun uden overlap fra beskyttet
 fremgang og eksakt fem-feltssammenligning; cron fortsat pauset.
 Se DEC-0253. Det følgende 4.0.486-afsnits »aktive run« og
 mergevent er historisk og erstattet her.
+# HISTORISK ARBEJDSPUNKT – 2026-09-24 – første 4.0.488-afgrænsning
+
+4.0.487/main `b1b88e0f` kørte `36022310055` grønt og deployede,
+men den offentlige 15:00 UTC-pakke tabte gyldige vejrpar på fælles
+prognosetimer: 34.885 vind, 32.646 bølger, 530 strøm, 4.864
+vandstand og 24.513 temperatur. Forrige komplette private generation
+blev gemt af `35993736090` på 4.0.485. Den brede kildehash afviste
+den, mens normal `integrated` fortsatte stateless. Lokal 4.0.488
+stopper denne fortsættelse, tillader kun den eksakt verificerede
+11:00-generation og binder anden restore til dens faktiske
+bundlesum. Måltests er grønne; exact-head, merge og produktionsbevis
+afventer. Ingen ny vejrkørsel er startet. DMI/Copernicus/Open-Meteo-
+fordeling, alle fem datamangler og en generel tabsbarriere er fortsat
+åbne. Se DEC-0254 og det aktive roadmap. Ældre checkpoints nedenfor
+er historiske, hvor de modsiger dette.

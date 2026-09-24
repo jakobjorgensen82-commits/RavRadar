@@ -1,4 +1,29 @@
-# Aktuelle issues – 2026-09-24, lokal 4.0.486
+# Aktuelle issues – 2026-09-24, lokal 4.0.488
+
+- **OFFENTLIGT CACHETAB – LOKALT RETTET, LIVE ÅBEN:** Grøn
+  `36022310055` mistede store mængder tidligere gyldig vejrdata.
+  Fuld-cachekrav, eksakt forgænger, lagrings-ABI og fem-felts
+  tabsbarriere er lokale og måltestede. Først exact-head, merge og
+  normalrun kan bevise, at tab ikke sker igen.
+- **DMI-FEMDØGNSDÆKNING – LOKALT RETTET, LIVE ÅBEN:** Den
+  tidligere gennemførte DMI-kørsel tog kun 28/116, 23/116 og
+  1/116 native trin i DKSS-familierne. Særligt vandstand var
+  næsten helt tom efter ca. T+48. Automatisk afgrænset recovery,
+  særskilt vandstandsprioritet og feltvis fremdrift er kodet, men
+  faktisk leverandørfremgang og fuld dækning er ikke bevist.
+- **COPERNICUS/OPEN-METEO-REST – LOKALT DELVIS RETTET, LIVE ÅBEN:**
+  Copernicus' korte kvalitetstur gentog for brede subsets; den
+  roterer nu shard/24-timers segment. Om det øger den accepterede
+  andel, skal måles. Open-Meteos ca. 57 vedvarende strømsteder
+  ligger overvejende i Limfjorden; et tomt provider-svar er ikke
+  et tal. DMI-regional fastholdelse bevares, mens rumlig dækning
+  og rester undersøges i normale kørsler.
+- **AUTONOM DRIFT – ÅBEN:** Ingen 4.0.488-livekørsel endnu, og
+  cron/automatiseret Codex-mål er pauset. Gendannelse, databevarelse,
+  cachegemning, deploy og flere vinduesskift skal bevises uden
+  manuelle mellemgreb, før det kaldes stabilt.
+
+# Historiske issues – 2026-09-24, lokal 4.0.486
 
 - **VEJRRUN-36009816840 – AKTIV:** Ny normalrun på den samme
   4.0.485-main. Ingen overlappende run eller 4.0.486-merge under
@@ -3248,3 +3273,15 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **DATADÆKNING – ÅBEN:** Sidst offentligt mål har betydelige huller
   i alle fem vejrtyper, især DMI-only-vandstand. Selvstændig normal
   drift, flere grønne kørsler og fuld dækning er ikke bevist.
+# Historisk arbejdspunkt – 2026-09-24, første 4.0.488-afgrænsning
+
+- **OFFENTLIGT CACHETAB – AKTIV:** Grøn `36022310055` deployede efter
+  afvist fuld privat cache og stateless genbygning. Fem feltvise
+  gyldig-til-tom-tab på fælles timer er dokumenteret i DEC-0254.
+  Lokal stopregel og eksakt 4.0.485-genindgang er måltestet, men ikke
+  leveret eller livebevist. Start ikke endnu en normalrun før det.
+- **UFULDSTÆNDIGE VEJRDATA – ÅBEN:** 15:00-pakken mangler mange
+  vind-, bølge-, strøm-, vandstands- og temperaturpar. Copernicus'
+  lave andel, Open-Meteos høje andel og de stående strømrester er
+  ikke forklaret alene af cachetabet. Mål dem separat på næste sikre
+  run. Vandstand er fortsat DMI-only; Limfjord-fastholdelsen bevares.

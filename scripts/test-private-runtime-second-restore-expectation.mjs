@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
+import { COMPLETE_WEATHER_PREDECESSOR, MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
 import { privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
 
@@ -76,6 +76,37 @@ assert.throws(() => secondRestoreExpectation({
   expected: marineExpected,
   source: { ...marineSource, datasetId: 'rr-other-generation' },
   manifest: marineManifest,
+}));
+
+const completeHashes = {
+  continuationStateContractSha256: COMPLETE_WEATHER_PREDECESSOR.continuationStateContractSha256,
+  fullRuntimeContractSha256: COMPLETE_WEATHER_PREDECESSOR.fullRuntimeContractSha256,
+  publicProjectionContractSha256: COMPLETE_WEATHER_PREDECESSOR.publicProjectionContractSha256,
+};
+const completeSource = {
+  ...COMPLETE_WEATHER_PREDECESSOR,
+  generatedAt: '2026-09-24T12:24:09.000Z',
+  bundleContentSha256: 'd'.repeat(64),
+  modelBinding: binding,
+  contractHashes: completeHashes,
+};
+const completeManifest = {
+  datasetId: completeSource.datasetId,
+  productionReferenceAt: completeSource.productionReferenceAt,
+  generatedAt: completeSource.generatedAt,
+  bundleContentSha256: completeSource.bundleContentSha256,
+  modelBinding: binding,
+  contractHashes: completeHashes,
+};
+assert.deepEqual(secondRestoreExpectation({
+  expected: { ...marineExpected, targetReferenceAt: '2026-09-24T17:00:00.000Z' },
+  source: completeSource,
+  manifest: completeManifest,
+}).contractHashes, completeHashes);
+assert.throws(() => secondRestoreExpectation({
+  expected: marineExpected,
+  source: { ...completeSource, datasetId: 'rr-thinner-successor' },
+  manifest: completeManifest,
 }));
 
 for (const changed of [

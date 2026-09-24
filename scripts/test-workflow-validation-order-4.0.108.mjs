@@ -2280,6 +2280,19 @@ if (lightweightPreflightSection.includes('protected-private-production-runtime.m
 }
 
 const privateRuntimeRestoreSection = text.slice(positions.privateRuntimeExpected, positions.legacyBootstrapGate);
+const runtimeAvailability = privateRuntimeRestoreSection.indexOf('name: Inspect private production runtime availability');
+const continuityGuard = privateRuntimeRestoreSection.indexOf('name: Require full private weather baseline before normal continuation');
+const selectedSource = privateRuntimeRestoreSection.indexOf('name: Describe the exact restored private generation');
+const secondRestore = privateRuntimeRestoreSection.indexOf('name: Verify and restore the private production runtime bundle');
+if (!(runtimeAvailability >= 0 && runtimeAvailability < continuityGuard
+  && continuityGuard < selectedSource && selectedSource < secondRestore)
+  || !privateRuntimeRestoreSection.includes("steps.operational-action.outputs.action != 'integrated-cutover'")
+  || !privateRuntimeRestoreSection.includes("steps.private-runtime-state.outputs.available }}\" != 'true'")
+  || !privateRuntimeRestoreSection.includes('Normal weather must not replace valid deployed values with a stateless rebuild.')
+  || !privateRuntimeRestoreSection.includes("jq -er '.productionReferenceAt' \"$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json\"")
+  || !privateRuntimeRestoreSection.includes('--source-description "$RUNNER_TEMP/private-runtime-restored-source.json"')) {
+  throw new Error('Normal weather must require its full private baseline and bind second restore to the selected generation.');
+}
 for (const marker of [
   'RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime',
   'RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle',
@@ -3675,6 +3688,19 @@ if (geometryPilotSection.includes('pages: write') || geometryPilotSection.includ
 if (!orchestratorWorkflow.includes('needs: build-and-prepare')) throw new Error('Deployjobbet skal afhænge af det færdige buildjob.');
 const buildSection = buildWorkflow.slice(buildWorkflow.indexOf('\n  build-and-prepare:'));
 const deploySection = deployWorkflow.slice(deployWorkflow.indexOf('\n  deploy-pages:'));
+const recoveryBudgetPosition = buildWorkflow.indexOf('name: Choose DMI budget from retained five-component PART coverage');
+const continuityPosition = buildWorkflow.indexOf('name: Refuse loss of previously valid public weather on identical coastal hours');
+if (recoveryBudgetPosition < buildWorkflow.indexOf('name: Prepare strict active DMI donor or resumable candidate')
+  || recoveryBudgetPosition >= positions.dmiBulk
+  || !buildWorkflow.includes('python scripts/plan-dmi-recovery.py')
+  || !buildWorkflow.includes("DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true'")) {
+  throw new Error('DMI must plan broad five-component recovery from the restored candidate before acquisition.');
+}
+if (continuityPosition < buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy')
+  || continuityPosition >= buildWorkflow.indexOf('name: Publish bounded private runtime with one protected rollback generation')
+  || !buildWorkflow.includes('node scripts/check-public-weather-continuity.mjs')) {
+  throw new Error('Public valid-to-missing continuity must run before private publication and Pages.');
+}
 const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
 const expectedBuildTimeoutContract = '${{ inputs.extended_provider_bootstrap && 240 || 180 }}';
 const buildTimeoutMinutes = buildTimeoutContract === expectedBuildTimeoutContract
@@ -3686,7 +3712,7 @@ const dmiBulkSection = buildWorkflow.slice(
 );
 const dmiStepTimeoutContract = dmiBulkSection.match(/^        timeout-minutes: (.+)$/m)?.[1];
 const dmiStepTimeoutMinutes = dmiStepTimeoutContract
-  === "${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true') && 70 || 55 }}" ? 70 : Number(dmiStepTimeoutContract);
+  === "${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}" ? 70 : Number(dmiStepTimeoutContract);
 const bootstrapRuntimeSeconds = Number(
   dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'1500'/)?.[1],
 );

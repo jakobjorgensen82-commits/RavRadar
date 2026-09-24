@@ -1,3 +1,18 @@
+## 4.0.488 – samlet cache- og vejrrecovery (2026-09-24)
+
+Et grønt normalrun tabte gyldig data i alle fem vejrtyper, da
+den tidligere fulde private cache blev afvist på grund af en for
+bred kildekodehash. Normal drift kræver nu faktisk verificeret
+cache; den eksakte sidst komplette forgænger kan gendannes, og
+fremtidig kodevedligeholdelse bruger en eksplicit lagrings-ABI.
+Før offentliggørelse stoppes gyldig-til-tom-tab på fælles
+kystdele/timer i vind, bølger, strøm, vandstand og temperatur.
+DMI's køretid vælges fra bevist fem-komponentdækning og giver
+bred vandstandsmangel særskilt prioritet. Copernicus' senere
+indhentning roterer i afgrænsede 24-timers segmenter. Den
+godkendte Limfjord-fastholdelse, DMI-only-vandstand og scoremodel
+er uændrede. Koden er lokal; livebevis afventer. Se DEC-0254.
+
 ## 4.0.486 – forståelige score- og prognoseforklaringer (2026-09-24)
 
 Offentlige forklaringer på dansk, tysk og engelsk bruger nu almindeligt
@@ -2318,3 +2333,14 @@ samling af to verificerede bølgekomponenter, bevarer gyldig gammel
 reserve uden revisionsbevis og holder ukendte konflikter som fejl.
 Den forståelige DA/DE/EN-tekst fra 4.0.486 følger med. Kun lokal
 måltest er endnu bevist; se `CHANGELOG-4.0.487.md` og DEC-0253.
+## Historisk første 4.0.488-afgrænsning – stop tab af vejrdata ved afvist privat cache (2026-09-24)
+
+Normalrun `36022310055` deployede grønt, men mistede mange tidligere
+gyldige vejrpar, fordi den fulde private cache blev afvist og
+normaldrift fortsatte uden den. 4.0.488 stopper normal drift uden
+fuld cache og tillader kun den eksakt verificerede 4.0.485-
+generation som midlertidig forgænger. Begge restore-trin bindes til
+den faktisk valgte pakke, også når to generationer deler tid og
+datasæt-id. Ingen vejr-, score- eller geometriændring. Livebevis,
+resterende datamangler og generel tabsbeskyttelse var da stadig åbne;
+den samlede lokale rettelse står øverst.

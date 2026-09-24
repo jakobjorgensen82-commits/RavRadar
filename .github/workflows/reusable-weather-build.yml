@@ -428,7 +428,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -708,6 +708,32 @@ jobs:
             echo "No private production runtime bundle was restored."
           fi
 
+      - name: Require full private weather baseline before normal continuation
+        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        run: |
+          if test "${{ steps.private-runtime-state.outputs.available }}" != 'true'; then
+            echo "::error title=Previous weather cache unavailable::Normal weather must not replace valid deployed values with a stateless rebuild."
+            exit 1
+          fi
+
+      - name: Describe the exact restored private generation
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          restored_reference="$(jq -er '.productionReferenceAt' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          restored_dataset="$(jq -er '.datasetId' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          restored_digest="$(jq -er '.bundleContentSha256' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          node scripts/protected-private-production-runtime.mjs --describe-target \
+            --target-reference "$restored_reference" \
+            --dataset-id "$restored_dataset" \
+            --bundle-content-sha256 "$restored_digest" \
+            --output "$RUNNER_TEMP/private-runtime-restored-source.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Verify and restore the private production runtime bundle
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
         shell: bash
@@ -723,10 +749,10 @@ jobs:
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs"
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
-          elif test -f "$RUNNER_TEMP/private-runtime-current-source.json"; then
+          elif test -f "$RUNNER_TEMP/private-runtime-restored-source.json"; then
             node scripts/private-runtime-second-restore-expectation.mjs \
               --expected "$restore_expected" \
-              --source-description "$RUNNER_TEMP/private-runtime-current-source.json" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
               --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
               --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
             restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
@@ -778,6 +804,16 @@ jobs:
           node scripts/private-production-runtime-workflow.mjs install \
             --restored "$restored_root" \
             --repository-root "$GITHUB_WORKSPACE"
+
+      - name: Preserve exact previous public weather for no-loss comparison
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/live/conditions.json
+          test -s .cache/public-hour-delivery.pack
+          cp data/live/conditions.json "$RUNNER_TEMP/previous-weather-conditions.json"
+          cp .cache/public-hour-delivery.pack "$RUNNER_TEMP/previous-public-hour-delivery.pack"
 
       - name: Classify the measured one-time historical wave-input transition
         id: historical-wave-transition
@@ -878,7 +914,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -903,7 +939,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1120,6 +1156,25 @@ jobs:
             echo "::notice title=DMI candidate resumed::The protected DMI cache is preserved as resumable work; it is not classified as READY before the DMI producer repairs and verifies it."
           fi
 
+      - name: Choose DMI budget from retained five-component PART coverage
+        id: dmi-recovery-budget
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_cache="$RUNNER_TEMP/dmi-active-proof/materialized.json"
+          if test -s .cache/dmi-candidate-progress.json; then
+            recovery_cache="$RUNNER_TEMP/dmi-active-proof/recovery-candidate.json"
+            python scripts/materialize-dmi-bulk-storage.py \
+              --input .cache/dmi-candidate-progress.json \
+              --output "$recovery_cache"
+          fi
+          python scripts/plan-dmi-recovery.py \
+            --cache "$recovery_cache" \
+            --parts data/live/coastal-parts-v2.json \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --github-output "$GITHUB_OUTPUT"
+
       - name: Plan global current acquisition before DMI
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         continue-on-error: true
@@ -1136,7 +1191,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: ${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true') && 70 || 55 }}
+        timeout-minutes: ${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
         run: python -u scripts/run-dmi-bulk-supervised.py
         env:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
@@ -1145,21 +1200,23 @@ jobs:
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
+          DMI_BULK_ADAPTIVE_RECOVERY: ${{ steps.dmi-recovery-budget.outputs.extended == 'true' }}
+          DMI_BULK_RECOVERY_BEFORE_COUNTS: ${{ steps.dmi-recovery-budget.outputs.missing_pair_counts_json }}
           DMI_BULK_HOURS: 118
-          DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
+          DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
-          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
-          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
+          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
-          DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}
+          DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS: 180
           DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180
           DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420
           DMI_BULK_REFRESH_MINUTES: 60
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
-          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
+          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode) || (steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.mode) || 'none' }}
@@ -1169,7 +1226,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1527,7 +1584,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1636,6 +1693,15 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Refuse loss of previously valid public weather on identical coastal hours
+        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        run: >-
+          node scripts/check-public-weather-continuity.mjs
+          --previous-conditions "$RUNNER_TEMP/previous-weather-conditions.json"
+          --previous-pack "$RUNNER_TEMP/previous-public-hour-delivery.pack"
+          --new-live data/live
 
       - name: Audit runtime and collect independent cutover validation failures
         # A model/control finding must remain visible, but it must not prevent

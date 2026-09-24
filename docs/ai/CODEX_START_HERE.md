@@ -1,4 +1,22 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.486
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.488 (endnu ikke leveret)
+
+Arbejd i den indlejrede Git-rod `node_modules/RavRadar-4.0.396` på
+`codex/4.0.488-cache-lineage-guard`. Main er 4.0.487. Normalrun
+`36022310055` deployede en tyndere 15:00-prognose, fordi fuld privat
+cache ikke blev gendannet, men workflowet alligevel fortsatte. På 114
+identiske timer og 673 kystdele mistedes tidligere gyldige par i alle
+fem vejrtyper. Lokal 4.0.488 stopper normal drift uden fuld cache,
+genfinder kun den eksakte komplette 4.0.485-forgænger, binder begge
+restore-trin til samme pakke, bevarer fremtidig cachekompatibilitet
+med en eksplicit lagrings-ABI og blokerer gyldig-til-tom-tab i den
+offentlige prognose. DMI's budget og vandstandsprioritet samt
+Copernicus' afgrænsede rotation er rettet lokalt. Måltests er grønne,
+men exact-head CI, merge, flere almindelige vejrkørsler og offentlig
+verifikation mangler. Cron og Codex-overvågning er pauset. Ingen
+oneoff eller overlappende runs. Se DEC-0254, CURRENT_TRUTH og aktivt
+roadmap; historiske checkpoints nedenfor er ikke aktuel releaseplan.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.486
 
 4.0.485/PR #447 er merged som `cc45e971` efter grøn exact-head
 `35991803426`; providerfri kodelevering `35992546525` er grøn.

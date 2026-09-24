@@ -1,14 +1,44 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.487
+**Håndbogsversion:** 4.0.488
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.487 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.488 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.84 4.0.488 – Bevar gamle vejrdata, og giv alle kilder en reel tur
+
+Den seneste grønne kørsel mistede mange allerede gyldige vejrdata.
+Årsagen var, at den gemte private vejrpakke ikke blev accepteret,
+men den almindelige kørsel alligevel byggede videre uden pakken.
+Rettelsen stopper nu en almindelig kørsel, hvis den ikke kan hente
+en fuld gemt pakke. Kun den præcist kontrollerede sidste komplette
+pakke må bruges som overgang; den anden indlæsning skal bruge netop
+den samme pakke. Fremtidige kodeændringer gør ikke automatisk
+vejrpakken ulæselig: det er lagringsformatet, der afgør, om den kan
+fortsættes. Inden en ny prognose offentliggøres, sammenlignes alle
+fælles timer og kystdele med den gamle pakke. Gamle gyldige felter
+må ikke blive tomme, heller ikke hvis selve GitHub-kørslen er grøn.
+
+DMI får automatisk længere, men stadig afgrænset, tid, når mange
+kystdele mangler data i vind, bølger, strøm, vandstand eller
+vandtemperatur. Vandstand får sin egen prioritet, fordi kun DMI må
+levere den. Et mindre antal vanskelige steder udløser ikke alene en
+lang kørsel. Copernicus får derefter afgrænsede, skiftende områder
+og timer; Open-Meteo udfylder de rester, hvor den kan levere
+godkendte tal. En tom værdi overskriver aldrig et gammelt gyldigt
+felt for samme sted og time. Den godkendte korte fastholdelse i
+Limfjorden bliver bevaret; der opfindes ikke data, hvor ingen kilde
+kan levere dem.
+
+Det er endnu ikke bevist i produktion. Først flere normale kørsler
+skal vise, om alle fem datatyper faktisk går fremad, cachen gemmes,
+og siden viser de samme værdier. Automatisk drift forbliver pauset
+indtil da.
 
 ## 89.83 4.0.487 – Gammel og ny bølge uden stop ved almindelig kildeændring
 
