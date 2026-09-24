@@ -1,3 +1,12 @@
+## 2026-09-24 – 4.0.485 faktisk projektion og åbne vejrrester
+
+4.0.484/PR #446 blev merged. Normalrun `35972581225` gemte
+`rr-20260924084821-210` og deployede 07:00-prognosen. Én af 54
+diagnostiske kontroller fejlede, fordi otte tilladte Limfjord-holds
+blev læst fra rå scoreform i stedet for den færdige projektion.
+4.0.485 retter kun kontrollen og har grøn måltest. Copernicus'
+`DatasetUpdating` og feltvise datamangler består. Cron pauset.
+
 ## 2026-09-24 – 4.0.482 lokal rettelse af dobbelt cache-restore
 
 4.0.481 blev merged efter grøn kildegate. Normalrun `35952076841`

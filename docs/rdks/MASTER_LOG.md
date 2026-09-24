@@ -1,3 +1,20 @@
+# 2026-09-24 – lokal 4.0.485, strømaudit og normalrun 35972581225
+
+4.0.484/PR #446 blev merged og kode-only-deploy verificeret. Den
+efterfølgende normale kørsel gemte ny privat cache, checkpoint og
+offentligt 07:00-dataset `rr-20260924084821-210`. Copernicus'
+komponentled forsøgte 24 gange uden optagne værdier, mens leverandøren
+meldte datasætopdatering. Open-Meteo fyldte nogle vind-, bølge- og
+temperaturhuller, men alle fem vejrtyper har rester.
+
+Én fuld diagnostisk kontrol fejlede på de otte autoriserede
+Limfjord-fastholdelser, som producent og offentlig score viste
+korrekt. Rodårsagen er auditens læsning af rå `publicContext` efter
+at produktionsadapteren har lagt `currentTransition` på topniveau.
+Kun denne læsning rettes i 4.0.485; måltesten bruger nu den rigtige
+produktionsprojektion og afviser fortsat modstridende rå markør.
+Næste: exact-head, kode-only, derefter årsagsbestemt vejrfortsættelse.
+
 # 2026-09-24 – lokal 4.0.482, samme cachebevis i begge restore-trin
 
 4.0.481/`64599ed4` bestod exact-head-gate `35951509094`, men run

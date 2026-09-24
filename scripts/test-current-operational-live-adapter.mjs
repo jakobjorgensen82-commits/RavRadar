@@ -20,7 +20,10 @@ import {
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { buildRavScoreRecoveryReplay } from './lib/ravscore-recovery-replay.mjs';
-import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import {
+  buildIntegratedPartPublicProjection,
+  verifiedIntegratedPartHourly,
+} from './lib/ravscore-production-adapters.mjs';
 import {
   RAVSCORE_STATE_ONLY_CURRENT_HOLD_CLOSURE_CONTRACT_ID,
   canonicalRavScoreStateOnlyCurrentHold,
@@ -575,6 +578,19 @@ assert.equal(integratedHoldProof.ok, true,
   'the spatial audit must read the integrated hold from the real publicContext shape');
 assert.equal(integratedHoldProof.referenceAt, new Date(SOURCE_TIME).toISOString());
 assert.equal(integratedHoldProof.ageHours, 1);
+const projectedHold = buildIntegratedPartPublicProjection({
+  row: { ...regionalPart, scores: [coldHoldScore] },
+  score: coldHoldScore,
+  scoreProfile: { activeProfileId: coldHoldScore.ravScoreModel.modelId },
+  selectedMode: (hour, mode) => hour.ravScoreModel.modes[mode],
+});
+assert.equal(projectedHold.ravScoreModel.publicContext, undefined,
+  'the production projection stores its transition at the top level');
+assert.equal(verifyCoastalPartNativeCadenceHold({
+  part: regionalPart,
+  runtimePart: projectedHold,
+  pilotHistory: liveWithRegionalReference,
+}).ok, true, 'the spatial audit must recognize an actual production-projected hold');
 for (const memoryStatus of [
   'WINDOW_INCOMPLETE',
   'WINDOW_HAS_MISSING_EVIDENCE',

@@ -130,8 +130,13 @@ export function verifyCoastalPartNativeCadenceHold({
   }
   const integratedState = runtimePart?.ravScoreModel;
   const state = integratedState ?? runtimePart?.candidateG;
+  // The score generator carries publicContext; the production projection
+  // flattens its transition. Prefer the generator's context when present so
+  // a conflicting top-level marker cannot authorize a hold.
   const currentTransition = integratedState
-    ? integratedState.publicContext?.currentTransition
+    ? (integratedState.publicContext
+      ? integratedState.publicContext.currentTransition
+      : integratedState.currentTransition)
     : state?.currentTransition;
   if (currentTransition !== 'NATIVE_CADENCE_HOLD') {
     return fail('den vektorfri scoretime er ikke markeret som native-cadence-fastholdelse');

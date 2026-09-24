@@ -1,3 +1,23 @@
+# 2026-09-24 – lokal 4.0.485, faktisk produktionsprojektion
+
+- [x] 4.0.484/PR #446 merged og kode-only `35971580803` grønt.
+- [x] Normalrun `35972581225` gennemførte leverandører, beskyttet
+  cachegemning, checkpoint og offentlig deploy af 07:00-pakken;
+  side og manifest er kontrolleret.
+- [x] Feltvis samme-mål-rapport: Open-Meteo gav 2.806 vind, 800
+  bølger og 851 temperatur; Copernicus-komponenten gav nul ved
+  `DatasetUpdating` og 24 genforsøgelige forsøg. De fire rester
+  og 5.649 strømpar er åbne. Forskudte runs er ikke eksakt sammenlignet.
+- [x] Påvist auditfejl: otte tilladte `NATIVE_CADENCE_HOLD` ligger på
+  topniveau i produktionsprojektionen, ikke kun under rå
+  `publicContext`. Lokal rettelse og regressionstest mod den faktiske
+  projektion er grøn.
+- [ ] Version/RDKS-kontrol, eksakt geodatadiff, én exact-head-kildegate,
+  PR/merge og kode-only-deploy uden leverandørkald.
+- [ ] Afklar Copernicus-opdatering og resthuller, mål eksakt overlap
+  mellem cachegenerationer, derefter næste ikke-overlappende normalrun.
+  Cron er pauset; ingen påstand om komplethed.
+
 # 2026-09-24 – lokal 4.0.482, anden private-cache-restore
 
 - [x] 4.0.481 exact-head-sourcegate `35951509094` grøn og PR #443

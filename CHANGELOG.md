@@ -2272,3 +2272,12 @@ Ranglisten bevarer områdescore og sortering og viser den bedste lokale
 RavScore mindre under områdenavnet. Score og vejrdata er uændrede.
 Kode-only-run `35967586655` deployede versionen med samme vejrpakke;
 offentlig desktopvisning er kontrolleret. Se `CHANGELOG-4.0.483.md`.
+
+## 4.0.485 – korrekt Limfjord-kontrol (2026-09-24)
+
+Normalrun `35972581225` gemte og deployede 07:00-pakken, men én
+diagnostisk strømaudit læste otte lovlige fastholdelser fra en ældre
+objektform. Kontrollen følger nu den faktiske produktionsprojektion og
+er dækket af en måltest. Ingen score, kildeprioritet, vejrdata eller
+tretimersregel ændres. Copernicus' `DatasetUpdating` og de feltvise
+vejrrester er stadig åbne. Se `CHANGELOG-4.0.485.md`.
