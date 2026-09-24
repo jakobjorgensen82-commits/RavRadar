@@ -505,6 +505,7 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
 {
   const at = hour => new Date(Date.parse(generatedAt) + hour * 3600000).toISOString();
   const oldRun = at(-6);
+  const newRun = at(-3);
   const row = (hour, runHour, sea, u, v, temperature, currentOverrides = {}) => ({
     step: at(hour),
     'sea-mean-deviation': sea,
@@ -518,7 +519,7 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
     },
   });
   const old = row(0, -6, 0.06, 0.04, 0.01, 13.8);
-  const newer = row(3, 3, -0.01, 0.02, 0.03, 13.2);
+  const newer = row(3, -3, -0.01, 0.02, 0.03, 13.2);
   const resolved = buildDmiForecastHourly({
     ocean: [old, newer], generatedAt, hours: 5, sourceCadenceMinutes: 180,
   });
@@ -531,19 +532,21 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   assert.equal(resolved.hourly[2].waterLevelCm, -1);
   assert.equal(resolved.hourly[2].waterTemperatureC, 13.2);
   assert.equal(resolved.hourly[2].currentUMps, 0.02);
-  assert.equal(resolved.hourly[2].sources.current.modelRun, at(3));
+  assert.equal(resolved.hourly[2].sources.current.modelRun, newRun);
   assert.equal(resolved.hourly[3].sources.current.temporalResolution, 'native');
   for (const component of ['current', 'waterLevel', 'waterTemperature']) {
-    assert.ok(verifiedDmiForecastSource(resolved.hourly[1].sources[component], component, at(1), {
-      entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
-      samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
-    }), `${component} must keep verified old-run native proof at the seam`);
+    for (const hour of [1, 2]) {
+      assert.ok(verifiedDmiForecastSource(resolved.hourly[hour].sources[component], component, at(hour), {
+        entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+        samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+      }), `${component} must keep verified native proof at seam hour ${hour}`);
+    }
   }
   assert.deepEqual(buildDmiForecastHourly({
     ocean: [newer, old], generatedAt, hours: 5, sourceCadenceMinutes: 180,
   }).hourly, resolved.hourly, 'marine run-seam selection must not depend on input order');
 
-  const differentLayer = row(3, 3, -0.01, 0.02, 0.03, 13.2,
+  const differentLayer = row(3, -3, -0.01, 0.02, 0.03, 13.2,
     { verticalLayer: 'depthbelowsea:1', verticalLayerRankM: 1 });
   const layerGuarded = buildDmiForecastHourly({
     ocean: [old, differentLayer], generatedAt, hours: 4, sourceCadenceMinutes: 180,
@@ -552,7 +555,7 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
     'a depth-layer change must not be treated as a run-only seam');
   assert.equal(layerGuarded.hourly[2].currentUMps, null);
   const distant = buildDmiForecastHourly({
-    ocean: [old, row(4, 4, -0.01, 0.02, 0.03, 13.2)],
+    ocean: [old, row(4, -3, -0.01, 0.02, 0.03, 13.2)],
     generatedAt, hours: 5, sourceCadenceMinutes: 180,
   });
   assert.equal(distant.hourly[2].waterLevelCm, null,
