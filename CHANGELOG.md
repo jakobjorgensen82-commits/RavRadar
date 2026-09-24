@@ -1,3 +1,13 @@
+## 4.0.482 – samme præcise cachebevis i begge restore-trin (2026-09-24)
+
+4.0.481 kom på main, men run `35952076841` stoppede før vejrhentning:
+den aktuelle 4.0.480-cache blev først godkendt og derefter afvist af
+en anden, strengere hashkontrol. 4.0.482 lader kun denne eksakte,
+manifest- og indholdsbundne forgænger passere også i andet trin.
+Alle andre sikkerheds- og datakontroller består; DMI-/Copernicus-
+fremgang kræver stadig en virkelig normalrun. Se `CHANGELOG-4.0.482.md`
+og DEC-0252.
+
 ## 4.0.481 – rotér DMI's kritiske timer og giv Copernicus en krypteret kvalitetstur (2026-09-24)
 
 4.0.480 er online uden tab af gamle gyldige værdier på fælles timer,

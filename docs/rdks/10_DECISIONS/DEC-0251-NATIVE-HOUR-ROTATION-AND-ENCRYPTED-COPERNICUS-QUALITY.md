@@ -1,7 +1,7 @@
 # DEC-0251 – Rotér kritiske DMI-timer og giv Copernicus en krypteret kvalitetstur
 
 **Dato:** 2026-09-24  
-**Status:** Lokal 4.0.481, måltestet; exact-head og produktion afventer
+**Status:** Merged 4.0.481; liveeffekt afventer efter 4.0.482-restore, se DEC-0252
 
 4.0.480 på main (`38fa4c27`) gennemførte normalrun `35939353111`, genbrugte
 4.0.479's seneste private pakke, gemte ny pakke/checkpoint og deployede
@@ -55,8 +55,13 @@ identificerede 4.0.480-pakke (`38fa4c27`, ovenstående datasæt og target)
 har en engangsovergang med eksakte tre kontrakthashes og fuld arkiv-
 og payloadkontrol. Andre forgængere afvises.
 
-Næste trin er én exact-head-sourcegate, merge og én ikke-overlappende
-normalrun; en særskilt providerfri deploy er ikke nødvendig. Mål eksakt
+**2026-09-24-tillæg:** Exact-head `35951509094` bestod, og 4.0.481 blev
+merged som `64599ed4`. Normalrun `35952076841` nåede ikke
+leverandørkald, fordi den efterfølgende lokale bundle-restore afviste
+den cache, som beskyttet restore allerede havde godkendt. Denne
+restore-kant rettes særskilt i DEC-0252; planlægningsvirkningen er
+fortsat ubevist live. Næste trin er én ikke-overlappende normalrun
+efter 4.0.482's exact-head og merge. Mål eksakt
 cachelineage, DMI-native
 timer pr. familie, Copernicus' nye bank- og offentlige andel i efterfølgende
 run, hver vejrtype, 57-del-rest, Feggesund, gemning, checkpoint, Pages og

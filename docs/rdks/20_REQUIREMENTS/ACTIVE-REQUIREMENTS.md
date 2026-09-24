@@ -1,3 +1,13 @@
+# Aktuel private-cache-restore – 2026-09-24
+
+- **REQ-TWO-STAGE-EXACT-PRIVATE-RESTORE-0252 – BINDENDE:** Når en
+  kendt forgænger godkendes af beskyttet restore, må den efterfølgende
+  bundle-restore ikke afvise netop den på et nyt bredt kodeaftryk.
+  Den må kun bruge forgængerens hash, hvis beskyttet kildebeskrivelse,
+  manifest og eksakt allowlist er ens i dataset, tid, model, hashes
+  og indhold. Alle øvrige tids-, fil- og bytekontroller forbliver
+  bindende; ukendte forgængere afvises.
+
 # Aktuel kildeplanlægning – 2026-09-24
 
 - **REQ-NATIVE-CRITICAL-ROTATION-0251 – BINDENDE:** Normal DMI-drift

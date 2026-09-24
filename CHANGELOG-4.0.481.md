@@ -16,5 +16,7 @@
   den ændrede producentfingerprint med fuldt byte- og kontraktbevis.
   Scoreformel, kildegyldighed, DMI-only-vandstand og Limfjordshold
   ændres ikke.
-- Lokale måltests er grønne; exact-head, merge og faktisk DMI-/CP-
-  fremgang i produktion afventer. Se DEC-0251.
+- Exact-head `35951509094` var grøn, og 4.0.481 blev merged som
+  `64599ed4`. Første normalrun `35952076841` stoppede dog før
+  leverandørerne på anden private-cache-restore. Faktisk DMI-/CP-
+  fremgang afventer 4.0.482's afgrænsede opfølgning, DEC-0252.

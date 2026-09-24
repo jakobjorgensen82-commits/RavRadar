@@ -1,4 +1,21 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.481, DMI-rotation og Copernicus-kvalitet
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.482, cachefortsættelse i begge trin
+
+4.0.481 blev merged som `64599ed4` efter grøn exact-head-kildekontrol
+`35951509094`. Første normalrun `35952076841` stoppede før DMI og de
+andre leverandører. Beskyttet restore godkendte den præcise aktuelle
+4.0.480-cache; den efterfølgende lokale bundle-restore afviste samme
+cache på en gammel bred kontrakthash. Der blev ikke bygget, gemt eller
+deployet nye vejrdata. Derfor er 4.0.481's planlægningsforbedringer
+endnu ikke bevist live, og sidste offentlige pakke er fortsat
+`rr-20260924012618-210` med de nedenfor anførte huller.
+
+Lokal 4.0.482 lader anden restore bruge nøjagtig den samme godkendte,
+manifest- og hashbundne forgænger som første restore. Ukendte
+genereringer afvises fortsat. Måltests grønne; exact-head, merge og
+én ny normalrun afventer. Stop ved fejl, start ikke overlappende run,
+ingen oneoff, cron pauset. Se DEC-0252.
+
+# HISTORISK SANDHED – 2026-09-24 – 4.0.481, DMI-rotation og Copernicus-kvalitet
 
 4.0.480 er merged (`38fa4c27`). Normalrun `35939353111` genbrugte den
 nyeste private 4.0.479-pakke, gemte ny pakke/checkpoint og deployede

@@ -1,4 +1,12 @@
-# Aktuelle issues – 2026-09-24, lokal 4.0.481
+# Aktuelle issues – 2026-09-24, lokal 4.0.482
+
+- **PRIVATE-SECOND-RESTORE-35952076841 – RETTET LOKALT / LIVEBEVIS
+  ÅBENT:** 4.0.481-run stoppede før DMI, efter at første beskyttede
+  restore havde godkendt den aktuelle 4.0.480-cache. Anden lokale
+  bundle-restore manglede samme eksakte forgængerregel og afviste
+  hashforskellen. 4.0.482 afstemmer beskyttet kilde og bundle på
+  identitet, model, hashes og indhold, og genbruger kun eksisterende
+  eksakt allowlist. Ingen ny cache eller deploy fra det fejlede run.
 
 - **DMI-KRITISK-HORISONT – RETTET LOKALT / LIVEBEVIS ÅBENT:**
   `dkss_lf` nåede 31/115 officielle timer; næste modelrun begynder

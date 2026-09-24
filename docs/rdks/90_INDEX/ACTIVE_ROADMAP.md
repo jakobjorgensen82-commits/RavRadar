@@ -1,13 +1,16 @@
-# Aktivt roadmap – 2026-09-24, 4.0.481 fuldere og stabilt vejr
+# Aktivt roadmap – 2026-09-24, 4.0.482 fuldere og stabilt vejr
 
 1. [x] Lever 4.0.480 og normalrun `35939353111`: korrekt privat cache,
    checkpoint, Pages, nul tabte gyldige værdier på fælles target.
 2. [x] Afgræns 5.868 offentlige strømrester i 57 dele, korte DMI-
    native horisonter og manglende Copernicus-kvalitetstur; mål fem
    vejrtype-totaler særskilt. Se DEC-0251.
-3. [ ] Lever samlet 4.0.481 med DMI-rotation, krypteret CP-kvalitet,
-   eksakt cacheforgænger, måltests og én exact-head-sourcegate.
-4. [ ] Én normalrun på ny main uden overlap. Sammenlign eksakt fælles
+3. [x] 4.0.481 merged efter grøn exact-head-kildegate. Normalrun
+   `35952076841` stoppede før vejr på anden private-cache-restore;
+   DMI/CP-forbedringerne er derfor endnu ikke målt live.
+4. [ ] Lever 4.0.482's afgrænsede anden-restore-rettelse med måltest,
+   én exact-head-kildegate og sikker merge. Kør derefter én normalrun
+   på ny main uden overlap. Sammenlign eksakt fælles
    mål, kilder pr. vejrtype, CP-donorbankens næste-run-fremgang,
    vandstand, Limfjord, Feggesund, private saves og Pages.
 5. [ ] Ved stagnation: stop nye runs og undersøg leverandørsvar,

@@ -1,4 +1,14 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.481 efter helkædeaudit
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.482 efter anden-restore-fejl
+
+4.0.481 merged som `64599ed4` efter grøn exact-head-gate. Normalrun
+`35952076841` stoppede før vejrleverandørerne: beskyttet restore
+godkendte 4.0.480-cachen, men næste lokale restore afviste dens brede
+hash. Ingen ny cache eller Pages. Lokal 4.0.482 binder andet trin til
+præcis samme godkendte kilde og bundle; måltests grønne. Næste skridt
+er exact-head, merge og én normalrun uden overlap. Først den kan
+måle DMI/CP/OM og alle fem felter. Cron pauset. Se DEC-0252.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – 4.0.481 efter helkædeaudit
 
 4.0.480 er merged (`38fa4c27`); normalrun `35939353111` var grønt,
 genbrugte den aktuelle private cache, gemte ny pakke/checkpoint og
