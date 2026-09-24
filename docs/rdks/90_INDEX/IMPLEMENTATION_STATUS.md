@@ -1,3 +1,30 @@
+# 2026-09-24 – lokal 4.0.486, forståeligt offentligt sprog
+
+- [x] 4.0.485/PR #447 exact-head `35991803426` grøn, merged som
+  `cc45e971`; providerfri deploy `35992546525` grøn.
+- [x] Start præcis én normalrun `35993736090` på samme main uden overlap;
+  alle tre leverandørtrin, privat cachegemning, gates og Pages er grønne.
+  Offentlig pakke: `rr-20260924122409-210`, 11:00 UTC, 210/673.
+- [x] Eksakt 114×673 fælles offentligt mål: nul gyldig→tom i alle fem
+  vejrtyper; nye gyldige par +966 vind, +625 bølger, +624 strøm,
+  +4.874 vandstand, +5.130 temperatur. DMI overtog 12.866
+  tidligere Open-Meteo-strømpar; Copernicus fik reel tilvækst.
+- [x] Start næste ikke-overlappende normalrun `36009816840` på
+  uændret main. Følg den uden main-merge eller ny oneoff.
+- [x] Skriv læsbare DA/DE/EN-forklaringer til score, prognose,
+  strøm over tid, bølger og manglende historik. Bevar grundige
+  forklaringer, når de hjælper; fjern kun jargon fra hovedvisningen.
+- [x] Bevar modelpræcise årsager i et frivilligt teknisk felt, og lad
+  den modelbundne presenter kontrollere gyldighed før visning.
+- [x] Verificér lokalt uændret bundlehash `61ec5474…` og målrettede
+  sprog-/offentlige forbrugertests. Geodata er kun versionsfelter.
+- [ ] Afslut RDKS-/versionskontrol, én exact-head-kildegate og
+  offentlig desktop-/mobilkontrol efter sikker merge. Vent med merge,
+  indtil `36009816840` har afsluttet sin main-låste kørsel.
+- [ ] Mål `36009816840` mod forrige eksakte mål, privat cachelineage,
+  leverandørbidrag, fem resttal, gemning, Pages og zoner. Stop nye
+  vejrkørsler ved regression eller uforklaret stagnation.
+
 # 2026-09-24 – lokal 4.0.485, faktisk projektion og marine timer
 
 - [x] 4.0.484/PR #446 merged og kode-only `35971580803` grønt.
@@ -6118,3 +6145,20 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   Open-Meteo-rest, fem feltvise eksakte overlap, cachelineage og Pages.
 - [ ] Find og ret den dokumenterede restårsag før flere runs ved
   stagnation; cron forbliver pauset og komplethed er ikke bevist.
+# 2026-09-24 – lokal 4.0.487, bølgeprioritet i recovery
+
+- [x] Afklar `36009816840`: alle tre leverandørtrin og beskyttet
+  progress-save lykkedes; scorehistorikken stoppede ved bølgekonflikt.
+  Intet nyt offentligt deploy eller produktionscache fra dette run.
+- [x] Bevar generic replay fail-closed, og brug streng bølgeadmission
+  samt eksisterende DMI-first/96-timersregel ved kvalificeret
+  tværleverandør-/reserveoverlap. Test gammel strøm + ny bølge.
+- [x] Målrettet lokal replay-, adapter-, komponent- og proxytest grøn.
+- [x] Medtag 4.0.486's almindeligt forståelige DA/DE/EN-tekster.
+- [ ] Afslut version/RDKS/håndbog og ren geodatadiff.
+- [ ] Bestå exact-head sourcegate på PR #448's **nye** head, merge og
+  én normalrun uden overlap fra sidst gemte private fremgang.
+- [ ] Bevis at samme normalrun gemmer cache, bygger score/artifact,
+  deployer Pages og bevarer/forbedrer fem vejrtyper på fælles grid.
+  Følg flere normale kørsler før cron genaktiveres. Større datahuller
+  og faktisk providerpar i denne konflikt er fortsat uafklarede.

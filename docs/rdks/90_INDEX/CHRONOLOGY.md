@@ -1,3 +1,18 @@
+## 2026-09-24 – 4.0.486 forståelige offentlige forklaringer
+
+4.0.485/PR #447 bestod exact-head `35991803426`, blev merged som
+`cc45e971` og kode-only-deployet i `35992546525`. Normalrun
+`35993736090` gennemførte på samme main med ny beskyttet privat
+cache og offentlig 11:00 UTC-pakke `rr-20260924122409-210`.
+114×673 fælles par viste nul gyldig→tom i alle fem vejrtyper;
+vandtemperaturens tidligere regression gentog sig ikke. En ny
+ikke-overlappende normalrun `36009816840` er startet på uændret main.
+Den lokale 4.0.486-branch reviderer score- og prognoseforklaringer på
+DA/DE/EN til dagligsprog uden krav om kortere tekst. Hovedvisningen
+forklarer strøm over tid, bølger og ufuldstændig historik; tekniske
+årsager kan stadig åbnes. Modelbundlen er uændret. Ingen merge eller
+main-merge, mens `36009816840` har en aktiv main-lås.
+
 ## 2026-09-24 – 4.0.485 faktisk projektion og marine timer
 
 4.0.484/PR #446 blev merged. Normalrun `35972581225` gemte
@@ -1664,3 +1679,11 @@ gav nul valgte værdier, og dets årsagsstatus blev ikke logget.
 4.0.484 tilføjer kun sikre samlede statusfelter; faktisk årsag og
 virkningen af Copernicus' krypterede næste-run-kvalitetstur skal
 måles i én ny normal kørsel efter exact-head og merge. Cron pauset.
+## 2026-09-24 – 4.0.487 bølgesamling efter afbrudt weather
+
+`36009816840` gennemførte tre leverandører og gemte beskyttet
+progress, men stoppede i score-replay før cache/artifact/Pages.
+Lokal 4.0.487 bruger det eksisterende DMI-first/96-timersvalg ved
+verificerede overlappende bølger og medtager 4.0.486's læsbare
+DA/DE/EN-tekster. Generisk replaykonflikt bevares. Livebevis
+afventer. Se DEC-0253.

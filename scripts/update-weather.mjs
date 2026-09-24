@@ -2458,6 +2458,7 @@ function scoreCoastalPartsRuntime(
         fallbackSource: deployedRecoverySource,
         preferredSource: progressiveRecoverySource,
         productionReferenceAt: generatedAt,
+        part: { ...part, zoneId },
       });
       const {
         recovery,

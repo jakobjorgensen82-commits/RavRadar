@@ -1,3 +1,25 @@
+## 4.0.486 – forståelige score- og prognoseforklaringer (2026-09-24)
+
+Offentlige forklaringer på dansk, tysk og engelsk bruger nu almindeligt
+sprog om strøm over tid, bølger, søgeforhold, historikhuller og bedste
+tidspunkt. En indadgående strøm lige nu forklares særskilt fra
+strømscoren over flere timer. Teksten er ikke forkortet på bekostning
+af mening. Den oprindelige modelpræcise begrundelse kan fortsat åbnes
+under tekniske detaljer. Modellen, vejrdata, geometri og de numeriske
+scorer ændres ikke; bundlehash er fortsat `61ec5474…`. Release og
+offentlig kontrol flyttes til 4.0.487, da næste normalrun
+`36009816840` stoppede i bølgehistorikken. Den forrige `35993736090` gemte privat cache og
+deployede 11:00 UTC-prognosen uden tabte gyldige felter på fælles mål.
+
+## 4.0.485 – komponentvis DMI-marin time og korrekt rumlig audit (2026-09-24)
+
+PR #447 er merged som `cc45e971` efter grøn exact-head `35991803426`.
+Kode-only-run `35992546525` deployede uden ny vejrhentning. Én normal
+vejrkørsel `35993736090` gennemførte på denne main med privat cache
+og Pages. Eksakt 114×673-overlap viste nul gyldig→tom i alle fem
+vejrtyper, herunder temperatur. Resterne er fortsat betydelige. Se
+`CHANGELOG-4.0.485.md`.
+
 ## 4.0.482 – samme præcise cachebevis i begge restore-trin (2026-09-24)
 
 4.0.481 kom på main, men run `35952076841` stoppede før vejrhentning:
@@ -2287,3 +2309,12 @@ Den eksakte sidste private cache er tilladt som forgænger i
 begge restore-trin. Desuden læser strømauditten otte godkendte
 Limfjord-fastholdelser fra den faktiske produktionsform. Livebevis
 afventer. Se `CHANGELOG-4.0.485.md`.
+## 4.0.487 – sikker bølgeprioritet i historik (2026-09-24)
+
+Normalrun `36009816840` gemte vejrfremskridt fra alle tre leverandører,
+men scorehistorikken stoppede på en bølgekonflikt før artifact/Pages.
+Den lokale rettelse anvender den eksisterende DMI-first-regel ved
+samling af to verificerede bølgekomponenter, bevarer gyldig gammel
+reserve uden revisionsbevis og holder ukendte konflikter som fejl.
+Den forståelige DA/DE/EN-tekst fra 4.0.486 følger med. Kun lokal
+måltest er endnu bevist; se `CHANGELOG-4.0.487.md` og DEC-0253.

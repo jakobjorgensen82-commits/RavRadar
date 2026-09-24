@@ -1,4 +1,41 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
+
+4.0.485/PR #447 blev merged som `cc45e971` efter grøn exact-head-
+kildegate `35991803426`. Providerfri kodelevering `35992546525`
+genbrugte den gemte vejrpakke og deployede 4.0.485 uden nye
+leverandørkald. Normalrun `35993736090` på præcis denne main
+gennemførte DMI, Copernicus, Open-Meteo, beskyttet privat
+cachegemning, releasegates og Pages. Offentligt 11:00 UTC-mål er
+`rr-20260924122409-210`, 210 zoner og 673 dele. Seneste gyldige
+private cache blev gendannet, og den nye blev udgivet. På præcis 114
+fælles timer × 673 dele blev nul gyldige felter tomme i alle fem
+vejrtyper. De 274 tidligere tab lå i en ældre vinduessammenligning;
+det nye nul-tab-bevis dækker kun de nu fælles timer, ikke en ny
+måling af præcis de 274 gamle positioner. Nye
+gyldige par på dette fælles mål: +966 vind, +625 bølger, +624 strøm,
++4.874 vandstand og +5.130 temperatur. Hele nye 118-timers-mål har
+fortsat huller: 6.680 vind, 8.992 bølger, 5.302 strøm, 62.567
+DMI-only-vandstand og 29.015 temperatur af 79.414 par. Disse tal
+kræver både værdi og retning/periode, hvor relevant; rå totaler for
+forskudte mål er ikke direkte sammenlignelige. På fælles mål steg
+DMI's strømpar fra 13.450 til 26.916, Copernicus 3.120→3.144 og
+Open-Meteo faldt fra 54.374 til 41.508; 80 er godkendte regionale
+DMI-fastholdelser. Næste ikke-overlappende normalrun `36009816840`
+er startet på samme main. Cron er fortsat pauset.
+
+Brugerens præcisering af UI-opgaven er bindende: Forklaringerne skal
+være forståelige for mennesker uden meteorologisk/teknisk baggrund,
+ikke blot kortere. Lokal 4.0.486 omskriver de synlige tekster om
+score, strøm over tid, bølger, ufuldstændig historik og prognose på
+dansk, tysk og engelsk. Den præcise tekniske begrundelse bevares
+under et valgfrit detaljefelt. UI-ordlyden ligger uden for den låste
+modelbundle; RavScore-formel, vejrdata og modelbinding er uændrede.
+Målrettede sprog-/forbrugertests og bundle-check er grønne lokalt.
+Versions-/RDKS-aflevering, exact-head og offentlig visning af 4.0.486
+afventer. Merge ikke tekstændringen, mens `36009816840` arbejder på
+den låste main.
+
+# HISTORISK SANDHED – 2026-09-24 – lokal 4.0.485, normalrun og marine timer
 
 4.0.484/PR #446 blev merged som `eec1f0d8`; kode-only
 `35971580803` bevarede præcis den offentlige 04:00-pakke.
@@ -5549,3 +5586,27 @@ er måltest, RDKS/version, én exact-head-kildegate, merge og kode-only-
 deploy, dernæst én ikke-overlappende normalrun med eksakt fælles
 felt-/leverandørsammenligning og konkret restårsag. Stop nye runs ved
 stagnation og ret årsagen før videre drift.
+# NYESTE SANDHED – 2026-09-24 – lokal 4.0.487 bølgehistorik
+
+Normalrun `36009816840` på 4.0.485-main er afsluttet **rød**.
+DMI, Copernicus, Open-Meteo, strøm-lukning og strømhistorik lykkedes;
+beskyttet krypteret vejrprogress blev gemt. Den centrale cachebygning
+stoppede i RavScore-replay på to forskellige verificerede bølger for
+samme time. Ingen ny cache, artifact eller Pages fra dette run.
+Sidst offentligt beviste pakke er fortsat 11:00 UTC
+`rr-20260924122409-210` fra grøn `35993736090`. Det konkrete
+providerpar i konflikten findes ikke i den sikre log og er uafklaret.
+
+Lokal 4.0.487 fører replayets eksakte bølgebevis ind i valg mellem
+gammel og ny kilde og genbruger DEC-0210's DMI-first/96-timersregel.
+Tidligere valgt reserve bevares uden bevis for en nyere prognose;
+frisk verificeret DMI kan overtage. Ugyldige kandidater og
+uforklarede peers forbliver fail-closed. Strøm er uafhængig.
+RavScore-formel/bundle, geometri og vejrproducent er uændrede.
+Målrettet replay-, komponent- og Feggesund-test er grøn lokalt,
+men livebevis mangler. 4.0.486's forståelige DA/DE/EN-tekster følger
+med i 4.0.487. PR #448 kræver nyt exact-head bevis på den ændrede
+commit før merge. Derefter én normalrun uden overlap fra beskyttet
+fremgang og eksakt fem-feltssammenligning; cron fortsat pauset.
+Se DEC-0253. Det følgende 4.0.486-afsnits »aktive run« og
+mergevent er historisk og erstattet her.

@@ -1,4 +1,27 @@
-# Aktivt roadmap – 2026-09-24, 4.0.485 efter faktisk normalrun
+# Aktivt roadmap – 2026-09-24, 4.0.486 normalrun og forståeligt UI
+
+1. [x] Lever 4.0.485 efter grøn exact-head-kildegate; kode-only-
+   deploy er grøn uden ny vejrhentning.
+2. [x] Start én normalrun `35993736090` på eksakt main `cc45e971`.
+   DMI/Copernicus/Open-Meteo, privat cache, gates og Pages lykkedes.
+   Samme-timers-måling fandt nul tabte gyldige felter i fem vejrtyper.
+3. [x] Skriv score- og prognosetekster i almindeligt dansk, tysk og
+   engelsk. Forklar historik, strøm, bølger, usikkerhed og bedste time
+   uden at gøre dem kunstigt korte. Teknisk bevis forbliver valgfrit.
+4. [x] Mål offentlig `rr-20260924122409-210` mod 07:00-pakken på
+   114×673 fælles par: nul gyldig→tom; +966 vind, +625 bølger,
+   +624 strøm, +4.874 vandstand og +5.130 temperatur. 118-timers-
+   rester er stadig store. Offentlig rangliste, prognose og en zone
+   er browserkontrolleret. Start én næste normalrun `36009816840`
+   uden overlap på samme main; følg dens cache, fem felter og deploy.
+5. [ ] Først efter `36009816840`: afslut 4.0.486's målrettede releasekontrol,
+   exact-head, merge og kode-only-deploy. Kontroller tekst på desktop
+   og mobil. Ændr ikke modelbinding, score, vejrdata eller geometri.
+6. [ ] Ved fortsatte vejrrester: analyser årsag og prioriter DMI-first,
+   Copernicus, Open-Meteo og DMI-only-vandstand særskilt. Gentag kun
+   normalrun efter målt og sikkert resultat. Cron først ved stabil drift.
+
+# Historisk roadmap – 2026-09-24, 4.0.485 efter faktisk normalrun
 
 1. [x] 4.0.484/PR #446 leveret; normalrun `35972581225` gemte og
    deployede 07:00-pakken. Den offentlige side svarer med 210/673.
@@ -3222,3 +3245,21 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
 5. [ ] Ved fortsat stagnation: stop nye runs og ret den dokumenterede
    leverandør-, gitter-, plan- eller tidsårsag. Genaktivér først cron
    efter gentagen autonom normaldrift; komplet gyldig data er stadig målet.
+# Aktivt roadmap – 2026-09-24, 4.0.487 efter fejlet normalrun
+
+1. [x] Stop nye vejrkørsler efter `36009816840`; ingen overlap.
+   Alle leverandører nåede igennem og privat fremgang blev gemt,
+   men score-replay stoppede før cache/artifact/Pages.
+2. [x] Ret kvalificeret bølgesamling efter DMI-first/96-timersreglen
+   uden at skjule ugyldige eller ukendte konflikter. Bevar gammel
+   gyldig strøm uafhængigt. Måltests grønne lokalt.
+3. [ ] Afslut 4.0.487-version, RDKS/håndbog, geodatabevis og én
+   exact-head sourcegate på den ændrede PR #448. Merge sikkert.
+4. [ ] Start én almindelig, ikke-overlappende kørsel på ny main fra
+   seneste krypterede cache. Bevis leverandører, alle fem resttyper,
+   score, cache-save, artifact, Pages og synlige zoner på fælles mål.
+5. [ ] Ved ny fejl: stop nye runs og afgræns sikker konkret årsag;
+   løs den uden at genhente unødigt eller lempe kildebevis. Ved grøn
+   kørsel: gentag normaldrift for at bevise autonom fortsættelse, før
+   cron genaktiveres. UI-sprog kontrolleres på desktop/mobil i
+   samme offentlige release. Intet oneoff uden målt behov.

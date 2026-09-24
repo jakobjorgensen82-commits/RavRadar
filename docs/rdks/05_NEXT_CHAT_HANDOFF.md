@@ -1962,3 +1962,15 @@ Næste: afslut målrettede kontroller og rent geodataversionsbevis, commit/push,
 én exact-head, merge og saved-weather-continuation. Verificér derefter live
 version, prognoser og scorer. Ingen oneoff eller ny providerhentning.
 Scheduler pauset. DEC-0185. Sol/Ekstra høj.
+# NYESTE HANDOFF – 2026-09-24 – lokal 4.0.487
+
+Se `docs/ai/CODEX_START_HERE.md` og DEC-0253. Main er 4.0.485
+`cc45e971`; PR #448 er lokal 4.0.487. Weather `36009816840`
+gennemførte alle leverandører og gemte privat progress, men fejlede
+før cache/artifact/Pages på to modstridende bølger i scorehistorik.
+Lokal rettelse anvender den allerede besluttede DMI-first/96-timers-
+politik ved replay-verificerede bølger. Ukendt kildekonflikt stopper
+stadig; modelbundle er uændret. 4.0.486's forståelige UI-sprog følger
+med. Næste: målrettede tests, version/RDKS, exact-head, merge og én
+normalrun uden overlap. Bevis cachelineage, alle fem vejrtype-rester,
+score, artifact og Pages. Cron pauset, ingen blind oneoff.

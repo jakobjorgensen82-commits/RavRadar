@@ -1,3 +1,20 @@
+# 2026-09-24 – lokal 4.0.486, almindeligt sprog i score og prognose
+
+4.0.485 blev merged som `cc45e971` efter grøn exact-head-kildegate;
+kode-only-run `35992546525` deployede samme gemte vejrpakke. Normalrun
+`35993736090` gennemførte på den præcise main, genbrugte og gemte
+beskyttet privat cache og deployede 11:00 UTC-prognosen. Eksakt
+114×673-overlap viste nul gyldig→tom i alle fem vejrtyper og reel
+feltvis fremgang. `36009816840` er startet som næste normalrun på
+uændret main. Sideløbende er
+4.0.486's offentlige score-/prognosetekster på DA/DE/EN omskrevet,
+så strøm nu versus tidligere timer, bølger, historikhuller og
+scorens begrænsning forklares uden fagsprog. Teksterne behøver ikke
+være korte, men skal være forståelige. Rå modelårsager er bevaret som
+frivillig teknisk detalje. Den integrerede scorebundle er uændret;
+ingen vejr-, score- eller geometriændring. Lokal måltest er grøn.
+Afvent den aktive main-lås før merge og offentlig sprogkontrol.
+
 # 2026-09-24 – lokal 4.0.485, strømaudit og marine timefelter
 
 4.0.484/PR #446 blev merged og kode-only-deploy verificeret. Den
@@ -5206,3 +5223,16 @@ kun aggregerede CP-/OM-tal til den eksisterende GitHub-rapport;
 ingen score, datakildevalg eller cacheformat ændres. Måltest,
 exact-head/merge/kode-only og én normalrun med målt feltvis fremgang
 afventer. Cron pauset; vejrdata er fortsat ufuldstændige.
+# 2026-09-24 – lokal 4.0.487, luk almindeligt bølgeoverlap
+
+Normalrun `36009816840` hentede gennem DMI/CP/OM og gemte privat
+progress, men central scorehistorik stoppede på bølgekonflikt før
+artifact og Pages. Den konkrete konfliktende kildeparring er ikke
+offentligt identificeret. Recovery bruger nu samme kildeprioritet
+som vejrhentningen, men kun for replay-verificerede bølger. DMI
+overtager gyldig reserve; gammel gyldig reserve bevares uden
+revisionsbevis; 96-timersundtagelsen kræver responsbundet nyere
+modelrun. Generisk fail-closed, Feggesund og uafhængig strøm
+bevares. 4.0.486's forståelige UI-sprog følger med. Lokal test grøn;
+exact-head, merge, live cache/deploy og autonom gentagelse afventer.
+Se DEC-0253 og CHANGELOG-4.0.487.

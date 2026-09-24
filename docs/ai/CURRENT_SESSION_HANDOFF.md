@@ -3159,3 +3159,17 @@ manifest. Version og dokumentation er løftet. Næste: måltests, RDKS/version,
 exact-head PR, merge, derpå samme recovery-input uden leverandørkald.
 Ingen ny oneoff. De to state-replay-fejl og 51/673 strømhuller undersøges
 separat efter offentlig genopretning. Bevar untracked `.tmp-*`.
+# NYESTE HANDOFF – 2026-09-24 – lokal 4.0.487
+
+Arbejd i den indlejrede Git-rod `node_modules/RavRadar-4.0.396`, branch
+`codex/4.0.486-plain-score-prognosis`, PR #448. Main er 4.0.485
+`cc45e971`. Normalrun `36009816840` fejlede i bølge-replay efter
+DMI/CP/OM, men beskyttet privat vejrprogress blev gemt. Intet nyt
+Pages-deploy; 11:00 UTC-pakken fra `35993736090` er sidst bevist.
+Lokal 4.0.487 retter kun den kvalificerede samling af verificerede
+bølger med DEC-0210's kildeprioritet, og medtager 4.0.486's
+forståelige UI-sprog. Ukendt konflikt stopper stadig. Måltest grøn.
+Næste: RDKS/version, exact-head på PR #448's nye commit, merge og
+én almindelig normalrun fra gemt fremgang. Ingen overlap/oneoff;
+cron pauset. Kontroller cache, fem feltvise rester, score, Pages.
+Tidligere handoffafsnit nedenfor er historiske.

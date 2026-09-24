@@ -757,6 +757,100 @@ assert.equal(
   0.12,
   'a verified DMI current must replace an overlapping controlled-live reserve current',
 );
+const priorityWaveRows = (oldRow, newRow, at = time(4)) =>
+  buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'deployed-private-runtime', record: record([oldRow]) },
+    preferredSource: { source: 'progressive-private-dmi', record: record([newRow]) },
+    productionReferenceAt: at,
+    part,
+  });
+const oldReserveWave = openMeteoWaveReserve(weather(2, { waveHeight: 1.2 }));
+const freshDirectWave = withVerifiedWave(withoutCurrent(weather(2, {
+  modelRun: time(-48), waveHeight: 1.3,
+})));
+const dmiReclaimsReserve = replayForAge(4, priorityWaveRows(oldReserveWave, freshDirectWave));
+assert.equal(dmiReclaimsReserve.hourly.find(row => row.time === time(2)).waveHeightM, 1.3,
+  'a verified DMI wave must reclaim the exact hour from an old reserve without a model reference');
+assert.equal(dmiReclaimsReserve.hourly.find(row => row.time === time(2)).currentSpeedMps, 0.09,
+  'replacing the wave must retain an independent old valid current component');
+const retainedDirectWave = replayForAge(4, priorityWaveRows(
+  freshDirectWave,
+  openMeteoWaveReserve(weather(2, { waveHeight: 1.4 })),
+));
+assert.equal(retainedDirectWave.hourly.find(row => row.time === time(2)).waveHeightM, 1.3,
+  'an unaged verified DMI wave must resist a newer download without model-reference proof');
+const oldReserveRetained = replayForAge(4, priorityWaveRows(
+  oldReserveWave,
+  openMeteoWaveReserve(weather(2, { waveHeight: 1.4 })),
+));
+assert.equal(oldReserveRetained.hourly.find(row => row.time === time(2)).waveHeightM, 1.2,
+  'an unproved new reserve must not erase a previously selected valid reserve');
+const invalidNewReserve = openMeteoWaveReserve(weather(2, { waveHeight: 1.4 }));
+invalidNewReserve.sources.wave.componentRecordId = 'not-a-valid-record-digest';
+const invalidNewReserveSources = priorityWaveRows(oldReserveWave, invalidNewReserve);
+assert.equal(invalidNewReserveSources[0].record.hourly[0].waveHeightM, 1.2,
+  'a malformed preferred reserve must not suppress the old verified wave');
+assert.throws(() => replayForAge(4, invalidNewReserveSources),
+  error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED',
+  'the strict replay still rejects a malformed candidate');
+const withBoundWaveModelRun = (row, modelRun, payload) => {
+  const source = {
+    ...row.sources.wave,
+    modelRun,
+    sourceResponseSha256: `sha256:${sha(payload)}`,
+    modelReference: {
+      kind: 'response-forecast-reference-time',
+      modelRun,
+      payloadSha256: `sha256:${sha(payload)}`,
+    },
+  };
+  return {
+    ...row,
+    sources: { ...row.sources, wave: source },
+    waveProvenance: { ...source, status: 'verified' },
+  };
+};
+const agedDmiWave = withVerifiedWave(weather(2, {
+  modelRun: time(-100), waveHeight: 1.3,
+}));
+const newerBoundReserveWave = withBoundWaveModelRun(
+  openMeteoWaveReserve(weather(2, { waveHeight: 1.4 })), time(-2), 'newer-wave',
+);
+const olderBoundReserveWave = withBoundWaveModelRun(
+  openMeteoWaveReserve(weather(2, { waveHeight: 1.2 })), time(-6), 'older-wave',
+);
+const reserveRevised = replayForAge(4, priorityWaveRows(
+  olderBoundReserveWave, newerBoundReserveWave,
+));
+assert.equal(reserveRevised.hourly.find(row => row.time === time(2)).waveHeightM, 1.4,
+  'a response-bound newer revision of the same reserve may replace its old wave');
+const crossProviderReserve = openMeteoWaveReserve(weather(2, { waveHeight: 1.4 }));
+crossProviderReserve.sources.wave.provider = 'copernicus';
+crossProviderReserve.waveProvenance.provider = 'copernicus';
+const oldReserveSurvivesCrossProvider = replayForAge(4, priorityWaveRows(
+  oldReserveWave, crossProviderReserve,
+));
+assert.equal(oldReserveSurvivesCrossProvider.hourly.find(row => row.time === time(2)).waveHeightM, 1.2,
+  'Copernicus priority at a real gap is not permission to overwrite an old valid Open-Meteo wave');
+const agedDmiMayYield = replayForAge(4, priorityWaveRows(
+  agedDmiWave, newerBoundReserveWave,
+));
+assert.equal(agedDmiMayYield.hourly.find(row => row.time === time(2)).waveHeightM, 1.4,
+  'a DMI wave at least 96 hours old may yield only to a proved newer reserve run');
+const unboundReserveWave = {
+  ...newerBoundReserveWave,
+  sources: { ...newerBoundReserveWave.sources,
+    wave: { ...newerBoundReserveWave.sources.wave,
+      modelReference: { ...newerBoundReserveWave.sources.wave.modelReference,
+        payloadSha256: `sha256:${'0'.repeat(64)}` },
+    },
+  },
+};
+const agedDmiMustNotYieldWithoutProof = replayForAge(4, priorityWaveRows(
+  agedDmiWave, unboundReserveWave,
+));
+assert.equal(agedDmiMustNotYieldWithoutProof.hourly.find(row => row.time === time(2)).waveHeightM, 1.3,
+  'even aged DMI remains when the reserve model reference is not response-bound');
 const revisionRows = (oldRow, newRow, labels = ['deployed-private-runtime', 'progressive-private-dmi']) =>
   buildNewestValidRavScoreRecoverySources({
     fallbackSource: { source: labels[0], record: record([oldRow]) },

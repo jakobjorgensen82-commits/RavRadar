@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.485";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.485";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.485";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.485";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.485";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.487";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.487";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.487";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.487";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.487";
 
 export const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -24,7 +24,7 @@ const directionArrow = (value, type = "current") => {
 // Fælles renderer til både zonepanelet og alle prognosedage. Nye zoner får
 // automatisk samme visning, fordi værdierne kommer fra zonens forecast/condition.
 const directionMetric = (type, speed, speedSuffix, direction, digits = 1) => `<span class="direction-reading">${directionArrow(direction,type)}<span>${formatMetric(speed,speedSuffix,digits)} · ${compass(direction)}</span></span>`;
-const MOBILISATION_DEFINITION = t('score.mobilisationDefinition');
+const mobilisationDefinition = () => t('score.mobilisationDefinition');
 const scoreLabel = result => result?.available ? t(`map.${result.level}`) : t('score.unavailable');
 const bestTimeReasonText = best => best?.selectionReason
   ? t(bestTimeSelectionReasonI18nKey(best.selectionReason))
@@ -51,14 +51,17 @@ function componentDetails(name, key, result, definition) {
     ? `<p class="score-calculation"><b>${t('score.contribution')}</b> ${t('score.calculation',{score:componentScore,weight:Math.round(weight*100),points:contribution})}</p>` : "";
   const weather=result.localWeather||{};
   const directionClass=result.explanation?.transportDiagnostics?.currentDirectionClass;
-  const directionKey=directionClass==='INBOUND'?'score.direction.inbound':directionClass==='ALONG_COAST'?'score.direction.along':directionClass==='OUTBOUND'?'score.direction.outbound':'score.direction.unknown';
-  const stableReason=key==='huntability'
-    ? t('score.reason.huntability',{score:componentScore,wind:formatMetric(weather.windSpeedMps,'m/s'),waves:formatMetric(weather.waveHeightM,'m')})
+  const directionReason=directionClass==='INBOUND'?'inbound':directionClass==='ALONG_COAST'?'along':directionClass==='OUTBOUND'?'outbound':'unknown';
+  const plainReason=key==='huntability'
+    ? t('score.plainReason.huntability',{wind:formatMetric(weather.windSpeedMps,'m/s'),waves:formatMetric(weather.waveHeightM,'m')})
     : key==='transport'
-      ? t('score.reason.transport',{score:componentScore,current:formatMetric(weather.currentSpeedMps,'m/s',2),direction:t(directionKey)})
-      : t('score.reason.mobilisation',{score:componentScore,waves:formatMetric(weather.waveHeightM,'m'),period:formatMetric(weather.wavePeriodS,'s')});
-  const reasons=getLanguage()==='da'?rawReasons:[stableReason];
-  return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>${t('score.meaning')}</b> ${definition}</p>${calculation}<p><b>${t('score.why')}</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || `<li>${t('score.noExplanation')}</li>`}</ul></div></details>`;
+      ? t(`score.plainReason.${directionReason}`,{current:formatMetric(weather.currentSpeedMps,'m/s',2)})
+      : t('score.plainReason.mobilisation',{waves:formatMetric(weather.waveHeightM,'m')});
+  const reasons=[plainReason];
+  if (key==='transport' && result.scoreQuality==='HISTORY_INCOMPLETE') reasons.push(t('score.plainReason.incomplete'));
+  const technicalReasons=getLanguage()==='da' && rawReasons.length
+    ? `<details class="component-technical-reasons"><summary>${t('score.debug.reasonDetails')}</summary><ul>${rawReasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul></details>` : '';
+  return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>${t('score.meaning')}</b> ${definition}</p>${calculation}<p><b>${t('score.why')}</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>${technicalReasons}</div></details>`;
 }
 
 function localCoveragePanel(result, {showMapButton=true} = {}) {
@@ -163,8 +166,21 @@ function secondaryScoreMarkup(result) {
 function integratedExplanationPanel(result) {
   const presentation = presentActiveRavScoreExplanation(result, { language:getLanguage() });
   if (!presentation.available) return '';
-  const facts = presentation.facts.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-  return `<section class="state-explanation integrated-explanation"><p class="eyebrow dark">${t('score.recentMeaning')}</p><h3>${escapeHtml(presentation.title)}</h3><p>${escapeHtml(presentation.summary)}</p><details><summary>${t('score.historyDetails')}</summary><ul>${facts}</ul></details></section>`;
+  const integrated=result.explanation?.transportDiagnostics?.engine==='INTEGRATED_COASTAL_PROCESS';
+  if (!integrated) {
+    const facts = presentation.facts.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    return `<section class="state-explanation integrated-explanation"><p class="eyebrow dark">${t('score.recentMeaning')}</p><h3>${escapeHtml(presentation.title)}</h3><p>${escapeHtml(presentation.summary)}</p><details><summary>${t('score.historyDetails')}</summary><ul>${facts}</ul></details></section>`;
+  }
+  const summary=t('score.plainSummary',{
+    score:result.score,
+    transport:result.components?.transport??'–',
+    mobilisation:result.components?.release??'–',
+    huntability:result.components?.huntability??'–',
+  });
+  const facts=['score.plainHistoryCurrent','score.plainHistoryWaves','score.plainHistoryLimit']
+    .map(key=>`<li>${escapeHtml(t(key))}</li>`).join('');
+  const technicalFacts=presentation.facts.map(item=>`<li>${escapeHtml(item)}</li>`).join('');
+  return `<section class="state-explanation integrated-explanation"><p class="eyebrow dark">${t('score.recentMeaning')}</p><h3>${t('score.readTitle')}</h3><p>${escapeHtml(summary)}</p><details><summary>${t('score.historyDetails')}</summary><ul>${facts}</ul></details><details class="model-technical-reasons"><summary>${t('score.debug.modelDetails')}</summary><ul>${technicalFacts}</ul></details></section>`;
 }
 
 const technicalScore = value => hasNumber(value)
@@ -315,7 +331,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
         ${historyQualityWarning(r)}
         ${waveInputWarning(selectedHourWeather)}
         ${localCoveragePanel(r,{showMapButton:false})}
-        <div class="component-list compact metric-sized">${componentDetails(t('score.huntability'),"huntability",r,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",r,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",r,MOBILISATION_DEFINITION)}</div>${r.available ? integratedExplanationPanel(r) : ""}
+        <div class="component-list compact metric-sized">${componentDetails(t('score.huntability'),"huntability",r,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",r,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",r,mobilisationDefinition())}</div>${r.available ? integratedExplanationPanel(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(h.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(h.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(h.waterTemperatureC,"°C")}</strong></div></div>`;
     };
     forecastSection.querySelectorAll(".forecast-score-day").forEach((button,index) => button.addEventListener("click",()=>render(index)));
@@ -337,7 +353,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
 
 export function showZoneInfo(element, zone, result, condition, mode, options = {}) {
   const modeName = t(mode === "waders" ? 'mode.waders' : 'mode.beachShort'), score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
-  const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails(t('score.huntability'),"huntability",result,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",result,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",result,MOBILISATION_DEFINITION)}</div>` : `<div class="metric-grid"><div class="metric"><span>${t('score.huntability')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.transport')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.mobilisation')}</span><strong>–/100</strong></div></div>`;
+  const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails(t('score.huntability'),"huntability",result,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",result,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",result,mobilisationDefinition())}</div>` : `<div class="metric-grid"><div class="metric"><span>${t('score.huntability')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.transport')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.mobilisation')}</span><strong>–/100</strong></div></div>`;
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>${t('score.backOverview')}</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(scoreLabel(result))}</span></div></div>
     ${localCoveragePanel(result)}
     ${displayContextPanel(result,options.displayContext)}

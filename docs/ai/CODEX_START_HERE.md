@@ -1,4 +1,26 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.485
+# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.486
+
+4.0.485/PR #447 er merged som `cc45e971` efter grøn exact-head
+`35991803426`; providerfri kodelevering `35992546525` er grøn.
+Normalrun `35993736090` på samme main er grøn: seneste beskyttede
+private cache blev genbrugt og en ny blev gemt; 11:00 UTC-pakken
+`rr-20260924122409-210` blev deployet med 210 zoner/673 kystdele.
+På præcis 114 fælles timer × 673 dele blev ingen gyldige værdier
+tomme i nogen af de fem vejrtyper. Større resthuller består. Næste
+ikke-overlappende normalrun `36009816840` er startet på uændret main
+og skal følges til gemning og deploy. Ingen main-merge under denne
+lås. Cron er fortsat pauset.
+
+Lokal branch `codex/4.0.486-plain-score-prognosis` reviderer kun
+offentlige score- og prognoseforklaringer. De skal være forståelige for
+almindelige brugere, ikke nødvendigvis kortere. Hovedvisningen
+forklarer strøm over tid, bølger, historikhuller og usikkerhed uden
+fagjargon; modelpræcise årsager kan stadig åbnes som teknisk detalje.
+Dansk, tysk og engelsk følges ad. Den aktive modelbundle er uændret
+(`61ec5474…`). Målrettede lokale tests er grønne; exact-head, merge,
+kode-only-deploy og visuel kontrol afventer det aktive run.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.485
 
 Normalrun `35972581225` på 4.0.484 gemte og deployede 07:00-pakken.
 Én rumlig strømaudit fejllæste otte autoriserede Limfjord-holds,
@@ -2260,3 +2282,17 @@ synliggør kun sikre årsagstal i GitHub-loggen. Først måltest, RDKS,
 exact-head, merge og kode-only; dernæst én normalrun uden overlap,
 eksakt feltvis før/efter og årsagsbestemt rettelse. Cron er pauset.
 Se CURRENT_TRUTH og ACTIVE_ROADMAP.
+# NYESTE CHECKPOINT – 2026-09-24 – lokal 4.0.487
+
+4.0.486-UI-branchen/PR #448 er udvidet til 4.0.487, fordi næste
+normalrun `36009816840` på uændret 4.0.485-main fejlede før deploy.
+DMI, Copernicus, Open-Meteo, strøm-lukning og strømhistorik lykkedes;
+krypteret privat vejrprogress blev gemt. Scorehistorikkens to
+verificerede bølger for samme time havde forskellige signaturer,
+og replay stoppede. Eksakt providerpar er ukendt. Lokal rettelse bruger
+DEC-0210's DMI-first/96-timers kildevalg også her, men kun efter
+replayets præcise bølgebevis. Modelbundle og scoreformel er uændrede.
+Måltest grøn. Næste: dokumentation/version, exact-head PR #448, merge,
+én normal ikke-overlappende kørsel fra seneste beskyttede progress;
+kontroller fem felter, cache og Pages. Cron pauset. Det gamle
+4.0.486-afsnits »aktivt run« er erstattet af dette resultat.

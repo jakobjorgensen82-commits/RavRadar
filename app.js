@@ -1,42 +1,42 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.485";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.485";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.485";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.485";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.485";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.485";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.485";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.485";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.485";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.485";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.485";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.485";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.485";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.485';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.485';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.485';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.485';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.487";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration } from "./js/services/data-service.js?v=4.0.487";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.487";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.487";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.487";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.487";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.487";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.487";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.487";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.487";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.487";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.487";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.487";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.487';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.487';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.487';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.487';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const RUNTIME_SNAPSHOT_TEXT = Object.freeze({
   da:Object.freeze({
-    ageUnknown:'Prognose for {time}. Nogle kilders modelalder er ukendt; det betyder ikke, at de viste værdier mangler eller er ugyldige.',
+    ageUnknown:'Prognose for {time}. Vi kan ikke se præcist, hvor gamle alle vejrberegninger er. Det betyder ikke i sig selv, at de viste værdier er ugyldige.',
     ranking:'Viser senest verificerede scorer fra {time}. Det er ikke den aktuelle time.',
     forecast:'Viser kun fremtidige prognoser fra den senest verificerede pakke.',
-    data:'Begrænset nøddrift: Senest verificerede score og vejr fra {time} vises tydeligt som ældre data. Konservativ vejrreference er {source} ({age} timer). {known} af {total} kildealdre kan sammenlignes; {unknown} kan ikke. Den aktuelle time og lokale prognosedetaljer afventer næste vejr-opdatering.',
+    data:'Midlertidig begrænset visning: Vi viser senest kontrollerede score og vejr fra {time}. Detaljer for de enkelte kyststrækninger vises igen efter næste vejr-opdatering.',
     trip:'En ravtur kan ikke startes fra den ældre nødvisning. Vent på næste vejr-opdatering.',
   }),
   de:Object.freeze({
-    ageUnknown:'Prognose für {time}. Das Modellalter einiger Quellen ist unbekannt; angezeigte Werte sind deshalb nicht fehlend oder ungültig.',
+    ageUnknown:'Prognose für {time}. Wie alt alle Wetterberechnungen genau sind, ist nicht bekannt. Das allein bedeutet nicht, dass die angezeigten Werte ungültig sind.',
     ranking:'Zuletzt verifizierte RavScores von {time}. Dies ist nicht die aktuelle Stunde.',
     forecast:'Es werden nur zukünftige Prognosen aus dem zuletzt verifizierten Paket angezeigt.',
-    data:'Eingeschränkter Notbetrieb: Der zuletzt verifizierte RavScore und das Wetter von {time} werden deutlich als ältere Daten angezeigt. Die konservative Wetterreferenz ist {source} ({age} Stunden). {known} von {total} Quellenaltern sind vergleichbar; {unknown} nicht. Die aktuelle Stunde und lokale Prognosedetails warten auf die nächste Wetteraktualisierung.',
+    data:'Vorübergehend eingeschränkte Ansicht: Wir zeigen den zuletzt geprüften Score und das Wetter von {time}. Details zu einzelnen Küstenabschnitten erscheinen nach der nächsten Wetteraktualisierung wieder.',
     trip:'Eine Bernsteintour kann nicht aus der älteren Notansicht gestartet werden. Warte auf die nächste Wetteraktualisierung.',
   }),
   en:Object.freeze({
-    ageUnknown:'Forecast for {time}. Some source model ages are unknown; that does not mean the displayed values are missing or invalid.',
+    ageUnknown:'Forecast for {time}. We cannot tell exactly how old every weather calculation is. That alone does not mean the values shown are invalid.',
     ranking:'Showing the latest verified RavScores from {time}. This is not the current hour.',
     forecast:'Only future forecasts from the latest verified package are shown.',
-    data:'Limited emergency mode: The latest verified RavScore and weather from {time} are clearly shown as older data. The conservative weather reference is {source} ({age} hours). {known} of {total} source ages are comparable; {unknown} are not. The current hour and local forecast details await the next weather update.',
+    data:'Temporarily limited view: We are showing the latest checked score and weather from {time}. Details for individual stretches of coast will return after the next weather update.',
     trip:'An amber trip cannot start from the older emergency view. Wait for the next weather update.',
   }),
 });
