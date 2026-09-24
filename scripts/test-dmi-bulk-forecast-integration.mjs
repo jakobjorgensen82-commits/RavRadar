@@ -258,8 +258,8 @@ assert.match(bulk, /33: "wind-tail-u-10m"/,
   'DKSS GRIB parameter 33 skal materialiseres som en separat vindhale');
 assert.match(bulk, /34: "wind-tail-v-10m"/,
   'DKSS GRIB parameter 34 skal materialiseres som en separat vindhale');
-assert.match(source, /buildDmiForecastHourly\(\{ wind, windTail, waves, ocean/,
-  'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier');
+assert.match(source, /buildDmiMarineComponentwiseHourly\(\{\s*wind, windTail, waves, ocean, generatedAt, startAt,[\s\S]*?expectedIdentity: dmiIdentity,/,
+  'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier med eksakt DMI-identitet');
 assert.match(bulkConverter, /const waveHeight = ravScoreNumber\(row\['significant-wave-height'\]\);[\s\S]*?const wavePeriod = ravScoreNumber\(row\['dominant-wave-period'\]\);[\s\S]*?if \(!waveSource \|\| waveHeight === null \|\| wavePeriod === null\) return null;/,
   'bulk-konverteringen skal bevare den verificerede Hs+periode-mobiliseringstuple uden at kræve retning');
 assert.match(bulkConverter, /const waveDirectionAttested = waveSource\.optionalFieldSet\.length === 1[\s\S]*?waveSource\.optionalFieldSet\[0\] === 'mean-wave-dir';[\s\S]*?const waveDirection = waveDirectionAttested[\s\S]*?ravScoreNumber\(row\['mean-wave-dir'\]\)[\s\S]*?: null;/,

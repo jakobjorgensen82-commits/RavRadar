@@ -23,6 +23,10 @@
   at exact-head-kildegaten påviste manglende modelbinding. Begge private restore-trin
   genkender kun den eksakte seneste 4.0.484-generation; syntetiske
   positive og negative tests er grønne.
+- [x] Exact-head `35991049556` bestod modelbinding og den nye
+  producenttest, men fandt én gammel strengtest for direkte
+  `buildDmiForecastHourly`-kald. Testen kontrollerer nu den faktiske
+  komponentvej og eksakte identitet; lokal måltest er grøn.
 - [ ] Afslut dokumentation, RDKS-kontrol, eksakt geodatadiff, én ny
   exact-head-kildegate på ændret PR, merge og kode-only-deploy.
 - [ ] Afklar Copernicus-opdatering og resthuller, mål eksakt overlap

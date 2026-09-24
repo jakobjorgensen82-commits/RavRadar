@@ -19,6 +19,9 @@
   ændring direkte i modelbundlen blev forkastet efter exact-head-gaten.
   Livebekræftelse af
   samtlige 274 afventer næste normale kørsel.
+- Næste exact-head-kontrol fandt én forældet strengtest, som stadig
+  krævede den gamle timebygger direkte. Den kontrollerer nu den nye
+  producentvej og den eksakte DMI-identitet; måltesten består.
 - Ændringen skifter vejrcachens kodefingeraftryk. Begge restore-trin
   accepterer kun den præcise, senest deployede 4.0.484-generation som
   forgænger, med uændret model-/statebinding og fuld arkivkontrol.
