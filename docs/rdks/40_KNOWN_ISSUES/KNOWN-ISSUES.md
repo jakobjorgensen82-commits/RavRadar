@@ -1,4 +1,23 @@
-# Aktuelle issues – 2026-09-24, lokal 4.0.488
+# Aktuelle issues – 2026-09-25, lokal 4.0.488
+
+- **PARRET CACHEGENOPRETNING – LOKALT RETTET, LIVE ÅBEN:** Den
+  beskyttede 11Z-generation er stærkeste private baseline, men
+  den aktuelle 15Z har 3.238 unikke stadig fremtidige feltpar
+  på 92 fælles timer pr. 25/9 kl. 13 UTC. Workflowet skal
+  verificere begge, installere kun 11Z, genhente resten normalt
+  og kræve nul gyldig→tom mod begge før privat publish/Pages.
+  Om én eller flere normale kørsler kan opnå det, er endnu ukendt.
+  Den eksisterende 72-timersgrænse består.
+- **GAMLE QUEUED VEJRRUNS – ÅBEN FØR CRON:** Tre gamle
+  workflow_dispatch-runs fra andre main-commits står stadig
+  `queued` trods normal annulleringsrespons. De må ikke starte
+  eller få udgivelsesret ved genåbning af workflowet.
+- **LOKALT SECURITY-TESTMILJØ – IKKE PRODUKTIONSFUND:** Den
+  indlejrede Windows-worktree ligger under `node_modules`, hvor
+  Node 24 nægter at strippe projektets TypeScript-import i
+  security-hardening-testen. RDKS, håndbog, version og målrettede
+  vejr-/workflowtests består; exact-head GitHub-kildegate skal
+  køre i normal repositoryplacering før merge.
 
 - **OFFENTLIGT CACHETAB – LOKALT RETTET, LIVE ÅBEN:** Grøn
   `36022310055` mistede store mængder tidligere gyldig vejrdata.

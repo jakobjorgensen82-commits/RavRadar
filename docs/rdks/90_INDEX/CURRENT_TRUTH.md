@@ -1,4 +1,32 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.488, samlet vejrrecovery
+# NYESTE SANDHED – 2026-09-25 – lokal 4.0.488, parret vejrrecovery
+
+Den præcise vej er besluttet efter sammenligning med en helt ny cache
+og fuld sammenfletning: verificér 11Z og 15Z fra samme beskyttede
+pointer, installér den langt stærkere 11Z som eneste privat udgangspunkt,
+og lad almindelig vejrhentning genhente 15Z's unikke felter. Den tynde
+15Z-pakke er et særskilt no-loss-anker, ikke en cache der blandes ind i
+scorehistorikken. På de 92 fælles timer fra 25/9 kl. 13 UTC har 11Z
+72.520 gyldige feltpar, som 15Z tabte; 15Z har 3.238, som 11Z mangler.
+Begge ankres stadig gyldige felter skal bevares, før nogen ny privat
+pakke eller Pages-prognose publiceres. En afvist kontrol lader den
+nuværende hjemmeside stå og kan bevare 11Z-bundet krypteret
+leverandørfremgang til et nyt ikke-overlappende forsøg. Den eksisterende
+72-timers restoregrænse er ikke forlænget. En frisk tom cache er
+forkastet som produktionsvej, fordi den ville kassere både værdier og
+historik.
+
+Den lokale kode kræver nu også læsbar DMI-candidate og forecast-store
+efter privat install; ingen af dem må stille blive tomme. En syntetisk
+checkpointtest beviser, at nyere DMI-candidate-progression bevares over
+en ældre READY-donor. Copernicus' kritiske passage tager faktiske
+resthuller først, mens afgrænset kvalitetsarbejde kan overtage
+Open-Meteo efterfølgende. At dette giver faktisk leverandørfremgang
+og passerer begge tabsankre er endnu **ikke livebevist**. 4.0.488 er
+ukommitteret og umerget; cron er pauset, og tre gamle queued
+workflow_dispatch-runs fra andre main-commits må neutraliseres før
+automatisk drift. Ingen ny vejrkørsel under releaseanalysen.
+
+# HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
 
 Normalrun `36022310055` deployede, men startede uden den tidligere fulde
 private cache og tabte gyldige vejrdata. På 114 identiske offentlige

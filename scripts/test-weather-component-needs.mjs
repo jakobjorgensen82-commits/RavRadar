@@ -38,9 +38,30 @@ test('planner separates actual gaps, retained aged DMI and future DMI upgrade wo
     { partId: 'P1', component: 'wave', validTime: at(1), purpose: 'AGED_DMI_CHALLENGE', protectedModelRun: at(-96) },
   ]);
   assert.deepEqual(result.dmiUpgradeNeeds, [{ partId: 'P1', component: 'waterTemperature', validTime: at(3) }]);
+  assert.deepEqual(result.copernicusUpgradeNeeds, [{ partId: 'P1', component: 'waterTemperature',
+    validTime: at(3), purpose: 'OPEN_METEO_UPGRADE' }]);
   assert.deepEqual(openMeteoGapPairsFromWeatherNeeds(result), [{ partId: 'P1', component: 'wind', validTime: at(0) }]);
   assert.equal(result.summary.wave.valid, 118, 'aged DMI remains valid while being challenged');
   assert.equal(result.summary.wave.missing, 0);
+});
+
+test('Copernicus upgrade work targets only admitted Open-Meteo wave and temperature', () => {
+  const rows = validRows();
+  rows[0].waveProvenance.provider = 'open-meteo';
+  rows[1].waterTemperatureProvenance.provider = 'open-meteo';
+  rows[2].windProvenance.provider = 'open-meteo';
+  rows[3].waterLevelProvenance.provider = 'open-meteo';
+  const result = plan(rows);
+  assert.deepEqual(result.copernicusUpgradeNeeds, [
+    { partId: 'P1', component: 'wave', validTime: at(0), purpose: 'OPEN_METEO_UPGRADE' },
+    { partId: 'P1', component: 'waterTemperature', validTime: at(1), purpose: 'OPEN_METEO_UPGRADE' },
+  ]);
+  assert.equal(result.needs.some(row => row.component === 'wave' || row.component === 'waterTemperature'), false);
+  assert.equal(result.needs.some(row => row.component === 'waterLevel'), true,
+    'reserve-labelled water level remains a DMI-only gap');
+  assert.equal(result.copernicusUpgradeNeeds.some(row => row.component === 'wind'), false,
+    'do not invent a Copernicus wind product');
+  assert.deepEqual(openMeteoGapPairsFromWeatherNeeds(result), []);
 });
 
 test('last three public water trends schedule exact private support through H120', () => {

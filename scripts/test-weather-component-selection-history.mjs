@@ -13,13 +13,13 @@ const candidates = [{ source: { provider: 'copernicus' } }, { source: { provider
 const choose = choices => selectQualifiedWeatherComponent(choices, { component: 'wave', productionReferenceAt: time,
   admit: candidate => candidate.source }).candidate.source.provider;
 
-test('prior selected OM survives restart and CP arrival; qualified DMI can still take over', () => {
+test('previous OM survives restart until admitted CP or DMI takes over', () => {
   const history = createWeatherComponentSelectionHistory(null, options);
   assert.equal(choose(candidates), 'copernicus', 'CP is first reserve for an actual new gap');
   recordSelectedWeatherComponents(history, part, [{ time, waveProvenance: proof('open-meteo') }]);
   const restored = createWeatherComponentSelectionHistory(snapshotWeatherComponentSelectionHistory(history), options);
   const retained = retainPreviouslySelectedReserve(candidates, restored, { part, time, component: 'wave' });
-  assert.equal(choose(retained), 'open-meteo');
+  assert.equal(choose(retained), 'copernicus');
   assert.equal(choose([...retained, { source: { provider: 'dmi', modelRun: time } }]), 'dmi');
   recordSelectedWeatherComponents(restored, part, [{ time, waveProvenance: { status: 'verified', provider: 'dmi' } }]);
   assert.equal(snapshotWeatherComponentSelectionHistory(restored).records.length, 0);

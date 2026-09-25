@@ -3,17 +3,20 @@ import fs from 'node:fs/promises';
 import { applyWaterSourceRouting, buildWaterSourceForecastIndex, applyWaterSourceForecastStatus } from './lib/water-source-forecast-routing.mjs';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
 
 const generatedAt='2026-08-05T12:00:00Z';
 const times=Array.from({length:40},(_,i)=>new Date(Date.parse(generatedAt)+i*3*3600000).toISOString());
-const series=base=>Object.fromEntries(times.map((time,i)=>[time,{time,'sea-mean-deviation':(base+i)/100}]));
 const sources=[
   {sourceKey:'oceanobs:NEAR',stationId:'NEAR',name:'Nær målestation',sourceType:'observation-station',point:[10.40,56.00],registryStatus:'active',properties:{status:'Active',parameterId:['sealev_dvr']}},
   {sourceKey:'tidewater:FAR',stationId:'FAR',name:'Fjernt prognosepunkt',sourceType:'forecast-point',point:[11.00,56.00],registryStatus:'active-forecast-point',properties:{status:'Active'}}
 ];
+const series=(source,base)=>Object.fromEntries(times.map((time,i)=>[
+  time,dmiWaterSourceFixture(source,time,base+i,generatedAt),
+]));
 const bulk={generatedAt,timeStrideHours:3,zones:{
-  'SOURCE::oceanobs:NEAR':{hourly:series(10)},
-  'SOURCE::tidewater:FAR':{hourly:series(50)}
+  'SOURCE::oceanobs:NEAR':{hourly:series(sources[0],10)},
+  'SOURCE::tidewater:FAR':{hourly:series(sources[1],50)}
 }};
 const index=buildWaterSourceForecastIndex(sources,bulk,generatedAt);
 const aware=applyWaterSourceForecastStatus(sources,index,generatedAt,{minimumHours:96});

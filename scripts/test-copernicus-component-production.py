@@ -13,8 +13,8 @@ from types import SimpleNamespace
 import numpy as np
 import xarray as xr
 
-from lib.copernicus_weather_component_bank import _request, empty_component_bank, produce_component_bank, save_component_bank
-from lib.copernicus_weather_components import CONTRACTS, MAX_SUBSET_BYTES
+from lib.copernicus_weather_component_bank import _request, _sealed, empty_component_bank, merge_component_read, produce_component_bank, save_component_bank
+from lib.copernicus_weather_components import CONTRACTS, MAX_SUBSET_BYTES, read_component_subset
 from lib.copernicus_component_spatial import POLICY, static_request, eligible_static_cell
 from lib.copernicus_component_transport import ComponentSubsetCache, BoundedComponentTransport, ComponentTransportDeferred, atomic_json, subset_arguments
 
@@ -122,16 +122,35 @@ class ComponentProductionTests(unittest.TestCase):
         self.assertEqual(result["stage"]["privateSupportCandidates"], [])
 
     def test_static_land_shallow_wrong_cell_and_radian_axis_never_admit(self):
-        for kwargs in ({"mask": 0}, {"depth": 9}, {"lon": 10.001}):
+        for kwargs in ({"mask": 0}, {"depth": 9}):
             with self.subTest(kwargs=kwargs):
                 self.store_static(**kwargs)
                 self.assertEqual(self.authority()["stage"]["candidates"], [])
+        self.case = prepare(self.case["folder"] / "pointer-shift")
+        # A changed latest pointer does not erase a different, still valid
+        # historical cell: the original receipt and bytes remain independent.
+        self.store_static(lon=10.001)
+        self.assertEqual([r["time"] for r in self.authority()["stage"]["candidates"]],
+                         [TIMES[0], TIMES[2]])
         dataset = static_fixture()
         dataset.longitude.attrs["units"] = "radians"
         path = self.case["folder"] / "radians.nc"
         dataset.to_netcdf(path, engine="h5netcdf")
         self.case["cache"].store(static_request("nws-wave", TARGET), path)
-        self.assertEqual(self.authority()["stage"]["candidates"], [])
+        self.assertEqual([r["time"] for r in self.authority()["stage"]["candidates"]],
+                         [TIMES[0], TIMES[2]])
+
+    def test_pack_keeps_original_static_cell_when_latest_pointer_moves(self):
+        self.store_static(lon=10.001)
+        result = self.authority()
+        self.assertEqual([r["time"] for r in result["stage"]["candidates"]],
+                         [TIMES[0], TIMES[2]])
+        inventory = RUNNER["storage_inventory"](self.case["bank"], self.case["cache"])
+        request_hash = static_request("nws-wave", TARGET)["requestSha256"][7:]
+        retained_receipts = [row for row in inventory["files"]
+                             if row["relativePath"].startswith("receipts/" + request_hash + "-")]
+        self.assertEqual(len(retained_receipts), 2)
+        self.assertEqual(len(inventory["files"]), 7)
 
     def test_all_six_pinned_static_fields_and_surface_mask_layer(self):
         for key in CONTRACTS:
@@ -153,6 +172,11 @@ class ComponentProductionTests(unittest.TestCase):
         path = self.case["cache"].object_path(row["subsetSha256"])
         with path.open("ab") as handle:
             handle.write(b"synthetic corruption")
+        admit, _, _ = RUNNER["original_component_admitter"](self.case["plan"], self.case["cache"])
+        entry = self.case["bank"]["records"][0]
+        request = next(request for request in self.case["bank"]["requests"]
+                       if request["requestSha256"] == entry["requestSha256"])
+        self.assertIsNone(admit(entry, request, request["target"]))
         result = self.authority()
         self.assertEqual(result["stage"]["candidates"], [])
         self.assertEqual(len(result["recordFailures"]), 2)
@@ -195,7 +219,91 @@ class ComponentProductionTests(unittest.TestCase):
             self.assertEqual(len(calls), expected)
             self.assertEqual(sleeps, [5] if responses[0] == 76 else [])
             self.assertTrue(all(c["timeout"] == 30 for c in calls))
-        self.assertIs(subset_arguments(request, "nws-wave", self.case["folder"])["raise_if_updating"], True)
+        dynamic_arguments = subset_arguments(request, "nws-wave", self.case["folder"])
+        static_arguments = subset_arguments(static_request("nws-wave", TARGET), "nws-wave", self.case["folder"])
+        self.assertIs(dynamic_arguments["raise_if_updating"], True)
+        self.assertEqual(dynamic_arguments["service"], "geoseries")
+        self.assertNotIn("dataset_part", dynamic_arguments)
+        self.assertEqual(static_arguments["service"], "static-arco")
+        self.assertEqual(static_arguments["dataset_part"], "bathy")
+        self.assertNotIn("start_datetime", static_arguments)
+
+    def test_explicit_static_refresh_uses_bounded_transport_and_keeps_old_original(self):
+        previous = self.case["cache"].load_static_for_grid("nws-wave", TARGET, [10.0, 58.0])
+        self.assertIsNotNone(previous)
+        calls = []
+        def run(args, **_kwargs):
+            calls.append(args)
+            static_fixture(lon=10.001).to_netcdf(Path(args[-1]) / "subset.nc", engine="h5netcdf")
+            return SimpleNamespace(returncode=0)
+        transport = BoundedComponentTransport(self.case["cache"], deadline_epoch=200,
+            request_timeout_seconds=30, maximum_requests=1,
+            maximum_download_bytes=MAX_SUBSET_BYTES, run=run, clock=lambda: 100)
+        refreshed = transport.refresh_static("nws-wave", TARGET)
+        self.assertEqual(refreshed["gridPoint"], [10.001, 58.0])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(transport.request_count, 1)
+        self.assertEqual(self.case["cache"].load_static_for_grid("nws-wave", TARGET, [10.0, 58.0]), previous)
+        self.assertIsNotNone(self.case["cache"].load_static_for_grid("nws-wave", TARGET, [10.001, 58.0]))
+
+    def test_two_private_generations_stage_only_originally_verified_union(self):
+        complete = self.case
+        latest = prepare(self.case["folder"] / "latest")
+        request = latest["bank"]["requests"][0]
+        changed = dynamic_fixture("nws-wave")
+        changed["VHM0"].values[:] = 2.0
+        changed["VTPK"].values[1] = np.nan
+        path = self.case["folder"] / "latest-changed.nc"
+        changed.to_netcdf(path, engine="h5netcdf")
+        new_path, receipt = latest["cache"].store(request, path)
+        read = read_component_subset(new_path, contract_key="nws-wave", target=TARGET,
+            expected_times=request["expectedTimes"])
+        latest_bank = merge_component_read(empty_component_bank([TARGET]), plan=latest["plan"],
+            request=request, read=read, acquisition_at=receipt["acquisitionAt"])
+        def retain(bank, time):
+            body = {key: value for key, value in bank.items() if key != "bankSha256"}
+            body["records"] = [entry for entry in bank["records"] if entry["native"]["validTime"] == time]
+            return _sealed(body, "bankSha256")
+        latest_bank = retain(latest_bank, TIMES[2])
+        complete_bank = retain(complete["bank"], TIMES[0])
+        output = self.case["folder"] / "dual-stage"
+        summary = RUNNER["merge_original_component_generations"](
+            latest_bank, latest["cache"], complete_bank, complete["cache"],
+            targets=[TARGET], retention_start_at="2026-09-17T00:00:00Z",
+            retention_end_at="2026-09-24T00:00:00Z", output_root=output)
+        merged = json.loads((output / "bank.json").read_text(encoding="utf-8"))
+        self.assertEqual(summary["recordCount"], 2)
+        self.assertEqual({row["native"]["validTime"] for row in merged["records"]}, {TIMES[0], TIMES[2]})
+        self.assertEqual(len(RUNNER["storage_inventory"](merged, ComponentSubsetCache(output / "cache"))["files"]), 7)
+        self.assertEqual(len(RUNNER["verify_original_components"](latest["plan"], merged,
+            ComponentSubsetCache(output / "cache"))["stage"]["candidates"]), 2)
+        collision_output = self.case["folder"] / "receipt-collision"
+        RUNNER["merge_original_component_generations"](
+            retain(latest["bank"], TIMES[2]), latest["cache"],
+            complete_bank, complete["cache"], targets=[TARGET],
+            retention_start_at="2026-09-17T00:00:00Z",
+            retention_end_at="2026-09-24T00:00:00Z", output_root=collision_output)
+        normalized = json.loads((collision_output / "bank.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(normalized["records"]), 2)
+        self.assertEqual(len({entry["acquisitionAt"] for entry in normalized["records"]}), 1)
+        self.assertEqual(len(RUNNER["verify_original_components"](latest["plan"], normalized,
+            ComponentSubsetCache(collision_output / "cache"))["stage"]["candidates"]), 2)
+        latest_file = self.case["folder"] / "latest-filtered.json"
+        complete_file = self.case["folder"] / "complete-filtered.json"
+        save_component_bank(latest_file, latest_bank, targets=[TARGET])
+        save_component_bank(complete_file, complete_bank, targets=[TARGET])
+        registry_file = self.case["folder"] / "central-targets.json"
+        atomic_json(registry_file, {"partCount": 1,
+            "zones": {TARGET["parentZoneId"]: [{**TARGET, "sourceZoneId": TARGET["parentZoneId"]}]}})
+        report = self.case["folder"] / "cli-report.json"
+        cli_output = self.case["folder"] / "cli-stage"
+        self.assertEqual(RUNNER["main"](["--merge-generations", "--bank", str(latest_file),
+            "--cache-directory", str(latest["cache"].directory),
+            "--complete-bank", str(complete_file),
+            "--complete-cache-directory", str(complete["cache"].directory),
+            "--merge-output-root", str(cli_output), "--target-registry", str(registry_file),
+            "--target-reference", "2026-09-19T00:00:00Z", "--output", str(report)]), 0)
+        self.assertEqual(json.loads(report.read_text(encoding="utf-8"))["recordCount"], 2)
 
     def test_walltime_budget_and_timeout_are_bounded_without_provider_call(self):
         request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)

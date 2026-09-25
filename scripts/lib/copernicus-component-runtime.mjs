@@ -5,6 +5,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadCopernicusComponentAuthority, validateCopernicusComponentCandidates } from './copernicus-component-index.mjs';
 
+export function copernicusRetryableReasonCounts(attempts) {
+  const counts = {};
+  for (const attempt of attempts) {
+    if (attempt?.status !== 'RETRYABLE_ERROR') continue;
+    const supplied = attempt.reason;
+    const code = typeof supplied === 'string' && /^CP_[A-Z0-9_]{1,80}$/.test(supplied)
+      ? supplied : 'CP_COMPONENT_REQUEST_RETRYABLE_ERROR';
+    counts[code] = (counts[code] ?? 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right, 'en')));
+}
+
 export async function runCopernicusComponentRuntime({ privateCacheRoot, bankPath, cacheDirectory,
   parts, productionReferenceAt, needs, retentionStartAt, retentionEndAt, budgetMs = 0,
   requestTimeoutMs, maximumRequests, maximumDownloadBytes,
@@ -44,7 +56,8 @@ export async function runCopernicusComponentRuntime({ privateCacheRoot, bankPath
       privateSupportCandidates: result.privateSupportCandidates.length, remainingNeeds: result.remainingNeeds.length,
       recordFailures: result.recordFailures.length, attempts: result.attempts.length,
       invalidOriginalRecordsReleasedForRetry: result.invalidOriginalRecordsReleasedForRetry,
-      retryableAttempts: result.attempts.filter(row => row.status === 'RETRYABLE_ERROR').length, transportFailure } };
+      retryableAttempts: result.attempts.filter(row => row.status === 'RETRYABLE_ERROR').length,
+      retryableReasons: copernicusRetryableReasonCounts(result.attempts), transportFailure } };
   } finally {
     await fs.rm(temporary, { recursive: true, force: true });
   }

@@ -601,6 +601,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Classify the exact 11Z weather recovery
+        id: exact-weather-recovery
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { isLatestUnpairedWeatherGeneration } from './scripts/protected-private-production-runtime.mjs';
+          const source = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/private-runtime-current-source.json', 'utf8'));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            `required=${isLatestUnpairedWeatherGeneration(source)}\n`);
+          NODE
+
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
         if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
@@ -645,7 +659,21 @@ jobs:
           status=1
           for attempt in 1 2 3; do
             rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-            if node "$restore_script" \
+            if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+              test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" != "true" || exit 1
+              rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest"
+              if node "$restore_script" \
+                  --restore-weather-pair \
+                  --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+                  --bundle "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest" \
+                  --complete-bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+                  --repository-root "$restore_repository" \
+                  --expected "$restore_expected"; then
+                exit 0
+              else
+                status=$?
+              fi
+            elif node "$restore_script" \
                 --restore \
                 --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
                 --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
@@ -658,6 +686,10 @@ jobs:
             echo "Protected normal-weather restore attempt $attempt of 3 failed."
             if test "$attempt" -lt 3; then sleep $((attempt * 5)); fi
           done
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            echo "The exact 11Z/15Z pair could not be verified; a stateless replacement is forbidden."
+            exit "$status"
+          fi
           if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             echo "The exact audited predecessor could not be restored; the approved transition cannot reuse or silently replace it."
             exit "$status"
@@ -690,6 +722,7 @@ jobs:
           exit "$status"
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -804,6 +837,30 @@ jobs:
           node scripts/private-production-runtime-workflow.mjs install \
             --restored "$restored_root" \
             --repository-root "$GITHUB_WORKSPACE"
+
+      - name: Preserve the paired 15Z public no-loss anchor without installing it
+        if: steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest_bundle="$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest"
+          latest_restored="$RAVRADAR_PRIVATE_RUNTIME_ROOT/restored-latest-anchor"
+          node scripts/private-runtime-second-restore-expectation.mjs \
+            --expected .cache/private-production-runtime-expected.json \
+            --source-description "$RUNNER_TEMP/private-runtime-current-source.json" \
+            --bundle-manifest "$latest_bundle/manifest.json" \
+            --paired-latest-anchor \
+            --output "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json"
+          node scripts/private-production-runtime-bundle.mjs restore \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$latest_bundle" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json" \
+            --output "$latest_restored"
+          test -s "$latest_restored/data/live/conditions.json"
+          test -s "$latest_restored/.cache/public-hour-delivery.pack"
+          cp "$latest_restored/data/live/conditions.json" "$RUNNER_TEMP/paired-15z-conditions.json"
+          cp "$latest_restored/.cache/public-hour-delivery.pack" "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack"
 
       - name: Preserve exact previous public weather for no-loss comparison
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
@@ -1561,6 +1618,7 @@ jobs:
           # default Node/V8 ceiling is too small for this bounded production
           # operation even after provider work has completed.
           NODE_OPTIONS: --max-old-space-size=8192
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           DMI_MAX_RETRIES: 0
           DMI_REQUEST_GAP_MS: 12000
@@ -1697,11 +1755,20 @@ jobs:
       - name: Refuse loss of previously valid public weather on identical coastal hours
         if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
         shell: bash
-        run: >-
-          node scripts/check-public-weather-continuity.mjs
-          --previous-conditions "$RUNNER_TEMP/previous-weather-conditions.json"
-          --previous-pack "$RUNNER_TEMP/previous-public-hour-delivery.pack"
-          --new-live data/live
+        env:
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
+        run: |
+          set -euo pipefail
+          node scripts/check-public-weather-continuity.mjs \
+            --previous-conditions "$RUNNER_TEMP/previous-weather-conditions.json" \
+            --previous-pack "$RUNNER_TEMP/previous-public-hour-delivery.pack" \
+            --new-live data/live
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            node scripts/check-public-weather-continuity.mjs \
+              --previous-conditions "$RUNNER_TEMP/paired-15z-conditions.json" \
+              --previous-pack "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack" \
+              --new-live data/live
+          fi
 
       - name: Audit runtime and collect independent cutover validation failures
         # A model/control finding must remain visible, but it must not prevent

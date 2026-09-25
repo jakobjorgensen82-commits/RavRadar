@@ -1935,7 +1935,9 @@ try:
         }
         producer.nearest_candidates = lambda *_args, **_kwargs: [dict(candidate, index=7)]
         producer.should_stop_work = lambda: False
-        producer.raw_cache_source_capture = lambda *_args: None
+        # Native component admission now requires an original STAC asset
+        # identity. Keep this grid-metadata test on the real proved path.
+        producer.raw_cache_source_capture = lambda *_args: dict(capture)
         output = {
             "generatedAt": "2026-01-01T02:00:00Z",
             "zones": {

@@ -215,8 +215,9 @@ function componentPreference(
     // Both rows were already sanitized by the production adapter. Re-check
     // the exact replay admission before allowing a source to suppress its
     // peer, then use the same DMI-first/96-hour rule as the public forecast.
-    // A previously selected reserve remains valid until a proved revision or
-    // qualified DMI replaces it; acquisition time alone is not a revision.
+    // Previous ownership orders revisions within its own provider. An
+    // independently admitted Copernicus wave may replace Open-Meteo;
+    // acquisition time alone still proves no same-provider revision.
     if (!verifiedWaveForPriority(fallbackRow, part)
       || !verifiedWaveForPriority(preferredRow, part)) return null;
     const fallbackSource = componentRevisionSource(fallbackRow, component);

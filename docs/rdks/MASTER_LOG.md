@@ -1,4 +1,20 @@
-# 2026-09-24 – lokal 4.0.488, samlet vejrgenopretning
+# 2026-09-25 – lokal 4.0.488, parret cachebevis og normal genhentning
+
+Efter ejerens spørgsmål om tid og risiko er en helt ny cache og
+automatisk fuld to-generationsfletning forkastet som første vej.
+11Z har 72.520 gyldige feltpar, som 15Z tabte, på 92 endnu
+fremtidige fælles timer; 15Z har 3.238 unikke gyldige par. 11Z
+installeres alene som verificeret privat baseline, mens 15Z er
+separat tabsanker. Normal kæde skal genhente de unikke par, og
+ingen ny privat pakke/Pages må udgives med gyldig→tom-tab mod
+nogen af originalerne. En mislykket no-loss kan bevare krypteret
+11Z-bundet progress uden stateless offentliggørelse. Læsbare
+conditions, DMI-candidate og DMI-forecast-store er obligatoriske
+efter privat install. Copernicus/DMI/tests er lokalt kontrolleret,
+men ingen ny produktionskørsel er foretaget; cron er pauset.
+Se DEC-0254's tillæg og aktivt roadmap.
+
+# HISTORISK LOG – 2026-09-24 – første 4.0.488-afgrænsning
 
 Grøn `36022310055` deployede uden den fulde beskyttede forgænger og
 tabte gyldige felter i alle fem vejrfamilier. Lokal 4.0.488 kræver

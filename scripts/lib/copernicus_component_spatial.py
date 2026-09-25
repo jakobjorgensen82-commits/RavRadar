@@ -150,16 +150,16 @@ def eligible_static_cell(evidence: dict) -> bool:
 def make_spatial_admitter(plan: dict, evidence_for: callable):
     """Return the bank callback backed by already-byte-verified static evidence.
 
-    evidence_for(contract_key,target) must load via inspect_static_subset, not
-    accept an arbitrary certificate. A failed static request returns None and
-    leaves the native bank usable for a later attempt, not falsely admitted.
+    evidence_for(contract_key,target,grid_point) must load via
+    inspect_static_subset, not accept an arbitrary certificate. A failed
+    original request returns None, not falsely admitted data.
     """
     current = _targets(plan["targets"])
     def admit(entry, request, target):
         row = entry["native"]
         if target != current.get(row["partId"]) or target != request["target"]:
             return None
-        evidence = evidence_for(row["contractKey"], target)
+        evidence = evidence_for(row["contractKey"], target, row["gridPoint"])
         if evidence is None or not eligible_static_cell(evidence):
             return None
         if (evidence["target"] != target or evidence["request"] != static_request(row["contractKey"], target)

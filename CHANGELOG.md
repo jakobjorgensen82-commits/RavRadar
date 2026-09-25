@@ -1,4 +1,22 @@
-## 4.0.488 – samlet cache- og vejrrecovery (2026-09-24)
+## 4.0.488 – samlet cache- og vejrrecovery (lokal, 2026-09-25)
+
+Efter en måling af begge gemte generationer vælges den verificerede
+11Z-pakke som eneste private fortsættelse. Den nyere, men tyndere
+15Z-pakke beholdes som separat tabsanker. På 92 endnu fremtidige
+fælles timer har 11Z 72.520 gyldige feltpar, som 15Z tabte;
+15Z har 3.238 gyldige par, som 11Z mangler. Almindelig vejrhentning
+skal forsøge at genhente de sidste, og ingen ny privat pakke eller
+offentlig prognose må udgives med tab mod nogen af originalerne.
+En frisk/tom produktionscache og automatisk fuld fletning er ikke
+valgt. Ulæselig privat DMI-candidate eller forecast-store stopper
+fortsættelsen; gyldig nyere DMI-fremdrift bevares over en ældre
+READY-donor. Copernicus' originalbevis, DMI's komponentvise
+modelvalg, kildeprioritet og admin-valgt DMI-vandstandsrouting er
+rettet lokalt og afventer faktisk normalrun-bevis.
+
+Intet er endnu merged eller online som 4.0.488. Cron forbliver
+pauset; de tre gamle queued vejr-runs på andre main-commits må
+neutraliseres før genåbning.
 
 Et grønt normalrun tabte gyldig data i alle fem vejrtyper, da
 den tidligere fulde private cache blev afvist på grund af en for

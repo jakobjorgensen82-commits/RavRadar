@@ -24,7 +24,8 @@ async function readHistory(file) {
 // Passing budget zero is the provider-free saved-weather/code-repair route.
 export async function prepareWeatherComponentRuntime({
   privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt,
-  readVerifiedHourly, openMeteoSpatialPolicies, copernicusBudgetMs, openMeteoBudgetMs,
+  readVerifiedHourly, openMeteoSpatialPolicies, copernicusBudgetMs,
+  copernicusUpgradeBudgetMs = copernicusBudgetMs, openMeteoBudgetMs,
   copernicusRequestTimeoutMs = 45_000, copernicusMaximumRequests = 32,
   copernicusMaximumDownloadBytes = 96 * 1024 * 1024,
   openMeteoRequestTimeoutMs = 15_000, openMeteoMaximumRetries = 2,
@@ -35,7 +36,8 @@ export async function prepareWeatherComponentRuntime({
   if (typeof privateCacheRoot !== 'string' || !path.isAbsolute(privateCacheRoot)
     || path.resolve(privateCacheRoot) === path.parse(privateCacheRoot).root
     || typeof readVerifiedHourly !== 'function'
-    || ![copernicusBudgetMs, openMeteoBudgetMs].every(value => Number.isSafeInteger(value) && value >= 0)) {
+    || ![copernicusBudgetMs, copernicusUpgradeBudgetMs, openMeteoBudgetMs]
+      .every(value => Number.isSafeInteger(value) && value >= 0)) {
     throw new Error('WEATHER_COMPONENT_RUNTIME_ARGUMENTS_INVALID');
   }
   await fs.mkdir(privateCacheRoot, { recursive: true, mode: 0o700 });
@@ -67,15 +69,14 @@ export async function prepareWeatherComponentRuntime({
   // Report every necessary missing component, but do not repeatedly spend
   // acquisition budget on fields whose source policy excludes reserves.
   // Water level and its T+3 support are DMI-only, not pending datum admission.
-  const acquisitionNeeds = before.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component));
-  if (copernicusBudgetMs > 0 && acquisitionNeeds.length) {
+  const refreshCopernicus = async (needs, budgetMs, failureCode) => {
     try {
-      cp = await runCopernicus({ ...cpOptions, needs: acquisitionNeeds, budgetMs: copernicusBudgetMs,
-        requestTimeoutMs: Math.min(copernicusRequestTimeoutMs, copernicusBudgetMs),
+      cp = await runCopernicus({ ...cpOptions, needs, budgetMs,
+        requestTimeoutMs: Math.min(copernicusRequestTimeoutMs, budgetMs),
         maximumRequests: copernicusMaximumRequests, maximumDownloadBytes: copernicusMaximumDownloadBytes });
       inputs.copernicusComponentIndex = cp.index;
     } catch {
-      failures.push('COPERNICUS_COMPONENT_REFRESH_UNAVAILABLE');
+      failures.push(failureCode);
       // A failed refresh may already have checkpointed a subset. Bind the
       // actual durable generation, never the pre-refresh in-memory digest.
       try {
@@ -87,6 +88,18 @@ export async function prepareWeatherComponentRuntime({
         failures.push('COPERNICUS_COMPONENT_DURABLE_SNAPSHOT_UNAVAILABLE');
       }
     }
+  };
+  const acquisitionNeeds = before.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component));
+  if (copernicusBudgetMs > 0 && acquisitionNeeds.length) {
+    await refreshCopernicus(acquisitionNeeds, copernicusBudgetMs,
+      'COPERNICUS_COMPONENT_REFRESH_UNAVAILABLE');
+  }
+  // Persistent physical gaps must not starve every lower-priority upgrade.
+  // This separate bounded pass follows the actual gap/challenge pass.
+  const afterCriticalCopernicus = plan();
+  if (copernicusUpgradeBudgetMs > 0 && afterCriticalCopernicus.copernicusUpgradeNeeds.length) {
+    await refreshCopernicus(afterCriticalCopernicus.copernicusUpgradeNeeds,
+      copernicusUpgradeBudgetMs, 'COPERNICUS_COMPONENT_UPGRADE_UNAVAILABLE');
   }
   // Recompute after CP. OM must not fetch every pair just because its own bank
   // is empty, or consume its budget challenging DMI without proved model age.
@@ -125,8 +138,11 @@ export async function prepareWeatherComponentRuntime({
     pendingAdmissionComponents: [...new Set(after.needs
       .filter(row => !SCORING_RESERVE_COMPONENTS.includes(row.component)
         && !DMI_ONLY_WEATHER_COMPONENTS.includes(row.component)).map(row => row.component))],
-    copernicus: cp?.summary ?? null, openMeteo: om?.summary ?? null },
-  remainingNeeds: after.needs, dmiOnlyNeeds: after.dmiOnlyNeeds, dmiUpgradeNeeds: after.dmiUpgradeNeeds };
+    copernicus: cp?.summary ?? null, openMeteo: om?.summary ?? null,
+    pendingCopernicusUpgrades: after.copernicusUpgradeNeeds.length },
+  remainingNeeds: after.needs, dmiOnlyNeeds: after.dmiOnlyNeeds,
+  dmiUpgradeNeeds: after.dmiUpgradeNeeds,
+  copernicusUpgradeNeeds: after.copernicusUpgradeNeeds };
 }
 
 export async function persistWeatherComponentSelections(prepared) {

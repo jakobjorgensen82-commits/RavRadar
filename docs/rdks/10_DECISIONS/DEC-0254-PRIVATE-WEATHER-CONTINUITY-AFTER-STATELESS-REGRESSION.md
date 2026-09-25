@@ -1,5 +1,39 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-25 – vælg 11Z, genhent resten, behold 15Z som tabsanker
+
+Ejeren bad om at sammenligne en engangssammenfletning, fortsættelse fra
+én cache og en helt frisk cache, før der kodes videre. På 92 stadig
+fremtidige fælles timer pr. 25/9 kl. 13 UTC har 11Z 72.520 gyldige
+feltpar, som 15Z tabte; 15Z har 3.238, som 11Z mangler. 11Z er derfor
+det verificerede private udgangspunkt. En tom start ville miste langt
+mere og også skade scorehistorik; fuld sammenfletning af to komplette
+private runtimegenerationer udvider risiko og tidsforbrug uden
+bevist behov.
+
+Kun når den beskyttede pointer fortsat er den kendte 15Z-generation,
+skal restore verificere både denne og den eksakte 11Z-forgænger fra
+samme pointer. Kun 11Z installeres. 15Z's offentlige timepakke
+gendannes særskilt som revisionsanker og må ikke fodre privat score-
+eller leverandørstate. Den almindelige kæde må forsøge at genhente
+dens unikke gyldige felter. Før ny privat publish eller Pages kræves
+nul gyldig→tom mod **begge** ankre på samme fremtidige kystdel,
+time og vejrtype. Et mislykket forsøg må bevare den krypterede 11Z-
+bundne fremdrift, men ikke udgive en tyndere prognose. Den eksisterende
+72-timersgrænse forlænges ikke skjult; ved udløb må recoveryplanen
+vurderes på ny.
+
+Efter verificeret privat install skal conditions, DMI-candidate og
+DMI-forecast-store kunne læses. En læse-/parsefejl er en reel
+fortsættelsesfejl, ikke en tom bootstrap. Vandstand forbliver
+DMI-only, den godkendte Limfjord-fastholdelse forbliver uændret,
+og 96-timersundtagelsen for andre felter forbliver gældende.
+
+Dette tillæg erstatter den nedenstående enkelt-11Z-fortolkning som
+tilstrækkeligt tabsbevis. Lokal kode er endnu ikke merged eller
+produktionsverificeret; ingen påstand om komplette vejrdata følger
+af denne beslutning.
+
 **Dato:** 2026-09-24
 **Status:** Lokal 4.0.488; exact-head og livebevis afventer
 

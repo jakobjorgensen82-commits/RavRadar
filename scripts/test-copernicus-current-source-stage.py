@@ -54,6 +54,7 @@ from lib.copernicus_current_source_stage import (
 )
 from lib.copernicus_current_donor_bank import (
     legacy_donor_bank, planning_covered_pairs, build_copernicus_donor_bank,
+    backfill_verified_copernicus_donor_banks,
     validate_copernicus_donor_bank, atomic_write_copernicus_donor_bank,
     load_copernicus_donor_bank,
     recover_copernicus_donor_bank, projected_donor_shadow,
@@ -1279,6 +1280,26 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         attempts=[],
         production_reference_at=REFERENCE,
     )
+    dual_bank = backfill_verified_copernicus_donor_banks(
+        donor_bank, fast_state, targets=[TARGET],
+        production_reference_at=REFERENCE,
+    )
+    assert {row["recordId"] for row in dual_bank["shadow"]["records"]} == {
+        row["recordId"] for original in (donor_bank, fast_state)
+        for row in original["shadow"]["records"]
+    }
+    assert dual_bank["positiveAdmissions"] == donor_bank["positiveAdmissions"]
+    tampered_dual_donor = copy.deepcopy(fast_state)
+    tampered_dual_donor["shadow"]["records"][0]["uMps"] += 0.25
+    try:
+        backfill_verified_copernicus_donor_banks(
+            donor_bank, tampered_dual_donor, targets=[TARGET],
+            production_reference_at=REFERENCE,
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Altered original donor must not backfill a newer generation")
     fast_bank_path = fast_checkpoint / "donor-bank.json"
     fast_shadow_path = fast_checkpoint / "shadow.json"
     fast_stage_path = fast_checkpoint / "source-stage.json"

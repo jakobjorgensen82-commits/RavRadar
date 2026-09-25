@@ -1,4 +1,21 @@
-# 2026-09-24 – lokal 4.0.488, samlet vejrrecovery (ikke leveret)
+# 2026-09-25 – lokal 4.0.488, parret 11Z/15Z-genopretning (ikke leveret)
+
+- [x] Målt to caches på 92 stadig fremtidige fælles timer: 11Z alene
+  72.520 gyldige feltpar, 15Z alene 3.238. Besluttet at bruge
+  verificeret 11Z og normal genhentning; frisk/tom cache forkastet.
+- [x] Lokal workflow klassificerer kun den eksakte 15Z-pointer,
+  verificerer begge pakker, installerer kun 11Z og anvender 15Z som
+  særskilt no-loss-anker før beskyttet publish og Pages.
+- [x] Lokal vejrbygger afviser ulæselig tidligere conditions,
+  DMI-candidate og DMI-forecast-store efter privat install.
+  Syntaktisk kontrol, komponent-runtime, public no-loss,
+  Copernicus source-stage og 33 DMI-checkpointtests er grønne.
+- [ ] Livebevis for 11Z-restaurering, genhentning af 15Z's 3.238
+  par, krypteret fremdrift ved eventuelt første stop, fem vejrtyper,
+  DMI/CP/OM-andel, scorehistorik, ny beskyttet pakke og Pages mangler.
+  De tre gamle queued GitHub-runs må ikke få lov at starte på gammel main.
+
+# HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
 
 - [x] Bevis fem feltvise tab fra grøn `36022310055` mod seneste
   komplette private cache `35993736090`; afgræns afvist cachehash og

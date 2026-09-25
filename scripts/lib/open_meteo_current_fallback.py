@@ -1099,6 +1099,45 @@ def validate_donor_bank(bank: Any, *, targets: list[dict[str, Any]]) -> dict[str
     return bank
 
 
+def backfill_verified_donor_banks(latest_bank: dict[str, Any], complete_bank: dict[str, Any], *,
+                                  targets: list[dict[str, Any]], production_reference_at: str,
+                                  checkpointed_at: str) -> dict[str, Any]:
+    """Combine two sealed current banks without laundering old proof or masks.
+
+    Source generation order is caller-bound. Record choice still follows the
+    native acquisition/conflict policy, not whichever archive was restored last.
+    """
+    latest = validate_donor_bank(latest_bank, targets=targets)
+    complete = validate_donor_bank(complete_bank, targets=targets)
+    identity = _bank_identity(targets, production_reference_at, checkpointed_at)
+    if (complete["productionReferenceAt"] > latest["productionReferenceAt"]
+        or latest["productionReferenceAt"] > identity["productionReferenceAt"]
+        or _exact_instant(latest["checkpointedAt"], "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+            > _exact_instant(checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+        or _exact_instant(complete["checkpointedAt"], "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]
+            > _exact_instant(checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID")[1]):
+        _fail("OPEN_METEO_DONOR_BANK_TIME_REGRESSION")
+    admissions = dict(complete["admissions"])
+    for key, proof in latest["admissions"].items():
+        if key in admissions and canonical_sha256(admissions[key]) != canonical_sha256(proof):
+            _fail("OPEN_METEO_DONOR_ADMISSION_CONFLICT")
+        admissions[key] = proof
+    records_by_id: dict[str, dict[str, Any]] = {}
+    for entry in [*complete["entries"], *latest["entries"]]:
+        record = entry["record"]
+        prior = records_by_id.get(record["recordId"])
+        if prior is not None and canonical_sha256(prior) != canonical_sha256(record):
+            _fail("OPEN_METEO_DONOR_RECORD_CONFLICT")
+        records_by_id[record["recordId"]] = record
+    rebuilt = _build_validated_donor_bank(
+        targets=targets, entries=[*complete["entries"], *latest["entries"]],
+        admissions=admissions, production_reference_at=identity["productionReferenceAt"],
+        checkpointed_at=checkpointed_at,
+        conflict_masks=[*complete["conflictMasks"], *latest["conflictMasks"]],
+    )
+    return validate_donor_bank(rebuilt, targets=targets)
+
+
 def merge_donor_bank(bank: Any, legacy_documents: list[dict[str, Any]], *,
                      targets: list[dict[str, Any]], production_reference_at: str,
                      checkpointed_at: str) -> tuple[dict[str, Any], dict[str, int | bool]]:
@@ -1175,7 +1214,7 @@ def select_donor_records(bank: Any, *, targets: list[dict[str, Any]],
 
 __all__ = [
     "DONOR_BANK_CONTRACT_ID", "DONOR_BANK_MAX_BYTES", "build_donor_bank",
-    "merge_donor_bank", "select_donor_records", "validate_donor_bank",
+    "merge_donor_bank", "backfill_verified_donor_banks", "select_donor_records", "validate_donor_bank",
     "CONTRACT_ID", "DOCUMENT_SCHEMA_VERSION", "LIVE_RECORD_PROJECTION_CONTRACT_ID",
     "MAXIMUM_DISTANCE_KM", "MODEL",
     "OpenMeteoCurrentFallbackError", "PHYSICAL_SCOPE", "SCORE_INPUT_POLICY_ID",

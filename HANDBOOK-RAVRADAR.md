@@ -12,6 +12,22 @@ over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
 ## 89.84 4.0.488 – Bevar gamle vejrdata, og giv alle kilder en reel tur
 
+Efter nærmere kontrol er den fuldere vejrpakke fra kl. 11 valgt som
+udgangspunkt. Den senere pakke fra kl. 15 havde enkelte nye værdier,
+men mistede langt flere gamle. Den gemmes derfor kun som et ekstra
+sammenligningspunkt. En almindelig vejrkørsel skal hente de nye
+værdier igen. Før en ny pakke må udgives, kontrolleres det, at ingen
+stadig gyldig værdi for samme kystdel, time og vejrtype er forsvundet
+i forhold til **nogen** af de to pakker. Lykkes det ikke, bliver den
+nuværende hjemmeside stående, og det sikre hente-arbejde kan
+fortsættes i næste kørsel. Vi starter ikke med en tom cache, fordi
+det ville kassere både vejrdata og den historik, scoren bruger.
+
+Det er endnu kun en lokal rettelse. Først en rigtig vejrkørsel kan
+vise, om DMI, Copernicus og Open-Meteo tilsammen kan genhente
+værdierne og opbygge cachen uden nye tab. Den automatiske plan
+er fortsat pauset.
+
 Den seneste grønne kørsel mistede mange allerede gyldige vejrdata.
 Årsagen var, at den gemte private vejrpakke ikke blev accepteret,
 men den almindelige kørsel alligevel byggede videre uden pakken.

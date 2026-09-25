@@ -62,12 +62,47 @@ test('new DMI reclaims reserve, while fallback fills only independent holes', ()
   assert.equal(choose([]), null);
 });
 
-test('reserve priority at a hole does not become general CP-over-OM overwrite', () => {
+test('newer independently admitted DMI run replaces an older valid grid and collection', () => {
+  const common = { provider: 'dmi', entityId: 'PART::P1', parentZoneId: 'Z1',
+    entityType: 'coastal-part', samplingContext: 'coastal-part-water-point',
+    samplingPoint: [10, 56] };
+  const older = { source: { ...common, modelRun: time(-6 * HOUR), collection: 'dkss_idw',
+    gridPoint: [10.01, 56], distanceKm: 0.5, verticalLayerRankM: 0 } };
+  const newer = { source: { ...common, modelRun: time(-3 * HOUR), collection: 'dkss_lf',
+    gridPoint: [10.03, 56], distanceKm: 1.5, verticalLayerRankM: 0 } };
+  const select = (component, rows) => selectQualifiedWeatherComponent(rows, {
+    component, productionReferenceAt: reference,
+    admit: candidate => candidate.invalid ? null : candidate.source,
+  });
+  for (const component of ['current', 'waterLevel', 'waterTemperature']) {
+    assert.equal(select(component, [older, newer]).candidate, newer);
+    assert.equal(select(component, [newer, older]).candidate, newer);
+    assert.equal(select(component, [older, { ...newer, invalid: true }]).candidate, older);
+  }
+  const sameRunFarther = { source: { ...newer.source, modelRun: older.source.modelRun } };
+  assert.equal(select('current', [older, sameRunFarther]).candidate, older,
+    'same-run current keeps its closer admitted cell');
+});
+
+test('qualified Copernicus replaces selected Open-Meteo at the same part/time/component', () => {
   const cp = reserve('copernicus', 1);
   const selectedOm = reserve('open-meteo', 6, { selected: true });
-  assert.equal(choose([cp, selectedOm]).candidate, selectedOm);
+  assert.equal(choose([cp, selectedOm]).candidate, cp);
+  assert.equal(choose([cp, selectedOm]).reason, 'COPERNICUS_REPLACES_OPEN_METEO');
   const newerOm = reserve('open-meteo', 1);
-  assert.equal(choose([cp, selectedOm, newerOm]).candidate, newerOm);
+  assert.equal(choose([cp, selectedOm, newerOm]).candidate, cp);
+  assert.equal(choose([selectedOm, newerOm]).candidate, newerOm);
+  assert.equal(choose([selectedOm, { ...cp, invalid: true }]).candidate, selectedOm);
+});
+
+test('96-hour DMI exception admits only newer proved reserves, then prefers Copernicus', () => {
+  const native = dmi(100);
+  const newerOm = reserve('open-meteo', 1);
+  const newerCp = reserve('copernicus', 2);
+  const olderCp = reserve('copernicus', 101);
+  assert.equal(choose([native, newerOm, newerCp]).candidate, newerCp);
+  assert.equal(choose([native, newerOm, olderCp]).candidate, newerOm);
+  assert.equal(choose([dmi(95), newerOm, newerCp]).candidate.source.provider, 'dmi');
 });
 
 test('policy cannot run without explicit admission and a locked timestamp', () => {

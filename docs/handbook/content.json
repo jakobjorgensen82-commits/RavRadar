@@ -2,14 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.488",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-09-24",
+  "updatedAt": "2026-09-25",
   "sections": [
     {
       "id": "complete-weather-recovery-4-0-488",
       "chapter": "89.84",
       "title": "Bevar gamle vejrdata, og giv alle kilder en reel tur",
       "summary": "En grøn kørsel tabte gyldige vejrdata. En ny prognose skal nu fortsætte fra den rigtige gemte pakke og må ikke tømme tidligere gyldige felter.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den seneste grønne vejrkørsel startede uden den fulde gemte vejrpakke. Derfor forsvandt gyldige tal fra den offentlige prognose. Det må ikke ske igen.</div><p>Den almindelige kørsel kræver nu en verificeret gemt vejrpakke. Kodeændringer alene gør ikke pakken ubrugelig; lagringsformatet bestemmer, om den kan fortsættes. Før nye data offentliggøres, sammenlignes alle fælles timer og kystdele. Gamle gyldige værdier må ikke blive tomme, selv om en leverandør ikke giver et nyt svar.</p><p>DMI får afgrænset ekstra tid, når mange steder mangler data. Vandstand får sin egen prioritet og kommer stadig kun fra DMI. Copernicus arbejder videre i skiftende, mindre områder og tidsstykker; Open-Meteo udfylder de rester, hvor den har godkendte data. Limfjordens godkendte korte fastholdelse bevares. Rettelsen er endnu ikke bevist i produktion; flere almindelige kørsler skal vise reel fremgang, cachegemning og korrekt visning på siden, før automatisk drift genåbnes.</p>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den seneste grønne vejrkørsel startede uden den fulde gemte vejrpakke. Derfor forsvandt gyldige tal fra den offentlige prognose. Det må ikke ske igen.</div><p>Den fuldere pakke fra kl. 11 er valgt som udgangspunkt. Den nyere pakke fra kl. 15 havde enkelte nye værdier, men mistede langt flere gamle. Derfor bruges den som et ekstra sammenligningspunkt, mens almindelig vejrhentning forsøger at hente dens nye værdier igen. Vi starter ikke med en tom cache og kasserer historikken.</p><p>Før en ny prognose offentliggøres, sammenlignes samme kystdel, time og vejrtype med begge gemte pakker. En stadig gyldig værdi må ikke blive tom. Lykkes det ikke, bliver den nuværende hjemmeside stående, og sikkert hente-arbejde kan fortsætte senere.</p><p>DMI får afgrænset ekstra tid, når mange steder mangler data. Vandstand får sin egen prioritet og kommer stadig kun fra DMI. Copernicus arbejder videre i skiftende, mindre områder og tidsstykker; Open-Meteo udfylder de rester, hvor den har godkendte data. Limfjordens godkendte korte fastholdelse bevares. Rettelsen er endnu ikke bevist i produktion; flere almindelige kørsler skal vise reel fremgang, cachegemning og korrekt visning på siden, før automatisk drift genåbnes.</p>"
     },
     {
       "id": "recovery-wave-priority-4-0-487",

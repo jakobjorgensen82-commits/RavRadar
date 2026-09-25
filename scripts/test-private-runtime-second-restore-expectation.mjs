@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { COMPLETE_WEATHER_PREDECESSOR, MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
+import { COMPLETE_WEATHER_PREDECESSOR, LATEST_WEATHER_PREDECESSOR, MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
 import { privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
 
@@ -108,6 +108,48 @@ assert.throws(() => secondRestoreExpectation({
   source: { ...completeSource, datasetId: 'rr-thinner-successor' },
   manifest: completeManifest,
 }));
+
+const latestHashes = {
+  continuationStateContractSha256: LATEST_WEATHER_PREDECESSOR.continuationStateContractSha256,
+  fullRuntimeContractSha256: LATEST_WEATHER_PREDECESSOR.fullRuntimeContractSha256,
+  publicProjectionContractSha256: LATEST_WEATHER_PREDECESSOR.publicProjectionContractSha256,
+};
+const latestSource = {
+  ...LATEST_WEATHER_PREDECESSOR,
+  generatedAt: '2026-09-24T16:30:02.000Z',
+  bundleContentSha256: 'e'.repeat(64),
+  modelBinding: binding,
+  contractHashes: latestHashes,
+};
+const latestManifest = {
+  datasetId: latestSource.datasetId,
+  productionReferenceAt: latestSource.productionReferenceAt,
+  generatedAt: latestSource.generatedAt,
+  bundleContentSha256: latestSource.bundleContentSha256,
+  modelBinding: binding,
+  contractHashes: latestHashes,
+};
+const pairedExpected = { ...marineExpected,
+  targetReferenceAt: '2026-09-25T12:00:00.000Z' };
+assert.deepEqual(secondRestoreExpectation({
+  expected: pairedExpected, source: latestSource, manifest: latestManifest,
+  pairedLatestAnchor: true,
+}).contractHashes, latestHashes);
+assert.throws(() => secondRestoreExpectation({
+  expected: pairedExpected, source: latestSource, manifest: latestManifest,
+}), /approved exact predecessor/);
+for (const changed of [
+  { sourceHead: 'c'.repeat(40) },
+  { datasetId: 'rr-other-generation' },
+  { contractHashes: { ...latestHashes,
+    continuationStateContractSha256: 'c'.repeat(64) } },
+]) {
+  const changedSource = { ...latestSource, ...changed };
+  assert.throws(() => secondRestoreExpectation({
+    expected: pairedExpected, source: changedSource,
+    manifest: { ...latestManifest, ...changed }, pairedLatestAnchor: true,
+  }));
+}
 
 for (const changed of [
   { source: { ...source, sourceHead: 'c'.repeat(40) } },

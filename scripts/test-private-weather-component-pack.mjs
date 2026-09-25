@@ -72,7 +72,10 @@ test('actual create-spec retains legacy inventory and requires packed inputs for
     zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`ZONE-${i}`, {}])),
     coastalParts: { modelBinding: ravScoreModelBinding(),
       parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) => [`PART-${i}`, {}])) } };
-  for (const file of new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())) await write(source, file, 'synthetic contract bytes\n');
+  for (const file of new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())) {
+    await write(source, file, file === 'scripts/lib/private-weather-storage-abi.json'
+      ? await fs.readFile(file) : 'synthetic contract bytes\n');
+  }
   for (const file of PRIVATE_RUNTIME_BASE_FILES) await write(source, file.relativePath, file.id === 'full-conditions' ? runtime : {});
   assert.equal((await buildPrivateRuntimeCreateSpec({ repositoryRoot: source })).files.length, 9);
   await seed(source);
@@ -217,6 +220,12 @@ test('real CP original static/dynamic NetCDF, receipts and cursor survive exact 
     await fs.readFile(path.join(source, file.relativePath)));
   const staticPointer = originals.find(file => file.relativePath.includes('/static/'));
   await fs.unlink(path.join(source, staticPointer.relativePath));
+  // The pointer is an optional acquisition hint. The exact immutable static
+  // receipt/object referenced by the bank must still make the pack portable.
+  await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions: cpConditions, pythonExecutable });
+  const originalStaticReceipt = originals.find(file => file.relativePath.includes('/receipts/')
+    && path.basename(file.relativePath).startsWith(path.basename(staticPointer.relativePath, '.json')));
+  await fs.unlink(path.join(source, originalStaticReceipt.relativePath));
   await assert.rejects(buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions: cpConditions, pythonExecutable }),
     /CP_ORIGINALS_INVALID/);
 });

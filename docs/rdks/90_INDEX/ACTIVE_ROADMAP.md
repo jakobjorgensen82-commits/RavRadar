@@ -1,4 +1,23 @@
-# Aktivt roadmap – 2026-09-24, samlet 4.0.488-vejrrecovery
+# Aktivt roadmap – 2026-09-25, samlet 4.0.488-vejrrecovery
+
+Nuværende beslutning: verificér parret 11Z/15Z, installer kun 11Z,
+genhent 15Z's stadig gyldige unikke felter gennem normal kæde, og
+kræv nul gyldig→tom mod begge før ny privat publish/Pages. Frisk
+produktionscache og fuld engangsfletning er ikke valgt. Den tidligere
+72-timers restoregrænse består. Før nogen workflow genåbnes,
+neutraliseres tre gamle queued runs fra ældre main-commits. En
+mislykket tabs-kontrol må kun føre til sikker fortsættelse på 11Z-
+bundet krypteret fremdrift eller en ny, kildebevist beslutning.
+
+1. [ ] Afslut tværgående review af lokal 4.0.488, opdatér beslutning,
+   status, håndbog og changelog, kør måltests og én exact-head-gate.
+   Ingen vejrkørsel under dette arbejde.
+2. [ ] Efter sikker merge: én ikke-overlappende normal vejrhentning.
+    Kontroller først begge cacheankre og fem feltvise no-loss-tal;
+    derefter DMI/CP/OM, scorehistorik, privat gemning og Pages.
+    Stands ved reel regression; kald ikke kun grøn GitHub-status succes.
+
+# HISTORISK ROADMAP – 2026-09-24, første 4.0.488-afgrænsning
 
 1. [x] Afgræns på samme kystdel/time alle fem offentlige tab i
    `36022310055`, seneste komplette private forgænger, DMI's native

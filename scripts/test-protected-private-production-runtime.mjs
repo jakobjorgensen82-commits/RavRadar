@@ -24,6 +24,7 @@ import {
   WEATHER_ROTATION_PREDECESSOR,
   MARINE_COMPONENT_PREDECESSOR,
   COMPLETE_WEATHER_PREDECESSOR,
+  LATEST_WEATHER_PREDECESSOR,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
@@ -31,6 +32,7 @@ import {
   describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
+  restoreExactProtectedPrivateWeatherPair,
   restoreProtectedPrivateProductionRuntime,
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
@@ -443,6 +445,26 @@ try {
     },
   };
   assert.equal(isApprovedExactWeatherPredecessor(completeWeatherPredecessor, schedulerExpected), true);
+  const latestWeatherPredecessor = {
+    ...LATEST_WEATHER_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: LATEST_WEATHER_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: LATEST_WEATHER_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: LATEST_WEATHER_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  assert.equal(isApprovedExactWeatherPredecessor(latestWeatherPredecessor, schedulerExpected), false);
+  for (const change of [
+    { datasetId: COMPLETE_WEATHER_PREDECESSOR.datasetId },
+    { productionReferenceAt: COMPLETE_WEATHER_PREDECESSOR.productionReferenceAt },
+    { contractHashes: { ...latestWeatherPredecessor.contractHashes,
+      fullRuntimeContractSha256: COMPLETE_WEATHER_PREDECESSOR.fullRuntimeContractSha256 } },
+  ]) {
+    assert.equal(isApprovedExactWeatherPredecessor(
+      { ...latestWeatherPredecessor, ...change }, schedulerExpected,
+    ), false);
+  }
   for (const change of [
     { sourceHead: SOURCE_HEADS[0] },
     { datasetId: 'rr-thinner-successor' },
@@ -575,6 +597,112 @@ try {
   assert.equal(completeRollback.exactDmiPredecessor, true);
   assert.equal(completeRollback.productionReferenceAt,
     COMPLETE_WEATHER_PREDECESSOR.productionReferenceAt);
+  const pairedDocuments = fakeDocuments();
+  const pairedStorage = fakeStorage();
+  const pairedTarget = '2026-09-24T17:00:00.000Z';
+  const pairedNow = '2026-09-24T17:05:00.000Z';
+  const pairedExpected = await buildPrivateRuntimeExpectation({
+    repositoryRoot: repository, targetReferenceAt: pairedTarget, now: pairedNow,
+  });
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: completeGeneration.bundlePath, repositoryRoot: repository,
+    expected: { ...pairedExpected, contractHashes: completeWeatherPredecessor.contractHashes },
+    now: pairedNow, sourceHead: COMPLETE_WEATHER_PREDECESSOR.sourceHead,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  });
+  const latestGeneration = await createGeneration(12, {
+    metadataOverride: {
+      datasetId: LATEST_WEATHER_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-24T16:30:02.000Z',
+      productionReferenceAt: LATEST_WEATHER_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: latestWeatherPredecessor.contractHashes,
+  });
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: latestGeneration.bundlePath, repositoryRoot: repository,
+    expected: { ...pairedExpected, contractHashes: latestWeatherPredecessor.contractHashes },
+    now: pairedNow, sourceHead: LATEST_WEATHER_PREDECESSOR.sourceHead,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  });
+  await assert.rejects(() => restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'unsafe-single-latest-or-older'),
+    repositoryRoot: repository,
+    expected: pairedExpected,
+    now: pairedNow,
+    request: pairedDocuments.request,
+    storage: pairedStorage.client,
+  }), /requires paired 11Z\/15Z restore/);
+  const latestPairPath = path.join(restoreRoot, 'weather-pair-latest');
+  const completePairPath = path.join(restoreRoot, 'weather-pair-complete');
+  const pairResult = await restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot,
+    latestBundlePath: latestPairPath,
+    completeBundlePath: completePairPath,
+    repositoryRoot: repository,
+    expected: pairedExpected,
+    now: pairedNow,
+    request: pairedDocuments.request,
+    storage: pairedStorage.client,
+  });
+  assert.equal(pairResult.restored, true);
+  assert.equal(pairResult.centralVersion, pairedDocuments.row().version);
+  for (const [bundlePath, approved] of [
+    [latestPairPath, latestWeatherPredecessor],
+    [completePairPath, completeWeatherPredecessor],
+  ]) {
+    const manifest = JSON.parse(await fs.readFile(path.join(bundlePath, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.datasetId, approved.datasetId);
+    await verifyPrivateProductionRuntimeBundle({
+      privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+      expected: { ...pairedExpected, contractHashes: approved.contractHashes }, now: pairedNow,
+    });
+  }
+  const badPairRow = pairedDocuments.row();
+  badPairRow.payload.previous.datasetId = 'rr-unapproved-weather-donor';
+  pairedDocuments.setRow(badPairRow);
+  const rejectedLatestPath = path.join(restoreRoot, 'weather-pair-rejected-latest');
+  const rejectedCompletePath = path.join(restoreRoot, 'weather-pair-rejected-complete');
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  }), /exact protected 11Z\/15Z weather pair/);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
+  pairedDocuments.setRow({ ...badPairRow, payload: {
+    ...badPairRow.payload,
+    previous: { ...badPairRow.payload.previous,
+      datasetId: COMPLETE_WEATHER_PREDECESSOR.datasetId },
+  } });
+  const corruptedPath = pairedDocuments.row().payload.previous.objects[0].objectPath;
+  const originalObject = pairedStorage.objects.get(corruptedPath);
+  pairedStorage.objects.set(corruptedPath, Buffer.from('corrupt protected donor'));
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  }), /storage readback|object integrity|archive/i);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
+  pairedStorage.objects.set(corruptedPath, originalObject);
+  let pairedRenameCount = 0;
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+    renameImpl: async (source, destination) => {
+      pairedRenameCount += 1;
+      if (pairedRenameCount === 2) throw new Error('synthetic second rename failure');
+      await fs.rename(source, destination);
+    },
+  }), /synthetic second rename failure/);
+  assert.equal(pairedRenameCount, 2);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);

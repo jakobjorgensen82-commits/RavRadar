@@ -3,6 +3,7 @@ import { DMI_RESERVE_CHALLENGE_AGE_HOURS, responseBoundModelRun } from './weathe
 
 export const PLANNED_WEATHER_COMPONENTS = Object.freeze(['wind', 'wave', 'waterLevel', 'waterTemperature']);
 export const RESERVE_WEATHER_COMPONENTS = Object.freeze(['wind', 'wave', 'waterTemperature']);
+export const COPERNICUS_UPGRADE_COMPONENTS = Object.freeze(['wave', 'waterTemperature']);
 export const DMI_ONLY_WEATHER_COMPONENTS = Object.freeze(['waterLevel']);
 const HOUR = 3_600_000;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -36,7 +37,7 @@ export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readV
   if (!Array.isArray(parts) || !parts.length || typeof readVerifiedHourly !== 'function') {
     throw new Error('WEATHER_COMPONENT_PLAN_INPUT_REQUIRED');
   }
-  const needs = [], dmiUpgradeNeeds = [];
+  const needs = [], dmiUpgradeNeeds = [], copernicusUpgradeNeeds = [];
   const partIds = new Set();
   const summary = Object.fromEntries(PLANNED_WEATHER_COMPONENTS.map(component => [component,
     { required: parts.length * RAVSCORE_PUBLIC_FORECAST_HOURS, valid: 0, missing: 0,
@@ -71,6 +72,10 @@ export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readV
           else if (['copernicus', 'open-meteo'].includes(source.provider)) {
             stats.reserve += 1;
             dmiUpgradeNeeds.push(key);
+            if (source.provider === 'open-meteo'
+              && COPERNICUS_UPGRADE_COMPONENTS.includes(component)) {
+              copernicusUpgradeNeeds.push({ ...key, purpose: 'OPEN_METEO_UPGRADE' });
+            }
           }
         } else stats.missing += 1;
         if (missingTrend) stats.trendMissing += 1;
@@ -95,7 +100,8 @@ export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readV
     if (!required.has(key)) support.set(key, { partId: need.partId, component: 'waterLevel', validTime,
       purpose: 'PRIVATE_T_PLUS_3_SUPPORT' });
   }
-  return { productionReferenceAt, needs, privateSupportNeeds: [...support.values()], dmiUpgradeNeeds,
+  return { productionReferenceAt, needs, privateSupportNeeds: [...support.values()],
+    dmiUpgradeNeeds, copernicusUpgradeNeeds,
     dmiOnlyNeeds: needs.filter(row => DMI_ONLY_WEATHER_COMPONENTS.includes(row.component)), summary };
 }
 

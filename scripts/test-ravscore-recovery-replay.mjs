@@ -827,11 +827,11 @@ assert.equal(reserveRevised.hourly.find(row => row.time === time(2)).waveHeightM
 const crossProviderReserve = openMeteoWaveReserve(weather(2, { waveHeight: 1.4 }));
 crossProviderReserve.sources.wave.provider = 'copernicus';
 crossProviderReserve.waveProvenance.provider = 'copernicus';
-const oldReserveSurvivesCrossProvider = replayForAge(4, priorityWaveRows(
+const copernicusReplacesOpenMeteoWave = replayForAge(4, priorityWaveRows(
   oldReserveWave, crossProviderReserve,
 ));
-assert.equal(oldReserveSurvivesCrossProvider.hourly.find(row => row.time === time(2)).waveHeightM, 1.2,
-  'Copernicus priority at a real gap is not permission to overwrite an old valid Open-Meteo wave');
+assert.equal(copernicusReplacesOpenMeteoWave.hourly.find(row => row.time === time(2)).waveHeightM, 1.4,
+  'independently admitted Copernicus wave replaces a valid Open-Meteo wave at the same part/hour');
 const agedDmiMayYield = replayForAge(4, priorityWaveRows(
   agedDmiWave, newerBoundReserveWave,
 ));

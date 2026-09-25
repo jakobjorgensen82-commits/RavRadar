@@ -44,9 +44,18 @@ def choice(distance, point=(56.1, 10.2), layer=4.0):
 
 valid = "2026-08-15T12:00:00Z"
 
-# Coast-type model preference cannot make a farther current column win.
+# A newer qualified official model run wins even when its valid column is
+# farther away, provided the independent current distance limit was met.
 point = selected_nsbs_point()
-assert PREFER(point, valid, "dkss_idw", "2026-08-15T06:00:00Z", choice(4.9, (56.2, 10.3))) is False
+assert PREFER(point, valid, "dkss_idw", "2026-08-15T06:00:00Z", choice(4.9, (56.2, 10.3))) is True
+
+# A farther column from the SAME model run cannot displace a closer one.
+point = selected_nsbs_point()
+assert PREFER(point, valid, "dkss_idw", "2026-08-15T00:00:00Z", choice(4.9, (56.2, 10.3))) is False
+
+# An older model run cannot displace a newer one by proximity alone.
+point = selected_nsbs_point()
+assert PREFER(point, valid, "dkss_idw", "2026-08-14T18:00:00Z", choice(2.8, (56.2, 10.3))) is False
 
 # A closer shared U/V column wins on the same native time across collections.
 point = selected_nsbs_point()
@@ -54,8 +63,8 @@ assert PREFER(point, valid, "dkss_idw", "2026-08-15T06:00:00Z", choice(2.8, (56.
 
 # Depth can decide only in the exact same physical column.
 point = selected_nsbs_point()
-assert PREFER(point, valid, "dkss_nsbs", "2026-08-15T06:00:00Z", choice(3.0, layer=7.0)) is True
-assert PREFER(point, valid, "dkss_nsbs", "2026-08-15T06:00:00Z", choice(3.0, layer=2.0)) is False
+assert PREFER(point, valid, "dkss_nsbs", "2026-08-15T00:00:00Z", choice(3.0, layer=7.0)) is True
+assert PREFER(point, valid, "dkss_nsbs", "2026-08-15T00:00:00Z", choice(3.0, layer=2.0)) is False
 
 # A different native time can be filled without mutating the current time.
 future = "2026-08-19T12:00:00Z"
@@ -66,4 +75,4 @@ assert point["hourly"][valid]["current-u"] == 0.1
 # More than five kilometres is always missing.
 assert PREFER({}, valid, "dkss_idw", "2026-08-15T06:00:00Z", choice(5.0001)) is False
 
-print("OK: current is selected per native time by nearest shared U/V column, then depth.")
+print("OK: current is selected per native time by latest qualified run, then nearest shared U/V column and depth.")

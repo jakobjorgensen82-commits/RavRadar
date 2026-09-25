@@ -644,7 +644,7 @@ class TransactionalAssetTests(unittest.TestCase):
         self.assertEqual(point["collections"]["synthetic"], COLLECTION)
         self.assertEqual(point["marineSelection"]["collection"], COLLECTION)
 
-    def test_owner_switch_detaches_other_hours_before_interrupted_rollback(
+    def test_staged_multihour_mutation_is_rolled_back_after_interruption(
         self,
     ) -> None:
         result, private, diagnostics, shadow, outcomes = durable_documents()
@@ -660,7 +660,7 @@ class TransactionalAssetTests(unittest.TestCase):
             }
         before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
 
-        def switch_owner_then_interrupt(
+        def mutate_staged_hours_then_interrupt(
             _path,
             collection,
             _model_run,
@@ -675,13 +675,13 @@ class TransactionalAssetTests(unittest.TestCase):
             allowed_parameters=None,
         ):
             del allowed_parameters
-            accepted = producer.accept_marine_collection(
-                staged_result["zones"][PUBLIC_ID],
-                {"id": PUBLIC_ID, "coastType": "east"},
-                collection,
-                1.0,
-            )
-            self.assertTrue(accepted)
+            staged_point = staged_result["zones"][PUBLIC_ID]
+            if isinstance(staged_point, producer.AssetStagedZone):
+                staged_point.detach_all_hourly_rows()
+            staged_point["marineSelection"] = {"collection": collection, "score": 0.0}
+            for hour in staged_point["hourly"].values():
+                hour.pop("sea-mean-deviation", None)
+                hour["sources"].pop("waterLevel", None)
             return {"synthetic-field"}, {PUBLIC_ID}, True, 1, 1
 
         failure_flush = Mock(
@@ -693,7 +693,7 @@ class TransactionalAssetTests(unittest.TestCase):
         with patch.object(
             producer,
             "process_grib",
-            side_effect=switch_owner_then_interrupt,
+            side_effect=mutate_staged_hours_then_interrupt,
         ):
             outcome = producer.process_grib_transactionally(
                 Path("synthetic.grib"),
@@ -715,6 +715,34 @@ class TransactionalAssetTests(unittest.TestCase):
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_verified_candidate_progress_survives_older_active_donor(self) -> None:
+        signature = "synthetic-signature"
+        active = {
+            "schemaVersion": 2, "generatedAt": MODEL_RUN,
+            "zoneRegistrySignature": signature,
+            "zones": {PUBLIC_ID: {"hourly": {}, "gridPoints": {}, "collections": {}}},
+            "runs": {"dkss_lf": {"referenceTime": MODEL_RUN, "processedSteps": {}}},
+            "collectionState": {}, "diagnostics": {},
+        }
+        candidate = copy.deepcopy(active)
+        candidate["checkpointedAt"] = SECOND_TIME
+        candidate["runs"]["dkss_lf"]["processedSteps"][FIRST_TIME] = {"status": "complete"}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "candidate.json"
+            fallback = Path(directory) / "active.json"
+            output.write_text(json.dumps(candidate), "utf-8")
+            fallback.write_text(json.dumps(active), "utf-8")
+            with (
+                patch.object(producer, "OUTPUT_PATH", output),
+                patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
+                patch.object(producer, "PREFER_OUTPUT_CACHE", True),
+                patch.object(producer, "_strict_current_donor_ready", return_value=True),
+            ):
+                restored = producer.load_previous(signature, coastal_part_targets=[],
+                                                  production_reference=Mock())
+        self.assertEqual(restored["checkpointedAt"], SECOND_TIME)
+        self.assertIn(FIRST_TIME, restored["runs"]["dkss_lf"]["processedSteps"])
+
     def test_migration_shadow_is_durable_before_recovery_bulk_write(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             shadow_path = Path(directory) / "regional-shadow.json"

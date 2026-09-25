@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildOpenMeteoPartRequest, mergeOpenMeteoPartBank, openMeteoPartSha256,
+  backfillVerifiedOpenMeteoPartBank, buildOpenMeteoPartRequest,
+  mergeOpenMeteoPartBank, openMeteoPartSha256,
   openMeteoMfNearestGridPoint, openMeteoComponentRequestParts, OPEN_METEO_COMPONENT_MODELS,
   readOpenMeteoPartResponse, selectedOpenMeteoPartRecord, validateOpenMeteoPartBank,
 } from './lib/open-meteo-part-bank.mjs';
@@ -99,6 +100,29 @@ test('PART-bound exact response admits three reserve tuples, never DMI-only wate
   assert.equal(selected(bank, 'waterLevel'), null);
   assert.throws(() => request('waterLevel'), /DMI_ONLY/);
   assert.equal(selected(bank, 'wind', reference, { ...part, waterPoint: [10.1, 56] }), null);
+});
+
+test('two protected generations retain newer Open-Meteo tuples and backfill only proved holes', () => {
+  const latest = mergeOpenMeteoPartBank(null, [admit('wind')], options);
+  const olderWind = response('wind');
+  olderWind.hourly.wind_speed_10m = olderWind.hourly.wind_speed_10m.map(() => 7);
+  const complete = mergeOpenMeteoPartBank(null, [
+    admit('wind', olderWind), ...marineAdmissions(),
+  ], options);
+  const recovered = backfillVerifiedOpenMeteoPartBank(latest, complete, options);
+  assert.equal(recovered.records.length, 9);
+  assert.equal(selected(recovered, 'wind').values.windSpeedMps, 4,
+    'the latest generation keeps its independently valid exact tuple');
+  assert.equal(selected(recovered, 'wave').values.waveHeightM, 1);
+  assert.equal(selected(recovered, 'waterTemperature').values.waterTemperatureC, 15);
+  assert.equal(selected(recovered, 'waterLevel'), null);
+  const forged = structuredClone(complete);
+  const evidenceId = forged.records.find(record => record.component === 'wave').evidenceId;
+  forged.responses[evidenceId].responseText = '{}';
+  const { bankSha256: _previousHash, ...body } = forged;
+  forged.bankSha256 = openMeteoPartSha256(body);
+  assert.throws(() => backfillVerifiedOpenMeteoPartBank(latest, forged, options),
+    /OPEN_METEO_PART_.*INVALID|OPEN_METEO.*RESPONSE/);
 });
 
 test('wrong units and missing wave fields leave independent temperature and valid sibling times intact', () => {

@@ -96,6 +96,20 @@ export const COMPLETE_WEATHER_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// This newer generation is not interchangeable with the 11Z predecessor:
+// both contain independently useful weather values. The bounded recovery
+// verifies both original private payloads, continues from the stronger 11Z
+// baseline and checks the new artifact against both generations before
+// publishing. A public Pages pack is never a native-data donor.
+export const LATEST_WEATHER_PREDECESSOR = Object.freeze({
+  sourceHead: 'b1b88e0f61b751cc91bdb09120dc895abc99cb65',
+  datasetId: 'rr-20260924163002-210',
+  productionReferenceAt: '2026-09-24T15:00:00.000Z',
+  fullRuntimeContractSha256: '110c1451730a6dcae1d43451197f0886292a9ddb60b1a0ed59aa4fb24ddbaba0',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
@@ -132,6 +146,14 @@ export function isApprovedExactWeatherPredecessor(descriptor, expected) {
     || isExactWeatherRotationPredecessor(descriptor, expected)
     || isExactMarineComponentPredecessor(descriptor, expected)
     || isExactDmiPredecessor(descriptor, expected, COMPLETE_WEATHER_PREDECESSOR);
+}
+
+export function isLatestUnpairedWeatherGeneration(descriptor) {
+  return descriptor?.sourceHead === LATEST_WEATHER_PREDECESSOR.sourceHead
+    && descriptor?.datasetId === LATEST_WEATHER_PREDECESSOR.datasetId
+    && descriptor?.productionReferenceAt === LATEST_WEATHER_PREDECESSOR.productionReferenceAt
+    && descriptor?.contractHashes?.fullRuntimeContractSha256
+      === LATEST_WEATHER_PREDECESSOR.fullRuntimeContractSha256;
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1566,6 +1588,9 @@ export async function restoreProtectedPrivateProductionRuntime({
       privatePayloadLogged: false,
     };
   }
+  if (isLatestUnpairedWeatherGeneration(row.payload.current)) {
+    throw new Error('The exact 15Z weather generation requires paired 11Z/15Z restore; single-generation fallback is unsafe');
+  }
   await storage.ensurePrivateBucket();
   const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
   const finalBundle = resolvePrivateCandidate(
@@ -1693,6 +1718,111 @@ export async function restoreProtectedPrivateProductionRuntime({
     await Promise.all(temporaryDirectories.map(directory => {
       assertInside(context.root, directory, 'Private runtime cleanup target');
       return fs.rm(directory, { recursive: true, force: true }).catch(() => {});
+    }));
+  }
+}
+
+// The 11Z and 15Z weather generations contain different, independently
+// useful native inputs. Read one protected pointer snapshot and validate both
+// immutable archives before exposing either bundle to the migration stage.
+// Ordinary restores continue to use the single-generation path above.
+export async function restoreExactProtectedPrivateWeatherPair({
+  privateRoot,
+  latestBundlePath,
+  completeBundlePath,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  expected,
+  now = new Date().toISOString(),
+  request,
+  storage,
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  renameImpl = fs.rename,
+} = {}) {
+  assertStorage(storage);
+  const row = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
+  });
+  const generations = [
+    { descriptor: row.payload.current, approved: LATEST_WEATHER_PREDECESSOR,
+      bundlePath: latestBundlePath, label: 'latest' },
+    { descriptor: row.payload.previous, approved: COMPLETE_WEATHER_PREDECESSOR,
+      bundlePath: completeBundlePath, label: 'complete' },
+  ];
+  if (generations.some(({ descriptor, approved }) =>
+    !isExactDmiPredecessor(descriptor, expected, approved))) {
+    throw new Error('The exact protected 11Z/15Z weather pair is unavailable');
+  }
+  const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
+  const finalPaths = generations.map(({ bundlePath, label }) => {
+    const result = resolvePrivateCandidate(context, bundlePath,
+      `Private ${label} weather bundle destination`);
+    if (path.dirname(result) !== context.root) {
+      throw new Error('Paired weather bundles must be direct children of the private root');
+    }
+    return result;
+  });
+  if (finalPaths[0] === finalPaths[1]
+    || (await Promise.all(finalPaths.map(destination => fs.lstat(destination).catch(() => null))))
+      .some(Boolean)) {
+    throw new Error('Paired weather bundle destinations must be distinct and absent');
+  }
+  await storage.ensurePrivateBucket();
+  const staged = [];
+  const installed = [];
+  try {
+    for (const [index, generation] of generations.entries()) {
+      const candidate = path.join(context.root,
+        `.protected-weather-pair-${process.pid}-${index}-${crypto.randomBytes(5).toString('hex')}`);
+      staged.push(candidate);
+      const archive = await verifyStoredArchive(storage, generation.descriptor);
+      await extractArchive({
+        archive,
+        descriptor: generation.descriptor,
+        privateRoot: context.root,
+        bundlePath: candidate,
+        repositoryRoot: context.repository,
+        policy,
+      });
+      const verified = await verifyPrivateProductionRuntimeBundle({
+        privateRoot: context.root,
+        bundlePath: candidate,
+        repositoryRoot: context.repository,
+        expected: { ...expected, contractHashes: generation.descriptor.contractHashes },
+        now,
+      });
+      assertDescriptorMatchesBundle(generation.descriptor, verified);
+      assertRestoreTime(generation.descriptor, expected, now, policy);
+    }
+    for (const [index, candidate] of staged.entries()) {
+      await renameImpl(candidate, finalPaths[index]);
+      installed.push(finalPaths[index]);
+    }
+    return {
+      restored: true,
+      reason: 'exact-protected-weather-pair-restored',
+      centralVersion: row.version,
+      latestProductionReferenceAt: row.payload.current.productionReferenceAt,
+      completeProductionReferenceAt: row.payload.previous.productionReferenceAt,
+      latestBundleContentSha256: row.payload.current.bundleContentSha256,
+      completeBundleContentSha256: row.payload.previous.bundleContentSha256,
+      privatePayloadLogged: false,
+    };
+  } catch (error) {
+    const rollback = await Promise.allSettled(installed.map(destination => fs.rm(destination, {
+      recursive: true, force: true,
+    })));
+    if (rollback.some(result => result.status === 'rejected')) {
+      const failure = new Error('Paired weather restore failed and rollback was incomplete');
+      failure.cause = error;
+      throw failure;
+    }
+    throw error;
+  } finally {
+    await Promise.all(staged.map(candidate => {
+      assertInside(context.root, candidate, 'Paired weather cleanup target');
+      return fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
     }));
   }
 }
@@ -1929,7 +2059,7 @@ function parseArguments(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
+    if (['--publish', '--restore', '--restore-weather-pair', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one protected private runtime mode');
       result.mode = argument.slice(2);
       continue;
@@ -1938,6 +2068,7 @@ function parseArguments(argv) {
     if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`);
     if (argument === '--private-root') result.privateRoot = value;
     else if (argument === '--bundle') result.bundlePath = value;
+    else if (argument === '--complete-bundle') result.completeBundlePath = value;
     else if (argument === '--repository-root') result.repositoryRoot = value;
     else if (argument === '--expected') result.expectedPath = value;
     else if (argument === '--source-head') result.sourceHead = value;
@@ -1954,7 +2085,7 @@ function parseArguments(argv) {
     else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!result.mode) {
-    throw new Error('Use --publish, --restore, --audit-anon, --describe-current or --describe-target');
+    throw new Error('Use --publish, --restore, --restore-weather-pair, --audit-anon, --describe-current or --describe-target');
   }
   if (!['audit-anon', 'describe-current', 'describe-target'].includes(result.mode)
     && (!result.privateRoot || !result.bundlePath || !result.expectedPath)) {
@@ -1962,6 +2093,12 @@ function parseArguments(argv) {
   }
   if (result.mode === 'publish' && !result.sourceHead) {
     throw new Error('Protected private runtime publish requires --source-head');
+  }
+  if (result.mode === 'restore-weather-pair' && !result.completeBundlePath) {
+    throw new Error('Paired weather restore requires --complete-bundle');
+  }
+  if (result.completeBundlePath && result.mode !== 'restore-weather-pair') {
+    throw new Error('--complete-bundle is only valid for paired weather restore');
   }
   if (['describe-current', 'describe-target'].includes(result.mode) && !result.outputPath) {
     throw new Error('Protected private runtime source description requires --output');
@@ -2041,7 +2178,13 @@ async function main() {
         sourceHead: options.sourceHead,
         sameReferenceSuccessorEvidence,
       })
-      : await restoreProtectedPrivateProductionRuntime(common);
+      : options.mode === 'restore-weather-pair'
+        ? await restoreExactProtectedPrivateWeatherPair({
+          ...common,
+          latestBundlePath: common.bundlePath,
+          completeBundlePath: options.completeBundlePath,
+        })
+        : await restoreProtectedPrivateProductionRuntime(common);
   }
   console.log(JSON.stringify({
     status: options.mode === 'describe-current'

@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadCopernicusComponentAuthority, validateCopernicusComponentCandidates,
   selectedCopernicusComponentRecord } from './lib/copernicus-component-index.mjs';
-import { runCopernicusComponentRuntime } from './lib/copernicus-component-runtime.mjs';
+import { copernicusRetryableReasonCounts, runCopernicusComponentRuntime } from './lib/copernicus-component-runtime.mjs';
 import { sealCopernicusComponentProjection } from './lib/copernicus-component-projection.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
@@ -14,6 +14,12 @@ import { buildFeggesundWaveInputProofEntry } from './lib/feggesund-wave-proxy.mj
 
 const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-index-test-'));
 try {
+  assert.deepEqual(copernicusRetryableReasonCounts([
+    { status: 'RETRYABLE_ERROR', reason: 'CP_COMPONENT_SUBSET_FAILED' },
+    { status: 'RETRYABLE_ERROR', reason: 'CP_COMPONENT_SUBSET_FAILED' },
+    { status: 'RETRYABLE_ERROR', reason: 'CP_COMPONENT_SUBSET_FAILED /private/path' },
+    { status: 'PARSED', reason: 'CP_COMPONENT_SUBSET_FAILED' },
+  ]), { CP_COMPONENT_REQUEST_RETRYABLE_ERROR: 1, CP_COMPONENT_SUBSET_FAILED: 2 });
   const python = process.env.PYTHON ?? 'python';
   execFileSync(python, [fileURLToPath(new URL('./test-copernicus-component-production.py', import.meta.url)), '--prepare-fixture', folder],
     { stdio: 'pipe', env: { ...process.env, PYTHONUTF8: '1' } });

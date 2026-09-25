@@ -285,6 +285,55 @@ def build_copernicus_donor_bank(
     )
 
 
+def backfill_verified_copernicus_donor_banks(
+    latest_bank: dict[str, Any], complete_bank: dict[str, Any], *,
+    targets: list[dict[str, Any]], production_reference_at: datetime,
+) -> dict[str, Any]:
+    """Carry two independently sealed generations into one native donor bank.
+
+    The caller binds which generation is latest. A repeated evidence identity
+    must be byte-equivalent before the normal builder is allowed to merge it;
+    otherwise an apparently valid bank could silently replace older proof.
+    """
+    latest = validate_copernicus_donor_bank(latest_bank, targets=targets)
+    complete = validate_copernicus_donor_bank(complete_bank, targets=targets)
+    for field, key in (("acquisitions", "acquisitionId"), ("records", "recordId")):
+        earlier = {row[key]: row for row in complete["shadow"][field]}
+        for row in latest["shadow"][field]:
+            prior = earlier.get(row[key])
+            if prior is not None and canonical_sha256(prior) != canonical_sha256(row):
+                raise ValueError("COPERNICUS_DONOR_GENERATION_ID_CONFLICT")
+    for field, key in (("positiveAdmissions", "recordId"), ("admissionAttempts", "attemptId")):
+        earlier = {row[key]: row for row in complete[field]}
+        for row in latest[field]:
+            prior = earlier.get(row[key])
+            if prior is not None and canonical_sha256(prior) != canonical_sha256(row):
+                raise ValueError("COPERNICUS_DONOR_GENERATION_PROOF_CONFLICT")
+    merged = build_copernicus_donor_bank(
+        latest["shadow"], targets=targets, attempts=[],
+        positive_admissions=latest["positiveAdmissions"],
+        admission_attempts=latest["admissionAttempts"],
+        previous_bank=complete, source_masks=latest["sourceMasks"],
+        production_reference_at=production_reference_at,
+    )
+    merged = validate_copernicus_donor_bank(merged, targets=targets)
+    lower = production_reference_at - timedelta(hours=RETENTION_HOURS)
+    upper = production_reference_at + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    carried = {row["recordId"]: row for row in merged["shadow"]["records"]}
+    carried_certificates = {row["recordId"]: row for row in merged["positiveAdmissions"]}
+    for original in (complete, latest):
+        certificates = {row["recordId"]: row for row in original["positiveAdmissions"]}
+        for row in original["shadow"]["records"]:
+            if not lower <= _time(row["validTime"], hour=True) <= upper:
+                continue
+            if carried.get(row["recordId"]) != row:
+                raise ValueError("COPERNICUS_DONOR_GENERATION_RECORD_LOSS")
+            certificate = certificates.get(row["recordId"])
+            if certificate is not None and carried_certificates.get(row["recordId"]) != certificate:
+                raise ValueError("COPERNICUS_DONOR_GENERATION_PROOF_LOSS")
+    return merged
+
+
 def _advance_validated_copernicus_donor_bank(
     shadow: dict[str, Any],
     *,

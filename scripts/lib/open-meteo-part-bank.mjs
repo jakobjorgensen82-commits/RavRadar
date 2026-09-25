@@ -388,3 +388,43 @@ export function mergeOpenMeteoPartBank(previous, admissions, options = {}) {
   for (const admission of admissions ?? []) builder.add(admission);
   return builder.snapshot();
 }
+
+// One-time native recovery from two separately authenticated private runtime
+// generations. The newer bank owns conflicts; the older bank may fill only
+// exact component/part/hour holes after its original response bytes have
+// passed the same admission path as a live provider response.
+export function backfillVerifiedOpenMeteoPartBank(latest, complete, options = {}) {
+  if (!latest && !complete) return null;
+  const validation = { parts: options.parts, spatialPolicies: options.spatialPolicies };
+  if (latest) validateOpenMeteoPartBank(latest, validation);
+  if (complete) validateOpenMeteoPartBank(complete, validation);
+  const builder = createOpenMeteoPartBankBuilder(latest, options);
+  if (builder.retired.changedOrRemovedTarget !== 0) {
+    fail('OPEN_METEO_PART_RECOVERY_TARGET_CHANGED');
+  }
+  const evidenceIds = new Set((complete?.records ?? []).map(record => record.evidenceId));
+  for (const evidenceId of evidenceIds) {
+    const evidence = complete.responses[evidenceId];
+    if (!evidence) fail('OPEN_METEO_PART_RECOVERY_EVIDENCE_MISSING');
+    builder.add({ evidence });
+  }
+  const result = builder.snapshot();
+  validateOpenMeteoPartBank(result, validation);
+  const inRetention = record => record.validTime >= result.retention.startAt
+    && record.validTime <= result.retention.endAt;
+  // Stored records intentionally omit the full private source; independent
+  // bank validation above already binds each partId to its original response.
+  const exactKey = record => stable([record.partId, record.validTime, record.component]);
+  const expected = new Map();
+  for (const record of (latest?.records ?? []).filter(inRetention)) {
+    expected.set(exactKey(record), record.recordId);
+  }
+  for (const record of (complete?.records ?? []).filter(inRetention)) {
+    if (!expected.has(exactKey(record))) expected.set(exactKey(record), record.recordId);
+  }
+  const actual = new Map(result.records.map(record => [exactKey(record), record.recordId]));
+  if (actual.size < expected.size || [...expected].some(([key, id]) => actual.get(key) !== id)) {
+    fail('OPEN_METEO_PART_RECOVERY_LOST_VALID_RECORD');
+  }
+  return result;
+}

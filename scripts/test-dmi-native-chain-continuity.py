@@ -49,6 +49,17 @@ def source(component, model_run=RUN, valid_time=VALID):
     return producer.native_component_source(collection, model_run, valid_time, component=component, zone=ZONE, grid_candidate=POINT, capture=CAPTURE, spatial_selection=producer.COMPONENT_SPATIAL_SELECTION[component], **extra)
 
 
+def marine_source(component, collection, model_run=RUN):
+    extra = {"verticalLayer": "surface:0", "verticalLayerRankM": 0.0} if component == "waterTemperature" else {}
+    if component == "windTail":
+        extra = {"vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation", "vectorSemanticsVersion": 1}
+    return producer.native_component_source(
+        collection, model_run, VALID, component=component, zone=ZONE,
+        grid_candidate=POINT, capture=CAPTURE,
+        spatial_selection=producer.COMPONENT_SPATIAL_SELECTION[component], **extra,
+    )
+
+
 def document(component, proof, values):
     return {"zones": {ZONE["id"]: {**producer.sampling_identity(ZONE), "hourly": {VALID: {"time": VALID, **dict(zip(producer.COMPONENT_FIELD_SET[component], values)), **({"mean-wave-dir": 90.0} if component == "wave" else {}), "sources": {component: proof}, "unrelated": "keep"}}, "gridPoints": {}, "collections": {}}}}
 
@@ -75,6 +86,101 @@ def catalog_item(collection, offset):
 
 
 class ComponentContinuityTests(unittest.TestCase):
+    def test_scheduler_uses_each_component_source_not_legacy_zone_selection(self):
+        cached = {
+            **producer.sampling_identity(ZONE),
+            "marineSelection": {"collection": "dkss_lf"},
+            "hourly": {VALID: {
+                "sea-mean-deviation": 0.1,
+                "water-temperature": 11.0,
+                "sources": {
+                    "waterLevel": marine_source("waterLevel", "dkss_nsbs"),
+                    "waterTemperature": marine_source("waterTemperature", "dkss_idw"),
+                },
+            }},
+        }
+        choose = producer.preferred_marine_collection_for_component
+        self.assertEqual(choose(
+            ZONE["id"], cached, ZONE, "waterLevel", ("sea-mean-deviation",), VALID,
+        ), "dkss_nsbs")
+        self.assertEqual(choose(
+            ZONE["id"], cached, ZONE, "waterTemperature", ("water-temperature",), VALID,
+        ), "dkss_idw")
+        cached["hourly"][VALID]["sources"]["waterLevel"]["gridPoint"] = [8.0, 56.0]
+        self.assertEqual(choose(
+            ZONE["id"], cached, ZONE, "waterLevel", ("sea-mean-deviation",), VALID,
+        ), "dkss_idw")
+
+    def test_marine_components_choose_newer_run_without_shared_model_lock(self):
+        for component in ("waterLevel", "waterTemperature", "windTail"):
+            with self.subTest(component=component):
+                fields = producer.COMPONENT_FIELD_SET[component]
+                old_source = marine_source(component, "dkss_idw", OLD_RUN)
+                new_source = marine_source(component, "dkss_nsbs")
+                row = {
+                    **{field: 1.0 for field in fields},
+                    "sources": {component: old_source, "other": {"preserve": True}},
+                }
+                point = {"hourly": {VALID: row}}
+                values = {field: 2.0 for field in fields}
+                self.assertTrue(producer.prefer_marine_component_hour_candidate(
+                    point, ZONE, VALID, component, new_source, values,
+                ))
+                self.assertEqual(row["sources"]["other"], {"preserve": True})
+                invalid = {**new_source, "gridPoint": [8.0, 56.0]}
+                self.assertFalse(producer.prefer_marine_component_hour_candidate(
+                    point, ZONE, VALID, component, invalid, values,
+                ))
+
+    def test_equal_run_marine_choice_keeps_coastal_model_preference(self):
+        old = marine_source("waterLevel", "dkss_idw")
+        alternative = marine_source("waterLevel", "dkss_nsbs")
+        point = {"hourly": {VALID: {"sea-mean-deviation": 0.1, "sources": {"waterLevel": old}}}}
+        self.assertFalse(producer.prefer_marine_component_hour_candidate(
+            point, ZONE, VALID, "waterLevel", alternative, {"sea-mean-deviation": 0.2},
+        ))
+        point["hourly"][VALID]["sources"]["waterLevel"] = alternative
+        self.assertTrue(producer.prefer_marine_component_hour_candidate(
+            point, ZONE, VALID, "waterLevel", old, {"sea-mean-deviation": 0.2},
+        ))
+
+    def test_producer_newer_scalar_does_not_clear_current_or_sibling(self):
+        old_level = marine_source("waterLevel", "dkss_idw", OLD_RUN)
+        retained_current = source("current")
+        retained_temperature = marine_source("waterTemperature", "dkss_idw", OLD_RUN)
+        zone = {
+            **producer.sampling_identity(ZONE),
+            "hourly": {VALID: {
+                "time": VALID, "sea-mean-deviation": 0.1,
+                "current-u": 0.2, "current-v": -0.1,
+                "water-temperature": 11.0,
+                "sources": {
+                    "waterLevel": old_level,
+                    "current": retained_current,
+                    "waterTemperature": retained_temperature,
+                },
+            }},
+            "gridPoints": {}, "collections": {},
+            "marineSelection": {"collection": "dkss_idw", "score": 0.0},
+        }
+        output = {"zones": {ZONE["id"]: zone}}
+        handles = iter((1, None))
+        with patch.object(Path, "open", lambda *args, **kwargs: io.BytesIO(b"synthetic")), \
+                patch.object(producer, "codes_grib_new_from_file", lambda _: next(handles)), \
+                patch.object(producer, "field_signature", lambda _: {"shortName": "smd"}), \
+                patch.object(producer, "classify_parameter", lambda *_: "sea-mean-deviation"), \
+                patch.object(producer, "nearest_valid_batch", lambda *_: {ZONE["id"]: {**POINT, "value": 0.4}}), \
+                patch.object(producer, "raw_cache_source_capture", lambda *_: CAPTURE), \
+                patch.object(producer, "should_stop_work", lambda: False):
+            producer.process_grib(Path("synthetic.grib"), "dkss_nsbs", RUN, VALID, [ZONE], output, {})
+        row = zone["hourly"][VALID]
+        self.assertEqual(row["sea-mean-deviation"], 0.4)
+        self.assertEqual(row["sources"]["waterLevel"]["collection"], "dkss_nsbs")
+        self.assertEqual((row["current-u"], row["current-v"]), (0.2, -0.1))
+        self.assertEqual(row["sources"]["current"], retained_current)
+        self.assertEqual(row["water-temperature"], 11.0)
+        self.assertEqual(row["sources"]["waterTemperature"], retained_temperature)
+
     def test_newer_component_replaces_old_atomically_not_other_components(self):
         for component, values in (("current", (0.1, 0.2)), ("wind", (2.0, 3.0)), ("waterLevel", (0.5,)), ("waterTemperature", (12.0,)), ("wave", (0.5, 7.0))):
             with self.subTest(component=component):
@@ -92,6 +198,44 @@ class ComponentContinuityTests(unittest.TestCase):
         before = copy.deepcopy(primary)
         producer.backfill_compatible_cache_data(primary, donor)
         self.assertEqual(primary["zones"][ZONE["id"]]["hourly"], before["zones"][ZONE["id"]]["hourly"])
+
+    def test_empty_primary_hour_imports_only_proved_donor_components(self):
+        donor = document("waterLevel", source("waterLevel"), (0.25,))
+        row = donor["zones"][ZONE["id"]]["hourly"][VALID]
+        row.update({"water-temperature": 12.0, "wind-speed-10m": 5.0})
+        row["sources"]["waterTemperature"] = {
+            **marine_source("waterTemperature", "dkss_idw"),
+            "gridPoint": [8.0, 56.0],
+        }
+        row["sources"]["wind"] = source("wind")
+        primary = {"zones": {ZONE["id"]: {
+            **producer.sampling_identity(ZONE),
+            "hourly": {}, "gridPoints": {}, "collections": {},
+        }}}
+        producer.backfill_compatible_cache_data(primary, donor)
+        imported = primary["zones"][ZONE["id"]]["hourly"][VALID]
+        self.assertEqual(imported["sea-mean-deviation"], 0.25)
+        self.assertEqual(imported["sources"]["waterLevel"], row["sources"]["waterLevel"])
+        self.assertNotIn("water-temperature", imported)
+        self.assertNotIn("wind-speed-10m", imported)
+        self.assertNotIn("unrelated", imported)
+
+    def test_empty_primary_current_requires_original_asset_attestation(self):
+        proof = source("current")
+        donor = document("current", proof, (0.2, -0.1))
+        blank = {"zones": {ZONE["id"]: {
+            **producer.sampling_identity(ZONE),
+            "hourly": {}, "gridPoints": {}, "collections": {},
+        }}}
+        unproved = copy.deepcopy(blank)
+        producer.backfill_compatible_cache_data(unproved, donor, [])
+        self.assertNotIn("current-u", unproved["zones"][ZONE["id"]]["hourly"][VALID])
+        self.assertNotIn("current-v", unproved["zones"][ZONE["id"]]["hourly"][VALID])
+        proved = copy.deepcopy(blank)
+        producer.backfill_compatible_cache_data(proved, donor, [retained(proof)])
+        row = proved["zones"][ZONE["id"]]["hourly"][VALID]
+        self.assertEqual((row["current-u"], row["current-v"]), (0.2, -0.1))
+        self.assertEqual(row["sources"]["current"], proof)
 
     def test_newer_positive_wave_without_direction_or_period_cannot_replace_valid_tuple(self):
         for mutation in ({"mean-wave-dir": None}, {"dominant-wave-period": 0.0}):
@@ -112,14 +256,66 @@ class ComponentContinuityTests(unittest.TestCase):
         self.assertTrue(producer.prefer_qualified_cached_component_source(existing, candidate, "wind"))
         self.assertFalse(producer.prefer_qualified_cached_component_source(candidate, existing, "wind"))
 
-    def test_current_geometry_and_layer_precede_recency(self):
+    def test_newer_qualified_run_precedes_same_run_geometry_and_layer_tiebreaks(self):
         existing = source("current", OLD_RUN)
         farther = {**source("current"), "gridPoint": [2.01, 1.01], "distanceKm": 1.5}
-        self.assertFalse(producer.prefer_qualified_cached_component_source(existing, farther, "current"))
+        self.assertTrue(producer.prefer_qualified_cached_component_source(existing, farther, "current"))
         shallower = {**source("current"), "verticalLayerRankM": 0.0, "verticalLayer": "surface:0"}
-        self.assertFalse(producer.prefer_qualified_cached_component_source(existing, shallower, "current"))
+        self.assertTrue(producer.prefer_qualified_cached_component_source(existing, shallower, "current"))
         other_grid = {**source("waterLevel"), "gridPoint": [2.01, 1.01]}
-        self.assertFalse(producer.prefer_qualified_cached_component_source(source("waterLevel", OLD_RUN), other_grid, "waterLevel"))
+        self.assertTrue(producer.prefer_qualified_cached_component_source(source("waterLevel", OLD_RUN), other_grid, "waterLevel"))
+        same_run = source("current")
+        self.assertFalse(producer.prefer_qualified_cached_component_source(same_run, farther, "current"))
+        self.assertFalse(producer.prefer_qualified_cached_component_source(same_run, shallower, "current"))
+
+    def test_zone_summary_mismatch_does_not_erase_proved_hourly_vector(self):
+        row = {
+            "current-u": 0.1,
+            "current-v": -0.2,
+            "sources": {"current": source("current")},
+        }
+        zone = {
+            **producer.sampling_identity(ZONE),
+            "hourly": {VALID: row},
+            "gridPoints": {
+                "current-u": {"latitude": 1.0, "longitude": 2.0},
+                "current-v": {"latitude": 1.01, "longitude": 2.01},
+            },
+            "collections": {"current-u": "dkss_idw", "current-v": "dkss_nsbs"},
+        }
+        self.assertTrue(producer.complete_native_source_for_hour(
+            row["sources"]["current"], "current", ZONE["id"], zone, VALID,
+        ))
+        self.assertEqual(producer.sanitize_vector_integrity(zone), ["current-u/current-v"])
+        self.assertEqual((row["current-u"], row["current-v"]), (0.1, -0.2))
+        self.assertEqual(zone["gridPoints"], {})
+
+    def test_partial_native_vector_does_not_survive_summary_cleanup(self):
+        zone = {
+            "hourly": {VALID: {
+                "current-u": 0.1,
+                "sources": {"current": source("current")},
+            }},
+            "gridPoints": {}, "collections": {},
+        }
+        self.assertIn("current-u/current-v:partial-hour", producer.sanitize_vector_integrity(zone))
+        self.assertNotIn("current-u", zone["hourly"][VALID])
+        self.assertNotIn("current", zone["hourly"][VALID]["sources"])
+
+    def test_surface_temperature_uses_each_hour_proof_not_last_zone_grid(self):
+        zone = {
+            "hourly": {VALID: {
+                "water-temperature": 11.0,
+                "sources": {"waterTemperature": {"verticalLayer": "surface:0"}},
+            }},
+            "gridPoints": {"water-temperature": {"verticalLayer": "depthbelowsea:2"}},
+            "collections": {"water-temperature": "dkss_lf"},
+        }
+        self.assertEqual(producer.sanitize_water_temperature_surface_integrity(
+            {"zones": {ZONE["id"]: zone}},
+        ), 0)
+        self.assertEqual(zone["hourly"][VALID]["water-temperature"], 11.0)
+        self.assertNotIn("water-temperature", zone["gridPoints"])
 
 
 class WaveSemanticsTests(unittest.TestCase):
@@ -158,6 +354,17 @@ class WaveSemanticsTests(unittest.TestCase):
 
 
 class SchedulingContinuityTests(unittest.TestCase):
+    def test_idw_lead_can_catch_up_multiple_hours_without_stealing_reserves(self):
+        limit = producer.bounded_strict_current_lead_attempt_limit
+        collections = ["dkss_idw", "dkss_nsbs", "dkss_lf"]
+        self.assertGreater(limit(1379.0, collections, 240.0), 1)
+        self.assertLessEqual(limit(1379.0, collections, 240.0), 8)
+        self.assertEqual(limit(300.0, collections, 240.0), 1)
+        self.assertLessEqual(
+            limit(1379.0, collections, 240.0, atmosphere_horizon_needed=True),
+            limit(1379.0, collections, 240.0),
+        )
+
     def test_h0_catalog_then_real_horizon_query_selects_future_native_assets(self):
         collection = "harmonie_dini_sf"
         reference = datetime.fromisoformat(RUN.replace("Z", "+00:00"))

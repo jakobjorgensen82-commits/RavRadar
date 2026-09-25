@@ -15,6 +15,7 @@ from lib.copernicus_weather_component_bank import (
     _request, build_component_plan, empty_component_bank, merge_component_read,
     produce_component_bank, project_component_candidates, save_component_bank,
     validate_component_bank, validate_component_plan, rebase_component_bank,
+    backfill_verified_component_banks,
 )
 from lib.copernicus_weather_components import read_component_subset
 
@@ -154,6 +155,19 @@ class ComponentBankTests(unittest.TestCase):
             plan([{"component": "wave", "validTime": T0, "purpose": "AGED_DMI_CHALLENGE",
                    "protectedModelRun": "2026-09-15T01:00:00Z"}])
 
+    def test_open_meteo_upgrade_uses_only_real_wave_or_temperature_product(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": T0,
+                         "purpose": "OPEN_METEO_UPGRADE"}])
+        self.assertEqual(validate_component_plan(document), document)
+        result = self.run_plan(document, admit_spatial=spatial_certificate)
+        self.assertEqual(result["stage"]["status"], "CANDIDATES_READY")
+        self.assertEqual(result["stage"]["candidates"][0]["source"]["provider"], "copernicus")
+        for component in ("wind", "waterLevel"):
+            with self.assertRaisesRegex(ValueError, "UPGRADE_PRODUCT_INVALID"):
+                plan([{"component": component, "validTime": T0,
+                       "purpose": "OPEN_METEO_UPGRADE"}])
+
     def test_native_tail_and_old_hour_survive_window_shift(self):
         self.write("nws-wave")
         initial = plan([{"component": "wave", "validTime": t} for t in [T0, T2]])
@@ -177,6 +191,152 @@ class ComponentBankTests(unittest.TestCase):
                                       acquisition_at="2026-09-19T04:00:00Z")
         self.assertTrue(all(row in merged["records"] for row in initial["bank"]["records"]))
         self.assertEqual(len(merged["records"]), 3)  # Unknown alternative is not allowed to erase either known sibling.
+
+    def test_unadmitted_static_row_retries_without_erasing_valid_original(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": T0}])
+        original = self.run_plan(document, admit_spatial=spatial_certificate)["bank"]
+        original_id = original["records"][0]["recordId"]
+        changed = FIXTURE("nws-wave")
+        changed["VHM0"].values[:] = 2.0
+        path = self.write("nws-wave", changed)
+        self.calls.clear()
+
+        def recovered_static(entry, request, target):
+            return None if entry["recordId"] == original_id else spatial_certificate(entry, request, target)
+
+        retried = produce_component_bank(document, original, acquire_subset=self.acquire,
+            acquisition_at=lambda: "2026-09-19T04:00:00Z",
+            checkpoint=lambda b, a: self.checkpoints.append((b, a)),
+            admit_spatial=recovered_static)
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(retried["stage"]["status"], "CANDIDATES_READY")
+        self.assertEqual(len(retried["bank"]["records"]), 1)
+        self.assertNotEqual(retried["bank"]["records"][0]["recordId"], original_id)
+
+        request = _request(document, TARGET["partId"], "nws-wave", [T0])
+        read = read_component_subset(path, contract_key="nws-wave", target=TARGET,
+            expected_times=[T0])
+        def unadmitted_replacement(entry, request, target):
+            return spatial_certificate(entry, request, target) if entry["recordId"] == original_id else None
+        retained = merge_component_read(original, plan=document, request=request, read=read,
+            acquisition_at="2026-09-19T05:00:00Z", admit_spatial=unadmitted_replacement)
+        self.assertEqual(retained["records"], original["records"])
+
+    def test_static_original_is_repaired_before_dynamic_refetch(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": T0}])
+        original = self.run_plan(document, admit_spatial=spatial_certificate)["bank"]
+        self.calls.clear()
+        ready = [False]
+        def original_proof(entry, request, target):
+            return spatial_certificate(entry, request, target) if ready[0] else None
+        def repair(_key, _target):
+            ready[0] = True
+            return True
+        result = self.run_plan(document, original, admit_spatial=original_proof,
+            prepare_reusable_group=repair)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(result["bank"], original)
+        self.assertEqual(result["stage"]["status"], "CANDIDATES_READY")
+        self.assertEqual(result["attempts"][0]["status"], "STATIC_EVIDENCE_READY")
+
+    def test_stale_static_grid_refreshes_once_without_refetching_valid_dynamic(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": T0}])
+        original = self.run_plan(document, admit_spatial=spatial_certificate)["bank"]
+        self.calls.clear()
+        ready, refreshed = [False], []
+        def original_proof(entry, request, target):
+            return spatial_certificate(entry, request, target) if ready[0] else None
+        def refresh(key, target, entry_requests):
+            self.assertEqual((key, target), ("nws-wave", TARGET))
+            self.assertEqual(entry_requests[0][0], original["records"][0])
+            self.assertEqual(entry_requests[0][1], original["requests"][0])
+            refreshed.append(key)
+            ready[0] = True
+            return True
+        result = self.run_plan(document, original, admit_spatial=original_proof,
+            prepare_reusable_group=lambda _key, _target: True,
+            refresh_unadmitted_static=refresh)
+        self.assertEqual(refreshed, ["nws-wave"])
+        self.assertEqual(self.calls, [])
+        self.assertEqual(result["bank"], original)
+        self.assertEqual(result["stage"]["status"], "CANDIDATES_READY")
+
+    def test_new_dynamic_grid_can_refresh_static_before_bank_merge(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": T0}])
+        ready, refreshed = [False], []
+        def original_proof(entry, request, target):
+            return spatial_certificate(entry, request, target) if ready[0] else None
+        def refresh(key, target, entry_requests):
+            self.assertEqual((key, target), ("nws-wave", TARGET))
+            self.assertEqual(entry_requests[0][0]["requestSha256"], entry_requests[0][1]["requestSha256"])
+            refreshed.append(key)
+            ready[0] = True
+            return True
+        result = self.run_plan(document, admit_spatial=original_proof,
+            refresh_unadmitted_static=refresh)
+        self.assertEqual(refreshed, ["nws-wave"])
+        self.assertEqual(result["stage"]["status"], "CANDIDATES_READY")
+
+    def test_failed_old_static_refresh_does_not_starve_other_pending_hour(self):
+        self.write("nws-wave")
+        document = plan([{"component": "wave", "validTime": time} for time in [T0, T1]])
+        original = self.run_plan(plan([{"component": "wave", "validTime": T0}]),
+            admit_spatial=spatial_certificate)["bank"]
+        old_id = original["records"][0]["recordId"]
+        self.calls.clear()
+        def proof(entry, request, target):
+            return None if entry["recordId"] == old_id else spatial_certificate(entry, request, target)
+        result = self.run_plan(document, original, admit_spatial=proof,
+            prepare_reusable_group=lambda *_: True,
+            refresh_unadmitted_static=lambda *_: False)
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.calls[0]["expectedTimes"], [T0, T1])
+        self.assertTrue(any(row["native"]["validTime"] == T1 for row in result["bank"]["records"]))
+
+    def test_transport_failure_reports_only_payload_free_reason_code(self):
+        document = plan([{"component": "wave", "validTime": T0}])
+        self.paths["nws-wave"] = RuntimeError("CP_COMPONENT_SUBSET_FAILED")
+        coded = self.run_plan(document)
+        self.assertEqual(coded["attempts"][0]["reason"], "CP_COMPONENT_SUBSET_FAILED")
+        self.paths["nws-wave"] = RuntimeError("CP_COMPONENT_SUBSET_FAILED /private/path")
+        redacted = self.run_plan(document)
+        self.assertEqual(redacted["attempts"][0]["reason"], "CP_COMPONENT_REQUEST_RETRYABLE_ERROR")
+        self.assertNotIn("/private/path", json.dumps(redacted["attempts"]))
+
+    def test_two_originally_admitted_generations_restore_gaps_without_blind_replacement(self):
+        self.write("nws-wave")
+        complete_plan = plan([{"component": "wave", "validTime": T0}])
+        complete = self.run_plan(complete_plan, admit_spatial=spatial_certificate)["bank"]
+        later_plan = plan([{"component": "wave", "validTime": T1}])
+        latest = self.run_plan(later_plan, admit_spatial=spatial_certificate)["bank"]
+        options = dict(targets=[TARGET], retention_start_at="2026-09-01T00:00:00Z",
+            retention_end_at="2026-10-01T00:00:00Z")
+        combined = backfill_verified_component_banks(latest, complete,
+            admit_latest=spatial_certificate, admit_complete=spatial_certificate, **options)
+        self.assertEqual({row["native"]["validTime"] for row in combined["records"]}, {T0, T1})
+        self.assertEqual(validate_component_bank(combined, targets=[TARGET]), combined)
+
+        changed = FIXTURE("nws-wave")
+        changed["VHM0"].values[:] = 2.0
+        self.write("nws-wave", changed)
+        newer = self.run_plan(complete_plan, admit_spatial=spatial_certificate)["bank"]
+        old_id = complete["records"][0]["recordId"]
+        new_id = newer["records"][0]["recordId"]
+        self.assertNotEqual(old_id, new_id)
+        rescued = backfill_verified_component_banks(newer, complete,
+            admit_latest=lambda *_: None, admit_complete=spatial_certificate, **options)
+        self.assertEqual(rescued["records"][0]["recordId"], old_id)
+        unproved = backfill_verified_component_banks(newer, complete,
+            admit_latest=lambda *_: None, admit_complete=lambda *_: None, **options)
+        self.assertEqual(unproved["records"], [])
+        self.assertEqual(unproved["requests"], [])
+        preferred = backfill_verified_component_banks(newer, complete,
+            admit_latest=spatial_certificate, admit_complete=spatial_certificate, **options)
+        self.assertEqual(preferred["records"][0]["recordId"], new_id)
 
     def test_source_errors_do_not_mark_complete_or_block_siblings(self):
         self.paths["nws-wave"] = RuntimeError("upstream still updating")
