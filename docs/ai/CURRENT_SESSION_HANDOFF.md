@@ -1,21 +1,20 @@
-# Aktuel overdragelse – 2026-09-25 – 4.0.488 database-readback
+# Aktuel overdragelse – 2026-09-25 – pakket DMI-cache i budgetplan
 
 Den aktive Git-rod er `node_modules/RavRadar-4.0.396`. Den samlede
-4.0.488-rettelse er merged via PR #449 som main `eaa32dec`; dens
-exact-head-kildegate `36147090206` er grøn. Database-only run
-`36147927454` installerede migration `20260925150000` og læste den
-tilbage, men kontroltrinnet blev rødt: live checkpoint-kontrakten havde
-hash `d12aeb...`, mens efterkontrollen forventede `251c38...` fra to
-gamle validatorfunktioner. De nye SQL-funktioner er de gamle
-validatorer med de planlagte nye modelhash, og den faktiske live-hash
-kan genskabes præcist fra migrationen. Den afgrænsede rettelse læser
-nu alle checkpoint-funktioner fra den senest installerede migration.
-Ingen vejrkørsel er startet, og den beskyttede cache er ikke ændret.
-Næste trin: exact-head-kontrol, merge readback-rettelsen, kør det
-database-only workflow igen for fuld live-readback og først derefter
-én almindelig vejrhentning. Mål cachelineage, de fem vejrfelter,
-DMI/Copernicus/Open-Meteo, gemning og Pages. Cron er fortsat pauset.
-Ældre overdragelser herunder er historiske.
+4.0.488-rettelse er merged via PR #449 som `eaa32dec`. PR #450
+rettede database-readback og er merged som `1bba8b27`; run
+`36150075645` bekræftede den installerede modelbinding live.
+Normalrun `36150276464` verificerede den beskyttede 11Z/15Z-pakke,
+genbandt og installerede den fyldigere 11Z-cache og bevarede 15Z som
+selvstændigt tabsanker. Det stoppede før DMI, fordi det nye
+budgetplanlægningsscript læste den pakkede kildeordbog som almindelig
+JSON og derfor ikke fandt `zones`. De øvrige DMI-/Copernicus-/Open-Meteo-
+læsere bruger allerede den korrekte pakkelæser. Den afgrænsede rettelse
+bruger nu samme validerede DMI-læser og har en regressionstest med en
+ægte pakket fixture. Ingen ny vejr- eller produktionscache blev gemt.
+Næste: præcis kildekontrol, merge, én ny normalrun uden overlap og mål
+fem vejrfelter, kildeprioritet, cachelineage, tabsanker, gemning og Pages.
+Cron er stadig pauset. Ældre overdragelser herunder er historiske.
 
 # Historisk 4.0.464-checkpoint – protected public-hour-par
 

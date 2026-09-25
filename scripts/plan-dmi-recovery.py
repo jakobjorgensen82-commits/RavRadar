@@ -13,6 +13,8 @@ import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from lib.dmi_bulk_storage import read_dmi_bulk_document
+
 HOURS = 118
 COMPONENT_FIELDS = {
     "wind": ("wind-speed-10m", "wind-dir-10m"),
@@ -190,6 +192,11 @@ def decide(cache, registry, target, *, now=None):
     }
 
 
+def load_cache(path):
+    """Use the producer's validated reader for source-dictionary storage."""
+    return read_dmi_bulk_document(path)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache", type=Path, required=True)
@@ -197,7 +204,7 @@ def main():
     parser.add_argument("--at", required=True)
     parser.add_argument("--github-output", type=Path, required=True)
     args = parser.parse_args()
-    result = decide(json.loads(args.cache.read_text(encoding="utf-8")),
+    result = decide(load_cache(args.cache),
                     json.loads(args.parts.read_text(encoding="utf-8")), args.at)
     with args.github_output.open("a", encoding="utf-8") as output:
         output.write(f"extended={'true' if result['extended'] else 'false'}\n")
