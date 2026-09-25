@@ -9,10 +9,20 @@ som 15Z tabte, og 15Z har 3.238, som 11Z mangler. Ingen ny privat
 pakke eller Pages før nul gyldig→tom mod begge. Frisk/tom cache og
 fuld automatisk to-generationsfletning er ikke valgt. Den eksisterende
 72-timersbro forlænges ikke. Lokal workflow og DMI-læseværn er
-rettet; måltests er grønne, men exact-head CI, merge og livebevis
+rettet. Første exact-head CI på PR #449 fandt en manglende
+model-/databasebinding; begge genererede modelpakker,
+continuation-identiteten og append-only-migration `20260925150000`
+er nu rettet og måltestet. Gammel 11Z-state skal verificeres med
+4.0.485-kilden og genbindes uden ændring af vejrdata; den eksakte
+4.0.487-læser kontrollerer begge oprindelige pakker. Det gamle
+checkpoint må ikke indlæses i denne ene overgang. Efter merge:
+brug kun `apply-weather-model-binding-only.yml` til databindingen
+før normalrun, ikke code-only deploy, som ellers kan fortrænge 11Z.
+Ny exact-head CI, merge, database-readback og livebevis
 mangler. Cron er deaktiveret. Tre gamle queued runs på andre main-
-commits er endnu ikke bekræftet annulleret; neutralisér dem før
-genåbning. Se DEC-0254's tillæg og aktivt roadmap.
+commits er endnu ikke annulleret, men deres egen tidlige SHA-gate
+forhindrer beskyttet læsning/skrivning på gammel kode. Se DEC-0254's
+tillæg og aktivt roadmap.
 
 # HISTORISK CHECKPOINT – 2026-09-24 – første lokale 4.0.488-afgrænsning
 

@@ -229,12 +229,17 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260923210000_checkpoint_cas_bounded_timeout',
     filename: '20260923210000_checkpoint_cas_bounded_timeout.sql',
   }),
+  Object.freeze({
+    version: '20260925150000',
+    id: '20260925150000_weather_selection_model_binding',
+    filename: '20260925150000_weather_selection_model_binding.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260920220000');
 export const TRIP_BINDING_POLICY_SOURCE_MIGRATION =
-  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923120000');
+  REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260925150000');
 export const CHECKPOINT_NATIVE_HOLD_MIGRATION =
   REQUIRED_CUTOVER_MIGRATIONS.find(item => item.version === '20260923140000');
 export const CHECKPOINT_COMPANION_ID_MIGRATION =

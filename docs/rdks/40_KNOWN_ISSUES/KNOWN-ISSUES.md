@@ -1,5 +1,11 @@
 # Aktuelle issues – 2026-09-25, lokal 4.0.488
 
+- **MODEL-/DATABASEBINDING – RETTET LOKALT, CI AFVENTER:** Første
+  exact-head-kontrol af PR #449 fandt den manglende hash-opdatering,
+  fordi vejrvalgsfiler indgår i modelpakkernes transitive kode. Begge
+  modelpakker og continuation er bundet på ny i append-only-migration
+  `20260925150000`. Scoreformlen er uændret; ny CI og live-database-
+  readback mangler.
 - **PARRET CACHEGENOPRETNING – LOKALT RETTET, LIVE ÅBEN:** Den
   beskyttede 11Z-generation er stærkeste private baseline, men
   den aktuelle 15Z har 3.238 unikke stadig fremtidige feltpar
@@ -10,8 +16,9 @@
   Den eksisterende 72-timersgrænse består.
 - **GAMLE QUEUED VEJRRUNS – ÅBEN FØR CRON:** Tre gamle
   workflow_dispatch-runs fra andre main-commits står stadig
-  `queued` trods normal annulleringsrespons. De må ikke starte
-  eller få udgivelsesret ved genåbning af workflowet.
+  `queued` trods normal annulleringsrespons. Deres egen tidlige
+  eksakte main-SHA-kontrol stopper dem før beskyttet læsning/skrivning
+  på gammel commit. Kontroller fortsat køen før cron-genåbning.
 - **LOKALT SECURITY-TESTMILJØ – IKKE PRODUKTIONSFUND:** Den
   indlejrede Windows-worktree ligger under `node_modules`, hvor
   Node 24 nægter at strippe projektets TypeScript-import i

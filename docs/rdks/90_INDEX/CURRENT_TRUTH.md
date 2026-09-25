@@ -15,6 +15,17 @@ leverandørfremgang til et nyt ikke-overlappende forsøg. Den eksisterende
 forkastet som produktionsvej, fordi den ville kassere både værdier og
 historik.
 
+Første PR-kontrol viste, at vejrvalget ændrer modelkodens hash. Derfor
+bruger genopretningen den eksakte gamle læser til at kontrollere begge
+originale pakker og den eksakte 4.0.485-kilde til at genbinde 11Z's
+scorehistorik uden at ændre vejrmålinger. Det gamle checkpoint
+indlæses ikke i denne overgang; 11Z's private state er grundlaget.
+Den nye databasebinding installeres først via et særskilt manuelt
+workflow, som hverken læser/skriver private vejrpakker eller deployer
+hjemmesiden. Code-only deploy er låst for den kendte 11Z/15Z-pointer,
+fordi den ellers kunne skubbe den komplette pakke ud. Dette er
+lokal kode, ikke endnu bevist i produktion.
+
 Den lokale kode kræver nu også læsbar DMI-candidate og forecast-store
 efter privat install; ingen af dem må stille blive tomme. En syntetisk
 checkpointtest beviser, at nyere DMI-candidate-progression bevares over
@@ -22,9 +33,15 @@ en ældre READY-donor. Copernicus' kritiske passage tager faktiske
 resthuller først, mens afgrænset kvalitetsarbejde kan overtage
 Open-Meteo efterfølgende. At dette giver faktisk leverandørfremgang
 og passerer begge tabsankre er endnu **ikke livebevist**. 4.0.488 er
-ukommitteret og umerget; cron er pauset, og tre gamle queued
-workflow_dispatch-runs fra andre main-commits må neutraliseres før
-automatisk drift. Ingen ny vejrkørsel under releaseanalysen.
+pushet på PR #449, men umerget; cron er pauset. Dens første
+exact-head-kontrol fandt en ægte manglende model-/databasebinding.
+Den er rettet med nye genererede integreret/Candidate G-pakkehash,
+continuation-hash og append-only-migration `20260925150000`, uden
+at scoreformlen eller anvendte migrationer omskrives. Ny exact-head-
+kontrol afventer. Tre gamle queued workflow_dispatch-runs har gamle
+main-commits; deres egen tidlige SHA-kontrol afviser dem før
+beskyttet læsning eller skrivning, hvis GitHub vækker dem. Ingen ny
+vejrkørsel under releaseanalysen.
 
 # HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
 

@@ -17,6 +17,40 @@ const {
   deploy: deployWorkflow,
   recovery: recoveryWorkflow,
 } = productionWorkflows;
+const bindingOnlyWorkflow = fs.readFileSync(
+  `${workflowDirectory}/apply-weather-model-binding-only.yml`, 'utf8',
+).replace(/\r\n/g, '\n');
+for (const marker of [
+  'group: ravradar-weather-production-v2',
+  'APPLY-WEATHER-MODEL-BINDING',
+  'node scripts/weather-source-gate.mjs check',
+  'node scripts/verify-code-only-migration-plan.mjs',
+  'supabase db push --linked --dry-run --skip-vault',
+  'supabase db push --linked --skip-vault',
+  'node scripts/integrated-cutover-readiness.mjs verify-db',
+]) {
+  assert.ok(bindingOnlyWorkflow.includes(marker),
+    `Binding-only delivery is missing ${marker}`);
+}
+for (const forbidden of [
+  'protected-private-production-runtime.mjs',
+  'private-production-runtime-workflow.mjs',
+  'ravscore-continuation-checkpoint.mjs',
+  'data/live/',
+  'pages: write',
+]) {
+  assert.ok(!bindingOnlyWorkflow.includes(forbidden),
+    `Binding-only delivery must not touch weather, checkpoint or Pages: ${forbidden}`);
+}
+const pairReaderCheckout = buildWorkflow.indexOf('name: Materialize exact archived readers for the 11Z and 15Z weather pair');
+const pairRestore = buildWorkflow.indexOf('name: Restore newest compatible private runtime from protected storage');
+const pairMigration = buildWorkflow.indexOf('name: Rebind exact 11Z private state without changing weather measurements');
+const pairInstall = buildWorkflow.indexOf('name: Install only the allowlisted restored private runtime files');
+assert.ok(pairReaderCheckout >= 0 && pairReaderCheckout < pairRestore
+  && pairRestore < pairMigration && pairMigration < pairInstall,
+  'Historical pair must be authenticated and rebound before installing any old model state');
+assert.ok(buildWorkflow.includes("steps.exact-weather-recovery.outputs.required != 'true'"),
+  'The old checkpoint must not be restored during exact pair migration');
 // DEC-0149/0160/0193: the completed first launch is not a reusable bypass of
 // exact target, privacy, protected state or deployment identity.
 for (const [role, source] of Object.entries(productionWorkflows)) {
@@ -50,7 +84,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -1474,10 +1508,10 @@ const expected = [
   'preflightCache',
   'publicPreflightManifest',
   'preflight',
-  'continuationRestore',
-  'protectedCheckpointRestore',
   'privateRuntimeExpected',
   'protectedPredecessorDescribe',
+  'continuationRestore',
+  'protectedCheckpointRestore',
   'privateRuntimeRestore',
   'privateRuntimeInspect',
   'privateRuntimeVerify',
@@ -2021,10 +2055,11 @@ const supabasePatConsumers = workflowFiles.filter((name) =>
   fs.readFileSync(`${workflowDirectory}/${name}`, 'utf8').includes('SUPABASE_ACCESS_TOKEN')
 );
 if (JSON.stringify(supabasePatConsumers) !== JSON.stringify([
+  'apply-weather-model-binding-only.yml',
   'deploy-code-only-repair.yml',
   'deploy-trip-storage.yml',
 ])) {
-  throw new Error(`Supabase-PAT må kun bruges af de to manuelt aktiverede database-deployments, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
+  throw new Error(`Supabase-PAT må kun bruges af de tre manuelt aktiverede database-deployments, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
 }
 if (tripStorageDeployment.includes('storage_mode:')
   || tripStorageDeployment.includes('inputs.storage_mode')
@@ -2257,7 +2292,7 @@ for (const marker of ['workflow_dispatch:', 'schedule:', 'permissions:\n  conten
 if (tripStorageMonitor.includes('pages: write') || tripStorageMonitor.includes('id-token: write') || tripStorageMonitor.includes('deploy-pages')) {
   throw new Error('Turlager-overvågningen må ikke kunne deploye Pages.');
 }
-const lightweightPreflightSection = text.slice(positions.preflightCache, positions.continuationRestore);
+const lightweightPreflightSection = text.slice(positions.preflightCache, positions.privateRuntimeExpected);
 for (const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/weather-preflight-state',
@@ -2420,13 +2455,13 @@ for (const marker of [
   }
 }
 
-const continuationRestoreSection = text.slice(positions.continuationRestore, positions.privateRuntimeExpected);
+const continuationRestoreSection = text.slice(positions.continuationRestore, positions.privateRuntimeRestore);
 for (const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/ravscore-continuation-checkpoint',
   'ravscore-continuation-schema6-v2-',
   "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',

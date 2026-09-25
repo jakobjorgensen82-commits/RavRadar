@@ -559,26 +559,6 @@ jobs:
           test "${{ steps.weather-source-handoff-cache.outcome }}" = "success"
           test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"
 
-      - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
-        id: ravscore-checkpoint-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            ravscore-continuation-schema6-v2-
-
-      - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --restore
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
       - name: Build current private-runtime restore expectation
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
@@ -614,6 +594,44 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT,
             `required=${isLatestUnpairedWeatherGeneration(source)}\n`);
           NODE
+
+      # The old protected checkpoint has the old model closure.  The 11Z
+      # private conditions carry the exact continuation states and are rebound
+      # below; restoring the old checkpoint here would reject a valid donor.
+      - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        id: ravscore-checkpoint-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/ravscore-continuation-checkpoint
+          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ravscore-continuation-schema6-v2-
+
+      - name: Restore protected atomic RavScore checkpoint when cache is absent
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --restore
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Materialize exact archived readers for the 11Z and 15Z weather pair
+        if: steps.exact-weather-recovery.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          reader_head=b1b88e0f61b751cc91bdb09120dc895abc99cb65
+          donor_head=cc45e97178a64406bdf3ab5401d8a3ae0f618891
+          reader_root="$RUNNER_TEMP/ravradar-exact-weather-reader"
+          donor_root="$RUNNER_TEMP/ravradar-exact-weather-donor-source"
+          git fetch --no-tags --depth=1 origin "$reader_head" "$donor_head"
+          git worktree add --detach "$reader_root" "$reader_head"
+          git worktree add --detach "$donor_root" "$donor_head"
+          test "$(git -C "$reader_root" rev-parse HEAD)" = "$reader_head"
+          test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
@@ -656,6 +674,10 @@ jobs:
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
           fi
+          pair_reader_args=()
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            pair_reader_args=(--historical-reader-root "$RUNNER_TEMP/ravradar-exact-weather-reader")
+          fi
           status=1
           for attempt in 1 2 3; do
             rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
@@ -668,7 +690,8 @@ jobs:
                   --bundle "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest" \
                   --complete-bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
                   --repository-root "$restore_repository" \
-                  --expected "$restore_expected"; then
+                  --expected "$restore_expected" \
+                  "${pair_reader_args[@]}"; then
                 exit 0
               else
                 status=$?
@@ -773,6 +796,7 @@ jobs:
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
           set -euo pipefail
           restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"
@@ -782,6 +806,16 @@ jobs:
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs"
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
+          elif test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            restore_repository="$RUNNER_TEMP/ravradar-exact-weather-reader"
+            restore_script="$restore_repository/scripts/private-production-runtime-bundle.mjs"
+            node scripts/private-runtime-second-restore-expectation.mjs \
+              --expected "$restore_expected" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
+              --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+              --historical-weather-pair \
+              --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+            restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
           elif test -f "$RUNNER_TEMP/private-runtime-restored-source.json"; then
             node scripts/private-runtime-second-restore-expectation.mjs \
               --expected "$restore_expected" \
@@ -820,6 +854,26 @@ jobs:
             --report "$RUNNER_TEMP/bounded-conditions-predecessor-migration.json"
           echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
 
+      - name: Rebind exact 11Z private state without changing weather measurements
+        id: exact-weather-pair-migration
+        if: steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          set -euo pipefail
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/exact-weather-pair-successor"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json" \
+            --predecessor-root "$RUNNER_TEMP/ravradar-exact-weather-donor-source" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head cc45e97178a64406bdf3ab5401d8a3ae0f618891 \
+            --report "$RUNNER_TEMP/exact-weather-pair-migration.json"
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
+
       - name: Install only the allowlisted restored private runtime files
         id: private-runtime-install
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
@@ -827,12 +881,15 @@ jobs:
         env:
           PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
+          EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           if test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
             test -n "$MIGRATED_RUNTIME_ROOT"
             restored_root="$MIGRATED_RUNTIME_ROOT"
+          elif test -n "$EXACT_WEATHER_MIGRATED_ROOT"; then
+            restored_root="$EXACT_WEATHER_MIGRATED_ROOT"
           fi
           node scripts/private-production-runtime-workflow.mjs install \
             --restored "$restored_root" \
@@ -850,11 +907,12 @@ jobs:
             --source-description "$RUNNER_TEMP/private-runtime-current-source.json" \
             --bundle-manifest "$latest_bundle/manifest.json" \
             --paired-latest-anchor \
+            --historical-weather-pair \
             --output "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json"
-          node scripts/private-production-runtime-bundle.mjs restore \
+          node "$RUNNER_TEMP/ravradar-exact-weather-reader/scripts/private-production-runtime-bundle.mjs" restore \
             --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
             --bundle "$latest_bundle" \
-            --repository-root "$GITHUB_WORKSPACE" \
+            --repository-root "$RUNNER_TEMP/ravradar-exact-weather-reader" \
             --expected "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json" \
             --output "$latest_restored"
           test -s "$latest_restored/data/live/conditions.json"
@@ -887,7 +945,7 @@ jobs:
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && steps.exact-weather-recovery.outputs.required != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -901,6 +959,7 @@ jobs:
         shell: bash
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
           set -euo pipefail
           protected_bundle_sha256="$(node --input-type=module -e '
@@ -916,7 +975,7 @@ jobs:
             --report "$RUNNER_TEMP/weather-progress-base-report.json"
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
-          if test "$captured" = "true"; then
+          if test "$captured" = "true" && test "$EXACT_WEATHER_RECOVERY_REQUIRED" != "true"; then
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
               --report "$RUNNER_TEMP/weather-progress-restore-report.json"

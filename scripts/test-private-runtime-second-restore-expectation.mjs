@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { COMPLETE_WEATHER_PREDECESSOR, LATEST_WEATHER_PREDECESSOR, MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
+import { COMPLETE_WEATHER_PREDECESSOR, EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256, LATEST_WEATHER_PREDECESSOR, MARINE_COMPONENT_PREDECESSOR, WEATHER_ROTATION_PREDECESSOR } from './protected-private-production-runtime.mjs';
 import { privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { secondRestoreExpectation } from './private-runtime-second-restore-expectation.mjs';
 
@@ -64,7 +64,8 @@ const marineManifest = {
 };
 const marineExpected = {
   ...expected,
-  contractHashes: await privateRuntimeContractHashes(),
+  contractHashes: { ...await privateRuntimeContractHashes(),
+    continuationStateContractSha256: marineOldHashes.continuationStateContractSha256 },
   targetReferenceAt: '2026-09-24T10:00:00.000Z',
 };
 assert.notEqual(marineExpected.contractHashes.fullRuntimeContractSha256,
@@ -164,6 +165,34 @@ for (const changed of [
     expected: changed.expected || expected,
     source: changed.source || source,
     manifest: changed.manifest || manifest,
+  }));
+}
+const currentExpected = { ...pairedExpected,
+  contractHashes: await privateRuntimeContractHashes() };
+const historicalBinding = { ...binding,
+  modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 };
+for (const [historicalSource, historicalManifest, pairedLatestAnchor] of [
+  [completeSource, completeManifest, false],
+  [latestSource, latestManifest, true],
+]) {
+  const oldSource = { ...historicalSource, modelBinding: historicalBinding };
+  const oldManifest = { ...historicalManifest, modelBinding: historicalBinding };
+  const selectedHistorical = secondRestoreExpectation({
+    expected: currentExpected, source: oldSource, manifest: oldManifest,
+    historicalWeatherPair: true, pairedLatestAnchor,
+  });
+  assert.deepEqual(selectedHistorical.modelBinding, historicalBinding);
+  assert.deepEqual(selectedHistorical.contractHashes, oldSource.contractHashes);
+  assert.throws(() => secondRestoreExpectation({
+    expected: currentExpected,
+    source: { ...oldSource, sourceHead: 'c'.repeat(40) },
+    manifest: oldManifest,
+    historicalWeatherPair: true, pairedLatestAnchor,
+  }));
+  assert.throws(() => secondRestoreExpectation({
+    expected: currentExpected, source: oldSource,
+    manifest: { ...oldManifest, modelBinding: binding },
+    historicalWeatherPair: true, pairedLatestAnchor,
   }));
 }
 console.log('Private runtime second-restore expectation: exact predecessor only.');

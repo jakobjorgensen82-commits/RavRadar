@@ -8,7 +8,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { createGunzip, gzip, gunzip } from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   PRIVATE_RUNTIME_REPOSITORY_ROOT,
@@ -109,6 +109,28 @@ export const LATEST_WEATHER_PREDECESSOR = Object.freeze({
   continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
+
+// These two sealed generations use the previous model closure.  Their only
+// permitted model-binding difference from the current integrated model is
+// the implementation bundle digest; the predecessor source is checked before
+// its reader is used to verify the original bytes.
+export const EXACT_WEATHER_PAIR_READER_HEAD =
+  'b1b88e0f61b751cc91bdb09120dc895abc99cb65';
+export const EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 =
+  '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1';
+
+export function isExactHistoricalWeatherPairGeneration(descriptor, expected, approved) {
+  const oldBinding = { ...expected?.modelBinding,
+    modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 };
+  const hashes = descriptor?.contractHashes;
+  return descriptor?.sourceHead === approved.sourceHead
+    && descriptor?.datasetId === approved.datasetId
+    && descriptor?.productionReferenceAt === approved.productionReferenceAt
+    && hashes?.fullRuntimeContractSha256 === approved.fullRuntimeContractSha256
+    && hashes?.continuationStateContractSha256 === approved.continuationStateContractSha256
+    && hashes?.publicProjectionContractSha256 === approved.publicProjectionContractSha256
+    && same(descriptor?.modelBinding, oldBinding);
+}
 
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
@@ -1737,6 +1759,8 @@ export async function restoreExactProtectedPrivateWeatherPair({
   storage,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
   renameImpl = fs.rename,
+  historicalVerifyBundle = null,
+  historicalRepositoryRoot = null,
 } = {}) {
   assertStorage(storage);
   const row = await readPointerRow(request, {
@@ -1750,9 +1774,16 @@ export async function restoreExactProtectedPrivateWeatherPair({
     { descriptor: row.payload.previous, approved: COMPLETE_WEATHER_PREDECESSOR,
       bundlePath: completeBundlePath, label: 'complete' },
   ];
-  if (generations.some(({ descriptor, approved }) =>
-    !isExactDmiPredecessor(descriptor, expected, approved))) {
+  const historical = generations.every(({ descriptor, approved }) =>
+    isExactHistoricalWeatherPairGeneration(descriptor, expected, approved));
+  const unchanged = generations.every(({ descriptor, approved }) =>
+    isExactDmiPredecessor(descriptor, expected, approved));
+  if (!historical && !unchanged) {
     throw new Error('The exact protected 11Z/15Z weather pair is unavailable');
+  }
+  if (historical && (typeof historicalVerifyBundle !== 'function'
+    || typeof historicalRepositoryRoot !== 'string')) {
+    throw new Error('Exact historical weather pair requires its predecessor reader');
   }
   const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
   const finalPaths = generations.map(({ bundlePath, label }) => {
@@ -1785,11 +1816,14 @@ export async function restoreExactProtectedPrivateWeatherPair({
         repositoryRoot: context.repository,
         policy,
       });
-      const verified = await verifyPrivateProductionRuntimeBundle({
+      const verified = await (historical ? historicalVerifyBundle
+        : verifyPrivateProductionRuntimeBundle)({
         privateRoot: context.root,
         bundlePath: candidate,
-        repositoryRoot: context.repository,
-        expected: { ...expected, contractHashes: generation.descriptor.contractHashes },
+        repositoryRoot: historical ? historicalRepositoryRoot : context.repository,
+        expected: { ...expected,
+          modelBinding: historical ? generation.descriptor.modelBinding : expected.modelBinding,
+          contractHashes: generation.descriptor.contractHashes },
         now,
       });
       assertDescriptorMatchesBundle(generation.descriptor, verified);
@@ -2070,6 +2104,7 @@ function parseArguments(argv) {
     else if (argument === '--bundle') result.bundlePath = value;
     else if (argument === '--complete-bundle') result.completeBundlePath = value;
     else if (argument === '--repository-root') result.repositoryRoot = value;
+    else if (argument === '--historical-reader-root') result.historicalReaderRoot = value;
     else if (argument === '--expected') result.expectedPath = value;
     else if (argument === '--source-head') result.sourceHead = value;
     else if (argument === '--now') result.now = value;
@@ -2099,6 +2134,9 @@ function parseArguments(argv) {
   }
   if (result.completeBundlePath && result.mode !== 'restore-weather-pair') {
     throw new Error('--complete-bundle is only valid for paired weather restore');
+  }
+  if (result.historicalReaderRoot && result.mode !== 'restore-weather-pair') {
+    throw new Error('--historical-reader-root is only valid for paired weather restore');
   }
   if (['describe-current', 'describe-target'].includes(result.mode) && !result.outputPath) {
     throw new Error('Protected private runtime source description requires --output');
@@ -2151,6 +2189,26 @@ async function main() {
     }
   } else {
     const expected = await readJson(options.expectedPath, 'Private runtime expectation');
+    let historicalVerifyBundle = null;
+    if (options.historicalReaderRoot) {
+      const oldRoot = await fs.realpath(options.historicalReaderRoot);
+      const oldContract = await import(pathToFileURL(path.join(
+        oldRoot, 'js/core/ravscore-model-contract.js')).href);
+      const oldBinding = oldContract.ravScoreModelBinding();
+      if (!same(oldBinding, {
+        ...expected.modelBinding,
+        modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256,
+      })) {
+        throw new Error('Exact weather predecessor reader has another model binding');
+      }
+      const oldReader = await import(pathToFileURL(path.join(
+        oldRoot, 'scripts/private-production-runtime-bundle.mjs')).href);
+      historicalVerifyBundle = oldReader.verifyPrivateProductionRuntimeBundle;
+      if (typeof historicalVerifyBundle !== 'function') {
+        throw new Error('Exact weather predecessor reader cannot verify bundles');
+      }
+      options.historicalReaderRoot = oldRoot;
+    }
     const common = {
       privateRoot: options.privateRoot,
       bundlePath: options.bundlePath,
@@ -2183,6 +2241,8 @@ async function main() {
           ...common,
           latestBundlePath: common.bundlePath,
           completeBundlePath: options.completeBundlePath,
+          historicalVerifyBundle,
+          historicalRepositoryRoot: options.historicalReaderRoot,
         })
         : await restoreProtectedPrivateProductionRuntime(common);
   }

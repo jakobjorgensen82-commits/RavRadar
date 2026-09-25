@@ -2,6 +2,34 @@
 
 ## Tillæg 2026-09-25 – vælg 11Z, genhent resten, behold 15Z som tabsanker
 
+Implementeringstillæg: Den første exact-head-kontrol af PR #449
+afslørede, at de ændrede vejrvalg også er del af den kryptografisk
+bundne modelkode. Identiteterne for den aktive model, den inaktive
+Candidate G-kompatibilitet og checkpointets continuation-kode er
+regenereret. Migration `20260925150000` fører kun den aktuelle
+binding videre og bevarer de senere checkpointrettelser. Tidligere
+anvendte migrationer og den fysiske scoreformel ændres ikke.
+
+Den nye identitet gør også 11Z/15Z's gamle modelmetadata uforenelige
+med den aktuelle læser. Derfor hentes begge kun med deres eksakte
+arkivhashes og den verificerede 4.0.487-læser. 11Z's private state
+kontrolleres dernæst med den oprindelige 4.0.485-kilde og genbindes
+til den aktuelle model. Migreringen skal bevise uændrede vejrmålinger
+og Candidate G-state; den må kun ændre identificerede bindingsfelter
+og genopbygge den tilsvarende offentlige timepakke. Det gamle
+checkpoint gendannes ikke i dette ene forløb: 11Z's verificerede
+private conditions indeholder fortsættelsesstaten, og den nye kørsel
+bygger et nyt checkpoint. 15Z forbliver på sin oprindelige identitet
+og bruges alene til tabsammenligning.
+
+Før normalrun installeres databasebindingen via det afgrænsede
+manuelle workflow `apply-weather-model-binding-only.yml`. Det
+anvender kun den ene dry-run-verificerede migration og læser den
+tilbage; det må ikke gemme checkpoint, ændre privat cachepointer,
+kalde vejrleverandører eller deploye Pages. Almindelig code-only
+deploy afvises, mens den beskyttede 11Z/15Z-pair stadig er aktiv:
+den ville ellers kunne fortrænge 11Z fra pointerens to pladser.
+
 Ejeren bad om at sammenligne en engangssammenfletning, fortsættelse fra
 én cache og en helt frisk cache, før der kodes videre. På 92 stadig
 fremtidige fælles timer pr. 25/9 kl. 13 UTC har 11Z 72.520 gyldige

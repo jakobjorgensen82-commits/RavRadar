@@ -1,5 +1,23 @@
 # 2026-09-25 – lokal 4.0.488, parret 11Z/15Z-genopretning (ikke leveret)
 
+- [x] Første exact-head CI på PR #449 fandt en forældet modelbundle-
+  binding. Aktiv og inaktiv bundle samt continuation-identitet er nu
+  regenereret. Append-only-migration `20260925150000` bevarer de
+  senere checkpointrettelser; historiske migrationer er urørte.
+  Målrettede score-, binding-, migrations- og rollbackkontroller består.
+- [x] Den nødvendige historiske modelovergang er nu indbygget lokalt:
+  eksakt 4.0.487-læser verificerer begge oprindelige pakker, 11Z-state
+  genbindes med den eksakte 4.0.485-kilde uden ændring af målinger,
+  15Z beholdes som gammelt tabsanker, og det inkompatible gamle
+  checkpoint springes over netop i denne overgang. Et afgrænset
+  database-only workflow anvender bindingen før normalt vejr;
+  almindelig code-only deploy afvises, mens 11Z/15Z-pointeren lever.
+- [ ] Ny exact-head CI på rettet PR-head, merge og normalrun-bevis
+  mangler. Database-only migration skal læses tilbage før normalrun.
+  Cron og nye vejrkørsler forbliver pauset imens.
+- [x] Tre gamle queued GitHub-runs har hver en tidlig eksakt main-SHA-
+  kontrol før beskyttet læsning/skrivning. Deres gamle commits kan ikke
+  skrive produktion, selv om GitHub endnu viser dem som queued.
 - [x] Målt to caches på 92 stadig fremtidige fælles timer: 11Z alene
   72.520 gyldige feltpar, 15Z alene 3.238. Besluttet at bruge
   verificeret 11Z og normal genhentning; frisk/tom cache forkastet.
@@ -13,7 +31,7 @@
 - [ ] Livebevis for 11Z-restaurering, genhentning af 15Z's 3.238
   par, krypteret fremdrift ved eventuelt første stop, fem vejrtyper,
   DMI/CP/OM-andel, scorehistorik, ny beskyttet pakke og Pages mangler.
-  De tre gamle queued GitHub-runs må ikke få lov at starte på gammel main.
+  De tre gamle queued GitHub-runs må ikke få udgivelsesret på gammel main.
 
 # HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
 

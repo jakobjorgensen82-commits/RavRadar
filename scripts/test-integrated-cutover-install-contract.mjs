@@ -26,7 +26,7 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql',
+  'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(
@@ -34,7 +34,7 @@ const stableTripMigration = await fs.readFile(
   'utf8',
 );
 const currentTripMigration = await fs.readFile(
-  'supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql',
+  'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
   'utf8',
 );
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [

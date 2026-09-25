@@ -4,7 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalPrivateRuntimeJson } from './private-production-runtime-bundle.mjs';
 import {
+  COMPLETE_WEATHER_PREDECESSOR,
+  LATEST_WEATHER_PREDECESSOR,
   isApprovedExactWeatherPredecessor,
+  isExactHistoricalWeatherPairGeneration,
   isLatestUnpairedWeatherGeneration,
 } from './protected-private-production-runtime.mjs';
 
@@ -14,7 +17,7 @@ const same = (left, right) => canonicalPrivateRuntimeJson(left) === canonicalPri
 // The second, local bundle restore must use that same *exact* archive contract
 // during a narrowly approved source-only transition, not a wider hash bypass.
 export function secondRestoreExpectation({ expected, source, manifest,
-  pairedLatestAnchor = false }) {
+  pairedLatestAnchor = false, historicalWeatherPair = false }) {
   if (!expected?.contractHashes || !source || !manifest) {
     throw new Error('Second restore requires an expectation, protected source and bundle manifest');
   }
@@ -25,6 +28,15 @@ export function secondRestoreExpectation({ expected, source, manifest,
     || !same(source.modelBinding, manifest.modelBinding)
     || !same(source.contractHashes, manifest.contractHashes)) {
     throw new Error('Second restore source contradicts the authenticated bundle');
+  }
+  if (historicalWeatherPair) {
+    const approved = pairedLatestAnchor
+      ? LATEST_WEATHER_PREDECESSOR : COMPLETE_WEATHER_PREDECESSOR;
+    if (!isExactHistoricalWeatherPairGeneration(source, expected, approved)) {
+      throw new Error('Second restore source is not the exact historical weather pair member');
+    }
+    return { ...expected, modelBinding: source.modelBinding,
+      contractHashes: source.contractHashes };
   }
   if (pairedLatestAnchor) {
     if (!isLatestUnpairedWeatherGeneration(source)
@@ -52,12 +64,13 @@ function argument(args, name) {
 
 async function main(args) {
   const pairedLatestAnchor = args.includes('--paired-latest-anchor');
+  const historicalWeatherPair = args.includes('--historical-weather-pair');
   const expected = JSON.parse(await fs.readFile(argument(args, '--expected'), 'utf8'));
   const source = JSON.parse(await fs.readFile(argument(args, '--source-description'), 'utf8'));
   const manifest = JSON.parse(await fs.readFile(argument(args, '--bundle-manifest'), 'utf8'));
   const output = path.resolve(argument(args, '--output'));
   const selected = secondRestoreExpectation({ expected, source, manifest,
-    pairedLatestAnchor });
+    pairedLatestAnchor, historicalWeatherPair });
   await fs.writeFile(output, `${canonicalPrivateRuntimeJson(selected)}\n`, { flag: 'wx', mode: 0o600 });
   console.log(JSON.stringify({ status: 'second-restore-expectation-ready', exactPredecessor: selected !== expected }));
 }

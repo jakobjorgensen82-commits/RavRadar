@@ -14,9 +14,28 @@ READY-donor. Copernicus' originalbevis, DMI's komponentvise
 modelvalg, kildeprioritet og admin-valgt DMI-vandstandsrouting er
 rettet lokalt og afventer faktisk normalrun-bevis.
 
+PR #449's første exact-head-kørsel fandt, at de ændrede vejrvalgsfiler
+også er del af de kryptografiske modelpakker. Begge pakkeidentiteter
+og continuation-identiteten er nu regenereret, og append-only-migration
+`20260925150000` fører dem ind i den aktuelle databinding uden at
+ændre de anvendte historiske migrationer. Scoreformlen er fortsat
+uændret. Målrettede binding-, migrations- og scorekontroller består;
+en ny exact-head-kontrol og livekørsel afventer.
+
+Den nye modelidentitet kræver også en eksplicit overgang fra de to
+beskyttede vejrpakker. Den præcise gamle læser verificerer begge,
+4.0.485-kilden kontrollerer og genbinder 11Z's scorehistorik uden at
+ændre vejrmålinger, og 15Z bruges stadig kun som tabsanker. Det
+gamle checkpoint indlæses ikke i denne ene overgang. En ny manuel
+database-only installation af den seneste binding bevarer begge
+private pakker urørte, før den almindelige vejrhentning starter.
+Code-only deploy afvises, mens denne særlige 11Z/15Z-genopretning
+afventer, så den komplette forgænger ikke bliver skubbet ud.
+
 Intet er endnu merged eller online som 4.0.488. Cron forbliver
-pauset; de tre gamle queued vejr-runs på andre main-commits må
-neutraliseres før genåbning.
+pauset. De tre gamle queued vejr-runs står fortsat i GitHub, men
+deres egen tidlige main-SHA-kontrol afviser dem før beskyttet læsning
+eller skrivning, hvis de vækkes på deres gamle commits.
 
 Et grønt normalrun tabte gyldig data i alle fem vejrtyper, da
 den tidligere fulde private cache blev afvist på grund af en for
