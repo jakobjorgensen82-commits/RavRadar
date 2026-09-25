@@ -19,6 +19,10 @@ Open-Meteo får korte budgetter, men den virkelige score-/public-
 bygning og alle tabsgates består. Kør ikke en lang ny hentning,
 før dette har vist gemning, deploy og offentlig visning. Cron er
 fortsat pauset. Måltests er lokale; exact-head CI og livebevis mangler.
+Første exact-head `36181263686` standsede på et forældet centralt
+workflowinterface, som ikke registrerede de nye valgfri inputs.
+Inventar og begge kaldere er nu synkroniseret; automatiske kald
+vælger eksplicit normal budget. Ny exact-head CI mangler.
 
 Copernicus' statiske subset kan nu bevare en faktisk fast
 leverandør-/tidsårsag i den sikre status i stedet for at skjule alle

@@ -107,7 +107,11 @@ for (const [role, sourceText, contract] of contracts) {
   assertExactKeys(directKeys(indentedBody(call, '    outputs:'), 6), contract.outputs, role + ' call outputs');
   for (const input of contract.inputs) {
     const block = indentedBody(call, '      ' + input + ':');
-    assert.match(block, /^        required: true$/m, role + ' required input: ' + input);
+    assert.match(block,
+      contract.optionalInputs?.includes(input)
+        ? /^        required: false$/m
+        : /^        required: true$/m,
+      role + ' required input: ' + input);
     assert.match(block, /^        type: (?:boolean|string)$/m, role + ' typed input: ' + input);
   }
   for (const secret of contract.secrets) {
@@ -204,6 +208,10 @@ assert.equal(
   'build caller directly needs dispatch and readiness gates',
 );
 assertExactKeys(directKeys(indentedBody(buildCaller, '    with:'), 6), buildContract.inputs, 'build caller inputs');
+assert.match(buildCaller, /^      quick_confirmation: false$/m,
+  'Automated production must not inherit manual short supplier budgets');
+assert.match(buildCaller, /^      quick_progress_source: ''$/m,
+  'Automated production has no one-off progress source');
 assertExactKeys(directKeys(indentedBody(buildCaller, '    secrets:'), 6), buildContract.secrets, 'build caller secrets');
 for (const secret of buildContract.secrets) {
   assert.equal(

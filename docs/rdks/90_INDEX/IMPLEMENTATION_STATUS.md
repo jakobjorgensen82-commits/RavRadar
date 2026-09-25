@@ -13,9 +13,14 @@
 - [x] Korte budgetter gælder kun leverandørerne; fuld build,
   tabsbarriere, privat gemning og deploy er uændrede. Ekstra
   Copernicus-kvalitetstur springes over under bekræftelsen.
+- [x] Første exact-head `36181263686` fandt én glemt binding i
+  det centrale workflowinterface. Inventaret og begge kaldere
+  er synkroniseret; cron-kalderen sætter kort mode eksplicit fra.
+  Den målrettede interfacekontrakt er grøn lokalt.
 - [ ] Rodårsagen til de 34 vandtemperaturtab er endnu ukendt.
   Den uofficielle byggede kandidat kan ikke genbruges som baseline.
-- [ ] RDKS/version, exact-head CI, merge og **én kort** normalrun på
+- [ ] Ny exact-head CI på PR #452's opdaterede head, merge og
+  **én kort** normalrun på
   aktuel main mangler. Verificér korrekt fremdriftsrestore før DMI,
   derefter fem felter, gemt ny cache, Pages og offentlig visning.
   Ingen lang kørsel eller cron-genåbning før end-to-end-bevis.

@@ -19,6 +19,11 @@ Copernicus' sikre statiske retryårsager og kort offentlig
 tabsdiagnose er forbedret. De 34 temperaturtab er stadig ikke
 forklaret eller løst. Målrettede JS-tests består; exact-head CI,
 merge, faktisk genbrug, gemning og offentlig visning mangler.
+Første exact-head CI på PR #452 fandt én glemt binding i det
+centrale workflowinterface: de to nye valgfri kort-mode-inputs
+var ikke registreret. Inventar og begge kaldere er nu synkroniseret;
+automatisk normaldrift sender eksplicit `false`/tom kilde.
+Målrettet interfacetest er grøn; ny exact-head CI kræves.
 Ingen ny kørsel er startet. Cron er pauset; start ikke en lang
 vejrhentning før kort end-to-end-bevis. De store resthuller og
 leverandørprioriteten er fortsat åbne, se DEC-0254 og roadmap.

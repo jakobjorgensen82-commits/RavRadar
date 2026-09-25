@@ -19,6 +19,8 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'production_target_hour',
       'force',
       'extended_provider_bootstrap',
+      'quick_confirmation',
+      'quick_progress_source',
       'produce_weather_handoff',
       'produce_weather_handoff_confirmation',
       'ravscore_candidate_g_rollback_mode',
@@ -29,6 +31,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'ravscore_integrated_return',
       'ravscore_integrated_return_confirmation',
     ]),
+    optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source']),
     secrets: freezeList([
       'CLOUDFLARE_TRIP_GATEWAY_URL',
       'COPERNICUSMARINE_SERVICE_PASSWORD',

@@ -12,6 +12,10 @@ består. Copernicus' faste genforsøgsårsag rapporteres tydeligere;
 en kort tabsrapport kan vise de berørte offentlige kystdel-id'er.
 Ingen scoreformel, geometri eller kildeprioritet ændres. Lokal
 måltest er grøn; GitHub- og produktionsbevis afventer.
+Første PR-kontrol fandt et forældet centralt workflowinterface.
+De to nye valgfri inputs er nu registreret og videreført gennem
+begge kaldere; automatisk drift har fortsat normale budgetter.
+Ny exact-head-kontrol kræves.
 
 ## 4.0.488 – samlet cache- og vejrrecovery (lokal, 2026-09-25)
 
