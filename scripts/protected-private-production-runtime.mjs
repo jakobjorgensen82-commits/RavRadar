@@ -8,7 +8,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { createGunzip, gzip, gunzip } from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   PRIVATE_RUNTIME_REPOSITORY_ROOT,
@@ -83,6 +83,55 @@ export const MARINE_COMPONENT_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// 4.0.487 changed the weather builder without changing the persisted model,
+// continuation or public projection. Its first run could not restore this
+// complete 4.0.485 generation and published a thinner stateless replacement.
+// Only the exact, still-protected complete generation may bridge that mistake.
+export const COMPLETE_WEATHER_PREDECESSOR = Object.freeze({
+  sourceHead: 'cc45e97178a64406bdf3ab5401d8a3ae0f618891',
+  datasetId: 'rr-20260924122409-210',
+  productionReferenceAt: '2026-09-24T11:00:00.000Z',
+  fullRuntimeContractSha256: '70fbfd0722ae1cee58340b0112b51d2f661c1c4493a4e778ad8729edab525e9c',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
+// This newer generation is not interchangeable with the 11Z predecessor:
+// both contain independently useful weather values. The bounded recovery
+// verifies both original private payloads, continues from the stronger 11Z
+// baseline and checks the new artifact against both generations before
+// publishing. A public Pages pack is never a native-data donor.
+export const LATEST_WEATHER_PREDECESSOR = Object.freeze({
+  sourceHead: 'b1b88e0f61b751cc91bdb09120dc895abc99cb65',
+  datasetId: 'rr-20260924163002-210',
+  productionReferenceAt: '2026-09-24T15:00:00.000Z',
+  fullRuntimeContractSha256: '110c1451730a6dcae1d43451197f0886292a9ddb60b1a0ed59aa4fb24ddbaba0',
+  continuationStateContractSha256: 'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
+// These two sealed generations use the previous model closure.  Their only
+// permitted model-binding difference from the current integrated model is
+// the implementation bundle digest; the predecessor source is checked before
+// its reader is used to verify the original bytes.
+export const EXACT_WEATHER_PAIR_READER_HEAD =
+  'b1b88e0f61b751cc91bdb09120dc895abc99cb65';
+export const EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 =
+  '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1';
+
+export function isExactHistoricalWeatherPairGeneration(descriptor, expected, approved) {
+  const oldBinding = { ...expected?.modelBinding,
+    modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256 };
+  const hashes = descriptor?.contractHashes;
+  return descriptor?.sourceHead === approved.sourceHead
+    && descriptor?.datasetId === approved.datasetId
+    && descriptor?.productionReferenceAt === approved.productionReferenceAt
+    && hashes?.fullRuntimeContractSha256 === approved.fullRuntimeContractSha256
+    && hashes?.continuationStateContractSha256 === approved.continuationStateContractSha256
+    && hashes?.publicProjectionContractSha256 === approved.publicProjectionContractSha256
+    && same(descriptor?.modelBinding, oldBinding);
+}
+
 function isExactDmiPredecessor(descriptor, expected, approved) {
   const contracts = descriptor?.contractHashes;
   const current = expected?.contractHashes;
@@ -117,7 +166,16 @@ export function isApprovedExactWeatherPredecessor(descriptor, expected) {
   return isExactDmiSchedulerPredecessor(descriptor, expected)
     || isExactDmiMarineSeamPredecessor(descriptor, expected)
     || isExactWeatherRotationPredecessor(descriptor, expected)
-    || isExactMarineComponentPredecessor(descriptor, expected);
+    || isExactMarineComponentPredecessor(descriptor, expected)
+    || isExactDmiPredecessor(descriptor, expected, COMPLETE_WEATHER_PREDECESSOR);
+}
+
+export function isLatestUnpairedWeatherGeneration(descriptor) {
+  return descriptor?.sourceHead === LATEST_WEATHER_PREDECESSOR.sourceHead
+    && descriptor?.datasetId === LATEST_WEATHER_PREDECESSOR.datasetId
+    && descriptor?.productionReferenceAt === LATEST_WEATHER_PREDECESSOR.productionReferenceAt
+    && descriptor?.contractHashes?.fullRuntimeContractSha256
+      === LATEST_WEATHER_PREDECESSOR.fullRuntimeContractSha256;
 }
 
 export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
@@ -1500,6 +1558,8 @@ export async function describeCurrentProtectedPrivateProductionRuntime({
 export async function describeTargetProtectedPrivateProductionRuntime({
   request,
   targetReferenceAt,
+  datasetId = null,
+  bundleContentSha256 = null,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   const target = canonicalTime(
@@ -1513,9 +1573,12 @@ export async function describeTargetProtectedPrivateProductionRuntime({
   });
   const selected = [row.payload.current, row.payload.previous]
     .filter(Boolean)
-    .find(descriptor => descriptor.productionReferenceAt === target);
+    .find(descriptor => descriptor.productionReferenceAt === target
+      && (datasetId === null || descriptor.datasetId === datasetId)
+      && (bundleContentSha256 === null
+        || descriptor.bundleContentSha256 === bundleContentSha256));
   if (!selected) {
-    throw new Error('No protected private runtime generation matches the exact target reference');
+    throw new Error('No protected private runtime generation matches the exact target reference and dataset');
   }
   return protectedPrivateRuntimeSourceIdentity(selected, policy.targetSourceKind, policy);
 }
@@ -1546,6 +1609,9 @@ export async function restoreProtectedPrivateProductionRuntime({
       targetUnchanged: true,
       privatePayloadLogged: false,
     };
+  }
+  if (isLatestUnpairedWeatherGeneration(row.payload.current)) {
+    throw new Error('The exact 15Z weather generation requires paired 11Z/15Z restore; single-generation fallback is unsafe');
   }
   await storage.ensurePrivateBucket();
   const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
@@ -1674,6 +1740,123 @@ export async function restoreProtectedPrivateProductionRuntime({
     await Promise.all(temporaryDirectories.map(directory => {
       assertInside(context.root, directory, 'Private runtime cleanup target');
       return fs.rm(directory, { recursive: true, force: true }).catch(() => {});
+    }));
+  }
+}
+
+// The 11Z and 15Z weather generations contain different, independently
+// useful native inputs. Read one protected pointer snapshot and validate both
+// immutable archives before exposing either bundle to the migration stage.
+// Ordinary restores continue to use the single-generation path above.
+export async function restoreExactProtectedPrivateWeatherPair({
+  privateRoot,
+  latestBundlePath,
+  completeBundlePath,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  expected,
+  now = new Date().toISOString(),
+  request,
+  storage,
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  renameImpl = fs.rename,
+  historicalVerifyBundle = null,
+  historicalRepositoryRoot = null,
+} = {}) {
+  assertStorage(storage);
+  const row = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
+  });
+  const generations = [
+    { descriptor: row.payload.current, approved: LATEST_WEATHER_PREDECESSOR,
+      bundlePath: latestBundlePath, label: 'latest' },
+    { descriptor: row.payload.previous, approved: COMPLETE_WEATHER_PREDECESSOR,
+      bundlePath: completeBundlePath, label: 'complete' },
+  ];
+  const historical = generations.every(({ descriptor, approved }) =>
+    isExactHistoricalWeatherPairGeneration(descriptor, expected, approved));
+  const unchanged = generations.every(({ descriptor, approved }) =>
+    isExactDmiPredecessor(descriptor, expected, approved));
+  if (!historical && !unchanged) {
+    throw new Error('The exact protected 11Z/15Z weather pair is unavailable');
+  }
+  if (historical && (typeof historicalVerifyBundle !== 'function'
+    || typeof historicalRepositoryRoot !== 'string')) {
+    throw new Error('Exact historical weather pair requires its predecessor reader');
+  }
+  const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
+  const finalPaths = generations.map(({ bundlePath, label }) => {
+    const result = resolvePrivateCandidate(context, bundlePath,
+      `Private ${label} weather bundle destination`);
+    if (path.dirname(result) !== context.root) {
+      throw new Error('Paired weather bundles must be direct children of the private root');
+    }
+    return result;
+  });
+  if (finalPaths[0] === finalPaths[1]
+    || (await Promise.all(finalPaths.map(destination => fs.lstat(destination).catch(() => null))))
+      .some(Boolean)) {
+    throw new Error('Paired weather bundle destinations must be distinct and absent');
+  }
+  await storage.ensurePrivateBucket();
+  const staged = [];
+  const installed = [];
+  try {
+    for (const [index, generation] of generations.entries()) {
+      const candidate = path.join(context.root,
+        `.protected-weather-pair-${process.pid}-${index}-${crypto.randomBytes(5).toString('hex')}`);
+      staged.push(candidate);
+      const archive = await verifyStoredArchive(storage, generation.descriptor);
+      await extractArchive({
+        archive,
+        descriptor: generation.descriptor,
+        privateRoot: context.root,
+        bundlePath: candidate,
+        repositoryRoot: context.repository,
+        policy,
+      });
+      const verified = await (historical ? historicalVerifyBundle
+        : verifyPrivateProductionRuntimeBundle)({
+        privateRoot: context.root,
+        bundlePath: candidate,
+        repositoryRoot: historical ? historicalRepositoryRoot : context.repository,
+        expected: { ...expected,
+          modelBinding: historical ? generation.descriptor.modelBinding : expected.modelBinding,
+          contractHashes: generation.descriptor.contractHashes },
+        now,
+      });
+      assertDescriptorMatchesBundle(generation.descriptor, verified);
+      assertRestoreTime(generation.descriptor, expected, now, policy);
+    }
+    for (const [index, candidate] of staged.entries()) {
+      await renameImpl(candidate, finalPaths[index]);
+      installed.push(finalPaths[index]);
+    }
+    return {
+      restored: true,
+      reason: 'exact-protected-weather-pair-restored',
+      centralVersion: row.version,
+      latestProductionReferenceAt: row.payload.current.productionReferenceAt,
+      completeProductionReferenceAt: row.payload.previous.productionReferenceAt,
+      latestBundleContentSha256: row.payload.current.bundleContentSha256,
+      completeBundleContentSha256: row.payload.previous.bundleContentSha256,
+      privatePayloadLogged: false,
+    };
+  } catch (error) {
+    const rollback = await Promise.allSettled(installed.map(destination => fs.rm(destination, {
+      recursive: true, force: true,
+    })));
+    if (rollback.some(result => result.status === 'rejected')) {
+      const failure = new Error('Paired weather restore failed and rollback was incomplete');
+      failure.cause = error;
+      throw failure;
+    }
+    throw error;
+  } finally {
+    await Promise.all(staged.map(candidate => {
+      assertInside(context.root, candidate, 'Paired weather cleanup target');
+      return fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
     }));
   }
 }
@@ -1910,7 +2093,7 @@ function parseArguments(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
+    if (['--publish', '--restore', '--restore-weather-pair', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one protected private runtime mode');
       result.mode = argument.slice(2);
       continue;
@@ -1919,12 +2102,16 @@ function parseArguments(argv) {
     if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`);
     if (argument === '--private-root') result.privateRoot = value;
     else if (argument === '--bundle') result.bundlePath = value;
+    else if (argument === '--complete-bundle') result.completeBundlePath = value;
     else if (argument === '--repository-root') result.repositoryRoot = value;
+    else if (argument === '--historical-reader-root') result.historicalReaderRoot = value;
     else if (argument === '--expected') result.expectedPath = value;
     else if (argument === '--source-head') result.sourceHead = value;
     else if (argument === '--now') result.now = value;
     else if (argument === '--output') result.outputPath = value;
     else if (argument === '--target-reference') result.targetReferenceAt = value;
+    else if (argument === '--dataset-id') result.datasetId = value;
+    else if (argument === '--bundle-content-sha256') result.bundleContentSha256 = value;
     else if (argument === '--same-reference-migration-report') {
       result.sameReferenceMigrationReportPath = value;
     } else if (argument === '--same-reference-predecessor-manifest') {
@@ -1933,7 +2120,7 @@ function parseArguments(argv) {
     else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!result.mode) {
-    throw new Error('Use --publish, --restore, --audit-anon, --describe-current or --describe-target');
+    throw new Error('Use --publish, --restore, --restore-weather-pair, --audit-anon, --describe-current or --describe-target');
   }
   if (!['audit-anon', 'describe-current', 'describe-target'].includes(result.mode)
     && (!result.privateRoot || !result.bundlePath || !result.expectedPath)) {
@@ -1941,6 +2128,15 @@ function parseArguments(argv) {
   }
   if (result.mode === 'publish' && !result.sourceHead) {
     throw new Error('Protected private runtime publish requires --source-head');
+  }
+  if (result.mode === 'restore-weather-pair' && !result.completeBundlePath) {
+    throw new Error('Paired weather restore requires --complete-bundle');
+  }
+  if (result.completeBundlePath && result.mode !== 'restore-weather-pair') {
+    throw new Error('--complete-bundle is only valid for paired weather restore');
+  }
+  if (result.historicalReaderRoot && result.mode !== 'restore-weather-pair') {
+    throw new Error('--historical-reader-root is only valid for paired weather restore');
   }
   if (['describe-current', 'describe-target'].includes(result.mode) && !result.outputPath) {
     throw new Error('Protected private runtime source description requires --output');
@@ -1978,6 +2174,8 @@ async function main() {
       : await describeTargetProtectedPrivateProductionRuntime({
         request: clients.documentRequest,
         targetReferenceAt: options.targetReferenceAt,
+        datasetId: options.datasetId ?? null,
+        bundleContentSha256: options.bundleContentSha256 ?? null,
       });
     const output = path.resolve(options.outputPath);
     const temporary = `${output}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
@@ -1991,6 +2189,26 @@ async function main() {
     }
   } else {
     const expected = await readJson(options.expectedPath, 'Private runtime expectation');
+    let historicalVerifyBundle = null;
+    if (options.historicalReaderRoot) {
+      const oldRoot = await fs.realpath(options.historicalReaderRoot);
+      const oldContract = await import(pathToFileURL(path.join(
+        oldRoot, 'js/core/ravscore-model-contract.js')).href);
+      const oldBinding = oldContract.ravScoreModelBinding();
+      if (!same(oldBinding, {
+        ...expected.modelBinding,
+        modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256,
+      })) {
+        throw new Error('Exact weather predecessor reader has another model binding');
+      }
+      const oldReader = await import(pathToFileURL(path.join(
+        oldRoot, 'scripts/private-production-runtime-bundle.mjs')).href);
+      historicalVerifyBundle = oldReader.verifyPrivateProductionRuntimeBundle;
+      if (typeof historicalVerifyBundle !== 'function') {
+        throw new Error('Exact weather predecessor reader cannot verify bundles');
+      }
+      options.historicalReaderRoot = oldRoot;
+    }
     const common = {
       privateRoot: options.privateRoot,
       bundlePath: options.bundlePath,
@@ -2018,7 +2236,15 @@ async function main() {
         sourceHead: options.sourceHead,
         sameReferenceSuccessorEvidence,
       })
-      : await restoreProtectedPrivateProductionRuntime(common);
+      : options.mode === 'restore-weather-pair'
+        ? await restoreExactProtectedPrivateWeatherPair({
+          ...common,
+          latestBundlePath: common.bundlePath,
+          completeBundlePath: options.completeBundlePath,
+          historicalVerifyBundle,
+          historicalRepositoryRoot: options.historicalReaderRoot,
+        })
+        : await restoreProtectedPrivateProductionRuntime(common);
   }
   console.log(JSON.stringify({
     status: options.mode === 'describe-current'

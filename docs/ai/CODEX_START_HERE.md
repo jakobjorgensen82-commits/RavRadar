@@ -1,4 +1,48 @@
-# AKTUELT CHECKPOINT – 2026-09-24 – lokal 4.0.486
+# AKTUELT CHECKPOINT – 2026-09-25 – lokal 4.0.488 (endnu ikke leveret)
+
+Seneste ejerbeslutning: verificér både den fuldere beskyttede 11Z-
+pakke og den tyndere aktuelle 15Z-pakke fra samme pointer; installer
+kun 11Z og lad almindelig vejrhentning genhente 15Z's unikke værdier.
+Brug 15Z som særskilt tabsanker, aldrig som privat score-/vejrdonor.
+På 92 endnu fremtidige fælles timer har 11Z 72.520 gyldige feltpar,
+som 15Z tabte, og 15Z har 3.238, som 11Z mangler. Ingen ny privat
+pakke eller Pages før nul gyldig→tom mod begge. Frisk/tom cache og
+fuld automatisk to-generationsfletning er ikke valgt. Den eksisterende
+72-timersbro forlænges ikke. Lokal workflow og DMI-læseværn er
+rettet. Første exact-head CI på PR #449 fandt en manglende
+model-/databasebinding; begge genererede modelpakker,
+continuation-identiteten og append-only-migration `20260925150000`
+er nu rettet og måltestet. Gammel 11Z-state skal verificeres med
+4.0.485-kilden og genbindes uden ændring af vejrdata; den eksakte
+4.0.487-læser kontrollerer begge oprindelige pakker. Det gamle
+checkpoint må ikke indlæses i denne ene overgang. Efter merge:
+brug kun `apply-weather-model-binding-only.yml` til databindingen
+før normalrun, ikke code-only deploy, som ellers kan fortrænge 11Z.
+Ny exact-head CI, merge, database-readback og livebevis
+mangler. Cron er deaktiveret. Tre gamle queued runs på andre main-
+commits er endnu ikke annulleret, men deres egen tidlige SHA-gate
+forhindrer beskyttet læsning/skrivning på gammel kode. Se DEC-0254's
+tillæg og aktivt roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – første lokale 4.0.488-afgrænsning
+
+Arbejd i den indlejrede Git-rod `node_modules/RavRadar-4.0.396` på
+`codex/4.0.488-cache-lineage-guard`. Main er 4.0.487. Normalrun
+`36022310055` deployede en tyndere 15:00-prognose, fordi fuld privat
+cache ikke blev gendannet, men workflowet alligevel fortsatte. På 114
+identiske timer og 673 kystdele mistedes tidligere gyldige par i alle
+fem vejrtyper. Lokal 4.0.488 stopper normal drift uden fuld cache,
+genfinder kun den eksakte komplette 4.0.485-forgænger, binder begge
+restore-trin til samme pakke, bevarer fremtidig cachekompatibilitet
+med en eksplicit lagrings-ABI og blokerer gyldig-til-tom-tab i den
+offentlige prognose. DMI's budget og vandstandsprioritet samt
+Copernicus' afgrænsede rotation er rettet lokalt. Måltests er grønne,
+men exact-head CI, merge, flere almindelige vejrkørsler og offentlig
+verifikation mangler. Cron og Codex-overvågning er pauset. Ingen
+oneoff eller overlappende runs. Se DEC-0254, CURRENT_TRUTH og aktivt
+roadmap; historiske checkpoints nedenfor er ikke aktuel releaseplan.
+
+# HISTORISK CHECKPOINT – 2026-09-24 – lokal 4.0.486
 
 4.0.485/PR #447 er merged som `cc45e971` efter grøn exact-head
 `35991803426`; providerfri kodelevering `35992546525` er grøn.

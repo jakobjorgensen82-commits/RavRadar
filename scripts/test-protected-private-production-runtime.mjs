@@ -23,6 +23,9 @@ import {
   DMI_SCHEDULER_ONLY_PREDECESSOR,
   WEATHER_ROTATION_PREDECESSOR,
   MARINE_COMPONENT_PREDECESSOR,
+  COMPLETE_WEATHER_PREDECESSOR,
+  LATEST_WEATHER_PREDECESSOR,
+  EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
   buildProtectedPrivateRuntimeArchive,
@@ -30,12 +33,14 @@ import {
   describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
+  restoreExactProtectedPrivateWeatherPair,
   restoreProtectedPrivateProductionRuntime,
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
   isExactWeatherRotationPredecessor,
   isExactMarineComponentPredecessor,
   isApprovedExactWeatherPredecessor,
+  isExactHistoricalWeatherPairGeneration,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
@@ -183,21 +188,24 @@ try {
   }
 
   const baselineContracts = await privateRuntimeContractHashes({ repositoryRoot: repository });
-  assert.equal(
-    baselineContracts.continuationStateContractSha256,
-    DMI_SCHEDULER_ONLY_PREDECESSOR.continuationStateContractSha256,
-    'the one-time predecessor may not cross a continuation change',
-  );
+  const legacyCompatibleContracts = {
+    ...baselineContracts,
+    continuationStateContractSha256:
+      DMI_SCHEDULER_ONLY_PREDECESSOR.continuationStateContractSha256,
+  };
+  assert.notEqual(baselineContracts.continuationStateContractSha256,
+    legacyCompatibleContracts.continuationStateContractSha256,
+    'the current release must not silently reuse the old continuation contract');
   assert.equal(
     baselineContracts.publicProjectionContractSha256,
     DMI_SCHEDULER_ONLY_PREDECESSOR.publicProjectionContractSha256,
     'the one-time predecessor may not cross a public projection change',
   );
-  assert.equal(baselineContracts.continuationStateContractSha256,
+  assert.equal(legacyCompatibleContracts.continuationStateContractSha256,
     DMI_MARINE_SEAM_PREDECESSOR.continuationStateContractSha256);
   assert.equal(baselineContracts.publicProjectionContractSha256,
     DMI_MARINE_SEAM_PREDECESSOR.publicProjectionContractSha256);
-  assert.equal(baselineContracts.continuationStateContractSha256,
+  assert.equal(legacyCompatibleContracts.continuationStateContractSha256,
     WEATHER_ROTATION_PREDECESSOR.continuationStateContractSha256);
   assert.equal(baselineContracts.publicProjectionContractSha256,
     WEATHER_ROTATION_PREDECESSOR.publicProjectionContractSha256);
@@ -212,7 +220,7 @@ try {
   };
   const schedulerExpected = {
     modelBinding: ravScoreModelBinding(),
-    contractHashes: baselineContracts,
+    contractHashes: legacyCompatibleContracts,
   };
   assert.equal(isExactDmiSchedulerPredecessor(schedulerPredecessor, schedulerExpected), true);
   for (const change of [
@@ -225,6 +233,8 @@ try {
     assert.equal(isExactDmiSchedulerPredecessor({ ...schedulerPredecessor, ...change }, schedulerExpected), false);
   }
   const workflowContractPath = path.join(repository, 'scripts/private-production-runtime-workflow.mjs');
+  await fs.copyFile(path.join(sourceRepository, 'scripts/private-production-runtime-workflow.mjs'), workflowContractPath);
+  const storageAbiPath = path.join(repository, 'scripts/lib/private-weather-storage-abi.json');
   const scoreContractPath = path.join(repository, 'js/core/local-zone-score.js');
   const workflowContractSource = await fs.readFile(workflowContractPath, 'utf8');
   const scoreContractSource = await fs.readFile(scoreContractPath, 'utf8');
@@ -238,11 +248,16 @@ try {
     'mechanical release numbers must not invalidate private weather contracts',
   );
   await fs.writeFile(workflowContractPath, `${workflowContractSource}\n// semantic-contract-change\n`);
-  assert.notEqual(
-    (await privateRuntimeContractHashes({ repositoryRoot: repository })).fullRuntimeContractSha256,
+  assert.deepEqual(await privateRuntimeContractHashes({ repositoryRoot: repository }), baselineContracts,
+    'an implementation-only producer change must not invalidate the storage ABI');
+  const storageAbiSource = await fs.readFile(storageAbiPath, 'utf8');
+  const changedStorageAbi = JSON.parse(storageAbiSource);
+  changedStorageAbi.incompatibleChangeRule += ' Audited.';
+  await fs.writeFile(storageAbiPath, `${JSON.stringify(changedStorageAbi)}\n`);
+  assert.notEqual((await privateRuntimeContractHashes({ repositoryRoot: repository })).fullRuntimeContractSha256,
     baselineContracts.fullRuntimeContractSha256,
-    'a substantive contract source change must remain hash-visible',
-  );
+    'a persisted storage ABI change must remain hash-visible');
+  await fs.writeFile(storageAbiPath, storageAbiSource);
   await fs.writeFile(workflowContractPath, workflowContractSource);
   await fs.writeFile(scoreContractPath, scoreContractSource);
 
@@ -280,11 +295,11 @@ try {
     privateRoot: restoreRoot,
     bundlePath: path.join(restoreRoot, 'exact-dmi-scheduler-bridge'),
     repositoryRoot: repository,
-    expected: await buildPrivateRuntimeExpectation({
+    expected: { ...await buildPrivateRuntimeExpectation({
       repositoryRoot: repository,
       targetReferenceAt: '2026-09-23T18:00:00.000Z',
       now: '2026-09-23T18:05:00.000Z',
-    }),
+    }), contractHashes: legacyCompatibleContracts },
     now: '2026-09-23T18:05:00.000Z',
     request: bridgeDocuments.request,
     storage: bridgeStorage.client,
@@ -342,11 +357,11 @@ try {
     privateRoot: restoreRoot,
     bundlePath: path.join(restoreRoot, 'exact-dmi-marine-seam-bridge'),
     repositoryRoot: repository,
-    expected: await buildPrivateRuntimeExpectation({
+    expected: { ...await buildPrivateRuntimeExpectation({
       repositoryRoot: repository,
       targetReferenceAt: '2026-09-23T22:00:00.000Z',
       now: '2026-09-23T22:05:00.000Z',
-    }),
+    }), contractHashes: legacyCompatibleContracts },
     now: '2026-09-23T22:05:00.000Z',
     request: seamDocuments.request,
     storage: seamStorage.client,
@@ -403,11 +418,11 @@ try {
     privateRoot: restoreRoot,
     bundlePath: path.join(restoreRoot, 'exact-weather-rotation-bridge'),
     repositoryRoot: repository,
-    expected: await buildPrivateRuntimeExpectation({
+    expected: { ...await buildPrivateRuntimeExpectation({
       repositoryRoot: repository,
       targetReferenceAt: '2026-09-24T02:00:00.000Z',
       now: '2026-09-24T02:05:00.000Z',
-    }),
+    }), contractHashes: legacyCompatibleContracts },
     now: '2026-09-24T02:05:00.000Z',
     request: rotationDocuments.request,
     storage: rotationStorage.client,
@@ -425,6 +440,69 @@ try {
   };
   assert.equal(isExactMarineComponentPredecessor(marineComponentPredecessor, schedulerExpected), true);
   assert.equal(isApprovedExactWeatherPredecessor(marineComponentPredecessor, schedulerExpected), true);
+  const completeWeatherPredecessor = {
+    ...COMPLETE_WEATHER_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: COMPLETE_WEATHER_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: COMPLETE_WEATHER_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: COMPLETE_WEATHER_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  assert.equal(isApprovedExactWeatherPredecessor(completeWeatherPredecessor, schedulerExpected), true);
+  const latestWeatherPredecessor = {
+    ...LATEST_WEATHER_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: LATEST_WEATHER_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: LATEST_WEATHER_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: LATEST_WEATHER_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  const historicalPairExpected = {
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: baselineContracts,
+  };
+  for (const [member, approved] of [
+    [completeWeatherPredecessor, COMPLETE_WEATHER_PREDECESSOR],
+    [latestWeatherPredecessor, LATEST_WEATHER_PREDECESSOR],
+  ]) {
+    const oldMember = { ...member, modelBinding: {
+      ...member.modelBinding,
+      modelBundleSha256: EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256,
+    } };
+    assert.equal(isExactHistoricalWeatherPairGeneration(
+      oldMember, historicalPairExpected, approved), true);
+    assert.equal(isExactHistoricalWeatherPairGeneration(
+      member, historicalPairExpected, approved), false);
+    assert.equal(isExactHistoricalWeatherPairGeneration({
+      ...oldMember,
+      contractHashes: { ...oldMember.contractHashes,
+        fullRuntimeContractSha256: 'a'.repeat(64) },
+    }, historicalPairExpected, approved), false);
+  }
+  assert.equal(isApprovedExactWeatherPredecessor(latestWeatherPredecessor, schedulerExpected), false);
+  for (const change of [
+    { datasetId: COMPLETE_WEATHER_PREDECESSOR.datasetId },
+    { productionReferenceAt: COMPLETE_WEATHER_PREDECESSOR.productionReferenceAt },
+    { contractHashes: { ...latestWeatherPredecessor.contractHashes,
+      fullRuntimeContractSha256: COMPLETE_WEATHER_PREDECESSOR.fullRuntimeContractSha256 } },
+  ]) {
+    assert.equal(isApprovedExactWeatherPredecessor(
+      { ...latestWeatherPredecessor, ...change }, schedulerExpected,
+    ), false);
+  }
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-thinner-successor' },
+    { productionReferenceAt: '2026-09-24T15:00:00.000Z' },
+    { contractHashes: { ...completeWeatherPredecessor.contractHashes, fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...completeWeatherPredecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isApprovedExactWeatherPredecessor(
+      { ...completeWeatherPredecessor, ...change }, schedulerExpected,
+    ), false);
+  }
   for (const change of [
     { sourceHead: SOURCE_HEADS[0] },
     { datasetId: 'rr-other-generation' },
@@ -467,17 +545,192 @@ try {
     privateRoot: restoreRoot,
     bundlePath: path.join(restoreRoot, 'exact-marine-component-bridge'),
     repositoryRoot: repository,
-    expected: await buildPrivateRuntimeExpectation({
+    expected: { ...await buildPrivateRuntimeExpectation({
       repositoryRoot: repository,
       targetReferenceAt: '2026-09-24T10:00:00.000Z',
       now: '2026-09-24T10:05:00.000Z',
-    }),
+    }), contractHashes: legacyCompatibleContracts },
     now: '2026-09-24T10:05:00.000Z',
     request: marineDocuments.request,
     storage: marineStorage.client,
   });
   assert.equal(marineRestored.restored, true);
   assert.equal(marineRestored.exactDmiPredecessor, true);
+  const continuityDocuments = fakeDocuments();
+  const continuityStorage = fakeStorage();
+  const completeGeneration = await createGeneration(10, {
+    metadataOverride: {
+      datasetId: COMPLETE_WEATHER_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-24T12:24:09.000Z',
+      productionReferenceAt: COMPLETE_WEATHER_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: completeWeatherPredecessor.contractHashes,
+  });
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: completeGeneration.bundlePath, repositoryRoot: repository,
+    expected: {
+      ...(await buildPrivateRuntimeExpectation({
+        repositoryRoot: repository,
+        targetReferenceAt: '2026-09-24T13:00:00.000Z',
+        now: '2026-09-24T12:30:00.000Z',
+      })),
+      contractHashes: completeWeatherPredecessor.contractHashes,
+    },
+    now: '2026-09-24T12:30:00.000Z',
+    sourceHead: COMPLETE_WEATHER_PREDECESSOR.sourceHead,
+    request: continuityDocuments.request,
+    storage: continuityStorage.client,
+  });
+  const thinnerHashes = { ...baselineContracts, fullRuntimeContractSha256: 'f'.repeat(64) };
+  const thinnerGeneration = await createGeneration(11, {
+    metadataOverride: {
+      datasetId: 'rr-thinner-successor',
+      generatedAt: '2026-09-24T16:30:02.000Z',
+      productionReferenceAt: '2026-09-24T15:00:00.000Z',
+    },
+    contractHashesOverride: thinnerHashes,
+  });
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: thinnerGeneration.bundlePath, repositoryRoot: repository,
+    expected: {
+      ...(await buildPrivateRuntimeExpectation({
+        repositoryRoot: repository,
+        targetReferenceAt: '2026-09-24T17:00:00.000Z',
+        now: '2026-09-24T16:35:00.000Z',
+      })),
+      contractHashes: thinnerHashes,
+    },
+    now: '2026-09-24T16:35:00.000Z',
+    sourceHead: SOURCE_HEADS[0],
+    request: continuityDocuments.request,
+    storage: continuityStorage.client,
+  });
+  const completeRollback = await restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'complete-weather-rollback'),
+    repositoryRoot: repository,
+    expected: { ...await buildPrivateRuntimeExpectation({
+      repositoryRoot: repository,
+      targetReferenceAt: '2026-09-24T17:00:00.000Z',
+      now: '2026-09-24T17:05:00.000Z',
+    }), contractHashes: legacyCompatibleContracts },
+    now: '2026-09-24T17:05:00.000Z',
+    request: continuityDocuments.request,
+    storage: continuityStorage.client,
+  });
+  assert.equal(completeRollback.restored, true);
+  assert.equal(completeRollback.rollbackSelected, true);
+  assert.equal(completeRollback.currentGenerationRejected, true);
+  assert.equal(completeRollback.exactDmiPredecessor, true);
+  assert.equal(completeRollback.productionReferenceAt,
+    COMPLETE_WEATHER_PREDECESSOR.productionReferenceAt);
+  const pairedDocuments = fakeDocuments();
+  const pairedStorage = fakeStorage();
+  const pairedTarget = '2026-09-24T17:00:00.000Z';
+  const pairedNow = '2026-09-24T17:05:00.000Z';
+  const pairedExpected = await buildPrivateRuntimeExpectation({
+    repositoryRoot: repository, targetReferenceAt: pairedTarget, now: pairedNow,
+  });
+  pairedExpected.contractHashes = legacyCompatibleContracts;
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: completeGeneration.bundlePath, repositoryRoot: repository,
+    expected: { ...pairedExpected, contractHashes: completeWeatherPredecessor.contractHashes },
+    now: pairedNow, sourceHead: COMPLETE_WEATHER_PREDECESSOR.sourceHead,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  });
+  const latestGeneration = await createGeneration(12, {
+    metadataOverride: {
+      datasetId: LATEST_WEATHER_PREDECESSOR.datasetId,
+      generatedAt: '2026-09-24T16:30:02.000Z',
+      productionReferenceAt: LATEST_WEATHER_PREDECESSOR.productionReferenceAt,
+    },
+    contractHashesOverride: latestWeatherPredecessor.contractHashes,
+  });
+  await publishProtectedPrivateProductionRuntime({
+    privateRoot, bundlePath: latestGeneration.bundlePath, repositoryRoot: repository,
+    expected: { ...pairedExpected, contractHashes: latestWeatherPredecessor.contractHashes },
+    now: pairedNow, sourceHead: LATEST_WEATHER_PREDECESSOR.sourceHead,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  });
+  await assert.rejects(() => restoreProtectedPrivateProductionRuntime({
+    privateRoot: restoreRoot,
+    bundlePath: path.join(restoreRoot, 'unsafe-single-latest-or-older'),
+    repositoryRoot: repository,
+    expected: pairedExpected,
+    now: pairedNow,
+    request: pairedDocuments.request,
+    storage: pairedStorage.client,
+  }), /requires paired 11Z\/15Z restore/);
+  const latestPairPath = path.join(restoreRoot, 'weather-pair-latest');
+  const completePairPath = path.join(restoreRoot, 'weather-pair-complete');
+  const pairResult = await restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot,
+    latestBundlePath: latestPairPath,
+    completeBundlePath: completePairPath,
+    repositoryRoot: repository,
+    expected: pairedExpected,
+    now: pairedNow,
+    request: pairedDocuments.request,
+    storage: pairedStorage.client,
+  });
+  assert.equal(pairResult.restored, true);
+  assert.equal(pairResult.centralVersion, pairedDocuments.row().version);
+  for (const [bundlePath, approved] of [
+    [latestPairPath, latestWeatherPredecessor],
+    [completePairPath, completeWeatherPredecessor],
+  ]) {
+    const manifest = JSON.parse(await fs.readFile(path.join(bundlePath, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.datasetId, approved.datasetId);
+    await verifyPrivateProductionRuntimeBundle({
+      privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+      expected: { ...pairedExpected, contractHashes: approved.contractHashes }, now: pairedNow,
+    });
+  }
+  const badPairRow = pairedDocuments.row();
+  badPairRow.payload.previous.datasetId = 'rr-unapproved-weather-donor';
+  pairedDocuments.setRow(badPairRow);
+  const rejectedLatestPath = path.join(restoreRoot, 'weather-pair-rejected-latest');
+  const rejectedCompletePath = path.join(restoreRoot, 'weather-pair-rejected-complete');
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  }), /exact protected 11Z\/15Z weather pair/);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
+  pairedDocuments.setRow({ ...badPairRow, payload: {
+    ...badPairRow.payload,
+    previous: { ...badPairRow.payload.previous,
+      datasetId: COMPLETE_WEATHER_PREDECESSOR.datasetId },
+  } });
+  const corruptedPath = pairedDocuments.row().payload.previous.objects[0].objectPath;
+  const originalObject = pairedStorage.objects.get(corruptedPath);
+  pairedStorage.objects.set(corruptedPath, Buffer.from('corrupt protected donor'));
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+  }), /storage readback|object integrity|archive/i);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
+  pairedStorage.objects.set(corruptedPath, originalObject);
+  let pairedRenameCount = 0;
+  await assert.rejects(() => restoreExactProtectedPrivateWeatherPair({
+    privateRoot: restoreRoot, latestBundlePath: rejectedLatestPath,
+    completeBundlePath: rejectedCompletePath, repositoryRoot: repository,
+    expected: pairedExpected, now: pairedNow,
+    request: pairedDocuments.request, storage: pairedStorage.client,
+    renameImpl: async (source, destination) => {
+      pairedRenameCount += 1;
+      if (pairedRenameCount === 2) throw new Error('synthetic second rename failure');
+      await fs.rename(source, destination);
+    },
+  }), /synthetic second rename failure/);
+  assert.equal(pairedRenameCount, 2);
+  assert.equal(await fs.lstat(rejectedLatestPath).catch(() => null), null);
+  assert.equal(await fs.lstat(rejectedCompletePath).catch(() => null), null);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumRawPayloadBytes, 2 * 1024 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumFilePayloadBytes, 768 * 1024 * 1024);
   assert.equal(PROTECTED_PRIVATE_RUNTIME_POLICY.maximumLegacyRawPayloadBytes, 768 * 1024 * 1024);
@@ -1044,6 +1297,21 @@ try {
     'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE');
   assert.equal(targetDescription.sourceHead, SOURCE_HEADS[1],
     'equal-time target selection must prefer the current protected generation');
+  const sameReferencePreviousDescription = await describeTargetProtectedPrivateProductionRuntime({
+    request: documents.request,
+    targetReferenceAt: documents.row().payload.previous.productionReferenceAt,
+    datasetId: documents.row().payload.previous.datasetId,
+    bundleContentSha256: documents.row().payload.previous.bundleContentSha256,
+  });
+  assert.equal(sameReferencePreviousDescription.bundleContentSha256,
+    documents.row().payload.previous.bundleContentSha256,
+    'a restored rollback with the same reference must select its exact dataset');
+  await assert.rejects(() => describeTargetProtectedPrivateProductionRuntime({
+    request: documents.request,
+    targetReferenceAt: documents.row().payload.previous.productionReferenceAt,
+    datasetId: 'not-the-restored-dataset',
+    bundleContentSha256: documents.row().payload.previous.bundleContentSha256,
+  }), /exact target reference and dataset/);
   const splitReferenceRow = documents.row();
   splitReferenceRow.payload.current.productionReferenceAt = '2026-08-29T11:00:00.000Z';
   splitReferenceRow.payload.current.generatedAt = '2026-08-29T11:05:00.000Z';

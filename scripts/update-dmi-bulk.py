@@ -1161,6 +1161,7 @@ def operational_collection_plan(
     force_wam_collections: set[str] | None = None,
     atmosphere_foundation_needed: bool = False,
     atmosphere_horizon_needed: bool = False,
+    water_level_recovery_needed: bool = False,
 ) -> tuple[list[str], dict[str, Any]]:
     """Plan fair critical DKSS/WAM service before maintenance slack."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -1243,7 +1244,7 @@ def operational_collection_plan(
     strict_current = strict_current_collection_order(
         [
             collection for collection in work_eligible
-            if not strict_current_anchor_available
+            if (not strict_current_anchor_available or water_level_recovery_needed)
             and collection in MARINE_COLLECTIONS
         ],
         state,
@@ -1294,7 +1295,13 @@ def operational_collection_plan(
     )
     return planned, {
         "strictCurrentLeadCollection": lead_dkss,
-        "strictCurrentLeadAttemptLimit": 1,
+        "waterLevelRecoveryNeeded": water_level_recovery_needed,
+        "strictCurrentLeadAttemptLimit": bounded_strict_current_lead_attempt_limit(
+            remaining_work_seconds,
+            strict_current,
+            reserve_total,
+            atmosphere_horizon_needed=atmosphere_horizon_needed,
+        ),
         "strictCurrentCollections": strict_current,
         "criticalCurrentOutsideBaseCollectionQuota": True,
         "strictCurrentRuntimeReserveSeconds": round(
@@ -1345,6 +1352,31 @@ def strict_current_lead_attempt_available(
         collection != lead_collection
         or attempted_assets < max(0, attempt_limit)
     )
+
+
+def bounded_strict_current_lead_attempt_limit(
+    remaining_work_seconds: float,
+    current_collections: list[str],
+    pending_wave_reserve_seconds: float,
+    *,
+    atmosphere_horizon_needed: bool = False,
+) -> int:
+    """Allow real hourly catch-up without stealing other critical starts.
+
+    The controller still measures actual per-asset cost and protects pending
+    DKSS/WAM slices before each download.  This cap only prevents the lead
+    collection from monopolising an otherwise available turn.  One asset per
+    run could never build IDW's 118 native hours before the model rotated.
+    """
+    if not current_collections:
+        return 0
+    protected_other = (
+        STRICT_CURRENT_TURN_RESERVE_SECONDS * max(0, len(current_collections) - 1)
+        + max(0.0, float(pending_wave_reserve_seconds))
+        + (ATMOSPHERE_HORIZON_TURN_RESERVE_SECONDS if atmosphere_horizon_needed else 0.0)
+    )
+    available = max(0.0, float(remaining_work_seconds) - protected_other)
+    return max(1, min(8, int(available // STRICT_CURRENT_TURN_RESERVE_SECONDS)))
 
 
 def asset_identity_sha256(href: Any) -> str | None:
@@ -2034,6 +2066,7 @@ def prioritize_marine_assets_for_current_gaps(
     covered_pair_keys: set[tuple[str, str]],
     *,
     critical_by_time: dict[str, bool] | None = None,
+    critical_priority_by_time: dict[str, int] | None = None,
     direct_valid_times: set[str] | None = None,
     regional_gap_pairs_by_time: dict[
         str, set[tuple[str, str]]
@@ -2070,13 +2103,15 @@ def prioritize_marine_assets_for_current_gaps(
         )
         regional_gap_count = len(regional_gap_pairs)
         real_gap_count = len(direct_missing_pairs | regional_gap_pairs)
-        critical = bool(
-            direct_missing_pairs
-            or regional_gap_count
-            or (critical_by_time or {}).get(valid_time)
-        )
+        configured_priority = (critical_priority_by_time or {}).get(valid_time)
+        if configured_priority not in (0, 1, 2):
+            configured_priority = 0 if (critical_by_time or {}).get(valid_time) else 2
+        critical_priority = 0 if real_gap_count else configured_priority
         return (
-            0 if real_gap_count else 1 if critical else 2,
+            # A fallback current gap must not outrank every missing DMI-only
+            # water-level hour for the whole 118-hour window. Both are real
+            # production deficits; rotate them on the same native-hour lane.
+            critical_priority,
             0 if regional_gap_count
                 and valid_time in (verified_reusable_valid_times or set())
                 else 1,
@@ -2196,18 +2231,22 @@ def classify_dkss_primary_asset(
     """Classify one DKSS asset as critical work or safe refresh-only work.
 
     The cache passed here has already been normalized by ``clean_and_summarize``.
-    An optional union plan classifies acquisition priority only; it never
-    authorizes a native DMI tuple. Without it, PART current keeps the existing
-    DMI proof requirement. Parent current is optional overview weather, not an
-    integrated-score input; its absence must not make an asset critical. Other
-    components still require finite values and native DMI provenance. Optional
-    temperature/wind-tail fields remain stride-bound.
+    An optional union plan separates true holes from already covered reserve
+    pairs. It never authorizes or suppresses a native DMI tuple: both are
+    actionable, with real holes ahead of DMI upgrades. Parent current is
+    optional overview weather, not an integrated-score input; its absence
+    must not make an asset critical. Other components still require finite
+    values and native DMI provenance. Optional temperature/wind-tail fields
+    remain stride-bound.
     """
     if not enabled or collection not in MARINE_COLLECTIONS:
         return {
             "critical": True,
             "deferValidRefresh": False,
             "currentMissingPairCount": 0,
+            "currentUpgradePairCount": 0,
+            "currentNativeDeficitCount": 0,
+            "criticalPriority": 2,
             "regionalCurrentPotentialPairCount": 0,
             "missingComponentKinds": [],
         }
@@ -2234,20 +2273,35 @@ def classify_dkss_primary_asset(
     if not valid_time or not canonical_run or not normalized_targets or not normalized_zones:
         missing_components.add("configuration")
         current_missing_pair_count = len(normalized_targets)
+        current_native_deficit_count = current_missing_pair_count
+        current_upgrade_pair_count = 0
     elif required_valid_times is not None and valid_time not in required_valid_times and not private_component_support_asset(asset, required_valid_times):
         # A T-3..T-1 LF source is supplemental input for the approved regional
         # hold only. It must not invent a native current/component deficit
         # outside the immutable T..T+117 operational denominator.
         current_missing_pair_count = 0
+        current_native_deficit_count = 0
+        current_upgrade_pair_count = 0
     else:
         private_support = private_component_support_asset(asset, required_valid_times or set())
-        current_missing_pair_count = 0 if private_support else sum(
-            (target_id, valid_time) not in (
-                planning_covered_pair_keys
-                if planning_covered_pair_keys is not None
-                else covered_pair_keys
+        current_native_deficit_count = 0 if private_support else sum(
+            (target_id, valid_time) not in covered_pair_keys
+            or not _exact_validated_dmi_component_present(
+                f"PART::{target_id}", cached_zones.get(f"PART::{target_id}"),
+                valid_time, "current", ("current-u", "current-v"),
             )
             for target_id in normalized_targets
+        )
+        current_missing_pair_count = (
+            current_native_deficit_count
+            if planning_covered_pair_keys is None
+            else 0 if private_support else sum(
+                (target_id, valid_time) not in planning_covered_pair_keys
+                for target_id in normalized_targets
+            )
+        )
+        current_upgrade_pair_count = max(
+            0, current_native_deficit_count - current_missing_pair_count,
         )
         required_components = dict(DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS)
         if private_support:
@@ -2256,13 +2310,9 @@ def classify_dkss_primary_asset(
             required_components.update(DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS)
         for component, fields in required_components.items():
             if component == "current":
-                # The source-union plan proves usable PART coverage for
-                # acquisition priority only. Without that plan, require the
-                # exact native PART rows, never optional parent overview U/V.
-                component_zone_ids = (
-                    [] if planning_covered_pair_keys is not None
-                    else sorted(part_zone_ids)
-                )
+                # The exact native PART matrix is counted independently above;
+                # parent overview U/V does not decide critical work.
+                component_zone_ids = []
             else:
                 component_zone_ids = normalized_zones
             if any(
@@ -2285,14 +2335,24 @@ def classify_dkss_primary_asset(
         )
         if current_missing_pair_count:
             missing_components.add("current")
+        if current_upgrade_pair_count:
+            missing_components.add("currentUpgrade")
     if valid_regional_gap_count:
         missing_components.add("regionalCurrent")
 
     critical = bool(missing_components)
+    critical_priority = (
+        0 if missing_components - {"currentUpgrade"}
+        else 1 if current_upgrade_pair_count
+        else 2
+    )
     result = {
         "critical": critical,
         "deferValidRefresh": not critical,
         "currentMissingPairCount": current_missing_pair_count,
+        "currentUpgradePairCount": current_upgrade_pair_count,
+        "currentNativeDeficitCount": current_native_deficit_count,
+        "criticalPriority": critical_priority,
         "regionalCurrentPotentialPairCount": valid_regional_gap_count,
         "missingComponentKinds": sorted(missing_components),
     }
@@ -2370,6 +2430,7 @@ def refine_operational_collection_plan_after_prefetch(
     coverage: dict[str, Any],
     refresh_only_collections: set[str],
     remaining_work_seconds: float,
+    native_deficit_collections: set[str] | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     """Remove proven maintenance-only DKSS work from critical reservations.
 
@@ -2379,9 +2440,14 @@ def refine_operational_collection_plan_after_prefetch(
     quality maintenance delay a real hole in another DKSS or WAM family.
     """
     refined = dict(coverage)
+    native_deficit_collections = native_deficit_collections or set()
     strict_current = [
         collection
-        for collection in coverage.get("strictCurrentCollections", [])
+        for collection in dict.fromkeys([
+            *coverage.get("strictCurrentCollections", []),
+            *[collection for collection in scheduled
+              if collection in native_deficit_collections],
+        ])
         if collection in scheduled
         and collection not in refresh_only_collections
     ]
@@ -2427,6 +2493,16 @@ def refine_operational_collection_plan_after_prefetch(
     refined.update({
         "strictCurrentLeadCollection": lead,
         "strictCurrentCollections": strict_current,
+        "strictCurrentLeadAttemptLimit": bounded_strict_current_lead_attempt_limit(
+            remaining_work_seconds,
+            strict_current,
+            wam_total,
+            atmosphere_horizon_needed=bool(coverage.get("atmosphereHorizonCollections")),
+        ),
+        "nativeDeficitCollections": [
+            collection for collection in strict_current
+            if collection in native_deficit_collections
+        ],
         "strictCurrentRuntimeReserveSeconds": round(current_total, 3),
         "strictCurrentRuntimeReserveSecondsByCollection": {
             collection: round(seconds, 3)
@@ -2542,7 +2618,7 @@ def should_skip_previously_processed_asset(
     missing_components = set(
         primary_requirement.get("missingComponentKinds") or []
     )
-    actionable_non_current = missing_components - {"current"}
+    actionable_non_current = missing_components - {"current", "currentUpgrade"}
     if regional_observation_reusable:
         actionable_non_current.discard("regionalCurrent")
     return not (
@@ -5507,10 +5583,11 @@ def prefer_current_hour_candidate(
     """Choose current independently for one native forecast time.
 
     Scalar marine fields may legitimately prefer a coast-type model, but that
-    model prior must never block a closer exact U/V water column.  Comparing at
-    the native time also prevents a late candidate from clearing a sound series
-    around now.  Forecast interpolation remains responsible for rejecting
-    transitions across collection, run, grid point or vertical layer.
+    model prior must never block an independently qualified U/V water column.
+    Prefer the latest qualified official model run at each native time; within
+    the same run, prefer the closest column and then the deepest valid layer.
+    Forecast interpolation remains responsible for rejecting transitions
+    across collection, run, grid point or vertical layer.
     """
     candidate_distance = float(candidate_choice["distanceKm"])
     if not math.isfinite(candidate_distance) or candidate_distance > CURRENT_MAX_DISTANCE_KM:
@@ -5575,6 +5652,10 @@ def prefer_current_hour_candidate(
         # revision. It must replace an earlier capture before geometry ties.
         return True
 
+    existing_run = str(source.get("modelRun") or "")
+    if epoch(model_run) != epoch(existing_run):
+        return epoch(model_run) > epoch(existing_run)
+
     existing_distance = float(source["distanceKm"])
     candidate_point = tuple(candidate_choice["pointKey"])
     existing_point = (round(float(existing_grid[1]), 7), round(float(existing_grid[0]), 7))
@@ -5590,68 +5671,11 @@ def prefer_current_hour_candidate(
     if candidate_layer_rank != existing_layer_rank:
         return candidate_layer_rank > existing_layer_rank
 
-    existing_run = str(source.get("modelRun") or "")
-    if epoch(model_run) != epoch(existing_run):
-        return epoch(model_run) > epoch(existing_run)
     existing_collection = str(source.get("collection") or "")
     if existing_collection != collection:
         existing_order = COLLECTION_ORDER.index(existing_collection) if existing_collection in COLLECTION_ORDER else len(COLLECTION_ORDER)
         return COLLECTION_ORDER.index(collection) < existing_order
     return False
-
-
-def accept_marine_collection(
-    point: dict[str, Any],
-    zone: dict[str, Any],
-    collection: str,
-    distance_km: float,
-    allow_existing_selection_update: bool = True,
-    candidate_valid_time: str | None = None,
-    reference_time: str | None = None,
-) -> bool:
-    coast = zone.get("coastType") or "east"
-    if distance_km > MAX_GRID_DISTANCE_KM.get(coast, 32.0):
-        return False
-    selection = point.get("marineSelection") or {}
-    # Vandstand, temperatur og andre skalare marinefelter må følge den allerede
-    # valgte havmodel, men må ikke genvælge modellen på deres eget gitterpunkt.
-    # Ellers kan ét lidt nærmere skalarfelt rydde en komplet strømserie, selv om
-    # kandidatmodellen ikke har et gyldigt fælles U/V-par ved samme forecasttid.
-    if selection and not allow_existing_selection_update:
-        return selection.get("collection") == collection
-    # Et sent halepar må ikke genvælge hele havmodellen og dermed rydde en
-    # eksisterende strømserie omkring nu. En bedre model kan stadig overtage,
-    # når dens eget fælles U/V-par også ligger i det aktuelle anker-vindue.
-    if (
-        selection.get("collection") != collection
-        and candidate_valid_time
-        and reference_time
-        and has_current_anchor(point, reference_time)
-        and abs(epoch(candidate_valid_time) - epoch(reference_time)) > 6.0 * 3600.0
-    ):
-        return False
-    score = marine_model_score(zone, collection, distance_km)
-    current_score = selection.get("score")
-    if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
-        return False
-    if selection.get("collection") != collection:
-        if isinstance(point, AssetStagedZone):
-            point.detach_all_hourly_rows()
-        for hour in (point.get("hourly") or {}).values():
-            for key in MARINE_SCALAR_PARAMETERS:
-                hour.pop(key, None)
-                component = PARAMETER_COMPONENT.get(key)
-                if component:
-                    (hour.get("sources") or {}).pop(component, None)
-        for key in MARINE_SCALAR_PARAMETERS:
-            (point.get("gridPoints") or {}).pop(key, None)
-            (point.get("collections") or {}).pop(key, None)
-    point["marineSelection"] = {
-        "collection": collection, "score": round(score, 3),
-        "distanceKm": round(distance_km, 3), "coastType": coast,
-        "modelPenaltyKm": MARINE_MODEL_PENALTY_KM.get(coast, {}).get(collection, 25.0),
-    }
-    return True
 
 
 def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -5831,6 +5855,93 @@ def native_component_source(
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
     }
+
+
+def prefer_marine_component_hour_candidate(
+    point: dict[str, Any],
+    zone: dict[str, Any],
+    valid_time: str,
+    component: str,
+    candidate_source: dict[str, Any] | None,
+    candidate_values: dict[str, Any],
+) -> bool:
+    """Choose one proved DKSS component without locking sibling components.
+
+    A source is checked against the exact native hour and sampling identity
+    *before* its tuple is allowed to replace an existing row.  Newer official
+    runs win within their individually admitted distance.  For equal runs the
+    original coast-model preference is retained, but only for this component
+    and hour.  An unknown content-hash change cannot masquerade as a newer
+    official revision.
+    """
+    if component not in {"windTail", "waterLevel", "waterTemperature"}:
+        return False
+    identity = sampling_identity(zone)
+    fields = COMPONENT_FIELD_SET[component]
+    if not identity or not candidate_source or not all(
+        isinstance(candidate_values.get(field), (int, float))
+        and not isinstance(candidate_values.get(field), bool)
+        and math.isfinite(float(candidate_values[field]))
+        for field in fields
+    ):
+        return False
+    if not complete_native_source_for_hour(
+        candidate_source, component, str(zone["id"]), identity, valid_time,
+    ):
+        return False
+    if component == "waterTemperature" and candidate_source.get("verticalLayer") != "surface:0":
+        return False
+    maximum = MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0)
+    if float(candidate_source["distanceKm"]) > maximum:
+        return False
+
+    hour = (point.get("hourly") or {}).get(valid_time) or {}
+    existing_source = (hour.get("sources") or {}).get(component)
+    existing_valid = bool(
+        isinstance(existing_source, dict)
+        and all(
+            isinstance(hour.get(field), (int, float))
+            and not isinstance(hour.get(field), bool)
+            and math.isfinite(float(hour[field]))
+            for field in fields
+        )
+        and complete_native_source_for_hour(
+            existing_source, component, str(zone["id"]), identity, valid_time,
+        )
+        and (component != "waterTemperature" or existing_source.get("verticalLayer") == "surface:0")
+    )
+    if not existing_valid:
+        return True
+
+    old_run = epoch(existing_source.get("modelRun"))
+    new_run = epoch(candidate_source.get("modelRun"))
+    if new_run != old_run:
+        return new_run > old_run
+
+    if existing_source.get("collection") == candidate_source.get("collection"):
+        revision_field = (
+            "itemUpdatedAt"
+            if existing_source.get("itemUpdatedAt") or candidate_source.get("itemUpdatedAt")
+            else "itemCreatedAt"
+        )
+        old_revision = epoch(existing_source.get(revision_field))
+        new_revision = epoch(candidate_source.get(revision_field))
+        if old_revision and new_revision and new_revision != old_revision:
+            return new_revision > old_revision
+
+    old_score = marine_model_score(
+        zone, str(existing_source["collection"]), float(existing_source["distanceKm"]),
+    )
+    new_score = marine_model_score(
+        zone, str(candidate_source["collection"]), float(candidate_source["distanceKm"]),
+    )
+    if not math.isclose(new_score, old_score, rel_tol=0, abs_tol=1e-6):
+        return new_score < old_score
+    old_collection = str(existing_source["collection"])
+    new_collection = str(candidate_source["collection"])
+    if new_collection != old_collection:
+        return COLLECTION_ORDER.index(new_collection) < COLLECTION_ORDER.index(old_collection)
+    return False
 
 
 def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
@@ -6066,14 +6177,28 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                                 continue
-                            selected_collection = (point.get("marineSelection") or {}).get("collection")
-                            if selected_collection and selected_collection != collection:
+                            tail_source = native_component_source(
+                                collection,
+                                model_run,
+                                valid_time,
+                                component="windTail",
+                                zone=zone,
+                                grid_candidate=first,
+                                capture=source_capture,
+                                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                                vectorSelection="nearest-shared-grid-cell-no-spatial-interpolation",
+                                vectorSemanticsVersion=1,
+                            )
+                            if not prefer_marine_component_hour_candidate(
+                                point,
+                                zone,
+                                valid_time,
+                                "windTail",
+                                tail_source,
+                                {first_key: first["value"], second_key: second["value"]},
+                            ):
                                 vector_search["selected"] = False
-                                vector_search["rejectedReason"] = "DIFFERENT_MARINE_COLLECTION_SELECTED"
-                                continue
-                            if not selected_collection and not accept_marine_collection(point, zone, collection, distance):
-                                vector_search["selected"] = False
-                                vector_search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
+                                vector_search["rejectedReason"] = "BETTER_NATIVE_COMPONENT_ALREADY_SELECTED"
                                 continue
                         selected_vector_choices[selection_key] = candidate_choice
                         if not zone.get("privateStage"):
@@ -6161,20 +6286,6 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
                             search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                             continue
-                        if not accept_marine_collection(
-                            point,
-                            zone,
-                            collection,
-                            distance,
-                            allow_existing_selection_update=False,
-                        ):
-                            search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
-                            continue
-                        search["selected"] = True
-                    if not zone.get("privateStage"):
-                        touched.add(zone["id"])
-                    hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
-                    hour[parameter] = nearest["value"]
                     component = PARAMETER_COMPONENT[parameter]
                     source_extra = {}
                     point_extra = {}
@@ -6193,6 +6304,22 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         spatial_selection="nearest-valid-grid-cell-no-spatial-interpolation",
                         **source_extra,
                     )
+                    if collection in MARINE_COLLECTIONS and parameter in MARINE_PARAMETERS:
+                        if not prefer_marine_component_hour_candidate(
+                            point,
+                            zone,
+                            valid_time,
+                            component,
+                            source,
+                            {parameter: nearest["value"]},
+                        ):
+                            search["rejectedReason"] = "BETTER_NATIVE_COMPONENT_ALREADY_SELECTED"
+                            continue
+                        search["selected"] = True
+                    if not zone.get("privateStage"):
+                        touched.add(zone["id"])
+                    hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
+                    hour[parameter] = nearest["value"]
                     if source:
                         hour.setdefault("sources", {})[component] = source
                     else:
@@ -7816,12 +7943,15 @@ def prefer_qualified_cached_component_source(
 ) -> bool:
     """Order already-qualified cache tuples, not cache files or fetch times.
 
-    Current retains the approved nearest-cell/deepest-shared-layer ordering.
-    Other components may replace an existing tuple only within its qualified
-    collection/grid/layer: a later fetch must not undo the producer's spatial
-    ownership decision. Equal model runs need a strictly newer official STAC
-    revision timestamp; a changed content hash alone proves no ordering.
+    Each source has already passed its own exact spatial/component admission.
+    A newer official DMI model run wins before same-run spatial and collection
+    tie-breakers; the old zone summary must not freeze a different valid grid.
+    Equal model runs need a strictly newer official STAC revision timestamp;
+    a changed content hash alone proves no ordering.
     """
+    old_run, new_run = epoch(existing.get("modelRun")), epoch(candidate.get("modelRun"))
+    if new_run != old_run:
+        return new_run > old_run
     existing_point = existing.get("gridPoint")
     candidate_point = candidate.get("gridPoint")
     if component == "current":
@@ -7837,9 +7967,6 @@ def prefer_qualified_cached_component_source(
         "collection", "gridDefinitionSha256", "gridPoint", "verticalLayer",
     )):
         return False
-    old_run, new_run = epoch(existing.get("modelRun")), epoch(candidate.get("modelRun"))
-    if new_run != old_run:
-        return new_run > old_run
     if candidate.get("collection") != existing.get("collection"):
         return COLLECTION_ORDER.index(candidate["collection"]) < COLLECTION_ORDER.index(existing["collection"])
     # Use the same comparable official timestamp kind on both sides. Creation
@@ -8114,11 +8241,12 @@ def backfill_compatible_cache_data(
                 and set(primary_row) <= {"time"}
             )
             if primary_row is None or structurally_empty:
-                # A wholly empty slot may inherit the donor's complete row.
-                # Nonempty slots follow the independently proof-bound current
-                # tuple rule below and never receive half a vector.
-                primary_hourly[valid_time] = copy.deepcopy(donor_row)
-                continue
+                # Even a wholly absent slot is not permission to copy a raw
+                # multi-component donor row. Validate each native weather
+                # tuple independently, including the separate PART U/V asset
+                # attestation below, before any value enters the union.
+                primary_row = {"time": valid_time}
+                primary_hourly[valid_time] = primary_row
             if not isinstance(primary_row, dict):
                 continue
             for component in COMPONENT_FIELD_SET:
@@ -9034,6 +9162,50 @@ def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, An
     return restored
 
 
+def preferred_marine_collection_for_component(
+    zone_id: str,
+    cached_zone: dict[str, Any],
+    zone_config: dict[str, Any],
+    component: str,
+    fields: tuple[str, ...],
+    reference_time: str,
+) -> str:
+    """Schedule each DKSS weather type from its own proved hourly source.
+
+    The old ``marineSelection`` is a single-zone legacy hint and cannot
+    describe independent water level, surface temperature and wind tail.
+    This is only a work-order hint; native source admission remains separate.
+    """
+    hours = (cached_zone.get("hourly") or {}) if isinstance(cached_zone, dict) else {}
+    reference_epoch = epoch(reference_time)
+    for valid_time, hour in sorted(
+        hours.items(), key=lambda item: (
+            abs(epoch(item[0]) - reference_epoch),
+            -epoch(item[0]),
+        ),
+    ):
+        if not isinstance(hour, dict):
+            continue
+        source = (hour.get("sources") or {}).get(component)
+        if not isinstance(source, dict):
+            continue
+        collection = str(source.get("collection") or "")
+        if collection not in MARINE_COLLECTIONS:
+            continue
+        if _exact_validated_dmi_component_present(
+            zone_id, cached_zone, valid_time, component, fields,
+        ):
+            return collection
+    coast = zone_config.get("coastType") or "east"
+    penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
+    return min(
+        MARINE_COLLECTIONS,
+        key=lambda collection: (
+            float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection),
+        ),
+    )
+
+
 def collection_schedule(
     previous: dict[str, Any],
     active_zones_config: list[dict[str, Any]],
@@ -9123,12 +9295,10 @@ def collection_schedule(
     ]
     preferred_wind_tail_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
     for zone_id in missing_wind_tail_zone_ids:
-        cached_zone = active_zones.get(zone_id, {})
-        selected = ((cached_zone.get("marineSelection") or {}).get("collection"))
-        if selected not in MARINE_COLLECTIONS:
-            coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
-            penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
-            selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        selected = preferred_marine_collection_for_component(
+            zone_id, active_zones.get(zone_id, {}), active_by_id.get(zone_id, {}),
+            "windTail", ("wind-tail-u-10m", "wind-tail-v-10m"), atmosphere_foundation_time,
+        )
         preferred_wind_tail_demand[selected] += 1
 
     missing_surface_temperature_zone_ids = [
@@ -9137,15 +9307,25 @@ def collection_schedule(
     ]
     preferred_surface_temperature_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
     for zone_id in missing_surface_temperature_zone_ids:
-        cached_zone = active_zones.get(zone_id, {})
-        selected = ((cached_zone.get("marineSelection") or {}).get("collection"))
-        if selected not in MARINE_COLLECTIONS:
-            coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
-            penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
-            selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        selected = preferred_marine_collection_for_component(
+            zone_id, active_zones.get(zone_id, {}), active_by_id.get(zone_id, {}),
+            "waterTemperature", ("water-temperature",), atmosphere_foundation_time,
+        )
         preferred_surface_temperature_demand[selected] += 1
     surface_temperature_recovery_active = bool(missing_surface_temperature_zone_ids)
-    marine_recovery_active = marine_recovery_active or surface_temperature_recovery_active
+    missing_water_level_zone_ids = [
+        zone_id for zone_id in active_ids
+        if component_horizon_hours(active_zones.get(zone_id, {}), ("sea-mean-deviation",)) < COMPLETE_HORIZON_HOURS
+    ]
+    preferred_water_level_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
+    for zone_id in missing_water_level_zone_ids:
+        selected = preferred_marine_collection_for_component(
+            zone_id, active_zones.get(zone_id, {}), active_by_id.get(zone_id, {}),
+            "waterLevel", ("sea-mean-deviation",), atmosphere_foundation_time,
+        )
+        preferred_water_level_demand[selected] += 1
+    water_level_recovery_needed = len(missing_water_level_zone_ids) >= max(1, math.ceil(zone_count * 0.15))
+    marine_recovery_active = marine_recovery_active or surface_temperature_recovery_active or water_level_recovery_needed
 
     lead_marine_collection = min(
         MARINE_COLLECTIONS,
@@ -9156,7 +9336,8 @@ def collection_schedule(
             # og Limfjorden aldrig bliver prøvet. Ikke-forsøgte/eldst
             # afbrudte modeller kommer derfor først under recovery.
             epoch((state.get(collection) or {}).get("lastBudgetInterruptedAt")),
-            -(preferred_wind_tail_demand.get(collection, 0) + preferred_surface_temperature_demand.get(collection, 0)),
+            -(preferred_water_level_demand.get(collection, 0) * (zone_count + 1)
+              + preferred_wind_tail_demand.get(collection, 0) + preferred_surface_temperature_demand.get(collection, 0)),
             -preferred_marine_demand.get(collection, 0),
             epoch((state.get(collection) or {}).get("lastAttemptAt")),
             COLLECTION_ORDER.index(collection),
@@ -9205,7 +9386,7 @@ def collection_schedule(
         elif balanced_foundation_recovery:
             marine_demand_rank = -preferred_wind_tail_demand.get(collection, 0)
         else:
-            marine_demand_rank = -(preferred_marine_demand.get(collection, 0) * (zone_count + 1)
+            marine_demand_rank = -((preferred_marine_demand.get(collection, 0) + preferred_water_level_demand.get(collection, 0)) * (zone_count + 1)
                                    + preferred_wind_tail_demand.get(collection, 0)
                                    + preferred_surface_temperature_demand.get(collection, 0))
         deficit_rank = -missing96.get(family, 0)
@@ -9238,6 +9419,9 @@ def collection_schedule(
         "missingWindTailZoneIds": missing_wind_tail_zone_ids,
         "preferredWindTailDemand": preferred_wind_tail_demand,
         "missingSurfaceTemperatureZoneIds": missing_surface_temperature_zone_ids,
+        "missingWaterLevelZoneIds": missing_water_level_zone_ids,
+        "preferredWaterLevelDemand": preferred_water_level_demand,
+        "waterLevelRecoveryNeeded": water_level_recovery_needed,
         "preferredSurfaceTemperatureDemand": preferred_surface_temperature_demand,
         "surfaceTemperatureRecoveryActive": surface_temperature_recovery_active,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
@@ -9248,7 +9432,12 @@ def collection_schedule(
 
 
 def sanitize_water_temperature_surface_integrity(document: dict[str, Any]) -> int:
-    """Drop cached temperature values that are not proven sea-surface data."""
+    """Admit each native surface row independently of the zone summary.
+
+    A zone may contain valid hourly samples from several DKSS grids.  Its
+    single ``gridPoints`` entry is only a summary and cannot invalidate an
+    otherwise proved hour from a different model run or collection.
+    """
     removed = 0
     for zone in (document.get("zones") or {}).values():
         grid_point = (zone.get("gridPoints") or {}).get("water-temperature") or {}
@@ -9257,7 +9446,7 @@ def sanitize_water_temperature_surface_integrity(document: dict[str, Any]) -> in
             if "water-temperature" not in hour:
                 continue
             source = (hour.get("sources") or {}).get("waterTemperature") or {}
-            if grid_surface and source.get("verticalLayer") == "surface:0":
+            if source.get("verticalLayer") == "surface:0":
                 continue
             hour.pop("water-temperature", None)
             (hour.get("sources") or {}).pop("waterTemperature", None)
@@ -10293,9 +10482,34 @@ def producer_terminal_code(
 
 
 def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
-    """Fjern gamle/partielle vektorer der ikke kan bevises at dele gitterpunkt."""
+    """Drop an invalid zone summary, never unrelated proved hourly vectors.
+
+    ``sanitize_component_provenance`` has already checked the exact native
+    source of each hourly vector.  A single zone summary cannot represent
+    several valid model runs/grid cells across the forecast axis.
+    """
     removed = []
-    for first_key, second_key in (("current-u", "current-v"), ("wind-u-10m", "wind-v-10m"), ("wind-tail-u-10m", "wind-tail-v-10m")):
+    vector_families = (
+        ("current-u", "current-v", "current", ()),
+        ("wind-u-10m", "wind-v-10m", "wind", ("wind-speed-10m", "wind-dir-10m")),
+        ("wind-tail-u-10m", "wind-tail-v-10m", "windTail", ("wind-tail-speed-10m", "wind-tail-dir-10m")),
+    )
+    for first_key, second_key, component, derived_fields in vector_families:
+        for hour in (zone.get("hourly") or {}).values():
+            fields = (first_key, second_key, *derived_fields)
+            if not any(field in hour for field in fields):
+                continue
+            if all(
+                isinstance(hour.get(field), (int, float))
+                and not isinstance(hour.get(field), bool)
+                and math.isfinite(float(hour[field]))
+                for field in (first_key, second_key)
+            ):
+                continue
+            for field in fields:
+                hour.pop(field, None)
+            (hour.get("sources") or {}).pop(component, None)
+            removed.append(f"{first_key}/{second_key}:partial-hour")
         first_point = (zone.get("gridPoints") or {}).get(first_key)
         second_point = (zone.get("gridPoints") or {}).get(second_key)
         has_any = first_point is not None or second_point is not None
@@ -10303,15 +10517,6 @@ def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
             continue
         if same_grid_point(first_point, second_point):
             continue
-        for hour in (zone.get("hourly") or {}).values():
-            hour.pop(first_key, None)
-            hour.pop(second_key, None)
-            if first_key == "wind-u-10m":
-                hour.pop("wind-speed-10m", None)
-                hour.pop("wind-dir-10m", None)
-            if first_key == "wind-tail-u-10m":
-                hour.pop("wind-tail-speed-10m", None)
-                hour.pop("wind-tail-dir-10m", None)
         for key in (first_key, second_key):
             (zone.get("gridPoints") or {}).pop(key, None)
             (zone.get("collections") or {}).pop(key, None)
@@ -10432,12 +10637,18 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
         "wind": coverage_summary(coastal_part_zones, ("wind-speed-10m", "wind-dir-10m")),
         "wave": coverage_summary(coastal_part_zones, ("significant-wave-height",)),
         "marine": coverage_summary(coastal_part_zones, ("sea-mean-deviation", "current-u", "current-v")),
+        "waterLevel": coverage_summary(coastal_part_zones, ("sea-mean-deviation",)),
+        "current": coverage_summary(coastal_part_zones, ("current-u", "current-v")),
+        "waterTemperature": coverage_summary(coastal_part_zones, ("water-temperature",)),
     }
     component_coverage = {
         "wind": coverage_summary(production_zones, ("wind-speed-10m", "wind-dir-10m")),
         "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m", "wind-tail-dir-10m")),
         "wave": coverage_summary(production_zones, ("significant-wave-height",)),
         "marine": coverage_summary(production_zones, ("sea-mean-deviation", "current-u", "current-v")),
+        "waterLevel": coverage_summary(production_zones, ("sea-mean-deviation",)),
+        "current": coverage_summary(production_zones, ("current-u", "current-v")),
+        "waterTemperature": coverage_summary(production_zones, ("water-temperature",)),
     }
     diag["componentHorizonCoverage"] = component_coverage
     # Backwards-compatible names now mean sufficient forecast horizon, not merely one value.
@@ -11407,6 +11618,20 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
+    prior_adaptive_recovery = (previous.get("diagnostics") or {}).get("adaptiveRecovery")
+    if isinstance(prior_adaptive_recovery, dict):
+        result["diagnostics"]["adaptiveRecovery"] = copy.deepcopy(prior_adaptive_recovery)
+    if os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true":
+        before_counts = json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))
+        if not isinstance(before_counts, dict) or any(
+            type(before_counts.get(component)) is not int or before_counts[component] < 0
+            for component in ("wind", "wave", "current", "waterLevel", "waterTemperature")
+        ):
+            raise ValueError("DMI adaptive recovery needs the measured five-component baseline")
+        result["diagnostics"]["adaptiveRecovery"] = {
+            "lastExtendedAt": generated,
+            "missingDmiPairsAtStart": before_counts,
+        }
     cache_leaf_sanitization = (
         (previous.get("diagnostics") or {}).get("cacheLeafSanitization")
     )
@@ -11505,6 +11730,9 @@ def main() -> int:
         ),
         atmosphere_horizon_needed=(
             int(schedule_coverage.get("missingWind") or 0) > 0
+        ),
+        water_level_recovery_needed=(
+            schedule_coverage.get("waterLevelRecoveryNeeded") is True
         ),
         force_wam_collections=(
             set(WAVE_BOOTSTRAP_COLLECTIONS)
@@ -11793,6 +12021,7 @@ def main() -> int:
     # own final bounded turn; a hole observed at run start is not a permanent
     # veto on spare-capacity native upgrades later in this same run.
     primary_refresh_only_collections: set[str] = set()
+    primary_native_deficit_collections: set[str] = set()
     primary_critical_work_observed = bool(
         acquisition_plan_diagnostics.get("globalMissingPairCountBeforeDmi", 0)
     )
@@ -11825,6 +12054,11 @@ def main() -> int:
                 )
                 for asset in selected_assets
             ]
+            if any(
+                int(row.get("currentNativeDeficitCount") or 0) > 0
+                for row in requirements
+            ):
+                primary_native_deficit_collections.add(collection)
             if requirements and all(
                 row["deferValidRefresh"] for row in requirements
             ):
@@ -11841,6 +12075,7 @@ def main() -> int:
                 schedule_coverage,
                 primary_refresh_only_collections,
                 runtime_remaining(),
+                native_deficit_collections=primary_native_deficit_collections,
             )
         )
         schedule_coverage["dkssPrimaryRefreshOnlyCollections"] = sorted(
@@ -12339,6 +12574,11 @@ def main() -> int:
                             regional_gap_pairs_by_time,
                         )
                     )
+                # The cross-provider current plan is advisory. If it is
+                # unavailable, native DMI current *and* DMI-only water level
+                # still need their own critical classification. Otherwise a
+                # transient planning failure silently demotes water-level
+                # holes to refresh-only work for this entire DKSS turn.
                 acquisition_requirements = {
                     str(asset["valid"]): classify_dkss_primary_asset(
                         collection=collection,
@@ -12359,13 +12599,21 @@ def main() -> int:
                         ),
                     )
                     for asset in assets
-                } if global_current_planning_pairs is not None else {}
+                }
                 if acquisition_requirements:
                     acquisition_plan_diagnostics.setdefault(
                         "byCollection", {}
                     )[collection] = {
                         "criticalAssetCount": sum(
                             bool(row["critical"])
+                            for row in acquisition_requirements.values()
+                        ),
+                        "nativeCurrentUpgradeAssetCount": sum(
+                            int(row.get("currentUpgradePairCount") or 0) > 0
+                            for row in acquisition_requirements.values()
+                        ),
+                        "nativeCurrentUpgradePairCount": sum(
+                            int(row.get("currentUpgradePairCount") or 0)
                             for row in acquisition_requirements.values()
                         ),
                         "optionalParentCurrentMissingAssetCount": sum(
@@ -12393,6 +12641,10 @@ def main() -> int:
                     planning_current_pairs,
                     critical_by_time={
                         valid_time: bool(row["critical"])
+                        for valid_time, row in acquisition_requirements.items()
+                    },
+                    critical_priority_by_time={
+                        valid_time: int(row["criticalPriority"])
                         for valid_time, row in acquisition_requirements.items()
                     },
                     direct_valid_times=required_current_valid_times,

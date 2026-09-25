@@ -727,7 +727,8 @@ as $$
         '14f3f0c9b1d91df0d23f94e1d56852a34f8d6a232e23da74590921be8f058904',
         'dafee01903ccb643b59572539104f879d99903bd622be8997cb20d1cc25d729d',
         '2c26b855fc0e93754c5f0ba586f6d2a2864c6de17880717ab6cd6c8cbc3bcad7',
-        '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1'
+        '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1',
+        'c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb'
       )
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
@@ -746,7 +747,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
-      and p_calibration_features ->> 'modelBundleSha256' = 'c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c'
+      and p_calibration_features ->> 'modelBundleSha256' = 'a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
       p_model_version,p_calibration_features,p_calibration_eligible,
@@ -1773,7 +1774,7 @@ begin
     or p_state ->> 'modelContractSha256'
       is distinct from 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
     or p_state ->> 'modelBundleSha256'
-      is distinct from '61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1'
+      is distinct from 'c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb'
     -- RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED_END
     or coalesce(p_state ->> 'samplingContextKey', '') !~ '^sha256:[0-9a-f]{64}$'
     or not public.ravradar_ravscore_checkpoint_canonical_time(p_reference_text)
@@ -1913,7 +1914,11 @@ begin
         or (ordered.previous_time is not null
           and ordered.previous_time::timestamptz
             >= (ordered.value ->> 'time')::timestamptz)
-        or (ordered.value ->> 'time')::timestamptz > v_current_reference
+        -- An exact regional native hold can retain later MISSING rows,
+        -- but may never invent later signed transport evidence.
+        or (ordered.value ->> 'time')::timestamptz > v_state_time
+        or ((ordered.value ->> 'time')::timestamptz > v_current_reference
+          and jsonb_typeof(ordered.value -> 'strength') is distinct from 'null')
     )
     or (((p_state -> 'currentMemoryReady') = 'true'::jsonb)
       and p_state -> 'currentEvidence'
@@ -2747,7 +2752,7 @@ begin
       '^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_BEGIN
     or p_payload ->> 'continuationStateContractSha256' is distinct from
-      'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587'
+      '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab'
     -- RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED_END
     or coalesce(p_payload ->> 'generationSha256', '') !~ '^[0-9a-f]{64}$'
     or coalesce(p_payload ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
@@ -2796,7 +2801,7 @@ begin
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "61ec54746fdf1ac58f3d7859d4d55a901fcc6376d0412acf2d6f4f418ae5c0a1"
+    "modelBundleSha256": "c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb"
   }'::jsonb then
     return false;
   end if;
@@ -2829,7 +2834,7 @@ begin
     or v_companion ->> 'generationSha256'
       is distinct from p_payload ->> 'generationSha256'
     or v_companion ->> 'rollbackId'
-      is distinct from 'integrated-schema6-to-candidate-g-schema2-v3'
+      is distinct from 'integrated-schema5-to-candidate-g-schema2-v2'
     or coalesce(v_companion ->> 'stateSha256', '') !~ '^[0-9a-f]{64}$'
     or jsonb_typeof(v_companion -> 'partCount') is distinct from 'number'
     or v_companion -> 'partCount' is distinct from '673'::jsonb
@@ -2877,7 +2882,7 @@ begin
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-    "modelBundleSha256": "c7c4840d3c07b71610b30d1528633bc30a9e2449d77e331d3018852a4e68891c"
+    "modelBundleSha256": "a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021"
   }'::jsonb then
     return false;
   end if;
@@ -3192,7 +3197,7 @@ begin
     'appliedMigrationVersion', case when exists (
       select 1
       from supabase_migrations.schema_migrations m
-      where m.version::text = '20260923120000'
+      where m.version::text = '20260925150000'
     ) then '20260920220000' else null end,
     'checkpointContract', pg_catalog.jsonb_build_object(
       'id', 'ravscore-checkpoint-metadata-cas-v1',

@@ -303,6 +303,52 @@ assert {
 } == threshold_pairs
 assert segments == runner.operational_request_segments(set(reversed(sorted(threshold_pairs))))
 
+# The post-closure quality pass must not turn a 118-hour backlog into a
+# single unbounded provider call, nor keep the same spatial shard first.
+refresh_shards = [
+    {"shardId": f"copernicus-baltic-nemo:refresh-{index}", "targets": []}
+    for index in range(2)
+]
+refresh_candidates = [
+    {"priority": 0, "source": "copernicus-baltic-nemo", "shard": shard,
+     "shardIndex": index, "partId": f"refresh-{index}",
+     "validTime": pair(f"refresh-{index}", hour)[1]}
+    for index, shard in enumerate(refresh_shards)
+    for hour in range(118)
+]
+first_refresh = runner.select_bounded_operational_refresh(
+    refresh_candidates, acquisition_at=reference, touched_shards=set())
+assert first_refresh is not None
+first_group, first_pairs = first_refresh
+assert len(first_pairs) == 24
+assert max(datetime.fromisoformat(time.replace("Z", "+00:00"))
+           for _, time in first_pairs) - min(datetime.fromisoformat(time.replace("Z", "+00:00"))
+                                       for _, time in first_pairs) <= timedelta(hours=23)
+second_refresh = runner.select_bounded_operational_refresh(
+    refresh_candidates, acquisition_at=reference,
+    touched_shards={(first_group["source"], first_group["shard"]["shardId"])})
+assert second_refresh is not None
+assert second_refresh[0]["shard"]["shardId"] != first_group["shard"]["shardId"]
+assert runner.select_bounded_operational_refresh(
+    refresh_candidates, acquisition_at=reference,
+    touched_shards={(row["source"], row["shard"]["shardId"])
+                    for row in refresh_candidates},
+) is None
+lower_priority_refresh = [*refresh_candidates, {
+    **refresh_candidates[0], "priority": 1,
+    "source": "copernicus-nws-amm15",
+    "shard": {"shardId": "copernicus-nws-amm15:other", "targets": []},
+}]
+assert runner.select_bounded_operational_refresh(
+    lower_priority_refresh, acquisition_at=reference,
+    touched_shards={(row["source"], row["shard"]["shardId"])
+                    for row in refresh_candidates},
+)[0]["source"] == "copernicus-nws-amm15"
+next_hour_refresh = runner.select_bounded_operational_refresh(
+    refresh_candidates, acquisition_at=reference + timedelta(hours=1), touched_shards=set())
+assert next_hour_refresh is not None
+assert next_hour_refresh[0]["shard"]["shardId"] != first_group["shard"]["shardId"]
+
 # A failed exact segment cannot suppress another segment of the same stable
 # full-register shard. Its failure key differs only by exact pair-set hash.
 segment_product = runner.PRODUCTS[0]

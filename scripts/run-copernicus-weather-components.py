@@ -10,61 +10,59 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
+import tempfile
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.copernicus_weather_component_bank import (
     empty_component_bank, validate_component_bank, validate_component_plan,
-    produce_component_bank, project_component_candidates, rebase_component_bank,
+    backfill_verified_component_banks, produce_component_bank, project_component_candidates, rebase_component_bank,
     save_component_bank, seal_component_projection,
     build_component_plan,
     _sealed,
 )
 from lib.copernicus_weather_components import read_component_subset, CONTRACTS
-from lib.copernicus_component_spatial import make_spatial_admitter, component_spatial_policy, static_request
+from lib.copernicus_component_spatial import (
+    make_spatial_admitter, component_spatial_policy, eligible_static_cell, static_request,
+)
 from lib.copernicus_component_transport import (
     ComponentSubsetCache, BoundedComponentTransport, atomic_json, subset_worker,
 )
 
 
-def verify_original_components(plan: dict, bank: dict, cache: ComponentSubsetCache) -> dict:
-    """Bind values to original dynamic bytes and wetness to original mask bytes."""
-    validate_component_plan(plan)
-    validate_component_bank(bank, targets=plan["targets"])
-    requests = {r["requestSha256"]: r for r in bank["requests"]}
-    parsed, receipts, static, failures = {}, {}, {}, []
-    authorized = set()
-    for entry in bank["records"]:
+def original_component_admitter(plan: dict, cache: ComponentSubsetCache):
+    """One original-byte decision for retry planning and final admission."""
+    parsed, receipts, static = {}, {}, {}
+
+    def dynamic_verified(entry, request):
         row = entry["native"]
-        if row["component"] == "waterLevel":
-            continue  # Preserved legacy bytes are not an authorised runtime source.
-        request = requests[entry["requestSha256"]]
         key = request["requestSha256"], row["subsetSha256"]
         if key not in parsed:
             try:
                 path, receipt = cache.load_receipt(request, row["subsetSha256"])
                 read = read_component_subset(path, contract_key=row["contractKey"], target=request["target"],
                                               expected_times=request["expectedTimes"])
-                parsed[key] = {r["validTime"]: r for r in read["records"]}
+                parsed[key] = {native["validTime"]: native for native in read["records"]}
                 receipts[key] = receipt
             except (OSError, ValueError, KeyError):
                 parsed[key] = {}
-        if parsed[key].get(row["validTime"]) == row and entry["acquisitionAt"] == receipts[key]["acquisitionAt"]:
-            authorized.add(entry["recordId"])
-        else:
-            failures.append({"recordId": entry["recordId"], "reason": "CP_ORIGINAL_DYNAMIC_BYTES_NOT_VERIFIED"})
-    def evidence_for(contract_key, target):
-        key = contract_key, target["partId"]
+        return bool(parsed[key].get(row["validTime"]) == row
+            and entry["acquisitionAt"] == (receipts.get(key) or {}).get("acquisitionAt"))
+
+    def evidence_for(contract_key, target, grid_point):
+        key = contract_key, target["partId"], tuple(grid_point)
         if key not in static:
             try:
-                static[key] = cache.load_static(contract_key, target)
+                static[key] = cache.load_static_for_grid(contract_key, target, grid_point)
             except (OSError, ValueError, KeyError):
                 static[key] = None
         return static[key]
     actual_spatial = make_spatial_admitter(plan, evidence_for)
     def admit(entry, request, target):
-        if entry["recordId"] not in authorized:
+        if not dynamic_verified(entry, request):
             return None
         certificate = actual_spatial(entry, request, target)
         if certificate is None:
@@ -73,6 +71,25 @@ def verify_original_components(plan: dict, bank: dict, cache: ComponentSubsetCac
             (request["requestSha256"], entry["native"]["subsetSha256"])].items() if k != "request"}
         certificate["evidenceSha256"] = seal_component_projection({"spatialWitness": certificate["witness"]})["projectionSha256"]
         return certificate
+    def reset():
+        parsed.clear()
+        receipts.clear()
+        static.clear()
+    return admit, dynamic_verified, reset
+
+
+def verify_original_components(plan: dict, bank: dict, cache: ComponentSubsetCache) -> dict:
+    """Bind values to original dynamic bytes and wetness to original mask bytes."""
+    validate_component_plan(plan)
+    validate_component_bank(bank, targets=plan["targets"])
+    requests = {r["requestSha256"]: r for r in bank["requests"]}
+    admit, dynamic_verified, _ = original_component_admitter(plan, cache)
+    failures = []
+    for entry in bank["records"]:
+        if entry["native"]["component"] == "waterLevel":
+            continue  # Preserved legacy bytes are not an authorised runtime source.
+        if not dynamic_verified(entry, requests[entry["requestSha256"]]):
+            failures.append({"recordId": entry["recordId"], "reason": "CP_ORIGINAL_DYNAMIC_BYTES_NOT_VERIFIED"})
     stage = project_component_candidates(plan, bank, admit_spatial=admit, include_retained_bank=True)
     return {"kind": "RAVRADAR_PRIVATE_CP_COMPONENT_AUTHORITY", "schemaVersion": 1,
         "targets": plan["targets"], "productionReferenceAt": plan["productionReferenceAt"],
@@ -110,14 +127,24 @@ def storage_inventory(bank: dict, cache: ComponentSubsetCache) -> dict:
     """Exact bank-referenced files only; no glob, recursive inventory or network."""
     validate_component_bank(bank, targets=bank["targets"])
     requests = {r["requestSha256"]: r for r in bank["requests"]}
-    files, checked, required_static = {}, set(), set()
+    files, checked, checked_static = {}, set(), set()
     def add(path):
         relative = path.relative_to(cache.directory).as_posix()
         payload = path.read_bytes()
         files[relative] = {"relativePath": relative, "sha256": "sha256:" + hashlib.sha256(payload).hexdigest(), "bytes": len(payload)}
     for entry in bank["records"]:
         request, row = requests[entry["requestSha256"]], entry["native"]
-        required_static.add(static_request(row["contractKey"], request["target"])["requestSha256"])
+        static_req = static_request(row["contractKey"], request["target"])
+        static_key = static_req["requestSha256"], tuple(row["gridPoint"])
+        if static_key not in checked_static:
+            evidence = cache.load_static_for_grid(row["contractKey"], request["target"], row["gridPoint"])
+            if evidence is None:
+                raise ValueError("CP_REFERENCED_STATIC_ORIGINAL_REQUIRED")
+            subset = evidence["subsetSha256"]
+            static_path, _ = cache.load_receipt(static_req, subset)
+            add(static_path)
+            add(cache.receipt_path(static_req["requestSha256"], subset))
+            checked_static.add(static_key)
         pair = request["requestSha256"], row["subsetSha256"]
         if pair in checked:
             continue
@@ -132,16 +159,129 @@ def storage_inventory(bank: dict, cache: ComponentSubsetCache) -> dict:
       for contract_key in CONTRACTS:
         static = static_request(contract_key, target)
         pointer = cache.directory / "static" / (static["requestSha256"][7:] + ".json")
-        if not pointer.exists() and static["requestSha256"] in required_static:
-            raise ValueError("CP_REFERENCED_STATIC_ORIGINAL_REQUIRED")
         if pointer.exists():
-            digest = json.loads(pointer.read_text(encoding="utf-8"))["subsetSha256"]
-            path, _ = cache.load_receipt(static, digest)
+            if pointer.is_symlink():
+                raise ValueError("CP_STATIC_POINTER_SYMLINK_INVALID")
+            try:
+                digest = json.loads(pointer.read_text(encoding="utf-8"))["subsetSha256"]
+                path, _ = cache.load_receipt(static, digest)
+            except (OSError, ValueError, KeyError):
+                continue  # Optional acquisition hint, never a retained row's only proof.
             add(pointer)
             add(path)
             add(cache.receipt_path(static["requestSha256"], digest))
     return {"kind": "CP_COMPONENT_STORAGE_INVENTORY", "schemaVersion": 1,
             "bankSha256": bank["bankSha256"], "files": [files[k] for k in sorted(files)]}
+
+
+def merge_original_component_generations(latest: dict, latest_cache: ComponentSubsetCache,
+                                         complete: dict, complete_cache: ComponentSubsetCache,
+                                         *, targets: list[dict], retention_start_at: str,
+                                         retention_end_at: str, output_root: Path) -> dict:
+    """Stage a dual-bank union with every selected immutable original, or none.
+
+    Both inputs must already come from independently verified protected packs.
+    This function still rechecks native bytes and wet-cell evidence rather than
+    trusting the pack manifest as scientific admission. Identical dynamic
+    subset bytes are rebound to one genuine receipt; an incompatible dynamic
+    receipt or original-file collision still fails closed.
+    """
+    validate_component_bank(latest, targets=latest["targets"])
+    validate_component_bank(complete, targets=complete["targets"])
+    output_root = Path(output_root)
+    if output_root.exists():
+        raise ValueError("CP_COMPONENT_MERGE_DESTINATION_EXISTS")
+    output_root.parent.mkdir(parents=True, exist_ok=True)
+    source_roots = [latest_cache.directory.resolve(), complete_cache.directory.resolve()]
+    if any(output_root.resolve() == root or root in output_root.resolve().parents
+           or output_root.resolve() in root.parents for root in source_roots):
+        raise ValueError("CP_COMPONENT_MERGE_SOURCE_DESTINATION_OVERLAP")
+    source_rows = []
+    for bank, cache in ((latest, latest_cache), (complete, complete_cache)):
+        plan = {"targets": bank["targets"], "targetRegistrySha256": bank["targetRegistrySha256"]}
+        admit, _, _ = original_component_admitter(plan, cache)
+        source_rows.append((bank, cache, admit,
+                            {row["requestSha256"]: row for row in bank["requests"]},
+                            {(row["requestSha256"], row["native"]["subsetSha256"],
+                              row["native"]["validTime"]): row for row in bank["records"]}))
+    merged = backfill_verified_component_banks(latest, complete, targets=targets,
+        retention_start_at=retention_start_at, retention_end_at=retention_end_at,
+        admit_latest=source_rows[0][2], admit_complete=source_rows[1][2])
+    requests = {row["requestSha256"]: row for row in merged["requests"]}
+    with tempfile.TemporaryDirectory(prefix=".cp-generation-", dir=output_root.parent,
+                                     ignore_cleanup_errors=True) as temporary:
+        staged = Path(temporary)
+        destination_cache = ComponentSubsetCache(staged / "cache")
+        destination_cache.directory.mkdir()
+        def copy_exact(source: Path, destination: Path, *, same_verified_static=False):
+            if source.is_symlink():
+                raise ValueError("CP_COMPONENT_MERGE_SOURCE_SYMLINK")
+            content = source.read_bytes()
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if destination.exists():
+                if destination.is_symlink() or (destination.read_bytes() != content
+                    and not same_verified_static):
+                    raise ValueError("CP_COMPONENT_MERGE_ORIGINAL_CONFLICT")
+                return
+            with destination.open("xb") as handle:
+                handle.write(content)
+        for entry in sorted(merged["records"],
+                            key=lambda row: row["native"]["validTime"], reverse=True):
+            request = requests[entry["requestSha256"]]
+            record_key = (entry["requestSha256"], entry["native"]["subsetSha256"],
+                          entry["native"]["validTime"])
+            source = next(((cache, originals) for bank, cache, admit, originals, records in source_rows
+                           if (original := records.get(record_key)) is not None
+                           and original["native"] == entry["native"]
+                           and admit(original, originals[entry["requestSha256"]], request["target"])), None)
+            if source is None:
+                raise ValueError("CP_COMPONENT_MERGE_SELECTED_ORIGINAL_UNAVAILABLE")
+            cache, originals = source
+            original_request = originals[entry["requestSha256"]]
+            dynamic_hash = entry["native"]["subsetSha256"]
+            dynamic_cache = None
+            for _, candidate_cache, _, candidate_requests, _ in source_rows:
+                candidate_request = candidate_requests.get(entry["requestSha256"])
+                if candidate_request is None:
+                    continue
+                try:
+                    _, candidate_receipt = candidate_cache.load_receipt(candidate_request, dynamic_hash)
+                except (OSError, ValueError, KeyError):
+                    continue
+                if candidate_receipt["acquisitionAt"] == entry["acquisitionAt"]:
+                    dynamic_cache = candidate_cache
+                    break
+            if dynamic_cache is None:
+                raise ValueError("CP_COMPONENT_MERGE_RECEIPT_UNAVAILABLE")
+            copy_exact(dynamic_cache.object_path(dynamic_hash), destination_cache.object_path(dynamic_hash))
+            copy_exact(dynamic_cache.receipt_path(entry["requestSha256"], dynamic_hash),
+                       destination_cache.receipt_path(entry["requestSha256"], dynamic_hash))
+            static = static_request(entry["native"]["contractKey"], original_request["target"])
+            evidence = cache.load_static_for_grid(entry["native"]["contractKey"],
+                                                  original_request["target"], entry["native"]["gridPoint"])
+            if evidence is None:
+                raise ValueError("CP_COMPONENT_MERGE_STATIC_ORIGINAL_UNAVAILABLE")
+            static_hash = evidence["subsetSha256"]
+            cache.load_receipt(static, static_hash)
+            copy_exact(cache.object_path(static_hash), destination_cache.object_path(static_hash))
+            copy_exact(cache.receipt_path(static["requestSha256"], static_hash),
+                       destination_cache.receipt_path(static["requestSha256"], static_hash),
+                       same_verified_static=True)
+            pointer = destination_cache.directory / "static" / (static["requestSha256"][7:] + ".json")
+            if not pointer.exists():
+                atomic_json(pointer, {"subsetSha256": static_hash})
+        save_component_bank(staged / "bank.json", merged, targets=targets)
+        merged_admit, _, _ = original_component_admitter(
+            {"targets": merged["targets"], "targetRegistrySha256": merged["targetRegistrySha256"]},
+            destination_cache)
+        if any(merged_admit(entry, requests[entry["requestSha256"]],
+                            requests[entry["requestSha256"]]["target"]) is None
+               for entry in merged["records"]):
+            raise ValueError("CP_COMPONENT_MERGE_FINAL_ORIGINAL_INVALID")
+        storage_inventory(merged, destination_cache)
+        os.replace(staged, output_root)
+    return {"bankSha256": merged["bankSha256"], "recordCount": len(merged["records"]),
+            "latestRecordCount": len(latest["records"]), "completeRecordCount": len(complete["records"])}
 
 
 def exclude_unverifiable_originals(bank: dict, cache: ComponentSubsetCache) -> tuple[dict, int]:
@@ -178,6 +318,28 @@ def exclude_unverifiable_originals(bank: dict, cache: ComponentSubsetCache) -> t
     return result, removed
 
 
+def central_component_targets(registry: dict) -> list[dict]:
+    zones = registry.get("zones")
+    if (not isinstance(zones, dict) or type(registry.get("partCount")) is not int
+        or registry["partCount"] < 1):
+        raise ValueError("CP_COMPONENT_CENTRAL_TARGET_REGISTRY_INVALID")
+    targets = []
+    for zone_id, parts in zones.items():
+        if not isinstance(parts, list):
+            raise ValueError("CP_COMPONENT_CENTRAL_TARGET_REGISTRY_INVALID")
+        for part in parts:
+            if not isinstance(part, dict) or part.get("sourceZoneId") != zone_id:
+                raise ValueError("CP_COMPONENT_CENTRAL_TARGET_REGISTRY_INVALID")
+            targets.append({"partId": part.get("partId"), "parentZoneId": zone_id,
+                            "waterPoint": part.get("waterPoint")})
+    if len(targets) != registry["partCount"]:
+        raise ValueError("CP_COMPONENT_CENTRAL_TARGET_COUNT_INVALID")
+    # The bank validator enforces unique ids, finite water points and a
+    # deterministic central fingerprint before any output is committed.
+    empty_component_bank(targets)
+    return targets
+
+
 def main(argv=None) -> int:
     args_list = list(sys.argv[1:] if argv is None else argv)
     if args_list[:1] == ["--subset-worker"]:
@@ -191,6 +353,12 @@ def main(argv=None) -> int:
     parser.add_argument("--cache-directory", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--storage-inventory", type=Path)
+    parser.add_argument("--merge-generations", action="store_true")
+    parser.add_argument("--complete-bank", type=Path)
+    parser.add_argument("--complete-cache-directory", type=Path)
+    parser.add_argument("--merge-output-root", type=Path)
+    parser.add_argument("--target-registry", type=Path)
+    parser.add_argument("--target-reference")
     parser.add_argument("--previous-targets", type=Path)
     parser.add_argument("--verify-only", action="store_true")
     parser.add_argument("--budget-seconds", type=float)
@@ -199,6 +367,27 @@ def main(argv=None) -> int:
     parser.add_argument("--maximum-download-bytes", type=int)
     args = parser.parse_args(args_list)
     cache = ComponentSubsetCache(args.cache_directory)
+    if args.merge_generations:
+        if (args.output is None or args.complete_bank is None or args.complete_cache_directory is None
+            or args.merge_output_root is None or args.target_registry is None
+            or args.target_reference is None or args.plan is not None or args.plan_input is not None
+            or args.verify_only or args.storage_inventory is not None):
+            raise ValueError("CP_COMPONENT_MERGE_ARGUMENTS_INVALID")
+        reference = datetime.fromisoformat(args.target_reference.replace("Z", "+00:00"))
+        if reference.tzinfo is None or reference.utcoffset() != timedelta(0) or any(
+            (reference.minute, reference.second, reference.microsecond)):
+            raise ValueError("CP_COMPONENT_MERGE_TARGET_REFERENCE_INVALID")
+        iso = lambda value: value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        summary = merge_original_component_generations(
+            json.loads(args.bank.read_text(encoding="utf-8")), cache,
+            json.loads(args.complete_bank.read_text(encoding="utf-8")),
+            ComponentSubsetCache(args.complete_cache_directory),
+            targets=central_component_targets(json.loads(args.target_registry.read_text(encoding="utf-8"))),
+            retention_start_at=iso(reference - timedelta(days=14)),
+            retention_end_at=iso(reference + timedelta(days=7)),
+            output_root=args.merge_output_root)
+        atomic_json(args.output, {"kind": "CP_COMPONENT_DUAL_GENERATION_STAGE", "schemaVersion": 1, **summary})
+        return 0
     if args.storage_inventory is not None:
         bank = json.loads(args.bank.read_text(encoding="utf-8"))
         atomic_json(args.storage_inventory, storage_inventory(bank, cache))
@@ -236,11 +425,39 @@ def main(argv=None) -> int:
             atomic_json(progress_path, {"kind": "CP_COMPONENT_PROGRESS_CURSOR", "schemaVersion": 1,
                 "planSha256": plan["planSha256"], "bankSha256": value["bankSha256"],
                 "attempts": attempt_rows, "nextCursor": [latest["partId"], latest["contractKey"]] if latest else cursor})
-        result = produce_component_bank(plan, bank, acquire_subset=transport.acquire_subset,
+        admit_existing_or_new, dynamic_verified, reset_original_checks = original_component_admitter(plan, cache)
+        def acquire_and_recheck(request):
+            try:
+                return transport.acquire_subset(request)
+            finally:
+                # New immutable static/dynamic receipts invalidate any cached
+                # negative original-byte decision from the preceding bank scan.
+                reset_original_checks()
+        def prepare_and_recheck(key, target):
+            try:
+                return transport.evidence_for(key, target) is not None
+            finally:
+                reset_original_checks()
+        def refresh_grid_if_needed(key, target, entry_requests):
+            # A broken dynamic original needs a dynamic retry, not an extra
+            # static request. A sound dynamic row on an unproved grid can only
+            # be rescued by an independently downloaded immutable static file.
+            if not any(dynamic_verified(entry, request) for entry, request in entry_requests):
+                return None
+            try:
+                evidence = transport.refresh_static(key, target)
+                return eligible_static_cell(evidence)
+            except (OSError, ValueError, RuntimeError):
+                return False
+            finally:
+                reset_original_checks()
+        result = produce_component_bank(plan, bank, acquire_subset=acquire_and_recheck,
             acquisition_at=lambda: transport.last_receipt["acquisitionAt"],
             checkpoint=checkpoint, should_continue=transport.can_continue,
             start_after=tuple(cursor) if isinstance(cursor, list) and len(cursor) == 2 else None,
-            prepare_reusable_group=lambda key, target: transport.evidence_for(key, target) is not None)
+            admit_spatial=admit_existing_or_new,
+            prepare_reusable_group=prepare_and_recheck,
+            refresh_unadmitted_static=refresh_grid_if_needed)
         bank, attempts = result["bank"], result["attempts"]
         # Even zero work emits a valid bank; the following verification has no
         # network path and cannot claim success merely from a status marker.

@@ -1,3 +1,55 @@
+## 4.0.488 – samlet cache- og vejrrecovery (lokal, 2026-09-25)
+
+Efter en måling af begge gemte generationer vælges den verificerede
+11Z-pakke som eneste private fortsættelse. Den nyere, men tyndere
+15Z-pakke beholdes som separat tabsanker. På 92 endnu fremtidige
+fælles timer har 11Z 72.520 gyldige feltpar, som 15Z tabte;
+15Z har 3.238 gyldige par, som 11Z mangler. Almindelig vejrhentning
+skal forsøge at genhente de sidste, og ingen ny privat pakke eller
+offentlig prognose må udgives med tab mod nogen af originalerne.
+En frisk/tom produktionscache og automatisk fuld fletning er ikke
+valgt. Ulæselig privat DMI-candidate eller forecast-store stopper
+fortsættelsen; gyldig nyere DMI-fremdrift bevares over en ældre
+READY-donor. Copernicus' originalbevis, DMI's komponentvise
+modelvalg, kildeprioritet og admin-valgt DMI-vandstandsrouting er
+rettet lokalt og afventer faktisk normalrun-bevis.
+
+PR #449's første exact-head-kørsel fandt, at de ændrede vejrvalgsfiler
+også er del af de kryptografiske modelpakker. Begge pakkeidentiteter
+og continuation-identiteten er nu regenereret, og append-only-migration
+`20260925150000` fører dem ind i den aktuelle databinding uden at
+ændre de anvendte historiske migrationer. Scoreformlen er fortsat
+uændret. Målrettede binding-, migrations- og scorekontroller består;
+en ny exact-head-kontrol og livekørsel afventer.
+
+Den nye modelidentitet kræver også en eksplicit overgang fra de to
+beskyttede vejrpakker. Den præcise gamle læser verificerer begge,
+4.0.485-kilden kontrollerer og genbinder 11Z's scorehistorik uden at
+ændre vejrmålinger, og 15Z bruges stadig kun som tabsanker. Det
+gamle checkpoint indlæses ikke i denne ene overgang. En ny manuel
+database-only installation af den seneste binding bevarer begge
+private pakker urørte, før den almindelige vejrhentning starter.
+Code-only deploy afvises, mens denne særlige 11Z/15Z-genopretning
+afventer, så den komplette forgænger ikke bliver skubbet ud.
+
+Intet er endnu merged eller online som 4.0.488. Cron forbliver
+pauset. De tre gamle queued vejr-runs står fortsat i GitHub, men
+deres egen tidlige main-SHA-kontrol afviser dem før beskyttet læsning
+eller skrivning, hvis de vækkes på deres gamle commits.
+
+Et grønt normalrun tabte gyldig data i alle fem vejrtyper, da
+den tidligere fulde private cache blev afvist på grund af en for
+bred kildekodehash. Normal drift kræver nu faktisk verificeret
+cache; den eksakte sidst komplette forgænger kan gendannes, og
+fremtidig kodevedligeholdelse bruger en eksplicit lagrings-ABI.
+Før offentliggørelse stoppes gyldig-til-tom-tab på fælles
+kystdele/timer i vind, bølger, strøm, vandstand og temperatur.
+DMI's køretid vælges fra bevist fem-komponentdækning og giver
+bred vandstandsmangel særskilt prioritet. Copernicus' senere
+indhentning roterer i afgrænsede 24-timers segmenter. Den
+godkendte Limfjord-fastholdelse, DMI-only-vandstand og scoremodel
+er uændrede. Koden er lokal; livebevis afventer. Se DEC-0254.
+
 ## 4.0.486 – forståelige score- og prognoseforklaringer (2026-09-24)
 
 Offentlige forklaringer på dansk, tysk og engelsk bruger nu almindeligt
@@ -2318,3 +2370,14 @@ samling af to verificerede bølgekomponenter, bevarer gyldig gammel
 reserve uden revisionsbevis og holder ukendte konflikter som fejl.
 Den forståelige DA/DE/EN-tekst fra 4.0.486 følger med. Kun lokal
 måltest er endnu bevist; se `CHANGELOG-4.0.487.md` og DEC-0253.
+## Historisk første 4.0.488-afgrænsning – stop tab af vejrdata ved afvist privat cache (2026-09-24)
+
+Normalrun `36022310055` deployede grønt, men mistede mange tidligere
+gyldige vejrpar, fordi den fulde private cache blev afvist og
+normaldrift fortsatte uden den. 4.0.488 stopper normal drift uden
+fuld cache og tillader kun den eksakt verificerede 4.0.485-
+generation som midlertidig forgænger. Begge restore-trin bindes til
+den faktisk valgte pakke, også når to generationer deler tid og
+datasæt-id. Ingen vejr-, score- eller geometriændring. Livebevis,
+resterende datamangler og generel tabsbeskyttelse var da stadig åbne;
+den samlede lokale rettelse står øverst.

@@ -469,7 +469,7 @@ const secondPrivateRestore = indentedBody(
   '      - name: Verify and restore the private production runtime bundle',
 );
 assert.match(secondPrivateRestore, /private-runtime-second-restore-expectation\.mjs/);
-assert.match(secondPrivateRestore, /--source-description "\$RUNNER_TEMP\/private-runtime-current-source\.json"/);
+assert.match(secondPrivateRestore, /--source-description "\$RUNNER_TEMP\/private-runtime-restored-source\.json"/);
 assert.match(secondPrivateRestore, /--bundle-manifest "\$RAVRADAR_PRIVATE_RUNTIME_BUNDLE\/manifest\.json"/);
 assert.match(secondPrivateRestore, /restore_expected="\$RUNNER_TEMP\/private-runtime-second-restore-expected\.json"/);
 assert.equal(

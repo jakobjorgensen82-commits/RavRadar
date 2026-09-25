@@ -1,0 +1,159 @@
+name: Apply RavRadar weather model binding only
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv APPLY-WEATHER-MODEL-BINDING"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# A binding migration and a normal weather run must never interleave. This
+# workflow never restores, publishes, or deploys a weather/runtime artifact.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  apply-binding:
+    name: Apply exact database model binding without touching saved weather
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require explicit main authority and exact head
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = APPLY-WEATHER-MODEL-BINDING
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Reuse exact successful pull-request source proof
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require existing source proof without a duplicate gate
+        shell: bash
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+
+      - name: Seal exact integrated implementation identity
+        id: integrated-implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/seal-ravscore-public-browser-closure.mjs \
+            --root . \
+            --output "$RUNNER_TEMP/integrated-public-closure.json" \
+            --model integrated \
+            --identity-output "$RUNNER_TEMP/integrated-implementation-identity.json"
+          closure_sha256="$(jq -er '.implementationClosureSha256 | select(test("^[a-f0-9]{64}$"))' "$RUNNER_TEMP/integrated-implementation-identity.json")"
+          echo "closure_sha256=$closure_sha256" >> "$GITHUB_OUTPUT"
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+
+      - name: Prepare isolated exact migration view
+        id: migration-view
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration_workdir="$(mktemp -d)"
+          echo "workdir=$migration_workdir" >> "$GITHUB_OUTPUT"
+          node scripts/integrated-cutover-readiness.mjs assert-source \
+            --public-implementation-closure-sha256 \
+            "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir \
+            --output "$migration_workdir"
+
+      - name: Read linked migration history
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-before.txt"
+
+      - name: Hydrate only already-applied migration identities
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs hydrate-history
+          --workdir "${{ steps.migration-view.outputs.workdir }}"
+          --migration-list "$RUNNER_TEMP/weather-binding-migrations-before.txt"
+
+      - name: Dry-run and allow only the latest exact binding migration
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-plan.txt"
+          supabase db push --linked --dry-run --skip-vault 2>&1 | tee "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/verify-code-only-migration-plan.mjs \
+            --migration-list "$RUNNER_TEMP/weather-binding-migrations-plan.txt" \
+            --dry-run "$RUNNER_TEMP/weather-binding-migrations-dry-run.txt" \
+            --migrations-directory "${{ steps.migration-view.outputs.workdir }}/supabase/migrations"
+
+      - name: Reconfirm main immediately before the one database write
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Apply only the dry-run-verified binding migration
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase db push --linked --skip-vault
+
+      - name: Read back applied migration and live database binding
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.migration-view.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/weather-binding-migrations-applied.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/integrated-cutover-readiness.mjs applied \
+            --migration-list "$RUNNER_TEMP/weather-binding-migrations-applied.txt"
+          node scripts/integrated-cutover-readiness.mjs verify-db

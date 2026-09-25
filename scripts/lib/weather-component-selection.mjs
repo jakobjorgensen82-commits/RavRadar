@@ -65,6 +65,11 @@ export function preferQualifiedDmiComponentSource(existing, candidate, component
   const oldRun = timestamp(existing.modelRun);
   const newRun = timestamp(candidate.modelRun);
   if (oldRun === null || newRun === null) return false;
+  // Both sources have already passed independent component/grid admission.
+  // A newer official DMI run must not be blocked by a different, still-valid
+  // cell or marine collection left in the old cache. Spatial and collection
+  // ordering remain tie-breakers only within the same model run.
+  if (newRun !== oldRun) return newRun > oldRun;
   if (component === 'current') {
     if (!samePoint(existing.gridPoint, candidate.gridPoint)) {
       if (!finite(existing.distanceKm) || !finite(candidate.distanceKm)
@@ -86,7 +91,6 @@ export function preferQualifiedDmiComponentSource(existing, candidate, component
     || !samePoint(existing.gridPoint, candidate.gridPoint)
     || existing.verticalLayer !== candidate.verticalLayer
     || existing.component !== candidate.component) return false;
-  if (newRun !== oldRun) return newRun > oldRun;
   if (candidate.collection !== existing.collection) {
     const oldRank = COLLECTION_ORDER.indexOf(existing.collection);
     const newRank = COLLECTION_ORDER.indexOf(candidate.collection);
@@ -122,14 +126,18 @@ export function selectQualifiedWeatherComponent(candidates, {
     if (!dmi || preferQualifiedDmiComponentSource(dmi.source, entry.source, component)) dmi = entry;
   }
   const reserves = admitted.filter(entry => entry.source.provider !== 'dmi');
-  // A filled reserve slot is not a general permission for CP to overwrite OM.
-  // Same-provider revision refresh is allowed only with comparable model proof.
+  // After independent admission, Copernicus outranks Open-Meteo for the
+  // same component/entity/hour. Previous ownership is only a tie-breaker
+  // *within* one provider; it cannot freeze a lower-priority provider.
+  // Same-provider revision refresh still needs comparable model proof.
   const selectReserve = entries => {
-    let winner = entries.find(entry => entry.candidate.previouslySelected === true)
-      ?? entries.find(entry => entry.source.provider === 'copernicus')
-      ?? entries[0] ?? null;
-    for (const entry of entries) {
-      if (!winner || entry.source.provider !== winner.source.provider) continue;
+    const provider = entries.some(entry => entry.source.provider === 'copernicus')
+      ? 'copernicus' : 'open-meteo';
+    const providerEntries = entries.filter(entry => entry.source.provider === provider);
+    let winner = providerEntries.find(entry => entry.candidate.previouslySelected === true)
+      ?? providerEntries[0] ?? null;
+    for (const entry of providerEntries) {
+      if (!winner) continue;
       if (!['model', 'productId', 'datasetId'].every(key =>
         entry.source[key] === winner.source[key])) continue;
       const oldRun = responseBoundModelRun(winner.source);
@@ -140,7 +148,12 @@ export function selectQualifiedWeatherComponent(candidates, {
   };
   if (!dmi) {
     const reserve = selectReserve(reserves);
-    return reserve ? { candidate: reserve.candidate, reason: 'GAP_FILLED_BY_RESERVE' } : null;
+    if (!reserve) return null;
+    const replacedOpenMeteo = reserve.source.provider === 'copernicus'
+      && reserves.some(entry => entry.source.provider === 'open-meteo'
+        && entry.candidate.previouslySelected === true);
+    return { candidate: reserve.candidate,
+      reason: replacedOpenMeteo ? 'COPERNICUS_REPLACES_OPEN_METEO' : 'GAP_FILLED_BY_RESERVE' };
   }
   const dmiRun = responseBoundModelRun(dmi.source);
   if (dmiRun !== null && referenceMs - dmiRun >= DMI_RESERVE_CHALLENGE_AGE_HOURS * 3_600_000) {

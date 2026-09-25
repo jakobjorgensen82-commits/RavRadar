@@ -8,6 +8,7 @@ import {
   PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY,
   PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY,
   PRIVATE_RUNTIME_CONTRACT_FILES,
+  PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,
   PRIVATE_RUNTIME_FILES,
   buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation,
@@ -127,22 +128,22 @@ assert.throws(
 try {
   await fs.mkdir(repository, { recursive: true });
   assert.ok(
-    PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(
+    PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(
       'scripts/lib/dmi_wave_history_bootstrap.py',
     ),
-    'The DMI wave-history bootstrap imported by update-dmi-bulk.py must be bound by the full private runtime contract',
+    'The DMI wave-history bootstrap must remain in the reviewed producer inventory',
   );
   assert.ok(
-    PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(
+    PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(
       'scripts/lib/dmi_wave_owner.py',
     ),
-    'The native WAM owner policy imported by the producer and bootstrap validator must be bound by the full private runtime contract',
+    'The native WAM owner policy must remain in the reviewed producer inventory',
   );
   assert.ok(
-    PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256.includes(
+    PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(
       'scripts/lib/dmi-marine-run-seam-recovery.mjs',
     ),
-    'The weather-only DMI seam repair must be bound by the full private runtime contract',
+    'The weather-only DMI seam repair must remain in the reviewed producer inventory',
   );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
   for (const relative of contractFiles) {
@@ -216,6 +217,8 @@ try {
     'publicProjectionContractSha256',
   ]);
   assert.ok(Object.values(hashes).every(value => /^[a-f0-9]{64}$/.test(value)));
+  assert.deepEqual(PRIVATE_RUNTIME_CONTRACT_FILES.fullRuntimeContractSha256,
+    ['scripts/lib/private-weather-storage-abi.json']);
 
   for (const [contract, relativePaths] of Object.entries(PRIVATE_RUNTIME_CONTRACT_FILES)) {
     for (const relativePath of relativePaths) {
@@ -231,6 +234,11 @@ try {
       await fs.writeFile(absolute, original);
     }
   }
+  const implementationOnly = path.join(repository, 'scripts/update-dmi-bulk.py');
+  await fs.copyFile(path.join(sourceRepository, 'scripts/update-dmi-bulk.py'), implementationOnly);
+  await fs.appendFile(implementationOnly, '\n# implementation-only scheduling repair\n');
+  assert.deepEqual(await privateRuntimeContractHashes({ repositoryRoot: repository }), hashes,
+    'producer code must not invalidate an unchanged persisted storage ABI');
 
   const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: repository });
   assert.equal(spec.metadata.zoneCount, 210);

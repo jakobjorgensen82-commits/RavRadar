@@ -428,7 +428,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -559,26 +559,6 @@ jobs:
           test "${{ steps.weather-source-handoff-cache.outcome }}" = "success"
           test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"
 
-      - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
-        id: ravscore-checkpoint-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            ravscore-continuation-schema6-v2-
-
-      - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --restore
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
       - name: Build current private-runtime restore expectation
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
@@ -600,6 +580,58 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Classify the exact 11Z weather recovery
+        id: exact-weather-recovery
+        if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { isLatestUnpairedWeatherGeneration } from './scripts/protected-private-production-runtime.mjs';
+          const source = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/private-runtime-current-source.json', 'utf8'));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,
+            `required=${isLatestUnpairedWeatherGeneration(source)}\n`);
+          NODE
+
+      # The old protected checkpoint has the old model closure.  The 11Z
+      # private conditions carry the exact continuation states and are rebound
+      # below; restoring the old checkpoint here would reject a valid donor.
+      - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        id: ravscore-checkpoint-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/ravscore-continuation-checkpoint
+          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ravscore-continuation-schema6-v2-
+
+      - name: Restore protected atomic RavScore checkpoint when cache is absent
+        if: steps.preflight.outputs.should_run == 'true' && steps.exact-weather-recovery.outputs.required != 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --restore
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Materialize exact archived readers for the 11Z and 15Z weather pair
+        if: steps.exact-weather-recovery.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          reader_head=b1b88e0f61b751cc91bdb09120dc895abc99cb65
+          donor_head=cc45e97178a64406bdf3ab5401d8a3ae0f618891
+          reader_root="$RUNNER_TEMP/ravradar-exact-weather-reader"
+          donor_root="$RUNNER_TEMP/ravradar-exact-weather-donor-source"
+          git fetch --no-tags --depth=1 origin "$reader_head" "$donor_head"
+          git worktree add --detach "$reader_root" "$reader_head"
+          git worktree add --detach "$donor_root" "$donor_head"
+          test "$(git -C "$reader_root" rev-parse HEAD)" = "$reader_head"
+          test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
@@ -642,10 +674,29 @@ jobs:
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
           fi
+          pair_reader_args=()
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            pair_reader_args=(--historical-reader-root "$RUNNER_TEMP/ravradar-exact-weather-reader")
+          fi
           status=1
           for attempt in 1 2 3; do
             rm -rf "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
-            if node "$restore_script" \
+            if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+              test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" != "true" || exit 1
+              rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest"
+              if node "$restore_script" \
+                  --restore-weather-pair \
+                  --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+                  --bundle "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest" \
+                  --complete-bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+                  --repository-root "$restore_repository" \
+                  --expected "$restore_expected" \
+                  "${pair_reader_args[@]}"; then
+                exit 0
+              else
+                status=$?
+              fi
+            elif node "$restore_script" \
                 --restore \
                 --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
                 --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
@@ -658,6 +709,10 @@ jobs:
             echo "Protected normal-weather restore attempt $attempt of 3 failed."
             if test "$attempt" -lt 3; then sleep $((attempt * 5)); fi
           done
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            echo "The exact 11Z/15Z pair could not be verified; a stateless replacement is forbidden."
+            exit "$status"
+          fi
           if test "$HISTORICAL_WAVE_PREDECESSOR_REQUIRED" = "true"; then
             echo "The exact audited predecessor could not be restored; the approved transition cannot reuse or silently replace it."
             exit "$status"
@@ -690,6 +745,7 @@ jobs:
           exit "$status"
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -708,12 +764,39 @@ jobs:
             echo "No private production runtime bundle was restored."
           fi
 
+      - name: Require full private weather baseline before normal continuation
+        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        run: |
+          if test "${{ steps.private-runtime-state.outputs.available }}" != 'true'; then
+            echo "::error title=Previous weather cache unavailable::Normal weather must not replace valid deployed values with a stateless rebuild."
+            exit 1
+          fi
+
+      - name: Describe the exact restored private generation
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          restored_reference="$(jq -er '.productionReferenceAt' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          restored_dataset="$(jq -er '.datasetId' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          restored_digest="$(jq -er '.bundleContentSha256' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          node scripts/protected-private-production-runtime.mjs --describe-target \
+            --target-reference "$restored_reference" \
+            --dataset-id "$restored_dataset" \
+            --bundle-content-sha256 "$restored_digest" \
+            --output "$RUNNER_TEMP/private-runtime-restored-source.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Verify and restore the private production runtime bundle
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
         shell: bash
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
           set -euo pipefail
           restore_script="$GITHUB_WORKSPACE/scripts/private-production-runtime-bundle.mjs"
@@ -723,10 +806,20 @@ jobs:
             restore_script="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/private-production-runtime-bundle.mjs"
             restore_repository="$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
             restore_expected="$HISTORICAL_WAVE_PREDECESSOR_EXPECTED"
-          elif test -f "$RUNNER_TEMP/private-runtime-current-source.json"; then
+          elif test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            restore_repository="$RUNNER_TEMP/ravradar-exact-weather-reader"
+            restore_script="$restore_repository/scripts/private-production-runtime-bundle.mjs"
             node scripts/private-runtime-second-restore-expectation.mjs \
               --expected "$restore_expected" \
-              --source-description "$RUNNER_TEMP/private-runtime-current-source.json" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
+              --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+              --historical-weather-pair \
+              --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+            restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+          elif test -f "$RUNNER_TEMP/private-runtime-restored-source.json"; then
+            node scripts/private-runtime-second-restore-expectation.mjs \
+              --expected "$restore_expected" \
+              --source-description "$RUNNER_TEMP/private-runtime-restored-source.json" \
               --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
               --output "$RUNNER_TEMP/private-runtime-second-restore-expected.json"
             restore_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
@@ -761,6 +854,26 @@ jobs:
             --report "$RUNNER_TEMP/bounded-conditions-predecessor-migration.json"
           echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
 
+      - name: Rebind exact 11Z private state without changing weather measurements
+        id: exact-weather-pair-migration
+        if: steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'
+        shell: bash
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          set -euo pipefail
+          migrated_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT/exact-weather-pair-successor"
+          node scripts/migrate-post-cutover-private-runtime.mjs \
+            --source "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" \
+            --output "$migrated_root" \
+            --bundle-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json" \
+            --predecessor-descriptor "$RUNNER_TEMP/private-runtime-restored-source.json" \
+            --predecessor-root "$RUNNER_TEMP/ravradar-exact-weather-donor-source" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --expected-source-head cc45e97178a64406bdf3ab5401d8a3ae0f618891 \
+            --report "$RUNNER_TEMP/exact-weather-pair-migration.json"
+          echo "restored_path=$migrated_root" >> "$GITHUB_OUTPUT"
+
       - name: Install only the allowlisted restored private runtime files
         id: private-runtime-install
         if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
@@ -768,16 +881,54 @@ jobs:
         env:
           PREDECESSOR_TRANSITION_KIND: ${{ steps.historical-wave-predecessor.outputs.transition_kind }}
           MIGRATED_RUNTIME_ROOT: ${{ steps.bounded-conditions-predecessor-migration.outputs.restored_path }}
+          EXACT_WEATHER_MIGRATED_ROOT: ${{ steps.exact-weather-pair-migration.outputs.restored_path }}
         run: |
           set -euo pipefail
           restored_root="$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           if test "$PREDECESSOR_TRANSITION_KIND" = "bounded-conditions-writer"; then
             test -n "$MIGRATED_RUNTIME_ROOT"
             restored_root="$MIGRATED_RUNTIME_ROOT"
+          elif test -n "$EXACT_WEATHER_MIGRATED_ROOT"; then
+            restored_root="$EXACT_WEATHER_MIGRATED_ROOT"
           fi
           node scripts/private-production-runtime-workflow.mjs install \
             --restored "$restored_root" \
             --repository-root "$GITHUB_WORKSPACE"
+
+      - name: Preserve the paired 15Z public no-loss anchor without installing it
+        if: steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest_bundle="$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-latest"
+          latest_restored="$RAVRADAR_PRIVATE_RUNTIME_ROOT/restored-latest-anchor"
+          node scripts/private-runtime-second-restore-expectation.mjs \
+            --expected .cache/private-production-runtime-expected.json \
+            --source-description "$RUNNER_TEMP/private-runtime-current-source.json" \
+            --bundle-manifest "$latest_bundle/manifest.json" \
+            --paired-latest-anchor \
+            --historical-weather-pair \
+            --output "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json"
+          node "$RUNNER_TEMP/ravradar-exact-weather-reader/scripts/private-production-runtime-bundle.mjs" restore \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$latest_bundle" \
+            --repository-root "$RUNNER_TEMP/ravradar-exact-weather-reader" \
+            --expected "$RUNNER_TEMP/private-runtime-latest-anchor-expected.json" \
+            --output "$latest_restored"
+          test -s "$latest_restored/data/live/conditions.json"
+          test -s "$latest_restored/.cache/public-hour-delivery.pack"
+          cp "$latest_restored/data/live/conditions.json" "$RUNNER_TEMP/paired-15z-conditions.json"
+          cp "$latest_restored/.cache/public-hour-delivery.pack" "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack"
+
+      - name: Preserve exact previous public weather for no-loss comparison
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/live/conditions.json
+          test -s .cache/public-hour-delivery.pack
+          cp data/live/conditions.json "$RUNNER_TEMP/previous-weather-conditions.json"
+          cp .cache/public-hour-delivery.pack "$RUNNER_TEMP/previous-public-hour-delivery.pack"
 
       - name: Classify the measured one-time historical wave-input transition
         id: historical-wave-transition
@@ -794,7 +945,7 @@ jobs:
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && steps.exact-weather-recovery.outputs.required != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -808,6 +959,7 @@ jobs:
         shell: bash
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
           set -euo pipefail
           protected_bundle_sha256="$(node --input-type=module -e '
@@ -823,7 +975,7 @@ jobs:
             --report "$RUNNER_TEMP/weather-progress-base-report.json"
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
-          if test "$captured" = "true"; then
+          if test "$captured" = "true" && test "$EXACT_WEATHER_RECOVERY_REQUIRED" != "true"; then
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
               --report "$RUNNER_TEMP/weather-progress-restore-report.json"
@@ -878,7 +1030,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -903,7 +1055,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1120,6 +1272,25 @@ jobs:
             echo "::notice title=DMI candidate resumed::The protected DMI cache is preserved as resumable work; it is not classified as READY before the DMI producer repairs and verifies it."
           fi
 
+      - name: Choose DMI budget from retained five-component PART coverage
+        id: dmi-recovery-budget
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_cache="$RUNNER_TEMP/dmi-active-proof/materialized.json"
+          if test -s .cache/dmi-candidate-progress.json; then
+            recovery_cache="$RUNNER_TEMP/dmi-active-proof/recovery-candidate.json"
+            python scripts/materialize-dmi-bulk-storage.py \
+              --input .cache/dmi-candidate-progress.json \
+              --output "$recovery_cache"
+          fi
+          python scripts/plan-dmi-recovery.py \
+            --cache "$recovery_cache" \
+            --parts data/live/coastal-parts-v2.json \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --github-output "$GITHUB_OUTPUT"
+
       - name: Plan global current acquisition before DMI
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         continue-on-error: true
@@ -1136,7 +1307,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: ${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true') && 70 || 55 }}
+        timeout-minutes: ${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
         run: python -u scripts/run-dmi-bulk-supervised.py
         env:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
@@ -1145,21 +1316,23 @@ jobs:
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
+          DMI_BULK_ADAPTIVE_RECOVERY: ${{ steps.dmi-recovery-budget.outputs.extended == 'true' }}
+          DMI_BULK_RECOVERY_BEFORE_COUNTS: ${{ steps.dmi-recovery-budget.outputs.missing_pair_counts_json }}
           DMI_BULK_HOURS: 118
-          DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
+          DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
-          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
-          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
+          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
-          DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}
+          DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS: 180
           DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180
           DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420
           DMI_BULK_REFRESH_MINUTES: 60
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
-          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
+          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode) || (steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.mode) || 'none' }}
@@ -1169,7 +1342,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1504,6 +1677,7 @@ jobs:
           # default Node/V8 ceiling is too small for this bounded production
           # operation even after provider work has completed.
           NODE_OPTIONS: --max-old-space-size=8192
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           DMI_MAX_RETRIES: 0
           DMI_REQUEST_GAP_MS: 12000
@@ -1527,7 +1701,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.487 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1636,6 +1810,24 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Refuse loss of previously valid public weather on identical coastal hours
+        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'
+        shell: bash
+        env:
+          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
+        run: |
+          set -euo pipefail
+          node scripts/check-public-weather-continuity.mjs \
+            --previous-conditions "$RUNNER_TEMP/previous-weather-conditions.json" \
+            --previous-pack "$RUNNER_TEMP/previous-public-hour-delivery.pack" \
+            --new-live data/live
+          if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
+            node scripts/check-public-weather-continuity.mjs \
+              --previous-conditions "$RUNNER_TEMP/paired-15z-conditions.json" \
+              --previous-pack "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack" \
+              --new-live data/live
+          fi
 
       - name: Audit runtime and collect independent cutover validation failures
         # A model/control finding must remain visible, but it must not prevent

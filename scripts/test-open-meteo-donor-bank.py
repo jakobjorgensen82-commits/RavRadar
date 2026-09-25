@@ -16,7 +16,8 @@ from urllib.parse import parse_qs, urlparse
 from lib.copernicus_current import canonical_sha256
 from lib.open_meteo_current_fallback import (
     OpenMeteoCurrentFallbackError, build_document, build_record,
-    merge_donor_bank, select_donor_records, validate_donor_bank,
+    merge_donor_bank, backfill_verified_donor_banks,
+    select_donor_records, validate_donor_bank,
     validate_checkpoint_document,
 )
 
@@ -55,6 +56,42 @@ def select(bank, hours, reference=0):
 
 
 class DonorBankTests(unittest.TestCase):
+    def test_two_sealed_generations_keep_newest_value_and_older_unique_pair(self):
+        old_four = row(4, 0.4)
+        old_five = row(5, 0.5)
+        older, _ = merge(documents=[document([old_four, old_five])])
+        new_four = row(4, 0.8, acquired=at(1, 10))
+        latest, _ = merge(documents=[document([new_four], reference=1)], reference=1)
+        joined = backfill_verified_donor_banks(
+            latest, older, targets=TARGETS,
+            production_reference_at=at(1), checkpointed_at=at(1, 40),
+        )
+        self.assertEqual(select(joined, [4, 5], reference=1), [new_four, old_five])
+        self.assertEqual(joined["entryCount"], 2)
+        self.assertEqual(len(joined["admissions"]), 2)
+        damaged = copy.deepcopy(older)
+        damaged["entries"][0]["record"]["uMps"] = 999
+        with self.assertRaises(OpenMeteoCurrentFallbackError):
+            backfill_verified_donor_banks(
+                latest, damaged, targets=TARGETS,
+                production_reference_at=at(1), checkpointed_at=at(1, 40),
+            )
+
+    def test_two_generation_conflict_mask_keeps_older_unambiguous_value(self):
+        older_record = row(4, 0.4, acquired=at(minutes=5))
+        older, _ = merge(documents=[document([older_record])])
+        latest, _ = merge(documents=[
+            document([row(4, 0.5)], reference=1),
+            document([row(4, 0.6)], reference=1),
+        ], reference=1)
+        self.assertEqual(select(latest, [4], reference=1), [])
+        joined = backfill_verified_donor_banks(
+            latest, older, targets=TARGETS,
+            production_reference_at=at(1), checkpointed_at=at(1, 40),
+        )
+        self.assertEqual(select(joined, [4], reference=1), [older_record])
+        self.assertEqual(len(joined["conflictMasks"]), 1)
+
     def test_three_cycle_gap_disappears_then_returns_without_refetch(self):
         original = [row(4), row(5)]
         legacy = document(original)

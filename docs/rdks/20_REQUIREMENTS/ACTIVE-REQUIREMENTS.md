@@ -1,3 +1,23 @@
+# Aktuel samlet vejrgenopretning – 2026-09-25
+
+- **REQ-PAIRED-RECOVERY-0254 – BINDENDE:** Når den beskyttede pointer
+  stadig peger på den kendte tynde 15Z-generation, skal både denne og
+  den eksakte fuldere 11Z-forgænger verificeres fra samme pointer.
+  Kun 11Z installeres som privat fortsættelsesgrundlag; 15Z er et
+  separat revisionsanker. En normal kørsel må først gemme ny privat
+  produktion og deploye, når ingen stadig gyldige felter på samme
+  kystdel/time/vejrtype er tabt mod **nogen** af de to generationer.
+  Manglende par eller udløbet 72-timersbro giver stop, ikke tom cache.
+- **REQ-NO-FRESH-RESET-0254 – BINDENDE:** En frisk, tom cache eller en
+  uverificeret sammenfletning er ikke en genvej til fulde vejrdata.
+  Bevar den beviseligt stærkere 11Z-historik, genhent den målte rest
+  i almindelige kørsler, og overvej kun en snæver originalbevist
+  migration, hvis virkelig fremgang viser, at det er nødvendigt.
+- **REQ-PRIVATE-READS-FAIL-CLOSED-0254 – BINDENDE:** Når en fuld
+  privat baseline er installeret, må ulæselige conditions,
+  DMI-candidate eller DMI-forecast-store ikke fortolkes som tomme
+  data eller scorehistorik. Kun reel første bootstrap må begynde tomt.
+
 # Aktuel private-cache-restore – 2026-09-24
 
 - **REQ-TWO-STAGE-EXACT-PRIVATE-RESTORE-0252 – BINDENDE:** Når en

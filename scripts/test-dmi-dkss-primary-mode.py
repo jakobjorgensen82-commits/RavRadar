@@ -216,6 +216,9 @@ assert full == {
     "critical": False,
     "deferValidRefresh": True,
     "currentMissingPairCount": 0,
+    "currentUpgradePairCount": 0,
+    "currentNativeDeficitCount": 0,
+    "criticalPriority": 2,
     "regionalCurrentPotentialPairCount": 0,
     "missingComponentKinds": [],
 }
@@ -229,14 +232,17 @@ missing_current_field = copy.deepcopy(full_stride_zone)
 missing_current_field["hourly"][STRIDE_VALID].pop("current-v")
 assert classify(STRIDE_VALID, missing_current_field)["missingComponentKinds"] == ["current"]
 
-# A valid fallback tuple affects acquisition priority, never native DMI proof.
-# Removing the native part-current field does not make an already union-covered
-# pair critical. The same field is still critical without valid union coverage.
+# A valid fallback tuple moves DMI work behind real holes, but does not hide
+# the native DMI upgrade. The same field is urgent without union coverage.
 global_covered = classify(
     STRIDE_VALID, missing_current_field, covered=False, global_covered=True,
 )
-assert global_covered["deferValidRefresh"] is True
+assert global_covered["critical"] is True
+assert global_covered["deferValidRefresh"] is False
 assert global_covered["currentMissingPairCount"] == 0
+assert global_covered["currentUpgradePairCount"] == 1
+assert global_covered["criticalPriority"] == 1
+assert global_covered["missingComponentKinds"] == ["currentUpgrade"]
 assert global_covered["optionalParentCurrentCount"] == 0
 assert classify(
     STRIDE_VALID, missing_current_field, covered=False, global_covered=False,
@@ -253,7 +259,7 @@ parent_cache["hourly"][STRIDE_VALID].pop("current-v")
 parent_requirement = producer.classify_dkss_primary_asset(
     collection="dkss_lf", model_run=MODEL_RUN,
     asset={"valid": STRIDE_VALID, "id": "parent-only-current-hole"},
-    target_ids=[TARGET_ID], covered_pair_keys=set(),
+    target_ids=[TARGET_ID], covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
     cached_zones={ZONE_ID: full_stride_zone, "ZONE-TEST": parent_cache},
     active_zone_ids=[ZONE_ID, "ZONE-TEST"], enabled=True,
     planning_covered_pair_keys={(TARGET_ID, STRIDE_VALID)},
@@ -312,6 +318,28 @@ assert producer.fair_pending_critical_runtime_reserve(
 assert producer.fair_pending_critical_runtime_reserve(
     [], [], 300.0, {}, {},
 ) == 0.0
+level_plan, level_diagnostics = producer.operational_collection_plan(
+    ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw"], {}, True, {}, 1500.0,
+    water_level_recovery_needed=True,
+)
+assert set(level_diagnostics["strictCurrentCollections"]) == set(producer.MARINE_COLLECTIONS)
+assert level_diagnostics["waterLevelRecoveryNeeded"] is True
+assert all(collection in level_plan[:3] for collection in producer.MARINE_COLLECTIONS)
+stable_plan, stable_diagnostics = producer.operational_collection_plan(
+    ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw"], {}, True, {}, 1500.0,
+)
+assert stable_diagnostics["strictCurrentCollections"] == []
+native_plan, native_diagnostics = producer.refine_operational_collection_plan_after_prefetch(
+    stable_plan,
+    stable_diagnostics,
+    {"dkss_lf"},
+    1500.0,
+    native_deficit_collections={"dkss_idw", "dkss_lf"},
+)
+assert native_diagnostics["strictCurrentCollections"] == ["dkss_idw"]
+assert native_diagnostics["nativeDeficitCollections"] == ["dkss_idw"]
+assert native_diagnostics["strictCurrentLeadAttemptLimit"] > 0
+assert native_plan[0] == "dkss_idw"
 assert producer.order_dkss_primary_refresh_collections(
     ["dkss_idw", "harmonie_dini_sf", "dkss_lf", "wam_dw"],
     {"dkss_idw", "dkss_lf"},
@@ -340,16 +368,16 @@ other_component_critical = producer.prioritize_marine_assets_for_current_gaps(
 assert [row["id"] for row in other_component_critical] == [
     "covered-current-missing-water", "covered-refresh",
 ]
-part_gap_before_parent_only = producer.prioritize_marine_assets_for_current_gaps(
+critical_water_and_current_are_peers = producer.prioritize_marine_assets_for_current_gaps(
     [
-        {"valid": NON_STRIDE_VALID, "id": "parent-only-current-hole"},
+        {"valid": NON_STRIDE_VALID, "id": "dmi-only-water-level-hole"},
         {"valid": STRIDE_VALID, "id": "global-part-current-hole"},
     ],
     [TARGET_ID], {(TARGET_ID, NON_STRIDE_VALID)},
     critical_by_time={NON_STRIDE_VALID: True, STRIDE_VALID: True},
 )
-assert [row["id"] for row in part_gap_before_parent_only] == [
-    "global-part-current-hole", "parent-only-current-hole",
+assert [row["id"] for row in critical_water_and_current_are_peers] == [
+    "dmi-only-water-level-hole", "global-part-current-hole",
 ]
 
 # An actual critical attempt advances a durable cursor in the producer. On

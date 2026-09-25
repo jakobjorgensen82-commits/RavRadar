@@ -1,4 +1,75 @@
-# NYESTE SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
+# NYESTE SANDHED – 2026-09-25 – lokal 4.0.488, parret vejrrecovery
+
+Den præcise vej er besluttet efter sammenligning med en helt ny cache
+og fuld sammenfletning: verificér 11Z og 15Z fra samme beskyttede
+pointer, installér den langt stærkere 11Z som eneste privat udgangspunkt,
+og lad almindelig vejrhentning genhente 15Z's unikke felter. Den tynde
+15Z-pakke er et særskilt no-loss-anker, ikke en cache der blandes ind i
+scorehistorikken. På de 92 fælles timer fra 25/9 kl. 13 UTC har 11Z
+72.520 gyldige feltpar, som 15Z tabte; 15Z har 3.238, som 11Z mangler.
+Begge ankres stadig gyldige felter skal bevares, før nogen ny privat
+pakke eller Pages-prognose publiceres. En afvist kontrol lader den
+nuværende hjemmeside stå og kan bevare 11Z-bundet krypteret
+leverandørfremgang til et nyt ikke-overlappende forsøg. Den eksisterende
+72-timers restoregrænse er ikke forlænget. En frisk tom cache er
+forkastet som produktionsvej, fordi den ville kassere både værdier og
+historik.
+
+Første PR-kontrol viste, at vejrvalget ændrer modelkodens hash. Derfor
+bruger genopretningen den eksakte gamle læser til at kontrollere begge
+originale pakker og den eksakte 4.0.485-kilde til at genbinde 11Z's
+scorehistorik uden at ændre vejrmålinger. Det gamle checkpoint
+indlæses ikke i denne overgang; 11Z's private state er grundlaget.
+Den nye databasebinding installeres først via et særskilt manuelt
+workflow, som hverken læser/skriver private vejrpakker eller deployer
+hjemmesiden. Code-only deploy er låst for den kendte 11Z/15Z-pointer,
+fordi den ellers kunne skubbe den komplette pakke ud. Dette er
+lokal kode, ikke endnu bevist i produktion.
+
+Den lokale kode kræver nu også læsbar DMI-candidate og forecast-store
+efter privat install; ingen af dem må stille blive tomme. En syntetisk
+checkpointtest beviser, at nyere DMI-candidate-progression bevares over
+en ældre READY-donor. Copernicus' kritiske passage tager faktiske
+resthuller først, mens afgrænset kvalitetsarbejde kan overtage
+Open-Meteo efterfølgende. At dette giver faktisk leverandørfremgang
+og passerer begge tabsankre er endnu **ikke livebevist**. 4.0.488 er
+pushet på PR #449, men umerget; cron er pauset. Dens første
+exact-head-kontrol fandt en ægte manglende model-/databasebinding.
+Den er rettet med nye genererede integreret/Candidate G-pakkehash,
+continuation-hash og append-only-migration `20260925150000`, uden
+at scoreformlen eller anvendte migrationer omskrives. Ny exact-head-
+kontrol afventer. Tre gamle queued workflow_dispatch-runs har gamle
+main-commits; deres egen tidlige SHA-kontrol afviser dem før
+beskyttet læsning eller skrivning, hvis GitHub vækker dem. Ingen ny
+vejrkørsel under releaseanalysen.
+
+# HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
+
+Normalrun `36022310055` deployede, men startede uden den tidligere fulde
+private cache og tabte gyldige vejrdata. På 114 identiske offentlige
+timer × 673 dele blev 34.885 vind-, 32.646 bølge-, 530 strøm-, 4.864
+vandstands- og 24.513 temperaturpar tomme. Det er ikke en normal
+prognoseforskydning. Lokal 4.0.488 er **ikke** merged eller livebevist.
+
+Den samlede lokale rettelse kræver en verificeret fuld forgænger,
+genfinder den eksakte 4.0.485-generation fra `35993736090` og binder
+begge restore-trin til faktisk bundlesum. Fremtidige kodeændringer
+bevarer cachekompatibilitet via en eksplicit lagrings-ABI frem for en
+hash af alle producentfiler. En normal ny offentlig pakke kan ikke
+erstatte et gyldigt felt med tomt på samme kystdel og time. DMI får et
+afgrænset større budget ved bred mangel i en af fem vejrfamilier;
+vandstand tælles og prioriteres særskilt fra strøm. Copernicus'
+efterfølgende indhentning roterer og bruger højst 24-timers segmenter.
+Vandstand er stadig kun DMI; Limfjord-reglen og scoreformlen er uændrede.
+
+Dette er endnu ikke bevis på komplet dækning eller stabil normaldrift.
+Kildegate på PR'ens eksakte head, merge, cache-/leverandør-/public-bevis
+fra flere almindelige kørsler og derefter en kontrolleret genåbning af
+cron mangler. Den automatiske Codex-overvågning er pauset under arbejdet.
+Se DEC-0254 og aktivt roadmap. Historiske afsnit nedenfor erstattes af
+dette, hvor de beskriver 4.0.486/487 som aktuel status.
+
+# HISTORISK SANDHED – 2026-09-24 – lokal 4.0.486, forståelig score- og prognosetekst
 
 4.0.485/PR #447 blev merged som `cc45e971` efter grøn exact-head-
 kildegate `35991803426`. Providerfri kodelevering `35992546525`
@@ -5610,3 +5681,18 @@ commit før merge. Derefter én normalrun uden overlap fra beskyttet
 fremgang og eksakt fem-feltssammenligning; cron fortsat pauset.
 Se DEC-0253. Det følgende 4.0.486-afsnits »aktive run« og
 mergevent er historisk og erstattet her.
+# HISTORISK ARBEJDSPUNKT – 2026-09-24 – første 4.0.488-afgrænsning
+
+4.0.487/main `b1b88e0f` kørte `36022310055` grønt og deployede,
+men den offentlige 15:00 UTC-pakke tabte gyldige vejrpar på fælles
+prognosetimer: 34.885 vind, 32.646 bølger, 530 strøm, 4.864
+vandstand og 24.513 temperatur. Forrige komplette private generation
+blev gemt af `35993736090` på 4.0.485. Den brede kildehash afviste
+den, mens normal `integrated` fortsatte stateless. Lokal 4.0.488
+stopper denne fortsættelse, tillader kun den eksakt verificerede
+11:00-generation og binder anden restore til dens faktiske
+bundlesum. Måltests er grønne; exact-head, merge og produktionsbevis
+afventer. Ingen ny vejrkørsel er startet. DMI/Copernicus/Open-Meteo-
+fordeling, alle fem datamangler og en generel tabsbarriere er fortsat
+åbne. Se DEC-0254 og det aktive roadmap. Ældre checkpoints nedenfor
+er historiske, hvor de modsiger dette.

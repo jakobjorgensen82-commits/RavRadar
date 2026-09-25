@@ -1,4 +1,46 @@
-# Aktivt roadmap – 2026-09-24, 4.0.486 normalrun og forståeligt UI
+# Aktivt roadmap – 2026-09-25, samlet 4.0.488-vejrrecovery
+
+Nuværende beslutning: verificér parret 11Z/15Z, installer kun 11Z,
+genhent 15Z's stadig gyldige unikke felter gennem normal kæde, og
+kræv nul gyldig→tom mod begge før ny privat publish/Pages. Frisk
+produktionscache og fuld engangsfletning er ikke valgt. Den tidligere
+72-timers restoregrænse består. Før nogen workflow genåbnes,
+neutraliseres tre gamle queued runs fra ældre main-commits. En
+mislykket tabs-kontrol må kun føre til sikker fortsættelse på 11Z-
+bundet krypteret fremdrift eller en ny, kildebevist beslutning.
+
+1. [ ] Afslut tværgående review af lokal 4.0.488, opdatér beslutning,
+   status, håndbog og changelog, kør måltests og én exact-head-gate.
+   Ingen vejrkørsel under dette arbejde.
+2. [ ] Efter sikker merge: én ikke-overlappende normal vejrhentning.
+    Kontroller først begge cacheankre og fem feltvise no-loss-tal;
+    derefter DMI/CP/OM, scorehistorik, privat gemning og Pages.
+    Stands ved reel regression; kald ikke kun grøn GitHub-status succes.
+
+# HISTORISK ROADMAP – 2026-09-24, første 4.0.488-afgrænsning
+
+1. [x] Afgræns på samme kystdel/time alle fem offentlige tab i
+   `36022310055`, seneste komplette private forgænger, DMI's native
+   trin, Copernicus' budget/rotation og Open-Meteos vedvarende
+   geografiske strømrest. Se DEC-0254.
+2. [x] Ret cachegenindgang, semantisk lagringskompatibilitet,
+   offentlig tabsbarriere, automatisk afgrænset DMI-recovery,
+   særskilt vandstandsprioritet og Copernicus-segmentrotation lokalt.
+3. [ ] Afslut relevante tests, version/RDKS/håndbog og ren
+   geodatadiff. Bestå én exact-head-kildegate på PR, merge kun samme
+   verificerede head. Start ingen vejrkørsel før da.
+4. [ ] Kør normal engangsvejrhentning uden overlap. Bevis eksakt
+   cachelineage, DMI/Copernicus/Open-Meteo-fremgang, fem feltrester,
+   ny cachegemning og offentlig score/Pages på samme timegrid.
+5. [ ] Følg flere normale vinduesskift og et rent runner-genstart.
+   Stående huller skal klassificeres per sted/time/type/leverandør;
+   ændr kun den dokumenterede årsag og genaktivér først cron efter
+   målt selvstændig drift. Ingen oneoff uden konkret behov.
+6. [ ] Når vejrkæden er stabil: verificér forståeligt UI-sprog,
+   bedste områder og øvrige aktive roadmap-punkter uden model- eller
+   geometriændring som sideeffekt.
+
+# Historisk roadmap – 2026-09-24, 4.0.486
 
 1. [x] Lever 4.0.485 efter grøn exact-head-kildegate; kode-only-
    deploy er grøn uden ny vejrhentning.
@@ -3263,3 +3305,20 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    kørsel: gentag normaldrift for at bevise autonom fortsættelse, før
    cron genaktiveres. UI-sprog kontrolleres på desktop/mobil i
    samme offentlige release. Intet oneoff uden målt behov.
+# Historisk arbejdspunkt – 2026-09-24, første 4.0.488-afgrænsning
+
+1. [x] Påvis faktisk tab af gyldige felter mellem 11:00 og 15:00
+   på samme 114 timer × 673 dele; stop nye runs.
+2. [x] Afgræns stateless continuation efter cacheafvisning og
+   måltest præcis 4.0.485-forgænger, fuld-cachekrav og samme
+   pakkeidentitet i begge restore-trin. Se DEC-0254.
+3. [ ] Bestå version/RDKS/geodatadiff og én exact-head-kildegate;
+   merge kun den verificerede rettelse. Kontroller live, at den
+   gamle fulde generation endnu findes. Ingen blind oneoff.
+4. [ ] Kør én normal vejrhentning uden overlap. Bevis faktisk
+   cachegenbrug, ny gemning, DMI/Copernicus/Open-Meteo og fem
+   feltvise samme-time-ændringer før mere drift.
+5. [ ] Undersøg særskilt manglende DMI-dækning, Copernicus'
+   opdaterings-/timeoutforløb, Open-Meteos 57 rester og vandstand.
+   Byg generel tabsbeskyttelse og genaktivér først cron efter
+   gentagne sikre, fremadskridende normalruns.

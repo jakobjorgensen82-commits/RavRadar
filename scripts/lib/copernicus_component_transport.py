@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -61,7 +62,7 @@ def subset_arguments(request: dict, contract_key: str, output_directory: Path) -
     kwargs = {"dataset_id": request["datasetId"], "dataset_version": request["datasetVersion"],
         "variables": request["variables"], "minimum_longitude": lon, "maximum_longitude": lon,
         "minimum_latitude": lat, "maximum_latitude": lat, "coordinates_selection_method": "nearest",
-        "file_format": "netcdf", "service": "geoseries", "disable_progress_bar": True,
+        "file_format": "netcdf", "service": "static-arco" if static else "geoseries", "disable_progress_bar": True,
         "raise_if_updating": True, "output_directory": Path(output_directory), "output_filename": "subset.nc",
         "overwrite": True, "netcdf_compression_level": 1}
     if static:
@@ -95,6 +96,28 @@ class ComponentSubsetCache:
     """Immutable .nc objects; exact request+payload receipts survive restarts."""
     def __init__(self, directory: Path):
         self.directory = Path(directory)
+        self._receipt_index: dict[str, list[str]] | None = None
+
+    def _indexed_receipts(self, request_hash: str) -> list[str]:
+        # One bounded directory scan serves all retained PART rows. A mutable
+        # static pointer alone cannot identify an older row's original cell.
+        if self._receipt_index is None:
+            index: dict[str, list[str]] = {}
+            directory = self.directory / "receipts"
+            if directory.exists():
+                with os.scandir(directory) as entries:
+                    for entry in entries:
+                        match = re.fullmatch(r"([0-9a-f]{64})-([0-9a-f]{64})\.json", entry.name)
+                        if not match:
+                            continue
+                        if entry.is_symlink():
+                            continue  # Invalid local leaf cannot block unrelated request keys.
+                        index.setdefault(match.group(1), []).append("sha256:" + match.group(2))
+            self._receipt_index = index
+        candidates = sorted(set(self._receipt_index.get(request_hash[7:], [])))
+        if len(candidates) > 128:
+            raise ValueError("CP_STATIC_ORIGINAL_VARIANT_LIMIT")
+        return candidates
 
     def object_path(self, digest: str) -> Path:
         if not valid_sha256(digest):
@@ -160,6 +183,7 @@ class ComponentSubsetCache:
                     atomic_json(self.directory / "static" / (request["requestSha256"][7:] + ".json"), {"subsetSha256": digest})
                 return existing
         atomic_json(receipt_path, receipt)
+        self._receipt_index = None
         if request.get("kind") == "CP_PINNED_STATIC_REQUEST":
             atomic_json(self.directory / "static" / (request["requestSha256"][7:] + ".json"),
                         {"subsetSha256": digest})
@@ -171,6 +195,36 @@ class ComponentSubsetCache:
         subset_hash = json.loads(pointer.read_text(encoding="utf-8"))["subsetSha256"]
         path, receipt = self.load_receipt(request, subset_hash)
         return inspect_static_subset(path, contract_key=contract_key, target=target, receipt=receipt)
+
+    def load_static_for_grid(self, contract_key: str, target: dict, grid_point: list[float]) -> dict | None:
+        """Find an intact ORIGINAL static subset for a retained dynamic cell.
+
+        Distinct cells may legitimately have different immutable static
+        subsets. Contradictory wet/depth proof for the same cell is ambiguous
+        and never authorizes a favourable older value by itself.
+        """
+        request = static_request(contract_key, target)
+        matches = []
+        for subset_hash in self._indexed_receipts(request["requestSha256"]):
+            try:
+                receipt_path = self.receipt_path(request["requestSha256"], subset_hash)
+                object_path = self.object_path(subset_hash)
+                if receipt_path.is_symlink() or object_path.is_symlink():
+                    raise ValueError("CP_STATIC_ORIGINAL_SYMLINK_INVALID")
+                path, receipt = self.load_receipt(request, subset_hash)
+                evidence = inspect_static_subset(path, contract_key=contract_key,
+                                                 target=target, receipt=receipt)
+            except (OSError, ValueError, KeyError):
+                continue
+            if evidence["gridPoint"] == grid_point:
+                matches.append(evidence)
+        if not matches:
+            return None
+        physical = lambda item: (item["gridIndex"], item["distanceKm"], item["mask"],
+                                 item["maskSurfaceDepthM"], item["depthM"])
+        if any(physical(item) != physical(matches[0]) for item in matches[1:]):
+            raise ValueError("CP_STATIC_ORIGINAL_CELL_CONFLICT")
+        return min(matches, key=lambda item: item["subsetSha256"])
 
 
 class BoundedComponentTransport:
@@ -244,6 +298,15 @@ class BoundedComponentTransport:
             except (OSError, ValueError, RuntimeError):
                 return None
         self.static_evidence[key] = evidence
+        return evidence
+
+    def refresh_static(self, contract_key: str, target: dict) -> dict | None:
+        """Bounded explicit refresh when the existing static grid cannot prove a native row."""
+        request = static_request(contract_key, target)
+        path, receipt = self.download(request, contract_key)
+        evidence = inspect_static_subset(path, contract_key=contract_key,
+                                         target=target, receipt=receipt)
+        self.static_evidence[(contract_key, request["requestSha256"])] = evidence
         return evidence
 
     def acquire_subset(self, request: dict) -> Path:

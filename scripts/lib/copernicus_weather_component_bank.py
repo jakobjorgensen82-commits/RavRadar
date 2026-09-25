@@ -110,7 +110,7 @@ def _need_key(row: dict) -> tuple:
 def build_component_plan(*, targets: list[dict], production_reference_at: str,
                          needs: list[dict], product_routes: dict, routing_policy: dict,
                          retention_start_at: str, retention_end_at: str) -> dict:
-    """Plan exact GAP/AGED_DMI_CHALLENGE needs, not an invented DMI verifier.
+    """Plan exact gaps, aged-DMI challenges and CP upgrades over Open-Meteo.
 
     product_routes[partId][component] is an explicitly approved ordered list of
     contract keys. Empty routes (including wind) remain visible unresolved work.
@@ -142,6 +142,9 @@ def build_component_plan(*, targets: list[dict], production_reference_at: str,
             if reference - protected < timedelta(hours=96):
                 raise ValueError("CP_COMPONENT_DMI_CHALLENGE_PREMATURE")
             row["protectedModelRun"] = _iso(protected)
+        elif row["purpose"] == "OPEN_METEO_UPGRADE":
+            if row["component"] not in {"wave", "waterTemperature"}:
+                raise ValueError("CP_COMPONENT_UPGRADE_PRODUCT_INVALID")
         elif row["purpose"] != "GAP":
             raise ValueError("CP_COMPONENT_NEED_PURPOSE_INVALID")
         seen.add(_need_key(row))
@@ -325,7 +328,20 @@ def validate_component_bank(bank: dict, *, targets: list[dict]) -> dict:
     return bank
 
 
-def merge_component_read(bank: dict, *, plan: dict, request: dict, read: dict, acquisition_at: str) -> dict:
+def _spatially_admitted(entry: dict, request: dict, plan: dict, admit_spatial: Callable | None) -> bool:
+    if admit_spatial is None:
+        return True
+    proof = admit_spatial(copy.deepcopy(entry), copy.deepcopy(request), copy.deepcopy(request["target"]))
+    return bool(isinstance(proof, dict)
+        and proof.get("recordId") == entry["recordId"]
+        and proof.get("targetRegistrySha256") == plan["targetRegistrySha256"]
+        and isinstance(proof.get("policyId"), str) and proof["policyId"]
+        and valid_sha256(proof.get("policySha256"))
+        and valid_sha256(proof.get("evidenceSha256")))
+
+
+def merge_component_read(bank: dict, *, plan: dict, request: dict, read: dict,
+                         acquisition_at: str, admit_spatial: Callable | None = None) -> dict:
     """Merge atomic candidates; holes/unknown ages cannot erase valid donors."""
     validate_component_plan(plan)
     acquisition_at = _iso(_time(acquisition_at, "CP_COMPONENT_ACQUISITION_INVALID"))
@@ -339,6 +355,7 @@ def merge_component_read(bank: dict, *, plan: dict, request: dict, read: dict, a
         raise ValueError("CP_COMPONENT_READ_PARTITION_INVALID")
     # Keep an unknown-age donor alongside a newly proven bulletin. Unknown age
     # cannot justify replacing either direction; downstream selection decides.
+    original_requests = {row["requestSha256"]: row for row in bank["requests"]}
     records = {(e["native"]["contractKey"], e["native"]["partId"], e["native"]["validTime"], bool(e["native"]["modelRun"])): copy.deepcopy(e)
                for e in bank["records"]}
     for native in read["records"]:
@@ -350,10 +367,16 @@ def merge_component_read(bank: dict, *, plan: dict, request: dict, read: dict, a
         key = native["contractKey"], native["partId"], native["validTime"], bool(native["modelRun"])
         previous = records.get(key)
         if previous:
+            previous_admitted = _spatially_admitted(
+                previous, original_requests[previous["requestSha256"]], plan, admit_spatial,
+            )
+            replacement_admitted = _spatially_admitted(entry, request, plan, admit_spatial)
+            if not replacement_admitted:
+                continue
             old = previous["native"]
             # Equal/unknown model ages never gain priority from download time.
             comparable = all(old.get(k) == native.get(k) for k in ("gridPoint", "verticalLayerM", "datum"))
-            if not (comparable and old["modelRun"] and native["modelRun"]
+            if previous_admitted and not (comparable and old["modelRun"] and native["modelRun"]
                     and _hour(native["modelRun"]) > _hour(old["modelRun"])):
                 continue
         records[key] = entry
@@ -402,6 +425,115 @@ def rebase_component_bank(bank: dict, *, previous_targets: list[dict], targets: 
         "requests": [requests[k] for k in sorted(used_requests)], "records": records}, "bankSha256")
     validate_component_bank(result, targets=targets)
     return {"bank": result, "excluded": excluded}
+
+
+def backfill_verified_component_banks(latest: dict, complete: dict, *, targets: list[dict],
+                                      retention_start_at: str, retention_end_at: str,
+                                      admit_latest: Callable, admit_complete: Callable) -> dict:
+    """Unite two independently verified generations without a blind bank merge.
+
+    An original record only wins a conflicting native slot when its own
+    dynamic/static bytes have been admitted by the caller against the source
+    generation. The latest generation remains the progress baseline, while a
+    qualified older record can restore a missing or invalid latest slot.
+    """
+    if not callable(admit_latest) or not callable(admit_complete):
+        raise ValueError("CP_COMPONENT_ORIGINAL_ADMITTERS_REQUIRED")
+    current = sorted(_targets(targets).values(), key=lambda row: row["partId"])
+    candidates = []
+    for generation, bank, admit in (("latest", latest, admit_latest),
+                                    ("complete", complete, admit_complete)):
+        validate_component_bank(bank, targets=bank["targets"])
+        originals = {row["requestSha256"]: row for row in bank["requests"]}
+        admitted = {}
+        for entry in bank["records"]:
+            request = originals[entry["requestSha256"]]
+            proof = admit(copy.deepcopy(entry), copy.deepcopy(request), copy.deepcopy(request["target"]))
+            admitted[entry["recordId"]] = bool(isinstance(proof, dict)
+                and proof.get("recordId") == entry["recordId"]
+                and proof.get("targetRegistrySha256") == bank["targetRegistrySha256"]
+                and isinstance(proof.get("policyId"), str) and proof["policyId"]
+                and valid_sha256(proof.get("policySha256"))
+                and valid_sha256(proof.get("evidenceSha256")))
+        rebased = rebase_component_bank(bank, previous_targets=bank["targets"],
+            targets=current, retention_start_at=retention_start_at,
+            retention_end_at=retention_end_at)["bank"]
+        candidates.append((generation, rebased, admitted))
+
+    def slot(entry: dict) -> tuple:
+        row = entry["native"]
+        return row["contractKey"], row["partId"], row["validTime"], bool(row["modelRun"])
+
+    winners = {}
+    for generation, bank, admitted in candidates:
+        for entry in bank["records"]:
+            key = slot(entry)
+            previous = winners.get(key)
+            if previous is None:
+                winners[key] = (generation, entry, admitted[entry["recordId"]])
+                continue
+            _, old_entry, old_ok = previous
+            new_ok = admitted[entry["recordId"]]
+            if new_ok != old_ok:
+                if new_ok:
+                    winners[key] = (generation, entry, True)
+                continue
+            old_run = old_entry["native"]["modelRun"]
+            new_run = entry["native"]["modelRun"]
+            # Both candidates were independently admitted. A newer official
+            # model run may win even when its individually valid wet grid has
+            # moved. Unknown/equal ages cannot displace the latest generation.
+            if old_ok and new_ok and old_run and new_run and _hour(new_run) > _hour(old_run):
+                winners[key] = (generation, entry, True)
+
+    requests, histories = {}, {}
+    for _, bank, _ in candidates:
+        for request in bank["requests"]:
+            key = request["requestSha256"]
+            if key in requests and requests[key] != request:
+                raise ValueError("CP_COMPONENT_GENERATION_REQUEST_CONFLICT")
+            requests[key] = request
+        for history in bank["targetRegistryHistory"]:
+            key = history["targetRegistrySha256"]
+            if key in histories and histories[key] != history:
+                raise ValueError("CP_COMPONENT_GENERATION_TARGET_CONFLICT")
+            histories[key] = history
+    # Only originally admitted rows may enter the merged private generation.
+    # An invalid row cannot be packed with its claimed immutable originals;
+    # dropping that precise slot leaves it eligible for a later real retry.
+    # Two independent acquisitions of the *same* request and *same* subset
+    # bytes can have different receipt timestamps. The content-addressed
+    # receipt path stores only one of them. Rebind all selected rows from that
+    # identical subset to one verified receipt, preferring the latest source;
+    # their native values are not changed, and the record IDs are resealed.
+    canonical_receipts = {}
+    for generation, entry, admitted in winners.values():
+        if not admitted:
+            continue
+        pair = entry["requestSha256"], entry["native"]["subsetSha256"]
+        if pair not in canonical_receipts or generation == "latest":
+            canonical_receipts[pair] = entry["acquisitionAt"]
+    records = []
+    for _, entry, admitted in winners.values():
+        if not admitted:
+            continue
+        pair = entry["requestSha256"], entry["native"]["subsetSha256"]
+        if entry["acquisitionAt"] != canonical_receipts[pair]:
+            entry = _sealed({"requestSha256": entry["requestSha256"],
+                "acquisitionAt": canonical_receipts[pair],
+                "native": copy.deepcopy(entry["native"])}, "recordId")
+        records.append(copy.deepcopy(entry))
+    used = {row["requestSha256"] for row in records}
+    current_hash = target_fingerprint(current)
+    required_history = {requests[key]["targetRegistrySha256"] for key in used} - {current_hash}
+    result = _sealed({"kind": BANK_KIND, "schemaVersion": 1,
+        "targetRegistrySha256": current_hash, "targets": current,
+        "targetRegistryHistory": [histories[key] for key in sorted(required_history)],
+        "requests": [requests[key] for key in sorted(used)],
+        "records": sorted(records, key=lambda entry: (
+            entry["native"]["validTime"], entry["native"]["partId"],
+            entry["native"]["contractKey"], bool(entry["native"]["modelRun"])))}, "bankSha256")
+    return validate_component_bank(result, targets=current)
 
 
 def project_component_candidates(plan: dict, bank: dict, *, admit_spatial: Callable | None = None,
@@ -489,7 +621,8 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
                            acquisition_at: Callable, checkpoint: Callable,
                            admit_spatial: Callable | None = None, should_continue: Callable = lambda: True,
                            start_after: tuple[str, str] | None = None,
-                           prepare_reusable_group: Callable | None = None) -> dict:
+                           prepare_reusable_group: Callable | None = None,
+                           refresh_unadmitted_static: Callable | None = None) -> dict:
     """Run a bounded caller-owned transport, checkpointing each parsed request.
 
     Transport/schema errors remain retryable; siblings and other components
@@ -510,9 +643,10 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         if need["purpose"] == "AGED_DMI_CHALLENGE":
             challenges_by_component.setdefault((need["partId"], need["component"]), {})[need["validTime"]] = need
     existing_by_group = {}
+    requests_by_sha = {row["requestSha256"]: row for row in bank["requests"]}
     for entry in bank["records"]:
         row = entry["native"]
-        existing_by_group.setdefault((row["partId"], row["contractKey"]), []).append(row)
+        existing_by_group.setdefault((row["partId"], row["contractKey"]), []).append(entry)
     attempts = []
     ordered = list(grouped)
     if start_after in grouped:
@@ -521,18 +655,52 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
     for part_id, key in ordered:
         times = grouped[(part_id, key)]
         challenges = challenges_by_component.get((part_id, CONTRACTS[key].component), {})
+        target = next(t for t in plan["targets"] if t["partId"] == part_id)
+        group_entries = existing_by_group.get((part_id, key), [])
+        needs_static_repair = bool(admit_spatial is not None and group_entries and any(
+            not _spatially_admitted(entry, requests_by_sha[entry["requestSha256"]], plan, admit_spatial)
+            for entry in group_entries
+        ))
+        if needs_static_repair and prepare_reusable_group is not None:
+            if not should_continue():
+                break
+            repaired = prepare_reusable_group(key, copy.deepcopy(target))
+            attempts.append({"partId": part_id, "contractKey": key,
+                "status": "STATIC_EVIDENCE_READY" if repaired else "RETRYABLE_ERROR",
+                "reason": None if repaired else "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
+            checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))
+            if not repaired:
+                continue
+            if refresh_unadmitted_static is not None and any(
+                not _spatially_admitted(entry, requests_by_sha[entry["requestSha256"]], plan, admit_spatial)
+                for entry in group_entries
+            ):
+                refreshed = refresh_unadmitted_static(key, copy.deepcopy(target),
+                    [(copy.deepcopy(entry), copy.deepcopy(requests_by_sha[entry["requestSha256"]]))
+                     for entry in group_entries])
+                if refreshed is not None:
+                    attempts.append({"partId": part_id, "contractKey": key,
+                        "status": "STATIC_EVIDENCE_READY" if refreshed else "RETRYABLE_ERROR",
+                        "reason": None if refreshed else "CP_COMPONENT_STATIC_GRID_REFRESH_UNAVAILABLE"})
+                    checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))
+                    # A stale *old* cell must not suppress a fresh dynamic
+                    # request for another still-missing hour in this group.
         existing = set()
-        for row in existing_by_group.get((part_id, key), []):
+        for entry in group_entries:
+            row = entry["native"]
+            if not _spatially_admitted(
+                entry, requests_by_sha[entry["requestSha256"]], plan, admit_spatial,
+            ):
+                continue
             challenge = challenges.get(row["validTime"])
             if challenge and (not row["modelRun"] or _hour(row["modelRun"]) <= _hour(challenge["protectedModelRun"])):
                 continue
             existing.add(row["validTime"])
         pending = sorted(times - existing)
         if not pending:
-            if prepare_reusable_group is not None:
+            if prepare_reusable_group is not None and admit_spatial is None:
                 if not should_continue():
                     break
-                target = next(t for t in plan["targets"] if t["partId"] == part_id)
                 ready = prepare_reusable_group(key, copy.deepcopy(target))
                 attempts.append({"partId": part_id, "contractKey": key,
                     "status": "STATIC_EVIDENCE_READY" if ready else "RETRYABLE_ERROR",
@@ -545,9 +713,25 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         try:
             path = acquire_subset(copy.deepcopy(request))
             read = read_component_subset(path, contract_key=key, target=request["target"], expected_times=pending)
-            updated = merge_component_read(bank, plan=plan, request=request, read=read, acquisition_at=acquisition_at())
+            acquired_at = acquisition_at()
+            if admit_spatial is not None and refresh_unadmitted_static is not None:
+                new_entries = [_sealed({"requestSha256": request["requestSha256"],
+                    "acquisitionAt": acquired_at, "native": copy.deepcopy(native)}, "recordId")
+                    for native in read["records"]]
+                if any(not _spatially_admitted(entry, request, plan, admit_spatial)
+                       for entry in new_entries):
+                    refresh_unadmitted_static(key, copy.deepcopy(target),
+                        [(entry, copy.deepcopy(request)) for entry in new_entries])
+            updated = merge_component_read(bank, plan=plan, request=request, read=read,
+                acquisition_at=acquired_at, admit_spatial=admit_spatial)
         except (OSError, ValueError, RuntimeError) as error:
-            reason = str(error) if isinstance(error, ComponentReadError) else "CP_COMPONENT_REQUEST_RETRYABLE_ERROR"
+            supplied = str(error)
+            # Bounded transport failures carry payload-free reason codes.
+            # Arbitrary exception text may contain a path or provider detail
+            # and must never escape into the aggregate production report.
+            reason = (supplied if isinstance(error, ComponentReadError)
+                      or re.fullmatch(r"CP_COMPONENT_[A-Z0-9_]+", supplied)
+                      else "CP_COMPONENT_REQUEST_RETRYABLE_ERROR")
             attempts.append({"requestSha256": request["requestSha256"], "partId": part_id, "contractKey": key,
                              "status": "RETRYABLE_ERROR", "reason": reason})
             checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))

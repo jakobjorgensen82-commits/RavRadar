@@ -199,8 +199,9 @@ assert diag['balancedFoundationRecovery'] is True, diag
 assert diag['atmosphereDeferredDuringMarineRecovery'] is False, diag
 assert diag['marineFoundationRatio'] >= 0.95, diag
 
-# A zone's established marine selection is authoritative for wind-tail demand,
-# so completed collections fall out and the scheduler rotates to the next gap.
+# A zone-wide legacy marineSelection cannot lock wind tail to its collection.
+# The 40 complete NSBS tails fall out; the remaining east-coast tails choose
+# their own first collection rather than blindly inheriting NSBS.
 for zone in active:
     zones.setdefault(zone['id'],{'hourly':{valid:{} for valid in future}})['marineSelection']={'collection':'dkss_nsbs'}
 for zone in active[:40]:
@@ -210,8 +211,9 @@ for zone in active[:40]:
          'sources':{'windTail':wind_source('windTail')},
         })
 scheduled,diag=module.collection_schedule({'zones':zones,'collectionState':previous['collectionState']},active)
-assert diag['preferredWindTailDemand']['dkss_nsbs']==168, diag
-assert scheduled[0]=='dkss_nsbs', scheduled
+assert diag['preferredWindTailDemand']['dkss_idw']==168, diag
+assert diag['preferredWindTailDemand']['dkss_nsbs']==0, diag
+assert scheduled[0]=='dkss_idw', scheduled
 
 # Native three-hour endpoints only form usable hourly coverage when they belong
 # to one unchanged run/grid/entity series. Alternating model runs are the live
@@ -464,14 +466,14 @@ _,malformed_diag=module.operational_collection_plan(
  mixed_schedule,malformed_state,False,wave_residual,600,now_epoch=1000,
 )
 assert malformed_diag['strictCurrentCollections'][:2]==['dkss_nsbs','dkss_lf'], malformed_diag
-assert module.fair_nonlead_strict_current_runtime_reserve(
- ['dkss_lf'],900,{'dkss_lf':120},
+assert module.fair_pending_critical_runtime_reserve(
+ [],['dkss_lf'],900,{}, {'dkss_lf':120},
 )==450
-assert module.fair_nonlead_strict_current_runtime_reserve(
- ['dkss_lf','dkss_idw'],900,{'dkss_lf':120,'dkss_idw':120},
+assert module.fair_pending_critical_runtime_reserve(
+ [],['dkss_lf','dkss_idw'],900,{}, {'dkss_lf':120,'dkss_idw':120},
 )==600
-assert module.fair_nonlead_strict_current_runtime_reserve(
- ['dkss_lf'],100,{'dkss_lf':120},
+assert module.fair_pending_critical_runtime_reserve(
+ [],['dkss_lf'],100,{}, {'dkss_lf':120},
 )==120
 
 real_remaining=module.runtime_remaining
@@ -508,9 +510,9 @@ for now_epoch in (2000,2100,2200):
   reserve=sum(wam_reserve.get(value,0) for value in pending_wam)+sum(
    current_reserve.get(value,0) for value in pending_current
   )
-  if is_current and collection!=lead and not pending_wam:
-   reserve=max(reserve,module.fair_nonlead_strict_current_runtime_reserve(
-    pending_current,remaining[0],current_reserve,
+  if is_wam or (is_current and collection!=lead):
+   reserve=max(reserve,module.fair_pending_critical_runtime_reserve(
+    pending_wam,pending_current,remaining[0],wam_reserve,current_reserve,
    ))
   module.begin_collection_scheduler_turn(
    production_state.setdefault(collection,{}),collection,lead,turn_at,
@@ -605,9 +607,10 @@ current_time='2026-01-01T11:00:00Z'
 scalar_covered={(part,scalar_time) for part in regional_parts}
 current_before_scalar=module.prioritize_marine_assets_for_current_gaps(
  [regional_asset(scalar_time,'i'),regional_asset(current_time,'j')],
- regional_parts,scalar_covered,
- critical_by_time={scalar_time:True,current_time:True},
- direct_valid_times={scalar_time,current_time},
+  regional_parts,scalar_covered,
+  critical_by_time={scalar_time:True,current_time:True},
+  critical_priority_by_time={scalar_time:1,current_time:0},
+  direct_valid_times={scalar_time,current_time},
 )
 assert [row['valid'] for row in current_before_scalar]==[
  current_time,scalar_time,

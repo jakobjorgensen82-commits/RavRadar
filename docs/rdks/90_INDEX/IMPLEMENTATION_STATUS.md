@@ -1,4 +1,61 @@
-# 2026-09-24 – lokal 4.0.486, forståeligt offentligt sprog
+# 2026-09-25 – lokal 4.0.488, parret 11Z/15Z-genopretning (ikke leveret)
+
+- [x] Første exact-head CI på PR #449 fandt en forældet modelbundle-
+  binding. Aktiv og inaktiv bundle samt continuation-identitet er nu
+  regenereret. Append-only-migration `20260925150000` bevarer de
+  senere checkpointrettelser; historiske migrationer er urørte.
+  Målrettede score-, binding-, migrations- og rollbackkontroller består.
+- [x] Den nødvendige historiske modelovergang er nu indbygget lokalt:
+  eksakt 4.0.487-læser verificerer begge oprindelige pakker, 11Z-state
+  genbindes med den eksakte 4.0.485-kilde uden ændring af målinger,
+  15Z beholdes som gammelt tabsanker, og det inkompatible gamle
+  checkpoint springes over netop i denne overgang. Et afgrænset
+  database-only workflow anvender bindingen før normalt vejr;
+  almindelig code-only deploy afvises, mens 11Z/15Z-pointeren lever.
+- [ ] Ny exact-head CI på rettet PR-head, merge og normalrun-bevis
+  mangler. Database-only migration skal læses tilbage før normalrun.
+  Cron og nye vejrkørsler forbliver pauset imens.
+- [x] Tre gamle queued GitHub-runs har hver en tidlig eksakt main-SHA-
+  kontrol før beskyttet læsning/skrivning. Deres gamle commits kan ikke
+  skrive produktion, selv om GitHub endnu viser dem som queued.
+- [x] Målt to caches på 92 stadig fremtidige fælles timer: 11Z alene
+  72.520 gyldige feltpar, 15Z alene 3.238. Besluttet at bruge
+  verificeret 11Z og normal genhentning; frisk/tom cache forkastet.
+- [x] Lokal workflow klassificerer kun den eksakte 15Z-pointer,
+  verificerer begge pakker, installerer kun 11Z og anvender 15Z som
+  særskilt no-loss-anker før beskyttet publish og Pages.
+- [x] Lokal vejrbygger afviser ulæselig tidligere conditions,
+  DMI-candidate og DMI-forecast-store efter privat install.
+  Syntaktisk kontrol, komponent-runtime, public no-loss,
+  Copernicus source-stage og 33 DMI-checkpointtests er grønne.
+- [ ] Livebevis for 11Z-restaurering, genhentning af 15Z's 3.238
+  par, krypteret fremdrift ved eventuelt første stop, fem vejrtyper,
+  DMI/CP/OM-andel, scorehistorik, ny beskyttet pakke og Pages mangler.
+  De tre gamle queued GitHub-runs må ikke få udgivelsesret på gammel main.
+
+# HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
+
+- [x] Bevis fem feltvise tab fra grøn `36022310055` mod seneste
+  komplette private cache `35993736090`; afgræns afvist cachehash og
+  tilladt stateless normalfortsættelse.
+- [x] Kræv fuld cache, verificér den eksakte forgænger og bind begge
+  restore-trin til faktisk pakkeidentitet. Erstat fremtidig bred
+  producentkodehash med eksplicit lagrings-ABI.
+- [x] Indfør tabsværn pr. gyldigt felt/kystdel/fælles time før
+  offentliggørelse og beskyttet privat produktionsgemning.
+- [x] Indfør faktisk fem-komponent-DMI-budgetvalg, særskilt
+  vandstandsprioritet og afgrænset roterende Copernicus-opdatering.
+- [x] Lokale måltests for cache, workflow, DMI-plan og Copernicus
+  består; det er ikke livebevis.
+- [ ] Afslut RDKS/håndbog/changelog, geodata-diff og exact-head
+  kildegate; merge kun verificeret head.
+- [ ] Kør almindelig vejrhentning uden overlap fra bevist cache.
+  Mål fem typer, tre leverandører, gemt næste cache, score, Pages
+  og offentlig visning. Gentag for autonome vinduesskift før cron.
+- [ ] Ved stående lokale rester: dokumentér præcis rumlig/opstrøms
+  årsag uden at kalde datasættet komplet eller indsætte opdigtede tal.
+
+# HISTORISK STATUS – 2026-09-24 – lokal 4.0.486
 
 - [x] 4.0.485/PR #447 exact-head `35991803426` grøn, merged som
   `cc45e971`; providerfri deploy `35992546525` grøn.
@@ -6162,3 +6219,18 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   deployer Pages og bevarer/forbedrer fem vejrtyper på fælles grid.
   Følg flere normale kørsler før cron genaktiveres. Større datahuller
   og faktisk providerpar i denne konflikt er fortsat uafklarede.
+# HISTORISK ARBEJDSPUNKT – 2026-09-24 – første 4.0.488-afgrænsning
+
+- [x] Sammenlign `35993736090` og `36022310055` på 114 identiske timer
+  og alle fem vejrtyper; dokumentér de store gyldig-til-tom-tab.
+- [x] Afgræns årsagen til afvist privat forgænger og tilladt stateless
+  normal continuation; verificér 4.0.485's tre hashes fra kildearkivet.
+- [x] Stop normalrun uden fuld restore; vælg kun eksakt forgænger og
+  bind anden restore til faktisk pakke, også ved samme tid/datasæt.
+- [x] Måltest beskyttet restore, anden restore og workflowrækkefølge.
+- [ ] Bestå RDKS/version/geodatabevis og exact-head-kildekontrol på PR.
+- [ ] Merge kun samme verificerede head. Start først derefter én normalrun
+  uden overlap; bevis gendannet forgænger, ny cache, fem felter,
+  leverandører, artifact og Pages. Stop ved tab eller stagnation.
+- [ ] Undersøg de tilbageværende DMI-/Copernicus-/Open-Meteo-barrierer
+  og byg en generel gyldig-til-tom-beskyttelse før cron genaktiveres.

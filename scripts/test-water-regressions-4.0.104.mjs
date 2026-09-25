@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
+import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
 
 const generatedAt='2026-08-05T18:00:00.000Z';
 const sources=[
@@ -9,8 +10,8 @@ const sources=[
 ];
 const times=Array.from({length:40},(_,i)=>new Date(Date.parse(generatedAt)+i*3*3600000).toISOString());
 const bulk={generatedAt,timeStrideHours:3,zones:{
-  'SOURCE::tidewater:EMPTY':{hourly:Object.fromEntries(times.map(time=>[time,{time,'sea-mean-deviation':null}]))},
-  'SOURCE::tidewater:REAL':{hourly:Object.fromEntries(times.map((time,i)=>[time,{time,'sea-mean-deviation':(12+i)/100}]))}
+  'SOURCE::tidewater:EMPTY':{hourly:Object.fromEntries(times.map(time=>[time,dmiWaterSourceFixture(sources[0],time,null,generatedAt)]))},
+  'SOURCE::tidewater:REAL':{hourly:Object.fromEntries(times.map((time,i)=>[time,dmiWaterSourceFixture(sources[1],time,12+i,generatedAt)]))}
 }};
 const index=buildWaterSourceForecastIndex(sources,bulk,generatedAt);
 assert.equal(index.has('tidewater:EMPTY'),false,'Null-vandstand må ikke konverteres til en falsk nulserie.');
@@ -29,8 +30,21 @@ const haversineKm=()=>0;
 const result=applyWaterSourceRouting({features:[feature],output,forecastStore,sources:aware,index,routing,haversineKm,generatedAt});
 assert.equal(result.audit.applied,1);
 assert.equal(output.zones.Z.waterLevel.interpolation.mode,'admin-override');
-assert.deepEqual(output.zones.Z.forecast.hourly.slice(0,8).map(x=>x.waterLevelCm),[12,13,14,15,16,17,18,19],'En reel prognose uden verificeret interpolationsproveniens skal bevare de native værdier og må ikke blive en kunstig nulserie.');
-assert.deepEqual(output.zones.Z.forecast.hourly.slice(0,3).map(x=>x.time),times.slice(0,3),'En fixture uden verificeret interpolationsproveniens må ikke opfinde mellemliggende timer.');
+assert.deepEqual(output.zones.Z.forecast.hourly.filter(x=>times.includes(x.time)).slice(0,8).map(x=>x.waterLevelCm),[12,13,14,15,16,17,18,19],'En verificeret prognose skal bevare de native værdier og må ikke blive en kunstig nulserie.');
+assert.equal(output.zones.Z.forecast.hourly[1].waterLevelCm,12,'Mellemtimer må kun interpoleres, når begge native DMI-endepunkter er verificerede.');
+const unprovedBulk={generatedAt,timeStrideHours:3,zones:{
+  'SOURCE::tidewater:REAL':{hourly:Object.fromEntries(times.map((time,i)=>[
+    time,{time,'sea-mean-deviation':(12+i)/100},
+  ]))},
+}};
+const unprovedIndex=buildWaterSourceForecastIndex(sources,unprovedBulk,generatedAt);
+const unprovedOutput={zones:{Z:{point:[10.1,56],current:{waterLevelCm:null},
+  forecast:{hourly:hourly.map(row=>({...row}))},waterLevel:{}}}};
+const unprovedResult=applyWaterSourceRouting({features:[feature],output:unprovedOutput,
+  forecastStore:{zones:{Z:{hourly:hourly.map(row=>({...row}))}}},sources:aware,
+  index:unprovedIndex,routing,haversineKm,generatedAt});
+assert.equal(unprovedResult.audit.applied,0,'A value-only SOURCE cannot enter the routed production series.');
+assert.equal(unprovedOutput.zones.Z.forecast.hourly[0].waterLevelCm,null);
 
 const admin=await fs.readFile('js/ui/admin-dashboard.js','utf8');
 assert.match(admin,/state\.waterRouting\.zones\?\?=\{\};const route=state\.waterRouting\.zones\[zoneId\]\?\?=/,'En ny zones administratorvalg skal oprettes direkte i det persistente routingdokument.');

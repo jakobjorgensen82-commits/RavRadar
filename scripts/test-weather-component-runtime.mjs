@@ -59,6 +59,40 @@ test('CP runs first; OM receives only recomputed real holes, not aged-DMI challe
   assert.deepEqual(result.summary.failures, []);
 });
 
+test('bounded Copernicus upgrade pass overtakes admitted Open-Meteo wave and temperature', async t => {
+  const calls = [];
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    readVerifiedHourly: (_part, inputs) => {
+      const values = rows();
+      for (const [offset, component] of [[0, 'wave'], [1, 'waterTemperature']]) {
+        values[offset][`${component}Provenance`].provider =
+          inputs.copernicusComponentIndex?.replacement ? 'copernicus' : 'open-meteo';
+      }
+      values[2].windProvenance.provider = 'open-meteo';
+      return values;
+    },
+    runCopernicus: async options => {
+      calls.push(['cp', options.budgetMs]);
+      if (options.budgetMs > 0) {
+        assert.deepEqual(options.needs.map(row => [row.component, row.purpose]), [
+          ['wave', 'OPEN_METEO_UPGRADE'], ['waterTemperature', 'OPEN_METEO_UPGRADE'],
+        ]);
+        return cp('d', { replacement: true });
+      }
+      return cp('c');
+    },
+    runOpenMeteo: async options => {
+      calls.push(['om', options.budgetMs]);
+      assert.deepEqual(options.requiredPairs, []);
+      return om('b');
+    },
+  }));
+  assert.deepEqual(calls, [['cp', 0], ['cp', 1000], ['om', 1000]]);
+  assert.equal(result.summary.pendingCopernicusUpgrades, 0);
+  assert.deepEqual(result.copernicusUpgradeNeeds, []);
+  assert.deepEqual(result.summary.failures, []);
+});
+
 test('provider-free build does not enter a positive-budget acquisition; saved marker binds exact ledger bytes', async t => {
   const calls = [];
   const result = await prepareWeatherComponentRuntime(await fixture(t, {

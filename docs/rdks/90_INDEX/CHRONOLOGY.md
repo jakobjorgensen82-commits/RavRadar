@@ -1,4 +1,15 @@
-## 2026-09-24 – 4.0.486 forståelige offentlige forklaringer
+## 2026-09-24 – lokal 4.0.488, datatab og samlet recovery
+
+`36022310055` blev grønt og deployede, men mistede gyldige værdier i
+alle fem vejrfamilier. Eksakt fælles time-/kystdelsammenligning og
+privat cachelineage viste, at en bred kodehash afviste den sidste
+komplette generation fra `35993736090`, hvorefter workflowet byggede
+uden den. 4.0.488 samler fuld-cachekrav, eksakt forgænger,
+lagrings-ABI, offentlig tabsbarriere, datastyret DMI-recovery med
+vandstandsprioritet og afgrænset Copernicus-rotation. Kun lokale
+måltests er gennemført; driftsbevis mangler. Se DEC-0254.
+
+## Historik 2026-09-24 – 4.0.486 forståelige offentlige forklaringer
 
 4.0.485/PR #447 bestod exact-head `35991803426`, blev merged som
 `cc45e971` og kode-only-deployet i `35992546525`. Normalrun

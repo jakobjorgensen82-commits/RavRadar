@@ -1,4 +1,17 @@
-# Aktuelt fokus – 2026-09-24, 4.0.482
+# Aktuelt fokus – 2026-09-24, lokal 4.0.488
+
+Bevis én sammenhængende normal vejrhentning fra den seneste
+komplette private generation uden datatab. Før det skal lokal
+4.0.488 gennem versions-/RDKS-kontrol og exact-head-kildegate.
+Rettelsen binder begge cache-restore-trin, indfører eksplicit
+lagrings-ABI, fem-felts offentlig tabsbarriere, automatisk
+datastyret DMI-recovery med DMI-only-vandstandsprioritet og
+roterende Copernicus-segmenter. Efter merge: sammenlign samme
+kystdel/time før og efter for alle fem vejrtyper, tre leverandører,
+privat gemning og Pages. Følg flere normale vinduesskift før cron;
+ingen blind oneoff. Se DEC-0254 og ACTIVE_ROADMAP.
+
+# Historisk fokus – 2026-09-24, 4.0.482
 
 4.0.481 bestod exact-head-kildekontrol og blev merged, men første
 normalrun `35952076841` stoppede før vejrhentning. Den aktuelle

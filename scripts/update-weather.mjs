@@ -41,7 +41,7 @@ import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
@@ -1081,8 +1081,17 @@ async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
 async function readDmiBulkCache(cachePath = DMI_BULK_CACHE_PATH) {
   try {
     const parsed = await readDmiBulkDocument(cachePath, { optional: true });
-    return [1, 2].includes(parsed?.schemaVersion) && parsed?.zones ? parsed : null;
-  } catch {
+    if ([1, 2].includes(parsed?.schemaVersion) && parsed?.zones) return parsed;
+    if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true'
+      && cachePath === DMI_BULK_CACHE_PATH) {
+      throw new Error('The current DMI candidate is missing or invalid');
+    }
+    return null;
+  } catch (error) {
+    if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true'
+      && cachePath === DMI_BULK_CACHE_PATH) {
+      throw new Error('The current DMI candidate cannot be read', { cause: error });
+    }
     return null;
   }
 }
@@ -1202,13 +1211,16 @@ function bulkZoneToForecastRecord(
     hours: DMI_FORECAST_HOURS, sourceCadenceMinutes, expectedIdentity: dmiIdentity,
   });
   const currentAvailable = ocean.some(item => ravScoreNumber(item['current-u']) !== null && ravScoreNumber(item['current-v']) !== null);
+  const waterLevelAvailable = ocean.some(item => ravScoreNumber(item['sea-mean-deviation']) !== null);
+  const waterTemperatureAvailable = ocean.some(item => ravScoreNumber(item['water-temperature']) !== null);
   const marine = ocean.some(item => ravScoreNumber(item['sea-mean-deviation']) !== null && ravScoreNumber(item['current-u']) !== null && ravScoreNumber(item['current-v']) !== null);
   const windAvailable = wind.some(item => ravScoreNumber(item['wind-speed-10m']) !== null && ravScoreNumber(item['wind-dir-10m']) !== null);
   const windTailAvailable = windTail.some(item => ravScoreNumber(item['wind-speed-10m']) !== null && ravScoreNumber(item['wind-dir-10m']) !== null);
   const waveAvailable = waves.some(item => ravScoreNumber(item['significant-wave-height']) !== null
     && ravScoreNumber(item['dominant-wave-period']) !== null);
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
-  if (!marine && !windAvailable && !windTailAvailable && !waveAvailable
+  if (!currentAvailable && !waterLevelAvailable && !waterTemperatureAvailable
+    && !windAvailable && !windTailAvailable && !waveAvailable
     && !materializeMissingHorizon) return null;
   const marineContinuousHourly = recoverDmiMarineRunSeamHours({
     hourly: built.hourly, ocean, generatedAt, startAt,
@@ -2081,6 +2093,7 @@ function scoreCoastalPartsRuntime(
   checkpointCandidateGRollbackStates = {},
   componentInputs = {},
   historicalWaveInputTransition = null,
+  waterSourceRoutingContext = null,
 ) {
   const forceHistoricalWaveMeasuredColdReplay =
     historicalWaveInputTransition !== null;
@@ -2293,7 +2306,15 @@ function scoreCoastalPartsRuntime(
           partDmiIdentity,
         )),
       });
-      const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId }, componentInputs);
+      const verifiedHourly = verifiedIntegratedPartHourly(
+        record, bulkCache, bulkId, { ...part, zoneId }, componentInputs,
+      );
+      const hourly = waterSourceRoutingContext
+        ? applyVerifiedWaterSourceRoutingToPartHourly({
+          part: { ...part, zoneId }, parentFeature: parent,
+          hourly: verifiedHourly, ...waterSourceRoutingContext,
+        }).hourly
+        : verifiedHourly;
       if (componentInputs.componentSelectionHistory) {
         recordSelectedWeatherComponents(componentInputs.componentSelectionHistory, { ...part, zoneId }, hourly);
       }
@@ -3693,8 +3714,16 @@ async function readDmiForecastStore() {
   let local = { schemaVersion: 1, zones: {} };
   try {
     const parsed = JSON.parse(await fs.readFile(DMI_FORECAST_STORE_PATH, 'utf8'));
-    if (parsed?.zones && typeof parsed.zones === 'object') local = parsed;
-  } catch {}
+    if (parsed?.zones && typeof parsed.zones === 'object'
+      && !Array.isArray(parsed.zones)) local = parsed;
+    else if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true') {
+      throw new Error('The installed DMI forecast store is structurally incomplete');
+    }
+  } catch (error) {
+    if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true') {
+      throw new Error('The installed DMI forecast store cannot be read', { cause: error });
+    }
+  }
   if (!DMI_DEPLOYED_CACHE_URL) return local;
   try {
     const remote = await fetchJson(DMI_DEPLOYED_CACHE_URL, { provider: 'Deployed DMI cache', retries: 1 });
@@ -3760,11 +3789,24 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
 async function readPrevious() {
   try {
     const previous = JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8'));
+    if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true'
+      && (!previous || typeof previous.zones !== 'object'
+        || Array.isArray(previous.zones)
+        || !previous.coastalParts?.parts
+        || typeof previous.coastalParts.parts !== 'object'
+        || Array.isArray(previous.coastalParts.parts))) {
+      throw new Error('The installed private weather baseline is structurally incomplete');
+    }
     previous.zones = Object.fromEntries(Object.entries(previous.zones ?? {})
       .map(([id, zone]) => [id, retainOnlyDmiZoneWaterLevel(zone)]));
     return previous;
   }
-  catch { return { zones: {} }; }
+  catch (error) {
+    if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true') {
+      throw new Error('The installed private weather baseline cannot be read', { cause: error });
+    }
+    return { zones: {} };
+  }
 }
 
 async function readCoastalPointStateInjections() {
@@ -4407,6 +4449,12 @@ const historicalWaveInputTransition = await loadHistoricalWaveInputTransition({
 const previousPrivateCandidateGRuntime = historicalWaveInputTransition
   ? null
   : selectPreviousPrivateCandidateGRuntime(previous);
+const waterSourceRoutingContext = {
+  sources: stationRegistry,
+  index: waterSourceForecastIndex,
+  routing: activeWaterRouting,
+  haversineKm,
+};
 let weatherComponents = null;
 if (coastalPartsContract.enabled) {
   const parts = Object.entries(coastalPartsContract.zones).flatMap(([zoneId, zoneParts]) =>
@@ -4434,8 +4482,12 @@ if (coastalPartsContract.enabled) {
     openMeteoSpatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
     copernicusBudgetMs: COMPONENT_COPERNICUS_BUDGET_MS,
     openMeteoBudgetMs: COMPONENT_OPEN_METEO_BUDGET_MS,
-    readVerifiedHourly: (part, inputs) => verifiedIntegratedPartHourly(
-      planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part, inputs),
+    readVerifiedHourly: (part, inputs) => applyVerifiedWaterSourceRoutingToPartHourly({
+      part, parentFeature: parentById.get(part.zoneId),
+      hourly: verifiedIntegratedPartHourly(
+        planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part, inputs),
+      ...waterSourceRoutingContext,
+    }).hourly,
   });
   planningRecords.clear();
   output.weatherEngine.componentFallback = weatherComponents.summary;
@@ -4461,6 +4513,7 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     ravScoreCheckpoint.loaded ? ravScoreCheckpoint.candidateGRollbackStates : {},
     weatherComponents?.inputs ?? {},
     historicalWaveInputTransition,
+    waterSourceRoutingContext,
   )
   : null;
 reportWeatherBuildStage('coastal-score-runtime-ready', {

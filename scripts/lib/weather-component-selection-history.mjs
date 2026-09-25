@@ -67,8 +67,8 @@ export function retainPreviouslySelectedReserve(candidates, history, { part, tim
   const previous = store.selected.get(key({ partId: part.partId, time, component }));
   if (!previous || !same(expected, rowIdentity(previous))) return candidates;
   return candidates.map(candidate => ({ ...candidate,
-    // A newer admitted revision of that SAME provider may update the value.
-    // This does not give another reserve provider general overwrite rights.
+    // This marks the previous winner only for same-provider revision ordering.
+    // A newly admitted Copernicus value may still replace Open-Meteo.
     previouslySelected: candidate?.source?.provider === previous.provider,
   }));
 }

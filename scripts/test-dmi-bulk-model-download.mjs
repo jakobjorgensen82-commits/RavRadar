@@ -211,11 +211,13 @@ assert.match(
 );
 
 const controllerInit = bulk.indexOf('checkpoint_controller = ProgressCheckpointController(', bulkMainStart);
-const collectionLoopStart = bulk.indexOf('for collection in scheduled:', controllerInit);
+const collectionTurnPlan = bulk.indexOf('collection_turns = operational_collection_turns(', controllerInit);
+const collectionLoopStart = bulk.indexOf('for collection, collection_turn in collection_turns:', collectionTurnPlan);
 const replayStart = bulk.indexOf('replay_targets: list[dict[str, Any]] = []', collectionLoopStart);
 assert.ok(
   controllerInit > bulkMainStart
-    && collectionLoopStart > controllerInit
+    && collectionTurnPlan > controllerInit
+    && collectionLoopStart > collectionTurnPlan
     && replayStart > collectionLoopStart,
   'Main skal oprette én controller før bootstrap og collection-loop.',
 );
@@ -401,20 +403,18 @@ assert.match(bulk, /write_ocean_diagnostics/);
 assert.match(build, new RegExp(`RavRadar/${appVersion.replaceAll('.', '\\.')}`));
 assert.match(build, /current-field-shadow\.json/);
 assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
-assert.match(
-  build,
-  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: \$\{\{ inputs\.extended_provider_bootstrap && 70 \|\| 55 \}\}[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ inputs\.extended_provider_bootstrap == true && '3600' \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\) && '3000' \|\| '1500' \}\}/,
-);
-assert.match(
-  build,
-  /DMI_BULK_MAX_DOWNLOAD_MB: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '4096' \|\| '2048' \}\}/,
-  'Første integrerede cutover skal kunne hente den målte fulde bootstrapmængde; normale vejrkørsler beholder 2048 MB-grænsen.',
-);
-assert.match(
-  build,
-  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ \(inputs\.extended_provider_bootstrap == true \|\| \(steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true'\)\) && '6' \|\| '3' \}\}/,
-  'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normal vedligeholdelse behandler tre collections.',
-);
+const dmiStepStart = build.indexOf('- name: Update DMI bulk model cache');
+const dmiStepEnd = build.indexOf('\n      - name:', dmiStepStart + 1);
+assert.ok(dmiStepStart >= 0 && dmiStepEnd > dmiStepStart, 'DMI-trinnet skal kunne afgrænses.');
+const dmiStep = build.slice(dmiStepStart, dmiStepEnd);
+assert.match(dmiStep, /timeout-minutes:.*70 \|\| 55/);
+assert.match(dmiStep, /DMI_BULK_MAX_RUNTIME_SECONDS:.*'3600'.*'3000'.*'1500'/);
+assert.match(dmiStep, /steps\.dmi-recovery-budget\.outputs\.extended == 'true'/);
+assert.match(dmiStep, /steps\.historical-wave-transition\.outputs\.required == 'true'/);
+assert.match(dmiStep, /DMI_BULK_MAX_DOWNLOAD_MB:.*'4096' \|\| '2048'/,
+  'Udvidet DMI-recovery skal have større downloadbudget uden at løfte den normale grænse.');
+assert.match(dmiStep, /DMI_BULK_COLLECTIONS_PER_RUN:.*'6' \|\| '3'/,
+  'Udvidet recovery skal kunne betjene alle officielle collections.');
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);

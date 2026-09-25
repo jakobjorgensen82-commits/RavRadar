@@ -185,6 +185,25 @@ jobs:
           test "${{ steps.source-proof.outputs.required }}" = "false"
           echo "Exact source tree already passed the PR source gate; it is not run again."
 
+      - name: Preserve the protected 11Z and 15Z pair for the next normal weather run
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/protected-private-production-runtime.mjs --describe-current \
+            --output "$RUNNER_TEMP/code-only-current-private-source.json"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { isLatestUnpairedWeatherGeneration } from './scripts/protected-private-production-runtime.mjs';
+          const source = JSON.parse(fs.readFileSync(
+            process.env.RUNNER_TEMP + '/code-only-current-private-source.json', 'utf8'));
+          if (isLatestUnpairedWeatherGeneration(source)) {
+            throw new Error('The sealed 11Z/15Z weather pair must be recovered by the next normal weather run; use the binding-only workflow before it, not code-only deployment');
+          }
+          NODE
+
       - name: Download exact currently public code-only source
         id: public-snapshot
         shell: bash

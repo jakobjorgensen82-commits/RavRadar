@@ -222,7 +222,7 @@ const operationalActivation=await read('scripts/ravscore-operational-activation.
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260925150000_weather_selection_model_binding.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -1227,6 +1227,7 @@ for(const marker of [
   '20260923140000_checkpoint_native_hold_null_evidence.sql',
   '20260923150000_checkpoint_candidate_diagnostic_correction.sql',
   '20260923160000_checkpoint_candidate_companion_id.sql',
+  '20260925150000_weather_selection_model_binding.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
@@ -1341,6 +1342,27 @@ ok(!lightweightPreflightSection.includes('protected-private-production-runtime.m
   && !lightweightPreflightSection.includes('/tmp/ravradar-private-production-runtime/bundle'),
 'Den tidlige vejrpreflight må ikke hente eller inspicere det fulde private runtimebundle');
 const privateRuntimeRestoreSection=buildWorkflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.legacyBootstrapGate);
+const runtimeAvailabilityStep=privateRuntimeRestoreSection.indexOf('name: Inspect private production runtime availability');
+const continuityGuardStep=privateRuntimeRestoreSection.indexOf('name: Require full private weather baseline before normal continuation');
+const selectedSourceStep=privateRuntimeRestoreSection.indexOf('name: Describe the exact restored private generation');
+const secondRestoreStep=privateRuntimeRestoreSection.indexOf('name: Verify and restore the private production runtime bundle');
+ok(runtimeAvailabilityStep>=0&&runtimeAvailabilityStep<continuityGuardStep
+  &&continuityGuardStep<selectedSourceStep&&selectedSourceStep<secondRestoreStep
+  &&privateRuntimeRestoreSection.includes('Normal weather must not replace valid deployed values with a stateless rebuild.')
+  &&privateRuntimeRestoreSection.includes('--source-description "$RUNNER_TEMP/private-runtime-restored-source.json"'),
+'Normal vejrdrift må ikke genopbygge stateless uden fuld privat cache eller binde anden restore til forkert generation');
+ok(privateRuntimeRestoreSection.includes('--dataset-id "$restored_dataset"')
+  &&privateRuntimeRestoreSection.includes('--bundle-content-sha256 "$restored_digest"'),
+'Anden restore skal vælge præcis den gendannede bundlegeneration, også ved samme referencetime');
+const weatherContinuitySnapshot=buildWorkflow.indexOf('name: Preserve exact previous public weather for no-loss comparison');
+const weatherContinuityBuild=buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy');
+const weatherContinuityGate=buildWorkflow.indexOf('name: Refuse loss of previously valid public weather on identical coastal hours');
+const privateRuntimePublish=buildWorkflow.indexOf('name: Publish bounded private runtime with one protected rollback generation');
+ok(weatherContinuitySnapshot>buildWorkflow.indexOf('name: Verify and restore the private production runtime bundle')
+  &&weatherContinuitySnapshot<weatherContinuityBuild
+  &&weatherContinuityBuild<weatherContinuityGate&&weatherContinuityGate<privateRuntimePublish
+  &&buildWorkflow.includes('node scripts/check-public-weather-continuity.mjs'),
+'Tidligere gyldige felter skal måles før en ny privat cache eller Pages kan publiceres');
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs expected',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
