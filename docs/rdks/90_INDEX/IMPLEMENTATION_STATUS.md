@@ -1,13 +1,23 @@
 # 2026-09-25 – 4.0.488 merged, parret 11Z/15Z-genopretning ikke livebevist
 
+- [x] PR #450 er merged som `1bba8b27`; database-only run
+  `36150075645` bekræftede den anvendte modelbinding live.
+- [x] Normalrun `36150276464` beviste eksakt 11Z/15Z-restore,
+  historisk genbinding, 11Z-installation og særskilt 15Z-tabsanker.
+- [ ] Samme run stoppede før leverandørerne: DMI-budgetplanen læste den
+  44 MB pakkede kildeordbog uden codec og så derfor ingen `zones`.
+  Rettet lokalt ved at bruge producentens validerede DMI-læser; en
+  pakket fixture reproducerer nu produktionsformatet i måltesten.
+  Kræver exact-head PR-gate og ny normalrun. Ingen privat pakke eller
+  Pages blev publiceret fra fejlkørslen.
 - [x] PR #449 er merged som `eaa32dec` efter grøn exact-head-kontrol
   `36147090206`. Database-only run `36147927454` installerede og
   læste migration `20260925150000` tilbage uden at røre vejrdata.
-- [ ] Live-readback stoppede på en forventningsfejl: to nye
+- [x] Første live-readback stoppede på en forventningsfejl: to nye
   checkpointvalidatorer blev sammenlignet med gamle modelhash. Den
   målte live-hash matcher præcist alle otte funktioner i migrationen;
-  efterkontrollen er rettet lokalt og skal gennem PR-gate, merge og
-  nyt database-only readback før første normalrun.
+  efterkontrollen er rettet i PR #450, og den gentagne live-readback
+  `36150075645` er grøn.
 
 - [x] Første exact-head CI på PR #449 fandt en forældet modelbundle-
   binding. Aktiv og inaktiv bundle samt continuation-identitet er nu
@@ -21,8 +31,10 @@
   checkpoint springes over netop i denne overgang. Et afgrænset
   database-only workflow anvender bindingen før normalt vejr;
   almindelig code-only deploy afvises, mens 11Z/15Z-pointeren lever.
-- [ ] Fuld database-readback og normalrun-bevis mangler.
-  Cron og nye vejrkørsler forbliver pauset imens.
+- [x] Fuld database-readback er grøn.
+- [ ] Fuld normalrun med leverandører, cachegemning og Pages mangler.
+  Cron er fortsat pauset;
+  ingen ny kørsel før den afgrænsede DMI-læserrettelse er leveret.
 - [x] Tre gamle queued GitHub-runs har hver en tidlig eksakt main-SHA-
   kontrol før beskyttet læsning/skrivning. Deres gamle commits kan ikke
   skrive produktion, selv om GitHub endnu viser dem som queued.
@@ -36,7 +48,7 @@
   DMI-candidate og DMI-forecast-store efter privat install.
   Syntaktisk kontrol, komponent-runtime, public no-loss,
   Copernicus source-stage og 33 DMI-checkpointtests er grønne.
-- [ ] Livebevis for 11Z-restaurering, genhentning af 15Z's 3.238
+- [ ] Livebevis for genhentning af 15Z's 3.238
   par, krypteret fremdrift ved eventuelt første stop, fem vejrtyper,
   DMI/CP/OM-andel, scorehistorik, ny beskyttet pakke og Pages mangler.
   De tre gamle queued GitHub-runs må ikke få udgivelsesret på gammel main.

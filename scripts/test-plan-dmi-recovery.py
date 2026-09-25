@@ -4,6 +4,9 @@
 import importlib.util
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from lib.dmi_bulk_storage import write_dmi_bulk_document
 
 spec = importlib.util.spec_from_file_location("plan_dmi_recovery", Path(__file__).with_name("plan-dmi-recovery.py"))
 planner = importlib.util.module_from_spec(spec)
@@ -40,6 +43,12 @@ result = planner.decide(level_gap, registry, target)
 assert result["extended"] is True
 assert result["recoveryComponents"] == ["waterLevel"]
 assert result["missingDmiPairs"]["waterLevel"] == 150
+with TemporaryDirectory() as directory:
+    encoded = Path(directory) / "dmi-source-dictionary.json"
+    write_dmi_bulk_document(encoded, level_gap)
+    # Production preserves the compact source-dictionary wrapper. The budget
+    # must inspect its validated logical zones, not the wrapper's top level.
+    assert planner.decide(planner.load_cache(encoded), registry, target) == result
 stalled = {**level_gap, "diagnostics": {"adaptiveRecovery": {
     "lastExtendedAt": "2026-09-24T12:00:00Z",
     "missingDmiPairsAtStart": result["missingDmiPairs"],

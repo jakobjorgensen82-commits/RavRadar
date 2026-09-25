@@ -1,4 +1,14 @@
-# NYESTE SANDHED – 2026-09-25 – lokal 4.0.488, parret vejrrecovery
+# NYESTE SANDHED – 2026-09-25 – 4.0.488, parret vejrrecovery
+
+Opdatering 25/9: PR #449 og #450 er merged, og databasebindingen er
+live-verificeret i `36150075645`. Normalrun `36150276464` verificerede
+11Z/15Z fra beskyttet storage, genbandt og installerede 11Z, og gemte
+15Z separat som tabsanker. Run stoppede derefter **før** leverandørerne:
+det nye DMI-budgetplanlægningsscript læste 44 MB pakket DMI-cache som
+almindelig JSON og fandt derfor ikke `zones`. De øvrige produktionslæsere
+benytter codec korrekt. Den lokale rettelse bruger samme validerede
+codec og tester det pakkede format. Ingen ny privat produktionscache
+eller Pages blev skrevet; fuld vejr- og tabsankerverifikation mangler.
 
 Den præcise vej er besluttet efter sammenligning med en helt ny cache
 og fuld sammenfletning: verificér 11Z og 15Z fra samme beskyttede
@@ -42,12 +52,13 @@ at scoreformlen eller anvendte migrationer omskrives. Database-only
 run `36147927454` anvendte migrationen og bekræftede dens identitet,
 men efterkontrollen sammenlignede to genbundne live-validatorer med
 gamle modelhash og gav falsk hash-drift. Live-hash `d12aeb...` er
-genskabt fra migrationens otte funktionstekster. En afgrænset
-readback-rettelse afventer kildekontrol; normalt vejr må først starte
-efter grøn fuld live-readback. Tre gamle queued workflow_dispatch-runs har gamle
+genskabt fra migrationens otte funktionstekster. PR #450 rettede
+efterkontrollen, og live-readback `36150075645` blev grøn. Tre gamle
+queued workflow_dispatch-runs har gamle
 main-commits; deres egen tidlige SHA-kontrol afviser dem før
-beskyttet læsning eller skrivning, hvis GitHub vækker dem. Ingen ny
-vejrkørsel under releaseanalysen.
+beskyttet læsning eller skrivning, hvis GitHub vækker dem. Normalrun
+`36150276464` er den første nye kørsel og standsede før leverandørerne
+som beskrevet ovenfor.
 
 # HISTORISK LOKAL STATUS – 2026-09-24 – første 4.0.488-afgrænsning
 
