@@ -23,8 +23,8 @@ indlæses ikke i denne overgang; 11Z's private state er grundlaget.
 Den nye databasebinding installeres først via et særskilt manuelt
 workflow, som hverken læser/skriver private vejrpakker eller deployer
 hjemmesiden. Code-only deploy er låst for den kendte 11Z/15Z-pointer,
-fordi den ellers kunne skubbe den komplette pakke ud. Dette er
-lokal kode, ikke endnu bevist i produktion.
+fordi den ellers kunne skubbe den komplette pakke ud. Koden er merged,
+men den private cacheovergang er endnu ikke bevist i produktion.
 
 Den lokale kode kræver nu også læsbar DMI-candidate og forecast-store
 efter privat install; ingen af dem må stille blive tomme. En syntetisk
@@ -33,12 +33,18 @@ en ældre READY-donor. Copernicus' kritiske passage tager faktiske
 resthuller først, mens afgrænset kvalitetsarbejde kan overtage
 Open-Meteo efterfølgende. At dette giver faktisk leverandørfremgang
 og passerer begge tabsankre er endnu **ikke livebevist**. 4.0.488 er
-pushet på PR #449, men umerget; cron er pauset. Dens første
+merged som `eaa32dec` fra PR #449 efter grøn exact-head-kontrol
+`36147090206`; cron er pauset. Dens første
 exact-head-kontrol fandt en ægte manglende model-/databasebinding.
 Den er rettet med nye genererede integreret/Candidate G-pakkehash,
 continuation-hash og append-only-migration `20260925150000`, uden
-at scoreformlen eller anvendte migrationer omskrives. Ny exact-head-
-kontrol afventer. Tre gamle queued workflow_dispatch-runs har gamle
+at scoreformlen eller anvendte migrationer omskrives. Database-only
+run `36147927454` anvendte migrationen og bekræftede dens identitet,
+men efterkontrollen sammenlignede to genbundne live-validatorer med
+gamle modelhash og gav falsk hash-drift. Live-hash `d12aeb...` er
+genskabt fra migrationens otte funktionstekster. En afgrænset
+readback-rettelse afventer kildekontrol; normalt vejr må først starte
+efter grøn fuld live-readback. Tre gamle queued workflow_dispatch-runs har gamle
 main-commits; deres egen tidlige SHA-kontrol afviser dem før
 beskyttet læsning eller skrivning, hvis GitHub vækker dem. Ingen ny
 vejrkørsel under releaseanalysen.

@@ -1,17 +1,21 @@
-# Aktuel overdragelse – 2026-09-24 – lokal 4.0.488
+# Aktuel overdragelse – 2026-09-25 – 4.0.488 database-readback
 
-Den aktive Git-rod er `node_modules/RavRadar-4.0.396`; main er 4.0.487,
-og lokal branch er `codex/4.0.488-cache-lineage-guard`. Run
-`36022310055` deployede efter afvist fuld privat forgænger og tabte
-tidligere gyldige offentlige vejrpar. DEC-0254 og de øverste afsnit i
-CURRENT_TRUTH/IMPLEMENTATION_STATUS beskriver den samlede lokale
-rettelse. Den er endnu ikke merged eller livebevist. Næste trin:
-afslut målrettet verifikation og geodataversionsdiff, bestå én
-exact-head-kildegate, merge samme head, og kør derefter almindelig
-vejrindhentning uden overlap. Mål cachelineage, alle fem vejrfelter,
-DMI/Copernicus/Open-Meteo, gemning og Pages på fælles timegrid.
-Cron og Codex-overvågning er pauset; start ikke nye kørsler før
-rettelsen er leveret. Ældre overdragelser herunder er historiske.
+Den aktive Git-rod er `node_modules/RavRadar-4.0.396`. Den samlede
+4.0.488-rettelse er merged via PR #449 som main `eaa32dec`; dens
+exact-head-kildegate `36147090206` er grøn. Database-only run
+`36147927454` installerede migration `20260925150000` og læste den
+tilbage, men kontroltrinnet blev rødt: live checkpoint-kontrakten havde
+hash `d12aeb...`, mens efterkontrollen forventede `251c38...` fra to
+gamle validatorfunktioner. De nye SQL-funktioner er de gamle
+validatorer med de planlagte nye modelhash, og den faktiske live-hash
+kan genskabes præcist fra migrationen. Den afgrænsede rettelse læser
+nu alle checkpoint-funktioner fra den senest installerede migration.
+Ingen vejrkørsel er startet, og den beskyttede cache er ikke ændret.
+Næste trin: exact-head-kontrol, merge readback-rettelsen, kør det
+database-only workflow igen for fuld live-readback og først derefter
+én almindelig vejrhentning. Mål cachelineage, de fem vejrfelter,
+DMI/Copernicus/Open-Meteo, gemning og Pages. Cron er fortsat pauset.
+Ældre overdragelser herunder er historiske.
 
 # Historisk 4.0.464-checkpoint – protected public-hour-par
 

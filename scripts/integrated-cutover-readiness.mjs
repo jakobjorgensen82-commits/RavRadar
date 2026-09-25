@@ -302,20 +302,11 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    // The trip-policy readback still uses the last full binding migration,
-    // but the checkpoint contract is explicitly reasserted by the append-only
-    // repair successor.  Reading the older source here made a live database
-    // that correctly applied 20260922100000 look drifted even though its
-    // checkpoint RPC matched the successor exactly.
+    // The append-only weather-binding successor reasserts all checkpoint
+    // functions, including the later native-hold and companion-ID validators
+    // with the new model hashes. Read the exact final definitions installed
+    // by that migration rather than mixing in the older validator bodies.
     TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
-  ), 'utf8');
-  const nativeHoldSuccessor = await fs.readFile(path.join(
-    migrationsDirectory,
-    CHECKPOINT_NATIVE_HOLD_MIGRATION.filename,
-  ), 'utf8');
-  const companionIdSuccessor = await fs.readFile(path.join(
-    migrationsDirectory,
-    CHECKPOINT_COMPANION_ID_MIGRATION.filename,
   ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
@@ -327,13 +318,7 @@ export async function expectedCheckpointCasContract({
       'exact predecessor payload validator'],
     ['public.ravradar_ravscore_checkpoint_cas', 'checkpoint CAS'],
     ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
-  ].map(([functionName, label]) => sqlFunctionBody(
-    functionName === 'public.ravradar_ravscore_checkpoint_integrated_state_valid'
-      ? nativeHoldSuccessor
-      : functionName === 'public.ravradar_ravscore_checkpoint_payload_valid'
-        ? companionIdSuccessor : migration,
-    functionName, label,
-  ));
+  ].map(([functionName, label]) => sqlFunctionBody(migration, functionName, label));
   const definition = definitions[0]
     + `\n-- forbidden-key-validator --\n${definitions[1]}`
     + `\n-- integrated-state-validator --\n${definitions[2]}`

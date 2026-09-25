@@ -1,4 +1,13 @@
-# 2026-09-25 – lokal 4.0.488, parret 11Z/15Z-genopretning (ikke leveret)
+# 2026-09-25 – 4.0.488 merged, parret 11Z/15Z-genopretning ikke livebevist
+
+- [x] PR #449 er merged som `eaa32dec` efter grøn exact-head-kontrol
+  `36147090206`. Database-only run `36147927454` installerede og
+  læste migration `20260925150000` tilbage uden at røre vejrdata.
+- [ ] Live-readback stoppede på en forventningsfejl: to nye
+  checkpointvalidatorer blev sammenlignet med gamle modelhash. Den
+  målte live-hash matcher præcist alle otte funktioner i migrationen;
+  efterkontrollen er rettet lokalt og skal gennem PR-gate, merge og
+  nyt database-only readback før første normalrun.
 
 - [x] Første exact-head CI på PR #449 fandt en forældet modelbundle-
   binding. Aktiv og inaktiv bundle samt continuation-identitet er nu
@@ -12,8 +21,7 @@
   checkpoint springes over netop i denne overgang. Et afgrænset
   database-only workflow anvender bindingen før normalt vejr;
   almindelig code-only deploy afvises, mens 11Z/15Z-pointeren lever.
-- [ ] Ny exact-head CI på rettet PR-head, merge og normalrun-bevis
-  mangler. Database-only migration skal læses tilbage før normalrun.
+- [ ] Fuld database-readback og normalrun-bevis mangler.
   Cron og nye vejrkørsler forbliver pauset imens.
 - [x] Tre gamle queued GitHub-runs har hver en tidlig eksakt main-SHA-
   kontrol før beskyttet læsning/skrivning. Deres gamle commits kan ikke

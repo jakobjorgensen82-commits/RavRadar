@@ -27,6 +27,8 @@ assert.doesNotMatch(sql, /\b(?:insert|update|delete|truncate|drop)\s+(?:into\s+|
 assert.match(sql, /ravradar_ravscore_checkpoint_candidate_state_valid\(/);
 assert.match(sql, /ravradar_ravscore_checkpoint_integrated_state_valid\(/);
 const cas = await expectedCheckpointCasContract();
+assert.equal(cas.sha256,
+  'd12aebfebbebe08ad36722996db35c48b93d076b1496c5bb0559e82c2fabec70');
 assert.match(cas.definition,
   /is distinct from 'integrated-schema5-to-candidate-g-schema2-v2'/);
 console.log('Checkpoint companion ID matches the sealed Candidate G package; native hold and CAS remain intact.');
