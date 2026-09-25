@@ -1,3 +1,30 @@
+# 2026-09-25 – lokal 4.0.489 efter stoppet 4.0.488-kørsel
+
+- [x] `36153463393` brugte verificeret 11Z-baseline og nåede gennem
+  leverandørled og central vejr-/scorebygning. Offentlig kontrol
+  afviste 34 gyldig→tom vandtemperaturpar før produktionscache og
+  Pages. De fire andre felter havde nul tab i den kontrol.
+- [x] Bekræftet i GitHub: DMI-GRIB-fremgang og krypteret privat
+  fremdrift fra forsøg 1 blev gemt (56.144.813 byte).
+- [x] Lokal 4.0.489 genåbner kun den beskyttede 11Z-bundne
+  fremdriftsrestore og kræver den eksakte run-/attempt-cache,
+  godkendt dekryptering og DMI-kandidat før et kort forsøg henter
+  nyt. Målrettede workflow- og public-tabs-tests er grønne.
+- [x] Korte budgetter gælder kun leverandørerne; fuld build,
+  tabsbarriere, privat gemning og deploy er uændrede. Ekstra
+  Copernicus-kvalitetstur springes over under bekræftelsen.
+- [x] Første exact-head `36181263686` fandt én glemt binding i
+  det centrale workflowinterface. Inventaret og begge kaldere
+  er synkroniseret; cron-kalderen sætter kort mode eksplicit fra.
+  Den målrettede interfacekontrakt er grøn lokalt.
+- [ ] Rodårsagen til de 34 vandtemperaturtab er endnu ukendt.
+  Den uofficielle byggede kandidat kan ikke genbruges som baseline.
+- [ ] Ny exact-head CI på PR #452's opdaterede head, merge og
+  **én kort** normalrun på
+  aktuel main mangler. Verificér korrekt fremdriftsrestore før DMI,
+  derefter fem felter, gemt ny cache, Pages og offentlig visning.
+  Ingen lang kørsel eller cron-genåbning før end-to-end-bevis.
+
 # 2026-09-25 – 4.0.488 merged, parret 11Z/15Z-genopretning ikke livebevist
 
 - [x] PR #450 er merged som `1bba8b27`; database-only run

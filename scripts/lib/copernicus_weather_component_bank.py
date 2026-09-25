@@ -648,6 +648,12 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         row = entry["native"]
         existing_by_group.setdefault((row["partId"], row["contractKey"]), []).append(entry)
     attempts = []
+    def safe_retryable_reason(error: Exception) -> str:
+        supplied = str(error)
+        # Only fixed, payload-free codes may leave the private producer.
+        return (supplied if isinstance(error, ComponentReadError)
+                or re.fullmatch(r"CP_COMPONENT_[A-Z0-9_]+", supplied)
+                else "CP_COMPONENT_REQUEST_RETRYABLE_ERROR")
     ordered = list(grouped)
     if start_after in grouped:
         offset = ordered.index(start_after) + 1
@@ -664,10 +670,15 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         if needs_static_repair and prepare_reusable_group is not None:
             if not should_continue():
                 break
-            repaired = prepare_reusable_group(key, copy.deepcopy(target))
+            static_reason = None
+            try:
+                repaired = prepare_reusable_group(key, copy.deepcopy(target))
+            except (OSError, ValueError, RuntimeError) as error:
+                repaired = False
+                static_reason = safe_retryable_reason(error)
             attempts.append({"partId": part_id, "contractKey": key,
                 "status": "STATIC_EVIDENCE_READY" if repaired else "RETRYABLE_ERROR",
-                "reason": None if repaired else "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
+                "reason": None if repaired else static_reason or "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
             checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))
             if not repaired:
                 continue
@@ -701,10 +712,15 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
             if prepare_reusable_group is not None and admit_spatial is None:
                 if not should_continue():
                     break
-                ready = prepare_reusable_group(key, copy.deepcopy(target))
+                static_reason = None
+                try:
+                    ready = prepare_reusable_group(key, copy.deepcopy(target))
+                except (OSError, ValueError, RuntimeError) as error:
+                    ready = False
+                    static_reason = safe_retryable_reason(error)
                 attempts.append({"partId": part_id, "contractKey": key,
                     "status": "STATIC_EVIDENCE_READY" if ready else "RETRYABLE_ERROR",
-                    "reason": None if ready else "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
+                    "reason": None if ready else static_reason or "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"})
                 checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))
             continue
         if not should_continue():
@@ -725,13 +741,7 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
             updated = merge_component_read(bank, plan=plan, request=request, read=read,
                 acquisition_at=acquired_at, admit_spatial=admit_spatial)
         except (OSError, ValueError, RuntimeError) as error:
-            supplied = str(error)
-            # Bounded transport failures carry payload-free reason codes.
-            # Arbitrary exception text may contain a path or provider detail
-            # and must never escape into the aggregate production report.
-            reason = (supplied if isinstance(error, ComponentReadError)
-                      or re.fullmatch(r"CP_COMPONENT_[A-Z0-9_]+", supplied)
-                      else "CP_COMPONENT_REQUEST_RETRYABLE_ERROR")
+            reason = safe_retryable_reason(error)
             attempts.append({"requestSha256": request["requestSha256"], "partId": part_id, "contractKey": key,
                              "status": "RETRYABLE_ERROR", "reason": reason})
             checkpoint(copy.deepcopy(bank), copy.deepcopy(attempts))

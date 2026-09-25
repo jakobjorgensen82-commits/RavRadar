@@ -2,6 +2,17 @@ name: Run current RavRadar weather once
 
 on:
   workflow_dispatch:
+    inputs:
+      quick_confirmation:
+        description: 'Use short supplier budgets while verifying cache continuation and deployment'
+        required: false
+        type: boolean
+        default: false
+      quick_progress_source:
+        description: 'Required encrypted-progress source run-attempt for exact short recovery, e.g. 123456-1'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -79,6 +90,8 @@ jobs:
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       force: true
       extended_provider_bootstrap: false
+      quick_confirmation: ${{ inputs.quick_confirmation }}
+      quick_progress_source: ${{ inputs.quick_progress_source }}
       produce_weather_handoff: false
       produce_weather_handoff_confirmation: ''
       ravscore_candidate_g_rollback_mode: ''

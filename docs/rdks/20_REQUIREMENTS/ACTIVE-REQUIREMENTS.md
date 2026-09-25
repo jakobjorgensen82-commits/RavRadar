@@ -1,5 +1,12 @@
 # Aktuel samlet vejrgenopretning – 2026-09-25
 
+- **REQ-EXACT-QUICK-PROGRESS-0255 – BINDENDE:** Før et kort
+  bekræftelsesforsøg på den særlige 11Z/15Z-genopretning bruger tid
+  på leverandører, skal den krypterede fremdrift fra det angivne
+  run-forsøg være hentet, godkendt mod præcis den installerede 11Z-
+  baseline og indlæst. En cache-miss, ældre cache eller ugyldig
+  kryptering stopper tidligt. Kortere leverandørbudgetter erstatter
+  ikke den rigtige scorebygning, tabsbeskyttelse, gemning eller deploy.
 - **REQ-PAIRED-RECOVERY-0254 – BINDENDE:** Når den beskyttede pointer
   stadig peger på den kendte tynde 15Z-generation, skal både denne og
   den eksakte fuldere 11Z-forgænger verificeres fra samme pointer.

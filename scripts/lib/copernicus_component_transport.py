@@ -295,6 +295,11 @@ class BoundedComponentTransport:
             try:
                 path, receipt = self.download(request, contract_key)
                 evidence = inspect_static_subset(path, contract_key=contract_key, target=target, receipt=receipt)
+            except ComponentTransportDeferred:
+                # Preserve the real provider/budget reason. Turning every
+                # failed static request into "evidence unavailable" hides a
+                # repeated DatasetUpdating or timeout behind the same code.
+                raise
             except (OSError, ValueError, RuntimeError):
                 return None
         self.static_evidence[key] = evidence

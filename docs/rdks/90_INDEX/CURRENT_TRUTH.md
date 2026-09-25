@@ -1,3 +1,34 @@
+# NYESTE SANDHED – 2026-09-25 – lokal 4.0.489, kort bekræftelse
+
+Main er 4.0.488 på `34e25e5f`; lokal 4.0.489 er ikke leveret.
+Normalrun `36153463393` hentede og byggede vejr fra den beskyttede
+11Z-pakke, men stoppede før privat produktionsgemning og Pages:
+34 gyldige vandtemperaturpar ville blive tomme på samme kystdel og
+time. Vind, bølger, havstrøm og vandstand havde nul tab i den
+kontrol. De 34 er en reel, endnu uafklaret barriere; den færdige
+15Z-kandidat er ikke officiel cache.
+
+Samme run gemte DMI's rå downloadfremgang og en 56.144.813-byte
+krypteret privat vejr-fremdriftspakke. GitHub-cachelisten bekræfter
+den præcise nøgle `weather-private-progress-encrypted-v2-Linux-main-
+36153463393-1`. Lokal 4.0.489 tillader den hidtil udelukkede
+kryptografisk bundne restore i 11Z-forløbet. Et kort bekræftelsesrun
+kræver *netop* denne run-/attempt-cache, godkendt dekryptering og
+gendannet DMI-kandidat **før** leverandørarbejde. DMI, Copernicus og
+Open-Meteo får korte budgetter, men den virkelige score-/public-
+bygning og alle tabsgates består. Kør ikke en lang ny hentning,
+før dette har vist gemning, deploy og offentlig visning. Cron er
+fortsat pauset. Måltests er lokale; exact-head CI og livebevis mangler.
+Første exact-head `36181263686` standsede på et forældet centralt
+workflowinterface, som ikke registrerede de nye valgfri inputs.
+Inventar og begge kaldere er nu synkroniseret; automatiske kald
+vælger eksplicit normal budget. Ny exact-head CI mangler.
+
+Copernicus' statiske subset kan nu bevare en faktisk fast
+leverandør-/tidsårsag i den sikre status i stedet for at skjule alle
+forsøg som »evidence unavailable«. Den ekstra kvalitetsrunde springes
+over i kort mode. Dette er diagnostik, ikke bevis for nye CP-værdier.
+
 # NYESTE SANDHED – 2026-09-25 – 4.0.488, parret vejrrecovery
 
 Opdatering 25/9: PR #449 og #450 er merged, og databasebindingen er

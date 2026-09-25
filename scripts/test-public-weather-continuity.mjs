@@ -41,6 +41,8 @@ const stateless = hour('new', { A: part([10, 56], { ...weather, windDirectionDeg
   waterTemperatureC: null }), B: part([11, 56]) });
 assert.deepEqual(comparePublicWeatherHours(old, stateless, options).losses,
   { wind: 1, wave: 1, current: 1, waterLevel: 1, waterTemperature: 1 });
+assert.deepEqual(comparePublicWeatherHours(old, stateless, options).lossPartIds,
+  { wind: ['A'], wave: ['A'], current: ['A'], waterLevel: ['A'], waterTemperature: ['A'] });
 
 const moved = hour('new', { A: part([12, 56], {}), B: part([11, 56]) });
 assert.equal(comparePublicWeatherHours(old, moved, options).changedIdentities, 1);
@@ -99,6 +101,11 @@ try {
     previousPackPath: packPath, newLiveDirectory: newLive, temporaryDirectory: root });
   assert.equal(result.comparedHours, 117);
   assert.equal(result.losses.waterLevel, 1);
+  assert.deepEqual(result.lossHours, [{
+    time: new Date(start + 5 * 3_600_000).toISOString(),
+    losses: { wind: 0, wave: 0, current: 0, waterLevel: 1, waterTemperature: 0 },
+    examplePartIds: { wind: [], wave: [], current: [], waterLevel: ['A'], waterTemperature: [] },
+  }]);
   assert.equal(result.passed, false);
 } finally { await fs.rm(root, { recursive: true, force: true }); }
 console.log('Public weather continuity: all five valid-old-over-empty fields and changed-point boundary pass.');

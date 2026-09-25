@@ -12,6 +12,14 @@ on:
       extended_provider_bootstrap:
         required: true
         type: boolean
+      quick_confirmation:
+        required: false
+        type: boolean
+        default: false
+      quick_progress_source:
+        required: false
+        type: string
+        default: ''
       produce_weather_handoff:
         required: true
         type: boolean
@@ -428,7 +436,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -945,7 +953,11 @@ jobs:
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
         continue-on-error: true
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && steps.exact-weather-recovery.outputs.required != 'true'
+        # The authenticated snapshot is bound to the installed protected
+        # conditions bytes and bundle hash. This also permits the exact 11Z
+        # recovery to resume its own progress after a later no-loss stop;
+        # a snapshot from the 15Z anchor is rejected by the binder below.
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -959,7 +971,6 @@ jobs:
         shell: bash
         env:
           WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
         run: |
           set -euo pipefail
           protected_bundle_sha256="$(node --input-type=module -e '
@@ -975,7 +986,7 @@ jobs:
             --report "$RUNNER_TEMP/weather-progress-base-report.json"
           captured="$(jq -r '.captured == true' "$RUNNER_TEMP/weather-progress-base-report.json")"
           echo "captured=$captured" >> "$GITHUB_OUTPUT"
-          if test "$captured" = "true" && test "$EXACT_WEATHER_RECOVERY_REQUIRED" != "true"; then
+          if test "$captured" = "true"; then
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
               --report "$RUNNER_TEMP/weather-progress-restore-report.json"
@@ -983,6 +994,24 @@ jobs:
           # Ordinary misses return success without touching the baseline.
           # Failed filesystem rollback stops this runner before weather use;
           # the next scheduled run begins again from protected storage.
+
+      - name: Require recovered progress before short confirmation
+        if: inputs.quick_confirmation == true && steps.exact-weather-recovery.outputs.required == 'true'
+        shell: bash
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+          PROGRESS_CACHE_MATCHED_KEY: ${{ steps.component-progress-cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/weather-progress-restore-report.json"
+          [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+          expected="weather-private-progress-encrypted-v2-${RUNNER_OS}-main-${QUICK_PROGRESS_SOURCE}"
+          test "$PROGRESS_CACHE_MATCHED_KEY" = "$expected"
+          test "${{ steps.component-progress-cache.outcome }}" = success
+          test "${{ steps.component-progress-restore.outcome }}" = success
+          test -s "$report"
+          jq -e '.status == "RESTORED" and .restored == true and .fileCount > 0' "$report" >/dev/null
+          test -s .cache/dmi-candidate-progress.json
 
       - name: Reapply exact verified weather sources after private runtime installation
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'
@@ -1030,7 +1059,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1055,7 +1084,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1307,7 +1336,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: ${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
+        timeout-minutes: ${{ inputs.quick_confirmation && 12 || (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
         run: python -u scripts/run-dmi-bulk-supervised.py
         env:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
@@ -1321,8 +1350,8 @@ jobs:
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
-          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
-          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
+          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.quick_confirmation && '360' || (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ inputs.quick_confirmation && '120' || (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
           DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}
@@ -1342,7 +1371,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1550,7 +1579,7 @@ jobs:
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
           --attempts 1
-          --timeout-seconds ${{ inputs.extended_provider_bootstrap == true && '3300' || '420' }}
+          --timeout-seconds ${{ inputs.quick_confirmation && '120' || inputs.extended_provider_bootstrap == true && '3300' || '420' }}
           --backoff-seconds 20
           --
           --donor-bank .cache/copernicus-current-donor-bank.json
@@ -1582,7 +1611,7 @@ jobs:
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --dmi .cache/dmi-candidate-progress.json
           --timeout-seconds 30
-          --runtime-seconds 900
+          --runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}
           --critical-only
 
       - name: Preserve safe weather acquisition diagnostics before terminal gates
@@ -1662,13 +1691,14 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         id: weather
         # The score build and the 118-hour public sealing step are one bounded
-        # operation.  The provider budgets remain separate and unchanged. A
+        # operation. A
         # provider-free production rebuild has measured at about 21 minutes;
         # normal runs also spend time in the score build before sealing, so
         # 25 minutes can terminate a healthy build before it writes its cache.
         # The last ordinary run measured nearly 39 minutes with supplemental
         # current silently rejected. Allow the corrected score projection
-        # headroom without changing the provider acquisition budgets.
+        # headroom. Short confirmation mode bounds new supplier work but
+        # still rebuilds the real score/public artifact and runs every seal.
         timeout-minutes: 60
         run: npm run update:weather
         env:
@@ -1697,11 +1727,11 @@ jobs:
           RAVSCORE_HISTORICAL_WAVE_TRANSITION_PATH: ${{ steps.historical-wave-transition.outputs.required == 'true' && steps.historical-wave-transition.outputs.transition_path || '' }}
           RAVSCORE_CURRENT_TRACE_PATH: data/diagnostics/ravscore-current-input-stage-trace.json
           RAVSCORE_CURRENT_TRACE_PART_IDS: dk-b04-07-national-part-02,dk-b04-07-national-part-05,dk-b05-12-national-part-01,dk-b05-17-national-part-03,dk-b05-17-national-part-02,dk-b05-17-national-part-04,dk-b05-18-national-part-02,dk-b05-18-national-part-03,dk-b05-18-national-part-05,dk-b05-20-owner-approved-01,dk-b09-06-national-part-06,dk-b10-23-national-part-01,dk-b12-03-national-part-05,dk-b12-06-national-part-02
-          RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: 90000
-          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: 90000
+          RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: ${{ inputs.quick_confirmation && '45000' || '90000' }}
+          RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.488 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1722,6 +1752,7 @@ jobs:
                    recordFailures:$coverage.copernicus.recordFailures,
                    attempts:$coverage.copernicus.attempts,
                    retryableAttempts:$coverage.copernicus.retryableAttempts,
+                   retryableReasons:$coverage.copernicus.retryableReasons,
                    transportFailure:$coverage.copernicus.transportFailure},
                  openMeteo:{requests:$coverage.openMeteo.requests,
                    deferred:$coverage.openMeteo.deferred,
@@ -1732,7 +1763,7 @@ jobs:
           ' data/live/conditions.json
 
       - name: Reclaim a bounded Copernicus quality slice for the next normal run
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true
         id: copernicus-next-run-refresh
         continue-on-error: true
         timeout-minutes: 7

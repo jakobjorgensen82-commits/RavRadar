@@ -1,3 +1,22 @@
+## 4.0.489 – kort bekræftelse af gemt vejr-fremdrift (lokal, 2026-09-25)
+
+Run `36153463393` gemte krypteret leverandørfremdrift, men den
+færdige prognose blev afvist før privat produktionscache og Pages,
+fordi 34 tidligere gyldige vandtemperaturpar ville blive tomme.
+4.0.489 tillader kun en eksakt 11Z-bundet dekryptering af den gemte
+fremdrift og kræver netop run `36153463393`, forsøg 1, før en kort
+bekræftelseskørsel må hente nyt vejr. Den bruger afgrænsede DMI-,
+Copernicus- og Open-Meteo-budgetter, men gennemfører stadig rigtig
+scorebygning, tabsbeskyttelse, privat gemning og Pages, hvis data
+består. Copernicus' faste genforsøgsårsag rapporteres tydeligere;
+en kort tabsrapport kan vise de berørte offentlige kystdel-id'er.
+Ingen scoreformel, geometri eller kildeprioritet ændres. Lokal
+måltest er grøn; GitHub- og produktionsbevis afventer.
+Første PR-kontrol fandt et forældet centralt workflowinterface.
+De to nye valgfri inputs er nu registreret og videreført gennem
+begge kaldere; automatisk drift har fortsat normale budgetter.
+Ny exact-head-kontrol kræves.
+
 ## 4.0.488 – samlet cache- og vejrrecovery (lokal, 2026-09-25)
 
 Efter en måling af begge gemte generationer vælges den verificerede

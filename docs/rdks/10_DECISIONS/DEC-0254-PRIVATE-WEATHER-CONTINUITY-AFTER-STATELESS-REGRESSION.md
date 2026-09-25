@@ -1,5 +1,31 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-25 – gemt fremdrift er ikke en gemt prognose
+
+Normalrun `36153463393` gendannede den fulde 11Z-baseline og byggede
+et nyt 15Z-mål med leverandørerne. Før privat produktionsgemning og
+Pages fandt den offentlige tabsbarriere 34 tidligere gyldige
+vandtemperaturpar, som den nye prognose ville gøre tomme på fælles
+kystdele og timer. De øvrige fire vejrtyper havde nul sådanne tab.
+Runnet blev korrekt standset; årsagen til de 34 temperaturtab er
+endnu ikke afklaret. Den færdigbyggede prognose er ikke gemt som
+produktionscache og kan ikke bruges som næste officielle baseline.
+
+Derimod gemte samme run DMI's rå downloadcache og en 56.144.813-byte
+krypteret privat fremdriftspakke med leverandør-/komponentarbejde.
+Næste korte normalforsøg skal derfor bygge på beskyttet 11Z **og**
+bevise, at præcis den pakke fra `36153463393` forsøg 1 blev gendannet
+og kryptografisk accepteret, før nye leverandørkald. En ældre pakke
+eller en cache-miss må stoppe tidligt. Korte DMI-, Copernicus- og
+Open-Meteo-budgetter begrænser ny hentetid; den fulde score-/
+prognosebygning, begge tabsankre, privat gemning og Pages skal stadig
+bestå, før noget kaldes reddet. Den ekstra Copernicus-kvalitetstur
+springes over i netop denne bekræftelse. Normal drift er uændret.
+
+Dette er lokal 4.0.489-kode og måltest, ikke et bestået livebevis.
+Cron forbliver pauset; ingen ny lang vejrhentning før den korte
+end-to-end-kontrol har vist faktisk cachegenbrug og publicering.
+
 ## Tillæg 2026-09-25 – vælg 11Z, genhent resten, behold 15Z som tabsanker
 
 Implementeringstillæg: Den første exact-head-kontrol af PR #449

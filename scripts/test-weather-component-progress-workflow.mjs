@@ -22,6 +22,8 @@ for (const value of [restore, bind]) {
   assert.match(value, /github.event_name != 'pull_request_target'/);
   assert.match(value, /steps.private-runtime-install.outcome == 'success'/);
   assert.match(value, /steps.weather-source-handoff.outputs.reused != 'true'/);
+  assert.doesNotMatch(value, /steps.exact-weather-recovery.outputs.required != 'true'/,
+    'Exact protected 11Z recovery must be allowed to restore its own authenticated progress');
 }
 assert.match(restore, /path: \.cache\/weather-private-progress.encrypted\s+key: weather-private-progress-encrypted-v2-/);
 assert.doesNotMatch(restore, /path:.*(?:\*|bank|components\/)/);
@@ -31,6 +33,8 @@ assert.match(bind, /privateRuntimeBundleContentSha256\(manifest\)/);
 assert.match(bind, /process\.env\.RAVRADAR_PRIVATE_RUNTIME_BUNDLE/);
 assert.match(bind, /--protected-bundle-sha256 "\$protected_bundle_sha256"/);
 assert.match(bind, /WEATHER_PROGRESS_MASTER_SECRET: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
+assert.doesNotMatch(bind, /EXACT_WEATHER_RECOVERY_REQUIRED/,
+  'The exact 11Z recovery may only be excluded by the snapshot binder, not by a workflow shortcut');
 const save = step('Encrypt newly saved private weather progress before later production steps');
 assert.match(save, /always\(\)/);
 assert.match(save, /steps.preflight.outputs.should_run == 'true'/);

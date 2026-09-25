@@ -1278,7 +1278,7 @@ for (const marker of [
   'DMI_BULK_DKSS_PRIMARY_MODE: true',
   'Restore encrypted private weather progress only',
   'Fill only the exact remaining current gaps from Open-Meteo',
-  '--runtime-seconds 900',
+  "--runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}",
   '--critical-only',
   'Encrypt newly saved private weather progress before later production steps',
   'Save only the authenticated encrypted private weather snapshot',
@@ -1328,7 +1328,7 @@ assert.ok(normalDmiAcquisition.includes('DMI_BULK_DKSS_PRIMARY_MODE: true'),
 for (const marker of [
   'id: open-meteo-fill',
   'continue-on-error: true',
-  '--runtime-seconds 900',
+  "--runtime-seconds ${{ inputs.quick_confirmation && '120' || '900' }}",
   '--critical-only',
 ]) assert.ok(normalOpenMeteoFill.includes(marker), `Normal Open-Meteo fill mangler ${marker}`);
 for (const marker of [
@@ -1748,7 +1748,7 @@ for (const marker of [
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
   'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
-  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}",
+  "DMI_BULK_MAX_RUNTIME_SECONDS: ${{ inputs.quick_confirmation && '360' || (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && '3600' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') && '3000' || '1500' }}",
   "DMI_BULK_COLLECTIONS_PER_RUN: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '6' || '3' }}",
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
@@ -3747,7 +3747,7 @@ const dmiBulkSection = buildWorkflow.slice(
 );
 const dmiStepTimeoutContract = dmiBulkSection.match(/^        timeout-minutes: (.+)$/m)?.[1];
 const dmiStepTimeoutMinutes = dmiStepTimeoutContract
-  === "${{ (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}" ? 70 : Number(dmiStepTimeoutContract);
+  === "${{ inputs.quick_confirmation && 12 || (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}" ? 70 : Number(dmiStepTimeoutContract);
 const bootstrapRuntimeSeconds = Number(
   dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'1500'/)?.[1],
 );

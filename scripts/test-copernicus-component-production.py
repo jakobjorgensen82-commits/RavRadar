@@ -228,6 +228,29 @@ class ComponentProductionTests(unittest.TestCase):
         self.assertEqual(static_arguments["dataset_part"], "bathy")
         self.assertNotIn("start_datetime", static_arguments)
 
+    def test_static_request_keeps_its_retryable_provider_reason(self):
+        # A missing static original must not turn a failed provider call into
+        # the generic "static evidence unavailable" classification. That
+        # obscured the cause of zero admitted component values in normal runs.
+        empty_cache = ComponentSubsetCache(self.case["folder"] / "empty-static-cache")
+        transport = BoundedComponentTransport(
+            empty_cache, deadline_epoch=200, request_timeout_seconds=30,
+            maximum_requests=4, maximum_download_bytes=MAX_SUBSET_BYTES,
+            run=lambda *args, **kwargs: SimpleNamespace(returncode=76),
+            clock=lambda: 100, sleep=lambda seconds: None,
+        )
+        with self.assertRaisesRegex(ComponentTransportDeferred, "CP_COMPONENT_DATASET_UPDATING"):
+            transport.evidence_for("nws-wave", TARGET)
+        def unavailable(*args):
+            raise ComponentTransportDeferred("CP_COMPONENT_DATASET_UPDATING")
+        result = produce_component_bank(
+            self.case["plan"], self.case["bank"], acquire_subset=unavailable,
+            acquisition_at=lambda: TIMES[0], checkpoint=lambda *args: None,
+            admit_spatial=lambda *args: None,
+            prepare_reusable_group=unavailable,
+        )
+        self.assertEqual(result["attempts"][0]["reason"], "CP_COMPONENT_DATASET_UPDATING")
+
     def test_explicit_static_refresh_uses_bounded_transport_and_keeps_old_original(self):
         previous = self.case["cache"].load_static_for_grid("nws-wave", TARGET, [10.0, 58.0])
         self.assertIsNotNone(previous)

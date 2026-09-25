@@ -8,6 +8,10 @@ const orchestrator = read('.github/workflows/update-and-deploy.yml');
 const manual = read('.github/workflows/run-current-weather-once.yml');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
 const retiredOneoff = read('.github/workflows/validate-copernicus-current-pilot.yml');
+assert.match(normal, /quick_confirmation:\s+required: false\s+type: boolean\s+default: false/);
+assert.match(manual, /quick_confirmation:\s+description: '[^']+'\s+required: false\s+type: boolean\s+default: false/);
+assert.match(normal, /quick_progress_source:\s+required: false\s+type: string\s+default: ''/);
+assert.match(manual, /quick_progress_source:\s+description: '[^']+'\s+required: false\s+type: string\s+default: ''/);
 const blocks = source => source.split(/(?=^      - (?:name:|uses:))/m);
 function step(source, name) {
   const found = blocks(source).filter(block => block.startsWith(`      - name: ${name}\n`));
@@ -38,6 +42,12 @@ const restore = step(normal, 'Restore encrypted private weather progress only');
 assert.match(restore, /actions\/cache\/restore@v6/);
 assert.match(restore, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(restore, /weather-private-progress-encrypted-v2-/);
+const shortRecoveryGate = step(normal, 'Require recovered progress before short confirmation');
+assert.match(shortRecoveryGate, /inputs\.quick_confirmation == true && steps\.exact-weather-recovery\.outputs\.required == 'true'/);
+assert.match(shortRecoveryGate, /\.status == "RESTORED" and \.restored == true and \.fileCount > 0/);
+assert.match(shortRecoveryGate, /test -s \.cache\/dmi-candidate-progress\.json/);
+assert.match(shortRecoveryGate, /test "\$PROGRESS_CACHE_MATCHED_KEY" = "\$expected"/);
+assert.ok(normal.indexOf(restore) < normal.indexOf(shortRecoveryGate));
 const seal = step(normal, 'Encrypt newly saved private weather progress before later production steps');
 assert.match(seal, /if: always\(\)/);
 assert.match(seal, /steps\.preflight\.outputs\.should_run == 'true'/);
@@ -46,11 +56,15 @@ const save = step(normal, 'Save only the authenticated encrypted private weather
 assert.match(save, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(save, /weather-private-progress-encrypted-v2-/);
 const coverage = step(normal, 'Report counts for each weather component after central cache');
+const weather = step(normal, 'Update central weather cache');
+assert.match(weather, /timeout-minutes: 60/);
+assert.match(weather, /RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '45000' \|\| '90000' \}\}/);
+assert.match(weather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '90000' \}\}/);
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
 assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);
 for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes',
-  'admittedCandidates', 'remainingNeeds', 'retryableAttempts', 'transportFailure',
+  'admittedCandidates', 'remainingNeeds', 'retryableAttempts', 'retryableReasons', 'transportFailure',
   'deferred', 'failureCount', 'componentsNotAdmitted']) {
   assert.match(coverage, new RegExp(field));
 }
@@ -82,6 +96,12 @@ const beforeCp = step(normal, 'Plan global current acquisition before Copernicus
 const cp = step(normal, 'Fill only exact-hour DMI gaps from Copernicus');
 const om = step(normal, 'Fill only the exact remaining current gaps from Open-Meteo');
 const terminal = step(normal, 'Require verified Open-Meteo residual checkpoint before closure');
+assert.match(dmi, /inputs\.quick_confirmation && '360'/);
+assert.ok(normal.indexOf(shortRecoveryGate) < normal.indexOf(dmi));
+assert.match(cp, /inputs\.quick_confirmation && '120'/);
+assert.match(om, /--runtime-seconds \$\{\{ inputs\.quick_confirmation && '120' \|\| '900' \}\}/);
+assert.match(manual, /quick_confirmation: \$\{\{ inputs\.quick_confirmation \}\}/);
+assert.match(manual, /quick_progress_source: \$\{\{ inputs\.quick_progress_source \}\}/);
 assert.ok(normal.indexOf(beforeDmi) < normal.indexOf(dmi));
 assert.ok(normal.indexOf(dmi) < normal.indexOf(beforeCp));
 assert.ok(normal.indexOf(beforeCp) < normal.indexOf(cp));

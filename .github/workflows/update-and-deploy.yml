@@ -403,6 +403,8 @@ jobs:
       production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
       extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}
+      quick_confirmation: false
+      quick_progress_source: ''
       produce_weather_handoff: ${{ needs.validate-dispatch.outputs.produce_weather_handoff == 'true' }}
       produce_weather_handoff_confirmation: ${{ needs.validate-dispatch.outputs.produce_weather_handoff_confirmation }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}

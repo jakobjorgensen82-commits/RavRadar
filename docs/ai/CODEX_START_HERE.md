@@ -1,3 +1,33 @@
+# AKTUELT CHECKPOINT – 2026-09-25 – lokal 4.0.489, kort cachebevis
+
+Arbejd i indlejret Git-rod `node_modules/RavRadar-4.0.396`, branch
+`codex/weather-continuity-unified`. Main er 4.0.488/`34e25e5f`.
+Normalrun `36153463393` stoppede før privat produktionscache og Pages,
+fordi 34 tidligere gyldige vandtemperaturpar ville blive tomme;
+de øvrige fire felter havde nul tab. Dets byggede 15Z-prognose er
+ikke officiel cache. DMI's rå downloadfremgang og den krypterede
+private fremdrift (56.144.813 byte, GitHub-cache-nøgle med
+`36153463393-1`) blev gemt.
+
+Lokal 4.0.489 ophæver 11Z-recoveryens udelukkelse af netop denne
+kryptografisk bundne fremdrift. Et manuelt kort bekræftelsesrun
+kræver eksakt cache-nøgle, godkendt restore og DMI-kandidat **før**
+ny leverandørhentning; ellers stopper det tidligt. DMI, Copernicus
+og Open-Meteo får korte budgetter, men central score/public,
+begge tabsankre, privat publish og Pages er uændrede krav.
+Copernicus' sikre statiske retryårsager og kort offentlig
+tabsdiagnose er forbedret. De 34 temperaturtab er stadig ikke
+forklaret eller løst. Målrettede JS-tests består; exact-head CI,
+merge, faktisk genbrug, gemning og offentlig visning mangler.
+Første exact-head CI på PR #452 fandt én glemt binding i det
+centrale workflowinterface: de to nye valgfri kort-mode-inputs
+var ikke registreret. Inventar og begge kaldere er nu synkroniseret;
+automatisk normaldrift sender eksplicit `false`/tom kilde.
+Målrettet interfacetest er grøn; ny exact-head CI kræves.
+Ingen ny kørsel er startet. Cron er pauset; start ikke en lang
+vejrhentning før kort end-to-end-bevis. De store resthuller og
+leverandørprioriteten er fortsat åbne, se DEC-0254 og roadmap.
+
 # AKTUELT CHECKPOINT – 2026-09-25 – lokal 4.0.488 (endnu ikke leveret)
 
 Seneste ejerbeslutning: verificér både den fuldere beskyttede 11Z-
