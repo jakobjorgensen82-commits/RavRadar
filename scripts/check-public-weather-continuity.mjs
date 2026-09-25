@@ -32,6 +32,7 @@ export function comparePublicWeatherHours(previous, current, {
   const newParts = assertHour(current, { time, datasetId: currentDatasetId, partCount });
   const losses = Object.fromEntries(FIELDS.map(key => [key, 0]));
   const gains = Object.fromEntries(FIELDS.map(key => [key, 0]));
+  const lossPartIds = Object.fromEntries(FIELDS.map(key => [key, []]));
   let changedIdentities = 0;
   for (const [partId, oldPart] of Object.entries(oldParts)) {
     const newPart = newParts[partId];
@@ -48,11 +49,17 @@ export function comparePublicWeatherHours(previous, current, {
     for (const component of FIELDS) {
       const before = hasValue(oldWeather, component);
       const after = hasValue(newWeather, component);
-      if (before && !after) losses[component] += 1;
+      if (before && !after) {
+        losses[component] += 1;
+        // Coastal part IDs are already public. A short sample identifies
+        // whether a regression is a single spatial gap or a broad tail loss
+        // without exposing any weather value, coordinate or private proof.
+        if (lossPartIds[component].length < 8) lossPartIds[component].push(partId);
+      }
       if (!before && after) gains[component] += 1;
     }
   }
-  return { losses, gains, changedIdentities };
+  return { losses, gains, changedIdentities, lossPartIds };
 }
 
 export async function checkPublicWeatherContinuity({
@@ -86,6 +93,7 @@ export async function checkPublicWeatherContinuity({
     const gains = Object.fromEntries(FIELDS.map(key => [key, 0]));
     let changedIdentities = 0;
     let comparedHours = 0;
+    const lossHours = [];
     for (const time of oldTimes) {
       const previousDescriptor = oldDelivery.hours[time];
       const currentDescriptor = newHours[time];
@@ -104,6 +112,10 @@ export async function checkPublicWeatherContinuity({
         losses[component] += compared.losses[component];
         gains[component] += compared.gains[component];
       }
+      if (Object.values(compared.losses).some(count => count > 0)) {
+        lossHours.push({ time, losses: compared.losses,
+          examplePartIds: compared.lossPartIds });
+      }
       changedIdentities += compared.changedIdentities;
       comparedHours += 1;
     }
@@ -116,6 +128,7 @@ export async function checkPublicWeatherContinuity({
       changedIdentities,
       losses,
       gains,
+      lossHours,
       // A normal run cannot silently redefine the 673 approved coastal
       // identities to evade comparison. Geometry changes require their own
       // explicitly audited migration, not an automatic weather refresh.

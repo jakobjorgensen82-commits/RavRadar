@@ -1,3 +1,17 @@
+# Aktivt roadmap – 2026-09-25, kort end-to-end-bevis før lang hentning
+
+`36153463393` gemte krypteret fremdrift, men ikke den færdige
+produktionsprognose. Næste forsøg må ikke gentage en lang
+leverandørhentning på ubekræftet cache. Lever lokal 4.0.489 med
+eksakt fremdriftsrestore, korte leverandørbudgetter og uændrede
+tabs-/releasegates. Kræv cachekilden `36153463393-1` før ny
+hentning. Kør én ikke-overlappende kort normalbekræftelse og mål,
+om både privat pakke og offentlig prognose faktisk bliver gemt og
+vist. Ved de samme 34 vandtemperaturtab: stop nye runs, brug den
+feltvise tabsrapport til at rette årsagen; lang hentning er ikke
+svaret. Først efter bestået end-to-end-kæde vurderes længere
+opfyldning og flere normale driftsskift. Cron forbliver pauset.
+
 # Aktivt roadmap – 2026-09-25, samlet 4.0.488-vejrrecovery
 
 Nuværende beslutning: verificér parret 11Z/15Z, installer kun 11Z,

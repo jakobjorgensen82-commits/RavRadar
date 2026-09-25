@@ -1,3 +1,17 @@
+# 2026-09-25 – lokal 4.0.489, skeln fremdrift fra produktionscache
+
+Ejerens spørgsmål afdækkede, at den fejlede 4.0.488-kørsel
+`36153463393` ikke kan være næste officielle cachebase: 34
+vandtemperaturpar ville blive tomme, så tabsbarrieren standsede
+privat publish og Pages. De hentede rå-/komponentdata blev dog
+gemt i DMI-GRIB-cache og en krypteret 56.144.813-byte fremdriftscache.
+Den hidtidige 11Z-recovery sprang denne restore over. Lokal 4.0.489
+genåbner den kun med eksakt baseline- og bundlebinding og kræver
+run-/attempt-nøglen `36153463393-1` før et kort bekræftelsesrun
+bruger leverandørtid. Den virkelige score-, tabs-, gemme- og
+deploykæde skal stadig bestå. Ingen ny kørsel er startet; cron
+fortsat pauset. Årsagen til de 34 tab og faktisk genbrug er åbne.
+
 # 2026-09-25 – lokal 4.0.488, parret cachebevis og normal genhentning
 
 Efter ejerens spørgsmål om tid og risiko er en helt ny cache og

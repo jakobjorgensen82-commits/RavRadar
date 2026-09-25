@@ -1,3 +1,21 @@
+# Aktuelle issues – 2026-09-25, lokal 4.0.489
+
+- **34 VANDTEMPERATURTAB – ÅBEN:** `36153463393` byggede en ny
+  prognose, men tabsbarrieren fandt 34 tidligere gyldige par,
+  som ville blive tomme. Ingen ny privat produktionspakke eller
+  Pages blev udgivet. Fire andre felter havde nul sådanne tab.
+  Lokal rapport viser ved næste forsøg timer og et lille udsnit
+  af offentlige kystdel-id'er, ikke private værdier. Rodårsag ukendt.
+- **GEMT FREMGANG, IKKE GEMT PROGNOSE – LOKALT RETTET, LIVE ÅBEN:**
+  Krypteret fremdrift fra `36153463393-1` findes i GitHub-cachen,
+  men 11Z-recovery udelukkede dens restore. Lokal kort mode kræver
+  præcis den pakke og godkendt restore før DMI. Først en livekørsel
+  kan bevise, at den virkelig bruges og kan blive til ny produktion.
+- **LEVERANDØR- OG RESTDÆKNING – ÅBEN:** Copernicus' statiske
+  fejlårsag blev tidligere skjult; lokal diagnostik bevarer faste
+  årsagskoder. DMI/CP/OM-fremgang, fem resttal og stabil autonom
+  drift er ikke bevist. Korte forsøg må ikke kaldes fuld dækning.
+
 # Aktuelle issues – 2026-09-25, lokal 4.0.488
 
 - **MODEL-/DATABASEBINDING – RETTET LOKALT, CI AFVENTER:** Første
