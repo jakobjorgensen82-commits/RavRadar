@@ -11,6 +11,7 @@ import { createGzip, createGunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
+import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
 
 export const WEATHER_PROGRESS_CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const PURPOSE = 'RAVRADAR_WEATHER_PRIVATE_PROGRESS_ONLY';
@@ -177,6 +178,7 @@ export async function weatherComponentProgressCache({
   repository = process.env.GITHUB_REPOSITORY,
   encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
   masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
+  productionReferenceAt = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR,
   pythonExecutable, renameImpl, rollbackRenameImpl,
   maximumEncryptedBytes = MAX_CIPHER_BYTES,
 } = {}) {
@@ -282,11 +284,24 @@ export async function weatherComponentProgressCache({
       includeOperationalProgress: true });
     // Reconfirm after the potentially slower CP-original validation.
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
-    await installComponents(root, files, { renameImpl, rollbackRenameImpl });
-    return status('RESTORED', 'ENCRYPTED_PROGRESS_RESTORED', { restored: true, fileCount: files.length });
+    let reconciled;
+    try {
+      reconciled = await mergeVerifiedProtectedProgressComponents({
+        root, progressFiles: files, progressVerifiedRoot: path.join(temporary.folder, 'verified'),
+        temporaryDirectory: temporary.folder,
+        productionReferenceAt, pythonExecutable,
+      });
+    } catch { fail('PROTECTED_PROGRESS_UNION_FAILED'); }
+    if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
+    return status('RESTORED', 'ENCRYPTED_PROGRESS_RESTORED', {
+      restored: true, fileCount: reconciled.files.length,
+      protectedOpenMeteoRecordsRecovered: reconciled.openMeteoAdded,
+      protectedCopernicusBankMerged: reconciled.copernicusMerged,
+    });
   } catch (error) {
     const code = error?.progressCode ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
-    return code === 'ROLLBACK_FAILED'
+    return ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
       ? status('RESTORE_REPAIR_REQUIRED', code, { requiresProtectedRestore: true })
       : status('CACHE_MISS', code);
   } finally {

@@ -5744,3 +5744,23 @@ afventer. Ingen ny vejrkørsel er startet. DMI/Copernicus/Open-Meteo-
 fordeling, alle fem datamangler og en generel tabsbarriere er fortsat
 åbne. Se DEC-0254 og det aktive roadmap. Ældre checkpoints nedenfor
 er historiske, hvor de modsiger dette.
+# NYESTE SANDHED – 2026-09-26 – 4.0.490, verificeret komponentfortsættelse
+
+Main er 4.0.489 på `0c6a901c`. Den korte normalrun `36183093672`
+gendannede den beskyttede 11Z-pakke og den krypterede fremdrift, nåede
+gennem leverandører og prognosebygning, men stoppede før privat
+produktionsgemning og Pages. No-loss fandt igen 34 tidligere gyldige
+vandtemperaturpar, alle ved 26/9 kl. 07 UTC; vind, bølger, havstrøm og
+vandstand havde nul tab på de fælles timer. Fremdriften fra runnets
+forsøg 1 blev gemt krypteret. Den byggede kandidat er ikke officiel
+produktionscache; cron er pauset.
+
+Lokal 4.0.490 samler individuelt verificerede komponenter fra den
+beskyttede produktionspakke med nyere krypteret fremdrift, inden
+sidstnævnte installeres. DMI får tilsvarende beskyttet donor uden at
+genbruge gamle fremdriftsmarkører. Lokale tests viser mekanismen,
+men beviser **ikke**, at netop dette er årsagen til de 34 tab.
+Ejerens beslutning er at sende rettelsen, merge efter nødvendig
+GitHub-kontrol og køre én kort normal vejrhentning, mens den konkrete
+årsag fortsat spores. Genåbn ikke cron eller lang hentning uden
+faktisk cachegemning, deploy og offentlig kontrol.

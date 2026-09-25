@@ -192,6 +192,7 @@ PROMOTION_PATH = (
     else None
 )
 DEPLOYED_FALLBACK_PATH = pathlib.Path(os.getenv("DMI_BULK_DEPLOYED_FALLBACK_PATH", str(ROOT / ".cache/deployed-dmi-bulk-cache.json")))
+PUBLISHED_BASELINE_PATH = pathlib.Path(os.getenv("DMI_BULK_PUBLISHED_BASELINE_PATH", str(ROOT / ".cache/deployed-dmi-bulk-cache.json")))
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
@@ -7981,6 +7982,8 @@ def backfill_compatible_cache_data(
     donor: dict[str, Any],
     validated_donor_current_asset_proofs: list[dict[str, Any]] | None = None,
     validated_primary_current_asset_proofs: list[dict[str, Any]] | None = None,
+    *,
+    include_progress_metadata: bool = True,
 ) -> None:
     """Backfill missing cache data without replacing newer progress metadata.
 
@@ -8005,7 +8008,7 @@ def backfill_compatible_cache_data(
     ):
         if key in donor:
             primary.setdefault(key, copy.deepcopy(donor[key]))
-    for container_name in ("collectionState", "runs"):
+    for container_name in (("collectionState", "runs") if include_progress_metadata else ()):
         primary_container = primary.setdefault(container_name, {})
         donor_container = donor.get(container_name) or {}
         if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
@@ -8959,6 +8962,14 @@ def load_previous(
 ) -> dict[str, Any]:
     output_document = load_bulk_document(OUTPUT_PATH)
     fallback_document = load_bulk_document(DEPLOYED_FALLBACK_PATH)
+    # The active DMI donor and the last published private weather are distinct.
+    # An encrypted candidate snapshot may supersede active, but it must not
+    # erase individually proved components from the protected published cache.
+    published_document = (
+        load_bulk_document(PUBLISHED_BASELINE_PATH)
+        if PUBLISHED_BASELINE_PATH.resolve() != DEPLOYED_FALLBACK_PATH.resolve()
+        else {}
+    )
     candidates = [output_document, fallback_document]
     proof_candidates: list[dict[str, Any]] = []
     proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
@@ -8978,7 +8989,7 @@ def load_previous(
         # Validate proofs against the exact persisted document before leaf
         # sanitation. The later selection step applies those authenticated
         # proofs only to rows that survived sanitation and the donor merge.
-        for document in candidates:
+        for document in [*candidates, published_document]:
             if (
                 document.get("zoneRegistrySignature") != expected_signature
                 or not document.get("zones")
@@ -9016,6 +9027,9 @@ def load_previous(
     sanitize_reusable_cache_document_leaves(fallback_document)
     if not reusable_cache_document_shape(fallback_document):
         fallback_document = {}
+    sanitize_reusable_cache_document_leaves(published_document)
+    if not reusable_cache_document_shape(published_document):
+        published_document = {}
     if output_quarantined:
         if (
             coastal_part_targets is None
@@ -9072,6 +9086,23 @@ def load_previous(
                 )
                 merged_current_proofs.extend(
                     proof_candidates_by_document.get(id(donor), [])
+                )
+            if (
+                published_document.get("zoneRegistrySignature") == expected_signature
+                and published_document.get("zones")
+            ):
+                # This donor need not have a globally READY current ledger:
+                # each native component is checked at its own part and hour.
+                # Never restore its old collection cursor or processed steps.
+                backfill_compatible_cache_data(
+                    merged,
+                    published_document,
+                    proof_candidates_by_document.get(id(published_document), []),
+                    merged_current_proofs,
+                    include_progress_metadata=False,
+                )
+                merged_current_proofs.extend(
+                    proof_candidates_by_document.get(id(published_document), [])
                 )
         if retained_current_asset_proofs is not None:
             retained_current_asset_proofs.extend(

@@ -2400,3 +2400,16 @@ den faktisk valgte pakke, også når to generationer deler tid og
 datasæt-id. Ingen vejr-, score- eller geometriændring. Livebevis,
 resterende datamangler og generel tabsbeskyttelse var da stadig åbne;
 den samlede lokale rettelse står øverst.
+## 4.0.490 – bevar verificerede vejrkomponenter ved fortsættelse (2026-09-26)
+
+Den korte kørsel `36183093672` gendannede gemt fremdrift, hentede hos
+leverandørerne og byggede prognosen, men stoppede før privat gemning og
+Pages: 34 tidligere gyldige vandtemperaturfelter ville blive tomme på
+samme kystdel og time. Fire andre vejrtyper havde nul sådanne tab.
+Denne rettelse lader verificerede Open-Meteo- og Copernicus-komponenter
+fra den beskyttede produktionspakke følge med, når nyere krypteret
+fremdrift installeres. DMI-producenten kan særskilt udfylde manglende
+gyldige komponenter fra den beskyttede DMI-pakke uden at overtage dens
+gamle fremdriftsmarkører. Ukendt eller ugyldig beskyttet pakke stopper
+sikkert. Målrettede tests består lokalt, men den præcise årsag til de
+34 er ikke bevist; en kort virkelig vejrkørsel skal afgøre det.
