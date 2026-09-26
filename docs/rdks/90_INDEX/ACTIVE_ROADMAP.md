@@ -1,3 +1,18 @@
+# Aktivt roadmap – 2026-09-26, R2-overgang før flere vejrkørsler
+
+1. [ ] Afslut lokal 4.0.490, RDKS/håndbøger, måltests og exact-head
+   kildegate. Hold Supabase som aktiv backend og start ikke vejr under
+   lagerskiftet.
+2. [ ] Opret scoped R2-token og GitHub-secrets, kopier begge private
+   generationer under produktionslåsen, verificér hashes og anonym
+   afvisning. Skift først derefter backend, og bevis én normal kort
+   cache-restore/publish/deploy på korrekt forgænger.
+3. [ ] Fortsæt feltvis vejrgenopretning og mål alle fem vejrtyper og
+   DMI/Copernicus/Open-Meteo uden overlap. Bevar gamle gyldige data.
+4. [ ] Følg Supabases to egresskategorier og R2-lager/Class A/Class B
+   dagligt. Supabase Free er først aktuelt efter flere målte døgn
+   og 30 % reserve, ikke blot efter et vellykket deploy.
+
 # Aktivt roadmap – 2026-09-25, kort end-to-end-bevis før lang hentning
 
 `36153463393` gemte krypteret fremdrift, men ikke den færdige

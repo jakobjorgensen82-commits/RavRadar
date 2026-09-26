@@ -1,3 +1,25 @@
+# NYESTE SANDHED – 2026-09-26 – lokal 4.0.490, privat R2-overgang
+
+Main er 4.0.489/`0c6a901c`. Supabases forrige afsluttede periode
+brugte 11,9 GB cachet og 6,45 GB øvrig egress og Free-projektet blev
+402-begrænset. Ejeren har købt Pro; dashboardet viser Pro uden
+spærring og en ny 26/9–26/10-periode, men de første 0 GB er ikke
+driftsbevis. Cloudflare R2 er aktiveret med en tom privat EU-bucket
+`ravradar-private-production-runtime` i Standard-klassen. Ingen
+produktionscache er endnu flyttet eller slettet.
+
+Lokal 4.0.490 gør storage-backend valgfri, men default er fortsat
+Supabase. En manuel, main-låst migration kopierer pointerens current
+og previous byte- og SHA-eksakt til R2 uden pointerændring og med
+anonym-læseafvisning. R2-publish har 2 GB lokalt bucketloft og bevarer
+to generationer. Historiske restore-wrappers, code-only og normal
+vejrkørsel er gennemgået for samme backend. Måltests er lokale;
+scoped token/GitHub-secrets, exact-head CI, merge, live migration,
+backendskift, ny cachegemning og offentlig deploy mangler. Se DEC-0255.
+Tilbagevenden til Supabase Free kræver målte døgn efter skiftet med
+begge egresskategorier fremskrevet under 3,5 GB/måned samt øvrige
+kvoter med reserve. Ingen vejrkørsel må starte på ubekræftet R2.
+
 # NYESTE SANDHED – 2026-09-25 – lokal 4.0.489, kort bekræftelse
 
 Main er 4.0.488 på `34e25e5f`; lokal 4.0.489 er ikke leveret.

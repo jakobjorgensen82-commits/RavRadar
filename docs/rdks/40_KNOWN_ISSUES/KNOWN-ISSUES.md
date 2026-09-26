@@ -1,3 +1,14 @@
+# Aktuelle issues – 2026-09-26, lokal 4.0.490
+
+- **SUPABASE FREE-EGRESS – ÅBEN:** Forrige periode overskred begge
+  Free-egressgrænser (11,9 GB cachet; 6,45 GB øvrig). Pro har ophævet
+  spærringen, men R2-flytningen er endnu ikke livebevist. Mål begge
+  kategorier efter skiftet; nulstillet Pro-tæller er ikke bevis.
+- **R2 FREE-OMKOSTNING – ÅBEN:** Privat EU/Standard-bucket findes og
+  er tom, men scoped token, GitHub-secrets og live migration mangler.
+  2 GB-kodeloft gælder kun denne bucket; kontoforbrug og operationer
+  skal overvåges særskilt. Ingen automatisk garanti mod betaling.
+
 # Aktuelle issues – 2026-09-25, lokal 4.0.489
 
 - **34 VANDTEMPERATURTAB – ÅBEN:** `36153463393` byggede en ny

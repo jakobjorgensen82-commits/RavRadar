@@ -1,3 +1,19 @@
+# 2026-09-26 – lokal 4.0.490, R2 og tilbagevej til Supabase Free
+
+Supabase Free blev 402-begrænset efter 11,9 GB cachet og 6,45 GB
+øvrig egress i den forrige periode. Ejeren opgraderede til Pro;
+dashboardet viser nu normal adgang. R2 blev aktiveret, og en privat
+EU/Standard-bucket uden offentlig adgang blev oprettet. Beslutning
+DEC-0255 vælger kun den store private runtime til R2, mens central
+pointer/admin, Auth, operationelle beviser og Pages bevares.
+Lokal kode omfatter adapter, 2 GB bucketloft, eksakt to-generations-
+migration, alle aktive restore-/publish-veje og privat manuel
+migrationsworkflow. Hverken live cache, pointer eller website er
+ændret af dette lokale arbejde. Scoped token, GitHub-secrets,
+exact-head CI, live migration, normal R2-run og flere dages
+efterfølgende kvotemåling er stadig åbne. Supabase Free kan derfor
+ikke loves endnu.
+
 # 2026-09-25 – lokal 4.0.489, skeln fremdrift fra produktionscache
 
 Ejerens spørgsmål afdækkede, at den fejlede 4.0.488-kørsel

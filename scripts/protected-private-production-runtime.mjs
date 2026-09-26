@@ -25,6 +25,7 @@ import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory,
@@ -1583,6 +1584,72 @@ export async function describeTargetProtectedPrivateProductionRuntime({
   return protectedPrivateRuntimeSourceIdentity(selected, policy.targetSourceKind, policy);
 }
 
+// Copy both referenced generations before changing the workflow backend.
+// This does not mutate the central pointer or delete the Supabase originals.
+// A lost connection leaves only immutable, content-addressed R2 objects; the
+// same command can resume and verifies every byte again before succeeding.
+export async function migrateProtectedPrivateRuntimeToR2({
+  request,
+  sourceStorage,
+  targetStorage,
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+} = {}) {
+  assertStorage(sourceStorage);
+  assertStorage(targetStorage);
+  const row = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
+  });
+  await sourceStorage.ensurePrivateBucket();
+  await targetStorage.ensurePrivateBucket();
+  const generations = [row.payload.current, row.payload.previous].filter(Boolean);
+  let objectCount = 0;
+  let totalBytes = 0;
+  for (const generation of generations) {
+    const archiveHash = crypto.createHash('sha256');
+    let generationBytes = 0;
+    for (const object of descriptorObjects(generation)) {
+      const original = await verifyStoredObject(sourceStorage, object);
+      archiveHash.update(original);
+      generationBytes += original.length;
+      await targetStorage.uploadImmutable(object.objectPath, original);
+      const copied = await verifyStoredObject(targetStorage, object);
+      if (!copied.equals(original)) {
+        throw new Error('R2 migration readback differs from the Supabase original');
+      }
+      const anonymousStatus = await targetStorage.anonymousStatus(object.objectPath);
+      if (![400, 401, 403, 404].includes(anonymousStatus)) {
+        throw new Error('R2 migrated private object is anonymously readable');
+      }
+      objectCount += 1;
+      totalBytes += original.length;
+    }
+    if (generationBytes !== generation.objectBytes
+      || archiveHash.digest('hex') !== generation.objectSha256) {
+      throw new Error('R2 migration source archive integrity is invalid');
+    }
+  }
+  const current = await readPointerRow(request, {
+    allowMissing: false,
+    policy,
+    allowHistoricalCurrentModelBinding: true,
+  });
+  if (current.version !== row.version || !same(current.payload, row.payload)) {
+    throw new Error('Private runtime pointer changed during R2 migration');
+  }
+  return {
+    migrated: true,
+    pointerVersion: row.version,
+    generationCount: generations.length,
+    objectCount,
+    totalBytes,
+    pointerUnchanged: true,
+    originalsPreserved: true,
+    privatePayloadLogged: false,
+  };
+}
+
 export async function restoreProtectedPrivateProductionRuntime({
   privateRoot,
   bundlePath,
@@ -1910,6 +1977,7 @@ export function createProtectedPrivateRuntimeClients({
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
   delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
   retryDelayMs = 1_000,
+  storageBackend = process.env.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND ?? 'supabase',
 } = {}) {
   const url = safeSupabaseUrl(supabaseUrl);
   const key = typeof serviceRoleKey === 'string' ? serviceRoleKey.trim() : '';
@@ -2083,9 +2151,19 @@ export function createProtectedPrivateRuntimeClients({
     );
     return response.status;
   }
+  if (!['supabase', 'r2'].includes(storageBackend)) {
+    throw new Error('Private runtime storage backend is invalid');
+  }
   return {
     documentRequest,
-    storage: { ensurePrivateBucket, uploadImmutable, download, removeExact, anonymousStatus },
+    storage: storageBackend === 'r2'
+      ? createR2PrivateRuntimeStorage({
+        bucketId: policy.bucketId,
+        maximumObjectBytes: policy.maximumArchiveBytes,
+        fetchImpl,
+        delayImpl,
+      })
+      : { ensurePrivateBucket, uploadImmutable, download, removeExact, anonymousStatus },
   };
 }
 
@@ -2093,7 +2171,7 @@ function parseArguments(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--restore-weather-pair', '--audit-anon', '--describe-current', '--describe-target'].includes(argument)) {
+    if (['--publish', '--restore', '--restore-weather-pair', '--audit-anon', '--describe-current', '--describe-target', '--migrate-r2'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one protected private runtime mode');
       result.mode = argument.slice(2);
       continue;
@@ -2120,9 +2198,9 @@ function parseArguments(argv) {
     else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!result.mode) {
-    throw new Error('Use --publish, --restore, --restore-weather-pair, --audit-anon, --describe-current or --describe-target');
+    throw new Error('Use --publish, --restore, --restore-weather-pair, --audit-anon, --describe-current, --describe-target or --migrate-r2');
   }
-  if (!['audit-anon', 'describe-current', 'describe-target'].includes(result.mode)
+  if (!['audit-anon', 'describe-current', 'describe-target', 'migrate-r2'].includes(result.mode)
     && (!result.privateRoot || !result.bundlePath || !result.expectedPath)) {
     throw new Error('Protected private runtime mode requires root, bundle and expectation');
   }
@@ -2159,9 +2237,22 @@ async function readJson(file, label) {
 
 async function main() {
   const options = parseArguments(process.argv.slice(2));
-  const clients = createProtectedPrivateRuntimeClients();
+  const clients = createProtectedPrivateRuntimeClients({
+    storageBackend: ['migrate-r2', 'describe-current', 'describe-target'].includes(options.mode)
+      ? 'supabase'
+      : process.env.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND ?? 'supabase',
+  });
   let result;
-  if (options.mode === 'audit-anon') {
+  if (options.mode === 'migrate-r2') {
+    result = await migrateProtectedPrivateRuntimeToR2({
+      request: clients.documentRequest,
+      sourceStorage: clients.storage,
+      targetStorage: createR2PrivateRuntimeStorage({
+        bucketId: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
+        maximumObjectBytes: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+      }),
+    });
+  } else if (options.mode === 'audit-anon') {
     result = await auditProtectedPrivateRuntimeAnonymousDenial({
       request: clients.documentRequest,
       storage: clients.storage,
@@ -2247,7 +2338,9 @@ async function main() {
         : await restoreProtectedPrivateProductionRuntime(common);
   }
   console.log(JSON.stringify({
-    status: options.mode === 'describe-current'
+    status: options.mode === 'migrate-r2'
+      ? 'protected-private-runtime-r2-migrated'
+      : options.mode === 'describe-current'
       ? 'protected-private-runtime-current-described'
       : options.mode === 'describe-target'
         ? 'protected-private-runtime-target-described'
@@ -2259,6 +2352,10 @@ async function main() {
     currentGenerationRejected: result.currentGenerationRejected,
     rejectedGenerationCount: result.rejectedGenerationCount,
     anonymousReadDenied: result.anonymousReadDenied,
+    migrated: result.migrated,
+    generationCount: result.generationCount,
+    objectCount: result.objectCount,
+    totalBytes: result.totalBytes,
     privatePayloadLogged: false,
   }));
 }

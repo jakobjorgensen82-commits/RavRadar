@@ -486,6 +486,7 @@ const predecessorCompatibility = workflow.slice(
 );
 for (const marker of [
   'scripts/protected-private-production-runtime.mjs',
+  'scripts/lib/r2-private-runtime-storage.mjs',
   'scripts/lib/supabase-admin-rest.mjs',
   'scripts/lib/private-weather-component-inventory.mjs',
   'await import(`${pathToFileURL(target).href}?compatibility-closure=1`)',
@@ -511,11 +512,13 @@ const protectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntim
 assert.deepEqual(protectedRuntimeRelativeImports, [
   '../js/core/ravscore-model-contract.js',
   './lib/private-weather-component-inventory.mjs',
+  './lib/r2-private-runtime-storage.mjs',
   './lib/supabase-admin-rest.mjs',
   './private-production-runtime-bundle.mjs',
 ].sort(), 'Alle relative restore-wrapperimports skal klassificeres i kompatibilitetslukningen');
 for (const helperPath of [
   'scripts/lib/private-weather-component-inventory.mjs',
+  'scripts/lib/r2-private-runtime-storage.mjs',
   'scripts/lib/supabase-admin-rest.mjs',
 ]) assert.deepEqual(relativeModuleSpecifiers(fs.readFileSync(helperPath, 'utf8')), [],
   `Den kopierede kompatibilitetshjælper har fået en uklassificeret relativ import: ${helperPath}`);

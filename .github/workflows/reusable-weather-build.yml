@@ -48,6 +48,8 @@ on:
         required: true
         type: string
     secrets:
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
       CLOUDFLARE_TRIP_GATEWAY_URL:
         required: true
       COPERNICUSMARINE_SERVICE_PASSWORD:
@@ -56,6 +58,10 @@ on:
         required: true
       DMI_API_KEY:
         required: true
+      RAVRADAR_R2_ACCESS_KEY_ID:
+        required: false
+      RAVRADAR_R2_SECRET_ACCESS_KEY:
+        required: false
       SUPABASE_SERVICE_ROLE_KEY:
         required: true
       SUPABASE_URL:
@@ -167,6 +173,7 @@ jobs:
       # Copernicus target list is derived from fresh DMI for this exact hour.
       RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}
       RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime
+      RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: ${{ vars.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND || 'supabase' }}
       RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle
       RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored
       RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-model
@@ -436,7 +443,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.490 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -667,6 +674,21 @@ jobs:
           rm -rf "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT"
           git worktree add --detach "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT" "$EXPECTED_SOURCE_HEAD"
           test "$(git -C "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT" rev-parse HEAD)" = "$EXPECTED_SOURCE_HEAD"
+          if test "$RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND" = 'r2'; then
+            # Keep the exact predecessor bundle/model reader, but use the
+            # current storage wrapper and its complete import closure. An old
+            # checkout cannot know how to read the new private R2 bucket.
+            install -m 0644 scripts/protected-private-production-runtime.mjs \
+              "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/protected-private-production-runtime.mjs"
+            install -m 0644 scripts/lib/r2-private-runtime-storage.mjs \
+              "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/lib/r2-private-runtime-storage.mjs"
+            install -m 0644 scripts/lib/supabase-admin-rest.mjs \
+              "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/lib/supabase-admin-rest.mjs"
+            install -m 0644 scripts/lib/private-weather-component-inventory.mjs \
+              "$RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT/scripts/lib/private-weather-component-inventory.mjs"
+            node --input-type=module -e \
+              'await import(process.env.RAVRADAR_HISTORICAL_WAVE_SOURCE_ROOT + "/scripts/protected-private-production-runtime.mjs")'
+          fi
 
       - name: Restore newest compatible private runtime from protected storage
         if: steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
@@ -752,6 +774,9 @@ jobs:
           fi
           exit "$status"
         env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
@@ -1059,7 +1084,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.490 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1084,7 +1109,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.490 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1371,7 +1396,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.490 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1731,7 +1756,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.489 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.490 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -2303,6 +2328,9 @@ jobs:
           --expected .cache/private-production-runtime-expected.json
           --source-head "$GITHUB_SHA"
         env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -2311,6 +2339,9 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 

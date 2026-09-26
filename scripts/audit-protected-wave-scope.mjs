@@ -88,6 +88,7 @@ export function createReadOnlyProtectedWaveClients({
   }
   const client = protectedApi.createProtectedPrivateRuntimeClients({
     supabaseUrl: base.origin, serviceRoleKey, fetchImpl: readOnlyFetch,
+    storageBackend: 'supabase',
   });
   return {
     request: client.documentRequest,

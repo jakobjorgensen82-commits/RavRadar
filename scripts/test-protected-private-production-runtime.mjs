@@ -41,6 +41,7 @@ import {
   isExactMarineComponentPredecessor,
   isApprovedExactWeatherPredecessor,
   isExactHistoricalWeatherPairGeneration,
+  migrateProtectedPrivateRuntimeToR2,
   validateSameReferencePrivateRuntimeSuccessor,
   validateProtectedPrivateRuntimePointer,
 } from './protected-private-production-runtime.mjs';
@@ -926,6 +927,38 @@ try {
     expected: first.expected,
     now: '2026-08-29T11:05:00.000Z',
   });
+  const migratedStorage = fakeStorage();
+  const migrated = await migrateProtectedPrivateRuntimeToR2({
+    request: splitDocuments.request,
+    sourceStorage: splitStorage.client,
+    targetStorage: migratedStorage.client,
+    policy: splitPolicy,
+  });
+  assert.equal(migrated.migrated, true);
+  assert.equal(migrated.pointerUnchanged, true);
+  assert.equal(migrated.objectCount, splitArchive.objects.length);
+  assert.deepEqual(migratedStorage.objects, splitStorage.objects,
+    'migration must copy exact bytes without changing the central pointer');
+  const migrationPointerBefore = splitDocuments.row();
+  await migrateProtectedPrivateRuntimeToR2({
+    request: splitDocuments.request,
+    sourceStorage: splitStorage.client,
+    targetStorage: migratedStorage.client,
+    policy: splitPolicy,
+  });
+  assert.deepEqual(splitDocuments.row(), migrationPointerBefore,
+    'idempotent migration must not write the production pointer');
+  migratedStorage.objects.set(splitArchive.objects[0].descriptor.objectPath, Buffer.from('tampered'));
+  await assert.rejects(
+    migrateProtectedPrivateRuntimeToR2({
+      request: splitDocuments.request,
+      sourceStorage: splitStorage.client,
+      targetStorage: migratedStorage.client,
+      policy: splitPolicy,
+    }),
+    /storage readback is invalid/,
+    'an existing R2 object collision must fail rather than overwrite',
+  );
 
   const large = await createGeneration(4, { largeStreamPayload: true });
   const largeDocuments = fakeDocuments();
