@@ -1650,6 +1650,61 @@ export async function migrateProtectedPrivateRuntimeToR2({
   };
 }
 
+// A failed run may restore its own encrypted, unpublished build. This never
+// consults or changes the production pointer; publication remains a separate
+// CAS-protected operation after all current checks have been repeated.
+export async function restoreStagedPrivateProductionRuntime({
+  archive,
+  descriptor,
+  privateRoot,
+  bundlePath,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  expected,
+  sourceHead,
+  now = new Date().toISOString(),
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+} = {}) {
+  const validated = validateProtectedPrivateRuntimeDescriptor(descriptor, { policy });
+  if (!SOURCE_HEAD_PATTERN.test(String(sourceHead ?? ''))
+    || validated.sourceHead !== sourceHead
+    || !same(validated.modelBinding, expected?.modelBinding)
+    || !same(validated.contractHashes, expected?.contractHashes)) {
+    throw new Error('Staged private runtime belongs to another exact source or contract');
+  }
+  const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
+  const finalBundle = resolvePrivateCandidate(
+    context, bundlePath, 'Staged private runtime destination',
+  );
+  if (await fs.lstat(finalBundle).catch(() => null)) {
+    throw new Error('Staged private runtime destination already exists');
+  }
+  const candidate = path.join(
+    context.root,
+    `.staged-runtime-candidate-${process.pid}-${crypto.randomBytes(6).toString('hex')}`,
+  );
+  try {
+    await extractArchive({
+      archive, descriptor: validated, privateRoot: context.root,
+      bundlePath: candidate, repositoryRoot: context.repository, policy,
+    });
+    const verified = await verifyPrivateProductionRuntimeBundle({
+      privateRoot: context.root, bundlePath: candidate,
+      repositoryRoot: context.repository, expected, now,
+    });
+    assertDescriptorMatchesBundle(validated, verified);
+    assertRestoreTime(validated, expected, now, policy);
+    await fs.rename(candidate, finalBundle);
+    return {
+      restored: true,
+      bundleContentSha256: verified.bundleContentSha256,
+      privatePayloadLogged: false,
+      productionPointerUnchanged: true,
+    };
+  } finally {
+    await fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 export async function restoreProtectedPrivateProductionRuntime({
   privateRoot,
   bundlePath,

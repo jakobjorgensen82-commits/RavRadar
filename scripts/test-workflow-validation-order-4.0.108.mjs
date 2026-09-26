@@ -1512,11 +1512,13 @@ const positions = {
   pointPromotion: text.indexOf('name: Atomically promote the validated point candidate in central admin storage'),
   continuationBuild: text.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
   continuationSave: text.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
+  privateRuntimeSpec: text.indexOf('name: Build private production runtime bundle specification'),
+  privateRuntimeCreate: text.indexOf('name: Create the next private production runtime bundle atomically'),
+  privateBuildStageSeal: text.indexOf('name: Encrypt exact completed private build for late-failure recovery'),
+  privateBuildStageUpload: text.indexOf('name: Save only encrypted completed private build for one day'),
   protectedCheckpointPublish: text.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
   preflightStateBuild: text.indexOf('name: Build dataminimized weather preflight state after final gates'),
   preflightStateSave: text.indexOf('name: Save dataminimized weather preflight state'),
-  privateRuntimeSpec: text.indexOf('name: Build private production runtime bundle specification'),
-  privateRuntimeCreate: text.indexOf('name: Create the next private production runtime bundle atomically'),
   privateRuntimeSave: text.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
   privateRuntimeAnonAudit: text.indexOf('name: Prove the private runtime object is not anonymously readable'),
   artifact: text.indexOf('name: Build lean GitHub Pages artifact'),
@@ -1600,11 +1602,13 @@ const expected = [
   'pointPromotion',
   'continuationBuild',
   'continuationSave',
+  'privateRuntimeSpec',
+  'privateRuntimeCreate',
+  'privateBuildStageSeal',
+  'privateBuildStageUpload',
   'protectedCheckpointPublish',
   'preflightStateBuild',
   'preflightStateSave',
-  'privateRuntimeSpec',
-  'privateRuntimeCreate',
   'privateRuntimeSave',
   'privateRuntimeAnonAudit',
   'artifact',
@@ -3489,7 +3493,7 @@ for (const name of [
     throw new Error(`${name} må ikke kræve Candidate G-checkpoint under measured warmup.`);
   }
 }
-const preflightStateSaveSection = text.slice(positions.preflightStateBuild, positions.privateRuntimeSpec);
+const preflightStateSaveSection = text.slice(positions.preflightStateBuild, positions.privateRuntimeSave);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
   "if: steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run')",
@@ -3509,6 +3513,24 @@ if (preflightContinuePolicies.length !== 2
   throw new Error('Kun de to advisory preflight-cachetrin må fortsætte efter deres egen fejl.');
 }
 const privateRuntimeCreateSection = text.slice(positions.privateRuntimeSpec, positions.artifact);
+const privateBuildStageSection = text.slice(positions.privateBuildStageSeal, positions.protectedCheckpointPublish);
+for (const marker of [
+  'node scripts/staged-private-production-runtime.mjs seal',
+  'STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  'uses: actions/upload-artifact@v7',
+  'ravradar-private-build-stage-${{ github.run_id }}-${{ github.run_attempt }}',
+  'path: ${{ runner.temp }}/ravradar-private-build-stage/sealed.bin',
+  'retention-days: 1',
+  'if-no-files-found: error',
+]) {
+  if (!privateBuildStageSection.includes(marker)) {
+    throw new Error(`Krypteret slutpakke mangler ${marker}`);
+  }
+}
+if (privateBuildStageSection.includes('continue-on-error')
+  || privateBuildStageSection.includes('path: .cache/')) {
+  throw new Error('Slutpakken skal gemmes fail-closed og kun i krypteret form uden for repositoryet.');
+}
 for (const marker of [
   'node scripts/private-production-runtime-workflow.mjs create-spec',
   '--repository-root "$GITHUB_WORKSPACE"',
@@ -3529,7 +3551,7 @@ for (const marker of [
 ]) {
   if (!privateRuntimeCreateSection.includes(marker)) throw new Error(`Private runtime-bevaring mangler ${marker}`);
 }
-const privateRuntimeCriticalSection = text.slice(positions.privateRuntimeSpec, positions.privateRuntimeSave);
+const privateRuntimeCriticalSection = text.slice(positions.privateRuntimeSpec, positions.protectedCheckpointPublish);
 const privateRuntimeSaveSection = text.slice(positions.privateRuntimeSave, text.indexOf('\n\n', positions.privateRuntimeSave));
 if (privateRuntimeCriticalSection.includes('continue-on-error')
   || privateRuntimeSaveSection.includes('continue-on-error')

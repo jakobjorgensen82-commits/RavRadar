@@ -3484,3 +3484,19 @@ kørsel; de er ikke forklaret af en grøn lokal test. Mål alle fem
 vejrtyper, DMI/Copernicus/Open-Meteo, privat cachegemning, Pages
 og offentlig visning. Ved gentaget tab: stop flere runs og ret
 den påviste årsag. Cron og lange runs forbliver pauset.
+# Aktivt roadmap – 2026-09-26, lokal 4.0.499 slutpakke og genoptagelse
+
+1. [x] 4.0.498/PR #461 og vejrfri backend er livegrønne;
+   den gamle checkpoint-rækkes eksakte forgænger er verificeret.
+2. [x] Byg den private slutpakke og gem kun dens krypterede,
+   autentificerede artifact før sen central skrivning. Målret
+   identitet, manipulation, pakkeindhold og workflowrækkefølge.
+3. [ ] Færdiggør sikker genoptagelse efter sen fejl uden gentaget
+   vejr-/scorebyg, med samme source-head, gyldig prognosetime,
+   fuld validering og uændrede centrale/R2/Pages-værn.
+4. [ ] Exact-head CI, merge og bevis på én kort normal kørsel:
+   krypteret artifact gemt, CAS, R2, Pages og offentlig prognose.
+   Ved fejl undersøges præcis årsag og gemt pakke før en ny kørsel.
+5. [ ] Undersøg resthuller, prioritet for DMI/Copernicus/Open-Meteo,
+   de historiske 34 temperaturfelter og Free-forbrug før lang
+   opfyldning eller genåbnet cron.

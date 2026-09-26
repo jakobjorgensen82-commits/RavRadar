@@ -6476,3 +6476,18 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Rodårsagen til netop de 34 er stadig ubevist. GitHub exact-head,
   merge, kort end-to-end-run, privat cachegemning, Pages og offentlig
   femfeltskontrol mangler. Cron og lange runs forbliver pauset.
+# 2026-09-26 – lokal 4.0.499 sikret slutpakke før sen fejl
+
+- [x] 4.0.498/PR #461 exact-head-grøn, merged `67379880`;
+  backendrun `36259580555` grøn og eksakt gammel central forgænger
+  bekræftet skrivefrit i live-databasen.
+- [x] Privat slutpakke bygges før central checkpoint-CAS, krypteres
+  og gemmes som obligatorisk Actions-artifact uden rå privat payload.
+  Målrettet roundtrip-, tamper-, identitets- og workflowtest grøn lokalt.
+- [ ] Exact-head CI, merge og livebevis for artifactets gemning.
+- [ ] Sikker genoptagelse efter en sen fejl uden at hente og bygge det
+  samme vejr igen; stadig bundet af samme head, targetfriskhed og
+  alle data-/release-/privacykontroller.
+- [ ] Først derefter én kort normal bekræftelse fra senest krypteret
+  fremdrift. Bevis CAS, R2, Pages, nul tab i fem vejrfamilier og
+  faktisk offentlig prognose; ingen lang opfyldning/cron.

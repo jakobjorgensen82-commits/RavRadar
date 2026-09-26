@@ -1743,3 +1743,11 @@ Lokal 4.0.487 bruger det eksisterende DMI-first/96-timersvalg ved
 verificerede overlappende bølger og medtager 4.0.486's læsbare
 DA/DE/EN-tekster. Generisk replaykonflikt bevares. Livebevis
 afventer. Se DEC-0253.
+## 2026-09-26 – 4.0.499: bevar færdig privat bygning
+
+PR #461/4.0.498 blev merged som `67379880`; vejrfri backendrun
+`36259580555` var grøn, og den eksakte gamle centralforgænger
+blev accepteret ved skrivefri livekontrol. Den tidligere vejrkørsel
+`36252591071` havde ikke nogen gemt slutpakke. Lokal 4.0.499
+lægger krypteret, runbundet slutpakke før central CAS. Genlevering
+uden ny vejr-/scorebyg, exact-head CI og rigtig vejrrun er åbne.

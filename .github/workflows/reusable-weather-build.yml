@@ -443,7 +443,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.498 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.499 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -1116,7 +1116,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.498 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.499 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1141,7 +1141,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.498 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.499 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1428,7 +1428,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.498 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.499 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1788,7 +1788,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.498 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.499 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -2283,6 +2283,62 @@ jobs:
           path: .cache/ravscore-continuation-checkpoint
           key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
+      # The expensive weather/score build is already complete. Save its exact
+      # private bundle before any late central write can stop this runner.
+      - name: Build private production runtime bundle specification
+        id: private-runtime-bundle-spec
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs create-spec
+          --repository-root "$GITHUB_WORKSPACE"
+          --dmi-bulk .cache/dmi-candidate-progress.json
+          --output .cache/private-production-runtime-create-spec.json
+
+      - name: Create the next private production runtime bundle atomically
+        id: private-runtime-bundle-create
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        shell: bash
+        run: |
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          if test -d "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"; then
+            mv "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+          fi
+          node scripts/private-production-runtime-bundle.mjs create \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
+            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+            --spec .cache/private-production-runtime-create-spec.json
+          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
+
+      - name: Encrypt exact completed private build for late-failure recovery
+        id: private-build-stage-seal
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run'
+        timeout-minutes: 30
+        run: >-
+          node scripts/staged-private-production-runtime.mjs seal
+          --repository-root "$GITHUB_WORKSPACE"
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --expected .cache/private-production-runtime-expected.json
+          --source-head "$GITHUB_SHA"
+          --repository "$GITHUB_REPOSITORY"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --output "$RUNNER_TEMP/ravradar-private-build-stage/sealed.bin"
+        env:
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Save only encrypted completed private build for one day
+        id: private-build-stage-upload
+        if: steps.private-build-stage-seal.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-private-build-stage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-private-build-stage/sealed.bin
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+
       - name: Reconfirm current main before protected RavScore write
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED')
         shell: bash
@@ -2320,31 +2376,6 @@ jobs:
         with:
           path: .cache/weather-preflight-state
           key: weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Build private production runtime bundle specification
-        id: private-runtime-bundle-spec
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
-        run: >-
-          node scripts/private-production-runtime-workflow.mjs create-spec
-          --repository-root "$GITHUB_WORKSPACE"
-          --dmi-bulk .cache/dmi-candidate-progress.json
-          --output .cache/private-production-runtime-create-spec.json
-
-      - name: Create the next private production runtime bundle atomically
-        id: private-runtime-bundle-create
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
-        shell: bash
-        run: |
-          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
-          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
-          if test -d "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"; then
-            mv "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
-          fi
-          node scripts/private-production-runtime-bundle.mjs create \
-            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
-            --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
-            --spec .cache/private-production-runtime-create-spec.json
-          rm -rf "$RAVRADAR_PRIVATE_RUNTIME_ROOT/bundle-prior"
 
       - name: Reconfirm current main before protected private-runtime write
         id: private-runtime-write-authority
