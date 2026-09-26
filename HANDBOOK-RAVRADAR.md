@@ -1,14 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.491
+**Håndbogsversion:** 4.0.492
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.491 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.492 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.88 4.0.492 – Fortsæt fra de data, vi allerede har hentet
+
+Begge gemte vejrpakker er nu kopieret til det private R2-lager og
+kontrolleret byte for byte. Den næste korte kørsel hentede dem
+korrekt tilbage, men stoppede før ny vejrhentning: samme klokkeslæt
+var skrevet på to forskellige gyldige måder, som koden ikke begge
+accepterede. Det er rettet uden at flytte eller afrunde tidspunktet.
+
+Gennemgangen fandt også en fejl ved samling af Open-Meteo-data.
+To leverandørsvar kan dække de samme timer, selv om cachen har valgt
+forskellige svar for hver time. Samlingen skal bevare netop disse
+valgte værdier, ikke vælge om ud fra rækkefølgen af hele svarene.
+Den nye samler kontrollerer originalerne og udfylder kun hullerne.
+
+Scoreberegning, leverandørprioritet og modelidentitet er uændrede.
+De lokale kontroller består, men ny gemning i R2, offentlig deploy
+og de tidligere 34 tabte temperaturfelter kræver stadig bevis fra
+én kort normal vejrkørsel. Lange kørsler og cron venter på det.
+R2- og Supabase-forbrug skal fortsat måles; flytningen er ikke i
+sig selv bevis for, at gratisgrænserne kan overholdes.
 
 ## 89.87 4.0.491 – Privat vejr-cache og omkostningskontrol
 

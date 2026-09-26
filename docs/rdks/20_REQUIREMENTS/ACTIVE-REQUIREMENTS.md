@@ -1,5 +1,15 @@
 # Aktuel privat lagring og kvotekontrol – 2026-09-26
 
+- **REQ-VERIFIED-PROGRESS-UNION-0492 – BINDENDE:** Den eksakte
+  UTC-produktionstime må staves med sekunder eller nulmillisekunder;
+  den normaliseres uden tidsafrunding. Originalverificeret recovery
+  skal forene de faktisk valgte poster pr. kystdel/time/vejrtype,
+  ikke genoplive samtlige timer fra gamle råsvar. Seneste gyldige
+  bank ejer konflikter; beskyttet bank udfylder kun huller. Den
+  operationelle rettelse må ikke ændre score-/continuationidentitet
+  og dermed kassere allerede hentet, kryptografisk bundet arbejde.
+  Ukendte fejl må kun logges med en fast, ikke-privat årsagskode.
+
 - **REQ-PRIVATE-R2-CUTOVER-0255 – BINDENDE:** Supabase er aktiv
   storage-backend indtil begge pointerrefererede private generationer
   er kopieret til en privat EU/Standard-R2-bucket, læst byte-/SHA-

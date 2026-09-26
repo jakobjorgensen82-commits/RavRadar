@@ -1,3 +1,22 @@
+# Aktivt roadmap – 2026-09-26, kort cachebekræftelse på R2
+
+1. [x] R2-migration, scoped token, byte-/SHA-verifikation, privat
+   adgang og første produktionsrestore er bevist. Ingen genkopiering.
+2. [ ] Lever samlet 4.0.492: præcis UTC-time, originalbevist union
+   af valgte Open-Meteo-poster og sikker fejlårsag. Bevar score-/
+   continuationbinding, så seneste krypterede arbejde kan genbruges.
+3. [ ] Én kort normalrun på aktuel main med `36183093672-1`, uden
+   overlap. Kontroller fem vejrtyper mod begge tabsankre, gemt ny
+   R2-pakke og faktisk offentlig prognose. Ingen lang kørsel før det.
+4. [ ] Afklar eventuelle resterende 34 temperaturtab og mål alle
+   fem felter, DMI/CP/OM og stagnerende rester, før cron genåbnes.
+5. [ ] Permanent: mål Supabase Cached Egress og Egress samt
+   R2-lager/Class A/Class B og fakturering efter DEC-0255. Dagens
+   kvoteopgave er sprunget over, ikke fremtidige krav.
+6. [ ] UI-tekster og øvrige roadmap-opgaver må ikke risikere driften.
+
+Tidligere afkrydsninger/planer herunder er historiske.
+
 # Aktivt roadmap – 2026-09-26, R2-overgang før flere vejrkørsler
 
 1. [ ] Afslut lokal 4.0.491, RDKS/håndbøger, måltests og exact-head

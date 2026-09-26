@@ -1,3 +1,37 @@
+# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.492, R2 læst, cachefortsættelse rettet
+
+Arbejd i managed worktree `r2-private-runtime`, branch
+`codex/4.0.492-progress-hour-normalization`; ikke i den gamle
+beskidte cb79-rod. Main er 4.0.491/`197f3cc3`, PR #454 merged.
+R2-token og GitHub-secrets er installeret med bucketbegrænset adgang.
+Migration `36225146256` kopierede to generationer, fem objekter,
+199.955.131 byte; byte-/SHA-readback og anonym afvisning bestod.
+Pointer og Supabase-originaler er bevaret; aktiv backend er nu R2.
+
+Kort normalrun `36225273085` beviste R2-restore, 11Z-installation
+og bevaret 15Z-tabsanker. Det stoppede FØR leverandørerne:
+workflowets UTC-time uden millisekunder blev afvist af den nye
+komponentsamling. Lokal regression genskabte præcis fejlen; 4.0.492
+normaliserer de to eksakte UTC-timeformer og bevarer afvisning af
+andre tider. En ekstra reproduceret fejl i overlappende Open-Meteo-
+svar er rettet i en selvstændig operationel samler, som kun forener
+de faktisk valgte bankposter. Den gamle replay-helper er ikke længere
+produktionskaldt. Scorepakke, continuation og databasebinding er
+uændrede, så allerede krypteret fremdrifts baseline ikke brydes.
+
+Seneste gemte fremdrift er `36183093672-1`, 56.603.798 byte,
+genbekræftet i GitHub 26/9. Den er hentearbejde, ikke en publiceret
+prognose. De tidligere 34 vandtemperaturtab og ny R2-publish/Pages
+mangler fortsat livebevis. Næste: måltests, exact-head-PR, sikker
+merge, derefter ÉN kort normalbekræftelse uden overlap på aktuel main
+med netop denne fremdriftskilde. Ingen lang hentning eller cron endnu.
+
+Ejeren bad om en kort helikoptergennemgang med Astra Ultra før nyt
+run. Se `docs/ai/WEATHER_CACHE_REVIEW_2026-09-26.md`.
+Dagens kvoteopgave er sprunget over efter ejerens ordre; permanent
+Supabase/R2-Free-overvågning er ikke ophævet. Lov ikke Free uden
+målte driftsdøgn. Historiske checkpoints herunder er erstattet.
+
 # Aktuel overdragelse – 2026-09-25 – pakket DMI-cache i budgetplan
 
 Den aktive Git-rod er `node_modules/RavRadar-4.0.396`. Den samlede

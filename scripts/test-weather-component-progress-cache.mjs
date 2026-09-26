@@ -9,6 +9,7 @@ import { execFile } from 'node:child_process';
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
+import { protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
 import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
   openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 
@@ -35,7 +36,8 @@ const baseline = '{"kind":"synthetic protected conditions","state":"never change
 function nativeTemperatureBank(validTime, value) {
   const grid = openMeteoMfNearestGridPoint(part.waterPoint);
   const responseText = JSON.stringify({ longitude: grid[0], latitude: grid[1], utc_offset_seconds: 0,
-    hourly: { time: [validTime], sea_surface_temperature: [value] },
+    hourly: { time: Array.isArray(validTime) ? validTime : [validTime],
+      sea_surface_temperature: Array.isArray(value) ? value : [value] },
     hourly_units: { sea_surface_temperature: '°C' } });
   const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, {
     component: 'waterTemperature', productionReferenceAt: reference,
@@ -113,7 +115,7 @@ test('encrypted roundtrip changes component files only and never caches plaintex
   await assert.rejects(fs.access(path.join(f.target, '.cache/weather-component-inputs.pack')));
 });
 
-test('authenticated progress and protected production bank retain both distinct valid hours', async t => {
+test('authenticated progress and protected production retain selected hours of overlapping responses', async t => {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-progress-union-test-'));
   t.after(async () => {
     assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
@@ -124,9 +126,15 @@ test('authenticated progress and protected production bank retain both distinct 
   const target = path.join(folder, 'target');
   await fs.mkdir(source);
   await fs.mkdir(target);
-  const previousBank = nativeTemperatureBank(reference, 15);
   const nextHour = new Date(Date.parse(reference) + 3600000).toISOString();
-  const progressBank = nativeTemperatureBank(nextHour, 16);
+  const lastHour = new Date(Date.parse(reference) + 2 * 3600000).toISOString();
+  const wider = nativeTemperatureBank([reference, nextHour], [14, 17]);
+  const previousBank = mergeOpenMeteoPartBank(nativeTemperatureBank(nextHour, 15),
+    Object.values(wider.responses).map(evidence => ({ evidence })), {
+      parts: [part], spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
+      retentionStartAt: reference, retentionEndAt: lastHour,
+    });
+  const progressBank = nativeTemperatureBank(lastHour, 16);
   const selection = '{"synthetic":"selection"}\n';
   const conditions = { weatherComponentInputs: {
     schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
@@ -154,18 +162,51 @@ test('authenticated progress and protected production bank retain both distinct 
   assert.equal(saved.saved, true, JSON.stringify(saved));
   await fs.copyFile(path.join(source, WEATHER_PROGRESS_CIPHER_PATH), path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
   const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
-    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference });
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference.replace('.000Z', 'Z') });
   assert.equal(restored.restored, true, JSON.stringify(restored));
-  assert.equal(restored.protectedOpenMeteoRecordsRecovered, 1);
+  assert.equal(restored.protectedOpenMeteoRecordsRecovered, 2);
   const finalBank = JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8'));
-  assert.deepEqual(finalBank.records.map(row => row.validTime), [reference, nextHour]);
+  assert.deepEqual(finalBank.records.map(row => row.validTime), [reference, nextHour, lastHour]);
+  assert.deepEqual(finalBank.records.map(row => row.values.waterTemperatureC), [14, 15, 16]);
+  // Exercise the real CLI/environment boundary used by the workflow, including
+  // its seconds-only UTC target, then prove the millisecond spelling is equal.
+  const cliReport = path.join(folder, 'cli-restore-report.json');
+  const cli = await execFileAsync(process.execPath, ['scripts/weather-component-progress-cache.mjs', 'restore',
+    '--root', target, '--base', targetBase, '--report', cliReport], { windowsHide: true,
+    env: { ...process.env, GITHUB_REPOSITORY: repository, WEATHER_PROGRESS_ENCRYPTION_KEY: encryptionKey,
+      RAVRADAR_PRODUCTION_TARGET_HOUR: reference.replace('.000Z', 'Z') } });
+  assert.equal(JSON.parse(cli.stdout).restored, true);
+  assert.equal(JSON.parse(await fs.readFile(cliReport, 'utf8')).restored, true);
+  const canonical = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference });
+  assert.equal(canonical.restored, true, JSON.stringify(canonical));
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8')), finalBank);
+  for (const invalid of ['2026-09-19T00:01:00Z', '2026-09-19T00:00:01Z',
+    '2026-09-19T00:00:00.001Z', '2026-09-19T00:00:00+00:00',
+    '2026-02-30T00:00:00Z', '2026-09-19T24:00:00Z', null]) {
+    const rejectedTime = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
+      basePath: targetBase, repository, encryptionKey, productionReferenceAt: invalid });
+    assert.equal(rejectedTime.status, 'RESTORE_REPAIR_REQUIRED');
+    assert.equal(rejectedTime.unionFailureCode, 'PROTECTED_PROGRESS_TARGET_HOUR_INVALID');
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8')), finalBank);
+  }
   assert.deepEqual(await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack')), protectedPack);
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, 'data/live/conditions.json'), 'utf8')), conditions);
   await fs.appendFile(path.join(target, '.cache/weather-component-inputs.pack'), 'corrupt');
   const rejected = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
     basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference });
   assert.equal(rejected.status, 'RESTORE_REPAIR_REQUIRED');
+  assert.equal(rejected.unionFailureCode, 'PROTECTED_PROGRESS_BASE_UNPACK_FAILED');
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8')), finalBank);
+});
+
+test('progress union diagnostics never expose private exception details', () => {
+  assert.equal(protectedProgressUnionFailureCode(new Error('PROTECTED_PROGRESS_CP_MERGE_TIMEOUT')),
+    'PROTECTED_PROGRESS_CP_MERGE_TIMEOUT');
+  for (const error of [new Error('private response, path or credential'),
+    new Error('PROTECTED_PROGRESS_BASE_INVALID secret=private'), null]) {
+    assert.equal(protectedProgressUnionFailureCode(error), 'PROTECTED_PROGRESS_UNCLASSIFIED');
+  }
 });
 
 test('legacy DMI, current, donor and staging progress share the authenticated private snapshot', async t => {
@@ -385,7 +426,7 @@ test('protected CP originals are re-admitted before encrypted progress can repla
   assert.equal(saved.saved, true, JSON.stringify(saved));
   await fs.copyFile(path.join(source, WEATHER_PROGRESS_CIPHER_PATH), path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
   const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
-    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference, pythonExecutable });
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference.replace('.000Z', 'Z'), pythonExecutable });
   assert.equal(restored.restored, true, JSON.stringify(restored));
   assert.equal(restored.protectedCopernicusBankMerged, true);
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.copernicusBank), 'utf8')).records,
