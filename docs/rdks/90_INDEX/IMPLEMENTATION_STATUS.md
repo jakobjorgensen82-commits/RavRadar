@@ -1,4 +1,48 @@
-# 2026-09-26 – samlet lokal 4.0.493
+# 2026-09-26 – 4.0.494 samlet kontinuitetskandidat
+
+- [x] 15Z's privat forseglede originaler kobles som nyere kildebevis
+  til 11Z og krypteret fremdrift; ingen offentlig JSON kopieres.
+- [x] Normal progress-restore forener også Copernicus' og
+  Open-Meteos verificerede havstrømsdonorbanker med den beskyttede
+  produktionsbank. Ti sparsomme DMI-generationer er måltestet.
+- [x] Gentagen scorehistorik for samme time bevarer gyldige gamle
+  felter ved nye huller, mens nye gyldige felter og sammenhørende
+  retning/trend/verifikation vælges samlet. Måltestet lokalt.
+- [x] R2-migration og læsning er livebevist; 26/9 viste bucket
+  5 objekter/199,96 MB, 38 Class A, 33 Class B og $0,00. Supabase
+  Pro viste 0,00 GB for begge egresskategorier i ny periode.
+- [ ] Ny R2-skrivning, Pages, 15Z-no-loss og de tidligere 34
+  temperaturfelter kræver særskilt virkelig kontrol.
+- [ ] Exact-head source-CI, merge og én kort normalrun uden overlap.
+- [ ] Før Free-retur: mål flere driftsdøgn; Supabase bruges stadig
+  til små admin-/pointer-/deploy-beviser og gamle rollbackkopier.
+- [ ] Mål slutdækning og kildeprioritet separat for vind, bølger,
+  havstrøm, vandstand og vandtemperatur. Genåbn ikke cron før
+  flere normale end-to-end-kørsler er stabile.
+
+Ældre afkrydsninger nedenfor er historik, ikke livebevis for 4.0.494.
+
+# HISTORISK STATUS – 2026-09-26 – faktisk levering efter 4.0.493
+
+- [x] PR #456 merged som `2f633ad9` efter grøn exact-head CI
+  `36230144041`; den bestilte krypterede fremdrift blev gendannet.
+- [ ] Ny vejrpakkegeneration i R2 og Pages: run `36232521656` stoppede
+  før begge. Offentlig side er stadig 4.0.487/15Z.
+- [ ] Bevar gamle gyldige felter fra **begge** verificerede private
+  generationer komponentvis. Nuværende 15Z-kopi er kun tabsanker;
+  sidste run mistede 1.380 vind- og 1.045 temperaturpar mod den.
+- [ ] Afklar tidligere 34 temperaturtab ved 26/9 07 UTC i privat
+  scorehistorik; senere fremtidig no-loss kan ikke bevise den time.
+- [ ] Bevis Copernicus-fremgang efter 4.0.493: sidste korte run gav
+  nul nye bølge-/temperaturkandidater i 13 forsøg.
+- [ ] Mål fuld slutdækning, prioritet og fortsættelse for vind,
+  bølger, havstrøm, vandstand og vandtemperatur separat. Ingen
+  status `færdig` på baggrund af mellemtrin eller lokal test.
+
+Ældre afkrydsninger nedenfor er historisk implementeringsstatus,
+ikke dokumentation for en vellykket produktionslevering.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – samlet lokal 4.0.493
 
 - [x] 4.0.492 exact-head grøn og PR #455 merged; main `c41aa472`.
 - [x] Kort run `36228162505` har genbrugt den krævede krypterede

@@ -1,4 +1,18 @@
-# Aktuelt fokus – 2026-09-24, lokal 4.0.488
+# Aktuelt fokus – 2026-09-26, lokal 4.0.494
+
+Færdiggør én kildebevist 11Z/15Z-/progress-samling, inklusive
+normal bevaring af DMI-, Copernicus- og Open-Meteo-komponenter.
+Tag målrettede tests, RDKS/version og én exact-head-sourcegate;
+derefter sikker merge og **én kort** normal vejrkørsel med seneste
+gyldige krypterede fremskridt. Kræv nul tab mod begge tidligere
+grundlag, ny privat R2-gemning og faktisk Pages-visning. Mål
+vind, bølger, havstrøm, vandstand og vandtemperatur særskilt.
+Afklar 34 historiske temperaturfelter særskilt. Ingen lang
+kørsel, oneoff eller cron før kort end-to-end-bevis. Mål derefter
+Supabase/R2 over flere normale driftsdøgn; nulstillet tæller
+er ikke et Free-bevis. Se DEC-0254/-0255 og ACTIVE_ROADMAP.
+
+# Historisk fokus – 2026-09-24, lokal 4.0.488
 
 Bevis én sammenhængende normal vejrhentning fra den seneste
 komplette private generation uden datatab. Før det skal lokal

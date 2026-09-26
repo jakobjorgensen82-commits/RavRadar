@@ -9,7 +9,9 @@ import { execFile } from 'node:child_process';
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
-import { protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
+import { mergeVerifiedProtectedProgressComponents,
+  protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
+import { reconcileProtectedWeatherSources } from './reconcile-protected-weather-sources.mjs';
 import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
   openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 
@@ -21,19 +23,19 @@ const reference = '2026-09-19T00:00:00.000Z';
 const part = { partId: 'TEST', zoneId: 'ZONE', waterPoint: [10, 56] };
 const spatialPolicies = Object.fromEntries(['wind', 'wave', 'waterLevel', 'waterTemperature']
   .map(component => [component, { policyId: 'synthetic-exact-cell-only', maximumDistanceKm: 0 }]));
-function bank(speed) {
+function bank(speed, acquiredAt = reference) {
   const responseText = JSON.stringify({ longitude: 10, latitude: 56, utc_offset_seconds: 0,
     hourly: { time: [reference], wind_speed_10m: [speed], wind_direction_10m: [90] },
     hourly_units: { wind_speed_10m: 'm/s', wind_direction_10m: '°' } });
   const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, {
-    component: 'wind', productionReferenceAt: reference }), responseText, acquiredAt: reference }, { part, spatialPolicies });
+    component: 'wind', productionReferenceAt: reference }), responseText, acquiredAt }, { part, spatialPolicies });
   return mergeOpenMeteoPartBank(null, [admission], { parts: [part], spatialPolicies,
     retentionStartAt: reference, retentionEndAt: reference });
 }
 const originalBank = bank(4);
 const progressedBank = bank(9);
 const baseline = '{"kind":"synthetic protected conditions","state":"never change through progress"}\n';
-function nativeTemperatureBank(validTime, value) {
+function nativeTemperatureBank(validTime, value, acquiredAt = reference) {
   const grid = openMeteoMfNearestGridPoint(part.waterPoint);
   const responseText = JSON.stringify({ longitude: grid[0], latitude: grid[1], utc_offset_seconds: 0,
     hourly: { time: Array.isArray(validTime) ? validTime : [validTime],
@@ -42,7 +44,7 @@ function nativeTemperatureBank(validTime, value) {
   const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, {
     component: 'waterTemperature', productionReferenceAt: reference,
     spatialPolicy: OPEN_METEO_NATIVE_NEAREST_POLICIES.waterTemperature,
-  }), responseText, acquiredAt: reference }, { part, spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
+  }), responseText, acquiredAt }, { part, spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
   return mergeOpenMeteoPartBank(null, [admission], { parts: [part], spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
     retentionStartAt: reference, retentionEndAt: new Date(Date.parse(reference) + 2 * 3600000).toISOString() });
 }
@@ -207,6 +209,87 @@ test('progress union diagnostics never expose private exception details', () => 
     new Error('PROTECTED_PROGRESS_BASE_INVALID secret=private'), null]) {
     assert.equal(protectedProgressUnionFailureCode(error), 'PROTECTED_PROGRESS_UNCLASSIFIED');
   }
+});
+
+test('paired newer protected generation wins an exact verified Open-Meteo collision', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-order-test-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(folder).startsWith('rr-paired-order-test-'));
+    await fs.rm(folder, { recursive: true, force: true });
+  });
+  const working = path.join(folder, 'working');
+  const donor = path.join(folder, 'donor');
+  const stage = path.join(folder, 'stage');
+  await fs.mkdir(working);
+  await fs.mkdir(donor);
+  await fs.mkdir(stage);
+  await write(working, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
+  await write(working, files.openMeteoBank, nativeTemperatureBank(reference, 14));
+  await write(donor, files.openMeteoBank, nativeTemperatureBank(reference, 17,
+    new Date(Date.parse(reference) + 300000).toISOString()));
+  const inputs = { root: working, progressFiles: [{ relativePath: files.openMeteoBank,
+    sourcePath: path.join(working, files.openMeteoBank) }], progressVerifiedRoot: working,
+    temporaryDirectory: stage, productionReferenceAt: reference,
+    completeFiles: [{ relativePath: files.openMeteoBank, sourcePath: path.join(donor, files.openMeteoBank) }],
+    completeIsNewer: true };
+  const merged = await mergeVerifiedProtectedProgressComponents(inputs);
+  const result = JSON.parse(await fs.readFile(merged.files[0].sourcePath, 'utf8'));
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].values.waterTemperatureC, 17);
+  assert.equal(merged.openMeteoAdded, 0, 'a same-slot update is not a newly filled hole');
+});
+
+test('the paired 11Z/15Z source restore admits the newer original without copying public values', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-source-test-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(folder).startsWith('rr-paired-source-test-'));
+    await fs.rm(folder, { recursive: true, force: true });
+  });
+  const working = path.join(folder, 'working');
+  const donor = path.join(folder, 'donor');
+  await fs.mkdir(working);
+  await fs.mkdir(donor);
+  const newer = nativeTemperatureBank(reference, 17,
+    new Date(Date.parse(reference) + 300000).toISOString());
+  const selection = '{"synthetic":"selected"}\n';
+  const donorConditions = { generatedAt: reference, weatherComponentInputs: {
+    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+    openMeteoBankSha256: newer.bankSha256, copernicusBankSha256: null,
+    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+  } };
+  await write(working, 'data/live/conditions.json', {
+    generatedAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+  });
+  await write(working, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
+  await write(working, files.openMeteoBank, nativeTemperatureBank(reference, 14));
+  await write(donor, 'data/live/conditions.json', donorConditions);
+  await write(donor, files.openMeteoBank, newer);
+  await write(donor, files.selectedComponents, selection);
+  await buildPrivateWeatherComponentPack({ repositoryRoot: donor, conditions: donorConditions });
+  const report = await reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() });
+  assert.equal(report.publicValuesCopied, false);
+  assert.equal(report.runtimeCursorCopied, false);
+  assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
+    .records[0].values.waterTemperatureC, 17);
+  await assert.rejects(reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) - 3600000).toISOString() }));
+  assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
+    .records[0].values.waterTemperatureC, 17);
+  // The later private generation can contain a verified provider bank that
+  // the earlier baseline never had. It must be re-admitted, not rejected.
+  await fs.unlink(path.join(working, files.openMeteoBank));
+  await reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() });
+  assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
+    .records[0].values.waterTemperatureC, 17);
+  await fs.appendFile(path.join(donor, '.cache/weather-component-inputs.pack'), 'tampered');
+  await assert.rejects(reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() }));
+  assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
+    .records[0].values.waterTemperatureC, 17);
 });
 
 test('legacy DMI, current, donor and staging progress share the authenticated private snapshot', async t => {
@@ -432,6 +515,50 @@ test('protected CP originals are re-admitted before encrypted progress can repla
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.copernicusBank), 'utf8')).records,
     cpBank.records);
   assert.deepEqual(await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack')), protectedPack);
+});
+
+test('a sole newer protected Copernicus bank is re-admitted against current targets', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-cp-only-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(folder).startsWith('rr-paired-cp-only-'));
+    await fs.rm(folder, { recursive: true, force: true });
+  });
+  const pythonExecutable = process.env.PYTHON ?? 'python';
+  const prepared = path.join(folder, 'cp-fixture');
+  await execFileAsync(pythonExecutable,
+    ['scripts/test-copernicus-component-production.py', '--prepare-fixture', prepared],
+    { timeout: 30_000, windowsHide: true });
+  const cpBank = JSON.parse(await fs.readFile(path.join(prepared, 'bank.json'), 'utf8'));
+  const selection = '{"synthetic":"selection"}\n';
+  const donor = path.join(folder, 'donor');
+  const working = path.join(folder, 'working');
+  for (const root of [donor, working]) {
+    await fs.mkdir(root);
+    await write(root, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: {
+      'DK-B05-11': [{ partId: 'SYNTHETIC-ø-PART', sourceZoneId: 'DK-B05-11', waterPoint: [10, 58] }],
+    } });
+  }
+  await write(working, 'data/live/conditions.json', {
+    generatedAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+  });
+  const donorConditions = { generatedAt: reference, weatherComponentInputs: {
+    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+    openMeteoBankSha256: null, copernicusBankSha256: cpBank.bankSha256,
+    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+  } };
+  await write(donor, 'data/live/conditions.json', donorConditions);
+  await write(donor, files.selectedComponents, selection);
+  await fs.copyFile(path.join(prepared, 'bank.json'), path.join(donor, files.copernicusBank));
+  await fs.cp(path.join(prepared, 'cache'), path.join(donor, '.cache/copernicus-components'), { recursive: true });
+  await buildPrivateWeatherComponentPack({ repositoryRoot: donor, conditions: donorConditions,
+    pythonExecutable });
+  const report = await reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString(), pythonExecutable });
+  assert.equal(report.sourceComponentsMerged.copernicus, true);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(working, files.copernicusBank), 'utf8')).records,
+    cpBank.records);
+  assert.ok((await fs.readdir(path.join(working, '.cache/copernicus-components/objects'))).length > 0);
 });
 
 test('compressed progress budget preserves the previous snapshot and never stops ordinary operation', async t => {

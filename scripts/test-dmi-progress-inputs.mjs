@@ -81,6 +81,22 @@ test('DMI progress merges all five proved tuples, preserves valid old fields at 
   assert.equal(joined.windSpeedMps, 8);
 });
 
+test('paired protected DMI source donor updates all five fields without restoring its scheduler cursor', () => {
+  const working = store(earlier, 1);
+  const donor = store(reference, 2);
+  working.runtime.nextZoneCursor = 0;
+  working.runtime.lastAttemptAt = '2026-09-26T09:00:00.000Z';
+  donor.runtime.lastAttemptAt = '2026-09-26T09:30:00.000Z';
+  const result = mergeVerifiedDmiForecastProgress(working, donor, {
+    ...options, recoverRuntimeCursor: false,
+  });
+  assert.equal(result.stats.recoveredComponents, 5);
+  assert.equal(result.stats.runtimeRecovered, false);
+  assert.equal(result.document.runtime.lastAttemptAt, working.runtime.lastAttemptAt);
+  assert.equal(result.document.zones.ZONE.hourly[0].waterTemperatureC, 14);
+  assert.equal(result.document.zones.ZONE.hourly[0].currentVMps, .4);
+});
+
 test('wrong point, stale source, missing proof and changed active geometry cannot overwrite protected values/cursor', () => {
   const before = store(reference, 2);
   const old = store(earlier, 1);
@@ -124,6 +140,33 @@ test('rolling121forecast keeps all still-current old tuples and the complete new
     if (old) assert.deepEqual(row.sources.waterTemperature, old.sources.waterTemperature);
   }
   assert.equal(before.zones.ZONE.hourly.length, 121, 'No mutation of the protected input');
+});
+
+test('ten successive sparse forecast generations retain every still-valid DMI component', () => {
+  const future = new Date(Date.parse(reference) + 20 * 3600000).toISOString();
+  let protectedStore = store(earlier, 1, { startAt: future });
+  const sparse = store(reference, 2, { startAt: future });
+  for (const row of sparse.zones.ZONE.hourly) {
+    for (const key of ['windSpeedMps', 'waveHeightM', 'currentUMps', 'currentVMps',
+      'waterLevelCm', 'waterTemperatureC']) row[key] = null;
+    row.sources = {};
+  }
+  const original = structuredClone(protectedStore.zones.ZONE.hourly[0]);
+  for (let run = 0; run < 10; run += 1) {
+    const target = new Date(Date.parse(reference) + run * 3600000).toISOString();
+    protectedStore = mergeVerifiedDmiForecastProgress(protectedStore, sparse,
+      { ...options, productionReferenceAt: target, recoverRuntimeCursor: false }).document;
+    const retained = protectedStore.zones.ZONE.hourly[0];
+    for (const component of Object.keys(fields)) {
+      assert.deepEqual(retained.sources[component], original.sources[component],
+        `${component} lost its original source on sparse generation ${run + 1}`);
+    }
+    assert.equal(retained.waterTemperatureC, original.waterTemperatureC);
+    assert.equal(retained.waterLevelCm, original.waterLevelCm);
+    assert.equal(retained.currentVMps, original.currentVMps);
+    assert.equal(retained.waveHeightM, original.waveHeightM);
+    assert.equal(retained.windSpeedMps, original.windSpeedMps);
+  }
 });
 
 test('late acquisition timestamps use the restore clock, not the locked target; real future timestamps fail closed', () => {

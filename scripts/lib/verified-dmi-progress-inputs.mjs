@@ -118,6 +118,7 @@ function recoverRuntime(complete, progress, zones, restored, stats) {
 
 export function mergeVerifiedDmiForecastProgress(complete, progress, {
   features, productionReferenceAt, restoredAt = new Date().toISOString(),
+  recoverRuntimeCursor = true,
 } = {}) {
   const stats = { status: 'RETAINED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false };
   if (!storeShape(complete) || !storeShape(progress)) return { document: complete, stats, code: 'DMI_FORECAST_SHAPE_REJECTED' };
@@ -191,7 +192,9 @@ export function mergeVerifiedDmiForecastProgress(complete, progress, {
       hourly, validFrom: hourly[0].time, validUntil: hourly.at(-1).time, horizonHours: hourly.length };
     stats.recoveredComponents += recovered;
   }
-  if (sameActiveGeometry(complete, zones)) recoverRuntime(document, progress, zones, restored, stats);
+  if (recoverRuntimeCursor && sameActiveGeometry(complete, zones)) {
+    recoverRuntime(document, progress, zones, restored, stats);
+  }
   if (stats.recoveredComponents || stats.runtimeRecovered) stats.status = 'MERGED';
   return { document: stats.status === 'MERGED' ? document : complete, stats,
     code: stats.rejectedRecords ? 'DMI_FORECAST_RECORDS_REJECTED' : null };
@@ -267,6 +270,7 @@ async function readJson(file) {
 
 export async function reconcileDmiProgressFiles({
   root, files, temporaryDirectory, productionReferenceAt, restoredAt = new Date().toISOString(),
+  recoverRuntimeCursor = true,
 }) {
   const extras = new Set(Object.values(FILES));
   const selected = files.filter(file => extras.has(file.relativePath));
@@ -281,7 +285,8 @@ export async function reconcileDmiProgressFiles({
       const [complete, progress] = await Promise.all([readJson(path.join(root, file.relativePath)), readJson(file.sourcePath)]);
       const result = forecast
         ? mergeVerifiedDmiForecastProgress(complete, progress, {
-          features: (await readJson(path.join(root, 'data/zones.geojson'))).features, productionReferenceAt, restoredAt,
+          features: (await readJson(path.join(root, 'data/zones.geojson'))).features,
+          productionReferenceAt, restoredAt, recoverRuntimeCursor,
         })
         : mergeVerifiedStationObservationProgress(complete, progress, { productionReferenceAt, restoredAt });
       summary[name] = result.stats;

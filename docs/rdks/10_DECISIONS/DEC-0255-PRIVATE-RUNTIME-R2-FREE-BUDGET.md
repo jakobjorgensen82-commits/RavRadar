@@ -3,6 +3,17 @@
 **Dato:** 2026-09-26
 **Status:** AKTIV BESLUTNING; migration og restore bevist, ny publish/deploy afventer
 
+## Måling 2026-09-26 efter skiftet
+
+Run `36232521656` gendannede fra aktiv R2, men stoppede før ny
+produktionsskrivning og Pages. Cloudflare viste fem objekter/
+199,96 MB, 38 Class A, 33 Class B og $0,00 for 26/9–26/10.
+Supabase Pro viste 0,00 GB Egress og 0,00 GB Cached Egress i den
+netop begyndte periode. Koden bruger R2 for den store private
+runtime, men Supabase til admin-/pointer-/deploy-beviser, og gamle
+Supabase-objekter bevares til rollback. Denne ene måling kan ikke
+godkende tilbagevenden til Free; mål flere faktiske driftsdøgn.
+
 ## Målt milepæl 2026-09-26
 
 PR #454/4.0.491 er merged. Bucketbegrænset token og GitHub-secrets

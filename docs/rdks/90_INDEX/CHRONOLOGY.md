@@ -1,3 +1,15 @@
+## 2026-09-26 – 4.0.494 kildebevarelse under lokal kontrol
+
+Run `36232521656` gendannede krypteret fremdrift fra `36228162505-1`
+og hentede vejr, men stoppede på 1.380 vind- og 1.045 temperaturtab
+mod 15Z før R2-publish/Pages. Den lokale rettelse genvaliderer 15Z's
+originale kildepakke som komponentdonor til 11Z og fletter begge
+havstrømsdonorbanker også ved normal progress-restore. R2-migration
+og læsning er livebevist, men ingen ny R2-produktionsskrivning endnu.
+En særskilt samme-time-overskrivning af gyldig scorehistorik blev
+reproduceret og rettet lokalt komponentvis. Den er ikke bevist som
+årsag til de 34 historiske offentlige temperaturtab, som forbliver åbne.
+
 ## 2026-09-24 – lokal 4.0.488, datatab og samlet recovery
 
 `36022310055` blev grønt og deployede, men mistede gyldige værdier i

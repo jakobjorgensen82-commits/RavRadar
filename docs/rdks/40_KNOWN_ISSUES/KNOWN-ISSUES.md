@@ -1,4 +1,50 @@
-# Aktuelle issues – 2026-09-26, lokal 4.0.493
+# Aktuelle issues – 2026-09-26, 4.0.494 under lokal kontrol
+
+- **PRODUKTIONSCACHE-KONTINUITET – LOKALT RETTET, LIVE ÅBEN P0:**
+  15Z's verificerede originale vejrkilder forenes med 11Z og
+  krypteret fremdrift; almindelig restore forener også begge
+  havstrømsdonorbanker. Reelt nul tab mod offentlig 15Z er ikke
+  bevist før ny kort kørsel, R2-gemning og Pages.
+- **34 HISTORISKE TEMPERATURFELTER – ÅBEN P0:** 26/9 kl. 07 UTC
+  skal undersøges i historisk scoreinput. En konkret samme-time
+  historikoverskrivning er lokalt rettet, men det er ikke bevist,
+  at den forårsagede de 34 offentlige tab. En grøn fremtidig
+  no-loss-kontrol er ikke et bevis for denne time.
+- **KILDEFORDELING OG HULLER – ÅBEN:** Nul nye Copernicus-bølge-/
+  temperaturkandidater i 13 forsøg, for lille DMI-andel og
+  resthuller i fem vejrtyper kræver live opgørelse efter leveringen.
+- **R2/SUPABASE FREE – ÅBEN:** Stor privat pakke er i R2 og
+  læsning er bevist; ny skrivning afventer. Supabase har fortsat
+  små admin-/pointer-/deploy-beviser og gamle rollbackobjekter.
+  Ny periodes 0,00 GB er ikke grundlag for Free-løfte.
+
+Ældre aktuelle-overskrifter nedenfor er historiske.
+
+# HISTORISKE ISSUES – 2026-09-26, efter merged 4.0.493
+
+- **PRODUKTIONSCACHE-KONTINUITET – ÅBEN P0:** Run `36232521656`
+  gendannede krypteret fremdrift, men en ny pakke tabte 1.380 vind-
+  og 1.045 temperaturpar mod offentlig 15Z. 15Z's verificerede
+  private kilder bruges endnu kun som tabsanker, ikke til generel
+  komponentvis bevarelse. R2-publish og Pages skete ikke.
+- **TIDLIGERE 34 TEMPERATURTAB – ÅBEN P0:** Tiden 26/9 kl. 07 UTC
+  er faldet uden for næste fremtidskontrol. Den skal vurderes i
+  historisk scoreinput og kildebevarelse, ikke erklæres løst.
+- **COPERNICUS OG DÆKNING – ÅBEN:** De lokale metadata- og
+  rotationsrettelser fra 4.0.493 er merged, men 13 faktiske forsøg
+  optog nul nye bølge-/temperaturkandidater. Slutdækning og
+  kildeprioritet for alle fem vejrtyper er ikke verificeret.
+- **NORMAL CACHEGENBRUG – RISIKO UNDER ANALYSE:** Krypteret progress
+  forenes eksplicit med beskyttet DMI-prognose/station og OM-/CP-
+  delbanker. De særskilte verificerede havstrømsdonorbanker kan
+  derimod installeres fra progress uden tilsvarende eksplicit
+  sammenføring med produktionsbanken. Ingen faktisk havstrømregression
+  er endnu udledt af dette; kræver kildebevist test og almindelige
+  kørslers end-to-end-bevis, før risikoen lukkes.
+
+Ældre status herunder er historisk, også hvor den siger `lokalt rettet`.
+
+# HISTORISK CHECKPOINT – 2026-09-26, lokal 4.0.493
 
 - **DMI FALSK LANGKØRSEL – LOKALT RETTET:** Kort 360-sekunders mode
   kunne sætte langmarkør og begrænse næste kørsel i fire timer.

@@ -1,4 +1,25 @@
-## 4.0.493 – samlet leverandørrotation og bevaret fremdrift (lokal, 2026-09-26)
+## 4.0.494 – bevar vejrkilder gennem afbrudte og almindelige kørsler (lokal, 2026-09-26)
+
+- Genvalider 15Z's privat forseglede DMI-, Copernicus- og
+  Open-Meteo-originaler og foren dem med 11Z og den gemte
+  krypterede fremdrift. Kopiér ikke offentlig score eller vejr-JSON,
+  og overtag ikke gamle schedulerpositioner.
+- Saml de separate verificerede havstrømsdonorbanker ved normal
+  progress-restore i stedet for at overskrive dem med en tyndere
+  fejl-kørsels snapshot. Nyere verificerede 15Z-input får forrang
+  i den ekstraordinære 11Z/15Z-samling.
+- Ved to kørsler for samme time bevares gyldig scorehistorik for
+  hver vejrtype, når et nyt felt er tomt. En nyere gyldig værdi
+  erstatter den gamle; retning, trend og strømverifikation følger
+  deres eget fysiske felt og blandes ikke med en anden hentning.
+  Samme UTC-time genkendes med og uden `.000Z`.
+- Målrettede DMI-/sourcepack-/R2-kontroller er grønne. De 34
+  historiske temperaturfelter, faktisk R2-produktion, offentlig
+  tabsfrihed, fem vejrtypers slutdækning og Supabase Free-budget
+  kræver stadig livebevis; ingen score- eller kildeprioritetsregel
+  ændres.
+
+## 4.0.493 – samlet leverandørrotation og bevaret fremdrift (2026-09-26)
 
 - Kort DMI-bekræftelse tæller ikke længere som en lang genopfyldning.
   Fjern kun tidligere falske markører med præcist tids-/budgetbevis.

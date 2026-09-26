@@ -1,4 +1,77 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – samlet 4.0.493 lokalt kontrolleret
+# AKTUELT CHECKPOINT – 2026-09-26 – samlet 4.0.494-kandidat, ikke produktionsbevist
+
+4.0.493 er merged, men run `36232521656` gendannede kun krypteret
+fremdrift og stoppede i offentlig tabsbeskyttelse: 1.380 vind- og
+1.045 temperaturfelter fra 15Z ville blive tomme. Ny 4.0.494-kode
+samler 11Z og 15Z fra hver deres autentificerede private originaler,
+med krypteret mellemfremskridt ovenpå. 15Z er nyere kildebevis, ikke
+en blind offentlig vejrværdi eller en ny schedulerautoritet. DMI's
+prognose-/stationsinput, DMI-bulk, Copernicus' delbank og
+havstrømsdonor samt Open-Meteos delbank og havstrømsdonor behandles
+komponentvis. Almindelig fremdriftsrecovery forener også begge
+havstrømsdonorbanker med produktion. Gyldige gamle komponenter må
+bevares gennem et vilkårligt antal kørsler inden for deres faktiske
+gyldighedshorisont, indtil en gyldig nyere kilde overtager.
+Ved gentagen scorehistorik for eksakt samme time bevares gyldige
+felter også særskilt for vind, bølger, strøm, vandstand og
+vandtemperatur; en ny gyldig komponent vinder, mens dens retning,
+trend og verifikation ikke lånes fra en anden hentning. Denne lokale
+rettelse er ikke bevis for de tidligere 34 offentlige tab kl. 07Z.
+Geometri, scoreformel, DMI-first, 96-timersundtagelse,
+DMI-vandstandsinterpolation og Limfjord-fastholdelse ændres ikke.
+Lokale måltests er grønne, men kilde-CI, merge, ny R2-skrivning,
+Pages og synlige data mangler. De særskilte 34 historiske
+temperaturtab kl. 26/9 07 UTC må ikke erklæres løst af et nyt
+fremtidsvindue. Ingen ny lang kørsel eller cron.
+
+R2 er virkelig aktiv for den store private produktionspakke:
+migration `36225146256` kopierede fem objekter/199.955.131 byte
+og beviste SHA-readback og privat adgang; run `36232521656`
+gendannede fra R2. Det stoppede før en ny produktionsskrivning,
+så den er stadig åben. Kontoen viste 26/9 199,96 MB, 38 Class A,
+33 Class B og $0,00 for perioden 26/9–26/10. Supabase Pro viste
+0,00 GB Egress og 0,00 GB Cached Egress i samme nye periode,
+men bruges fortsat til små pointer-/admin-/deploy-beviser og
+bevarer gamle private pakker til rollback. Først flere målte
+driftsdøgn kan vise, om Free-budgetterne faktisk holder.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.493 merged, vejrhentning stadig ikke leveret
+
+4.0.493/PR #456 bestod exact-head source-CI `36230144041` og blev
+merged på `main` som `2f633ad9ba72c3281da759784e7ca9c4d0c10eaa`.
+Den korte bekræftelse `36232521656` gendannede den bestilte krypterede
+fremdrift fra `36228162505-1`, men stoppede før ny R2-produktionspakke
+og Pages. Mod offentlig 15Z fandt tabsbarrieren 1.380 tidligere
+gyldige vindpar og 1.045 vandtemperaturpar, som blev tomme i 31
+fælles prognosetimer. Mod beskyttet 11Z var der nul tab på de
+fælles fremtidige timer. Offentlig side er fortsat 4.0.487/15Z.
+
+Den bekræftede designmangel er, at 15Z's fulde verificerede private
+kildepakke kun bruges som tabsanker, mens 11Z installeres og nyere
+krypteret hentefremdrift flettes med 11Z. Systemet ser derfor tab
+fra 15Z, men kan ikke automatisk bevare dens unikke gyldige værdier.
+Undersøg en generel kildebevist sammenføring for præcis sted, time og
+vejrtype, ikke offentlig JSON eller de aktuelle tabstal som særregel.
+Den tidligere 34-felts temperaturfejl ved 26/9 07 UTC er fortsat
+uafklaret; et nyt target efter 07 tester ikke automatisk den time.
+Bevaringsreglen gælder også normal drift på tværs af 4, 10 eller flere
+vejrkørsler: ingen grænse i antal kørsler må slette en fortsat gyldig,
+kildebevist værdi for eksakt sted, time og vejrtype, blot fordi intet
+nyere gyldigt svar kom. Udløb følger den relevante prognose-/
+historikhorisont, ikke antallet af kørsler. Et lokalt hul må ikke
+overskrive sådan en værdi. Dette er et krav, ikke et bevist resultat
+for den nuværende kæde; også almindelig progress-restore og nye
+beskyttede generationer skal kontrolleres mod det.
+
+Copernicus optog nul nye bølge-/temperaturkandidater i det seneste
+korte run trods 13 forsøg. DMI-/Open-Meteo-andel og resthuller i alle
+fem vejrtyper er fortsat åbne måle- og fejlfindingspunkter. 4.0.493's
+lokale metadata-, rotations-, DMI-cooldown- og progressrettelser er
+merged, men ikke produktionsbevist som løsning på disse resultater.
+Ingen ny vejrkørsel eller cron-genåbning, før cachekontinuiteten er
+afklaret, og ingen påstand om leveret 4.0.493 eller komplet vejrdata.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – samlet 4.0.493 lokalt kontrolleret
 
 Arbejd i managed worktree `r2-private-runtime`, branch
 `codex/4.0.493-provider-continuity`. Den gamle cb79-rod er urørt.
