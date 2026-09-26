@@ -1,7 +1,7 @@
 # AKTUELT CHECKPOINT – 2026-09-26 – 4.0.494 kildekontinuitet under lokal kontrol
 
 Arbejd i managed worktree `r2-private-runtime`, branch
-`codex/4.0.493-provider-continuity`; cb79 er ikke arbejdsroden. Run
+`codex/4.0.494-paired-weather-sources`; cb79 er ikke arbejdsroden. Run
 `36232521656` stoppede før privat R2-publish og Pages på 1.380
 vind- og 1.045 vandtemperaturtab mod offentlig 15Z. Ny lokal
 4.0.494-kandidat genvaliderer 15Z's originale private kildepakke
@@ -13,6 +13,8 @@ produktionsbank. Test ti efterfølgende sparsomme DMI-generationer
 bevarer alle fem fortsat gyldige vejrkomponenter. Koden er endnu
 ikke merged eller bevist i produktion. De 34 historiske
 temperaturtab kl. 26/9 07 UTC er fortsat et særskilt åbent punkt.
+En samme-time-overskrivning af gyldig scorehistorik er nu også
+lokalt rettet og testet, men ikke bevist som årsag til de 34 tab.
 
 R2-migration `36225146256` kopierede to pakker/fem objekter med
 byte-/SHA-readback og afvist anonym adgang; aktiv variabel er `r2`,

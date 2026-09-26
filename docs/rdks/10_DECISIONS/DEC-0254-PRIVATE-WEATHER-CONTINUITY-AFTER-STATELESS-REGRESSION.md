@@ -19,6 +19,14 @@ offentlig JSON-replay og ændring af score-/kildeprioritet er fortsat
 forbudt. Lokal test er ikke bevis for de 34 historiske temperaturtab,
 R2-gemning eller offentlig deploy.
 
+Samme-timers scorehistorik er en særskilt fortsættelseskant: en ny
+tom værdi må ikke slette et gyldigt gammelt historikfelt for samme
+kyststed og time. Nye gyldige vind-, bølge-, strøm-, vandstands-
+og temperaturfelter overtager hver for sig. Vektorretning,
+vandstandstrend og strømverifikation følger deres valgte komponent;
+de må ikke lånes fra en anden hentning. Lokal regression dækker
+denne kant, men den tidligere offentlige 34-feltsfejl er stadig åben.
+
 ## Implementeringstillæg 2026-09-26 – lokal 4.0.493
 
 Kort mode skal hente præcis den bestilte krypterede run-/attempt-cache.

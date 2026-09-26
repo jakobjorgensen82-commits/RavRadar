@@ -13,6 +13,13 @@ tidligere regel om 15Z **kun** som tabsanker er dermed afgrænset:
 15Z er fortsat tabsanker og må nu også afgive selvstændigt
 verificerede originale vejrinput, aldrig hele private runtime.
 
+Helikopterturen fandt desuden et reproduceret samme-time-tab i
+scorehistorikken: ny vind kunne følges af tom temperatur og dermed
+slette den gamle gyldige temperatur. 4.0.494 bevarer nu hvert
+gyldigt historikfelt separat uden at blande retning/trend mellem
+hentninger. Det er lokalt testet og endnu ikke årsagsbevist for
+de tidligere 34 offentlige temperaturtab.
+
 R2-migration `36225146256` og læsning i `36232521656` er bevist;
 ny produktionsskrivning og Pages blev ikke nået. 26/9 viste R2
 fem objekter/199,96 MB, 38 Class A, 33 Class B og $0,00 for

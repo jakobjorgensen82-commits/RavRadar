@@ -6,7 +6,9 @@ mod 15Z før R2-publish/Pages. Den lokale rettelse genvaliderer 15Z's
 originale kildepakke som komponentdonor til 11Z og fletter begge
 havstrømsdonorbanker også ved normal progress-restore. R2-migration
 og læsning er livebevist, men ingen ny R2-produktionsskrivning endnu.
-34 historiske temperaturtab forbliver åbne.
+En særskilt samme-time-overskrivning af gyldig scorehistorik blev
+reproduceret og rettet lokalt komponentvis. Den er ikke bevist som
+årsag til de 34 historiske offentlige temperaturtab, som forbliver åbne.
 
 ## 2026-09-24 – lokal 4.0.488, datatab og samlet recovery
 

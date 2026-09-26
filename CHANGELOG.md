@@ -8,6 +8,10 @@
   progress-restore i stedet for at overskrive dem med en tyndere
   fejl-kørsels snapshot. Nyere verificerede 15Z-input får forrang
   i den ekstraordinære 11Z/15Z-samling.
+- Ved to kørsler for samme time bevares gyldig scorehistorik for
+  hver vejrtype, når et nyt felt er tomt. En nyere gyldig værdi
+  erstatter den gamle; retning, trend og strømverifikation følger
+  deres eget fysiske felt og blandes ikke med en anden hentning.
 - Målrettede DMI-/sourcepack-/R2-kontroller er grønne. De 34
   historiske temperaturfelter, faktisk R2-produktion, offentlig
   tabsfrihed, fem vejrtypers slutdækning og Supabase Free-budget

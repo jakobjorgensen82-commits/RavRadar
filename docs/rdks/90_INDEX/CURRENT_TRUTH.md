@@ -12,6 +12,11 @@ komponentvis. Almindelig fremdriftsrecovery forener også begge
 havstrømsdonorbanker med produktion. Gyldige gamle komponenter må
 bevares gennem et vilkårligt antal kørsler inden for deres faktiske
 gyldighedshorisont, indtil en gyldig nyere kilde overtager.
+Ved gentagen scorehistorik for eksakt samme time bevares gyldige
+felter også særskilt for vind, bølger, strøm, vandstand og
+vandtemperatur; en ny gyldig komponent vinder, mens dens retning,
+trend og verifikation ikke lånes fra en anden hentning. Denne lokale
+rettelse er ikke bevis for de tidligere 34 offentlige tab kl. 07Z.
 Geometri, scoreformel, DMI-first, 96-timersundtagelse,
 DMI-vandstandsinterpolation og Limfjord-fastholdelse ændres ikke.
 Lokale måltests er grønne, men kilde-CI, merge, ny R2-skrivning,

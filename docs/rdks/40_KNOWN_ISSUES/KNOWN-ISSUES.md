@@ -6,7 +6,9 @@
   havstrømsdonorbanker. Reelt nul tab mod offentlig 15Z er ikke
   bevist før ny kort kørsel, R2-gemning og Pages.
 - **34 HISTORISKE TEMPERATURFELTER – ÅBEN P0:** 26/9 kl. 07 UTC
-  skal undersøges i historisk scoreinput. En grøn fremtidig
+  skal undersøges i historisk scoreinput. En konkret samme-time
+  historikoverskrivning er lokalt rettet, men det er ikke bevist,
+  at den forårsagede de 34 offentlige tab. En grøn fremtidig
   no-loss-kontrol er ikke et bevis for denne time.
 - **KILDEFORDELING OG HULLER – ÅBEN:** Nul nye Copernicus-bølge-/
   temperaturkandidater i 13 forsøg, for lille DMI-andel og

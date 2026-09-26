@@ -5,6 +5,9 @@
 - [x] Normal progress-restore forener også Copernicus' og
   Open-Meteos verificerede havstrømsdonorbanker med den beskyttede
   produktionsbank. Ti sparsomme DMI-generationer er måltestet.
+- [x] Gentagen scorehistorik for samme time bevarer gyldige gamle
+  felter ved nye huller, mens nye gyldige felter og sammenhørende
+  retning/trend/verifikation vælges samlet. Måltestet lokalt.
 - [x] R2-migration og læsning er livebevist; 26/9 viste bucket
   5 objekter/199,96 MB, 38 Class A, 33 Class B og $0,00. Supabase
   Pro viste 0,00 GB for begge egresskategorier i ny periode.

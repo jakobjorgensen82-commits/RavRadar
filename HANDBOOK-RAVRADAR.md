@@ -25,6 +25,13 @@ vejrkørsler. Vi overtager ikke en gammel markering af, hvor langt
 en hentning var nået, og kopierer ikke tal fra hjemmesiden tilbage
 som om de var originale leverandørdata.
 
+Hvis to kørsler gælder samme time, kan den nye have bedre vind,
+men mangle vandtemperatur. I scorehistorikken bruges den nye
+gyldige vind sammen med den gamle gyldige temperatur. Bølgens
+retning og vandstandens ændring følger dog altid den værdi, de
+hører til; vi sætter ikke tal fra forskellige hentninger sammen
+til en opdigtet bølge eller vandstand.
+
 Den store private pakke ligger nu i R2 og er blevet læst tilbage
 med succes. En ny opdateret pakke er endnu ikke gemt der, fordi
 kørslen stoppede før det trin. Supabase bruges stadig til mindre
