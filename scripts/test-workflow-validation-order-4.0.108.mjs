@@ -84,7 +84,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -94,6 +94,33 @@ for (const privateName of expectedWorkflowFiles.filter(name => !productionWorkfl
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
+const r2MigrationWorkflow = fs.readFileSync(
+  `${workflowDirectory}/migrate-private-runtime-to-r2.yml`, 'utf8',
+).replace(/\r\n/g, '\n');
+for (const marker of [
+  'workflow_dispatch:',
+  'group: ravradar-weather-production-v2',
+  "github.ref == 'refs/heads/main'",
+  "test \"$MIGRATION_CONFIRMATION\" = 'COPY-PRIVATE-RUNTIME-TO-R2'",
+  'test "$(git rev-parse origin/main)" = "$EXPECTED_HEAD_SHA"',
+  'node scripts/protected-private-production-runtime.mjs --migrate-r2',
+]) assert.ok(r2MigrationWorkflow.includes(marker), `Private R2 migration lacks ${marker}`);
+for (const workflowName of [
+  'migrate-private-runtime-to-r2.yml',
+  'run-current-weather-once.yml',
+  'update-and-deploy.yml',
+  'reusable-weather-build.yml',
+  'deploy-code-only-repair.yml',
+]) {
+  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8');
+  for (const secretName of [
+    'RAVRADAR_R2_ACCOUNT_ID',
+    'RAVRADAR_R2_ACCESS_KEY_ID',
+    'RAVRADAR_R2_SECRET_ACCESS_KEY',
+  ]) assert.ok(workflow.includes(secretName), `${workflowName} lacks ${secretName}`);
+}
+assert.doesNotMatch(r2MigrationWorkflow, /pages: write|id-token: write|deploy-pages|--publish/,
+  'The copy-only R2 migration must not deploy or change the pointer');
 const manualCurrentWeatherWorkflow = fs.readFileSync(
   `${workflowDirectory}/run-current-weather-once.yml`,
   'utf8',
@@ -2384,6 +2411,21 @@ for (const marker of [
 const activeIntegratedRestoreStart = privateRuntimeRestoreSection.indexOf(
   'if test "$OPERATIONAL_ACTION" = "integrated"; then',
 );
+const r2RestoreAttempt = privateRuntimeRestoreSection.indexOf(
+  'Protected normal-weather restore attempt $attempt of 3 failed.',
+);
+const r2RestoreGuardStart = privateRuntimeRestoreSection.indexOf(
+  'if test "$RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND" = "r2"; then',
+  r2RestoreAttempt,
+);
+const r2RestoreGuard = privateRuntimeRestoreSection.slice(r2RestoreGuardStart,
+  privateRuntimeRestoreSection.indexOf('fi', r2RestoreGuardStart) + 2);
+if (!(r2RestoreAttempt >= 0 && r2RestoreAttempt < r2RestoreGuardStart
+  && r2RestoreGuardStart < activeIntegratedRestoreStart
+  && r2RestoreGuard.includes('R2 private runtime restore failed; no stateless recovery is allowed.')
+  && r2RestoreGuard.includes('exit "$status"'))) {
+  throw new Error('R2 restore must fail before any stateless integrated recovery path.');
+}
 const activeIntegratedRestoreFallback = privateRuntimeRestoreSection.slice(
   activeIntegratedRestoreStart,
   privateRuntimeRestoreSection.indexOf('exit "$status"', activeIntegratedRestoreStart),

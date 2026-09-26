@@ -1,3 +1,22 @@
+# Aktuel privat lagring og kvotekontrol – 2026-09-26
+
+- **REQ-PRIVATE-R2-CUTOVER-0255 – BINDENDE:** Supabase er aktiv
+  storage-backend indtil begge pointerrefererede private generationer
+  er kopieret til en privat EU/Standard-R2-bucket, læst byte-/SHA-
+  eksakt tilbage og anonym adgang afvist. Kopi ændrer ikke pointer
+  eller originaler. En hovedkø forhindrer samtidig cache-publish.
+  Første R2-restore og nye publish skal bevises før flere lange runs.
+- **REQ-PRIVATE-R2-QUOTA-0255 – BINDENDE:** Den dedikerede bucket
+  afviser nye objekter over 2 GB og token er scoped til kun den bucket.
+  Faktisk Cloudflare-kontoforbrug for Standard-lager, Class A/B og
+  billable usage skal overvåges; lokal bucketgrænse er ikke
+  kontodækkende omkostningsloft. Brug ikke Infrequent Access.
+- **REQ-SUPABASE-FREE-RETURN-0255 – BINDENDE:** Pro må kun sænkes
+  efter flere normale R2-driftsdøgn, hvor både cachet og øvrig
+  Supabase-egress fremskrives under 3,5 GB/måned og øvrige Free-
+  kvoter har tilsvarende reserve. En ny Pro-periodes nulstilling
+  alene er ikke evidens.
+
 # Aktuel samlet vejrgenopretning – 2026-09-25
 
 - **REQ-EXACT-QUICK-PROGRESS-0255 – BINDENDE:** Før et kort

@@ -729,7 +729,9 @@ async function writeJsonAtomic(file, value) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const clients = createProtectedPrivateRuntimeClients();
+  // Operational evidence is a separate, small Supabase object family. The
+  // R2 cutover only moves the large production weather/runtime generations.
+  const clients = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
   const result = options.mode === 'publish'
     ? await publishProtectedOperationalEvidence({
       directory: options.directory,

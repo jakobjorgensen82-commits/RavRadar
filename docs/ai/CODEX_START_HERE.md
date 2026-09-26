@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-25 – lokal 4.0.489, kort cachebevis
+# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.491, R2 før vejrhentning
+
+Arbejd i managed worktree `r2-private-runtime`, branch
+`codex/r2-private-runtime`. Main er 4.0.490/`66e0f1b5` efter
+exact-head-grøn PR #453. Rettelsen til de 34 tabte vandtemperaturpar
+mangler stadig livebevis. Cron/vejrmonitor er pauset; start ingen
+overlappende eller lang kørsel på ubekræftet cache.
+
+Supabase Pro er midlertidigt aktiv efter 11,9 GB cachet og 6,45 GB
+øvrig egress i forrige periode. Den private EU/Standard-R2-bucket
+findes, men er tom. Lokal 4.0.491 flytter kun den store private
+produktionsruntime; Supabase er fortsat default indtil migrationen
+af current+previous er byte-/SHA-verificeret, anonym adgang afvist
+og backend eksplicit skiftet. R2-konto-ID-secret er oprettet; scoped
+R2-token og de to nøgle-secrets afventer specifik godkendelse.
+Måltests er grønne lokalt, men ny combined exact-head-kontrol,
+merge, live migration og kort normal weather/deploy mangler.
+Supabase Free må ikke loves før flere målte driftsdøgn under begge
+egressgrænser med reserve. Se DEC-0255 og aktivt roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-25 – lokal 4.0.489, kort cachebevis
 
 Arbejd i indlejret Git-rod `node_modules/RavRadar-4.0.396`, branch
 `codex/weather-continuity-unified`. Main er 4.0.488/`34e25e5f`.

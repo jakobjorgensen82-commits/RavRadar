@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.490
+**Håndbogsversion:** 4.0.491
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.490 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.491 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.87 4.0.491 – Privat vejr-cache og omkostningskontrol
+
+RavRadars store private vejrpakke har hidtil ligget i Supabase.
+Supabases gratis månedsgrænse for datatrafik blev overskredet, så
+ejeren har midlertidigt åbnet Pro. Den store pakke flyttes til en
+privat R2-bucket i EU. Hjemmesiden leveres stadig fra GitHub Pages,
+og login, centrale indstillinger samt de små driftsoplysninger
+bliver i Supabase.
+
+Flytningen må ikke nulstille vejrcachen. Begge gemte versioner
+kopieres, læses tilbage og kontrolleres, inden RavRadar begynder at
+læse fra R2. Hvis kontrollen fejler, bruger produktionen fortsat
+Supabase; ingen tom vejrpakke må erstatte gyldige data. Den nye
+bucket er privat og har et lokalt loft på 2 GB, men den grænse
+beskytter ikke automatisk hele Cloudflare-kontoen mod betaling.
+Lager og antal operationer skal derfor overvåges.
+
+Supabase kan senere sættes tilbage på Free. Først skal flere
+almindelige driftsdøgn vise, at både cachet og øvrig Supabase-trafik
+holder sig tydeligt under de gratis grænser. At Pro-tælleren lige
+er nulstillet er ikke et sådant bevis.
 
 ## 89.86 4.0.490 – Bevar vejr, når gemt hente-arbejde fortsættes
 

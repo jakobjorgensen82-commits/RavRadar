@@ -1,0 +1,56 @@
+name: Copy protected production runtime to private R2
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type COPY-PRIVATE-RUNTIME-TO-R2 after the scoped EU R2 bucket and secrets exist'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# A pointer can change during a weather build or code-only deployment. Copy
+# under the same production lock and fail if it changed despite the lock.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  copy-private-runtime:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Require exact current main and deliberate migration
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+          MIGRATION_CONFIRMATION: ${{ inputs.confirmation }}
+          STORAGE_BACKEND: ${{ vars.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND || 'supabase' }}
+        run: |
+          set -euo pipefail
+          test "$MIGRATION_CONFIRMATION" = 'COPY-PRIVATE-RUNTIME-TO-R2'
+          test "$STORAGE_BACKEND" = 'supabase'
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_HEAD_SHA"
+
+      - name: Copy and verify both private generations without changing the pointer
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/protected-private-production-runtime.mjs --migrate-r2

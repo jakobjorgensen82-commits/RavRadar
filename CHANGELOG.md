@@ -1,3 +1,20 @@
+## 4.0.491 – privat cachelager i R2, stadig fail-closed (lokal, 2026-09-26)
+
+Den store private produktionsruntime kan flyttes fra Supabase Storage
+til en privat EU/Standard-bucket i Cloudflare R2. Supabase er fortsat
+standard, indtil begge aktive cachegenerationer er kopieret og
+verificeret; migrationen ændrer hverken pointer eller originaler.
+R2 har snævert bucket-/objektloft, begrænset credential-scope,
+anonym-læsebevis og genoptagelig byte-/SHA-læsning. Vejr- og
+code-only-workflows samt den historiske restore-lukning følger
+samme backend. En fejlet R2-gendannelse stopper før enhver ældre
+"fortsæt uden cache"-gren. Score, leverandørprioritet, geometri og offentlige
+prognosedata er ikke ændret. Supabase Pro er midlertidigt aktiv;
+Free-retur kræver faktisk måling efter R2-skiftet. Local tests er
+ikke bevis for live migration, GitHub-gate eller offentlig deploy.
+4.0.490's separate komponentbevarende vejrrettelse er merged på
+`main` som `66e0f1b5`, men mangler stadig bevis fra et normalt run.
+
 ## 4.0.489 – kort bekræftelse af gemt vejr-fremdrift (lokal, 2026-09-25)
 
 Run `36153463393` gemte krypteret leverandørfremdrift, men den
