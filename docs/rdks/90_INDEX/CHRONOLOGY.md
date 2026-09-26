@@ -1,3 +1,15 @@
+## 2026-09-26 – 4.0.495: faktisk byggetid er ikke prognosetime
+
+4.0.494/PR #457 blev merged som `b3881c54`. Kort run
+`36242754220` læste R2 og seneste præcise krypterede fremdrift,
+men 11Z/15Z-kildesamleren stoppede før ny hentning, R2-publish
+eller Pages. Den sammenlignede `generatedAt` som heltime i stedet
+for den låste `productionReferenceAt`. 4.0.495 retter og tester
+denne kontrakt, og rapporterer faste fejlfaser. R2-bucketen havde
+stadig fem objekter/199,96 MB/$0; Supabase-perioden viste 0,20 GB
+cachet og 0,003 GB anden udgående trafik. Fuld data-/deploykontrol
+afventer.
+
 ## 2026-09-26 – 4.0.494 kildebevarelse under lokal kontrol
 
 Run `36232521656` gendannede krypteret fremdrift fra `36228162505-1`

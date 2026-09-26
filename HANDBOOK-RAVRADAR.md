@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.494
+**Håndbogsversion:** 4.0.495
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.494 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.495 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.91 4.0.495 – Skeln mellem prognosetime og byggetid
+
+Den korte prøve kunne åbne den store vejrpakke i R2 og det
+gemte hente-arbejde. Den stoppede alligevel, før den hentede nyt
+vejr, fordi sammenlægningen krævede, at filen var bygget præcis
+klokken hel. Det er normalt ikke sådan en computer gemmer tidspunktet:
+den bygger for eksempel klokken 14.37. Prognosen gælder derimod en
+fast time, for eksempel klokken 14.00.
+
+Rettelsen sammenligner nu prognosetimerne og lader byggetiderne
+være almindelige klokkeslæt. Testen bruger også tider med minutter.
+Skulle et andet led afvise sammenlægningen, får vi fremover at vide
+hvilket led, uden at private vejrdata vises i loggen. Den gamle
+prognose beholdes, indtil en ny virkelig kørsel både er gemt i R2
+og vises på siden. De tidligere 34 historiske temperaturfelter
+og fuld dækning er fortsat åbne.
+
+R2 viste fem private filer på 199,96 MB og ingen faktureret udgift.
+Supabase viste 0,20 GB cachet og 0,003 GB øvrig udgående trafik i
+den nye periode; små centrale oplysninger bruger stadig Supabase.
+Vi kan derfor ikke love, at Free er sikkert efter kun få timer.
 
 ## 89.90 4.0.494 – Bevar alle gyldige vejrdata, når vi fortsætter
 

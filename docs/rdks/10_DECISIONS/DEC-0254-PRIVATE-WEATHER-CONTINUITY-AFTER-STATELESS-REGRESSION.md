@@ -1,5 +1,19 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-26 – 4.0.495: sammenlign prognosetimer, ikke byggetider
+
+4.0.494's første korte prøve `36242754220` genbrugte R2-parret og
+den eksakte krypterede fremdrift, men 11Z/15Z-samleren afviste den,
+før ny vejrhentning begyndte. `conditions.generatedAt` er den faktiske
+byggetid med minutter og sekunder; `productionReferenceAt` er den
+låste prognosetime. Kravet om hele timer på `generatedAt` var derfor
+forkert, og de lokale fixtures skjulte det ved at bruge hele timer.
+4.0.495 sammenligner kun de faste prognosetimer, tester almindelige
+byggetider og giver payloadfri fasekode ved senere afvisninger.
+Alle oprindelige kilde-, no-loss- og gyldighedskrav består. En lokal
+test er stadig ikke bevis for R2-ny skrivning, Pages, de 34 historiske
+temperaturfelter eller fuld cache.
+
 ## Tillæg 2026-09-26 – 4.0.494 originalbevist 15Z-donor, ikke fuld runtimefletning
 
 Run `36232521656` beviste, at genhentning alene ikke bevarede alle

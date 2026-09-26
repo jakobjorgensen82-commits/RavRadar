@@ -1,4 +1,21 @@
-# Aktuelle issues – 2026-09-26, 4.0.494 under lokal kontrol
+# Aktuelle issues – 2026-09-26, 4.0.495 under lokal kontrol
+
+- **11Z/15Z-SAMLING – RODÅRSAG FUNDET, LIVE ÅBEN P0:** Kort run
+  `36242754220` gendannede R2 og krypteret fremdrift, men stoppede
+  før leverandørkald. Samleren forvekslede faktisk byggetid med fast
+  prognosetime; 4.0.495 retter feltet og giver sikre fasekoder.
+  Ny ende-til-ende-kontrol mangler stadig.
+- **R2/SUPABASE FREE – ÅBEN:** R2 har fortsat fem objekter/199,96 MB,
+  $0 faktureret; Supabase har 0,20 GB Cached Egress og 0,003 GB
+  Egress i perioden 26/9–26/10. Ingen ny R2-skrivning endnu.
+  Flere vellykkede driftsdøgn kræves til Free-konklusion.
+- **VEJRDATA – ÅBEN P0:** Nul tab mod 11Z/15Z, de 34 historiske
+  temperaturfelter, fem vejrfamiliers dækning og leverandørprioritet
+  skal bevises i virkelig drift. Ingen påstand om komplet cache.
+
+Ældre aktuelle-overskrifter nedenfor er historiske.
+
+# HISTORISKE ISSUES – 2026-09-26, 4.0.494 under lokal kontrol
 
 - **PRODUKTIONSCACHE-KONTINUITET – LOKALT RETTET, LIVE ÅBEN P0:**
   15Z's verificerede originale vejrkilder forenes med 11Z og

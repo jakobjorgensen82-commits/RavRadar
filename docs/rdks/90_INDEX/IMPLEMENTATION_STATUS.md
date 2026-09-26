@@ -1,4 +1,24 @@
-# 2026-09-26 – 4.0.494 samlet kontinuitetskandidat
+# 2026-09-26 – 4.0.495 tidskontrakt i kildesamleren
+
+- [x] 4.0.494/PR #457 exact-head-grøn og merged som `b3881c54`.
+- [x] Kort run `36242754220` gendannede R2-par og præcis krypteret
+  fremdrift, men stoppede før vejrhentning, R2-skrivning og deploy.
+- [x] Forkert heltimekrav på faktisk byggetid fundet i 11Z/15Z-
+  samleren. Nu sammenlignes faste `productionReferenceAt`-timer;
+  lokale måltests bruger realistiske byggetider med minutter.
+- [x] Fast fasekode til fremtidige sammenlægningsfejl uden private
+  filnavne, leverandørsvar eller værdier i loggen.
+- [ ] Exact-head kilde-CI, merge og højst én kort normal bekræftelse
+  fra nyeste autentificerede fremdrift; ingen lang oneoff eller cron.
+- [ ] Nul tab mod begge tidligere grundlag, de særskilte historiske
+  34 temperaturfelter, ny R2-publish, Pages og fremgang for alle fem
+  vejrfamilier skal stadig måles i produktion.
+- [ ] Supabase Free kræver flere normale driftsdøgn: aktuelt
+  Cached Egress 0,20 GB og Egress 0,003 GB 26/9–26/10, ikke nul.
+
+Ældre afkrydsninger nedenfor er historik, ikke nyt livebevis.
+
+# HISTORISK STATUS – 2026-09-26 – 4.0.494 samlet kontinuitetskandidat
 
 - [x] 15Z's privat forseglede originaler kobles som nyere kildebevis
   til 11Z og krypteret fremdrift; ingen offentlig JSON kopieres.

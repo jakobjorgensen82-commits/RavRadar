@@ -1,4 +1,34 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – samlet 4.0.494-kandidat, ikke produktionsbevist
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.495 retter forkert tidsfelt før kildefletning
+
+4.0.494/PR #457 blev merged til `b3881c54` efter grøn exact-head-CI.
+Den ene korte normale bekræftelse `36242754220` gendannede det
+autentificerede R2-cachepar og den præcise krypterede fremdrift
+`36232521656-1` (15 filer; DMI-prognose +27.726 komponenter og
+stationer +125 i restore-rapporten). Den stoppede før leverandørkald,
+ny R2-gemning og Pages i 11Z/15Z-kildesamleren.
+
+Rodårsagen i den nye samler er verificeret mod producentkoden:
+`conditions.generatedAt` er vægurtiden, hvor filen faktisk bygges,
+normalt med minutter/sekunder. Samleren krævede fejlagtigt en hel
+UTC-time dér; den korrekte faste prognosetime ligger i
+`conditions.productionReferenceAt`. De lokale fixtures havde
+kunstigt lagt `generatedAt` på hele timer og skjulte fejlen.
+4.0.495 bruger nu prognosetimen til rækkefølge/tidsvindue og tester
+normale byggetider med minutter. Fremtidige stop får en fast,
+payloadfri fasekode i stedet for én uoplysende samlefejl.
+Det er en målrettet korrigering, ikke endnu et bevis for succesfuld
+samling, kildefordeling, fuld dækning eller offentlig deploy.
+
+Cloudflare viste 26/9 fortsat R2 5 objekter/199,96 MB, 38 Class A,
+33 Class B og $0,00. Supabase Pro viste i perioden 26/9–26/10
+0,20 GB Cached Egress og 0,003 GB Egress; målinger kan halte op til
+en time. Stor privat cache læses fra R2; små admin-/pointer- og
+driftsbeviser bruger stadig Supabase. Flere almindelige, vellykkede
+driftsdøgn kræves før en Free-vurdering. Ingen ny vejrkørsel eller
+cron før 4.0.495's exact-head-CI og sikker levering; derefter højst
+én kort bekræftelse fra seneste autentificerede fremdrift.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – samlet 4.0.494-kandidat, ikke produktionsbevist
 
 4.0.493 er merged, men run `36232521656` gendannede kun krypteret
 fremdrift og stoppede i offentlig tabsbeskyttelse: 1.380 vind- og

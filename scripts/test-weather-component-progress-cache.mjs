@@ -11,7 +11,8 @@ import { buildPrivateWeatherComponentPack } from './lib/private-weather-componen
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
 import { mergeVerifiedProtectedProgressComponents,
   protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
-import { reconcileProtectedWeatherSources } from './reconcile-protected-weather-sources.mjs';
+import { pairedSourceDiagnostic,
+  reconcileProtectedWeatherSources } from './reconcile-protected-weather-sources.mjs';
 import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
   openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 
@@ -20,6 +21,18 @@ const repository = 'owner/fixture';
 const encryptionKey = Buffer.alloc(32, 73).toString('base64');
 const protectedBundleSha256 = 'a'.repeat(64);
 const reference = '2026-09-19T00:00:00.000Z';
+test('paired source diagnostics expose only fixed phases and classified codes', () => {
+  assert.equal(pairedSourceDiagnostic(new Error('private response at C:\\secret')),
+    'PAIRED_SOURCE_UNCLASSIFIED');
+  assert.equal(pairedSourceDiagnostic(Object.assign(
+    new Error('PAIRED_SOURCE_MERGE_WEATHER_BANKS_REJECTED'),
+    { safeDetail: 'PROTECTED_PROGRESS_CP_MERGE_REJECTED' })),
+  'PAIRED_SOURCE_MERGE_WEATHER_BANKS_REJECTED PROTECTED_PROGRESS_CP_MERGE_REJECTED');
+  assert.equal(pairedSourceDiagnostic(Object.assign(
+    new Error('PAIRED_SOURCE_MERGE_WEATHER_BANKS_REJECTED'),
+    { safeDetail: 'private response at C:\\secret' })),
+  'PAIRED_SOURCE_MERGE_WEATHER_BANKS_REJECTED');
+});
 const part = { partId: 'TEST', zoneId: 'ZONE', waterPoint: [10, 56] };
 const spatialPolicies = Object.fromEntries(['wind', 'wave', 'waterLevel', 'waterTemperature']
   .map(component => [component, { policyId: 'synthetic-exact-cell-only', maximumDistanceKm: 0 }]));
@@ -254,13 +267,17 @@ test('the paired 11Z/15Z source restore admits the newer original without copyin
   const newer = nativeTemperatureBank(reference, 17,
     new Date(Date.parse(reference) + 300000).toISOString());
   const selection = '{"synthetic":"selected"}\n';
-  const donorConditions = { generatedAt: reference, weatherComponentInputs: {
-    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
-    openMeteoBankSha256: newer.bankSha256, copernicusBankSha256: null,
-    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
-  } };
+  const donorConditions = {
+    productionReferenceAt: reference,
+    generatedAt: new Date(Date.parse(reference) + 17 * 60000).toISOString(),
+    weatherComponentInputs: {
+      schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+      openMeteoBankSha256: newer.bankSha256, copernicusBankSha256: null,
+      selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+    } };
   await write(working, 'data/live/conditions.json', {
-    generatedAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+    productionReferenceAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+    generatedAt: new Date(Date.parse(reference) - 43 * 60000).toISOString(),
   });
   await write(working, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
   await write(working, files.openMeteoBank, nativeTemperatureBank(reference, 14));
@@ -274,6 +291,14 @@ test('the paired 11Z/15Z source restore admits the newer original without copyin
   assert.equal(report.runtimeCursorCopied, false);
   assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
     .records[0].values.waterTemperatureC, 17);
+  const workingConditions = JSON.parse(await fs.readFile(path.join(working, 'data/live/conditions.json'), 'utf8'));
+  await write(working, 'data/live/conditions.json', { ...workingConditions,
+    productionReferenceAt: new Date(Date.parse(reference) + 2 * 3600000).toISOString(),
+  });
+  await assert.rejects(reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3 * 3600000).toISOString() }),
+  /PAIRED_SOURCE_GENERATION_ORDER_INVALID/);
+  await write(working, 'data/live/conditions.json', workingConditions);
   await assert.rejects(reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
     productionReferenceAt: new Date(Date.parse(reference) - 3600000).toISOString() }));
   assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
@@ -540,13 +565,16 @@ test('a sole newer protected Copernicus bank is re-admitted against current targ
     } });
   }
   await write(working, 'data/live/conditions.json', {
-    generatedAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+    productionReferenceAt: new Date(Date.parse(reference) - 3600000).toISOString(),
+    generatedAt: new Date(Date.parse(reference) - 43 * 60000).toISOString(),
   });
-  const donorConditions = { generatedAt: reference, weatherComponentInputs: {
-    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
-    openMeteoBankSha256: null, copernicusBankSha256: cpBank.bankSha256,
-    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
-  } };
+  const donorConditions = { productionReferenceAt: reference,
+    generatedAt: new Date(Date.parse(reference) + 17 * 60000).toISOString(),
+    weatherComponentInputs: {
+      schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+      openMeteoBankSha256: null, copernicusBankSha256: cpBank.bankSha256,
+      selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+    } };
   await write(donor, 'data/live/conditions.json', donorConditions);
   await write(donor, files.selectedComponents, selection);
   await fs.copyFile(path.join(prepared, 'bank.json'), path.join(donor, files.copernicusBank));
