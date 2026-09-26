@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop efter gemt fremdrift
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.497 cache-sikker backendlevering
+
+4.0.496/PR #459 bestod exact-head CI og blev merged som `ca5dbfb7`.
+Providerfri code-only-run `36250874394` stoppede før nogen ekstern
+ændring: dens bevidste 11Z/15Z-værn afviser et nyt privat runtime-
+artifact, mens det beskyttede cachepar stadig skal bruges af næste
+normale vejrkørsel. Den tidligere plan om code-only her er dermed
+forkastet; værnet må ikke fjernes for at tvinge deploy igennem.
+
+4.0.497 udvider den eksisterende, vejrfri bindingskørsel, der allerede
+har eksakt main/source-bevis og kontrolleret migrationsplan. Efter
+database-readback sikrer den igen main, deployer kun den eksakte
+assistant Edge-funktion og verificerer dens model-/knowledge-headere
+og samlet backend-readiness. Den læser eller skriver ikke privat
+vejr-cache, krypteret fremdrift, offentlig prognose eller Pages.
+Dette er lokalt testet, ikke endnu liveleveret. Efter exact-head CI og
+merge skal denne vejrfri binding bestå, før højst én kort normalrun
+fortsætter fra `36244956035-1`. R2-ny skrivning, Pages, de historiske
+34 vandtemperaturfelter, fuld dækning og Free-budget er fortsat åbne.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop efter gemt fremdrift
 
 4.0.495/PR #458 er merged som `a7f6ca8b`. Den korte normale kørsel
 `36244956035` genbrugte de beskyttede vejrgrundlag og præcis
@@ -14,8 +34,8 @@ prognose er bevaret; ingen overlappende vejrkørsel er aktiv.
 
 4.0.496 medtager fixturefilen og kører begge berørte vandstandstests
 allerede i kildekontrollen; de består lokalt. Den eksisterende
-providerfri code-only-levering skal på aktuel main opdatere den
-eksakte Edge-funktion før næste korte normalrun. Ingen scoreformel
+providerfri code-only-levering var den daværende plan, men blev siden
+afvist af 11Z/15Z-værnet; se aktuelt checkpoint. Ingen scoreformel
 eller kildeprioritet ændres. Exact-head CI, merge, code-only-deploy,
 ny R2-skrivning, Pages og offentlig prognose mangler livebevis.
 

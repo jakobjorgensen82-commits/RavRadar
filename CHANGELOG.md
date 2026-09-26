@@ -1,4 +1,16 @@
-## 4.0.496 – luk testmangel og lever aktuel Edge-binding (lokal, 2026-09-26)
+## 4.0.497 – opdater backend uden at røre det beskyttede vejrpar (lokal, 2026-09-26)
+
+- 4.0.496/PR #459 blev merged efter grøn kildekontrol. Code-only-run
+  `36250874394` stoppede med vilje før eksterne ændringer, fordi et
+  privat genbyg ville forstyrre det bevarede 11Z/15Z-cachepar.
+- Den eksisterende vejrfri bindingskørsel leverer nu også den præcise
+  assistant Edge-funktion efter database-readback og en ny main-kontrol.
+  Den afslutter med live kontrol af modelbinding og backend-readiness.
+- Ingen vejrdata, scoreformel, offentlig prognose eller Pages ændres af
+  denne vej. Kilde-CI, live backendlevering og kort normalrun mangler
+  endnu; R2-ny skrivning og komplet cache er ikke bevist.
+
+## 4.0.496 – luk testmangel og lever aktuel Edge-binding (historisk, 2026-09-26)
 
 - Kort normalrun `36244956035` nåede vejrleverandører og cache,
   gemte krypteret fremdrift, men stoppede før R2-produktionspakke
@@ -7,7 +19,8 @@
 - Den manglende fixture er tilføjet; begge berørte vandstandstests
   kører nu i kildekontrollen, så samme testfejl ikke først opdages
   efter lang vejrhentning. Den eksisterende providerfri code-only-
-  levering skal opdatere Edge på aktuel main før næste korte run.
+  levering var den daværende plan, men cacheparrets værn afviste den.
+  4.0.497 bruger i stedet den vejrfri backendlevering.
 - Vejr-, score- og prioriteringsregler er uændrede. R2-læsning og
   gemt fremskridt er bevist; ny R2-produktionsskrivning, Pages,
   fuld dækning og Supabase/R2 Free er ikke bevist endnu.

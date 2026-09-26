@@ -1,14 +1,17 @@
-# Aktuelle issues – 2026-09-26, 4.0.496 leveringsstop og ufuldstændige data
+# Aktuelle issues – 2026-09-26, 4.0.497 backendlevering og ufuldstændige data
 
 - **ASSISTANT EDGE-BINDING – ÅBEN P0:** `36244956035` fandt
   deployet `61ec5474…` mod kilde `c557f91a…`. Den eksisterende
-  providerfri code-only-vej skal deploye og læse den eksakte funktion
-  tilbage før næste almindelige vejrhentning. Koden er ikke en ny
+  providerfri code-only-vej `36250874394` blev korrekt afvist af
+  11Z/15Z-værnet før nogen ændring. 4.0.497's vejrfri binding skal
+  deploye og læse den eksakte funktion tilbage før næste korte run.
+  Koden er ikke en ny
   scoreformel; live-Edge er blot ikke fulgt med tidligere bundelskift.
 - **VANDSTANDSTEST – LOKALT RETTET, LIVE ÅBEN:** Den fulde
   artifactkontrol manglede en importeret fixturefil. 4.0.496
   medtager den og kører to vandstandstests tidligt. Ikke bevis for
-  vandstandsdatatab; exact-head CI og live-gate mangler.
+  vandstandsdatatab; exact-head CI bestod for PR #459, men den nye
+  produktion har endnu ikke gennemført den samme kontrol.
 - **VEJRDÆKNING – ÅBEN P0:** Krypteret fremskridt `36244956035-1`
   er gemt, men ny R2-produktion og Pages mangler. Fem vejrfamiliers
   resthuller, DMI-andel, Copernicus nul accepterede nye komponenter

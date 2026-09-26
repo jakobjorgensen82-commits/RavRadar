@@ -1,5 +1,18 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-26 – 4.0.497 backendbinding uden cachegenbyg
+
+4.0.496's providerfri code-only-forsøg `36250874394` blev afvist
+før eksterne ændringer af det tilsigtede 11Z/15Z-værn. Værnet
+bevares. Den eksisterende vejrfri bindingskørsel får derfor kun
+den manglende assistant Edge-levering efter database-readback,
+ny eksakt main-kontrol og efterfølgende live model-/knowledge-
+readback og readiness. Ingen vejrpakke, krypteret fremdrift,
+offentlig prognose eller Pages læses, ændres eller publiceres.
+Den gamle 4.0.496-plan om code-only er supersederet. En grøn lokal
+workflowtest er ikke livebevis; den beskyttede cache må først
+bruges til en kort normal kørsel efter sikker backend-readback.
+
 ## Tillæg 2026-09-26 – 4.0.495: sammenlign prognosetimer, ikke byggetider
 
 4.0.494's første korte prøve `36242754220` genbrugte R2-parret og
