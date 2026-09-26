@@ -1,4 +1,16 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.497 vejrfri backendlevering
+# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.498 checkpointbro
+
+4.0.497 er merged; vejrfri backendlevering er livegrøn. Kort
+normalrun `36252591071` bestod vejr, cache og artifact, gemte
+krypteret fremdrift `36252591071-1`, men stoppede før R2/Pages på
+central CAS: `HTTP_400_22023_CENTRAL_INVALID`. Den eksisterende
+schema-5-række har en gammel modelkontrakt, mens den installerede
+overgang kun kender schema 4. Lokal 4.0.498 giver kun den eksakte,
+SHA-256-bundne række adgang som forgænger. Koden er endnu ikke
+merget eller livebevist. Ingen ny vejrkørsel før migration/readback;
+derefter højst én kort fortsættelse fra eksakt gemt fremskridt.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.497 vejrfri backendlevering
 
 Arbejd i `r2-private-runtime`, ikke cb79. 4.0.496/PR #459 er
 exact-head-grøn og merged som `ca5dbfb7`. Providerfri code-only

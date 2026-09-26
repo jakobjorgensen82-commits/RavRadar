@@ -1,4 +1,20 @@
-# Aktuelle issues – 2026-09-26, 4.0.497 backendlevering og ufuldstændige data
+# Aktuelle issues – 2026-09-26, lokal 4.0.498 checkpointstop
+
+- **CENTRAL CAS – P0:** `36252591071` stoppede før R2/Pages,
+  fordi installeret forgængerbro kun accepterer schema 4, mens
+  central række er eksakt verificeret schema 5 med gammel kontrakt.
+  Lokal SHA-bundet overgang mangler exact-head og live migration.
+- **VEJR/R2/FREE – ÅBEN:** Krypteret fremdrift er gemt, men ingen
+  ny R2-produktion eller offentlig femfeltsprognose. Resthuller,
+  Copernicus/DMI-andel, historiske 34 felter og Free-budget er åbne.
+- **SENT STOP KOSTER BYGGETID – ÅBEN:** GitHub gemte for run
+  `36252591071` krypterede vejrkomponenter, DMI-råcache og score-
+  checkpoint, men ikke den færdige produktionspakke. Den private
+  bundling og R2-skrivning lå efter den fejlede centrale CAS. En
+  tidsbegrænset, krypteret stagingpakke med eksakt genoptagelse
+  mangler; indtil da må slutpakken bygges på ny efter et sent stop.
+
+# Historiske issues – 2026-09-26, 4.0.497 backendlevering og ufuldstændige data
 
 - **ASSISTANT EDGE-BINDING – ÅBEN P0:** `36244956035` fandt
   deployet `61ec5474…` mod kilde `c557f91a…`. Den eksisterende

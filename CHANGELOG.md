@@ -1,4 +1,14 @@
-## 4.0.497 – opdater backend uden at røre det beskyttede vejrpar (lokal, 2026-09-26)
+## 4.0.498 – eksakt central checkpointovergang (lokal, 2026-09-26)
+
+- Backendbindingen er livegrøn; kort normalrun `36252591071` gemte
+  hente-fremdrift, men stoppede ved central CAS før R2/Pages.
+- Den gamle schema-5-række kan nu kun være forgænger, hvis dens
+  fulde SHA-256 matcher det skrivefrit verificerede fingeraftryk.
+  Ny payloadvalidator, CAS og den tidligere schema-4-bro bevares.
+- Exact-head CI, merge, live migration og næste korte levering
+  mangler; scoreformel og vejrprioritet er uændrede.
+
+## 4.0.497 – opdater backend uden at røre det beskyttede vejrpar (historisk, 2026-09-26)
 
 - 4.0.496/PR #459 blev merged efter grøn kildekontrol. Code-only-run
   `36250874394` stoppede med vilje før eksterne ændringer, fordi et

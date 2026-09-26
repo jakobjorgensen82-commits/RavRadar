@@ -1,4 +1,14 @@
-# 2026-09-26 – 4.0.497: cache-sikker levering af backendbinding
+# 2026-09-26 – lokal 4.0.498: eksakt central checkpointforgænger
+
+Backendrun for 4.0.497 er grønt. Kort normalrun `36252591071`
+bestod vejr/cache/artifact og gemte krypteret fremdrift, men
+stoppede på `CENTRAL_INVALID` før privat R2/Pages. Skrivefri
+databasekontrol viste den gamle gyldige schema-5-række, som den
+nuværende schema-4-overgang overså. Lokal 4.0.498 binder netop den
+rækkes fulde SHA-256 som forgænger uden at svække ny payload/CAS.
+Exact-head, migration og ny offentlig produktion mangler endnu.
+
+# HISTORISK – 2026-09-26 – 4.0.497: cache-sikker levering af backendbinding
 
 4.0.496/PR #459 bestod exact-head-kontrol og blev merged som
 `ca5dbfb7`. Providerfri code-only `36250874394` stoppede uden

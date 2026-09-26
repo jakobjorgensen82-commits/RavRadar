@@ -223,6 +223,7 @@ const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const publicRuntimeContractSource=await read('js/core/ravscore-public-runtime-contract.js');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const checkpointMetadataCasMigration=await read('supabase/migrations/20260925150000_weather_selection_model_binding.sql');
+const exactCheckpointPredecessorMigration=await read('supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql');
 const privateRuntimeStorageMigration=await read('supabase/migrations/20260915020000_private_runtime_storage_deny.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -1033,6 +1034,13 @@ for(const marker of [
 ok(/\bbegin;\s*set local lock_timeout = '5s';/i.test(checkpointMetadataCasMigration)
   && /notify pgrst, 'reload schema';\s*commit;\s*$/i.test(checkpointMetadataCasMigration),
 'Checkpoint metadata-CAS-migrationen skal være transaktionel med bounded lock og afsluttende PostgREST-reload');
+ok(exactCheckpointPredecessorMigration.includes('5ba4d8944a3e791a7fc918fe5027c5b3157b3cc74e6cd5f99c0fb54dca5208c9')
+  && exactCheckpointPredecessorMigration.includes('extensions.digest(p_payload::text::bytea')
+  && exactCheckpointPredecessorMigration.includes('rr-20260924163002-210')
+  && exactCheckpointPredecessorMigration.includes('Preserve the existing exact schema-4 migration bridge unchanged.')
+  && /\bbegin;\s*set local lock_timeout = '5s';/i.test(exactCheckpointPredecessorMigration)
+  && /notify pgrst, 'reload schema';\s*commit;\s*$/i.test(exactCheckpointPredecessorMigration),
+'Den eksakte checkpoint-forgængerbro skal være SHA-bundet og transaktionel');
 const checkpointCasStart=checkpointMetadataCasMigration.indexOf(
   'create or replace function public.ravradar_ravscore_checkpoint_cas(',
 );
@@ -1228,6 +1236,7 @@ for(const marker of [
   '20260923150000_checkpoint_candidate_diagnostic_correction.sql',
   '20260923160000_checkpoint_candidate_companion_id.sql',
   '20260925150000_weather_selection_model_binding.sql',
+  '20260926170000_exact_checkpoint_predecessor.sql',
   'Prepare ten EU-restricted D1 shards, schema and durable phase',
   'Require safe D1 storage headroom',
   'Record fail-closed intent for the already-live legacy D1 installation',
