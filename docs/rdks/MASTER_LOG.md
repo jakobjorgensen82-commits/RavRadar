@@ -1,4 +1,22 @@
-# 2026-09-26 – 4.0.496: gemt vejr, men to leveringsstop
+# 2026-09-26 – 4.0.497: cache-sikker levering af backendbinding
+
+4.0.496/PR #459 bestod exact-head-kontrol og blev merged som
+`ca5dbfb7`. Providerfri code-only `36250874394` stoppede uden
+eksterne ændringer, fordi den beskyttede 11Z/15Z-kilde ikke må
+erstattes af en ny privat runtime før næste normale vejrfortsættelse.
+Den gamle plan om code-only er dermed forkastet; dataværnet består.
+
+Den eksisterende vejrfri bindingskørsel får i 4.0.497 en afsluttende
+assistent-Edge-levering: database-readback, ny eksakt main-kontrol,
+deploy af kun den versionsbundne funktion og live kontrol af
+model-/knowledge-headere og readiness. Den rører ikke R2-cachen,
+krypteret fremdrift, offentlig prognose eller Pages. Målrettet lokal
+workflowkontrol består; exact-head CI, merge, live backendbevis og
+én kort normalrun fra `36244956035-1` er de næste trin. Fem
+vejrfamiliers dækning, 34 historiske temperaturfelter og Free-budget
+forbliver åbne. Dette er samtaledeltaet siden seneste release.
+
+# HISTORISK – 2026-09-26 – 4.0.496: gemt vejr, men to leveringsstop
 
 Ejeren bad om at fortsætte selvstændigt og se hele kæden ved fejl,
 inklusive reel R2-flytning og Supabase-trafik. Den korte normale
@@ -10,8 +28,8 @@ et uafhængigt Edge-readback fandt ældre assistant-modelbundle end
 den aktuelle kilde. Derfor ingen ny R2-produktionspakke eller Pages.
 
 4.0.496 leverer fixturen og flytter de to relevante vandstandstests
-til kildekontrollen. Den eksisterende providerfri code-only-vej skal
-deploye eksakt assistant Edge før næste korte vejrfortsættelse;
+til kildekontrollen. Den daværende plan om providerfri code-only-
+levering af assistant Edge blev senere afvist af cacheparrets værn;
 ingen providerarbejde gentages blot for at opdatere kode. En ny
 release kræver exact-head CI, merge, code-only-bevis, derefter én
 kort normalrun fra eksakt gemt fremskridt. Nul tab, 34 historiske

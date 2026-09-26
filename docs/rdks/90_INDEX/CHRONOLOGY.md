@@ -1,4 +1,15 @@
-## 2026-09-26 – 4.0.496: gemt fremskridt, men to slutstop
+## 2026-09-26 – 4.0.497: vejrfri backendbinding bevarer cachepar
+
+PR #459/4.0.496 blev merged efter grøn exact-head. Code-only
+`36250874394` stoppede før eksterne ændringer på det bevidste
+11Z/15Z-værn. I stedet får den eksisterende vejrfri
+bindingskørsel eksakt assistant Edge-deploy efter DB-readback og
+ny main-kontrol, med live model-/knowledge-readback til sidst.
+Ingen R2-/cache-/Pages-ændring her. Livebevis og kort normalrun
+fra `36244956035-1` afventer. Den tidligere code-only-plan er
+erstattet; fulde vejrdata og Free er fortsat åbne.
+
+## HISTORISK 2026-09-26 – 4.0.496: gemt fremskridt, men to slutstop
 
 Run `36244956035` nåede leverandører, vejrbygning og krypteret
 progress-save `36244956035-1`, men ikke ny R2-produktion eller

@@ -1,4 +1,16 @@
-# Aktuelt fokus – 2026-09-26, lokal 4.0.496
+# Aktuelt fokus – 2026-09-26, lokal 4.0.497
+
+4.0.496 er merged. Code-only `36250874394` stoppede korrekt før
+eksterne ændringer på 11Z/15Z-cacheværnet; den tidligere plan
+om code-only er erstattet. 4.0.497 skal bestå exact-head CI og
+merges, hvorefter den vejrfri bindingskørsel opdaterer database og
+assistant Edge med live readback uden vejr-/Pages-mutation.
+Først derefter én kort normalrun fra `36244956035-1` med bevis
+for ny R2-pakke, Pages, alle fem vejrtyper og nul tab på fælles
+sted/tid. Leverandørrester, historiske 34 temperaturfelter og
+Free-budget er åbne. Ingen lang hentning eller cron endnu.
+
+# Historisk fokus – 2026-09-26, lokal 4.0.496
 
 4.0.495-run `36244956035` gemte krypteret vejrfremskridt efter
 alle leverandører, men blev ikke publiceret: én vandstandstest

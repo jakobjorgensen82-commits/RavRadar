@@ -1,4 +1,23 @@
-# 2026-09-26 – 4.0.496 luk to uafhængige leveringsstop
+# 2026-09-26 – 4.0.497 lever backend uden at overskrive vejrparret
+
+- [x] 4.0.496/PR #459 exact-head-grøn og merged som `ca5dbfb7`.
+- [x] Klassificér code-only `36250874394`: 11Z/15Z-værnet stoppede
+  korrekt før R2, Edge, Pages og anden ekstern ændring.
+- [x] Udvid kun vejrfri bindingsworkflow: eksakt source/main, begrænset
+  migrationsplan og DB-readback før ny main-kontrol, assistent-Edge
+  og live readback/readiness. Vejr-cache og Pages forbliver urørte.
+- [ ] Bestå målrettede kontroller og én exact-head kildegate, merge
+  samme head og gennemfør den vejrfri backendlevering på main.
+- [ ] Kør højst én kort normalrun fra `36244956035-1`; bevis R2-ny
+  skrivning, Pages, fem feltvise overlap og offentlig prognose.
+- [ ] Afklar Copernicus' nul nytilvækst, DMI-andel, resthuller og de
+  historiske 34 temperaturfelter før lang opfyldning/cron.
+- [ ] Mål R2 og begge Supabase-egresskategorier over flere driftsdøgn;
+  Free er ikke bevist.
+
+Ældre statusafsnit nedenfor er historiske.
+
+# HISTORISK STATUS – 2026-09-26 – 4.0.496 luk to uafhængige leveringsstop
 
 - [x] 4.0.495/PR #458 merged; normalrun `36244956035` genbrugte
   beskyttet cache, nåede alle leverandører og gemte krypteret
@@ -7,8 +26,9 @@
   produktionsvalideringen og gammel assistant Edge-modelbinding.
 - [x] Tilføj fixture og begge berørte tests til den tidlige kildegate;
   måltest begge lokalt. Bevar fuld artifact- og releasekontrol.
-- [ ] Én exact-head CI, merge samme head og providerfri code-only-run,
-  som opdaterer og læser Edge-bindingen tilbage uden ny vejrhentning.
+- [x] Én exact-head CI og merge samme head. Den planlagte providerfri
+  code-only-run stoppede korrekt på cacheparrets værn; 4.0.497 bruger
+  i stedet vejrfri backendbinding.
 - [ ] Én kort normalrun fra eksakt `36244956035-1`; bevis ny R2-pakke,
   Pages, nul tab på fælles timer og offentlig prognose.
 - [ ] Mål vind, bølger, havstrøm, vandstand og vandtemperatur hver for

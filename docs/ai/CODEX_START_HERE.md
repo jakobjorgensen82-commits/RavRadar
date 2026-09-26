@@ -1,4 +1,19 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop før R2 og Pages
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.497 vejrfri backendlevering
+
+Arbejd i `r2-private-runtime`, ikke cb79. 4.0.496/PR #459 er
+exact-head-grøn og merged som `ca5dbfb7`. Providerfri code-only
+`36250874394` blev afvist før eksterne ændringer af det tilsigtede
+11Z/15Z-cacheværn. Fjern ikke dette værn. 4.0.497 udvider i stedet
+den eksisterende vejrfri bindingsworkflow med kontrolleret assistant
+Edge-deploy og live model-/knowledge-readback efter DB-kontrol og
+ny main-CAS. Lokal måltest er grøn; exact-head CI, merge og live
+backendlevering mangler. Derefter kun én kort normalrun fra eksakt
+gemt `36244956035-1`. Bevis R2-ny skrivning, Pages, offentlig
+prognose og alle fem vejrtyper. Historiske 34 temperaturfelter,
+Copernicus nul tilvækst, DMI-andel, resthuller og Free-budget er
+stadig åbne. Ingen overlap, lang kørsel, oneoff eller cron.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop før R2 og Pages
 
 Arbejd i managed worktree `r2-private-runtime`; cb79 er ikke
 arbejdsroden. 4.0.495/PR #458 er merged som `a7f6ca8b`. Kort

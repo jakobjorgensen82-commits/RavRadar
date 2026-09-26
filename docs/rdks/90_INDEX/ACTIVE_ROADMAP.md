@@ -1,14 +1,16 @@
-# Aktivt roadmap – 2026-09-26, 4.0.496 lever Edge før kort vejr
+# Aktivt roadmap – 2026-09-26, 4.0.497 backend før kort vejr
 
 1. [x] Afklar `36244956035`: krypteret fremskridt er gemt; R2-
    produktionspakke og Pages er ikke opdateret. Den fulde kontrol
    nåede alle trin og fandt manglende vandstandsfixture samt gammel
    assistant Edge-binding.
 2. [x] Ret fixturen og flyt begge berørte tests til kildekontrollen.
-3. [ ] Bestå målrettet version/RDKS og én exact-head CI; merge
-   samme head uden modstridende evidens.
-4. [ ] Kør eksisterende providerfri code-only-deploy på aktuel main
-   for at opdatere assistant Edge og publicere den bevarede prognose.
+3. [x] Bestå 4.0.496 exact-head CI og merge PR #459. Providerfri
+   code-only `36250874394` stoppede korrekt før ændringer på
+   11Z/15Z-cacheværnet; den vej er forkastet for denne overgang.
+4. [ ] Bestå 4.0.497 exact-head CI, merge og kør den vejrfri
+   bindingsworkflow til database- og assistant Edge-readback uden
+   cache- eller Pages-skrivning.
 5. [ ] Kør højst én kort normalrun fra eksakt krypteret fremskridt
    `36244956035-1`; kræv ny R2-skrivning, Pages og nul tab.
 6. [ ] Mål fem vejrtyper og leverandører. Undersøg Copernicus' nul

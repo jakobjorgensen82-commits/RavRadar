@@ -28,6 +28,8 @@ for (const marker of [
   'supabase db push --linked --dry-run --skip-vault',
   'supabase db push --linked --skip-vault',
   'node scripts/integrated-cutover-readiness.mjs verify-db',
+  'supabase functions deploy ravradar-assistant --project-ref "$SUPABASE_PROJECT_ID"',
+  'node scripts/integrated-cutover-readiness.mjs publish',
 ]) {
   assert.ok(bindingOnlyWorkflow.includes(marker),
     `Binding-only delivery is missing ${marker}`);
@@ -94,6 +96,16 @@ for (const privateName of expectedWorkflowFiles.filter(name => !productionWorkfl
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
+const bindingDbReadback = bindingOnlyWorkflow.indexOf('name: Read back applied migration and live database binding');
+const bindingEdgeCas = bindingOnlyWorkflow.indexOf('name: Reconfirm exact main before assistant Edge deployment');
+const bindingEdgeDeploy = bindingOnlyWorkflow.indexOf('name: Deploy only the exact RavRadar assistant Edge function');
+const bindingReadiness = bindingOnlyWorkflow.indexOf('name: Verify exact backend and assistant readback without weather or Pages');
+assert.ok(bindingDbReadback >= 0 && bindingDbReadback < bindingEdgeCas
+  && bindingEdgeCas < bindingEdgeDeploy && bindingEdgeDeploy < bindingReadiness,
+  'Protected weather pair requires database readback, fresh main CAS, exact Edge deployment and live readiness in order');
+assert.ok(bindingOnlyWorkflow.slice(bindingEdgeCas, bindingEdgeDeploy).includes(
+  'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"'),
+  'Assistant Edge deployment requires a fresh exact-main guard');
 const r2MigrationWorkflow = fs.readFileSync(
   `${workflowDirectory}/migrate-private-runtime-to-r2.yml`, 'utf8',
 ).replace(/\r\n/g, '\n');
