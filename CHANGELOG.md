@@ -2533,3 +2533,20 @@ gyldige komponenter fra den beskyttede DMI-pakke uden at overtage dens
 gamle fremdriftsmarkører. Ukendt eller ugyldig beskyttet pakke stopper
 sikkert. Målrettede tests består lokalt, men den præcise årsag til de
 34 er ikke bevist; en kort virkelig vejrkørsel skal afgøre det.
+## 4.0.499 – gem den færdige private bygning før sene fejl (2026-09-26)
+
+- 4.0.498/PR #461 er merged som `67379880`; den vejrfri backendkørsel
+  `36259580555` er grøn. Skrivefri livekontrol bekræftede, at den
+  eksisterende checkpoint-række nu kan være forgænger. En ny vejrkørsel
+  har endnu ikke bevist central skrivning, R2 eller Pages.
+- Når en normal vejrkørsel har bestået de fulde data- og releasekontroller,
+  bygger den nu den private slutpakke og gemmer den som et krypteret,
+  autentificeret GitHub Actions-artifact *før* central checkpointskrivning.
+  Kun `sealed.bin` forlader runneren; ingen privat råpakke uploades.
+  Pakken bindes til repository, eksakt run/attempt og source-head,
+  gemmes i ét døgn og kan kun åbnes med den beskyttede nøgle og den
+  samme model-/kontraktbinding. Gemningen er obligatorisk.
+- Dette er et sikret genoprettelsespunkt, ikke automatisk deploy eller
+  tilladelse til at springe friskhed, validering, centrale CAS-værn eller
+  privat R2/Pages-kontrol over. En fuld, sikker genoptagelsesvej for
+  sen fejl er fortsat åben; ingen ny tung vejrkørsel før den er afklaret.

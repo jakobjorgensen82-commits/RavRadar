@@ -3503,3 +3503,17 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **PRODUKTIONSGEMNING OG DEPLOY – AFVENTER:** `36183093672` gemte
   krypteret fremdrift, ikke en ny officiel produktionscache; Pages
   blev sprunget over. Cron forbliver pauset.
+# Aktuelle issues – 2026-09-26, lokal 4.0.499 slutpakke
+
+- **SENT STOP/SPILDT BYGGETID – DELVIST RETTET, LIVE ÅBEN:**
+  4.0.499 gemmer den færdige private pakke krypteret i ét døgn
+  før central CAS. Gendannelsens identitet, indhold og fejlafvisning
+  består lokalt. Exact-head upload og en fuld sikker vej fra gemt
+  pakke til R2/Pages uden nyt vejr-/scorebyg mangler stadig.
+- **CENTRAL CAS – KODE OG LIVE BRO BEVIST, ENDE-TIL-ENDE ÅBEN:**
+  4.0.498/PR #461 er merged; `36259580555` bestod backend, og
+  skrivefri databasefunktion accepterer eksakt forgænger. Næste
+  normalrun skal bevise selve nye CAS og efterfølgende levering.
+- **VEJR/FREE – ÅBEN:** Ny R2-pakke og Pages mangler fortsat;
+  alle fem vejrfamiliers huller, DMI/Copernicus/Open-Meteo-prioritet,
+  historiske 34 temperaturfelter og fler-døgns Free-forbrug er åbne.

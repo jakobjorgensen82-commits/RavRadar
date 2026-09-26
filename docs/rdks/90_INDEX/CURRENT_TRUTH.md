@@ -6037,3 +6037,23 @@ Ejerens beslutning er at sende rettelsen, merge efter nødvendig
 GitHub-kontrol og køre én kort normal vejrhentning, mens den konkrete
 årsag fortsat spores. Genåbn ikke cron eller lang hentning uden
 faktisk cachegemning, deploy og offentlig kontrol.
+# NYESTE SANDHED – 2026-09-26 – lokal 4.0.499 krypteret slutpakke
+
+4.0.498/PR #461 bestod exact-head CI og blev merged som `67379880`.
+Den vejrfri backendkørsel `36259580555` var grøn, og en skrivefri
+Supabase-kontrol bekræftede, at den eksisterende checkpoint-række nu
+accepteres som den eksakte forgænger. Ny central CAS, R2-skrivning og
+Pages-deploy er ikke bevist ved en vejrkørsel.
+
+4.0.499 flytter bygningen af den private slutpakke frem foran den
+centrale checkpointskrivning. Den gemmes autentificeret og krypteret
+som et kortlivet GitHub Actions-artifact med eksakt run/attempt/head-
+binding; råpakken uploades aldrig. Hvis en senere kontrol stopper,
+ligger det færdige resultat ikke kun på den forsvindende runner.
+Genåbning kræver nøgle, samme kilde og model-/datakontrakt, fuld
+pakkeverifikation og aktuel friskheds- og releasekontrol. Den nye
+mekanisme er lokalt testet; exact-head CI, merge, reel upload og en
+sikker genoptagelsesvej mangler. Der startes ingen ny tung kørsel,
+før dette er afklaret. Det gamle run `36252591071` har ingen slutpakke
+og kan ikke bagudrettet reddes. De fem vejrfamiliers dækning,
+historiske 34 temperaturfelter og Free-budget er stadig åbne.

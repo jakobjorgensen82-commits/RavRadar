@@ -5449,3 +5449,19 @@ beskyttet donor. Måltests viser mekanismen; de 34's konkrete
 årsag er fortsat ubevist. Ejer besluttede at sende rettelsen,
 merge efter nødvendig gate og forsøge én kort normalrun, mens
 årsagen undersøges. Cron og lange runs er fortsat pauset.
+# 2026-09-26 – lokal 4.0.499: slutpakken gemmes før sen fejl
+
+4.0.498/PR #461 bestod exact-head CI og blev merged som `67379880`.
+Vejrfri backend `36259580555` er livegrøn; skrivefri kontrol af
+den centrale gamle række gav `true` for den nye eksakte forgængerbro.
+Ny vejr-CAS, R2-skrivning og Pages er endnu ikke bevist.
+
+Ejeren påpegede, at gentagen timeslang bygning ikke er acceptabel,
+når den færdige pakke blot forsvinder efter en sen fejl. 4.0.499
+lægger et obligatorisk krypteret GitHub Actions-artifact af den
+færdige private pakke før central CAS. Rå payload uploades ikke.
+Artifaktet er knyttet til eksakt kilde og run og har ét døgns
+retention. Lokal gendannelse, manipulation og workflowrækkefølge
+er testet. Automatisk sikker genoptagelse, exact-head og livebevis
+er fortsat åbne; derfor ingen ny tung kørsel endnu. Dette er
+samtaledeltaet siden sidste ZIP/release.
