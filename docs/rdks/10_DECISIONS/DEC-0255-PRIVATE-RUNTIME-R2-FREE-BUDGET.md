@@ -3,6 +3,18 @@
 **Dato:** 2026-09-26
 **Status:** AKTIV BESLUTNING; migration og restore bevist, ny publish/deploy afventer
 
+## Måling senere 2026-09-26 – supplerende livekontrol
+
+Kort run `36242754220` på 4.0.494 læste R2-parret igen og
+gendannede seneste krypterede fremdrift. Det stoppede i en lokal
+tidskontrol før ny vejrbygning og R2-publish. Cloudflare viste fortsat
+fem objekter, 199,96 MB, 38 Class A, 33 Class B og $0,00 for
+26/9–26/10. Supabase Pro viste 0,20 GB Cached Egress og 0,003 GB
+Egress i samme periode; kontrolpanelet kan halte op til en time.
+Den tidligere nulmåling er derfor erstattet af disse aflæsninger.
+Den store pakke går via R2, men Supabase-trafik er ikke nul, og
+Free-retur er ikke godkendt uden flere normale driftsdøgn.
+
 ## Måling 2026-09-26 efter skiftet
 
 Run `36232521656` gendannede fra aktiv R2, men stoppede før ny

@@ -1,3 +1,19 @@
+## 4.0.495 – brug låst prognosetime ved samling af gemte vejrkilder (lokal, 2026-09-26)
+
+- Den korte 4.0.494-kørsel `36242754220` gendannede R2-parret og
+  krypteret fremdrift, men stoppede i 11Z/15Z-samleren før
+  leverandørarbejde, ny R2-gemning og Pages.
+- Samleren brugte fejlagtigt den faktiske byggetid som heltime.
+  Nu sammenlignes den låste prognosetime, og regressionstesten
+  bruger realistiske byggetider med minutter.
+- Fremtidige stop i samme samler rapporterer en fast, privatdatafri
+  fasekode. Ingen scoreformel, leverandørprioritet, geometri eller
+  vejrvaliditet er ændret.
+- R2 viste fortsat 199,96 MB/$0; Supabase viste 0,20 GB cachet og
+  0,003 GB øvrig egress i ny periode. Free kræver mere driftsbevis.
+  Ny R2-skrivning, offentlig deploy og fem vejrfamiliers nul tab
+  afventer én kort virkelig bekræftelse.
+
 ## 4.0.494 – bevar vejrkilder gennem afbrudte og almindelige kørsler (lokal, 2026-09-26)
 
 - Genvalider 15Z's privat forseglede DMI-, Copernicus- og

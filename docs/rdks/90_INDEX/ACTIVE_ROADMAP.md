@@ -1,4 +1,24 @@
-# Aktivt roadmap – 2026-09-26, 4.0.494 kildebevarelse før ny hentning
+# Aktivt roadmap – 2026-09-26, 4.0.495 før én ny kort hentning
+
+1. [x] Bevar R2-parret og seneste krypterede fremdrift fra
+   `36232521656-1`; run `36242754220` beviste læsning, men ingen
+   ny R2-skrivning eller offentlig deploy.
+2. [x] Ret 11Z/15Z-samlerens forveksling af faktisk byggetid og
+   fast prognosetime. Test realistiske byggetider og giv sikre
+   fasekoder, så et nyt stop kan diagnosticeres samlet.
+3. [ ] Gennemfør målrettet lokal kontrol, alle versions-/RDKS-krav
+   og exact-head source-CI; merge kun uden modstridende evidens.
+4. [ ] Kør højst én kort normal bekræftelse på aktuel main uden
+   overlap og med seneste præcise autentificerede fremskridt.
+5. [ ] Bevis nul tab for alle fem vejrfamilier mod begge relevante
+   grundlag, særskilt historik ved 07 UTC, R2-skrivning, Pages og
+   faktisk offentlig prognose. Undersøg stop før ny kørsel.
+6. [ ] Mål R2- og Supabase-forbrug over flere vellykkede normale
+   driftsdøgn før Free-retur eller længere genopfyldning. Cron pauset.
+
+Ældre roadmapoverskrifter nedenfor er historiske.
+
+# Historisk roadmap – 2026-09-26, 4.0.494 kildebevarelse før ny hentning
 
 1. [x] R2-migration og læsning; 4.0.493 merged og kort run afsluttet
    uden offentlig deploy. Ingen overlap eller genkopiering.

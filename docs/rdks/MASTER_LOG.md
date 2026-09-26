@@ -1,3 +1,22 @@
+# 2026-09-26 – 4.0.495: heltimekrav lå på forkert felt
+
+Run `36242754220` på merged 4.0.494/main `b3881c54` gendannede
+R2-par og krypteret 36232521656-1-fremdrift, men stoppede i den nye
+11Z/15Z-samler, før leverandører, privat publish eller Pages. Producenten
+skriver `conditions.generatedAt` som faktisk byggetid og
+`productionReferenceAt` som fast prognosetime. Samleren krævede hele
+timer på byggetiden; testene havde gjort det samme. 4.0.495 flytter
+rækkefølgekriteriet til prognosetimen, bruger realistiske fixtures
+og giver fremover sikre fasekoder. De øvrige aftaler om gyldige
+komponenter, R2 og no-loss er fortsat åbne for livebevis.
+
+Ejeren bad samtidig om R2-/Supabase-kontrol: Cloudflare viste
+5 objekter/199,96 MB, 38 Class A, 33 Class B og $0,00; Supabase
+Pro viste 0,20 GB Cached Egress og 0,003 GB Egress 26/9–26/10.
+R2-læsning er gentaget i produktion; R2-ny skrivning og månedlig
+Free-egnethed er ikke bevist. Ingen ny vejrkørsel før målrettet
+kontrol, exact-head-CI og sikker merge.
+
 # 2026-09-26 – 4.0.494 komponentvis kildebevarelse og R2-kontrol
 
 Samtaledelta: ejeren krævede, at fortsat gyldige data overlever
