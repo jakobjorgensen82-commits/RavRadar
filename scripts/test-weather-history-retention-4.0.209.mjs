@@ -27,7 +27,7 @@ const sameHour = retainWeatherHistory({ samples72h: [{
   currentSpeedMps: 0.2, currentDirectionDeg: 90, currentAlignment: 0.8, currentVerified: true,
   waterLevelCm: 12, waterLevelTrendCm3h: 3, waterLevelSource: 'dmi', waterTemperatureC: 14,
 }] }, {
-  at: at(0), windSpeedMps: 7, windDirectionDeg: null,
+  at: at(0).replace('.000Z', 'Z'), windSpeedMps: 7, windDirectionDeg: null,
   waveHeightM: null, waveDirectionDeg: null, wavePeriodS: null,
   currentSpeedMps: null, currentDirectionDeg: null, currentAlignment: null, currentVerified: false,
   waterLevelCm: null, waterLevelTrendCm3h: null, waterLevelSource: null, waterTemperatureC: null,
@@ -58,7 +58,7 @@ assert.equal(newerMarine.currentAlignment, 0.5);
 assert.equal(newerMarine.waterLevelCm, 20, 'nyere gyldig vandstand skal vinde');
 assert.equal(newerMarine.waterLevelTrendCm3h, null, 'ny vandstand må ikke arve gammel trend');
 const verifiedCurrent={currentSpeedMps:.23,currentDirectionDeg:184,currentProvenance:{status:'verified'}};
-const verified72=attachVerifiedCurrentToSample(retained.samples72h,verifiedCurrent,at(0));
+const verified72=attachVerifiedCurrentToSample(retained.samples72h,verifiedCurrent,at(0).replace('.000Z', 'Z'));
 const latest=verified72.find(row=>row.at===at(0));
 assert.equal(latest.currentVerified,true,'den aktuelle DMI-prøve skal markeres verificeret i 72-timersvinduet');
 assert.equal(latest.currentSpeedMps,.23);

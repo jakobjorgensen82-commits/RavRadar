@@ -25,7 +25,9 @@ kyststed og time. Nye gyldige vind-, bølge-, strøm-, vandstands-
 og temperaturfelter overtager hver for sig. Vektorretning,
 vandstandstrend og strømverifikation følger deres valgte komponent;
 de må ikke lånes fra en anden hentning. Lokal regression dækker
-denne kant, men den tidligere offentlige 34-feltsfejl er stadig åben.
+denne kant, også når eksakt samme UTC-time er skrevet med eller
+uden `.000Z`; senere strømverifikation finder samme time på samme
+måde. Den tidligere offentlige 34-feltsfejl er stadig åben.
 
 ## Implementeringstillæg 2026-09-26 – lokal 4.0.493
 

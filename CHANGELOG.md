@@ -12,6 +12,7 @@
   hver vejrtype, når et nyt felt er tomt. En nyere gyldig værdi
   erstatter den gamle; retning, trend og strømverifikation følger
   deres eget fysiske felt og blandes ikke med en anden hentning.
+  Samme UTC-time genkendes med og uden `.000Z`.
 - Målrettede DMI-/sourcepack-/R2-kontroller er grønne. De 34
   historiske temperaturfelter, faktisk R2-produktion, offentlig
   tabsfrihed, fem vejrtypers slutdækning og Supabase Free-budget

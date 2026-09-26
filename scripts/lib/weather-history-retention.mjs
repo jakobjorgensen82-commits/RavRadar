@@ -35,8 +35,8 @@ function orderedUnique(samples = []) {
   for (const sample of samples) {
     const timestamp = atMs(sample);
     if (!Number.isFinite(timestamp)) continue;
-    byTime.set(sample.at, byTime.has(sample.at)
-      ? mergeSameHour(byTime.get(sample.at), sample) : sample);
+    byTime.set(timestamp, byTime.has(timestamp)
+      ? mergeSameHour(byTime.get(timestamp), sample) : sample);
   }
   return [...byTime.values()].sort((a, b) => atMs(a) - atMs(b));
 }
@@ -56,7 +56,8 @@ export function retainWeatherHistory(previousZone = {}, sample, generatedAt) {
 
 export function attachVerifiedCurrentToSample(samples = [], current = {}, generatedAt) {
   const verified = current?.currentProvenance?.status === 'verified';
-  return samples.map(sample => sample?.at !== generatedAt ? sample : {
+  const target = Date.parse(generatedAt ?? '');
+  return samples.map(sample => !Number.isFinite(target) || atMs(sample) !== target ? sample : {
     ...sample,
     currentVerified: verified,
     currentSpeedMps: current?.currentSpeedMps ?? null,
