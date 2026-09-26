@@ -1,4 +1,23 @@
-# Aktivt roadmap – 2026-09-26, 4.0.497 backend før kort vejr
+# Aktivt roadmap – 2026-09-26, lokal 4.0.498 checkpointbro
+
+1. [x] 4.0.497 backendbinding live; kort normalrun gemte
+   krypteret fremdrift men stoppede på gammel central checkpoint-
+   række før ny R2/Pages-produktion.
+2. [x] Afgræns den eksakte, tidligere gyldige schema-5-række med
+   fuldt SHA-256 og bevar alle nye validator- og CAS-værn.
+3. [ ] Exact-head CI, merge, dry-run-verificeret migration og live
+   database-readback; ingen ny vejrkørsel før dette.
+4. [ ] Før endnu en tung cachebygning: gem et privat, verificerbart
+   slutresultat før sen central skrivning, og tilføj en sikker vej til
+   at genoptage levering uden ny vejr-/scorebygning. Den nuværende
+   krypterede fremdrift er ikke en færdig produktionspakke.
+5. [ ] Fortsæt fra `36252591071-1`; bevis CAS, R2-skrivning,
+   Pages og alle fem vejrfamiliers no-loss. Undgå ny leverandørhentning,
+   hvis den genoptagelige pakke kan bygges sikkert af gemt fremdrift.
+6. [ ] Mål leverandørprioritet, resthuller, historiske 34 felter og
+   kvoter over flere driftsdøgn før lang opfyldning/cron.
+
+# Historisk roadmap – 2026-09-26, 4.0.497 backend før kort vejr
 
 1. [x] Afklar `36244956035`: krypteret fremskridt er gemt; R2-
    produktionspakke og Pages er ikke opdateret. Den fulde kontrol

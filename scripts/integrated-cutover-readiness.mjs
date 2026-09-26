@@ -234,6 +234,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260925150000_weather_selection_model_binding',
     filename: '20260925150000_weather_selection_model_binding.sql',
   }),
+  Object.freeze({
+    version: '20260926170000',
+    id: '20260926170000_exact_checkpoint_predecessor',
+    filename: '20260926170000_exact_checkpoint_predecessor.sql',
+  }),
 ]);
 
 export const LATEST_RAVSCORE_BINDING_MIGRATION =
@@ -308,6 +313,10 @@ export async function expectedCheckpointCasContract({
     // by that migration rather than mixing in the older validator bodies.
     TRIP_BINDING_POLICY_SOURCE_MIGRATION.filename,
   ), 'utf8');
+  const predecessorMigration = await fs.readFile(path.join(
+    migrationsDirectory,
+    LATEST_REQUIRED_CUTOVER_MIGRATION.filename,
+  ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
     ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
@@ -318,7 +327,12 @@ export async function expectedCheckpointCasContract({
       'exact predecessor payload validator'],
     ['public.ravradar_ravscore_checkpoint_cas', 'checkpoint CAS'],
     ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
-  ].map(([functionName, label]) => sqlFunctionBody(migration, functionName, label));
+  ].map(([functionName, label]) => sqlFunctionBody(
+    functionName === 'public.ravradar_ravscore_checkpoint_predecessor_payload_valid'
+      ? predecessorMigration : migration,
+    functionName,
+    label,
+  ));
   const definition = definitions[0]
     + `\n-- forbidden-key-validator --\n${definitions[1]}`
     + `\n-- integrated-state-validator --\n${definitions[2]}`

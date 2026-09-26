@@ -1,4 +1,15 @@
-# 2026-09-26 – 4.0.497 lever backend uden at overskrive vejrparret
+# 2026-09-26 – lokal 4.0.498 central checkpointbro
+
+- [x] 4.0.497 merged; vejrfri backendrun er livegrønt.
+- [x] `36252591071` bestod vejr/cache/artifact, gemte fremdrift,
+  men stoppede før R2/Pages på gammel central checkpoint-række.
+- [x] Eksakt forgængeridentitet er læst skrivefrit; lokal SHA-bundet
+  migration og målrettet migrationskontrol er grøn.
+- [ ] Exact-head CI, merge, migration og live DB-readback.
+- [ ] Én kort normal fortsættelse fra `36252591071-1`; bevis CAS,
+  R2/Pages og offentlig femfeltsprognose uden datatab.
+
+# HISTORISK STATUS – 2026-09-26 – 4.0.497 lever backend uden at overskrive vejrparret
 
 - [x] 4.0.496/PR #459 exact-head-grøn og merged som `ca5dbfb7`.
 - [x] Klassificér code-only `36250874394`: 11Z/15Z-værnet stoppede

@@ -1,4 +1,26 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.497 cache-sikker backendlevering
+# NYESTE SANDHED – 2026-09-26 – lokal 4.0.498 checkpointbro
+
+GitHub-run `36252591071` gemte komponentfremdrift, DMI-råcache og
+score-checkpoint, men ingen færdig produktionspakke: bundling og R2-
+publicering blev sprunget over efter central CAS-fejl. Den midlertidige
+runner er væk. Det er derfor forkert at kalde checkpointet en direkte
+deploybar pakke; før næste tunge bygning skal et privat, verificerbart
+staging-/genoptagelsespunkt afklares og indføres.
+
+4.0.497-backendrun er livegrønt. Vejrrun `36252591071` gennemførte
+alle tre leverandører, cache, fuld validering og releasegate, men
+central checkpoint-CAS afviste det hidtidige schema-5-checkpoint
+med `CENTRAL_INVALID`. Krypteret hente-fremdrift og lokalt checkpoint
+er gemt; privat R2-produktionsskrivning og Pages er ikke sket.
+Skrivefri kontrol viste, at den eksisterende række er fra 24/9
+kl. 15 UTC og har en tidligere gyldig modelkontrakt, som den nye
+schema-4-only-forgængerbro overså. Lokal 4.0.498 tillader præcis
+denne gamle rækkes fulde SHA-256 som forgænger til et nyt, fuldt
+valideret checkpoint. Exact-head CI, migration og live ny CAS
+mangler. Ingen ny vejrkørsel, lang opfyldning, oneoff eller cron
+før broen er bevist. Fuld dækning og R2/Pages/Free er stadig åbne.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.497 cache-sikker backendlevering
 
 4.0.496/PR #459 bestod exact-head CI og blev merged som `ca5dbfb7`.
 Providerfri code-only-run `36250874394` stoppede før nogen ekstern

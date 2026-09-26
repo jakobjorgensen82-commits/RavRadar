@@ -2354,3 +2354,14 @@ historikgodkendelse skal fortsat afvise en påstået, men ugyldig kilde. En
 normal kørsel skal rapportere dataminimeret særskilt bevisstatus og må ikke
 kalde vejrdata fulde alene fordi en privat closure findes; de anvendte
 scoreinput og den historiske mobilisering skal også kontrolleres. DEC-0238.
+# Aktuel checkpointkontinuitet – 2026-09-26
+
+- **REQ-EXACT-CENTRAL-CHECKPOINT-PREDECESSOR-0498 – BINDENDE:**
+  Når et allerede publiceret og oprindeligt valideret RavScore-
+  checkpoint blev efterladt under forrige modelkontrakt, må en
+  append-only overgang godkende det som CAS-forgænger kun med
+  verificeret eksakt rækkeidentitet og fuldt payloadfingeraftryk.
+  Den nye kandidat skal stadig bestå den fulde aktuelle validator,
+  versions-CAS, monotont target og alle sikkerhedskrav. Overgangen
+  må ikke tillade vilkårlige ældre schemaer, databaserækker eller
+  ændrede vejr-/scoreværdier. Gemte hente-caches er ikke publicering.

@@ -45,10 +45,10 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 38,
-  'The active backend must preserve every predecessor, storage security and the trip-binding repair successor');
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 39,
+  'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260925150000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20260926170000');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -93,6 +93,31 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
 const checkpointMigration = await fs.readFile(
   'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
   'utf8',
+);
+const exactPredecessorMigration = await fs.readFile(
+  'supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql',
+  'utf8',
+);
+for (const marker of [
+  '5ba4d8944a3e791a7fc918fe5027c5b3157b3cc74e6cd5f99c0fb54dca5208c9',
+  'd2227fe5e5d5a157099d05bdbbc42cbb4b0d3535b7b45fefa4260a27e81d4587',
+  CHECKPOINT_CONTINUATION_HASH,
+  'rr-20260924163002-210',
+  'extensions.digest(p_payload::text::bytea',
+  'revoke all on function public.ravradar_ravscore_checkpoint_predecessor_payload_valid',
+]) assert.ok(exactPredecessorMigration.includes(marker),
+  `exact checkpoint predecessor bridge is missing ${marker}`);
+const oldPredecessor = checkpointMigration.match(
+  /create or replace function public\.ravradar_ravscore_checkpoint_predecessor_payload_valid\([\s\S]*?\n\$\$;/,
+)?.[0];
+const newPredecessor = exactPredecessorMigration.match(
+  /create or replace function public\.ravradar_ravscore_checkpoint_predecessor_payload_valid\([\s\S]*?\n\$\$;/,
+)?.[0];
+assert.ok(oldPredecessor && newPredecessor);
+assert.equal(
+  newPredecessor.slice(newPredecessor.indexOf('  if p_payload is null')).replace(/\s+/g, ''),
+  oldPredecessor.slice(oldPredecessor.indexOf('  if p_payload is null')).replace(/\s+/g, ''),
+  'the existing schema-4 predecessor bridge must remain unchanged',
 );
 for (const marker of [
   'begin;',
@@ -321,6 +346,7 @@ const unicodeList = `
  20260923160000    │                  │ 2026-09-23 16:00:00
  20260923210000    │                  │ 2026-09-23 21:00:00
  20260925150000    │                  │ 2026-09-25 15:00:00
+ 20260926170000    │                  │ 2026-09-26 17:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -362,6 +388,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260923160000', remote: null },
   { local: '20260923210000', remote: null },
   { local: '20260925150000', remote: null },
+  { local: '20260926170000', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -412,6 +439,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260923160000\` | \` \`    | \`2026-09-23 16:00:00\`
    \`20260923210000\` | \` \`    | \`2026-09-23 21:00:00\`
    \`20260925150000\` | \` \`    | \`2026-09-25 15:00:00\`
+   \`20260926170000\` | \` \`    | \`2026-09-26 17:00:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -538,6 +566,7 @@ await assert.rejects(
        20260923160000 | | pending
        20260923210000 | | pending
        20260925150000 | | pending
+       20260926170000 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -585,6 +614,7 @@ const appliedList = `
  20260923160000 | 20260923160000 | now
  20260923210000 | 20260923210000 | now
  20260925150000 | 20260925150000 | now
+ 20260926170000 | 20260926170000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -650,8 +680,8 @@ try {
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20260925150000_weather_selection_model_binding.sql/,
-    'the live code-only helper must admit exactly the current binding successor',
+    /exactly 20260926170000_exact_checkpoint_predecessor.sql/,
+    'the live code-only helper must admit exactly the current checkpoint bridge',
   );
 } finally {
   await fs.rm(codeOnlyHelperDirectory, { recursive: true, force: true });
@@ -733,6 +763,7 @@ try {
  20260923160000 │ │ pending
  20260923210000 │ │ pending
  20260925150000 │ │ pending
+ 20260926170000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -784,6 +815,7 @@ try {
  20260923160000 │ │ pending
  20260923210000 │ │ pending
  20260925150000 │ │ pending
+ 20260926170000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {

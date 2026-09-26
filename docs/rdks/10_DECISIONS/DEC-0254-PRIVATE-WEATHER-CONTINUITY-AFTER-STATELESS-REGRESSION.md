@@ -256,3 +256,15 @@ kørsler bevise faktisk cachegenbrug, fremgang pr. vejrtype og leverandør,
 gemt næste generation og offentlig prognose. Ved uventet tab eller
 stagnation må næste kørsel ikke startes blindt. Cron forbliver pauset
 indtil autonom normaldrift er målt; ingen oneoff uden konkret behov.
+## Tillæg 2026-09-26 – 4.0.498: præcis forgænger ved central checkpoint-CAS
+
+4.0.497's korte normalrun nåede alle leverandører og kontroller, men
+central CAS afviste den allerede gemte schema-5-række fra 24/9,
+fordi 25/9-modelbindingsmigrationen kun havde en schema-4-
+forgængerbro. Rækkens metadata og PostgreSQL-jsonb-SHA-256 er
+kontrolleret skrivefrit i produktion. En ny append-only migration
+accepterer kun den eksakte gamle række mod den eksakte nye kontrakt;
+den eksisterende schema-4-bro og den fulde ny-kandidat-validator
+bevares. Dette reparerer hverken vejrdata, score eller historiske
+temperaturfelter og må ikke rapporteres som R2-/Pages-bevis, før en
+efterfølgende kort normalrun faktisk passerer CAS og deploy.

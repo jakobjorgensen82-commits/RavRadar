@@ -1,14 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.497
+**Håndbogsversion:** 4.0.498
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.497 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.498 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.94 4.0.498 – Bevar et gammelt checkpoint uden at åbne for datatab
+
+Den seneste korte vejrkørsel hentede data og bestod kontrollerne,
+men blev stoppet, da et centralt RavScore-checkpoint skulle gemmes.
+Databasen kendte ikke den gamle checkpointtype som tilladt forgænger
+efter et modelbindingsskift. Det betyder ikke, at de nye vejrdata
+var ugyldige; de blev blot ikke leveret til hjemmesiden.
+
+Rettelsen genkender kun den ene gamle række, hvis hele dens digitale
+fingeraftryk passer. Den nye række skal stadig opfylde alle aktuelle
+krav, og en anden gammel eller ændret række bliver fortsat afvist.
+Den krypterede fremdrift fra vejrkørslen er gemt, men der er endnu
+ikke skrevet en ny R2-produktionspakke eller opdateret Pages. Det
+kræver en ny kort, sikker fortsættelse efter databaseændringen.
 
 ## 89.93 4.0.497 – Opdater hjælpen uden at ændre vejr-cachen
 
