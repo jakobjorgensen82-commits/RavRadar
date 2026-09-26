@@ -7,7 +7,8 @@ verificeret; migrationen ændrer hverken pointer eller originaler.
 R2 har snævert bucket-/objektloft, begrænset credential-scope,
 anonym-læsebevis og genoptagelig byte-/SHA-læsning. Vejr- og
 code-only-workflows samt den historiske restore-lukning følger
-samme backend. Score, leverandørprioritet, geometri og offentlige
+samme backend. En fejlet R2-gendannelse stopper før enhver ældre
+"fortsæt uden cache"-gren. Score, leverandørprioritet, geometri og offentlige
 prognosedata er ikke ændret. Supabase Pro er midlertidigt aktiv;
 Free-retur kræver faktisk måling efter R2-skiftet. Local tests er
 ikke bevis for live migration, GitHub-gate eller offentlig deploy.

@@ -2411,6 +2411,21 @@ for (const marker of [
 const activeIntegratedRestoreStart = privateRuntimeRestoreSection.indexOf(
   'if test "$OPERATIONAL_ACTION" = "integrated"; then',
 );
+const r2RestoreAttempt = privateRuntimeRestoreSection.indexOf(
+  'Protected normal-weather restore attempt $attempt of 3 failed.',
+);
+const r2RestoreGuardStart = privateRuntimeRestoreSection.indexOf(
+  'if test "$RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND" = "r2"; then',
+  r2RestoreAttempt,
+);
+const r2RestoreGuard = privateRuntimeRestoreSection.slice(r2RestoreGuardStart,
+  privateRuntimeRestoreSection.indexOf('fi', r2RestoreGuardStart) + 2);
+if (!(r2RestoreAttempt >= 0 && r2RestoreAttempt < r2RestoreGuardStart
+  && r2RestoreGuardStart < activeIntegratedRestoreStart
+  && r2RestoreGuard.includes('R2 private runtime restore failed; no stateless recovery is allowed.')
+  && r2RestoreGuard.includes('exit "$status"'))) {
+  throw new Error('R2 restore must fail before any stateless integrated recovery path.');
+}
 const activeIntegratedRestoreFallback = privateRuntimeRestoreSection.slice(
   activeIntegratedRestoreStart,
   privateRuntimeRestoreSection.indexOf('exit "$status"', activeIntegratedRestoreStart),

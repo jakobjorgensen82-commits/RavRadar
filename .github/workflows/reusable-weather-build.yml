@@ -739,6 +739,10 @@ jobs:
             echo "Protected normal-weather restore attempt $attempt of 3 failed."
             if test "$attempt" -lt 3; then sleep $((attempt * 5)); fi
           done
+          if test "$RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND" = "r2"; then
+            echo "R2 private runtime restore failed; no stateless recovery is allowed."
+            exit "$status"
+          fi
           if test "$EXACT_WEATHER_RECOVERY_REQUIRED" = "true"; then
             echo "The exact 11Z/15Z pair could not be verified; a stateless replacement is forbidden."
             exit "$status"
