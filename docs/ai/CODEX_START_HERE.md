@@ -2370,3 +2370,18 @@ Måltest grøn. Næste: dokumentation/version, exact-head PR #448, merge,
 én normal ikke-overlappende kørsel fra seneste beskyttede progress;
 kontroller fem felter, cache og Pages. Cron pauset. Det gamle
 4.0.486-afsnits »aktivt run« er erstattet af dette resultat.
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.490 kandidat
+
+Main er 4.0.489/`0c6a901c`. Kort run `36183093672` nåede hele
+vejr- og prognosebygningen, men no-loss afviste 34 tidligere gyldige
+vandtemperaturfelter kl. 07 UTC 26/9. Fire andre vejrtyper havde
+nul tab. Ny krypteret fremdrift `36183093672-1` blev gemt, men
+privat produktionscache og Pages blev ikke opdateret.
+
+Lokal 4.0.490 forener verificerede komponenter fra beskyttet cache
+med den krypterede fremdrift og bevarer særskilt beskyttet DMI-donor.
+Måltests er grønne, men det er ikke bevist, at dette forklarer de 34.
+Efter ejerens beslutning: exact-head PR-kontrol, sikker merge og én
+kort normalrun; spor samtidigt tabets konkrete oprindelse. Ingen
+lange runs eller cron før end-to-end-bevis. Tidligere checkpoint
+nedenfor er historisk.

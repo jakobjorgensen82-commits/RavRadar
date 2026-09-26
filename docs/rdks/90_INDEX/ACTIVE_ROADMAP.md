@@ -3336,3 +3336,14 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    opdaterings-/timeoutforløb, Open-Meteos 57 rester og vandstand.
    Byg generel tabsbeskyttelse og genaktivér først cron efter
    gentagne sikre, fremadskridende normalruns.
+# Aktivt roadmap – 2026-09-26, kort virkelig kontrol af 4.0.490
+
+Send den afgrænsede komponentfortsættelse gennem exact-head-kontrol,
+merge den efter nødvendig gate og start derefter **én kort** normal
+vejrkørsel uden overlap. Brug krypteret fremdrift fra
+`36183093672-1`, hvis den præcist matcher beskyttet 11Z-baseline.
+Undersøg sideløbende de 34 vandtemperaturtab i den foregående
+kørsel; de er ikke forklaret af en grøn lokal test. Mål alle fem
+vejrtyper, DMI/Copernicus/Open-Meteo, privat cachegemning, Pages
+og offentlig visning. Ved gentaget tab: stop flere runs og ret
+den påviste årsag. Cron og lange runs forbliver pauset.

@@ -1,5 +1,19 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-26 – foren verificerede komponenter før kort forsøg
+
+Et krypteret hente-checkpoint erstatter ikke den sidst beskyttede
+produktionspakke. Ved restore skal gyldige, individuelt verificerede
+OM-/CP-komponenter fra den beskyttede pakke forenes med nyere
+fremdrift, inden filerne installeres. DMI kan bruge en særskilt
+beskyttet donor for manglende gyldige komponenter, men må ikke
+overtage donorens gamle fremdriftsmarkører. Ugyldig beskyttet pakke
+stopper forsøget. Dette er en lokal 4.0.490-rettelse med måltests;
+det er endnu ikke bevist, at den løser de 34 temperaturtab i
+`36183093672`. Ejer ønsker exact-head-kontrol, merge og én kort
+virkelig vejrhentning, mens den konkrete årsag spores. De gældende
+no-loss- og dataintegritetskrav består.
+
 ## Tillæg 2026-09-25 – gemt fremdrift er ikke en gemt prognose
 
 Normalrun `36153463393` gendannede den fulde 11Z-baseline og byggede

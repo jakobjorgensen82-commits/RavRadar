@@ -7,8 +7,10 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
+import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
-import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse } from './lib/open-meteo-part-bank.mjs';
+import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
+  openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 
 const execFileAsync = promisify(execFile);
 const repository = 'owner/fixture';
@@ -30,6 +32,18 @@ function bank(speed) {
 const originalBank = bank(4);
 const progressedBank = bank(9);
 const baseline = '{"kind":"synthetic protected conditions","state":"never change through progress"}\n';
+function nativeTemperatureBank(validTime, value) {
+  const grid = openMeteoMfNearestGridPoint(part.waterPoint);
+  const responseText = JSON.stringify({ longitude: grid[0], latitude: grid[1], utc_offset_seconds: 0,
+    hourly: { time: [validTime], sea_surface_temperature: [value] },
+    hourly_units: { sea_surface_temperature: '°C' } });
+  const admission = readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, {
+    component: 'waterTemperature', productionReferenceAt: reference,
+    spatialPolicy: OPEN_METEO_NATIVE_NEAREST_POLICIES.waterTemperature,
+  }), responseText, acquiredAt: reference }, { part, spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
+  return mergeOpenMeteoPartBank(null, [admission], { parts: [part], spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
+    retentionStartAt: reference, retentionEndAt: new Date(Date.parse(reference) + 2 * 3600000).toISOString() });
+}
 async function write(root, relative, value) {
   const destination = path.join(root, relative);
   await fs.mkdir(path.dirname(destination), { recursive: true });
@@ -97,6 +111,61 @@ test('encrypted roundtrip changes component files only and never caches plaintex
   assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
   await assert.rejects(fs.access(path.join(f.target, '.cache/secret-token.json')));
   await assert.rejects(fs.access(path.join(f.target, '.cache/weather-component-inputs.pack')));
+});
+
+test('authenticated progress and protected production bank retain both distinct valid hours', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-progress-union-test-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(folder).startsWith('rr-progress-union-test-'));
+    await fs.rm(folder, { recursive: true, force: true });
+  });
+  const source = path.join(folder, 'source');
+  const target = path.join(folder, 'target');
+  await fs.mkdir(source);
+  await fs.mkdir(target);
+  const previousBank = nativeTemperatureBank(reference, 15);
+  const nextHour = new Date(Date.parse(reference) + 3600000).toISOString();
+  const progressBank = nativeTemperatureBank(nextHour, 16);
+  const selection = '{"synthetic":"selection"}\n';
+  const conditions = { weatherComponentInputs: {
+    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+    openMeteoBankSha256: previousBank.bankSha256, copernicusBankSha256: null,
+    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+  } };
+  for (const root of [source, target]) {
+    await write(root, 'data/live/conditions.json', conditions);
+    await write(root, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
+    await write(root, files.openMeteoBank, previousBank);
+    await write(root, files.selectedComponents, selection);
+  }
+  await buildPrivateWeatherComponentPack({ repositoryRoot: target, conditions });
+  const protectedPack = await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack'));
+  const sourceBase = path.join(folder, 'source-base.json');
+  const targetBase = path.join(folder, 'target-base.json');
+  for (const [root, basePath] of [[source, sourceBase], [target, targetBase]]) {
+    const captured = await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: root,
+      basePath, repository, protectedBundleSha256 });
+    assert.equal(captured.captured, true, JSON.stringify(captured));
+  }
+  await write(source, files.openMeteoBank, progressBank);
+  const saved = await weatherComponentProgressCache({ mode: 'save', repositoryRoot: source,
+    basePath: sourceBase, repository, encryptionKey });
+  assert.equal(saved.saved, true, JSON.stringify(saved));
+  await fs.copyFile(path.join(source, WEATHER_PROGRESS_CIPHER_PATH), path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
+  const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference });
+  assert.equal(restored.restored, true, JSON.stringify(restored));
+  assert.equal(restored.protectedOpenMeteoRecordsRecovered, 1);
+  const finalBank = JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8'));
+  assert.deepEqual(finalBank.records.map(row => row.validTime), [reference, nextHour]);
+  assert.deepEqual(await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack')), protectedPack);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, 'data/live/conditions.json'), 'utf8')), conditions);
+  await fs.appendFile(path.join(target, '.cache/weather-component-inputs.pack'), 'corrupt');
+  const rejected = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference });
+  assert.equal(rejected.status, 'RESTORE_REPAIR_REQUIRED');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.openMeteoBank), 'utf8')), finalBank);
 });
 
 test('legacy DMI, current, donor and staging progress share the authenticated private snapshot', async t => {
@@ -271,6 +340,57 @@ test('CP positive original object/static/receipt inventory survives encrypted sa
   assert.ok((await fs.readdir(path.join(f.target, '.cache/copernicus-components/objects'))).length > 0);
   assert.ok((await fs.readdir(path.join(f.target, '.cache/copernicus-components/receipts'))).length > 0);
   assert.ok((await fs.readdir(path.join(f.target, '.cache/copernicus-components/static'))).length > 0);
+});
+
+test('protected CP originals are re-admitted before encrypted progress can replace the working bank', async t => {
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-progress-cp-union-'));
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(folder)), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(folder).startsWith('rr-progress-cp-union-'));
+    await fs.rm(folder, { recursive: true, force: true });
+  });
+  const pythonExecutable = process.env.PYTHON ?? 'python';
+  const prepared = path.join(folder, 'cp-fixture');
+  await execFileAsync(pythonExecutable, ['scripts/test-copernicus-component-production.py', '--prepare-fixture', prepared],
+    { timeout: 30_000, windowsHide: true });
+  const cpBank = JSON.parse(await fs.readFile(path.join(prepared, 'bank.json'), 'utf8'));
+  const selection = '{"synthetic":"selection"}\n';
+  const conditions = { weatherComponentInputs: {
+    schemaVersion: 1, kind: 'PRIVATE_WEATHER_COMPONENT_INPUTS', sourceSelectionApplied: true,
+    openMeteoBankSha256: null, copernicusBankSha256: cpBank.bankSha256,
+    selectedComponentsSha256: crypto.createHash('sha256').update(selection).digest('hex'),
+  } };
+  const source = path.join(folder, 'source');
+  const target = path.join(folder, 'target');
+  for (const root of [source, target]) {
+    await fs.mkdir(root);
+    await write(root, 'data/live/conditions.json', conditions);
+    await write(root, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: {
+      'DK-B05-11': [{ partId: 'SYNTHETIC-ø-PART', sourceZoneId: 'DK-B05-11', waterPoint: [10, 58] }],
+    } });
+    await write(root, files.selectedComponents, selection);
+    await fs.copyFile(path.join(prepared, 'bank.json'), path.join(root, files.copernicusBank));
+    await fs.cp(path.join(prepared, 'cache'), path.join(root, '.cache/copernicus-components'), { recursive: true });
+  }
+  await buildPrivateWeatherComponentPack({ repositoryRoot: target, conditions, pythonExecutable });
+  const protectedPack = await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack'));
+  const sourceBase = path.join(folder, 'source-base.json');
+  const targetBase = path.join(folder, 'target-base.json');
+  for (const [root, basePath] of [[source, sourceBase], [target, targetBase]]) {
+    assert.equal((await weatherComponentProgressCache({ mode: 'capture-base', repositoryRoot: root,
+      basePath, repository, protectedBundleSha256 })).captured, true);
+  }
+  const saved = await weatherComponentProgressCache({ mode: 'save', repositoryRoot: source,
+    basePath: sourceBase, repository, encryptionKey, pythonExecutable });
+  assert.equal(saved.saved, true, JSON.stringify(saved));
+  await fs.copyFile(path.join(source, WEATHER_PROGRESS_CIPHER_PATH), path.join(target, WEATHER_PROGRESS_CIPHER_PATH));
+  const restored = await weatherComponentProgressCache({ mode: 'restore', repositoryRoot: target,
+    basePath: targetBase, repository, encryptionKey, productionReferenceAt: reference, pythonExecutable });
+  assert.equal(restored.restored, true, JSON.stringify(restored));
+  assert.equal(restored.protectedCopernicusBankMerged, true);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, files.copernicusBank), 'utf8')).records,
+    cpBank.records);
+  assert.deepEqual(await fs.readFile(path.join(target, '.cache/weather-component-inputs.pack')), protectedPack);
 });
 
 test('compressed progress budget preserves the previous snapshot and never stops ordinary operation', async t => {

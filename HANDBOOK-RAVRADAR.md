@@ -1,14 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.489
+**Håndbogsversion:** 4.0.490
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.489 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.490 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.86 4.0.490 – Bevar vejr, når gemt hente-arbejde fortsættes
+
+Den korte kørsel hentede vejr, men den nye prognose kunne ikke gemmes:
+34 steder havde en tidligere gyldig vandtemperatur, som ville blive
+tom. Den eksisterende hjemmeside og produktionscache blev derfor
+stående. Den krypterede pakke med hente-arbejdet blev gemt.
+
+Når den pakke nu åbnes, skal gyldige data fra den beskyttede gamle
+pakke følge med. Det kontrolleres for hver kilde og hvert felt; gamle
+markører for, hvor langt en hentning var nået, overtages ikke.
+Rettelsen er testet lokalt, men de 34 tab er ikke endeligt forklaret.
+Én kort virkelig vejrkørsel skal vise, om prognosen kan gemmes og
+vises uden at miste gyldige vejrdata. Først derefter giver lange
+opfyldningskørsler og automatisk drift mening.
 
 ## 89.85 4.0.489 – Genbrug gemt hente-arbejde uden at love en gemt prognose
 

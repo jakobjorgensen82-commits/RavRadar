@@ -5278,3 +5278,14 @@ modelrun. Generisk fail-closed, Feggesund og uafhængig strøm
 bevares. 4.0.486's forståelige UI-sprog følger med. Lokal test grøn;
 exact-head, merge, live cache/deploy og autonom gentagelse afventer.
 Se DEC-0253 og CHANGELOG-4.0.487.
+# 2026-09-26 – 4.0.490 kandidat, bevar beskyttede vejrkomponenter
+
+Kort normalrun `36183093672` restaurerede krypteret fremdrift og
+byggede vejr, men 34 gyldige vandtemperaturpar ville blive tomme;
+tabsbarrieren stoppede før privat cache og Pages. Ny krypteret
+fremdrift blev gemt. Lokal rettelse sammenholder den fremdrift med
+den verificerede beskyttede pakke for OM/CP og giver DMI en særskilt
+beskyttet donor. Måltests viser mekanismen; de 34's konkrete
+årsag er fortsat ubevist. Ejer besluttede at sende rettelsen,
+merge efter nødvendig gate og forsøge én kort normalrun, mens
+årsagen undersøges. Cron og lange runs er fortsat pauset.

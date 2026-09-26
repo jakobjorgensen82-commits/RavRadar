@@ -86,6 +86,62 @@ def catalog_item(collection, offset):
 
 
 class ComponentContinuityTests(unittest.TestCase):
+    def test_published_partial_donor_restores_only_proved_component_not_old_progress(self):
+        candidate = document("wind", source("wind"), (2.0, 3.0))
+        candidate.update({
+            "schemaVersion": 2,
+            "zoneRegistrySignature": "synthetic-registry",
+            "checkpointedAt": RUN,
+            "runs": {"harmonie_dini_sf": {"referenceTime": RUN}},
+        })
+        published = document(
+            "waterTemperature",
+            marine_source("waterTemperature", "dkss_idw", OLD_RUN),
+            (11.0,),
+        )
+        published.update({
+            "schemaVersion": 2,
+            "zoneRegistrySignature": "synthetic-registry",
+            "generatedAt": OLD_RUN,
+            "runs": {"dkss_idw": {"referenceTime": OLD_RUN}},
+        })
+        self.assertTrue(producer.reusable_cache_document_shape(published))
+        self.assertTrue(producer._exact_validated_dmi_component_present(
+            ZONE["id"], published["zones"][ZONE["id"]], VALID,
+            "waterTemperature", ("water-temperature",),
+        ))
+        direct_primary = copy.deepcopy(candidate)
+        direct_donor = copy.deepcopy(published)
+        producer.sanitize_reusable_cache_document_leaves(direct_donor)
+        producer.backfill_compatible_cache_data(
+            direct_primary, direct_donor, include_progress_metadata=False,
+        )
+        self.assertEqual(direct_primary["zones"][ZONE["id"]]["hourly"][VALID]["water-temperature"], 11.0)
+        output = Path("candidate.json")
+        active = Path("active.json")
+        protected = Path("published.json")
+        documents = {output: candidate, active: {}, protected: published}
+        with patch.object(producer, "OUTPUT_PATH", output), \
+                patch.object(producer, "DEPLOYED_FALLBACK_PATH", active), \
+                patch.object(producer, "PUBLISHED_BASELINE_PATH", protected), \
+                patch.object(producer, "PREFER_OUTPUT_CACHE", True), \
+                patch.object(producer, "load_bulk_document", side_effect=lambda path: copy.deepcopy(documents[path])) as loader, \
+                patch.object(producer, "backfill_compatible_cache_data", wraps=producer.backfill_compatible_cache_data) as backfill:
+            result = producer.load_previous(
+                "synthetic-registry",
+                coastal_part_targets=[{"partId": "TEST", "parentZoneId": "ZONE", "waterPoint": [2.0, 1.0]}],
+                production_reference=datetime.fromisoformat(RUN.replace("Z", "+00:00")),
+            )
+        self.assertEqual(loader.call_count, 3)
+        self.assertEqual(backfill.call_count, 1)
+        row = result["zones"][ZONE["id"]]["hourly"][VALID]
+        self.assertEqual(row["wind-u-10m"], 2.0)
+        self.assertEqual(row["wind-v-10m"], 3.0)
+        self.assertEqual(row["water-temperature"], 11.0)
+        self.assertEqual(row["sources"]["waterTemperature"],
+                         published["zones"][ZONE["id"]]["hourly"][VALID]["sources"]["waterTemperature"])
+        self.assertNotIn("dkss_idw", result["runs"])
+
     def test_scheduler_uses_each_component_source_not_legacy_zone_selection(self):
         cached = {
             **producer.sampling_identity(ZONE),
