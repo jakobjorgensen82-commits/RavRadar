@@ -1,4 +1,26 @@
-# 2026-09-26 – 4.0.495: heltimekrav lå på forkert felt
+# 2026-09-26 – 4.0.496: gemt vejr, men to leveringsstop
+
+Ejeren bad om at fortsætte selvstændigt og se hele kæden ved fejl,
+inklusive reel R2-flytning og Supabase-trafik. Den korte normale
+4.0.495-kørsel `36244956035` gendannede beskyttet cache, kørte
+DMI/Copernicus/Open-Meteo, byggede vejr og gemte krypteret
+fremskridt `36244956035-1`. Den samlede artifactkontrol nåede alle
+54 kontroller, men én vandstandstest manglede en importeret fixture;
+et uafhængigt Edge-readback fandt ældre assistant-modelbundle end
+den aktuelle kilde. Derfor ingen ny R2-produktionspakke eller Pages.
+
+4.0.496 leverer fixturen og flytter de to relevante vandstandstests
+til kildekontrollen. Den eksisterende providerfri code-only-vej skal
+deploye eksakt assistant Edge før næste korte vejrfortsættelse;
+ingen providerarbejde gentages blot for at opdatere kode. En ny
+release kræver exact-head CI, merge, code-only-bevis, derefter én
+kort normalrun fra eksakt gemt fremskridt. Nul tab, 34 historiske
+temperaturfelter, fem vejrfamiliers dækning og Copernicus' nul nye
+komponenter forbliver åbne. R2 viste fem objekter/199,96 MB/$0;
+Supabase Pro 0,20 GB Cached Egress og 0,004 GB Egress 26/9–26/10.
+Dette er ikke et Free-bevis. Tidligere 4.0.495-plan erstattes.
+
+# 2026-09-26 – 4.0.495: heltimekrav lå på forkert felt (historisk)
 
 Run `36242754220` på merged 4.0.494/main `b3881c54` gendannede
 R2-par og krypteret 36232521656-1-fremdrift, men stoppede i den nye

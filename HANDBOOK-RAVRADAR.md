@@ -1,16 +1,39 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.495
+**Håndbogsversion:** 4.0.496
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.495 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.496 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.91 4.0.495 – Skeln mellem prognosetime og byggetid
+## 89.92 4.0.496 – Gem vejrfremskridt, og lever uden at hente igen
+
+Den korte vejrkørsel hentede nye data og gemte arbejdet, men den
+kunne ikke lægge en ny prognose på hjemmesiden. To forskellige
+kontroller stoppede den: en vandstandstest manglede sin testfil,
+og hjemmesidens hjælpefunktion var endnu ikke opdateret til den
+aktuelle scoremodels identitet. Det siger ikke, at selve vejrdataene
+er væk. Den hidtidige offentlige prognose blev bevaret.
+
+Testfilen er tilføjet, og de to vandstandskontroller køres nu tidligt,
+før en ny vejrindsamling kan bruge lang tid. Den eksisterende
+kodelevering kan opdatere hjælpefunktionen uden at hente vejret igen.
+Derefter kan en kort normal vejrkørsel fortsætte fra det præcist
+gemte fremskridt. Først når ny privat pakke er skrevet til R2 og
+Pages viser en ny prognose, er den offentlige levering bevist.
+
+Der mangler fortsat gyldige felter i alle fem vejrtyper, og årsagen
+til Copernicus' manglende nye bidrag kræver særskilt undersøgelse.
+R2 har endnu kun de fem tidligere produktionsobjekter (199,96 MB,
+$0). Supabase Pro viste 0,20 GB cachet og 0,004 GB øvrig trafik i
+den nye periode. Flere vellykkede driftsdøgn er nødvendige, før
+gratisplanerne kan vurderes sikkert.
+
+## 89.91 4.0.495 – Skeln mellem prognosetime og byggetid (historisk)
 
 Den korte prøve kunne åbne den store vejrpakke i R2 og det
 gemte hente-arbejde. Den stoppede alligevel, før den hentede nyt

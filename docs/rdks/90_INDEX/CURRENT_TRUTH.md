@@ -1,4 +1,34 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.495 retter forkert tidsfelt før kildefletning
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop efter gemt fremdrift
+
+4.0.495/PR #458 er merged som `a7f6ca8b`. Den korte normale kørsel
+`36244956035` genbrugte de beskyttede vejrgrundlag og præcis
+krypteret fremdrift, gennemførte leverandører og cachebygning og
+gemte ny krypteret fremdrift som `36244956035-1` (65.636.371 byte).
+Alle 54 produktionskontroller og releasegate blev gennemført, men
+runnet blev rødt før ny R2-produktionsskrivning og Pages af to
+uafhængige grunde: Supabase Edge-funktionen `ravradar-assistant`
+havde gammel modelbundle-hash `61ec5474…` mod kildens `c557f91a…`,
+og vandstandstesten manglede sin importerede fixturefil. Sidstnævnte
+er en testfejl, ikke påvist tab af vandstandsdata. Den gamle offentlige
+prognose er bevaret; ingen overlappende vejrkørsel er aktiv.
+
+4.0.496 medtager fixturefilen og kører begge berørte vandstandstests
+allerede i kildekontrollen; de består lokalt. Den eksisterende
+providerfri code-only-levering skal på aktuel main opdatere den
+eksakte Edge-funktion før næste korte normalrun. Ingen scoreformel
+eller kildeprioritet ændres. Exact-head CI, merge, code-only-deploy,
+ny R2-skrivning, Pages og offentlig prognose mangler livebevis.
+
+Komponentrapporten viser fremgang i vind, bølger og vandtemperatur,
+men store huller består i alle fem vejrtyper; Copernicus gav nul
+nyligt accepterede komponenter i denne korte kørsel. DMI-andel,
+resthuller og de tidligere 34 historiske temperaturfelter kl.
+26/9 07 UTC er fortsat åbne. R2 viste fem objekter/199,96 MB og $0;
+Supabase Pro viste 0,20 GB Cached Egress og 0,004 GB Egress i
+perioden 26/9–26/10. R2-læsning er bevist, ny produktionsskrivning
+og Free-budget over tid er endnu ikke bevist.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.495 retter forkert tidsfelt før kildefletning
 
 4.0.494/PR #457 blev merged til `b3881c54` efter grøn exact-head-CI.
 Den ene korte normale bekræftelse `36242754220` gendannede det

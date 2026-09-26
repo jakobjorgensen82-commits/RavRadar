@@ -1,4 +1,18 @@
-# Aktuelt fokus – 2026-09-26, lokal 4.0.494
+# Aktuelt fokus – 2026-09-26, lokal 4.0.496
+
+4.0.495-run `36244956035` gemte krypteret vejrfremskridt efter
+alle leverandører, men blev ikke publiceret: én vandstandstest
+manglede en fixture, og assistant Edge havde den gamle bundle.
+4.0.496 retter fixturen og den tidlige kontrol. Bestå én exact-head
+kilde-CI, merge, kør providerfri code-only-levering med Edge-
+readback, derefter højst én kort normalrun fra `36244956035-1`.
+Bevis ny R2-produktionspakke, Pages, nul tab på fælles timer og
+fem vejrfamiliers dækning. Undersøg Copernicus' nul nye bidrag,
+DMI-andel, resthuller og 34 historiske temperaturfelter separat.
+Ingen overlap, lang kørsel, oneoff eller cron før leveringsbevis.
+Følg Supabase/R2 Free efter flere vellykkede driftsdøgn.
+
+# Historisk fokus – 2026-09-26, lokal 4.0.494
 
 Færdiggør én kildebevist 11Z/15Z-/progress-samling, inklusive
 normal bevaring af DMI-, Copernicus- og Open-Meteo-komponenter.

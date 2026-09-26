@@ -1,4 +1,24 @@
-# 2026-09-26 – 4.0.495 tidskontrakt i kildesamleren
+# 2026-09-26 – 4.0.496 luk to uafhængige leveringsstop
+
+- [x] 4.0.495/PR #458 merged; normalrun `36244956035` genbrugte
+  beskyttet cache, nåede alle leverandører og gemte krypteret
+  fremskridt som `36244956035-1`.
+- [x] Afgræns den røde slutstatus til manglende vandstandsfixture i
+  produktionsvalideringen og gammel assistant Edge-modelbinding.
+- [x] Tilføj fixture og begge berørte tests til den tidlige kildegate;
+  måltest begge lokalt. Bevar fuld artifact- og releasekontrol.
+- [ ] Én exact-head CI, merge samme head og providerfri code-only-run,
+  som opdaterer og læser Edge-bindingen tilbage uden ny vejrhentning.
+- [ ] Én kort normalrun fra eksakt `36244956035-1`; bevis ny R2-pakke,
+  Pages, nul tab på fælles timer og offentlig prognose.
+- [ ] Mål vind, bølger, havstrøm, vandstand og vandtemperatur hver for
+  sig samt DMI/Copernicus/Open-Meteo. DMI-andel, Copernicus nul nye
+  komponenter, resthuller og historiske 34 temperaturfelter er åbne.
+- [ ] Bevis R2/Supabase Free-budget over flere driftsdøgn; cron pauset.
+
+Ældre statusoverskrifter nedenfor er historiske.
+
+# HISTORISK STATUS – 2026-09-26 – 4.0.495 tidskontrakt i kildesamleren
 
 - [x] 4.0.494/PR #457 exact-head-grøn og merged som `b3881c54`.
 - [x] Kort run `36242754220` gendannede R2-par og præcis krypteret

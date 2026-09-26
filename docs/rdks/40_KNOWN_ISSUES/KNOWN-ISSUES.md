@@ -1,4 +1,25 @@
-# Aktuelle issues – 2026-09-26, 4.0.495 under lokal kontrol
+# Aktuelle issues – 2026-09-26, 4.0.496 leveringsstop og ufuldstændige data
+
+- **ASSISTANT EDGE-BINDING – ÅBEN P0:** `36244956035` fandt
+  deployet `61ec5474…` mod kilde `c557f91a…`. Den eksisterende
+  providerfri code-only-vej skal deploye og læse den eksakte funktion
+  tilbage før næste almindelige vejrhentning. Koden er ikke en ny
+  scoreformel; live-Edge er blot ikke fulgt med tidligere bundelskift.
+- **VANDSTANDSTEST – LOKALT RETTET, LIVE ÅBEN:** Den fulde
+  artifactkontrol manglede en importeret fixturefil. 4.0.496
+  medtager den og kører to vandstandstests tidligt. Ikke bevis for
+  vandstandsdatatab; exact-head CI og live-gate mangler.
+- **VEJRDÆKNING – ÅBEN P0:** Krypteret fremskridt `36244956035-1`
+  er gemt, men ny R2-produktion og Pages mangler. Fem vejrfamiliers
+  resthuller, DMI-andel, Copernicus nul accepterede nye komponenter
+  og historiske 34 temperaturfelter kræver særskilt kontrol.
+- **R2/SUPABASE FREE – ÅBEN:** R2 fem objekter/199,96 MB/$0;
+  Supabase Pro 0,20 GB Cached Egress og 0,004 GB Egress i perioden
+  26/9–26/10. Ny R2-skrivning og Free-budget over flere døgn er åbne.
+
+Ældre issueoverskrifter nedenfor er historiske.
+
+# HISTORISKE ISSUES – 2026-09-26, 4.0.495 under lokal kontrol
 
 - **11Z/15Z-SAMLING – RODÅRSAG FUNDET, LIVE ÅBEN P0:** Kort run
   `36242754220` gendannede R2 og krypteret fremdrift, men stoppede
