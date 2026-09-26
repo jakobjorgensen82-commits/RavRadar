@@ -2,11 +2,13 @@
 """Small deterministic checks for the five-component recovery budget."""
 
 import importlib.util
+import copy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lib.dmi_bulk_storage import write_dmi_bulk_document
+from lib.dmi_adaptive_recovery import next_adaptive_recovery, retained_adaptive_recovery
 
 spec = importlib.util.spec_from_file_location("plan_dmi_recovery", Path(__file__).with_name("plan-dmi-recovery.py"))
 planner = importlib.util.module_from_spec(spec)
@@ -55,6 +57,52 @@ stalled = {**level_gap, "diagnostics": {"adaptiveRecovery": {
 }}}
 assert planner.decide(stalled, registry, target, now=datetime(2026, 9, 24, 13, tzinfo=timezone.utc))["cooldownActive"] is True
 assert planner.decide(stalled, registry, target, now=datetime(2026, 9, 24, 16, tzinfo=timezone.utc))["extended"] is True
+
+# A 4.0.492 quick turn could incorrectly claim an extended recovery. Match
+# instants, not spelling: production used both Z and .000Z UTC forms.
+short = copy.deepcopy(stalled)
+short["generatedAt"] = "2026-09-24T12:00:00.000Z"
+short["diagnostics"]["runtimeBudgetSeconds"] = 360
+assert retained_adaptive_recovery(short) is None
+assert planner.decide(short, registry, target, now=datetime(2026, 9, 24, 13, tzinfo=timezone.utc))["extended"] is True
+
+# A real long marker copied through a newer short invocation must survive.
+carried = copy.deepcopy(short)
+carried["generatedAt"] = "2026-09-24T12:30:00Z"
+assert planner.decide(carried, registry, target, now=datetime(2026, 9, 24, 13, tzinfo=timezone.utc))["cooldownActive"] is True
+for budget in (None, "360", True):
+    unknown = copy.deepcopy(short)
+    unknown["diagnostics"]["runtimeBudgetSeconds"] = budget
+    assert retained_adaptive_recovery(unknown) is not None
+long = copy.deepcopy(short)
+long["diagnostics"]["runtimeBudgetSeconds"] = 3600
+assert retained_adaptive_recovery(long) is not None
+assert next_adaptive_recovery(short, requested=True, runtime_budget_seconds=360,
+    generated_at="2026-09-24T13:00:00Z", before_counts=None) is None
+kept = next_adaptive_recovery(carried, requested=True, runtime_budget_seconds=360,
+    generated_at="2026-09-24T13:00:00Z", before_counts=None)
+assert kept == carried["diagnostics"]["adaptiveRecovery"]
+assert kept is not carried["diagnostics"]["adaptiveRecovery"]
+fresh = next_adaptive_recovery(short, requested=True, runtime_budget_seconds=3600,
+    generated_at="2026-09-24T13:00:00Z", before_counts=result["missingDmiPairs"])
+assert fresh["runtimeBudgetSeconds"] == 3600
+assert fresh["lastExtendedAt"] == "2026-09-24T13:00:00Z"
+assert fresh["missingDmiPairsAtStart"] == result["missingDmiPairs"]
+assert next_adaptive_recovery(short, requested=False, runtime_budget_seconds=3600,
+    generated_at="2026-09-24T13:00:00Z", before_counts=None) is None
+try:
+    next_adaptive_recovery(short, requested=True, runtime_budget_seconds=3600,
+        generated_at="2026-09-24T13:00:00Z", before_counts={"current": 1})
+except ValueError:
+    pass
+else:
+    raise AssertionError("A long marker requires all five measured component counts")
+explicit = copy.deepcopy(carried)
+explicit["diagnostics"]["adaptiveRecovery"]["runtimeBudgetSeconds"] = 360
+assert retained_adaptive_recovery(explicit) is None
+explicit["diagnostics"]["adaptiveRecovery"]["runtimeBudgetSeconds"] = 3600
+assert retained_adaptive_recovery(explicit) is not None
+
 stalled["diagnostics"]["adaptiveRecovery"]["missingDmiPairsAtStart"] = {
     **result["missingDmiPairs"], "waterLevel": 300,
 }

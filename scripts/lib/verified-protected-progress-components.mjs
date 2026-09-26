@@ -9,6 +9,7 @@ import { unpackPrivateWeatherComponentPack } from './private-weather-component-p
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './private-weather-component-inventory.mjs';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './open-meteo-part-bank.mjs';
 import { mergeVerifiedOpenMeteoGenerations } from './verified-open-meteo-generation-union.mjs';
+import { reconcileDmiProgressFiles } from './verified-dmi-progress-inputs.mjs';
 import { RESEARCH_HISTORY_HOURS } from './weather-history-retention.mjs';
 import { OPEN_METEO_FUTURE_HOURS } from './open-meteo-forecast-window.mjs';
 
@@ -69,12 +70,14 @@ export async function mergeVerifiedProtectedProgressComponents({
     || typeof temporaryDirectory !== 'string') {
     throw new Error('PROTECTED_PROGRESS_ARGUMENTS_INVALID');
   }
+  const dmi = await reconcileDmiProgressFiles({ root, files: progressFiles, temporaryDirectory, productionReferenceAt });
+  progressFiles = dmi.files;
   const protectedPack = path.join(root, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
   const stat = await fs.lstat(protectedPack).catch(error => {
     if (error.code === 'ENOENT') return null;
     throw error;
   });
-  if (!stat) return { files: progressFiles, openMeteoAdded: 0, copernicusMerged: false };
+  if (!stat) return { files: progressFiles, openMeteoAdded: 0, copernicusMerged: false, dmiProgress: dmi.summary };
   if (!stat.isFile() || stat.isSymbolicLink()) {
     throw new Error('PROTECTED_PROGRESS_BASE_INVALID');
   }
@@ -145,5 +148,5 @@ export async function mergeVerifiedProtectedProgressComponents({
   }
   const names = files.map(file => file.relativePath);
   if (new Set(names).size !== names.length) throw new Error('PROTECTED_PROGRESS_DUPLICATE_OUTPUT');
-  return { files, openMeteoAdded, copernicusMerged };
+  return { files, openMeteoAdded, copernicusMerged, dmiProgress: dmi.summary };
 }

@@ -17,10 +17,10 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// The five source-critical groups currently expand to 29 direct commands,
-// including the two binding preflight checks. Keep this explicit ceiling so a
-// future historical-suite command cannot silently enter the source gate.
-assert.ok(declared.length <= 29, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
+// 4.0.493: the existing 37 commands plus five bounded provider-continuity
+// commands (offline metadata, cursor, runtime, encrypted restore and pack).
+// Keep this explicit ceiling; no historical suite or network acquisition.
+assert.ok(declared.length <= 42, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
 
 for (const changes of [
   { 'validate:source': 'node other.mjs' },
@@ -50,6 +50,7 @@ const sourceDeclaration = scripts['validate:source:checks'];
 for (const required of [
   'test:ravscore-source-critical',
   'test:weather-source-critical',
+  'test:provider-continuity',
   'test:deploy-source-critical',
   'test:privacy-source-critical',
   'source:critical-gate',

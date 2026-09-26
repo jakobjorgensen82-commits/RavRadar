@@ -154,3 +154,102 @@ test('DMI-only level cannot consume reserve budget or disappear from missing tot
   assert.equal(result.summary.after.waterLevel.missing, 1);
   assert.equal(result.remainingNeeds[0].component, 'waterLevel');
 });
+
+test('Copernicus reports critical and upgrade attempts separately and totals both passes', async t => {
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    readVerifiedHourly: (_part, inputs) => {
+      const values = rows();
+      if (!inputs.copernicusComponentIndex?.criticalDone) values[0].wavePeriodS = null;
+      values[1].waterTemperatureProvenance.provider = inputs.copernicusComponentIndex?.upgradeDone
+        ? 'copernicus' : 'open-meteo';
+      return values;
+    },
+    runCopernicus: async options => {
+      if (options.budgetMs === 0) return cp('c');
+      const upgrade = options.needs[0].purpose === 'OPEN_METEO_UPGRADE';
+      return { ...cp(upgrade ? 'e' : 'd', { criticalDone: true, upgradeDone: upgrade }), summary: {
+        status: 'CANDIDATES_READY', admittedCandidates: upgrade ? 17 : 15,
+        remainingNeeds: 0, attempts: upgrade ? 3 : 2, retryableAttempts: upgrade ? 2 : 1,
+        retryableReasons: { CP_COMPONENT_REQUEST_TIMEOUT: upgrade ? 2 : 1 },
+        transportFailure: null, attemptCountsComplete: true,
+      } };
+    },
+  }));
+  const summary = result.summary.copernicus;
+  assert.equal(summary.attempts, 5);
+  assert.equal(summary.retryableAttempts, 3);
+  assert.deepEqual(summary.retryableReasons, { CP_COMPONENT_REQUEST_TIMEOUT: 3 });
+  assert.equal(summary.admittedCandidates, 17, 'final bank inventory, not two summed snapshots');
+  assert.equal(summary.attemptCountsComplete, true);
+  assert.equal(summary.passes.critical.attempts, 2);
+  assert.equal(summary.passes.upgrade.attempts, 3);
+  assert.equal(summary.passes.critical.requestedNeeds, 1);
+  assert.equal(summary.passes.upgrade.requestedNeeds, 1);
+  assert.equal(summary.remainingNeeds, 0);
+  assert.equal(summary.remainingUpgradeNeeds, 0);
+  assert.equal(result.sourceMarker.copernicusBankSha256, `sha256:${sha('e')}`);
+});
+
+test('an interrupted critical pass cannot be hidden by a later successful upgrade or offline reread', async t => {
+  let interrupted = false;
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    readVerifiedHourly: (_part, inputs) => {
+      const values = rows();
+      values[0].wavePeriodS = null;
+      values[1].waterTemperatureProvenance.provider = inputs.copernicusComponentIndex?.upgradeDone
+        ? 'copernicus' : 'open-meteo';
+      return values;
+    },
+    runCopernicus: async options => {
+      if (options.budgetMs === 0) return cp(interrupted ? 'd' : 'c');
+      if (options.needs[0].purpose !== 'OPEN_METEO_UPGRADE') {
+        interrupted = true;
+        throw new Error('private provider detail must not appear in the safe report');
+      }
+      return { ...cp('e', { upgradeDone: true }), summary: {
+        status: 'CANDIDATES_READY', attempts: 3, retryableAttempts: 0,
+        retryableReasons: {}, remainingNeeds: 0, transportFailure: null, attemptCountsComplete: true,
+      } };
+    },
+  }));
+  const summary = result.summary.copernicus;
+  assert.equal(summary.attempts, 3, 'known attempts only, not an assertion of total work');
+  assert.equal(summary.attemptCountsComplete, false);
+  assert.equal(summary.transportFailure, 'CP_COMPONENT_REFRESH_FAILED');
+  assert.equal(summary.passes.critical.outcome, 'FAILED');
+  assert.equal(summary.passes.critical.attempts, null);
+  assert.equal(summary.passes.upgrade.outcome, 'COMPLETED');
+  assert.equal(summary.remainingNeeds, 1, 'current critical gap, not last upgrade stage remainingNeeds=0');
+  assert.equal(summary.remainingUpgradeNeeds, 0);
+  assert.ok(!JSON.stringify(summary).includes('private provider detail'));
+});
+
+test('offline recovery preserves explicit unknown attempt counts for its interrupted invocation', async t => {
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    readVerifiedHourly: () => { const values = rows(); values[0].wavePeriodS = null; return values; },
+    runCopernicus: async options => ({ ...cp('d'), summary: {
+      status: 'IN_PROGRESS', attempts: 0, retryableAttempts: 0, retryableReasons: {}, remainingNeeds: 1,
+      transportFailure: options.budgetMs > 0 ? 'CP_COMPONENT_PRODUCER_FAILED_OR_TIMED_OUT' : null,
+      attemptCountsComplete: options.budgetMs === 0,
+    } }),
+  }));
+  assert.equal(result.summary.copernicus.attemptCountsComplete, false);
+  assert.equal(result.summary.copernicus.passes.critical.outcome, 'RECOVERED_AFTER_TRANSPORT_FAILURE');
+  assert.equal(result.summary.copernicus.passes.upgrade, null);
+  assert.equal(result.summary.copernicus.transportFailure, 'CP_COMPONENT_PRODUCER_FAILED_OR_TIMED_OUT');
+});
+
+test('later Open-Meteo gains must not be attributed to the Copernicus boundary', async t => {
+  const result = await prepareWeatherComponentRuntime(await fixture(t, {
+    readVerifiedHourly: (_part, inputs) => {
+      const values = rows();
+      if (!inputs.openMeteoComponentIndex?.filled) values[0].wavePeriodS = null;
+      return values;
+    },
+    runOpenMeteo: async () => om('d', { filled: true }),
+  }));
+  assert.equal(result.summary.afterCopernicus.wave.missing, 1);
+  assert.equal(result.summary.copernicus.remainingNeeds, 1);
+  assert.equal(result.summary.after.wave.missing, 0);
+  assert.equal(result.remainingNeeds.length, 0);
+});

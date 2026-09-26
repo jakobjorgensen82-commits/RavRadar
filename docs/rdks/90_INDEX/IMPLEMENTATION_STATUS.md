@@ -1,3 +1,27 @@
+# 2026-09-26 – samlet lokal 4.0.493
+
+- [x] 4.0.492 exact-head grøn og PR #455 merged; main `c41aa472`.
+- [x] Kort run `36228162505` har genbrugt den krævede krypterede
+  fremdrift `36183093672-1` og gennemført DMI.
+- [ ] Samme runs cachegemning, offentlig deploy og tabsopgørelser.
+- [x] Reproducerede barrierer: falsk DMI-langmarkør, fælles CP-cursor,
+  NWS-static metadata og forkert udvælgelse af exact quick-cache.
+- [x] CP-metadata/rotation og DMI-cooldown er rettet med måltests.
+  Eksisterende modelbundle og bindingsforbrugere er uændrede.
+- [x] Sikker, bagudkompatibel krypteret DMI-inputbevarelse; 23
+  måltests, 10 eksisterende pakkekontroller og normal-wireup består.
+  Separat hentetidsur, rullende 121-timers hale og cursororden
+  er krydstjekket; særskilt scorehistorik er urørt.
+- [x] CP: 20 original-/metadata-, 22 bank-, 9 cursor- og 10
+  runtime-tests består. Modelbinding, privacy, RDKS og version består;
+  særskilt geodatadiff ændrer kun topversion.
+- [ ] Samlet versions-/RDKS-kontrol, exact-head CI, sikker merge og
+  livebevis for 4.0.493. Ingen påstand om fuld vejr-cache.
+- [ ] Mål alle fem vejrfelter og leverandørfordeling efter hvert run.
+  Ingen lange forsøg, overlappende kørsel eller cron før leveringsbevis.
+
+Ældre afkrydsninger herunder er historiske.
+
 # 2026-09-26 – lokal 4.0.492 efter bevist R2-migration
 
 - [x] PR #454/4.0.491 merged som `197f3cc3`; exact-head grøn.

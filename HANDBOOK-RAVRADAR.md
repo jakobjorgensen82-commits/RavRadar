@@ -1,14 +1,39 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.492
+**Håndbogsversion:** 4.0.493
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.492 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.493 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.89 4.0.493 – Hent videre uden at gentage de samme områder
+
+Gennemgangen fandt flere konkrete grunde til manglende fremgang.
+En kort DMI-kørsel kunne blive registreret som en lang og dermed
+udsætte næste genopfyldning. Copernicus havde to forskellige opgaver,
+men kun én fælles markering af, hvor langt den var nået. De kunne
+derfor få hinanden til at begynde ved de samme områder igen.
+
+Rettelsen skelner mellem korte og lange DMI-kørsler og husker
+Copernicus' position for hver opgave: først manglende felter,
+derefter bedre dækning af felter, som Open-Meteo allerede leverer.
+Rapporten viser begge opgaver, så et lille sidste gennemløb ikke
+forveksles med hele leverandørens indsats.
+
+Vi fandt også oplysninger i Copernicus' faktiske datafiler, som vores
+læser afviste. De dokumenterede formater læses nu korrekt; data med
+forkert enhed, forkert lag eller manglende bevis er stadig ugyldige.
+En kort bekræftelse skal desuden hente netop den gemte kørsel, der er
+valgt, og bevare gyldige DMI-input fra et tidligere afbrudt forsøg.
+
+Scoreberegning og kildernes prioritet ændres ikke. DMI's vandstand
+bruger fortsat administratorens interpolation. De lokale rettelser
+skal stadig vise deres effekt i en virkelig kørsel. Komplet vejr,
+ny cachegemning og offentlig visning må ikke loves alene ud fra tests.
 
 ## 89.88 4.0.492 – Fortsæt fra de data, vi allerede har hentet
 

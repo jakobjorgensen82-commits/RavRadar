@@ -654,10 +654,14 @@ def produce_component_bank(plan: dict, bank: dict, *, acquire_subset: Callable,
         return (supplied if isinstance(error, ComponentReadError)
                 or re.fullmatch(r"CP_COMPONENT_[A-Z0-9_]+", supplied)
                 else "CP_COMPONENT_REQUEST_RETRYABLE_ERROR")
-    ordered = list(grouped)
-    if start_after in grouped:
-        offset = ordered.index(start_after) + 1
-        ordered = ordered[offset:] + ordered[:offset]
+    # A stable group order survives target-window shifts and needs disappearing
+    # after another provider fills them. Membership-only rotation restarted at
+    # the head whenever the last attempted group was no longer pending.
+    ordered = sorted(grouped)
+    if (isinstance(start_after, tuple) and len(start_after) == 2
+            and all(isinstance(value, str) and value for value in start_after)):
+        ordered = ([group for group in ordered if group > start_after]
+                   + [group for group in ordered if group <= start_after])
     for part_id, key in ordered:
         times = grouped[(part_id, key)]
         challenges = challenges_by_component.get((part_id, CONTRACTS[key].component), {})

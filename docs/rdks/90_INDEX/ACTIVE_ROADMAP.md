@@ -1,3 +1,23 @@
+# Aktivt roadmap – 2026-09-26, samlet leverandør- og fortsættelsesrettelse
+
+1. [x] R2-migration/restore og 4.0.492-merge er bevist; gentag ikke.
+2. [ ] Følg den eneste aktive korte kørsel `36228162505` til
+   cachegemning og Pages. Gem dens præcise nye fremdrifts-id.
+3. [ ] Færdiggør samlet 4.0.493 efter auditrapporten: DMI-cooldown,
+   CP-rotation/metadata/rapporter, exact quick-cache og bevaret
+   DMI-prognose-/stationsfremdrift. Hold modelbinding uændret.
+4. [ ] Én exact-head CI og sikker merge efter aktiv produktionslås;
+   derefter kort bekræftelse fra nyeste verificerede fremdrift.
+5. [ ] Mål fremgang og rester for vind, bølger, havstrøm, vandstand og
+   vandtemperatur; adskil native DMI fra interpoleret offentlig
+   vandstand. Copernicus-vind har endnu ingen implementeret adapter.
+6. [ ] Først når gemning, deploy og bevaring er bevist: vurder
+   længere opfyldning, derefter flere stabile almindelige kørsler.
+7. [ ] Supabase/R2-Free-måling består efter DEC-0255; dagens
+   kvoteopgave er sprunget over. UI/roadmap må ikke risikere driften.
+
+Ældre status herunder er historisk.
+
 # Aktivt roadmap – 2026-09-26, kort cachebekræftelse på R2
 
 1. [x] R2-migration, scoped token, byte-/SHA-verifikation, privat

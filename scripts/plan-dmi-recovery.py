@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.dmi_bulk_storage import read_dmi_bulk_document
+from lib.dmi_adaptive_recovery import retained_adaptive_recovery
 
 HOURS = 118
 COMPONENT_FIELDS = {
@@ -162,7 +163,7 @@ def decide(cache, registry, target, *, now=None):
             if amount >= broad_limit:
                 counts[component] += 1
     recovering = [component for component in COMPONENT_FIELDS if counts[component] >= 12]
-    previous = (cache.get("diagnostics") or {}).get("adaptiveRecovery") or {}
+    previous = retained_adaptive_recovery(cache) or {}
     last_at = previous.get("lastExtendedAt")
     last_missing = previous.get("missingDmiPairsAtStart")
     current_total = sum(missing_pairs.values())

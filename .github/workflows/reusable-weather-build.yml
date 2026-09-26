@@ -443,7 +443,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.492 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.493 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -979,6 +979,15 @@ jobs:
           --output "$RUNNER_TEMP/historical-wave-input-transition.json"
           --github-output "$GITHUB_OUTPUT"
 
+      - name: Validate requested short-confirmation progress source
+        if: inputs.quick_confirmation == true
+        shell: bash
+        env:
+          QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
+        run: |
+          set -euo pipefail
+          [[ "$QUICK_PROGRESS_SOURCE" =~ ^[0-9]+-[1-9][0-9]*$ ]]
+
       - name: Restore encrypted private weather progress only
         id: component-progress-cache
         continue-on-error: true
@@ -990,9 +999,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
-          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            weather-private-progress-encrypted-v2-${{ runner.os }}-main-
+          key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ inputs.quick_confirmation && inputs.quick_progress_source || format('{0}-{1}', github.run_id, github.run_attempt) }}
+          restore-keys: ${{ !inputs.quick_confirmation && format('weather-private-progress-encrypted-v2-{0}-main-', runner.os) || '' }}
 
       - name: Bind optional progress to the exact protected baseline
         id: component-progress-restore
@@ -1025,7 +1033,7 @@ jobs:
           # the next scheduled run begins again from protected storage.
 
       - name: Require recovered progress before short confirmation
-        if: inputs.quick_confirmation == true && steps.exact-weather-recovery.outputs.required == 'true'
+        if: inputs.quick_confirmation == true
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
@@ -1088,7 +1096,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.492 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.493 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1113,7 +1121,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.492 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.493 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1374,7 +1382,7 @@ jobs:
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json
-          DMI_BULK_ADAPTIVE_RECOVERY: ${{ steps.dmi-recovery-budget.outputs.extended == 'true' }}
+          DMI_BULK_ADAPTIVE_RECOVERY: ${{ inputs.quick_confirmation != true && steps.dmi-recovery-budget.outputs.extended == 'true' }}
           DMI_BULK_RECOVERY_BEFORE_COUNTS: ${{ steps.dmi-recovery-budget.outputs.missing_pair_counts_json }}
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: ${{ (inputs.extended_provider_bootstrap == true || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')) && '4096' || '2048' }}
@@ -1400,7 +1408,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.492 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.493 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1760,7 +1768,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.492 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.493 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1782,7 +1790,14 @@ jobs:
                    attempts:$coverage.copernicus.attempts,
                    retryableAttempts:$coverage.copernicus.retryableAttempts,
                    retryableReasons:$coverage.copernicus.retryableReasons,
-                   transportFailure:$coverage.copernicus.transportFailure},
+                   transportFailure:$coverage.copernicus.transportFailure,
+                   attemptCountsComplete:$coverage.copernicus.attemptCountsComplete,
+                   remainingUpgradeNeeds:$coverage.copernicus.remainingUpgradeNeeds,
+                   passes:($coverage.copernicus.passes | if type == "object" then
+                     with_entries(.value |= if type == "object" then
+                       {requestedNeeds,budgetMs,outcome,status,attempts,retryableAttempts,
+                        retryableReasons,remainingNeeds,transportFailure,attemptCountsComplete}
+                       else null end) else null end)},
                  openMeteo:{requests:$coverage.openMeteo.requests,
                    deferred:$coverage.openMeteo.deferred,
                    failureCount:($coverage.openMeteo.failures | length),

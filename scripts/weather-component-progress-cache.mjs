@@ -302,6 +302,7 @@ export async function weatherComponentProgressCache({
       restored: true, fileCount: reconciled.files.length,
       protectedOpenMeteoRecordsRecovered: reconciled.openMeteoAdded,
       protectedCopernicusBankMerged: reconciled.copernicusMerged,
+      dmiProgress: reconciled.dmiProgress,
     });
   } catch (error) {
     const code = error?.progressCode ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');

@@ -1,7 +1,7 @@
 // Public wording is deliberately outside the sealed RavScore model bundle.
 // Keep all three public languages together so a wording change cannot alter
 // the score calculation or its model binding.
-import { registerI18nMessages } from '../i18n.js?v=4.0.492';
+import { registerI18nMessages } from '../i18n.js?v=4.0.493';
 
 registerI18nMessages({
   da: {

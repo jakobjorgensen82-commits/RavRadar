@@ -1,4 +1,44 @@
-# NYESTE SANDHED – 2026-09-26 – lokal 4.0.492, R2 læst, cachefortsættelse rettet
+# AKTUELT CHECKPOINT – 2026-09-26 – samlet 4.0.493 lokalt kontrolleret
+
+Arbejd i managed worktree `r2-private-runtime`, branch
+`codex/4.0.493-provider-continuity`. Den gamle cb79-rod er urørt.
+PR #455/4.0.492 bestod exact-head `36227603554` og er merged som
+`c41aa4721406392bddc49cb92f4b523f95a41858`. Kort normalrun
+`36228162505` bruger netop `36183093672-1`: restore og DMI er
+grønne; senest observeret opbygger den central vejr-cache. Ny privat
+R2-publish, offentlig deploy og nul tab er endnu ikke bevist.
+Ingen main-ændring eller overlappende vejrkørsel under denne lås.
+
+Ejeren brugte den resterende Astra Ultra-tid på en samlet gennemgang
+og er nu tilbage på Sol Ekstra høj. Se den konkrete evidens i
+`docs/ai/PROVIDER_ACQUISITION_AUDIT_2026-09-26.md`.
+Den samlede lokale 4.0.493 retter fem sammenhængende forhold:
+
+- Kort DMI-bekræftelse må ikke registreres som en lang genopfyldning
+  og udløse fire timers pause. Kun dokumenteret falske gamle markører
+  fjernes; ægte langkørselsmarkører bevares.
+- Copernicus får separate gemte positioner til huller og opgradering
+  af Open-Meteo-data. Begge gennemløb rapporteres særskilt.
+- De dokumenterede NWS 202511-metadata læses korrekt: manglende
+  bathymetri-enhed og tredimensional overflademaske. Forkert eksplicit
+  enhed, andre produkter og dybe lag godkendes ikke.
+- Kort bekræftelse henter præcis det bestilte run/attempt fra cachen,
+  ikke den nyeste tilfældige prefix-træffer.
+- Krypteret fremdrift kan bevare DMI's prognose-/stationsinput;
+  komponenter genvalideres mod central geometri og gyldighed.
+  Gamle snapshots og fuld produktionspakke skal forblive kompatible.
+
+Scoreformel, aktiv modelbinding, DMI-first/96-timersregel, DMI-only-
+vandstand, admininterpolation og Limfjord-fastholdelse er uændrede.
+Måltests og integration er afsluttet lokalt; exact-head CI og merge
+mangler. 4.0.493 er ikke produktionsbevist. De 34 temperaturtab ved 26/9 kl. 07Z
+må kun kaldes afkræftet, hvis præcis den time faktisk kontrolleres.
+Der er stadig åbne dækning-/leverandørspørgsmål i alle fem vejrtyper.
+Ingen lang hentning eller cron før kort save/deploy-bevis.
+Permanent Supabase/R2-Free-overvågning består; dagens kvoteopgave er
+sprunget over efter ejeren. Flytning alene er ikke et Free-løfte.
+
+# HISTORISK CHECKPOINT – lokal 4.0.492 før merge og bekræftelse
 
 Arbejd i managed worktree `r2-private-runtime`, branch
 `codex/4.0.492-progress-hour-normalization`; ikke i den gamle
