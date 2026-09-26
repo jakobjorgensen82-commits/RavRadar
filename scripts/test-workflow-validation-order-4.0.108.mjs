@@ -105,6 +105,20 @@ for (const marker of [
   'test "$(git rev-parse origin/main)" = "$EXPECTED_HEAD_SHA"',
   'node scripts/protected-private-production-runtime.mjs --migrate-r2',
 ]) assert.ok(r2MigrationWorkflow.includes(marker), `Private R2 migration lacks ${marker}`);
+for (const workflowName of [
+  'migrate-private-runtime-to-r2.yml',
+  'run-current-weather-once.yml',
+  'update-and-deploy.yml',
+  'reusable-weather-build.yml',
+  'deploy-code-only-repair.yml',
+]) {
+  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8');
+  for (const secretName of [
+    'RAVRADAR_R2_ACCOUNT_ID',
+    'RAVRADAR_R2_ACCESS_KEY_ID',
+    'RAVRADAR_R2_SECRET_ACCESS_KEY',
+  ]) assert.ok(workflow.includes(secretName), `${workflowName} lacks ${secretName}`);
+}
 assert.doesNotMatch(r2MigrationWorkflow, /pages: write|id-token: write|deploy-pages|--publish/,
   'The copy-only R2 migration must not deploy or change the pointer');
 const manualCurrentWeatherWorkflow = fs.readFileSync(

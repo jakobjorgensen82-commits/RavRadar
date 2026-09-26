@@ -33,7 +33,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
     ]),
     optionalInputs: freezeList(['quick_confirmation', 'quick_progress_source']),
     secrets: freezeList([
-      'CLOUDFLARE_ACCOUNT_ID',
+      'RAVRADAR_R2_ACCOUNT_ID',
       'CLOUDFLARE_TRIP_GATEWAY_URL',
       'COPERNICUSMARINE_SERVICE_PASSWORD',
       'COPERNICUSMARINE_SERVICE_USERNAME',
@@ -45,7 +45,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'TRIP_GATEWAY_SHARED_SECRET',
     ]),
     optionalSecrets: freezeList([
-      'CLOUDFLARE_ACCOUNT_ID',
+      'RAVRADAR_R2_ACCOUNT_ID',
       'RAVRADAR_R2_ACCESS_KEY_ID',
       'RAVRADAR_R2_SECRET_ACCESS_KEY',
     ]),

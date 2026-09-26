@@ -139,7 +139,7 @@ async function readBoundedBody(response, limit) {
 }
 
 export function createR2PrivateRuntimeStorage({
-  accountId = process.env.CLOUDFLARE_ACCOUNT_ID,
+  accountId = process.env.RAVRADAR_R2_ACCOUNT_ID,
   accessKeyId = process.env.RAVRADAR_R2_ACCESS_KEY_ID,
   secretAccessKey = process.env.RAVRADAR_R2_SECRET_ACCESS_KEY,
   bucketId,

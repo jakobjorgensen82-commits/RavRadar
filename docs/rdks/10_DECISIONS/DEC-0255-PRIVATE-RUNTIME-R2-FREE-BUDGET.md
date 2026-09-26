@@ -25,7 +25,10 @@ Supabase-kopi ikke længere en automatisk aktuel rollback.
 
 Workflowets backend er Supabase, indtil den særskilte migration og
 R2-secrets er på plads. R2-token må kun have Object Read & Write på
-den ene private bucket. Bucketens lokale 2.000.000.000-byte-tærskel
+den ene private bucket. R2's konto-ID bindes særskilt som
+`RAVRADAR_R2_ACCOUNT_ID`; den eksisterende `CLOUDFLARE_ACCOUNT_ID`
+til andre Cloudflare-funktioner må ikke stiltiende genbruges.
+Bucketens lokale 2.000.000.000-byte-tærskel
 stopper nye objekter før 10 GB Free storage; den er **ikke** en
 Cloudflare-kontodækkende betalingsgrænse. Bucketens drift kræver
 regelmæssig kontrol af faktisk kontoforbrug: Standard-lager, Class A,

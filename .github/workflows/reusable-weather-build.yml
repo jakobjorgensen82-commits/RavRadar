@@ -48,7 +48,7 @@ on:
         required: true
         type: string
     secrets:
-      CLOUDFLARE_ACCOUNT_ID:
+      RAVRADAR_R2_ACCOUNT_ID:
         required: false
       CLOUDFLARE_TRIP_GATEWAY_URL:
         required: true
@@ -774,7 +774,7 @@ jobs:
           fi
           exit "$status"
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -2328,7 +2328,7 @@ jobs:
           --expected .cache/private-production-runtime-expected.json
           --source-head "$GITHUB_SHA"
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -2339,7 +2339,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
