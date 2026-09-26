@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
+
+for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
+  'scripts/lib/verified-open-meteo-generation-union.mjs']) {
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(file),
+    'The operational recovery helpers must remain in the producer inventory');
+}
 
 const workflow = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
   .replace(/\r\n/g, '\n');

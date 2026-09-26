@@ -41,6 +41,8 @@
   produktionskald bruger den længere; workflowtesten låser dette.
 - Begge eksisterende modelpakker er verificeret uændrede. Ingen ny
   database-, source-prioritets-, score-, geometri- eller punktændring.
+  Begge operationelle recovery-helpers står i producentinventaret;
+  den stabile lagringskontrakt ændres ikke af implementeringsrettelsen.
 - Installer er atomisk overlay og sletter ikke en gammel bank, som
   ikke findes i progress-pakken. Fejlet rename rulles tilbage; usikker
   rollback stopper. Baseline- og bundlehash kontrolleres før installation.

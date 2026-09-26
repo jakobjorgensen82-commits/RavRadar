@@ -63,6 +63,8 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/protected-private-production-runtime.mjs',
     'scripts/lib/r2-private-runtime-storage.mjs',
     'scripts/weather-component-progress-cache.mjs',
+    'scripts/lib/verified-protected-progress-components.mjs',
+    'scripts/lib/verified-open-meteo-generation-union.mjs',
     'scripts/lib/coastal_point_staging.py',
     'scripts/lib/copernicus_current.py',
     'scripts/lib/copernicus_current_donor_bank.py',
