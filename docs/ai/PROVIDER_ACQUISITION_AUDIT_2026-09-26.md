@@ -1,5 +1,33 @@
 # Afgrænset leverandør- og genbrugsaudit – 26. september 2026
 
+## Efterfølgende live-status, 26/9
+
+4.0.493/PR #456 blev merged efter grøn exact-head-kontrol, men det
+korte live-run `36232521656` stoppede før R2-publish og Pages.
+Den præcise bestilte krypterede fremdrift blev gendannet. Ny pakke
+havde 1.380 gyldig-til-tom-vindpar og 1.045 temperaturpar mod den
+stadig offentlige 15Z-generation; mod 11Z var der nul fremtidige tab.
+15Z's verificerede private kildepakke er fortsat kun tabsanker.
+De tidligere 34 temperaturpar ved 26/9 07 UTC er ikke retestet,
+fordi det nye target startede senere. Copernicus optog nul nye
+bølge-/temperaturkandidater i 13 faktiske forsøg. Dermed er de
+oprindelige lokale rettelser **ikke** en produktionsverificeret
+afslutning på kontinuitet, leverandørfremgang eller deploy. Se
+`docs/rdks/90_INDEX/CURRENT_TRUTH.md` for aktuel arbejdsstatus.
+
+**Kontinuitetskrav for både genopretning og almindelig drift:** En
+verificeret værdi for eksakt kystdel, prognosetime og vejrtype må
+overleve vilkårligt mange efterfølgende vejrkørsler (også 4 eller 10),
+så længe timen stadig ligger i den relevante gyldige prognose- eller
+historikhorisont, og ingen nyere gyldig kilde må erstatte den efter
+leverandørreglerne. Antal kørsler er aldrig en udløbsregel. Kun den
+konkrete tidslige/videnskabelige gyldighed, kildebevis og eventuel
+ændret stedidentitet må pensionere værdien. Et tomt, fejlbehæftet
+eller ufuldstændigt nyt svar må ikke gøre det. Samme invariant skal
+testes over flere normale beskyttede generationsskift, ikke kun ved
+den særlige 11Z/15Z-sammenlægning. No-loss-kontrollen er sidste værn,
+ikke en erstatning for bevaring af de oprindelige kildebanker.
+
 ## Status og afgrænsning
 
 Ejeren bad om at bruge resterende Astra Ultra-tid på konkrete korte

@@ -1,14 +1,41 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.493
+**Håndbogsversion:** 4.0.494
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.493 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.494 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.90 4.0.494 – Bevar alle gyldige vejrdata, når vi fortsætter
+
+Den seneste korte kørsel byggede videre på gemt hente-arbejde,
+men ville gøre gamle gyldige vind- og vandtemperaturfelter tomme.
+Den offentlige prognose blev derfor ikke udskiftet.
+
+To gemte pakker indeholder hver deres gyldige oplysninger. Nu
+kontrollerer vi deres oprindelige data og samler dem for samme
+kyststed, tidspunkt og vejrtype. Nyere gyldige oplysninger får
+forrang; en gammel gyldig værdi bliver stående ved et nyt hul.
+Det gælder også, hvis værdien overlever mange almindelige
+vejrkørsler. Vi overtager ikke en gammel markering af, hvor langt
+en hentning var nået, og kopierer ikke tal fra hjemmesiden tilbage
+som om de var originale leverandørdata.
+
+Den store private pakke ligger nu i R2 og er blevet læst tilbage
+med succes. En ny opdateret pakke er endnu ikke gemt der, fordi
+kørslen stoppede før det trin. Supabase bruges stadig til mindre
+centrale oplysninger. Vi skal måle forbruget gennem flere normale
+dage, før vi kan vide, om den gratis plan er tilstrækkelig.
+
+Rettelsen er kun kontrolleret lokalt. Næste korte virkelige kørsel
+skal bevise, at data bevares, at den nye pakke gemmes, og at
+hjemmesiden viser den. De tidligere 34 temperaturfelter i
+historikken kræver en separat kontrol. Vi kalder ikke vejrcachen
+komplet eller driften stabil endnu.
 
 ## 89.89 4.0.493 – Hent videre uden at gentage de samme områder
 

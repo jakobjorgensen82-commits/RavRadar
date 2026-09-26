@@ -1,5 +1,24 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-26 – 4.0.494 originalbevist 15Z-donor, ikke fuld runtimefletning
+
+Run `36232521656` beviste, at genhentning alene ikke bevarede alle
+15Z's tidligere gyldige felter: 1.380 vind- og 1.045
+temperaturpar ville blive tomme. Derfor supersederer dette tillæg
+den tidligere formulering om 15Z **alene** som tabsanker.
+11Z forbliver det eneste private runtime-/scoreudgangspunkt og
+15Z forbliver tabsanker, men 15Z's selvstændigt autentificerede
+originale DMI-, CP- og OM-vejrkilder må nu også være komponentdonor
+for præcis sted, time og vejrtype. DMI-bulk læses som særskilt
+beskyttet donor; gammel processed-step-/schedulerstatus overtages
+ikke. Almindelig krypteret progress-restore skal også forene CP's
+og OM's havstrømsdonorbanker med beskyttet produktion, så en tyndere
+fejlkørsel ikke sletter gyldige felter. Antal gennemførte kørsler
+er aldrig i sig selv en udløbsregel. Fuld privat runtimefletning,
+offentlig JSON-replay og ændring af score-/kildeprioritet er fortsat
+forbudt. Lokal test er ikke bevis for de 34 historiske temperaturtab,
+R2-gemning eller offentlig deploy.
+
 ## Implementeringstillæg 2026-09-26 – lokal 4.0.493
 
 Kort mode skal hente præcis den bestilte krypterede run-/attempt-cache.

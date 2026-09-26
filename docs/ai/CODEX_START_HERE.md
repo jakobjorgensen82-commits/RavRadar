@@ -1,4 +1,47 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – samlet 4.0.493 lokalt kontrolleret
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.494 kildekontinuitet under lokal kontrol
+
+Arbejd i managed worktree `r2-private-runtime`, branch
+`codex/4.0.493-provider-continuity`; cb79 er ikke arbejdsroden. Run
+`36232521656` stoppede før privat R2-publish og Pages på 1.380
+vind- og 1.045 vandtemperaturtab mod offentlig 15Z. Ny lokal
+4.0.494-kandidat genvaliderer 15Z's originale private kildepakke
+og fletter dens gyldige DMI-, Copernicus- og Open-Meteo-input med
+11Z plus krypteret fremdrift. Den flytter ikke offentlig JSON,
+scoretilstand eller gammel scheduler-cursor. Almindelig progress-
+restore forener også de to havstrømsdonorbanker med den beskyttede
+produktionsbank. Test ti efterfølgende sparsomme DMI-generationer
+bevarer alle fem fortsat gyldige vejrkomponenter. Koden er endnu
+ikke merged eller bevist i produktion. De 34 historiske
+temperaturtab kl. 26/9 07 UTC er fortsat et særskilt åbent punkt.
+
+R2-migration `36225146256` kopierede to pakker/fem objekter med
+byte-/SHA-readback og afvist anonym adgang; aktiv variabel er `r2`,
+og `36232521656` gendannede fra R2. Ny produktionsskrivning i R2
+er **ikke** bevist, fordi runnet stoppede tidligere. Cloudflare viste
+26/9 fem objekter/199,96 MB, 38 Class A, 33 Class B og $0,00 i
+perioden 26/9–26/10. Supabase Pro viste 0,00 GB i både Egress og
+Cached Egress for den netop påbegyndte periode. Små admin-/pointer-
+og deploy-beviser bruger stadig Supabase; ældre Supabase-kopier er
+bevaret til rollback. En nulstillet tæller er intet Free-bevis.
+Ingen ny vejrkørsel før exact-head-gate og sikker merge; derefter
+kun én kort, ikke-overlappende bekræftelse med eksakt seneste
+krypterede fremdrift. Mål alle fem vejrtyper, begge tidligere
+grundlag, R2-gemning og offentlig visning.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – stop før ny vejrkørsel
+
+Læs først `docs/rdks/90_INDEX/CURRENT_TRUTH.md` og
+`.cache/codex-4.0.492-handoff.md` for den seneste 4.0.493-fejl og alle
+åbne arbejdspunkter. PR #456 er merged, men run `36232521656` fejlede
+før R2-publish/Pages på 1.380 vind- og 1.045 temperaturtab mod den
+offentlige 15Z-pakke. 15Z er i dag kun tabsanker, ikke verificeret
+komponentdonor. De ældre 34 temperaturtab kl. 26/9 07 UTC, nul nye
+Copernicus-komponenter og store rester i fem vejrtyper er stadig åbne.
+Ingen ny vejrkørsel, før den generelle kilde- og historikkontinuitet
+er analyseret og sikret. En merged koderelease lukker ikke et
+produktionsissue uden målt end-to-end-bevis.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – samlet 4.0.493 lokalt kontrolleret
 
 Arbejd i managed worktree `r2-private-runtime`, branch
 `codex/4.0.493-provider-continuity`. Den gamle cb79-rod er urørt.

@@ -1,4 +1,28 @@
-# 2026-09-26 – samlet 4.0.493 fra leverandør- og fortsættelsesaudit
+# 2026-09-26 – 4.0.494 komponentvis kildebevarelse og R2-kontrol
+
+Samtaledelta: ejeren krævede, at fortsat gyldige data overlever
+også fire, ti eller flere almindelige vejrkørsler, bad om en
+helhedsgennemgang og konkret kontrol af R2-flytning/Supabase-trafik.
+Run `36232521656` genbrugte krypteret fremdrift, men stoppede på
+1.380 vind- og 1.045 temperaturtab mod offentlig 15Z. Den lokale
+4.0.494-kandidat forener originalverificerede DMI-, Copernicus- og
+Open-Meteo-kilder fra både 11Z og 15Z med fremdriften, og normal
+progress-restore forener de to havstrømsdonorbanker. Offentlig JSON,
+scorestate og gamle schedulerpositioner bliver ikke donor. Den
+tidligere regel om 15Z **kun** som tabsanker er dermed afgrænset:
+15Z er fortsat tabsanker og må nu også afgive selvstændigt
+verificerede originale vejrinput, aldrig hele private runtime.
+
+R2-migration `36225146256` og læsning i `36232521656` er bevist;
+ny produktionsskrivning og Pages blev ikke nået. 26/9 viste R2
+fem objekter/199,96 MB, 38 Class A, 33 Class B og $0,00 for
+26/9–26/10. Supabase Pro viste 0,00 GB i begge egresskategorier
+i ny periode. Små admin-/pointer-/deploy-beviser og gamle
+rollbackkopier er fortsat i Supabase; Free kræver flere målte døgn.
+34 historiske temperaturtab og fuld fem-vejrtype-dækning forbliver
+åbne. Lokal test er ikke et produktionsbevis. Se DEC-0254/-0255.
+
+# HISTORISK – 2026-09-26 – samlet 4.0.493 fra leverandør- og fortsættelsesaudit
 
 Ejeren stillede resterende Astra Ultra-tid til rådighed til afgrænsede
 parallelle gennemgange under det korte vejrbevis og skiftede derpå

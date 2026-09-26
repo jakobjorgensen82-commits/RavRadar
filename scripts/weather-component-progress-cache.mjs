@@ -126,7 +126,7 @@ async function readExactly(handle, length, position) {
   return buffer;
 }
 
-async function installComponents(root, files, { renameImpl = fs.rename, rollbackRenameImpl = fs.rename } = {}) {
+export async function installComponents(root, files, { renameImpl = fs.rename, rollbackRenameImpl = fs.rename } = {}) {
   const transaction = crypto.randomUUID();
   const staged = [];
   let committed = false;
@@ -302,6 +302,7 @@ export async function weatherComponentProgressCache({
       restored: true, fileCount: reconciled.files.length,
       protectedOpenMeteoRecordsRecovered: reconciled.openMeteoAdded,
       protectedCopernicusBankMerged: reconciled.copernicusMerged,
+      protectedCurrentDonorBanksMerged: reconciled.currentDonorMerged,
       dmiProgress: reconciled.dmiProgress,
     });
   } catch (error) {

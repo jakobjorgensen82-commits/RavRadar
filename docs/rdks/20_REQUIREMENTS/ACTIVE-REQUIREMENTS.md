@@ -1,3 +1,17 @@
+# Aktuel kildebevarelse – 2026-09-26
+
+- **REQ-PAIRED-ORIGINAL-DONOR-0494 – BINDENDE:** Ved den kendte
+  11Z/15Z-pair skal 11Z's private runtime fortsat være udgangspunkt
+  og 15Z fortsat være selvstændigt tabsanker. 15Z må desuden afgive
+  sine **originalverificerede vejrkomponenter** for præcis sted,
+  time og vejrtype efter kilde-/geometrikontrol; det er ikke
+  tilladelse til at kopiere offentlig JSON, scorestate eller gammel
+  schedulerposition. DMI-bulk, DMI-forecast/station, OM-/CP-delbanker
+  og deres havstrømsdonorbanker skal vurderes selvstændigt.
+  Også normal krypteret progress-restore skal forene donorbanker
+  med den beskyttede produktion. Gyldig værdi udløber efter
+  kilde-/prognosehorisont, ikke efter antal normale kørsler.
+
 # Aktuel privat lagring og kvotekontrol – 2026-09-26
 
 - **REQ-VERIFIED-PROGRESS-UNION-0492 – BINDENDE:** Den eksakte
@@ -40,15 +54,17 @@
   stadig peger på den kendte tynde 15Z-generation, skal både denne og
   den eksakte fuldere 11Z-forgænger verificeres fra samme pointer.
   Kun 11Z installeres som privat fortsættelsesgrundlag; 15Z er et
-  separat revisionsanker. En normal kørsel må først gemme ny privat
+  separat revisionsanker og må efter REQ-PAIRED-ORIGINAL-DONOR-0494
+  afgive verificerede originale vejrinput. En normal kørsel må først gemme ny privat
   produktion og deploye, når ingen stadig gyldige felter på samme
   kystdel/time/vejrtype er tabt mod **nogen** af de to generationer.
   Manglende par eller udløbet 72-timersbro giver stop, ikke tom cache.
 - **REQ-NO-FRESH-RESET-0254 – BINDENDE:** En frisk, tom cache eller en
   uverificeret sammenfletning er ikke en genvej til fulde vejrdata.
-  Bevar den beviseligt stærkere 11Z-historik, genhent den målte rest
-  i almindelige kørsler, og overvej kun en snæver originalbevist
-  migration, hvis virkelig fremgang viser, at det er nødvendigt.
+  Bevar den beviseligt stærkere 11Z-historik. Den efterfølgende
+  4.0.493-kørsel viste, at genhentning alene ikke bevarede 15Z's
+  tidligere gyldige felter; derfor er en snæver originalbevist
+  komponentdonor nu nødvendig og tilladt efter 0494-kravet.
 - **REQ-PRIVATE-READS-FAIL-CLOSED-0254 – BINDENDE:** Når en fuld
   privat baseline er installeret, må ulæselige conditions,
   DMI-candidate eller DMI-forecast-store ikke fortolkes som tomme

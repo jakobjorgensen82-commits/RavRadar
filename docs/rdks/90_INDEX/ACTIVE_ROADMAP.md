@@ -1,4 +1,24 @@
-# Aktivt roadmap – 2026-09-26, samlet leverandør- og fortsættelsesrettelse
+# Aktivt roadmap – 2026-09-26, 4.0.494 kildebevarelse før ny hentning
+
+1. [x] R2-migration og læsning; 4.0.493 merged og kort run afsluttet
+   uden offentlig deploy. Ingen overlap eller genkopiering.
+2. [ ] Afslut én samlet 4.0.494 med verificerede 11Z-/15Z-originaler
+   og gemt fremdrift. Bevar gyldige komponenter gennem mange
+   normale kørsler; overtag ikke ældre scheduler-cursor eller score.
+3. [ ] Målrettede tests, versions-/RDKS-kontrol og exact-head-CI;
+   derefter merge og én kort normalrun med seneste gyldige fremskridt.
+4. [ ] Kræv nul datatab mod begge tidligere grundlag, ny R2-gemning,
+   Pages og synlig prognose. Kontrollér 34 historiske temperaturfelter
+   særskilt; mål fem vejrtyper og kildeprioritet med tydelige nævnere.
+5. [ ] Først derefter vurder længere opfyldning og flere autonome
+   normale kørsler. Cron forbliver pauset indtil stabilt bevis.
+6. [ ] Følg faktisk Supabase Cached Egress/Egress og R2 Standard-
+   lager, Class A/B og eventuelle betalinger i flere driftsdøgn.
+   Små Supabase-beviser består; et nyt periodes nul er ikke Free-bevis.
+
+Ældre roadmapoverskrifter nedenfor er historiske.
+
+# Historisk roadmap – 2026-09-26, samlet leverandør- og fortsættelsesrettelse
 
 1. [x] R2-migration/restore og 4.0.492-merge er bevist; gentag ikke.
 2. [ ] Følg den eneste aktive korte kørsel `36228162505` til
