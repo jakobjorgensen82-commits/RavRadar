@@ -11,7 +11,7 @@ import { createGzip, createGunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
-import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
+import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
 
 export const WEATHER_PROGRESS_CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const PURPOSE = 'RAVRADAR_WEATHER_PRIVATE_PROGRESS_ONLY';
@@ -291,7 +291,11 @@ export async function weatherComponentProgressCache({
         temporaryDirectory: temporary.folder,
         productionReferenceAt, pythonExecutable,
       });
-    } catch { fail('PROTECTED_PROGRESS_UNION_FAILED'); }
+    } catch (error) {
+      return status('RESTORE_REPAIR_REQUIRED', 'PROTECTED_PROGRESS_UNION_FAILED', {
+        requiresProtectedRestore: true, unionFailureCode: protectedProgressUnionFailureCode(error),
+      });
+    }
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
     return status('RESTORED', 'ENCRYPTED_PROGRESS_RESTORED', {

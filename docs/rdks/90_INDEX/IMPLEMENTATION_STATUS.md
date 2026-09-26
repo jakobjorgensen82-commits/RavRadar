@@ -1,3 +1,26 @@
+# 2026-09-26 – lokal 4.0.492 efter bevist R2-migration
+
+- [x] PR #454/4.0.491 merged som `197f3cc3`; exact-head grøn.
+- [x] Scoped R2-token/secrets; to generationer/fem objekter/
+  199.955.131 byte kopieret og genlæst i `36225146256`.
+  Anonym læsning afvist; originaler og pointer uændrede.
+- [x] Backend skiftet til R2; run `36225273085` gendannede korrekt
+  cachepar. Stoppede før nye leverandørkald på UTC-tidsformat.
+- [x] Tidsfejl og overlappende Open-Meteo-responsers samlingsfejl
+  reproduceret og rettet lokalt. Sikre diagnostikkoder; ingen
+  score-, geometri-, leverandørprioritets- eller databaseændring.
+- [x] 35 målrettede JS-kontroller og 15 Copernicus-originaltests
+  bestået; begge modelpakker har uændret identitet.
+- [ ] Exact-head CI, merge og én kort normalrun med `36183093672-1`.
+- [ ] Bevis nye R2-data, offentlig deploy og nul gyldig→tom i alle
+  fem vejrtyper; de tidligere 34 temperaturtab er fortsat åbne.
+- [ ] Efter end-to-end: mål leverandørandel/resthuller pr. vejrtype
+  og genoptag kun længere hentning på dokumenteret fremgang.
+- [ ] Permanente Free-budgetkrav består; dagens kvotekontrol er
+  sprunget over efter ejeren. Ingen løfte om gratis sikker drift.
+
+Ældre status nedenfor er historisk.
+
 # 2026-09-26 – lokal 4.0.491 R2-kapacitetsaflastning
 
 - [x] Pro er aktiv i Supabase; forrige periode målte 11,9 GB cachet

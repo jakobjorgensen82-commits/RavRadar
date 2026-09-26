@@ -7,6 +7,7 @@ import {
   readOpenMeteoPartResponse, selectedOpenMeteoPartRecord, validateOpenMeteoPartBank,
 } from './lib/open-meteo-part-bank.mjs';
 import { produceOpenMeteoPartComponents } from './produce-open-meteo-part-components.mjs';
+import { mergeVerifiedOpenMeteoGenerations } from './lib/verified-open-meteo-generation-union.mjs';
 import { responseBoundModelRun, selectQualifiedWeatherComponent } from './lib/weather-component-selection.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
@@ -111,6 +112,7 @@ test('two protected generations retain newer Open-Meteo tuples and backfill only
   ], options);
   const recovered = backfillVerifiedOpenMeteoPartBank(latest, complete, options);
   assert.equal(recovered.records.length, 9);
+  assert.deepEqual(mergeVerifiedOpenMeteoGenerations(latest, complete, options), recovered);
   assert.equal(selected(recovered, 'wind').values.windSpeedMps, 4,
     'the latest generation keeps its independently valid exact tuple');
   assert.equal(selected(recovered, 'wave').values.waveHeightM, 1);
@@ -121,8 +123,36 @@ test('two protected generations retain newer Open-Meteo tuples and backfill only
   forged.responses[evidenceId].responseText = '{}';
   const { bankSha256: _previousHash, ...body } = forged;
   forged.bankSha256 = openMeteoPartSha256(body);
+  assert.throws(() => mergeVerifiedOpenMeteoGenerations(latest, forged, options));
   assert.throws(() => backfillVerifiedOpenMeteoPartBank(latest, forged, options),
     /OPEN_METEO_PART_.*INVALID|OPEN_METEO.*RESPONSE/);
+});
+
+test('recovery preserves the selected hours of overlapping responses, independent of record order', () => {
+  // The first response owns hour 1. A later, wider response only filled hour 0.
+  // Replaying that wider response first must not replace the stored hour 1.
+  const first = response('wind', [at(1)]);
+  const wider = response('wind', [at(0), at(1), at(2)]);
+  wider.hourly.wind_speed_10m = [7, 8, 9];
+  const complete = mergeOpenMeteoPartBank(null, [admit('wind', first), admit('wind', wider)], options);
+  const latest = mergeOpenMeteoPartBank(null, [], options);
+  const recovered = mergeVerifiedOpenMeteoGenerations(latest, complete, options);
+  assert.equal(selected(recovered, 'wind', at(0)).values.windSpeedMps, 7);
+  assert.equal(selected(recovered, 'wind', at(1)).values.windSpeedMps, 4);
+  assert.deepEqual(recovered.records, complete.records);
+  const reverse = structuredClone(complete);
+  reverse.records.reverse();
+  const { bankSha256: _old, ...body } = reverse;
+  reverse.bankSha256 = openMeteoPartSha256(body);
+  assert.deepEqual(mergeVerifiedOpenMeteoGenerations(latest, reverse, options), recovered);
+  // Original bytes can contain unselected hours; restore only retained records.
+  const narrowed = structuredClone(complete);
+  narrowed.records = narrowed.records.filter(record => record.validTime !== at(2));
+  const { bankSha256: _narrowHash, ...narrowBody } = narrowed;
+  narrowed.bankSha256 = openMeteoPartSha256(narrowBody);
+  const subset = mergeVerifiedOpenMeteoGenerations(latest, narrowed, options);
+  assert.equal(subset.records.length, 2);
+  assert.equal(selected(subset, 'wind', at(2)), null);
 });
 
 test('wrong units and missing wave fields leave independent temperature and valid sibling times intact', () => {

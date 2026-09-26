@@ -1,3 +1,26 @@
+# Aktuelle issues – 2026-09-26, lokal 4.0.492
+
+- **FREMDRIFTS-UTC – LOKALT RETTET, LIVE ÅBEN:** Run `36225273085`
+  afviste `2026-09-26T06:00:00Z`, fordi samleren kun accepterede
+  `.000Z`. Regression gengiver fejlen. Begge former af samme eksakte
+  UTC-time er nu tilladt; minutter, offset og ugyldige datoer afvises.
+- **OVERLAPPENDE OPEN-METEO-SVAR – LOKALT RETTET, LIVE ÅBEN:**
+  Replay af hele svar kunne ændre valgte ældre timer eller genoplive
+  ikke-valgte rækker. Ny operationel samler genvaliderer originalerne
+  og bevarer hver banks valgte poster; ingen ny modelbinding.
+- **34 VANDTEMPERATURTAB – FORTSAT ÅBEN:** Må ikke kaldes løst før
+  den nye korte kæde består. De to ovenstående fejl er ikke bevis
+  for årsagen til alle tidligere huller.
+- **R2 – MIGRATION/RESTORE BEVIST, NY PUBLISH ÅBEN:** `36225146256`
+  kopierede 199.955.131 byte fra begge generationer og afviste
+  anonym adgang. `36225273085` gendannede dem, men publicerede
+  ikke ny vejrpakke/Pages og hentede ingen nye leverandørdata.
+- **SUPABASE/R2 FREE – FORTSAT ÅBEN:** Pro er midlertidig;
+  faktisk fremtidig egress og R2-kontoforbrug skal måles. Dagens
+  kvotemåling er sprunget over efter ejerens ordre. Intet Free-løfte.
+
+Ældre beskrivelser af tom R2-bucket og manglende secrets er erstattet.
+
 # Aktuelle issues – 2026-09-26, lokal 4.0.491
 
 - **SUPABASE FREE-EGRESS – ÅBEN:** Forrige periode overskred begge

@@ -1,3 +1,18 @@
+## 4.0.492 – genbrug gemt vejr uden tids- og unionsfejl (2026-09-26)
+
+- Accepter workflowets eksakte UTC-time med eller uden `.000`;
+  normalisér før cacheunion, uden at runde eller acceptere andre tider.
+- Saml valgte Open-Meteo-poster efter originalvalidering i stedet for
+  at genafspille hele overlappende svar. Gyldige eksisterende værdier
+  bevares; ikke-valgte poster opfindes ikke som nye hullerstatninger.
+- Hold operationel recovery uden for scorepakken: eksisterende model-,
+  continuation- og krypteret baselinebinding er uændrede.
+- Vis faste, sikre fejlårsager for unionstrinnet uden private detaljer.
+- R2-migration og første restore er livebevist. Ny cachegemning/Pages
+  og de tidligere 34 temperaturtab afventer kort normalbekræftelse.
+- Permanente R2/Supabase-Free-krav består; dagens kvoteopgave er
+  sprunget over efter ejeren, ikke generelt aflyst.
+
 ## 4.0.491 – privat cachelager i R2, stadig fail-closed (lokal, 2026-09-26)
 
 Den store private produktionsruntime kan flyttes fra Supabase Storage

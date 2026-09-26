@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
+
+for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
+  'scripts/lib/verified-open-meteo-generation-union.mjs']) {
+  assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(file),
+    'The operational recovery helpers must remain in the producer inventory');
+}
 
 const workflow = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
   .replace(/\r\n/g, '\n');
@@ -14,6 +21,10 @@ const capture = workflow.indexOf('id: component-progress-restore');
 const weather = workflow.indexOf('id: weather\n');
 const seal = workflow.indexOf('id: component-progress-seal');
 const gates = workflow.indexOf('- name: Validate critical production artifact after fresh weather and current provenance');
+const union = await fs.readFile('scripts/lib/verified-protected-progress-components.mjs', 'utf8');
+assert.match(union, /import.*mergeVerifiedOpenMeteoGenerations.*verified-open-meteo-generation-union/);
+assert.doesNotMatch(union, /backfillVerifiedOpenMeteoPartBank/,
+  'Recovery must not replay unselected hours from overlapping response originals');
 assert.ok(install < capture && capture < weather && weather < seal && seal < gates);
 const restore = step('Restore encrypted private weather progress only');
 const bind = step('Bind optional progress to the exact protected baseline');

@@ -1,3 +1,22 @@
+# 2026-09-26 – 4.0.492, UTC og eksakt cacheunion efter R2-skift
+
+Samtaledelta: ejeren prioriterede cacheflytning/fejlsøgning over dagens
+kvoteopgave og bad om en kort helikoptergennemgang på Astra Ultra før
+nyt run. Permanent Free-budgetkontrol består. PR #454 er merged;
+R2-migration `36225146256` beviste 2 generationer/5 objekter/
+199.955.131 byte, hashes og privat adgang. Backend er skiftet; kort
+run `36225273085` gendannede rigtigt, men stoppede før providers.
+
+To lokale fejl er reproduceret: seconds-only UTC afvises, og replay
+af overlappende OM-originals bryder valgte timeposters identitet.
+4.0.492 retter tidsgrænsen og bruger en selvstændig originalvalideret,
+hole-only unionsfunktion uden at ændre score-/continuationbinding.
+Det bevarer den krypterede fremdrift `36183093672-1`. Ukendte
+exceptiontekster skjules stadig; kun faste diagnostikkoder udgives.
+35 målrettede JS-tests og 15 CP-originaltests bestod; CI/live afventer.
+Ingen ny vejrhentning, ny cachepublicering eller Pages er endnu bevist.
+34 temperaturtab, fuld dækning og driftskvoter er fortsat åbne.
+
 # 2026-09-26 – lokal 4.0.491, R2 og tilbagevej til Supabase Free
 
 Supabase Free blev 402-begrænset efter 11,9 GB cachet og 6,45 GB

@@ -1,7 +1,22 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
 **Dato:** 2026-09-26
-**Status:** AKTIV BESLUTNING; lokal implementation, liveovergang ikke bevist
+**Status:** AKTIV BESLUTNING; migration og restore bevist, ny publish/deploy afventer
+
+## Målt milepæl 2026-09-26
+
+PR #454/4.0.491 er merged. Bucketbegrænset token og GitHub-secrets
+er oprettet efter ejerens bekræftelse. Run `36225146256` kopierede
+to generationer/fem objekter/199.955.131 byte og bestod byte-/SHA-
+readback samt anonym afvisning uden at ændre pointer eller originaler.
+Backend er skiftet til R2. Kort run `36225273085` gendannede cacheparret,
+men stoppede før providers på et UTC-formatkrav i samleren. Lokal
+4.0.492 retter dette og den reproducerede overlap-fejl i OM-unionen.
+Ny R2-publish og Pages er stadig ikke bevist. Ejeren sprang dagens
+kvoteopgave over; de permanente måle- og Free-returkrav består.
+
+Nedenstående beskriver fortsat beslutningens regler; kravene om
+token/kopiering før backendskift er nu opfyldt, ikke udestående.
 
 Supabases foregående periode brugte 11,9 GB cachet og 6,45 GB øvrig
 egress mod Free-grænser på 5 GB for hver kategori. Organisationen blev
