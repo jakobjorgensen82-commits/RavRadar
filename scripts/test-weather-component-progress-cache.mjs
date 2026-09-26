@@ -587,6 +587,12 @@ test('a sole newer protected Copernicus bank is re-admitted against current targ
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(working, files.copernicusBank), 'utf8')).records,
     cpBank.records);
   assert.ok((await fs.readdir(path.join(working, '.cache/copernicus-components/objects'))).length > 0);
+  const repeated = await reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString(), pythonExecutable });
+  assert.equal(repeated.sourceComponentsMerged.copernicus, true,
+    'the next run must merge two present, authenticated Copernicus generations');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(working, files.copernicusBank), 'utf8')).records,
+    cpBank.records);
 });
 
 test('compressed progress budget preserves the previous snapshot and never stops ordinary operation', async t => {
