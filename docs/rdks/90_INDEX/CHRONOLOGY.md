@@ -1,4 +1,14 @@
-## 2026-09-26 – 4.0.495: faktisk byggetid er ikke prognosetime
+## 2026-09-26 – 4.0.496: gemt fremskridt, men to slutstop
+
+Run `36244956035` nåede leverandører, vejrbygning og krypteret
+progress-save `36244956035-1`, men ikke ny R2-produktion eller
+Pages. Produktionsvalideringen nåede alle 54 kontroller og fandt
+manglende vandstandsfixture; assistant Edge havde uafhængigt den
+forrige bundle-hash. 4.0.496 retter testen og den tidlige kontrol;
+eksisterende providerfri code-only-vej skal levere Edge før en
+kort normalrun. Free-budget og fuld vejrkomplethed er åbne.
+
+## 2026-09-26 – 4.0.495: faktisk byggetid er ikke prognosetime (historisk)
 
 4.0.494/PR #457 blev merged som `b3881c54`. Kort run
 `36242754220` læste R2 og seneste præcise krypterede fremdrift,

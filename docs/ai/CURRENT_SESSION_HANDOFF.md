@@ -1,4 +1,19 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.492, R2 læst, cachefortsættelse rettet
+# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.496, vejrarbejde gemt
+
+Arbejd i managed worktree `r2-private-runtime`; cb79 er ikke
+arbejdsroden. Se CURRENT_TRUTH og `.cache/codex-4.0.492-handoff.md`
+for eksakt evidens. 4.0.495-normalrun `36244956035` gennemførte
+leverandørerne og cachebygning og gemte krypteret fremskridt
+`36244956035-1`, men stoppede før ny R2-produktion og Pages.
+Vandstandstest manglede fixture, mens Supabase assistant Edge stadig
+havde gammel modelbundle. Lokal 4.0.496 tilføjer fixture og begge
+tests til tidlig sourcegate. Næste: version/RDKS, exact-head CI,
+merge, providerfri code-only-deploy med Edge-readback og derefter
+højst én kort normalrun på main fra eksakt fremskridt. Ingen overlap,
+lang kørsel, oneoff eller cron. R2-læsning er bevist; ny skrivning,
+Pages, fuld dækning og Free-budget er åbne. Se ACTIVE_ROADMAP.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.492, R2 læst, cachefortsættelse rettet
 
 Arbejd i managed worktree `r2-private-runtime`, branch
 `codex/4.0.492-progress-hour-normalization`; ikke i den gamle

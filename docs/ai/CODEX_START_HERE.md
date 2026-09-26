@@ -1,4 +1,26 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.494 kildekontinuitet under lokal kontrol
+# AKTUELT CHECKPOINT – 2026-09-26 – 4.0.496 leveringsstop før R2 og Pages
+
+Arbejd i managed worktree `r2-private-runtime`; cb79 er ikke
+arbejdsroden. 4.0.495/PR #458 er merged som `a7f6ca8b`. Kort
+normalrun `36244956035` gennemførte DMI, Copernicus, Open-Meteo,
+cache og alle 54 artifactkontroller og gemte krypteret fremdrift
+`36244956035-1`. Det stoppede før privat produktionsskrivning og
+Pages, fordi én vandstandstest manglede sin importerede fixture,
+og deployet assistant Edge havde gammel modelbundle-hash. 4.0.496
+tilføjer fixturen og begge tests til den tidlige kildekontrol.
+Kilde-, score- og vejrbindinger ændres ikke. Næste: målrettet
+version/RDKS, exact-head CI, merge, providerfri code-only-deploy
+med Edge-readback, derpå højst én kort normalrun fra eksakt gemt
+fremdrift. Start ingen overlappende/lang kørsel eller oneoff.
+
+R2-læsning er bevist, men ny produktionsskrivning er stadig åben:
+fem objekter/199,96 MB/$0. Supabase Pro 26/9–26/10 viste
+0,20 GB Cached Egress og 0,004 GB Egress. Flere vellykkede
+driftsdøgn kræves til Free. Fem vejrfamiliers huller, Copernicus'
+nul nye accepterede komponenter og 34 historiske temperaturfelter
+kl. 26/9 07 UTC er åbne. Se CURRENT_TRUTH og ACTIVE_ROADMAP.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – 4.0.494 kildekontinuitet under lokal kontrol
 
 Arbejd i managed worktree `r2-private-runtime`, branch
 `codex/4.0.494-paired-weather-sources`; cb79 er ikke arbejdsroden. Run

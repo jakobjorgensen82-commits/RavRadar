@@ -1,4 +1,25 @@
-# Aktivt roadmap – 2026-09-26, 4.0.495 før én ny kort hentning
+# Aktivt roadmap – 2026-09-26, 4.0.496 lever Edge før kort vejr
+
+1. [x] Afklar `36244956035`: krypteret fremskridt er gemt; R2-
+   produktionspakke og Pages er ikke opdateret. Den fulde kontrol
+   nåede alle trin og fandt manglende vandstandsfixture samt gammel
+   assistant Edge-binding.
+2. [x] Ret fixturen og flyt begge berørte tests til kildekontrollen.
+3. [ ] Bestå målrettet version/RDKS og én exact-head CI; merge
+   samme head uden modstridende evidens.
+4. [ ] Kør eksisterende providerfri code-only-deploy på aktuel main
+   for at opdatere assistant Edge og publicere den bevarede prognose.
+5. [ ] Kør højst én kort normalrun fra eksakt krypteret fremskridt
+   `36244956035-1`; kræv ny R2-skrivning, Pages og nul tab.
+6. [ ] Mål fem vejrtyper og leverandører. Undersøg Copernicus' nul
+   nye accepterede komponenter, DMI-andel og resthuller før længere
+   opfyldning. Historiske 34 temperaturfelter kræver separat bevis.
+7. [ ] Mål R2/Supabase Free-budget over flere vellykkede driftsdøgn.
+   Cron er stadig pauset; start ikke overlap eller oneoff.
+
+Ældre roadmapoverskrifter nedenfor er historiske.
+
+# Historisk roadmap – 2026-09-26, 4.0.495 før én ny kort hentning
 
 1. [x] Bevar R2-parret og seneste krypterede fremdrift fra
    `36232521656-1`; run `36242754220` beviste læsning, men ingen

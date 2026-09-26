@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.495",
+  "version": "4.0.496",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -170,7 +170,7 @@
     "test:code-only-public-runtime": "node scripts/test-code-only-public-runtime.mjs",
     "source:critical-gate": "node scripts/source-critical-gate.mjs",
     "validate:source": "node scripts/validate-source-once.mjs",
-    "validate:source:checks": "npm run test:ravscore-source-critical && npm run test:weather-source-critical && npm run test:provider-continuity && npm run test:deploy-source-critical && npm run test:privacy-source-critical && npm run source:critical-gate",
+    "validate:source:checks": "npm run test:ravscore-source-critical && npm run test:weather-source-critical && npm run test:water-source-production-chain && npm run test:water-regressions && npm run test:provider-continuity && npm run test:deploy-source-critical && npm run test:privacy-source-critical && npm run source:critical-gate",
     "audit:coastal-geometry-v2": "python scripts/audit-coastal-geometry-v2.py",
     "test:owner-coastal-review": "python scripts/audit-national-owner-review-duplicates.py --self-test && python scripts/apply-national-owner-coastal-review.py --self-test && node scripts/build-national-owner-correction-review.mjs --self-test",
     "test:owner-coastal-final": "python scripts/assemble-national-owner-final-coast.py --self-test && node scripts/build-national-final-point-review.mjs --self-test",

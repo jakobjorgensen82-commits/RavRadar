@@ -1,4 +1,18 @@
-## 4.0.495 – brug låst prognosetime ved samling af gemte vejrkilder (lokal, 2026-09-26)
+## 4.0.496 – luk testmangel og lever aktuel Edge-binding (lokal, 2026-09-26)
+
+- Kort normalrun `36244956035` nåede vejrleverandører og cache,
+  gemte krypteret fremdrift, men stoppede før R2-produktionspakke
+  og Pages: én vandstandstest manglede en fixture, og live assistant
+  Edge bar en ældre modelbundle-hash.
+- Den manglende fixture er tilføjet; begge berørte vandstandstests
+  kører nu i kildekontrollen, så samme testfejl ikke først opdages
+  efter lang vejrhentning. Den eksisterende providerfri code-only-
+  levering skal opdatere Edge på aktuel main før næste korte run.
+- Vejr-, score- og prioriteringsregler er uændrede. R2-læsning og
+  gemt fremskridt er bevist; ny R2-produktionsskrivning, Pages,
+  fuld dækning og Supabase/R2 Free er ikke bevist endnu.
+
+## 4.0.495 – brug låst prognosetime ved samling af gemte vejrkilder (historisk, 2026-09-26)
 
 - Den korte 4.0.494-kørsel `36242754220` gendannede R2-parret og
   krypteret fremdrift, men stoppede i 11Z/15Z-samleren før

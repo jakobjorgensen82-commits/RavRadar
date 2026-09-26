@@ -536,7 +536,7 @@ for(const marker of [
 for(const [scriptName,required] of [
   ['test:score',['test:ravscore-integrated','test:ravscore-rollback-oracle']],
   ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
-  ['validate:source:checks',['test:ravscore-source-critical','test:weather-source-critical','test:deploy-source-critical','test:privacy-source-critical','source:critical-gate']],
+  ['validate:source:checks',['test:ravscore-source-critical','test:weather-source-critical','test:water-source-production-chain','test:water-regressions','test:deploy-source-critical','test:privacy-source-critical','source:critical-gate']],
 ]){
   const chain=packageScripts[scriptName]??'';
   for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
