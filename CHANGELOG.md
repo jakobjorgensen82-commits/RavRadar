@@ -1,4 +1,4 @@
-## 4.0.490 – privat cachelager i R2, stadig fail-closed (lokal, 2026-09-26)
+## 4.0.491 – privat cachelager i R2, stadig fail-closed (lokal, 2026-09-26)
 
 Den store private produktionsruntime kan flyttes fra Supabase Storage
 til en privat EU/Standard-bucket i Cloudflare R2. Supabase er fortsat
@@ -11,6 +11,8 @@ samme backend. Score, leverandørprioritet, geometri og offentlige
 prognosedata er ikke ændret. Supabase Pro er midlertidigt aktiv;
 Free-retur kræver faktisk måling efter R2-skiftet. Local tests er
 ikke bevis for live migration, GitHub-gate eller offentlig deploy.
+4.0.490's separate komponentbevarende vejrrettelse er merged på
+`main` som `66e0f1b5`, men mangler stadig bevis fra et normalt run.
 
 ## 4.0.489 – kort bekræftelse af gemt vejr-fremdrift (lokal, 2026-09-25)
 
@@ -2414,3 +2416,16 @@ den faktisk valgte pakke, også når to generationer deler tid og
 datasæt-id. Ingen vejr-, score- eller geometriændring. Livebevis,
 resterende datamangler og generel tabsbeskyttelse var da stadig åbne;
 den samlede lokale rettelse står øverst.
+## 4.0.490 – bevar verificerede vejrkomponenter ved fortsættelse (2026-09-26)
+
+Den korte kørsel `36183093672` gendannede gemt fremdrift, hentede hos
+leverandørerne og byggede prognosen, men stoppede før privat gemning og
+Pages: 34 tidligere gyldige vandtemperaturfelter ville blive tomme på
+samme kystdel og time. Fire andre vejrtyper havde nul sådanne tab.
+Denne rettelse lader verificerede Open-Meteo- og Copernicus-komponenter
+fra den beskyttede produktionspakke følge med, når nyere krypteret
+fremdrift installeres. DMI-producenten kan særskilt udfylde manglende
+gyldige komponenter fra den beskyttede DMI-pakke uden at overtage dens
+gamle fremdriftsmarkører. Ukendt eller ugyldig beskyttet pakke stopper
+sikkert. Målrettede tests består lokalt, men den præcise årsag til de
+34 er ikke bevist; en kort virkelig vejrkørsel skal afgøre det.

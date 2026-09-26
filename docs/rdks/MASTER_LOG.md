@@ -1,4 +1,4 @@
-# 2026-09-26 – lokal 4.0.490, R2 og tilbagevej til Supabase Free
+# 2026-09-26 – lokal 4.0.491, R2 og tilbagevej til Supabase Free
 
 Supabase Free blev 402-begrænset efter 11,9 GB cachet og 6,45 GB
 øvrig egress i den forrige periode. Ejeren opgraderede til Pro;
@@ -11,7 +11,11 @@ migration, alle aktive restore-/publish-veje og privat manuel
 migrationsworkflow. Hverken live cache, pointer eller website er
 ændret af dette lokale arbejde. Scoped token, GitHub-secrets,
 exact-head CI, live migration, normal R2-run og flere dages
-efterfølgende kvotemåling er stadig åbne. Supabase Free kan derfor
+efterfølgende kvotemåling er stadig åbne. 4.0.490/PR #453 er i
+mellemtiden merged som `66e0f1b5`, men dens vejrbevarelse mangler
+livebevis. R2-konto-ID har nu sit eget GitHub-secret; scoped token
+og nøgle-secrets er ikke oprettet. En seks-timers kvotealarm er aktiv.
+Supabase Free kan derfor
 ikke loves endnu.
 
 # 2026-09-25 – lokal 4.0.489, skeln fremdrift fra produktionscache
@@ -5294,3 +5298,14 @@ modelrun. Generisk fail-closed, Feggesund og uafhængig strøm
 bevares. 4.0.486's forståelige UI-sprog følger med. Lokal test grøn;
 exact-head, merge, live cache/deploy og autonom gentagelse afventer.
 Se DEC-0253 og CHANGELOG-4.0.487.
+# 2026-09-26 – 4.0.490 kandidat, bevar beskyttede vejrkomponenter
+
+Kort normalrun `36183093672` restaurerede krypteret fremdrift og
+byggede vejr, men 34 gyldige vandtemperaturpar ville blive tomme;
+tabsbarrieren stoppede før privat cache og Pages. Ny krypteret
+fremdrift blev gemt. Lokal rettelse sammenholder den fremdrift med
+den verificerede beskyttede pakke for OM/CP og giver DMI en særskilt
+beskyttet donor. Måltests viser mekanismen; de 34's konkrete
+årsag er fortsat ubevist. Ejer besluttede at sende rettelsen,
+merge efter nødvendig gate og forsøge én kort normalrun, mens
+årsagen undersøges. Cron og lange runs er fortsat pauset.

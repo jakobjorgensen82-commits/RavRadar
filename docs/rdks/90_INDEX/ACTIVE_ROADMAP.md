@@ -1,9 +1,10 @@
 # Aktivt roadmap – 2026-09-26, R2-overgang før flere vejrkørsler
 
-1. [ ] Afslut lokal 4.0.490, RDKS/håndbøger, måltests og exact-head
+1. [ ] Afslut lokal 4.0.491, RDKS/håndbøger, måltests og exact-head
    kildegate. Hold Supabase som aktiv backend og start ikke vejr under
    lagerskiftet.
-2. [ ] Opret scoped R2-token og GitHub-secrets, kopier begge private
+2. [ ] Opret scoped R2-token og de to nøgle-secrets (R2-konto-ID er
+   allerede bundet særskilt), kopier begge private
    generationer under produktionslåsen, verificér hashes og anonym
    afvisning. Skift først derefter backend, og bevis én normal kort
    cache-restore/publish/deploy på korrekt forgænger.
@@ -3351,3 +3352,14 @@ DEC-0185. Ingen ny oneoff eller gentagelse af den allerede gennemførte vejrinds
    opdaterings-/timeoutforløb, Open-Meteos 57 rester og vandstand.
    Byg generel tabsbeskyttelse og genaktivér først cron efter
    gentagne sikre, fremadskridende normalruns.
+# Aktivt roadmap – 2026-09-26, kort virkelig kontrol af 4.0.490
+
+Send den afgrænsede komponentfortsættelse gennem exact-head-kontrol,
+merge den efter nødvendig gate og start derefter **én kort** normal
+vejrkørsel uden overlap. Brug krypteret fremdrift fra
+`36183093672-1`, hvis den præcist matcher beskyttet 11Z-baseline.
+Undersøg sideløbende de 34 vandtemperaturtab i den foregående
+kørsel; de er ikke forklaret af en grøn lokal test. Mål alle fem
+vejrtyper, DMI/Copernicus/Open-Meteo, privat cachegemning, Pages
+og offentlig visning. Ved gentaget tab: stop flere runs og ret
+den påviste årsag. Cron og lange runs forbliver pauset.

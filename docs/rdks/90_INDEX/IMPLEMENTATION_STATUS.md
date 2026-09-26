@@ -1,4 +1,4 @@
-# 2026-09-26 – lokal 4.0.490 R2-kapacitetsaflastning
+# 2026-09-26 – lokal 4.0.491 R2-kapacitetsaflastning
 
 - [x] Pro er aktiv i Supabase; forrige periode målte 11,9 GB cachet
   og 6,45 GB øvrig egress. R2 er aktiveret; den private EU/Standard-
@@ -6,13 +6,18 @@
 - [x] Lokal R2-adapter, snæver backendkobling, to-generationskopi uden
   pointerændring, 2 GB bucketloft, historisk restore-lukning og
   migrationsworkflow er kodet og måltestet.
-- [ ] Opret scoped R2-token/GitHub-secrets, bestå exact-head CI,
+- [x] Merge 4.0.490/PR #453 på `main` efter grøn exact-head; den
+  komponentbevarende rettelse afventer stadig livebevis.
+- [x] Opret dedikeret `RAVRADAR_R2_ACCOUNT_ID` som GitHub-secret;
+  den eksisterende Cloudflare-binding til andre funktioner er urørt.
+- [ ] Opret scoped R2-token og de to nøgle-secrets, bestå exact-head CI,
   merge og verificér live kopiering af begge generationer.
 - [ ] Skift først derefter backend til R2; bevis normal restore,
   cache-publish, no-loss-gates og offentlig deploy uden overlap.
 - [ ] Mål Supabase og R2 over flere døgn. Anbefal først Free, når
   begge Supabase-egresskategorier fremskrives under 3,5 GB/måned
-  og øvrige Free-kvoter har reserve. Opret varsel før R2-Free-grænser.
+  og øvrige Free-kvoter har reserve. Kvotevarsel hver sjette time
+  er oprettet; det er ikke en hård betalingsspærre.
 
 # 2026-09-25 – lokal 4.0.489 efter stoppet 4.0.488-kørsel
 
@@ -6297,3 +6302,15 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
   leverandører, artifact og Pages. Stop ved tab eller stagnation.
 - [ ] Undersøg de tilbageværende DMI-/Copernicus-/Open-Meteo-barrierer
   og byg en generel gyldig-til-tom-beskyttelse før cron genaktiveres.
+# 2026-09-26 – 4.0.490 kandidat, endnu ikke livebevist
+
+- [x] `36183093672` gendannede tidligere fremdrift og byggede et nyt
+  prognoseforslag, men no-loss stoppede 34 vandtemperaturtab før privat
+  produktion og Pages. De fire andre vejrtyper havde nul tab.
+- [x] Samme run gemte ny krypteret komponentfremdrift fra forsøg 1.
+- [x] Lokal rettelse forener individuelt verificerede OM/CP-komponenter
+  fra den beskyttede pakke med fremdriftsgenerationen og medtager den
+  beskyttede DMI-donor uden gamle fremdriftsmarkører. Måltests består.
+- [ ] Rodårsagen til netop de 34 er stadig ubevist. GitHub exact-head,
+  merge, kort end-to-end-run, privat cachegemning, Pages og offentlig
+  femfeltskontrol mangler. Cron og lange runs forbliver pauset.

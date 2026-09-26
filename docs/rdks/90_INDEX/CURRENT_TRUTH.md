@@ -1,6 +1,8 @@
-# NYESTE SANDHED – 2026-09-26 – lokal 4.0.490, privat R2-overgang
+# NYESTE SANDHED – 2026-09-26 – lokal 4.0.491, privat R2-overgang
 
-Main er 4.0.489/`0c6a901c`. Supabases forrige afsluttede periode
+Main er 4.0.490/`66e0f1b5`: den komponentbevarende vejrrettelse i
+PR #453 bestod exact-head og er merged, men mangler livebevis.
+Supabases forrige afsluttede periode
 brugte 11,9 GB cachet og 6,45 GB øvrig egress og Free-projektet blev
 402-begrænset. Ejeren har købt Pro; dashboardet viser Pro uden
 spærring og en ny 26/9–26/10-periode, men de første 0 GB er ikke
@@ -8,13 +10,13 @@ driftsbevis. Cloudflare R2 er aktiveret med en tom privat EU-bucket
 `ravradar-private-production-runtime` i Standard-klassen. Ingen
 produktionscache er endnu flyttet eller slettet.
 
-Lokal 4.0.490 gør storage-backend valgfri, men default er fortsat
+Lokal 4.0.491 gør storage-backend valgfri, men default er fortsat
 Supabase. En manuel, main-låst migration kopierer pointerens current
 og previous byte- og SHA-eksakt til R2 uden pointerændring og med
 anonym-læseafvisning. R2-publish har 2 GB lokalt bucketloft og bevarer
 to generationer. Historiske restore-wrappers, code-only og normal
 vejrkørsel er gennemgået for samme backend. Måltests er lokale;
-scoped token/GitHub-secrets, exact-head CI, merge, live migration,
+scoped token og de to nøgle-secrets, exact-head CI, merge, live migration,
 backendskift, ny cachegemning og offentlig deploy mangler. Se DEC-0255.
 Tilbagevenden til Supabase Free kræver målte døgn efter skiftet med
 begge egresskategorier fremskrevet under 3,5 GB/måned samt øvrige
@@ -5766,3 +5768,23 @@ afventer. Ingen ny vejrkørsel er startet. DMI/Copernicus/Open-Meteo-
 fordeling, alle fem datamangler og en generel tabsbarriere er fortsat
 åbne. Se DEC-0254 og det aktive roadmap. Ældre checkpoints nedenfor
 er historiske, hvor de modsiger dette.
+# NYESTE SANDHED – 2026-09-26 – 4.0.490, verificeret komponentfortsættelse
+
+Main er 4.0.489 på `0c6a901c`. Den korte normalrun `36183093672`
+gendannede den beskyttede 11Z-pakke og den krypterede fremdrift, nåede
+gennem leverandører og prognosebygning, men stoppede før privat
+produktionsgemning og Pages. No-loss fandt igen 34 tidligere gyldige
+vandtemperaturpar, alle ved 26/9 kl. 07 UTC; vind, bølger, havstrøm og
+vandstand havde nul tab på de fælles timer. Fremdriften fra runnets
+forsøg 1 blev gemt krypteret. Den byggede kandidat er ikke officiel
+produktionscache; cron er pauset.
+
+Lokal 4.0.490 samler individuelt verificerede komponenter fra den
+beskyttede produktionspakke med nyere krypteret fremdrift, inden
+sidstnævnte installeres. DMI får tilsvarende beskyttet donor uden at
+genbruge gamle fremdriftsmarkører. Lokale tests viser mekanismen,
+men beviser **ikke**, at netop dette er årsagen til de 34 tab.
+Ejerens beslutning er at sende rettelsen, merge efter nødvendig
+GitHub-kontrol og køre én kort normal vejrhentning, mens den konkrete
+årsag fortsat spores. Genåbn ikke cron eller lang hentning uden
+faktisk cachegemning, deploy og offentlig kontrol.

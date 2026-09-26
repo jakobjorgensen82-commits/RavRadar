@@ -1,11 +1,12 @@
-# Aktuelle issues – 2026-09-26, lokal 4.0.490
+# Aktuelle issues – 2026-09-26, lokal 4.0.491
 
 - **SUPABASE FREE-EGRESS – ÅBEN:** Forrige periode overskred begge
   Free-egressgrænser (11,9 GB cachet; 6,45 GB øvrig). Pro har ophævet
   spærringen, men R2-flytningen er endnu ikke livebevist. Mål begge
   kategorier efter skiftet; nulstillet Pro-tæller er ikke bevis.
 - **R2 FREE-OMKOSTNING – ÅBEN:** Privat EU/Standard-bucket findes og
-  er tom, men scoped token, GitHub-secrets og live migration mangler.
+  er tom; konto-ID-secret findes, men scoped token, nøgle-secrets og
+  live migration mangler.
   2 GB-kodeloft gælder kun denne bucket; kontoforbrug og operationer
   skal overvåges særskilt. Ingen automatisk garanti mod betaling.
 
@@ -3340,3 +3341,14 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
   lave andel, Open-Meteos høje andel og de stående strømrester er
   ikke forklaret alene af cachetabet. Mål dem separat på næste sikre
   run. Vandstand er fortsat DMI-only; Limfjord-fastholdelsen bevares.
+# Aktuelle issues – 2026-09-26, 4.0.490 kandidat
+
+- **34 VANDTEMPERATURTAB – STADIG ÅBEN:** Kort run `36183093672`
+  stoppede igen på samme antal tab ved 26/9 kl. 07 UTC. De øvrige
+  fire vejrtyper havde nul tab på fælles timer. En lokal rettelse
+  bevarer verificerede komponenter på tværs af beskyttet cache og
+  krypteret fremdrift, men årsagssammenhængen til de 34 er ikke
+  bevist. Kun et kort end-to-end-run kan vise, om tabet er væk.
+- **PRODUKTIONSGEMNING OG DEPLOY – AFVENTER:** `36183093672` gemte
+  krypteret fremdrift, ikke en ny officiel produktionscache; Pages
+  blev sprunget over. Cron forbliver pauset.
