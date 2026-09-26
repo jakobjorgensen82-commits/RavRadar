@@ -1,3 +1,24 @@
+# 2026-09-26 – samlet 4.0.493 fra leverandør- og fortsættelsesaudit
+
+Ejeren stillede resterende Astra Ultra-tid til rådighed til afgrænsede
+parallelle gennemgange under det korte vejrbevis og skiftede derpå
+tilbage til Sol Ekstra høj. Analyse og reproduktioner er samlet i
+`docs/ai/PROVIDER_ACQUISITION_AUDIT_2026-09-26.md`.
+PR #455/4.0.492 er exact-head-grøn og merged som `c41aa472`.
+Run `36228162505` har genbrugt krævet fremdrift og passeret DMI;
+gemning, Pages og tabsresultater afventer.
+
+Samlet lokal rettelse adresserer falsk DMI-langmarkør, CP's fælles
+rotationscursor, dokumenterede NWS-static-metadata, overskrevet
+passestatistik, exact quick-cacheudvælgelse og udeladt DMI-input i
+krypteret failed-run-fremdrift. Hver bevist årsag måltestes;
+eksisterende model/state/publicbinding og kilde-/gyldighedspolitik
+skal bevares. Gammel CP-bank genvalideres fra originale uændrede
+filer under ny metadatafortolkning. Ingen oprydning i Candidate G.
+Gamle cachemarkører er ikke generel tilladelse til at omgå integritet.
+Liveeffekt og fuld dækning er stadig åbne. Dette er én samlet
+lokal release, ikke en serie af produktionsforsøg.
+
 # 2026-09-26 – 4.0.492, UTC og eksakt cacheunion efter R2-skift
 
 Samtaledelta: ejeren prioriterede cacheflytning/fejlsøgning over dagens

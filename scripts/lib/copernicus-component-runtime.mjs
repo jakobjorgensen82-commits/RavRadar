@@ -57,7 +57,10 @@ export async function runCopernicusComponentRuntime({ privateCacheRoot, bankPath
       recordFailures: result.recordFailures.length, attempts: result.attempts.length,
       invalidOriginalRecordsReleasedForRetry: result.invalidOriginalRecordsReleasedForRetry,
       retryableAttempts: result.attempts.filter(row => row.status === 'RETRYABLE_ERROR').length,
-      retryableReasons: copernicusRetryableReasonCounts(result.attempts), transportFailure } };
+      retryableReasons: copernicusRetryableReasonCounts(result.attempts), transportFailure,
+      // Offline re-verification recovers the bank, not the interrupted
+      // invocation's attempt log. Zero recovered attempts is not zero work.
+      attemptCountsComplete: transportFailure === null } };
   } finally {
     await fs.rm(temporary, { recursive: true, force: true });
   }

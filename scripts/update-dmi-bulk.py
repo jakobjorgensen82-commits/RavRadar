@@ -41,6 +41,7 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
+from lib.dmi_adaptive_recovery import EXTENDED_RUNTIME_SECONDS, next_adaptive_recovery
 from lib.regional_source_proofs import (
     capture_regional_source_proof,
     migrate_regional_source_proofs,
@@ -11649,20 +11650,16 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
-    prior_adaptive_recovery = (previous.get("diagnostics") or {}).get("adaptiveRecovery")
-    if isinstance(prior_adaptive_recovery, dict):
-        result["diagnostics"]["adaptiveRecovery"] = copy.deepcopy(prior_adaptive_recovery)
-    if os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true":
-        before_counts = json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))
-        if not isinstance(before_counts, dict) or any(
-            type(before_counts.get(component)) is not int or before_counts[component] < 0
-            for component in ("wind", "wave", "current", "waterLevel", "waterTemperature")
-        ):
-            raise ValueError("DMI adaptive recovery needs the measured five-component baseline")
-        result["diagnostics"]["adaptiveRecovery"] = {
-            "lastExtendedAt": generated,
-            "missingDmiPairsAtStart": before_counts,
-        }
+    extended_recovery = (os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true"
+                         and MAX_RUNTIME_SECONDS >= EXTENDED_RUNTIME_SECONDS)
+    adaptive_recovery = next_adaptive_recovery(
+        previous, requested=extended_recovery, runtime_budget_seconds=MAX_RUNTIME_SECONDS,
+        generated_at=generated,
+        before_counts=(json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))
+                       if extended_recovery else None),
+    )
+    if adaptive_recovery is not None:
+        result["diagnostics"]["adaptiveRecovery"] = adaptive_recovery
     cache_leaf_sanitization = (
         (previous.get("diagnostics") or {}).get("cacheLeafSanitization")
     )

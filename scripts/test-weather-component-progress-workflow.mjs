@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
 for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
+  'scripts/lib/verified-dmi-progress-inputs.mjs', 'scripts/lib/private-weather-progress-files.mjs',
+  'scripts/lib/dmi_adaptive_recovery.py',
   'scripts/lib/verified-open-meteo-generation-union.mjs']) {
   assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(file),
     'The operational recovery helpers must remain in the producer inventory');
@@ -38,6 +40,14 @@ for (const value of [restore, bind]) {
 }
 assert.match(restore, /path: \.cache\/weather-private-progress.encrypted\s+key: weather-private-progress-encrypted-v2-/);
 assert.doesNotMatch(restore, /path:.*(?:\*|bank|components\/)/);
+assert.match(restore, /key: .*inputs\.quick_confirmation && inputs\.quick_progress_source/,
+  'Short confirmation retrieves the requested run/attempt, not whichever prefix hit is newest');
+assert.match(restore, /restore-keys: \$\{\{ !inputs\.quick_confirmation && format\([\s\S]*?\|\| '' \}\}/,
+  'A short confirmation must not silently use another run');
+const validateSource = step('Validate requested short-confirmation progress source');
+assert.match(validateSource, /QUICK_PROGRESS_SOURCE.*inputs\.quick_progress_source/);
+assert.match(validateSource, /\^\[0-9\]\+-\[1-9\]\[0-9\]\*\$/);
+assert.ok(workflow.indexOf(validateSource) < workflow.indexOf(restore));
 assert.doesNotMatch(bind, /continue-on-error|\|\| true/);
 assert.match(bind, /capture-base[\s\S]*restore \\/);
 assert.match(bind, /privateRuntimeBundleContentSha256\(manifest\)/);

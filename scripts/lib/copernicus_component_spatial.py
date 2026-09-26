@@ -40,11 +40,17 @@ def static_request(contract_key: str, target: dict) -> dict:
 
 
 def _static_value(dataset: xr.Dataset, name: str, standard: str, unit: str,
-                  selectors: dict, policy: dict) -> tuple[float, float | None]:
+                  selectors: dict, policy: dict, *, documented_missing_unit: str | None = None) -> tuple[float, float | None]:
     if name not in dataset or dataset[name].attrs.get("standard_name") != standard:
         raise ValueError("CP_STATIC_FIELD_SEMANTICS_INVALID")
     array = dataset[name]
     units = str(array.attrs.get("units", ""))
+    # NWS 202511 bathymetry omits this attribute; its pinned product manual
+    # specifies metres. Never reinterpret an explicit unit (even an empty
+    # string), another variable, dataset/version, or undocumented product.
+    if (name == POLICY["depthVariable"] and unit == "m" and "units" not in array.attrs
+        and documented_missing_unit == "m"):
+        units = "m"
     if (unit == "1" and units not in {"", "1"}) or (unit == "m" and units != "m"):
         raise ValueError("CP_STATIC_FIELD_UNIT_INVALID")
     extra = set(array.dims) - set(selectors)
@@ -126,8 +132,13 @@ def inspect_static_subset(path: Path, *, contract_key: str, target: dict, receip
     distance, lat, lon, y, x = min(cells)
     selectors = {dataset[lat_name].dims[0]: y, dataset[lon_name].dims[0]: x}
     policy = POLICY["contracts"][contract_key]
+    documented = POLICY.get("documentedMissingDepthUnits", {}).get(request["datasetId"], {})
+    documented_unit = documented.get("units") if all(
+        documented.get(key) == request[key] for key in ("productId", "datasetVersion", "datasetPart")
+    ) else None
     mask, mask_depth = _static_value(dataset, POLICY["maskVariable"], POLICY["maskStandardName"], "1", selectors, policy)
-    depth, _ = _static_value(dataset, POLICY["depthVariable"], POLICY["depthStandardName"], "m", selectors, policy)
+    depth, _ = _static_value(dataset, POLICY["depthVariable"], POLICY["depthStandardName"], "m", selectors, policy,
+                             documented_missing_unit=documented_unit)
     if mask not in {0.0, 1.0} or depth < 0:
         raise ValueError("CP_STATIC_MASK_OR_DEPTH_INVALID")
     return {"kind": "CP_PINNED_STATIC_CELL_EVIDENCE", "contractKey": contract_key,

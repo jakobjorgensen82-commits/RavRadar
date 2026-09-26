@@ -4,6 +4,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
+import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 
 // Execute the actual normal producer's integration block without calling its
 // network/storage entry point. Provider byte admission has separate real-file
@@ -19,12 +20,14 @@ const verifiedInputs = Object.freeze({ fromPrivateAuthority: true });
 test('normal PART production plans on current central identity and passes the prepared indexes into scoring', async () => {
   let planned = false, scored = false;
   const output = { weatherEngine: {} };
+  const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
   const context = vm.createContext({ path, output, generatedAt: reference,
     coastalPartsContract: { enabled: true, zones: { CURRENT: [part] } },
     features: [{ properties: { id: 'CURRENT' } }], nextDmiForecastStore: {}, dmiBulkCache: {},
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null,
+    waterSourceRoutingContext, applyVerifiedWaterSourceRoutingToPartHourly,
     RESEARCH_HISTORY_HOURS: 72, OPEN_METEO_FUTURE_HOURS: 121, OPEN_METEO_NATIVE_NEAREST_POLICIES,
     COMPONENT_COPERNICUS_BUDGET_MS: 0, COMPONENT_OPEN_METEO_BUDGET_MS: 0,
     reportWeatherBuildStage: () => {},
@@ -56,6 +59,7 @@ test('normal PART production plans on current central identity and passes the pr
     },
     scoreCoastalPartsRuntime: (...args) => {
       assert.equal(planned, true); assert.equal(args[12], verifiedInputs);
+      assert.equal(args[14], waterSourceRoutingContext);
       scored = true; return { completeLocalBuild: true };
     },
   });

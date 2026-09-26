@@ -43,7 +43,8 @@ assert.match(restore, /actions\/cache\/restore@v6/);
 assert.match(restore, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(restore, /weather-private-progress-encrypted-v2-/);
 const shortRecoveryGate = step(normal, 'Require recovered progress before short confirmation');
-assert.match(shortRecoveryGate, /inputs\.quick_confirmation == true && steps\.exact-weather-recovery\.outputs\.required == 'true'/);
+assert.match(shortRecoveryGate, /if: inputs\.quick_confirmation == true\n/,
+  'Every quick confirmation requires its requested progress, including after the one-time recovery');
 assert.match(shortRecoveryGate, /\.status == "RESTORED" and \.restored == true and \.fileCount > 0/);
 assert.match(shortRecoveryGate, /test -s \.cache\/dmi-candidate-progress\.json/);
 assert.match(shortRecoveryGate, /test "\$PROGRESS_CACHE_MATCHED_KEY" = "\$expected"/);
@@ -65,6 +66,7 @@ assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);
 for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes',
   'admittedCandidates', 'remainingNeeds', 'retryableAttempts', 'retryableReasons', 'transportFailure',
+  'attemptCountsComplete', 'remainingUpgradeNeeds', 'passes', 'requestedNeeds', 'budgetMs',
   'deferred', 'failureCount', 'componentsNotAdmitted']) {
   assert.match(coverage, new RegExp(field));
 }
@@ -97,6 +99,8 @@ const cp = step(normal, 'Fill only exact-hour DMI gaps from Copernicus');
 const om = step(normal, 'Fill only the exact remaining current gaps from Open-Meteo');
 const terminal = step(normal, 'Require verified Open-Meteo residual checkpoint before closure');
 assert.match(dmi, /inputs\.quick_confirmation && '360'/);
+assert.match(dmi, /DMI_BULK_ADAPTIVE_RECOVERY: \$\{\{ inputs\.quick_confirmation != true &&/,
+  'Six-minute confirmation must not consume a one-hour adaptive recovery cooldown');
 assert.ok(normal.indexOf(shortRecoveryGate) < normal.indexOf(dmi));
 assert.match(cp, /inputs\.quick_confirmation && '120'/);
 assert.match(om, /--runtime-seconds \$\{\{ inputs\.quick_confirmation && '120' \|\| '900' \}\}/);

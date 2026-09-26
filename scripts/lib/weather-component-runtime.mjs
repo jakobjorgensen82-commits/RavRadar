@@ -19,6 +19,43 @@ async function readHistory(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
 }
 
+function copernicusPassSummary(summary, { requestedNeeds, budgetMs, outcome }) {
+  const count = key => Number.isSafeInteger(summary?.[key]) && summary[key] >= 0 ? summary[key] : null;
+  return { requestedNeeds, budgetMs, outcome,
+    status: summary?.status ?? null,
+    attempts: count('attempts'), retryableAttempts: count('retryableAttempts'),
+    retryableReasons: Object.fromEntries(Object.entries(summary?.retryableReasons ?? {})
+      .filter(([key, value]) => /^CP_[A-Z0-9_]{1,80}$/.test(key) && Number.isSafeInteger(value) && value >= 0)),
+    remainingNeeds: count('remainingNeeds'),
+    transportFailure: summary?.transportFailure ?? (outcome === 'FAILED' ? 'CP_COMPONENT_REFRESH_FAILED' : null),
+    attemptCountsComplete: outcome !== 'FAILED' && summary?.attemptCountsComplete !== false
+      && !summary?.transportFailure && count('attempts') !== null && count('retryableAttempts') !== null,
+  };
+}
+
+function copernicusCombinedSummary(snapshot, passes, after) {
+  const attempted = Object.values(passes).filter(Boolean);
+  if (!snapshot && !attempted.length) return null;
+  const reasons = {};
+  for (const pass of attempted) {
+    for (const [code, count] of Object.entries(pass.retryableReasons)) reasons[code] = (reasons[code] ?? 0) + count;
+  }
+  // Candidate/record counts describe the final verified bank. Attempt totals
+  // describe BOTH acquisitions, not merely the last (upgrade) invocation.
+  // If an invocation could only be recovered offline, totals are known lower
+  // bounds and attemptCountsComplete explicitly says so.
+  return { ...snapshot,
+    attempts: attempted.reduce((sum, pass) => sum + (pass.attempts ?? 0), 0),
+    retryableAttempts: attempted.reduce((sum, pass) => sum + (pass.retryableAttempts ?? 0), 0),
+    retryableReasons: Object.fromEntries(Object.entries(reasons).sort(([a], [b]) => a.localeCompare(b, 'en'))),
+    transportFailure: attempted.find(pass => pass.transportFailure)?.transportFailure ?? null,
+    attemptCountsComplete: attempted.every(pass => pass.attemptCountsComplete),
+    remainingNeeds: after.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)).length,
+    remainingUpgradeNeeds: after.copernicusUpgradeNeeds.length,
+    passes,
+  };
+}
+
 // The outer production job remains the single writer. The source-specific
 // loaders independently validate original bytes and central PART identity.
 // Passing budget zero is the provider-free saved-weather/code-repair route.
@@ -48,6 +85,7 @@ export async function prepareWeatherComponentRuntime({
   const inputs = { productionReferenceAt, componentSelectionHistory: history,
     openMeteoComponentIndex: null, copernicusComponentIndex: null };
   const failures = [];
+  const copernicusPasses = { critical: null, upgrade: null };
   const common = { privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt };
   const omOptions = { ...common, bankPath: path.join(privateCacheRoot, 'open-meteo-part-component-bank.json'),
     spatialPolicies: openMeteoSpatialPolicies };
@@ -69,14 +107,19 @@ export async function prepareWeatherComponentRuntime({
   // Report every necessary missing component, but do not repeatedly spend
   // acquisition budget on fields whose source policy excludes reserves.
   // Water level and its T+3 support are DMI-only, not pending datum admission.
-  const refreshCopernicus = async (needs, budgetMs, failureCode) => {
+  const refreshCopernicus = async (needs, budgetMs, failureCode, pass) => {
     try {
       cp = await runCopernicus({ ...cpOptions, needs, budgetMs,
         requestTimeoutMs: Math.min(copernicusRequestTimeoutMs, budgetMs),
         maximumRequests: copernicusMaximumRequests, maximumDownloadBytes: copernicusMaximumDownloadBytes });
       inputs.copernicusComponentIndex = cp.index;
+      copernicusPasses[pass] = copernicusPassSummary(cp.summary,
+        { requestedNeeds: needs.length, budgetMs,
+          outcome: cp.summary?.transportFailure ? 'RECOVERED_AFTER_TRANSPORT_FAILURE' : 'COMPLETED' });
     } catch {
       failures.push(failureCode);
+      copernicusPasses[pass] = copernicusPassSummary(null,
+        { requestedNeeds: needs.length, budgetMs, outcome: 'FAILED' });
       // A failed refresh may already have checkpointed a subset. Bind the
       // actual durable generation, never the pre-refresh in-memory digest.
       try {
@@ -92,14 +135,14 @@ export async function prepareWeatherComponentRuntime({
   const acquisitionNeeds = before.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component));
   if (copernicusBudgetMs > 0 && acquisitionNeeds.length) {
     await refreshCopernicus(acquisitionNeeds, copernicusBudgetMs,
-      'COPERNICUS_COMPONENT_REFRESH_UNAVAILABLE');
+      'COPERNICUS_COMPONENT_REFRESH_UNAVAILABLE', 'critical');
   }
   // Persistent physical gaps must not starve every lower-priority upgrade.
   // This separate bounded pass follows the actual gap/challenge pass.
   const afterCriticalCopernicus = plan();
   if (copernicusUpgradeBudgetMs > 0 && afterCriticalCopernicus.copernicusUpgradeNeeds.length) {
     await refreshCopernicus(afterCriticalCopernicus.copernicusUpgradeNeeds,
-      copernicusUpgradeBudgetMs, 'COPERNICUS_COMPONENT_UPGRADE_UNAVAILABLE');
+      copernicusUpgradeBudgetMs, 'COPERNICUS_COMPONENT_UPGRADE_UNAVAILABLE', 'upgrade');
   }
   // Recompute after CP. OM must not fetch every pair just because its own bank
   // is empty, or consume its budget challenging DMI without proved model age.
@@ -138,7 +181,8 @@ export async function prepareWeatherComponentRuntime({
     pendingAdmissionComponents: [...new Set(after.needs
       .filter(row => !SCORING_RESERVE_COMPONENTS.includes(row.component)
         && !DMI_ONLY_WEATHER_COMPONENTS.includes(row.component)).map(row => row.component))],
-    copernicus: cp?.summary ?? null, openMeteo: om?.summary ?? null,
+    // Attribute remaining CP work at its own boundary, before OM fills gaps.
+    copernicus: copernicusCombinedSummary(cp?.summary, copernicusPasses, afterCopernicus), openMeteo: om?.summary ?? null,
     pendingCopernicusUpgrades: after.copernicusUpgradeNeeds.length },
   remainingNeeds: after.needs, dmiOnlyNeeds: after.dmiOnlyNeeds,
   dmiUpgradeNeeds: after.dmiUpgradeNeeds,

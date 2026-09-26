@@ -22,10 +22,32 @@ from .copernicus_component_spatial import static_request, inspect_static_subset,
 
 DATASET_UPDATING_EXIT = 76
 WORKER = Path(__file__).resolve().parents[1] / "run-copernicus-weather-components.py"
+# Fixed code-only classifications. Exception text may contain private paths,
+# provider payloads or credentials and must never become a report by pattern.
+STATIC_FAILURE_CODES = frozenset({
+    "CP_STATIC_FIELD_SEMANTICS_INVALID", "CP_STATIC_FIELD_UNIT_INVALID",
+    "CP_STATIC_FIELD_DIMENSIONS_INVALID", "CP_STATIC_FIELD_VALUE_MISSING",
+    "CP_STATIC_MASK_SURFACE_INVALID", "CP_STATIC_MASK_SURFACE_MISSING",
+    "CP_STATIC_REQUEST_RECEIPT_INVALID", "CP_STATIC_SIZE_LIMIT",
+    "CP_STATIC_PAYLOAD_INVALID", "CP_STATIC_DECODED_SIZE_LIMIT",
+    "CP_STATIC_DECODE_FAILED", "CP_STATIC_DATASET_IDENTITY_CONFLICT",
+    "CP_STATIC_COORDINATE_INVALID", "CP_STATIC_GRID_DIMENSIONS_INVALID",
+    "CP_STATIC_NATIVE_CELL_OUTSIDE_BOUND", "CP_STATIC_MASK_OR_DEPTH_INVALID",
+    "CP_COORDINATE_MISSING_OR_AMBIGUOUS", "CP_COORDINATE_SEMANTICS_INVALID",
+})
 
 
 class ComponentTransportDeferred(RuntimeError):
     """Code-only retryable work, never completed-negative upstream evidence."""
+
+
+def _inspect_static_for_transport(path: Path, *, contract_key: str, target: dict, receipt: dict) -> dict:
+    try:
+        return inspect_static_subset(path, contract_key=contract_key, target=target, receipt=receipt)
+    except (OSError, ValueError, RuntimeError) as error:
+        code = str(error)
+        reason = "CP_COMPONENT_" + code[3:] if code in STATIC_FAILURE_CODES else "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"
+        raise ComponentTransportDeferred(reason) from None
 
 
 def atomic_json(path: Path, value: dict) -> None:
@@ -294,9 +316,9 @@ class BoundedComponentTransport:
                 return None
             try:
                 path, receipt = self.download(request, contract_key)
-                evidence = inspect_static_subset(path, contract_key=contract_key, target=target, receipt=receipt)
+                evidence = _inspect_static_for_transport(path, contract_key=contract_key, target=target, receipt=receipt)
             except ComponentTransportDeferred:
-                # Preserve the real provider/budget reason. Turning every
+                # Preserve the real provider/budget or allowlisted static reason. Turning every
                 # failed static request into "evidence unavailable" hides a
                 # repeated DatasetUpdating or timeout behind the same code.
                 raise
@@ -309,8 +331,8 @@ class BoundedComponentTransport:
         """Bounded explicit refresh when the existing static grid cannot prove a native row."""
         request = static_request(contract_key, target)
         path, receipt = self.download(request, contract_key)
-        evidence = inspect_static_subset(path, contract_key=contract_key,
-                                         target=target, receipt=receipt)
+        evidence = _inspect_static_for_transport(path, contract_key=contract_key,
+                                                target=target, receipt=receipt)
         self.static_evidence[(contract_key, request["requestSha256"])] = evidence
         return evidence
 

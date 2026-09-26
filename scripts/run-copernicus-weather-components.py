@@ -33,6 +33,47 @@ from lib.copernicus_component_transport import (
 )
 
 
+COMPONENT_PROGRESS_LANES = ("critical", "upgrade")
+
+
+def component_progress_lane(plan: dict) -> str:
+    """Keep gap/aged-DMI work separate from the later CP-over-OM pass."""
+    needs = plan.get("needs") or []
+    return ("upgrade" if needs and all(
+        row.get("purpose") == "OPEN_METEO_UPGRADE" for row in needs
+    ) else "critical")
+
+
+def component_progress_cursors(previous: dict) -> dict:
+    """Read scheduling hints only; neither an old nor new cursor admits data."""
+    def cursor(value):
+        return (list(value) if isinstance(value, (list, tuple)) and len(value) == 2
+                and all(isinstance(item, str) and item for item in value) else None)
+    if not isinstance(previous, dict):
+        return {lane: None for lane in COMPONENT_PROGRESS_LANES}
+    if previous.get("schemaVersion") == 2:
+        saved = previous.get("cursors")
+        saved = saved if isinstance(saved, dict) else {}
+        return {lane: cursor(saved.get(lane)) for lane in COMPONENT_PROGRESS_LANES}
+    # The old single cursor has no lane identity. Seed both once, then preserve
+    # their independent progress in the same already-inventoried private file.
+    legacy = cursor(previous.get("nextCursor"))
+    return {lane: list(legacy) if legacy else None for lane in COMPONENT_PROGRESS_LANES}
+
+
+def component_progress_checkpoint(previous: dict, plan: dict, bank: dict,
+                                  attempt_rows: list[dict]) -> dict:
+    lane = component_progress_lane(plan)
+    cursors = component_progress_cursors(previous)
+    if attempt_rows:
+        latest = attempt_rows[-1]
+        cursors[lane] = [latest["partId"], latest["contractKey"]]
+    return {"kind": "CP_COMPONENT_PROGRESS_CURSOR", "schemaVersion": 2,
+            "planSha256": plan["planSha256"], "bankSha256": bank["bankSha256"],
+            "attempts": attempt_rows, "lane": lane, "cursors": cursors,
+            "nextCursor": cursors[lane]}
+
+
 def original_component_admitter(plan: dict, cache: ComponentSubsetCache):
     """One original-byte decision for retry planning and final admission."""
     parsed, receipts, static = {}, {}, {}
@@ -418,13 +459,14 @@ def main(argv=None) -> int:
             maximum_download_bytes=args.maximum_download_bytes)
         progress_path = args.bank.with_suffix(args.bank.suffix + ".progress.json")
         previous = json.loads(progress_path.read_text(encoding="utf-8")) if progress_path.exists() else {}
-        cursor = previous.get("nextCursor")
+        lane = component_progress_lane(plan)
+        cursor = component_progress_cursors(previous)[lane]
         def checkpoint(value, attempt_rows):
+            nonlocal previous
             save_component_bank(args.bank, value, targets=plan["targets"])
-            latest = attempt_rows[-1] if attempt_rows else None
-            atomic_json(progress_path, {"kind": "CP_COMPONENT_PROGRESS_CURSOR", "schemaVersion": 1,
-                "planSha256": plan["planSha256"], "bankSha256": value["bankSha256"],
-                "attempts": attempt_rows, "nextCursor": [latest["partId"], latest["contractKey"]] if latest else cursor})
+            next_progress = component_progress_checkpoint(previous, plan, value, attempt_rows)
+            atomic_json(progress_path, next_progress)
+            previous = next_progress
         admit_existing_or_new, dynamic_verified, reset_original_checks = original_component_admitter(plan, cache)
         def acquire_and_recheck(request):
             try:

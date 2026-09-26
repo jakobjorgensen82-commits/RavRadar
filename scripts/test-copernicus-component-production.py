@@ -1,12 +1,14 @@
 """Offline real NetCDF -> immutable originals -> authority / transport tests."""
 from __future__ import annotations
 import copy
+import hashlib
 import json
 import runpy
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,6 +17,9 @@ import xarray as xr
 
 from lib.copernicus_weather_component_bank import _request, _sealed, empty_component_bank, merge_component_read, produce_component_bank, save_component_bank
 from lib.copernicus_weather_components import CONTRACTS, MAX_SUBSET_BYTES, read_component_subset
+from lib import copernicus_component_spatial as spatial
+from lib import copernicus_component_transport as transport_module
+from lib.copernicus_current import canonical_sha256
 from lib.copernicus_component_spatial import POLICY, static_request, eligible_static_cell
 from lib.copernicus_component_transport import ComponentSubsetCache, BoundedComponentTransport, ComponentTransportDeferred, atomic_json, subset_arguments
 
@@ -42,7 +47,27 @@ def static_fixture(key="nws-wave", mask=1, depth=20, lon=10.0):
     return dataset
 
 
-def prepare(folder, all_components=False):
+def nws_metadata_fixture(key="nws-wave"):
+    """Public NWS 202511 headers, synthetic values, after SDK depth normalization.
+
+    Both phy/wav static.zarr/.zmetadata omit deptho.units and have
+    mask(elevation,latitude,longitude). Copernicus Marine 2.4.1 writes that
+    coordinate as depth, positive down, in the downloaded NetCDF. PUMs
+    CMEMS-NWS-PUM-004-013 p14 and 004-014 p12 document deptho in metres.
+    """
+    dataset = static_fixture(key)
+    dataset.attrs.clear()  # Public static headers need not repeat the pinned dataset id.
+    dataset["deptho"].attrs = {"grid": "amm15rT", "long_name": "Bathymetry",
+                                "standard_name": "sea_floor_depth_below_geoid"}
+    dataset.coords["depth"] = ("depth", [3.0, 0.0],
+        {"standard_name": "depth", "units": "m", "positive": "down", "axis": "Z"})
+    dataset["mask"] = xr.DataArray([[[0.0]], [[1.0]]], dims=("depth", "latitude", "longitude"),
+        attrs={"long_name": "Land-sea mask: 1 = sea ; 0 = land", "missing_value": 0,
+               "standard_name": "sea_binary_mask"})
+    return dataset
+
+
+def prepare(folder, all_components=False, static_factory=static_fixture):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     cache = ComponentSubsetCache(folder / "cache")
@@ -60,7 +85,7 @@ def prepare(folder, all_components=False):
         retention_start_at=raw["retentionStartAt"], retention_end_at=raw["retentionEndAt"])
     static_path = folder / "static.nc"
     for key in (["nws-wave", "nws-temperature", "nws-level"] if all_components else ["nws-wave"]):
-        static_fixture(key).to_netcdf(static_path, engine="h5netcdf")
+        static_factory(key).to_netcdf(static_path, engine="h5netcdf")
         cache.store(static_request(key, TARGET), static_path)
     receipt = None
     def acquire(request):
@@ -166,6 +191,166 @@ class ComponentProductionTests(unittest.TestCase):
         evidence = self.case["cache"].load_static("baltic-temperature", TARGET)
         self.assertEqual(evidence["maskSurfaceDepthM"], 0.5)
         self.assertTrue(eligible_static_cell(evidence))
+
+    def inspect_fixture(self, dataset, key="nws-wave"):
+        # Isolated immutable originals: an older good file cannot mask a
+        # deliberately malformed fixture at the same target.
+        with tempfile.TemporaryDirectory(dir=self.case["folder"], prefix="metadata-") as folder:
+            path = Path(folder) / "static.nc"
+            dataset.to_netcdf(path, engine="h5netcdf")
+            cache = ComponentSubsetCache(Path(folder) / "cache")
+            cache.store(static_request(key, TARGET), path)
+            return cache.load_static(key, TARGET)
+
+    def test_actual_nws_202511_metadata_admits_surface_wave_and_temperature(self):
+        for key in ("nws-wave", "nws-temperature", "nws-level"):
+            with self.subTest(key=key):
+                evidence = self.inspect_fixture(nws_metadata_fixture(key), key)
+                self.assertEqual(evidence["maskSurfaceDepthM"], 0.0)
+                self.assertEqual(evidence["depthM"], 20.0)
+                self.assertTrue(eligible_static_cell(evidence))
+        # All the way through original-byte revalidation, not just the parser.
+        self.case = prepare(self.case["folder"] / "actual-headers", all_components=True,
+                            static_factory=nws_metadata_fixture)
+        result = self.authority()
+        self.assertEqual(len(result["stage"]["candidates"]), 3)
+        self.assertEqual(result["recordFailures"], [])
+        self.assertEqual({row["component"] for row in result["stage"]["candidates"]},
+                         {"wave", "waterTemperature"})
+        self.assertTrue(all(row["source"]["spatialAdmission"]["witness"]["static"]["maskSurfaceDepthM"] == 0.0
+                            for row in result["stage"]["candidates"]))
+
+    def test_documented_missing_unit_never_overrides_explicit_units_or_other_products(self):
+        for unit in ("km", "cm", "", "metres"):
+            with self.subTest(unit=unit):
+                dataset = nws_metadata_fixture()
+                dataset["deptho"].attrs["units"] = unit
+                with self.assertRaisesRegex(ValueError, "^CP_STATIC_FIELD_UNIT_INVALID$"):
+                    self.inspect_fixture(dataset)
+        for key in ("baltic-wave", "baltic-temperature", "baltic-level"):
+            with self.subTest(key=key):
+                dataset = static_fixture(key)
+                del dataset["deptho"].attrs["units"]
+                with self.assertRaisesRegex(ValueError, "^CP_STATIC_FIELD_UNIT_INVALID$"):
+                    self.inspect_fixture(dataset, key)
+        for attribute, value in (("dataset_id", "wrong-dataset"), ("dataset_version", "202612"),
+                                 ("product_id", "wrong-product")):
+            with self.subTest(attribute=attribute):
+                dataset = nws_metadata_fixture()
+                dataset.attrs[attribute] = value
+                with self.assertRaisesRegex(ValueError, "^CP_STATIC_DATASET_IDENTITY_CONFLICT$"):
+                    self.inspect_fixture(dataset)
+        # Even a future pinned request must acquire its own documented unit
+        # policy. The present fallback is not inherited by name/prefix.
+        for changed in ({"staticVersion": "202612"}, {"staticDatasetId": "unreviewed_static"}):
+            with self.subTest(changed=changed), patch.dict(POLICY["contracts"]["nws-wave"], changed):
+                with self.assertRaisesRegex(ValueError, "^CP_STATIC_FIELD_UNIT_INVALID$"):
+                    self.inspect_fixture(nws_metadata_fixture())
+
+    def test_nws_metadata_still_requires_surface_and_exact_semantics(self):
+        dataset = nws_metadata_fixture()
+        dataset.coords["depth"] = ("depth", [3.0, 0.51], dict(dataset.depth.attrs))
+        with self.assertRaisesRegex(ValueError, "^CP_STATIC_MASK_SURFACE_MISSING$"):
+            self.inspect_fixture(dataset)
+        for mutation, reason in (
+            (lambda ds: ds.depth.attrs.update(positive="up"), "CP_STATIC_MASK_SURFACE_INVALID"),
+            (lambda ds: ds.depth.attrs.update(units="cm"), "CP_STATIC_MASK_SURFACE_INVALID"),
+            (lambda ds: ds.deptho.attrs.update(standard_name="sea_floor_depth_below_sea_surface"),
+             "CP_STATIC_FIELD_SEMANTICS_INVALID"),
+        ):
+            with self.subTest(reason=reason):
+                dataset = nws_metadata_fixture()
+                mutation(dataset)
+                with self.assertRaisesRegex(ValueError, "^" + reason + "$"):
+                    self.inspect_fixture(dataset)
+        dataset = nws_metadata_fixture()
+        dataset["mask"].values[:] = np.array([[[1.0]], [[0.0]]])
+        with self.assertRaisesRegex(ValueError, "^CP_STATIC_FIELD_VALUE_MISSING$"):
+            self.inspect_fixture(dataset)  # Deep wet cell must not replace a dry surface.
+        dataset = nws_metadata_fixture()
+        dataset["deptho"] = xr.DataArray([[[20.0]], [[20.0]]], dims=("depth", "latitude", "longitude"),
+                                         attrs=dict(dataset.deptho.attrs))
+        with self.assertRaisesRegex(ValueError, "^CP_STATIC_FIELD_DIMENSIONS_INVALID$"):
+            self.inspect_fixture(dataset)
+
+    def test_policy_upgrade_revalidates_old_nws_and_baltic_without_rewriting_originals(self):
+        old_policy = copy.deepcopy(POLICY)
+        old_policy.pop("documentedMissingDepthUnits")
+        old_policy["contracts"]["nws-wave"]["surfaceMaskDepth"] = None
+        old_hash = canonical_sha256(old_policy)
+        current_hash = spatial.POLICY_SHA256
+        self.assertNotEqual(old_hash, current_hash)
+        with patch.dict(POLICY, old_policy, clear=True), patch.object(spatial, "POLICY_SHA256", old_hash):
+            legacy = prepare(self.case["folder"] / "old-policy", all_components=True)
+            old_request = static_request("nws-wave", TARGET)
+            old_result = RUNNER["verify_original_components"](legacy["plan"], legacy["bank"], legacy["cache"])
+            self.assertEqual(len(old_result["stage"]["candidates"]), 3)
+            # Store actual Baltic native records under the old global hash as
+            # well: the NWS-only correction must not cold-reset Baltic banks.
+            for key in ("baltic-wave", "baltic-temperature"):
+                path = legacy["folder"] / "baltic-static.nc"
+                static_fixture(key).to_netcdf(path, engine="h5netcdf")
+                legacy["cache"].store(static_request(key, TARGET), path)
+                request = _request(legacy["plan"], TARGET["partId"], key, [TIMES[0]])
+                path = legacy["folder"] / "baltic-dynamic.nc"
+                dynamic_fixture(key).to_netcdf(path, engine="h5netcdf")
+                path, receipt = legacy["cache"].store(request, path)
+                read = read_component_subset(path, contract_key=key, target=TARGET, expected_times=[TIMES[0]])
+                legacy["bank"] = merge_component_read(legacy["bank"], plan=legacy["plan"], request=request,
+                                                       read=read, acquisition_at=receipt["acquisitionAt"])
+        original_bank = copy.deepcopy(legacy["bank"])
+        inventory_before = RUNNER["storage_inventory"](legacy["bank"], legacy["cache"])
+        originals_before = {p.relative_to(legacy["cache"].directory).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                            for p in legacy["cache"].directory.rglob("*") if p.is_file()}
+        fresh_plan = RUNNER["pinned_plan"](legacy["raw"])
+        self.assertEqual(static_request("nws-wave", TARGET), old_request)
+        self.assertEqual(fresh_plan["routingPolicy"]["policySha256"], current_hash)
+        result = RUNNER["verify_original_components"](fresh_plan, legacy["bank"], legacy["cache"])
+        self.assertEqual(result["recordFailures"], [])
+        rows = result["stage"]["candidates"]
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(sum(row["source"]["datasetId"].startswith("cmems_mod_nws") for row in rows), 3)
+        self.assertEqual(sum(row["source"]["datasetId"].startswith("cmems_mod_bal") for row in rows), 2)
+        self.assertTrue(all(row["source"]["spatialAdmission"]["policySha256"] == current_hash for row in rows))
+        self.assertEqual(legacy["bank"], original_bank)
+        self.assertEqual(RUNNER["storage_inventory"](legacy["bank"], legacy["cache"]), inventory_before)
+        self.assertEqual({p.relative_to(legacy["cache"].directory).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                          for p in legacy["cache"].directory.rglob("*") if p.is_file()}, originals_before)
+
+    def test_static_validation_reports_only_allowlisted_codes_during_fetch_and_refresh(self):
+        request = _request(self.case["plan"], TARGET["partId"], "nws-wave", TIMES)
+        for refresh in (False, True):
+            for error, expected in (
+                ("CP_STATIC_FIELD_UNIT_INVALID", "CP_COMPONENT_STATIC_FIELD_UNIT_INVALID"),
+                ("CP_STATIC_MASK_SURFACE_MISSING", "CP_COMPONENT_STATIC_MASK_SURFACE_MISSING"),
+                ("CP_STATIC_FIELD_UNIT_INVALID private-payload", "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"),
+                ("CP_STATIC_PRIVATE_SECRET", "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"),
+                ("private filename or token", "CP_COMPONENT_STATIC_EVIDENCE_UNAVAILABLE"),
+            ):
+                with self.subTest(refresh=refresh, error=error):
+                    cache = ComponentSubsetCache(self.case["folder"] / "empty-code-cache")
+                    transport = BoundedComponentTransport(cache, deadline_epoch=200, request_timeout_seconds=30,
+                        maximum_requests=4, maximum_download_bytes=MAX_SUBSET_BYTES, clock=lambda: 100)
+                    with patch.object(transport, "download", return_value=(Path("unused.nc"), {})), \
+                         patch.object(transport_module, "inspect_static_subset", side_effect=ValueError(error)):
+                        with self.assertRaisesRegex(ComponentTransportDeferred, "^" + expected + "$"):
+                            if refresh:
+                                transport.refresh_static("nws-wave", TARGET)
+                            else:
+                                transport.acquire_subset(request)
+        # Real malformed bytes must reach the same safe classification and
+        # survive the bank's attempt-summary sanitizer (no live API call).
+        def run(args, **_kwargs):
+            dataset = nws_metadata_fixture()
+            dataset.deptho.attrs["units"] = "km"
+            dataset.to_netcdf(Path(args[-1]) / "subset.nc", engine="h5netcdf")
+            return SimpleNamespace(returncode=0)
+        transport = BoundedComponentTransport(ComponentSubsetCache(self.case["folder"] / "bad-unit-cache"),
+            deadline_epoch=200, request_timeout_seconds=30, maximum_requests=4,
+            maximum_download_bytes=MAX_SUBSET_BYTES, run=run, clock=lambda: 100)
+        result = produce_component_bank(self.case["plan"], empty_component_bank([TARGET]),
+            acquire_subset=transport.acquire_subset, acquisition_at=lambda: TIMES[0], checkpoint=lambda *args: None)
+        self.assertEqual(result["attempts"][0]["reason"], "CP_COMPONENT_STATIC_FIELD_UNIT_INVALID")
 
     def test_dynamic_original_tamper_is_not_authorized_by_self_consistent_bank(self):
         row = self.case["bank"]["records"][0]["native"]

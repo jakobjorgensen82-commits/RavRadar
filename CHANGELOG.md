@@ -1,3 +1,17 @@
+## 4.0.493 – samlet leverandørrotation og bevaret fremdrift (lokal, 2026-09-26)
+
+- Kort DMI-bekræftelse tæller ikke længere som en lang genopfyldning.
+  Fjern kun tidligere falske markører med præcist tids-/budgetbevis.
+- Copernicus roterer huller og opgraderinger hver for sig og
+  rapporterer begge gennemløb, også når forsøgstallene er ufuldstændige.
+- Læs NWS 202511's dokumenterede bathymetri-/overflademaskeformater
+  uden at tillade forkerte eksplicitte enheder eller dybe lag.
+- Hent den bestilte krypterede cache direkte ved kort bekræftelse.
+- Bevar verificerede DMI-prognose-/stationsinput i krypteret
+  fremdrift uden ændring af modelbundet produktionsinventar.
+- Scoreformel, leverandørprioritet, admininterpolation og eksisterende
+  gemte datakontrakter bevares. Liveeffekt og fuld dækning afventer.
+
 ## 4.0.492 – genbrug gemt vejr uden tids- og unionsfejl (2026-09-26)
 
 - Accepter workflowets eksakte UTC-time med eller uden `.000`;

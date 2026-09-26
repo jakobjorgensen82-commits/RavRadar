@@ -1,3 +1,28 @@
+# Aktuelle issues – 2026-09-26, lokal 4.0.493
+
+- **DMI FALSK LANGKØRSEL – LOKALT RETTET:** Kort 360-sekunders mode
+  kunne sætte langmarkør og begrænse næste kørsel i fire timer.
+  Faktisk budget styrer nu markøren; kendt falsk legacy-markør
+  fjernes kun med matchende tids-/budgetbevis.
+- **CP STAGNERENDE ROTATION – LOKALT RETTET:** Hul- og
+  opgraderingsgennemløb overskrev samme cursor. Separate positioner
+  og stabil efterfølger er måltestet; livefremgang mangler.
+- **CP NWS-METADATA – LOKALT RETTET:** Faktiske 202511-headere
+  afviger fra parserantagelserne. De snævert dokumenterede former
+  accepteres nu uden svagere krav til dybde, landmaske eller enhed.
+- **GEMT DMI-INPUT – LOKALT RETTET:** Fuld produktionspakke
+  indeholder prognose-/stationscache, men fejlede runs krypterede
+  fremdrift gjorde ikke. Ny operationel udvidelse bevarer kun
+  verificerede data uden at kopiere gamle admin-/scorebindinger.
+- **KORT EXACT CACHE – LOKALT RETTET:** Bestilt run/attempt bruges
+  allerede ved hentning, ikke først som kontrol efter prefix-restore.
+- **34 TEMPERATURTAB / R2-PUBLISH / DÆKNING – LIVE ÅBEN:**
+  `36228162505` har passeret restore/DMI og bygger central cache.
+  Historisk 07Z-tab kræver kontrol af netop 07Z, ikke et senere vindue.
+- **FREE-BUDGET – ÅBEN:** Ingen løfte om gratis drift uden målte døgn.
+
+Ældre status herunder er historisk.
+
 # Aktuelle issues – 2026-09-26, lokal 4.0.492
 
 - **FREMDRIFTS-UTC – LOKALT RETTET, LIVE ÅBEN:** Run `36225273085`

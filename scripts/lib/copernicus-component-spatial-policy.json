@@ -8,8 +8,12 @@
   "depthVariable": "deptho",
   "depthStandardName": "sea_floor_depth_below_geoid",
   "staticPart": "bathy",
+  "documentedMissingDepthUnits": {
+    "cmems_mod_nws_wav_anfc_1.5km_static": {"productId": "NWSHELF_ANALYSISFORECAST_WAV_004_014", "datasetVersion": "202511", "datasetPart": "bathy", "units": "m", "sourceDocument": "https://documentation.marine.copernicus.eu/PUM/CMEMS-NWS-PUM-004-014.pdf"},
+    "cmems_mod_nws_phy_anfc_1.5km_static": {"productId": "NWSHELF_ANALYSISFORECAST_PHY_004_013", "datasetVersion": "202511", "datasetPart": "bathy", "units": "m", "sourceDocument": "https://documentation.marine.copernicus.eu/PUM/CMEMS-NWS-PUM-004-013.pdf"}
+  },
   "contracts": {
-    "nws-wave": {"staticDatasetId": "cmems_mod_nws_wav_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "10", "depthComparison": ">=", "surfaceMaskDepth": null},
+    "nws-wave": {"staticDatasetId": "cmems_mod_nws_wav_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "10", "depthComparison": ">=", "surfaceMaskDepth": "at-most-0.5"},
     "baltic-wave": {"staticDatasetId": "cmems_mod_bal_wav_anfc_static", "staticVersion": "202311", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": null},
     "nws-level": {"staticDatasetId": "cmems_mod_nws_phy_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "at-most-0.5"},
     "nws-temperature": {"staticDatasetId": "cmems_mod_nws_phy_anfc_1.5km_static", "staticVersion": "202511", "minimumDepthM": "0", "depthComparison": ">", "surfaceMaskDepth": "at-most-0.5"},

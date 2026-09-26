@@ -9,6 +9,7 @@ import { openMeteoPartSha256 } from './open-meteo-part-bank.mjs';
 import {
   PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE, privateWeatherComponentMarker,
 } from './private-weather-component-inventory.mjs';
+import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES } from './private-weather-progress-files.mjs';
 
 const MAGIC = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
 const MAX_PACK_BYTES = 768 * 1024 * 1024; // existing private-runtime per-file bound
@@ -34,11 +35,12 @@ const RUNNER = fileURLToPath(new URL('../run-copernicus-weather-components.py', 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const same = (a, b) => openMeteoPartSha256(a) === openMeteoPartSha256(b);
 const fail = code => { throw new Error(code); };
-const safePath = relative => Object.values(PRIVATE_WEATHER_COMPONENT_FILES).includes(relative)
+const safePath = (relative, includeOperationalProgress = false) => Object.values(PRIVATE_WEATHER_COMPONENT_FILES).includes(relative)
+  || includeOperationalProgress === true && Object.values(PRIVATE_WEATHER_PROGRESS_ONLY_FILES).includes(relative)
   || relative.startsWith(CP_PREFIX) && [CP_OBJECT, CP_RECEIPT, CP_STATIC].some(pattern => pattern.test(relative.slice(CP_PREFIX.length)));
 
-async function checkedFile(root, relative, { optional = false, maximumBytes = MAX_PACK_BYTES } = {}) {
-  if (!safePath(relative) && relative !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath) fail('WEATHER_PACK_PATH_NOT_ALLOWLISTED');
+async function checkedFile(root, relative, { optional = false, maximumBytes = MAX_PACK_BYTES, includeOperationalProgress = false } = {}) {
+  if (!safePath(relative, includeOperationalProgress) && relative !== PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath) fail('WEATHER_PACK_PATH_NOT_ALLOWLISTED');
   let current = path.resolve(root);
   for (const segment of relative.split('/')) {
     current = path.join(current, segment);
@@ -122,6 +124,18 @@ async function sourceInventory(root, conditions, {
     const digest = await digestFile(source.absolute);
     files.push({ relativePath, ...digest });
     if (key.endsWith('Bank')) banks[key] = await readSmallJson(source.absolute, maximumBytes);
+  }
+  if (includeOperationalProgress === true) {
+    for (const [key, relativePath] of Object.entries(PRIVATE_WEATHER_PROGRESS_ONLY_FILES)) {
+      const source = await checkedFile(root, relativePath, {
+        optional: true, maximumBytes: MAX_JSON_BYTES, includeOperationalProgress: true,
+      });
+      // Old authenticated snapshots must reproduce their exact old manifest.
+      // Do not introduce false presence keys for absent progress-only files.
+      if (!source) continue;
+      presence[key] = true;
+      files.push({ relativePath, ...await digestFile(source.absolute) });
+    }
   }
   if (banks.openMeteoBank) {
     const { bankSha256, ...body } = banks.openMeteoBank;
@@ -241,7 +255,7 @@ export async function unpackPrivateWeatherComponentPack({
     const seen = new Set();
     let total = position;
     for (const file of manifest.files) {
-      if (!safePath(file.relativePath) || seen.has(file.relativePath) || !Number.isSafeInteger(file.bytes)
+      if (!safePath(file.relativePath, includeOperationalProgress) || seen.has(file.relativePath) || !Number.isSafeInteger(file.bytes)
         || file.bytes < 1 || !/^[0-9a-f]{64}$/.test(file.sha256)) fail('WEATHER_PACK_ENTRY_INVALID');
       seen.add(file.relativePath);
       total += file.bytes;

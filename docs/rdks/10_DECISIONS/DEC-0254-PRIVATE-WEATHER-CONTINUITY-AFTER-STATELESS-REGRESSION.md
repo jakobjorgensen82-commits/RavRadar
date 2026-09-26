@@ -1,5 +1,35 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Implementeringstillæg 2026-09-26 – lokal 4.0.493
+
+Kort mode skal hente præcis den bestilte krypterede run-/attempt-cache.
+Normal mode kan stadig finde nyeste kompatible fremdrift via main-prefix;
+autentifikation, baselinehash og atomisk installation er uændrede.
+En kort DMI-kørsel må ikke registreres som den lange genopfyldning,
+der ellers udløser fire timers pause. Ægte eller ukendt legacy-
+langmarkør bevares; kun dokumenteret kortmarkør fjernes.
+
+Kun den eksplicit operationelle fremdriftspakke udvides med DMI's
+prognose- og stationsinput. Det fælles modelbundne filinventar og
+fulde produktionspakkes format ændres ikke. Gamle snapshots uden
+ekstrafiler læses uændret. Nye input forenes komponentvis efter
+geometri-, kilde- og tidskontrol; administrative punkter, scorestate
+og gamle udløbstider må ikke ukritisk kopieres. Al validering sker
+før den samlede atomiske installation.
+
+Copernicus skal huske rotation særskilt for ægte huller/ældet DMI og
+opgradering af Open-Meteo. Den samme eksisterende progressfil rummer
+begge cursorer; gamle filer læses fortsat. NWS 202511's dokumenterede
+statiske metadata fortolkes snævert efter produktmanualerne, mens
+forkert eksplicit enhed og ugyldige lag stadig afvises. Genbrug af
+gammel bank kræver genvalidering af uændrede originaler, ikke
+omskrivning af kvitteringer eller historiske request-hashes.
+
+Dette ændrer ikke DMI-first/96-timersregel, DMI-only-vandstand,
+admininterpolation, Limfjord-fastholdelse eller scoreformel.
+Se auditrapporten for reproduktioner og åbne måleopgaver. Lokal
+test er ikke produktionsbevis for cache, leverandørandel eller deploy.
+
 ## Tillæg 2026-09-26 – foren verificerede komponenter før kort forsøg
 
 Et krypteret hente-checkpoint erstatter ikke den sidst beskyttede
