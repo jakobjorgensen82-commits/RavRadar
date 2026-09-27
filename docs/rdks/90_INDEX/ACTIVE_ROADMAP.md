@@ -3500,3 +3500,20 @@ den påviste årsag. Cron og lange runs forbliver pauset.
 5. [ ] Undersøg resthuller, prioritet for DMI/Copernicus/Open-Meteo,
    de historiske 34 temperaturfelter og Free-forbrug før lang
    opfyldning eller genåbnet cron.
+# Aktivt roadmap – 2026-09-27, lokal 4.0.501 privat fuldcache
+
+1. [x] Afgræns fuldt run `36293202251`: vejr/score nåede frem,
+   men privat conditions-JSON blev for stor; gammel offentlig pakke
+   og beskyttet baseline blev ikke erstattet.
+2. [ ] Fuldfør DEC-0256's lagrings- og læserkontrol, måltests,
+   version/RDKS og én grøn exact-head kildekontrol på PR'en.
+3. [ ] Merge sikkert; kør én kort normal bekræftelse fra nyeste
+   gyldige beskyttede cache. Bevis 210×118 timer, begge private
+   timefelter, no-loss, fuld artifactgate, central CAS, R2, Pages
+   og offentlig version/prognose før ny lang opfyldning.
+4. [ ] Kør derefter ikke-overlappende normale opfyldninger og mål
+   vind, bølger, havstrøm, vandstand og vandtemperatur hver for sig
+   på slutproduktet. Afklar vandstandens sidste tre døgn, ca. 4.500
+   havstrømpar samt DMI/Copernicus/Open-Meteo-bidrag uden at ændre
+   kildeprioritet ud fra mellemtal alene. Cron forbliver pauset,
+   indtil flere selvstændige normale kørsler er stabile.

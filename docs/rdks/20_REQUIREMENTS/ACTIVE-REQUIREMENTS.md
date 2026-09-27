@@ -2365,3 +2365,13 @@ scoreinput og den historiske mobilisering skal også kontrolleres. DEC-0238.
   versions-CAS, monotont target og alle sikkerhedskrav. Overgangen
   må ikke tillade vilkårlige ældre schemaer, databaserækker eller
   ændrede vejr-/scoreværdier. Gemte hente-caches er ikke publicering.
+## Privat fuld-cache-lagring – 2026-09-27
+
+- **REQ-LOSSLESS-PRIVATE-HOURLY-0256 – BINDENDE:** En voksende
+  fuld vejrcache må ikke kasseres alene fordi privat JSON overstiger
+  én proces' strenggrænse. Begge private zone-timeserier skal kunne
+  lagres og genskabes bit-identisk med begrænsede størrelser, hash
+  og eksakt datasæt-/tidsbinding. En ABI-ændring må ikke nulstille
+  den verificerede sidste offentlige cache eller ændre offentlig
+  prognose, score, femfeltsdata og leverandørprioritet. Før lang
+  opfyldning skal et kort normalt run bevise gemning og deploy.

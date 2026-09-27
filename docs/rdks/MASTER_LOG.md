@@ -5486,3 +5486,17 @@ retention. Lokal gendannelse, manipulation og workflowrækkefølge
 er testet. Automatisk sikker genoptagelse, exact-head og livebevis
 er fortsat åbne; derfor ingen ny tung kørsel endnu. Dette er
 samtaledeltaet siden sidste ZIP/release.
+# 2026-09-27 – lokal 4.0.501: fuld vejrbygning kræver kompakt privat lagring
+
+Kort run `36288805313` leverede 4.0.500 offentligt. Første fulde
+normalrun `36293202251` nåede vejr- og scorebygning, men stoppede
+før privat slutpakke, R2 og Pages, fordi `conditions.json` oversteg
+V8's enkeltstrengsgrænse. Den hidtidige offentlige prognose blev
+stående. Lokal 4.0.501 pakker både vejr- og scorezonernes timefelter
+tabsfrit med eksakt marker, bytegrænser og SHA-256; aktiv læsning
+pakker ud igen. Privat ABI løftes til v2 med kun den eksakte seneste
+4.0.500-generation som v1-forgænger. Syntetiske 210×118 femfelts-
+prøver og ti generationer er ikke bevis for faktisk fuld størrelse.
+Exact-head, kort normal livekontrol og derefter ny fuld opfyldning
+udestår. Vandstandens korte synlige horisont, havstrømsrest og
+leverandørfordeling er særskilt åbne. Se DEC-0256 og roadmap.

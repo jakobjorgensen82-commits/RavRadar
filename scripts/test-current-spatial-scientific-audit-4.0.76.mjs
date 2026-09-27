@@ -16,11 +16,12 @@ import {
 } from './lib/ravscore-production-adapters.mjs';
 import { projectExactDmiNativeCurrentToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const bulkPath=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
 const [zones,conditions,bulkBytes,publicDoc,publicDetails,coastalParts,pilotControl,pilotHistory]=await Promise.all([
   fs.readFile('data/zones.geojson','utf8').then(JSON.parse),
-  fs.readFile('data/live/conditions.json','utf8').then(JSON.parse),
+  fs.readFile('data/live/conditions.json','utf8').then(JSON.parse).then(hydratePrivateConditionsHourly),
   fs.readFile(bulkPath),
   fs.readFile('data/live/public-conditions.json','utf8').then(JSON.parse),
   fs.readFile('data/live/public-condition-details.json','utf8').then(JSON.parse),

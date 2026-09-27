@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
+import { hydratePrivateConditionsHourly, packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { enrichCurrentProvenanceDocuments } from './enrich-current-provenance.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import {
@@ -3807,7 +3808,9 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
 
 async function readPrevious() {
   try {
-    const previous = JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8'));
+    const previous = hydratePrivateConditionsHourly(
+      JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8')),
+    );
     if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true'
       && (!previous || typeof previous.zones !== 'object'
         || Array.isArray(previous.zones)
@@ -4607,6 +4610,7 @@ const publicHourPackPath = PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath;
 const stagedPublicHourPackPath = `${publicHourPackPath}.stage-${privateWriteId}`;
 let publicHourPack;
 let conditionsWrite;
+let privateHourlyMetrics;
 let privatePairInstalled = false;
 try {
   const publicRuntime = await writePublicRuntimeFromFull(output);
@@ -4616,7 +4620,10 @@ try {
     startupNationalForecast: publicRuntime.publicDocument.nationalForecast,
     outputPath: stagedPublicHourPackPath,
   });
-  const privateOutput = compactPrivateConditionsForPersistence(output, publicHourPack.marker);
+  const privateOutput = packPrivateConditionsHourly(
+    compactPrivateConditionsForPersistence(output, publicHourPack.marker),
+  );
+  privateHourlyMetrics = privateOutput.privateZoneHourly;
   conditionsWrite = await writeBoundedJsonAtomic(stagedConditionsPath, privateOutput);
   await installPrivateConditionsAndHourPack({
     stagedConditionsPath,
@@ -4634,6 +4641,7 @@ try {
   }
 }
 console.log(`Skrev privat conditions atomisk: ${conditionsWrite.bytes} byte. Største topfelter: ${JSON.stringify(Object.entries(conditionsWrite.topLevelBytes).sort((left, right) => right[1] - left[1]).slice(0, 5))}`);
+console.log(`Pakkede private zonetimer tabsfrit: ${privateHourlyMetrics.zoneCount} zoner, ${privateHourlyMetrics.rawBytes} rå byte til ${privateHourlyMetrics.gzipBytes} gzip-byte; conditions-grænse ${conditionsWrite.maximumBytes} byte.`);
 console.log(`Skrev privat offentlig-timepakke: ${publicHourPack.marker.packBytes} byte for ${publicHourPack.marker.rawBytes} offentlige byte.`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);

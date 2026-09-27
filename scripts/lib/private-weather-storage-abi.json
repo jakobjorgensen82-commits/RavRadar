@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "contractId": "ravradar-private-weather-storage-abi-v1",
+  "schemaVersion": 2,
+  "contractId": "ravradar-private-weather-storage-abi-v2",
   "bundleSchemaVersion": "1.0.0",
   "baseFileIds": [
     "full-conditions",
@@ -15,6 +15,7 @@
   ],
   "componentPackSchemaVersion": 1,
   "publicHourPackSchemaVersion": 1,
+  "privateZoneHourlySchemaVersion": 1,
   "dmiBulkDocumentSchemaVersion": 2,
   "incompatibleChangeRule": "Increment this ABI and perform an explicit audited migration before reading an incompatible saved cache."
 }

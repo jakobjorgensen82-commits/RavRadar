@@ -111,6 +111,19 @@ export const LATEST_WEATHER_PREDECESSOR = Object.freeze({
   publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
 });
 
+// 4.0.501 changes only the private on-disk representation of zone-hour rows.
+// The last public 4.0.500 generation is the sole v1 donor. Its encrypted
+// archive, file hashes, identity, model and unaffected contracts must still
+// verify; this bridge does not authorize arbitrary old or incomplete caches.
+export const PRIVATE_HOURLY_V1_PREDECESSOR = Object.freeze({
+  sourceHead: 'd1a8f99051d3d5ede3bf6d3da0d756e5802944ae',
+  datasetId: 'rr-20260927025504-210',
+  productionReferenceAt: '2026-09-27T02:00:00.000Z',
+  fullRuntimeContractSha256: '5f3fe27c06ea13433c5d9cf02f02a145b19742e4aef149e4bcb6041349b39de9',
+  continuationStateContractSha256: '46683362ec6b69835695db375f7de976a8dd0a75b7367a27e2854b653d73e0ab',
+  publicProjectionContractSha256: 'be153999db9d196727800ff41a05b6929137392f7bb3a1fdafd19fc13eff37fe',
+});
+
 // These two sealed generations use the previous model closure.  Their only
 // permitted model-binding difference from the current integrated model is
 // the implementation bundle digest; the predecessor source is checked before
@@ -168,7 +181,8 @@ export function isApprovedExactWeatherPredecessor(descriptor, expected) {
     || isExactDmiMarineSeamPredecessor(descriptor, expected)
     || isExactWeatherRotationPredecessor(descriptor, expected)
     || isExactMarineComponentPredecessor(descriptor, expected)
-    || isExactDmiPredecessor(descriptor, expected, COMPLETE_WEATHER_PREDECESSOR);
+    || isExactDmiPredecessor(descriptor, expected, COMPLETE_WEATHER_PREDECESSOR)
+    || isExactDmiPredecessor(descriptor, expected, PRIVATE_HOURLY_V1_PREDECESSOR);
 }
 
 export function isLatestUnpairedWeatherGeneration(descriptor) {

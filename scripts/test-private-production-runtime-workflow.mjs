@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import {
   PRIVATE_RUNTIME_CAPACITY_POLICY,
   PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY,
@@ -145,6 +146,12 @@ try {
     ),
     'The weather-only DMI seam repair must remain in the reviewed producer inventory',
   );
+  assert.ok(
+    PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(
+      'scripts/lib/private-conditions-hourly.mjs',
+    ),
+    'The private hourly storage codec must remain in the reviewed producer inventory',
+  );
   const contractFiles = [...new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())];
   for (const relative of contractFiles) {
     const destination = path.join(repository, relative);
@@ -246,6 +253,26 @@ try {
   assert.deepEqual(spec.metadata.modelBinding, ravScoreModelBinding());
   assert.equal(spec.files.length, PRIVATE_RUNTIME_FILES.length);
   assert.equal(spec.measuredWarmupCheckpointAbsenceAttested, false);
+
+  const packedConditions = packPrivateConditionsHourly({
+    ...conditions,
+    zones: Object.fromEntries(Object.keys(zones).map(id => [id,
+      { forecast: { hourly: [{ time: conditions.productionReferenceAt,
+        windSpeedMps: 5, waterTemperatureC: 12 }] } }])),
+    coastalParts: { ...conditions.coastalParts,
+      zones: Object.fromEntries(Object.keys(zones).map(id => [id,
+        { hourly: [{ time: conditions.productionReferenceAt, waders: { score: 50 } }] }])) },
+  });
+  const conditionsFile = path.join(repository, 'data/live/conditions.json');
+  await fs.writeFile(conditionsFile, `${JSON.stringify(packedConditions)}\n`);
+  assert.equal((await buildPrivateRuntimeCreateSpec({ repositoryRoot: repository }))
+    .files.length, PRIVATE_RUNTIME_FILES.length);
+  const tamperedPackedConditions = structuredClone(packedConditions);
+  tamperedPackedConditions.privateZoneHourly.zones['z-0'].forecast.rawSha256 = '0'.repeat(64);
+  await fs.writeFile(conditionsFile, `${JSON.stringify(tamperedPackedConditions)}\n`);
+  await assert.rejects(buildPrivateRuntimeCreateSpec({ repositoryRoot: repository }),
+    /PRIVATE_CONDITIONS_HOURLY_/);
+  await fs.writeFile(conditionsFile, `${JSON.stringify(conditions)}\n`);
 
   const expected = await buildPrivateRuntimeExpectation({
     repositoryRoot: repository,

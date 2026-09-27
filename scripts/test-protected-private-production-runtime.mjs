@@ -25,6 +25,7 @@ import {
   MARINE_COMPONENT_PREDECESSOR,
   COMPLETE_WEATHER_PREDECESSOR,
   LATEST_WEATHER_PREDECESSOR,
+  PRIVATE_HOURLY_V1_PREDECESSOR,
   EXACT_WEATHER_PAIR_MODEL_BUNDLE_SHA256,
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   auditProtectedPrivateRuntimeAnonymousDenial,
@@ -451,6 +452,30 @@ try {
     },
   };
   assert.equal(isApprovedExactWeatherPredecessor(completeWeatherPredecessor, schedulerExpected), true);
+  const hourlyV1Predecessor = {
+    ...PRIVATE_HOURLY_V1_PREDECESSOR,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes: {
+      continuationStateContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.continuationStateContractSha256,
+      fullRuntimeContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.fullRuntimeContractSha256,
+      publicProjectionContractSha256: PRIVATE_HOURLY_V1_PREDECESSOR.publicProjectionContractSha256,
+    },
+  };
+  const hourlyV2Expected = {
+    modelBinding: ravScoreModelBinding(), contractHashes: baselineContracts,
+  };
+  assert.equal(isApprovedExactWeatherPredecessor(hourlyV1Predecessor, hourlyV2Expected), true);
+  for (const change of [
+    { sourceHead: SOURCE_HEADS[0] },
+    { datasetId: 'rr-wrong-generation' },
+    { productionReferenceAt: '2026-09-27T03:00:00.000Z' },
+    { contractHashes: { ...hourlyV1Predecessor.contractHashes,
+      fullRuntimeContractSha256: 'a'.repeat(64) } },
+    { modelBinding: { ...hourlyV1Predecessor.modelBinding, modelBundleSha256: 'a'.repeat(64) } },
+  ]) {
+    assert.equal(isApprovedExactWeatherPredecessor(
+      { ...hourlyV1Predecessor, ...change }, hourlyV2Expected), false);
+  }
   const latestWeatherPredecessor = {
     ...LATEST_WEATHER_PREDECESSOR,
     modelBinding: ravScoreModelBinding(),

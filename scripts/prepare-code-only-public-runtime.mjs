@@ -16,6 +16,7 @@ import { assertBindingUpgrade } from './migrate-post-cutover-private-runtime.mjs
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
 import { PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 
 export const CODE_ONLY_SNAPSHOT_FILES = Object.freeze({
@@ -427,7 +428,7 @@ export async function prepareCodeOnlyPublicRuntime({
     atomicWrite(path.join(repository, 'data/water-level-station-routing.json'), routingSource.text),
   ]);
 
-  const generated = await writePublicRuntimeFromFull(fullSource.value, {
+  const generated = await writePublicRuntimeFromFull(hydratePrivateConditionsHourly(fullSource.value), {
     publicPath: path.join(repository, 'data/live/public-conditions.json'),
     detailsPath: path.join(repository, 'data/live/public-condition-details.json'),
     manifestPath: path.join(repository, 'data/live/manifest.json'),

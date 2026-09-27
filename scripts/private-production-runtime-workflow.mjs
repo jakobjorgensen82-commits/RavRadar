@@ -28,6 +28,7 @@ import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory, privateWeatherComponentMarker } from './lib/private-weather-component-inventory.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { assertPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import {
   inspectPrivatePublicHourDeliveryPack,
   privatePublicHourDeliveryMarker,
@@ -109,6 +110,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/lib/open-meteo-o1280-grid.mjs',
     'scripts/lib/open-meteo-part-runtime.mjs',
     'scripts/lib/bounded-json-writer.mjs',
+    'scripts/lib/private-conditions-hourly.mjs',
     'scripts/lib/private-weather-component-inventory.mjs',
     'scripts/lib/private-weather-component-pack.mjs',
     'scripts/lib/public-hour-delivery-pack.mjs',
@@ -201,7 +203,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.500',
+  releaseVersion: '4.0.501',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -217,7 +219,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.500',
+  releaseVersion: '4.0.501',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -462,8 +464,9 @@ export async function privateRuntimeContractHashes({
   const storageAbi = JSON.parse(await fs.readFile(path.join(
     root, 'scripts/lib/private-weather-storage-abi.json',
   ), 'utf8'));
-  if (storageAbi.schemaVersion !== 1
-    || storageAbi.contractId !== 'ravradar-private-weather-storage-abi-v1'
+  if (storageAbi.schemaVersion !== 2
+    || storageAbi.contractId !== 'ravradar-private-weather-storage-abi-v2'
+    || storageAbi.privateZoneHourlySchemaVersion !== 1
     || storageAbi.bundleSchemaVersion !== PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.schemaVersion
     || JSON.stringify(storageAbi.baseFileIds) !== JSON.stringify(PRIVATE_RUNTIME_BASE_FILES.map(file => file.id))
     || storageAbi.componentPackSchemaVersion !== 1
@@ -579,6 +582,7 @@ export async function buildPrivateRuntimeCreateSpec({
     throw new Error('Private runtime conditions source cannot be parsed');
   }
   const metadata = assertConditionsMetadata(conditions);
+  assertPrivateConditionsHourly(conditions);
   const measuredWarmupCheckpointAbsenceAttested =
     hasMeasuredWarmupCheckpointAbsenceAttestation(conditions);
   const files = [];
@@ -1520,6 +1524,7 @@ export async function installRestoredPrivateRuntime({
     descriptor.id === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.id
     && descriptor.relativePath === PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath);
   const conditions = JSON.parse(await fs.readFile(path.join(sourceRoot, 'data/live/conditions.json'), 'utf8'));
+  assertPrivateConditionsHourly(conditions);
   if (privateWeatherComponentMarker(conditions) && !hasExtension) throw new Error('Private runtime component inputs pack is missing');
   if (Boolean(privatePublicHourDeliveryMarker(conditions)) !== hasPublicHourDelivery) {
     throw new Error('Private runtime public-hour pack inventory does not match conditions');

@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import { validateActiveZoneIds } from "./zone-registry-integrity.mjs";
 import { classifyLocalWeatherSnapshot, formatCoverageFailure } from "./local-weather-snapshot-status.mjs";
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
-const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
+const conditions = hydratePrivateConditionsHourly(JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8")));
 const manifest = JSON.parse(fs.readFileSync("data/live/manifest.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");

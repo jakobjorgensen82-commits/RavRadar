@@ -1,4 +1,26 @@
-# 2026-09-27 – lokal 4.0.500, beskyttet DMI-timereparation
+# 2026-09-27 – lokal 4.0.501, kompakt privat zonehistorik
+
+- [x] Kort 4.0.500-normalrun `36288805313` nåede cache, CAS, privat
+  R2, Pages og offentlig prognose.
+- [x] Fuldt run `36293202251` afgrænset til V8's JSON-strenggrænse
+  under privat `conditions.json`-skrivning; ingen ny produktionspakke.
+- [x] Tabfri, hash-/størrelseskontrolleret pakning af privat vejr-
+  og score-timeserie for 210 zoner implementeret lokalt. Legacy v1
+  kan kun være eksakt verificeret 4.0.500-forgænger. Aktiv læsning
+  under normal bygning, public-projektion, provenance og validering
+  er gennemgået; målrettede tests køres før PR.
+- [ ] Exact-head CI, merge og ét kort normalt v2-run skal bevise
+  cachegenbrug, fuld artifactgate, privat gemning, CAS, R2, Pages og
+  offentlig prognose uden tab. Derefter må lang opfyldning vurderes.
+- [x] Første PR-CI `36304752106` afslørede en ældre runner-fejl:
+  Copernicus' `.py`-test var startet med Node i kildegaten. Den
+  faktiske Python-test er grøn lokalt; kommandoen er rettet, og ny
+  exact-head CI afventes. Det første røde run er ikke releasebevis.
+- [ ] Målt dækning pr. vind, bølger, havstrøm, vandstand og vandtemperatur
+  på slutproduktet, vandstandens 5-døgnsrækkevidde, ca. 4.500
+  havstrømsrester og kildeandele. Syntetisk 210×118 er ikke livebevis.
+
+# HISTORISK STATUS – 2026-09-27 – lokal 4.0.500, beskyttet DMI-timereparation
 
 - [x] 4.0.499 er offentlig efter `36261248486`; ny normalrun
   `36278712741` nåede prognosebygning, men blev korrekt stoppet af

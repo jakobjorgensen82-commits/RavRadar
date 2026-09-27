@@ -1,4 +1,4 @@
-import { activeTrip, answerTrip, onTripChange } from './trip-service.js?v=4.0.500';
+import { activeTrip, answerTrip, onTripChange } from './trip-service.js?v=4.0.501';
 
 function markLegacyAnswered(tripId, answer = null) {
   if (!tripId) return;
