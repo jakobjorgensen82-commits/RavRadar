@@ -1,5 +1,35 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-27 – 4.0.503: bevar kildebevis gennem alle normale generationer
+
+4.0.500's formulering om vilkårligt mange kørsler var for stærk og
+er erstattet. Run `36312278335` viste 68 gyldig→tom temperaturpar:
+4.0.500's beskyttede forrige native DMI-endepunkter kunne danne
+timeværdier, men den nye private pakke gemte ikke de afledte,
+kildeverificerede PART-timer. Næste run havde kun sin umiddelbare
+forgænger og mistede dem. Det er en generel DMI-livscyklusfejl,
+ikke en særregel for vandtemperatur.
+
+Den normale private DMI-forecast-cache får derfor en additiv,
+komprimeret PART-timepakke. Hver kystdel og UTC-time rummer kun
+DMI's kildeverificerede komponenter for vind, bølger, havstrøm,
+vandstand og vandtemperatur. Pakken har grænser og hash-/bytekontrol
+pr. kystdel. Den bæres videre gennem gendannelse, fremskridt og
+privat produktion og bruges ved både fallbackbehov og scorebygning.
+Nye, bedre gyldige DMI-værdier overtager komponentvis; et hul
+sletter ikke en gammel stadig gyldig værdi. En ændring af centralt
+valgt prøvepunkt nulstiller kun den berørte kystdel.
+
+Kun den eksakt kendte 4.0.500-forgænger uden sådan pakke må én gang
+suppleres med den beskyttede generations native DMI-bulk fra før.
+Begge arkiver og manifesthash kontrolleres, og pointeridentiteten
+skal svare. Det gamle score-/runtimeindhold og schedulerposition
+installeres ikke. Dette er additivt inden for den nuværende
+private lagrings-ABI: ældre læsere ignorerer feltet, mens nye
+læsere afviser ugyldig pakke. Offentlig model og leverandørregler
+ændres ikke. Lokal test er ikke produktionsbevis; no-loss,
+gemning og Pages skal bekræftes af en normal livekørsel.
+
 ## Tillæg 2026-09-27 – 4.0.500: verificerede PART-timer over DMI-modelskift
 
 4.0.499 blev offentligt leveret, men næste normale run

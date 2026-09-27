@@ -1,3 +1,16 @@
+# Aktuel bevarelse af DMI-timer – 2026-09-27
+
+- **REQ-DMI-PART-MULTIRUN-0503 – BINDENDE:** Normal vejrbygning
+  skal bevare en stadig gyldig, kildeverificeret DMI-komponent for
+  præcis kystdel, prøvepunkt, UTC-time og vejrtype, også når den er
+  4 eller 10 kørsler gammel, indtil en nyere gyldig komponent
+  erstatter den eller dens egen gyldighed udløber. Dette gælder
+  vind, bølger, havstrøm, vandstand og vandtemperatur hver for sig.
+  Beviset skal følge den private cache gennem checkpoint, R2 og
+  næste run; en enkelt beskyttet forgænger er ikke tilstrækkelig.
+  Ukendt eller beskadiget pakke må aldrig fortolkes som tom cache.
+  Et nyt adminprøvepunkt må ikke arve et tidligere punkts værdier.
+
 # Aktuel kildebevarelse – 2026-09-26
 
 - **REQ-PAIRED-ORIGINAL-DONOR-0494 – BINDENDE:** Ved den kendte

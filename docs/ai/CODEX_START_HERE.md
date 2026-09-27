@@ -1,4 +1,27 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.502, public-hour mismatch efter vellykket pakning
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, DMI-kontinuitet afventer livebevis
+
+Arbejd i `C:\Users\Lenovo T14\.codex\worktrees\r2-private-runtime\RavRadar`,
+branch `codex/4.0.503-dmi-part-continuity`; cb79-roden er ikke
+arbejdskopien. 4.0.502-run `36312278335` stoppede på 68 tabte
+tidligere gyldige vandtemperaturpar. Ingen ny privat slutpakke,
+CAS, R2 eller Pages blev gemt; offentlig 4.0.500 står endnu.
+Krypteret hente-fremdrift er gemt. Den faktiske rodårsag er, at
+afledte kildeverificerede DMI-PART-timer ikke fulgte den private
+cache mere end én generation. Det kan også ramme de andre fire
+vejrfamilier, selv om netop dette run ikke viste tab dér.
+
+Lokal 4.0.503 gemmer DMI-only-PART-timer privat pr. kystdel med
+integritetskontrol og bruger dem i både behovsplan og scorebygning.
+En eksakt beskyttet tidligere native DMI-bulk er engangsbro fra den
+kendte 4.0.500-forgænger. Testresultater og rester står i
+IMPLEMENTATION_STATUS. Exact-head source-CI, merge og ét kort
+normalt live-run er endnu ikke gennemført. Ingen lang eller
+overlappende kørsel, cron eller påstand om komplet vejr før måling.
+Se CURRENT_TRUTH, DEC-0254, ACTIVE_ROADMAP og KNOWN-ISSUES.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.502
+
+## Public-hour mismatch efter vellykket pakning
 
 Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
 Kort normalrun `36306037218` på 4.0.501 gendannede gemt fremdrift

@@ -1,14 +1,37 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.502
+**Håndbogsversion:** 4.0.503
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.502 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.503 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.99 4.0.503 – Behold en god vejrtime gennem flere hentninger
+
+En ny DMI-prognose kan mangle enkelte tider, selv om en tidligere
+prognose stadig havde en gyldig værdi for præcis samme sted og time.
+Den gamle værdi skal ikke forsvinde, blot fordi flere nye vejrkørsler
+er gennemført. Det gælder hver for sig for vind, bølger, havstrøm,
+vandstand og vandtemperatur. En nyere gyldig DMI-værdi overtager;
+ellers beholdes den ældre, indtil dens egen gyldighed udløber.
+
+Den forrige løsning huskede kun én beskyttet forgænger. En rigtig
+kørsel viste derfor 68 vandtemperaturfelter, som ville blive tomme.
+Kørslen blev stoppet, og den hidtidige prognose blev stående. Nu
+gemmes de dokumenterede DMI-timer sammen med den private cache,
+så næste og senere kørsler kan bruge dem. Et ændret prøvepunkt
+arver ikke gamle værdier fra et andet sted. Den kendte ældre cache
+kan suppleres én gang fra den eksakte beskyttede tidligere DMI-fil;
+der overtages hverken gammel score eller driftsposition.
+
+Dette er testet lokalt, men skal endnu bekræftes i en virkelig
+vejrkørsel med gemning og offentlig prognose. Rettelsen gør ikke
+automatisk alle vejrdata komplette. De resterende huller og
+leverandørernes bidrag skal måles særskilt.
 
 ## 89.98 4.0.502 – Bevar samme prognose, når de private timer pakkes ud
 

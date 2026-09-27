@@ -1,3 +1,21 @@
+## 4.0.503 – bevar DMI's dokumenterede vejrtime gennem næste kørsel (lokal, 2026-09-27)
+
+- Kort 4.0.502-run `36312278335` blev stoppet ved 68 tidligere
+  gyldige vandtemperaturpar på 34 kystdele og to timer. Vind,
+  bølger, havstrøm og vandstand tabte nul i netop den sammenligning.
+  Den gamle offentlige 4.0.500-prognose blev stående; krypteret
+  hentefremdrift er gemt, men ingen ny slutpakke/CAS/R2/Pages.
+- DMI's dokumenterede timer gemmes nu pr. kystdel i den private
+  DMI-cache på tværs af normale runs. Hver af fem vejrfamilier
+  udvælges selvstændigt, og ændret prøvepunkt kan ikke arve data.
+  Den kendte 4.0.500-forgænger får en engangsbro fra den eksakte
+  beskyttede tidligere native DMI-cache, uden gammel scorestate.
+- Lokale tests dækker flere generationer, alle fem vejrfamilier,
+  pakkeintegritet, punktændring og eksakt donor. Dette ændrer ikke
+  scoreformel, offentlig datakontrakt eller leverandørprioritet.
+  Exact-head CI, merge og rigtig kort normal bekræftelse mangler;
+  fuld vejrdækning er ikke bevist.
+
 ## 4.0.502 – bevar vejr- og scorezoners uafhængige rækkefølge (lokal, 2026-09-27)
 
 - Kort produktionsrun `36306037218` målte, at de private zonetimer blev

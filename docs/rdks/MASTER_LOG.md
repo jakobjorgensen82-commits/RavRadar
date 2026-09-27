@@ -1,4 +1,25 @@
-# 2026-09-27 – lokal 4.0.502: kompakt privat cache bevarer zoneorden
+# 2026-09-27 – lokal 4.0.503: beskyttede DMI-timer skal følge næste run
+
+4.0.502-normalrun `36312278335` nåede no-loss, som afviste 68
+tidligere gyldige vandtemperatur-kystdel/time-par. Fire andre
+vejrfamilier havde nul konstaterede tab på samme 74.030-pars
+sammenligningsdomæne. Ingen ny privat slutpakke/CAS/R2/Pages.
+Den beskyttede 4.0.499-generations native DMI-endepunkter forklarede
+de to timer, som 4.0.500 kunne vise via én forrige donor, men ikke
+gemte videre som DMI-timebevis. Påstanden fra 4.0.500 om bevaring
+over mange kørsler er dermed erstattet.
+
+Lokal 4.0.503 gemmer verificerede DMI-PART-timer i separat
+komprimerede, hashbundne dele af den eksisterende private cache;
+begge PART-indgange bruger dem. Kun den eksakte beskyttede tidligere
+native DMI-bulk bruges som engangsbro fra 4.0.500. Ingen offentlig
+JSON, gammel scorestate eller schedulerposition kopieres. Måltests
+for fem felter, fire generationer, ændret punkt og forkert donor
+består. Exact-head CI, merge og normal livebekræftelse mangler.
+Samlet femfeltsdækning, kildeprioritet, R2/Supabase-kvoter og cron
+er ikke løst af denne rettelse. Se DEC-0254 og ACTIVE_ROADMAP.
+
+# HISTORISK – 2026-09-27 – lokal 4.0.502: kompakt privat cache bevarer zoneorden
 
 Kort normalrun `36306037218` målte 421.904.065 rå zone-timebyte
 komprimeret til 12.010.732 byte og privat `conditions.json` på
