@@ -1,4 +1,29 @@
-# NYESTE SANDHED – 2026-09-26 – lokal 4.0.498 checkpointbro
+# NYESTE SANDHED – 2026-09-27 – lokal 4.0.500
+
+4.0.499 er i offentlig drift efter normalrun `36261248486`. Senere
+normalrun `36278712741` nåede DMI, Copernicus, Open-Meteo og
+prognosebygning, men no-loss afviste 529 tidligere gyldige
+vandtemperaturværdier på identiske kystdele/timer; de fire andre
+vejrfamilier tabte nul. Den gamle offentlige pakke blev stående.
+Run-attempt `36278712741-1` gemte krypteret hente-fremdrift, ikke
+en færdig produktionspakke, central CAS, ny R2 eller Pages. De
+529 berører seks timer i det fælles 113-timersvindue. Nye gevinster
+andre steder gør ikke dette tab acceptabelt.
+
+Lokal 4.0.500 lukker en generel DMI-modelskiftskant: PART-planlægning
+og scorebygning genskaber verificerede timer fra den beskyttede
+forgænger-cache og lader en nyere gyldig komponent overtage. Mangler
+i ny hentning må ikke tømme en stadig gyldig gammel værdi for samme
+punkt, time og vejrtype; det gælder også efter mange kørsler. Nyt
+aktiverede punkter arver ikke gamle prøvesteder. Måltests omfatter
+alle fem vejrfamilier og en faktisk DMI-interpolations-/provenienssti.
+Rettelsen er endnu ikke production-verificeret, og det er ikke
+bevist, at samtlige 529 kom fra netop denne kant. Exact-head CI,
+merge og en kort normal bekræftelse fra eksakt gemt fremdrift kræves.
+Copernicus' nul accepterede nytilføjelser, DMI/OM-fordeling,
+resthuller, historik, Free-forbrug og autonom cron-drift er åbne.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.498 checkpointbro
 
 GitHub-run `36252591071` gemte komponentfremdrift, DMI-råcache og
 score-checkpoint, men ingen færdig produktionspakke: bundling og R2-
@@ -6037,7 +6062,7 @@ Ejerens beslutning er at sende rettelsen, merge efter nødvendig
 GitHub-kontrol og køre én kort normal vejrhentning, mens den konkrete
 årsag fortsat spores. Genåbn ikke cron eller lang hentning uden
 faktisk cachegemning, deploy og offentlig kontrol.
-# NYESTE SANDHED – 2026-09-26 – lokal 4.0.499 krypteret slutpakke
+# HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.499 krypteret slutpakke
 
 4.0.498/PR #461 bestod exact-head CI og blev merged som `67379880`.
 Den vejrfri backendkørsel `36259580555` var grøn, og en skrivefri

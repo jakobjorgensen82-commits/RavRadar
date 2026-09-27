@@ -37,8 +37,10 @@ test('normal PART production plans on current central identity and passes the pr
       return { entityId: `PART::${target.partId}` };
     },
     localPartRuntimeProperties: (_parent, _part, id) => ({ id }),
-    bulkZoneToForecastRecord: (_feature, _bulk, at, _previous, options) => {
-      assert.equal(at, reference); assert.equal(options.materializeMissingHorizon, true);
+    buildPartDmiForecastWithProtectedRetention: (_feature, _bulk, protectedBulk, at, options) => {
+      assert.equal(at, reference);
+      assert.equal(protectedBulk, context.deployedDmiBulkCache);
+      assert.equal(options.startAt, reference);
       return { hourly: [{ time: reference }], localMaterialization: true };
     },
     applyFeggesundOperationalWaveProxy: record => record,

@@ -1,4 +1,22 @@
-## 4.0.498 – eksakt central checkpointovergang (lokal, 2026-09-26)
+## 4.0.500 – behold ældre gyldige DMI-timer i normal vejrhentning (lokal, 2026-09-27)
+
+- 4.0.499 er offentligt leveret. Næste normale run `36278712741`
+  byggede ny prognose, men stoppede korrekt, fordi 529 tidligere
+  gyldige vandtemperaturværdier ville blive tomme på samme kystdel og
+  time. Vind, bølger, havstrøm og vandstand mistede ingen gyldige
+  værdier i sammenligningen. Hente-fremdriften blev gemt krypteret;
+  en ny privat slutpakke/R2/Pages blev ikke leveret.
+- PART-plan og scorebygning genskaber nu den beskyttede forrige DMI-
+  generations verificerede timer, før en nyere DMI-generation vælges
+  pr. vejrtype. Nyt gyldigt vinder; et hul kan ikke slette en gammel
+  gyldig værdi for samme sted og time. Nye prøvepunkter arver ikke
+  gamle punkters data, og gamle planlægningsmarkører importeres ikke.
+- Måltests dækker alle fem vejrfamilier gennem ti sparse generationer
+  samt faktisk DMI-run-seam og normal runtime-wiring. Produktion,
+  Copernicus' nul optagelse, rester og Free-kvoter er endnu ikke
+  afklaret af lokale tests.
+
+## 4.0.498 – eksakt central checkpointovergang (historisk, 2026-09-26)
 
 - Backendbindingen er livegrøn; kort normalrun `36252591071` gemte
   hente-fremdrift, men stoppede ved central CAS før R2/Pages.

@@ -1,4 +1,21 @@
-# 2026-09-26 – lokal 4.0.498: eksakt central checkpointforgænger
+# 2026-09-27 – lokal 4.0.500: DMI-værdi skal overleve en ny models hul
+
+4.0.499 er offentligt efter `36261248486`. Normalrun
+`36278712741` gendannede forgængeren, hentede fra alle tre
+leverandører og byggede prognosen, men no-loss stoppede 529
+vandtemperaturtab på seks fælles timer. Fire øvrige vejrfamilier
+tabte nul. Den gamle offentlige pakke blev stående, og krypteret
+fremdrift `36278712741-1` er gemt. Ingen ny slutpakke/CAS/R2/Pages.
+
+Lokal 4.0.500 bruger den beskyttede DMI-cache som verificeret
+donor i begge PART-bygninger, så nye gyldige DMI-komponenter kan
+vinde uden at nye huller tømmer gamle, stadig gyldige komponenter.
+Ingen gammel scheduler-cursor eller ændret vandpunkt arves. Ti
+generationer og native run-seam er måltestet; exact-head og live
+end-to-end-bevis udestår. Copernicus' nul tilvækst, DMI-andel,
+resthuller, historik og kvoter undersøges videre. Cron er pauset.
+
+# HISTORISK – 2026-09-26 – lokal 4.0.498: eksakt central checkpointforgænger
 
 Backendrun for 4.0.497 er grønt. Kort normalrun `36252591071`
 bestod vejr/cache/artifact og gemte krypteret fremdrift, men
