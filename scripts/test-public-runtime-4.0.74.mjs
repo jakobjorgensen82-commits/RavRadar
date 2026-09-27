@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
-const full=JSON.parse(await fs.readFile('data/live/conditions.json','utf8'));
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
+const full=hydratePrivateConditionsHourly(JSON.parse(await fs.readFile('data/live/conditions.json','utf8')));
 const publicFile=JSON.parse(await fs.readFile('data/live/public-conditions.json','utf8'));
 const detailsFile=JSON.parse(await fs.readFile('data/live/public-condition-details.json','utf8'));
 const zones=JSON.parse(await fs.readFile('data/zones.geojson','utf8'));

@@ -91,6 +91,7 @@ import {
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const DEFAULT_INPUT = 'data/live/conditions.json';
 const DEFAULT_STARTUP = 'data/live/public-conditions.json';
@@ -2136,7 +2137,7 @@ async function main() {
     fs.readFile(coastalPartsPath, 'utf8'),
     fs.readFile(zoneRegistryPath, 'utf8'),
   ]);
-  const report = auditIntegratedRavScorePublicRuntime(JSON.parse(fullText), {
+  const report = auditIntegratedRavScorePublicRuntime(hydratePrivateConditionsHourly(JSON.parse(fullText)), {
     startup: JSON.parse(startupText),
     startupText,
     details: JSON.parse(detailsText),

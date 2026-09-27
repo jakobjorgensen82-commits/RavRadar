@@ -1,4 +1,22 @@
-# Aktuelle issues – 2026-09-27, lokal 4.0.500
+# Aktuelle issues – 2026-09-27, lokal 4.0.501
+
+- **FULDT RUN/PRIVAT JSON – LOKALT RETTET, LIVE ÅBEN:** Fuldt
+  `36293202251` oversteg V8's enkeltstrengsgrænse ved privat
+  conditions-skrivning efter vejr-/scorebygning. Ingen ny R2/Pages.
+  4.0.501 pakker zone-timer tabsfrit; reel fuld størrelse og fuld
+  release er endnu ikke bevist. Kort v2-run før ny lang opfyldning.
+- **FEMFELTSDÆKNING – ÅBEN:** Ca. 4.583 manglende havstrømpar ved
+  27/9 04 UTC var et mellemresultat med 79.414 kystdel/time-par som
+  nævner, ikke tal for alle vejrtyper eller slutprodukt. Vind, bølger,
+  vandstand og vandtemperatur kræver egne slutopgørelser. Vandstand
+  syntes kun at række ca. to døgn i en tidligere etape, selv om DMI
+  DKSS tilbyder fem dage; rotation, tid og interpolation skal adskilles.
+  Copernicus-optagelse og DMI/Open-Meteo-fordeling er åbne.
+- **4.0.500 LIVE, MEN IKKE KOMPLET:** Kort run `36288805313` leverede
+  offentlig prognose, privat R2 og CAS. Det er ikke et bevis for, at
+  tidligere 529 vandtemperaturtab er dækket i et senere tidsvindue.
+
+# Historiske issues – 2026-09-27, lokal 4.0.500
 
 - **529 VANDTEMPERATURTAB – ÅBEN INDIL LIVEBEVIS:** Run
   `36278712741` stoppede korrekt før privat produktionsgemning og

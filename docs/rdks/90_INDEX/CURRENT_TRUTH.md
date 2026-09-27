@@ -1,4 +1,23 @@
-# NYESTE SANDHED – 2026-09-27 – lokal 4.0.500
+# NYESTE SANDHED – 2026-09-27 – lokal 4.0.501
+
+4.0.500 blev offentligt leveret af kort normalrun `36288805313` med
+cache, privat R2, central CAS, Pages og synlig prognose. Dette beviser
+leveringsvejen, men ikke fuld vejrcache eller stabil selvkørende drift.
+Første fulde normale run `36293202251` færdiggjorde vejr-/scorebygning,
+men `conditions.json` oversteg V8's grænse for én JSON-streng. Ingen
+ny færdig privat pakke eller offentlig prognose blev gemt af runnet.
+
+Lokal 4.0.501 ændrer kun privat lagringsform: de to store 210-zone-
+timeserier i vejr- og scoredata pakkes tabsfrit, kontrolleres med
+størrelse og SHA-256 og udpakkes ved aktiv læsning. Offentlig kontrakt,
+scoreberegning, vejrkildeprioritet og gyldige gamle værdier er uændret.
+Kun den eksakt identificerede seneste 4.0.500-produktion må læses som
+ABI-v1-forgænger. Syntetisk fuld horisont er testet, men reel fuld
+produktionsstørrelse, femfeltsdækning, R2/Pages og vandstandens sidste
+døgn kræver efterprøvelse. Intet nyt langt run før kort v2-gennemløb.
+Se DEC-0256, IMPLEMENTATION_STATUS og aktivt roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.500
 
 4.0.499 er i offentlig drift efter normalrun `36261248486`. Senere
 normalrun `36278712741` nåede DMI, Copernicus, Open-Meteo og

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { buildPublicConditions, buildPublicConditionDetails, compactJson, sha256Text } from './public-conditions-lib.mjs';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 let detailsText=null;
 try {
@@ -9,7 +10,7 @@ try {
   if (error?.code!=='ENOENT') throw error;
 }
 if(detailsText!==null){
-  const full=JSON.parse(await fs.readFile('data/live/conditions.json','utf8'));
+  const full=hydratePrivateConditionsHourly(JSON.parse(await fs.readFile('data/live/conditions.json','utf8')));
   const publicText=await fs.readFile('data/live/public-conditions.json','utf8');
   const manifest=JSON.parse(await fs.readFile('data/live/manifest.json','utf8'));
   const expectedText=compactJson(buildPublicConditions(full));

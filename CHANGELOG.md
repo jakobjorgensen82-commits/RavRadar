@@ -2573,3 +2573,17 @@ sikkert. Målrettede tests består lokalt, men den præcise årsag til de
   tilladelse til at springe friskhed, validering, centrale CAS-værn eller
   privat R2/Pages-kontrol over. En fuld, sikker genoptagelsesvej for
   sen fejl er fortsat åben; ingen ny tung vejrkørsel før den er afklaret.
+## 4.0.501 – tabsfri privat zonehistorik til fuld vejropfyldning (lokal, 2026-09-27)
+
+- Kort 4.0.500-run `36288805313` blev offentligt leveret. Første fulde
+  run `36293202251` nåede vejr- og scorebygning, men privat
+  `conditions.json` blev for stor til V8's enkeltstrengsgrænse;
+  ingen ny slutpakke eller Pages blev leveret.
+- Begge store private zone-timeserier pakkes tabsfrit med bundne
+  byteantal og SHA-256 og udpakkes ved aktive læsere. ABI v2 har
+  kun en eksakt 4.0.500-v1-forgænger. Offentlig timeprojektion,
+  model og kildeprioritet ændres ikke.
+- 210×118 femfeltsrækker, ti cachegenerationer og fejl i marker/
+  hash testes lokalt. Faktisk fuld størrelse, slutdækning, central
+  cache, R2, Pages og offentlig prognose kræver produktionsbevis.
+  Vandstandens sidste døgn og leverandørandele er fortsat åbne.

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const CONDITIONS='data/live/conditions.json';
 const BULK=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
@@ -181,7 +182,8 @@ export function enrichCurrentProvenanceDocuments({conditions,bulk,forecast=null}
 async function read(file){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch{return null;}}
 
 async function main(){
-  const conditions=await read(CONDITIONS);
+  const savedConditions=await read(CONDITIONS);
+  const conditions=savedConditions?hydratePrivateConditionsHourly(savedConditions):null;
   const bulk=await readDmiBulkDocument(BULK,{optional:true});
   const forecast=await read(FORECAST);
   if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');return;}

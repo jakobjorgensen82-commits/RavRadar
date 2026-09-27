@@ -1,9 +1,10 @@
 import fs from 'node:fs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
 const exists = path => fs.existsSync(path);
 const zonesDoc = readJson('data/zones.geojson');
-const conditions = readJson('data/live/conditions.json');
+const conditions = hydratePrivateConditionsHourly(readJson('data/live/conditions.json'));
 const projectVersion = readJson('package.json').version;
 const active = (zonesDoc.features || []).filter(f => f.properties?.zoneStatus === 'active');
 const issues = [];

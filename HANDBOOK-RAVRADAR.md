@@ -1,14 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.500
+**Håndbogsversion:** 4.0.501
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.500 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.501 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.97 4.0.501 – Plads til hele den private vejrhistorik
+
+Den korte 4.0.500-kørsel fik prognosen på hjemmesiden. Da en normal
+kørsel derefter hentede langt flere timer, blev den private fil med
+vejr- og scorehistorik for stor til at blive skrevet som én almindelig
+JSON-streng. Den nye prognose blev derfor ikke gemt eller offentliggjort;
+den hidtidige blev stående.
+
+De to store time-for-time-tabeller for hver af 210 zoner gemmes nu
+kompakt og uden at fjerne nogen værdier. Ved brug pakkes de ud igen,
+og kontroltal afslører en manglende eller ændret del. Kun den præcist
+verificerede seneste offentlige cache må være forgænger til den nye
+lagringsform. Det ændrer ikke vejrkildernes rækkefølge, scoremodellen
+eller de offentlige prognosetimer. En prøve med fulde 118 timer
+virker lokalt; først en virkelig kørsel kan bevise størrelse, gemning
+og visning på hjemmesiden. Manglende vejrdata, især vandstand langt
+ude i prognosen, undersøges separat.
 
 ## 89.96 4.0.500 – Behold en gyldig vejrtime, når næste hentning har hul
 

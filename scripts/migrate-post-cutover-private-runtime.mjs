@@ -18,6 +18,7 @@ import {
   privatePublicHourDeliveryMarker,
 } from './lib/public-hour-delivery-pack.mjs';
 import { rebindPublicHourPackExact } from './lib/rebind-public-hour-pack-exact.mjs';
+import { hydratePrivateConditionsHourly, packPrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import {
   buildPublicConditionDetails,
   compactJson,
@@ -1204,6 +1205,7 @@ export async function migratePostCutoverPrivateRuntime({
   const currentCandidate = candidateModelBinding();
   const conditionsPath = path.join(source, 'data/live/conditions.json');
   const conditions = await readJson(conditionsPath, 'Predecessor private conditions');
+  const packedZoneHourly = Object.hasOwn(conditions, 'privateZoneHourly');
   if (conditions.productionReferenceAt !== manifest.productionReferenceAt
       || conditions.generatedAt !== manifest.generatedAt) {
     throw new Error('Predecessor conditions do not match the protected bundle timestamps');
@@ -1214,7 +1216,7 @@ export async function migratePostCutoverPrivateRuntime({
   try {
     await fs.mkdir(temporary, { recursive: false });
     const result = await validateAndMigrateConditions({
-      source: conditions,
+      source: hydratePrivateConditionsHourly(conditions),
       predecessor: predecessorIdentity,
       oldStaging: modules.staging,
       oldIntegratedBinding: modules.integrated,
@@ -1232,7 +1234,7 @@ export async function migratePostCutoverPrivateRuntime({
     if (result.transitionKind !== 'CONTRACT_ONLY_REBIND') {
       migratedConditionsDigest = await atomicWriteJson(
         path.join(temporary, 'data/live/conditions.json'),
-        result.migrated,
+        packedZoneHourly ? packPrivateConditionsHourly(result.migrated) : result.migrated,
       );
     } else {
       migratedConditionsDigest = await digestPrivateRuntimeFile(path.join(temporary, 'data/live/conditions.json'));

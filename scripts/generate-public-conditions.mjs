@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
+import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { privatePublicHourDeliveryMarker } from './lib/public-hour-delivery-pack.mjs';
-const input=JSON.parse(await fs.readFile('data/live/conditions.json','utf8'));
+const input=hydratePrivateConditionsHourly(JSON.parse(await fs.readFile('data/live/conditions.json','utf8')));
 const {publicDocument,manifest}=await writePublicRuntimeFromFull(input, {
   hourDeliveryPackPath: privatePublicHourDeliveryMarker(input)
     ? path.resolve(PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath)

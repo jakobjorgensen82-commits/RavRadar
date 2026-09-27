@@ -1,4 +1,27 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.500, DMI-værdier over modelskift
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.501, fuld normalbygning ramte privat JSON-grænse
+
+Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
+4.0.500 er offentlig efter kort normalrun `36288805313`. Det rettede
+ikke dokumenteret alle tidligere temperaturhuller, men R2, central
+cache, Pages og synlig prognose lykkedes. Første lange normale run
+`36293202251` nåede vejrhentning og scorebygning, men stoppede før
+ny privat slutpakke og deploy: `conditions.json` overskred V8's
+enkeltstrengsgrænse ved atomisk skrivning. Den offentlige 4.0.500-
+pakke står stadig. DMI-råcache blev gemt; fuld krypteret hente-
+fremdrift fra dette run er ikke dokumenteret gemt.
+
+Lokal 4.0.501 pakker de to private zone-timefelter tabsfrit og
+kontrollerer deres identitet, længder og hash ved læsning. Offentlige
+timefiler, vejrprioritet, scoreformel og de 673 kystdele ændres ikke.
+Den eksakte 4.0.500-produktionspakke er eneste tilladte ABI-v1-
+forgænger. Lokale 210×118-prøver er ikke livebevis for en fuld cache;
+målret alle aktive læsere, exact-head CI, merge og én kort normal
+bekræftelse før ny lang opfyldning. Vandstand efter ca. to døgn,
+havstrømsrester, Copernicus/DMI-andel og alle fem felters endelige
+dækning er åbne. Cron fortsat pauset. Se DEC-0256 og roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.500, DMI-værdier over modelskift
+
 
 Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
 4.0.499 er offentlig efter normalrun `36261248486`, men den senere
