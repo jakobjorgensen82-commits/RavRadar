@@ -1,4 +1,16 @@
-## 4.0.503 – bevar DMI's dokumenterede vejrtime gennem næste kørsel (lokal, 2026-09-27)
+## 4.0.504 – udvid intern DMI-PART-kapacitet (lokal, 2026-09-27)
+
+- Fuldt normalrun `36331715231` stoppede efter tre leverandører i
+  DMI's interne PART-timepakning. Krypteret hente-fremdrift blev
+  gemt; privat slutpakke og deploy skete ikke.
+- Rå samlegrænse hævet fra 512 MiB til 2 GiB, gzipgrænse fra
+  96 til 160 MiB, krypteret checkpointgrænse fra 256 til 384 MiB.
+  Rå og komprimeret stop får hver sin sikre kode og summerede mål.
+- Dette ændrer ikke vejrprioritet, score eller offentlig kontrakt.
+  Kapacitet, gemning og levering kræver exact-head CI og en kort
+  livefortsættelse fra den gemte fremdrift; fuld dækning er åben.
+
+## 4.0.503 – bevar DMI's dokumenterede vejrtime gennem næste kørsel (2026-09-27)
 
 - Helhedsgennemgang fandt også, at en afvist kørsel før DMI kunne
   udgive et misvisende nyt krypteret checkpoint-id. Det kræver nu

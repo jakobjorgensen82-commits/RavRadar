@@ -19,7 +19,7 @@ const MAGIC = Buffer.from('RR-WEATHER-PRIVATE-PROGRESS-2\n');
 const MAX_PACK_BYTES = 768 * 1024 * 1024;
 // Best-effort progress shares GitHub's cache with the larger GRIB cache.
 // This is a storage budget, not an estimate of real provider-bank sizes.
-export const WEATHER_PROGRESS_MAX_CIPHER_BYTES = 256 * 1024 * 1024;
+export const WEATHER_PROGRESS_MAX_CIPHER_BYTES = 384 * 1024 * 1024;
 const MAX_CIPHER_BYTES = WEATHER_PROGRESS_MAX_CIPHER_BYTES;
 const CONDITIONS_PATH = 'data/live/conditions.json';
 const SHA = /^[0-9a-f]{64}$/;

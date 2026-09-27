@@ -1,4 +1,30 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, DMI-kontinuitet afventer livebevis
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.504, kapacitet efter fejlet normalrun
+
+Arbejd kun i `r2-private-runtime`; `cb79` er ikke arbejdskopien.
+Main 4.0.503/`eff527bc` og fuldt normalrun `36331715231` nåede alle
+tre leverandører og cachebygning, men stoppede ved
+`DMI_PART_CONTINUITY_TOTAL_SIZE_LIMIT` under pakning af de 673
+DMI-kystdeles dokumenterede timer. Loggen skelner ikke, om den gamle
+512 MiB rå eller 96 MiB komprimerede samlegrænse var udløseren.
+Krypteret leverandørfremdrift blev gemt som `36331715231-1`;
+ingen ny privat slutpakke, central CAS, R2 eller Pages blev leveret.
+Den tidligere offentlige 4.0.503-prognose står. Vejrhentningen skal
+ikke startes forfra.
+
+Lokal 4.0.504 giver 2 GiB rå og 160 MiB komprimeret loft og
+384 MiB til krypteret fremdrift, med særskilte, payloadfri
+fejlkoder og summerede byteantal. Komprimeret DMI-loft er under
+halvdelen af både checkpoint- og privat arkivgrænse. Dette er
+kapacitetsdesign og lokale tests, **ikke** måling af den fejlede
+pakke eller produktionsbevis. Efter eksakt PR-head CI og sikker
+merge: højst én kort normal fortsættelse på aktuel main, som
+gendanner præcis `36331715231-1` og beskyttet produktion.
+Følg no-loss for fem vejrfamilier, sikker gemning, CAS, R2, Pages
+og offentlig visning. Ved endnu et kapacitetsstop: ingen ny
+vejrhentning, brug de loggede rå/komprimerede mål og undersøg
+hele nedstrømskæden før rettelse. Cron fortsat pauset.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.503, DMI-kontinuitet afventer livebevis
 
 Helikopterfund efter første PR-head: fuldt `36293202251` gemte
 ikke krypteret komponentfremdrift (`PROGRESS_UNAVAILABLE` uden

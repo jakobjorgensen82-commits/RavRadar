@@ -8,8 +8,14 @@ const gunzipAsync = promisify(gunzip);
 const SHA256 = /^[a-f0-9]{64}$/;
 const MAX_PART_RAW_BYTES = 8 * 1024 * 1024;
 const MAX_PART_COMPRESSED_BYTES = 2 * 1024 * 1024;
-const MAX_TOTAL_RAW_BYTES = 512 * 1024 * 1024;
-const MAX_TOTAL_COMPRESSED_BYTES = 96 * 1024 * 1024;
+// The 673 independently bounded PART rows can legitimately exceed 512 MiB
+// before compression as DMI fills the five forecast families. Keep a separate
+// decoded-data safety ceiling and a much tighter on-disk/JSON ceiling.
+export const MAX_TOTAL_RAW_BYTES = 2048 * 1024 * 1024;
+// The compressed ceiling must stay below the budgets for the encrypted
+// progress cache and the complete private archive, not merely below R2's
+// storage allowance. Those independent budgets are checked during release.
+export const MAX_TOTAL_COMPRESSED_BYTES = 160 * 1024 * 1024;
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const pointValid = point => Array.isArray(point) && point.length === 2
   && point.every(value => typeof value === 'number' && Number.isFinite(value));
@@ -22,6 +28,15 @@ const exactHour = value => typeof value === 'string'
 const exactKeys = (value, keys) => value && typeof value === 'object'
   && !Array.isArray(value)
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
+
+export function assertDmiPartContinuityTotalSize(rawBytes, compressedBytes) {
+  if (rawBytes > MAX_TOTAL_RAW_BYTES) {
+    throw new Error('DMI_PART_CONTINUITY_TOTAL_RAW_SIZE_LIMIT');
+  }
+  if (compressedBytes > MAX_TOTAL_COMPRESSED_BYTES) {
+    throw new Error('DMI_PART_CONTINUITY_TOTAL_COMPRESSED_SIZE_LIMIT');
+  }
+}
 
 // The DMI-only, source-attested record is stored by PART, not as one enormous
 // JSON string. Each row can be decoded below V8's string ceiling, and the
@@ -63,8 +78,13 @@ export async function packDmiPartContinuity(records, parts, productionReferenceA
     }
     rawBytes += raw.length;
     compressedBytes += compressed.length;
-    if (rawBytes > MAX_TOTAL_RAW_BYTES || compressedBytes > MAX_TOTAL_COMPRESSED_BYTES) {
-      throw new Error('DMI_PART_CONTINUITY_TOTAL_SIZE_LIMIT');
+    try { assertDmiPartContinuityTotalSize(rawBytes, compressedBytes); }
+    catch (error) {
+      console.error(JSON.stringify({ kind: 'DMI_PART_CONTINUITY_SIZE',
+        status: 'LIMIT', partCount: entries.length + 1, rawBytes, compressedBytes,
+        rawLimitBytes: MAX_TOTAL_RAW_BYTES,
+        compressedLimitBytes: MAX_TOTAL_COMPRESSED_BYTES }));
+      throw error;
     }
     entries.push({
       partId, point: [...point], rawBytes: raw.length, rawSha256: digest(raw),
@@ -73,6 +93,9 @@ export async function packDmiPartContinuity(records, parts, productionReferenceA
     });
   }
   if (records.size !== seen.size) throw new Error('DMI_PART_CONTINUITY_DOMAIN_INVALID');
+  console.log(JSON.stringify({ kind: 'DMI_PART_CONTINUITY_SIZE', partCount: entries.length,
+    rawBytes, compressedBytes, rawLimitBytes: MAX_TOTAL_RAW_BYTES,
+    compressedLimitBytes: MAX_TOTAL_COMPRESSED_BYTES }));
   return {
     schemaVersion: 1, kind: 'PRIVATE_DMI_PART_HOURLY_CONTINUITY',
     productionReferenceAt, partCount: entries.length,
