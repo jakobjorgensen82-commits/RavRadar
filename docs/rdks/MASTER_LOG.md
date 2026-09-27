@@ -1,4 +1,24 @@
-# 2026-09-27 – lokal 4.0.500: DMI-værdi skal overleve en ny models hul
+# 2026-09-27 – lokal 4.0.502: kompakt privat cache bevarer zoneorden
+
+Kort normalrun `36306037218` målte 421.904.065 rå zone-timebyte
+komprimeret til 12.010.732 byte og privat `conditions.json` på
+52.370.498 byte under V8-loftet. Det stoppede efter bygning på
+generisk mismatch i public-hour/runtime, før R2/Pages. Krypteret
+hente-fremdrift `36306037218-1` blev gemt. Den gamle log beviser
+ikke hvilken mismatch-dimension der udløste stoppet.
+
+Reproduktion viser, at vejr- og scorezoner kan stå i forskellig orden,
+som 4.0.501's pakning/udpakning ikke bevarede. Offentlig details-SHA
+ændredes uden ændrede værdier. Lokal 4.0.502 bevarer begge ordener
+og måltest består; exact-head CI, merge og kort livebekræftelse er åbne.
+Første PR-kildekontrol fandt desuden, at ekstra fejltekst i den
+modelbundne public-kode ændrede modellens hash og to eksakte
+cacheforgængerkrav. Den tekstændring er forkastet, så den gemte
+fremdrift fortsat kan være kompatibel.
+Score, kildeprioritet, R2-/Supabase-kvoter og femfeltsdækning er ikke
+løst af denne ændring. DEC-0256 præciserer lagringskontrakten.
+
+# HISTORISK – 2026-09-27 – lokal 4.0.500: DMI-værdi skal overleve en ny models hul
 
 4.0.499 er offentligt efter `36261248486`. Normalrun
 `36278712741` gendannede forgængeren, hentede fra alle tre

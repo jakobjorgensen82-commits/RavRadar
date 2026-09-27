@@ -12,6 +12,7 @@ import { addNationalRanking } from '../js/core/zone-ranking.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import { packPrivateConditionsHourly, hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
 const productionReferenceAt = '2026-08-28T09:00:00.000Z';
 const horizonTimes = Array.from({ length: 118 }, (_, index) =>
@@ -144,6 +145,24 @@ const full = {
     scoredPartCount:Object.keys(parts).length, parts, zones:coastalZones,
   },
 };
+
+// Weather and score zones are independent maps. Their insertion order need
+// not match, but the public details byte hash must survive private storage.
+const independentOrder = {
+  ...full,
+  zones: Object.fromEntries(Object.entries(full.zones).map(([id, zone]) => [id, {
+    ...zone, forecast: { ...zone.forecast, hourly: zone.forecast.hourly.slice(0, 1) },
+  }])),
+  coastalParts: { ...full.coastalParts, zones: Object.fromEntries(
+    Object.entries(full.coastalParts.zones).reverse().map(([id, zone]) => [id, {
+      ...zone, hourly: zone.hourly.slice(0, 1),
+    }])) },
+};
+const beforePrivatePack = sha256Text(compactJson(buildPublicConditionDetails(independentOrder)));
+const afterPrivatePack = hydratePrivateConditionsHourly(JSON.parse(JSON.stringify(
+  packPrivateConditionsHourly(independentOrder))));
+assert.equal(sha256Text(compactJson(buildPublicConditionDetails(afterPrivatePack))),
+  beforePrivatePack, 'Private packing must preserve the exact public details identity.');
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);

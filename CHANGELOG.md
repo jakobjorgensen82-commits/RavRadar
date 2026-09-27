@@ -1,3 +1,23 @@
+## 4.0.502 – bevar vejr- og scorezoners uafhængige rækkefølge (lokal, 2026-09-27)
+
+- Kort produktionsrun `36306037218` målte, at de private zonetimer blev
+  pakket fra 421.904.065 rå byte til 12.010.732 gzip-byte. Den færdige
+  private `conditions.json` var 52.370.498 byte mod V8-grænsen
+  535.822.312 byte. 4.0.501's størrelsesrettelse virker dermed på denne
+  virkelige pakke; det er ikke et bevis for komplet vejrdækning.
+- Runnet stoppede senere ved genopbygning af offentlig prognose, før
+  ny R2-/Pages-publicering. Den krypterede hente-fremdrift blev gemt som
+  `weather-private-progress-encrypted-v2-Linux-main-36306037218-1`.
+- Privat pakning og udpakning bevarer nu vejr- og scorezonernes
+  selvstændige rækkefølge. En prøve med bevidst forskellig rækkefølge
+  beviser uændret offentlig detaljer-hash; fejlen i det faktiske run
+  havde kun en generel kode, så den præcise mismatch-type er ikke
+  dokumenteret. En udvidelse af fejlteksten er fravalgt her, fordi den
+  ville ændre den låste score-/public-kontrakt og afvise cachegenbrug.
+- Ingen scoreformel, leverandørprioritet, vejrkomponent eller offentlig
+  datakontrakt er ændret. Exact-head CI, merge og en kort normal
+  bekræftelse med gemt fremdrift mangler.
+
 ## 4.0.501 – tabsfri privat zonehistorik til fuld vejropfyldning (PR, 2026-09-27)
 
 - Kort 4.0.500-run `36288805313` blev offentligt leveret. Første fulde

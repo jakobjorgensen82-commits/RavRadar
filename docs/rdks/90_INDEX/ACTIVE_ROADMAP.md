@@ -1,4 +1,24 @@
-# Aktivt roadmap – 2026-09-26, lokal 4.0.498 checkpointbro
+# Aktivt roadmap – 2026-09-27, lokal 4.0.502 privat zoneorden
+
+1. [x] Mål faktisk kapacitet i `36306037218`: privat fil
+   52.370.498 byte mod 535.822.312-byte grænse. Runnet stoppede
+   efter bygning, før R2/Pages, på generisk public-hour mismatch.
+2. [x] Reproducer selvstændig scorezoneorden, som ændrer offentlig
+   detaljer-hash ved pakning/udpakning; bevar begge ordener separat
+   og måltest 210 zoner. Ændr ikke modelbundet public-kode kun for
+   en længere fejltekst; det ville bryde gemt cacheidentitet.
+3. [ ] Fuldfør version/RDKS/geodatadiff og én exact-head PR-source-CI;
+   merge kun uden nye reelle fejl. Gem ikke private payloads i PR.
+4. [ ] Kør højst én kort normal bekræftelse på aktuel main fra eksakt
+   krypteret `36306037218-1`, uden overlap eller ny lang hentning.
+   Kræv hele artifactkontrollen, no-loss, privat slutgemning, central
+   CAS, R2, Pages og synlig offentlig prognose.
+5. [ ] Først ved bevist levering: mål vind, bølger, havstrøm, vandstand
+   og vandtemperatur med tydelige nævnere og kildeandele. Afklar
+   vandstandens sidste prognosedøgn, resthuller og Copernicus/DMI-
+   bidrag; følg R2/Supabase-kvoter over flere døgn. Cron er pauset.
+
+# Historisk roadmap – 2026-09-26, lokal 4.0.498 checkpointbro
 
 1. [x] 4.0.497 backendbinding live; kort normalrun gemte
    krypteret fremdrift men stoppede på gammel central checkpoint-

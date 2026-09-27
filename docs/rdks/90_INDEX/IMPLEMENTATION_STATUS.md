@@ -1,4 +1,29 @@
-# 2026-09-27 – lokal 4.0.501, kompakt privat zonehistorik
+# 2026-09-27 – lokal 4.0.502, bevaret zoneorden ved privat genopbygning
+
+- [x] Kort produktionsrun `36306037218` beviste rigtig pakning:
+  421.904.065 rå zone-timebyte → 12.010.732 gzip-byte og privat
+  `conditions.json` 52.370.498 byte under V8-loftet 535.822.312.
+  Dette er ikke bevis for komplet femfeltsdækning.
+- [x] Runnet stoppede senere ved public-hour/runtime-mismatch uden
+  R2/Pages. Krypteret hente-fremdrift `36306037218-1` er gemt;
+  færdig privat produktionspakke er ikke dokumenteret gemt.
+- [x] Reproduceret uafhængig vejr-/scorezoneorden ændrede offentlig
+  detaljer-hash i 4.0.501. Lokal 4.0.502 bevarer hver orden separat
+  ved pakning og udpakning; 210-zone-prøve og måltests er grønne.
+  Den gamle produktionslog skelnede ikke mismatch-kategorier, så
+  dette er en stærk lokal rodårsag, ikke et direkte logbevis.
+- [x] En ekstra mismatch-fejltekst i modelbundet public-kode blev
+  forkastet efter exact-head CI: den ændrede model-/public-hash og
+  ville afvise gemt fremdrift. Ingen modelbundet kilde ændres nu.
+- [ ] Kontroller version, RDKS, geodatadiff og exact-head source-CI;
+  merge kun uden modstridende evidens. Kør derefter højst én kort
+  ikke-overlappende normal bekræftelse fra eksakt gemt fremdrift.
+- [ ] Bevis fuld artifactkontrol, privat slutgemning, central CAS,
+  R2, Pages, synlig offentlig prognose og ingen gyldige tab. Opgør
+  derefter vind, bølger, havstrøm, vandstand og vandtemperatur med
+  hver sin nævner før videre opfyldning eller cron.
+
+# HISTORISK STATUS – 2026-09-27 – lokal 4.0.501, kompakt privat zonehistorik
 
 - [x] Kort 4.0.500-normalrun `36288805313` nåede cache, CAS, privat
   R2, Pages og offentlig prognose.

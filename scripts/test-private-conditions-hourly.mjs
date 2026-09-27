@@ -104,6 +104,22 @@ test('legacy authenticated predecessor remains readable without a stateless rese
   assert.equal(assertPrivateConditionsHourly(source), false);
 });
 
+test('packing keeps independent weather and score-zone insertion orders', () => {
+  const source = fullFiveTypeFixture(2);
+  source.coastalParts.zones = Object.fromEntries(
+    Object.entries(source.coastalParts.zones).reverse());
+  const weatherOrder = Object.keys(source.zones);
+  const scoreOrder = Object.keys(source.coastalParts.zones);
+  assert.notDeepEqual(weatherOrder, scoreOrder);
+  const packed = packPrivateConditionsHourly(source);
+  assert.deepEqual(Object.keys(packed.zones), weatherOrder);
+  assert.deepEqual(Object.keys(packed.coastalParts.zones), scoreOrder);
+  const restored = hydratePrivateConditionsHourly(JSON.parse(JSON.stringify(packed)));
+  assert.deepEqual(Object.keys(restored.zones), weatherOrder);
+  assert.deepEqual(Object.keys(restored.coastalParts.zones), scoreOrder);
+  assert.deepEqual(restored, source);
+});
+
 test('tampering, partial packing and a mixed raw/packed zone fail closed', () => {
   const source = fullFiveTypeFixture(1);
   const packed = packPrivateConditionsHourly(source);

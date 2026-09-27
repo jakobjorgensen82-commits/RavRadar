@@ -1,4 +1,31 @@
-# NYESTE SANDHED – 2026-09-27 – lokal 4.0.501
+# NYESTE SANDHED – 2026-09-27 – lokal 4.0.502
+
+Kort 4.0.501-normalrun `36306037218` genbrugte eksakt gemt fremdrift
+og målte privat pakning af 421.904.065 rå zone-timebyte til 12.010.732
+gzip-byte. Den komplette private `conditions.json` var 52.370.498
+byte, langt under V8-grænsen 535.822.312. Den reelle
+størrelsesbarriere er dermed lukket for denne pakke, men hverken fuld
+vejrdækning eller et øvre slutmål er bevist.
+
+Runnet stoppede i den efterfølgende offentlige runtime-genopbygning
+med en generel mismatch mellem privat public-hour-pakning og
+regenereret offentlig runtime. Ingen ny R2/Pages-prognose blev leveret;
+offentlig 4.0.500 forbliver aktiv. Den krypterede hente-fremdrift
+`weather-private-progress-encrypted-v2-Linux-main-36306037218-1`
+er gemt. Den gamle fejltekst identificerer ikke mismatch-feltet.
+
+Lokal 4.0.502 retter en reproduceret lagringsfejl: vejr- og scorezoner
+kan have uafhængig rækkefølge, men 4.0.501 pakkede begge i vejrorden.
+En afvigende scoreorden ændrede public-details-hash efter pakning og
+udpakning. Begge ordener bevares nu separat. En ændring af fejlteksten
+i modelbundet public-kode er fravalgt for ikke at ændre modelidentitet
+og afvise gemt fremdrift. Måltests med 210 zoner er grønne;
+exact-head kilde-CI, merge og kort normal livebekræftelse mangler.
+Først derefter kan fuld opfyldning, femfeltsdækning, DMI/Copernicus-
+prioritet, vandstandens sidste døgn, kvoter og autonom cron vurderes.
+Se DEC-0256, IMPLEMENTATION_STATUS og aktivt roadmap.
+
+# HISTORISK SANDHED – 2026-09-27 – lokal 4.0.501
 
 4.0.500 blev offentligt leveret af kort normalrun `36288805313` med
 cache, privat R2, central CAS, Pages og synlig prognose. Dette beviser
