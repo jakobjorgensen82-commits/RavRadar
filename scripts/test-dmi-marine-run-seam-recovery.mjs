@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { buildDmiForecastHourly, verifiedDmiForecastSource } from './lib/dmi-forecast-store.mjs';
 import { verifiedDmiForecastComponentSource } from './lib/ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
+import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import {
   buildDmiMarineComponentwiseHourly,
   recoverDmiMarineRunSeamHours,
@@ -78,7 +79,7 @@ const mergeVerifiedHourly = Function('ravScoreNumber', 'normalizeForecastHourly'
   value => typeof value === 'number' && Number.isFinite(value) ? value : null,
   rows => [...rows].sort((left, right) => left.time.localeCompare(right.time)),
   verifiedDmiForecastComponentSource, () => ({ status: 'not-needed' }),
-  2, 25, 118, 120, preferQualifiedDmiComponentSource,
+  2, 25, 118, 121, preferQualifiedDmiComponentSource,
 );
 const protectedOld = [
   native(0, -6, 0.06, 0.04, 0.01, 13.8),
@@ -99,6 +100,25 @@ assert.equal(joinedHours[2].waterTemperatureC, oldHours[2].waterTemperatureC,
 assert.ok(verifiedDmiForecastComponentSource(joinedHours[2].sources.waterTemperature,
   at(2), 'waterTemperature', identity),
   'the retained temperature keeps its exact old native-endpoint proof');
+let continued = joinedHours;
+for (let generation = 1; generation <= 4; generation += 1) {
+  const part = { partId: 'TEST', waterPoint: [10, 56] };
+  const records = new Map([['TEST', {
+    zoneId: 'PART::TEST', point: part.waterPoint, hourly: continued,
+  }]]);
+  const saved = await packDmiPartContinuity(records, [part], at(generation - 1));
+  const restored = await unpackDmiPartContinuity(saved, [part], at(generation));
+  continued = mergeVerifiedHourly([], restored.get('TEST').hourly, {
+    generatedAt: at(generation), startAt: at(generation), expectedIdentity: identity,
+  });
+  assert.equal(continued.find(row => row.time === at(4))?.waterTemperatureC,
+    oldHours[4].waterTemperatureC,
+    'a still-valid derived DMI temperature must survive repeated save/restore cycles');
+  assert.ok(verifiedDmiForecastComponentSource(
+    continued.find(row => row.time === at(4))?.sources.waterTemperature,
+    at(4), 'waterTemperature', identity,
+  ));
+}
 const base = build([old, newer]);
 assert.equal(base[1].currentUMps, null);
 assert.equal(base[1].waterLevelCm, null);

@@ -1,4 +1,31 @@
-# Aktuelle issues – 2026-09-27, lokal 4.0.502
+# Aktuelle issues – 2026-09-27, lokal 4.0.503
+
+- **FULDRUNS KRYPTEREDE FREMSKRIDT – LIVE ÅBENT:**
+  `36293202251` gav kun `PROGRESS_UNAVAILABLE` ved gemning og
+  efterlod intet krypteret komponentcheckpoint. Præcis årsag
+  fremgår ikke af den gamle log. En afvist genstart fik derimod
+  nyt id, som næste run gendannede. Lokal rettelse lukker den
+  falske udgivelsesvej, tillader store streamede DMI-input inden
+  for samlet pakkegrænse og viser sikre faste årsagskoder.
+  Rigtig fuld cachegemning og videreførsel er ikke bevist.
+
+- **DMI-PART-TIMER OVER FLERE KØRSLER – LOKALT RETTET, LIVE ÅBEN:**
+  `36312278335` stoppede 68 tabte, tidligere gyldige
+  vandtemperaturpar på 34 kystdele og to timer. Den beskyttede
+  DMI-forgænger blev brugt ved bygning, men dens dokumenterede
+  timer blev ikke gemt videre. Lokal 4.0.503 gemmer dem privat,
+  komponentvis og med kilde-/punktkontrol. De fire øvrige
+  vejrfamilier havde nul faktiske tab i runnet, men samme DMI-kant
+  kan ramme dem; måltest dækker alle fem. Rigtig normal kørsel,
+  privat gemning og offentlig deploy er endnu ikke bevist.
+- **FULDE VEJRDATA OG KILDEANDELE – ÅBEN:** En succesfuld
+  leveringskæde er ikke fuld dækning. Opgør vind, bølger, havstrøm,
+  vandstand og vandtemperatur med egne nævnere; efterprøv DMI-først,
+  Copernicus-optagelse, Open-Meteo-andel, vedvarende huller og
+  vandstandens sidste prognosedøgn. Start ikke overlappende runs
+  eller selvkørende cron før flere målte normale succeser.
+
+# Historiske issues – 2026-09-27, lokal 4.0.502
 
 - **PRIVAT PAKNING → OFFENTLIG GENOPBYGNING – LOKALT RETTET, LIVE
   ÅBEN:** `36306037218` beviste reel kompakt privat fil på 52.370.498

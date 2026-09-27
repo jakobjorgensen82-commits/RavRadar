@@ -1880,6 +1880,85 @@ export async function restoreProtectedPrivateProductionRuntime({
   }
 }
 
+// One-time, exact-source bootstrap for DMI PART-hour continuity. The previous
+// protected generation is never installed as a runtime or used for score
+// state. Extract only its byte/hash-verified native DMI cache as a donor.
+export async function restoreExactPreviousDmiBulkDonor({
+  privateRoot,
+  outputPath,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  currentReferenceAt,
+  currentBundleContentSha256,
+  previousReferenceAt,
+  request,
+  storage,
+  policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+} = {}) {
+  assertStorage(storage);
+  const row = await readPointerRow(request, {
+    allowMissing: false, policy, allowHistoricalCurrentModelBinding: true,
+  });
+  const current = row.payload.current;
+  const previous = row.payload.previous;
+  if (!previous || current.productionReferenceAt !== currentReferenceAt
+    || current.bundleContentSha256 !== currentBundleContentSha256
+    || previous.productionReferenceAt !== previousReferenceAt
+    || Date.parse(previousReferenceAt) >= Date.parse(currentReferenceAt)
+    || !same(current.modelBinding, previous.modelBinding)) {
+    throw new Error('EXACT_DMI_PART_DONOR_GENERATIONS_UNAVAILABLE');
+  }
+  const context = await assertPrivateRoot({ privateRoot, repositoryRoot });
+  const destination = resolvePrivateCandidate(context, outputPath, 'DMI donor output');
+  if (await fs.lstat(destination).catch(() => null)) {
+    throw new Error('EXACT_DMI_PART_DONOR_DESTINATION_EXISTS');
+  }
+  await storage.ensurePrivateBucket();
+  const archive = await verifyStoredArchive(storage, previous);
+  const decoded = await decodeArchive(archive, previous, policy);
+  const manifestEntry = decoded.files.find(file => file.path === 'manifest.json');
+  const donorEntry = decoded.files.find(file =>
+    file.path === 'payload/data/live/dmi-bulk-cache.json');
+  if (!manifestEntry || !donorEntry) throw new Error('EXACT_DMI_PART_DONOR_INVENTORY_MISSING');
+  const stage = path.join(context.root,
+    `.dmi-donor-stage-${process.pid}-${crypto.randomBytes(6).toString('hex')}`);
+  try {
+    await fs.mkdir(stage, { mode: 0o700 });
+    const manifestPath = path.join(stage, 'manifest.json');
+    const donorPath = path.join(stage, 'dmi-bulk-cache.json');
+    await writeDecodedArchiveFile({
+      file: manifestEntry, target: manifestPath,
+      contentEncoding: decoded.contentEncoding,
+    });
+    await writeDecodedArchiveFile({
+      file: donorEntry, target: donorPath,
+      contentEncoding: decoded.contentEncoding,
+    });
+    const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+    const listed = manifest?.files?.find(file =>
+      file?.id === 'dmi-bulk-cache'
+      && file?.relativePath === 'data/live/dmi-bulk-cache.json');
+    if (manifest?.bundleContentSha256 !== previous.bundleContentSha256
+      || privateRuntimeBundleContentSha256(manifest) !== previous.bundleContentSha256
+      || manifest.productionReferenceAt !== previousReferenceAt
+      || !same(manifest.modelBinding, previous.modelBinding)
+      || !listed || listed.bytes !== donorEntry.bytes
+      || listed.sha256 !== donorEntry.sha256) {
+      throw new Error('EXACT_DMI_PART_DONOR_MANIFEST_MISMATCH');
+    }
+    await fs.rename(donorPath, destination);
+    return {
+      restored: true,
+      previousProductionReferenceAt: previousReferenceAt,
+      donorSha256: listed.sha256,
+      donorBytes: listed.bytes,
+      productionPointerUnchanged: true,
+      privatePayloadLogged: false,
+    };
+  } finally {
+    await fs.rm(stage, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 // The 11Z and 15Z weather generations contain different, independently
 // useful native inputs. Read one protected pointer snapshot and validate both
 // immutable archives before exposing either bundle to the migration stage.
@@ -2240,7 +2319,7 @@ function parseArguments(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--restore-weather-pair', '--audit-anon', '--describe-current', '--describe-target', '--migrate-r2'].includes(argument)) {
+    if (['--publish', '--restore', '--restore-weather-pair', '--restore-previous-dmi-donor', '--audit-anon', '--describe-current', '--describe-target', '--migrate-r2'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one protected private runtime mode');
       result.mode = argument.slice(2);
       continue;
@@ -2257,6 +2336,9 @@ function parseArguments(argv) {
     else if (argument === '--now') result.now = value;
     else if (argument === '--output') result.outputPath = value;
     else if (argument === '--target-reference') result.targetReferenceAt = value;
+    else if (argument === '--current-reference') result.currentReferenceAt = value;
+    else if (argument === '--current-bundle-sha256') result.currentBundleContentSha256 = value;
+    else if (argument === '--previous-reference') result.previousReferenceAt = value;
     else if (argument === '--dataset-id') result.datasetId = value;
     else if (argument === '--bundle-content-sha256') result.bundleContentSha256 = value;
     else if (argument === '--same-reference-migration-report') {
@@ -2269,7 +2351,7 @@ function parseArguments(argv) {
   if (!result.mode) {
     throw new Error('Use --publish, --restore, --restore-weather-pair, --audit-anon, --describe-current, --describe-target or --migrate-r2');
   }
-  if (!['audit-anon', 'describe-current', 'describe-target', 'migrate-r2'].includes(result.mode)
+  if (!['audit-anon', 'describe-current', 'describe-target', 'migrate-r2', 'restore-previous-dmi-donor'].includes(result.mode)
     && (!result.privateRoot || !result.bundlePath || !result.expectedPath)) {
     throw new Error('Protected private runtime mode requires root, bundle and expectation');
   }
@@ -2290,6 +2372,12 @@ function parseArguments(argv) {
   }
   if (result.mode === 'describe-target' && !result.targetReferenceAt) {
     throw new Error('Protected private runtime target description requires --target-reference');
+  }
+  if (result.mode === 'restore-previous-dmi-donor'
+    && (!result.privateRoot || !result.bundlePath || !result.currentReferenceAt
+      || !result.currentBundleContentSha256
+      || !result.previousReferenceAt)) {
+    throw new Error('Exact previous DMI donor requires private root, output, and both references');
   }
   const hasSameReferenceReport = Boolean(result.sameReferenceMigrationReportPath);
   const hasSameReferenceManifest = Boolean(result.sameReferencePredecessorManifestPath);
@@ -2323,6 +2411,17 @@ async function main() {
     });
   } else if (options.mode === 'audit-anon') {
     result = await auditProtectedPrivateRuntimeAnonymousDenial({
+      request: clients.documentRequest,
+      storage: clients.storage,
+    });
+  } else if (options.mode === 'restore-previous-dmi-donor') {
+    result = await restoreExactPreviousDmiBulkDonor({
+      privateRoot: options.privateRoot,
+      outputPath: options.bundlePath,
+      repositoryRoot: options.repositoryRoot ?? PRIVATE_RUNTIME_REPOSITORY_ROOT,
+      currentReferenceAt: options.currentReferenceAt,
+      currentBundleContentSha256: options.currentBundleContentSha256,
+      previousReferenceAt: options.previousReferenceAt,
       request: clients.documentRequest,
       storage: clients.storage,
     });

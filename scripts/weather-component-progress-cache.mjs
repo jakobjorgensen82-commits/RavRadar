@@ -23,6 +23,16 @@ export const WEATHER_PROGRESS_MAX_CIPHER_BYTES = 256 * 1024 * 1024;
 const MAX_CIPHER_BYTES = WEATHER_PROGRESS_MAX_CIPHER_BYTES;
 const CONDITIONS_PATH = 'data/live/conditions.json';
 const SHA = /^[0-9a-f]{64}$/;
+// Only fixed, payload-free pack error codes may appear in Actions logs.
+const SAFE_PACK_ERROR_CODES = new Set([
+  'WEATHER_PACK_SIZE_LIMIT', 'WEATHER_PACK_FILE_SIZE_INVALID',
+  'WEATHER_PACK_JSON_SIZE_INVALID', 'WEATHER_PACK_JSON_INVALID',
+  'WEATHER_PACK_CP_INVENTORY_TIMEOUT', 'WEATHER_PACK_CP_INVENTORY_UNAVAILABLE',
+  'WEATHER_PACK_CP_ORIGINALS_INVALID', 'WEATHER_PACK_CP_INVENTORY_INVALID',
+  'WEATHER_PACK_CP_REFERENCE_INVALID', 'WEATHER_PACK_CP_ORIGINAL_CHANGED',
+  'WEATHER_PACK_OM_BANK_HASH_INVALID', 'WEATHER_PACK_REQUIRED_INPUT_MISSING_OR_CHANGED',
+  'WEATHER_PACK_CP_PROGRESS_WITHOUT_BANK', 'WEATHER_PACK_SOURCE_CHANGED',
+]);
 const fail = code => { const error = new Error(code); error.progressCode = code; throw error; };
 const status = (value, code, extra = {}) => ({
   schemaVersion: 1, kind: 'WEATHER_COMPONENT_PROGRESS_CACHE_RESULT', status: value, code,
@@ -306,7 +316,9 @@ export async function weatherComponentProgressCache({
       dmiProgress: reconciled.dmiProgress,
     });
   } catch (error) {
-    const code = error?.progressCode ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
+    const code = error?.progressCode
+      ?? (mode === 'save' && SAFE_PACK_ERROR_CODES.has(error?.message) ? error.message : null)
+      ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
     return ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
       ? status('RESTORE_REPAIR_REQUIRED', code, { requiresProtectedRestore: true })
       : status('CACHE_MISS', code);

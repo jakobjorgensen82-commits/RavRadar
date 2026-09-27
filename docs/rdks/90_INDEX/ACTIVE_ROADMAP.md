@@ -1,4 +1,34 @@
-# Aktivt roadmap – 2026-09-27, lokal 4.0.502 privat zoneorden
+# Aktivt roadmap – 2026-09-27, lokal 4.0.503
+
+Ny helhedskontrol: Den fulde kørsel `36293202251` mistede sit
+krypterede hentefremskridt, mens en senere kørsel afvist **før**
+vejrhentning fejlagtigt fik et nyt checkpoint-id. Ret begge kanter
+i samme PR og kræv ny exact-head CI; brug ikke det afviste id som
+bevis for fuld rotationsfremgang. Den oprindelige uklare gemmefejl
+er fortsat åben, indtil en rigtig kørsel giver en sikker fejlkode
+eller gemmer checkpointet. Ingen ny lang hentning før det bevis.
+
+1. [x] Afklar `36312278335`: 68 tidligere gyldige temperaturpar
+   faldt ud, fordi beskyttet DMI-timebevis kun fulgte én generation.
+   Undersøg samme kant for vind, bølger, havstrøm og vandstand;
+   disse havde nul konstaterede tab i netop det run.
+2. [x] Implementer vedvarende, kildeverificeret DMI-PART-kontinuitet
+   pr. kystdel/time/vejrtype i privat cache og begge PART-indgange.
+   Beskyt overgang med eksakt tidligere native DMI-donor; ingen
+   gammel runtime eller schedulerposition installeres.
+3. [ ] Afslut versions- og RDKS-kontrol, geodatadiff og måltests.
+   Bestå én source-CI på eksakt PR-head, vurder konkrete fund og
+   merge først, når de berørte produktionskrav er opfyldt.
+4. [ ] Kør én kort normal bekræftelse fra seneste gyldige fremdrift.
+   Kontroller alle fem vejrfamilier, samme sted/time, privat
+   slutgemning, central CAS, R2, Pages og synlig prognose. Hvis
+   noget stopper, undersøg rodårsagen før ny kørsel.
+5. [ ] Mål samlet og særskilt slutdækning, DMI/Copernicus/Open-Meteo-
+   bidrag, vandstandens sidste døgn, resthuller, historik og
+   R2/Supabase-kvoter. Flere selvstændigt vellykkede normale runs
+   kræves, før cron kan åbnes. Ingen påstand om 100 % før måling.
+
+# Historisk roadmap – 2026-09-27, lokal 4.0.502 privat zoneorden
 
 1. [x] Mål faktisk kapacitet i `36306037218`: privat fil
    52.370.498 byte mod 535.822.312-byte grænse. Runnet stoppede

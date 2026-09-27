@@ -41,6 +41,7 @@ import {
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
@@ -1293,15 +1294,34 @@ function bulkZoneToForecastRecord(
 // prefer a qualified newer DMI source. Never import its scheduler cursor.
 function buildPartDmiForecastWithProtectedRetention(
   feature, activeBulkCache, protectedBulkCache, generatedAt,
-  { startAt, expectedIdentity },
+  { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null },
 ) {
   const retained = protectedBulkCache
     ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
       startAt, expectedIdentity, materializeMissingHorizon: true,
     })
     : null;
-  return bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
+  const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
     startAt, expectedIdentity, materializeMissingHorizon: true,
+  });
+  const historical = historicalBulkCache
+    ? bulkZoneToForecastRecord(feature, historicalBulkCache, generatedAt, null, {
+      startAt, expectedIdentity, materializeMissingHorizon: true,
+    })
+    : null;
+  const previousHourly = historical
+    ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {
+      generatedAt, startAt, expectedIdentity,
+    })
+    : persistedHourly;
+  if (!previousHourly.length) return current;
+  return createDmiForecastRecord({
+    zoneId: current.zoneId, point: current.point, generatedAt,
+    hourly: mergeHourlyPreferDmi(current.hourly, previousHourly, {
+      generatedAt, startAt, expectedIdentity,
+    }),
+    waterLevelInterpolation: current.waterLevelInterpolation,
+    model: current.model,
   });
 }
 
@@ -2113,6 +2133,8 @@ function scoreCoastalPartsRuntime(
   componentInputs = {},
   historicalWaveInputTransition = null,
   waterSourceRoutingContext = null,
+  persistedDmiPartRows = new Map(),
+  historicalDmiBulkCache = null,
 ) {
   const forceHistoricalWaveMeasuredColdReplay =
     historicalWaveInputTransition !== null;
@@ -2131,6 +2153,7 @@ function scoreCoastalPartsRuntime(
   }
   const expectedByZone = new Map();
   const partRows = [];
+  const selectedDmiPartRecords = new Map();
   const sourceAgeRows = [];
   const currentInputTraceRows = [];
   const componentStageSummary = {
@@ -2307,10 +2330,15 @@ function scoreCoastalPartsRuntime(
         generatedAt, {
         startAt: partForecastStartAt,
         expectedIdentity: partDmiIdentity,
+        persistedHourly: initialSelection.source === 'POINT_ACTIVATION'
+          ? [] : persistedDmiPartRows.get(part.partId)?.hourly ?? [],
+        historicalBulkCache: initialSelection.source === 'POINT_ACTIVATION'
+          ? null : historicalDmiBulkCache,
       });
       if (!dmiRecord) {
         throw new Error('COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT');
       }
+      selectedDmiPartRecords.set(part.partId, dmiRecord);
       const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
         dmiRecord,
         { ...part, zoneId },
@@ -2846,6 +2874,7 @@ function scoreCoastalPartsRuntime(
   );
   return {
     integratedRuntime,
+    selectedDmiPartRecords,
     weatherSourceAge,
     currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
       schemaVersion: 1,
@@ -3727,6 +3756,9 @@ function mergeDmiStores(...stores) {
     const candidateAttempt = Date.parse(candidateRuntime.lastAttemptAt ?? '');
     if (!Number.isFinite(currentAttempt) || candidateAttempt > currentAttempt) merged.runtime = { ...merged.runtime, ...candidateRuntime };
   }
+  // The installed, authenticated private generation is the sole authority
+  // for per-PART continuity. A remote parent-zone cache cannot replace it.
+  if (valid[0]?.partContinuity) merged.partContinuity = valid[0].partContinuity;
   return merged;
 }
 
@@ -4032,9 +4064,20 @@ const coastalPointStateInjections = await readCoastalPointStateInjections();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
 const deployedDmiBulkCache = await readDmiBulkCache(DEPLOYED_DMI_BULK_CACHE_PATH);
+const historicalDmiBulkCache = process.env.DMI_PART_CONTINUITY_DONOR_PATH
+  ? await readDmiBulkCache(process.env.DMI_PART_CONTINUITY_DONOR_PATH)
+  : null;
+if (process.env.DMI_PART_CONTINUITY_DONOR_PATH && !historicalDmiBulkCache) {
+  throw new Error('DMI_PART_CONTINUITY_DONOR_INVALID');
+}
 const liveCurrentPilot = await readLiveCurrentPilot();
 const buildGeneratedAt = new Date().toISOString();
 const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
+const activeParts = Object.entries(coastalPartsContract.zones ?? {}).flatMap(([zoneId, zoneParts]) =>
+  zoneParts.map(part => ({ ...part, zoneId })));
+const persistedDmiPartRows = await unpackDmiPartContinuity(
+  dmiForecastStore.partContinuity, activeParts, generatedAt,
+);
 const ravScoreCheckpoint = await loadRavScoreContinuationCheckpointForTarget({
   checkpointPath: RAVSCORE_CONTINUATION_CHECKPOINT_PATH,
   targetReference: generatedAt,
@@ -4493,7 +4536,11 @@ if (coastalPartsContract.enabled) {
       properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
     const dmiRecord = buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
       coastalPointStateInjections?.[part.partId] ? null : deployedDmiBulkCache,
-      generatedAt, { startAt: generatedAt, expectedIdentity });
+      generatedAt, { startAt: generatedAt, expectedIdentity,
+        persistedHourly: coastalPointStateInjections?.[part.partId]
+          ? [] : persistedDmiPartRows.get(part.partId)?.hourly ?? [],
+        historicalBulkCache: coastalPointStateInjections?.[part.partId]
+          ? null : historicalDmiBulkCache });
     // Plan from the same DMI/proxy/component adapter as scoring. Current is
     // handled by its existing independently verified closure, not this plan.
     planningRecords.set(part.partId, applyFeggesundOperationalWaveProxy(dmiRecord, part, sourcesByTime));
@@ -4537,8 +4584,17 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
     weatherComponents?.inputs ?? {},
     historicalWaveInputTransition,
     waterSourceRoutingContext,
+    persistedDmiPartRows,
+    historicalDmiBulkCache,
   )
   : null;
+if (coastalPartScoreBuild) {
+  nextDmiForecastStore.partContinuity = await packDmiPartContinuity(
+    coastalPartScoreBuild.selectedDmiPartRecords,
+    activeParts,
+    generatedAt,
+  );
+}
 reportWeatherBuildStage('coastal-score-runtime-ready', {
   scoredPartCount: coastalPartScoreBuild?.integratedRuntime?.scoredPartCount ?? 0,
 });

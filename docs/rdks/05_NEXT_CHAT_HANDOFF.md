@@ -1,4 +1,23 @@
-# NYESTE CHECKPOINT – 2026-09-22 – lokal 4.0.461 target-bundet predecessor
+# NYESTE CHECKPOINT – 2026-09-27 – lokal 4.0.503 DMI-PART-kontinuitet
+
+Helikoptertillæg før merge: fuldt `36293202251` gemte ingen
+krypteret komponentfremdrift; et afvist run før DMI fik derimod
+et misvisende nyt checkpoint-id. Den næste korte kørsel brugte
+det. Lokal 4.0.503 udvides med checkpoint-værn, streaming af store
+DMI-input under samlet grænse og ufølsomme sikre gemmekoder.
+Oprindelig PR #466-CI er grøn for et ældre head, ikke den nye
+rettelse. Kræv ny exact-head CI og senere rigtig livegemning.
+
+Brug `r2-private-runtime`-worktree, ikke beskidt cb79. 4.0.502-run
+`36312278335` stoppede 68 tidligere gyldige temperaturpar;
+offentlig 4.0.500 forbliver aktiv. Lokal 4.0.503 gemmer
+kildeverificerede DMI-timer for alle fem vejrfamilier over normale
+cachegenerationer og bruger eksakt tidligere native donor som
+engangsbro. Måltests og RDKS er grønne, men exact-head CI,
+merge og rigtig kort normal produktionsbekræftelse mangler.
+Se CURRENT_TRUTH, IMPLEMENTATION_STATUS og aktivt roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-22 – lokal 4.0.461 target-bundet predecessor
 
 4.0.461-arbejdet bygger på merged main `06cb5f0e`. Run `35740940791` viste,
 at current pointergenerationen var `19:00`, mens restore korrekt valgte

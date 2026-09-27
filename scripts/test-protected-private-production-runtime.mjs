@@ -35,6 +35,7 @@ import {
   describeTargetProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreExactProtectedPrivateWeatherPair,
+  restoreExactPreviousDmiBulkDonor,
   restoreProtectedPrivateProductionRuntime,
   isExactDmiMarineSeamPredecessor,
   isExactDmiSchedulerPredecessor,
@@ -1460,6 +1461,30 @@ try {
   assert.equal(documents.row().version, 3);
   assert.equal(documents.row().payload.previous.objectSha256, archiveOne.descriptor.objectSha256);
   assert.equal(storage.objects.size, 2);
+  const exactDonorPath = path.join(restoreRoot, 'previous-dmi-donor.json');
+  const exactDonor = await restoreExactPreviousDmiBulkDonor({
+    privateRoot: restoreRoot,
+    outputPath: exactDonorPath,
+    repositoryRoot: repository,
+    currentReferenceAt: second.conditions.productionReferenceAt,
+    currentBundleContentSha256: documents.row().payload.current.bundleContentSha256,
+    previousReferenceAt: first.conditions.productionReferenceAt,
+    request: documents.request,
+    storage: storage.client,
+  });
+  assert.equal(exactDonor.restored, true);
+  assert.equal(await fs.readFile(exactDonorPath, 'utf8'),
+    'synthetic-generation-0-dmi-bulk-cache\n');
+  await assert.rejects(restoreExactPreviousDmiBulkDonor({
+    privateRoot: restoreRoot,
+    outputPath: path.join(restoreRoot, 'wrong-dmi-donor.json'),
+    repositoryRoot: repository,
+    currentReferenceAt: second.conditions.productionReferenceAt,
+    currentBundleContentSha256: documents.row().payload.current.bundleContentSha256,
+    previousReferenceAt: '2026-08-29T09:00:00.000Z',
+    request: documents.request,
+    storage: storage.client,
+  }), /GENERATIONS_UNAVAILABLE/);
 
   const realPreviousBundle = path.join(restoreRoot, 'bundle-real-previous');
   const downloadsBeforeRealPrevious = storage.downloads();

@@ -1,4 +1,46 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.496, vejrarbejde gemt
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, kildebevis over flere runs
+
+Senere helikopterfund: den lange `36293202251` havde intet
+krypteret komponentcheckpoint efter en uklar gemmefejl. Den
+før-DMI-afviste `36305751581` skabte alligevel et nyt checkpoint,
+som den næste korte kørsel gendannede. PR #466/oprindeligt head
+`f3e7a2d3` fik grøn CI, men er **ikke** klar til merge efter dette
+fund. Nye workflow-/pakke-/diagnoserettelser ligger endnu lokalt;
+måltest og ny exact-head CI kræves. Ingen ny kørsel eller cron.
+
+Brug managed worktree `r2-private-runtime` på branch
+`codex/4.0.503-dmi-part-continuity`, baseret på main
+`3aab8726040e1994f9a095dbf7dee6fa5dc29cdf`; den beskidte
+cb79-rod må ikke overskrives. 4.0.502-normalrun `36312278335`
+gendannede fremdrift og byggede prognose, men no-loss stoppede
+68 tidligere gyldige vandtemperaturpar. Vind, bølger, havstrøm
+og vandstand havde nul faktiske tab på de 74.030 sammenlignelige
+kystdel/time-par. Ingen privat slutpakke, central CAS, R2 eller
+Pages fra dette run. Offentlig prognose er stadig 4.0.500.
+
+Den utilstrækkelige én-generationsbevaring er erstattet lokalt af
+en per-PART komprimeret og hashbundet DMI-timepakke i eksisterende
+privat DMI-forecast-cache. Begge PART-indgange bruger den; kilder
+vælges atomisk pr. vejrtype. Den kendte 4.0.500-forgænger får
+én eksakt beskyttet tidligere native DMI-donor, uden gammel
+scorestate eller scheduler-cursor. Testet lokalt: codec, fire
+save/restore-generationer, alle fem feltvalg, ændret prøvepunkt,
+forkert donor, workflow-/private-runtime-kontrakter, RDKS og
+releaseversion. Workflow-YAML parser. Geodatadiff har kun det
+godkendte topversionsfelt. Intet af dette er livebevis.
+
+Næste: afslut kode-/dokumentationsreview, commit og push uden
+private filer fra `.cache`, exact-head source-CI, PR og sikker
+merge. Dernæst kun én kort normal ikke-overlappende vejrkørsel,
+der gendanner senest gyldige fremdrift og beviser no-loss,
+privat gemning, CAS, R2, Pages og synlig prognose. Ved fejl
+undersøg hele kæden, ikke blind genhentning. DMI/Copernicus-
+andeler, femfeltsdækning, resthuller, vandstandens sidste døgn,
+Free-kvoter og autonom cron er åbne. Anbefalet model/indsats:
+Sol 6 Ekstra høj for næste kritiske review og livevurdering.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.496, vejrarbejde gemt
+
 
 Arbejd i managed worktree `r2-private-runtime`; cb79 er ikke
 arbejdsroden. Se CURRENT_TRUTH og `.cache/codex-4.0.492-handoff.md`

@@ -53,6 +53,8 @@ const seal = step(normal, 'Encrypt newly saved private weather progress before l
 assert.match(seal, /if: always\(\)/);
 assert.match(seal, /steps\.preflight\.outputs\.should_run == 'true'/);
 assert.match(seal, /steps\.component-progress-restore\.outputs\.captured == 'true'/);
+assert.match(seal, /steps\.dmi-bulk\.outcome == 'success' \|\| steps\.dmi-bulk\.outcome == 'failure'/,
+  'An early restore gate failure must not create a misleading new progress checkpoint');
 const save = step(normal, 'Save only the authenticated encrypted private weather snapshot');
 assert.match(save, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(save, /weather-private-progress-encrypted-v2-/);

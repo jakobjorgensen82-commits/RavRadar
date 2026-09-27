@@ -16,7 +16,8 @@ export function createPersistentDmiStore(existingStore, activeZoneIds, horizonHo
       lastSuccessAt: null,
       ...(existingStore?.runtime ?? {})
     },
-    zones
+    zones,
+    ...(existingStore?.partContinuity ? { partContinuity: existingStore.partContinuity } : {})
   };
 }
 

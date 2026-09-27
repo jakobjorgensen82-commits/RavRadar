@@ -1,4 +1,57 @@
-# NYESTE SANDHED – 2026-09-27 – lokal 4.0.502
+# NYESTE SANDHED – 2026-09-27 – lokal 4.0.503, endnu ikke leveret
+
+Ny helhedsgennemgang før merge: fuldt normalrun `36293202251`
+byggede et langt fyldigere mellemresultat, men stoppede før
+produktion og gemte **ikke** krypteret komponentfremdrift:
+gemmetrinnet returnerede kun den uklare kode `PROGRESS_UNAVAILABLE`.
+Et efterfølgende run `36305751581` blev afvist før DMI på
+`BASELINE_MISMATCH`, men gemte alligevel et nyt checkpoint-id.
+Den følgende korte kørsel gendannede dette id. Dets svagere
+leverandør- og dækningsresultat må derfor ikke bruges som bevis
+for, at den lange kørsels fremskridt blev videreført. Lokal
+4.0.503 er udvidet: et afvist tidligt run må ikke udgive nyt
+checkpoint; store, kun streamede DMI-input får plads inden for
+samme samlede private pakkegrænse; gemning rapporterer kun faste,
+ufølsomme fejlkoder. Den præcise årsag i det gamle fulde run er
+stadig ukendt og kræver ny reel måling. PR #466 har én tidligere
+grøn kildekontrol, men de nye ændringer kræver ny exact-head CI.
+
+Kort normalrun `36312278335` på 4.0.502 gendannede den gemte
+hentefremdrift og nåede gennem leverandører og prognosebygning, men
+no-loss stoppede 68 tidligere gyldige vandtemperaturfelter for
+samme kystdel og time (34 kystdele × to timer). Vind, bølger,
+havstrøm og vandstand havde nul konstaterede tab på de 74.030
+sammenlignelige kystdel/time-par. Der kom ingen ny privat slutpakke,
+central CAS, R2-publicering eller Pages-deploy; offentlig 4.0.500
+forbliver aktiv. Krypteret hentefremdrift er gemt.
+
+Rodårsagen er bredere end de 68: DMI's native cache kan erstatte
+ældre støtteendepunkter med en nyere, delvis model. 4.0.500's
+beskyttede forgænger holdt de mellemliggende DMI-timer i live én
+generation, men den nye private pakke gemte ikke disse dokumenterede
+PART-timer til senere kørsler. 4.0.500's påstand om bevaring over
+vilkårligt mange kørsler er dermed modbevist og erstattet af denne
+lokale rettelse.
+
+4.0.503 gemmer kildeverificerede DMI-timer for hver kystdel og alle
+fem vejrfamilier i den eksisterende private DMI-cache. De læses
+ved både behovsplanlægning og scorebygning og vælges komponentvis:
+nyere gyldig DMI overtager, tomme nye felter sletter ikke en stadig
+gyldig gammel værdi. Et ændret adminvalgt prøvepunkt arver ikke
+gamle værdier. Den kendte 4.0.500-forgænger får én eksakt, beskyttet
+native DMI-donor; ingen gammel scorestate eller schedulerstatus
+installeres. Der ændres ikke scoreformel, leverandørprioritet,
+96-timersundtagelse, DMI-only-vandstand eller offentlig kontrakt.
+
+Måltests er lokale. Exact-head CI, sikker merge og et kort normalt
+produktionsrun skal stadig bevise no-loss, cachegemning, CAS, R2,
+Pages og offentlig prognose. Fuld femfeltsdækning, DMI/Copernicus-
+andel, vandstandens sidste prognosedøgn, resthuller, Free-kvoter og
+selvkørende cron er fortsat åbne. Se DEC-0254, KNOWN-ISSUES og
+ACTIVE_ROADMAP.
+
+# HISTORISK SANDHED – 2026-09-27 – lokal 4.0.502
+
 
 Kort 4.0.501-normalrun `36306037218` genbrugte eksakt gemt fremdrift
 og målte privat pakning af 421.904.065 rå zone-timebyte til 12.010.732

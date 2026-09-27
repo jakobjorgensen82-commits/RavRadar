@@ -349,8 +349,8 @@ assert.match(directDmi, /withoutCurrent\(createDmiForecastRecord\(/,
   'ForecastEDR-resultatet skal lukkes fail-closed for strøm før scoring');
 assert.match(hourlyMerge, /row\?\.sources\?\.\[component\][\s\S]*?wave: selectedWave\?\.attestation/,
   'den endelige merge skal føre den valgte bølgetuples egen verificerede proveniens videre');
-assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 3,
-  'missing-horizon materialization is limited to component planning, Feggesund preflight and the primary integrated part runtime');
+assert.equal((source.match(/materializeMissingHorizon: true/g) ?? []).length, 4,
+  'missing-horizon materialization also covers the one-time verified historical DMI donor');
 assert.match(integratedRuntime, /preflightFeggesundOperationalWaveReadiness\([\s\S]*?const nearestIndex/,
   'Feggesund readiness must be checked before the main scoring loop');
 assert.match(source, /direct \+ proxy \+ missing !== expected/,
