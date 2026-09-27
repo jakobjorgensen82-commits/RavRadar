@@ -117,7 +117,11 @@ async function sourceInventory(root, conditions, {
     if (!COMPONENT_FILE_KEYS.has(key)
       && (operationalScope === 'none'
         || operationalScope === 'extension' && BASE_DUPLICATE_PROGRESS_KEYS.has(key))) continue;
-    const maximumBytes = key === 'copernicusBank' ? MAX_PACK_BYTES : MAX_JSON_BYTES;
+    // Acquisition snapshots are hashed/streamed, never parsed here. A full
+    // DMI rotation can legitimately exceed the smaller parsed-bank cap.
+    // The cumulative raw pack and encrypted-cache budgets remain bounded.
+    const maximumBytes = key === 'copernicusBank' || key === 'dmiActive' || key === 'dmiCandidate'
+      ? MAX_PACK_BYTES : MAX_JSON_BYTES;
     const source = await checkedFile(root, relativePath, { optional: true, maximumBytes });
     presence[key] = Boolean(source);
     if (!source) continue;
@@ -128,7 +132,7 @@ async function sourceInventory(root, conditions, {
   if (includeOperationalProgress === true) {
     for (const [key, relativePath] of Object.entries(PRIVATE_WEATHER_PROGRESS_ONLY_FILES)) {
       const source = await checkedFile(root, relativePath, {
-        optional: true, maximumBytes: MAX_JSON_BYTES, includeOperationalProgress: true,
+        optional: true, maximumBytes: MAX_PACK_BYTES, includeOperationalProgress: true,
       });
       // Old authenticated snapshots must reproduce their exact old manifest.
       // Do not introduce false presence keys for absent progress-only files.

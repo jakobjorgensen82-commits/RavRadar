@@ -1910,7 +1910,10 @@ jobs:
 
       - name: Encrypt newly saved private weather progress before later production steps
         id: component-progress-seal
-        if: always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true'
+        # An early restore/short-confirmation failure must never publish a new
+        # run-id checkpoint that is only a copy of older progress. At least the
+        # first real supplier step must have been attempted.
+        if: always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')
         continue-on-error: true
         timeout-minutes: 4
         shell: bash

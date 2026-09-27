@@ -1,5 +1,13 @@
 # Aktivt roadmap – 2026-09-27, lokal 4.0.503
 
+Ny helhedskontrol: Den fulde kørsel `36293202251` mistede sit
+krypterede hentefremskridt, mens en senere kørsel afvist **før**
+vejrhentning fejlagtigt fik et nyt checkpoint-id. Ret begge kanter
+i samme PR og kræv ny exact-head CI; brug ikke det afviste id som
+bevis for fuld rotationsfremgang. Den oprindelige uklare gemmefejl
+er fortsat åben, indtil en rigtig kørsel giver en sikker fejlkode
+eller gemmer checkpointet. Ingen ny lang hentning før det bevis.
+
 1. [x] Afklar `36312278335`: 68 tidligere gyldige temperaturpar
    faldt ud, fordi beskyttet DMI-timebevis kun fulgte én generation.
    Undersøg samme kant for vind, bølger, havstrøm og vandstand;

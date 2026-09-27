@@ -436,7 +436,10 @@ test('missing key, absent snapshot, invalid original pack and unsafe destination
   assert.equal((await f.call('save', f.source, { encryptionKey: '' })).code, 'ENCRYPTION_KEY_UNAVAILABLE');
   assert.equal((await f.call('save', f.source, { encryptionKey: 'invalid' })).code, 'ENCRYPTION_KEY_INVALID');
   await write(f.source, files.openMeteoBank, { invalid: true });
-  assert.equal((await f.call('save')).saved, false);
+  const invalidBank = await f.call('save');
+  assert.equal(invalidBank.saved, false);
+  assert.equal(invalidBank.code, 'WEATHER_PACK_OM_BANK_HASH_INVALID',
+    'a fixed, payload-free reason must replace the opaque progress-unavailable status');
   await assert.rejects(fs.access(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)));
   await f.saveAndTransfer();
   await fs.unlink(path.join(f.target, files.selectedComponents));

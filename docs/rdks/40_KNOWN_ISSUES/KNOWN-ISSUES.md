@@ -1,5 +1,14 @@
 # Aktuelle issues – 2026-09-27, lokal 4.0.503
 
+- **FULDRUNS KRYPTEREDE FREMSKRIDT – LIVE ÅBENT:**
+  `36293202251` gav kun `PROGRESS_UNAVAILABLE` ved gemning og
+  efterlod intet krypteret komponentcheckpoint. Præcis årsag
+  fremgår ikke af den gamle log. En afvist genstart fik derimod
+  nyt id, som næste run gendannede. Lokal rettelse lukker den
+  falske udgivelsesvej, tillader store streamede DMI-input inden
+  for samlet pakkegrænse og viser sikre faste årsagskoder.
+  Rigtig fuld cachegemning og videreførsel er ikke bevist.
+
 - **DMI-PART-TIMER OVER FLERE KØRSLER – LOKALT RETTET, LIVE ÅBEN:**
   `36312278335` stoppede 68 tabte, tidligere gyldige
   vandtemperaturpar på 34 kystdele og to timer. Den beskyttede

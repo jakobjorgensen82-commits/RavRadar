@@ -1,5 +1,13 @@
 # AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, kildebevis over flere runs
 
+Senere helikopterfund: den lange `36293202251` havde intet
+krypteret komponentcheckpoint efter en uklar gemmefejl. Den
+før-DMI-afviste `36305751581` skabte alligevel et nyt checkpoint,
+som den næste korte kørsel gendannede. PR #466/oprindeligt head
+`f3e7a2d3` fik grøn CI, men er **ikke** klar til merge efter dette
+fund. Nye workflow-/pakke-/diagnoserettelser ligger endnu lokalt;
+måltest og ny exact-head CI kræves. Ingen ny kørsel eller cron.
+
 Brug managed worktree `r2-private-runtime` på branch
 `codex/4.0.503-dmi-part-continuity`, baseret på main
 `3aab8726040e1994f9a095dbf7dee6fa5dc29cdf`; den beskidte

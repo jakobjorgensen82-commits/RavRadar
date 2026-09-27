@@ -1,5 +1,22 @@
 # 2026-09-27 – lokal 4.0.503, DMI-timer over flere normale kørsler
 
+- [x] Helikoptergennemgang af fuld `36293202251` mod de korte
+  efterfølgere: fuldt mellemresultat havde 4.583 manglende
+  havstrømpar af 79.414, men ingen gemt krypteret komponentfremdrift.
+  En tidligt afvist kørsel skabte derefter et nyt checkpoint-id, som
+  næste korte kørsel gendannede. Disse mellemresultater er ikke
+  sammenlignelige produktionspakker eller tal for alle fem typer.
+- [x] Lokal workflowrettelse kræver, at DMI-trinnet faktisk er nået,
+  før et nyt fremdrifts-id kan udgives. Store DMI-filer hashes
+  streaming inden for samlet pakkegrænse, og sikre, faste pakke-
+  fejlkoder erstatter den generiske gemmefejl. Ældre fuldruns
+  præcise gemmeårsag kan ikke udledes af dets log.
+- [ ] Ny exact-head CI for det samlede PR-head, merge uden ny
+  modstridende evidens, derefter kun én kort normal liveprøve.
+- [ ] Bevis derefter flere ikke-overlappende normale kørsler, fem
+  feltvise dækningstal, DMI/Copernicus/OM-optagelse, checkpoint-
+  lineage, privat slutpakke, CAS, R2, Pages og offentlig visning.
+
 - [x] `36312278335` nåede no-loss og stoppede på 68 gyldig→tom
   vandtemperatur-kystdel/time-par; nul konstaterede tab i de fire
   andre vejrfamilier på 74.030 sammenlignelige par. Ingen ny

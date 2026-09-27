@@ -1,5 +1,14 @@
 # 2026-09-27 – lokal 4.0.503: beskyttede DMI-timer skal følge næste run
 
+Helikoptertillæg: fuldrun `36293202251` havde stor vejrtilvækst,
+men ingen gemt krypteret komponentfremdrift; gammel log gav kun
+`PROGRESS_UNAVAILABLE`. Et run afvist før DMI udgav derefter
+misvisende nyt checkpoint-id, som næste korte run gendannede.
+Den samlede lokale 4.0.503 lukker den falske udgivelsesvej,
+udvider kun streamede store DMI-input inden for samlet pakkegrænse
+og giver sikre faste gemmeårsager. Ny exact-head CI/livebevis
+mangler, selv om første PR-head var kildegrøn.
+
 4.0.502-normalrun `36312278335` nåede no-loss, som afviste 68
 tidligere gyldige vandtemperatur-kystdel/time-par. Fire andre
 vejrfamilier havde nul konstaterede tab på samme 74.030-pars

@@ -1,5 +1,21 @@
 # NYESTE SANDHED – 2026-09-27 – lokal 4.0.503, endnu ikke leveret
 
+Ny helhedsgennemgang før merge: fuldt normalrun `36293202251`
+byggede et langt fyldigere mellemresultat, men stoppede før
+produktion og gemte **ikke** krypteret komponentfremdrift:
+gemmetrinnet returnerede kun den uklare kode `PROGRESS_UNAVAILABLE`.
+Et efterfølgende run `36305751581` blev afvist før DMI på
+`BASELINE_MISMATCH`, men gemte alligevel et nyt checkpoint-id.
+Den følgende korte kørsel gendannede dette id. Dets svagere
+leverandør- og dækningsresultat må derfor ikke bruges som bevis
+for, at den lange kørsels fremskridt blev videreført. Lokal
+4.0.503 er udvidet: et afvist tidligt run må ikke udgive nyt
+checkpoint; store, kun streamede DMI-input får plads inden for
+samme samlede private pakkegrænse; gemning rapporterer kun faste,
+ufølsomme fejlkoder. Den præcise årsag i det gamle fulde run er
+stadig ukendt og kræver ny reel måling. PR #466 har én tidligere
+grøn kildekontrol, men de nye ændringer kræver ny exact-head CI.
+
 Kort normalrun `36312278335` på 4.0.502 gendannede den gemte
 hentefremdrift og nåede gennem leverandører og prognosebygning, men
 no-loss stoppede 68 tidligere gyldige vandtemperaturfelter for

@@ -1,5 +1,15 @@
 # AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, DMI-kontinuitet afventer livebevis
 
+Helikopterfund efter første PR-head: fuldt `36293202251` gemte
+ikke krypteret komponentfremdrift (`PROGRESS_UNAVAILABLE` uden
+præcis årsag). Tidligt afvist `36305751581` gemte derimod et
+misvisende nyt id før DMI; næste korte run gendannede netop dét.
+Det første grønne PR-CI gjaldt et ældre head. Ny lokal rettelse
+kræver reelt forsøgt DMI før nyt id, giver streamede store DMI-
+input samme samlede pakkeramme og rapporterer faste sikre fejlkoder.
+Måltests, ny exact-head CI og livebevis afventer. Ingen merge eller
+ny vejrkørsel før den samlede rettelse er gennemgået.
+
 Arbejd i `C:\Users\Lenovo T14\.codex\worktrees\r2-private-runtime\RavRadar`,
 branch `codex/4.0.503-dmi-part-continuity`; cb79-roden er ikke
 arbejdskopien. 4.0.502-run `36312278335` stoppede på 68 tabte

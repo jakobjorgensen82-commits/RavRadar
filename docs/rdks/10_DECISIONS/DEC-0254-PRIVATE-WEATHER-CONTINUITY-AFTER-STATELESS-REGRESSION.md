@@ -1,5 +1,17 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-27 – 4.0.503: kun reelt nået vejrhentning må få nyt checkpoint-id
+
+Et tidligt `BASELINE_MISMATCH` før DMI skabte tidligere et nyt
+krypteret checkpoint-id; næste korte run læste det som om ny
+leverandørfremgang var gemt. Det er forkert. Gemmetrin må først
+udgive et nyt id, når mindst det første reelle leverandørtrin
+er forsøgt. En fejlet lang kørsel må stadig bevare ægte delvis
+fremgang. Kildepakken må omfatte store DMI-input, som kun hashes
+og streames; den samlede private størrelsesgrænse består.
+Pakningsfejl vises som faste, ufølsomme årsagskoder, aldrig
+private filnavne, positioner eller vejrdata. Livebevis mangler.
+
 ## Tillæg 2026-09-27 – 4.0.503: bevar kildebevis gennem alle normale generationer
 
 4.0.500's formulering om vilkårligt mange kørsler var for stærk og

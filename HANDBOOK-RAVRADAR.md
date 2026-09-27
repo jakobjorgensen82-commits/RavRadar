@@ -12,6 +12,17 @@ over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
 ## 89.99 4.0.503 – Behold en god vejrtime gennem flere hentninger
 
+En ekstra gennemgang fandt også en fejl i måden kørslers arbejde
+gemmes på. En kørsel, der blev afvist før vejrhentningen, fik
+alligevel et nyt gemt checkpoint-id. Det kan forveksles med nyt
+hentearbejde. Nu skal DMI-trinnet mindst være forsøgt, før et nyt
+id må udgives. En tidligere fuld kørsel hentede meget vejr, men
+dens krypterede fremskridt blev ikke gemt; den gamle log fortæller
+ikke hvorfor. Store DMI-input kan nu behandles uden den snævre
+grænse for JSON-filer, der faktisk skal indlæses, og fremtidige
+gemmefejl får en ufølsom, konkret årsagskode. Vi skal stadig
+bevise i en virkelig kørsel, at dette er nok.
+
 En ny DMI-prognose kan mangle enkelte tider, selv om en tidligere
 prognose stadig havde en gyldig værdi for præcis samme sted og time.
 Den gamle værdi skal ikke forsvinde, blot fordi flere nye vejrkørsler

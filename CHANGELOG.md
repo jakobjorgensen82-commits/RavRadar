@@ -1,5 +1,12 @@
 ## 4.0.503 – bevar DMI's dokumenterede vejrtime gennem næste kørsel (lokal, 2026-09-27)
 
+- Helhedsgennemgang fandt også, at en afvist kørsel før DMI kunne
+  udgive et misvisende nyt krypteret checkpoint-id. Det kræver nu
+  et faktisk forsøgt DMI-trin. Store streamede DMI-input kan rummes
+  inden for den fortsat samlede pakkegrænse, og ufølsomme faste
+  fejlkoder erstatter den uklare gemmefejl. Den gamle fulde kørsels
+  præcise gemmeårsag er ikke bevist; ny livekontrol kræves.
+
 - Kort 4.0.502-run `36312278335` blev stoppet ved 68 tidligere
   gyldige vandtemperaturpar på 34 kystdele og to timer. Vind,
   bølger, havstrøm og vandstand tabte nul i netop den sammenligning.
