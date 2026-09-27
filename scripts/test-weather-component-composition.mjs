@@ -176,16 +176,24 @@ test('qualified donor freshness uses model run, never acquiredAt or hash alone',
     modelRun: at(-1) }), 'waterLevel'), false);
 });
 
-test('current selection retains spatial and layer priority before model freshness', () => {
+test('newer DMI current run wins; spatial and layer priority break same-run ties', () => {
   const old = qualifiedDmi({ component: 'current', distanceKm: 1 });
   assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
-    distanceKm: 2, gridPoint: [10.01, 56], modelRun: at(-1) }), 'current'), false);
+    distanceKm: 2, gridPoint: [10.01, 56], modelRun: at(-1) }), 'current'), true);
   assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
-    distanceKm: 0.5, gridPoint: [10.001, 56], modelRun: at(-9) }), 'current'), true);
+    distanceKm: 0.5, gridPoint: [10.001, 56], modelRun: at(-9) }), 'current'), false);
   assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
-    verticalLayerRankM: 2, modelRun: at(-9) }), 'current'), true);
+    verticalLayerRankM: 2, modelRun: at(-9) }), 'current'), false);
   assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
-    verticalLayerRankM: 0.5, modelRun: at(-1) }), 'current'), false);
+    verticalLayerRankM: 0.5, modelRun: at(-1) }), 'current'), true);
+  assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
+    distanceKm: 0.5, gridPoint: [10.001, 56] }), 'current'), true);
+  assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
+    distanceKm: 2, gridPoint: [10.01, 56] }), 'current'), false);
+  assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
+    verticalLayerRankM: 2 }), 'current'), true);
+  assert.equal(preferQualifiedDmiComponentSource(old, qualifiedDmi({ component: 'current',
+    verticalLayerRankM: 0.5 }), 'current'), false);
 });
 
 test('same-run revision requires comparable official timestamps for every changed endpoint', () => {
