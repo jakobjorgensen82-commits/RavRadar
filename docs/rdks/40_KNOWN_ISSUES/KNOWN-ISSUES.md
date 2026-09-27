@@ -1,4 +1,27 @@
-# Aktuelle issues – 2026-09-26, lokal 4.0.498 checkpointstop
+# Aktuelle issues – 2026-09-27, lokal 4.0.500
+
+- **529 VANDTEMPERATURTAB – ÅBEN INDIL LIVEBEVIS:** Run
+  `36278712741` stoppede korrekt før privat produktionsgemning og
+  deploy. Seks fælles timer mistede tidligere gyldige værdier;
+  vind, bølger, havstrøm og vandstand havde nul tab. Lokal kode
+  bevarer verificerede DMI-værdier over modelskift, men den præcise
+  forklaring på alle 529 skal bevises i produktion. Den bevarede
+  krypterede hente-fremdrift er `36278712741-1`.
+- **COPERNICUS NUL/LEVERANDØRANDEL – ÅBEN:** Sidste fulde run
+  havde 23 forsøg og nul optagelse i bølge-/temperaturleddet;
+  registrerede hindringer omfatter statisk celle, overflademaske
+  og timeout. Det er ikke forklaret alene af cachegenbrug. DMI
+  leverede kun delvis dækning, og Open-Meteo fyldte mange huller.
+  Fysisk celle-/maskepolitik ændres ikke uden bevis.
+- **SENT STOP/STAGING – DELVIST LØST:** 4.0.499's krypterede
+  slutartifact kommer først efter no-loss og blev derfor ikke
+  skabt i `36278712741`. Hente-fremdrift blev gemt. Sikker
+  genoptagelse af en allerede bygget pakke er fortsat åben.
+- **PRODUKTION OG KVOTER – ÅBEN:** Den offentlige 4.0.499-
+  pakke står; 4.0.500 har endnu ikke livebevist R2/CAS/Pages.
+  Supabase-/R2-Free kræver målte driftsdøgn, ikke et løfte.
+
+# Historiske issues – 2026-09-26, lokal 4.0.498 checkpointstop
 
 - **CENTRAL CAS – P0:** `36252591071` stoppede før R2/Pages,
   fordi installeret forgængerbro kun accepterer schema 4, mens
@@ -3503,7 +3526,7 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **PRODUKTIONSGEMNING OG DEPLOY – AFVENTER:** `36183093672` gemte
   krypteret fremdrift, ikke en ny officiel produktionscache; Pages
   blev sprunget over. Cron forbliver pauset.
-# Aktuelle issues – 2026-09-26, lokal 4.0.499 slutpakke
+# Historiske issues – 2026-09-26, lokal 4.0.499 slutpakke
 
 - **SENT STOP/SPILDT BYGGETID – DELVIST RETTET, LIVE ÅBEN:**
   4.0.499 gemmer den færdige private pakke krypteret i ét døgn

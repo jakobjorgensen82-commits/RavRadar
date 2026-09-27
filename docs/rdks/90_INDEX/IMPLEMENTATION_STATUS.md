@@ -1,4 +1,27 @@
-# 2026-09-26 – lokal 4.0.498 central checkpointbro
+# 2026-09-27 – lokal 4.0.500, beskyttet DMI-timereparation
+
+- [x] 4.0.499 er offentlig efter `36261248486`; ny normalrun
+  `36278712741` nåede prognosebygning, men blev korrekt stoppet af
+  529 vandtemperaturtab. De andre fire vejrfamilier havde nul tab.
+- [x] Krypteret hente-fremdrift `36278712741-1` er gemt; ingen ny
+  slutpakke, central CAS, R2 eller Pages blev leveret af det fejlede run.
+- [x] Begge PART-indgange til DMI-prognosen bruger lokalt beskyttet
+  ældre, kildeverificeret timemateriale uden at genbruge gammel
+  scheduler-fremdrift eller et ændret prøvepunkt. Måltests for ti
+  sparse generationer, fem vejrfamilier, native run-seam og normal
+  planlægning/scoring består.
+- [x] Forældet test om DMI-modelprioritet er rettet. Den afsluttede
+  DEC-0122-engangsundtagelse returnerer `RETIRED` selv med gammel
+  beslutningsmarkør og er låst af releasekontrollen.
+- [ ] RDKS/version, exact-head CI, merge og kort normal bekræftelse.
+  Bevis nul tab på fælles sted/timer, korrekt cacheforgænger, privat
+  gemning, CAS, R2, Pages og offentlig prognose. Historiske tab uden
+  for det nye tidsvindue er ikke automatisk bevist repareret.
+- [ ] Undersøg særskilt Copernicus' nul optagelse, lave DMI-andel,
+  øvrige huller og Free-forbrug. Flere normale succeser kræves før
+  cron kan åbnes. Ingen overlappende eller blind lang kørsel.
+
+# HISTORISK STATUS – 2026-09-26 – lokal 4.0.498 central checkpointbro
 
 - [x] 4.0.497 merged; vejrfri backendrun er livegrønt.
 - [x] `36252591071` bestod vejr/cache/artifact, gemte fremdrift,
@@ -6476,7 +6499,7 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Rodårsagen til netop de 34 er stadig ubevist. GitHub exact-head,
   merge, kort end-to-end-run, privat cachegemning, Pages og offentlig
   femfeltskontrol mangler. Cron og lange runs forbliver pauset.
-# 2026-09-26 – lokal 4.0.499 sikret slutpakke før sen fejl
+# HISTORISK STATUS – 2026-09-26 – lokal 4.0.499 sikret slutpakke før sen fejl
 
 - [x] 4.0.498/PR #461 exact-head-grøn, merged `67379880`;
   backendrun `36259580555` grøn og eksakt gammel central forgænger

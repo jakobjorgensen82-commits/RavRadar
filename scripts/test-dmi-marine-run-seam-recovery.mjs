@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { buildDmiForecastHourly, verifiedDmiForecastSource } from './lib/dmi-forecast-store.mjs';
+import { verifiedDmiForecastComponentSource } from './lib/ravscore-production-adapters.mjs';
+import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
 import {
   buildDmiMarineComponentwiseHourly,
   recoverDmiMarineRunSeamHours,
@@ -61,6 +64,41 @@ const componentwise = ocean => buildDmiMarineComponentwiseHourly({
   ocean, generatedAt, hours: 5, sourceCadenceMinutes: 180,
   expectedIdentity: identity,
 }).hourly;
+const producerSource = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
+const hourlyMergeSource = producerSource.slice(
+  producerSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
+  producerSource.indexOf('function componentSource('),
+);
+const mergeVerifiedHourly = Function('ravScoreNumber', 'normalizeForecastHourly',
+  'verifiedDmiForecastComponentSource', 'repairWaterLevelContinuity',
+  'SHORT_DMI_WATER_GAP_HOURS', 'WATER_LEVEL_JUMP_WARN_CM',
+  'ACCEPTED_FORECAST_HOURS', 'DMI_FORECAST_HOURS',
+  'preferQualifiedDmiComponentSource',
+  `${hourlyMergeSource}; return mergeHourlyPreferDmi;`)(
+  value => typeof value === 'number' && Number.isFinite(value) ? value : null,
+  rows => [...rows].sort((left, right) => left.time.localeCompare(right.time)),
+  verifiedDmiForecastComponentSource, () => ({ status: 'not-needed' }),
+  2, 25, 118, 120, preferQualifiedDmiComponentSource,
+);
+const protectedOld = [
+  native(0, -6, 0.06, 0.04, 0.01, 13.8),
+  native(3, -6, 0.09, 0.05, 0.02, 14.4),
+];
+const sparseNew = [native(0, 0, 0.11, 0.08, 0.03, 15.2)];
+const oldHours = componentwise(protectedOld);
+const newHours = componentwise(sparseNew);
+assert.equal(newHours[2].waterTemperatureC, null,
+  'the sparse new model cannot synthesize a second-hour temperature');
+const joinedHours = mergeVerifiedHourly(newHours, oldHours, {
+  generatedAt, startAt: generatedAt, expectedIdentity: identity,
+});
+assert.equal(joinedHours[0].waterTemperatureC, 15.2,
+  'the newer independently verified native DMI temperature wins');
+assert.equal(joinedHours[2].waterTemperatureC, oldHours[2].waterTemperatureC,
+  'the old independently verified derived DMI temperature survives a new native gap');
+assert.ok(verifiedDmiForecastComponentSource(joinedHours[2].sources.waterTemperature,
+  at(2), 'waterTemperature', identity),
+  'the retained temperature keeps its exact old native-endpoint proof');
 const base = build([old, newer]);
 assert.equal(base[1].currentUMps, null);
 assert.equal(base[1].waterLevelCm, null);

@@ -1286,6 +1286,24 @@ function bulkZoneToForecastRecord(
   });
 }
 
+// A protected previous DMI generation can still prove a component for the
+// exact PART/hour when a newer, incomplete acquisition cannot. Rebuild its
+// hourly rows from its native cache, then let the normal atomic selector
+// prefer a qualified newer DMI source. Never import its scheduler cursor.
+function buildPartDmiForecastWithProtectedRetention(
+  feature, activeBulkCache, protectedBulkCache, generatedAt,
+  { startAt, expectedIdentity },
+) {
+  const retained = protectedBulkCache
+    ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
+      startAt, expectedIdentity, materializeMissingHorizon: true,
+    })
+    : null;
+  return bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
+    startAt, expectedIdentity, materializeMissingHorizon: true,
+  });
+}
+
 function verifiedFeggesundNeighborSource(hour, expectedIdentity) {
   const source = verifiedDmiForecastComponentSource(
     hour?.sources?.wave,
@@ -2283,10 +2301,11 @@ function scoreCoastalPartsRuntime(
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
         properties: localPartRuntimeProperties(parent.properties, part, bulkId)
       };
-      const dmiRecord = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, {
+      const dmiRecord = buildPartDmiForecastWithProtectedRetention(feature, bulkCache,
+        initialSelection.source === 'POINT_ACTIVATION' ? null : deployedBulkCache,
+        generatedAt, {
         startAt: partForecastStartAt,
         expectedIdentity: partDmiIdentity,
-        materializeMissingHorizon: true,
       });
       if (!dmiRecord) {
         throw new Error('COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT');
@@ -4469,8 +4488,9 @@ if (coastalPartsContract.enabled) {
     const expectedIdentity = dmiExpectedIdentityForPart(part, bulkId);
     const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
       properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
-    const dmiRecord = bulkZoneToForecastRecord(feature, dmiBulkCache, generatedAt, null,
-      { startAt: generatedAt, expectedIdentity, materializeMissingHorizon: true });
+    const dmiRecord = buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
+      coastalPointStateInjections?.[part.partId] ? null : deployedDmiBulkCache,
+      generatedAt, { startAt: generatedAt, expectedIdentity });
     // Plan from the same DMI/proxy/component adapter as scoring. Current is
     // handled by its existing independently verified closure, not this plan.
     planningRecords.set(part.partId, applyFeggesundOperationalWaveProxy(dmiRecord, part, sourcesByTime));

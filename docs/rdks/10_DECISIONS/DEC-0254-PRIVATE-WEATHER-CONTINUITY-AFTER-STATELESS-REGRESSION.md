@@ -1,5 +1,23 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-27 – 4.0.500: verificerede PART-timer over DMI-modelskift
+
+4.0.499 blev offentligt leveret, men næste normale run
+`36278712741` ville tømme 529 tidligere gyldige vandtemperaturpar
+på samme PART/time. No-loss stoppede korrekt; den offentlige pakke
+står, mens hente-fremdriften er gemt krypteret. Den konkrete
+producentkant var, at begge PART-byggesteder havde adgang til den
+beskyttede gamle DMI-cache, men dannede den nye timeliste uden den
+som donor. 4.0.500 genopbygger den gamle kildes egne verificerede
+timer og vælger derpå atomisk pr. vejrtype/time mellem gammel og ny
+DMI. Kun samme identitet og prøvepunkt kan genbruges; nyere gyldig
+modelkørsel vinder, tomme nye felter gør ikke. Dette ændrer ikke
+reserveprioritet, 96-timersundtagelse, DMI-vandstand, Limfjordregel
+eller schedulerens rotationsmarkører. Lokal test dækker fem typer,
+ti sparse generationer og native DMI-interpolation. Faktisk løsning
+af de 529 og produktionens gennemløb afventer exact-head og ét kort
+normalrun; ingen svækkelse af no-loss-gaten.
+
 ## Tillæg 2026-09-26 – 4.0.497 backendbinding uden cachegenbyg
 
 4.0.496's providerfri code-only-forsøg `36250874394` blev afvist

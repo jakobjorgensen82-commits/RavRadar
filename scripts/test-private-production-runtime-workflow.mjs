@@ -468,9 +468,10 @@ try {
   });
   assert.equal(
     approvedCapacity.firstCutoverException.status,
-    'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER',
+    'RETIRED',
   );
-  assert.equal(approvedCapacity.firstCutoverException.eligible, true);
+  assert.equal(approvedCapacity.firstCutoverException.eligible, false);
+  assert.equal(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.retired, true);
   assert.equal(approvedCapacity.firstCutoverException.releaseVersion, sourceVersion);
   assert.equal(
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
@@ -537,7 +538,8 @@ try {
       projection: normalOneByteOver,
       decisionMarker: PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.invocationMarker,
     });
-  assert.equal(approvedExceptionWithRedMonthlyProjection.eligible, true);
+  assert.equal(approvedExceptionWithRedMonthlyProjection.status, 'RETIRED');
+  assert.equal(approvedExceptionWithRedMonthlyProjection.eligible, false);
   assert.equal(
     approvedExceptionWithRedMonthlyProjection.generalMonthlyEgressWithinBudget,
     false,

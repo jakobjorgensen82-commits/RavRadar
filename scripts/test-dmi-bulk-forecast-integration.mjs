@@ -10,6 +10,32 @@ const bulkConverter = source.slice(
   source.indexOf('function bulkZoneToForecastRecord('),
   source.indexOf('function mergeBulkCacheIntoForecastStore('),
 );
+const protectedRetentionSource = source.slice(
+  source.indexOf('function buildPartDmiForecastWithProtectedRetention('),
+  source.indexOf('function verifiedFeggesundNeighborSource('),
+);
+const protectedRetentionCalls = [];
+const buildWithProtectedRetention = Function('bulkZoneToForecastRecord',
+  `${protectedRetentionSource}; return buildPartDmiForecastWithProtectedRetention;`)(
+  (feature, cache, generatedAt, previous, options) => {
+    protectedRetentionCalls.push({ cache, previous, options });
+    return { point: feature.geometry.coordinates, hourly: [], cache };
+  },
+);
+const protectedFeature = { geometry: { coordinates: [10, 56] } };
+const protectedCache = { generation: 'protected' };
+const activeCache = { generation: 'active' };
+buildWithProtectedRetention(protectedFeature, activeCache, protectedCache,
+  '2026-09-08T12:00:00.000Z', {
+    startAt: '2026-09-08T12:00:00.000Z', expectedIdentity: { entityId: 'PART::TEST' },
+  });
+assert.deepEqual(protectedRetentionCalls.map(call => call.cache),
+  [protectedCache, activeCache],
+  'the old protected DMI source must be independently rebuilt before the active forecast');
+assert.equal(protectedRetentionCalls[1].previous.cache, protectedCache,
+  'the active forecast must receive the old source as a verified component donor');
+assert.ok(protectedRetentionCalls.every(call => call.options.materializeMissingHorizon === true),
+  'a missing native hour must not silently remove the public PART/time position');
 assert.match(bulkConverter, /recoverDmiMarineRunSeamHours\(\{[\s\S]*?hourly: built\.hourly, ocean, generatedAt, startAt,[\s\S]*?expectedIdentity: dmiIdentity/,
   'normal and one-off bulk conversion must run the same bounded marine seam repair');
 const integratedRuntime = source.slice(
@@ -92,6 +118,46 @@ assert.equal(selectAtomicComponentTuple(
 'the legacy display contract may still use an atomic speed+direction current tuple without U/V');
 
 const atomicTestTime = '2026-09-08T12:00:00.000Z';
+const retainedSource = (component, modelRun) => ({
+  provider: 'dmi', component, modelRun, entityId: 'PART::TEST',
+  parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+  samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+});
+const fiveWeatherFields = {
+  time: atomicTestTime,
+  windSpeedMps: 5, windDirectionDeg: 180,
+  waveHeightM: 1, wavePeriodS: 6, waveDirectionDeg: 270,
+  currentUMps: 0.1, currentVMps: 0.2,
+  currentSpeedMps: 0.22, currentDirectionDeg: 27,
+  waterLevelCm: 12, waterTemperatureC: 14,
+  sources: Object.fromEntries(['wind', 'wave', 'current', 'waterLevel', 'waterTemperature']
+    .map(component => [component, retainedSource(component, '2026-09-08T06:00:00.000Z')])),
+};
+let tenGenerationHold = [fiveWeatherFields];
+for (let generation = 0; generation < 10; generation += 1) {
+  tenGenerationHold = mergeHourlyPreferDmiForTest([], tenGenerationHold, {
+    generatedAt: atomicTestTime, startAt: atomicTestTime,
+    expectedIdentity: { entityId: 'PART::TEST' },
+  });
+  assert.deepEqual(
+    [tenGenerationHold[0].windSpeedMps, tenGenerationHold[0].waveHeightM,
+      tenGenerationHold[0].currentUMps, tenGenerationHold[0].waterLevelCm,
+      tenGenerationHold[0].waterTemperatureC],
+    [5, 1, 0.1, 12, 14],
+    `a sparse DMI generation ${generation + 1} must not erase any of the five weather types`,
+  );
+}
+const freshTemperatureOnly = mergeHourlyPreferDmiForTest([{
+  time: atomicTestTime, waterTemperatureC: 15,
+  sources: { waterTemperature: retainedSource('waterTemperature', atomicTestTime) },
+}], tenGenerationHold, {
+  generatedAt: atomicTestTime, startAt: atomicTestTime,
+  expectedIdentity: { entityId: 'PART::TEST' },
+})[0];
+assert.equal(freshTemperatureOnly.waterTemperatureC, 15,
+  'newer qualified DMI temperature must replace the retained DMI temperature');
+assert.equal(freshTemperatureOnly.waterLevelCm, 12,
+  'one newer weather component must not clear the other four components');
 const hourlyDomainValidated = mergeHourlyPreferDmiForTest([
   {
     time: atomicTestTime,
@@ -298,8 +364,12 @@ assert.ok(
 );
 assert.doesNotMatch(integratedRuntime, /if \(!dmiRecord\) continue;/,
   'a primary integrated part may never disappear silently when its bulk zone is absent');
-assert.match(integratedRuntime, /materializeMissingHorizon: true,[\s\S]*?COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT/,
-  'the primary runtime must materialize missing horizons and fail on an impossible null result');
+assert.match(integratedRuntime, /buildPartDmiForecastWithProtectedRetention\([\s\S]*?COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT/,
+  'the primary runtime must use the protected DMI donor and fail on an impossible null result');
+assert.match(source, /const dmiRecord = buildPartDmiForecastWithProtectedRetention\(feature, dmiBulkCache,[\s\S]*?planningRecords\.set/,
+  'component planning must see the same protected DMI donor as scoring');
+assert.match(integratedRuntime, /initialSelection\.source === 'POINT_ACTIVATION' \? null : deployedBulkCache/,
+  'a point activation must not inherit the old sampling point');
 const recoveryRuntime = integratedRuntime.slice(
   integratedRuntime.indexOf('// A promoted point has a deliberately new sampling context'),
   integratedRuntime.indexOf('const {\n        ravScoreState'),

@@ -1,14 +1,33 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.499
+**Håndbogsversion:** 4.0.500
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.499 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.500 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.96 4.0.500 – Behold en gyldig vejrtime, når næste hentning har hul
+
+Når en ny DMI-prognose kommer, kan den være bedre på mange timer og
+samtidig mangle enkelte værdier. En manglende ny værdi er ikke et
+signal om at slette den gamle. For præcis samme kystdel, time og
+vejrtype skal RavRadar bruge den nyeste gyldige og dokumenterede
+værdi, men beholde den tidligere gyldige, hvis den nye mangler.
+Dette gælder også efter flere normale kørsler. Et nyt eller flyttet
+prøvepunkt må derimod ikke arve data fra det tidligere punkt.
+
+Efter at 4.0.499 kom på siden, blev næste vejrkørsel stoppet, fordi
+529 ældre gyldige vandtemperaturfelter ellers ville være blevet
+tomme. De andre fire vejrtyper havde intet tilsvarende tab. 4.0.500
+retter den indgang, hvor den beskyttede gamle DMI-prognose ikke blev
+taget med i den nye timeliste. Lokale prøver virker, men først en ny
+normal kørsel kan vise, om alle berørte felter faktisk bevares og
+den nye prognose når hjemmesiden. Den hidtidige offentlige pakke
+bliver stående indtil da.
 
 ## 89.95 4.0.499 – Gem den færdige vejrpakke før de sidste kontroller
 
@@ -25,7 +44,9 @@ døgn. Hvis noget går galt bagefter, kan vi undersøge og gendanne
 præcis det byggede resultat i stedet for straks at hente og beregne
 alt igen. Den faktiske genlevering skal stadig bestå alle sikkerheds-,
 friskheds- og datakontroller. Den automatiske genoptagelse er endnu
-ikke leveret eller bevist live.
+ikke leveret. Den nye gemmevej blev senere brugt i den succesfulde
+4.0.499-kørsel. Et endnu tidligere stop ved datatab kan dog stadig
+komme før denne slutpakke oprettes.
 
 ## 89.94 4.0.498 – Bevar et gammelt checkpoint uden at åbne for datatab
 

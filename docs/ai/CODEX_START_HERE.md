@@ -1,4 +1,26 @@
-# AKTUELT CHECKPOINT – 2026-09-26 – lokal 4.0.498 checkpointbro
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.500, DMI-værdier over modelskift
+
+Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
+4.0.499 er offentlig efter normalrun `36261248486`, men den senere
+normalkørsel `36278712741` fejlede no-loss: 529 tidligere gyldige
+vandtemperaturfelter ville blive tomme på samme PART og time. Vind,
+bølger, havstrøm og vandstand havde nul sådanne tab. Den offentlige
+18Z-pakke står derfor fortsat; ny krypteret hente-fremdrift fra
+`36278712741-1` er gemt, ikke en ny produktionspakke. 4.0.499's
+slutartifact blev ikke oprettet, fordi tabsstoppet kom tidligere.
+
+Lokal 4.0.500 bygger gammel beskyttet DMI-kilde om til verificerede
+PART-timer før den nye DMI-kilde vælges komponentvis. Kun samme punkt,
+time, vejrtype og gyldigt kildebevis må bevares; et nyere gyldigt DMI-
+svar vinder. Både planlægning og scorebygning bruger dette, mens en
+nyt aktiveret punkt ikke arver et gammelt punkt. Måltests er grønne,
+men de 529 er endnu ikke livebevist løst. Næste: versions-/RDKS-
+kontrol, exact-head CI, sikker merge og én kort ikke-overlappende
+normalrun fra eksakt gemt fremdrift. Bekræft faktisk privat pakke,
+central CAS, R2, Pages og alle fem vejrfelter. Copernicus' nul
+tilvækst, lav DMI-andel, huller og Free-kvoter er åbne. Cron pauset.
+
+# HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.498 checkpointbro
 
 4.0.497 er merged; vejrfri backendlevering er livegrøn. Kort
 normalrun `36252591071` bestod vejr, cache og artifact, gemte

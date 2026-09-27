@@ -201,7 +201,9 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.499',
+  releaseVersion: '4.0.500',
+  // The first cutover is over. A release-version bump cannot renew this authority.
+  retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
   scope: 'ONE_EXACT_VERIFIED_FIRST_CUTOVER',
   maximumArchiveObjectBytes: 50_000_000,
@@ -215,7 +217,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.499',
+  releaseVersion: '4.0.500',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -978,6 +980,7 @@ export function buildPrivateRuntimeFirstCutoverException({
   const checkpointDatabaseWithinBound =
     projection.database.withinIncrementalBound === true;
   const eligible = requested
+    && policy.retired !== true
     && decisionMatches
     && archiveWithinBound
     && retainedStorageWithinBudget
@@ -988,6 +991,8 @@ export function buildPrivateRuntimeFirstCutoverException({
     scope: policy.scope,
     status: !requested
       ? 'NOT_REQUESTED'
+      : policy.retired === true
+        ? 'RETIRED'
       : eligible
         ? 'ELIGIBLE_FOR_ONE_EXACT_VERIFIED_FIRST_CUTOVER'
         : 'BLOCKED_BY_EXCEPTION_BOUNDS',
