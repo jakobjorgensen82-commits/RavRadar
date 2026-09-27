@@ -12,6 +12,10 @@
 - [ ] Exact-head CI, merge og ét kort normalt v2-run skal bevise
   cachegenbrug, fuld artifactgate, privat gemning, CAS, R2, Pages og
   offentlig prognose uden tab. Derefter må lang opfyldning vurderes.
+- [x] Første PR-CI `36304752106` afslørede en ældre runner-fejl:
+  Copernicus' `.py`-test var startet med Node i kildegaten. Den
+  faktiske Python-test er grøn lokalt; kommandoen er rettet, og ny
+  exact-head CI afventes. Det første røde run er ikke releasebevis.
 - [ ] Målt dækning pr. vind, bølger, havstrøm, vandstand og vandtemperatur
   på slutproduktet, vandstandens 5-døgnsrækkevidde, ca. 4.500
   havstrømsrester og kildeandele. Syntetisk 210×118 er ikke livebevis.
