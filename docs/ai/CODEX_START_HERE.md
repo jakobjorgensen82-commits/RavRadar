@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.504, kapacitet efter fejlet normalrun
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.505, firetimers vejrplan
+
+Arbejd fortsat kun i `r2-private-runtime`; `cb79` er ikke
+arbejdskopien. 4.0.504 er nu offentligt leveret. Fuldt normalrun
+`36347957014` gennemførte cache/fremdrift, DMI, Copernicus,
+Open-Meteo, fulde gates, privat gemning, R2 og Pages. Den offentlige
+pakke har 383.054/397.070 gyldige femfeltspar. Tre zoner er helt
+uden score, primært på grund af manglende brugbar havstrøm;
+ejers omtale af en fjerde er ikke påvist i denne eksakte pakke.
+
+Ejeren har besluttet én normal vejrkørsel hver fjerde time samt
+længere Copernicus-, cache- og jobbudget. Lokal 4.0.505 sætter
+25/80/230 minutter og ændrer Copernicus/Open-Meteo-rotation fra
+UTC-time/kvartal til UTC-firetimersslot, så firetimerskadencen
+ikke permanent kan springe grupper over. DMI's gemte, faktiske
+forsøgsrotation består og skal verificeres live. Ingen model-,
+geometri- eller kildegyldighedsændring. Cron er **ikke** aktiveret;
+først exact-head CI, sikker merge og kontrol af intet overlap,
+derpå målte normale runs. Se DEC-0257, CURRENT_TRUTH og roadmap.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.504, kapacitet efter fejlet normalrun
 
 Arbejd kun i `r2-private-runtime`; `cb79` er ikke arbejdskopien.
 Main 4.0.503/`eff527bc` og fuldt normalrun `36331715231` nåede alle

@@ -1276,9 +1276,9 @@ if (/\$\{\{\s*secrets\./.test(activeTripRun)) {
 }
 for (const marker of [
   'schedule:',
-  '- cron: "14,29,44,59 * * * *"',
-  'Ekstern cron-dispatch er den primære 15-minutterskadence.',
-  'GitHub schedule er reserve',
+  '- cron: "17 */4 * * *"',
+  'Normal vejrhentning hver fjerde time',
+  'forhindrer overlappende produktion',
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"',
   'Targeted supplement pending',
@@ -1291,7 +1291,7 @@ for (const marker of [
   'Extended provider bootstrap requires an explicit force run.',
   "extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}",
 ]) {
-  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersorkestrator mangler ${marker}`);
+  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 4-timersorkestrator mangler ${marker}`);
 }
 assert.ok(!orchestratorWorkflow.includes('name: Restore private Copernicus current cache for timed gate'),
   'Current-hour-gaten må låse UTC-timen uden at åbne en privat plaintext-cache.');
@@ -2694,7 +2694,7 @@ for (const forbidden of [
 ]) {
   assert.ok(!publicAuditBlock.includes(forbidden), `First-cutover må ikke gentage den brede kontrol: ${forbidden}`);
 }
-assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 180 }}'),
+assert.ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 230 }}'),
   'Normal vejrkørsel skal rumme leverandører, central cache og efterfølgende kontroller; providerbootstrap har fortsat sit særskilte loft');
 assert.equal((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g) || []).length, 2,
   'Begge boolske rollbackudtræk skal acceptere både true og false uden at acceptere forkert type');
@@ -3813,9 +3813,9 @@ if (continuityPosition < buildWorkflow.indexOf('name: Rebuild deterministic publ
   throw new Error('Public valid-to-missing continuity must run before private publication and Pages.');
 }
 const buildTimeoutContract = buildSection.match(/^    timeout-minutes: (.+)$/m)?.[1];
-const expectedBuildTimeoutContract = '${{ inputs.extended_provider_bootstrap && 240 || 180 }}';
+const expectedBuildTimeoutContract = '${{ inputs.extended_provider_bootstrap && 240 || 230 }}';
 const buildTimeoutMinutes = buildTimeoutContract === expectedBuildTimeoutContract
-  ? 180 : Number(buildTimeoutContract);
+  ? 230 : Number(buildTimeoutContract);
 const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
 const dmiBulkSection = buildWorkflow.slice(
   positions.dmiBulk,
@@ -3838,14 +3838,14 @@ if (dmiStepTimeoutMinutes * 60 < bootstrapRuntimeSeconds + 300) {
 if (buildTimeoutMinutes < dmiStepTimeoutMinutes + 30) {
   throw new Error('Buildjobbet skal rumme hele DMI-steppet plus mindst 30 minutter til forudgående og efterfølgende gates.');
 }
-if (buildTimeoutMinutes < 55 + 7 + 15 + 60 + 30) {
+if (buildTimeoutMinutes < 70 + 25 + 18 + 80 + 30) {
   throw new Error('Normal buildjob-timeout skal rumme DMI, Copernicus, Open-Meteo, central cache og mindst 30 minutter til øvrige trin.');
 }
 const centralCacheTimeoutMinutes = Number(buildSection.match(
   /- name: Update central weather cache[\s\S]*?timeout-minutes: (\d+)/,
 )?.[1]);
-if (centralCacheTimeoutMinutes !== 60) {
-  throw new Error('Den centrale cache skal have 60 minutter til den fulde scoreprojektion.');
+if (centralCacheTimeoutMinutes !== 80) {
+  throw new Error('Den centrale cache skal have 80 minutter til den fulde scoreprojektion.');
 }
 if (buildSection.includes('environment:\n      name: github-pages')) throw new Error('Det tunge buildjob må ikke holde github-pages-miljøet.');
 if (!deploySection.includes('environment:\n      name: github-pages')) throw new Error('Kun deployjobbet skal eje github-pages-miljøet.');

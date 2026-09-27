@@ -745,7 +745,7 @@ for(const marker of [
 for(const marker of [
   'python scripts/run-copernicus-current-pilot-with-retry.py',
   '--attempts 1',
-  "--timeout-seconds ${{ inputs.extended_provider_bootstrap == true && '3300' || '420' }}",
+  "--timeout-seconds ${{ inputs.quick_confirmation && '120' || inputs.extended_provider_bootstrap == true && '3300' || '1500' }}",
   '--backoff-seconds 20',
 ]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
@@ -1719,7 +1719,7 @@ for(const marker of [
 ]){
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
-ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 180 }}'),
+ok(buildWorkflow.includes('timeout-minutes: ${{ inputs.extended_provider_bootstrap && 240 || 230 }}'),
 'Normalt buildjob skal rumme hele kæden gennem efterkontrol; providerbootstrap beholder et særskilt loft');
 ok((buildWorkflow.match(/\.rollback\.activationReady \| select\(type == "boolean"\) \| tostring/g)||[]).length===2,
 'Begge boolske rollbackudtræk skal bevare gyldigt false som tekst');

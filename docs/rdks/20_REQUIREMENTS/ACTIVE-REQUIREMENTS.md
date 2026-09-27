@@ -1,3 +1,15 @@
+# Aktuel normal drift – 2026-09-28
+
+- **REQ-WEATHER-FOUR-HOUR-0505 – BINDENDE:** Efter grøn exact-head
+  kildekontrol og sikker merge skal kun det normale GitHub-workflow
+  planlægges hver fjerde time. Alle run deler én concurrencygruppe;
+  ingen ny produktion må overlappe. Copernicus og Open-Meteo skal
+  rotere reelt over deres køer med denne kadence. Længere tidslofter
+  ændrer ikke kildegyldighed, DMI-prioritet, 96-timersundtagelse,
+  adminvalgt vandstand eller kravet om gammel gyldig databevaring.
+  Mål alle fem vejrtyper særskilt med nævner og verificér offentligt
+  resultat; kalendergrøn status alene er ikke bevis for fuld dækning.
+
 # Aktuel bevarelse af DMI-timer – 2026-09-27
 
 - **REQ-DMI-PART-MULTIRUN-0503 – BINDENDE:** Normal vejrbygning

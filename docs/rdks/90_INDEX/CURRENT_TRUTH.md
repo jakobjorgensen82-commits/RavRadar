@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-09-27 – lokal 4.0.504, kapacitetsstop efter reel hentning
+# NYESTE SANDHED – 2026-09-28 – lokal 4.0.505, firetimerskadence afventer levering
+
+4.0.504 er nu offentligt leveret. Fuldt normalrun `36347957014`
+gendannede cache/fremdrift og gennemførte DMI, Copernicus,
+Open-Meteo, cache, fulde gates, R2 og Pages. Buildjobbet tog
+158 minutter; DMI cirka 59, Copernicus knap fem, Open-Meteo
+cirka 18 og cache cirka 55 af de hidtidige 60 minutter.
+Den offentlige femfeltsdækning er 383.054/397.070 par, ikke
+komplet. Tre zoner er helt uden score på alle 118 timer; se
+DEC-0257. Ejeren ønsker 4-timers cron, længere budgetter og mere
+Copernicus. Lokal 4.0.505 sætter normal Copernicus til 25 minutter,
+cache til 80 minutter, samlet build til 230 minutter og korrigerer
+Copernicus/Open-Meteo-rotationen for firetimerskadencen. Kildeprioritet
+og gyldighed ændres ikke. Cron er **endnu ikke aktiveret**. Exact-head
+CI, merge og livebevis for rotation, dækning og alle gates mangler.
+
+# HISTORISK SANDHED – 2026-09-27 – lokal 4.0.504, kapacitetsstop efter reel hentning
 
 4.0.503 blev leveret offentligt. Det efterfølgende fulde normalrun
 `36331715231` på main `eff527bc` gennemførte DMI, Copernicus og

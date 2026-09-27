@@ -377,8 +377,9 @@ def operational_shard_work_order(
     The order deliberately does not use stored provider-attempt or acquisition
     records. Those are admission/provenance evidence with different retention rules and
     must not double as a durable scheduler cursor.  A time-slot/attempt-derived
-    rotation uses each queue's actual length. Hourly runs at the same quarter
-    move one shard forward, while quarter-hour runs spread across the queue.
+    rotation uses each queue's actual length. Consecutive four-hour normal
+    runs move one shard forward; indexing by UTC hour would move four shards
+    and could permanently skip some in an even-sized queue.
     Fixed product round-robin keeps Baltic from hiding AMM15 behind its longer
     queue. Shard membership and original shard indices never change.
     """
@@ -414,11 +415,11 @@ def operational_shard_work_order(
 def operational_rotation_slot(acquisition_at: datetime, *, shard_count: int) -> int:
     """Return a queue-length-aware offset shared by normal and oneoff.
 
-    A quarter-hour ordinal alone advances four places per hourly run and can
-    permanently alias with an even queue length. Instead UTC hours advance by
-    one and the quarter selects a separated band within this product's queue.
-    Actual acquisition time also moves retries at one locked forecast reference;
-    no provider-attempt history or additional persistent cursor is required.
+    Consecutive UTC four-hour slots advance one place for any queue length.
+    The minute is deliberately excluded: variable DMI duration can move the
+    Copernicus start into another quarter and must not reintroduce aliasing.
+    Attempt ordinals move retries at one locked reference without a durable
+    scheduler cursor.
     """
     if (not isinstance(acquisition_at, datetime)
             or acquisition_at.utcoffset() is None):
@@ -430,10 +431,8 @@ def operational_rotation_slot(acquisition_at: datetime, *, shard_count: int) -> 
     if not 0 <= outer_attempt <= 2 or not 1 <= github_attempt <= 100:
         raise ValueError("Copernicus scheduler attempt metadata is invalid")
     utc_acquisition = acquisition_at.astimezone(timezone.utc)
-    quarter_in_hour = utc_acquisition.minute // 15
     return (
-        int(utc_acquisition.timestamp() // 3600)
-        + quarter_in_hour * shard_count // 4
+        int(utc_acquisition.timestamp() // (4 * 3600))
         + outer_attempt
         + github_attempt - 1
     ) % shard_count

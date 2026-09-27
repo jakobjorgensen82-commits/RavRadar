@@ -449,7 +449,7 @@ assert.match(safeAcquisitionArtifact,
 const weatherCacheStep = indentedBody(build, '      - name: Update central weather cache');
 assert.match(
   weatherCacheStep,
-  /timeout-minutes:\s*60/,
+  /timeout-minutes:\s*80/,
   'normal weather cache sealing has enough bounded time for the measured 118-hour public build',
 );
 assert.match(

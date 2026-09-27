@@ -2,9 +2,9 @@ name: Update weather and deploy RavRadar
 
 on:
   schedule:
-    # Ekstern cron-dispatch er den primære 15-minutterskadence.
-    # GitHub schedule er reserve, hvis den eksterne dispatcher er forsinket eller nede.
-    - cron: "14,29,44,59 * * * *"
+    # Normal vejrhentning hver fjerde time; den fælles concurrencygruppe
+    # forhindrer overlappende produktion, også ved manuel dispatch.
+    - cron: "17 */4 * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -79,7 +79,7 @@ permissions:
   actions: read
   pull-requests: read
 
-# GitHub starter den normale vejropdatering hvert 15. minut. En særskilt
+# GitHub starter den normale vejropdatering hver fjerde time. En særskilt
 # current-hour-gate låser den eksakte UTC-time. Den endelige Copernicus-målliste
 # dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.

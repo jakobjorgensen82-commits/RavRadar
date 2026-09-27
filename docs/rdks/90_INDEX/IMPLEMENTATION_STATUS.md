@@ -1,4 +1,24 @@
-# 2026-09-27 – lokal 4.0.504, DMI-PART-kapacitet
+# 2026-09-28 – lokal 4.0.505, firetimers vejrdrift
+
+- [x] Fuld normal 4.0.504 `36347957014` leverede cache, gates,
+  privat gemning, R2, Pages og offentlig prognose efter 158 minutter.
+  De tidligere 4.0.504-åbne deploypunkter nedenfor er dermed historiske.
+- [x] Målt tidsflaskehals: DMI cirka 59 minutter, Copernicus knap fem,
+  Open-Meteo cirka 18, cache cirka 55 af 60. Lokal 4.0.505 giver
+  normal Copernicus 25 minutter, cache 80 og job 230.
+- [x] Lokal rotation for begge reservekøer ændret til ét trin pr.
+  firetimersslot modulo faktisk kølængde; måltests dækker køer 1–32.
+- [x] Offentlig femfeltsdækning målt: 383.054/397.070 par.
+  Tre helt prognoseløse zoner er identificeret, ikke fire i den
+  eksakte 118-timerspakke; se DEC-0257.
+- [ ] Exact-head kilde-CI, sikker merge og aktivering af **kun**
+  normalt GitHub-schedule. Bekræft ingen overlappende kørsler.
+- [ ] Flere normale 4-timersruns: mål femfelts-no-loss på fælles
+  kystdel/time, de 22 zonedele, Copernicus/OM-rotation, budget,
+  kildeandele, privat gemning og offentlig visning. Driften er ikke
+  endnu kaldt stabil eller komplet.
+
+# HISTORISK STATUS – 2026-09-27 – lokal 4.0.504, DMI-PART-kapacitet
 
 - [x] Log fra fuldt normalrun `36331715231` afgrænset til DMI-PART-
   pakning efter alle tre leverandører. Fælles størrelsekode kan ikke
