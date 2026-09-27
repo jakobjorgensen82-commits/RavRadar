@@ -6,6 +6,9 @@ const pkg=JSON.parse(await fs.readFile('package.json','utf8'));const version=pkg
 if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion!==version){
   throw new Error(`DEC-0122-engangsundtagelsen gælder ${PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion}, ikke release ${version}. En ny release må ikke arve undtagelsen uden en udtrykkelig beslutning.`);
 }
+if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.retired!==true){
+  throw new Error('DEC-0122-engangsundtagelsen er afsluttet og må ikke genaktiveres af et versionsløft.');
+}
 const files=['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','version.json'];
 for(const file of files){const text=await fs.readFile(file,'utf8');if(!text.includes(version))throw new Error(`${file} viser ikke releaseversion ${version}.`);}
 const browserSources=[];

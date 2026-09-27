@@ -14,6 +14,10 @@ Ingen gammel scheduler-cursor eller ændret vandpunkt arves. Ti
 generationer og native run-seam er måltestet; exact-head og live
 end-to-end-bevis udestår. Copernicus' nul tilvækst, DMI-andel,
 resthuller, historik og kvoter undersøges videre. Cron er pauset.
+Efterkontrol fandt en forældet DMI-modelprioritetstest og en gammel
+first-cutover-undtagelse, som versionsværktøjet havde løftet med til
+4.0.500. Testen følger nu gældende nyere-model-først, mens
+DEC-0122-undtagelsen altid er `RETIRED` og kontrolleres ved release.
 
 # HISTORISK – 2026-09-26 – lokal 4.0.498: eksakt central checkpointforgænger
 

@@ -22,6 +22,11 @@ bevist, at samtlige 529 kom fra netop denne kant. Exact-head CI,
 merge og en kort normal bekræftelse fra eksakt gemt fremdrift kræves.
 Copernicus' nul accepterede nytilføjelser, DMI/OM-fordeling,
 resthuller, historik, Free-forbrug og autonom cron-drift er åbne.
+DEC-0122's gamle first-cutover-engangsundtagelse er afsluttet:
+dens beslutningsmarkør giver nu status `RETIRED`, aldrig adgang.
+Versionskontrollen kræver denne lås; en fremtidig versionsændring
+må ikke stiltiende genaktivere den. En ældre test med prioritet for
+gridafstand før nyere DMI-model er rettet til den gældende regel.
 
 # HISTORISK CHECKPOINT – 2026-09-26 – lokal 4.0.498 checkpointbro
 

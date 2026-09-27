@@ -10,6 +10,9 @@
   scheduler-fremdrift eller et ændret prøvepunkt. Måltests for ti
   sparse generationer, fem vejrfamilier, native run-seam og normal
   planlægning/scoring består.
+- [x] Forældet test om DMI-modelprioritet er rettet. Den afsluttede
+  DEC-0122-engangsundtagelse returnerer `RETIRED` selv med gammel
+  beslutningsmarkør og er låst af releasekontrollen.
 - [ ] RDKS/version, exact-head CI, merge og kort normal bekræftelse.
   Bevis nul tab på fælles sted/timer, korrekt cacheforgænger, privat
   gemning, CAS, R2, Pages og offentlig prognose. Historiske tab uden

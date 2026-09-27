@@ -15,6 +15,11 @@
   samt faktisk DMI-run-seam og normal runtime-wiring. Produktion,
   Copernicus' nul optagelse, rester og Free-kvoter er endnu ikke
   afklaret af lokale tests.
+- En ældre test forventede fejlagtigt, at en ældre DMI-model med et
+  nærmere gridpunkt slog en nyere gyldig DMI-model. Testen følger nu
+  nyere-model-først med afstand/dybde som valg inden for samme run.
+  Den historiske DEC-0122-engangsundtagelse er eksplicit lukket i
+  runtime og releasekontrol; mekanisk versionsløft kan ikke åbne den.
 
 ## 4.0.498 – eksakt central checkpointovergang (historisk, 2026-09-26)
 

@@ -86,9 +86,9 @@ for(const file of [...new Set(versionedWeatherWorkflows)]){
   await fs.writeFile(file,text);
 }
 
-// De aktive private-runtime launchpolicies er exact-release-låse. Når en
-// nødvendig launchrettelse skaber en ny release, skal begge følge samme
-// package-version; de historiske run/head-bindinger ændres ikke.
+// Legacy private-runtime policy metadata følger releaseversionen, men
+// DEC-0122's retired-lås nedenfor må aldrig blive fjernet eller åbnet igen
+// af et mekanisk versionsløft; de historiske run/head-bindinger ændres ikke.
 {
   const file='scripts/private-production-runtime-workflow.mjs';
   let text=await fs.readFile(file,'utf8');
