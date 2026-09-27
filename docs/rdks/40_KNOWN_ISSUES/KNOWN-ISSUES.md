@@ -1,4 +1,14 @@
-# Aktuelle issues – 2026-09-27, lokal 4.0.503
+# Aktuelle issues – 2026-09-27, lokal 4.0.504
+
+- **DMI-PART-KAPACITET – LOKALT ÆNDRET, LIVE ÅBEN:** Fuldt run
+  `36331715231` fejlede efter leverandørerne på én af de gamle
+  samlegrænser (512 MiB rå/96 MiB gzip); loggen skelnede ikke.
+  Fremdrift `36331715231-1` er krypteret gemt, men cachebygning
+  og levering må fortsættes. Lokal 4.0.504 giver væsentligt mere
+  plads og adskiller målene; exact-head og live fuldførelse mangler.
+  R2-lager alene fjerner ikke Node-, checkpoint- og arkivgrænser.
+
+# Historiske issues – 2026-09-27, lokal 4.0.503
 
 - **FULDRUNS KRYPTEREDE FREMSKRIDT – LIVE ÅBENT:**
   `36293202251` gav kun `PROGRESS_UNAVAILABLE` ved gemning og

@@ -1,4 +1,28 @@
-# NYESTE SANDHED – 2026-09-27 – lokal 4.0.503, endnu ikke leveret
+# NYESTE SANDHED – 2026-09-27 – lokal 4.0.504, kapacitetsstop efter reel hentning
+
+4.0.503 blev leveret offentligt. Det efterfølgende fulde normalrun
+`36331715231` på main `eff527bc` gennemførte DMI, Copernicus og
+Open-Meteo, men stoppede i cachebygningen på
+`DMI_PART_CONTINUITY_TOTAL_SIZE_LIMIT` før privat slutpakke,
+central CAS, R2 og Pages. Den gamle fejl samlede rågrænsen
+512 MiB og gzipgrænsen 96 MiB under samme kode; præcis udløser
+kan ikke fastslås af loggen. Den krypterede leverandørfremdrift
+`36331715231-1` blev gemt og må bruges i en eksakt fortsættelse;
+den er ikke en færdig prognose. Den offentlige 4.0.503-pakke står.
+
+Lokal 4.0.504 udvider de interne DMI-PART-grænser til 2 GiB rå
+og 160 MiB komprimeret samt checkpointets krypterede loft til
+384 MiB. Grænserne skilles diagnostisk og rapporterer kun
+sumbyte, ikke indhold. Det komprimerede loft er under halvdelen af
+både det krypterede checkpoints og det private arkivs nuværende
+grænser; de øvrige filer kan stadig vokse, så dette er ikke en
+ubetinget kapacitetsgaranti. Lokal måltest er grøn; exact-head CI,
+kort livefortsættelse fra det præcise checkpoint, privat gemning,
+CAS, R2, Pages og offentlig femfeltskontrol mangler. Ingen
+ny lang hentning eller cron. Den tidligere påstand om »rigelig
+luft« var ikke bevist og er forkastet.
+
+# HISTORISK SANDHED – 2026-09-27 – lokal 4.0.503, endnu ikke leveret
 
 Ny helhedsgennemgang før merge: fuldt normalrun `36293202251`
 byggede et langt fyldigere mellemresultat, men stoppede før

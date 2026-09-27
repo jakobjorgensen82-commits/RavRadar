@@ -1,14 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.503
+**Håndbogsversion:** 4.0.504
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.503 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.504 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.100 4.0.504 – Gør plads til flere gemte DMI-vejrdata
+
+En fuld vejrkørsel hentede data hos alle tre leverandører, men
+stoppede, da RavRadar ville gemme DMI's dokumenterede timer for
+kystdelene. Årsagen var en intern størrelsesgrænse, ikke mangel
+på plads hos R2. Hentearbejdet blev gemt krypteret, mens den
+gamle offentlige prognose blev stående.
+
+Den interne grænse får nu betydeligt mere plads, og en ny log
+viser særskilt, hvor meget der fylder før og efter komprimering,
+uden at vise private vejrværdier. Også grænsen for det krypterede
+checkpoint hæves. En kort rigtig fortsættelse skal bevise, at
+de gemte data kan bruges, og at en ny prognose når hjemmesiden.
+Det er endnu ikke et løfte om komplette vejrdata eller ubegrænset
+fremtidig plads.
 
 ## 89.99 4.0.503 – Behold en god vejrtime gennem flere hentninger
 

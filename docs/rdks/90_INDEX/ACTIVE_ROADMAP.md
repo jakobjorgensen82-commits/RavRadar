@@ -1,4 +1,22 @@
-# Aktivt roadmap – 2026-09-27, lokal 4.0.503
+# Aktivt roadmap – 2026-09-27, lokal 4.0.504
+
+1. [x] Afklar stop i `36331715231`: intern DMI-PART-samlegrænse
+   efter alle leverandører, ikke R2 eller deploy. Den gamle
+   fælles fejlkode skjuler, om rå eller gzip nåede loftet.
+2. [x] Udvid begge grænser og checkpointbudget sammenhængende,
+   adskil årsagskoder, log kun summerede størrelser og test de
+   krydsende grænser. Kald ikke lokal budgetberegning livebevis.
+3. [ ] Exact-head CI og sikker merge; derefter kun kort normal
+   fortsættelse fra krypteret `36331715231-1` og den eksakte
+   beskyttede produktionsbaseline. Ingen gentagen lang hentning.
+4. [ ] Mål faktisk størrelse, femfelts-no-loss, privat slutgemning,
+   CAS, R2, Pages og offentlig prognose. Ved kapacitets-/anden
+   fejl: stop nye kørsler og brug præcis fase og mål før rettelse.
+5. [ ] Følg derefter feltvis dækning, leverandørprioritet,
+   vandstandshorisont, resthuller og Free-kvoter. Cron først
+   efter flere stabile almindelige kørsler.
+
+# Historisk roadmap – 2026-09-27, lokal 4.0.503
 
 Ny helhedskontrol: Den fulde kørsel `36293202251` mistede sit
 krypterede hentefremskridt, mens en senere kørsel afvist **før**

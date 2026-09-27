@@ -1,4 +1,20 @@
-# 2026-09-27 – lokal 4.0.503, DMI-timer over flere normale kørsler
+# 2026-09-27 – lokal 4.0.504, DMI-PART-kapacitet
+
+- [x] Log fra fuldt normalrun `36331715231` afgrænset til DMI-PART-
+  pakning efter alle tre leverandører. Fælles størrelsekode kan ikke
+  skelne gammel rå 512 MiB fra gammel komprimeret 96 MiB-grænse.
+- [x] Krypteret fremdrift `36331715231-1` gemt; ingen privat
+  slutpakke, CAS, R2 eller Pages fra dette run.
+- [x] Lokal rå grænse 2 GiB, komprimeret 160 MiB, krypteret
+  checkpoint 384 MiB; særskilte fejlkoder og summeret størrelseslog.
+  Codec og checkpoint-kontraktens måltests er grønne. Komprimeret
+  DMI-loft er under halvdelen af checkpoint- og arkivloftet.
+- [ ] Exact-head CI, sikker merge og højst én kort normal fortsættelse
+  fra den eksakte gemte fremdrift. Bevis fuld gemning/deploy, ingen
+  femfeltsdatatab og offentlig visning. Ingen kapacitets- eller
+  komplethedspåstand uden det faktiske fulde måleresultat.
+
+# HISTORISK STATUS – 2026-09-27 – lokal 4.0.503, DMI-timer over flere normale kørsler
 
 - [x] Helikoptergennemgang af fuld `36293202251` mod de korte
   efterfølgere: fuldt mellemresultat havde 4.583 manglende

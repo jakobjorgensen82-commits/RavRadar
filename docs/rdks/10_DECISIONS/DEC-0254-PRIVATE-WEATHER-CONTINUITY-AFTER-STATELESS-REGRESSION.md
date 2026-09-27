@@ -1,5 +1,24 @@
 # DEC-0254 – Ingen normal vejrhentning uden bevaret produktionscache
 
+## Tillæg 2026-09-27 – 4.0.504: pakkeplads må følge fuldere vejrdata
+
+Et fuldt normalt run `36331715231` passerede tre leverandører, men
+stoppede før privat produktionspakke i DMI-PART-kontinuitetens
+samlede størrelsesværn. Gammel kode brugte én fejlkode for både
+512 MiB rå og 96 MiB komprimeret; præcis udløser er ukendt.
+Det krypterede hente-checkpoint `36331715231-1` er gyldigt
+gemt, men er ikke en færdig produktionscache.
+
+Intern rågrænse sættes til 2 GiB, komprimeret grænse 160 MiB
+og krypteret progressgrænse 384 MiB. Kun samlede byteantal,
+antal dele, grænser og særskilte faste årsagskoder må logges.
+Per-del-værn, hashkontrol, R2-arkivgrænse, no-loss og alle
+produktgatekrav er uændrede. En stor R2-kvote begrunder ikke
+uendelig Node-/checkpointkapacitet. De nye grænser skal måles
+mod den virkelige næste pakke og hele nedstrømskæden; lokal
+beregning kan ikke garantere fremtidig vækst. Fortsæt kun fra
+den eksakte gemte fremdrift og beskyttet produktionsbaseline.
+
 ## Tillæg 2026-09-27 – 4.0.503: kun reelt nået vejrhentning må få nyt checkpoint-id
 
 Et tidligt `BASELINE_MISMATCH` før DMI skabte tidligere et nyt

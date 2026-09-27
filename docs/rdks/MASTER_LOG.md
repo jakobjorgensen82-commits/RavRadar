@@ -1,4 +1,20 @@
-# 2026-09-27 – lokal 4.0.503: beskyttede DMI-timer skal følge næste run
+# 2026-09-27 – lokal 4.0.504: intern DMI-pakke stoppede fuldt vejr-run
+
+4.0.503 kom offentligt i drift. Fuld normal `36331715231` nåede
+DMI, Copernicus og Open-Meteo, men ikke ny produktionscache eller
+deploy: intern DMI-PART-pakning ramte den hidtidige fælles
+rå/komprimerede samlegrænse. Loggen afgør ikke hvilken. En
+krypteret fremdrift `36331715231-1` er bevaret. Ejeren krævede
+betydelig plads til mere vejr og fortsættelse fra den pakke,
+ikke en ny lang hentning. Lokal 4.0.504 hæver råloftet 4× til
+2 GiB, gziploftet til 160 MiB og checkpointbudget til 384 MiB,
+med særskilt grænsekode og payloadfri summer. R2's ledige lager
+er ikke det samme som plads i Node/GitHub/private arkiver.
+Tidligere erklæring om »rigelig luft« var ubevist og forkastes.
+Lokale testresultater må ikke kaldes produktionsbevis; exact-head
+CI, kort checkpointfortsættelse og hele gemme-/deploykæden mangler.
+
+# Historisk log – 2026-09-27 – lokal 4.0.503: beskyttede DMI-timer skal følge næste run
 
 Helikoptertillæg: fuldrun `36293202251` havde stor vejrtilvækst,
 men ingen gemt krypteret komponentfremdrift; gammel log gav kun
