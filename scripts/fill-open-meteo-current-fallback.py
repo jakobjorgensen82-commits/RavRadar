@@ -677,9 +677,9 @@ def open_meteo_rotation_slot(
 
     Provider admissions and negative observations have different retention
     rules and must not double as a scheduler cursor.  Instead, the actual UTC
-    acquisition slot rotates whole, stable batches.  Hourly movement advances
-    one batch, quarter-hour runs spread across the remaining queue, and a
-    GitHub retry advances once more.  Difficult/null batches can therefore not
+    acquisition slot rotates whole, stable batches. Consecutive four-hour
+    normal runs advance one batch, independently of the variable DMI finish
+    minute; a GitHub retry advances once more. Difficult/null batches cannot
     monopolize every bounded run while later real gaps remain unvisited.
     """
     if (
@@ -700,10 +700,8 @@ def open_meteo_rotation_slot(
     if not 1 <= github_attempt <= 100:
         raise ValueError("Open-Meteo scheduler attempt metadata is invalid")
     utc_acquisition = acquisition_at.astimezone(timezone.utc)
-    quarter_in_hour = utc_acquisition.minute // 15
     return (
-        int(utc_acquisition.timestamp() // 3600)
-        + quarter_in_hour * batch_count // 4
+        int(utc_acquisition.timestamp() // (4 * 3600))
         + github_attempt - 1
     ) % batch_count
 

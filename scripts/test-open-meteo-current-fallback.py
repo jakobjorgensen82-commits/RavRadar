@@ -509,8 +509,9 @@ rejected(lambda: build_record(
 cli = runpy.run_path(str(Path(__file__).with_name("fill-open-meteo-current-fallback.py")))
 
 # The bounded provider queue must move without turning provider evidence into
-# scheduler state. UTC-equivalent starts are stable, quarter/hour slots spread
-# work, and a GitHub retry advances one additional batch.
+# scheduler state. UTC-equivalent starts are stable, four-hour slots visit
+# every batch despite queue lengths divisible by four, and a GitHub retry
+# advances one additional batch.
 rotation_base = datetime(2026, 9, 16, 2, 0, tzinfo=timezone.utc)
 rotation_slot = cli["open_meteo_rotation_slot"]
 assert rotation_slot(rotation_base, batch_count=7) == rotation_slot(
@@ -520,13 +521,18 @@ assert rotation_slot(rotation_base, batch_count=7) == rotation_slot(
     rotation_base + timedelta(minutes=14, seconds=59), batch_count=7,
 )
 assert {
-    rotation_slot(rotation_base + timedelta(hours=offset), batch_count=7)
+    rotation_slot(rotation_base + timedelta(hours=4 * offset), batch_count=7)
     for offset in range(7)
 } == set(range(7))
-assert len({
-    rotation_slot(rotation_base + timedelta(minutes=15 * quarter), batch_count=8)
-    for quarter in range(4)
-}) == 4
+for batch_count in range(1, 33):
+    assert {
+        rotation_slot(rotation_base + timedelta(hours=4 * offset), batch_count=batch_count)
+        for offset in range(batch_count)
+    } == set(range(batch_count))
+    assert len({
+        rotation_slot(rotation_base.replace(minute=minute), batch_count=batch_count)
+        for minute in (0, 14, 29, 44, 59)
+    }) == 1
 default_retry_slot = rotation_slot(rotation_base, batch_count=7)
 with patch.dict(rotation_slot.__globals__["os"].environ, {
     "GITHUB_RUN_ATTEMPT": "2",

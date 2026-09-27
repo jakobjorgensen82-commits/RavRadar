@@ -1,3 +1,22 @@
+## 4.0.505 – firetimers vejrkadence og fair reservekø (lokal, 2026-09-28)
+
+- Normal GitHub-plan ændres til hver fjerde time efter merge og
+  aktivering. Alle produktioner deler fortsat én concurrencygruppe;
+  den gamle separate watchdog åbnes ikke.
+- Normalt Copernicus-budget bliver 25 minutter, cachebygning får
+  80 minutter og buildjobbet 230. Kort bekræftelse og udvidet
+  bootstrap beholder særskilte budgetter.
+- Copernicus og Open-Meteo roterer én køposition pr. firetimersslot
+  i stedet for UTC-time/kvartal, som ellers kunne springe mange
+  grupper over permanent. DMI's eksisterende gemte forsøgsrotation
+  beholdes. DMI's rapporterede EDR-tidsestimat følger nu 240-minutters
+  kadencen, og den gamle DMI-workflowtest kontrollerer den aktuelle
+  krypterede cachevej. Ingen score-, kildegyldigheds- eller geometriændring.
+- Sidste fulde 4.0.504-run `36347957014` leverede 383.054/397.070
+  vejrpar fordelt på fem typer. Tre zoner er helt uden score; den
+  eksakte offentlige pakke viser ikke en fjerde. Effekten af de nye
+  budgetter og rotation måles først i efterfølgende livekørsler.
+
 ## 4.0.504 – udvid intern DMI-PART-kapacitet (lokal, 2026-09-27)
 
 - Fuldt normalrun `36331715231` stoppede efter tre leverandører i

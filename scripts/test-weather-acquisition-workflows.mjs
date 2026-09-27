@@ -60,7 +60,7 @@ assert.match(save, /path: \.cache\/weather-private-progress\.encrypted/);
 assert.match(save, /weather-private-progress-encrypted-v2-/);
 const coverage = step(normal, 'Report counts for each weather component after central cache');
 const weather = step(normal, 'Update central weather cache');
-assert.match(weather, /timeout-minutes: 60/);
+assert.match(weather, /timeout-minutes: 80/);
 assert.match(weather, /RAVRADAR_COMPONENT_COPERNICUS_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '45000' \|\| '90000' \}\}/);
 assert.match(weather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.quick_confirmation && '60000' \|\| '90000' \}\}/);
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);

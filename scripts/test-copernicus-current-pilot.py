@@ -175,7 +175,7 @@ assert cold_sources[:4] == [
 ]
 rotated_order = runner.operational_shard_work_order(
     targets=fair_targets,
-    acquisition_at=rotation_started_at + timedelta(hours=1),
+    acquisition_at=rotation_started_at + timedelta(hours=4),
 )
 rotated_sources = [row["product"]["source"] for row in rotated_order]
 assert rotated_sources[:4] == cold_sources[:4]
@@ -190,8 +190,8 @@ for source in ("copernicus-baltic-nemo", "copernicus-nws-amm15"):
     ]
     assert rotated_product == cold_product[1:] + cold_product[:1]
 
-# Across bounded short runs every stable product shard becomes the first shard
-# for its product, regardless of missing/expired attempt history.
+# Across four-hour scheduled runs every stable product shard becomes the first
+# shard for its product, regardless of missing/expired attempt history.
 for source, product in ((row["source"], row) for row in runner.PRODUCTS):
     product_shards = runner.spatial_shards(
         [row for row in fair_targets if runner.eligible_target(row, product)],
@@ -202,13 +202,29 @@ for source, product in ((row["source"], row) for row in runner.PRODUCTS):
             row["shard"]["shardId"]
             for row in runner.operational_shard_work_order(
                 targets=fair_targets,
-                acquisition_at=rotation_started_at + timedelta(hours=slot),
+                acquisition_at=rotation_started_at + timedelta(hours=4 * slot),
             )
             if row["product"]["source"] == source
         )
         for slot in range(len(product_shards))
     }
     assert first_shards == {row["shardId"] for row in product_shards}
+
+# The four-hour cadence must not alias with queues divisible by four; DMI's
+# variable finish minute must not change a run's selected starting shard.
+for shard_count in range(1, 33):
+    start = datetime(2026, 9, 28, 0, 17, tzinfo=timezone.utc)
+    slots = [
+        runner.operational_rotation_slot(
+            start + timedelta(hours=4 * index), shard_count=shard_count,
+        )
+        for index in range(shard_count)
+    ]
+    assert len(set(slots)) == shard_count
+    for minute in (0, 14, 29, 44, 59):
+        assert runner.operational_rotation_slot(
+            start.replace(minute=minute), shard_count=shard_count,
+        ) == slots[0]
 
 # Pair admission remains independent of that historical ordering hint.  An
 # AMM15-only pair can run immediately; an overlap pair needs a Baltic attempt
@@ -344,10 +360,10 @@ assert runner.select_bounded_operational_refresh(
     touched_shards={(row["source"], row["shard"]["shardId"])
                     for row in refresh_candidates},
 )[0]["source"] == "copernicus-nws-amm15"
-next_hour_refresh = runner.select_bounded_operational_refresh(
-    refresh_candidates, acquisition_at=reference + timedelta(hours=1), touched_shards=set())
-assert next_hour_refresh is not None
-assert next_hour_refresh[0]["shard"]["shardId"] != first_group["shard"]["shardId"]
+next_cycle_refresh = runner.select_bounded_operational_refresh(
+    refresh_candidates, acquisition_at=reference + timedelta(hours=4), touched_shards=set())
+assert next_cycle_refresh is not None
+assert next_cycle_refresh[0]["shard"]["shardId"] != first_group["shard"]["shardId"]
 
 # A failed exact segment cannot suppress another segment of the same stable
 # full-register shard. Its failure key differs only by exact pair-set hash.

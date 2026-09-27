@@ -421,7 +421,7 @@ assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);
 assert.match(updater, /spatialInterpolation: false/);
 assert.match(orchestrator, /workflow_dispatch/);
 assert.match(orchestrator, /^\s+schedule:/m);
-assert.match(orchestrator, /cron: ["']14,29,44,59 \* \* \* \*["']/);
+assert.match(orchestrator, /cron: ["']17 \*\/4 \* \* \*["']/);
 assert.match(orchestrator, /current-hour-readiness/);
 assert.match(orchestrator, /github\.event_name == 'workflow_dispatch' && inputs\.force != true && inputs\.geometry_v2_pilot != true && inputs\.geometry_v2_national != true/);
 for (const source of Object.values(workflows)) assert.doesNotMatch(source, /candidate_g_gap_reconstruction_mode/);
@@ -457,47 +457,34 @@ for (const source of Object.values(workflows)) assert.doesNotMatch(source, /sche
 assert.match(build, /DMI_API_KEY/);
 assert.match(build, /Report DMI bulk result/);
 const dmiProducer = build.indexOf('name: Update DMI bulk model cache');
+const dmiWriteAuthority = build.indexOf('name: Reconfirm exact main before shared DMI GRIB cache');
 const dmiGribSave = build.indexOf('name: Save progressed DMI GRIB download cache');
-const dmiCandidateSave = build.indexOf('name: Save isolated DMI candidate progress before any terminal decision');
-const dmiShadowSave = build.indexOf('name: Save private seven-day current-field research cache');
 const dmiTerminalGate = build.indexOf('name: Classify DMI readiness before current supplement');
 const dmiActiveSnapshot = build.indexOf('name: Strictly snapshot the maintained READY active DMI generation');
-const dmiActiveSave = build.indexOf('name: Save the maintained complete active DMI generation');
 const copernicusSelector = build.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement');
 assert.ok(
-  dmiProducer < dmiGribSave
-    && dmiGribSave < dmiCandidateSave
-    && dmiCandidateSave < dmiShadowSave
-    && dmiShadowSave < dmiTerminalGate
+  dmiProducer >= 0
+    && dmiProducer < dmiWriteAuthority
+    && dmiWriteAuthority < dmiGribSave
+    && dmiGribSave < dmiTerminalGate
     && dmiTerminalGate < dmiActiveSnapshot
-    && dmiActiveSnapshot < dmiActiveSave
-    && dmiActiveSave < copernicusSelector
+    && dmiActiveSnapshot < copernicusSelector
     && dmiTerminalGate < copernicusSelector,
-  'Rå/private sidecaches og partial kandidat skal gemmes før terminalgaten, mens active først må gemmes efter READY-promotion.',
+  'DMI-GRIB kræver eksakt main før gemning; terminalgaten og READY-snapshot kommer før reservevalg.',
 );
-const dmiCandidateSaveEnd = build.indexOf('\n      - name:', dmiCandidateSave + 1);
-const dmiCandidateSaveBlock = build.slice(dmiCandidateSave, dmiCandidateSaveEnd);
-assert.match(dmiCandidateSaveBlock, /always\(\)/);
-assert.match(dmiCandidateSaveBlock, /steps\.dmi-bulk\.outcome != 'cancelled'/);
-assert.match(dmiCandidateSaveBlock, /path: \.cache\/dmi-candidate-progress\.json/);
-assert.match(dmiCandidateSaveBlock, /key: dmi-zone-candidate-v1-/);
+assert.doesNotMatch(build, /key: dmi-zone-candidate-v1-|key: current-field-shadow-v1-/,
+  'Private DMI candidate/shadow files must not return to plaintext Actions caches');
 const dmiActiveSnapshotEnd = build.indexOf('\n      - name:', dmiActiveSnapshot + 1);
 const dmiActiveSnapshotBlock = build.slice(dmiActiveSnapshot, dmiActiveSnapshotEnd);
 assert.match(dmiActiveSnapshotBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
 assert.match(dmiActiveSnapshotBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
-const dmiActiveSaveEnd = build.indexOf('\n      - name:', dmiActiveSave + 1);
-const dmiActiveSaveBlock = build.slice(dmiActiveSave, dmiActiveSaveEnd);
-assert.match(dmiActiveSaveBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
-assert.match(dmiActiveSaveBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
-assert.match(dmiActiveSaveBlock, /path: \.cache\/dmi-active-complete\.json/);
-assert.match(dmiActiveSaveBlock, /key: dmi-zone-active-v1-/);
-assert.doesNotMatch(dmiActiveSaveBlock, /always\(\)|outcome != 'cancelled'/);
+assert.match(dmiActiveSnapshotBlock, /\.cache\/dmi-active-complete\.json/);
 const dmiTerminalGateEnd = build.indexOf('\n      - name:', dmiTerminalGate + 1);
 const terminalGateBlock = build.slice(dmiTerminalGate, dmiTerminalGateEnd);
 for (const marker of [
   'id: dmi-terminal-gate',
-  'steps.dmi-bulk.outputs.terminal_code',
-  'steps.dmi-bulk.outputs.strict_current_anchor_ready',
+  'PRODUCER_CODE: ${{ steps.dmi-bulk.outputs.terminal_code',
+  'STRICT_CURRENT_ANCHOR_READY: ${{ steps.dmi-bulk.outputs.strict_current_anchor_ready',
   'test "$code" = "DMI_READY"',
   'echo "ready=$ready" >> "$GITHUB_OUTPUT"',
 ]) {

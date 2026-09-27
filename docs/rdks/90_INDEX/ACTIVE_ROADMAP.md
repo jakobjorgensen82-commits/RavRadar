@@ -1,4 +1,20 @@
-# Aktivt roadmap – 2026-09-27, lokal 4.0.504
+# Aktivt roadmap – 2026-09-28, lokal 4.0.505
+
+1. [x] Bekræft fuld normal 4.0.504-kørsel `36347957014` fra
+   gyldig cache gennem tre kilder, fulde gates, R2, Pages og
+   offentlig 383.054/397.070 femfeltsdækning. Det er ikke fuldt vejr.
+2. [x] Afgræns tidsbudget og firetimersrotationsfejl i begge
+   reservekøer; lav én samlet 4.0.505-ændring uden score-/geometrigreb.
+3. [ ] Exact-head CI, sikker merge; aktiver kun normalt GitHub-schedule
+   hver fjerde time og kontroller ikke-overlap samt reel first-run.
+4. [ ] Mål successive normale runs på samme kystdel/time: alle fem
+   felter, kildeandele, Copernicus- og Open-Meteo-købesøg, cache/
+   CAS/R2/Pages og de 22 dele i tre helt tomme zoner. Efterspørg
+   identitet på en eventuel fjerde zone, som fortsat ses tom.
+5. [ ] Ved vedvarende mangler: undersøg faktiske modelgrid-/svar- og
+   August-kilder, uden at løsne gyldighed eller opfinde score.
+
+# Historisk roadmap – 2026-09-27, lokal 4.0.504
 
 1. [x] Afklar stop i `36331715231`: intern DMI-PART-samlegrænse
    efter alle leverandører, ikke R2 eller deploy. Den gamle

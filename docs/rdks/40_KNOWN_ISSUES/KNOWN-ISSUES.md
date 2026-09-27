@@ -1,4 +1,18 @@
-# Aktuelle issues – 2026-09-27, lokal 4.0.504
+# Aktuelle issues – 2026-09-28, lokal 4.0.505
+
+- **FEMFELTSREST OG TRE HELT TOMME ZONER – ÅBENT:** Offentlig
+  4.0.504 efter `36347957014` har 383.054/397.070 gyldige
+  vejrpar. `DK-B05-21`, `DK-B05-23`, `DK-B05-24` mangler alle
+  118 scoretimer grundet manglende brugbar havstrøm. En fjerde
+  helt tom zone ses ikke i den præcise pakke. Mere Copernicus-tid
+  og fair firetimersrotation skal testes live; domæneberettigelse
+  er ikke bevis for leverandørværdi. Ingen proxy-/punktændring.
+- **TIDSMARGIN – LOKALT ÆNDRET, LIVE ÅBEN:** 55 af 60 minutter
+  blev brugt til cache. 4.0.505 øger cache til 80, normalt
+  build til 230 og Copernicus til 25 minutter. Fuld drift og
+  konsekvens for Free-kvoter kræver måling efter aktivering.
+
+# Historiske issues – 2026-09-27, lokal 4.0.504
 
 - **DMI-PART-KAPACITET – LOKALT ÆNDRET, LIVE ÅBEN:** Fuldt run
   `36331715231` fejlede efter leverandørerne på én af de gamle

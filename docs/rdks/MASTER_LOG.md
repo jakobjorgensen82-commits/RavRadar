@@ -1,4 +1,19 @@
-# 2026-09-27 – lokal 4.0.504: intern DMI-pakke stoppede fuldt vejr-run
+# 2026-09-28 – lokal 4.0.505: firetimers normalproduktion
+
+Fuldt 4.0.504-run `36347957014` er leveret og verificeret, men
+383.054/397.070 femfeltspar og tre helt tomme zoner er ikke fuld
+dækning. Tidsmålingerne viser 55 minutters cache mod 60 minutters
+grænse og knap fem minutters reel Copernicus. Ejeren besluttede
+firetimers normal cron, højere tidsgrænser og mere Copernicus-tid.
+Vi fandt samtidig en systemisk rotationsalias: UTC-time + kvartal
+ville ved firetimersstarter kunne gentage få shards/batches og
+springe resten over. Lokal 4.0.505 roterer pr. firetimersslot,
+giver normal Copernicus 25 minutter, cache 80 og job 230. Ingen
+score- eller geometriændring. Cron forbliver deaktiveret til grøn
+exact-head CI og sikker merge; flere livekørsler må dokumentere
+dækning og stabilitet. Beslutning DEC-0257 afløser 15-minutterskravet.
+
+# Historisk log – 2026-09-27 – lokal 4.0.504: intern DMI-pakke stoppede fuldt vejr-run
 
 4.0.503 kom offentligt i drift. Fuld normal `36331715231` nåede
 DMI, Copernicus og Open-Meteo, men ikke ny produktionscache eller
