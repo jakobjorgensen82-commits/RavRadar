@@ -1,7 +1,7 @@
 # DEC-0256 – Tabsfri privat lagring af zone-timer
 
 **Dato:** 2026-09-27
-**Status:** AKTIV BESLUTNING; lokal 4.0.501, produktion afventer
+**Status:** AKTIV BESLUTNING; lokal 4.0.502, fuld levering afventer
 
 ## Baggrund
 
@@ -66,3 +66,34 @@ Pages. Exact-head kilde-CI og et rigtigt kort produktionsrun mangler.
 Vandstandens tilsyneladende cirka to døgn, havstrømsrest og
 leverandørfordeling er særskilte åbne dataissues; denne beslutning
 må ikke fremstilles som løsning på dem. Se DEC-0254/-0255.
+
+## Tillæg 2026-09-27 – virkelig størrelse og uafhængig zoneorden
+
+Kort normalrun `36306037218` bekræftede den nye lagrings kapacitet
+for en virkelig produktionspakke: 421.904.065 rå zone-timebyte blev
+12.010.732 gzip-byte, og samlet privat `conditions.json` var
+52.370.498 byte mod V8's 535.822.312-byte grænse. Dette erstatter
+det syntetiske kapacitetsoverslag som bevis for netop denne pakke,
+men ikke som garanti for et fuldstændigt eller vilkårligt større
+fremtidigt datasæt.
+
+Runnet stoppede senere i offentlig runtime-genopbygning på en
+generisk public-hour mismatch. Krypteret hente-fremdrift
+`36306037218-1` er gemt, mens privat slutartifact, R2 og Pages ikke
+er dokumenteret leveret. Den gamle log viser ikke, hvilket felt der
+afveg. En lokal reproduktion viser en konkret kontraktbrist:
+vejrzone- og scorezoneobjekter kan have hver sin indsættelsesorden;
+4.0.501's pakker og udpakker tvang scorezoner over i vejrorden.
+Dermed ændredes offentlig details-SHA efter en ellers tabsfri
+lagringscyklus. Beslutningen præciseres: hver af de to zoneordeners
+JSON-identitet skal bevares selvstændigt, ikke kun værdierne.
+4.0.502 implementerer dette. En 210-zone-prøve består lokalt.
+En planlagt ekstra mismatch-fejltekst i modelbundet public-kode
+ændrede ved første exact-head CI den låste model-/public-identitet
+og to cacheforgængerkrav. Denne rene diagnoseændring er derfor
+forkastet; den må ikke koste den gemte fremdrift.
+
+Ingen offentlig eller faglig model, kildeprioritet, no-loss-regel,
+gyldighed eller gammel-cache-regel svækkes. Exact-head CI, merge og
+en kort rigtig kørsel fra gemt fremdrift skal stadig bevise hele
+leveringskæden; øvrige femfelts- og leverandørissues er åbne.

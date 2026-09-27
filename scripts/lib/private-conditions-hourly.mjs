@@ -81,7 +81,7 @@ export function packPrivateConditionsHourly(conditions) {
     || Object.keys(weatherZones).length !== MAX_ZONES) fail('ZONE_INVENTORY_INVALID');
   const packedZones = {};
   const packedWeatherZones = {};
-  const packedScoreZones = {};
+  const scoreRowsByZone = {};
   let rawBytes = 0;
   let gzipBytes = 0;
   for (const zoneId of Object.keys(weatherZones)) {
@@ -97,8 +97,12 @@ export function packPrivateConditionsHourly(conditions) {
     const { hourly: _forecastHourly, ...forecast } = weather.forecast;
     const { hourly: _scoreHourly, ...scoreRetained } = score;
     packedWeatherZones[zoneId] = { ...weather, forecast };
-    packedScoreZones[zoneId] = scoreRetained;
+    scoreRowsByZone[zoneId] = scoreRetained;
   }
+  // The public details digest includes JSON object order. Weather and score
+  // zones may have different insertion orders, so retain each independently.
+  const packedScoreZones = Object.fromEntries(Object.keys(scoreZones)
+    .map(zoneId => [zoneId, scoreRowsByZone[zoneId]]));
   return {
     ...conditions,
     zones: packedWeatherZones,
@@ -137,7 +141,7 @@ function decodePrivateConditionsHourly(conditions, materialize) {
     || !sameKeys(marker.zones, conditions.coastalParts.zones)
     || Object.keys(marker.zones).length !== MAX_ZONES) fail('MARKER_INVALID');
   const weatherZones = materialize ? {} : null;
-  const scoreZones = materialize ? {} : null;
+  const scoreRowsByZone = materialize ? {} : null;
   let rawBytes = 0;
   let gzipBytes = 0;
   for (const zoneId of Object.keys(marker.zones)) {
@@ -154,11 +158,13 @@ function decodePrivateConditionsHourly(conditions, materialize) {
     if (rawBytes > MAX_RAW_TOTAL_BYTES || gzipBytes > MAX_GZIP_TOTAL_BYTES) fail('TOTAL_LIMIT');
     if (materialize) {
       weatherZones[zoneId] = { ...weather, forecast: { ...weather.forecast, hourly: forecastHourly } };
-      scoreZones[zoneId] = { ...score, hourly: scoreHourly };
+      scoreRowsByZone[zoneId] = { ...score, hourly: scoreHourly };
     }
   }
   if (rawBytes !== marker.rawBytes || gzipBytes !== marker.gzipBytes) fail('TOTAL_MISMATCH');
   if (!materialize) return true;
+  const scoreZones = Object.fromEntries(Object.keys(conditions.coastalParts.zones)
+    .map(zoneId => [zoneId, scoreRowsByZone[zoneId]]));
   const { privateZoneHourly: _packed, ...retained } = conditions;
   return { ...retained, zones: weatherZones,
     coastalParts: { ...conditions.coastalParts, zones: scoreZones } };

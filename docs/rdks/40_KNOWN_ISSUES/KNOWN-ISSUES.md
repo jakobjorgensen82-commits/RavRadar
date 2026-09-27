@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-09-27, lokal 4.0.501
+# Aktuelle issues – 2026-09-27, lokal 4.0.502
+
+- **PRIVAT PAKNING → OFFENTLIG GENOPBYGNING – LOKALT RETTET, LIVE
+  ÅBEN:** `36306037218` beviste reel kompakt privat fil på 52.370.498
+  byte, men stoppede på generel public-hour/runtime-mismatch før R2
+  og Pages. Uafhængig vejr-/scorezoneorden ændrede detaljer-hash i
+  lokal reproduktion og er nu bevaret; præcis mismatch-dimension fra
+  dette run kan ikke udledes af loggen. Fremdriften er gemt
+  krypteret, ikke en færdig produktionspakke. Exact-head CI og kort
+  normal livebekræftelse mangler.
+- **STØRRELSE – MÅLT FOR ÉN RIGTIG PAKKE:** 421.904.065 rå zone-
+  timebyte blev 12.010.732 gzip-byte; privat fil 52.370.498 byte mod
+  535.822.312-byte grænsen. Fuld femfeltsdækning og største fremtidige
+  pakke er ikke målt, så dette er ikke en ubetinget kapacitetsgaranti.
+
+# Historiske issues – 2026-09-27, lokal 4.0.501
 
 - **FULDT RUN/PRIVAT JSON – LOKALT RETTET, LIVE ÅBEN:** Fuldt
   `36293202251` oversteg V8's enkeltstrengsgrænse ved privat

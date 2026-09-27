@@ -1,4 +1,29 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.501, fuld normalbygning ramte privat JSON-grænse
+# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.502, public-hour mismatch efter vellykket pakning
+
+Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
+Kort normalrun `36306037218` på 4.0.501 gendannede gemt fremdrift
+og målte 421.904.065 rå zone-timebyte → 12.010.732 gzip-byte;
+privat `conditions.json` var 52.370.498 byte mod V8-loftet
+535.822.312. Størrelsesrettelsen virker på denne rigtige pakke.
+Runnet stoppede bagefter på generisk mismatch mellem privat
+public-hour-pakning og regenereret offentlig runtime; ny R2/Pages
+blev ikke leveret. Krypteret hente-fremdrift `36306037218-1` er
+gemt, men ikke en færdig privat produktionspakke.
+
+Lokal 4.0.502 bevarer vejr- og scorezoners uafhængige rækkefølge
+gennem pakning/udpakning. En 210-zone-prøve påviste før rettelsen
+ændret public-details-SHA og består efter rettelsen. Den gamle log
+angiver ikke mismatch-feltet, så dette er stærk reproduceret
+forklaring, ikke direkte logbevis. En ekstra fejltekst i modelbundet
+public-kode blev forkastet efter CI, fordi den ændrede modelhash og
+ville afvise gemt fremdrift. Måltests er grønne. Næste: version/RDKS/geodatadiff,
+exact-head CI, merge ved grøn og ingen ny modstridende evidens,
+derefter én kort ikke-overlappende normal kørsel fra eksakt gemt
+`36306037218-1`. Bevis privat slutgemning, CAS, R2, Pages, offentlig
+prognose og femfelts-no-loss. Ingen ny lang hentning eller cron før
+det. Se DEC-0256 og aktivt roadmap. Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.501, fuld normalbygning ramte privat JSON-grænse
 
 Arbejd i `r2-private-runtime`; cb79 er en gammel, beskidt checkout.
 4.0.500 er offentlig efter kort normalrun `36288805313`. Det rettede
