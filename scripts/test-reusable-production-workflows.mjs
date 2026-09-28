@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -562,5 +563,40 @@ assert.equal(
   true,
   'outcome national flag is normalized',
 );
+
+const sealedRecovery = fs.readFileSync(
+  new URL('../.github/workflows/recover-sealed-weather-36396834072.yml', import.meta.url),
+  'utf8',
+).replace(/\r\n/g, '\n');
+assert.match(sealedRecovery, /workflow_dispatch:/);
+assert.doesNotMatch(sealedRecovery, /\bschedule:/);
+assert.match(sealedRecovery, /group: ravradar-weather-production-v2/);
+assert.match(sealedRecovery, /ravscore-continuation-schema6-v2-36396834072-1/);
+assert.match(sealedRecovery, /ravradar-private-build-stage-36396834072-1/);
+assert.match(sealedRecovery, /cadd9b9dc605ac810ad2fbd6c5a73be834302dfb/);
+assert.match(sealedRecovery, /ad864f1b29ad7f453f24eda7717bd10e837ad70147f87fa2b3ea77f3ee85592d/);
+assert.match(sealedRecovery, /git diff --name-only "\$SOURCE_HEAD" "\$GITHUB_SHA"/);
+assert.match(sealedRecovery, /--target-reference "\$TARGET_REFERENCE"/);
+assert.match(sealedRecovery, /staged-private-production-runtime\.mjs open/);
+assert.match(sealedRecovery, /mkdir -p "\$RAVRADAR_PRIVATE_RUNTIME_ROOT"/);
+assert.match(sealedRecovery, /protected-private-production-runtime\.mjs/);
+assert.doesNotMatch(sealedRecovery, /(?:run-current-weather-once|update-weather|run-dmi-bulk|run-copernicus|fill-open-meteo|npm run validate|npm run release:gate)/);
+assert.equal(
+  sealedRecovery.indexOf('Publish saved RavScore checkpoint')
+    < sealedRecovery.indexOf('Authenticate and restore the exact sealed bundle'),
+  true,
+);
+assert.equal(
+  sealedRecovery.indexOf('Authenticate and restore the exact sealed bundle')
+    < sealedRecovery.indexOf('Publish authenticated original private bundle'),
+  true,
+);
+const checkpointTimeoutMigration = fs.readFileSync(
+  new URL('../supabase/migrations/20260928112500_checkpoint_cas_bounded_timeout_55s.sql', import.meta.url),
+  'utf8',
+);
+assert.match(checkpointTimeoutMigration,
+  /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '55s';/);
+assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 
 console.log('Reusable production workflow interface and failure contracts passed.');

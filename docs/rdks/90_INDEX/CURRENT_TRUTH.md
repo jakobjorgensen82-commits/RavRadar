@@ -1,4 +1,28 @@
-# NYESTE SANDHED – 2026-09-28 – lokal 4.0.508, afgrænset DMI-diagnostik
+# NYESTE SANDHED – 2026-09-28 – 4.0.508, gemt vejrpakke afventer checkpoint
+
+4.0.508 er merged som main `cadd9b9d`. Ekstern test af cron-job.org
+`8348098` udløste præcis ét normalt run `36396834072` på denne commit.
+DMI, Copernicus, Open-Meteo, cachebygning, fuld validering og releasegate
+blev gennemført. Før et beskyttet Supabase-checkpoint kunne gemmes,
+ramte dets RPC `57014` to gange under den funktionslokale 30-sekunders
+grænse. Den offentlige prognose, R2-pointeren og Pages blev ikke
+opdateret. Det krypterede færdigbuild-artifact
+`ravradar-private-build-stage-36396834072-1` og det eksakte
+score-checkpoint `ravscore-continuation-schema6-v2-36396834072-1`
+findes stadig. Det første er ikke en offentlig eller centralt gemt
+produktionspakke.
+
+Ejeren har nu forbudt en ny vejrhentning og cachebygning under
+fejlafhjælpningen. Cron-job.org-jobbet er derfor deaktiveret og
+bekræftet ved genindlæsning. Supabases timeout er ændret **kun**
+for `ravradar_ravscore_checkpoint_cas` til 55 sekunder og læst tilbage
+fra databasen; append-only migrationen i denne branch fastholder det
+i kildekoden. En snæver, eksakt artifact-/cachebundet recovery er
+under kildekontrol. Den er endnu ikke kørt, og checkpoint, R2 og Pages
+må ikke kaldes leveret før deres egne livebeviser. Ingen leverandør-
+eller scoremodelregel er ændret. Se DEC-0249's nye tillæg.
+
+# HISTORISK SANDHED – 2026-09-28 – lokal 4.0.508, afgrænset DMI-diagnostik
 
 4.0.507 er merged som main `36083ab8`. GitHub-tørkørsel
 `36366253633` nåede `external-four-hour-weather-slot-ready`, men
