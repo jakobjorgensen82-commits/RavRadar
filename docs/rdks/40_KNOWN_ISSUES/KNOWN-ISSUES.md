@@ -1,4 +1,21 @@
-# Aktuelle issues – 2026-09-28, lokal 4.0.507
+# Aktuelle issues – 2026-09-28, lokal 4.0.508
+
+- **DMI DKSS-TIMEFIL AFVISES EFTER GENINDTRÆDEN – ÅBEN:** Fuld
+  normal `36347957014` deployede, men DMI afviste seks genbrugte
+  DKSS-timefiler før commit med én generisk proveniensbesked.
+  `36331715231` havde behandlet samme officielle filer, modelrun
+  og partOutcomeProof. Årsagen er ikke bevist; udled ikke en bestemt
+  afvisningsgren af den gamle log. Lokal 4.0.508 tilføjer kun
+  faste, datasikre gren-koder, så næste naturlige run kan vise den
+  præcise betingelse uden at svække accept eller no-loss. Source-CI,
+  merge og faktisk runbevis mangler.
+- **EKSTERN FIRETIMERSSTART – AFVENTER FAKTISK TEST:** 4.0.507 er
+  merged, og tørkørsel `36366253633` blev klar til et eksternt
+  slot, men den udløste ikke vejr. Job `8348098` er deaktiveret.
+  Den manuelle test varsler videresendelse af ejerens IP-adresse;
+  særskilt samtykke afventes før test og aktivering.
+
+# Historiske issues – 2026-09-28, lokal 4.0.507
 
 - **EKSTERN START BLOKERET AF TRE FASTLÅSTE LEGACY-RUNS:**
   4.0.506-kontrollen er merged, men tørkørsel `36365055249`

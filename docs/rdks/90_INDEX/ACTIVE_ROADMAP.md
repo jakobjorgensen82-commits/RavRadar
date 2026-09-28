@@ -1,4 +1,19 @@
-# Aktivt roadmap – 2026-09-28, lokal 4.0.507
+# Aktivt roadmap – 2026-09-28, lokal 4.0.508
+
+1. [x] 4.0.507 merged; guard-tørkørsel `36366253633` viste
+   `external-four-hour-weather-slot-ready` uden vejrdispatch.
+2. [x] Seks DMI DKSS-afvisninger i sidste fulde run sammenholdt
+   med et ældre run på samme filer/proof. Lokal 4.0.508 giver
+   udelukkende faste, payloadfri afvisningskoder; 34 måltests grønne.
+3. [ ] Bestå RDKS/version/geodatadiff og exact-head kilde-CI,
+   merge sikkert, og lad næste naturlige run afdække DMI-grenen.
+   Ret først den konkrete rodårsag efter evidens.
+4. [ ] Med særskilt samtykke: test det deaktiverede eksterne job
+   `8348098`, kontrollér én normal start uden overlap og aktivér
+   derefter firetimersplanen. Følg flere almindelige runs til
+   cache, fem felter, kilder, gates, R2, Pages og kvoter er målt.
+
+# Historisk roadmap – 2026-09-28, lokal 4.0.507
 
 1. [x] PR #469/4.0.506 merged efter grøn exact-head CI;
    cron-job.org-jobbet er gemt deaktiveret og den gamle

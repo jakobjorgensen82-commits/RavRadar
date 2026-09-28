@@ -1,4 +1,25 @@
-# NYESTE SANDHED – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
+# NYESTE SANDHED – 2026-09-28 – lokal 4.0.508, afgrænset DMI-diagnostik
+
+4.0.507 er merged som main `36083ab8`. GitHub-tørkørsel
+`36366253633` nåede `external-four-hour-weather-slot-ready`, men
+startede bevidst intet vejr. cron-job.org-job `8348098` er fortsat
+deaktiveret, indtil en faktisk ekstern test er udført med ejerens
+samtykke til den varslede IP-videresendelse. Ingen ny normal
+firetimerskørsel er dermed bevist.
+
+Fuld 4.0.504-kørsel `36347957014` leverede offentlig prognose,
+men DMI afviste seks tidlige DKSS-timefiler transaktionelt. Et
+tidligere run `36331715231` accepterede samme officielle assets,
+modelrun og partOutcomeProof. Det peger mod forskel i genbrugt
+cache/bevis ved genindtræden, men den præcise guard er **ukendt**.
+Lokal 4.0.508 skelner kun tolv faste, indholdsfri afvisningskoder
+i den eksisterende sikre fejlrapport. Den ændrer ikke accepterede
+data, no-loss, rollback eller processing-signatur. 34 afgrænsede
+tests er grønne; exact-head CI, merge og levende årsagsbevis
+mangler. 383.054/397.070 offentlige femfeltspar er fortsat seneste
+målte dækning, ikke bevis for fuld dækning eller stabil drift.
+
+# HISTORISK SANDHED – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
 
 PR #469/4.0.506 er merged som main `1e2cc005` efter grøn
 exact-head-kildekontrol. Det eksterne cron-job.org-job `8348098`

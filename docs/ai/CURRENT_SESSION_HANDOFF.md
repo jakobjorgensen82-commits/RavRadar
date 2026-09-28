@@ -1,4 +1,25 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.507, legacy-køundtagelse
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.508, sikker DMI-diagnostik
+
+Arbejd i `r2-private-runtime`, branch
+`codex/4.0.508-dmi-stage-rejection-codes`. PR #470/4.0.507 er
+merged som main `36083ab8`. Guard-tørkørsel `36366253633`
+returnerede `external-four-hour-weather-slot-ready` uden at
+bestille vejr. Det eneste cron-job.org-job `8348098` er fortsat
+deaktiveret. Manuel UI-test viser varslet IP-videresendelse til
+GitHub; særskilt samtykke er spurgt asynkront, ikke modtaget.
+Ingen manuel omvej eller aktivering før faktisk ekstern test.
+
+Seks genbrugte DKSS-timefiler blev afvist af DMI pre-commit i
+`36347957014`, skønt samme officielle filer/modelrun/proof blev
+behandlet i `36331715231`. Præcis validatorgren er ukendt.
+Lokal 4.0.508 føjer kun tolv faste, payloadfri afvisningskoder
+til den sikre fejlrække. Accept, transaktionel rollback,
+processing-signatur og femfeltsdata er uændrede. 34 måltests
+består; version er synkroniseret, RDKS/source-gates, særskilt
+geodatadiff, exact-head CI, merge og livebevis udestår.
+Anbefalet model/indsats: Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – lokal 4.0.507, legacy-køundtagelse
 
 Arbejd i `r2-private-runtime`, branch
 `codex/4.0.507-ignore-inert-legacy-queue`. PR #469/4.0.506 blev
