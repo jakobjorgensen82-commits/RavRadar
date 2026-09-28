@@ -1,4 +1,18 @@
-# Aktivt roadmap – 2026-09-28, lokal 4.0.506
+# Aktivt roadmap – 2026-09-28, lokal 4.0.507
+
+1. [x] PR #469/4.0.506 merged efter grøn exact-head CI;
+   cron-job.org-jobbet er gemt deaktiveret og den gamle
+   GitHub-plan fjernet.
+2. [x] Levende tørkørsel fandt tre eksakt kendte fastlåste
+   legacy-`queued`-poster. Lokal 4.0.507 undtager kun disse tre;
+   andre ventende kørsler blokerer fortsat. Se DEC-0260.
+3. [ ] Exact-head CI, merge og ny levende tørkørsel. Test derpå
+   det deaktiverede cron-job.org-kald, kontrollér korrekt normalt
+   vejr-run, aktivér plan og følg næste automatiske slot.
+4. [ ] Mål femfeltsdækning, alle leverandører, cache, R2, Pages,
+   tre tomme zoner og Free-kvoter gennem flere ordinære kørsler.
+
+# Historisk roadmap – 2026-09-28, lokal 4.0.506
 
 1. [x] Afklar den manglende eksterne plan og bevar det ene tidligere
    cron-job.org-job deaktiveret med korrekt UTC-firetimersplan og

@@ -1,4 +1,13 @@
-## 4.0.506 – ekstern firetimersplan (lokal, 2026-09-28)
+## 4.0.507 – tre eksakte fastlåste legacy-kørsler (lokal, 2026-09-28)
+
+- Efter merge af 4.0.506 viste levende tørkørsel `36365055249`,
+  at tre gamle, uændrede `queued`-poster fejlagtigt blokerede
+  den eksterne firetimerskontrol. Kun deres eksakte identiteter
+  undtages; alle nye eller ændrede ventende kørsler spærrer fortsat.
+- Ingen vejrdata eller deploygate ændres. Live-test af en faktisk
+  ekstern start afventer exact-head CI og sikker merge; se DEC-0260.
+
+## 4.0.506 – ekstern firetimersplan (merged, 2026-09-28)
 
 - GitHubs egen vejr-`schedule` fjernes efter ejerens beslutning;
   den ene eksisterende cron-job.org-post genbruges ved UTC-minut

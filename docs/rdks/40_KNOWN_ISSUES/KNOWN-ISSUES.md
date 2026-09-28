@@ -1,4 +1,13 @@
-# Aktuelle issues – 2026-09-28, lokal 4.0.506
+# Aktuelle issues – 2026-09-28, lokal 4.0.507
+
+- **EKSTERN START BLOKERET AF TRE FASTLÅSTE LEGACY-RUNS:**
+  4.0.506-kontrollen er merged, men tørkørsel `36365055249`
+  klassificerede tre gamle uændrede `queued`-poster som aktivt
+  arbejde. 4.0.507 har en snæver identitetsbundet undtagelse;
+  live-bevis og ekstern test mangler. Job `8348098` er deaktiveret.
+  Se DEC-0260.
+
+# Historiske issues – 2026-09-28, lokal 4.0.506
 
 - **EKSTERN FIRETIMERSPLAN – IKKE AKTIVERET:** Den første 4.0.505-
   GitHub-planstart ved 00:17 UTC havde intet run kl. 00:29. En

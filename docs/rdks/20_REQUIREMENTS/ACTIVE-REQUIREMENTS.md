@@ -1,5 +1,12 @@
 # Aktuel ekstern firetimersplan – 2026-09-28
 
+- **REQ-WEATHER-INERT-LEGACY-QUEUE-0507 – BINDENDE:** Kun de tre
+  verificerede fastlåste runidentiteter i DEC-0260 må ignoreres i
+  den gamle workflowhistorik, og kun når id, attempt, event, SHA,
+  status og begge tidsstempler er præcis uændrede. En ny eller
+  ændret ventende kørsel i enhver produktionsindgang skal fortsat
+  forhindre overlap. Ingen generel aldersgrænse må erstatte dette.
+
 - **REQ-WEATHER-EXTERNAL-CADENCE-0506 – BINDENDE:** Kun det ene
   cron-job.org-job må udløse den almindelige firetimersplan. GitHub
   må ikke have et eget vejr-`schedule`. Et eksplicit eksternt intent

@@ -1,4 +1,17 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
+
+Arbejd i `r2-private-runtime` på branch
+`codex/4.0.507-ignore-inert-legacy-queue`. PR #469/4.0.506 blev
+merged som main `1e2cc005` efter grøn exact-head CI. Det eneste
+cron-job.org-job `8348098` er gemt deaktiveret med UTC
+`19 */4 * * *`; den gamle separate vagt er slukket.
+Levende GitHub-tørkørsel `36365055249` viste falsk blokering
+fra tre gamle, uændrede legacy-`queued`-poster. Lokal 4.0.507
+ignorerer kun deres eksakte identiteter, ikke andre ventende runs.
+Måltest er grøn, men exact-head CI, merge, ny levende kontrol,
+ekstern test og aktivering mangler. Se DEC-0260 og CURRENT_TRUTH.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – 4.0.506, ekstern firetimersplan
 
 Arbejd kun i `r2-private-runtime`; `cb79` er ikke arbejdskopien.
 4.0.505 er merged på main `6b7223dc`. Første forventede GitHub-

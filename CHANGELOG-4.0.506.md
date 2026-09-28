@@ -12,6 +12,8 @@
 - Den tidligere separate 15-/45-minuttersvagt forbliver
   deaktiveret. Ingen ændring af vejrdata, cache, kildeprioritet,
   score, geometri eller deploygates.
-- Lokal kontrakt- og dokumentationskontrol er ikke livebevis.
-  Exact-head CI, sikker merge og faktisk eksternt kald
-  kræves før driftsverifikation.
+- Exact-head CI var grøn, og PR #469 blev merged som `1e2cc005`.
+  Første levende tørkørsel fandt derefter tre fastlåste gamle
+  `queued`-poster, som fejlagtigt blokerede ekstern dispatch.
+  4.0.507/DEC-0260 afgrænser den konkrete undtagelse. Cron-job.org
+  er stadig deaktiveret indtil en faktisk start er verificeret.

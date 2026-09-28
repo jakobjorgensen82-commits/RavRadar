@@ -11,8 +11,16 @@ const run = (created, updated = created, status = 'completed', branch = 'main', 
   updated_at: updated,
 });
 const old = run('2026-09-27T20:25:00Z', '2026-09-27T23:03:00Z');
+const inertLegacy = [
+  { id: 34868901509, at: '2026-09-14T16:29:10Z', sha: 'c4930944a6273c00f201994504e3971ad3f2b165' },
+  { id: 34613079069, at: '2026-09-11T14:55:55Z', sha: '5587001b45ffea056addaf6cd20084719540336a' },
+  { id: 34228112413, at: '2026-09-08T12:47:45Z', sha: 'b814b525962514a368536f456477881390d6b333' },
+].map(({ id, at: time, sha }) => ({
+  ...run(time, time, 'queued'), id, run_attempt: 1,
+  event: 'workflow_dispatch', head_sha: sha,
+}));
 const base = {
-  normalRuns: { workflow_runs: [old] },
+  normalRuns: { workflow_runs: [old, ...inertLegacy] },
   manualRuns: { workflow_runs: [old] },
   nowMs: at('2026-09-28T00:19:00Z'),
 };
@@ -23,6 +31,20 @@ assert.deepEqual(check({}), {
   reason: 'external-four-hour-weather-slot-ready',
   slotAt: '2026-09-28T00:17:00.000Z',
 });
+for (const legacy of inertLegacy) {
+  assert.equal(check({ normalRuns: { workflow_runs: [old, legacy] } }).dispatch, true,
+    'Only the exact verified inert legacy queue may be ignored');
+  for (const changed of [
+    { ...legacy, id: legacy.id + 1 },
+    { ...legacy, run_attempt: 2 },
+    { ...legacy, event: 'schedule' },
+    { ...legacy, status: 'in_progress' },
+    { ...legacy, created_at: new Date(Date.parse(legacy.created_at) - 1000).toISOString() },
+    { ...legacy, updated_at: '2026-09-28T00:18:00Z' },
+    { ...legacy, head_sha: 'a'.repeat(40) },
+  ]) assert.equal(check({ normalRuns: { workflow_runs: [old, changed] } }).reason,
+    'weather-run-active-or-queued', 'A changed or unknown queued run must block dispatch');
+}
 assert.equal(check({ nowMs: at('2026-09-28T00:17:59Z') }).reason, 'before-external-cadence-window');
 assert.equal(check({ nowMs: at('2026-09-28T01:47:00Z') }).reason, 'external-cadence-window-expired');
 assert.equal(check({ normalRuns: { workflow_runs: [old,

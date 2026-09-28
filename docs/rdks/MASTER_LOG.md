@@ -1,4 +1,17 @@
-# 2026-09-28 – lokal 4.0.506: ekstern firetimersplan overtager
+# 2026-09-28 – lokal 4.0.507: tre fastlåste legacy-runs isoleres
+
+PR #469/4.0.506 blev merged som `1e2cc005` efter grøn exact-head
+CI. En levende tørkørsel `36365055249` bestod teknisk og sprang
+vejrdispatch over som krævet ved tørkørsel, men dens beslutning
+`weather-run-active-or-queued` var falsk: rå API-historik viste
+netop de tre gamle fastlåste `queued`-poster fra 8., 11. og 14.
+september, som ejeren allerede havde afklaret ikke bliver aktive.
+Lokal 4.0.507 undtager kun deres eksakte uændrede identiteter.
+Enhver ny eller ændret kø spærrer fortsat. Ingen vejrproduktion
+blev startet. Exact-head CI, merge, ekstern test og aktivering
+af det fortsat deaktiverede cron-job mangler; se DEC-0260.
+
+# HISTORISK – 2026-09-28 – 4.0.506: ekstern firetimersplan overtager
 
 Første 4.0.505-GitHub-planstart ved 00:17 UTC havde intet run kl.
 00:29. Ejeren påpegede med rette, at cron-job.org ikke var sat op:

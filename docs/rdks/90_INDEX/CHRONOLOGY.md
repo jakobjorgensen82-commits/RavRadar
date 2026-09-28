@@ -1,4 +1,14 @@
-## 2026-09-28 – lokal 4.0.506: ekstern firetimersplan
+## 2026-09-28 – lokal 4.0.507: fastlåste legacy-kørsler
+
+PR #469/4.0.506 blev merged som `1e2cc005` efter grøn
+exact-head-kildekontrol. Den første levende GitHub-tørkørsel
+`36365055249` afslørede, at tre gamle, uændrede `queued`-poster
+fra det ældre workflow blokerede den eksterne kontrol. Ingen
+normal vejrhentning blev startet. Lokal 4.0.507 undtager kun
+deres eksakte identiteter; ny/ændret kø spærrer fortsat.
+Ekstern test og cron-aktivering afventer; se DEC-0260.
+
+## HISTORISK 2026-09-28 – 4.0.506: ekstern firetimersplan
 
 Efter merge af 4.0.505 på main `6b7223dc` udeblev den første
 forventede GitHub-planstart indtil mindst 00:29 UTC. Ejeren

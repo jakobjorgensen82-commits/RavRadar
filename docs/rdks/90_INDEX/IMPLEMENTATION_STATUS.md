@@ -1,4 +1,17 @@
-# 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+# 2026-09-28 – lokal 4.0.507, eksakt legacy-køundtagelse
+
+- [x] 4.0.506 er merged som `1e2cc005` efter grøn exact-head CI.
+  Første levende tørkørsel `36365055249` læste begge historikker
+  og startede intet vejr, men blev falsk blokeret af tre gamle
+  uændrede `queued`-poster fra det ældre workflow.
+- [x] Lokal 4.0.507 undtager kun disse tre run-id'er med præcis
+  uændret status, tid, attempt, event og SHA. Ukendte/ændrede
+  ventende runs blokerer; måltesten er grøn. Se DEC-0260.
+- [ ] Exact-head CI, merge, levende kontrol uden falsk blokering,
+  ekstern starttest, cron-aktivering og normal produktionskæde.
+  Jobbet er fortsat deaktiveret.
+
+# HISTORISK STATUS – 2026-09-28 – 4.0.506, ekstern firetimersplan
 
 - [x] Direkte UI-kontrol: cron-job.org havde 0 aktive jobs og et
   deaktiveret kvartersjob mod pensioneret workflow. Samme job er
