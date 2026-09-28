@@ -21,6 +21,20 @@ senere normalt run mangler. Koden ændrer ikke DMI/CP's våd-celle-
 eller dybdelagsvalg, score, admininterpolation eller no-loss. Se
 DEC-0261 og CURRENT_TRUTH. Anbefalet indsats: Ekstra høj.
 
+Det første planlagte 4.0.509-normalrun `36478379298` startede alene
+28/9 kl. 20:19 UTC via bestået ekstern vagt `36478335838`; dets
+vejr- og deployresultat er endnu ikke kendt. På fælles 114 timer i
+de to seneste offentlige 4.0.508-pakker steg scoretilgængeligheden
+med 416/23.940 zone-timer uden tab. Ingen af de 210 zoner har nu
+nul scoretimer, men tre Limfjordszoner har kun 24, 24 og 48/118.
+Deres 22 kystdele fik hver præcis én 24-timersblok fra Copernicus
+Baltic ved et faktisk valgt fælles U/V-dybdelag; 2.068/2.596
+havstrømspar mangler stadig. På fælles zone-timer forsvandt 320
+lokale vind- og 115 direkte havstrømsmangeltilfælde uden nye
+tilfælde. Målingerne retfærdiggør ikke ændring af dybdelag eller
+AMM15-grænse. Dokumentations-PR #476 afventer vejr-runnet; merge
+den ikke mens normalrun bruger main.
+
 # HISTORISK CHECKPOINT – 2026-09-28 – gemt 4.0.508-build, ingen ny hentning
 
 Arbejd i `r2-private-runtime`. Main er `cadd9b9d`/4.0.508.

@@ -16,6 +16,15 @@
 - [ ] Fortsat vandstandshul efter time 70, delvise scoretimer i tre
   zoner, DMI-afvisninger og samlet datadækning er åbne. Ingen
   leverandør-/dybde-/admin-/scoreændring er godkendt af denne rettelse.
+- [x] Alle 210 offentlige zoner er målt på de to seneste pakker:
+  +416/23.940 fælles scoretimer uden tab, ingen zone med nul timer,
+  320 færre zone-timer med manglende lokal vind og 115 færre med
+  manglende direkte havstrøm. De tre tidligere tomme zoner har
+  fortsat kun 24, 24 og 48/118 timer; deres 22 dele har 528/2.596
+  direkte havstrømspar fra Copernicus Baltic i 24-timersblokke.
+- [ ] Normalrun `36478379298` på merged 4.0.509 er startet alene
+  via ekstern vagt `36478335838`; mål reel DMI-LF-rotation,
+  leverandør-/cache-/release-/deployresultat før effekt påstås.
 
 # HISTORISK STATUS – 2026-09-28 – 4.0.508, eksakt færdigpakke-recovery
 

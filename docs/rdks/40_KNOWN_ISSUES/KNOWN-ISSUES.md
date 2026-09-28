@@ -16,6 +16,16 @@
   del; undersøg rotation og den resterende horisont, før AMM15-
   grænsen ændres. DMI og Copernicus vælger allerede dybeste
   tilgængelige fælles U/V-lag efter våd-cellevalg.
+- **LOKALE SCOREINPUT I SEN PROGNOSE – ÅBEN:** På de 114 fælles
+  timer mellem de sidste to offentlige pakker steg tilgængelige
+  zone-scoretimer 20.344 → 20.760/23.940 uden tab. Ingen af 210
+  zoner har nu nul scoretimer. Manglende lokal vind forekom på
+  2.966 → 2.646 zone-timer og manglende direkte havstrøm på
+  978 → 863; ingen nye mangeltilfælde. De to årsager overlapper
+  nogle timer. Vejr ved zonehovedpunktet kan være udfyldt, selv
+  når scoreinput ved kystdelen er utilstrækkeligt. Analyser den
+  faktiske part-/timehorisont efter næste normale run; antag ikke,
+  at vandstand eller hovedpunktet forklarer alle scorehuller.
 - **FEMFELTSREST OG SELVKØRENDE DRIFT – ÅBEN:** Seneste offentlige
   target har 352.513/397.070 gyldige par på fem vejrtyper. Flere
   normale, ikke-overlappende runs, DMI-afvisningskoder, nøjagtig

@@ -15,6 +15,13 @@
 5. [ ] Fortsæt målt forbedring af de tre delvise zoner, de seks
    DMI-afvisninger, vandstandshorisont, kvoter og selvkørende drift.
    Ændr ikke U/V-dybdevalg eller AMM15-domæne uden nye data.
+6. [x] Efterprøv scoretilgængelighed på alle 210 zoner for præcis
+   fælles sted/time: +416/23.940 zonetimer uden tab, ingen fjerde
+   tom zone. Skeln lokal vindmangel fra direkte havstrømsmangel;
+   deres forekomster faldt 320 og 115 uden nye tilfælde.
+7. [ ] Følg det første planlagte merged-4.0.509-run `36478379298`
+   fra ekstern vagt `36478335838` til reel produktion før
+   dokumentations-PR #476 merges eller LF-rettelsen kaldes bevist.
 
 # Historisk roadmap – 2026-09-28, lokal 4.0.508
 

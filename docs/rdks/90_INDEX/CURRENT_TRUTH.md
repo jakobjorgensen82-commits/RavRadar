@@ -17,6 +17,26 @@ helt scoreløse Limfjordszoner har nu henholdsvis 24, 24 og 48 af 118
 scoretimer; deres 22 kystdele mangler stadig 2.068 af 2.596 direkte
 havstrømspar. Dette er fremgang, ikke komplethed eller stabilitetsbevis.
 
+En særskilt kontrol af alle 210 zoner på fælles 114 timer fandt
+20.344 → 20.760 scoretimer af 23.940, altså +416 uden tab.
+Ingen zone har nu nul scoretimer; der er ikke påvist en fjerde tom
+zone. De tre delvise Limfjordszoner fik henholdsvis 168/826,
+144/708 og 216/1.062 direkte kystdels-havstrømspar. Alle 528 nye
+par kom fra Copernicus Baltic i præcis én 24-timersblok pr. del
+med et faktisk valgt U/V-dybdelag. Den tredje zone har to
+forskudte blokke for forskellige kystdele og derfor kun delvis
+områdescore. Tidsblokkene stemmer med den afgrænsede
+24-timers-request i koden, men beviser ikke endnu, at de senere
+blokke kan hentes. AMM15-grænsen ændres ikke på denne evidens.
+
+For de samme 23.940 zone-timer faldt forekomsten af manglende
+lokalt vindinput 2.966 → 2.646 og manglende direkte havstrømsinput
+978 → 863, uden nye mangeltilfælde. De to typer kan forekomme på
+samme zone-time; de må ikke lægges sammen som unikke mangler.
+Hovedpunktets vejrvisning er ikke bevis for kystdelenes scoreinput.
+Ekstern vagt `36478335838` startede præcis ét normalt 4.0.509-run
+`36478379298` kl. 20:19 UTC; dets vejrresultat afventer.
+
 Limfjordsvandstand ophører efter prognosetime 70, mens andre DMI-
 vandstandskilder når time 93. To normale runs forsøgte LF-assets i
 tidlig kronologisk rækkefølge. Main 4.0.509 retter en verificeret
