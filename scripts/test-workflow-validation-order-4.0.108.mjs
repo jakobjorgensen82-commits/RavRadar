@@ -86,7 +86,7 @@ productionWorkflowNames.add('run-current-weather-once.yml');
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -1275,10 +1275,7 @@ if (/\$\{\{\s*secrets\./.test(activeTripRun)) {
   throw new Error('Trip-storage-secrets må kun bindes via step-env og ikke interpoleres i run-scriptet.');
 }
 for (const marker of [
-  'schedule:',
-  '- cron: "17 */4 * * *"',
-  'Normal vejrhentning hver fjerde time',
-  'forhindrer overlappende produktion',
+  'workflow_dispatch:',
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"',
   'Targeted supplement pending',
@@ -1291,8 +1288,10 @@ for (const marker of [
   'Extended provider bootstrap requires an explicit force run.',
   "extended_provider_bootstrap: ${{ needs.validate-dispatch.outputs.extended_provider_bootstrap == 'true' }}",
 ]) {
-  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 4-timersorkestrator mangler ${marker}`);
+  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den eksternt bestilte produktionsorkestrator mangler ${marker}`);
 }
+assert.doesNotMatch(orchestratorWorkflow, /^  schedule:$/m,
+  'Normal vejrhentning må ikke længere afhænge af GitHubs egen cron.');
 assert.ok(!orchestratorWorkflow.includes('name: Restore private Copernicus current cache for timed gate'),
   'Current-hour-gaten må låse UTC-timen uden at åbne en privat plaintext-cache.');
 for (const marker of [

@@ -1,4 +1,16 @@
-## 2026-09-26 – 4.0.497: vejrfri backendbinding bevarer cachepar
+## 2026-09-28 – lokal 4.0.506: ekstern firetimersplan
+
+Efter merge af 4.0.505 på main `6b7223dc` udeblev den første
+forventede GitHub-planstart indtil mindst 00:29 UTC. Ejeren
+påpegede, at cron-job.org havde 0 aktive jobs; direkte UI viste
+ét deaktiveret gammelt job. Ejeren flyttede derfor tidsplanen
+til dette ene eksterne job. Lokal 4.0.506 fjerner GitHub-cron
+og gør GitHub-kontrollen til et eksplicit eksternt dispatch med
+dobbelttjek og højst én normal kørsel pr. slot. En fejl i forrige
+slot blokerer ikke næste. Det eksterne job er endnu deaktiveret;
+exact-head CI, merge og livebevis afventer. Se DEC-0259.
+
+## HISTORISK 2026-09-26 – 4.0.497: vejrfri backendbinding bevarer cachepar
 
 PR #459/4.0.496 blev merged efter grøn exact-head. Code-only
 `36250874394` stoppede før eksterne ændringer på det bevidste

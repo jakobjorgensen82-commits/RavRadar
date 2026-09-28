@@ -1,4 +1,22 @@
-# 2026-09-28 – lokal 4.0.505: firetimers normalproduktion
+# 2026-09-28 – lokal 4.0.506: ekstern firetimersplan overtager
+
+Første 4.0.505-GitHub-planstart ved 00:17 UTC havde intet run kl.
+00:29. Ejeren påpegede med rette, at cron-job.org ikke var sat op:
+direkte UI viste 0 aktive jobs og ét deaktiveret kvartersjob mod
+det pensionerede Copernicus-workflow. Ejeren besluttede derefter
+at fjerne GitHubs egen vejrcron. Det ene eksisterende eksterne
+job `8348098` er gemt **deaktiveret** med UTC `19 */4 * * *`,
+POST og nyt GitHub-mål; ingen ny credential eller dublet.
+
+Lokal 4.0.506's GitHub-kontrol har ingen egen schedule, kræver
+eksplicit eksternt intent, dobbelttjekker begge produktionsindgange
+og kan bestille højst ét normalt `force=false`-run pr. slot uden
+overlap. Fejl i forrige slot blokerer ikke næste ordinære slot;
+fejlrun i samme slot genstartes ikke straks. Den gamle 15-/45-
+minuttersvagt forbliver slukket. Exact-head CI, sikker merge,
+ekstern test og flere faktiske kørsler mangler; se DEC-0259.
+
+# Historisk log – 2026-09-28 – lokal 4.0.505: firetimers normalproduktion
 
 Fuldt 4.0.504-run `36347957014` er leveret og verificeret, men
 383.054/397.070 femfeltspar og tre helt tomme zoner er ikke fuld

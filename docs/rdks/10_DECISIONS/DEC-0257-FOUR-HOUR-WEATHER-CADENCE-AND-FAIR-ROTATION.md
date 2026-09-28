@@ -3,6 +3,10 @@
 **Dato:** 2026-09-28
 **Status:** Besluttet af ejeren; lokal 4.0.505, liveeffekt afventer
 
+**Senere ændring:** DEC-0259 flytter selve tidsudløseren fra GitHubs
+`schedule` til det ene eksisterende cron-job.org-job. Firetimerskadence,
+leverandørrotation, tidsbudgetter og datakrav herunder består.
+
 Ejeren ønsker én normal vejrhentning hver fjerde time, længere tidsgrænser
 og mere tid til Copernicus. Dette afløser den tidligere 15-minuttersplan,
 men ikke kravet om én produktion ad gangen, fuld artifactgate eller

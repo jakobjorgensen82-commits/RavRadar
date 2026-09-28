@@ -1,10 +1,6 @@
 name: Update weather and deploy RavRadar
 
 on:
-  schedule:
-    # Normal vejrhentning hver fjerde time; den fælles concurrencygruppe
-    # forhindrer overlappende produktion, også ved manuel dispatch.
-    - cron: "17 */4 * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -79,14 +75,15 @@ permissions:
   actions: read
   pull-requests: read
 
-# GitHub starter den normale vejropdatering hver fjerde time. En særskilt
-# current-hour-gate låser den eksakte UTC-time. Den endelige Copernicus-målliste
+# Den eksterne firetimerskontrol starter run-current-weather-once.yml.
+# Denne ældre indgang er kun manuel. Current-hour-gaten låser den eksakte UTC-time.
+# Den endelige Copernicus-målliste
 # dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production-v2' }}
   # RavScore transitions and normal weather share one production group. An
-  # incoming push, schedule or force run must never cancel an atomic model
+  # incoming push, external dispatch or force run must never cancel an atomic model
   # transition between preparation, full gates and Pages deployment. Queued
   # normal runs re-check freshness and become cheap no-ops as needed.
   queue: max
@@ -308,7 +305,7 @@ jobs:
         id: readiness
         shell: bash
         env:
-          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true) }}
+          CHECK_CURRENT_HOUR: ${{ github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
           echo "ready=true" >> "$GITHUB_OUTPUT"
