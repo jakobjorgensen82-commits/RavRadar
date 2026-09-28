@@ -1,14 +1,29 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.506
+**Håndbogsversion:** 4.0.507
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.506 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.507 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.103 4.0.507 – Gammel kø må ikke spænde ben for nyt vejr
+
+Den første virkelige kontrol efter 4.0.506 fandt tre gamle
+GitHub-kørsler, der stadig vises som ventende, selv om de er
+fastlåst siden 8., 11. og 14. september. Derfor startede
+kontrollen ikke en ny vejrhentning. Ingen data blev ændret.
+
+RavRadar ignorerer nu kun disse tre poster, når alle deres
+identitetsoplysninger og tidsstempler stadig er præcis de samme.
+En ny eller ændret ventende kørsel blokerer fortsat, så to
+vejrhentninger ikke kommer til at arbejde oven i hinanden.
+En afsluttet fejl fra forrige firetimersslot spærrer ikke næste.
+Den eksterne plan er stadig deaktiveret, indtil koden og en
+faktisk start er verificeret. Se DEC-0260.
 
 ## 89.102 4.0.506 – Ekstern firetimersplan uden overlap
 

@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.507, legacy-køundtagelse
+
+Arbejd i `r2-private-runtime`, branch
+`codex/4.0.507-ignore-inert-legacy-queue`. PR #469/4.0.506 blev
+merged til main `1e2cc005` efter grøn exact-head CI. Job
+`8348098` i cron-job.org er stadig deaktiveret. GitHub-tørkørsel
+`36365055249` var grøn men besluttede fejlagtigt
+`weather-run-active-or-queued` på grund af tre gamle uændrede
+legacy-`queued`-poster. Lokal 4.0.507 undtager kun deres
+eksakte identiteter (DEC-0260). Node-måltest består; exact-head
+CI, merge, ny tørkørsel, ekstern test og cron-aktivering mangler.
+Den manuelle cron-job.org-test viser en advarsel om at sende
+brugerens IP-adresse i X-Forwarded-For til GitHub; særskilt
+brugergodkendelse er spurgt asynkront og må ikke antages.
+Ingen secret eller privat vejrpayload må i repo eller svar.
+Anbefalet model/indsats: Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – 4.0.506, ekstern firetimersplan
 
 Arbejd i `r2-private-runtime`, branch
 `codex/4.0.506-weather-cadence-watchdog`; `cb79` er en gammel,

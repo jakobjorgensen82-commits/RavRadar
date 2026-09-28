@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+# NYESTE SANDHED – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
+
+PR #469/4.0.506 er merged som main `1e2cc005` efter grøn
+exact-head-kildekontrol. Det eksterne cron-job.org-job `8348098`
+er fortsat deaktiveret. GitHubs levende tørkørsel `36365055249`
+gennemførte uden vejrdispatch, men afslørede en falsk blokering:
+tre helt uændrede legacy-`queued`-runs fra 8., 11. og 14.
+september står stadig i rå API-historik. Ejeren har tidligere
+afklaret, at de ikke kan blive aktive. Lokal 4.0.507 ignorerer
+kun disse tre eksakte identiteter; enhver ændret eller ny ventende
+kørsel blokerer fortsat. Måltesten er grøn, men exact-head CI,
+merge, faktisk ekstern test, cron-aktivering og normal produktion
+afventer. Se DEC-0260. Femfeltsdækning er ikke komplet bevist.
+
+# HISTORISK SANDHED – 2026-09-28 – 4.0.506, ekstern firetimersplan
 
 4.0.505 er merged på `main` som `6b7223dc`. Den første forventede
 GitHub-`schedule` ved 00:17 UTC havde endnu intet run kl. 00:29;

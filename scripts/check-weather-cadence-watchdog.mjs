@@ -9,12 +9,28 @@ const EARLIEST_DISPATCH_MS = 60_000;
 const LATEST_DISPATCH_MS = 90 * 60_000;
 const ACTIVE = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 const STATUSES = new Set([...ACTIVE, 'completed']);
+// GitHub still reports these three old, inert legacy-orchestrator attempts as
+// queued. Ignore only their exact unchanged identities, never an arbitrary old
+// queued run. A changed attempt, SHA, timestamp or state regains the guard.
+const INERT_LEGACY_QUEUE = new Map([
+  [34868901509, { at: '2026-09-14T16:29:10Z', sha: 'c4930944a6273c00f201994504e3971ad3f2b165' }],
+  [34613079069, { at: '2026-09-11T14:55:55Z', sha: '5587001b45ffea056addaf6cd20084719540336a' }],
+  [34228112413, { at: '2026-09-08T12:47:45Z', sha: 'b814b525962514a368536f456477881390d6b333' }],
+]);
 
-function readMainRuns(document, branch, label, nowMs) {
+function isInertLegacyQueue(run) {
+  const known = INERT_LEGACY_QUEUE.get(run?.id);
+  return Boolean(known && run.status === 'queued' && run.run_attempt === 1 &&
+    run.event === 'workflow_dispatch' && run.head_sha === known.sha &&
+    run.created_at === known.at && run.updated_at === known.at);
+}
+
+function readMainRuns(document, branch, label, nowMs, legacy = false) {
   if (!Array.isArray(document?.workflow_runs)) {
     throw new Error(`${label}: workflow-run history is unavailable`);
   }
-  return document.workflow_runs.filter(run => run?.head_branch === branch).map(run => {
+  return document.workflow_runs.filter(run => run?.head_branch === branch &&
+    !(legacy && isInertLegacyQueue(run))).map(run => {
     const createdMs = Date.parse(run.created_at);
     const updatedMs = Date.parse(run.updated_at);
     if (!STATUSES.has(run.status) || !Number.isFinite(createdMs) ||
@@ -36,7 +52,7 @@ export function assessWeatherCadenceWatchdog({
   if (!Number.isFinite(nowMs) || branch !== 'main') {
     throw new Error('Invalid four-hour weather watchdog policy');
   }
-  const normal = readMainRuns(normalRuns, branch, 'normal weather', nowMs);
+  const normal = readMainRuns(normalRuns, branch, 'normal weather', nowMs, true);
   const manual = readMainRuns(manualRuns, branch, 'manual weather', nowMs);
   if (manual.length === 0) throw new Error('No verified current-weather run history on main');
   const slotMs = Math.floor((nowMs - SLOT_MINUTE_MS) / FOUR_HOURS_MS) * FOUR_HOURS_MS + SLOT_MINUTE_MS;

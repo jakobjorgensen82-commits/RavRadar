@@ -1,7 +1,7 @@
 # DEC-0259 – ekstern firetimersplan for normal vejrhentning
 
 **Dato:** 2026-09-28
-**Status:** Besluttet af ejeren; lokal 4.0.506 og deaktiveret ekstern konfiguration, livebevis afventer
+**Status:** Udgivet i 4.0.506; ekstern aktivering afventer 4.0.507's præcise legacy-køundtagelse og livebevis
 
 Efter at den første 4.0.505-GitHub-`schedule` ved 00:17 UTC ikke havde
 oprettet et run kl. 00:29 UTC, påpegede ejeren, at den uafhængige
@@ -48,3 +48,8 @@ efterfølgende normalrun og mindst flere ordinære slot uden overlap.
 Budgetter og R2-/Supabase-Free-forbrug måles fortsat. Dette erstatter
 DEC-0258's GitHub-planlagte 90-minuttersvagt og DEC-0257's
 GitHub-ejede udløser, men ikke deres firetimersrotation og datakrav.
+
+Efter merge af PR #469 som `1e2cc005` afslørede første levende
+tørkørsel `36365055249` tre gamle fastlåste `queued`-poster, der
+fejlagtigt blokerede dispatch. Den snævre fortsættelse står i
+DEC-0260; cron-job.org er ikke aktiveret på dette grundlag alene.
