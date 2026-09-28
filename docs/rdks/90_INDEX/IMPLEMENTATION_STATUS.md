@@ -1,5 +1,20 @@
 # 2026-09-28 – 4.0.508, eksakt færdigpakke-recovery
 
+- [x] PR #473: grøn exact-head source-CI `36418025182`, merge
+  `e28e2f85`; afgrænset recovery `36418759385` bestod uden
+  leverandørhentning eller cachebygning.
+- [x] Det eksakte `36396834072-1` RavScore-checkpoint er gemt i
+  Supabase som central version 14 for 28/9 kl. 08 UTC.
+- [x] Det eksakte krypterede færdigbuild er autentificeret og
+  publiceret i privat R2 med central pointer; fire objekter blev
+  afvist ved anonym læsning.
+- [ ] Offentlig Pages-version er stadig 4.0.504. Find kun en sikker,
+  separat vej til offentlig levering, der respekterer ejerens forbud
+  mod ny vejrhentning og cachebygning. Kald ikke 4.0.508 offentligt
+  deployet eller driften stabil. Cron-job.org `8348098` forbliver fra.
+
+# HISTORISK STATUS – 2026-09-28 – recovery før faktisk publicering
+
 - [x] Main `cadd9b9d` er leveret som kode. Eksternt testkald startede
   kun normalrun `36396834072`; det gennemførte leverandører,
   cachebygning, 54 artifact-/valideringskontroller og releasegate.

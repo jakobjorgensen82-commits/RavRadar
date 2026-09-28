@@ -1,4 +1,22 @@
-# NYESTE SANDHED – 2026-09-28 – 4.0.508, gemt vejrpakke afventer checkpoint
+# NYESTE SANDHED – 2026-09-28 – 4.0.508, gemt pakke i Supabase og R2
+
+PR #473 bestod exact-head source-CI `36418025182` på
+`38acfef5` og blev merged som main `e28e2f85`. Det afgrænsede
+recovery-run `36418759385` genbrugte præcis checkpoint-cachen og
+det krypterede artifact fra `36396834072-1` uden vejrleverandører
+eller ny cachebygning. Supabase-CAS publicerede RavScore-checkpointet
+for 28/9 kl. 08 UTC som central version 14. Den autentificerede
+private pakke blev publiceret i R2 med opdateret central pointer
+og fire private objekter; anonym læsning blev afvist. Den snævre
+55-sekunders timeout for checkpoint-RPC'en blev læst tilbage i
+Supabase og er fastholdt i kildemigrationen. Dette er et faktisk
+privat lagringsbevis, ikke et Pages-deploy: offentlig side viste
+fortsat 4.0.504 ved kontrollen efter recovery. Cron-job.org-job
+`8348098` er deaktiveret og genkontrolleret; start ikke ny vejr-
+eller cachebygning under ejerens aktuelle instruktion. En sikker,
+separat offentlig levering uden genbygning er endnu ikke bevist.
+
+# HISTORISK SANDHED – 2026-09-28 – 4.0.508, gemt vejrpakke afventede checkpoint
 
 4.0.508 er merged som main `cadd9b9d`. Ekstern test af cron-job.org
 `8348098` udløste præcis ét normalt run `36396834072` på denne commit.
