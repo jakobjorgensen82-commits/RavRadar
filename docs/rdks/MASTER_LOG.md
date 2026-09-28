@@ -1,4 +1,17 @@
-# 2026-09-28 – main 4.0.509, DMI-Limfjord køretning
+# 2026-09-29 – 4.0.509 normalt deploy, restårsager åbne
+
+Run `36478379298` blev startet af det eksterne firetimersslot,
+afsluttet grønt og offentligt verificeret som
+`rr-20260928215954-210`/4.0.509. På 114 identiske timer er
+339.105 → 351.428/383.610 gyldige femfeltspar (+12.323, nul
+tab). Den private produktionscache, Supabase-CAS, R2 og Pages
+bestod; forrige separate krypterede progresskopi fik
+`BASELINE_MISMATCH`, mens en ny kopi blev gemt. Tre delvise zoner
+har fortsat kun 20/20/46 scoretimer, og syv LF-zoner kun 67/118
+vandstandstimer. Afvisningskoder, CP-shard 8 og næste naturlige
+rotation må undersøges før ændring eller stabilitetspåstand.
+
+# HISTORISK 2026-09-28 – main 4.0.509, DMI-Limfjord køretning
 
 Den eksterne firetimersplan udløste normalrun `36450204193`, som
 bestod alle leverandører, cache, fulde gates, Supabase-CAS version

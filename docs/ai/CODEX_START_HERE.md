@@ -1,4 +1,33 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – main 4.0.509, live-DMI afventer
+# AKTUELT CHECKPOINT – 2026-09-29 – 4.0.509 offentligt, sen horisont åben
+
+Det eksternt udløste normalrun `36478379298` på main `9fcd996f`
+sluttede grønt gennem tre leverandører, cache, no-loss, fuld
+validering/releasegate, Supabase-CAS, privat R2 og Pages. Levende
+`version.json` er 4.0.509, og manifestet er
+`rr-20260928215954-210`/28-09 kl. 20 UTC. På præcis 114 fælles
+timer × 673 kystdele steg vind +2.791, bølger +0, havstrøm +72,
+vandstand +5.580 og vandtemperatur +3.880 uden tab af gamle gyldige
+par. Samlet fælles dækning er 351.428/383.610; hele nye vindue er
+357.307/397.070. Dette er ikke komplethed eller autonom stabilitet.
+
+`DK-B05-21/23/24` har nu kun 20/20/46 af 118 scoretimer og samlet
+524/2.596 kystdel-timepar med havstrøm, alle fra Copernicus Baltic.
+Kun shard 9 fik 72 nye strømpar på fælles timer; shard 8 med 19 af
+de 22 kystdele fik ingen. Syv Limfjordszoner har fortsat vandstand
+kun 67/118 timer. Koden for DMI-LF-restkø er live, men den tilsigtede
+senere vandstand er ikke bevist. De præcise leverandør-/afvisnings-
+årsager og næste slots rotationsresultat skal måles, før ny kode.
+
+Protected runtime og forrige preflight var grundlag. Den særskilte
+krypterede progresskopi fra det forrige run blev afvist med
+`BASELINE_MISMATCH` og må ikke omtales som gendannet; dette run gemte
+sin egen nye krypterede fremdrift. Den næste eksterne firetimersstart
+må ikke dubleres manuelt. Dokumentations-PR #476 skal opdateres og
+have grøn exact-head CI før merge; den ældre tekst nedenfor er
+historisk. `cb79` forbliver en gammel, dirty checkout. Sol/Ekstra høj
+anbefales til videre DMI/Copernicus-rodårsagsarbejde.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – main 4.0.509, live-DMI afventer
 
 Main er `9fcd996f`/4.0.509 efter PR #475 og grøn exact-head
 source-CI `36476446904`; den offentlige prognose er fortsat 4.0.508.

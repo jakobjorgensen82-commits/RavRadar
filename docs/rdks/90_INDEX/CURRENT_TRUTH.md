@@ -1,4 +1,32 @@
-# NYESTE SANDHED – 2026-09-28 – main 4.0.509, offentlig 4.0.508
+# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.509, resthuller åbne
+
+Normalt cron-run `36478379298` på main `9fcd996f`/4.0.509 bestod
+leverandører, cache, no-loss, fuld validering og releasegate,
+Supabase-CAS, privat R2 og Pages. Den levende side viser dataset
+`rr-20260928215954-210` med target 28/9 kl. 20 UTC. På de 114
+fælles timer × 673 kystdele var femfeltsdækningen
+339.105 → 351.428/383.610: +12.323 gyldige par og nul tabte.
+Vind +2.791, bølger +0, havstrøm +72, vandstand +5.580 og
+vandtemperatur +3.880. Hele det nye 118-timersvindue har
+357.307/397.070 par; dette er ikke komplet eller stabil drift.
+
+De tre delvise Limfjordszoner har 20, 20 og 46/118 scoretimer.
+Deres 22 kystdele har kun 524/2.596 havstrømspar, alle fra
+Copernicus Baltic; shard 8 rummer 19 af delene og shard 9 de
+øvrige tre. På fælles timer kom kun 72 nye havstrømspar, alle i
+shard 9. Den gamle U/V-dybdelagsfejl er ikke påvist. Syv zoner
+har stadig vandstand kun i 67/118 timer; 131 andre zoner fik
+12 flere fælles timer, og 72 andre var uændrede. Den præcise
+sen-LF-afvisnings-/leverandørårsag er fortsat åben.
+
+Beskyttet produktionsgrundlag og forrige preflight blev genbrugt.
+Den løse krypterede progresskopi fra forrige run blev korrekt afvist
+med `BASELINE_MISMATCH` mod den nye beskyttede generation; en ny
+krypteret kopi er gemt. Følg næste ordinære slot uden manuel dublet,
+og mål om kilde- og rotationsfremgangen fortsætter. Dokumentation
+nedenfor beskriver tilstanden før dette run.
+
+# HISTORISK 2026-09-28 – main 4.0.509, offentlig 4.0.508
 
 Main `9fcd996f`/4.0.509 er merged fra PR #475 efter grøn
 exact-head source-CI `36476446904`. Den offentlige prognose er endnu

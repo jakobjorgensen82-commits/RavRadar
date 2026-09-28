@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – main 4.0.509, DMI-LF-livebevis åbent
+# AKTUELT CHECKPOINT – 2026-09-29 – offentlig 4.0.509, næste slot afventes
+
+Run `36478379298` på main `9fcd996f` er afsluttet og deployet.
+Fuld no-loss, validering/releasegate, CAS, privat R2, Pages og
+levende `version.json`/manifest er kontrolleret. Dataset
+`rr-20260928215954-210`, target 28/9 kl. 20 UTC, 210 zoner,
+673 kystdele og 118 timer. På 114 identiske timer er femfelts-
+dækningen 339.105 → 351.428/383.610 (+12.323, nul tab); hele nye
+vindue er 357.307/397.070. De tre delvise zoner har 20/20/46
+scoretimer, og syv LF-zoner har vandstand 67/118 timer.
+
+Protected runtime blev genbrugt; forrige krypterede progresskopi
+fik `BASELINE_MISMATCH` mod den ændrede baseline og blev ikke
+installeret. Ny fremdrift er krypteret gemt. Undersøg særskilt om
+dette påvirker flere slots; kald ikke det en gyldig progress-restore.
+Næste cron-job.org-slot er 29/9 kl. 00:19 UTC. Start ikke manuelt.
+PR #476 er docs-only, men dens tidligere head beskriver stadig
+4.0.509 som ikke liveverificeret; opdatér, genvalider exact head og
+merge kun uden aktivt normalrun. Sol/Ekstra høj. `cb79` er dirty.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – main 4.0.509, DMI-LF-livebevis åbent
 
 Main `9fcd996f`/4.0.509 er merged fra PR #475 efter grøn exact-head
 CI `36476446904`; offentlig side er endnu 4.0.508. Den forrige main

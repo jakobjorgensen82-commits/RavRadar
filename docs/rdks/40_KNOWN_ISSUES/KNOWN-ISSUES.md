@@ -1,4 +1,34 @@
-# Aktuelle issues – 2026-09-28, offentlig 4.0.508 og main 4.0.509
+# Aktuelle issues – 2026-09-29, offentlig 4.0.509
+
+- **HAVSTRØM I TRE LIMFJORDSZONER – ÅBEN:** På 118 timer har
+  `DK-B05-21/23/24` kun 20/20/46 scoretimer. Deres 22 kystdele
+  har 524/2.596 gyldige havstrømspar; 2.072 mangler. Alt gyldigt
+  kommer fra Copernicus Baltic i 24-timersblokke. På de 114
+  fælles timer gav run `36478379298` kun +72 nye par, alle i
+  shard 9 (tre dele); shard 8 (19 dele) fik ingen. Shardrotation,
+  tidsbudget, forsøg og leverandørrespons skal adskilles, før en
+  ændring af AMM15-grænsen eller dybdelag kan begrundes.
+- **VANDSTAND I SEN HORISONT – ÅBEN:** Syv Limfjordszoner har
+  67/118 timer til og med 1/10 kl. 14 UTC; 72 andre zoner har
+  90/118 og 131 zoner 102/118. På identiske timer fik de 131
+  zoner 12 ekstra vandstandstimer hver, men alle syv LF-zoner var
+  uændrede. 4.0.509's restkørettelse er produktionskørt, men
+  dens tilsigtede LF-effekt er ikke bevist. Mål DMI-afvisningskoder,
+  native katalog og administratorvalgte interpolationskilder.
+- **FEMFELTSREST – ÅBEN:** Offentlig target 28/9 kl. 20 UTC har
+  357.307/397.070 gyldige sted-time-vejrpar. Rester: vind 9.336,
+  bølger 0, havstrøm 4.369, vandstand 13.793 og vandtemperatur
+  12.265. På 114 fælles timer mod forrige pakke kom +12.323
+  uden tab; én grøn kørsel beviser ikke komplethed eller stabilitet.
+- **PROGRESS-LINEAGE – OBSERVATION:** Forrige krypterede Actions-
+  progresskopi blev hentet, men afvist med `BASELINE_MISMATCH`
+  efter installation af den nyere beskyttede produktionsgeneration.
+  Den beskyttede cache og data blev bevaret, og nyt krypteret
+  fremskridt blev gemt. Mål om denne normale baselineovergang
+  koster kilde-/rotationsfremgang over efterfølgende runs; slet
+  eller sammenflet ikke private pakker på formodning.
+
+# Historiske issues – 2026-09-28, offentlig 4.0.508 og main 4.0.509
 
 - **LIMFJORDS SENERE DMI-VANDSTAND – ÅBEN:** Offentlig 4.0.508
   stopper for 23 berørte kystdele efter prognosetime 70, mens

@@ -1,4 +1,22 @@
-# Aktivt roadmap – 2026-09-28, main 4.0.509
+# Aktivt roadmap – 2026-09-29, offentlig 4.0.509
+
+1. [x] Første naturlige 4.0.509-run `36478379298` bestod hele
+   cache-/validerings-/CAS-/R2-/Pages-kæden og blev set på siden.
+   Samme 114 timer gav +12.323/383.610 femfeltspar, nul tab.
+2. [ ] Følg næste og flere firetimersslots uden Codex-start;
+   bevis eksakt cachelineage, DMI-/Copernicus-/Open-Meteo-
+   rotation, femfeltsfremgang, kvoter og ingen overlap.
+3. [ ] Undersøg Copernicus Baltic shard 8 (19 af 22 dele i de tre
+   delvise zoner) mod shard 9, som gav 72 nye havstrømspar;
+   adskil udsættelse, forsøg og gyldig leverandørrespons. Ingen
+   AMM15-/dybdelagsændring uden positivt kildetestbevis.
+4. [ ] Undersøg syv LF-zoners uændrede 67/118 vandstandstimer,
+   DMI's sikre afvisningskoder og adminvalgte interpolation.
+5. [ ] Gør PR #476 sand efter dette live-run, kræv ny exact-head
+   kildekontrol og merge i et writer-frit vindue. Bevar gammel
+   15/45-minuttersvagt deaktiveret og Free-kvotemåling aktiv.
+
+# Historisk roadmap – 2026-09-28, main 4.0.509
 
 1. [x] Normalrun `36450204193` genbrugte nyeste gyldige cache,
    gennemførte tre leverandører, gates, CAS, privat R2 og Pages.

@@ -1,4 +1,25 @@
-# 2026-09-28 – main 4.0.509, DMI-Limfjord-restkø
+# 2026-09-29 – offentlig 4.0.509, målt fremgang og resthuller
+
+- [x] Eksternt slot og vagt startede præcis normalrun
+  `36478379298` på main `9fcd996f` uden overlap. Tre leverandører,
+  cache, streng no-loss, 54 fulde artefaktkontroller, releasegate,
+  Supabase-CAS, privat R2 og Pages bestod. Offentlig version og
+  manifest `rr-20260928215954-210` er læst direkte.
+- [x] Samme 114 timer × 673 dele: vind +2.791, bølger +0,
+  havstrøm +72, vandstand +5.580, vandtemperatur +3.880;
+  samlet +12.323/383.610 og nul gamle gyldige par tabt.
+- [ ] 118-timerspakken har stadig 39.763 manglende femfeltspar.
+  Tre zoner har kun 20/20/46 scoretimer, syv LF-zoner kun
+  67/118 vandstandstimer. Ingen fjerde helt scoreløs zone blev
+  fundet. DMI's sen-LF-effekt og CP shard 8 er ikke bevist.
+- [ ] Kontroller næste naturlige firetimersslot og nyeste gyldige
+  beskyttede cache. Forrige løse progresskopi blev afvist med
+  `BASELINE_MISMATCH`; dette run gemte ny krypteret fremdrift.
+  Undersøg flere slots før cron kaldes selvkørende/stabil.
+- [ ] Opdatér docs-only PR #476 fra den gamle afventende status,
+  kræv ny grøn exact-head source-CI og merge kun uden aktivt vejr.
+
+# Historisk status – 2026-09-28 – main 4.0.509, DMI-Limfjord-restkø
 
 - [x] Ekstern firetimersplan er aktiv. Normalt run `36450204193`
   bestod alle leverandører, cache, fulde gates, CAS, R2 og Pages;

@@ -1,3 +1,17 @@
+## 4.0.509 – første offentlige normalrun (2026-09-29)
+
+- Det eksternt startede run `36478379298` gennemførte tre
+  leverandører, cache, no-loss, fuld validering/releasegate,
+  Supabase-CAS, privat R2 og Pages. Offentlig version og dataset
+  `rr-20260928215954-210` er kontrolleret direkte.
+- På samme 114 timer og 673 dele steg gyldige vind-, bølge-,
+  havstrøms-, vandstands- og temperaturpar med henholdsvis
+  2.791, 0, 72, 5.580 og 3.880; nul gyldige par gik tabt.
+  Hele 118-timerspakken har 357.307/397.070 femfeltspar.
+- Tre zoner har endnu kun 20/20/46 scoretimer, og syv LF-zoner
+  kun 67/118 vandstandstimer. Rettelsens tilsigtede sen-LF-
+  dækning er ikke bevist; ingen ny kilde-/scorekode er ændret.
+
 ## 4.0.509 – ens DMI-prioritet og fair LF-restkø (merged, 2026-09-28)
 
 - To normale kørsler viste kronologiske LF-forsøg, mens offentlig

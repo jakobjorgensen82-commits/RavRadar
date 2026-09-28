@@ -1,4 +1,16 @@
-## 2026-09-28 – main 4.0.509: LF-restkø bevarer prioritet og rotation
+## 2026-09-29 – 4.0.509 offentligt, LF-horisont fortsat kort
+
+Eksternt slot og vagt startede normalrun `36478379298` alene på
+main `9fcd996f`. Leverandører, cache, no-loss, fulde gates,
+Supabase-CAS, privat R2 og Pages bestod. Levende target 28/9
+kl. 20 UTC har 357.307/397.070 femfeltspar. På 114 identiske
+timer gav kørslen +12.323 par og nul tab. Syv LF-zoner blev
+stående på 67/118 vandstandstimer; CP Baltic gav 72 nye
+havstrømspar i shard 9, ikke i shard 8 med 19 af de 22 dele
+i tre delvise zoner. Dette beviser levering, men ikke komplethed
+eller den tilsigtede sen-LF-forbedring.
+
+## HISTORISK 2026-09-28 – main 4.0.509: LF-restkø bevarer prioritet og rotation
 
 Efter vellykket normalt run `36450204193` blev offentlig 4.0.508
 opdateret. Nøjagtig fælles sted-/tidskontrol viste +3.484 gyldige

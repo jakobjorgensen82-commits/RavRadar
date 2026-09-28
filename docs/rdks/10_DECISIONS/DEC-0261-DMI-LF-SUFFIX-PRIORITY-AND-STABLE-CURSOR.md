@@ -1,7 +1,21 @@
 # DEC-0261 – Samme DMI-prioritet ved Limfjord-omplanlægning
 
 **Dato:** 2026-09-28
-**Status:** Implementeret på main i 4.0.509; vejrproduktionsbevis afventer
+**Status:** Implementeret på main i 4.0.509; produktionskæden bestod,
+men den tilsigtede sen-LF-vandstand er ikke bevist.
+
+## Produktionsmåling 2026-09-29
+
+Normalrun `36478379298` på den mergede kode bestod cache,
+no-loss, fulde gates, beskyttet gemning og Pages. Syv berørte
+Limfjordszoner havde fortsat kun 67/118 vandstandstimer og var
+uændrede på alle 114 fælles timer mod forrige pakke. Derimod fik
+131 andre zoner 12 ekstra fælles vandstandstimer hver. Dette
+beviser, at workflowet og DMI-vandstand kan gøre fremskridt, men
+ikke at den ændrede restkø faktisk hentede senere LF-værdier.
+Den eksakte native katalog-/afvisnings-/interpolationsårsag skal
+måles før yderligere kodeændring. Beslutningen om DMI-first og
+centralt valgte vandstandskilder består.
 
 Den normale firetimershentning skal fortsætte med at udfylde reelle
 mangler før den opgraderer allerede gyldige reserveværdier. For
