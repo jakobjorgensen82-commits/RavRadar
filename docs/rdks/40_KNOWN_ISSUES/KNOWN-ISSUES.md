@@ -1,5 +1,16 @@
 # Aktuelle issues – 2026-09-28, gemt 4.0.508-build
 
+- **PRIVAT PAKKE GEMT, OFFENTLIG LEVERING ÅBEN:** Recovery
+  `36418759385` publicerede det eksakte score-checkpoint som
+  Supabase-version 14 samt den autentificerede private pakke i R2
+  med central pointer; anonym læsning af fire objekter blev afvist.
+  Den offentlige side viste fortsat 4.0.504. Ejerens forbud mod ny
+  vejrhentning og cachebygning gælder fortsat, og cron-job.org
+  `8348098` er deaktiveret. Undersøg offentlig levering uden
+  genbygning særskilt, før 4.0.508 kaldes deployet.
+
+# Historisk issue – 2026-09-28, Supabase-CAS før recovery
+
 - **FÆRDIG BYGNING STOPPET VED SUPABASE-CAS – ÅBEN:** Run
   `36396834072` gennemførte frisk vejr, cache og releasegate,
   men checkpoint-RPC ramte `57014` to gange ved 30 sekunder.

@@ -1,4 +1,19 @@
-# 2026-09-28 – gemt 4.0.508-build, ingen ny vejrhentning
+# 2026-09-28 – eksakt 4.0.508-recovery uden ny vejr- eller cachebygning
+
+PR #473 bestod exact-head source-CI `36418025182` og blev merged
+som `e28e2f85`. Recovery `36418759385` gendannede kun den eksakte
+krypterede pakke og checkpoint fra `36396834072-1`. Supabase-CAS
+opdaterede RavScore-checkpointet til central version 14 for target
+28/9 kl. 08 UTC. Den autentificerede private pakke blev gemt i R2
+med central pointer, og anonym læsning af fire objekter blev afvist.
+Der var ingen DMI-, Copernicus- eller Open-Meteo-hentning og ingen
+ny cachebygning. Offentlig side viste stadig 4.0.504; Pages er ikke
+deployet af recovery. Cron-job.org `8348098` blev genkontrolleret
+deaktiveret. Den funktionslokale 55-sekunders timeout er live og
+registreret som idempotent migration. Stabil autonom drift og
+fuld vejrdækning er ikke bevist.
+
+# HISTORISK – 2026-09-28 – gemt 4.0.508-build før recovery
 
 Ejeren besluttede efter fejlet `36396834072`, at den allerede
 færdige og krypterede pakke skal genoptages uden ny hentning og
