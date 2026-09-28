@@ -1,4 +1,4 @@
-# 2026-09-28 – lokal 4.0.509, DMI-Limfjord-restkø
+# 2026-09-28 – main 4.0.509, DMI-Limfjord-restkø
 
 - [x] Ekstern firetimersplan er aktiv. Normalt run `36450204193`
   bestod alle leverandører, cache, fulde gates, CAS, R2 og Pages;
@@ -7,9 +7,10 @@
   dynamiske restkø er reproduceret. Lokal adapter giver samme
   komponentprioritet i begge planer og fastholder sorteringsmarkøren
   fra turens start. Målrettet regressionskontrakt består.
-- [ ] Afslut version/RDKS/håndbøger, geodatadiff og relevante lokale
-  tests; kræv grøn source-CI på PR'ens eksakte head. Merge først uden
-  aktiv normal vejrkørsel. Følg derefter mindst ét normalt run med
+- [x] Version/RDKS/håndbøger, særskilt geodatadiff og måltests
+  er gennemført. PR #475 bestod exact-head CI `36476446904` og blev
+  merged som `9fcd996f`, da ingen normal vejrkørsel var aktiv.
+- [ ] Følg mindst ét normalt run på den mergede main med
   dokumenteret sen LF-rotation, cache/no-loss, fulde gates, R2/Pages
   og offentlig vandstand/alle fem vejrfelter.
 - [ ] Fortsat vandstandshul efter time 70, delvise scoretimer i tre

@@ -1,4 +1,4 @@
-# 2026-09-28 – lokal 4.0.509, DMI-Limfjord køretning
+# 2026-09-28 – main 4.0.509, DMI-Limfjord køretning
 
 Den eksterne firetimersplan udløste normalrun `36450204193`, som
 bestod alle leverandører, cache, fulde gates, Supabase-CAS version
@@ -7,10 +7,11 @@ bestod alle leverandører, cache, fulde gates, Supabase-CAS version
 LF-native forsøg og ingen senere vandstand i 23 LF-dele efter
 prognosetime 70. Kode- og måltest fandt to omplanlægningsbrister:
 dynamisk restkø mistede den præcise komponentprioritet og flyttede
-rotationspivot til sidste forsøg. Lokal 4.0.509 deler prioritet
+rotationspivot til sidste forsøg. Main 4.0.509 deler prioritet
 mellem begge plansteder og bevarer startpivot i turen. Ingen
-dybdelag, vejraccept, score eller adminrute ændres. Live-effekt,
-exact-head CI og merge mangler; se DEC-0261.
+dybdelag, vejraccept, score eller adminrute ændres. PR #475 bestod
+exact-head CI `36476446904` og blev merged som `9fcd996f`;
+live-effekt mangler fortsat. Se DEC-0261.
 
 # HISTORISK – 2026-09-28 – eksakt 4.0.508-recovery uden ny vejr- eller cachebygning
 

@@ -1,14 +1,17 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.509, DMI-LF-restkø
+# AKTUELT CHECKPOINT – 2026-09-28 – main 4.0.509, DMI-LF-livebevis åbent
 
-Main `42c57a8a`/4.0.508 er offentligt efter vellykket normalt
+Main `9fcd996f`/4.0.509 er merged fra PR #475 efter grøn exact-head
+CI `36476446904`; offentlig side er endnu 4.0.508. Den forrige main
+`42c57a8a`/4.0.508 er offentligt efter vellykket normalt
 run `36450204193` med CAS version 63, privat R2 og Pages. Eksternt
 cron-job.org-job `8348098` er aktivt hver fjerde UTC-time; ingen
 manuel ekstra kørsel. Target 28/9 kl. 16 UTC har 352.513/397.070
-femfeltspar og tre kun delvist scorede Limfjordszoner. Ny lokal
-branch `codex/dmi-lf-critical-rotation` i isoleret worktree
-`dmi-lf-rotation` retter to reproducerede fejl i LF-restkøens
-prioritet/rotationspivot. Der er måltest, men ingen exact-head CI,
-merge eller faktisk effekt endnu. Følg DEC-0261 og nyere CURRENT_TRUTH.
+femfeltspar og tre kun delvist scorede Limfjordszoner. Branch
+`codex/dmi-lf-critical-rotation` i isoleret worktree
+`dmi-lf-rotation` rettede to reproducerede fejl i LF-restkøens
+prioritet/rotationspivot. Måltest, CI og merge er gennemført;
+faktisk senere DMI-/vandstandseffekt mangler. Følg DEC-0261 og
+nyere CURRENT_TRUTH.
 Anbefalet model/indsats: Sol/Ekstra høj. `cb79` er gammel og må
 ikke bruges til at bygge fra.
 

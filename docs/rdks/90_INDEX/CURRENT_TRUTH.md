@@ -1,6 +1,9 @@
-# NYESTE SANDHED – 2026-09-28 – offentlig 4.0.508, lokal DMI-rotationsrettelse
+# NYESTE SANDHED – 2026-09-28 – main 4.0.509, offentlig 4.0.508
 
-Main `42c57a8a`/4.0.508 og cron-job.org-job `8348098` er aktive.
+Main `9fcd996f`/4.0.509 er merged fra PR #475 efter grøn
+exact-head source-CI `36476446904`. Den offentlige prognose er endnu
+4.0.508; en 4.0.509-vejrproduktion er ikke verificeret.
+Cron-job.org-job `8348098` er aktivt.
 Det seneste normale run `36450204193` lykkedes gennem DMI,
 Copernicus, Open-Meteo, cache, fulde gates, Supabase-checkpoint
 version 63, privat R2 og Pages. Offentlig pakke
@@ -16,9 +19,9 @@ havstrømspar. Dette er fremgang, ikke komplethed eller stabilitetsbevis.
 
 Limfjordsvandstand ophører efter prognosetime 70, mens andre DMI-
 vandstandskilder når time 93. To normale runs forsøgte LF-assets i
-tidlig kronologisk rækkefølge. Lokal 4.0.509 retter en verificeret
-prioritets-/rotationsbrist i DMI's omplanlagte restkø; måltest er grøn,
-men exact-head CI, merge og reel effekt afventer. Se DEC-0261 og
+tidlig kronologisk rækkefølge. Main 4.0.509 retter en verificeret
+prioritets-/rotationsbrist i DMI's omplanlagte restkø; måltest,
+exact-head CI og merge er grønne, men reel effekt afventer. Se DEC-0261 og
 KNOWN-ISSUES. Den gamle U/V-dybdelagsfejl er allerede rettet i både
 DMI- og Copernicus-udvælgelsen; der ændres ikke dybdelag her.
 

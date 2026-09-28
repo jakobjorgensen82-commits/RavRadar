@@ -1,6 +1,8 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – offentlig 4.0.508 og lokal LF-rettelse
+# AKTUELT CHECKPOINT – 2026-09-28 – main 4.0.509, live-DMI afventer
 
-Main er `42c57a8a`/4.0.508. Eksternt cron-job.org-job `8348098`
+Main er `9fcd996f`/4.0.509 efter PR #475 og grøn exact-head
+source-CI `36476446904`; den offentlige prognose er fortsat 4.0.508.
+Eksternt cron-job.org-job `8348098`
 er aktivt hver fjerde UTC-time, og `36450204193` lykkedes gennem
 leverandører, cache, releasegates, Supabase-CAS version 63, privat
 R2 og Pages. Offentlig target 28/9 kl. 16 UTC viser
@@ -8,13 +10,13 @@ R2 og Pages. Offentlig target 28/9 kl. 16 UTC viser
 Limfjordszoner har kun 24, 24 og 48/118 scoretimer. Kald ikke
 dækningen komplet. Der må ikke startes ekstra eller overlappende run.
 
-Arbejd på branch `codex/dmi-lf-critical-rotation` i isoleret
-`dmi-lf-rotation`-worktree, ikke i den gamle `cb79`. Lokal 4.0.509
+Den mergede branch `codex/dmi-lf-critical-rotation` blev bygget i
+isoleret `dmi-lf-rotation`-worktree, ikke i den gamle `cb79`. 4.0.509
 retter to verificerede omplanlægningsbrister i DMI-LF: den dynamiske
 restkø tabte `criticalPriority` og flyttede rotationspivot fra
 turens start efter hvert forsøg. To normale runs forsøgte LF-timer
 kronologisk og offentlig Limfjordsvandstand sluttede efter time 70.
-Måltest er grøn, men exact-head CI, sikker merge og målt effekt i et
+Måltest, exact-head CI og sikker merge er grønne, men målt effekt i et
 senere normalt run mangler. Koden ændrer ikke DMI/CP's våd-celle-
 eller dybdelagsvalg, score, admininterpolation eller no-loss. Se
 DEC-0261 og CURRENT_TRUTH. Anbefalet indsats: Ekstra høj.

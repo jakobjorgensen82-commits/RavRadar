@@ -1,7 +1,7 @@
 # DEC-0261 – Samme DMI-prioritet ved Limfjord-omplanlægning
 
 **Dato:** 2026-09-28
-**Status:** Besluttet; lokal 4.0.509, produktionsbevis afventer
+**Status:** Implementeret på main i 4.0.509; vejrproduktionsbevis afventer
 
 Den normale firetimershentning skal fortsætte med at udfylde reelle
 mangler før den opgraderer allerede gyldige reserveværdier. For
@@ -31,9 +31,11 @@ vandstandshul går før en allerede dækket havstrømsopgradering, og
 at restkøen efter første forsøg fortsætter ved den ubetjente sene
 horisont. Den kræver også, at begge produktionskald bruger adapteren
 og startmarkøren. Lokal test alene beviser ikke reel senere DMI-
-dækning: exact-head kilde-CI, sikker merge uden aktiv vejrproduktion,
-normalt run, cache/no-loss, Supabase/R2/Pages og offentlig femfelts-
-kontrol afventer. Hvis den senere vandstand stadig mangler, skal
+dækning: normalt run, cache/no-loss, Supabase/R2/Pages og offentlig
+femfeltskontrol afventer. PR #475 bestod exact-head source-CI `36476446904`
+på `4f61ff84` og blev merged som `9fcd996f`; den planlagte
+firetimerskørsel skal stadig give det nødvendige livebevis. Hvis
+den senere vandstand stadig mangler, skal
 faktisk leverandørkatalog, afvisninger og adminvalgte kilder måles
 før en ny ændring; en reservekilde aktiveres ikke på formodning.
 

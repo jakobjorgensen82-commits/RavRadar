@@ -1,4 +1,4 @@
-# Aktivt roadmap – 2026-09-28, lokal 4.0.509
+# Aktivt roadmap – 2026-09-28, main 4.0.509
 
 1. [x] Normalrun `36450204193` genbrugte nyeste gyldige cache,
    gennemførte tre leverandører, gates, CAS, privat R2 og Pages.
@@ -7,11 +7,12 @@
 2. [x] Reproduceret LF-restkøfejl og afgrænset lokal rettelse med
    måltest: samme prioritet i første og dynamisk plan og uændret
    sorteringsmarkør under en samlingstur. Se DEC-0261.
-3. [ ] Fuldfør versions-/RDKS-/håndbogs- og geodatakontrol, grøn
-   source-CI på eksakt head og sikker merge uden aktivt vejr-run.
-   Kontroller senere naturligt run for faktisk sen LF-rotation,
+3. [x] Versions-/RDKS-/håndbogs- og geodatakontrol samt grøn
+   source-CI på eksakt head `36476446904`; PR #475 blev sikkert
+   merged som `9fcd996f` uden aktivt vejr-run.
+4. [ ] Kontroller næste naturlige run for faktisk sen LF-rotation,
    vandstand, femfelts-no-loss, leverandører, CAS/R2/Pages.
-4. [ ] Fortsæt målt forbedring af de tre delvise zoner, de seks
+5. [ ] Fortsæt målt forbedring af de tre delvise zoner, de seks
    DMI-afvisninger, vandstandshorisont, kvoter og selvkørende drift.
    Ændr ikke U/V-dybdevalg eller AMM15-domæne uden nye data.
 

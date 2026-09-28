@@ -1,11 +1,12 @@
-# Aktuelle issues – 2026-09-28, offentlig 4.0.508 og lokal 4.0.509
+# Aktuelle issues – 2026-09-28, offentlig 4.0.508 og main 4.0.509
 
 - **LIMFJORDS SENERE DMI-VANDSTAND – ÅBEN:** Offentlig 4.0.508
   stopper for 23 berørte kystdele efter prognosetime 70, mens
   650 andre dele når time 93. To normale runs forsøgte LF-filer i
   tidlig kronologisk rækkefølge. Den dynamiske kø mistede
   komponentprioritet og flyttede sorteringspivot under samme tur.
-  Lokal 4.0.509 retter begge med måltest; reel senere LF-dækning,
+  Main 4.0.509 retter begge efter grøn exact-head CI og merge;
+  reel senere LF-dækning,
   central kildehorisont og eventuelle afvisninger skal stadig måles
   efter naturligt produktionsrun. Se DEC-0261.
 - **TRE DELVIST DÆKKEDE ZONER – ÅBEN:** `DK-B05-21`, `DK-B05-23`
