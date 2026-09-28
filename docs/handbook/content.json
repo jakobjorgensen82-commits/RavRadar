@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-28",
   "sections": [
     {
+      "id": "sealed-weather-build-checkpoint-recovery-4-0-508",
+      "chapter": "89.105",
+      "title": "Færdig vejrpakke stoppede ved databasen",
+      "summary": "Vejr og cache var færdige, men scorehistorikken nåede en tidsgrænse i Supabase. Den krypterede pakke er bevaret.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den nye prognose er endnu ikke på hjemmesiden, men vi behøver ikke hente vejret og bygge cachen igen for at forsøge at gemme den færdige pakke.</div><p>Kun den konkrete databasefunktion har fået lidt mere tid, og ændringen er læst tilbage. Den automatiske vejrstart er midlertidigt slået fra efter ejerens ønske. Vi genoptager kun den eksakte krypterede pakke og kontrollerer særskilt gemning i Supabase, privat R2 og offentlig visning. En vellykket tidsændring er ikke i sig selv bevis for, at prognosen er leveret eller fremtidig drift er stabil.</p>"
+    },
+    {
       "id": "dmi-current-stage-safe-rejection-reason-4-0-508",
       "chapter": "89.104",
       "title": "Når DMI afviser en vejrtime",

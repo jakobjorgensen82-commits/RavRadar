@@ -1,4 +1,21 @@
-# 2026-09-28 – lokal 4.0.508, DMI-afvisningsdiagnostik
+# 2026-09-28 – 4.0.508, eksakt færdigpakke-recovery
+
+- [x] Main `cadd9b9d` er leveret som kode. Eksternt testkald startede
+  kun normalrun `36396834072`; det gennemførte leverandører,
+  cachebygning, 54 artifact-/valideringskontroller og releasegate.
+- [x] Krypteret færdigpakke-artifact `36396834072-1` og separat
+  score-checkpoint-cache `36396834072-1` findes med eksakte identiteter.
+- [x] RPC'ens 30-sekunders timeout gav to `57014`; kun denne funktion
+  er sat til 55 sekunder i Supabase og læst tilbage. Cron-job.org
+  `8348098` er deaktiveret efter ejerens nye instruktion.
+- [ ] Den nye, snævre recovery skal bestå exact-head source-CI og
+  derefter gendanne/publisere **samme** checkpoint og krypterede
+  private build uden vejrleverandører eller cachebygning.
+- [ ] Verificér Supabase-CAS, R2-pointer og derefter en særskilt,
+  sikker vej til Pages. En gemt privat pakke er ikke i sig selv en
+  opdateret offentlig prognose. Genaktiver ikke cron under dette arbejde.
+
+# HISTORISK STATUS – 2026-09-28 – lokal 4.0.508, DMI-afvisningsdiagnostik
 
 - [x] PR #470/4.0.507 merged som main `36083ab8` efter grøn
   exact-head CI. Tørkørsel `36366253633` bekræftede klar ekstern

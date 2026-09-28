@@ -1,0 +1,205 @@
+name: Recover exact sealed 4.0.508 weather build
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv RECOVER-SEALED-36396834072"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+# Recovery shares the production write lock, but never calls weather providers
+# or regenerates a score/cache artifact.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    name: Publish exact saved checkpoint and private runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_RUN_ID: '36396834072'
+      SOURCE_RUN_ATTEMPT: '1'
+      SOURCE_HEAD: cadd9b9dc605ac810ad2fbd6c5a73be834302dfb
+      TARGET_REFERENCE: '2026-09-28T08:00:00.000Z'
+      RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-sealed-recovery
+      RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-sealed-recovery/bundle
+      RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: ${{ vars.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND || 'supabase' }}
+    steps:
+      - name: Require exact manual authority on main
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = RECOVER-SEALED-36396834072
+
+      # Run the original, already validated producer code. The newer workflow
+      # and timeout migration are control-plane changes, not a model rebind.
+      - uses: actions/checkout@v7
+        with:
+          ref: cadd9b9dc605ac810ad2fbd6c5a73be834302dfb
+          fetch-depth: 0
+
+      - name: Prove immutable source, current main and exact failed artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "$SOURCE_HEAD"
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$current_main" = "$GITHUB_SHA"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$SOURCE_HEAD" "$GITHUB_SHA"
+          # A UI/model/provider change merged after the producer would make
+          # its old private build an unsafe new-current publication.
+          allowed_changes=(
+            .github/workflows/recover-sealed-weather-36396834072.yml
+            supabase/migrations/20260928112500_checkpoint_cas_bounded_timeout_55s.sql
+            scripts/test-reusable-production-workflows.mjs
+            CHANGELOG-4.0.508.md
+            HANDBOOK-RAVRADAR.md
+            docs/ai/CODEX_START_HERE.md
+            docs/handbook/content.json
+            docs/rdks/10_DECISIONS/DEC-0249-WEATHER-CACHE-AND-BOUNDED-COPERNICUS.md
+            docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md
+            docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md
+            docs/rdks/90_INDEX/CURRENT_TRUTH.md
+            docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md
+            docs/rdks/MASTER_LOG.md
+          )
+          while IFS= read -r changed; do
+            allowed=false
+            for item in "${allowed_changes[@]}"; do
+              if test "$changed" = "$item"; then allowed=true; break; fi
+            done
+            if test "$allowed" != true; then
+              echo "Unrelated main change blocks sealed recovery: $changed" >&2
+              exit 1
+            fi
+          done < <(git diff --name-only "$SOURCE_HEAD" "$GITHUB_SHA")
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+            | jq -e --arg head "$SOURCE_HEAD" \
+              '.id == 36396834072 and .run_attempt == 1 and .head_sha == $head and .conclusion == "failure"' >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/10966570534" \
+            | jq -e --arg head "$SOURCE_HEAD" '
+              .id == 10966570534
+              and .name == "ravradar-private-build-stage-36396834072-1"
+              and .expired == false
+              and .digest == "sha256:ad864f1b29ad7f453f24eda7717bd10e837ad70147f87fa2b3ea77f3ee85592d"
+              and .workflow_run.id == 36396834072
+              and .workflow_run.head_sha == $head
+            ' >/dev/null
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Restore only the exact validated checkpoint cache
+        id: checkpoint-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/ravscore-continuation-checkpoint
+          key: ravscore-continuation-schema6-v2-36396834072-1
+          fail-on-cache-miss: true
+
+      - name: Require exact checkpoint identity before protected write
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.checkpoint-cache.outputs.cache-hit }}" = true
+          test -s .cache/ravscore-continuation-checkpoint/checkpoint.json
+          jq -e --arg target "$TARGET_REFERENCE" \
+            '.productionReferenceAt == $target and .partCount == 673' \
+            .cache/ravscore-continuation-checkpoint/checkpoint.json >/dev/null
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish saved RavScore checkpoint to Supabase by protected CAS
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --publish
+          --target-reference "$TARGET_REFERENCE"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Download only the authenticated encrypted build
+        uses: actions/download-artifact@v8
+        with:
+          name: ravradar-private-build-stage-36396834072-1
+          path: ${{ runner.temp }}/ravradar-sealed-recovery
+          run-id: 36396834072
+          github-token: ${{ github.token }}
+
+      - name: Derive original private-runtime contract and target
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          node scripts/private-production-runtime-workflow.mjs expected \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --target-reference "$TARGET_REFERENCE" \
+            --output .cache/private-production-runtime-expected.json
+
+      - name: Authenticate and restore the exact sealed bundle without rebuilding
+        run: >-
+          node scripts/staged-private-production-runtime.mjs open
+          --repository-root "$GITHUB_WORKSPACE"
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --expected .cache/private-production-runtime-expected.json
+          --source-head "$SOURCE_HEAD"
+          --repository "$GITHUB_REPOSITORY"
+          --run-id "$SOURCE_RUN_ID"
+          --run-attempt "$SOURCE_RUN_ATTEMPT"
+          --input "${{ runner.temp }}/ravradar-sealed-recovery/sealed.bin"
+        env:
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Reconfirm current main before private publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^{commit})" = "$SOURCE_HEAD"
+          test "$RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND" = r2
+
+      - name: Publish authenticated original private bundle to R2 and central pointer
+        run: >-
+          node scripts/protected-private-production-runtime.mjs
+          --publish
+          --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
+          --repository-root "$GITHUB_WORKSPACE"
+          --expected .cache/private-production-runtime-expected.json
+          --source-head "$SOURCE_HEAD"
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Verify private runtime is not anonymously readable
+        run: node scripts/protected-private-production-runtime.mjs --audit-anon
+        env:
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

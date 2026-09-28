@@ -1,5 +1,24 @@
 # DEC-0249 – fortsæt fra rigtig vejrpakke og gem kortere Copernicus-kald
 
+## Tillæg 2026-09-28 – afgrænset timeout og allerede færdig pakke
+
+En ny fuld 4.0.508-kørsel `36396834072` viste, at 30 sekunder ikke
+var en sikker øvre grænse for den beskyttede score-checkpoint-RPC:
+to forsøg blev annulleret med `57014`, efter at vejr, cache og
+releasegate var færdige. Den eksakte krypterede private bygning og
+score-checkpointet overlevede særskilt i GitHub. Ejeren besluttede,
+at der **ikke** må startes ny vejrhentning eller cachebygning for at
+rette dette. Den eksterne plan er deaktiveret og verificeret.
+Kun funktionen `ravradar_ravscore_checkpoint_cas` får nu 55 sekunder;
+Supabase er læst tilbage. Denne tidsforøgelse er ikke en ændring af
+payload-, model- eller kildevalidering og er ikke i sig selv bevis for
+en vellykket CAS. Genoptagelse må kun bruge run `36396834072`'s
+eksakte checkpoint og autentificerede, krypterede build-artifact,
+samme kilde-SHA og samme mål. Nyere central produktion, ændret
+kontrakt eller manglende artifact skal afvise publicering. R2 og
+Pages afventer særskilte beviser; en privat gemning er ikke et
+offentligt deploy.
+
 **Dato:** 2026-09-23
 **Status:** Lokal 4.0.479; livebevis afventer
 

@@ -1,4 +1,20 @@
-# 2026-09-28 – lokal 4.0.508: DMI-pre-commit kan diagnosticeres sikkert
+# 2026-09-28 – gemt 4.0.508-build, ingen ny vejrhentning
+
+Ejeren besluttede efter fejlet `36396834072`, at den allerede
+færdige og krypterede pakke skal genoptages uden ny hentning og
+cachebygning. Cron-job.org `8348098` blev slået fra og kontrolleret
+efter genindlæsning. Score-checkpointets Supabase-RPC ramte
+`57014` to gange ved 30 sekunder; netop den funktions timeout blev
+sat til 55 sekunder og læst tilbage, uden at ændre andre roller
+eller databaseindstillinger. Både krypteret Actions-artifact og
+det eksakte checkpoint findes. En engangsrecovery på præcis run,
+attempt, source-SHA, target og artifact-digest er under kontrol;
+den har endnu ikke publiceret checkpoint, R2 eller Pages.
+Samme kørsels DMI/Copernicus/Open-Meteo, cachebygning,
+artifact-validering og releasegate bestod; det er ikke bevis
+for offentlig levering. UI-PR #472 afventer separat håndtering.
+
+# HISTORISK – 2026-09-28 – lokal 4.0.508: DMI-pre-commit kan diagnosticeres sikkert
 
 PR #470 er merged som main `36083ab8`, og guard-tørkørsel
 `36366253633` viste klar beslutning uden vejrdispatch. Det ene

@@ -10,6 +10,23 @@ deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
+## 89.105 4.0.508 – Færdig vejrpakke stoppede ved databasen
+
+En normal kørsel nåede helt igennem vejrleverandørerne og den
+langsomme cachebygning. Før resultatet kunne lægges ud,
+overskred gemning af scorehistorikken en 30-sekundersgrænse i
+Supabase. Derfor er den nye prognose **ikke** på hjemmesiden.
+Den færdige private pakke og score-checkpointet ligger dog stadig
+krypteret i GitHub. Kun den konkrete databasefunktion har nu fået
+55 sekunder, og ændringen er kontrolleret i databasen.
+
+Efter ejerens ønske er den automatiske start midlertidigt slået
+fra. Vi prøver at gemme netop den færdige pakke uden at hente
+vejret eller bygge cachen på ny. Først når database, privat R2
+og hjemmesiden hver især er kontrolleret, kan vi sige, at den
+er leveret. Den længere tidsgrænse alene beviser ikke, at alle
+fremtidige kørsler er stabile.
+
 ## 89.104 4.0.508 – Når DMI afviser en vejrtime
 
 RavRadar kontrollerer en ny DMI-timefil, før dens vejrdata må

@@ -1,4 +1,17 @@
-# Aktuelle issues – 2026-09-28, lokal 4.0.508
+# Aktuelle issues – 2026-09-28, gemt 4.0.508-build
+
+- **FÆRDIG BYGNING STOPPET VED SUPABASE-CAS – ÅBEN:** Run
+  `36396834072` gennemførte frisk vejr, cache og releasegate,
+  men checkpoint-RPC ramte `57014` to gange ved 30 sekunder.
+  Krypteret færdigpakke og eksakt score-checkpoint er bevaret;
+  R2/Pages er ikke opdateret. Funktionens timeout er afgrænset
+  hævet til 55 sekunder og læst tilbage, men den gemte pakke
+  skal stadig publiceres via eksakt recovery uden ny hentning.
+  Cron-job.org `8348098` er deaktiveret under ejerens forbud
+  mod nye vejrkørsler. 55 sekunder er ikke et generelt bevis
+  for fremtidig autonom stabilitet.
+
+# Historiske issues – 2026-09-28, lokal 4.0.508
 
 - **DMI DKSS-TIMEFIL AFVISES EFTER GENINDTRÆDEN – ÅBEN:** Fuld
   normal `36347957014` deployede, men DMI afviste seks genbrugte

@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.508, DMI-afvisning kan skelnes
+# AKTUELT CHECKPOINT – 2026-09-28 – gemt 4.0.508-build, ingen ny hentning
+
+Arbejd i `r2-private-runtime`. Main er `cadd9b9d`/4.0.508.
+Ekstern test af cron-job.org startede normalrun `36396834072`.
+Vejr, cache og fulde gates bestod; checkpoint-RPC fejlede to
+gange på `57014` under dens 30-sekundersgrænse. Krypteret
+færdigpakke `ravradar-private-build-stage-36396834072-1` og
+score-checkpoint `ravscore-continuation-schema6-v2-36396834072-1`
+findes, men R2/Pages/offentlig 4.0.508 blev ikke leveret.
+Supabase-funktionen alene er nu sat til 55 sekunder og læst tilbage.
+Ejeren forbød ny vejr- og cachebygning; cron-job.org-jobbet er
+deaktiveret og genindlæst. På branch
+`codex/4.0.508-sealed-checkpoint-recovery` forberedes eksakt
+genoptagelse fra de to gemte dele. Den er ikke kørt endnu.
+Kør exact-head source-CI og stop ved modstridende evidens.
+UI-PR #472 er særskilt og må ikke blandes ind i recovery.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – lokal 4.0.508, DMI-afvisning kan skelnes
 
 Arbejd i `r2-private-runtime` på branch
 `codex/4.0.508-dmi-stage-rejection-codes`; `cb79` er ikke

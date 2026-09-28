@@ -1,3 +1,16 @@
+# Aktuel gemt-vejr-recovery – 2026-09-28
+
+- **REQ-SEALED-BUILD-RECOVERY-0508 – BINDENDE:** Under ejerens
+  aktuelle forbud må ingen planlagt, manuel eller overlappende
+  vejrhentning og ingen ny cache-/scorebygning starte. Kun
+  checkpoint-cache og krypteret færdigbuild fra præcis
+  `36396834072-1`, bundet til `cadd9b9d`, må forsøges
+  genoptaget. Eksakt GitHub-artifactidentitet, cache-hit,
+  kildekontrakt, central CAS, privat R2-pointer og offentlig
+  Pages-levering skal verificeres hver for sig. Fejl lukker
+  sikkert; cron forbliver deaktiveret, indtil ejeren igen
+  beslutter at genoptage almindelige kørsler.
+
 # Aktuel DMI-diagnostik – 2026-09-28
 
 - **REQ-DMI-STAGE-SAFE-REASON-0508 – BINDENDE:** Når en operationel
