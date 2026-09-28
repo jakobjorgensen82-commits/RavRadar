@@ -1,4 +1,15 @@
-## 2026-09-28 – lokal 4.0.508: sikker årsagskode for DMI
+## 2026-09-28 – lokal 4.0.509: LF-restkø bevarer prioritet og rotation
+
+Efter vellykket normalt run `36450204193` blev offentlig 4.0.508
+opdateret. Nøjagtig fælles sted-/tidskontrol viste +3.484 gyldige
+femfeltspar uden tab, men vandstand i 23 Limfjordsdele sluttede
+efter prognosetime 70. De to seneste run forsøgte LF-timer
+kronologisk. Lokal kodegennemgang og reproduktion fandt, at
+omplanlagt LF-restkø udelod `criticalPriority` og genbrugte den
+senest forsøgte time som sorteringspivot. 4.0.509 retter kun
+denne køadfærd. Måltest består; CI og faktisk drift afventer.
+
+## HISTORISK 2026-09-28 – lokal 4.0.508: sikker årsagskode for DMI
 
 PR #470/4.0.507 blev merged som main `36083ab8`; levende
 tørkørsel `36366253633` viste, at et eksternt slot kan godkendes

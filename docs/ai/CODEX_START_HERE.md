@@ -1,4 +1,25 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – gemt 4.0.508-build, ingen ny hentning
+# AKTUELT CHECKPOINT – 2026-09-28 – offentlig 4.0.508 og lokal LF-rettelse
+
+Main er `42c57a8a`/4.0.508. Eksternt cron-job.org-job `8348098`
+er aktivt hver fjerde UTC-time, og `36450204193` lykkedes gennem
+leverandører, cache, releasegates, Supabase-CAS version 63, privat
+R2 og Pages. Offentlig target 28/9 kl. 16 UTC viser
+352.513/397.070 gyldige femfeltspar; de tre tidligere tomme
+Limfjordszoner har kun 24, 24 og 48/118 scoretimer. Kald ikke
+dækningen komplet. Der må ikke startes ekstra eller overlappende run.
+
+Arbejd på branch `codex/dmi-lf-critical-rotation` i isoleret
+`dmi-lf-rotation`-worktree, ikke i den gamle `cb79`. Lokal 4.0.509
+retter to verificerede omplanlægningsbrister i DMI-LF: den dynamiske
+restkø tabte `criticalPriority` og flyttede rotationspivot fra
+turens start efter hvert forsøg. To normale runs forsøgte LF-timer
+kronologisk og offentlig Limfjordsvandstand sluttede efter time 70.
+Måltest er grøn, men exact-head CI, sikker merge og målt effekt i et
+senere normalt run mangler. Koden ændrer ikke DMI/CP's våd-celle-
+eller dybdelagsvalg, score, admininterpolation eller no-loss. Se
+DEC-0261 og CURRENT_TRUTH. Anbefalet indsats: Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – gemt 4.0.508-build, ingen ny hentning
 
 Arbejd i `r2-private-runtime`. Main er `cadd9b9d`/4.0.508.
 Ekstern test af cron-job.org startede normalrun `36396834072`.

@@ -2166,6 +2166,37 @@ def prioritize_marine_assets_for_current_gaps(
     return sorted(assets, key=priority)
 
 
+def prioritize_dkss_primary_assets(
+    assets: list[dict[str, Any]],
+    target_ids: list[str],
+    covered_pair_keys: set[tuple[str, str]],
+    requirements: dict[str, dict[str, Any]],
+    *,
+    direct_valid_times: set[str],
+    regional_gap_pairs_by_time: dict[str, set[tuple[str, str]]],
+    verified_reusable_valid_times: set[str],
+    critical_cursor_valid_time: str | None,
+) -> list[dict[str, Any]]:
+    """Use the same component priorities for initial and dynamic LF plans."""
+    return prioritize_marine_assets_for_current_gaps(
+        assets,
+        target_ids,
+        covered_pair_keys,
+        critical_by_time={
+            valid_time: bool(row["critical"])
+            for valid_time, row in requirements.items()
+        },
+        critical_priority_by_time={
+            valid_time: int(row["criticalPriority"])
+            for valid_time, row in requirements.items()
+        },
+        direct_valid_times=direct_valid_times,
+        regional_gap_pairs_by_time=regional_gap_pairs_by_time,
+        verified_reusable_valid_times=verified_reusable_valid_times,
+        critical_cursor_valid_time=critical_cursor_valid_time,
+    )
+
+
 def critical_native_cursor_for_run(
     state: dict[str, Any], previous_run: dict[str, Any],
     required_valid_times: set[str],
@@ -12432,7 +12463,11 @@ def main() -> int:
             # validated regional gain. Never mutate the prefetched official
             # catalog used by the immutable T..T+117 ledger.
             assets = list(assets)
-            critical_native_cursor = (
+            # Keep the entry cursor fixed while this turn replans its LF
+            # suffix. The durable cursor still advances on each real attempt,
+            # but moving the sort pivot to that attempt would requeue the
+            # near-term prefix and starve later native hours.
+            critical_native_cursor_at_turn_start = (
                 critical_native_cursor_for_run(
                     state, previous_run, required_current_valid_times,
                 )
@@ -12697,25 +12732,18 @@ def main() -> int:
                             verified_reusable_regional_times
                         ),
                     }
-                assets = prioritize_marine_assets_for_current_gaps(
+                assets = prioritize_dkss_primary_assets(
                     assets,
                     current_target_ids,
                     planning_current_pairs,
-                    critical_by_time={
-                        valid_time: bool(row["critical"])
-                        for valid_time, row in acquisition_requirements.items()
-                    },
-                    critical_priority_by_time={
-                        valid_time: int(row["criticalPriority"])
-                        for valid_time, row in acquisition_requirements.items()
-                    },
+                    acquisition_requirements,
                     direct_valid_times=required_current_valid_times,
                     regional_gap_pairs_by_time=regional_gap_pairs_by_time,
                     verified_reusable_valid_times=(
                         verified_reusable_regional_times
                     ),
                     critical_cursor_valid_time=(
-                        critical_native_cursor
+                        critical_native_cursor_at_turn_start
                         if not collection_is_maintenance else None
                     ),
                 )
@@ -13410,7 +13438,6 @@ def main() -> int:
                     # upstream null/error. A failed first hour must not keep
                     # the long-horizon critical queue at its head forever.
                     state["criticalNativeCursorValidTime"] = asset["valid"]
-                    critical_native_cursor = asset["valid"]
                     checkpoint_controller.mark_bulk_dirty()
                 try:
                     with supervised_asset_operation(supervised_identity):
@@ -14154,15 +14181,11 @@ def main() -> int:
                                 )
                             )
                             assets[asset_number:] = (
-                                prioritize_marine_assets_for_current_gaps(
+                                prioritize_dkss_primary_assets(
                                     remaining_assets,
                                     current_target_ids,
                                     planning_current_pairs,
-                                    critical_by_time={
-                                        valid_time: bool(row["critical"])
-                                        for valid_time, row
-                                        in remaining_requirements.items()
-                                    },
+                                    remaining_requirements,
                                     direct_valid_times=(
                                         required_current_valid_times
                                     ),
@@ -14173,7 +14196,7 @@ def main() -> int:
                                         verified_reusable_regional_times
                                     ),
                                     critical_cursor_valid_time=(
-                                        critical_native_cursor
+                                        critical_native_cursor_at_turn_start
                                         if not collection_is_maintenance else None
                                     ),
                                 )

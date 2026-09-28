@@ -1,4 +1,28 @@
-# NYESTE SANDHED – 2026-09-28 – 4.0.508, gemt pakke i Supabase og R2
+# NYESTE SANDHED – 2026-09-28 – offentlig 4.0.508, lokal DMI-rotationsrettelse
+
+Main `42c57a8a`/4.0.508 og cron-job.org-job `8348098` er aktive.
+Det seneste normale run `36450204193` lykkedes gennem DMI,
+Copernicus, Open-Meteo, cache, fulde gates, Supabase-checkpoint
+version 63, privat R2 og Pages. Offentlig pakke
+`rr-20260928180115-210` har target 28/9 kl. 16 UTC og 210 zoner,
+673 kystdele og 118 timer. Af 79.414 mulige sted-time-par pr.
+vejrtype er 69.545 vind, 79.414 bølger, 75.165 havstrøm, 62.733
+vandstand og 65.656 vandtemperatur udfyldt: samlet 352.513/397.070.
+På præcis fælles sted/tid med forrige run steg de fem felter samlet
+med 3.484 gyldige par uden tab af tidligere gyldige par. Tre tidligere
+helt scoreløse Limfjordszoner har nu henholdsvis 24, 24 og 48 af 118
+scoretimer; deres 22 kystdele mangler stadig 2.068 af 2.596 direkte
+havstrømspar. Dette er fremgang, ikke komplethed eller stabilitetsbevis.
+
+Limfjordsvandstand ophører efter prognosetime 70, mens andre DMI-
+vandstandskilder når time 93. To normale runs forsøgte LF-assets i
+tidlig kronologisk rækkefølge. Lokal 4.0.509 retter en verificeret
+prioritets-/rotationsbrist i DMI's omplanlagte restkø; måltest er grøn,
+men exact-head CI, merge og reel effekt afventer. Se DEC-0261 og
+KNOWN-ISSUES. Den gamle U/V-dybdelagsfejl er allerede rettet i både
+DMI- og Copernicus-udvælgelsen; der ændres ikke dybdelag her.
+
+# HISTORISK SANDHED – 2026-09-28 – 4.0.508, gemt pakke i Supabase og R2
 
 PR #473 bestod exact-head source-CI `36418025182` på
 `38acfef5` og blev merged som main `e28e2f85`. Det afgrænsede

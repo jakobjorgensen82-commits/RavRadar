@@ -1,4 +1,22 @@
-# 2026-09-28 – 4.0.508, eksakt færdigpakke-recovery
+# 2026-09-28 – lokal 4.0.509, DMI-Limfjord-restkø
+
+- [x] Ekstern firetimersplan er aktiv. Normalt run `36450204193`
+  bestod alle leverandører, cache, fulde gates, CAS, R2 og Pages;
+  offentlig 4.0.508-pakke og femfeltsdækning er målt.
+- [x] Tidlige LF-assets i to normale runs og kodefejlen i den
+  dynamiske restkø er reproduceret. Lokal adapter giver samme
+  komponentprioritet i begge planer og fastholder sorteringsmarkøren
+  fra turens start. Målrettet regressionskontrakt består.
+- [ ] Afslut version/RDKS/håndbøger, geodatadiff og relevante lokale
+  tests; kræv grøn source-CI på PR'ens eksakte head. Merge først uden
+  aktiv normal vejrkørsel. Følg derefter mindst ét normalt run med
+  dokumenteret sen LF-rotation, cache/no-loss, fulde gates, R2/Pages
+  og offentlig vandstand/alle fem vejrfelter.
+- [ ] Fortsat vandstandshul efter time 70, delvise scoretimer i tre
+  zoner, DMI-afvisninger og samlet datadækning er åbne. Ingen
+  leverandør-/dybde-/admin-/scoreændring er godkendt af denne rettelse.
+
+# HISTORISK STATUS – 2026-09-28 – 4.0.508, eksakt færdigpakke-recovery
 
 - [x] PR #473: grøn exact-head source-CI `36418025182`, merge
   `e28e2f85`; afgrænset recovery `36418759385` bestod uden
