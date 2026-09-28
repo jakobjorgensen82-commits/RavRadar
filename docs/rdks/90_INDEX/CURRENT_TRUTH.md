@@ -1,6 +1,37 @@
-# NYESTE SANDHED – 2026-09-28 – offentlig 4.0.508, lokal DMI-rotationsrettelse
+# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.509, resthuller åbne
 
-Main `42c57a8a`/4.0.508 og cron-job.org-job `8348098` er aktive.
+Normalt cron-run `36478379298` på main `9fcd996f`/4.0.509 bestod
+leverandører, cache, no-loss, fuld validering og releasegate,
+Supabase-CAS, privat R2 og Pages. Den levende side viser dataset
+`rr-20260928215954-210` med target 28/9 kl. 20 UTC. På de 114
+fælles timer × 673 kystdele var femfeltsdækningen
+339.105 → 351.428/383.610: +12.323 gyldige par og nul tabte.
+Vind +2.791, bølger +0, havstrøm +72, vandstand +5.580 og
+vandtemperatur +3.880. Hele det nye 118-timersvindue har
+357.307/397.070 par; dette er ikke komplet eller stabil drift.
+
+De tre delvise Limfjordszoner har 20, 20 og 46/118 scoretimer.
+Deres 22 kystdele har kun 524/2.596 havstrømspar, alle fra
+Copernicus Baltic; shard 8 rummer 19 af delene og shard 9 de
+øvrige tre. På fælles timer kom kun 72 nye havstrømspar, alle i
+shard 9. Den gamle U/V-dybdelagsfejl er ikke påvist. Syv zoner
+har stadig vandstand kun i 67/118 timer; 131 andre zoner fik
+12 flere fælles timer, og 72 andre var uændrede. Den præcise
+sen-LF-afvisnings-/leverandørårsag er fortsat åben.
+
+Beskyttet produktionsgrundlag og forrige preflight blev genbrugt.
+Den løse krypterede progresskopi fra forrige run blev korrekt afvist
+med `BASELINE_MISMATCH` mod den nye beskyttede generation; en ny
+krypteret kopi er gemt. Følg næste ordinære slot uden manuel dublet,
+og mål om kilde- og rotationsfremgangen fortsætter. Dokumentation
+nedenfor beskriver tilstanden før dette run.
+
+# HISTORISK 2026-09-28 – main 4.0.509, offentlig 4.0.508
+
+Main `9fcd996f`/4.0.509 er merged fra PR #475 efter grøn
+exact-head source-CI `36476446904`. Den offentlige prognose er endnu
+4.0.508; en 4.0.509-vejrproduktion er ikke verificeret.
+Cron-job.org-job `8348098` er aktivt.
 Det seneste normale run `36450204193` lykkedes gennem DMI,
 Copernicus, Open-Meteo, cache, fulde gates, Supabase-checkpoint
 version 63, privat R2 og Pages. Offentlig pakke
@@ -14,11 +45,31 @@ helt scoreløse Limfjordszoner har nu henholdsvis 24, 24 og 48 af 118
 scoretimer; deres 22 kystdele mangler stadig 2.068 af 2.596 direkte
 havstrømspar. Dette er fremgang, ikke komplethed eller stabilitetsbevis.
 
+En særskilt kontrol af alle 210 zoner på fælles 114 timer fandt
+20.344 → 20.760 scoretimer af 23.940, altså +416 uden tab.
+Ingen zone har nu nul scoretimer; der er ikke påvist en fjerde tom
+zone. De tre delvise Limfjordszoner fik henholdsvis 168/826,
+144/708 og 216/1.062 direkte kystdels-havstrømspar. Alle 528 nye
+par kom fra Copernicus Baltic i præcis én 24-timersblok pr. del
+med et faktisk valgt U/V-dybdelag. Den tredje zone har to
+forskudte blokke for forskellige kystdele og derfor kun delvis
+områdescore. Tidsblokkene stemmer med den afgrænsede
+24-timers-request i koden, men beviser ikke endnu, at de senere
+blokke kan hentes. AMM15-grænsen ændres ikke på denne evidens.
+
+For de samme 23.940 zone-timer faldt forekomsten af manglende
+lokalt vindinput 2.966 → 2.646 og manglende direkte havstrømsinput
+978 → 863, uden nye mangeltilfælde. De to typer kan forekomme på
+samme zone-time; de må ikke lægges sammen som unikke mangler.
+Hovedpunktets vejrvisning er ikke bevis for kystdelenes scoreinput.
+Ekstern vagt `36478335838` startede præcis ét normalt 4.0.509-run
+`36478379298` kl. 20:19 UTC; dets vejrresultat afventer.
+
 Limfjordsvandstand ophører efter prognosetime 70, mens andre DMI-
 vandstandskilder når time 93. To normale runs forsøgte LF-assets i
-tidlig kronologisk rækkefølge. Lokal 4.0.509 retter en verificeret
-prioritets-/rotationsbrist i DMI's omplanlagte restkø; måltest er grøn,
-men exact-head CI, merge og reel effekt afventer. Se DEC-0261 og
+tidlig kronologisk rækkefølge. Main 4.0.509 retter en verificeret
+prioritets-/rotationsbrist i DMI's omplanlagte restkø; måltest,
+exact-head CI og merge er grønne, men reel effekt afventer. Se DEC-0261 og
 KNOWN-ISSUES. Den gamle U/V-dybdelagsfejl er allerede rettet i både
 DMI- og Copernicus-udvælgelsen; der ændres ikke dybdelag her.
 

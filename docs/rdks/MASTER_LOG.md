@@ -1,4 +1,17 @@
-# 2026-09-28 – lokal 4.0.509, DMI-Limfjord køretning
+# 2026-09-29 – 4.0.509 normalt deploy, restårsager åbne
+
+Run `36478379298` blev startet af det eksterne firetimersslot,
+afsluttet grønt og offentligt verificeret som
+`rr-20260928215954-210`/4.0.509. På 114 identiske timer er
+339.105 → 351.428/383.610 gyldige femfeltspar (+12.323, nul
+tab). Den private produktionscache, Supabase-CAS, R2 og Pages
+bestod; forrige separate krypterede progresskopi fik
+`BASELINE_MISMATCH`, mens en ny kopi blev gemt. Tre delvise zoner
+har fortsat kun 20/20/46 scoretimer, og syv LF-zoner kun 67/118
+vandstandstimer. Afvisningskoder, CP-shard 8 og næste naturlige
+rotation må undersøges før ændring eller stabilitetspåstand.
+
+# HISTORISK 2026-09-28 – main 4.0.509, DMI-Limfjord køretning
 
 Den eksterne firetimersplan udløste normalrun `36450204193`, som
 bestod alle leverandører, cache, fulde gates, Supabase-CAS version
@@ -7,10 +20,11 @@ bestod alle leverandører, cache, fulde gates, Supabase-CAS version
 LF-native forsøg og ingen senere vandstand i 23 LF-dele efter
 prognosetime 70. Kode- og måltest fandt to omplanlægningsbrister:
 dynamisk restkø mistede den præcise komponentprioritet og flyttede
-rotationspivot til sidste forsøg. Lokal 4.0.509 deler prioritet
+rotationspivot til sidste forsøg. Main 4.0.509 deler prioritet
 mellem begge plansteder og bevarer startpivot i turen. Ingen
-dybdelag, vejraccept, score eller adminrute ændres. Live-effekt,
-exact-head CI og merge mangler; se DEC-0261.
+dybdelag, vejraccept, score eller adminrute ændres. PR #475 bestod
+exact-head CI `36476446904` og blev merged som `9fcd996f`;
+live-effekt mangler fortsat. Se DEC-0261.
 
 # HISTORISK – 2026-09-28 – eksakt 4.0.508-recovery uden ny vejr- eller cachebygning
 

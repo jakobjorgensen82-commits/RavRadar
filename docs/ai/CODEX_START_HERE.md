@@ -1,6 +1,37 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – offentlig 4.0.508 og lokal LF-rettelse
+# AKTUELT CHECKPOINT – 2026-09-29 – 4.0.509 offentligt, sen horisont åben
 
-Main er `42c57a8a`/4.0.508. Eksternt cron-job.org-job `8348098`
+Det eksternt udløste normalrun `36478379298` på main `9fcd996f`
+sluttede grønt gennem tre leverandører, cache, no-loss, fuld
+validering/releasegate, Supabase-CAS, privat R2 og Pages. Levende
+`version.json` er 4.0.509, og manifestet er
+`rr-20260928215954-210`/28-09 kl. 20 UTC. På præcis 114 fælles
+timer × 673 kystdele steg vind +2.791, bølger +0, havstrøm +72,
+vandstand +5.580 og vandtemperatur +3.880 uden tab af gamle gyldige
+par. Samlet fælles dækning er 351.428/383.610; hele nye vindue er
+357.307/397.070. Dette er ikke komplethed eller autonom stabilitet.
+
+`DK-B05-21/23/24` har nu kun 20/20/46 af 118 scoretimer og samlet
+524/2.596 kystdel-timepar med havstrøm, alle fra Copernicus Baltic.
+Kun shard 9 fik 72 nye strømpar på fælles timer; shard 8 med 19 af
+de 22 kystdele fik ingen. Syv Limfjordszoner har fortsat vandstand
+kun 67/118 timer. Koden for DMI-LF-restkø er live, men den tilsigtede
+senere vandstand er ikke bevist. De præcise leverandør-/afvisnings-
+årsager og næste slots rotationsresultat skal måles, før ny kode.
+
+Protected runtime og forrige preflight var grundlag. Den særskilte
+krypterede progresskopi fra det forrige run blev afvist med
+`BASELINE_MISMATCH` og må ikke omtales som gendannet; dette run gemte
+sin egen nye krypterede fremdrift. Den næste eksterne firetimersstart
+må ikke dubleres manuelt. Dokumentations-PR #476 skal opdateres og
+have grøn exact-head CI før merge; den ældre tekst nedenfor er
+historisk. `cb79` forbliver en gammel, dirty checkout. Sol/Ekstra høj
+anbefales til videre DMI/Copernicus-rodårsagsarbejde.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – main 4.0.509, live-DMI afventer
+
+Main er `9fcd996f`/4.0.509 efter PR #475 og grøn exact-head
+source-CI `36476446904`; den offentlige prognose er fortsat 4.0.508.
+Eksternt cron-job.org-job `8348098`
 er aktivt hver fjerde UTC-time, og `36450204193` lykkedes gennem
 leverandører, cache, releasegates, Supabase-CAS version 63, privat
 R2 og Pages. Offentlig target 28/9 kl. 16 UTC viser
@@ -8,16 +39,30 @@ R2 og Pages. Offentlig target 28/9 kl. 16 UTC viser
 Limfjordszoner har kun 24, 24 og 48/118 scoretimer. Kald ikke
 dækningen komplet. Der må ikke startes ekstra eller overlappende run.
 
-Arbejd på branch `codex/dmi-lf-critical-rotation` i isoleret
-`dmi-lf-rotation`-worktree, ikke i den gamle `cb79`. Lokal 4.0.509
+Den mergede branch `codex/dmi-lf-critical-rotation` blev bygget i
+isoleret `dmi-lf-rotation`-worktree, ikke i den gamle `cb79`. 4.0.509
 retter to verificerede omplanlægningsbrister i DMI-LF: den dynamiske
 restkø tabte `criticalPriority` og flyttede rotationspivot fra
 turens start efter hvert forsøg. To normale runs forsøgte LF-timer
 kronologisk og offentlig Limfjordsvandstand sluttede efter time 70.
-Måltest er grøn, men exact-head CI, sikker merge og målt effekt i et
+Måltest, exact-head CI og sikker merge er grønne, men målt effekt i et
 senere normalt run mangler. Koden ændrer ikke DMI/CP's våd-celle-
 eller dybdelagsvalg, score, admininterpolation eller no-loss. Se
 DEC-0261 og CURRENT_TRUTH. Anbefalet indsats: Ekstra høj.
+
+Det første planlagte 4.0.509-normalrun `36478379298` startede alene
+28/9 kl. 20:19 UTC via bestået ekstern vagt `36478335838`; dets
+vejr- og deployresultat er endnu ikke kendt. På fælles 114 timer i
+de to seneste offentlige 4.0.508-pakker steg scoretilgængeligheden
+med 416/23.940 zone-timer uden tab. Ingen af de 210 zoner har nu
+nul scoretimer, men tre Limfjordszoner har kun 24, 24 og 48/118.
+Deres 22 kystdele fik hver præcis én 24-timersblok fra Copernicus
+Baltic ved et faktisk valgt fælles U/V-dybdelag; 2.068/2.596
+havstrømspar mangler stadig. På fælles zone-timer forsvandt 320
+lokale vind- og 115 direkte havstrømsmangeltilfælde uden nye
+tilfælde. Målingerne retfærdiggør ikke ændring af dybdelag eller
+AMM15-grænse. Dokumentations-PR #476 afventer vejr-runnet; merge
+den ikke mens normalrun bruger main.
 
 # HISTORISK CHECKPOINT – 2026-09-28 – gemt 4.0.508-build, ingen ny hentning
 
