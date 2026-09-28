@@ -173,3 +173,4 @@ assert.match(workflow, /--report "\$RUNNER_TEMP\/ravradar-production-watchdog-re
 assert.match(workflow, /steps\.watchdog\.outputs\.dispatch == 'true' && steps\.watchdog-recheck\.outputs\.dispatch == 'true'/);
 assert.doesNotMatch(workflow, /issues: write|::warning|advisory.*dispatch|curl.*notification/);
 console.log('Production watchdog: unchanged bounded dispatch and privacy-safe stale-weather advisory passed.');
+await import('./test-weather-cadence-watchdog.mjs');

@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.505, firetimers vejrplan
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+
+Arbejd kun i `r2-private-runtime`; `cb79` er ikke arbejdskopien.
+4.0.505 er merged på main `6b7223dc`. Første forventede GitHub-
+planstart kl. 00:17 UTC havde intet run kl. 00:29. Ejeren påpegede,
+at cron-job.org havde 0 aktive jobs; det gamle deaktiverede job
+`8348098` pegede mod pensioneret workflow. Efter ny ejerbeslutning
+flyttes selve firetimersplanen til dette ene eksterne job, som er
+gemt **deaktiveret** med UTC `19 */4 * * *` og nyt GitHub-mål.
+Lokal branch `codex/4.0.506-weather-cadence-watchdog` fjerner
+GitHubs egen vejrcron og lader en eksplicit ekstern dispatch
+dobbelttjekke begge produktionsindgange før ét normalt run.
+En fejl i forrige slot spærrer ikke næste. Gammel 15-/45-minutters-
+vagt forbliver deaktiveret. Exact-head CI, sikker merge, ekstern
+test og aktivering afventer. Se DEC-0259 og CURRENT_TRUTH.
+Ingen overlap med igangværende vejr-run.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – lokal 4.0.505, firetimers vejrplan
 
 Arbejd fortsat kun i `r2-private-runtime`; `cb79` er ikke
 arbejdskopien. 4.0.504 er nu offentligt leveret. Fuldt normalrun

@@ -1,4 +1,14 @@
-# Aktuelle issues – 2026-09-28, lokal 4.0.505
+# Aktuelle issues – 2026-09-28, lokal 4.0.506
+
+- **EKSTERN FIRETIMERSPLAN – IKKE AKTIVERET:** Den første 4.0.505-
+  GitHub-planstart ved 00:17 UTC havde intet run kl. 00:29. En
+  samtidig direkte kontrol viste 0 aktive cron-job.org-jobs; det
+  eneste gamle job pegede på pensioneret workflow. Job `8348098`
+  er nu gemt deaktiveret med ny UTC-firetimersplan og mål. Lokal
+  4.0.506 fjerner GitHub-cron; exact-head CI, merge, kontrolleret
+  eksternt kald og mindst flere automatiske slot er åbne. Et
+  fejlet run i forrige slot spærrer ikke næste planlagte slot.
+  Se DEC-0259.
 
 - **FEMFELTSREST OG TRE HELT TOMME ZONER – ÅBENT:** Offentlig
   4.0.504 efter `36347957014` har 383.054/397.070 gyldige

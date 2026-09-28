@@ -87,7 +87,7 @@ for (const [role, sourceText] of Object.entries({ build, deploy })) {
 }
 assertExactKeys(
   directKeys(indentedBody(orchestrator, 'on:'), 2),
-  ['schedule', 'workflow_dispatch'],
+  ['workflow_dispatch'],
   'orchestrator trigger',
 );
 assert.equal(orchestrator.includes('\nconcurrency:'), true, 'orchestrator remains sole concurrency owner');

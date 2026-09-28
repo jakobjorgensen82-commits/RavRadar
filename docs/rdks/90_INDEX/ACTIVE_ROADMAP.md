@@ -1,4 +1,18 @@
-# Aktivt roadmap – 2026-09-28, lokal 4.0.505
+# Aktivt roadmap – 2026-09-28, lokal 4.0.506
+
+1. [x] Afklar den manglende eksterne plan og bevar det ene tidligere
+   cron-job.org-job deaktiveret med korrekt UTC-firetimersplan og
+   nyt mål. Fjern GitHub-`schedule` fra både normal- og vagtworkflow.
+2. [x] Byg en separat fail-closed GitHub-kontrol for eksternt intent:
+   ingen dobbeltstart/overlap, men næste ordinære slot følger også
+   efter en fejl i forrige slot. Bevar den gamle vagt slukket.
+3. [ ] Bestå målrettede tests, version/RDKS og exact-head CI. Merge
+   kun uden aktiv vejrkørsel; test derpå cron-job.org-kald, aktivér
+   firetimersplanen og verificér faktisk GitHub-normalrun.
+4. [ ] Følg flere ordinære kørsler gennem fem felter, cache, gates,
+   R2, Pages og Free-kvoter før stabil drift erklæres.
+
+# Historisk roadmap – 2026-09-28, lokal 4.0.505
 
 1. [x] Bekræft fuld normal 4.0.504-kørsel `36347957014` fra
    gyldig cache gennem tre kilder, fulde gates, R2, Pages og

@@ -1,8 +1,20 @@
+# Aktuel ekstern firetimersplan – 2026-09-28
+
+- **REQ-WEATHER-EXTERNAL-CADENCE-0506 – BINDENDE:** Kun det ene
+  cron-job.org-job må udløse den almindelige firetimersplan. GitHub
+  må ikke have et eget vejr-`schedule`. Et eksplicit eksternt intent
+  skal i det aktuelle slot dobbelttjekke begge produktionsindgange,
+  afvise overlap, ventende og allerede forsøgte runs og kun bestille
+  én normal `force=false`-kørsel. En fejl i forrige slot må ikke
+  blokere næste planlagte forsøg; et fejlrun i samme slot må ikke
+  straks gentages. Ukendt evidens stopper uden dispatch. Den gamle
+  særskilte vagt forbliver deaktiveret. Se DEC-0259.
+
 # Aktuel normal drift – 2026-09-28
 
 - **REQ-WEATHER-FOUR-HOUR-0505 – BINDENDE:** Efter grøn exact-head
-  kildekontrol og sikker merge skal kun det normale GitHub-workflow
-  planlægges hver fjerde time. Alle run deler én concurrencygruppe;
+  kildekontrol og sikker merge skal kun ét eksternt cron-job planlægge
+  den normale GitHub-kørsel hver fjerde time. Alle run deler én concurrencygruppe;
   ingen ny produktion må overlappe. Copernicus og Open-Meteo skal
   rotere reelt over deres køer med denne kadence. Længere tidslofter
   ændrer ikke kildegyldighed, DMI-prioritet, 96-timersundtagelse,
@@ -1958,7 +1970,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 
 ## Produktionsplan og beskyttet diagnostik – 4.0.234
 
-- **REQ-WORKFLOW-GITHUB-SCHEDULE-001 – BINDENDE EJERBESLUTNING / PRÆCISERET I 4.0.289:** GitHub Actions ejer den normale 15-minuttersproduktion. Frisk DMI afgør den ikke-fremtidige produktionstime, og Copernicus må kun supplere dens eksakte DMI-huller under bounded retry. En fejlet, timeoutet eller før-start-fejlet planlagt kørsel genbestilles højst én gang. Et payloadfrit watchdog må efter 45 minutters stilhed kun dispatch'e, når intet build er aktivt og både workflowhistorik og offentligt manifest er gamle. Alle builds deler én concurrencygruppe. Watchdoget bruger selv GitHubs scheduler og kan derfor ikke lukke total schedulerstilhed; ekstern overvågning kræver en senere afgrænset ejerbeslutning. Push/manual release forbliver fuldt fail-closed. Se DEC-0085.
+- **REQ-WORKFLOW-GITHUB-SCHEDULE-001 – HISTORISK / SUPERSEDERET AF REQ-WEATHER-FOUR-HOUR-0505 OG REQ-WEATHER-MISSED-SLOT-WATCHDOG-0506:** Den tidligere 15-minuttersproduktion, automatiske fejlretry og 45-minutters stilhedsvagt er ikke gældende firetimersdrift. Den gamle vagt er deaktiveret. Alle builds deler fortsat én concurrencygruppe, og releasegates er uændrede. Se DEC-0085 historisk og DEC-0257/0258 aktuelt.
 - **REQ-PROTECTED-RUNTIME-ARCHIVE-001 – BINDENDE:** Den fulde beskyttede `runtime-diagnostics` må komprimeres tabsfrit for at undgå PostgreSQL `57014`, men ingen rå felter må kasseres. Download kræver eksisterende rettighed og verificeret schema, komprimeret/ukomprimeret størrelse, SHA-256, version og genereringstid. Ældre ukomprimerede dokumenter skal fortsat kunne læses. Gentagne Supabase- eller integritetsfejl stopper fail-closed. Se DEC-0043.
 
 ## Offentlig lokal sammenhæng – bindende og senest præciseret i 4.0.237

@@ -1,4 +1,37 @@
-# AKTUELT CHECKPOINT – 2026-09-27 – lokal 4.0.503, kildebevis over flere runs
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+
+Arbejd i `r2-private-runtime`, branch
+`codex/4.0.506-weather-cadence-watchdog`; `cb79` er en gammel,
+beskidt checkout. 4.0.505 blev merged på main `6b7223dc`.
+Første forventede GitHub-cron kl. 00:17 UTC havde intet run kl.
+00:29. Cron-job.org viste 0 aktive jobs og ét deaktiveret gammelt
+job `8348098`, som pegede på pensioneret workflow. Ejeren ændrede
+beslutningen: GitHub-cron fjernes, og det ene eksterne job skal eje
+firetimerskadencen. Det er gemt **deaktiveret** med UTC `19 */4 * * *`,
+POST og ny GitHub-workflow-URL; dets eksisterende credential omtales
+ikke i repo. Lokal 4.0.506 dobbelttjekker begge produktionsindgange
+og bestiller højst ét normalt `run-current-weather-once.yml`-run med
+fulde leverandørbudgetter pr. slot. Næste slot
+kører også efter fejl i forrige slot; ingen straksretry i samme slot.
+Gamle `preserve-copernicus-current-shadow` forbliver deaktiveret.
+Målrettede Node-tests er genkørt efter ændringen; fuld slutkontrol,
+exact-head CI, sikker merge, kontrolleret eksternt kald og aktivering
+mangler. Ingen secrets/private payloads i kode. Anbefalet model/
+indsats: Sol/Ekstra høj. Se DEC-0259 og CURRENT_TRUTH.
+
+Branchens ændringer er endnu **ucommittede**. Den bredere lokale
+`test-source-validation-once` havde en forældet grænse 44 mod de
+47 uændrede main-kontroller; ejeren godkendte særskilt at synkronisere
+grænsen til 47, og måltesten består uden at fjerne nogen kontrol.
+En utilsigtet bred lokal `release-gate`-prøve blev
+afbrudt efter sandbox-`spawn EPERM` og er ikke releasebevis.
+Næste trin: gennemgå workflowet og måltestene,
+commit/push, exact-head CI, og merge først uden aktiv vejrproduktion.
+Test derefter det deaktiverede eksterne job med et sikkert kald,
+kontroller GitHub-run og aktivér først den faste plan ved korrekt
+resultat. Udelad `.cache/` fra staging.
+
+# HISTORISK CHECKPOINT – 2026-09-27 – lokal 4.0.503, kildebevis over flere runs
 
 Senere helikopterfund: den lange `36293202251` havde intet
 krypteret komponentcheckpoint efter en uklar gemmefejl. Den

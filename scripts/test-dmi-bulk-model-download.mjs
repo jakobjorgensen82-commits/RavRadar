@@ -420,8 +420,8 @@ assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);
 assert.match(updater, /spatialInterpolation: false/);
 assert.match(orchestrator, /workflow_dispatch/);
-assert.match(orchestrator, /^\s+schedule:/m);
-assert.match(orchestrator, /cron: ["']17 \*\/4 \* \* \*["']/);
+assert.doesNotMatch(orchestrator, /^  schedule:$/m,
+  'Firetimersdriften må ikke starte via GitHubs upålidelige schedule-event.');
 assert.match(orchestrator, /current-hour-readiness/);
 assert.match(orchestrator, /github\.event_name == 'workflow_dispatch' && inputs\.force != true && inputs\.geometry_v2_pilot != true && inputs\.geometry_v2_national != true/);
 for (const source of Object.values(workflows)) assert.doesNotMatch(source, /candidate_g_gap_reconstruction_mode/);
@@ -530,4 +530,4 @@ assert.match(bulk, /marineRecoveryActive/);
 assert.match(bulk, /HARMONIE_RUN_RETENTION_HOURS/);
 assert.match(bulk, /runRetentionHorizonHours/);
 assert.match(updater, /version: APP_VERSION/);
-console.log('DMI bulk model download and GitHub-owned scheduler preflight test passed.');
+console.log('DMI bulk model download and external scheduler preflight test passed.');

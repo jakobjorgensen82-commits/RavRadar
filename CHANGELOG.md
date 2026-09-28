@@ -1,4 +1,16 @@
-## 4.0.505 – firetimers vejrkadence og fair reservekø (lokal, 2026-09-28)
+## 4.0.506 – ekstern firetimersplan (lokal, 2026-09-28)
+
+- GitHubs egen vejr-`schedule` fjernes efter ejerens beslutning;
+  den ene eksisterende cron-job.org-post genbruges ved UTC-minut
+  19 hver fjerde time, efter sikker aktivering.
+- Eksternt intent dobbeltkontrollerer begge produktionsindgange
+  og kan starte højst én normal `force=false`-kørsel pr. slot.
+  En fejl i forrige slot spærrer ikke næste ordinære slot;
+  samme forsøg genstartes ikke straks. Gammel hurtig vagt er slukket.
+- Lokale tests er ikke bevis for ekstern levering eller korrekt
+  vejr-/cache-/Pages-resultat; exact-head CI og livekontrol kræves.
+
+## 4.0.505 – firetimers vejrkadence og fair reservekø (2026-09-28)
 
 - Normal GitHub-plan ændres til hver fjerde time efter merge og
   aktivering. Alle produktioner deler fortsat én concurrencygruppe;

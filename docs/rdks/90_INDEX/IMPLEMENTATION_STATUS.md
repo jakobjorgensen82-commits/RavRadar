@@ -1,4 +1,22 @@
-# 2026-09-28 – lokal 4.0.505, firetimers vejrdrift
+# 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+
+- [x] Direkte UI-kontrol: cron-job.org havde 0 aktive jobs og et
+  deaktiveret kvartersjob mod pensioneret workflow. Samme job er
+  gemt deaktiveret med UTC `19 */4 * * *`, nyt mål og eksisterende
+  POST-adgang. Ingen ekstern kørsel er endnu udløst.
+- [x] Lokal GitHub-kontrol uden `schedule`: to inspektioner af begge
+  indgange, højst ét normalt `run-current-weather-once.yml`-run med
+  fulde leverandørbudgetter pr. slot, ingen overlap
+  og ingen straksretry i samme slot. En afsluttet fejl i forrige slot
+  blokerer ikke næste ordinære kørsel, selv ved sen afslutning.
+  Se DEC-0259.
+- [ ] Slut måltests, version/RDKS/geodatadiff, exact-head source-CI,
+  sikker merge uden aktivt vejr-run, kontrolleret eksternt kald,
+  aktivering og mindst flere automatiske firetimersslot.
+- [ ] Bevis faktisk cachegenbrug, femfeltsfremgang, R2 og Pages i
+  ordinære runs. Den gamle særskilte vagt forbliver deaktiveret.
+
+# HISTORISK STATUS – 2026-09-28 – lokal 4.0.505, firetimers vejrdrift
 
 - [x] Fuld normal 4.0.504 `36347957014` leverede cache, gates,
   privat gemning, R2, Pages og offentlig prognose efter 158 minutter.

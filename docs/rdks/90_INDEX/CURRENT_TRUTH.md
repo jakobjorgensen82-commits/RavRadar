@@ -1,4 +1,24 @@
-# NYESTE SANDHED – 2026-09-28 – lokal 4.0.505, firetimerskadence afventer levering
+# NYESTE SANDHED – 2026-09-28 – lokal 4.0.506, ekstern firetimersplan
+
+4.0.505 er merged på `main` som `6b7223dc`. Den første forventede
+GitHub-`schedule` ved 00:17 UTC havde endnu intet run kl. 00:29;
+det beviser ikke, om eventet er tabt eller forsinket. Ejeren pegede
+korrekt på, at cron-job.org ikke var sat op: 0 aktive og ét
+deaktiveret gammelt job. Ejeren har derfor besluttet at fjerne
+GitHubs normale vejrcron og lade det eksisterende eksterne job
+eje firetimersplanen. Job id `8348098` er nu gemt **deaktiveret**
+med UTC `19 */4 * * *`, POST og det nye vagtworkflow som mål.
+Lokal 4.0.506 har ingen GitHub-`schedule`, dobbeltkontrollerer
+begge produktionsindgange og tillader kun ét normalt
+`run-current-weather-once.yml`-run med fulde leverandørbudgetter
+run pr. slot uden overlap. En afsluttet fejl i forrige slot spærrer ikke
+næste ordinære slot, heller ikke ved afslutning efter slotgrænsen.
+Gamle 15-/45-minutters-
+vagt er slukket. Exact-head CI, merge, ekstern test, aktivering og
+faktisk normal produktion mangler; se DEC-0259. Femfeltsdækning er
+stadig ikke komplet bevist.
+
+# HISTORISK SANDHED – 2026-09-28 – lokal 4.0.505, firetimerskadence afventer levering
 
 4.0.504 er nu offentligt leveret. Fuldt normalrun `36347957014`
 gendannede cache/fremdrift og gennemførte DMI, Copernicus,

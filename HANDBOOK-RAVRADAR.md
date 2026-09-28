@@ -1,14 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.505
+**Håndbogsversion:** 4.0.506
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.505 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.506 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.102 4.0.506 – Ekstern firetimersplan uden overlap
+
+GitHubs egen planlagte start udeblev ved det første forventede
+firetimerspunkt. Ejeren har derfor valgt det ene eksisterende job
+hos cron-job.org til at udløse en GitHub-kontrol ved minut 19 hver
+fjerde UTC-time. Det er gemt deaktiveret, indtil koden er leveret og
+en sikker test er gennemført. GitHubs egen vejrplan fjernes.
+
+Kontrollen læser begge produktionsindganges vejrkørsler to gange og
+starter højst én almindelig kørsel i det aktuelle
+`run-current-weather-once.yml` med fulde leverandørbudgetter, hvis ingen allerede kører,
+venter eller er startet i dette slot.
+Et fejlet forsøg gentages ikke straks i samme slot. Næste planlagte
+firetimersslot starter dog også efter en afsluttet fejl i forrige slot,
+selv hvis den sluttede efter slotgrænsen. Det er ejerens udtrykkelige
+ønske. Fejl skal fortsat undersøges, og
+vejrdata-/releasekontroller må ikke omgås. Den gamle hurtige vagt
+forbliver slukket. Ekstern timing beskytter mod GitHubs manglende
+`schedule`-event, men ikke mod fejl i GitHub API/Actions eller hos
+cron-job.org. Flere faktiske kørsler kræves før stabilitet påstås.
 
 ## 89.101 4.0.505 – Mere tid og en fair tur til alle vejrkilder
 

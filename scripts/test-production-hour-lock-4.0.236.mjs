@@ -67,13 +67,13 @@ assert.ok(
 const productionTargetCondition = "if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)";
 assert.equal(
   orchestrator.split(productionTargetCondition).length - 1,
-  2,
-  'Både cachegendannelse og timeinspektion skal beregne target_hour for push, schedule og alle produktioner, men ikke de private geometri-dispatches.'
+  1,
+  'Timeinspektion skal beregne target_hour for almindelig produktion, men ikke de private geometri-dispatches.'
 );
 assert.match(
   orchestrator,
-  /CHECK_CURRENT_HOUR: \$\{\{ github\.event_name == 'schedule' \|\| \(github\.event_name == 'workflow_dispatch' && inputs\.force != true/,
-  'Timed schedule og almindelig ikke-forceret dispatch skal fortsat identificeres før den efterfølgende DMI-timeresolution.'
+  /CHECK_CURRENT_HOUR: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.force != true/,
+  'Eksternt startet, almindelig ikke-forceret dispatch skal identificeres før den efterfølgende DMI-timeresolution.'
 );
 assert.ok(
   build.indexOf('Update DMI bulk model cache') < build.indexOf('Bind production to resolved DMI current hour') &&

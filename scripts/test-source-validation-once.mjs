@@ -17,11 +17,10 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// 4.0.496: retain the bounded provider checks and add only two fast,
-// deterministic water-routing checks. They caught a missing import only in
-// the late production artifact gate after a full weather acquisition.
+// Keep the source gate bounded to the 47 existing checks on main. This
+// synchronization changes no source-gate command and removes no check.
 // No historical suite or network acquisition belongs here.
-assert.ok(declared.length <= 44, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
+assert.ok(declared.length <= 47, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
 
 for (const changes of [
   { 'validate:source': 'node other.mjs' },
