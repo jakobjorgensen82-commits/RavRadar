@@ -1,4 +1,19 @@
-## 2026-09-28 – lokal 4.0.507: fastlåste legacy-kørsler
+## 2026-09-28 – lokal 4.0.508: sikker årsagskode for DMI
+
+PR #470/4.0.507 blev merged som main `36083ab8`; levende
+tørkørsel `36366253633` viste, at et eksternt slot kan godkendes
+uden at starte vejrhentning. cron-job.org-jobbet er deaktiveret,
+mens særskilt IP-samtykke til manuel starttest afventes.
+
+Fuld tidligere kørsel `36347957014` deployede, men afviste seks
+genbrugte DKSS-timefiler transaktionelt med generisk proveniens-
+besked. `36331715231` behandlede samme officielle filer og proof
+uden afvisning. Den konkrete forskel i cache/proof-genindtræden
+er ukendt. Lokal 4.0.508 mærker de eksisterende afvisningsveje
+med faste indholdsfrie koder og ændrer ikke accept eller rollback.
+Måltest består; exact-head CI og levende årsagsbevis mangler.
+
+## HISTORISK 2026-09-28 – lokal 4.0.507: fastlåste legacy-kørsler
 
 PR #469/4.0.506 blev merged som `1e2cc005` efter grøn
 exact-head-kildekontrol. Den første levende GitHub-tørkørsel

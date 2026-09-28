@@ -1,4 +1,29 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.508, DMI-afvisning kan skelnes
+
+Arbejd i `r2-private-runtime` på branch
+`codex/4.0.508-dmi-stage-rejection-codes`; `cb79` er ikke
+arbejdskopien. PR #470/4.0.507 er merged som main `36083ab8`, og
+levende GitHub-tørkørsel `36366253633` bestod med beslutningen
+`external-four-hour-weather-slot-ready` uden at starte vejr.
+Det ene cron-job.org-job `8348098` er stadig deaktiveret. En manuel
+test fra browseren vil videresende ejerens IP-adresse; særskilt
+samtykke er spurgt asynkront, men endnu ikke givet. Start ikke en
+omvej eller aktivér planen før den aftalte faktiske eksterne test.
+
+Fuld normal 4.0.504-kørsel `36347957014` deployede, men dens DMI-
+opdatering afviste seks genbrugte DKSS-timefiler transaktionelt med
+samme generiske proveniensfejl. Et tidligere run `36331715231`
+havde behandlet de samme officielle filer, modelkørsel og
+partOutcomeProof uden afvisning. Den præcise afvisningsbetingelse
+kan ikke udledes af den eksisterende log. Lokal 4.0.508 føjer
+derfor kun faste, payloadfrie afvisningskoder til fejlrækkerne;
+accept, rollback, kildeprioritet, parser-/processing-signatur og
+vejrdata er uændrede. 34 målrettede transaktionstests er grønne.
+Exact-head CI, merge og levende DMI-bevis mangler. Den konkrete
+rodårsag er fortsat åben; intet nyt vejr-run må startes blot for
+at teste denne diagnostik, før den eksterne plan er verificeret.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – lokal 4.0.507, fastlåst legacy-kø
 
 Arbejd i `r2-private-runtime` på branch
 `codex/4.0.507-ignore-inert-legacy-queue`. PR #469/4.0.506 blev

@@ -1,3 +1,14 @@
+# Aktuel DMI-diagnostik – 2026-09-28
+
+- **REQ-DMI-STAGE-SAFE-REASON-0508 – BINDENDE:** Når en operationel
+  havmodel-timefil afvises af den eksisterende pre-commit-kontrol,
+  må den sikre fejlrapport angive kun en afgrænset, fast årsagskode.
+  Koden må ikke medtage kildeindhold, kystdel-id, vektorer,
+  private payloads eller credentials. Diagnostikken må ikke
+  ændre accept, transactional rollback, DMI-first, gemt gyldig
+  værdi eller processing-signatur. Den faktiske afvisningsgren
+  skal observeres før en adfærdsrettelse besluttes.
+
 # Aktuel ekstern firetimersplan – 2026-09-28
 
 - **REQ-WEATHER-INERT-LEGACY-QUEUE-0507 – BINDENDE:** Kun de tre

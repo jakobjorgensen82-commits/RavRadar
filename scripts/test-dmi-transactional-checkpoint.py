@@ -456,6 +456,33 @@ class TransactionalAssetTests(unittest.TestCase):
         self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
         failure_flush.assert_called_once_with()
 
+    def test_current_stage_reason_is_bounded_and_guard_specific(self) -> None:
+        guard_error = RuntimeError(
+            producer.OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR
+        )
+        for code in producer.OPERATIONAL_CURRENT_STAGE_REJECTION_CODES:
+            with self.subTest(code=code):
+                self.assertRegex(code, r"^[A-Z][A-Z0-9_]{2,55}$")
+                self.assertEqual(
+                    producer.operational_current_stage_failure_code(
+                        COLLECTION, guard_error, code,
+                    ),
+                    code,
+                )
+        for collection, error, rejected in (
+            (COLLECTION, guard_error, "PRIVATE_TARGET_ID"),
+            ("wam_nsb", guard_error, "DKSS_STAGE_NO_TOUCHED_ZONES"),
+            (COLLECTION, RuntimeError("other parser failure"),
+             "DKSS_STAGE_NO_TOUCHED_ZONES"),
+        ):
+            with self.subTest(collection=collection, error=str(error)):
+                self.assertEqual(
+                    producer.operational_current_stage_failure_code(
+                        collection, error, rejected,
+                    ),
+                    producer.collection_failure_code(error),
+                )
+
     def test_absent_research_target_stays_absent_after_success(self) -> None:
         result, private, diagnostics, shadow, outcomes = durable_documents()
         self.assertNotIn(RESEARCH_ID, result["zones"])

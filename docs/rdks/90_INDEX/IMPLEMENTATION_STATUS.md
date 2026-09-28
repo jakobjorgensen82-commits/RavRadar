@@ -1,4 +1,20 @@
-# 2026-09-28 – lokal 4.0.507, eksakt legacy-køundtagelse
+# 2026-09-28 – lokal 4.0.508, DMI-afvisningsdiagnostik
+
+- [x] PR #470/4.0.507 merged som main `36083ab8` efter grøn
+  exact-head CI. Tørkørsel `36366253633` bekræftede klar ekstern
+  slotbeslutning uden vejrdispatch.
+- [x] Lokal 4.0.508 giver en fast, payloadfri kode for hver af
+  DMI's aktuelle pre-commit-afvisningsveje. Den ændrer ikke
+  transaktionens accept/rollback eller cache-signatur. 34
+  målrettede transaktionstests er grønne.
+- [ ] RDKS/version/geodata-kontrol, exact-head source-CI, sikker
+  merge og et senere levende DMI-resultat. Afvisningens faktiske
+  rodårsag er ikke identificeret endnu.
+- [ ] Ejerens samtykke til den varslede IP-videresendelse, faktisk
+  test af deaktiveret cron-job.org-job `8348098`, dernæst
+  aktivering og flere målte automatiske firetimerskørsler.
+
+# HISTORISK STATUS – 2026-09-28 – lokal 4.0.507, eksakt legacy-køundtagelse
 
 - [x] 4.0.506 er merged som `1e2cc005` efter grøn exact-head CI.
   Første levende tørkørsel `36365055249` læste begge historikker

@@ -577,6 +577,40 @@ def diagnostic_collection_failure_codes(diagnostics: dict[str, Any]) -> list[str
     return sorted(observed)[:3]
 
 
+OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR = (
+    "operational DKSS asset lacks exact pre-commit provenance"
+)
+OPERATIONAL_CURRENT_STAGE_REJECTION_CODES = frozenset({
+    "DKSS_STAGE_SOURCE_CAPTURE_MISSING",
+    "DKSS_STAGE_REQUIRED_FIELDS_MISSING",
+    "DKSS_STAGE_NO_TOUCHED_ZONES",
+    "DKSS_STAGE_PART_OUTCOME_INCOMPLETE",
+    "DKSS_STAGE_TARGET_SET_MISMATCH",
+    "DKSS_STAGE_OUTCOME_PROOF_INVALID",
+    "DKSS_STAGE_ATTESTATION_INVALID",
+    "DKSS_STAGE_NEW_SOURCE_OUTSIDE_OUTCOME",
+    "DKSS_STAGE_TRUSTED_UNAVAILABLE_CHANGED",
+    "DKSS_STAGE_EXPECTED_ROW_CHANGED",
+    "DKSS_STAGE_EXPECTED_SOURCE_MISSING",
+    "DKSS_STAGE_EXPECTED_SOURCE_UNTRUSTED",
+})
+
+
+def operational_current_stage_failure_code(
+    collection: str, error: Exception, rejection_code: Any,
+) -> str:
+    """Expose only a fixed diagnostic code for the exact transactional guard."""
+    if (
+        collection in MARINE_COLLECTIONS
+        and isinstance(error, RuntimeError)
+        and str(error) == OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR
+        and isinstance(rejection_code, str)
+        and rejection_code in OPERATIONAL_CURRENT_STAGE_REJECTION_CODES
+    ):
+        return rejection_code
+    return collection_failure_code(error)
+
+
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     query = dict(params or {})
     if API_KEY and url.startswith(STAC_ROOT):
@@ -13534,17 +13568,24 @@ def main() -> int:
                     outcome: tuple[set[str], set[str], bool, int, int],
                     part_outcomes: dict[str, Any] | None,
                 ) -> bool:
+                    def reject(code: str) -> bool:
+                        # The transaction still rolls back. Only this bounded,
+                        # payload-free reason survives in the safe error row.
+                        validated_current_stage["rejectionCode"] = code
+                        return False
+
                     if collection not in MARINE_COLLECTIONS:
                         return True
-                    if (
-                        step_source_asset is None
-                        or not REQUIRED_TARGETS["marine"] <= set(outcome[0])
-                        or not outcome[1]
-                        or not isinstance(part_outcomes, dict)
-                        or part_outcomes.get("complete") is not True
-                        or part_outcomes.get("targetPartIds") != current_target_ids
-                    ):
-                        return False
+                    if step_source_asset is None:
+                        return reject("DKSS_STAGE_SOURCE_CAPTURE_MISSING")
+                    if not REQUIRED_TARGETS["marine"] <= set(outcome[0]):
+                        return reject("DKSS_STAGE_REQUIRED_FIELDS_MISSING")
+                    if not outcome[1]:
+                        return reject("DKSS_STAGE_NO_TOUCHED_ZONES")
+                    if not isinstance(part_outcomes, dict) or part_outcomes.get("complete") is not True:
+                        return reject("DKSS_STAGE_PART_OUTCOME_INCOMPLETE")
+                    if part_outcomes.get("targetPartIds") != current_target_ids:
+                        return reject("DKSS_STAGE_TARGET_SET_MISMATCH")
                     try:
                         proof = build_current_part_outcome_proof(
                             part_outcomes.get("spatialUnavailablePartIds"),
@@ -13553,6 +13594,9 @@ def main() -> int:
                             processing_signature,
                             step_source_asset,
                         )
+                    except (TypeError, ValueError):
+                        return reject("DKSS_STAGE_OUTCOME_PROOF_INVALID")
+                    try:
                         valid_at = datetime.fromisoformat(
                             asset["valid"].replace("Z", "+00:00")
                         )
@@ -13565,7 +13609,7 @@ def main() -> int:
                             [],
                         )
                     except (TypeError, ValueError):
-                        return False
+                        return reject("DKSS_STAGE_ATTESTATION_INVALID")
                     expected_part_ids = set(current_target_ids) - set(
                         proof["spatialUnavailablePartIds"]
                     )
@@ -13574,7 +13618,7 @@ def main() -> int:
                         for row in staged_attestation.get("verifiedPairs") or []
                     }
                     if not new_source_part_ids <= expected_part_ids:
-                        return False
+                        return reject("DKSS_STAGE_NEW_SOURCE_OUTSIDE_OUTCOME")
                     for part_id in current_target_ids:
                         zone_id = f"PART::{part_id}"
                         before_hour = (
@@ -13615,15 +13659,15 @@ def main() -> int:
                                 before_source_key,
                             ) in actual_current_pair_source_keys
                             if before_trusted and after_tuple != before_tuple:
-                                return False
+                                return reject("DKSS_STAGE_TRUSTED_UNAVAILABLE_CHANGED")
                             continue
                         if after_tuple != before_tuple:
-                            return False
+                            return reject("DKSS_STAGE_EXPECTED_ROW_CHANGED")
                         retained_source = canonical_current_source_asset(
                             after_tuple[2] if after_tuple is not None else None
                         )
                         if retained_source is None:
-                            return False
+                            return reject("DKSS_STAGE_EXPECTED_SOURCE_MISSING")
                         retained_source_key = json.dumps(
                             retained_source,
                             sort_keys=True,
@@ -13635,7 +13679,7 @@ def main() -> int:
                             asset["valid"],
                             retained_source_key,
                         ) not in actual_current_pair_source_keys:
-                            return False
+                            return reject("DKSS_STAGE_EXPECTED_SOURCE_UNTRUSTED")
                     validated_current_stage["partOutcomeProof"] = proof
                     return True
 
@@ -13709,7 +13753,7 @@ def main() -> int:
                                 else None
                             ),
                             validation_error=(
-                                "operational DKSS asset lacks exact pre-commit provenance"
+                                OPERATIONAL_CURRENT_STAGE_VALIDATION_ERROR
                                 if collection in MARINE_COLLECTIONS
                                 else "operational WAM asset lacks required fields"
                             ),
@@ -13787,7 +13831,11 @@ def main() -> int:
                             "collection": collection,
                             "validTime": supervised_identity["validTime"],
                             "message": safe_error_message(exc),
-                            "failureCode": collection_failure_code(exc),
+                            "failureCode": operational_current_stage_failure_code(
+                                collection,
+                                exc,
+                                validated_current_stage.get("rejectionCode"),
+                            ),
                             "failureClass": "asset-processing",
                             "partialProgressPreserved": (
                                 False if bootstrap_operational_wam else True

@@ -1,4 +1,19 @@
-# 2026-09-28 – lokal 4.0.507: tre fastlåste legacy-runs isoleres
+# 2026-09-28 – lokal 4.0.508: DMI-pre-commit kan diagnosticeres sikkert
+
+PR #470 er merged som main `36083ab8`, og guard-tørkørsel
+`36366253633` viste klar beslutning uden vejrdispatch. Det ene
+cron-job.org-job er deaktiveret, indtil en faktisk ekstern test
+med særskilt samtykke til varslet IP-videresendelse er mulig.
+
+Seks DKSS-timefiler blev i fuld kørsel `36347957014` afvist af
+den transaktionelle provenienskontrol. Et ældre run accepterede
+samme officielle input og partOutcomeProof; eksakt rodårsag er
+ikke bevist. Lokal 4.0.508 registrerer kun faste årsagskoder i
+den sikre fejlrække. Ingen accept-, no-loss-, rollback-, kilde-
+eller processing-signaturændring. 34 måltests grønne; source-CI,
+merge og levende bevis er åbne.
+
+# HISTORISK – 2026-09-28 – lokal 4.0.507: tre fastlåste legacy-runs isoleres
 
 PR #469/4.0.506 blev merged som `1e2cc005` efter grøn exact-head
 CI. En levende tørkørsel `36365055249` bestod teknisk og sprang

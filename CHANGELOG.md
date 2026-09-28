@@ -1,4 +1,17 @@
-## 4.0.507 – tre eksakte fastlåste legacy-kørsler (lokal, 2026-09-28)
+## 4.0.508 – årsag til DMI-afvisning kan måles (lokal, 2026-09-28)
+
+- Den seneste fulde vejrkørsel leverede prognose, men afviste seks
+  genbrugte DMI DKSS-timefiler med en generisk proveniensbesked.
+  Tidligere behandling af samme officielle filer lykkedes; den
+  præcise afvisningsbetingelse er ikke bevist.
+- Sikker fejllog skelner nu mellem tolv faste pre-commit-grunde.
+  Datavalg, kildeprioritet, no-loss, rollback og cacheidentitet
+  ændres ikke. 34 målrettede tests består; exact-head CI og
+  faktisk DMI-bevis afventer.
+- 4.0.507 er merged; eksternt cron-job er fortsat deaktiveret,
+  indtil en faktisk test med særskilt IP-samtykke er gennemført.
+
+## 4.0.507 – tre eksakte fastlåste legacy-kørsler (merged, 2026-09-28)
 
 - Efter merge af 4.0.506 viste levende tørkørsel `36365055249`,
   at tre gamle, uændrede `queued`-poster fejlagtigt blokerede
