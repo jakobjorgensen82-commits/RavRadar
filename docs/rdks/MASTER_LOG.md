@@ -1,3 +1,22 @@
+# 2026-09-28 – lokal 4.0.509: UI forklarer scorehistorik ærligt
+
+4.0.508 er merged som main `cadd9b9d` efter grøn exact-head-CI.
+Den eksterne cron-test og dens varslede IP-videresendelse er nu
+udtrykkeligt godkendt af ejeren. Job `8348098` er fortsat
+deaktiveret indtil testen i gyldigt slot og et normalt run er
+verificeret; 4.0.508 er ikke vejrmæssigt produktionsbevist.
+
+Ejeren viste offentlig Lyngby og Lodbjerg: 48/48 dækkede
+havstrømstimer, men `WAVE_MOBILISATION_HISTORY_INCOMPLETE`
+og et vist 92–92-spænd. Den længere bølgehistorik, ikke de
+48 havstrømstimer, holder kvalitetsadvarslen åben. Lokal
+4.0.509 ændrer kun DA/DE/EN-tekst, skjuler sammenfaldende
+viste scoreintervaller, beholder historikadvarslen og retter
+flagets CSS-lag på tre sider. Ingen scoremodel, bounds,
+historikkvalitet, vejrdata eller kildeprioritet ændres.
+Målrettede UI-/forbrugertests er grønne; exact-head CI,
+merge og offentlig kontrol afventer.
+
 # 2026-09-28 – lokal 4.0.508: DMI-pre-commit kan diagnosticeres sikkert
 
 PR #470 er merged som main `36083ab8`, og guard-tørkørsel

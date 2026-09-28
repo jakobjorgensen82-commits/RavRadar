@@ -1,4 +1,12 @@
-# Aktuelle issues – 2026-09-28, lokal 4.0.508
+# Aktuelle issues – 2026-09-28, lokal 4.0.509
+
+- **HISTORIKTEKST OG ENGELSK FLAG – LOKALT RETTET, IKKE LEVERET:**
+  Offentlig Lyngby og Lodbjerg viste 48/48 havstrømstimer og
+  `WAVE_MOBILISATION_HISTORY_INCOMPLETE`, men teksten antydede
+  manglende timer og gentog et sammenfaldende 92–92-spænd.
+  4.0.509 ændrer kun UI-kopi og flagets CSS-lag; score og
+  bounds er uændrede. Exact-head CI, merge og offentlig kontrol
+  afventer.
 
 - **DMI DKSS-TIMEFIL AFVISES EFTER GENINDTRÆDEN – ÅBEN:** Fuld
   normal `36347957014` deployede, men DMI afviste seks genbrugte
@@ -7,13 +15,14 @@
   og partOutcomeProof. Årsagen er ikke bevist; udled ikke en bestemt
   afvisningsgren af den gamle log. Lokal 4.0.508 tilføjer kun
   faste, datasikre gren-koder, så næste naturlige run kan vise den
-  præcise betingelse uden at svække accept eller no-loss. Source-CI,
-  merge og faktisk runbevis mangler.
+  præcise betingelse uden at svække accept eller no-loss. 4.0.508
+  er merged som `cadd9b9d`; faktisk runbevis mangler stadig.
 - **EKSTERN FIRETIMERSSTART – AFVENTER FAKTISK TEST:** 4.0.507 er
   merged, og tørkørsel `36366253633` blev klar til et eksternt
   slot, men den udløste ikke vejr. Job `8348098` er deaktiveret.
-  Den manuelle test varsler videresendelse af ejerens IP-adresse;
-  særskilt samtykke afventes før test og aktivering.
+  Ejeren har godkendt den varslede IP-videresendelse. Testen
+  afventer næste gyldige slot 28/9 kl. 08:19 UTC; aktivering
+  kræver stadig fuldt eksternt og vejrmæssigt produktionsbevis.
 
 # Historiske issues – 2026-09-28, lokal 4.0.507
 

@@ -1,4 +1,24 @@
-# NYESTE SANDHED – 2026-09-28 – lokal 4.0.508, afgrænset DMI-diagnostik
+# NYESTE SANDHED – 2026-09-28 – lokal 4.0.509, visning uden modelændring
+
+4.0.508 er merged som main `cadd9b9d` efter grøn exact-head-CI.
+Ejeren har godkendt en faktisk ekstern cron-job.org-test og
+IP-videresendelsen til GitHub. Job `8348098` er fortsat deaktiveret;
+næste gyldige testslot er 28/9 kl. 08:19 UTC. Der er endnu intet
+bevis for 4.0.508's vejrproduktion, DMI-afvisningsårsag eller
+selvkørende firetimersdrift.
+
+Lokal 4.0.509 ændrer kun offentlig præsentation: farvet engelsk
+flag, præcisere DA/DE/EN-historiktekst og ingen visning af et
+sammenfaldende scoreinterval som »muligt spænd«. Den synlige
+`HISTORY_INCOMPLETE`-advarsel bevares. Offentlig Lyngby og
+Lodbjerg viste 48/48 dækkede havstrømstimer, men
+`WAVE_MOBILISATION_HISTORY_INCOMPLETE` og vist 92–92; det er
+en uafklaret længere bølgehistorik, ikke dokumenteret mangel i
+de 48 havstrømstimer. Score, bounds, kvalitet og vejrdata ændres
+ikke. Måltests er lokalt grønne; exact-head source-CI, merge og
+offentlig UI-kontrol er endnu åbne.
+
+# HISTORISK SANDHED – 2026-09-28 – lokal 4.0.508, afgrænset DMI-diagnostik
 
 4.0.507 er merged som main `36083ab8`. GitHub-tørkørsel
 `36366253633` nåede `external-four-hour-weather-slot-ready`, men

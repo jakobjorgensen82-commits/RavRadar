@@ -1,3 +1,16 @@
+## 2026-09-28 – lokal 4.0.509: farvet flag og forståelig historik
+
+4.0.508 blev merged som main `cadd9b9d`. Ejeren godkendte den
+faktiske eksterne cron-test med varslet IP-videresendelse;
+jobbet er fortsat deaktiveret til næste gyldige slot.
+Offentlig Lyngby og Lodbjerg havde 48/48 havstrømstimer,
+men længere uafklaret bølgehistorik og et vist 92–92-spænd.
+Lokal 4.0.509 retter alene UI: beholder synlig advarsel,
+forklarer bølgehistorikken særskilt, skjuler nulbredde-spænd
+og ordner CSS-lagene i det engelske flag på tre sider.
+Scoremodel, bounds og vejrdata er uændrede. Lokale måltests
+er grønne; exact-head CI, merge og offentlig visning afventer.
+
 ## 2026-09-28 – lokal 4.0.508: sikker årsagskode for DMI
 
 PR #470/4.0.507 blev merged som main `36083ab8`; levende

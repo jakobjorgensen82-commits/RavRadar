@@ -1,3 +1,16 @@
+## 4.0.509 – tydelig historiktekst og farvet engelsk flag (lokal, 2026-09-28)
+
+- Det engelske flag får rødt kors og blåt grundfelt i alle tre
+  sprogskiftere. Kun CSS-lagenes rækkefølge er ændret.
+- Ranglister og scorepanel viser ikke længere et »muligt spænd«, når
+  de viste nedre og øvre tal er ens. Den krævede advarsel om
+  ufuldstændig historik bevares uden et meningsløst talspænd.
+- Ved 48 af 48 dækkede havstrømstimer og uafklaret længere
+  bølgehistorik forklarer panelet netop bølgehistorikken. Scoremodel,
+  intervalberegning, kvalitetsflag og vejrdata er uændrede.
+- Målrettede DA/DE/EN- og forbrugertests er grønne lokalt.
+  Exact-head CI, merge og offentlig visningskontrol afventer.
+
 ## 4.0.508 – årsag til DMI-afvisning kan måles (lokal, 2026-09-28)
 
 - Den seneste fulde vejrkørsel leverede prognose, men afviste seks

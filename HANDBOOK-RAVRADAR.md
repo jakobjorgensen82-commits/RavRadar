@@ -1,14 +1,30 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.508
+**Håndbogsversion:** 4.0.509
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.508 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.509 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.105 4.0.509 – Hvad betyder vejrhistorikken under en score?
+
+Hvis RavRadar stadig mangler eller ikke kan bekræfte en del af den
+tidligere vejrhistorik, står der fortsat en advarsel ved scoren.
+Et vist scoreinterval som 92–92 er derimod ikke et reelt spænd og
+vises ikke længere. Det betyder ikke, at historikken pludselig er
+komplet: advarslen bliver stående, indtil modellen selv melder fuld
+historik.
+
+Havstrøm kan være dokumenteret i alle de seneste 48 timer, mens
+modellens længere bølgehistorik stadig er uafklaret. I det tilfælde
+forklarer detaljepanelet bølgehistorikken i stedet for at give
+indtryk af manglende havstrøm. Ingen score, intervalgrænse eller
+historikregel ændres af denne tekst. Sprogskifterens engelske flag
+har nu synligt rødt kors, hvid kant og blåt grundfelt.
 
 ## 89.104 4.0.508 – Når DMI afviser en vejrtime
 

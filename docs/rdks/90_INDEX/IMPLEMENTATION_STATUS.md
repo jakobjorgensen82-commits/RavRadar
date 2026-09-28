@@ -1,4 +1,21 @@
-# 2026-09-28 – lokal 4.0.508, DMI-afvisningsdiagnostik
+# 2026-09-28 – lokal 4.0.509, sprogflag og forståelig historikadvarsel
+
+- [x] Offentlig eksempel ved Lyngby og Lodbjerg: 48/48 timer
+  havstrøm, `WAVE_MOBILISATION_HISTORY_INCOMPLETE`, vist 92–92.
+  Årsagen er længere bølgehistorik, ikke et hul i de 48 strømstimer.
+- [x] CSS-flag ensrettet på forside, Om og Grundbog. Rangliste
+  og detaljepanel undlader sammenfaldende vist scoreinterval, men
+  beholder synlig `HISTORY_INCOMPLETE`-advarsel. DA/DE/EN forklarer
+  længere bølgehistorik særskilt. Ingen model- eller vejrdataændring.
+- [x] Målrettede UI-/forbrugertests og geodatadiff kontrolleret
+  lokalt; kun versionsfelter i geodata er ændret.
+- [ ] RDKS-/versionsvalidering, exact-head source-CI, sikker merge
+  uden aktivt vejrrun og offentlig UI-verifikation.
+- [ ] Uafhængig ekstern cron-test, fuldt vejrproduktionsbevis,
+  DMI-afvisningskoder og senere sikker aktivering. 4.0.508 er
+  merged som `cadd9b9d`, men endnu ikke vejrmæssigt bevist.
+
+# HISTORISK STATUS – 2026-09-28 – lokal 4.0.508, DMI-afvisningsdiagnostik
 
 - [x] PR #470/4.0.507 merged som main `36083ab8` efter grøn
   exact-head CI. Tørkørsel `36366253633` bekræftede klar ekstern
