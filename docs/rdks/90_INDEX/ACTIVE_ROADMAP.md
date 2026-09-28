@@ -1,4 +1,21 @@
-# Aktivt roadmap – 2026-09-28, lokal 4.0.508
+# Aktivt roadmap – 2026-09-28, lokal 4.0.509
+
+1. [x] Normalrun `36450204193` genbrugte nyeste gyldige cache,
+   gennemførte tre leverandører, gates, CAS, privat R2 og Pages.
+   Nøjagtig fælles sted-/tidskontrol gav +1.800 vind, +0 bølger,
+   +667 havstrøm, +0 vandstand og +1.017 temperatur uden tab.
+2. [x] Reproduceret LF-restkøfejl og afgrænset lokal rettelse med
+   måltest: samme prioritet i første og dynamisk plan og uændret
+   sorteringsmarkør under en samlingstur. Se DEC-0261.
+3. [ ] Fuldfør versions-/RDKS-/håndbogs- og geodatakontrol, grøn
+   source-CI på eksakt head og sikker merge uden aktivt vejr-run.
+   Kontroller senere naturligt run for faktisk sen LF-rotation,
+   vandstand, femfelts-no-loss, leverandører, CAS/R2/Pages.
+4. [ ] Fortsæt målt forbedring af de tre delvise zoner, de seks
+   DMI-afvisninger, vandstandshorisont, kvoter og selvkørende drift.
+   Ændr ikke U/V-dybdevalg eller AMM15-domæne uden nye data.
+
+# Historisk roadmap – 2026-09-28, lokal 4.0.508
 
 1. [x] 4.0.507 merged; guard-tørkørsel `36366253633` viste
    `external-four-hour-weather-slot-ready` uden vejrdispatch.

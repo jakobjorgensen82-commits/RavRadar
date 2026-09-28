@@ -1,3 +1,21 @@
+## 4.0.509 – ens DMI-prioritet og fair LF-restkø (lokal, 2026-09-28)
+
+- To normale kørsler viste kronologiske LF-forsøg, mens offentlig
+  Limfjordsvandstand fortsat sluttede efter prognosetime 70.
+  Omplanlægningen af den resterende DMI-kø mistede prioritet mellem
+  faktiske vandstandshuller og allerede dækkede havstrømsopgraderinger;
+  den flyttede desuden rotationspivot efter hvert forsøg.
+- Begge planlægningssteder bruger nu samme komponentprioriteter og
+  turens uændrede indgangscursor. Den gemte cursor opdateres fortsat
+  ved faktiske forsøg til næste kørsel. Måltesten dækker begge brister
+  og produktionskald. Ingen ændring af U/V-lag, kildeaccept,
+  vandstandsinterpolation, score eller no-loss. Exact-head CI,
+  merge og levende DMI-/deploybevis afventer. Se DEC-0261.
+- Offentlig 4.0.508 efter `36450204193`: 352.513/397.070 gyldige
+  femfeltspar på target 28/9 kl. 16 UTC. Tre tidligere tomme zoner
+  har delvise scorer, ikke fuld prognose. Den eksterne firetimersplan
+  er aktiv; der startes ingen ekstra eller overlappende kørsel.
+
 ## 4.0.508 – årsag til DMI-afvisning kan måles (lokal, 2026-09-28)
 
 - Den seneste fulde vejrkørsel leverede prognose, men afviste seks

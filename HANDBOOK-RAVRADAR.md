@@ -1,14 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.508
+**Håndbogsversion:** 4.0.509
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.508 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.509 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.106 4.0.509 – En fair tur til senere Limfjordstimer
+
+RavRadar henter fortsat vejr automatisk hver fjerde time, én
+kørsel ad gangen. En faktisk kørsel leverede ny prognose til
+hjemmesiden, men vandstand i nogle Limfjordskystdele stopper
+tidligere end andre steder. Vi fandt, at DMI's interne arbejdskø
+kunne starte forfra med de tidlige timer, når den blev planlagt
+om undervejs. Derudover kunne en time, hvor en allerede gyldig
+havstrøm blot skulle forbedres, komme foran et reelt hul i
+vandstand. Køen er rettet, så senere timer får en tur, og
+faktiske huller går først. Det betyder ikke, at flere værdier
+allerede er leveret: næste normale kørsel skal måle resultatet.
+Eksisterende vejrdata, score og dybdevalg ændres ikke.
+Ældre afsnit nedenfor om en deaktiveret automatisk start og en
+endnu ikke offentliggjort 4.0.508-pakke er historiske: den
+eksterne firetimersplan er nu aktiv, og 4.0.508 kom senere på
+hjemmesiden.
 
 ## 89.105 4.0.508 – Færdig vejrpakke stoppede ved databasen
 

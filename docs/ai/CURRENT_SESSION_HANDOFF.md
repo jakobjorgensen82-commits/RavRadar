@@ -1,4 +1,18 @@
-# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.508, sikker DMI-diagnostik
+# AKTUELT CHECKPOINT – 2026-09-28 – lokal 4.0.509, DMI-LF-restkø
+
+Main `42c57a8a`/4.0.508 er offentligt efter vellykket normalt
+run `36450204193` med CAS version 63, privat R2 og Pages. Eksternt
+cron-job.org-job `8348098` er aktivt hver fjerde UTC-time; ingen
+manuel ekstra kørsel. Target 28/9 kl. 16 UTC har 352.513/397.070
+femfeltspar og tre kun delvist scorede Limfjordszoner. Ny lokal
+branch `codex/dmi-lf-critical-rotation` i isoleret worktree
+`dmi-lf-rotation` retter to reproducerede fejl i LF-restkøens
+prioritet/rotationspivot. Der er måltest, men ingen exact-head CI,
+merge eller faktisk effekt endnu. Følg DEC-0261 og nyere CURRENT_TRUTH.
+Anbefalet model/indsats: Sol/Ekstra høj. `cb79` er gammel og må
+ikke bruges til at bygge fra.
+
+# HISTORISK CHECKPOINT – 2026-09-28 – lokal 4.0.508, sikker DMI-diagnostik
 
 Arbejd i `r2-private-runtime`, branch
 `codex/4.0.508-dmi-stage-rejection-codes`. PR #470/4.0.507 er

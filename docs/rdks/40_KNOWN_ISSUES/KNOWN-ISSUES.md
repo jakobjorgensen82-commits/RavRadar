@@ -1,4 +1,26 @@
-# Aktuelle issues – 2026-09-28, gemt 4.0.508-build
+# Aktuelle issues – 2026-09-28, offentlig 4.0.508 og lokal 4.0.509
+
+- **LIMFJORDS SENERE DMI-VANDSTAND – ÅBEN:** Offentlig 4.0.508
+  stopper for 23 berørte kystdele efter prognosetime 70, mens
+  650 andre dele når time 93. To normale runs forsøgte LF-filer i
+  tidlig kronologisk rækkefølge. Den dynamiske kø mistede
+  komponentprioritet og flyttede sorteringspivot under samme tur.
+  Lokal 4.0.509 retter begge med måltest; reel senere LF-dækning,
+  central kildehorisont og eventuelle afvisninger skal stadig måles
+  efter naturligt produktionsrun. Se DEC-0261.
+- **TRE DELVIST DÆKKEDE ZONER – ÅBEN:** `DK-B05-21`, `DK-B05-23`
+  og `DK-B05-24` gik fra nul til 24/118, 24/118 og 48/118
+  scoretimer, men de 22 dele mangler endnu 2.068/2.596 direkte
+  havstrømspar. Copernicus-Baltic leverede én 24-timersblok pr.
+  del; undersøg rotation og den resterende horisont, før AMM15-
+  grænsen ændres. DMI og Copernicus vælger allerede dybeste
+  tilgængelige fælles U/V-lag efter våd-cellevalg.
+- **FEMFELTSREST OG SELVKØRENDE DRIFT – ÅBEN:** Seneste offentlige
+  target har 352.513/397.070 gyldige par på fem vejrtyper. Flere
+  normale, ikke-overlappende runs, DMI-afvisningskoder, nøjagtig
+  sted-/tidssammenligning og R2/Supabase-kvoter skal fortsat måles.
+
+# Historiske issues – 2026-09-28, gemt 4.0.508-build
 
 - **PRIVAT PAKKE GEMT, OFFENTLIG LEVERING ÅBEN:** Recovery
   `36418759385` publicerede det eksakte score-checkpoint som

@@ -1,8 +1,10 @@
 """Focused contract checks for opt-in DKSS primary-gap processing."""
 from __future__ import annotations
 
+import ast
 import copy
 import importlib.util
+import inspect
 import os
 import sys
 import types
@@ -421,6 +423,96 @@ assert producer.critical_native_cursor_for_run(
     {}, {"processedSteps": {rotating_hours[7]: {"complete": False}}},
     set(rotating_hours),
 ) is None
+
+# The first plan and the dynamic LF suffix must agree on real holes versus
+# DMI-current upgrades. A covered early current upgrade cannot outrank a
+# later missing DMI-only water-level component after regional replanning.
+priority_hours = [
+    "2026-09-24T08:00:00Z", "2026-09-24T09:00:00Z",
+]
+priority_assets = [
+    {"valid": priority_hours[0], "id": "current-upgrade"},
+    {"valid": priority_hours[1], "id": "water-level-hole"},
+]
+priority_requirements = {
+    priority_hours[0]: {"critical": True, "criticalPriority": 1},
+    priority_hours[1]: {"critical": True, "criticalPriority": 0},
+}
+priority_order = producer.prioritize_dkss_primary_assets(
+    priority_assets, [TARGET_ID],
+    {(TARGET_ID, value) for value in priority_hours},
+    priority_requirements,
+    direct_valid_times=set(priority_hours),
+    regional_gap_pairs_by_time={},
+    verified_reusable_valid_times=set(),
+    critical_cursor_valid_time=None,
+)
+assert [row["id"] for row in priority_order] == [
+    "water-level-hole", "current-upgrade",
+]
+
+# Replanning after the first attempt must retain the cursor from turn entry;
+# the latest attempt is persisted for the NEXT turn, not used as this turn's
+# pivot. Otherwise repeated suffix replans walk hours 0,1,2,3... again.
+long_hours = [
+    f"2026-09-{24 + hour // 24:02d}T{hour % 24:02d}:00:00Z"
+    for hour in range(40)
+]
+long_assets = [
+    {"valid": value, "id": f"hour-{index}"}
+    for index, value in enumerate(long_hours)
+]
+long_requirements = {
+    value: {"critical": True, "criticalPriority": 0}
+    for value in long_hours
+}
+long_plan_args = dict(
+    direct_valid_times=set(long_hours),
+    regional_gap_pairs_by_time={},
+    verified_reusable_valid_times=set(),
+    critical_cursor_valid_time=long_hours[30],
+)
+initial_long_plan = producer.prioritize_dkss_primary_assets(
+    long_assets, [TARGET_ID], set(), long_requirements,
+    **long_plan_args,
+)
+assert [row["id"] for row in initial_long_plan[:5]] == [
+    "hour-0", "hour-1", "hour-2", "hour-31", "hour-32",
+]
+replanned_suffix = producer.prioritize_dkss_primary_assets(
+    initial_long_plan[1:], [TARGET_ID], set(), long_requirements,
+    **long_plan_args,
+)
+assert [row["id"] for row in replanned_suffix[:5]] == [
+    "hour-1", "hour-2", "hour-31", "hour-32", "hour-33",
+]
+
+# Guard the production wiring too: both initial and suffix plans must use
+# the shared classifier-priority adapter and the immutable entry cursor.
+main_tree = ast.parse(inspect.getsource(producer.main))
+dkss_plans = [
+    node for node in ast.walk(main_tree)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "prioritize_dkss_primary_assets"
+]
+assert len(dkss_plans) == 2
+for call in dkss_plans:
+    cursor_arg = next(
+        keyword.value for keyword in call.keywords
+        if keyword.arg == "critical_cursor_valid_time"
+    )
+    assert any(
+        isinstance(node, ast.Name)
+        and node.id == "critical_native_cursor_at_turn_start"
+        for node in ast.walk(cursor_arg)
+    )
+assert sum(
+    isinstance(node, ast.Name)
+    and isinstance(node.ctx, ast.Store)
+    and node.id == "critical_native_cursor_at_turn_start"
+    for node in ast.walk(main_tree)
+) == 1
 
 # No configured plan preserves old callers; invalid planning input cannot
 # confer coverage or interrupt native cache preservation.
