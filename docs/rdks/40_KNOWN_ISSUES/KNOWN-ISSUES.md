@@ -1,4 +1,13 @@
-# Aktuelle issues – 2026-09-29, offentlig 4.0.510
+# Aktuelle issues – 2026-09-29, offentlig 4.0.510, main 4.0.511
+
+- **DMI-PROGNOSEFREMDRIFT – ÅBEN:** Normalrun `36596877513`
+  beholdt beskyttet cache, men flettede nul separate DMI-
+  prognosekomponenter ind (`DMI_FORECAST_RECOVERY_UNAVAILABLE`).
+  Stationer gav 125 gendannede observationer. Den konkrete årsag
+  er ukendt; 4.0.512-kandidaten giver kun faste sikre fejltrinskoder.
+  Bevar den gamle cache; ændr ikke størrelsesgrænse eller kildevalg
+  før et naturligt run identificerer årsagen. 256/768 MiB-forskellen
+  mellem læser og progress-pack er en uprøvet hypotese.
 
 - **FEMFELTSREST – ÅBEN:** Target 29/9 16 UTC har
   370.007/397.070 gyldige sted-time-vejrpar. Af 79.414 pr.
@@ -20,11 +29,12 @@
   tab; 424 deltimer mangler fortsat. Gentagne Baltic-update-
   udsættelser og kildehorisont må måles. AMM15-grænsen eller
   dybdelaget må ikke ændres uden leverandørbevis.
-- **UI-HISTORIK OG FLAG – RETTET I 4.0.511-KANDIDAT, AFVENTER CI/PRODUKTION:**
+- **UI-HISTORIK OG FLAG – MERGED I 4.0.511, AFVENTER PRODUKTION:**
   Visning af 48/48 strømdata må ikke begrunde advarslen om
   ufuldstændig længere bølgehistorik; viste 92–92-spænd skjules.
   Flagets CSS-lag rettes i tre offentlige sider. Ingen modelkode
-  ændres. Lokal måltest består; releasebevis mangler endnu.
+  ændres. Exact-head kilde-CI bestod, men offentlig visning
+  mangler endnu.
 - **FEGGESUND-FORHÅNDSKONTROL – PRODUKTIONSBEVIST I 4.0.510:**
   Run `36596877513` passerede den strenge forhåndskontrol og
   runtime med 354/354 direkte bølgedeltimer; tidligere åbne

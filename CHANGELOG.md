@@ -1,3 +1,17 @@
+## 4.0.512 – sikre årsagskoder for DMI-gendannelse
+
+- Når den krypterede DMI-fremdrift ikke kan flettes med den beskyttede
+  produktionscache, rapporteres nu en fast kode for filrolle og trin
+  (læsning, fletning eller gemning). Stier, payloads og fejltekst
+  offentliggøres ikke. Gamle gyldige data forbliver beskyttet.
+- Dette er diagnostik, ikke en dokumenteret rettelse af det DMI-tabte
+  fremskridt i run `36596877513`. Ingen leverandørprioritet,
+  vejrværdi, score eller normal scheduler ændres. Først et nyt
+  normalrun kan påvise den konkrete årsag og en senere dataeffekt.
+- 4.0.511's rene UI-PR #478 bestod exact-head kilde-CI og blev
+  merged på main `86b4528d`; offentlig UI-verifikation afventer
+  næste ordinære Pages-deploy.
+
 ## 4.0.511 – tydeligere historikadvarsel og farvet engelsk flag
 
 - Kun visning ændres: ved 48/48 bekræftede strøm-timer forklarer

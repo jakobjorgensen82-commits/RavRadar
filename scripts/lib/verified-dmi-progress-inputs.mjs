@@ -262,11 +262,22 @@ export function mergeVerifiedStationObservationProgress(complete, progress, {
     code: stats.rejectedRecords ? 'DMI_STATION_RECORDS_REJECTED' : null };
 }
 
-async function readJson(file) {
-  const info = await fs.lstat(file);
-  if (!info.isFile() || info.isSymbolicLink() || info.size < 1 || info.size > MAX_BYTES) throw new Error('invalid');
-  return JSON.parse(await fs.readFile(file, 'utf8'));
+async function readJson(file, role) {
+  let info;
+  try { info = await fs.lstat(file); }
+  catch (error) {
+    throw new Error(`DMI_PROGRESS_${role}_${error?.code === 'ENOENT' ? 'MISSING' : 'READ_UNAVAILABLE'}`);
+  }
+  if (!info.isFile() || info.isSymbolicLink()) throw new Error(`DMI_PROGRESS_${role}_INVALID_FILE`);
+  if (info.size < 1 || info.size > MAX_BYTES) throw new Error(`DMI_PROGRESS_${role}_INVALID_SIZE`);
+  let body;
+  try { body = await fs.readFile(file, 'utf8'); }
+  catch { throw new Error(`DMI_PROGRESS_${role}_READ_UNAVAILABLE`); }
+  try { return JSON.parse(body); }
+  catch { throw new Error(`DMI_PROGRESS_${role}_INVALID_JSON`); }
 }
+
+const SAFE_READ_CODE = /^DMI_PROGRESS_(?:FORECAST_BASE|FORECAST_PROGRESS|STATIONS_BASE|STATIONS_PROGRESS|ACTIVE_ZONES)_(?:MISSING|READ_UNAVAILABLE|INVALID_FILE|INVALID_SIZE|INVALID_JSON)$/;
 
 export async function reconcileDmiProgressFiles({
   root, files, temporaryDirectory, productionReferenceAt, restoredAt = new Date().toISOString(),
@@ -281,27 +292,37 @@ export async function reconcileDmiProgressFiles({
   for (const file of selected) {
     const forecast = file.relativePath === FILES.dmiForecastStore;
     const name = forecast ? 'forecast' : 'stations';
+    const role = forecast ? 'FORECAST' : 'STATIONS';
+    let phase = 'READ';
     try {
-      const [complete, progress] = await Promise.all([readJson(path.join(root, file.relativePath)), readJson(file.sourcePath)]);
+      const [complete, progress] = await Promise.all([
+        readJson(path.join(root, file.relativePath), `${role}_BASE`),
+        readJson(file.sourcePath, `${role}_PROGRESS`),
+      ]);
+      const features = forecast ? (await readJson(path.join(root, 'data/zones.geojson'), 'ACTIVE_ZONES')).features : null;
+      phase = 'MERGE';
       const result = forecast
         ? mergeVerifiedDmiForecastProgress(complete, progress, {
-          features: (await readJson(path.join(root, 'data/zones.geojson'))).features,
+          features,
           productionReferenceAt, restoredAt, recoverRuntimeCursor,
         })
         : mergeVerifiedStationObservationProgress(complete, progress, { productionReferenceAt, restoredAt });
       summary[name] = result.stats;
       if (result.code) summary.codes.push(result.code);
       if (result.stats.status !== 'MERGED') continue;
+      phase = 'SAVE';
       const bytes = Buffer.from(`${JSON.stringify(result.document)}\n`);
       if (bytes.length > MAX_BYTES) throw new Error('invalid');
       const sourcePath = path.join(temporaryDirectory, `merged-dmi-progress-${name}.json`);
       await fs.writeFile(sourcePath, bytes, { flag: 'wx', mode: 0o600 });
       output.push({ ...file, sourcePath });
-    } catch {
+    } catch (error) {
       summary[name] = forecast
         ? { status: 'RETAINED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false }
         : { status: 'RETAINED', recoveredObservations: 0, rejectedRecords: 0 };
-      summary.codes.push(forecast ? 'DMI_FORECAST_RECOVERY_UNAVAILABLE' : 'DMI_STATION_RECOVERY_UNAVAILABLE');
+      // Never reveal authenticated file paths, content, or exception text in Actions logs.
+      summary.codes.push(SAFE_READ_CODE.test(error?.message) ? error.message
+        : `DMI_${role}_${phase}_UNAVAILABLE`);
     }
   }
   return { files: output, summary };

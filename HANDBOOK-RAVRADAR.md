@@ -1,14 +1,27 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.511
+**Håndbogsversion:** 4.0.512
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.511 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.512 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.109 4.0.512 – Hvorfor DMI-fremdrift ikke blev genbrugt
+
+Et normalrun kan gennemføre DMI-vejrhentning og stadig måtte bevare
+den ældre, beskyttede DMI-cache, hvis en separat krypteret
+fremdriftspakke ikke kan flettes sikkert ind. Run `36596877513`
+rapporterede netop `DMI_FORECAST_RECOVERY_UNAVAILABLE` og nul
+gendannede prognosekomponenter. Den gamle fælleskode skelnede ikke
+mellem manglende/ugyldig fil, flettefejl og skrivefejl. 4.0.512
+giver faste, indholdsfri koder for disse trin og de to DMI-filer.
+Den ændrer hverken dataudvælgelse eller produktionscache; den
+konkrete årsag og effekt må først måles i et naturligt normalrun.
+Offentlig 4.0.512 er derfor ikke bevist ved lokal test alene.
 
 ## 89.108 4.0.511 – Hvad advarslen om vejrhistorik betyder
 
@@ -21,7 +34,8 @@ fra advarslen, mens et reelt spænd fortsat vises. Ændringen gælder
 kun teksten og visningen på forside, Om og Grundbog; scoreformlen,
 de numeriske grænser og vejrhentningen er uændrede. Det engelske
 flag har igen rødt, hvidt og blåt. Den målrettede lokale test
-består; offentlig 4.0.511 kræver endnu kildegate, merge og deploy.
+består; exact-head kilde-CI og merge er gennemført, men offentlig
+4.0.511-visning afventer et ordinært deploy.
 
 Den foregående 4.0.510-kontrol er nu bekræftet i normalrun
 `36596877513`: alle 354 Feggesund-bølgedeltimer var direkte

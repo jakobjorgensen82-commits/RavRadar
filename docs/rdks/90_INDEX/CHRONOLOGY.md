@@ -1,3 +1,12 @@
+## 2026-09-29 – 4.0.511 merged, 4.0.512 DMI-diagnostikkandidat
+
+UI-PR #478 er på main `86b4528d` efter grøn exact-head CI.
+Run `36596877513` gemte cache og deployede 4.0.510, men den
+separate DMI-prognosefremdrift blev ikke indflettet; generisk
+fejlkode gav ingen rodårsag. 4.0.512-kandidaten giver sikre
+fil-/trinkoder og målrettede tests. Vejrprioritet og gamle gyldige
+data er uændrede; årsag og live-effekt afventer normalrun.
+
 ## 2026-09-29 – 4.0.510 offentligt; 4.0.511 UI-kandidat
 
 Eksternt normalrun `36596877513` på main `6c12c52c` bestod

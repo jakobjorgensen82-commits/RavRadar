@@ -1,4 +1,15 @@
-# 2026-09-29 – offentlig 4.0.510, 4.0.511 UI-kandidat
+# 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
+
+- [x] UI-PR #478/4.0.511 bestod grøn exact-head source-CI
+  `36618674293` og er merged som main `86b4528d`.
+- [ ] Kontroller flag/historiktekst på den levende side efter næste
+  ordinære deploy; nuværende offentlige pakke er stadig 4.0.510.
+- [x] DMI-fremdriftens tidligere generiske fejlkode er opdelt i
+  sikre faste filrolle-/trinkoder i 4.0.512-kandidaten; målrettede
+  tests bevarer protected input og private stier.
+- [ ] 4.0.512 kræver RDKS-/versionskontrol, exact-head source-CI,
+  sikker merge uden aktiv vejrkørsel og derefter naturligt
+  produktionsbevis for den præcise DMI-gendannelsesårsag.
 
 - [x] Naturligt normalrun `36596877513` på main `6c12c52c`
   gennemførte tre leverandører, cache, nul tab på identiske
@@ -14,10 +25,9 @@
   424/2.596 havstrømspar i de tre zoner mangler. Undersøg DMI's
   native LF-kø, adminvalgte kildehorisont og Copernicus Baltic-
   update-respons uden at gætte data eller ændre AMM15-grænse.
-- [ ] 4.0.511's rene UI-patch består målrettet lokal test; kræv
-  RDKS-/versionkontrol, grøn exact-head source-CI, sikker merge og
-  direkte offentlig visning. Numerisk score og vejrpipeline er ikke
-  ændret i denne patch.
+- [ ] 4.0.511's rene UI-patch er merged efter exact-head source-CI;
+  direkte offentlig visning afventer. Numerisk score og vejrpipeline
+  er ikke ændret i denne patch.
 - [ ] Flere normale firetimersruns og faktiske R2/Supabase-målinger
   kræves før stabilitet, komplethed eller Free-margen erklæres.
 
