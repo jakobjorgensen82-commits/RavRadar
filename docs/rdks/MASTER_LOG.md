@@ -1,3 +1,19 @@
+# 2026-09-29 – 4.0.510 normalrun og 4.0.511 UI-kandidat
+
+Run `36596877513` passerede eksakt main, DMI, Copernicus,
+Open-Meteo, cache, no-loss, fuld validering/releasegate,
+krypteret gemning, Supabase-CAS, privat R2 og Pages. Offentlig
+4.0.510/`rr-20260929175636-210` har 370.007/397.070
+femfeltspar. På 110 fælles timer × 673 kystdele: vind +2.629,
+bølger +1.971, havstrøm +1.259, vandstand +0 og temperatur
++667; nul tab. Feggesund 354/354 direkte bølgedeltimer.
+Tre delvise Limfjordszoner nåede 96/96/116 scoretimer,
+men syv LF-zoner har kun 71/118 vandstandstimer. DMI's
+3.599-sekunders arbejde nåede 48/117 LF-steps; vandstands-
+rodårsagen er endnu ikke fastslået. 4.0.511-porten fra den
+konfliktende UI-PR rører kun tekst og flag, ikke scoremodellen.
+Måltest grøn; exact-head CI og offentlig UI-verifikation afventer.
+
 # 2026-09-29 – 4.0.509 normalt deploy, restårsager åbne
 
 Run `36478379298` blev startet af det eksterne firetimersslot,

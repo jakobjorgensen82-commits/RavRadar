@@ -1,4 +1,42 @@
-# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.509, resthuller åbne
+# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.510, 4.0.511 UI-kandidat
+
+Eksternt startet normalrun `36596877513` på eksakt main `6c12c52c`
+bestod gendannelse, DMI, Copernicus, Open-Meteo, cache, no-loss,
+fuld produktionsvalidering og releasegate, krypteret gemning,
+Supabase-CAS, privat R2 og Pages. Den levende hjemmeside er direkte
+læst som version 4.0.510, dataset `rr-20260929175636-210`, target
+29/9 kl. 16 UTC, 210 zoner og 673 kystdele. Feggesund havde direkte
+bølger i alle 354/354 deltimer i den sikre runtime-audit; 4.0.510's
+forhåndskontrol har dermed også et naturligt produktionsbevis.
+
+På de 110 identiske timer × 673 kystdele gav runnet +2.629 vind,
++1.971 bølger, +1.259 havstrøm, +0 vandstand og +667
+vandtemperatur: 350.866 → 357.392/370.150 femfeltspar og nul tab
+af tidligere gyldige par. Det nye fulde 118-timersvindue har
+370.007/397.070: vind 73.566, bølger 79.414, havstrøm 77.133,
+vandstand 69.969 og vandtemperatur 69.925, hver af 79.414.
+Forskudte fuldvinduetotaler må ikke kaldes samme-time-regression.
+
+DK-B05-21/23/24 har nu 96/96/116 scoretimer og 2.172/2.596
+direkte havstrømspar, alle fra Copernicus Baltic. På 110 fælles
+timer steg deres scoretimer 48→96, 48→96 og 72→110 uden tab.
+Den tidligere nulprognose er altså afløst af delvis dækning, men
+424 havstrømspar mangler stadig. Syv Limfjordszoner har kun 71/118
+vandstandstimer; andre zoner 103 eller 106/118. På fælles timer
+fik vandstand ingen nye gyldige par. DMI arbejdede i 3.599 sekunder
+og nåede 48/117 `dkss_lf`-forecast-steps; sen kildehorisont og
+adminvalgt interpolation er fortsat åbne. Ingen reservekilde eller
+AMM15-grænse ændres på denne observation alene.
+
+4.0.511-kandidaten ændrer kun UI: forklaring af 48/48 strømdata
+med ufuldstændig længere bølgehistorik, skjul af viste intervaller
+som 92–92, og rødt/hvidt/blåt engelsk flag. Scorens numeriske model,
+vejrkilder og cacheprioritet er uændret. Den målrettede lokale
+UI-test er grøn; exact-head kildegate, merge og offentlig visning
+afventer. Stabil selvkørende drift, fuld femfeltsdækning og
+R2/Supabase-Free-margener er ikke bevist af ét run.
+
+# HISTORISK SNAPSHOT – 2026-09-29 – offentlig 4.0.509, nu afløst
 
 Normalt cron-run `36478379298` på main `9fcd996f`/4.0.509 bestod
 leverandører, cache, no-loss, fuld validering og releasegate,

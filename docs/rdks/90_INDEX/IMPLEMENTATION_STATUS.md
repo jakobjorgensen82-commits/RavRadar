@@ -1,4 +1,27 @@
-# 2026-09-29 – offentlig 4.0.509, målt fremgang og resthuller
+# 2026-09-29 – offentlig 4.0.510, 4.0.511 UI-kandidat
+
+- [x] Naturligt normalrun `36596877513` på main `6c12c52c`
+  gennemførte tre leverandører, cache, nul tab på identiske
+  kystdele/timer, fuld produktionsvalidering/releasegate,
+  krypteret færdigpakke, Supabase-CAS, privat R2 og Pages.
+  Levende version 4.0.510 og target 29/9 16 UTC er læst direkte.
+- [x] På 110 fælles timer × 673 dele: vind +2.629, bølger +1.971,
+  havstrøm +1.259, vandstand +0, vandtemperatur +667; samlet
+  +6.526/370.150 uden tab. Nyt fuldt vindue: 370.007/397.070.
+- [x] Feggesund har 354/354 direkte bølgedeltimer i ny runtime.
+  De tidligere tre scoreløse zoner har nu 96/96/116 af 118 timer.
+- [ ] Syv Limfjordszoner står på 71/118 vandstandstimer, og
+  424/2.596 havstrømspar i de tre zoner mangler. Undersøg DMI's
+  native LF-kø, adminvalgte kildehorisont og Copernicus Baltic-
+  update-respons uden at gætte data eller ændre AMM15-grænse.
+- [ ] 4.0.511's rene UI-patch består målrettet lokal test; kræv
+  RDKS-/versionkontrol, grøn exact-head source-CI, sikker merge og
+  direkte offentlig visning. Numerisk score og vejrpipeline er ikke
+  ændret i denne patch.
+- [ ] Flere normale firetimersruns og faktiske R2/Supabase-målinger
+  kræves før stabilitet, komplethed eller Free-margen erklæres.
+
+# Historisk status – 2026-09-29, offentlig 4.0.509, nu afløst
 
 - [x] Eksternt slot og vagt startede præcis normalrun
   `36478379298` på main `9fcd996f` uden overlap. Tre leverandører,

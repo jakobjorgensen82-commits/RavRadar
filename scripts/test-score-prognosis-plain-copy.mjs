@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import '../js/ui/score-prognosis-copy.js?v=4.0.486';
-import { setLanguage, t } from '../js/i18n.js?v=4.0.486';
-import { showZoneInfo } from '../js/ui/info-panel.js?v=4.0.486';
+import '../js/ui/score-prognosis-copy.js?v=4.0.511';
+import { setLanguage, t } from '../js/i18n.js?v=4.0.511';
+import { historyQualityWarning, showZoneInfo } from '../js/ui/info-panel.js?v=4.0.511';
 
 const bootstrap=fs.readFileSync('bootstrap.js','utf8');
 const panel=fs.readFileSync('js/ui/info-panel.js','utf8');
@@ -30,7 +30,7 @@ const keys=[
 for(const language of ['da','de','en']){
   for(const key of keys){
     const value=t(key,{score:25,transport:0,mobilisation:4,huntability:100,
-      current:'0,02 m/s',lower:21,upper:98},language);
+      current:'0,02 m/s',lower:21,upper:98,span:77},language);
     assert.notEqual(value,key,`${language}: ${key} mangler`);
     assert.doesNotMatch(value,/\{[A-Za-z]+\}/,`${language}: ${key} har ufyldte parametre`);
   }
@@ -74,4 +74,44 @@ showZoneInfo(englishElement,{id:'TEST',name:'Testkyst',region:'Test'},result,wea
 assert.match(englishElement.innerHTML,/The current points towards shore right now/);
 assert.doesNotMatch(englishElement.innerHTML,/GRID_CURRENT_48H/,
   'danske råårsager må ikke vises som engelsk forklaring');
+const waveHistoryOnly = {
+  scoreQuality:'HISTORY_INCOMPLETE',
+  scoreBounds:{lower:92,upper:92,modelUncertaintyPoints:0,
+    rawLower:91.555052,rawUpper:91.588436},
+  historyCoverageHours:48,
+  historyReasonCodes:['WAVE_MOBILISATION_HISTORY_INCOMPLETE'],
+};
+for (const language of ['da','de','en']) {
+  setLanguage(language);
+  const compact=historyQualityWarning(waveHistoryOnly,{compact:true});
+  assert.ok(compact.includes(t('score.historyIncomplete.short',{},language)),
+    `${language}: historikadvarslen skal stadig vises i ranglisten`);
+  assert.doesNotMatch(compact,/92[–-]92/,
+    `${language}: et sammenfaldende vist interval må ikke fylde i ranglisten`);
+  const detailed=historyQualityWarning(waveHistoryOnly);
+  assert.ok(detailed.includes(t('score.historyIncomplete.waveBody',{},language)),
+    `${language}: bølgehistorik skal forklares særskilt ved 48/48 strøm-timer`);
+  assert.doesNotMatch(detailed,/92[–-]92/,
+    `${language}: intervallet 92–92 må ikke vises`);
+  assert.ok(!detailed.includes(t('score.historyIncomplete.coverage',{hours:48},language)),
+    `${language}: 48/48 strøm-timer er ikke forklaringen på advarslen`);
+  const meaningfulRange={...waveHistoryOnly,
+    scoreBounds:{lower:71,upper:78,modelUncertaintyPoints:7,
+      rawLower:70.6,rawUpper:78.1}};
+  assert.ok(historyQualityWarning(meaningfulRange,{compact:true}).includes('71–78'),
+    `${language}: et reelt scoreinterval skal fortsat vises`);
+}
+const flagBackgrounds=['style.css','about.css','learn.css'].map(path => {
+  const css=fs.readFileSync(path,'utf8');
+  const background=css.match(/\.flag-en\s*\{\s*background:\s*([^;}]+)/)?.[1]
+    ?.replace(/\s+/g,'');
+  assert.ok(background,`${path}: engelsk flag mangler`);
+  assert.ok(background.indexOf('#c8102e')<background.indexOf('#fff'),
+    `${path}: rødt kors skal ligge foran hvidt i CSS-lagene`);
+  assert.match(background,/#012169$/,
+    `${path}: det blå grundfelt skal være synligt`);
+  return background;
+});
+assert.equal(new Set(flagBackgrounds).size,1,
+  'forside, Om og Grundbog skal bruge samme farvede flag');
 console.log('Forståelig score- og prognosetekst i DA/DE/EN: OK');
