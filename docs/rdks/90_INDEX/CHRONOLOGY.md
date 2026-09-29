@@ -1812,3 +1812,6 @@ blev accepteret ved skrivefri livekontrol. Den tidligere vejrkørsel
 `36252591071` havde ikke nogen gemt slutpakke. Lokal 4.0.499
 lægger krypteret, runbundet slutpakke før central CAS. Genlevering
 uden ny vejr-/scorebyg, exact-head CI og rigtig vejrrun er åbne.
+## 2026-09-29 – Feggesund forhånds-/slutproof uenige i normalrun
+
+Eksternt 12:19 UTC-slot startede ét normalrun `36567354134` på 4.0.509. De tre leverandørtrin bestod, men central weather-update stoppede på `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH`. En krypteret privat fremdrift blev gemt; ingen fuld pakke/CAS/R2/Pages. Koden viste, at forhåndsbeviset rekonstruerede fra kun den aktive DMI-cache, mens slutbeviset byggede på scorerens beskyttede tidligere DMI-generation og timebevaring. 4.0.510-kandidaten samler inputgrundlaget uden at lempe 3 × 118-beviset; produktionsbevis mangler.

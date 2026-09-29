@@ -43,6 +43,21 @@ assert.match(
   /buildFeggesundWaveCoverageProof\(\{\s*forecastStartAt: partForecastStartAt,\s*forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,/,
   'Feggesund coverage proof must use the 118-hour public horizon',
 );
+assert.match(
+  updateWeatherSource,
+  /const dmiRecord = buildPartDmiForecastWithProtectedRetention\(\s*feature, bulkCache, pointActivated \? null : deployedBulkCache,/,
+  'Feggesund preflight must use the protected DMI donor selected for scoring',
+);
+assert.match(
+  updateWeatherSource,
+  /persistedHourly: pointActivated \? \[\] : persistedDmiPartRows\.get\(part\.partId\)\?\.hourly \?\? \[\],[\s\S]*?historicalBulkCache: pointActivated \? null : historicalBulkCache/,
+  'Feggesund preflight must retain verified old hours but exclude the old point on activation',
+);
+assert.match(
+  updateWeatherSource,
+  /const feggesundWavePreflight = preflightFeggesundOperationalWaveReadiness\(\{[\s\S]*?deployedBulkCache,[\s\S]*?historicalBulkCache: historicalDmiBulkCache,[\s\S]*?persistedDmiPartRows,[\s\S]*?pointStateInjections,[\s\S]*?\}\);/,
+  'Feggesund preflight must receive the same protected donor and point-activation inputs as scoring',
+);
 const source = (parentZoneId, waveHeightM, wavePeriodS, waveDirectionDeg, digit) => ({
   parentZoneId,
   validTime: TIME,

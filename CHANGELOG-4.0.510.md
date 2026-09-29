@@ -1,0 +1,6 @@
+# 4.0.510 – ens Feggesund-bølgegrundlag i forhåndskontrol og score
+
+- Normalrun `36567354134` hentede fra DMI, Copernicus og Open-Meteo, men stoppede før færdig produktionspakke med `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH`. Ingen cache-CAS, R2- eller Pages-deploy skete; krypteret vejr-fremdrift blev gemt under `weather-private-progress-encrypted-v2-Linux-main-36567354134-1`.
+- Årsagen er et forskelligt inputgrundlag: forhåndskontrollen byggede Feggesunds tre kystdele alene fra den aktive DMI-delcache, mens den egentlige score også beholdt verificerede ældre DMI-bølgetupler. Begge veje bruger nu den samme beskyttede DMI-udvælger, inklusive historisk timebevaring og særskilt håndtering af et nyt kystpunkt.
+- Kontrollen er fortsat før den dyre landsdækkende scoring og sammenligner fortsat 3 × 118 eksakte timebeviser med slutresultatet. Manglende og ugyldige bølger accepteres ikke som målte data. Kildeprioritet, scoreformel, geometri og vandstandsinterpolation er uændret.
+- Målrettede Feggesund- og DMI-kontrakttests består lokalt. Exact-head kildegate, sikker merge og naturligt produktionsbevis er endnu ikke gennemført; 18.19-kørslen må ikke kaldes repareret før disse trin er grønne.

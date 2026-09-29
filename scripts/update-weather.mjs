@@ -1455,6 +1455,10 @@ function preflightFeggesundOperationalWaveReadiness({
   contract,
   parentById,
   bulkCache,
+  deployedBulkCache,
+  historicalBulkCache,
+  persistedDmiPartRows,
+  pointStateInjections,
   generatedAt,
   forecastStartAt,
   sourcesByTime,
@@ -1485,15 +1489,16 @@ function preflightFeggesundOperationalWaveReadiness({
       geometry: { type: 'Point', coordinates: part.waterPoint },
       properties: localPartRuntimeProperties(parent.properties, part, bulkId),
     };
-    const dmiRecord = bulkZoneToForecastRecord(
-      feature,
-      bulkCache,
-      generatedAt,
-      null,
-      {
+    const pointActivated = Boolean(pointStateInjections?.[part.partId]);
+    // Match the scorer's protected donor and persisted-part selection. The
+    // active bulk cache alone may lack a still-valid retained wave tuple.
+    const dmiRecord = buildPartDmiForecastWithProtectedRetention(
+      feature, bulkCache, pointActivated ? null : deployedBulkCache,
+      generatedAt, {
         startAt: forecastStartAt,
         expectedIdentity,
-        materializeMissingHorizon: true,
+        persistedHourly: pointActivated ? [] : persistedDmiPartRows.get(part.partId)?.hourly ?? [],
+        historicalBulkCache: pointActivated ? null : historicalBulkCache,
       },
     );
     if (!dmiRecord) {
@@ -2213,6 +2218,10 @@ function scoreCoastalPartsRuntime(
     contract,
     parentById,
     bulkCache,
+    deployedBulkCache,
+    historicalBulkCache: historicalDmiBulkCache,
+    persistedDmiPartRows,
+    pointStateInjections,
     generatedAt,
     forecastStartAt: partForecastStartAt,
     sourcesByTime: feggesundSourcesByTime,

@@ -2860,3 +2860,8 @@ Efter ejerens beslutning: exact-head PR-kontrol, sikker merge og én
 kort normalrun; spor samtidigt tabets konkrete oprindelse. Ingen
 lange runs eller cron før end-to-end-bevis. Tidligere checkpoint
 nedenfor er historisk.
+# AKTUELT CHECKPOINT – 2026-09-29 – 4.0.510 Feggesund-rettelse, endnu ikke leveret
+
+Normalrun `36567354134` (12:19 UTC-slot) gennemførte DMI, Copernicus og Open-Meteo, men stoppede i `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH` før fuld privat pakke, CAS, R2 og Pages. Krypteret fremdrift blev gemt med eksakt run-/attemptnøgle `weather-private-progress-encrypted-v2-Linux-main-36567354134-1`. Det gamle offentlige vejr er derfor fortsat produktion.
+
+Verificeret kodemismatch: Feggesund-forhåndskontrollen materialiserede alene aktiv DMI-cache; den faktiske score brugte også beskyttet tidligere DMI-cache og beholdte timekomponenter. Den isolerede 4.0.510-branch `codex/4.0.510-feggesund-preflight` lader forhåndskontrollen bruge samme beskyttede udvælger og beholder 3 × 118 hashbevis før landsdækkende scoring. Måltests består lokalt, men exact-head CI, merge og produktion mangler. GitHub-vagten er midlertidigt deaktiveret for at forhindre nyt run før sikker rettelse; cron-job.org-jobbet er stadig aktivt. Genaktivér vagten før næste eksterne slot kl. 16:19 UTC kun efter grøn source-CI og sikker merge. Ingen ny manuel vejrhentning.

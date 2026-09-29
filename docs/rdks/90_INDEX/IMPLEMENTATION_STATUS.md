@@ -6766,3 +6766,9 @@ snævert DMI-only uden for Candidate G-migrationsbroen.
 - [ ] Først derefter én kort normal bekræftelse fra senest krypteret
   fremdrift. Bevis CAS, R2, Pages, nul tab i fem vejrfamilier og
   faktisk offentlig prognose; ingen lang opfyldning/cron.
+# 2026-09-29 – 4.0.510-kandidat efter Feggesund-stop
+
+- [x] Fejlet normalrun `36567354134` isoleret til `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH` efter tre leverandører; krypteret fremdrift gemt, men ingen færdig pakke/deploy.
+- [x] Kodemismatch mellem aktiv-only forhåndskontrol og beskyttet DMI-retention i scoring rettet i isoleret branch; 3 × 118 hashkontrol, score, kildeprioritet og no-loss bevares. Målrettede Feggesund-/DMI-tests grønne.
+- [ ] Exact-head source-CI, geodataversionsdiff, merge og naturligt produktionsbevis mangler. GitHub-vagten må først genaktiveres, når rettelsen er sikker; ekstern cron står aktiv.
+- [ ] Undersøg fortsat femfeltsdækning, tre delvise zoner, Baltic-shards og sen Limfjordsvandstand efter et faktisk grønt normalrun.

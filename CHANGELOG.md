@@ -1,3 +1,7 @@
+## 4.0.510 – Feggesund-forhåndskontrol på samme beskyttede vejrgrundlag
+
+Se [CHANGELOG-4.0.510.md](CHANGELOG-4.0.510.md). Kandidat: normalrun `36567354134` gemte krypteret fremdrift, men ingen færdig produktionspakke. Exact-head CI, merge og naturligt deploybevis afventer.
+
 ## 4.0.509 – første offentlige normalrun (2026-09-29)
 
 - Det eksternt startede run `36478379298` gennemførte tre

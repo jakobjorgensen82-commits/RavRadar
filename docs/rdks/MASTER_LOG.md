@@ -5686,3 +5686,6 @@ prøver og ti generationer er ikke bevis for faktisk fuld størrelse.
 Exact-head, kort normal livekontrol og derefter ny fuld opfyldning
 udestår. Vandstandens korte synlige horisont, havstrømsrest og
 leverandørfordeling er særskilt åbne. Se DEC-0256 og roadmap.
+# 2026-09-29 – Feggesund-stop og beskyttet 4.0.510-kandidat
+
+Normalrun `36567354134` hentede fra DMI, Copernicus og Open-Meteo, men stoppede før central cache/deploy med `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH`. Krypteret fremdrift er bevaret; en færdig privat pakke findes ikke. Feggesund-forhåndskontrollen brugte kun den aktive DMI-cache, slutberegningen også den beskyttede tidligere generation og beholdte timefelter. Lokal 4.0.510 lader begge følge samme beskyttede DMI-udvælger, også ved eksakt ny punktaktivering, og beholder hash-gaten før landsdækkende scoring. Test, exact-head CI, merge og naturligt produktionsbevis er adskilte; kun de målrettede lokale tests er endnu grønne. GitHub-vagten er midlertidigt deaktiveret før næste eksterne firetimersslot; cron-job.org-jobbet er fortsat aktivt.

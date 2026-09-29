@@ -3747,3 +3747,6 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 - **VEJR/FREE – ÅBEN:** Ny R2-pakke og Pages mangler fortsat;
   alle fem vejrfamiliers huller, DMI/Copernicus/Open-Meteo-prioritet,
   historiske 34 temperaturfelter og fler-døgns Free-forbrug er åbne.
+# Aktuelt leveringsstop – 2026-09-29
+
+- **FEGGESUND-FORHÅNDSKONTROL – 4.0.510-KANDIDAT:** Normalrun `36567354134` stoppede efter leverandørerne, fordi forhåndskontrollen kun læste aktiv DMI-cache, mens scorebygningen også brugte gyldige beskyttede ældre bølger. Ingen færdig pakke eller deploy; krypteret fremdrift bevaret. Koden bruger nu samme beskyttede udvælger i begge veje, men exact-head CI og produktionsbevis mangler. En lokal grøn test lukker ikke issue.

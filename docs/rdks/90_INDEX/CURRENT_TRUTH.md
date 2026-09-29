@@ -6398,3 +6398,6 @@ sikker genoptagelsesvej mangler. Der startes ingen ny tung kørsel,
 før dette er afklaret. Det gamle run `36252591071` har ingen slutpakke
 og kan ikke bagudrettet reddes. De fem vejrfamiliers dækning,
 historiske 34 temperaturfelter og Free-budget er stadig åbne.
+# NYESTE SANDHED – 2026-09-29 – Feggesund-stop i normalt 12:19 UTC-run
+
+Run `36567354134` på 4.0.509 gennemførte alle tre leverandører, men stoppede i `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH` under cache-/scorebygning. Ingen færdig produktionspakke, fuld artifactgate, central CAS, privat R2 eller Pages. Krypteret leverandørfremdrift blev gemt; den er ikke i sig selv et deploybart artifact. Offentlig 4.0.509 er uændret. 4.0.510-kandidaten retter det påviste forskellige Feggesund-inputgrundlag; den er ikke merged eller produktionsbevist. Ekstern firetimersplan er gemt aktiv, men GitHub-vagten er midlertidigt deaktiveret mod overlap til rettelsen er sikker. De tidligere femfeltsresthuller og tre delvise zoner er fortsat åbne.
