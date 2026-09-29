@@ -1,4 +1,8 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.512, 4.0.513 diagnostikkandidat
+# 2026-09-30 – offentlig 4.0.510, main 4.0.513, cron pauset
+
+- [x] PR #480/4.0.513 bestod 47 source-kontroller på eksakt
+  head `5f0cc08d` i CI `36644336295` og blev merged som
+  main `75c01656`. Ingen weather blev startet ved merge.
 
 - [x] `36625547109` er diagnosticeret til det præcise stoptrin:
   streng bølgekonflikt under central replay efter tre leverandører;
@@ -6,12 +10,12 @@
   er gemt; den forrige løse kopi blev korrekt afvist på baseline.
 - [x] Ekstern cron-job.org-plan er midlertidigt pauset og genlæst
   som inaktiv; ingen manuel erstatningskørsel eller overlap startes.
-- [x] Lokal 4.0.513-kandidat opsummerer kun faste mulige
+- [x] Merged 4.0.513 opsummerer kun faste mulige
   bølgeoverlap ved replay-fejl uden for den låste RavScore-bundle.
   Måltest og bundle-`--check` er grønne; værdier og gate er uændrede.
-- [ ] Kør RDKS/version/relevante tests, grøn source-CI på eksakt
-  PR-head og merge først uden aktiv weather. Brug derefter kun
-  eksakt baseline-bundet gemt fremdrift til en kort bekræftelse.
+- [x] RDKS/version/relevante måltests og unchanged-modelbundle
+  blev valideret før grøn source-CI og sikker merge.
+- [ ] Brug kun eksakt baseline-bundet gemt fremdrift til en kort bekræftelse.
   Live kategori, no-loss, artifactgate, CAS, R2 og Pages er ikke bevist.
 - [ ] Undersøg derefter den faktiske bølgekonflikt og DMI's tre
   `DKSS_STAGE_NO_TOUCHED_ZONES` særskilt; vælg først en målrettet

@@ -1,4 +1,4 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.512
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.513
 
 - **GEMT BØLGEHISTORIK KONFLIKTER – BLOKERER NORMAL DRIFT:**
   Run `36625547109` gennemførte leverandørerne, men central
@@ -6,7 +6,7 @@
   `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger. Den præcise
   kilde-, modelrun- og værdi-relation er ikke i den sikre log.
   Krypteret fremskridt findes; ny færdig pakke/deploy findes ikke.
-  Ekstern cron er pauset. Lokal 4.0.513-diagnose tæller kun
+  Ekstern cron er pauset. Merged 4.0.513-diagnose tæller kun
   kategorier af mulige overlap, ikke den faktiske vinder.
   Kildeprioritet og den hårde gate må ikke ændres på gæt.
 - **DMI-OPERATIONEL AFVISNING – ÅBEN:** Tre `dkss_idw`-timer
