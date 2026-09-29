@@ -1,11 +1,12 @@
-## 2026-09-30 – 4.0.512 stoppede i bølge-replay; 4.0.513-kandidat
+## 2026-09-30 – 4.0.512 stoppede i bølge-replay; 4.0.513 merged
 
 Normalrun `36625547109` gemte krypteret fremdrift, men ikke nyt
 færdigt produktionsartifact, fordi to bølgekandidater gav hård
 replaykonflikt. Cron-job.org-planen er pauset. Den nye lokale
 diagnose klassificerer kun mulige overlap med faste koder og antal
-uden privat payload eller modelbundleændring; måltest er grøn,
-exact-head CI og levende årsagsbevis afventer. DMI viste desuden
+uden privat payload eller modelbundleændring. PR #480 bestod
+exact-head CI `36644336295` og blev merged som `75c01656`;
+levende årsagsbevis afventer. DMI viste desuden
 tre tvetydige `DKSS_STAGE_NO_TOUCHED_ZONES`-afvisninger.
 
 ## 2026-09-29 – 4.0.511 merged, 4.0.512 DMI-diagnostikkandidat

@@ -1,4 +1,4 @@
-## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik (kandidat)
+## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik
 
 - Ved den strenge stopkode for modstridende bølger opgøres nu kun faste,
   indholdsfri kategorier for mulige overlap i den berørte kystdels
@@ -10,7 +10,9 @@
 - Normalkørsel `36625547109` på 4.0.512 gemte krypteret fremdrift, men
   stoppede i `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger inden nyt
   produktionsartifact/CAS/R2/Pages. Ekstern cron er pauset for at undgå
-  endnu en lang kørsel med samme systemiske fejl. CI og nyt livebevis afventer.
+  endnu en lang kørsel med samme systemiske fejl. PR #480 blev merged
+  som main `75c01656` efter grøn exact-head source-CI `36644336295`;
+  vejrmæssigt livebevis og faktisk rodårsag afventer.
 
 ## 4.0.512 – sikre årsagskoder for DMI-gendannelse
 

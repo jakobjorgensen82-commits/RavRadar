@@ -1,4 +1,10 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.512, 4.0.513 diagnostikkandidat
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.513, cron pauset
+
+PR #480 bestod exact-head source-CI `36644336295` på
+`5f0cc08d` og blev merged som main `75c01656`. 4.0.513's
+diagnose er kildevalideret, men endnu ikke vejr- eller
+deployverificeret. Der er ingen ny normal vejrkørsel efter
+`36625547109`; automatisk start forbliver pauset.
 
 Ekstern cron-job.org-plan `8348098` er midlertidigt pauset efter
 normalrun `36625547109` på eksakt main `03c9fe22`/4.0.512.
@@ -12,13 +18,13 @@ Offentlig 4.0.510 og dens målte 370.007/397.070 femfeltspar er derfor
 fortsat sidste verificerede produktionsbillede, ikke en ny måling.
 
 Den præcise konfliktende kystdel/time og kildepar er ikke i den
-sikre log. 4.0.513-kandidaten føjer kun faste kategorier og antal
+sikre log. 4.0.513 føjer kun faste kategorier og antal
 mulige overlap til fejlstien uden for RavScores låste modelbundle.
 Kategorierne er ikke en automatisk konfliktløsning eller et bevis
 for præcis hvilket par der fejlede. Den strenge afvisning, DMI-først,
 96-timersundtagelsen, beskyttet gammel cache og alle vejr-/scoreværdier
-forbliver uændrede. Måltest er lokal; exact-head CI, merge og kort
-produktionstest med eksakt baseline-bundet fremdrift afventer.
+forbliver uændrede. Måltest, exact-head CI og merge er grønne;
+kort produktionstest med eksakt baseline-bundet fremdrift afventer.
 
 4.0.508's sikre DMI-kode viste i samme run tre afviste `dkss_idw`-
 timer med `DKSS_STAGE_NO_TOUCHED_ZONES`. Denne kode siger, at ingen
