@@ -1,14 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.512
+**Håndbogsversion:** 4.0.513
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.512 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.513 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.110 4.0.513 – Hvorfor en hentet prognose endnu ikke blev vist
+
+Den seneste normale vejrkørsel hentede data fra DMI, Copernicus og
+Open-Meteo, men stoppede under samlingen af gammel og ny
+bølgehistorik. To gyldige oplysninger for samme sted og time var
+uenige. RavRadar standsede sikkert i stedet for at gætte, hvilken
+der skulle vinde, så hjemmesiden viser fortsat den sidste godkendte
+prognose. Den nye fejldiagnose kan kun tælle mulige overlap og
+skelne deres kildetyper uden at vise private vejrdata. Den er ikke
+en rettelse af uenigheden; den fortæller os, hvad der skal
+undersøges næste gang. Scoreberegning, kildeprioritet og gamle
+gyldige værdier er uændrede, og automatisk start er midlertidigt
+pauset. Versionskoden er endnu ikke produktionsverificeret.
 
 ## 89.109 4.0.512 – Hvorfor DMI-fremdrift ikke blev genbrugt
 

@@ -33,6 +33,7 @@ import {
 } from './lib/ravscore-recovery-replay.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
+  summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
@@ -648,6 +649,55 @@ assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { waveHeight: 1.3 })]) },
 ]), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+const unresolvedWaveSources = [
+  { source: 'deployed-private-runtime', record: record([withVerifiedWave(weather(2))]) },
+  { source: 'progressive-private-dmi', record: record([
+    withVerifiedWave(weather(2, { waveHeight: 1.3 })),
+  ]) },
+];
+const unresolvedWaveSnapshot = JSON.stringify(unresolvedWaveSources);
+const safeWaveDiagnosis = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: unresolvedWaveSources, part, startAt: time(1), targetAt: time(4),
+});
+assert.deepEqual(safeWaveDiagnosis, {
+  status: 'CANDIDATES_ONLY',
+  candidatePairCount: 1,
+  withinRecordPairCount: 0,
+  classes: {
+    ACROSS_RECORDS_DMI_DMI_SAME_RUN_BOTH_PRIORITY_ADMITTED_DIFFERENT_VALUES: 1,
+  },
+}, 'a same-run DMI wave overlap is classified without relaxing replay');
+assert.equal(JSON.stringify(unresolvedWaveSources), unresolvedWaveSnapshot,
+  'failure-only classification must not mutate recovery inputs');
+assert.equal(JSON.stringify(safeWaveDiagnosis).includes(part.partId), false);
+assert.equal(JSON.stringify(safeWaveDiagnosis).includes(time(2)), false);
+assert.equal(JSON.stringify(safeWaveDiagnosis).includes('1.3'), false);
+assert.throws(() => replayForAge(4, unresolvedWaveSources),
+  error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+  'classification never authorizes a conflicting wave');
+const withinRecordWaveDiagnosis = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: [{ source: 'deployed-private-runtime', record: record([
+    withVerifiedWave(weather(2)), withVerifiedWave(weather(2, { waveHeight: 1.3 })),
+  ]) }],
+  part, startAt: time(1), targetAt: time(4),
+});
+assert.equal(withinRecordWaveDiagnosis.withinRecordPairCount, 1,
+  'duplicate hours inside one source must be distinguishable from cache overlap');
+const admissionGapDiagnosis = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: [
+    { source: 'deployed-private-runtime', record: record([weather(2)]) },
+    { source: 'progressive-private-dmi', record: record([
+      withoutCurrent(openMeteoWaveReserve(weather(2, { waveHeight: 1.3 }))),
+    ]) },
+  ],
+  part, startAt: time(1), targetAt: time(4),
+});
+assert.deepEqual(admissionGapDiagnosis.classes, {
+  ACROSS_RECORDS_DMI_OTHER_UNBOUND_RUN_PRIORITY_ADMISSION_GAP_DIFFERENT_VALUES: 1,
+}, 'the diagnostic distinguishes a source-priority admission gap without silently selecting a reserve');
+assert.deepEqual(summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: unresolvedWaveSources, part, startAt: time(4), targetAt: time(1),
+}), { status: 'INVALID_WINDOW' });
 const deployedFallbackRows = [weather(1), weather(2), weather(3)]
   .map(withVerifiedWave);
 const freshWaveOnly = {

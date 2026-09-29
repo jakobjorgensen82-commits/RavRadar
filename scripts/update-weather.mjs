@@ -115,6 +115,7 @@ import {
 } from './lib/ravscore-production-part-pipeline.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
+  summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import {
   exactNationalOperationalColdReplayInitialization,
@@ -2538,41 +2539,63 @@ function scoreCoastalPartsRuntime(
         productionReferenceAt: generatedAt,
         part: { ...part, zoneId },
       });
+      let productionSeries;
+      try {
+        productionSeries = buildRavScoreProductionPartSeries({
+          part: { ...part, zoneId },
+          zone,
+          initialSelection,
+          previousCandidateGContinuation,
+          legacyCandidateGMigrationState,
+          candidateGRollbackMeasuredColdStart,
+          candidateGRollbackMeasuredWarmupContinuation,
+          targetReferenceAt: generatedAt,
+          recoverySources,
+          // T+118..T+120 were needed to derive the last public trends above,
+          // but must never extend the public score horizon or its state walk.
+          publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+            && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
+          nativeCadenceHoldHours,
+          resolveNativeCadenceReferenceSample: sourceValidTime =>
+            latestVerifiedNativeCadenceSampleForPart(
+              { ...part, zoneId },
+              liveCurrentPilot,
+              sourceValidTime,
+            ),
+          resolveCandidateGNativeCadenceReferenceSample: sourceValidTime =>
+            latestVerifiedNativeCadenceSampleForPart(
+              { ...part, zoneId },
+              liveCurrentPilot,
+              sourceValidTime,
+              { projection: 'candidate-g-legacy-quantized' },
+            ),
+        });
+      } catch (error) {
+        if (error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
+          && error?.message === 'RavScore recovery replay has a conflicting wave component') {
+          // Fixed categories and counts only: no private row, place, time,
+          // source identifier, coordinate, wave value or raw exception text.
+          try {
+            const diagnosis = summarizeRavScoreWaveRecoveryConflictCandidates({
+              sourceRecords: recoverySources,
+              part: { ...part, zoneId },
+              startAt: replayStartAt,
+              targetAt: generatedAt,
+            });
+            console.error(`RAVSCORE_RECOVERY_WAVE_CONFLICT_CANDIDATES ${JSON.stringify(diagnosis)}`);
+          } catch {
+            console.error('RAVSCORE_RECOVERY_WAVE_CONFLICT_CANDIDATES_UNAVAILABLE');
+          }
+        }
+        throw error;
+      }
       const {
         recovery,
         ravScoreState,
         scores,
         candidateGState,
         candidateGRollbackScores,
-      } = buildRavScoreProductionPartSeries({
-        part: { ...part, zoneId },
-        zone,
-        initialSelection,
-        previousCandidateGContinuation,
-        legacyCandidateGMigrationState,
-        candidateGRollbackMeasuredColdStart,
-        candidateGRollbackMeasuredWarmupContinuation,
-        targetReferenceAt: generatedAt,
-        recoverySources,
-        // T+118..T+120 were needed to derive the last public trends above,
-        // but must never extend the public score horizon or its state walk.
-        publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
-          && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
-        nativeCadenceHoldHours,
-        resolveNativeCadenceReferenceSample: sourceValidTime =>
-          latestVerifiedNativeCadenceSampleForPart(
-            { ...part, zoneId },
-            liveCurrentPilot,
-            sourceValidTime,
-          ),
-        resolveCandidateGNativeCadenceReferenceSample: sourceValidTime =>
-          latestVerifiedNativeCadenceSampleForPart(
-            { ...part, zoneId },
-            liveCurrentPilot,
-            sourceValidTime,
-            { projection: 'candidate-g-legacy-quantized' },
-          ),
-      });
+      } = productionSeries;
       const sanitizedTraceHour = RAVSCORE_CURRENT_TRACE_PATH
         ? hourly.find(hour => hour?.time === partForecastStartAt) ?? null
         : null;

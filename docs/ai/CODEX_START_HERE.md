@@ -1,4 +1,28 @@
-# AKTUELT CHECKPOINT – 2026-09-29 – 4.0.509 offentligt, sen horisont åben
+# AKTUELT CHECKPOINT – 2026-09-30 – 4.0.512 replay-fejl, cron pauset
+
+Arbejd i `feggesund-preflight-recovery`, ikke den gamle dirty
+`cb79`-checkout. Main er `03c9fe22`/4.0.512; den sidste direkte
+verificerede offentlige pakke er stadig 4.0.510. Normalrun
+`36625547109` gennemførte DMI, Copernicus og Open-Meteo, men
+stoppede i streng bølge-replaykonflikt før færdig privat pakke,
+Supabase-CAS, R2 og Pages. Krypteret fremskridt blev gemt som
+`weather-private-progress-encrypted-v2-Linux-main-36625547109-1`.
+Forrige løse progresskopi blev korrekt afvist på
+`BASELINE_MISMATCH`. Eksternt cron-job.org-job `8348098` er pauset
+og må ikke genåbnes før dokumenteret sikkerhed. Ingen ny lang,
+overlappende eller oneoff-kørsel.
+
+Lokal 4.0.513-kandidat tilføjer alene indholdsfri kategorier for
+mulige bølgeoverlap på fejlstien uden for RavScores låste
+modelbundle. Det er ikke bevis for det eksakte konfliktpar og
+ikke en prioriteringsrettelse. Målrettet replay-test og uændret
+modelbundle er grønne; RDKS/version, exact-head source-CI, merge
+og en kort bekræftelse mod eksakt cachegrundlag mangler.
+DMI's tre `DKSS_STAGE_NO_TOUCHED_ZONES` er tvetydige og må ikke
+udlægges som bevist grid-/dybdefejl. Anbefalet model/indsats til
+fortsættelsen: Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-29 – 4.0.509 offentligt, sen horisont åben
 
 Det eksternt udløste normalrun `36478379298` på main `9fcd996f`
 sluttede grønt gennem tre leverandører, cache, no-loss, fuld

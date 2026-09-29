@@ -1,3 +1,17 @@
+## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik (kandidat)
+
+- Ved den strenge stopkode for modstridende bølger opgøres nu kun faste,
+  indholdsfri kategorier for mulige overlap i den berørte kystdels
+  gendannelseskilder. Kategorien skelner bl.a. samme/gammel-ny kilde,
+  leverandørtype, modelkørsel og om bølgeværdierne er forskellige.
+- Diagnosen vælger eller ændrer ingen vejrdata. RavScores låste modelbundle,
+  kildeprioritet, historik, scoreformel og selve stopkontrollen er uændrede.
+  Tallene er kandidater, ikke bevis for præcis hvilket par der stoppede.
+- Normalkørsel `36625547109` på 4.0.512 gemte krypteret fremdrift, men
+  stoppede i `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger inden nyt
+  produktionsartifact/CAS/R2/Pages. Ekstern cron er pauset for at undgå
+  endnu en lang kørsel med samme systemiske fejl. CI og nyt livebevis afventer.
+
 ## 4.0.512 – sikre årsagskoder for DMI-gendannelse
 
 - Når den krypterede DMI-fremdrift ikke kan flettes med den beskyttede
