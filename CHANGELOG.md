@@ -1,6 +1,24 @@
+## 4.0.511 – tydeligere historikadvarsel og farvet engelsk flag
+
+- Kun visning ændres: ved 48/48 bekræftede strøm-timer forklarer
+  advarslen den længere ufuldstændige bølgehistorik i stedet for
+  at hævde, at de 48 strøm-timer mangler. Delscoreforklaringer
+  knyttes til den vejrtype, der faktisk har en historikgrund.
+- Et vist muligt spænd som 92–92 udelades; et reelt spænd som
+  71–78 vises stadig. RavScores beregning og rå usikkerhedsgrænser
+  er uændrede. Rødt/hvidt/blåt flag vises på forside, Om og Grundbog.
+- 4.0.510 blev efter den oprindelige kandidattekst nedenfor
+  kildekontrolleret, merged og produktionsverificeret i normalrun
+  `36596877513`. Ny offentlig target 29/9 16 UTC har
+  370.007/397.070 femfeltspar; på 110 identiske timer kom
+  +6.526 uden tab. Vandstand gav +0 og kræver særskilt analyse.
+
 ## 4.0.510 – Feggesund-forhåndskontrol på samme beskyttede vejrgrundlag
 
-Se [CHANGELOG-4.0.510.md](CHANGELOG-4.0.510.md). Kandidat: normalrun `36567354134` gemte krypteret fremdrift, men ingen færdig produktionspakke. Exact-head CI, merge og naturligt deploybevis afventer.
+Se [CHANGELOG-4.0.510.md](CHANGELOG-4.0.510.md). Den oprindelige
+kandidat fulgte det fejlede run `36567354134`; exact-head CI, merge
+og efterfølgende normalrun `36596877513` har nu bevist fuld
+validering, 354/354 Feggesund-bølgedeltimer, R2 og offentligt deploy.
 
 ## 4.0.509 – første offentlige normalrun (2026-09-29)
 

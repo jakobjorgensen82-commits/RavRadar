@@ -1,7 +1,7 @@
 // Public wording is deliberately outside the sealed RavScore model bundle.
 // Keep all three public languages together so a wording change cannot alter
 // the score calculation or its model binding.
-import { registerI18nMessages } from '../i18n.js?v=4.0.510';
+import { registerI18nMessages } from '../i18n.js?v=4.0.511';
 
 registerI18nMessages({
   da: {
@@ -11,10 +11,11 @@ registerI18nMessages({
     'score.transportDefinition': 'Tallet bygger på den beregnede strøm gennem flere timer. Det viser, om strømmen taler for, at let materiale kan bevæge sig mod kystområdet. Strøm ind mod kysten lige nu er ikke nok i sig selv til en høj score. RavRadar kan ikke se den præcise vej helt ind til stranden.',
     'score.mobilisationDefinition': 'Bølger kan sætte rav, som allerede findes i området, i bevægelse. De nyeste timers bølger tæller mest. Tallet siger ikke, om der faktisk er rav på stedet.',
     'score.huntabilityDefinition': 'Viser, hvor let det kan være at lede på den måde, du har valgt. I vandet kan vind og små bølger blandt andet gøre det svært at se bunden. Det er ikke en vurdering af, om det er sikkert at gå i vandet.',
-    'score.historyIncomplete.title': 'Vi mangler noget af de tidligere timers vejr',
-    'score.historyIncomplete.short': 'Tidligere timer mangler',
+    'score.historyIncomplete.title': 'Noget af vejrhistorikken bag scoren er endnu ikke fuldt afklaret',
+    'score.historyIncomplete.short': 'Vejrhistorik under opbygning',
     'score.historyIncomplete.compactRange': 'muligt spænd {lower}–{upper}',
-    'score.historyIncomplete.body': 'RavRadar har ikke alle de tidligere timer, som scoren normalt bygger på. Derfor vises et forsigtigt minimum ud fra de data, vi har. Prognosen kan stadig vises for timer, hvor de nødvendige vejrdata findes. Scoren opdateres automatisk, når historikken er komplet.',
+    'score.historyIncomplete.body': 'RavRadar mangler eller kan endnu ikke bekræfte dele af det tidligere vejr, som scoren bygger på. Den viste score er derfor forsigtig. Prognosen kan stadig vises for timer med de nødvendige aktuelle vejrdata.',
+    'score.historyIncomplete.waveBody': 'Havstrøm er dækket i alle de seneste 48 timer. Det længere bølgeforløb bag scoren er dog endnu ikke fuldt afklaret. Derfor er scoren stadig foreløbig.',
     'score.historyIncomplete.range': 'Den forsigtige score er {lower}. Med fuld historik kunne den efter modellens beregning ligge op til {upper}.',
     'score.historyIncomplete.coverage': 'RavRadar har bekræftede strømdata for {hours} af de seneste 48 timer.',
     'score.noCandidateData': 'Der mangler nødvendige vejrdata for denne kyststrækning. Derfor viser RavRadar ingen score her lige nu.',
@@ -34,6 +35,7 @@ registerI18nMessages({
     'score.plainReason.along': 'Strømmen går mest langs kysten eller er for svag til at give et tydeligt tegn på transport ind mod kysten ({current}).',
     'score.plainReason.unknown': 'RavRadar kan ikke sikkert fastslå strømmens virkning mod kysten for denne time.',
     'score.plainReason.incomplete': 'Nogle tidligere timer mangler. Derfor er tallet forsigtigt sat ud fra det, vi faktisk ved.',
+    'score.plainReason.incompleteWaves': 'Det længere bølgeforløb er endnu ikke fuldt afklaret. Bølgetallet er derfor forsigtigt beregnet.',
     'score.debug.reasonDetails': 'Tekniske detaljer om beregningen',
     'score.debug.modelDetails': 'Se modellens fulde tekniske forklaring',
     'score.bestTimeBody': 'RavRadar vælger først timen med den højeste RavScore{future}. Hvis flere timer står lige, kan vandstanden bruges til at vælge en time, der måske er lettere at afsøge med waders. Det siger ikke, at der er mere rav, eller at det er sikkert at gå i vandet.',
@@ -50,10 +52,11 @@ registerI18nMessages({
     'score.transportDefinition': 'Der Wert beruht auf der berechneten Strömung über mehrere Stunden. Er zeigt, ob die Strömung leichtes Material zur Küstenzone bewegen könnte. Eine landwärts gerichtete Strömung genau jetzt reicht allein nicht für einen hohen Wert. Den letzten Weg bis zum Strand kann RavRadar nicht beobachten.',
     'score.mobilisationDefinition': 'Wellen können Bernstein bewegen, der schon in diesem Gebiet vorhanden ist. Neuere Stunden zählen am stärksten. Der Wert sagt nicht, ob dort tatsächlich Bernstein liegt.',
     'score.huntabilityDefinition': 'Zeigt, wie leicht die Suche auf die gewählte Weise sein könnte. Im Wasser können Wind und kleine Wellen die Sicht auf den Grund erschweren. Dies ist keine Sicherheitsbewertung.',
-    'score.historyIncomplete.title': 'Wetterdaten aus früheren Stunden fehlen',
-    'score.historyIncomplete.short': 'Frühere Stunden fehlen',
+    'score.historyIncomplete.title': 'Ein Teil des Wetterverlaufs hinter dem Score ist noch nicht vollständig geklärt',
+    'score.historyIncomplete.short': 'Wetterverlauf noch im Aufbau',
     'score.historyIncomplete.compactRange': 'mögliche Spanne {lower}–{upper}',
-    'score.historyIncomplete.body': 'RavRadar fehlen einige frühere Stunden, die normalerweise in den Score einfließen. Daher erscheint ein vorsichtiger Mindestwert aus den vorhandenen Daten. Stunden, für die die nötigen Wetterdaten vorliegen, können weiter als Prognose angezeigt werden. Sobald der Verlauf vollständig ist, wird der Score automatisch aktualisiert.',
+    'score.historyIncomplete.body': 'RavRadar fehlen noch Teile des früheren Wetterverlaufs oder kann sie noch nicht bestätigen. Deshalb wird ein vorsichtiger Score angezeigt. Die Prognose bleibt für Stunden mit den nötigen aktuellen Wetterdaten verfügbar.',
+    'score.historyIncomplete.waveBody': 'Für alle letzten 48 Stunden liegen Strömungsdaten vor. Der längere Wellenverlauf für den Score ist jedoch noch nicht vollständig geklärt. Der Score bleibt deshalb vorläufig.',
     'score.historyIncomplete.range': 'Der vorsichtige Score ist {lower}. Mit vollständigem Verlauf könnte er nach dem Modell bis zu {upper} betragen.',
     'score.historyIncomplete.coverage': 'Für {hours} der letzten 48 Stunden liegen bestätigte Strömungsdaten vor.',
     'score.noCandidateData': 'Für diesen Küstenabschnitt fehlen nötige Wetterdaten. Deshalb zeigt RavRadar hier derzeit keinen Score.',
@@ -73,6 +76,7 @@ registerI18nMessages({
     'score.plainReason.along': 'Die Strömung verläuft überwiegend entlang der Küste oder ist zu schwach für ein deutliches Zeichen von Transport zur Küste ({current}).',
     'score.plainReason.unknown': 'RavRadar kann für diese Stunde nicht sicher bestimmen, wie die Strömung zur Küste wirkt.',
     'score.plainReason.incomplete': 'Einige frühere Stunden fehlen. Daher ist der Wert aus den tatsächlich bekannten Daten vorsichtig berechnet.',
+    'score.plainReason.incompleteWaves': 'Der längere Wellenverlauf ist noch nicht vollständig geklärt. Der Wellenwert ist deshalb vorsichtig berechnet.',
     'score.debug.reasonDetails': 'Technische Einzelheiten zur Berechnung',
     'score.debug.modelDetails': 'Vollständige technische Modellerklärung',
     'score.bestTimeBody': 'RavRadar wählt zuerst die Stunde mit dem höchsten RavScore{future}. Bei Gleichstand kann der Wasserstand für die Wat-Suche den Ausschlag geben. Das bedeutet weder mehr Bernstein noch sicheres Betreten des Wassers.',
@@ -89,10 +93,11 @@ registerI18nMessages({
     'score.transportDefinition': 'This number uses the predicted current over several hours. It shows whether the current suggests that light material could move towards the coastal area. An inward current right now is not enough on its own for a high score. RavRadar cannot observe the final path onto the beach.',
     'score.mobilisationDefinition': 'Waves can move amber that is already in the area. Recent hours count most. This number cannot tell whether amber is actually there.',
     'score.huntabilityDefinition': 'Shows how easy searching may be in the way you selected. In the water, wind and small waves can make it harder to see the bottom. This is not a safety assessment.',
-    'score.historyIncomplete.title': 'Weather from earlier hours is missing',
-    'score.historyIncomplete.short': 'Earlier hours missing',
+    'score.historyIncomplete.title': 'Some weather history behind this score is not fully established yet',
+    'score.historyIncomplete.short': 'Weather history still building',
     'score.historyIncomplete.compactRange': 'possible range {lower}–{upper}',
-    'score.historyIncomplete.body': 'RavRadar is missing some earlier hours normally used by the score. It therefore shows a cautious minimum based on the data available. Forecast hours can still be shown when the necessary weather data is available. The score updates automatically when the history is complete.',
+    'score.historyIncomplete.body': 'Some earlier weather used by the score is missing or cannot yet be confirmed. The displayed score is therefore cautious. Forecast hours with the necessary current weather data can still be shown.',
+    'score.historyIncomplete.waveBody': 'Current data covers all of the last 48 hours. The longer wave history behind the score is not fully established yet, so the score remains provisional.',
     'score.historyIncomplete.range': 'The cautious score is {lower}. With complete history, the model says it could be as high as {upper}.',
     'score.historyIncomplete.coverage': 'RavRadar has verified current data for {hours} of the last 48 hours.',
     'score.noCandidateData': 'This stretch of coast is missing necessary weather data. RavRadar cannot show a score here right now.',
@@ -112,6 +117,7 @@ registerI18nMessages({
     'score.plainReason.along': 'The current runs mostly along the shore or is too weak to clearly suggest movement towards it ({current}).',
     'score.plainReason.unknown': 'RavRadar cannot reliably determine the current’s effect towards shore for this hour.',
     'score.plainReason.incomplete': 'Some earlier hours are missing. The number is therefore cautious and uses only what is actually known.',
+    'score.plainReason.incompleteWaves': 'The longer wave history is not fully established yet. The wave number is therefore calculated cautiously.',
     'score.debug.reasonDetails': 'Technical details of the calculation',
     'score.debug.modelDetails': 'Full technical model explanation',
     'score.bestTimeBody': 'RavRadar first picks the hour with the highest RavScore{future}. If hours tie, water level can help choose an hour that may be easier to search while wading. It means neither more amber nor that entering the water is safe.',

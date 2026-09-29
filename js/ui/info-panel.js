@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.510";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.510";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.510";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.510";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.510";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.511";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.511";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.511";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.511";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.511";
 
 export const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -58,7 +58,13 @@ function componentDetails(name, key, result, definition) {
       ? t(`score.plainReason.${directionReason}`,{current:formatMetric(weather.currentSpeedMps,'m/s',2)})
       : t('score.plainReason.mobilisation',{waves:formatMetric(weather.waveHeightM,'m')});
   const reasons=[plainReason];
-  if (key==='transport' && result.scoreQuality==='HISTORY_INCOMPLETE') reasons.push(t('score.plainReason.incomplete'));
+  const historyReasons = Array.isArray(result.historyReasonCodes) ? result.historyReasonCodes : [];
+  if (key==='transport' && historyReasons.some(code => code.startsWith('CURRENT_'))) {
+    reasons.push(t('score.plainReason.incomplete'));
+  }
+  if (key==='release' && historyReasons.includes('WAVE_MOBILISATION_HISTORY_INCOMPLETE')) {
+    reasons.push(t('score.plainReason.incompleteWaves'));
+  }
   const technicalReasons=getLanguage()==='da' && rawReasons.length
     ? `<details class="component-technical-reasons"><summary>${t('score.debug.reasonDetails')}</summary><ul>${rawReasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join('')}</ul></details>` : '';
   return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>${t('score.meaning')}</b> ${definition}</p>${calculation}<p><b>${t('score.why')}</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>${technicalReasons}</div></details>`;
@@ -93,12 +99,17 @@ function displayContextPanel(result, context = {}) {
   return '';
 }
 
-function historyQualityWarning(result, { compact = false } = {}) {
+export function historyQualityWarning(result, { compact = false } = {}) {
   if (result?.scoreQuality !== 'HISTORY_INCOMPLETE') return '';
-  const body = t('score.historyIncomplete.body');
+  const reasons = Array.isArray(result.historyReasonCodes) ? result.historyReasonCodes : [];
+  const onlyLongerWaveHistory = result.historyCoverageHours === 48
+    && reasons.length === 1 && reasons[0] === 'WAVE_MOBILISATION_HISTORY_INCOMPLETE';
+  const body = t(onlyLongerWaveHistory
+    ? 'score.historyIncomplete.waveBody' : 'score.historyIncomplete.body');
   const bounds = result?.scoreBounds;
-  const rangeText = hasNumber(bounds?.lower) && hasNumber(bounds?.upper)
-    && hasNumber(bounds?.modelUncertaintyPoints)
+  const visibleRange = hasNumber(bounds?.lower) && hasNumber(bounds?.upper)
+    && Number(bounds.upper) > Number(bounds.lower);
+  const rangeText = visibleRange
     ? t('score.historyIncomplete.range', {
       lower:localizedNumber(bounds.lower,{maximumFractionDigits:1}),
       upper:localizedNumber(bounds.upper,{maximumFractionDigits:1}),
@@ -106,19 +117,17 @@ function historyQualityWarning(result, { compact = false } = {}) {
     })
     : '';
   if (compact) {
-    const historyReasons = Array.isArray(result?.historyReasonCodes)
-      ? result.historyReasonCodes.filter(code => typeof code === 'string').join(' ') : '';
+    const historyReasons = reasons.filter(code => typeof code === 'string').join(' ');
     return '<span class="score-quality-inline" title="' + escapeHtml(body) + '"'
       + (historyReasons ? ' data-history-reasons="' + escapeHtml(historyReasons) + '"' : '') + '>'
       + escapeHtml(t('score.historyIncomplete.short')
-        + (hasNumber(bounds?.lower) && hasNumber(bounds?.upper)
-          ? ` · ${t('score.historyIncomplete.compactRange', {
-            lower:localizedNumber(bounds.lower,{maximumFractionDigits:1}),
-            upper:localizedNumber(bounds.upper,{maximumFractionDigits:1}),
-          })}`
-          : '')) + '</span>';
+        + (visibleRange ? ` · ${t('score.historyIncomplete.compactRange', {
+          lower:localizedNumber(bounds.lower,{maximumFractionDigits:1}),
+          upper:localizedNumber(bounds.upper,{maximumFractionDigits:1}),
+        })}` : '')) + '</span>';
   }
   const coverage = hasNumber(result.historyCoverageHours)
+    && Number(result.historyCoverageHours) < 48
     ? '<p class="history-quality-coverage">'
       + escapeHtml(t('score.historyIncomplete.coverage', {
         hours: localizedNumber(result.historyCoverageHours, { maximumFractionDigits: 1 }),
@@ -147,7 +156,8 @@ function secondaryScoreText(result) {
   }
   const bounds=result?.scoreBounds;
   if(result.scoreQuality==='HISTORY_INCOMPLETE'
-    &&hasNumber(bounds?.lower)&&hasNumber(bounds?.upper)) {
+    &&hasNumber(bounds?.lower)&&hasNumber(bounds?.upper)
+    &&Number(bounds.upper)>Number(bounds.lower)) {
     return `${localizedNumber(bounds.lower,{maximumFractionDigits:1})}–${localizedNumber(bounds.upper,{maximumFractionDigits:1})} · ${t('score.historyIncomplete.short')}`;
   }
   return localizedNumber(result.score,{maximumFractionDigits:1});

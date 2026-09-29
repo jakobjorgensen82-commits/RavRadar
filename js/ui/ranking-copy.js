@@ -1,5 +1,5 @@
 // Public-only wording lives outside the sealed RavScore implementation closure.
-import { registerI18nMessages } from '../i18n.js?v=4.0.510';
+import { registerI18nMessages } from '../i18n.js?v=4.0.511';
 
 registerI18nMessages({
   da: {

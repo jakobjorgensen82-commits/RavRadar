@@ -1,3 +1,17 @@
+## 2026-09-29 – 4.0.510 offentligt; 4.0.511 UI-kandidat
+
+Eksternt normalrun `36596877513` på main `6c12c52c` bestod
+restore, tre leverandører, cache, no-loss, fulde gates,
+krypteret færdigpakke, Supabase-CAS, privat R2 og Pages.
+Levende version 4.0.510 og dataset `rr-20260929175636-210`
+blev læst direkte. Feggesund 354/354 direkte bølgedeltimer;
+tre tidligere næsten tomme zoner har 96/96/116 scoretimer.
+På 110 identiske timer steg femfeltsdækningen 350.866→357.392
+af 370.150 uden tab; vandstand +0. Fuld targetdækning er
+370.007/397.070, så komplethed og stabil drift er ikke bevist.
+4.0.511-kandidaten er alene præsentation: 48/48-historiktekst,
+skjul af 92–92 og flagfarver. Lokal måltest grøn, CI/deploy åbne.
+
 ## 2026-09-29 – 4.0.509 offentligt, LF-horisont fortsat kort
 
 Eksternt slot og vagt startede normalrun `36478379298` alene på

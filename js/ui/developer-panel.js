@@ -1,5 +1,5 @@
-import { getLocalObservations } from "../services/observation-service.js?v=4.0.510";
-import { t } from "../i18n.js?v=4.0.510";
+import { getLocalObservations } from "../services/observation-service.js?v=4.0.511";
+import { t } from "../i18n.js?v=4.0.511";
 
 function legacyTripCount() {
   try {

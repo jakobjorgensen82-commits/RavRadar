@@ -1,18 +1,37 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.510
+**Håndbogsversion:** 4.0.511
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.510 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.511 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
+## 89.108 4.0.511 – Hvad advarslen om vejrhistorik betyder
+
+En score kan være foreløbig, selv om der er bekræftede havstrømsdata
+for alle de seneste 48 timer. Scoren bruger også et længere
+bølgeforløb; når kun dét er ufuldstændigt, siger forklaringen nu
+netop det. Den siger ikke længere, at de 48 strøm-timer mangler.
+Et talpar som 92–92 er ikke et reelt vist spænd og udelades derfor
+fra advarslen, mens et reelt spænd fortsat vises. Ændringen gælder
+kun teksten og visningen på forside, Om og Grundbog; scoreformlen,
+de numeriske grænser og vejrhentningen er uændrede. Det engelske
+flag har igen rødt, hvidt og blåt. Den målrettede lokale test
+består; offentlig 4.0.511 kræver endnu kildegate, merge og deploy.
+
+Den foregående 4.0.510-kontrol er nu bekræftet i normalrun
+`36596877513`: alle 354 Feggesund-bølgedeltimer var direkte
+dækket, og pakken blev offentliggjort. Det betyder ikke, at alle
+fem vejrtyper er komplette. Især DMI-vandstand i syv
+Limfjordszoner er stadig kort i den sene prognose.
+
 ## 89.107 4.0.510 – Feggesunds bølger kontrolleres på samme grundlag
 
-Et automatisk vejrjob nåede at hente nyt vejr, men stoppede inden hjemmesiden kunne opdateres. Kontrollen af tre kystdele ved Feggesund så kun den nyeste DMI-cache, mens den egentlige beregning korrekt også beholdt ældre, stadig gyldige bølgedata. Derfor var to ellers beskyttede kontrolresultater forskellige. Nu ser begge kontroller det samme gyldige grundlag. Den strenge kontrol af alle 118 timer pr. kystdel består; et manglende bølgefelt fremstilles ikke som en måling. Rettelsen afventer endnu GitHub-kontrol og et faktisk vellykket vejrjob.
+Et automatisk vejrjob nåede at hente nyt vejr, men stoppede inden hjemmesiden kunne opdateres. Kontrollen af tre kystdele ved Feggesund så kun den nyeste DMI-cache, mens den egentlige beregning korrekt også beholdt ældre, stadig gyldige bølgedata. Derfor var to ellers beskyttede kontrolresultater forskellige. Nu ser begge kontroller det samme gyldige grundlag. Den strenge kontrol af alle 118 timer pr. kystdel består; et manglende bølgefelt fremstilles ikke som en måling. Efter grøn kildekontrol og merge bestod normalrun `36596877513` med 354/354 direkte bølgedeltimer, R2 og offentlig Pages-deploy. Den tidligere åbne kandidatstatus er dermed afløst; øvrige vejrdata er ikke dermed komplette.
 
 ## 89.106 4.0.509 – En fair tur til senere Limfjordstimer
 

@@ -1,4 +1,36 @@
-# Aktuelle issues – 2026-09-29, offentlig 4.0.509
+# Aktuelle issues – 2026-09-29, offentlig 4.0.510
+
+- **FEMFELTSREST – ÅBEN:** Target 29/9 16 UTC har
+  370.007/397.070 gyldige sted-time-vejrpar. Af 79.414 pr.
+  vejrtype mangler vind 5.848, bølger 0, havstrøm 2.281,
+  vandstand 9.445 og vandtemperatur 9.489. På 110 identiske
+  timer kom +6.526 uden tab; rå forskudte totaler er ikke en
+  før/efter-sammenligning. Langtids-/leverandørhuller er ikke løst.
+- **SEN DMI-VANDSTAND – ÅBEN:** Syv Limfjordszoner har 71/118
+  timer, andre 103 eller 106/118. Nul nye vandstandsfelter på
+  110 fælles timer, selv om DMI brugte 3.599 sekunder og
+  behandlede 48/117 `dkss_lf`-steps. Katalog, scheduler, den
+  centralt valgte interpolation og sikker prioritet skal afklares
+  før en kode- eller reservekildeændring. 4.0.509's forventede
+  sene LF-effekt er fortsat ikke målt.
+- **TRE DELVISE LIMFJORDSZONER – ÅBEN, IKKE NUL:**
+  `DK-B05-21/23/24` har 96/96/116 scoretimer og 2.172/2.596
+  gyldige direkte havstrømspar, alle Copernicus Baltic. På samme
+  110 timer steg deres scoretimer 48→96, 48→96 og 72→110 uden
+  tab; 424 deltimer mangler fortsat. Gentagne Baltic-update-
+  udsættelser og kildehorisont må måles. AMM15-grænsen eller
+  dybdelaget må ikke ændres uden leverandørbevis.
+- **UI-HISTORIK OG FLAG – RETTET I 4.0.511-KANDIDAT, AFVENTER CI/PRODUKTION:**
+  Visning af 48/48 strømdata må ikke begrunde advarslen om
+  ufuldstændig længere bølgehistorik; viste 92–92-spænd skjules.
+  Flagets CSS-lag rettes i tre offentlige sider. Ingen modelkode
+  ændres. Lokal måltest består; releasebevis mangler endnu.
+- **FEGGESUND-FORHÅNDSKONTROL – PRODUKTIONSBEVIST I 4.0.510:**
+  Run `36596877513` passerede den strenge forhåndskontrol og
+  runtime med 354/354 direkte bølgedeltimer; tidligere åbne
+  kandidatstatus nedenfor er historisk.
+
+# Historiske issues – 2026-09-29, offentlig 4.0.509, nu afløst
 
 - **HAVSTRØM I TRE LIMFJORDSZONER – ÅBEN:** På 118 timer har
   `DK-B05-21/23/24` kun 20/20/46 scoretimer. Deres 22 kystdele
