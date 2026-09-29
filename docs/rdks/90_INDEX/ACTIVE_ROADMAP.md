@@ -3687,3 +3687,9 @@ den påviste årsag. Cron og lange runs forbliver pauset.
    havstrømpar samt DMI/Copernicus/Open-Meteo-bidrag uden at ændre
    kildeprioritet ud fra mellemtal alene. Cron forbliver pauset,
    indtil flere selvstændige normale kørsler er stabile.
+# Aktivt roadmap – 2026-09-29, Feggesund-releaseblokering
+
+1. [x] Isolér fejlen i normalrun `36567354134`: forskelligt Feggesund-bølgegrundlag i tidlig og sen hashkontrol; krypteret fremskridt, men ingen færdig deploypakke.
+2. [ ] Færdiggør 4.0.510 med grønt exact-head source-CI, ren geodataversionsdiff og sikker merge før næste firetimersslot, hvis gates når det. Genaktivér da GitHub-vagten, så cron-job.org starter præcis ét normalt run; ingen manuel dublet.
+3. [ ] Hvis rettelsen ikke er sikker før kl. 16:19 UTC, lad vagten være disabled. Verificér efter et senere normalt run fuld cache-/CAS-/R2-/Pages-kæde og alle fem vejrtypers dækning på identiske steder/timer.
+4. [ ] Fortsæt Baltic-shard-8, DMI-LF-vandstand, kildeandele, kvote og 3 delvise zoner med målt leverandørbevis. Ingen AMM15-/dybde-/scoreændring på gæt.

@@ -3390,3 +3390,8 @@ Næste: RDKS/version, exact-head på PR #448's nye commit, merge og
 én almindelig normalrun fra gemt fremgang. Ingen overlap/oneoff;
 cron pauset. Kontroller cache, fem feltvise rester, score, Pages.
 Tidligere handoffafsnit nedenfor er historiske.
+# AKTUELT CHECKPOINT – 2026-09-29 – 4.0.510 Feggesund-kandidat
+
+Normalrun `36567354134` på 4.0.509 sluttede med `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH` før færdig cache/artifact/CAS/R2/Pages. DMI, Copernicus og Open-Meteo var færdige, og krypteret privat fremskridt blev gemt som `weather-private-progress-encrypted-v2-Linux-main-36567354134-1`. Den forrige offentlige 4.0.509-prognose er fortsat gældende. Brug ikke runnet som produktionsbevis eller færdig pakke.
+
+Isoleret branch `codex/4.0.510-feggesund-preflight` retter den konkrete forskel mellem Feggesunds aktiv-cache-only forhåndskontrol og scorerens beskyttede DMI-retention. Måltests er grønne. Ingen scoreformel, kildeprioritet eller geometri ændres. Exact-head CI, merge og et normalt produktionsrun mangler endnu. GitHub-vagten `watch-missed-weather-schedule.yml` er midlertidigt disabled; cron-job.org-job 8348098 står aktivt til kl. 16:19 UTC. Ejeren ønsker rettelse før da og derpå én almindelig cron-start, ikke en særskilt vejrhentning. Genaktivér kun vagten efter sikker merge og verificerede gates; ellers lad den blokere frem for at starte samme fejl igen. Undersøg efterfølgende alle fem vejrtyper, Baltic-rest og sen Limfjordsvandstand.
