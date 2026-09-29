@@ -364,3 +364,73 @@ export function buildNewestValidRavScoreRecoverySources({
     },
   ];
 }
+
+/**
+ * Failure-only, payload-free diagnostic for the exact part being rebuilt.
+ * It describes overlapping *candidates*, not the replay validator's winning
+ * pair. It must never be used to choose or suppress a weather component.
+ */
+export function summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords = [], part = null, startAt = null, targetAt = null,
+} = {}) {
+  const startMs = Date.parse(startAt ?? '');
+  const targetMs = Date.parse(targetAt ?? '');
+  if (!Number.isFinite(startMs) || !Number.isFinite(targetMs) || startMs >= targetMs) {
+    return { status: 'INVALID_WINDOW' };
+  }
+  const byTime = new Map();
+  for (const [sourceIndex, source] of sourceRecords.entries()) {
+    for (const row of source?.record?.hourly ?? []) {
+      const time = canonicalTime(row?.time);
+      const timeMs = Date.parse(time ?? '');
+      if (!Number.isFinite(timeMs) || timeMs < startMs || timeMs >= targetMs
+        || !finite(row?.waveHeightM) || !finite(row?.wavePeriodS)
+        || !row?.sources?.wave || typeof row.sources.wave !== 'object') continue;
+      const entries = byTime.get(time) ?? [];
+      entries.push({ row, sourceIndex,
+        priorityAdmitted: verifiedWaveForPriority(row, part) });
+      byTime.set(time, entries);
+    }
+  }
+  const counts = new Map();
+  let candidatePairCount = 0;
+  let withinRecordPairCount = 0;
+  for (const entries of byTime.values()) {
+    for (let leftIndex = 0; leftIndex < entries.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < entries.length; rightIndex += 1) {
+        const left = entries[leftIndex];
+        const right = entries[rightIndex];
+        candidatePairCount += 1;
+        const withinRecord = left.sourceIndex === right.sourceIndex;
+        if (withinRecord) withinRecordPairCount += 1;
+        const provider = entry => {
+          const value = componentProvider(entry.row, 'wave');
+          return ['dmi', 'copernicus', 'open-meteo', 'ravradar-derived']
+            .includes(value) ? value : 'unknown';
+        };
+        const providers = [provider(left), provider(right)];
+        const providerPair = providers.every(value => value === 'dmi') ? 'DMI_DMI'
+          : providers.includes('dmi') ? 'DMI_OTHER'
+            : providers[0] === providers[1] ? 'SAME_OTHER' : 'DIFFERENT_OTHERS';
+        const leftRun = componentModelRun(left.row, 'wave');
+        const rightRun = componentModelRun(right.row, 'wave');
+        const runRelation = leftRun === null || rightRun === null ? 'UNBOUND_RUN'
+          : leftRun === rightRun ? 'SAME_RUN' : 'DIFFERENT_RUN';
+        const sameValues = ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg']
+          .every(key => left.row[key] === right.row[key]);
+        const admission = left.priorityAdmitted && right.priorityAdmitted
+          ? 'BOTH_PRIORITY_ADMITTED' : 'PRIORITY_ADMISSION_GAP';
+        const category = [withinRecord ? 'WITHIN_RECORD' : 'ACROSS_RECORDS',
+          providerPair, runRelation, admission,
+          sameValues ? 'SAME_VALUES' : 'DIFFERENT_VALUES'].join('_');
+        counts.set(category, (counts.get(category) ?? 0) + 1);
+      }
+    }
+  }
+  return {
+    status: 'CANDIDATES_ONLY',
+    candidatePairCount,
+    withinRecordPairCount,
+    classes: Object.fromEntries([...counts].sort(([left], [right]) => left.localeCompare(right))),
+  };
+}

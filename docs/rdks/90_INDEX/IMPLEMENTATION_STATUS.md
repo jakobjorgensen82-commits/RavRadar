@@ -1,4 +1,23 @@
-# 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
+# 2026-09-30 – offentlig 4.0.510, main 4.0.512, 4.0.513 diagnostikkandidat
+
+- [x] `36625547109` er diagnosticeret til det præcise stoptrin:
+  streng bølgekonflikt under central replay efter tre leverandører;
+  ingen ny færdig pakke, CAS, R2 eller Pages. Krypteret fremdrift
+  er gemt; den forrige løse kopi blev korrekt afvist på baseline.
+- [x] Ekstern cron-job.org-plan er midlertidigt pauset og genlæst
+  som inaktiv; ingen manuel erstatningskørsel eller overlap startes.
+- [x] Lokal 4.0.513-kandidat opsummerer kun faste mulige
+  bølgeoverlap ved replay-fejl uden for den låste RavScore-bundle.
+  Måltest og bundle-`--check` er grønne; værdier og gate er uændrede.
+- [ ] Kør RDKS/version/relevante tests, grøn source-CI på eksakt
+  PR-head og merge først uden aktiv weather. Brug derefter kun
+  eksakt baseline-bundet gemt fremdrift til en kort bekræftelse.
+  Live kategori, no-loss, artifactgate, CAS, R2 og Pages er ikke bevist.
+- [ ] Undersøg derefter den faktiske bølgekonflikt og DMI's tre
+  `DKSS_STAGE_NO_TOUCHED_ZONES` særskilt; vælg først en målrettet
+  adfærdsrettelse med fuld kontrakt- og produktionskontrol.
+
+# Historisk status – 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
 
 - [x] UI-PR #478/4.0.511 bestod grøn exact-head source-CI
   `36618674293` og er merged som main `86b4528d`.

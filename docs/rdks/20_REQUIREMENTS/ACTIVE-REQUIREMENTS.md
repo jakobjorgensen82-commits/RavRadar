@@ -1,3 +1,16 @@
+# Aktuel replay-fejldiagnose – 2026-09-30
+
+- **REQ-RAVSCORE-WAVE-CONFLICT-DIAG-0513 – BINDENDE:** En faktisk
+  bølgekonflikt i gemt historik må fortsat stoppe produktionen.
+  Fejldiagnosen uden for den låste scorebundle må alene tælle
+  mulige overlap i faste, indholdsfri kategorier. Ingen kystdel,
+  time, værdi, koordinat, kilde-id, komplet proveniens eller
+  privat payload må logges. Kategoritællingen må ikke fremstilles
+  som et bevis for det eksakte konfliktpar eller vælge en vinder.
+  Normal drift genåbnes først efter konkret årsag, relevant gate
+  og et målt produktionsresultat. Dette aktuelle krav afløser
+  ikke den ældre, historiske 4.0.508-ejerpause nedenfor.
+
 # Aktuel gemt-vejr-recovery – 2026-09-28
 
 - **REQ-SEALED-BUILD-RECOVERY-0508 – BINDENDE:** Under ejerens

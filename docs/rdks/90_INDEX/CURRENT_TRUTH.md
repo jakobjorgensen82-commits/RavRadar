@@ -1,4 +1,34 @@
-# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.512, 4.0.513 diagnostikkandidat
+
+Ekstern cron-job.org-plan `8348098` er midlertidigt pauset efter
+normalrun `36625547109` på eksakt main `03c9fe22`/4.0.512.
+Runnet gendannede den beskyttede produktionsbaseline, gennemførte DMI,
+Copernicus og Open-Meteo og gemte krypteret fremdrift som
+`weather-private-progress-encrypted-v2-Linux-main-36625547109-1`.
+Det stoppede ved `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger under
+central cache/scoregenopbygning; der blev ikke gemt et nyt færdigt
+produktionsartifact, central CAS, privat R2 eller Pages-deploy.
+Offentlig 4.0.510 og dens målte 370.007/397.070 femfeltspar er derfor
+fortsat sidste verificerede produktionsbillede, ikke en ny måling.
+
+Den præcise konfliktende kystdel/time og kildepar er ikke i den
+sikre log. 4.0.513-kandidaten føjer kun faste kategorier og antal
+mulige overlap til fejlstien uden for RavScores låste modelbundle.
+Kategorierne er ikke en automatisk konfliktløsning eller et bevis
+for præcis hvilket par der fejlede. Den strenge afvisning, DMI-først,
+96-timersundtagelsen, beskyttet gammel cache og alle vejr-/scoreværdier
+forbliver uændrede. Måltest er lokal; exact-head CI, merge og kort
+produktionstest med eksakt baseline-bundet fremdrift afventer.
+
+4.0.508's sikre DMI-kode viste i samme run tre afviste `dkss_idw`-
+timer med `DKSS_STAGE_NO_TOUCHED_ZONES`. Denne kode siger, at ingen
+zone blev ændret; den skelner endnu ikke mellem manglende fysisk
+brugbare kandidater og gyldige kandidater, som tabte en prioritering.
+4.0.512's nyere filrolle-/trinkoder blev ikke nået, fordi den løse
+forrige fremdrift blev afvist med `BASELINE_MISMATCH` før dette trin.
+Ingen DMI-dybdelags-, grænse- eller tidsbudgetændring er begrundet endnu.
+
+# HISTORISK SNAPSHOT – 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
 
 UI-PR #478/4.0.511 bestod exact-head source-CI `36618674293` og
 blev merged som main `86b4528d`; dens offentlige Pages-resultat er

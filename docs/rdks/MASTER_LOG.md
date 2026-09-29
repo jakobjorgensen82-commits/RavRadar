@@ -1,3 +1,16 @@
+# 2026-09-30 – 4.0.512 replay-stop og afgrænset 4.0.513-diagnose
+
+Main `03c9fe22`/4.0.512 blev brugt i normalrun `36625547109`.
+Tre leverandører blev kørt, og en ny krypteret progresskopi blev
+gemt, men den centrale scorehistorik stoppede på en bølgekonflikt.
+Der kom intet nyt færdigt produktionsartifact eller deploy.
+Ekstern firetimerscron er midlertidigt pauset. Den faktiske
+kilde-/modelrunrelation er ukendt; lokal 4.0.513-kandidat måler
+kun sikre mulige overlap på fejlstien. RavScore-modelhash, score,
+vejrvalg og fail-closed er uændrede. Måltest grøn; CI, merge og
+livebevis åbne. Den ældre 4.0.512-gendannelsesdiagnose blev ikke
+nået efter sikker `BASELINE_MISMATCH` for forrige progresskopi.
+
 # 2026-09-29 – 4.0.511 merged, 4.0.512 DMI-diagnostik
 
 UI-PR #478 bestod exact-head source-CI `36618674293` og blev
