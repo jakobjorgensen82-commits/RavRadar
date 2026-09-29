@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { buildDmiForecastHourly, createDmiForecastRecord } from './lib/dmi-forecast-store.mjs';
-import { mergeVerifiedDmiForecastProgress, mergeVerifiedStationObservationProgress } from './lib/verified-dmi-progress-inputs.mjs';
+import { mergeVerifiedDmiForecastProgress, mergeVerifiedStationObservationProgress,
+  reconcileDmiProgressFiles } from './lib/verified-dmi-progress-inputs.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as FILES } from './lib/private-weather-progress-files.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
@@ -60,6 +61,37 @@ function stations({ observed = earlier, value = 3 } = {}) {
     routingEligible: true }], notifications: [] };
 }
 const options = { features, productionReferenceAt: reference, restoredAt: '2026-09-26T10:30:00.000Z' };
+
+test('DMI restore reports fixed safe file/phase codes without changing protected inputs', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-reason-'));
+  try {
+    const baseline = path.join(root, FILES.dmiForecastStore);
+    const progress = path.join(root, 'progress.json');
+    await fs.mkdir(path.dirname(baseline), { recursive: true });
+    await fs.writeFile(progress, JSON.stringify(store(reference, 2)));
+    const files = [{ relativePath: FILES.dmiForecastStore, sourcePath: progress }];
+    const reconcile = () => reconcileDmiProgressFiles({ root, files, temporaryDirectory: root,
+      productionReferenceAt: reference, restoredAt: options.restoredAt });
+    assert.deepEqual((await reconcile()).summary.codes, ['DMI_PROGRESS_FORECAST_BASE_MISSING']);
+    await fs.writeFile(baseline, JSON.stringify(store()));
+    await fs.writeFile(progress, '{not-json');
+    assert.deepEqual((await reconcile()).summary.codes, ['DMI_PROGRESS_FORECAST_PROGRESS_INVALID_JSON']);
+    await fs.writeFile(progress, JSON.stringify(store(reference, 2)));
+    assert.deepEqual((await reconcile()).summary.codes, ['DMI_PROGRESS_ACTIVE_ZONES_MISSING']);
+    await fs.writeFile(path.join(root, 'data/zones.geojson'), JSON.stringify({ features }));
+    const output = path.join(root, 'merged-dmi-progress-forecast.json');
+    await fs.writeFile(output, 'existing');
+    const result = await reconcile();
+    assert.deepEqual(result.summary.codes, ['DMI_FORECAST_SAVE_UNAVAILABLE']);
+    assert.equal(result.summary.forecast.status, 'RETAINED');
+    assert.equal(await fs.readFile(output, 'utf8'), 'existing');
+    assert.ok(result.summary.codes.every(code => /^[A-Z_]+$/.test(code)),
+      'Diagnostics may contain only fixed codes, never private paths or values');
+  } finally {
+    assert.ok(root.startsWith(path.join(os.tmpdir(), 'rr-dmi-reason-')));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
 
 test('DMI progress merges all five proved tuples, preserves valid old fields at new holes', () => {
   const before = store();

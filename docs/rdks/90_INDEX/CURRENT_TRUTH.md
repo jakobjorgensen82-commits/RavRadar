@@ -1,4 +1,21 @@
-# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.510, 4.0.511 UI-kandidat
+# NYESTE SANDHED – 2026-09-29 – offentlig 4.0.510, main 4.0.511, 4.0.512 diagnostikkandidat
+
+UI-PR #478/4.0.511 bestod exact-head source-CI `36618674293` og
+blev merged som main `86b4528d`; dens offentlige Pages-resultat er
+endnu ikke verificeret. Den eksterne firetimersplan er aktiv, og
+næste naturlige slot er 29/9 kl. 20:19 UTC. Ingen ekstra eller
+overlappende vejrkørsel startes for denne ændring.
+
+Normalrun `36596877513` gendannede ikke den separate krypterede
+DMI-prognosefremdrift: sikker summary var `RETAINED`, nul
+gendannede komponenter, `runtimeRecovered=false` og
+`DMI_FORECAST_RECOVERY_UNAVAILABLE`. DMI-stationsfremdrift blev
+flettet med 125 observationer. Den gamle prognosekode skjuler det
+konkrete fejltrin; 4.0.512-kandidaten skelner med faste sikre
+filrolle-/trinkoder uden at ændre vejrdata, score, kildeprioritet
+eller scheduler. Den sandsynlige størrelsesgrænsekonflikt er kun en
+hypotese, ikke en påvist årsag. Kræv exact-head kilde-CI og målt
+normalrun før årsag eller produktionseffekt erklæres.
 
 Eksternt startet normalrun `36596877513` på eksakt main `6c12c52c`
 bestod gendannelse, DMI, Copernicus, Open-Meteo, cache, no-loss,
@@ -28,12 +45,12 @@ og nåede 48/117 `dkss_lf`-forecast-steps; sen kildehorisont og
 adminvalgt interpolation er fortsat åbne. Ingen reservekilde eller
 AMM15-grænse ændres på denne observation alene.
 
-4.0.511-kandidaten ændrer kun UI: forklaring af 48/48 strømdata
+4.0.511 ændrer kun UI: forklaring af 48/48 strømdata
 med ufuldstændig længere bølgehistorik, skjul af viste intervaller
 som 92–92, og rødt/hvidt/blåt engelsk flag. Scorens numeriske model,
 vejrkilder og cacheprioritet er uændret. Den målrettede lokale
-UI-test er grøn; exact-head kildegate, merge og offentlig visning
-afventer. Stabil selvkørende drift, fuld femfeltsdækning og
+UI-test og exact-head kildegate er grønne, og merge er gennemført;
+offentlig visning afventer. Stabil selvkørende drift, fuld femfeltsdækning og
 R2/Supabase-Free-margener er ikke bevist af ét run.
 
 # HISTORISK SNAPSHOT – 2026-09-29 – offentlig 4.0.509, nu afløst

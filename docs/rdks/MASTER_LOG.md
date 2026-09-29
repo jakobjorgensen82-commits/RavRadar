@@ -1,3 +1,14 @@
+# 2026-09-29 – 4.0.511 merged, 4.0.512 DMI-diagnostik
+
+UI-PR #478 bestod exact-head source-CI `36618674293` og blev
+merged på main `86b4528d`; offentlig visning afventer næste
+normale Pages-deploy. Gennemgang af normalrun `36596877513` viste,
+at separat krypteret DMI-prognosefremdrift blev beholdt uden
+komponentgendannelse, mens stationsfremdrift gav 125 observationer.
+4.0.512-kandidaten opdeler den hidtil generiske fejlkode i faste
+filrolle-/trinkoder uden vejr- eller prioriteringsændring. Den
+konkrete årsag er åben, og nyt naturligt produktionsbevis kræves.
+
 # 2026-09-29 – 4.0.510 normalrun og 4.0.511 UI-kandidat
 
 Run `36596877513` passerede eksakt main, DMI, Copernicus,
