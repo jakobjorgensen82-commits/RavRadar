@@ -1,4 +1,10 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.513, kandidat 4.0.514, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.514, cron pauset
+
+PR #482 bestod fuld exact-head source-CI `36649441478` på
+`da8a34c1` og blev merged som main `c57ea1d4` med identisk
+kildetræ. Én kort normal bekræftelse `36650098594` er aktiv på
+denne main fra eksakt fremdrift `36645991041-1`; den nåede DMI's
+reelle producenttrin. Ingen ny offentlig pakke er endnu bevist.
 
 Docs-PR #481 bestod exact-head CI `36645545073` og blev merged
 som main `6d24ad1c`. Den ændrede kun statusdokumentation.
@@ -16,15 +22,18 @@ blev gemt. Ingen ny slutpakke, CAS, R2 eller Pages blev udgivet.
 Replay af bølgehistorik blev ikke nået, så 4.0.513's diagnose er
 fortsat ikke liveverificeret.
 
-Kandidat 4.0.514 ændrer kun den korte DMI-bekræftelses tidskontrakt:
-15 minutters samlet supervisorbudget, heraf 7 minutter reserveret
-til afslutning (op til 8 minutter til producentarbejde), og
-24 minutters ydre workflow-timeout. Normal kørsel er uændret.
+Merged 4.0.514 ændrer kun den korte DMI-bekræftelses tidskontrakt:
+producenten kan få op til 900 sekunder; ved en superviseret
+genstart kan en særskilt afslutning få op til 420 sekunder.
+Supervisorens reserve kontrolleres mellem producentforsøg, ikke
+som et fradrag fra det første forsøgs 900 sekunder. Det ydre
+workflowtrin har 24 minutter til begge forløb og margen.
+Normal kørsel er uændret.
 Supervisoren afviser nu et internt modstridende budget med fast,
 indholdsfri kode, før leverandørarbejde starter; måltests låser
-kontrakten. Dette er endnu ikke kilde-CI- eller produktionsbevis.
-Ekstern cron forbliver pauset, og næste forsøg skal gendanne det
-nyeste gyldige checkpoint på den beskyttede produktionsbaseline.
+kontrakten. Kilde-CI er grøn, men produktionsbevis afventer det
+aktive run. Ekstern cron forbliver pauset; runnet skal bevise
+gendannelse af nyeste gyldige checkpoint og beskyttet baseline.
 Offentlig 4.0.510 og 370.007/397.070 femfeltspar er uændret.
 
 # HISTORISK SNAPSHOT – 2026-09-30 – offentlig 4.0.510, main 4.0.513

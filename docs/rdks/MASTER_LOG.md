@@ -1,4 +1,15 @@
-# 2026-09-30 – kort DMI-bekræftelse og 4.0.514-kandidat
+# 2026-09-30 – 4.0.514 merged, kort bekræftelse aktiv
+
+PR #482 bestod exact-head CI `36649441478` og blev merged
+som main `c57ea1d4`. Kort normalrun `36650098594` fra
+præcis krypteret fremdrift `36645991041-1` nåede DMI's
+reelle producenttrin. Hele vejr-/cache-/deploykæden er endnu
+ikke bevist. Supervisorens 900 sekunder kan bruges af første
+producentforsøg; en op til 420-sekunders sikker afslutning er
+separat og ikke automatisk trukket fra de 900 sekunder. Det
+ydre workflowtrin rummer 24 minutter. Ekstern cron er pauset.
+
+# Historisk – 2026-09-30 – kort DMI-bekræftelse og 4.0.514-kandidat
 
 Docs-PR #481 blev merged som `6d24ad1c` efter exact-head
 CI `36645545073`. Kort normalt run `36645991041` gendannede
@@ -9,9 +20,9 @@ afslutningsreserve. Uden nyt target-bundet operationelt ledger
 afviste Copernicus-forhåndskontrollen korrekt start-mismatch.
 Ny krypteret fremdrift `36645991041-1` blev gemt, men intet
 slutartifact/CAS/R2/Pages. Bølgereplay blev ikke nået.
-4.0.514-kandidaten giver quick DMI 900 sekunders samlet tid,
-heraf 420 sekunders afslutningsreserve og højst 480 sekunders
-producenttid, med 24 minutters ydre timeout,
+4.0.514-kandidaten ændrede quick DMI til 900 sekunders
+muligt producentforsøg og en separat 420-sekunders
+afslutningsreserve, med 24 minutters ydre timeout,
 og supervisoren afviser fremtidige budgetkonflikter før arbejde.
 Normal vejrtid, data, kildeprioritet, RavScore og cron er uændrede;
 source-CI og produktionsbevis afventer. Offentlig 4.0.510 består.

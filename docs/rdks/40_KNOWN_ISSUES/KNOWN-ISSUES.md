@@ -1,4 +1,4 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.513, kandidat 4.0.514
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.514
 
 - **KORT DMI-BEKRÆFTELSE STOPPEDE FØR REEL HENTNING –
   DOKUMENTERET RODÅRSAG:** `36645991041` gendannede præcis
@@ -8,8 +8,11 @@
   ikke nyt target-bundet ledger. Den strenge Copernicus-
   forhåndskontrol afviste korrekt start-mismatch. Ny krypteret
   fremdrift `36645991041-1` blev gemt; ingen ny offentlig pakke.
-  4.0.514-kandidaten retter kun quick-budgetkontrakten og tilføjer
-  fail-fast/test. Livebevis afventer; ekstern cron forbliver pauset.
+  Merged 4.0.514 retter kun quick-budgetkontrakten og tilføjer
+  fail-fast/test. Kort bekræftelse `36650098594` nåede DMI's
+  producenttrin; fuldt livebevis afventer, og ekstern cron
+  forbliver pauset. De 900 sekunder er producentens mulige
+  første forsøg; 420 sekunder er en separat afslutningsreserve.
 
 - **GEMT BØLGEHISTORIK KONFLIKTER – BLOKERER NORMAL DRIFT:**
   Run `36625547109` gennemførte leverandørerne, men central

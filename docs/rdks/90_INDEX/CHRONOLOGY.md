@@ -1,3 +1,13 @@
+## 2026-09-30 – 4.0.514 source-grøn, merged og kort run i DMI
+
+PR #482 bestod full exact-head source-CI `36649441478` og
+blev merged som main `c57ea1d4`. Kort normalrun `36650098594`
+blev startet alene fra eksakt fremdrift `36645991041-1` og
+nåede DMI-producenten. Endelig cache/deploy afventer.
+Tidssemantikken er præciseret: første producentforsøg kan
+bruge op til 900 sekunder; en eventuel sikker afslutning får
+op til 420 sekunder særskilt inden for ydre 24 minutter.
+
 ## 2026-09-30 – 4.0.514 retter kort DMI-tidskontrakt
 
 Docs-PR #481 blev merged på main `6d24ad1c`. Kort normalrun
@@ -6,8 +16,8 @@ quick-DMI-budget 360 sekunder var mindre end supervisorens
 420 sekunders afslutningsreserve. DMI producerede derfor ikke
 et nyt target-bundet ledger, og Copernicus' strenge preflight
 stoppede korrekt. Krypteret fremskridt `36645991041-1` blev
-gemt; intet nyt deploy. 4.0.514-kandidaten giver supervisoren
-900 sekunder samlet, heraf 420 reserveret til afslutning,
+gemt; intet nyt deploy. 4.0.514-kandidaten giver producenten
+op til 900 sekunder og en særskilt afslutningsreserve på 420 sekunder,
 ydre 24 minutters trin og fail-fast-test af
 budgetmodsigelsen. Bølgekonflikten er stadig uafklaret.
 

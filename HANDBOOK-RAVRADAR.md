@@ -24,6 +24,14 @@ med det samme. Det er ikke bevis for, at den tidligere bølgekonflikt
 er væk; næste kontrollerede kørsel skal vise resultatet. Almindelige
 vejrkørsler og RavScore-reglerne er uændrede.
 
+Teknisk betyder tidsgrænsen, at DMI's første producentforsøg kan
+bruge op til 15 minutter. Hvis supervisoren efter et stop må
+afslutte et sikkert checkpoint, kan afslutningen bruge yderligere
+op til syv minutter. De syv minutter bliver ikke på forhånd
+trukket fra de 15. Det ydre trin har 24 minutter og plads til
+begge dele. Rettelsen er kildekontrolleret og merged, men fuld
+vejrproduktion afventer den igangværende korte bekræftelse.
+
 ## 89.110 4.0.513 – Hvorfor en hentet prognose endnu ikke blev vist
 
 Den seneste normale vejrkørsel hentede data fra DMI, Copernicus og

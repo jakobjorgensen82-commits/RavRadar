@@ -6,15 +6,19 @@
   afslutningsreserve. Copernicus' strenge ledger-kontrol stoppede
   korrekt den videre bygning. Den nye fremdrift `36645991041-1`
   blev sikret; der blev ikke udgivet nyt vejr.
-- Quick DMI får 900 sekunders samlet supervisorbudget, heraf
-  420 sekunders afslutningsreserve og højst 480 sekunders
-  producentarbejde, samt 24 minutters ydre timeout. En modstridende
+- Quick DMI får et muligt producentforsøg på op til 900 sekunder
+  og op til 420 sekunders separat superviseret afslutning,
+  samt 24 minutters ydre timeout. Reserven kontrolleres mellem
+  forsøg og trækkes ikke fra det første producentforsøg.
+  En modstridende
   konfiguration afvises nu med en fast sikker kode før arbejdet,
   og test kontrollerer både fail-fast og workflowets tidsmargin.
 - Normal leverandørtid, kildeprioritet, gamle gyldige data,
   vandstandsinterpolation og score er uændrede. Den oprindelige
   bølgekonflikt blev ikke nået i den fejlede test og er fortsat åben.
-  Ændringen er kandidat, ikke produktionsverificeret.
+  PR #482 bestod exact-head source-CI `36649441478` og blev
+  merged som main `c57ea1d4`. Kort normalrun `36650098594`
+  nåede DMI-producenten; hele produktionskæden er endnu ikke bevist.
 
 ## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik
 
