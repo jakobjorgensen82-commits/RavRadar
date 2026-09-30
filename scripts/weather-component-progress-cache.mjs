@@ -136,6 +136,101 @@ async function readExactly(handle, length, position) {
   return buffer;
 }
 
+// The callback can inspect authenticated, allowlisted private inputs only for
+// its awaited lifetime. This boundary never merges, installs or saves them.
+// Audit-only entry point; the existing normal restore path is intentionally unchanged.
+export async function withAuthenticatedWeatherProgress({
+  repositoryRoot = process.cwd(), basePath,
+  repository = process.env.GITHUB_REPOSITORY,
+  encryptionKey = process.env.WEATHER_PROGRESS_ENCRYPTION_KEY,
+  masterSecret = process.env.WEATHER_PROGRESS_MASTER_SECRET,
+  pythonExecutable,
+  // Optional callers may tighten the production limits, never widen them.
+  maximumEncryptedBytes = MAX_CIPHER_BYTES, maximumPackBytes = MAX_PACK_BYTES,
+} = {}, inspect) {
+  let temporary = null;
+  try {
+    if (typeof inspect !== 'function') fail('INSPECTION_CALLBACK_REQUIRED');
+    if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
+      || maximumEncryptedBytes > MAX_CIPHER_BYTES
+      || !Number.isSafeInteger(maximumPackBytes) || maximumPackBytes < 1024
+      || maximumPackBytes > MAX_PACK_BYTES) fail('SIZE_BUDGET_INVALID');
+    repoIdentity(repository);
+    const root = await rootPath(repositoryRoot);
+    if (typeof basePath !== 'string' || !basePath) fail('BASE_INVALID');
+    const baselineFile = path.resolve(basePath);
+    if (baselineFile === path.join(root, WEATHER_PROGRESS_CIPHER_PATH)) fail('BASE_INVALID');
+    const key = keyBytes(encryptionKey, { masterSecret, repository });
+    const base = await readBase(baselineFile, repository);
+    if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    const checkedCipher = await checkedPath(root, WEATHER_PROGRESS_CIPHER_PATH,
+      { optional: true, maximum: maximumEncryptedBytes });
+    if (!checkedCipher) fail('SNAPSHOT_ABSENT');
+    const handle = await fs.open(checkedCipher, 'r');
+    let aad;
+    let iv;
+    let tag;
+    let start;
+    let end;
+    let encryptedBytes;
+    try {
+      const stat = await handle.stat();
+      const size = stat.size;
+      if (!stat.isFile() || size > maximumEncryptedBytes) fail('FILE_INVALID');
+      encryptedBytes = size;
+      if (!(await readExactly(handle, MAGIC.length, 0)).equals(MAGIC)) fail('SNAPSHOT_INVALID');
+      const length = await readExactly(handle, 4, MAGIC.length);
+      const count = length.readUInt32BE();
+      if (count < 2 || count > 4096 || size <= MAGIC.length + 4 + count + 12 + 16) fail('SNAPSHOT_INVALID');
+      const header = await readExactly(handle, count, MAGIC.length + 4);
+      let parsed;
+      try { parsed = JSON.parse(header.toString('utf8')); } catch { fail('SNAPSHOT_INVALID'); }
+      if (Object.keys(parsed ?? {}).sort().join(',') !== 'baselineSha256,kind,protectedBundleContentSha256,repository,schemaVersion'
+        || parsed.kind !== PURPOSE || parsed.schemaVersion !== 1 || parsed.repository !== repository) fail('SNAPSHOT_SCOPE_MISMATCH');
+      if (parsed.baselineSha256 !== base.baselineSha256
+        || parsed.protectedBundleContentSha256 !== base.protectedBundleContentSha256) fail('BASELINE_MISMATCH');
+      aad = Buffer.concat([MAGIC, length, header]);
+      iv = await readExactly(handle, 12, aad.length);
+      tag = await readExactly(handle, 16, size - 16);
+      start = aad.length + 12;
+      end = size - 17;
+    } finally { await handle.close(); }
+    temporary = await temporaryRoot();
+    const compressed = path.join(temporary.folder, 'authenticated-pack.gz');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+    decipher.setAAD(aad);
+    decipher.setAuthTag(tag);
+    try {
+      // Do not gunzip, unpack or inspect emitted plaintext until final() has
+      // authenticated the WHOLE message at successful pipeline completion.
+      await pipeline(createReadStream(checkedCipher, { start, end }), boundedStream(maximumEncryptedBytes),
+        decipher, boundedStream(maximumEncryptedBytes), createWriteStream(compressed, { flags: 'wx', mode: 0o600 }));
+    } catch { fail('SNAPSHOT_AUTHENTICATION_FAILED'); }
+    const packPath = path.join(temporary.folder, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
+    await fs.mkdir(path.dirname(packPath), { recursive: true, mode: 0o700 });
+    await pipeline(createReadStream(compressed), createGunzip(), boundedStream(maximumPackBytes),
+      createWriteStream(packPath, { flags: 'wx', mode: 0o600 }));
+    const verifiedRoot = path.join(temporary.folder, 'verified');
+    const files = await unpackPrivateWeatherComponentPack({ restoredRoot: temporary.folder,
+      outputRoot: verifiedRoot, conditions: {}, pythonExecutable, includeOperationalProgress: true });
+    // Reconfirm after the potentially slower CP-original validation and again
+    // after the consumer. Private paths/content must never enter a public log.
+    if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    const result = await inspect({ root, files, verifiedRoot, temporaryDirectory: temporary.folder,
+      baselineSha256: base.baselineSha256,
+      protectedBundleContentSha256: base.protectedBundleContentSha256,
+      capacity: Object.freeze({ encryptedBytes, compressedBytes: (await fs.stat(compressed)).size,
+        rawPackBytes: (await fs.stat(packPath)).size, fileCount: files.length }) });
+    if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    return result;
+  } finally {
+    if (temporary) {
+      try { await temporary.cleanup(); }
+      catch { fail('TEMPORARY_CLEANUP_FAILED'); }
+    }
+  }
+}
+
 export async function installComponents(root, files, { renameImpl = fs.rename, rollbackRenameImpl = fs.rename } = {}) {
   const transaction = crypto.randomUUID();
   const staged = [];

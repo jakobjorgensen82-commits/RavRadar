@@ -1,14 +1,39 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.518
+**Håndbogsversion:** 4.0.520
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.518 bevarer 4.0.517's låste `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.520 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.117 4.0.520 – Undersøg det gemte vejr uden at hente igen
+
+Den hentede fremdrift er gemt, men den seneste kørsel blev ikke
+publiceret. Derfor undersøger vi først de eksisterende pakker i
+stedet for at gentage vejrhentningen og den lange cachebygning.
+
+Kontrollen læser den præcise gemte pakke og måler, hvor meget dens
+dele fylder. Den undersøger også, om bevarede DMI-værdier stadig
+har deres oprindelige modelværdier og kildeoplysninger med sig.
+Det er vigtigt: At et tal findes, er ikke nødvendigvis nok til,
+at en senere sikkerhedskontrol kan bekræfte, hvor det kom fra.
+
+Læsekontrollen ændrer ikke de gemte data, scoren, leverandørvalget
+eller hjemmesiden. Den starter ikke en ny vejrhentning og viser
+kun samlede tal, ikke private målinger. Første kontrol dækker
+prognosens gemte DMI-beviser, ikke hele den længere vejrhistorik.
+Et manglende bevis i én pakke betyder derfor ikke automatisk,
+at selve vejrværdien er tabt.
+
+Den samlede vejrrettelse holdes tilbage, indtil de nødvendige
+målinger er afklaret. Hjemmesiden viser fortsat sidste godkendte
+prognose, og automatisk vejrstart er pauset. En grøn læsekontrol
+vil ikke alene betyde, at data er komplette eller systemet stabilt.
+Se DEC-0267 og forskningsnotatet SAVED-WEATHER-AUDIT-2026-09-30.
 
 ## 89.115 4.0.518 – Hvorfor havstrømshistorikken stoppede
 

@@ -6,7 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
-import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
+import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
+  WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
 import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
 import { mergeVerifiedProtectedProgressComponents,
@@ -128,6 +129,101 @@ test('encrypted roundtrip changes component files only and never caches plaintex
   assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
   await assert.rejects(fs.access(path.join(f.target, '.cache/secret-token.json')));
   await assert.rejects(fs.access(path.join(f.target, '.cache/weather-component-inputs.pack')));
+});
+
+test('authenticated audit callback exposes verified temporary inputs and exact sizes without installation', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const cipher = await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const options = { repositoryRoot: f.target, basePath: f.targetBase, repository, encryptionKey };
+  let temporaryDirectory;
+  let inspectedFiles;
+  const result = await withAuthenticatedWeatherProgress(options, async input => {
+    ({ temporaryDirectory } = input);
+    inspectedFiles = input.files;
+    assert.equal(input.protectedBundleContentSha256, protectedBundleSha256);
+    assert.equal(input.baselineSha256, crypto.createHash('sha256').update(baseline).digest('hex'));
+    assert.equal(input.capacity.encryptedBytes, cipher.length);
+    assert.equal(input.capacity.compressedBytes,
+      (await fs.stat(path.join(temporaryDirectory, 'authenticated-pack.gz'))).size);
+    assert.equal(input.capacity.rawPackBytes,
+      (await fs.stat(path.join(temporaryDirectory, '.cache/weather-component-inputs.pack'))).size);
+    assert.equal(input.capacity.fileCount, 3);
+    assert.ok(Object.values(input.capacity).every(value => Number.isSafeInteger(value) && value > 0));
+    for (const file of input.files) {
+      assert.equal(file.sourcePath, path.join(input.verifiedRoot, file.relativePath));
+      const bytes = await fs.readFile(file.sourcePath);
+      assert.equal(bytes.length, file.bytes);
+      assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), file.sha256);
+    }
+    await f.assertTargetOriginal();
+    return { inspected: true, ...input.capacity };
+  });
+  assert.equal(result.inspected, true);
+  await assert.rejects(fs.access(temporaryDirectory), { code: 'ENOENT' });
+  for (const file of inspectedFiles) await assert.rejects(fs.access(file.sourcePath), { code: 'ENOENT' });
+  await f.assertTargetOriginal();
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+  let failedTemporary;
+  await assert.rejects(withAuthenticatedWeatherProgress(options, async input => {
+    failedTemporary = input.temporaryDirectory;
+    throw new Error('SYNTHETIC_AUDIT_FAILURE');
+  }), /SYNTHETIC_AUDIT_FAILURE/);
+  await assert.rejects(fs.access(failedTemporary), { code: 'ENOENT' });
+  await f.assertTargetOriginal();
+});
+
+test('audit cannot inspect unauthenticated, mismatched or over-budget progress and cleans rejected plaintext', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  // Incompressible scheduling-only bytes make the compressed bound test real.
+  await write(f.source, files.fallbackCursor, { schedulingOnly: crypto.randomBytes(8192).toString('hex') });
+  assert.equal((await f.call('save')).saved, true);
+  await fs.copyFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH), path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const cipherPath = path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH);
+  const cipher = await fs.readFile(cipherPath);
+  assert.ok(cipher.length > 4096);
+  const options = { repositoryRoot: f.target, basePath: f.targetBase, repository, encryptionKey };
+  const priorTemporary = new Set((await fs.readdir(os.tmpdir())).filter(name => name.startsWith('rr-encrypted-progress-')));
+  let calls = 0;
+  const inspect = async () => { calls += 1; };
+  const rejects = async (extra, code) => {
+    await assert.rejects(withAuthenticatedWeatherProgress({ ...options, ...extra }, inspect),
+      error => error.progressCode === code);
+    assert.equal(calls, 0);
+    await f.assertTargetOriginal();
+  };
+  const corrupt = Buffer.from(cipher);
+  corrupt[corrupt.length - 1] ^= 1;
+  await fs.writeFile(cipherPath, corrupt);
+  await rejects({}, 'SNAPSHOT_AUTHENTICATION_FAILED');
+  await fs.writeFile(cipherPath, cipher);
+  await rejects({ encryptionKey: Buffer.alloc(32, 74).toString('base64') }, 'SNAPSHOT_AUTHENTICATION_FAILED');
+  await rejects({ maximumEncryptedBytes: 4096 }, 'FILE_INVALID');
+  await rejects({ maximumPackBytes: 1024 }, 'SIZE_LIMIT');
+  await rejects({ maximumEncryptedBytes: WEATHER_PROGRESS_MAX_CIPHER_BYTES + 1 }, 'SIZE_BUDGET_INVALID');
+  await rejects({ maximumPackBytes: 768 * 1024 * 1024 + 1 }, 'SIZE_BUDGET_INVALID');
+  const originalBase = await fs.readFile(f.targetBase, 'utf8');
+  const changedBundle = JSON.parse(originalBase);
+  changedBundle.protectedBundleContentSha256 = 'b'.repeat(64);
+  await fs.writeFile(f.targetBase, JSON.stringify(changedBundle));
+  await rejects({}, 'BASELINE_MISMATCH');
+  await fs.writeFile(f.targetBase, originalBase);
+  await write(f.target, 'data/live/conditions.json', `${baseline} `);
+  await assert.rejects(withAuthenticatedWeatherProgress(options, inspect), error => error.progressCode === 'BASELINE_MISMATCH');
+  assert.equal(calls, 0);
+  await write(f.target, 'data/live/conditions.json', baseline);
+  let changedDuringInspection;
+  await assert.rejects(withAuthenticatedWeatherProgress(options, async input => {
+    changedDuringInspection = input.temporaryDirectory;
+    await write(f.target, 'data/live/conditions.json', `${baseline} `);
+  }), error => error.progressCode === 'BASELINE_MISMATCH');
+  await assert.rejects(fs.access(changedDuringInspection), { code: 'ENOENT' });
+  await write(f.target, 'data/live/conditions.json', baseline);
+  await f.assertTargetOriginal();
+  const remainingTemporary = (await fs.readdir(os.tmpdir())).filter(name => name.startsWith('rr-encrypted-progress-'));
+  assert.deepEqual(remainingTemporary.filter(name => !priorTemporary.has(name)), []);
+  assert.deepEqual(await fs.readFile(cipherPath), cipher);
 });
 
 test('authenticated progress and protected production retain selected hours of overlapping responses', async t => {

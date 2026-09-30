@@ -1,4 +1,24 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+# 2026-09-30 – isoleret læsekandidat 4.0.520; funktionel rettelse tilbageholdt
+
+- [x] Main 4.0.518 er merged som `b076968e`; seneste normalrun
+  `36698472505` fejlede efter providers og gemte krypteret fremdrift.
+- [x] PR #487's første head bestod source-CI. Nyere lokale ændringer
+  og native-bevispersistens er ikke dækket; PR'en holdes tilbage.
+- [x] DEC-0267 udskiller providerfri læseaudit fra funktionelle fixes.
+  Normal save/restore, modelbundle, prioriteter og scheduler bevares.
+- [x] Auditmatrix: 72 udførte tests bestod; én eksplicit opt-in storfiltest
+  blev ikke kørt i standardmatrixen. Uafhængig auditkontrol 27/27,
+  byte-identisk normal restore, tre uændrede private kontrakthashes,
+  modelbundle, geodata-version-only og håndbog/RDKS/version bestod.
+- [ ] Få fuld source-CI grøn på audit-PR'ens eksakte head før merge.
+- [ ] Kør kun den godkendte læseaudit på eksisterende krypteret
+  `36698472505-1` og original beskyttet baseline; mål faktiske størrelser,
+  oprindelig kontekst og originale endpoints særskilt.
+- [ ] Afklar fuldt replay, generationspersistens, samlet kapacitet og
+  åbne femfeltsrester før funktionel release og nyt produktionsbevis.
+  Offentlig 4.0.510 er fortsat sidste bevis; cron forbliver pauset.
+
+# Historisk status – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
 
 - [x] PR #485 bestod exact-head source-CI og blev merged som
   main `31d7ce8b`. Kort run `36677551077` genbrugte den

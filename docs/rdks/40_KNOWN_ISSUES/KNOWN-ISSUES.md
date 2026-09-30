@@ -1,4 +1,21 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# Aktuelle issues – 2026-09-30, main 4.0.518, isoleret læsekandidat 4.0.520
+
+- **FUNKTIONEL RELEASE HOLDES TILBAGE:** PR #487 har nyere lokale
+  ændringer efter første grønne head. Bevarede DMI-værdier skal også
+  have deres faktiske originale modelbeviser til rådighed gennem
+  gemning/restore/artifactkontrol. Metadata er ikke tilstrækkeligt.
+  Produktionshyppighed og national kapacitet mangler måling.
+- **LÆSEBEVIS MANGLER:** DEC-0267 måler eksisterende pakker uden
+  leverandører, cachebygning eller deploy. Kildevalidering og virkelig
+  audit afventer. Den måler ikke fuldt 288-timersreplay eller beviser
+  fremtidig persistens. Ingen hypotetiske resultater må kaldes datatab.
+- **ØVRIGE RESTER ER IKKE LØST:** Offentlig 4.0.510 havde 370.007 af
+  397.070 femfeltspar. Sene vind-/temperatur-/vandstandshuller, delvis
+  havstrøm, CP-scalarbidrag, historik, R2-retention/cleanup, færdigpakke-
+  genoptagelse og Free-kvoter er fortsat åbne. Cron er pauset. Se
+  forskningsnotatet SAVED-WEATHER-AUDIT-2026-09-30.
+
+# Historiske issues – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
 
 - **HAVSTRØMSREPLAY STOPPER PUBLICERING:** Run `36677551077`
   kom gennem DMI, Copernicus, Open-Meteo og den tidligere

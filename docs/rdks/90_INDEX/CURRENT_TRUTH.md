@@ -1,4 +1,19 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
+
+Main er `b076968e`. Run `36698472505` fejlede efter leverandørerne i
+havstrømsreplay; krypteret `36698472505-1` er gemt. Ingen ny slutpakke,
+CAS, R2 eller Pages. Cron `8348098` er pauset. Sidste offentlige
+target er 29/9 16 UTC, version 4.0.510, 370.007/397.070 par for
+alle fem vejrfamilier samlet. Det er ikke fuld dækning eller stabil drift.
+
+Funktionel PR #487 har første grønne source-CI, men nyere lokale
+rettelser og native originalbevisers persistens er uafklarede. Den
+holdes tilbage. 4.0.520/DEC-0267 leverer alene en isoleret læseaudit
+af eksisterende pakker. Exact-head CI og faktisk måling afventer.
+Produktionsadfærd, scoremodel og leverandørprioritet er uændrede.
+Audit er ikke fuldt replay, artifactgate eller en ny offentlig prognose.
+
+# HISTORISK SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
 
 PR #485/4.0.517 bestod exact-head source-CI `36676610928`
 og blev merged som main `31d7ce8b`. Kort normalrun
