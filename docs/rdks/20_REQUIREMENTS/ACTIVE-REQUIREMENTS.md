@@ -10,6 +10,11 @@
   Normal drift genåbnes først efter konkret årsag, relevant gate
   og et målt produktionsresultat. Dette aktuelle krav afløser
   ikke den ældre, historiske 4.0.508-ejerpause nedenfor.
+  DEC-0262 tillader yderligere faste, indholdsfri kandidatklasser
+  for same-run-DMI's identitetsmatch, native trin og officiel
+  revisionsorden. Også disse er kun mulige overlap, ikke det
+  eksakte afviste par; de må ikke vælge en vinder eller svække
+  fail-closed-reglen i DEC-0192/DEC-0229.
 
 # Aktuel gemt-vejr-recovery – 2026-09-28
 

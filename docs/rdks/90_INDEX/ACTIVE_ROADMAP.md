@@ -1,4 +1,29 @@
-# Aktivt roadmap – 2026-09-29, offentlig 4.0.509
+# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+
+1. [x] Kort `36650098594` gendannede eksakt fremdrift,
+   passerede reelt DMI-ledger, Copernicus og Open-Meteo og
+   gemte ny krypteret fremdrift `36650098594-1`. Der blev
+   ikke udgivet ny pakke: bølgereplay stoppede sikkert.
+2. [ ] Færdiggør DEC-0262's kun-fejlsti, indholdsfri
+   revisionsdiagnose med måltests, versions-/RDKS-/håndbogs-
+   kontrol, exact-head CI og sikker merge. Hold ekstern cron
+   pauset. Der må ikke startes ny lang, overlappende eller
+   blind oneoff-kørsel.
+3. [ ] Brug højst én kort normal bekræftelse fra præcis
+   `36650098594-1` og den beskyttede baseline til at måle
+   revisionshindringen. Bevar den hårde same-run-konflikt,
+   indtil officiel nyere revision eller anden aktiv regel
+   dokumenterer en sikker vinder. En ny fejl skal ikke
+   omdøbes til produktionssucces.
+4. [ ] Efter dokumenteret rettelse: fuld artifactgate,
+   no-loss på fælles 673 kystdele/timer, særskilte vind-,
+   bølge-, havstrøms-, vandstands- og temperaturtal,
+   Supabase-CAS, privat R2, Pages og offentlig prognose.
+   Mål DMI/CP/OM-andele, LF-vandstand, delvise zoner og
+   kvoter. Flere autonome normale kørsler kræves før cron
+   og stabilitetskonklusion.
+
+# Historisk roadmap – 2026-09-29, offentlig 4.0.509
 
 1. [x] Første naturlige 4.0.509-run `36478379298` bestod hele
    cache-/validerings-/CAS-/R2-/Pages-kæden og blev set på siden.

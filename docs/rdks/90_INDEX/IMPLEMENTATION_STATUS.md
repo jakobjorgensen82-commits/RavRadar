@@ -1,4 +1,35 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.513, kandidat 4.0.514, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515, cron pauset
+
+- [x] Kort run `36650098594` passerede eksakt progress-restore,
+  reelt DMI-producentarbejde, target-bundet DMI-ledger,
+  Copernicus og Open-Meteo. Det stoppede i bølge-replay under
+  central cache; senere artifact-/CAS-/R2-/Pages-trin blev
+  sprunget over. Ingen ny offentlig vejrpakke.
+- [x] 4.0.513's sikre kandidatdiagnose blev nået: syv
+  DMI/DMI-overlap fra samme modelkørsel, to med forskellige
+  fysiske bølgeværdier og fem med samme. De er ikke det
+  verificerede, eksakte konfliktpar.
+- [x] Ny krypteret fremdrift `36650098594-1` blev gemt under
+  eksakt run-/attemptnøgle. Ekstern cron forbliver pauset.
+- [x] Lokal 4.0.515-diagnose (DEC-0262) opdeler mulige
+  same-run-DMI-overlap efter officiel revisionsorden,
+  native-trin- og identitetshindring, uden vejradfærdsændring.
+  Målrettet replay-test er grøn.
+- [ ] Færdiggør versions-/RDKS-/håndbogskontrol, exact-head
+  source-CI og sikker merge uden aktiv vejrkørsel. Kun derefter
+  én kort, eksakt fremdriftsbundet bekræftelse; ingen blind
+  fuld kørsel eller cron-genåbning.
+- [ ] Brug de nye sikre klasser til at dokumentere faktisk
+  revisionshindring, før kildeprioritet eller replay ændres.
+
+# Historisk status – 2026-09-30 – main 4.0.514 før cachefejlen
+
+- [x] PR #482 bestod fuld exact-head source-CI `36649441478`
+  på `da8a34c1` og blev merged som main `c57ea1d4` med
+  identisk kildetræ, uden aktiv vejrkørsel ved merge.
+- [x] Kort normalrun `36650098594` blev startet alene på den
+  nye main fra eksakt krypteret fremdrift `36645991041-1` og
+  nåede DMI's reelle producenttrin. Det senere stop står øverst.
 
 - [x] Docs-PR #481 bestod exact-head source-CI `36645545073`
   og blev merged som main `6d24ad1c` uden vejradfærdsændring.
@@ -9,14 +40,17 @@
   quick-total mod 420 sekunders supervisorreserve. Den direkte
   afslutning skabte ikke et target-bundet ledger; Copernicus-
   forhåndskontrollen afviste det korrekt. Bølgereplay blev ikke nået.
-- [x] Kandidat 4.0.514 giver quick DMI 900 sekunders samlet
-  supervisorbudget (op til 480 til producenten), 420 sekunders
-  afslutningsreserve og 24 minutters ydre timeout; supervisoren
+- [x] Merged 4.0.514 giver quick DMI op til 900 sekunders
+  producentforsøg, eventuelt efterfulgt af op til 420 sekunders
+  separat superviseret afslutning og 24 minutters ydre timeout.
+  Reserven kontrolleres mellem forsøg, ikke som et fradrag fra
+  det første producentforsøgs budget; supervisoren
   afviser fremtidige modstridende budgetter før arbejde. Normal
   kørsels budgetter, kildeprioritet, vejrdata og score er uændrede.
-- [ ] Kør måltests, RDKS/versionskontrol, exact-head source-CI og
-  sikker merge. Bekræft derefter nyeste præcise fremdrift i én kort
-  normal kørsel; ingen blind ny fuld vejrhentning eller cron-genstart.
+- [ ] Følg den ene aktive korte normale kørsel gennem eksakt
+  restore, tre leverandører, cache, no-loss, fulde gates, CAS,
+  R2, Pages og offentlig prognose; ingen blind ny fuld
+  vejrhentning eller cron-genstart.
 - [ ] Undersøg stadig den faktiske bølgekonflikt og DMI's tre
   `DKSS_STAGE_NO_TOUCHED_ZONES`. 4.0.514 beviser ikke deres årsag.
 

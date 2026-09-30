@@ -1,4 +1,31 @@
-# AKTUELT CHECKPOINT – 2026-09-29 – offentlig 4.0.509, næste slot afventes
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.515-wave-revision-evidence`; den gamle `cb79`-checkout
+er ikke arbejdsstedet. Ekstern cron-job.org `8348098` er pauset.
+Main `c57ea1d4`/4.0.514 bestod exact-head source-CI. Kort
+normalrun `36650098594` gendannede eksakt krypteret fremdrift
+`36645991041-1`, passerede DMI, Copernicus og Open-Meteo og
+viste dermed at quick-DMI-budgetstoppet er væk. Central cache
+stoppede igen på streng bølge-replaykonflikt. Fejlstiens syv
+mulige DMI/DMI-same-run-par omfattede to med forskellige
+fysiske bølgeværdier og fem med samme; det er ikke det eksakte
+fejlpar. Ny krypteret fremdrift `36650098594-1` er gemt.
+Ingen ny slutpakke, artifactgate, CAS, R2 eller Pages; offentlig
+4.0.510/370.007 af 397.070 femfeltspar står fortsat.
+
+Lokal 4.0.515/DEC-0262 udvider kun sikre, aggregerede
+revisions-/identitetsårsager for mulige DMI-overlap; uafklaret
+same-run-revision stopper fortsat. Målrettet replay-test er
+grøn. Færdiggør RDKS/version/handbook, exact-head source-CI
+og merge kun hvis ingen aktiv vejrkørsel. Dernæst højst én
+kort normal bekræftelse fra præcis `36650098594-1` og
+beskyttet baseline; brug de sikre klasser til dokumenteret
+rodårsag før en adfærdsrettelse. Ingen ny lang/overlappende
+vejrhentning, oneoff eller cron-genstart. Anbefalet indsats:
+Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-29 – offentlig 4.0.509, næste slot afventes
 
 Run `36478379298` på main `9fcd996f` er afsluttet og deployet.
 Fuld no-loss, validering/releasegate, CAS, privat R2, Pages og

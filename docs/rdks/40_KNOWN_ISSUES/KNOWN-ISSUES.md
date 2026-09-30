@@ -1,4 +1,4 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.513, kandidat 4.0.514
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.514, lokal 4.0.515
 
 - **KORT DMI-BEKRÆFTELSE STOPPEDE FØR REEL HENTNING –
   DOKUMENTERET RODÅRSAG:** `36645991041` gendannede præcis
@@ -8,18 +8,26 @@
   ikke nyt target-bundet ledger. Den strenge Copernicus-
   forhåndskontrol afviste korrekt start-mismatch. Ny krypteret
   fremdrift `36645991041-1` blev gemt; ingen ny offentlig pakke.
-  4.0.514-kandidaten retter kun quick-budgetkontrakten og tilføjer
-  fail-fast/test. Livebevis afventer; ekstern cron forbliver pauset.
+  Merged 4.0.514 retter kun quick-budgetkontrakten og tilføjer
+  fail-fast/test. Kort bekræftelse `36650098594` kom gennem DMI,
+  Copernicus og Open-Meteo; budget-/ledgerstoppet kom ikke igen.
+  Den fejlede senere ved bølgereplay, så fuld levering afventer,
+  og ekstern cron forbliver pauset. De 900 sekunder er producentens mulige
+  første forsøg; 420 sekunder er en separat afslutningsreserve.
 
 - **GEMT BØLGEHISTORIK KONFLIKTER – BLOKERER NORMAL DRIFT:**
-  Run `36625547109` gennemførte leverandørerne, men central
-  replay af to gyldige historikkandidater stoppede med
+  Run `36625547109` og den kortere `36650098594` gennemførte
+  leverandørerne, men central replay af historikkandidater stoppede med
   `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger. Den præcise
-  kilde-, modelrun- og værdi-relation er ikke i den sikre log.
-  Krypteret fremskridt findes; ny færdig pakke/deploy findes ikke.
+  replay-konfliktkilde og revisionshindring er ikke i den sikre log.
+  Sidstnævntes diagnose fandt syv mulige DMI/DMI-par med samme
+  modelkørsel: to med forskellige bølgeværdier og fem med samme.
+  Krypteret fremskridt `36650098594-1` findes; ny færdig
+  pakke/deploy findes ikke.
   Ekstern cron er pauset. Merged 4.0.513-diagnose tæller kun
   kategorier af mulige overlap, ikke den faktiske vinder.
-  Kildeprioritet og den hårde gate må ikke ændres på gæt.
+  Lokal 4.0.515 (DEC-0262) skelner sikre officielle
+  revisionshindringer; den hårde gate må ikke ændres på gæt.
 - **DMI-OPERATIONEL AFVISNING – ÅBEN:** Tre `dkss_idw`-timer
   viste `DKSS_STAGE_NO_TOUCHED_ZONES` i runnet. Koden er tvetydig:
   ingen ændret zone kan skyldes både nul brugbare kandidater og

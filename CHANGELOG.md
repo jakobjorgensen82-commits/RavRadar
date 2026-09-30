@@ -1,3 +1,20 @@
+## 4.0.515 – sikker DMI-bølgerevisionsdiagnose (lokal kandidat)
+
+- Kort normalrun `36650098594` passerede DMI, Copernicus og
+  Open-Meteo på 4.0.514, men stoppede igen ved streng bølgekonflikt
+  i historisk cache. Syv mulige DMI/DMI-overlap havde samme
+  modelkørsel; to havde forskellige fysiske bølgeværdier, fem
+  havde samme værdier. Diagnosen beviser ikke det præcise
+  afviste par. Krypteret fremdrift `36650098594-1` blev gemt;
+  ingen færdig pakke, CAS, R2 eller Pages blev udgivet.
+- Fejlstien opdeler nu disse **mulige** overlap efter, om DMI's
+  kilde-/gitteridentitet kan sammenlignes, om de native trin
+  passer, og om en nyere officiel revision er bevist. Kun faste
+  klasser, feltnavne og antal logges. Intet vejr-, score- eller
+  prioriteringsvalg ændres; uafklaret same-run-bølge stopper
+  fortsat fail-closed. Se DEC-0262. Måltest er lokalgrøn;
+  exact-head CI og live resultat afventer.
+
 ## 4.0.514 – ret modstridende DMI-tidsbudget i kort bekræftelse
 
 - Run `36645991041` gendannede eksakt krypteret fremdrift og
@@ -6,15 +23,19 @@
   afslutningsreserve. Copernicus' strenge ledger-kontrol stoppede
   korrekt den videre bygning. Den nye fremdrift `36645991041-1`
   blev sikret; der blev ikke udgivet nyt vejr.
-- Quick DMI får 900 sekunders samlet supervisorbudget, heraf
-  420 sekunders afslutningsreserve og højst 480 sekunders
-  producentarbejde, samt 24 minutters ydre timeout. En modstridende
+- Quick DMI får et muligt producentforsøg på op til 900 sekunder
+  og op til 420 sekunders separat superviseret afslutning,
+  samt 24 minutters ydre timeout. Reserven kontrolleres mellem
+  forsøg og trækkes ikke fra det første producentforsøg.
+  En modstridende
   konfiguration afvises nu med en fast sikker kode før arbejdet,
   og test kontrollerer både fail-fast og workflowets tidsmargin.
 - Normal leverandørtid, kildeprioritet, gamle gyldige data,
   vandstandsinterpolation og score er uændrede. Den oprindelige
   bølgekonflikt blev ikke nået i den fejlede test og er fortsat åben.
-  Ændringen er kandidat, ikke produktionsverificeret.
+  PR #482 bestod exact-head source-CI `36649441478` og blev
+  merged som main `c57ea1d4`. Kort normalrun `36650098594`
+  nåede DMI-producenten; hele produktionskæden er endnu ikke bevist.
 
 ## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik
 

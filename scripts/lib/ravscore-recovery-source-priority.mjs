@@ -365,6 +365,73 @@ export function buildNewestValidRavScoreRecoverySources({
   ];
 }
 
+// Failure-only evidence. These fixed labels describe *possible* DMI overlaps
+// after priority projection; they are not an authorization to select either
+// wave and must never contain source values, identifiers or timestamps.
+function sameRunDmiWaveRevisionEvidence(leftRow, rightRow) {
+  const left = componentRevisionSource(leftRow, 'wave');
+  const right = componentRevisionSource(rightRow, 'wave');
+  const scalarFields = ['entityId', 'parentZoneId', 'entityType',
+    'samplingContext', 'collection', 'component', 'gridDefinitionSha256',
+    'verticalLayer', 'verticalLayerRankM'];
+  const mismatchFields = scalarFields.filter(field => left?.[field] !== right?.[field]);
+  for (const field of ['samplingPoint', 'gridPoint']) {
+    if (!Array.isArray(left?.[field]) || !Array.isArray(right?.[field])
+      || left[field].length !== 2 || right[field].length !== 2
+      || !left[field].every((value, index) => finite(value)
+        && value === right[field][index])) mismatchFields.push(field);
+  }
+  if (!comparableDmiRevision(left, right)) {
+    return { code: 'SOURCE_IDENTITY_NOT_COMPARABLE', mismatchFields };
+  }
+  const rightWins = preferQualifiedDmiComponentSource(left, right, 'wave');
+  const leftWins = preferQualifiedDmiComponentSource(right, left, 'wave');
+  if (rightWins !== leftWins) {
+    return { code: rightWins ? 'RIGHT_OFFICIAL_REVISION_PROVED'
+      : 'LEFT_OFFICIAL_REVISION_PROVED', mismatchFields: [] };
+  }
+  if (rightWins && leftWins) {
+    return { code: 'CONTRADICTORY_REVISION_ORDER', mismatchFields: [] };
+  }
+  const leftSteps = Array.isArray(left.nativeSteps) ? left.nativeSteps : [left];
+  const rightSteps = Array.isArray(right.nativeSteps) ? right.nativeSteps : [right];
+  if (leftSteps.length === 0 || leftSteps.length !== rightSteps.length) {
+    return { code: 'NATIVE_STEP_COUNT_NOT_COMPARABLE', mismatchFields: [] };
+  }
+  const rightByTime = new Map(rightSteps.map(step => [step.nativeValidTime, step]));
+  if (rightByTime.size !== rightSteps.length
+    || leftSteps.some(step => !rightByTime.has(step.nativeValidTime))) {
+    return { code: 'NATIVE_STEP_TIME_NOT_COMPARABLE', mismatchFields: [] };
+  }
+  const revisionKey = [...leftSteps, ...rightSteps].some(step => step.itemUpdatedAt != null)
+    ? 'itemUpdatedAt' : 'itemCreatedAt';
+  let hasChangedAsset = false;
+  let hasMissingRevisionTime = false;
+  let hasEqualTimeChangedAsset = false;
+  let hasNewerRight = false;
+  let hasNewerLeft = false;
+  for (const oldStep of leftSteps) {
+    const newStep = rightByTime.get(oldStep.nativeValidTime);
+    if (oldStep.itemId === newStep.itemId
+      && oldStep.assetIdentitySha256 === newStep.assetIdentitySha256
+      && oldStep[revisionKey] === newStep[revisionKey]) continue;
+    hasChangedAsset = true;
+    const oldAt = canonicalTime(oldStep[revisionKey]);
+    const newAt = canonicalTime(newStep[revisionKey]);
+    if (oldAt === null || newAt === null) hasMissingRevisionTime = true;
+    else if (newAt === oldAt) hasEqualTimeChangedAsset = true;
+    else if (newAt > oldAt) hasNewerRight = true;
+    else hasNewerLeft = true;
+  }
+  const prefix = revisionKey === 'itemUpdatedAt' ? 'UPDATED_AT' : 'CREATED_AT';
+  const code = !hasChangedAsset ? 'SAME_OFFICIAL_ASSET_PROOF'
+    : hasMissingRevisionTime ? `${prefix}_MISSING`
+      : hasEqualTimeChangedAsset ? `${prefix}_EQUAL_FOR_CHANGED_ASSET`
+        : hasNewerRight && hasNewerLeft ? `${prefix}_MIXED_ENDPOINT_ORDER`
+          : 'REVISION_SELECTION_UNRESOLVED';
+  return { code, mismatchFields: [] };
+}
+
 /**
  * Failure-only, payload-free diagnostic for the exact part being rebuilt.
  * It describes overlapping *candidates*, not the replay validator's winning
@@ -393,6 +460,9 @@ export function summarizeRavScoreWaveRecoveryConflictCandidates({
     }
   }
   const counts = new Map();
+  const sameRunDmiRevisionClasses = new Map();
+  const sameRunDmiValueRevisionClasses = new Map();
+  const sameRunDmiIdentityMismatchFields = new Map();
   let candidatePairCount = 0;
   let withinRecordPairCount = 0;
   for (const entries of byTime.values()) {
@@ -424,6 +494,19 @@ export function summarizeRavScoreWaveRecoveryConflictCandidates({
           providerPair, runRelation, admission,
           sameValues ? 'SAME_VALUES' : 'DIFFERENT_VALUES'].join('_');
         counts.set(category, (counts.get(category) ?? 0) + 1);
+        if (providerPair === 'DMI_DMI' && runRelation === 'SAME_RUN'
+          && admission === 'BOTH_PRIORITY_ADMITTED') {
+          const evidence = sameRunDmiWaveRevisionEvidence(left.row, right.row);
+          sameRunDmiRevisionClasses.set(evidence.code,
+            (sameRunDmiRevisionClasses.get(evidence.code) ?? 0) + 1);
+          const valueRevisionClass = `${sameValues ? 'SAME_VALUES' : 'DIFFERENT_VALUES'}_${evidence.code}`;
+          sameRunDmiValueRevisionClasses.set(valueRevisionClass,
+            (sameRunDmiValueRevisionClasses.get(valueRevisionClass) ?? 0) + 1);
+          for (const field of evidence.mismatchFields) {
+            sameRunDmiIdentityMismatchFields.set(field,
+              (sameRunDmiIdentityMismatchFields.get(field) ?? 0) + 1);
+          }
+        }
       }
     }
   }
@@ -432,5 +515,11 @@ export function summarizeRavScoreWaveRecoveryConflictCandidates({
     candidatePairCount,
     withinRecordPairCount,
     classes: Object.fromEntries([...counts].sort(([left], [right]) => left.localeCompare(right))),
+    sameRunDmiRevisionClasses: Object.fromEntries(
+      [...sameRunDmiRevisionClasses].sort(([left], [right]) => left.localeCompare(right))),
+    sameRunDmiValueRevisionClasses: Object.fromEntries(
+      [...sameRunDmiValueRevisionClasses].sort(([left], [right]) => left.localeCompare(right))),
+    sameRunDmiIdentityMismatchFields: Object.fromEntries(
+      [...sameRunDmiIdentityMismatchFields].sort(([left], [right]) => left.localeCompare(right))),
   };
 }

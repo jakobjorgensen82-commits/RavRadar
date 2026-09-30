@@ -1,14 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.514
+**Håndbogsversion:** 4.0.515
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.514 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.515 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.112 4.0.515 – Hvorfor bølgeoplysningerne stadig ikke kan samles
+
+Den korte vejrkørsel hentede denne gang faktisk data fra DMI,
+Copernicus og Open-Meteo. Problemet med for lidt tid til DMI er
+dermed passeret. Men da RavRadar skulle samle den nye prognose med
+tidligere gemt bølgehistorik, fandt den igen oplysninger, der ikke
+uden videre kan bruges som én og samme historie. Derfor blev den
+sidste godkendte prognose stående på hjemmesiden.
+
+Den sikre fejlrapport viste syv mulige sammenfald mellem to
+DMI-bølgeoplysninger fra samme modelkørsel. I to af dem var
+bølgetallene forskellige; i fem var tallene ens, men de tilhørende
+kildeoplysninger kunne stadig være forskellige. Rapporten viser
+ikke præcis hvilket sammenfald, der udløste stoppet. Den nye
+diagnose undersøger derfor, om DMI-kildernes sted/gitter og
+officielle opdateringstid faktisk kan sammenlignes. Den viser kun
+faste årsagsord og antal – aldrig sted, klokkeslæt, målinger eller
+private data. Den vælger ikke en vinder og ændrer ikke scoren.
+Hvis en nyere officiel revision ikke kan bevises, stopper udgivelsen
+fortsat sikkert. Den krypterede hente-fremdrift er bevaret, så
+næste kontrollerede forsøg ikke behøver starte fra nul. Automatisk
+vejrstart er stadig pauset, indtil årsagen og en sikker løsning er
+vist i en rigtig kørsel. Se DEC-0262.
 
 ## 89.111 4.0.514 – Tid til DMI i en kort bekræftelse
 
@@ -23,6 +47,15 @@ plads til sikker afslutning. Et modstridende budget bliver nu afvist
 med det samme. Det er ikke bevis for, at den tidligere bølgekonflikt
 er væk; næste kontrollerede kørsel skal vise resultatet. Almindelige
 vejrkørsler og RavScore-reglerne er uændrede.
+
+Teknisk betyder tidsgrænsen, at DMI's første producentforsøg kan
+bruge op til 15 minutter. Hvis supervisoren efter et stop må
+afslutte et sikkert checkpoint, kan afslutningen bruge yderligere
+op til syv minutter. De syv minutter bliver ikke på forhånd
+trukket fra de 15. Det ydre trin har 24 minutter og plads til
+begge dele. Rettelsen er kildekontrolleret og merged. Den korte
+bekræftelse kom videre gennem alle tre leverandører, men stoppede
+senere ved den særskilte bølgekonflikt beskrevet ovenfor.
 
 ## 89.110 4.0.513 – Hvorfor en hentet prognose endnu ikke blev vist
 

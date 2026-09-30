@@ -1,4 +1,35 @@
-# 2026-09-30 – kort DMI-bekræftelse og 4.0.514-kandidat
+# 2026-09-30 – 4.0.514 gennemført til bølgekonflikt; lokal 4.0.515
+
+Run `36650098594` på main `c57ea1d4` gendannede eksakt
+`36645991041-1` og kom gennem DMI, Copernicus og Open-Meteo.
+4.0.514's tidsrettelse passerede sin tidligere ledgerbarriere.
+Central cache stoppede derefter igen på streng bølgekonflikt.
+4.0.513's sikre tæller fandt syv mulige DMI/DMI-overlap med samme
+modelkørsel: to med forskellige fysiske bølgeværdier, fem med
+samme. Hvilket par der konkret stoppede replay, vides ikke.
+Krypteret fremdrift `36650098594-1` er gemt; ingen færdig
+pakke, CAS, R2 eller Pages findes fra dette run. Offentlig
+4.0.510 består, og ekstern cron er pauset.
+
+Lokal 4.0.515/DEC-0262 tilføjer kun faste, payloadfri
+revisions-/identitetsklasser til de mulige DMI-par.
+DEC-0192/DEC-0229's fail-closed-regel og værdier er uændrede.
+Måltest består; versions-/RDKS-/håndbogskontrol, exact-head
+CI, merge og et eneste kort eksakt fremdriftsbundet livebevis
+afventer. Ingen ny lang, overlappende eller blind kørsel.
+
+# Historisk – 2026-09-30 – 4.0.514 merged, kort bekræftelse aktiv
+
+PR #482 bestod exact-head CI `36649441478` og blev merged
+som main `c57ea1d4`. Kort normalrun `36650098594` fra
+præcis krypteret fremdrift `36645991041-1` nåede DMI's
+reelle producenttrin. Hele vejr-/cache-/deploykæden er endnu
+ikke bevist. Supervisorens 900 sekunder kan bruges af første
+producentforsøg; en op til 420-sekunders sikker afslutning er
+separat og ikke automatisk trukket fra de 900 sekunder. Det
+ydre workflowtrin rummer 24 minutter. Ekstern cron er pauset.
+
+# Historisk – 2026-09-30 – kort DMI-bekræftelse og 4.0.514-kandidat
 
 Docs-PR #481 blev merged som `6d24ad1c` efter exact-head
 CI `36645545073`. Kort normalt run `36645991041` gendannede
@@ -9,9 +40,9 @@ afslutningsreserve. Uden nyt target-bundet operationelt ledger
 afviste Copernicus-forhåndskontrollen korrekt start-mismatch.
 Ny krypteret fremdrift `36645991041-1` blev gemt, men intet
 slutartifact/CAS/R2/Pages. Bølgereplay blev ikke nået.
-4.0.514-kandidaten giver quick DMI 900 sekunders samlet tid,
-heraf 420 sekunders afslutningsreserve og højst 480 sekunders
-producenttid, med 24 minutters ydre timeout,
+4.0.514-kandidaten ændrede quick DMI til 900 sekunders
+muligt producentforsøg og en separat 420-sekunders
+afslutningsreserve, med 24 minutters ydre timeout,
 og supervisoren afviser fremtidige budgetkonflikter før arbejde.
 Normal vejrtid, data, kildeprioritet, RavScore og cron er uændrede;
 source-CI og produktionsbevis afventer. Offentlig 4.0.510 består.
