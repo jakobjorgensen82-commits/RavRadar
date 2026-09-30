@@ -1,3 +1,28 @@
+# 2026-09-30 – 4.0.517 stoppede i havstrøm; 4.0.518 måler uden private værdier
+
+PR #485/4.0.517 bestod exact-head CI `36676610928`
+og blev merged som main `31d7ce8b`. Normalrun
+`36677551077` gendannede præcis beskyttet baseline og
+`36667807638-1`, gennemførte DMI, Copernicus og Open-Meteo
+og passerede bølgereplay. Central cache stoppede på streng
+`RAVSCORE_RECOVERY_REPLAY_CONFLICT` for havstrøm før slutpakke,
+fuld artifactgate, CAS, R2 og Pages. En ny krypteret
+fremdrift `36677551077-1` blev gemt. Sidste offentlige
+4.0.510/370.007 af 397.070 femfeltspar er uændret.
+
+Der er ingen evidens for forkert DMI-råfil. Den verificerede
+kæde danner timeværdier fra native trin, genberegner strøm-
+hastighed/-retning fra atomisk U/V og sammenligner både
+værdier og begrænset proveniens ved replay. Lokal
+DEC-0265/4.0.518 tilføjer kun en fejlkontrol med faste
+kategorier og højst 96 isolerede par mod uændret replay.
+Syntetisk måltest bekræfter, at både forskellige U/V og
+ens U/V med gyldigt andet native tidsgrundlag kan give
+konflikt. Det faktiske live-par kendes ikke; ingen kilde
+vælges på gæt. Modelbundle og kildeprioritet er uændret.
+Exact-head CI, liveårsag og senere adfærdsrettelse afventer.
+Ekstern cron-job.org `8348098` er pauset.
+
 # 2026-09-30 – 4.0.516 beviste to isolerede same-run-konflikter; 4.0.517 bevarer gyldig historik
 
 PR #484/4.0.516 bestod exact-head kildekontrol

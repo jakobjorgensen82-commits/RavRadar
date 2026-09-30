@@ -116,6 +116,7 @@ import {
 import {
   buildNewestValidRavScoreRecoverySources,
   summarizeIsolatedRavScoreWaveReplayConflicts,
+  summarizeRavScoreCurrentRecoveryConflicts,
   summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import {
@@ -2580,6 +2581,32 @@ function scoreCoastalPartsRuntime(
             ),
         });
       } catch (error) {
+        if (error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
+          && error?.message === 'RavScore recovery replay has a conflicting current component') {
+          // A failing cache build may have two differently projected, valid
+          // current histories. Diagnose with the unchanged replay validator,
+          // but emit only fixed categories and aggregate counts. In particular
+          // never log U/V, source IDs, points, hours or raw exception text.
+          try {
+            const diagnosis = summarizeRavScoreCurrentRecoveryConflicts({
+              sourceRecords: recoverySources,
+              startAt: replayStartAt,
+              targetAt: generatedAt,
+              replayCandidate: isolatedSources => buildRavScoreRecoveryReplay({
+                part: { ...part, zoneId },
+                initialState: initialSelection.state,
+                targetReferenceAt: generatedAt,
+                sourceRecords: isolatedSources,
+                publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+                  && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
+                nativeCadenceHoldHours,
+              }),
+            });
+            console.error(`RAVSCORE_RECOVERY_CURRENT_CONFLICT_PROOF ${JSON.stringify(diagnosis)}`);
+          } catch {
+            console.error('RAVSCORE_RECOVERY_CURRENT_CONFLICT_PROOF_UNAVAILABLE');
+          }
+        }
         if (error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
           && error?.message === 'RavScore recovery replay has a conflicting wave component') {
           // Fixed categories and counts only: no private row, place, time,

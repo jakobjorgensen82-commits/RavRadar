@@ -1,6 +1,6 @@
-import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.517';
-import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.517';
-import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.517';
+import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.518';
+import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.518';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.518';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();

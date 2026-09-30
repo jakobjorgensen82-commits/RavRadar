@@ -1,3 +1,27 @@
+## 4.0.518 – indholdsfrit bevis for havstrømskonflikt (lokal kandidat)
+
+- PR #485/4.0.517 blev merged efter grøn exact-head source-CI.
+  Kort normalrun `36677551077` gendannede beskyttet baseline og
+  eksakt fremdrift, passerede DMI, Copernicus og Open-Meteo og kom
+  forbi bølgereplay. Central cache stoppede derefter på en
+  havstrømskonflikt. Ny krypteret fremdrift `36677551077-1` er
+  gemt; ingen ny slutpakke, CAS, R2 eller Pages blev udgivet.
+- Fejlstien tæller kun faste kategorier for mulige strømoverlap
+  og prøver højst 96 par enkeltvis med den uændrede replayvalidator.
+  Det første isoleret bekræftede par rapporteres kun som en fast
+  klasse, aldrig som sted, tid, måling, hash eller rå payload.
+  Kandidater eller isoleret bevis udpeger ikke nødvendigvis den
+  fulde replays første par og vælger ingen vinder.
+- Score, kildeprioritet, DMI's rådata, timeopbygning, modelbundle,
+  scheduler og offentlig prognose er uændrede. Syntetisk måltest
+  og modelbundle er lokalt grønne; exact-head CI og liveårsag
+  afventer. Se DEC-0265. Ekstern cron forbliver pauset.
+- To ældre testforventninger er synkroniseret med uændret produktionskode:
+  PART-testens syntetiske kontekst omfatter nu de eksisterende
+  DMI-kontinuitetsinput, og gate-testen kræver de 54 kontroller,
+  som har været i produktionsplanen siden 4.0.438. Ingen test er
+  fjernet fra den faktiske plan. Se DEC-0184/DEC-0217.
+
 ## 4.0.517 – bevar beskyttet DMI-historik ved ubevist same-run-opdatering (lokal kandidat)
 
 - PR #484/4.0.516 bestod exact-head source-CI og blev merged.

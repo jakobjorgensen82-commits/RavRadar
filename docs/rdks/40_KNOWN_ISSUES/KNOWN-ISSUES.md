@@ -1,4 +1,21 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+
+- **HAVSTRØMSREPLAY STOPPER PUBLICERING:** Run `36677551077`
+  kom gennem DMI, Copernicus, Open-Meteo og den tidligere
+  bølgekonflikt, men central cache afviste en havstrømskonflikt.
+  Det faktiske par og årsagsklassen er ukendt. Det er ikke
+  bevis for fejl i DMI's rådata. Krypteret fremdrift
+  `36677551077-1` er gemt; ingen slutpakke, CAS, R2 eller
+  Pages. Lokal 4.0.518/DEC-0265 tilføjer kun en sikker,
+  indholdsfri diagnose; livebevis og årsagsrettelse mangler.
+  Ekstern cron er pauset.
+- **FEMFELTSREST OG DRIFT – STADIG ÅBEN:** Sidste offentlige
+  pakke er fortsat 4.0.510 med 370.007/397.070 par. Sene
+  huller, tre delvise zoner, DMI-/Copernicus-andel,
+  Limfjordsvandstand, historik og Free-kvoter kræver nye
+  eksakte målinger efter en fuld, sikker publicering.
+
+# Historiske issues – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
 
 - **BESKYTTET BØLGEREPLAY – LOKAL ÅRSAGSRETTELSE, IKKE
   PRODUKTIONSBEVIST:** Run `36667807638` gennemførte de tre

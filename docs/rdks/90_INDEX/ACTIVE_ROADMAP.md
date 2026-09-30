@@ -1,4 +1,27 @@
-# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+
+1. [x] PR #485/4.0.517 exact-head-grøn og merged.
+   `36677551077` gendannede eksakt fremdrift, passerede
+   DMI, Copernicus, Open-Meteo og bølgereplay, men stoppede
+   i central cache ved havstrømskonflikt. Krypteret
+   `36677551077-1` er gemt; offentlig produktion er uændret.
+2. [ ] Afslut DEC-0265's indholdsfri, modeluændrede
+   havstrømsdiagnose med RDKS/version/begge håndbøger,
+   måltests, exact-head source-CI og sikker merge. Cron
+   forbliver pauset; ingen blind lang kørsel eller oneoff.
+3. [ ] Kør højst én kort normal bekræftelse fra præcis
+   `36677551077-1`. Skeln kandidatpar, isoleret afvist
+   par og faktisk første fulde replaypar. Undersøg native
+   DMI-input, RavRadars interpolation, kildevalg og
+   proveniens samlet før en selvstændig adfærdsrettelse.
+4. [ ] Bevis efter årsagsrettelse femfelts-no-loss,
+   artifactgate, CAS, privat R2, Pages og offentlig
+   prognose. Mål DMI/CP/OM, delvise zoner,
+   Limfjordsvandstand, historik og Free-kvoter på samme
+   sted/time. Genåbn først cron efter flere sikre
+   normale resultater uden Codex-indgreb.
+
+# Historisk roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
 
 1. [x] PR #484/4.0.516 bestod exact-head-CI og blev merged.
    Kort run `36667807638` genbrugte præcis krypteret fremdrift,

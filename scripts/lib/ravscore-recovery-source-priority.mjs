@@ -403,11 +403,11 @@ export function buildNewestValidRavScoreRecoverySources({
 }
 
 // Failure-only evidence. These fixed labels describe *possible* DMI overlaps
-// after priority projection; they are not an authorization to select either
-// wave and must never contain source values, identifiers or timestamps.
-function sameRunDmiWaveRevisionEvidence(leftRow, rightRow) {
-  const left = componentRevisionSource(leftRow, 'wave');
-  const right = componentRevisionSource(rightRow, 'wave');
+// after priority projection; they are not an authorization to select a
+// current/wave value and must never contain source values, identifiers or times.
+function sameRunDmiRevisionEvidence(leftRow, rightRow, component) {
+  const left = componentRevisionSource(leftRow, component);
+  const right = componentRevisionSource(rightRow, component);
   const scalarFields = ['entityId', 'parentZoneId', 'entityType',
     'samplingContext', 'collection', 'component', 'gridDefinitionSha256',
     'verticalLayer', 'verticalLayerRankM'];
@@ -421,8 +421,8 @@ function sameRunDmiWaveRevisionEvidence(leftRow, rightRow) {
   if (!comparableDmiRevision(left, right)) {
     return { code: 'SOURCE_IDENTITY_NOT_COMPARABLE', mismatchFields };
   }
-  const rightWins = preferQualifiedDmiComponentSource(left, right, 'wave');
-  const leftWins = preferQualifiedDmiComponentSource(right, left, 'wave');
+  const rightWins = preferQualifiedDmiComponentSource(left, right, component);
+  const leftWins = preferQualifiedDmiComponentSource(right, left, component);
   if (rightWins !== leftWins) {
     return { code: rightWins ? 'RIGHT_OFFICIAL_REVISION_PROVED'
       : 'LEFT_OFFICIAL_REVISION_PROVED', mismatchFields: [] };
@@ -533,7 +533,7 @@ export function summarizeRavScoreWaveRecoveryConflictCandidates({
         counts.set(category, (counts.get(category) ?? 0) + 1);
         if (providerPair === 'DMI_DMI' && runRelation === 'SAME_RUN'
           && admission === 'BOTH_PRIORITY_ADMITTED') {
-          const evidence = sameRunDmiWaveRevisionEvidence(left.row, right.row);
+          const evidence = sameRunDmiRevisionEvidence(left.row, right.row, 'wave');
           sameRunDmiRevisionClasses.set(evidence.code,
             (sameRunDmiRevisionClasses.get(evidence.code) ?? 0) + 1);
           const valueRevisionClass = `${sameValues ? 'SAME_VALUES' : 'DIFFERENT_VALUES'}_${evidence.code}`;
@@ -645,7 +645,7 @@ export function summarizeIsolatedRavScoreWaveReplayConflicts({
     const category = `${providerClass}_${runClass}_${valueClass}`;
     confirmedClasses.set(category, (confirmedClasses.get(category) ?? 0) + 1);
     if (providerClass === 'DMI_DMI' && runClass === 'SAME_RUN') {
-      const reason = sameRunDmiWaveRevisionEvidence(left.row, right.row).code;
+      const reason = sameRunDmiRevisionEvidence(left.row, right.row, 'wave').code;
       const key = `${valueClass}_${reason}`;
       confirmedSameRunDmiReasons.set(key, (confirmedSameRunDmiReasons.get(key) ?? 0) + 1);
     }
@@ -659,5 +659,140 @@ export function summarizeIsolatedRavScoreWaveReplayConflicts({
       .sort(([left], [right]) => left.localeCompare(right))),
     confirmedSameRunDmiReasons: Object.fromEntries([...confirmedSameRunDmiReasons]
       .sort(([left], [right]) => left.localeCompare(right))),
+  };
+}
+
+/**
+ * Failure-only current evidence. The original replay validator, not this
+ * classifier, decides whether a candidate pair really conflicts. At most one
+ * isolated proof is returned; no row, location, timestamp, vector, digest or
+ * untrusted exception text can leave this function.
+ */
+export function summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords = [], startAt = null, targetAt = null,
+  replayCandidate = null, maxPairs = 96,
+} = {}) {
+  const startMs = Date.parse(startAt ?? '');
+  const targetMs = Date.parse(targetAt ?? '');
+  if (!Number.isFinite(startMs) || !Number.isFinite(targetMs) || startMs >= targetMs
+    || !Array.isArray(sourceRecords) || sourceRecords.length > 4
+    || typeof replayCandidate !== 'function'
+    || !Number.isSafeInteger(maxPairs) || maxPairs < 1 || maxPairs > 96) {
+    return { status: 'INVALID_DIAGNOSTIC_INPUT' };
+  }
+  const byTime = new Map();
+  for (const [sourceIndex, source] of sourceRecords.entries()) {
+    for (const [rowIndex, row] of (source?.record?.hourly ?? []).entries()) {
+      const time = canonicalTime(row?.time);
+      const timeMs = Date.parse(time ?? '');
+      if (!Number.isFinite(timeMs) || timeMs < startMs || timeMs >= targetMs
+        || !hasVerifiedCurrent(row) || !finite(row.currentSpeedMps)
+        || !finite(row.currentDirectionDeg)) continue;
+      const entries = byTime.get(time) ?? [];
+      entries.push({ sourceIndex, rowIndex, row });
+      byTime.set(time, entries);
+    }
+  }
+  const pairs = [];
+  const classes = new Map();
+  const sameRunDmiReasons = new Map();
+  const sameRunDmiIdentityMismatchFields = new Map();
+  for (const entries of byTime.values()) {
+    for (let leftIndex = 0; leftIndex < entries.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < entries.length; rightIndex += 1) {
+        const left = entries[leftIndex];
+        const right = entries[rightIndex];
+        pairs.push([left, right]);
+        const provider = entry => {
+          const value = componentProvider(entry.row, 'current');
+          return ['dmi', 'copernicus', 'open-meteo'].includes(value) ? value : 'unknown';
+        };
+        const providers = [provider(left), provider(right)];
+        const providerPair = providers.every(value => value === 'dmi') ? 'DMI_DMI'
+          : providers.includes('dmi') ? 'DMI_OTHER'
+            : providers[0] === providers[1] ? 'SAME_OTHER' : 'DIFFERENT_OTHERS';
+        const leftRun = componentModelRun(left.row, 'current');
+        const rightRun = componentModelRun(right.row, 'current');
+        const runRelation = leftRun === null || rightRun === null ? 'UNBOUND_RUN'
+          : leftRun === rightRun ? 'SAME_RUN' : 'DIFFERENT_RUN';
+        const valueClass = ['currentUMps', 'currentVMps', 'currentSpeedMps',
+          'currentDirectionDeg'].every(key => left.row[key] === right.row[key])
+          ? 'SAME_VALUES' : 'DIFFERENT_VALUES';
+        const category = [left.sourceIndex === right.sourceIndex
+          ? 'WITHIN_RECORD' : 'ACROSS_RECORDS', providerPair,
+        runRelation, valueClass].join('_');
+        classes.set(category, (classes.get(category) ?? 0) + 1);
+        if (providerPair === 'DMI_DMI' && runRelation === 'SAME_RUN') {
+          const evidence = sameRunDmiRevisionEvidence(left.row, right.row, 'current');
+          const reason = `${valueClass}_${evidence.code}`;
+          sameRunDmiReasons.set(reason, (sameRunDmiReasons.get(reason) ?? 0) + 1);
+          for (const field of evidence.mismatchFields) {
+            sameRunDmiIdentityMismatchFields.set(field,
+              (sameRunDmiIdentityMismatchFields.get(field) ?? 0) + 1);
+          }
+        }
+      }
+    }
+  }
+  const sortedCounts = map => Object.fromEntries([...map]
+    .sort(([left], [right]) => left.localeCompare(right)));
+  let testedPairCount = 0;
+  let otherOutcomeCount = 0;
+  let confirmedClass = 'NONE';
+  let confirmedSameRunDmiReason = 'NONE';
+  for (const [left, right] of pairs.slice(0, maxPairs)) {
+    const isolated = sourceRecords.map((source, sourceIndex) => ({
+      ...source,
+      record: {
+        ...source.record,
+        hourly: (source.record?.hourly ?? []).map((row, rowIndex) => {
+          const selected = (sourceIndex === left.sourceIndex && rowIndex === left.rowIndex)
+            || (sourceIndex === right.sourceIndex && rowIndex === right.rowIndex);
+          return withoutWave(selected ? row : withoutCurrent(row));
+        }),
+      },
+    }));
+    testedPairCount += 1;
+    let confirmed = false;
+    try {
+      replayCandidate(isolated);
+    } catch (error) {
+      confirmed = error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
+        && error?.message === 'RavScore recovery replay has a conflicting current component';
+    }
+    if (!confirmed) {
+      otherOutcomeCount += 1;
+      continue;
+    }
+    const leftProvider = componentProvider(left.row, 'current');
+    const rightProvider = componentProvider(right.row, 'current');
+    const providerClass = leftProvider === 'dmi' && rightProvider === 'dmi'
+      ? 'DMI_DMI' : 'OTHER';
+    const leftRun = componentModelRun(left.row, 'current');
+    const rightRun = componentModelRun(right.row, 'current');
+    const runClass = leftRun !== null && leftRun === rightRun
+      ? 'SAME_RUN' : 'OTHER_RUN';
+    const valueClass = ['currentUMps', 'currentVMps', 'currentSpeedMps',
+      'currentDirectionDeg'].every(key => left.row[key] === right.row[key])
+      ? 'SAME_VALUES' : 'DIFFERENT_VALUES';
+    confirmedClass = `${providerClass}_${runClass}_${valueClass}`;
+    if (providerClass === 'DMI_DMI' && runClass === 'SAME_RUN') {
+      confirmedSameRunDmiReason = sameRunDmiRevisionEvidence(
+        left.row, right.row, 'current',
+      ).code;
+    }
+    break;
+  }
+  return {
+    status: 'CANDIDATES_AND_ISOLATED_REPLAY_PROOF_NOT_FULL_REPLAY_ORDER',
+    candidatePairCount: pairs.length,
+    testedPairCount,
+    truncated: pairs.length > maxPairs,
+    otherOutcomeCount,
+    classes: sortedCounts(classes),
+    sameRunDmiReasons: sortedCounts(sameRunDmiReasons),
+    sameRunDmiIdentityMismatchFields: sortedCounts(sameRunDmiIdentityMismatchFields),
+    confirmedClass,
+    confirmedSameRunDmiReason,
   };
 }

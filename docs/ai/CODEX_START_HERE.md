@@ -1,4 +1,32 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.518-current-conflict-proof`, ikke `cb79`.
+`.cache/` er privat og må ikke stages. Ekstern cron-job.org
+`8348098` er pauset. PR #485/4.0.517 bestod exact-head
+source-CI `36676610928` og blev merged som main `31d7ce8b`.
+Kort run `36677551077` gendannede eksakt `36667807638-1`
+og beskyttet baseline, gennemførte DMI, Copernicus og
+Open-Meteo, passerede bølgereplay og stoppede i central
+cache på `RAVSCORE_RECOVERY_REPLAY_CONFLICT` for havstrøm.
+Krypteret `36677551077-1` er gemt; ingen slutpakke,
+artifactgate, CAS, R2 eller Pages. Offentlig 4.0.510 med
+370.007/397.070 femfeltspar er fortsat sidste bevis.
+
+Der er intet bevis for fejl i DMI's rådata. RavRadar
+interpolerer native tider, genberegner hastighed/retning
+fra U/V og sammenligner fysisk par plus kildebevis i
+replay. Lokal DEC-0265/4.0.518 tilføjer kun indholdsfri
+kandidatklasser og højst 96 isolerede prøver med uændret
+validator på fejlstien. Syntetiske replay-, kildevalg-
+og modelbundletests er grønne lokalt. Afslut dokumentation,
+version, RDKS, exact-head CI og sikker merge. Højst én kort
+normal bekræftelse fra præcis `36677551077-1`; analyser
+liveårsagen før adfærdsrettelse. Ingen lang/overlappende
+kørsel, oneoff eller cron-genåbning. Anbefalet model/Indsats:
+GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.517-protected-same-run-retention`, ikke `cb79`.

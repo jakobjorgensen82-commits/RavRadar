@@ -1,4 +1,24 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+
+- [x] PR #485 bestod exact-head source-CI og blev merged som
+  main `31d7ce8b`. Kort run `36677551077` genbrugte den
+  eksakte fremdrift, passerede alle tre leverandører og den
+  tidligere bølgekonflikt, men stoppede i central cache på
+  havstrømsreplay. `36677551077-1` er krypteret gemt;
+  ingen slutpakke, CAS, R2 eller Pages blev udgivet.
+- [x] Lokal DEC-0265-diagnose klassificerer kun faste,
+  indholdsfri kandidatklasser og prøver højst 96 par med
+  uændret replay. Syntetiske årsags-/privatlivstests,
+  kildeprioritet og uændret modelbundle består lokalt.
+- [ ] Afslut RDKS/version, begge håndbøger og måltests;
+  kræv grøn exact-head source-CI, merge uden aktiv kørsel
+  og højst én kort normal bekræftelse fra præcis
+  `36677551077-1`. Find konkret havstrømsårsag før en
+  særskilt adfærdsrettelse. Genåbn ikke cron på diagnostik.
+- [ ] Bevis siden fuld femfelts-no-loss, artifactgate, CAS,
+  R2, Pages, offentlig prognose og gentagen autonom fremgang.
+
+# Historisk status – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
 
 - [x] PR #484/4.0.516 bestod exact-head source-CI
   `36667111156` og blev merged som main `f7c1dcc0`.

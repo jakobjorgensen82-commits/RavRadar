@@ -1,8 +1,20 @@
 # DEC-0184 – Kritisk produktionsartifact-gate uden historisk testspiral
 
-**Status:** Aktiv og bindende; exact-head og den virkelige 52+3-produktionskæde
-er livebevist i 4.0.402
+**Status:** Aktiv og bindende; den oprindelige 52+3-kæde er livebevist i
+4.0.402. Siden 4.0.438 har den kritiske artifactplan 54 bladkontroller,
+fordi DEC-0217 tilføjede to kontroller for offentlig timepakke og
+strømproveniens. De tre særskilte releasekontroller består.
 **Dato:** 2026-09-17
+
+## Præcisering 2026-09-30
+
+Beskrivelsen af 52 bladkontroller nedenfor er den oprindelige 4.0.402-plan,
+ikke den aktuelle plans størrelse. 4.0.438 udvidede `test:public-runtime`
+med `test:public-hour-delivery-pack` og `test:current-provenance-sealing`
+under DEC-0217. `validate:production-artifact` udvider dermed nu til 54
+bladkontroller. Den hidtidige statiske assertion på 52 var forældet; 4.0.518
+synkroniserer den med den faktisk kørte plan uden at tilføje eller fjerne
+produktionskontroller.
 
 ## Baggrund
 

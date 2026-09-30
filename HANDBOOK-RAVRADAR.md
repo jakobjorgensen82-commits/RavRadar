@@ -1,14 +1,41 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.517
+**Håndbogsversion:** 4.0.518
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.517 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.518 bevarer 4.0.517's låste `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.115 4.0.518 – Hvorfor havstrømshistorikken stoppede
+
+Den seneste korte kørsel hentede data fra DMI, Copernicus og
+Open-Meteo. Den kom forbi den tidligere bølgekonflikt, men
+stoppede, da gammel og ny havstrømshistorik skulle samles.
+Derfor er de nye data **ikke** på hjemmesiden. Fremdriften er
+gemt krypteret, og den automatiske vejrstart er pauset.
+
+Det er ikke vist, at DMI's rå data er forkerte. RavRadar
+beregner timeværdier fra DMI's modeltidspunkter og kontrollerer
+både de øst-/nordgående strømdele og beviset for, hvor de kom
+fra. To gyldige udgaver kan derfor være uenige efter vores
+egen behandling – enten i strømværdien eller alene i dens
+bagvedliggende tids- og kildeoplysninger. Vi ved endnu ikke,
+**hvilket** par der stoppede den virkelige kørsel.
+
+En ny, snæver kontrol kører kun, hvis denne fejl opstår. Den
+tæller mulige par i faste årsagsgrupper og prøver højst 96
+par med den samme uændrede sikkerhedsregel, der stoppede
+kørslen. Den viser ikke sted, klokkeslæt, strømværdier,
+koordinater eller private data. Et par, der stoppes i en
+enkeltprøve, er ikke nødvendigvis det første par i hele
+kørslen. Kontrollen vælger ingen ny værdi, ændrer ikke
+RavScore og sætter ikke automatisk en prognose på nettet.
+Først når årsagen er bevist, kan vi rette den sikkert og
+kontrollere hele kæden frem til hjemmesiden. Se DEC-0265.
 
 ## 89.114 4.0.517 – Når nye DMI-timer beregnes anderledes
 
