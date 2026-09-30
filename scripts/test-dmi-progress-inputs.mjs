@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { constants as bufferConstants } from 'node:buffer';
 import { buildDmiForecastHourly, createDmiForecastRecord } from './lib/dmi-forecast-store.mjs';
 import { mergeVerifiedDmiForecastProgress, mergeVerifiedStationObservationProgress,
   reconcileDmiProgressFiles } from './lib/verified-dmi-progress-inputs.mjs';
@@ -10,6 +11,7 @@ import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as FILES } from './lib/private-weat
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { weatherComponentProgressCache, WEATHER_PROGRESS_CIPHER_PATH } from './weather-component-progress-cache.mjs';
 import { prioritizeDmiFeatures } from './lib/dmi-acquisition-state.mjs';
+import { readDmiForecastFile, inspectDmiForecastFile, readDmiForecastRecord } from './lib/dmi-forecast-file.mjs';
 
 const reference = '2026-09-26T07:00:00.000Z';
 const earlier = '2026-09-26T01:00:00.000Z';
@@ -83,7 +85,7 @@ test('DMI restore reports fixed safe file/phase codes without changing protected
     await fs.writeFile(output, 'existing');
     const result = await reconcile();
     assert.deepEqual(result.summary.codes, ['DMI_FORECAST_SAVE_UNAVAILABLE']);
-    assert.equal(result.summary.forecast.status, 'RETAINED');
+    assert.equal(result.summary.forecast.status, 'REJECTED');
     assert.equal(await fs.readFile(output, 'utf8'), 'existing');
     assert.ok(result.summary.codes.every(code => /^[A-Z_]+$/.test(code)),
       'Diagnostics may contain only fixed codes, never private paths or values');
@@ -111,6 +113,125 @@ test('DMI progress merges all five proved tuples, preserves valid old fields at 
   assert.equal(joined.currentVMps, before.zones.ZONE.hourly[0].currentVMps);
   assert.deepEqual(joined.sources.waterLevel, before.zones.ZONE.hourly[0].sources.waterLevel);
   assert.equal(joined.windSpeedMps, 8);
+});
+
+test('a newer wave with unproved direction never displaces the older complete tuple', () => {
+  const before = store();
+  const progress = store(reference, 2);
+  const oldWave = before.zones.ZONE.hourly[0];
+  const row = progress.zones.ZONE.hourly[0];
+  row.sources.wave.optionalFieldSet = [];
+  for (const step of row.sources.wave.nativeSteps ?? []) step.optionalFieldSet = [];
+  const result = mergeVerifiedDmiForecastProgress(before, progress, options);
+  assert.equal(result.stats.recoveredComponents, 4);
+  assert.equal(result.stats.rejectedRecords, 1);
+  assert.equal(result.document.zones.ZONE.hourly[0].waveHeightM, oldWave.waveHeightM);
+  assert.equal(result.document.zones.ZONE.hourly[0].waveDirectionDeg, oldWave.waveDirectionDeg);
+  assert.deepEqual(result.document.zones.ZONE.hourly[0].sources.wave, oldWave.sources.wave);
+
+  row.waveHeightM = 0;
+  row.waveDirectionDeg = null;
+  const calm = mergeVerifiedDmiForecastProgress(before, progress, options);
+  assert.equal(calm.stats.recoveredComponents, 5, 'Attested calm without direction remains admissible');
+  assert.equal(calm.document.zones.ZONE.hourly[0].waveHeightM, 0);
+  row.sources.wave.optionalFieldSet = ['mean-wave-dir'];
+  for (const step of row.sources.wave.nativeSteps ?? []) step.optionalFieldSet = ['mean-wave-dir'];
+  const inconsistentCalm = mergeVerifiedDmiForecastProgress(before, progress, options);
+  assert.equal(inconsistentCalm.stats.recoveredComponents, 4, 'Claimed direction without value is not a complete replacement');
+  assert.deepEqual(inconsistentCalm.document.zones.ZONE.hourly[0].sources.wave, oldWave.sources.wave);
+});
+
+test('recordwise file reconciliation equals tuple selection, preserves protected continuity, and distinguishes no-change', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-recordwise-'));
+  try {
+    const baseline = path.join(root, FILES.dmiForecastStore);
+    const progress = path.join(root, 'progress.json');
+    await fs.mkdir(path.dirname(baseline), { recursive: true });
+    const before = store(earlier, 1, { hours: 121 });
+    before.partContinuity = { schemaVersion: 1, entries: [{ partId: 'BASE_PART', gzipBase64: 'baseline-only' }] };
+    const newer = store(reference, 2, { hours: 121 });
+    newer.partContinuity = { schemaVersion: 1, entries: [{ partId: 'OTHER_PART', gzipBase64: 'never-import' }] };
+    await fs.writeFile(baseline, JSON.stringify(before, null, 2));
+    await fs.writeFile(progress, JSON.stringify(newer, null, 2));
+    await fs.writeFile(path.join(root, 'data/zones.geojson'), JSON.stringify({ features }));
+    const files = [{ relativePath: FILES.dmiForecastStore, sourcePath: progress }];
+    const reconcile = () => reconcileDmiProgressFiles({ root, files, temporaryDirectory: root,
+      productionReferenceAt: reference, restoredAt: options.restoredAt });
+    const selected = mergeVerifiedDmiForecastProgress(before, newer, options);
+    const result = await reconcile();
+    assert.deepEqual(result.summary.forecast, selected.stats);
+    assert.deepEqual(await readDmiForecastFile(result.files[0].sourcePath), selected.document);
+    assert.deepEqual((await readDmiForecastFile(result.files[0].sourcePath)).partContinuity, before.partContinuity);
+    await fs.unlink(result.files[0].sourcePath);
+    const exactBaseline = await fs.readFile(baseline);
+    await fs.writeFile(progress, JSON.stringify(before));
+    const retained = await reconcile();
+    assert.equal(retained.summary.forecast.status, 'ACCEPTED_NO_CHANGE');
+    assert.equal(retained.files.length, 0);
+    assert.deepEqual(await fs.readFile(baseline), exactBaseline);
+    assert.equal(await fs.stat(path.join(root, 'merged-dmi-progress-forecast.json')).catch(() => null), null);
+  } finally {
+    assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(root).startsWith('rr-dmi-recordwise-'));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('real >V8-size baseline and progress reconcile with bounded memory and unchanged selection', {
+  skip: process.env.RAVRADAR_TEST_LARGE_FORECAST !== '1',
+}, async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-large-merge-'));
+  try {
+    const baseline = path.join(root, FILES.dmiForecastStore);
+    const progress = path.join(root, 'progress.json');
+    await fs.mkdir(path.dirname(baseline), { recursive: true });
+    const ids = ['ZONE', ...Array.from({ length: 179 }, (_, index) => `SYNTHETIC${index}`)];
+    const allFeatures = ids.map(id => ({ ...features[0], properties: { ...features[0].properties, id } }));
+    await fs.writeFile(path.join(root, 'data/zones.geojson'), JSON.stringify({ features: allFeatures }));
+    const padding = 'x'.repeat(3 * 1024 * 1024);
+    async function writeFixture(file, modelRun, multiplier) {
+      const model = store(modelRun, multiplier);
+      const handle = await fs.open(file, 'wx');
+      try {
+        await handle.writeFile(`{"schemaVersion":2,"runtime":${JSON.stringify(model.runtime)},"zones":{`);
+        for (let index = 0; index < ids.length; index += 1) {
+          const id = ids[index];
+          const value = index === 0 ? { ...model.zones.ZONE, padding }
+            : { zoneId: id, point: [10, 56], generatedAt: modelRun, hourly: [], padding };
+          await handle.writeFile(`${index ? ',' : ''}${JSON.stringify(id)}:${JSON.stringify(value)}`);
+        }
+        await handle.writeFile('}}\n');
+      } finally { await handle.close(); }
+    }
+    await writeFixture(baseline, earlier, 1);
+    await writeFixture(progress, reference, 2);
+    const baselineBytes = (await fs.stat(baseline)).size;
+    const progressBytes = (await fs.stat(progress)).size;
+    assert.ok(baselineBytes > bufferConstants.MAX_STRING_LENGTH && progressBytes > bufferConstants.MAX_STRING_LENGTH);
+    const started = Date.now();
+    const result = await reconcileDmiProgressFiles({ root,
+      files: [{ relativePath: FILES.dmiForecastStore, sourcePath: progress }], temporaryDirectory: root,
+      productionReferenceAt: reference, restoredAt: options.restoredAt });
+    assert.deepEqual(result.summary.forecast, { status: 'MERGED', recoveredComponents: 5,
+      rejectedRecords: 0, runtimeRecovered: true });
+    const merged = await inspectDmiForecastFile(result.files[0].sourcePath);
+    const expected = mergeVerifiedDmiForecastProgress(store(), store(reference, 2), options);
+    const actual = await readDmiForecastRecord(merged, merged.zones.get('ZONE'));
+    assert.equal(actual.padding, padding);
+    delete actual.padding;
+    assert.deepEqual(actual, expected.document.zones.ZONE);
+    assert.equal(merged.zones.size, ids.length);
+    assert.deepEqual(merged.metadata.runtime, expected.document.runtime);
+    assert.equal((await fs.stat(baseline)).size, baselineBytes);
+    t.diagnostic(JSON.stringify({ kind: 'DMI_FORECAST_LARGE_RECONCILIATION_SYNTHETIC_TEST',
+      ...result.summary.forecastCapacity, elapsedMs: Date.now() - started,
+      maxRssKiB: process.resourceUsage().maxRSS,
+      note: 'synthetic capacity/selection proof, not measured production size or coverage' }));
+  } finally {
+    assert.equal(path.dirname(root), path.resolve(os.tmpdir()));
+    assert.ok(path.basename(root).startsWith('rr-dmi-large-merge-'));
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 test('paired protected DMI source donor updates all five fields without restoring its scheduler cursor', () => {

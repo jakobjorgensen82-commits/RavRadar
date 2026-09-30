@@ -1,4 +1,46 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal 4.0.519
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.519-weather-continuity-capacity`, ikke det gamle `cb79`.
+`.cache/` er privat og må ikke stages. Ejeren har bestilt dyb analyse
+og sammenhængende fejlrettelse; brug den aftalte Astra/Ultra-indsats.
+Ekstern cron `8348098` er pauset. Ingen ny vejr-/cachebygning nu.
+
+Main er `b076968e`; exact-head source-CI for 4.0.518 var `36696989835`.
+Run `36698472505` er afsluttet med fejl ved havstrømsreplay efter de tre
+leverandører. DMI/DMI same-run-overlap med andet grid/collection/celle
+er afvist i isolation; første fulde replaypar er ikke udpeget. Desuden
+er 256-MiB-forecastlæserens afvisning bevist på både base og progress
+i tre runs, selv om transporten tillader 768 MiB. Nyeste krypterede
+fremskridt er `36698472505-1` (103.497.964 byte), ikke en slutpakke.
+
+DEC-0266 samler beskyttet komponentvalg, forecast-/historikdonorer,
+korrekt bølgeretningsbevis, postvis forecast-I/O og komponentgenbrugsgate.
+RavScore-bundle, native nærmeste/dybeste U/V-valg, interpolation,
+kildehierarki, 96 timer, admin-vandstand og scheduler ændres ikke.
+Måltests og syntetisk >V8-fil beviser kun den lokale kandidat. Kræv
+grøn exact-head CI og providerfri måling af autentificerede eksisterende
+input/størrelser/replay før ny dyr produktion. Intet blindt oneoff.
+
+Den ekstra helhedskontrol fandt desuden en reproduceret OM-bank/runtime-
+uenighed, som kunne blokere genhentning af ubrugelige afrundede tupler.
+Kandidaten frigiver kun originalt validerede, ubrugelige poster og bevarer
+gyldige søskendefelter. Den låste validator ændres ikke. Alternative
+restorestier og source-testernes faktiske reachability er kontrolleret;
+R2-oprydningsfejl eksponeres kun med faste tællere. Generel genoptagelse
+af færdige præ-CAS-pakker og tidligere efterladte R2-objekter er fortsat
+åbne, ikke løst af denne kandidat. Se auditens ekstra tværgående afsnit.
+
+Seneste offentlige pakke er 4.0.510, target 29/9 16 UTC, dataset
+`rr-20260929175636-210`: vind 73.566, bølger 79.414, havstrøm 77.133,
+vandstand 69.969, vandtemperatur 69.925, hver af 79.414 mulige par;
+samlet 370.007/397.070. De tre tidligere tomme zoner er nu delvist
+dækket, ikke fortsat helt tomme. Følg de åbne fund i nyeste issues og
+`docs/rdks/30_RESEARCH/WEATHER-CHAIN-AUDIT-2026-09-30.md`.
+UI 4.0.511 er merged, men stadig ikke offentligt deployet. Fuld
+artifactgate, CAS/R2/Pages og målt femfelts-no-loss mangler fortsat.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.518-current-conflict-proof`, ikke `cb79`.

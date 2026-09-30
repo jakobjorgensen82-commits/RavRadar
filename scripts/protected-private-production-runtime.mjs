@@ -2524,6 +2524,8 @@ async function main() {
     generationCount: result.generationCount,
     objectCount: result.objectCount,
     totalBytes: result.totalBytes,
+    retentionCleanupComplete: result.retentionCleanupComplete,
+    retentionCleanupFailureCount: result.retentionCleanupFailureCount,
     privatePayloadLogged: false,
   }));
 }

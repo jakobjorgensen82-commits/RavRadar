@@ -1,4 +1,19 @@
-# Aktuelt fokus – 2026-09-26, lokal 4.0.497
+# Aktuelt fokus – 2026-09-30, lokal 4.0.519
+
+Færdiggør DEC-0266's sammenhængende kontinuitets-/kapacitetsrettelse,
+grøn exact-head CI og providerfri audit af eksisterende krypterede
+input, størrelser og replay. Ingen blind ny vejrhentning. Bevis derefter
+fuld no-loss-levering fra seneste gyldige fremskridt, CAS/R2/Pages og
+offentlig prognose. Cron er pauset ved systemisk fejl.
+
+Følg separat local-part-vindhalen, CP-wave/temperaturens statiske fejl,
+Baltic-rester, Limfjordsvandstand og bølgehistorikkens sidste ukendte
+interval. MET Norway indgår som nødkandidat, ikke aktiveret reserve.
+Ingen risikabel cachehastighedsændring eller budgetflytning uden måling.
+Se WEATHER-CHAIN-AUDIT-2026-09-30 og aktuelle issues; ældre runplaner
+nedenfor er historiske, ikke aktuelle instruktioner.
+
+# Historisk fokus – 2026-09-26, lokal 4.0.497
 
 4.0.496 er merged. Code-only `36250874394` stoppede korrekt før
 eksterne ændringer på 11Z/15Z-cacheværnet; den tidligere plan

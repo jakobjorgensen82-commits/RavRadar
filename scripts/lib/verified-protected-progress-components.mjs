@@ -7,8 +7,9 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { unpackPrivateWeatherComponentPack } from './private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './private-weather-component-inventory.mjs';
-import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './open-meteo-part-bank.mjs';
+import { OPEN_METEO_NATIVE_NEAREST_POLICIES, OPEN_METEO_PART_COMPONENTS } from './open-meteo-part-bank.mjs';
 import { mergeVerifiedOpenMeteoGenerations } from './verified-open-meteo-generation-union.mjs';
+import { hasValue } from './weather-component-needs.mjs';
 import { reconcileDmiProgressFiles } from './verified-dmi-progress-inputs.mjs';
 import { RESEARCH_HISTORY_HOURS } from './weather-history-retention.mjs';
 import { OPEN_METEO_FUTURE_HOURS } from './open-meteo-forecast-window.mjs';
@@ -126,8 +127,15 @@ export async function mergeVerifiedProtectedProgressComponents({
         retentionEndAt: new Date(reference + (OPEN_METEO_FUTURE_HOURS - 1) * HOUR).toISOString(),
       });
     } catch { throw new Error('PROTECTED_PROGRESS_OPEN_METEO_MERGE_FAILED'); }
-    openMeteoAdded = merged.records.length - (latest?.records ?? []).filter(row =>
-      row.validTime >= merged.retention.startAt && row.validTime <= merged.retention.endAt).length;
+    // Both inputs have now passed original-byte admission. Count newly usable
+    // exact slots, not a net record delta: retiring an unusable tuple is not
+    // lost valid weather, and replacing an already usable slot is not a gain.
+    const slotKey = row => JSON.stringify([row.partId, row.validTime, row.component]);
+    const usable = row => OPEN_METEO_PART_COMPONENTS.includes(row.component)
+      && hasValue(row.values, row.component);
+    const previousUsable = new Set((latest?.records ?? []).filter(row => usable(row)
+      && row.validTime >= merged.retention.startAt && row.validTime <= merged.retention.endAt).map(slotKey));
+    openMeteoAdded = merged.records.filter(row => usable(row) && !previousUsable.has(slotKey(row))).length;
     const destination = path.join(temporaryDirectory, 'merged-open-meteo-bank.json');
     await fs.writeFile(destination, `${JSON.stringify(merged)}\n`, { flag: 'wx', mode: 0o600 });
     if (latestOm) files = files.map(file => file === latestOm ? { ...file, sourcePath: destination } : file);

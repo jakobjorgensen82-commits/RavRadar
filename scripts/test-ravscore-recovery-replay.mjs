@@ -419,6 +419,15 @@ assert.equal(initialState.waveMemoryReady, true);
 const record = rows => ({ point: [...part.waterPoint], hourly: rows });
 const publicRows = targetHour => [weather(targetHour), weather(targetHour + 1), weather(targetHour + 2)];
 
+// Synthetic counterpart of the authenticated baseline/history assembly. The
+// production caller must authenticate the previous record before opting in;
+// a matching source label or an equal clone is deliberately not sufficient.
+const authenticatedPrioritySources = options => buildNewestValidRavScoreRecoverySources({
+  part,
+  ...options,
+  protectedPreviousSource: options.fallbackSource,
+});
+
 function replayForAge(age, sources) {
   return buildRavScoreRecoveryReplay({
     part,
@@ -892,7 +901,7 @@ for (const [oldWave, progressiveWave] of [
   const progressive = withoutCurrent(progressiveWave);
   const unchangedInputs = JSON.stringify([deployed, progressive]);
   const retained = [];
-  const projected = buildNewestValidRavScoreRecoverySources({
+  const projected = authenticatedPrioritySources({
     fallbackSource: { source: 'deployed-private-runtime', record: record([deployed]) },
     preferredSource: { source: 'progressive-private-dmi', record: record([progressive]) },
     part,
@@ -916,9 +925,9 @@ const badNativeProof = withoutCurrent(interpolatedWaveAt2(1, 3, 1.3));
 badNativeProof.sources.wave.nativeValidTimes = [time(1), time(4)];
 const mismatchedGridWave = withoutCurrent(interpolatedWaveAt2(1, 3, 1.3));
 mismatchedGridWave.sources.wave.gridDefinitionSha256 = sha('other-wave-grid');
-for (const candidate of [badNativeProof, mismatchedGridWave]) {
+for (const candidate of [badNativeProof]) {
   const retained = [];
-  const projected = buildNewestValidRavScoreRecoverySources({
+  const projected = authenticatedPrioritySources({
     fallbackSource: { source: 'deployed-private-runtime', record: record([protectedWave]) },
     preferredSource: { source: 'progressive-private-dmi', record: record([candidate]) },
     part,
@@ -926,7 +935,7 @@ for (const candidate of [badNativeProof, mismatchedGridWave]) {
       retained.push(`${component}:${valueClass}`),
   });
   assert.notEqual(projected[1].record.hourly[0].waveHeightM, null,
-    'invalid native proof or a different grid must never be silently suppressed');
+    'invalid native proof must never be silently suppressed');
   assert.deepEqual(retained, []);
 }
 const officialWaveRevision = (row, updatedAt) => ({
@@ -941,7 +950,7 @@ const revisedProtectedWave = officialWaveRevision(protectedWave, time(-2));
 const revisedProgressiveWave = officialWaveRevision(
   withoutCurrent(withVerifiedWave(weather(2, { waveHeight: 1.3 }))), time(-1),
 );
-const revisedWaveSources = buildNewestValidRavScoreRecoverySources({
+const revisedWaveSources = authenticatedPrioritySources({
   fallbackSource: { source: 'deployed-private-runtime', record: record([revisedProtectedWave]) },
   preferredSource: { source: 'progressive-private-dmi', record: record([revisedProgressiveWave]) },
   part,
@@ -994,7 +1003,7 @@ const freshWaveOnly = {
 };
 const deployedFallbackSnapshot = JSON.stringify(deployedFallbackRows);
 const freshWaveSnapshot = JSON.stringify(freshWaveOnly);
-const freshFirstSources = buildNewestValidRavScoreRecoverySources({
+const freshFirstSources = authenticatedPrioritySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
     record: record(deployedFallbackRows),
@@ -1019,7 +1028,7 @@ const newerCurrentOnly = withoutWave(weather(2, {
   speed: 0.11,
   rawU: 0.11,
 }));
-const newestPerComponentSources = buildNewestValidRavScoreRecoverySources({
+const newestPerComponentSources = authenticatedPrioritySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
     record: record(deployedFallbackRows),
@@ -1036,7 +1045,7 @@ assert.equal(newestPerComponentHour.currentSpeedMps, 0.11,
   'the newest verified current must replace an older current independently');
 assert.equal(newestPerComponentHour.waveHeightM, 1.2,
   'an older valid wave must remain when the newer DMI run lacks waves');
-const olderProgressiveSources = buildNewestValidRavScoreRecoverySources({
+const olderProgressiveSources = authenticatedPrioritySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
     record: record([withVerifiedWave(
@@ -1055,7 +1064,7 @@ const olderProgressiveHour = olderProgressiveRecovery.hourly
   .find(row => row.time === time(2));
 assert.equal(olderProgressiveHour.waveHeightM, 1.4,
   'a cache position may not override a genuinely newer DMI model run');
-const equalRunProgressiveRevision = buildNewestValidRavScoreRecoverySources({
+const equalRunProgressiveRevision = authenticatedPrioritySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
     record: record([withCurrentRevision(
@@ -1078,7 +1087,7 @@ assert.equal(
   'the accepted progressive DMI revision may replace the deployed current at the same model run',
 );
 
-const dmiMustBeatControlledLiveReserve = buildNewestValidRavScoreRecoverySources({
+const dmiMustBeatControlledLiveReserve = authenticatedPrioritySources({
   fallbackSource: {
     source: 'deployed-private-runtime',
     record: record([controlledLiveWeather(2)]),
@@ -1189,10 +1198,12 @@ const agedDmiMustNotYieldWithoutProof = replayForAge(4, priorityWaveRows(
 ));
 assert.equal(agedDmiMustNotYieldWithoutProof.hourly.find(row => row.time === time(2)).waveHeightM, 1.3,
   'even aged DMI remains when the reserve model reference is not response-bound');
-const revisionRows = (oldRow, newRow, labels = ['deployed-private-runtime', 'progressive-private-dmi']) =>
-  buildNewestValidRavScoreRecoverySources({
+const revisionRows = (oldRow, newRow, labels = ['deployed-private-runtime', 'progressive-private-dmi'],
+  authenticated = true) =>
+  (authenticated ? authenticatedPrioritySources : buildNewestValidRavScoreRecoverySources)({
     fallbackSource: { source: labels[0], record: record([oldRow]) },
     preferredSource: { source: labels[1], record: record([newRow]) },
+    part,
   });
 const oldRevision = withCurrentRevision(weather(2, { modelRun: time(-48) }), time(-2));
 const newRevision = withCurrentRevision(
@@ -1202,7 +1213,7 @@ const reversedRevision = replayForAge(4, revisionRows(newRevision, oldRevision))
 assert.equal(reversedRevision.hourly.find(row => row.time === time(2)).currentSpeedMps, 0.11,
   'a newer deployed revision must survive an older progressive cache');
 const retainedCurrent = [];
-const unprovedSameRunCurrent = buildNewestValidRavScoreRecoverySources({
+const unprovedSameRunCurrent = authenticatedPrioritySources({
   fallbackSource: { source: 'deployed-private-runtime', record: record([weather(2)]) },
   preferredSource: { source: 'progressive-private-dmi',
     record: record([weather(2, { speed: 0.11, rawU: 0.11 })]) },
@@ -1214,6 +1225,268 @@ assert.equal(replayForAge(4, unprovedSameRunCurrent).hourly
   .find(row => row.time === time(2)).currentSpeedMps, 0.09,
 'the protected verified current survives an unproved same-run DMI refresh');
 assert.deepEqual(retainedCurrent, ['current:DIFFERENT_VALUES']);
+
+// A new native selection can change its collection, cell or deepest valid
+// layer inside the same model run. Recovery must not invent a cross-grid
+// interpolation or treat that selection as proof of an official revision.
+const alternateCurrentIdentity = row => ({
+  ...row,
+  currentProvenance: {
+    ...row.currentProvenance,
+    collection: 'dkss_nsbs',
+    gridPoint: [8.001, 55],
+    gridDefinitionSha256: sha('second-current-grid'),
+    distanceKm: 0.064,
+    verticalLayer: 'depth:2',
+    verticalLayerRankM: 2,
+  },
+});
+const alternateWaveIdentity = row => ({
+  ...row,
+  sources: { ...row.sources, wave: {
+    ...row.sources.wave,
+    collection: 'wam_nsb',
+    gridPoint: [8.001, 55],
+    gridDefinitionSha256: sha('second-wave-grid'),
+    distanceKm: 0.064,
+  } },
+});
+const alternateCurrent = alternateCurrentIdentity(withoutWave(
+  weather(2, { speed: 0.11, rawU: 0.11 }),
+));
+const oldCurrent = withoutWave(weather(2));
+const alternateWave = alternateWaveIdentity(withoutCurrent(
+  withVerifiedWave(weather(2, { waveHeight: 1.3 })),
+));
+const interpolatedCurrent = {
+  ...alternateCurrent,
+  currentProvenance: {
+    ...alternateCurrent.currentProvenance,
+    ...dmiForecastSource('current', time(1), time(-54)).nativeSteps[0],
+    leadTimeHours: 56,
+    temporalResolution: 'interpolated',
+    nativeValidTimes: [time(1), time(3)],
+    nativeSteps: [1, 3].map(hour => dmiForecastSource('current', time(hour), time(-54)).nativeSteps[0]),
+  },
+};
+const currentIdentityVariants = [
+  { gridDefinitionSha256: sha('another-grid-definition') },
+  { gridPoint: [8.001, 55], distanceKm: 0.064 },
+  { collection: 'dkss_nsbs' },
+  { verticalLayer: 'depth:2', verticalLayerRankM: 2 },
+].map(proof => ({
+  ...oldCurrent, currentUMps: 0.11, currentSpeedMps: 0.11,
+  currentProvenance: { ...oldCurrent.currentProvenance, ...proof },
+}));
+for (const [previous, candidate, component, physicalKey] of [
+  [oldCurrent, alternateCurrent, 'current', 'currentUMps'],
+  ...currentIdentityVariants.map(row => [oldCurrent, row, 'current', 'currentUMps']),
+  [oldCurrent, interpolatedCurrent, 'current', 'currentUMps'],
+  [interpolatedCurrent, oldCurrent, 'current', 'currentUMps'],
+  [protectedWave, alternateWave, 'wave', 'waveHeightM'],
+  [protectedWave, mismatchedGridWave, 'wave', 'waveHeightM'],
+]) {
+  const inputs = JSON.stringify([previous, candidate]);
+  // Prove validity independently with the unchanged validator; a green
+  // priority result alone would not distinguish valid retention from hiding.
+  for (const row of [previous, candidate]) replayForAge(4, [{ record: record([row]) }]);
+  assert.throws(() => replayForAge(4, [{ record: record([previous, candidate]) }]),
+    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+  const fallbackSource = { source: 'deployed-private-runtime', record: record([previous]) };
+  const preferredSource = { source: 'progressive-private-dmi', record: record([candidate]) };
+  const selected = authenticatedPrioritySources({ fallbackSource, preferredSource });
+  replayForAge(4, selected);
+  assert.equal(selected[0].record.hourly[0][physicalKey], previous[physicalKey]);
+  assert.equal(selected[1].record.hourly[0][physicalKey], null,
+    `${component}: an authenticated previous tuple survives an incomparable same-run refresh`);
+  assert.equal(JSON.stringify([previous, candidate]), inputs);
+  for (const protectedPreviousSource of [null, structuredClone(fallbackSource), preferredSource]) {
+    const unauthorized = buildNewestValidRavScoreRecoverySources({
+      fallbackSource, preferredSource, protectedPreviousSource, part,
+    });
+    assert.throws(() => replayForAge(4, unauthorized),
+      error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+      'labels, equal objects and reversed ownership are not authenticated prior ownership');
+  }
+}
+
+// A genuine newer model run can change the grid, but an updatedAt on a
+// different same-run grid does not prove a revision of the protected cell.
+const newerGridCurrent = alternateCurrentIdentity(withoutWave(
+  weather(2, { modelRun: time(-48), speed: 0.12, rawU: 0.12 }),
+));
+assert.equal(replayForAge(4, revisionRows(oldCurrent, newerGridCurrent)).hourly[0].currentSpeedMps,
+  0.12, 'a newer independently validated model run may replace the previous grid');
+assert.equal(replayForAge(4, revisionRows(newerGridCurrent, oldCurrent)).hourly[0].currentSpeedMps,
+  0.12, 'an older grid must not displace a newer protected model run');
+const newerGridWave = alternateWaveIdentity(withoutCurrent(withVerifiedWave(
+  weather(2, { modelRun: time(-48), waveHeight: 1.4 }),
+)));
+assert.equal(replayForAge(4, revisionRows(protectedWave, newerGridWave)).hourly[0].waveHeightM,
+  1.4, 'the same newer-run rule applies to the complete wave tuple');
+assert.equal(replayForAge(4, revisionRows(
+  withCurrentRevision(oldCurrent, time(-2)), withCurrentRevision(alternateCurrent, time(-1)),
+)).hourly[0].currentSpeedMps, 0.09,
+'a newer timestamp attached to a different current cell is not a comparable official revision');
+assert.equal(replayForAge(4, revisionRows(
+  officialWaveRevision(protectedWave, time(-2)), officialWaveRevision(alternateWave, time(-1)),
+)).hourly[0].waveHeightM, 1.2,
+'a newer timestamp attached to another wave grid is not a comparable official revision');
+const independentlyUpdated = {
+  ...alternateCurrent, waveHeightM: newerGridWave.waveHeightM,
+  wavePeriodS: newerGridWave.wavePeriodS, waveDirectionDeg: newerGridWave.waveDirectionDeg,
+  waveProvenance: { status: 'verified' }, sources: { wave: newerGridWave.sources.wave },
+};
+const mixedTuples = revisionRows(withVerifiedWave(weather(2)), independentlyUpdated);
+assert.equal(mixedTuples[0].record.hourly[0].currentUMps, 0.09);
+assert.equal(mixedTuples[0].record.hourly[0].currentVMps, 0);
+assert.equal(mixedTuples[0].record.hourly[0].waveHeightM, null);
+assert.equal(mixedTuples[0].record.hourly[0].wavePeriodS, null);
+assert.equal(mixedTuples[0].record.hourly[0].waveDirectionDeg, null);
+assert.equal(mixedTuples[0].record.hourly[0].sources.wave, undefined);
+assert.equal(mixedTuples[1].record.hourly[0].currentUMps, null);
+assert.equal(mixedTuples[1].record.hourly[0].waveHeightM, 1.4);
+assert.equal(replayForAge(4, mixedTuples).hourly[0].currentSpeedMps, 0.09,
+  'retaining same-run current does not block a newer independently valid wave tuple');
+assert.equal(replayForAge(4, mixedTuples).hourly[0].waveHeightM, 1.4);
+
+assert.throws(() => replayForAge(4, revisionRows(
+  withoutWave(regionalWeather(2)), withoutWave(regionalWeather(2, { rawU: 0.11 })),
+)), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+'the separate owner-approved regional proxy is not silently redefined by direct DMI retention');
+
+// Invalid data must remain visible in either direction, including when it
+// claims a newer run: never suppress the invalid loser or valid old winner.
+const changeCurrentProof = change => {
+  const row = structuredClone(alternateCurrent);
+  change(row, row.currentProvenance);
+  return row;
+};
+const badCurrentRows = [
+  changeCurrentProof(row => { row.currentSpeedMps = 0.8; }),
+  changeCurrentProof(row => { row.currentDirectionDeg = 180; }),
+  changeCurrentProof(row => { row.currentVMps = null; }),
+  changeCurrentProof((row, proof) => { proof.distanceKm = 6; }),
+  changeCurrentProof((row, proof) => { proof.gridPoint = [9, 55]; }),
+  changeCurrentProof((row, proof) => { proof.vectorSemanticsVersion = 2; }),
+  changeCurrentProof((row, proof) => { proof.vectorSelection = 'deepest-anywhere'; }),
+  changeCurrentProof((row, proof) => { proof.entityId = 'PART::OTHER'; }),
+  changeCurrentProof((row, proof) => { proof.parentZoneId = 'OTHER'; }),
+  changeCurrentProof((row, proof) => { proof.samplingPoint = [8.1, 55]; }),
+  changeCurrentProof((row, proof) => { proof.nativeValidTimes = [time(3)]; }),
+  changeCurrentProof((row, proof) => { proof.nativeSteps[0].leadTimeHours += 1; }),
+  changeCurrentProof((row, proof) => { proof.modelRun = time(-48); }),
+];
+const changeWaveProof = change => {
+  const row = structuredClone(alternateWave);
+  change(row, row.sources.wave);
+  return row;
+};
+const badWaveRows = [
+  badNativeProof,
+  changeWaveProof(row => { row.waveHeightM = -1; }),
+  changeWaveProof(row => { row.wavePeriodS = null; }),
+  changeWaveProof(row => { row.waveDirectionDeg = null; }),
+  changeWaveProof((row, proof) => { proof.optionalFieldSet = []; }),
+  changeWaveProof((row, proof) => { proof.entityId = 'PART::OTHER'; }),
+  changeWaveProof((row, proof) => { proof.parentZoneId = 'OTHER'; }),
+  changeWaveProof((row, proof) => { proof.samplingPoint = [8.1, 55]; }),
+  changeWaveProof((row, proof) => { proof.modelRun = time(-48); }),
+];
+for (const [validRow, badRows, key, expectedCode] of [
+  [oldCurrent, badCurrentRows, 'currentUMps', 'RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED'],
+  [protectedWave, badWaveRows, 'waveHeightM', 'RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED'],
+]) {
+  for (const invalid of badRows) {
+    for (const rows of [[validRow, invalid], [invalid, validRow]]) {
+      const sources = revisionRows(...rows);
+      assert.equal(sources[0].record.hourly[0][key], rows[0][key]);
+      assert.equal(sources[1].record.hourly[0][key], rows[1][key]);
+      assert.throws(() => replayForAge(4, sources), error => error?.code === expectedCode,
+        'priority must leave malformed evidence to the unchanged replay rejection');
+    }
+  }
+}
+
+const wrongPointSource = { source: 'deployed-private-runtime',
+  record: { ...record([oldCurrent]), point: [8.1, 55] } };
+assert.throws(() => replayForAge(4, authenticatedPrioritySources({
+  fallbackSource: wrongPointSource,
+  preferredSource: { source: 'progressive-private-dmi', record: record([alternateCurrent]) },
+})), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_SAMPLING_MISMATCH');
+const duplicateProtectedSource = { source: 'deployed-private-runtime',
+  record: record([oldCurrent, alternateCurrent]) };
+assert.throws(() => replayForAge(4, authenticatedPrioritySources({
+  fallbackSource: duplicateProtectedSource,
+  preferredSource: { source: 'progressive-private-dmi', record: record([alternateCurrent]) },
+})), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+'ambiguous within-record duplicates must not be masked by a cross-record decision');
+const noBorrowedHour = revisionRows(oldCurrent, { ...alternateCurrent, time: time(3) });
+assert.equal(noBorrowedHour[0].record.hourly[0].currentUMps, oldCurrent.currentUMps,
+  'an exact-hour retention rule never borrows another hour');
+assert.equal(noBorrowedHour[1].record.hourly[0].currentUMps, alternateCurrent.currentUMps);
+
+// Cache admission only inside one call. A later mutation must be revalidated.
+const mutableCandidate = structuredClone(alternateCurrent);
+revisionRows(oldCurrent, mutableCandidate);
+mutableCandidate.currentSpeedMps = 0.8;
+assert.throws(() => replayForAge(4, revisionRows(oldCurrent, mutableCandidate)),
+  error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED');
+
+// Protection is about the exact still-valid component, not how many runs
+// ago it was selected. Keep each tuple atomic and retain independent waves.
+let cumulative = withVerifiedWave(weather(2));
+const originalCumulative = structuredClone(cumulative);
+for (let generation = 0; generation < 10; generation += 1) {
+  const candidate = { ...alternateCurrent, waterTemperatureC: 16,
+    waveHeightM: null, wavePeriodS: null, waveDirectionDeg: null };
+  const projected = revisionRows(cumulative, candidate);
+  cumulative = projected[0].record.hourly[0];
+  assert.deepEqual(cumulative, originalCumulative);
+  assert.equal(projected[1].record.hourly[0].currentUMps, null);
+  assert.equal(projected[1].record.hourly[0].currentVMps, null);
+  assert.equal(projected[1].record.hourly[0].currentSpeedMps, null);
+  assert.equal(projected[1].record.hourly[0].currentDirectionDeg, null);
+  assert.equal(projected[1].record.hourly[0].waterTemperatureC, 16,
+    'current retention must not alter any scalar component');
+  assert.equal(replayForAge(4, projected).replayedHourCount, 1);
+}
+
+// Opt-in synthetic capacity measurement, deliberately separate from normal
+// correctness testing. It exercises all 673 parts x 118 hours x 2 complete
+// competing tuples, without providers, files, cache writes or score builds.
+if (process.env.RAVRADAR_RECOVERY_PRIORITY_BENCHMARK === '1') {
+  const previousRows = Array.from({ length: 118 }, (_, hour) => withVerifiedWave(weather(hour)));
+  const nextRows = previousRows.map(row => alternateCurrentIdentity(alternateWaveIdentity({
+    ...structuredClone(row), currentUMps: 0.11, currentSpeedMps: 0.11, waveHeightM: 1.3,
+  })));
+  const startedAt = performance.now();
+  let retainedComponents = 0;
+  for (let index = 0; index < 673; index += 1) {
+    const benchmarkPart = { ...part, partId: `SYNTHETIC-BENCHMARK-${index}` };
+    for (const row of [...previousRows, ...nextRows]) {
+      row.currentProvenance.entityId = `PART::${benchmarkPart.partId}`;
+      row.sources.wave.entityId = `PART::${benchmarkPart.partId}`;
+    }
+    const fallbackSource = { source: 'deployed-private-runtime', record: record(previousRows) };
+    const projected = buildNewestValidRavScoreRecoverySources({
+      fallbackSource,
+      protectedPreviousSource: fallbackSource,
+      preferredSource: { source: 'progressive-private-dmi', record: record(nextRows) },
+      part: benchmarkPart,
+      onProtectedSameRunDmiRetention: () => { retainedComponents += 1; },
+    });
+    assert.equal(projected[1].record.hourly.filter(row =>
+      row.currentUMps === null && row.waveHeightM === null).length, 118);
+  }
+  assert.equal(retainedComponents, 673 * 118 * 2);
+  console.log(JSON.stringify({
+    test: 'SYNTHETIC_RECOVERY_PRIORITY_CAPACITY', parts: 673, hours: 118,
+    competingComponents: retainedComponents,
+    elapsedMs: Math.round(performance.now() - startedAt),
+  }));
+}
+
 for (const labels of [['deployed', 'progressive'], ['progressive-private-dmi', 'deployed-private-runtime']]) {
   assert.throws(() => replayForAge(4, revisionRows(oldRevision, newRevision, labels)),
     error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
@@ -1244,6 +1517,7 @@ for (const invalidRevision of [
 }
 assert.throws(() => replayForAge(4, revisionRows(
   weather(2), weather(2, { speed: 0.11, rawU: 0.11 }),
+  ['deployed-private-runtime', 'progressive-private-dmi'], false,
 )), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
 'source labels alone never prove a same-run revision');
 assert.throws(() => replayForAge(4, [

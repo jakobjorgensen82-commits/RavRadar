@@ -1,4 +1,38 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal 4.0.519, cron pauset
+
+4.0.518 er merged som `b076968e` efter grøn source-CI `36696989835`.
+Seneste normalrun `36698472505` fejlede ved havstrømsreplay efter
+leverandørerne. Ét same-run-DMI-kandidatpar med andet grid/collection/
+celle blev faktisk afvist i isolation. Det beviser ikke forkert DMI-
+rådata eller fuld replays første konflikt. Krypteret `36698472505-1`
+er gemt; ingen ny produktionspakke, artifactgate, CAS, R2 eller Pages.
+
+Tre logs beviser også forkert intern filgrænse ved DMI-forecastrestore:
+256 MiB i læseren mod tilladte 768 MiB i transporten. Begge donorsider
+har fejlet. Lokal DEC-0266/4.0.519 samler postvis I/O, eksplicit
+komponentrestoregate, beskyttet same-run-valg og samme relevante
+forecast-/historikdonorer. En reproduceret bølgetabsvej får streng
+retning/kildebevis-kontrol før erstatning. Ingen scorebundleændring.
+Tests med rigtige validators og syntetiske store filer er ikke
+produktionsbevis. Eksakte eksisterende private størrelser/replay og
+samlede transport-/RAM-margener er næste nødvendige kontrol.
+
+Offentlig 4.0.510 har fortsat 370.007/397.070 femfeltspar ved target
+29/9 16 UTC. B05-21/23/24 har henholdsvis 96/96/116 scoretimer;
+de er ikke længere helt tomme. Lokal vindhale, delvis havstrøm,
+Limfjordsvandstand, Copernicus wave/temperatur, historisk bølgeusikkerhed
+og Free-kvoter er åbne. Se forskningsnotatet WEATHER-CHAIN-AUDIT-2026-09-30.
+Cron `8348098` forbliver pauset; ingen ny blind vejrhentning.
+
+Ekstra helhedskontrol omfatter den faktiske offentlige PART-sti, alternative
+restoreveje og kildegatens test-reachability. En syntetisk OM-bølgepost
+kunne være originalt valideret, men efter afrunding ubrugelig og alligevel
+blokere retry; operationel inputforberedelse retter dette uden ændret låst
+model. R2-cleanupfejl får sikre outputtællere. Færdigpakker har fortsat kun
+ét døgns Actions-livstid og ingen generisk præ-CAS-genoptagelsesvej; de
+åbne driftsrisici er ikke produktionstestet væk. Se den samlede audit.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
 
 PR #485/4.0.517 bestod exact-head source-CI `36676610928`
 og blev merged som main `31d7ce8b`. Kort normalrun

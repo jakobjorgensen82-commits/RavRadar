@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import {
@@ -1538,7 +1539,39 @@ try {
   });
 
   const third = await createGeneration(2);
-  await publishProtectedPrivateProductionRuntime({
+  const cleanupFailureDocuments = fakeDocuments();
+  cleanupFailureDocuments.setRow(documents.row());
+  const cleanupFailureStorage = fakeStorage();
+  for (const [objectPath, bytes] of storage.objects) {
+    cleanupFailureStorage.objects.set(objectPath, Buffer.from(bytes));
+  }
+  const cleanupAttempts = [];
+  const cleanupFailurePublication = await publishProtectedPrivateProductionRuntime({
+    privateRoot,
+    bundlePath: third.bundlePath,
+    repositoryRoot: repository,
+    expected: third.expected,
+    now: '2026-08-29T13:05:00.000Z',
+    sourceHead: SOURCE_HEADS[2],
+    request: cleanupFailureDocuments.request,
+    storage: {
+      ...cleanupFailureStorage.client,
+      removeExact: async objectPath => {
+        cleanupAttempts.push(objectPath);
+        throw new Error('SYNTHETIC_PRIVATE_CLEANUP_ERROR');
+      },
+    },
+  });
+  assert.equal(cleanupFailurePublication.published, true,
+    'best-effort retention failure must not misreport the verified publication as failed');
+  assert.equal(cleanupFailurePublication.retentionCleanupComplete, false);
+  assert.equal(cleanupFailurePublication.retentionCleanupFailureCount, 1);
+  assert.equal(cleanupFailureDocuments.row().version, 4);
+  assert.equal(cleanupFailureStorage.objects.size, 3,
+    'failed cleanup preserves the retired object rather than silently removing it');
+  assert.deepEqual(cleanupAttempts, [archiveOne.descriptor.objects[0].objectPath],
+    'cleanup still targets only the retired generation, never current or rollback');
+  const cleanedPublication = await publishProtectedPrivateProductionRuntime({
     privateRoot,
     bundlePath: third.bundlePath,
     repositoryRoot: repository,
@@ -1549,6 +1582,8 @@ try {
     storage: storage.client,
   });
   assert.equal(documents.row().version, 4);
+  assert.equal(cleanedPublication.retentionCleanupComplete, true);
+  assert.equal(cleanedPublication.retentionCleanupFailureCount, 0);
   assert.equal(storage.objects.size, 2, 'only current and rollback objects remain');
   assert.deepEqual(storage.removed, [archiveOne.descriptor.objects[0].objectPath]);
 
@@ -1748,10 +1783,41 @@ try {
   assert.equal(referencedBeforeCasLoss.has(cleanStorage.removed[0]), false,
     'orphan cleanup must never delete current or previous');
 
-  const implementation = await fs.readFile(
+  const implementation = (await fs.readFile(
     'scripts/protected-private-production-runtime.mjs',
     'utf8',
-  );
+  )).replace(/\r\n/g, '\n');
+  // Execute the actual CLI projection without invoking providers or storage.
+  // The output must expose the existing fixed counters, not the failed path,
+  // raw exception or private descriptor from the publication result.
+  const projectionStart = implementation.indexOf('  console.log(JSON.stringify({\n    status: options.mode');
+  const projectionEnd = implementation.indexOf('\n  }));', projectionStart);
+  assert.ok(projectionStart >= 0 && projectionEnd > projectionStart,
+    'the protected runtime CLI must keep an explicit bounded result projection');
+  const projectCli = result => {
+    const lines = [];
+    runInNewContext(implementation.slice(projectionStart, projectionEnd + '\n  }));'.length), {
+      options: { mode: 'publish' },
+      result: { ...result, privateDiagnostic: 'SYNTHETIC_PRIVATE_CLEANUP_ERROR',
+        objectPath: 'private/synthetic-do-not-log', rawPayload: { secret: 'DO_NOT_LOG' } },
+      console: { log: line => lines.push(line) },
+    });
+    assert.equal(lines.length, 1);
+    assert.doesNotMatch(lines[0], /SYNTHETIC_PRIVATE_CLEANUP_ERROR|synthetic-do-not-log|DO_NOT_LOG|privateDiagnostic|objectPath|rawPayload/);
+    return JSON.parse(lines[0]);
+  };
+  const failedCleanupLog = projectCli(cleanupFailurePublication);
+  assert.equal(failedCleanupLog.published, true);
+  assert.equal(failedCleanupLog.retentionCleanupComplete, false);
+  assert.equal(failedCleanupLog.retentionCleanupFailureCount, 1);
+  assert.equal(failedCleanupLog.privatePayloadLogged, false);
+  const successfulCleanupLog = projectCli(cleanedPublication);
+  assert.equal(successfulCleanupLog.retentionCleanupComplete, true);
+  assert.equal(successfulCleanupLog.retentionCleanupFailureCount, 0);
+  const noCleanupLog = projectCli({ reason: 'protected-private-runtime-already-current' });
+  assert.equal(Object.hasOwn(noCleanupLog, 'retentionCleanupComplete'), false);
+  assert.equal(Object.hasOwn(noCleanupLog, 'retentionCleanupFailureCount'), false,
+    'absence of a cleanup attempt must not be reported as a measured zero');
   assert.equal(implementation.includes('admin_document_versions'), false,
     'private runtime publication must preserve all existing admin-document history');
   assert.equal(implementation.includes('version cleanup'), false,
