@@ -1,4 +1,24 @@
-# 2026-09-30 – 4.0.517 stoppede i havstrøm; 4.0.518 måler uden private værdier
+# 2026-09-30 – 4.0.520 adskiller læsebevis fra funktionel vejrrettelse
+
+Ejeren krævede en ekstra omfattende helhedsgennemgang, også af endnu
+uovervejede ruter. Main 4.0.518/run `36698472505` stoppede efter
+leverandørerne; fremdrift er gemt, offentlig 4.0.510 er uændret.
+Den funktionelle PR #487/4.0.519 holdes tilbage trods første grønne
+source-head, fordi nyere lokale ændringer og originalbevisernes
+persistens kræver konkret måling. Ingen ny vejrhentning eller
+cachebygning startes for at skaffe dette bevis.
+
+DEC-0267/4.0.520 er en særskilt læselevering fra uændret main-runtime.
+Den bevarer gammel save/restore byte-for-byte og tilføjer en additiv
+autentificeret læseeksport samt et strengt manuelt analyseworkflow.
+Eksakte gemte generationer læses med original producentkontrakt;
+kun faste sikre størrelses-/bevistællere må forlade analysen.
+Ingen providers, semantisk fusion, CAS, R2-publicering eller Pages.
+Kildekontrol og den faktiske produktionsmåling afventer. Samlet
+funktionel rettelse og alle fem familiers dækning er fortsat åbne.
+Se forskningsnotatet SAVED-WEATHER-AUDIT-2026-09-30. Cron er pauset.
+
+# Historisk log – 2026-09-30 – 4.0.517 stoppede i havstrøm; 4.0.518 måler uden private værdier
 
 PR #485/4.0.517 bestod exact-head CI `36676610928`
 og blev merged som main `31d7ce8b`. Normalrun

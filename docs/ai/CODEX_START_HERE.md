@@ -1,4 +1,24 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
+
+Analyse: `ravradar-readonly-evidence`, branch
+`codex/4.0.520-saved-weather-readonly-audit`, fra main `b076968e`.
+Funktionel PR #487 i `feggesund-preflight-recovery` holdes tilbage og
+må ikke blandes ind i denne gren. Cron `8348098` er pauset.
+Run `36698472505` fejlede efter leverandørerne; krypteret
+`36698472505-1` er gemt, men ingen slutpakke/CAS/Pages.
+Offentlig 4.0.510/370.007 af 397.070 femfeltspar er sidste bevis.
+
+DEC-0267's manuelle læseaudit skal måle eksisterende pakker med original
+producentbinding og streng GET/HEAD-klient. Ingen vejrhentning,
+cachebygning, semantisk installation eller deploy. Original kontekst
+og native kildebeviser måles særskilt; dette beviser ikke fuld historik
+eller fremtidig persistens. PR #487's første grønne head `765089b5`
+/CI `36732477177` dækker ikke dens nyere lokale ændringer.
+Se `docs/rdks/30_RESEARCH/SAVED-WEATHER-AUDIT-2026-09-30.md`.
+Indsats: Ultra til den ejerbestilte tværgående analyse. `.cache/`
+er privat og må aldrig stages; ingen secrets/private payloads.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.518-current-conflict-proof`, ikke `cb79`.

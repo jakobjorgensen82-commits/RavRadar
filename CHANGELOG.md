@@ -1,3 +1,14 @@
+## 4.0.520 – isoleret læseaudit af allerede gemt vejr (lokal kandidat)
+
+- Manuelt exact-main/source-CI-bundet læseværktøj til beskyttet R2-pakke
+  og præcis krypteret fremdrift. Ingen providerkald, cachebygning,
+  progress-save, CAS eller deploy. Kun faste sikre aggregater udgives.
+- Måler fil-/arkivstørrelser og skelner mellem DMI-kontekst og komplette
+  originale kildebeviser. Eksisterende normal save/restore bevares.
+- Funktionel 4.0.519-kandidat i PR #487 holdes tilbage; denne analyse
+  aktiverer ingen af dens rettelser. Se DEC-0267. Syntetiske tests er
+  ikke produktionsbevis; exact-head CI og faktisk måling afventer.
+
 ## 4.0.518 – indholdsfrit bevis for havstrømskonflikt (lokal kandidat)
 
 - PR #485/4.0.517 blev merged efter grøn exact-head source-CI.

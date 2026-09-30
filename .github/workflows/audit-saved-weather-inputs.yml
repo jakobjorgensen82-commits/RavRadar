@@ -1,0 +1,184 @@
+name: Audit authenticated saved weather inputs without production work
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Skriv AUDIT-SAVED-WEATHER-INPUTS"
+        required: true
+        type: string
+      expected_main_head:
+        description: "Eksakt main-commit med grøn kildekontrol"
+        required: true
+        type: string
+      progress_source_run_id:
+        description: "Eksakt afsluttet normalrun med krypteret fremdrift"
+        required: true
+        type: string
+      progress_source_attempt:
+        description: "Eksakt run-attempt; ingen prefix-fallback"
+        required: true
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# Take a consistent read snapshot without racing an ordinary production writer.
+# This workflow never invokes operational reentry, acquisition, scoring or deploy.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Authenticate existing packages and report only bounded aggregates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Require approved exact main and completed normal source attempt
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
+          SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$CONFIRMATION" = AUDIT-SAVED-WEATHER-INPUTS
+          [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT" \
+            > "$RUNNER_TEMP/saved-input-source-run.json"
+          jq -e --arg repo "$GITHUB_REPOSITORY" --arg run "$SOURCE_RUN_ID" \
+            --arg attempt "$SOURCE_RUN_ATTEMPT" '
+            (.id | tostring) == $run and (.run_attempt | tostring) == $attempt
+            and .repository.full_name == $repo and .head_repository.full_name == $repo
+            and .head_branch == "main" and .event == "workflow_dispatch"
+            and .path == ".github/workflows/run-current-weather-once.yml"
+            and .status == "completed" and (.head_sha | test("^[a-f0-9]{40}$"))
+          ' "$RUNNER_TEMP/saved-input-source-run.json" >/dev/null
+          source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/saved-input-source-run.json")"
+          git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
+          echo "cache_key=weather-private-progress-encrypted-v2-Linux-main-$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify live exact-content source validation
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Stop unless current source already has live green proof
+        shell: bash
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REQUIRED" = false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install only existing offline reader dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
+
+      - name: Restore only the requested encrypted acquisition snapshot
+        id: progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-private-progress.encrypted
+          key: ${{ steps.authority.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Require exact cache hit before reading any protected data
+        shell: bash
+        env:
+          EXACT_KEY: ${{ steps.authority.outputs.cache_key }}
+          MATCHED_KEY: ${{ steps.progress.outputs.cache-matched-key }}
+          CACHE_HIT: ${{ steps.progress.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          test "$CACHE_HIT" = true
+          test "$MATCHED_KEY" = "$EXACT_KEY"
+          test -s .cache/weather-private-progress.encrypted
+          test ! -L .cache/weather-private-progress.encrypted
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
+          install -m 0600 .cache/weather-private-progress.encrypted \
+            "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
+
+      - name: Read the current protected source identity without storage writes
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs describe
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/describe-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Materialize exact original producer code without running it
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          producer_head="$(jq -er '.sourceHead' "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json")"
+          [[ "$producer_head" =~ ^[a-f0-9]{40}$ ]]
+          git merge-base --is-ancestor "$producer_head" "$GITHUB_SHA"
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          git archive "$producer_head" | tar -x -C "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+
+      - name: Authenticate and measure saved inputs without merge or rebuild
+        id: input-audit
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs audit
+          --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
+          --descriptor "$RUNNER_TEMP/ravradar-saved-input-audit/current-source.json"
+          --predecessor-root "$RUNNER_TEMP/ravradar-saved-input-predecessor"
+          --progress-file "$RUNNER_TEMP/ravradar-saved-input-audit/progress.encrypted"
+          --progress-source "$PROGRESS_SOURCE"
+          --progress-cache-key "$PROGRESS_CACHE_KEY"
+          --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          WEATHER_PROGRESS_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PROGRESS_SOURCE: ${{ inputs.progress_source_run_id }}-${{ inputs.progress_source_attempt }}
+          PROGRESS_CACHE_KEY: ${{ steps.authority.outputs.cache_key }}
+
+      - name: Upload only the fixed-schema payload-free aggregate report
+        if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: saved-weather-input-audit-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-saved-input-audit/summary-safe.json
+          if-no-files-found: error
+          retention-days: 14
