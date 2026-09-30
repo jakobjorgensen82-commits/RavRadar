@@ -1,4 +1,22 @@
-# 2026-09-30 – 4.0.512 replay-stop og afgrænset 4.0.513-diagnose
+# 2026-09-30 – kort DMI-bekræftelse og 4.0.514-kandidat
+
+Docs-PR #481 blev merged som `6d24ad1c` efter exact-head
+CI `36645545073`. Kort normalt run `36645991041` gendannede
+den præcise beskyttede baseline og krypteret fremdrift
+`36625547109-1`, men DMI fik nul producenttid: 360 sekunders
+totalbudget var mindre end supervisorens 420 sekunders
+afslutningsreserve. Uden nyt target-bundet operationelt ledger
+afviste Copernicus-forhåndskontrollen korrekt start-mismatch.
+Ny krypteret fremdrift `36645991041-1` blev gemt, men intet
+slutartifact/CAS/R2/Pages. Bølgereplay blev ikke nået.
+4.0.514-kandidaten giver quick DMI 900 sekunders samlet tid,
+heraf 420 sekunders afslutningsreserve og højst 480 sekunders
+producenttid, med 24 minutters ydre timeout,
+og supervisoren afviser fremtidige budgetkonflikter før arbejde.
+Normal vejrtid, data, kildeprioritet, RavScore og cron er uændrede;
+source-CI og produktionsbevis afventer. Offentlig 4.0.510 består.
+
+# Historisk – 2026-09-30 – 4.0.512 replay-stop og 4.0.513-diagnose
 
 Main `03c9fe22`/4.0.512 blev brugt i normalrun `36625547109`.
 Tre leverandører blev kørt, og en ny krypteret progresskopi blev

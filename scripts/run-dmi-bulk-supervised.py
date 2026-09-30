@@ -24,6 +24,7 @@ LEGACY_ASSET_END = re.compile(
 )
 WATCHDOG_FAILURE_CODE = "HARMONIE_ASSET_WATCHDOG_TIMEOUT"
 WATCHDOG_LIMIT_CODE = "ASSET_PROCESSING_WATCHDOG_LIMIT"
+BUDGET_CONFLICT_CODE = "DMI_SUPERVISOR_BUDGET_CONFLICT"
 ONEOFF_CONTINUATION_PROTOCOL_ENV = "DMI_BULK_ONEOFF_CONTINUATION_PROTOCOL"
 ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE = 75
 ASSET_MARKER_FIELDS = {
@@ -215,6 +216,15 @@ def main() -> int:
     finalize_reserve = bounded_seconds(
         environment, "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS", 420, 120, 600
     )
+    if total_runtime <= finalize_reserve:
+        # A reserve as large as the entire run would enter FINALIZE_ONLY
+        # immediately, without giving the DMI producer a chance to advance
+        # the target-bound operational ledger. Fail before consuming the
+        # reserve or presenting an old ledger to downstream suppliers.
+        write_failure_outputs(environment, BUDGET_CONFLICT_CODE)
+        print("DMI supervisor budget conflict; no producer work started.",
+              file=sys.stderr, flush=True)
+        return 2
     deadline = time.monotonic() + total_runtime
     skipped_assets: list[dict[str, str]] = []
     while True:

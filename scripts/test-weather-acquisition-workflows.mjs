@@ -100,9 +100,9 @@ const beforeCp = step(normal, 'Plan global current acquisition before Copernicus
 const cp = step(normal, 'Fill only exact-hour DMI gaps from Copernicus');
 const om = step(normal, 'Fill only the exact remaining current gaps from Open-Meteo');
 const terminal = step(normal, 'Require verified Open-Meteo residual checkpoint before closure');
-assert.match(dmi, /inputs\.quick_confirmation && '360'/);
+assert.match(dmi, /inputs\.quick_confirmation && '900'/);
 assert.match(dmi, /DMI_BULK_ADAPTIVE_RECOVERY: \$\{\{ inputs\.quick_confirmation != true &&/,
-  'Six-minute confirmation must not consume a one-hour adaptive recovery cooldown');
+  'Short confirmation must not consume a one-hour adaptive recovery cooldown');
 assert.ok(normal.indexOf(shortRecoveryGate) < normal.indexOf(dmi));
 assert.match(cp, /inputs\.quick_confirmation && '120'/);
 assert.match(om, /--runtime-seconds \$\{\{ inputs\.quick_confirmation && '120' \|\| '900' \}\}/);

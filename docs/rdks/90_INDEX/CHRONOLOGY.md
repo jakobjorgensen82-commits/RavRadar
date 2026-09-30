@@ -1,3 +1,16 @@
+## 2026-09-30 – 4.0.514 retter kort DMI-tidskontrakt
+
+Docs-PR #481 blev merged på main `6d24ad1c`. Kort normalrun
+`36645991041` gendannede eksakt beskyttet fremdrift, men
+quick-DMI-budget 360 sekunder var mindre end supervisorens
+420 sekunders afslutningsreserve. DMI producerede derfor ikke
+et nyt target-bundet ledger, og Copernicus' strenge preflight
+stoppede korrekt. Krypteret fremskridt `36645991041-1` blev
+gemt; intet nyt deploy. 4.0.514-kandidaten giver supervisoren
+900 sekunder samlet, heraf 420 reserveret til afslutning,
+ydre 24 minutters trin og fail-fast-test af
+budgetmodsigelsen. Bølgekonflikten er stadig uafklaret.
+
 ## 2026-09-30 – 4.0.512 stoppede i bølge-replay; 4.0.513 merged
 
 Normalrun `36625547109` gemte krypteret fremdrift, men ikke nyt

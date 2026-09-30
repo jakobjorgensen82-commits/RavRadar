@@ -1,4 +1,15 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.513
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.513, kandidat 4.0.514
+
+- **KORT DMI-BEKRÆFTELSE STOPPEDE FØR REEL HENTNING –
+  DOKUMENTERET RODÅRSAG:** `36645991041` gendannede præcis
+  fremdrift `36625547109-1`, men workflowets DMI-quick-total
+  (360 sekunder) var mindre end supervisorens afslutningsreserve
+  (420 sekunder). Supervisoren gik direkte i afslutning og lavede
+  ikke nyt target-bundet ledger. Den strenge Copernicus-
+  forhåndskontrol afviste korrekt start-mismatch. Ny krypteret
+  fremdrift `36645991041-1` blev gemt; ingen ny offentlig pakke.
+  4.0.514-kandidaten retter kun quick-budgetkontrakten og tilføjer
+  fail-fast/test. Livebevis afventer; ekstern cron forbliver pauset.
 
 - **GEMT BØLGEHISTORIK KONFLIKTER – BLOKERER NORMAL DRIFT:**
   Run `36625547109` gennemførte leverandørerne, men central

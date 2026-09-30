@@ -409,6 +409,13 @@ assert.ok(dmiStepStart >= 0 && dmiStepEnd > dmiStepStart, 'DMI-trinnet skal kunn
 const dmiStep = build.slice(dmiStepStart, dmiStepEnd);
 assert.match(dmiStep, /timeout-minutes:.*70 \|\| 55/);
 assert.match(dmiStep, /DMI_BULK_MAX_RUNTIME_SECONDS:.*'3600'.*'3000'.*'1500'/);
+const quickDmiMinutes = Number(dmiStep.match(/timeout-minutes:\s*\$\{\{ inputs\.quick_confirmation && (\d+)/)?.[1]);
+const quickDmiSeconds = Number(dmiStep.match(/DMI_BULK_MAX_RUNTIME_SECONDS:\s*\$\{\{ inputs\.quick_confirmation && '(\d+)'/)?.[1]);
+const supervisorFinalizeSeconds = Number(dmiStep.match(/DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS:\s*(\d+)/)?.[1]);
+assert.ok(quickDmiSeconds > supervisorFinalizeSeconds,
+  'Kort DMI skal have reel producenttid før supervisorens afslutningsreserve.');
+assert.ok(quickDmiMinutes * 60 >= quickDmiSeconds + supervisorFinalizeSeconds + 120,
+  'Kort DMI-trin skal rumme producent, superviseret afslutning og sikker margen.');
 assert.match(dmiStep, /steps\.dmi-recovery-budget\.outputs\.extended == 'true'/);
 assert.match(dmiStep, /steps\.historical-wave-transition\.outputs\.required == 'true'/);
 assert.match(dmiStep, /DMI_BULK_MAX_DOWNLOAD_MB:.*'4096' \|\| '2048'/,
