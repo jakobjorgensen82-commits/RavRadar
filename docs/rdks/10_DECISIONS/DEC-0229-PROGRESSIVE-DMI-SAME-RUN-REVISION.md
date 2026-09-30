@@ -1,6 +1,6 @@
 # DEC-0229 – Accepteret DMI-revision i samme modelkørsel
 
-**Status:** Bindende fra 4.0.451, lokal måltest grøn, produktionsbevis afventer.
+**Status:** Bindende fra 4.0.451 med DEC-0264's snævre beskyttede-bevarelse.
 
 Den progressive DMI-cache er en ny accepteret vedligeholdelsesprøve. Hvis den
 og den gamle deployede runtime bruger samme DMI-modelkørsel, må den progressive
@@ -14,6 +14,14 @@ Strøm og bølger vælges uafhængigt.
 Alle andre ens modelkørsler og alle ikke-sammenlignelige kilder forbliver
 konflikter og stopper fail-closed. Scoreformel, DMI-first, fallback-prioritet,
 geometri og MISSING-regler ændres ikke.
+
+**Aktuel præcisering 2026-09-30:** DEC-0264 supersederer kun det
+absolutte stop for eksakt samme, uafhængigt validerede DMI-sted,
+time, komponent, collection, gitter, lag og modelkørsel, når den
+beskyttede deployed-værdi allerede er valgt, og progressiv cache
+ikke kan bevise en nyere officiel revision. Da bevares den gamle
+komponent; ikke-sammenlignelige/ugyldige kilder og generisk replay
+forbliver strenge.
 
 Grundlaget er normalrun `35567119842`, som nåede komponent-runtime men stoppede
 ved en RavScore-konflikt mellem gammel runtime og progressiv DMI-cache.

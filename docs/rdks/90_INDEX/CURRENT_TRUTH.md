@@ -1,4 +1,38 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
+
+PR #484/4.0.516 bestod exact-head source-CI `36667111156`
+og blev merged som main `f7c1dcc0`. Kort normalrun
+`36667807638` gendannede præcis `36659094103-1` og den
+beskyttede produktionsbaseline; DMI, Copernicus og Open-Meteo
+gennemførte. Central cache stoppede igen ved bølgereplay.
+En ny krypteret Actions-cache `36667807638-1` findes
+(104.951.816 byte). Ingen ny slutpakke, fuld artifactgate,
+CAS, R2 eller Pages. Offentlig 4.0.510 med 370.007/397.070
+femfeltspar er uændret; cron-job.org `8348098` er pauset.
+
+4.0.516's isolerede prøve med uændret validator bekræftede
+to DMI/DMI-konflikter fra samme modelkørsel med forskellige
+bølgeværdier: ét par har forskelligt antal native trin, ét
+forskellige native tider. Ni andre mulige par med samme
+fysiske værdi gav ikke isoleret replaykonflikt. Det viser
+ikke første fejlpar i fuld replay og beviser ikke fejl hos
+DMI. RavRadar kan beregne den samme time fra forskellige
+gyldige native DMI-trin. `assetIdentitySha256` er URL-hash,
+ikke råfilens særskilte `contentSha256`.
+
+Lokal 4.0.517/DEC-0264 bevarer ved dette snævre, fuldt
+validerede deployed/progressive-DMI-overlap den beskyttede
+tidligere komponent, medmindre en nyere officiel revision
+eller modelkørsel er bevist. Andre kildepar/identiteter og
+ugyldige beviser møder fortsat den strenge replayvalidator.
+Kun sikre aggregerede tællere logges. Måltests for begge
+livebeviste bølgeklasser, havstrøm, officiel revision,
+ugyldigt bevis, DMI-kildevalg og uændret modelbundle er
+lokalt grønne. Exact-head CI, merge og faktisk produktions-
+bevis afventer. DEC-0192/DEC-0229's absolutte same-run-stop
+er kun supersederet inden for DEC-0264's præcise grænse.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516, cron pauset
 
 PR #483/4.0.515 blev merged som main `ee44015d` efter grøn
 exact-head source-CI. Kort normalrun `36659094103` gendannede

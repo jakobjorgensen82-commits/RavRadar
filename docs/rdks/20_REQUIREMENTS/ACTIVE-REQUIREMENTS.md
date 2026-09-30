@@ -1,3 +1,20 @@
+# Aktuel beskyttet DMI-historik – 2026-09-30
+
+- **REQ-RAVSCORE-PROTECTED-SAME-RUN-DMI-0517 – BINDENDE:** Den
+  eksakte tidligere valgte, stadig gyldige DMI-komponent skal
+  bevares før RavScore-replay, når den progressive komponent for
+  samme kystdel, UTC-time, modelkørsel, collection, gitter, lag
+  og prøvepunkt også er verificeret, men en nyere officiel
+  revision **ikke** er bevist. Kun dette identitets- og
+  proveniensvaliderede deployed/progressive-par må projiceres;
+  strøm-U/V og bølgepakken vælges hver for sig og atomisk.
+  Beviste nyere revisioner/modelkørsler må stadig overtage;
+  øvrige konflikter skal fortsat stoppe. Log kun aggregerede
+  faste strøm-/bølgetællere for ens/forskellige værdier.
+  Se DEC-0264. Det supersederer
+  kun DEC-0192/DEC-0229's absolutte same-run-stop på denne
+  snævre grænse, ikke deres øvrige integritetskrav.
+
 # Aktuel replay-fejldiagnose – 2026-09-30
 
 - **REQ-RAVSCORE-WAVE-ISOLATED-PROOF-0516 – BINDENDE:** Efter en
@@ -11,8 +28,10 @@
   kandidatdiagnose; dens forbud mod at udlede en vinder af
   tællingerne består. Se DEC-0263.
 
-- **REQ-RAVSCORE-WAVE-CONFLICT-DIAG-0513 – BINDENDE:** En faktisk
-  bølgekonflikt i gemt historik må fortsat stoppe produktionen.
+- **REQ-RAVSCORE-WAVE-CONFLICT-DIAG-0513 – BINDENDE FOR UAFKLAREDE
+  KILDER:** En faktisk bølgekonflikt, som ikke er løst efter
+  DEC-0264's snævre beskyttede kildevalg, skal fortsat stoppe
+  produktionen.
   Fejldiagnosen uden for den låste scorebundle må alene tælle
   mulige overlap i faste, indholdsfri kategorier. Ingen kystdel,
   time, værdi, koordinat, kilde-id, komplet proveniens eller

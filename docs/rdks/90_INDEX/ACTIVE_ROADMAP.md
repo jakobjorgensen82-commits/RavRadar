@@ -1,4 +1,29 @@
-# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+
+1. [x] PR #484/4.0.516 bestod exact-head-CI og blev merged.
+   Kort run `36667807638` genbrugte præcis krypteret fremdrift,
+   passerede de tre leverandører og gemte `36667807638-1`,
+   men stoppede i central cache; offentlig produktion er uændret.
+2. [x] Isoleret uændret replay beviste to DMI/DMI-same-run-
+   bølgekonflikter med henholdsvis andet antal native trin og
+   andre native tider. Ni same-value-par var ikke konflikter
+   isoleret. Dette er ikke bevis for rå DMI-fejl eller første
+   par i fuld replay. DEC-0264 beskriver den databevarende regel.
+3. [ ] Afslut lokal 4.0.517's RDKS/version/begge håndbøger,
+   måltests og exact-head source-CI. Merge kun uden aktiv
+   vejrkørsel. Den låste RavScore-model og øvrige kildeprioritet
+   må ikke ændres. Ekstern cron forbliver pauset.
+4. [ ] Kør højst én kort normal bekræftelse fra eksakt
+   `36667807638-1`, ikke blind ny fuld hentning. Kræv
+   no-loss for vind, bølger, havstrøm, vandstand og vand-
+   temperatur på identiske steder/timer, fuld artifactgate,
+   CAS, privat R2, Pages og offentlig visning.
+5. [ ] Fortsæt derefter med dokumenteret rest for DMI/CP/OM,
+   tre delvise zoner, LF-vandstand, historik og Free-kvoter;
+   genåbn først automatisk drift efter flere sikre normale
+   resultater uden Codex-indgreb.
+
+# Historisk roadmap – 2026-09-30, main 4.0.515, lokal 4.0.516
 
 1. [x] PR #483 blev exact-head-CI-godkendt og merged. Kort run
    `36659094103` genbrugte eksakt fremdrift, passerede alle tre

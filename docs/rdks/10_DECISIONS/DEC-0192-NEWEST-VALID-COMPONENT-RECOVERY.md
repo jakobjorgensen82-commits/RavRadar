@@ -1,6 +1,6 @@
 # DEC-0192 – Nyeste gyldige komponent vinder i RavScore-recovery
 
-**Status:** Aktiv og bindende; implementeret lokalt i 4.0.409, livebevis afventer
+**Status:** Aktiv og bindende med DEC-0229/DEC-0264's snævre same-run-præciseringer
 **Dato:** 2026-09-18
 
 ## Evidens
@@ -37,6 +37,13 @@ prognoserevision.
 5. Samme eller ikke-sammenlignelige `modelRun` med forskellige værdier
    forbliver en hård replaykonflikt. Den generiske fail-closed-kontrol
    svækkes ikke.
+
+   **Aktuel præcisering 2026-09-30:** DEC-0264 supersederer kun
+   denne sætnings absolutte same-run-del for et eksakt,
+   selvstændigt valideret deployed/progressive-DMI-par med samme
+   modelkørsel og kildeidentitet: uden bevist nyere officiel
+   revision bevares den beskyttede gamle komponent. Alle andre
+   uafklarede konflikter stopper fortsat i uændret replay.
 6. Rettelsen ændrer kun samlingen af gammel og ny privat vejrhistorik. Den
    ændrer ikke RavScore-formel, vægte, modelkode, kildeprioritet, geometri,
    land-/vandpunkter eller offentlige scorekontrakter.

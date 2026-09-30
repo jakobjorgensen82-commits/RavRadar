@@ -2164,6 +2164,10 @@ function scoreCoastalPartsRuntime(
   const selectedDmiPartRecords = new Map();
   const sourceAgeRows = [];
   const currentInputTraceRows = [];
+  const protectedSameRunDmiRetentions = {
+    current: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
+    wave: { SAME_VALUES: 0, DIFFERENT_VALUES: 0 },
+  };
   const componentStageSummary = {
     partCount: 0,
     rawDmi: {
@@ -2540,6 +2544,9 @@ function scoreCoastalPartsRuntime(
         preferredSource: progressiveRecoverySource,
         productionReferenceAt: generatedAt,
         part: { ...part, zoneId },
+        onProtectedSameRunDmiRetention: (component, valueClass) => {
+          protectedSameRunDmiRetentions[component][valueClass] += 1;
+        },
       });
       let productionSeries;
       try {
@@ -2810,6 +2817,9 @@ function scoreCoastalPartsRuntime(
     }
   }
 
+  // Aggregate fixed component labels only; never log a private part, hour,
+  // value or source identity when an unproved same-run refresh is retained.
+  console.log(`RAVSCORE_PROTECTED_SAME_RUN_DMI_RETAINED ${JSON.stringify(protectedSameRunDmiRetentions)}`);
   const referenceReadiness = integratedRavScoreReferenceReadiness(partRows, generatedAt);
   const profileReadiness = integratedRavScoreProfileReadiness(
     referenceReadiness,

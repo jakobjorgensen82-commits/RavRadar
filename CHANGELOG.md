@@ -1,4 +1,30 @@
-## 4.0.516 – isoleret bølgekonfliktbevis uden modelændring (lokal kandidat)
+## 4.0.517 – bevar beskyttet DMI-historik ved ubevist same-run-opdatering (lokal kandidat)
+
+- PR #484/4.0.516 bestod exact-head source-CI og blev merged.
+  Kort normalrun `36667807638` passerede DMI, Copernicus og
+  Open-Meteo, men stoppede i central cache. To same-run-DMI-
+  bølgepar med forskellige værdier blev afvist af uændret
+  replay i isolation: forskelligt native-antal og forskellige
+  native tider. Ni par med samme værdier blev ikke afvist.
+  Det beviser ikke en fejl i DMI's rå data eller første par
+  i fuld replay. Krypteret `36667807638-1` er gemt;
+  offentlig 4.0.510 er uændret.
+- Ved eksakt deployed/progressive-DMI-overlap for samme sted,
+  time, modelkørsel, collection, gitter og lag bevares den
+  selvstændigt validerede gamle strøm- eller bølgekomponent,
+  hvis en nyere officiel revision ikke kan bevises. Nyere
+  beviste revisioner/modelkørsler vinder stadig. Ugyldige
+  kilder, andre identiteter og generisk replay er uændret
+  fail-closed. Kun aggregatantal for de to komponenter og faste
+  ens-/forskellige-værdier-klasser logges.
+- RavScore-formel/modelbundle, øvrig providerprioritet,
+  96-timersundtagelse, vandstand, geometri, scheduler og
+  offentlig UI er uændrede. Målrettet replay, DMI-forecast,
+  kildevalg og modelbundle består lokalt. Exact-head source-CI,
+  merge og fuldt produktionsbevis afventer; cron er pauset.
+  Se DEC-0264.
+
+## 4.0.516 – isoleret bølgekonfliktbevis uden modelændring (historisk kandidat; merged)
 
 - Main 4.0.515 bestod kildekontrol, men kort run `36659094103`
   stoppede igen i bølgereplay efter de tre leverandører. Ni

@@ -1,4 +1,23 @@
-## 2026-09-30 – 4.0.515 stoppede i bølgereplay; lokal 4.0.516 diagnose
+## 2026-09-30 – 4.0.516 isolerede to bølgekonflikter; lokal 4.0.517 årsagsrettelse
+
+PR #484/4.0.516 bestod exact-head CI `36667111156` og blev
+merged som main `f7c1dcc0`. Kort normalrun `36667807638`
+genbrugte præcis `36659094103-1`, passerede DMI, Copernicus
+og Open-Meteo og stoppede igen i central cache. Uændret replay
+afviste to DMI/DMI-same-run-bølgepar i isolation: forskellige
+fysiske værdier med forskelligt native-antal og forskellige
+native tider. Ni andre same-value-par blev ikke afvist isoleret.
+Krypteret fremdrift `36667807638-1` findes; ingen slutpakke,
+CAS, R2 eller Pages. Offentlig 4.0.510 består; cron er pauset.
+
+DEC-0264/4.0.517 bevarer lokalt kun den eksakte gamle,
+selvstændigt validerede DMI-komponent, når en progressiv
+same-run-opdatering ikke beviser nyere officiel revision.
+Generisk replay, modelbundle og øvrige kildepar forbliver
+strenge. Måltests er lokalt grønne; CI og produktionsbevis
+afventer. Ingen fejl i rå DMI-filer er påvist.
+
+## Historisk – 2026-09-30 – 4.0.515 stoppede i bølgereplay; lokal 4.0.516 diagnose
 
 PR #483 bestod exact-head source-CI og blev merged som main
 `ee44015d`. Kort run `36659094103` gendannede eksakt

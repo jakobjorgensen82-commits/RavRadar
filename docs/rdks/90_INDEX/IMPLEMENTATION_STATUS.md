@@ -1,4 +1,29 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
+
+- [x] PR #484/4.0.516 bestod exact-head source-CI
+  `36667111156` og blev merged som main `f7c1dcc0`.
+  Kort normalrun `36667807638` gendannede præcis tidligere
+  fremdrift og beskyttet baseline, passerede DMI, Copernicus
+  og Open-Meteo og stoppede ved bølgereplay i central cache.
+  Krypteret fremdrift `36667807638-1` er verificeret gemt.
+- [x] Den uændrede replayvalidator afviste to mulige DMI/DMI-
+  same-run-par i isolation: forskellige værdier med forskelligt
+  native-antal og med forskellige native-tider. Ni same-value-
+  par blev ikke afvist. Intet af dette beviser rå DMI-fejl
+  eller fuld replays første fejlpar.
+- [x] Lokal 4.0.517/DEC-0264 bevarer kun eksakt identisk,
+  selvstændigt valideret tidligere DMI-strøm/bølge ved ubevist
+  same-run-revision. Ugyldig native proveniens, andet gitter
+  eller andet kildepar undertrykkes ikke. Aggregerede tællere
+  logges. Målrettet replay, DMI-forecast, kildeprioritet og
+  uændret modelbundle er lokalt grønne.
+- [ ] Afslut RDKS/version/begge håndbøger, exact-head source-CI
+  og sikker merge. Bekræft derefter højst én kort normal kørsel
+  fra `36667807638-1` gennem fulde gates, femfelts-no-loss,
+  CAS, R2, Pages og offentlig prognose. Ekstern cron forbliver
+  pauset, indtil flere normale resultater er sikre.
+
+# Historisk status – 2026-09-30 – main 4.0.515, lokal 4.0.516
 
 - [x] PR #483 bestod exact-head kildekontrol og blev merged som
   main `ee44015d`. Kort run `36659094103` gendannede præcis

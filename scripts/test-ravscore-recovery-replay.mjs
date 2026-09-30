@@ -792,6 +792,73 @@ for (const [leftWave, rightWave, expectedReason] of [
     'different valid DMI native support must still fail through the unchanged replay');
   assert.deepEqual(proof.confirmedSameRunDmiReasons, { [expectedReason]: 1 });
 }
+for (const [oldWave, progressiveWave] of [
+  [withVerifiedWave(weather(2)), interpolatedWaveAt2(1, 3, 1.3)],
+  [interpolatedWaveAt2(0, 3, 1.2), interpolatedWaveAt2(1, 3, 1.3)],
+  [interpolatedWaveAt2(1, 3, 1.2), withVerifiedWave(weather(2, { waveHeight: 1.3 }))],
+  [withVerifiedWave(weather(2)), interpolatedWaveAt2(1, 3, 1.2)],
+]) {
+  const deployed = withoutCurrent(oldWave);
+  const progressive = withoutCurrent(progressiveWave);
+  const unchangedInputs = JSON.stringify([deployed, progressive]);
+  const retained = [];
+  const projected = buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'deployed-private-runtime', record: record([deployed]) },
+    preferredSource: { source: 'progressive-private-dmi', record: record([progressive]) },
+    part,
+    onProtectedSameRunDmiRetention: (component, valueClass) =>
+      retained.push(`${component}:${valueClass}`),
+  });
+  assert.equal(replayForAge(4, projected).hourly.find(row => row.time === time(2)).waveHeightM,
+    deployed.waveHeightM,
+    'an unproved same-run DMI wave refresh must preserve the verified deployed wave');
+  assert.equal(projected[1].record.hourly[0].waveHeightM, null,
+    'only the losing wave tuple is removed before strict replay');
+  assert.deepEqual(retained, [
+    `wave:${deployed.waveHeightM === progressive.waveHeightM
+      ? 'SAME_VALUES' : 'DIFFERENT_VALUES'}`,
+  ]);
+  assert.equal(JSON.stringify([deployed, progressive]), unchangedInputs,
+    'same-run protection must not mutate either original DMI record');
+}
+const protectedWave = withoutCurrent(withVerifiedWave(weather(2)));
+const badNativeProof = withoutCurrent(interpolatedWaveAt2(1, 3, 1.3));
+badNativeProof.sources.wave.nativeValidTimes = [time(1), time(4)];
+const mismatchedGridWave = withoutCurrent(interpolatedWaveAt2(1, 3, 1.3));
+mismatchedGridWave.sources.wave.gridDefinitionSha256 = sha('other-wave-grid');
+for (const candidate of [badNativeProof, mismatchedGridWave]) {
+  const retained = [];
+  const projected = buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'deployed-private-runtime', record: record([protectedWave]) },
+    preferredSource: { source: 'progressive-private-dmi', record: record([candidate]) },
+    part,
+    onProtectedSameRunDmiRetention: (component, valueClass) =>
+      retained.push(`${component}:${valueClass}`),
+  });
+  assert.notEqual(projected[1].record.hourly[0].waveHeightM, null,
+    'invalid native proof or a different grid must never be silently suppressed');
+  assert.deepEqual(retained, []);
+}
+const officialWaveRevision = (row, updatedAt) => ({
+  ...row,
+  sources: { ...row.sources, wave: {
+    ...row.sources.wave,
+    itemUpdatedAt: updatedAt,
+    nativeSteps: row.sources.wave.nativeSteps.map(step => ({ ...step, itemUpdatedAt: updatedAt })),
+  } },
+});
+const revisedProtectedWave = officialWaveRevision(protectedWave, time(-2));
+const revisedProgressiveWave = officialWaveRevision(
+  withoutCurrent(withVerifiedWave(weather(2, { waveHeight: 1.3 }))), time(-1),
+);
+const revisedWaveSources = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: { source: 'deployed-private-runtime', record: record([revisedProtectedWave]) },
+  preferredSource: { source: 'progressive-private-dmi', record: record([revisedProgressiveWave]) },
+  part,
+});
+assert.equal(replayForAge(4, revisedWaveSources).hourly
+  .find(row => row.time === time(2)).waveHeightM, 1.3,
+'a proved newer official DMI wave revision still replaces the protected old wave');
 assert.deepEqual(summarizeIsolatedRavScoreWaveReplayConflicts({
   sourceRecords: unresolvedWaveSources,
   startAt: time(1), targetAt: time(4), maxPairs: 1,
@@ -1044,6 +1111,19 @@ const newRevision = withCurrentRevision(
 const reversedRevision = replayForAge(4, revisionRows(newRevision, oldRevision));
 assert.equal(reversedRevision.hourly.find(row => row.time === time(2)).currentSpeedMps, 0.11,
   'a newer deployed revision must survive an older progressive cache');
+const retainedCurrent = [];
+const unprovedSameRunCurrent = buildNewestValidRavScoreRecoverySources({
+  fallbackSource: { source: 'deployed-private-runtime', record: record([weather(2)]) },
+  preferredSource: { source: 'progressive-private-dmi',
+    record: record([weather(2, { speed: 0.11, rawU: 0.11 })]) },
+  part,
+  onProtectedSameRunDmiRetention: (component, valueClass) =>
+    retainedCurrent.push(`${component}:${valueClass}`),
+});
+assert.equal(replayForAge(4, unprovedSameRunCurrent).hourly
+  .find(row => row.time === time(2)).currentSpeedMps, 0.09,
+'the protected verified current survives an unproved same-run DMI refresh');
+assert.deepEqual(retainedCurrent, ['current:DIFFERENT_VALUES']);
 for (const labels of [['deployed', 'progressive'], ['progressive-private-dmi', 'deployed-private-runtime']]) {
   assert.throws(() => replayForAge(4, revisionRows(oldRevision, newRevision, labels)),
     error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
