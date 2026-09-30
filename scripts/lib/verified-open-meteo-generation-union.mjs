@@ -5,6 +5,7 @@ import {
   createOpenMeteoPartBankBuilder, validateOpenMeteoPartBank, openMeteoPartSha256,
   OPEN_METEO_PART_COMPONENTS, OPEN_METEO_PART_BANK_KIND, OPEN_METEO_PART_BANK_MAX_BYTES,
 } from './open-meteo-part-bank.mjs';
+import { pruneUnusableOpenMeteoPartBank } from './open-meteo-usable-part-bank.mjs';
 
 export function mergeVerifiedOpenMeteoGenerations(latest, complete, options = {}) {
   if (!latest && !complete) return null;
@@ -15,7 +16,11 @@ export function mergeVerifiedOpenMeteoGenerations(latest, complete, options = {}
   if (builder.retired.changedOrRemovedTarget !== 0) {
     throw new Error('OPEN_METEO_PART_RECOVERY_TARGET_CHANGED');
   }
-  const retained = builder.snapshot();
+  const { bank: retained } = pruneUnusableOpenMeteoPartBank(builder.snapshot(), options);
+  // Rebuild only previously selected, still-admitted records. In particular,
+  // a response-bound legacy tuple can be canonically unusable after rounding;
+  // copying its raw stored record would resurrect a retry-blocking false fill.
+  const completeRetained = complete ? pruneUnusableOpenMeteoPartBank(complete, validation).bank : null;
   const inRetention = record => record.validTime >= retained.retention.startAt
     && record.validTime <= retained.retention.endAt;
   // Both banks have been re-admitted from original bytes above. Merge only
@@ -23,7 +28,7 @@ export function mergeVerifiedOpenMeteoGenerations(latest, complete, options = {}
   // owns conflicts; complete fills only exact component/part/hour holes.
   const exactKey = record => JSON.stringify([record.partId, record.validTime, record.component]);
   const selected = new Map(retained.records.map(record => [exactKey(record), record]));
-  for (const record of (complete?.records ?? []).filter(inRetention)) {
+  for (const record of (completeRetained?.records ?? []).filter(inRetention)) {
     if (OPEN_METEO_PART_COMPONENTS.includes(record.component) && !selected.has(exactKey(record))) {
       selected.set(exactKey(record), record);
     }
@@ -33,7 +38,7 @@ export function mergeVerifiedOpenMeteoGenerations(latest, complete, options = {}
   const responses = {};
   for (const { evidenceId } of records) {
     if (Object.hasOwn(responses, evidenceId)) continue;
-    const evidence = retained.responses[evidenceId] ?? complete?.responses[evidenceId];
+    const evidence = retained.responses[evidenceId] ?? completeRetained?.responses[evidenceId];
     if (!evidence) throw new Error('OPEN_METEO_PART_RECOVERY_EVIDENCE_MISSING');
     responses[evidenceId] = evidence;
   }

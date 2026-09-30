@@ -7,10 +7,14 @@ import { DMI_FORECAST_HOURS, normalizeForecastHourly } from './dmi-forecast-stor
 import { verifiedDmiForecastComponentSource } from './ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';
 import { hasValue } from './weather-component-needs.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord, writeDmiForecastRecords } from './dmi-forecast-file.mjs';
+import { dmiWaveDirectionMatchesSource } from './dmi-wave-tuple-proof.mjs';
 
 const HOUR = 3_600_000;
 const CLOCK_SKEW = 5 * 60_000;
-const MAX_BYTES = 256 * 1024 * 1024;
+// Stations and central geometry remain small JSON inputs. The national
+// forecast has a separate shared, recordwise capacity contract.
+const SMALL_JSON_MAX_BYTES = 256 * 1024 * 1024;
 const COMPONENTS = ['wind', 'wave', 'current', 'waterLevel', 'waterTemperature'];
 const FIELDS = {
   wind: ['windSpeedMps', 'windDirectionDeg', 'windProvenance'],
@@ -65,6 +69,7 @@ function admittedSource(row, component, identity) {
   // A vector must remain one acquisition, including both U/V when present.
   if (component === 'current' && (row.currentUMps != null || row.currentVMps != null)
     && !(finite(row.currentUMps) && finite(row.currentVMps))) return null;
+  if (component === 'wave' && !dmiWaveDirectionMatchesSource(row, row.sources?.wave)) return null;
   return verifiedDmiForecastComponentSource(row.sources?.[component], row.time,
     component === 'wind' && row.sources?.wind?.component === 'windTail' ? 'windTail' : component,
     identity);
@@ -120,13 +125,14 @@ export function mergeVerifiedDmiForecastProgress(complete, progress, {
   features, productionReferenceAt, restoredAt = new Date().toISOString(),
   recoverRuntimeCursor = true,
 } = {}) {
-  const stats = { status: 'RETAINED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false };
-  if (!storeShape(complete) || !storeShape(progress)) return { document: complete, stats, code: 'DMI_FORECAST_SHAPE_REJECTED' };
+  const stats = { status: 'ACCEPTED_NO_CHANGE', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false };
+  if (!storeShape(complete) || !storeShape(progress)) return { document: complete,
+    stats: { ...stats, status: 'REJECTED' }, code: 'DMI_FORECAST_SHAPE_REJECTED' };
   const zones = expectedZones(features);
   const reference = instant(productionReferenceAt);
   const restored = instant(restoredAt);
   if (!zones || !exactHour(productionReferenceAt) || !Number.isFinite(restored)) {
-    return { document: complete, stats, code: 'DMI_FORECAST_CONTEXT_REJECTED' };
+    return { document: complete, stats: { ...stats, status: 'REJECTED' }, code: 'DMI_FORECAST_CONTEXT_REJECTED' };
   }
   const document = copy(complete);
   for (const [zoneId, candidate] of Object.entries(progress.zones)) {
@@ -269,7 +275,7 @@ async function readJson(file, role) {
     throw new Error(`DMI_PROGRESS_${role}_${error?.code === 'ENOENT' ? 'MISSING' : 'READ_UNAVAILABLE'}`);
   }
   if (!info.isFile() || info.isSymbolicLink()) throw new Error(`DMI_PROGRESS_${role}_INVALID_FILE`);
-  if (info.size < 1 || info.size > MAX_BYTES) throw new Error(`DMI_PROGRESS_${role}_INVALID_SIZE`);
+  if (info.size < 1 || info.size > SMALL_JSON_MAX_BYTES) throw new Error(`DMI_PROGRESS_${role}_INVALID_SIZE`);
   let body;
   try { body = await fs.readFile(file, 'utf8'); }
   catch { throw new Error(`DMI_PROGRESS_${role}_READ_UNAVAILABLE`); }
@@ -278,6 +284,72 @@ async function readJson(file, role) {
 }
 
 const SAFE_READ_CODE = /^DMI_PROGRESS_(?:FORECAST_BASE|FORECAST_PROGRESS|STATIONS_BASE|STATIONS_PROGRESS|ACTIVE_ZONES)_(?:MISSING|READ_UNAVAILABLE|INVALID_FILE|INVALID_SIZE|INVALID_JSON)$/;
+
+async function inspectForecast(file, role) {
+  try { return await inspectDmiForecastFile(file); }
+  catch (error) {
+    const suffix = String(error?.message ?? '').replace(/^DMI_FORECAST_FILE_/, '');
+    const known = ['MISSING', 'READ_UNAVAILABLE', 'INVALID_FILE', 'INVALID_SIZE'];
+    throw new Error(`DMI_PROGRESS_${role}_${known.includes(suffix) ? suffix : 'INVALID_JSON'}`);
+  }
+}
+
+// The files have been authenticated by the outer pack. Keep only small
+// indexes plus one pair of zones in memory, and keep protected PART continuity.
+async function reconcileForecastFile({ root, file, temporaryDirectory, productionReferenceAt,
+  restoredAt, recoverRuntimeCursor, setPhase }) {
+  const complete = await inspectForecast(path.join(root, file.relativePath), 'FORECAST_BASE');
+  const progress = await inspectForecast(file.sourcePath, 'FORECAST_PROGRESS');
+  const features = (await readJson(path.join(root, 'data/zones.geojson'), 'ACTIVE_ZONES')).features;
+  setPhase('MERGE');
+  const zones = expectedZones(features);
+  const restored = instant(restoredAt);
+  if (!zones || !exactHour(productionReferenceAt) || !Number.isFinite(restored)) {
+    throw new Error('DMI_FORECAST_CONTEXT_REJECTED');
+  }
+  const stats = { status: 'ACCEPTED_NO_CHANGE', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false };
+  const originalRuntime = { zones: complete.zoneGeometry, runtime: complete.metadata.runtime };
+  const candidateRuntime = { zones: progress.zoneGeometry, runtime: progress.metadata.runtime };
+  if (recoverRuntimeCursor) recoverRuntime(originalRuntime, candidateRuntime, zones, restored, stats);
+  const metadata = { ...complete.metadata };
+  if (stats.runtimeRecovered) metadata.runtime = originalRuntime.runtime;
+  const sourcePath = path.join(temporaryDirectory, 'merged-dmi-progress-forecast.json');
+  async function* records() {
+    const ids = new Set([...complete.zones.keys(), ...progress.zones.keys()]);
+    for (const id of ids) {
+      const previous = complete.zones.has(id) ? await readDmiForecastRecord(complete, complete.zones.get(id)) : null;
+      if (!progress.zones.has(id)) { yield [id, previous]; continue; }
+      const candidate = await readDmiForecastRecord(progress, progress.zones.get(id));
+      const result = mergeVerifiedDmiForecastProgress(
+        { zones: previous ? { [id]: previous } : {} }, { zones: { [id]: candidate } }, {
+          features, productionReferenceAt, restoredAt, recoverRuntimeCursor: false,
+        });
+      if (result.stats.status === 'REJECTED') throw new Error(result.code);
+      stats.recoveredComponents += result.stats.recoveredComponents;
+      stats.rejectedRecords += result.stats.rejectedRecords;
+      if (Object.hasOwn(result.document.zones, id)) yield [id, result.document.zones[id]];
+    }
+  }
+  setPhase('SAVE');
+  const written = await writeDmiForecastRecords(sourcePath, complete, records(), metadata);
+  if (stats.recoveredComponents || stats.runtimeRecovered) stats.status = 'MERGED';
+  else await fs.unlink(sourcePath);
+  return { sourcePath, stats, code: stats.rejectedRecords ? 'DMI_FORECAST_RECORDS_REJECTED' : null,
+    capacity: { baselineBytes: complete.bytes, progressBytes: progress.bytes, mergedBytes: written.bytes,
+      largestInputRecordBytes: Math.max(complete.largestRecordBytes, progress.largestRecordBytes),
+      maximumBytes: written.maximumBytes } };
+}
+
+export function assertUsableDmiProgressRecovery(summary, { allowAbsent = true } = {}) {
+  const forecast = summary?.forecast;
+  if (!object(forecast) || !['MERGED', 'ACCEPTED_NO_CHANGE', ...(allowAbsent ? ['NOT_PRESENT'] : [])].includes(forecast.status)
+    || !Number.isSafeInteger(forecast.recoveredComponents) || forecast.recoveredComponents < 0
+    || !Number.isSafeInteger(forecast.rejectedRecords) || forecast.rejectedRecords < 0
+    || typeof forecast.runtimeRecovered !== 'boolean') {
+    throw new Error('DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED');
+  }
+  return true;
+}
 
 export async function reconcileDmiProgressFiles({
   root, files, temporaryDirectory, productionReferenceAt, restoredAt = new Date().toISOString(),
@@ -295,34 +367,39 @@ export async function reconcileDmiProgressFiles({
     const role = forecast ? 'FORECAST' : 'STATIONS';
     let phase = 'READ';
     try {
+      if (forecast) {
+        const result = await reconcileForecastFile({ root, file, temporaryDirectory,
+          productionReferenceAt, restoredAt, recoverRuntimeCursor, setPhase: value => { phase = value; } });
+        summary.forecast = result.stats;
+        summary.forecastCapacity = result.capacity;
+        if (result.code) summary.codes.push(result.code);
+        if (result.stats.status === 'MERGED') output.push({ ...file, sourcePath: result.sourcePath });
+        continue;
+      }
       const [complete, progress] = await Promise.all([
         readJson(path.join(root, file.relativePath), `${role}_BASE`),
         readJson(file.sourcePath, `${role}_PROGRESS`),
       ]);
-      const features = forecast ? (await readJson(path.join(root, 'data/zones.geojson'), 'ACTIVE_ZONES')).features : null;
       phase = 'MERGE';
-      const result = forecast
-        ? mergeVerifiedDmiForecastProgress(complete, progress, {
-          features,
-          productionReferenceAt, restoredAt, recoverRuntimeCursor,
-        })
-        : mergeVerifiedStationObservationProgress(complete, progress, { productionReferenceAt, restoredAt });
+      const result = mergeVerifiedStationObservationProgress(complete, progress, { productionReferenceAt, restoredAt });
       summary[name] = result.stats;
       if (result.code) summary.codes.push(result.code);
       if (result.stats.status !== 'MERGED') continue;
       phase = 'SAVE';
       const bytes = Buffer.from(`${JSON.stringify(result.document)}\n`);
-      if (bytes.length > MAX_BYTES) throw new Error('invalid');
+      if (bytes.length > SMALL_JSON_MAX_BYTES) throw new Error('invalid');
       const sourcePath = path.join(temporaryDirectory, `merged-dmi-progress-${name}.json`);
       await fs.writeFile(sourcePath, bytes, { flag: 'wx', mode: 0o600 });
       output.push({ ...file, sourcePath });
     } catch (error) {
       summary[name] = forecast
-        ? { status: 'RETAINED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false }
+        ? { status: 'REJECTED', recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false }
         : { status: 'RETAINED', recoveredObservations: 0, rejectedRecords: 0 };
       // Never reveal authenticated file paths, content, or exception text in Actions logs.
       summary.codes.push(SAFE_READ_CODE.test(error?.message) ? error.message
-        : `DMI_${role}_${phase}_UNAVAILABLE`);
+        : forecast && error?.code === 'EEXIST' ? 'DMI_FORECAST_SAVE_UNAVAILABLE'
+          : forecast && error?.message === 'DMI_FORECAST_CONTEXT_REJECTED' ? error.message
+            : `DMI_${role}_${phase}_UNAVAILABLE`);
     }
   }
   return { files: output, summary };

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { enrichCurrentProvenanceDocuments } from './enrich-current-provenance.mjs';
+import crypto from 'node:crypto';
+import { enrichCurrentProvenanceDocuments, hashProvenanceZones } from './enrich-current-provenance.mjs';
+import { hashDmiForecastDocument } from './lib/dmi-forecast-file.mjs';
 
 test('current provenance enrichment is complete and idempotent before hour sealing', () => {
   const time = '2026-09-19T02:00:00.000Z';
@@ -59,8 +61,19 @@ test('current provenance enrichment is complete and idempotent before hour seali
   assert.equal(conditions.zones.z1.current.currentProvenance.status, 'verified');
   const sealedZones = JSON.stringify(conditions.zones);
   const sealedForecast = JSON.stringify(forecast);
+  const zoneDigest = hashProvenanceZones(conditions.zones);
+  const forecastDigest = hashDmiForecastDocument(forecast);
+  assert.equal(zoneDigest, crypto.createHash('sha256').update(sealedZones).digest('hex'));
+  assert.equal(forecastDigest, crypto.createHash('sha256').update(sealedForecast).digest('hex'));
   const second = enrichCurrentProvenanceDocuments({ conditions, bulk, forecast });
   assert.equal(second.skipped, false);
   assert.equal(JSON.stringify(conditions.zones), sealedZones);
   assert.equal(JSON.stringify(forecast), sealedForecast);
+  assert.equal(hashProvenanceZones(conditions.zones), zoneDigest);
+  assert.equal(hashDmiForecastDocument(forecast), forecastDigest);
+  conditions.zones.z1.forecast.hourly[0].currentUMps += 0.01;
+  assert.notEqual(hashProvenanceZones(conditions.zones), zoneDigest,
+    'sealed data changes are still detected');
+  forecast.zones.z1.hourly[0].currentUMps += 0.01;
+  assert.notEqual(hashDmiForecastDocument(forecast), forecastDigest);
 });

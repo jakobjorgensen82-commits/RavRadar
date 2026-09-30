@@ -3,6 +3,12 @@
 **Status:** Aktiv beslutning; lokalt implementeret i 4.0.517, produktionsbevis afventer.
 **Dato:** 2026-09-30
 
+**Senere præcisering:** DEC-0266/4.0.519 supersederer kun kravet om
+identisk collection/gitter/lag i punkt 1 og 3 for det autentificerede,
+selvstændigt fuldt validerede tidligere/progressive DMI-par. Samme
+målsted/time, atomiske komponenter og streng proveniens består.
+Nedenstående test-/runplan er historisk; følg nyeste checkpoint.
+
 ## Bevis og afgrænsning
 
 Kort normalrun `36667807638` på eksakt main 4.0.516 gendannede

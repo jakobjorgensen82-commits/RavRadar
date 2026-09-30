@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
 import { applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
+import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 
 // Execute the actual normal producer's integration block without calling its
 // network/storage entry point. Provider byte admission has separate real-file
@@ -19,9 +20,11 @@ const verifiedInputs = Object.freeze({ fromPrivateAuthority: true });
 
 test('normal PART production plans on current central identity and passes the prepared indexes into scoring', async () => {
   let planned = false, scored = false;
+  const safeLogs = [];
   const output = { weatherEngine: {} };
   const waterSourceRoutingContext = { sources: [], index: new Map(), routing: {}, haversineKm: () => 0 };
   const context = vm.createContext({ path, output, generatedAt: reference,
+    safeWeatherComponentSummary, console: { log: line => safeLogs.push(JSON.parse(line)) },
     coastalPartsContract: { enabled: true, zones: { CURRENT: [part] } },
     features: [{ properties: { id: 'CURRENT' } }], nextDmiForecastStore: {}, dmiBulkCache: {},
     persistedDmiPartRows: new Map(), historicalDmiBulkCache: {}, activeParts: [part],
@@ -61,6 +64,8 @@ test('normal PART production plans on current central identity and passes the pr
       return { inputs: verifiedInputs, summary: { prepared: true } };
     },
     scoreCoastalPartsRuntime: (...args) => {
+      assert.equal(safeLogs.length, 1, 'supplier evidence is emitted before replay can fail');
+      assert.equal(safeLogs[0].kind, 'weather-component-coverage');
       assert.equal(planned, true); assert.equal(args[12], verifiedInputs);
       assert.equal(args[14], waterSourceRoutingContext);
       assert.equal(args[15], context.persistedDmiPartRows);
@@ -76,6 +81,7 @@ test('normal PART production plans on current central identity and passes the pr
   await vm.runInContext(`(async () => { ${source.slice(start, end)} })()`, context);
   assert.equal(scored, true);
   assert.equal(output.weatherEngine.componentFallback.prepared, true);
+  assert.equal(safeLogs[0].prepared, undefined, 'raw summary fields do not reach logs');
 });
 
 test('durable selected-input marker precedes provenance, public shards and compact private output', () => {

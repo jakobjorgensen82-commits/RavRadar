@@ -2,7 +2,20 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
-## Aktuel 4.0.343-læring
+## Aktuel 4.0.519-læring
+
+- Et autentificeret ydre cache-hit er ikke bevis for, at alle indre
+  komponenter er genbrugt. Mål hver restorefase og luk ved reel afvisning.
+- Fil-, post-, samlet pakke-, kompressions-, transport- og RAM-grænser er
+  forskellige. Et større R2-lager løser ikke V8's nationale strengloft.
+- En syntetisk test med source=>source kan ikke bevise, at en komplet
+  tuple fortsat er komplet efter den rigtige adapter. Test hele grænsen.
+- Bevar det faktisk valgte gamle timeinput, ikke kun rådata som senere
+  kan rekonstrueres anderledes. Valider begge konkurrenter før fravalg.
+- Leverandørens havstrømsbudget er ikke dens budget for vind/bølge/
+  temperatur. Flyt aldrig tid ud fra et andet delsystems resttal.
+
+## Historisk 4.0.343-læring
 
 - En samlet tidsgrænse er ikke fair service: optæl faktisk startmulighed pr. kritisk familie og produkt.
 - Providerens egne mangler er ikke den autoritative kø. Planen skal afledes af hele cacheunionens reelle rest, og refresh-only må først nedgraderes efter eksakt bevis.

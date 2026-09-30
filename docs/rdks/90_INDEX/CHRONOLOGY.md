@@ -1,4 +1,15 @@
-## 2026-09-30 – 4.0.517 passerede bølgekonflikten, men stoppede ved havstrøm
+## 2026-09-30 – 4.0.518 årsagsbevis og samlet lokal 4.0.519-kandidat
+
+4.0.518 er merged som `b076968e` efter CI `36696989835`.
+Run `36698472505` stoppede på same-run-DMI-havstrømsreplay og gemte
+krypteret fremdrift. Tre restorelogs beviste også forecastlæserens
+for lave 256-MiB-grænse. DEC-0266 samler postvis I/O, beskyttet
+komponentvalg, forecast-/historikdonorer og bølgeretningsbevis.
+Lokale storefil-/adversarial tests består; faktisk ny produktion
+og samlet kapacitetsmargin afventer. Offentlig 4.0.510 består,
+cron er pauset. MET Norway er analyseret, ikke nyaktiveret.
+
+## Historisk – 2026-09-30 – 4.0.517 passerede bølgekonflikten, men stoppede ved havstrøm
 
 PR #485 bestod exact-head source-CI `36676610928` og blev
 merged som main `31d7ce8b`. Kort normalrun `36677551077`

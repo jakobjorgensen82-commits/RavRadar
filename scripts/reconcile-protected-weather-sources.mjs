@@ -10,7 +10,7 @@ import { PRIVATE_WEATHER_COMPONENT_FILES as FILES } from './lib/private-weather-
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as DMI_FILES } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents,
   protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
-import { reconcileDmiProgressFiles } from './lib/verified-dmi-progress-inputs.mjs';
+import { assertUsableDmiProgressRecovery, reconcileDmiProgressFiles } from './lib/verified-dmi-progress-inputs.mjs';
 import { installComponents } from './weather-component-progress-cache.mjs';
 
 const BANKS = [FILES.openMeteoBank, FILES.copernicusBank,
@@ -106,6 +106,9 @@ export async function reconcileProtectedWeatherSources({
       root, files: dmiDonors, temporaryDirectory: temporary,
       productionReferenceAt, recoverRuntimeCursor: false,
     });
+    // This legacy donor can legitimately omit operational DMI progress, but a
+    // present, rejected forecast must not be hidden by successfully merged banks.
+    assertUsableDmiProgressRecovery(dmi.summary, { allowAbsent: true });
     const files = [...merged.files, ...dmi.files];
     if (new Set(files.map(file => file.relativePath)).size !== files.length) {
       throw new Error('PAIRED_SOURCE_DUPLICATE_OUTPUT');

@@ -1,4 +1,34 @@
-## 4.0.518 – indholdsfrit bevis for havstrømskonflikt (lokal kandidat)
+## 4.0.519 – sammenhængende DMI-kontinuitet og forecastkapacitet (lokal kandidat)
+
+- Bevar den autentificerede tidligere DMI-komponent ved ubevist same-run-
+  skift af grid, collection eller lag; nyere gyldig prognose/revision kan
+  fortsat overtage. Begge komponenter prøves af uændret replay før valg.
+- Prognose og historik medtager relevante gemte DMI-donorer. En bølge
+  må ikke fortrænge en komplet gammel bølge med en uattesteret retning.
+- Forecastfilens logiske format bevares; postvis læsning/fletning og
+  atomisk skrivning erstatter nationale JSON-strenge. Den interne
+  256-MiB-restoreregel følger nu eksisterende autoritative 768 MiB.
+- Normal og kort kørsel skelner mellem reelt forecastgenbrug, gyldigt
+  no-change og afvisning; ydre restore alene er utilstrækkeligt bevis.
+- Den identitetslåste historiske paired-restore stopper også før installation
+  ved afvist forecast. Den offentlige PART-sti og replay genbruger begge
+  oprindelig gyldig DMI-kontekst; punktaktivering er fortsat adskilt.
+- Operationel OM-forberedelse lader ikke en originalt valideret, men efter
+  afrunding fysisk ubrugelig tuple blokere genhentning. Gyldige værdier og
+  den låste bank-/scoremodel bevares. Nye regressioner kører i de eksisterende
+  47 sourcegrupper. R2-oprydningsfejl får sikre CLI-tællere uden ny sletning.
+- Sikre, faste komponenttællere logges inden score/replay. Ingen private
+  rækker eller vilkårlige leverandørfejl logges. Modelbundle, geometri,
+  scheduler, native interpolation, DMI/CP/OM-prioritet og 96 timer ændres ikke.
+- Måltests og syntetisk >V8-fil er lokale beviser; samlet privat
+  pakkemargin, exact-head CI og fuldt produktionsresultat afventer.
+  MET Norway analyseres som nødkilde, men aktiveres ikke. Se DEC-0266.
+- Udvidet audit dokumenterer åbne recovery-/artifactlevetids-, scheduler-
+  attempt- og kvoterisici. De er ikke løst alene af denne kandidat. Native
+  postskrivning reducerer den første bounded writers målte overhead med
+  identiske testbyte; national cachebygning er ikke hastighedsoptimeret.
+
+## 4.0.518 – indholdsfrit bevis for havstrømskonflikt (historisk kandidatnotat)
 
 - PR #485/4.0.517 blev merged efter grøn exact-head source-CI.
   Kort normalrun `36677551077` gendannede beskyttet baseline og

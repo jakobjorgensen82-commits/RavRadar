@@ -1,14 +1,51 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.518
+**Håndbogsversion:** 4.0.519
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.518 bevarer 4.0.517's låste `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.519 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.116 4.0.519 – Gemte vejrdata skal kunne bruges igen
+
+En gammel, gyldig vejroplysning skal blive stående, hvis den nye
+hentning ikke har en bedre, gyldig oplysning til samme sted og time.
+Det gælder vind, bølger, havstrøm, vandstand og vandtemperatur – også
+når den gamle værdi stammer fra mange kørsler tilbage.
+
+Analysen fandt to forskellige problemer: En gemt DMI-fil kunne være
+tilladt i pakken, men for stor til den særlige læser, som skulle
+genbruge den. Desuden kunne to gyldige beregninger fra samme DMI-
+prognose støde sammen i historikken. Den lokale rettelse læser store
+filer i mindre dele og beskytter den tidligere valgte oplysning, når
+den nye ikke kan bevises nyere. En nyere gyldig prognose kan stadig
+overtage. En særskilt kontrol sikrer, at en bølgeretning faktisk hører
+til sin kilde, før den får lov at erstatte en gammel, komplet bølge.
+
+Scoreformlen og valget af strømdata i vandsøjlen ændres ikke. De store
+lokale tests er bestået, men rettelsen er endnu ikke bevist gennem en
+rigtig offentlig levering. Hjemmesiden viser fortsat den tidligere
+godkendte pakke. De tre tidligere tomme zoner har nu delvis prognose;
+der er stadig huller sent i prognosen andre steder. Vi undersøger
+leverandørerne hver for sig. MET Norway er med som mulig nødkilde,
+men er ikke koblet på hele prognosen. Se DEC-0266 og den samlede audit.
+
+Den ekstra gennemgang kontrollerer også, at noget ikke blot står som
+udfyldt i en reservebank, hvis prognosen faktisk ikke kan bruge det.
+Testene skal følge den rigtige vej til hjemmesidens prognose og være
+koblet på GitHubs kontrol. Filkapacitet prøves også for tidsforbrug,
+så en større tilladt fil ikke i sig selv gør hentningen for langsom.
+
+Gemning og levering er forskellige trin. En allerede registreret central
+overgang kan genoptages sikkert, men en tidligere fejl efter bygning og
+før central gemning er ikke generelt dækket endnu. Den færdige krypterede
+Actions-pakke har kun ét døgns levetid. R2-oprydningsfejl skal desuden
+være synlige, selv når den nye pakke er korrekt gemt. Disse åbne drifts-
+opgaver må ikke forveksles med den lokale rettelses beviste virkninger.
 
 ## 89.115 4.0.518 – Hvorfor havstrømshistorikken stoppede
 

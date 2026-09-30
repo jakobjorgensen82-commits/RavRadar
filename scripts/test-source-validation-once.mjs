@@ -17,10 +17,33 @@ assert.deepEqual(plan.remaining, declared.filter(command => command !== plan.gat
 assert.equal(plan.gate, 'node scripts/source-critical-gate.mjs');
 assert.ok(plan.preflight.includes('node scripts/build-ravscore-model-bundle.mjs --check'));
 assert.ok(plan.preflight.includes('node scripts/sync-ravscore-model-binding.mjs --check'));
-// Keep the source gate bounded to the 47 existing checks on main. This
-// synchronization changes no source-gate command and removes no check.
-// No historical suite or network acquisition belongs here.
+// Keep 47 bounded command groups. Related 4.0.519 regression files share a
+// node --test command with their existing producer boundary; no old test is
+// removed and no historical suite or network acquisition belongs here.
 assert.ok(declared.length <= 47, `Kildegaten er igen blevet for bred: ${declared.length} kommandoer.`);
+const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
+  /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
+for (const file of [
+  'scripts/test-ravscore-integrated-generator.mjs',
+  'scripts/test-ravscore-recovery-replay.mjs',
+  'scripts/test-dmi-bulk-forecast-integration.mjs',
+  'scripts/test-weather-component-normal-wireup.mjs',
+  'scripts/test-weather-component-safe-summary.mjs',
+  'scripts/test-dmi-protected-tuple-continuity.mjs',
+  'scripts/test-weather-component-progress-cache.mjs',
+  'scripts/test-weather-component-progress-workflow.mjs',
+  'scripts/test-dmi-progress-inputs.mjs',
+  'scripts/test-dmi-forecast-file.mjs',
+  'scripts/test-current-provenance-sealing.mjs',
+  'scripts/test-weather-acquisition-workflows.mjs',
+  'scripts/test-source-validation-once.mjs',
+  'scripts/test-open-meteo-part-bank.mjs',
+  'scripts/test-open-meteo-part-runtime.mjs',
+  'scripts/test-open-meteo-normal-component-chain.mjs',
+]) {
+  assert.equal(invokedFiles.filter(candidate => candidate === file).length, 1,
+    `Den faktiske sourceplan skal køre ${file} præcis én gang, ikke kun erklære et ubrugt package-script.`);
+}
 
 for (const changes of [
   { 'validate:source': 'node other.mjs' },

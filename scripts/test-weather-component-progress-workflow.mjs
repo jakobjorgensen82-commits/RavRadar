@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES } from './private-production-runtime-workflow.mjs';
 
 for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
   'scripts/lib/verified-dmi-progress-inputs.mjs', 'scripts/lib/private-weather-progress-files.mjs',
   'scripts/lib/dmi_adaptive_recovery.py',
-  'scripts/lib/verified-open-meteo-generation-union.mjs']) {
+  'scripts/lib/verified-open-meteo-generation-union.mjs', 'scripts/lib/open-meteo-usable-part-bank.mjs']) {
   assert.ok(PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES.includes(file),
     'The operational recovery helpers must remain in the producer inventory');
 }
@@ -56,6 +59,82 @@ assert.match(bind, /--protected-bundle-sha256 "\$protected_bundle_sha256"/);
 assert.match(bind, /WEATHER_PROGRESS_MASTER_SECRET: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
 assert.doesNotMatch(bind, /EXACT_WEATHER_RECOVERY_REQUIRED/,
   'The exact 11Z recovery may only be excluded by the snapshot binder, not by a workflow shortcut');
+assert.match(bind, /report\.status === 'RESTORED' && report\.restored === true/);
+assert.match(bind, /assertUsableDmiProgressRecovery\(report\.dmiProgress, \{ allowAbsent: true \}\)/,
+  'Normal full runs must also reject a restored snapshot whose DMI forecast was rejected');
+assert.ok(bind.indexOf('weather-component-progress-cache.mjs restore')
+  < bind.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress'));
+const donor = step('Classify one-time DMI PART continuity donor');
+assert.match(donor, /import \{ inspectDmiForecastFile \} from '\.\/scripts\/lib\/dmi-forecast-file\.mjs'/);
+assert.match(donor, /await inspectDmiForecastFile\('data\/live\/dmi-forecast-cache\.json'\)/);
+assert.match(donor, /if \(store\.hasPartContinuity\)/);
+assert.doesNotMatch(donor, /readFile(?:Sync)?\('data\/live\/dmi-forecast-cache\.json'/,
+  'The continuity donor classifier must validate the large forecast incrementally');
+const confirmation = step('Require recovered progress before short confirmation');
+assert.match(confirmation, /test "\$PROGRESS_CACHE_MATCHED_KEY" = "\$expected"/);
+assert.match(confirmation, /\.status == "RESTORED" and \.restored == true and \.fileCount > 0/);
+assert.match(confirmation,
+  /import \{ assertUsableDmiProgressRecovery \} from '\.\/scripts\/lib\/verified-dmi-progress-inputs\.mjs'/);
+assert.match(confirmation, /assertUsableDmiProgressRecovery\(report\.dmiProgress, \{ allowAbsent: true \}\)/,
+  'A short confirmation permits an omitted legacy forecast or valid no-change, but rejects failed forecast admission');
+assert.ok(confirmation.indexOf('assertUsableDmiProgressRecovery(report.dmiProgress')
+  < confirmation.indexOf('test -s .cache/dmi-candidate-progress.json'));
+assert.doesNotMatch(confirmation, /continue-on-error|\|\| true/,
+  'A known forecast restore rejection must not be swallowed');
+const assertionBlock = confirmation.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
+assert.ok(assertionBlock, 'The actual quick-confirmation assertion must remain executable');
+const assertionScript = assertionBlock[1].replace(/^ {10}/gm, '');
+const normalAssertionBlock = bind.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
+assert.ok(normalAssertionBlock, 'The actual normal restore assertion must remain executable');
+const normalAssertionScript = normalAssertionBlock[1].replace(/^ {10}/gm, '');
+const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-quick-confirmation-contract-'));
+try {
+  for (const [status, succeeds] of [['MERGED', true], ['ACCEPTED_NO_CHANGE', true],
+    ['NOT_PRESENT', true], ['REJECTED', false], ['RETAINED', false], ['UNKNOWN', false], [null, false]]) {
+    const report = { status: 'RESTORED', restored: true, fileCount: 3,
+      ...(status === null ? {} : { dmiProgress: { forecast: { status,
+        recoveredComponents: 0, rejectedRecords: 2, runtimeRecovered: false } } }) };
+    await fs.writeFile(path.join(temporary, 'weather-progress-restore-report.json'), JSON.stringify(report));
+    const result = spawnSync(process.execPath, ['--input-type=module'], {
+      input: assertionScript, encoding: 'utf8', cwd: process.cwd(),
+      env: { ...process.env, RUNNER_TEMP: temporary },
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status === 0, succeeds, `actual workflow assertion: ${status}`);
+    if (!succeeds) assert.match(result.stderr, /DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED/);
+  }
+  for (const [status, forecastStatus, succeeds] of [
+    ['MISS', null, true], ['BASELINE_MISMATCH', null, true],
+    ['RESTORED', 'MERGED', true], ['RESTORED', 'ACCEPTED_NO_CHANGE', true],
+    ['RESTORED', 'NOT_PRESENT', true], ['RESTORED', 'REJECTED', false],
+    ['RESTORED', 'RETAINED', false], ['RESTORED', null, false],
+  ]) {
+    const report = { status, restored: status === 'RESTORED', fileCount: status === 'RESTORED' ? 3 : 0,
+      ...(forecastStatus === null ? {} : { dmiProgress: { forecast: { status: forecastStatus,
+        recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false } } }) };
+    await fs.writeFile(path.join(temporary, 'weather-progress-restore-report.json'), JSON.stringify(report));
+    const result = spawnSync(process.execPath, ['--input-type=module'], {
+      input: normalAssertionScript, encoding: 'utf8', cwd: process.cwd(),
+      env: { ...process.env, RUNNER_TEMP: temporary },
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status === 0, succeeds, `normal workflow assertion: ${status}/${forecastStatus}`);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), succeeds ? '' : 'DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED');
+  }
+  await fs.writeFile(path.join(temporary, 'weather-progress-restore-report.json'), '{"PRIVATE_TOKEN_ABCDEF":');
+  const malformed = spawnSync(process.execPath, ['--input-type=module'], {
+    input: normalAssertionScript, encoding: 'utf8', cwd: process.cwd(),
+    env: { ...process.env, RUNNER_TEMP: temporary },
+  });
+  assert.equal(malformed.status, 1);
+  assert.equal(malformed.stdout, '');
+  assert.equal(malformed.stderr.trim(), 'DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED');
+} finally {
+  assert.equal(path.dirname(temporary), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(temporary).startsWith('rr-quick-confirmation-contract-'));
+  await fs.rm(temporary, { recursive: true, force: true });
+}
 const save = step('Encrypt newly saved private weather progress before later production steps');
 assert.match(save, /always\(\)/);
 assert.match(save, /steps.preflight.outputs.should_run == 'true'/);

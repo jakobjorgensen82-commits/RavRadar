@@ -1,4 +1,38 @@
-# 2026-09-30 – 4.0.517 stoppede i havstrøm; 4.0.518 måler uden private værdier
+# 2026-09-30 – 4.0.519-kandidat: sammenhængende kontinuitet, forecastkapacitet og dækningsanalyse
+
+Ejeren kræver helhedsanalyse og varig årsagsrettelse, ikke flere blinde
+genkørsler, og har tilføjet Copernicus/Open-Meteo-vind samt den aftalte
+MET Norway-nødkilde til analysen. Private logs må læses lokalt, men kun
+redigerede årsager rapporteres. Arbejdet fortsætter med Astra/Ultra.
+
+4.0.518 blev merged som `b076968e` efter CI `36696989835`; normalrun
+`36698472505` stoppede ved havstrømsreplay. Samme modelkørsel med andet
+grid/collection/celle er isoleret bekræftet som konfliktklasse. Tre
+restorelogs beviser samtidig en intern 256/768-MiB-forecastgrænsefejl.
+En reel adaptertest viser potentiel bølgetabsvej ved manglende attest
+for numerisk retning. DEC-0266 samler afgrænsede årsagsrettelser uden
+at ændre modelbundle, native vandkolonnevalg eller leverandørprioritet.
+
+Lokal test dækker ti generationer, nyere gyldige kilder, ugyldigt bevis,
+atomisk rollback, normal restoregate og fil større end V8's strengloft.
+Det er endnu ikke produktionsbevis. Nyeste krypterede fremskridt er
+`36698472505-1`; offentlig 4.0.510/370.007 af 397.070 par er uændret.
+Før ny dyr produktion skal autentificerede input/størrelser/replay og
+samlede kapacitetsmargener kontrolleres. Cron er pauset. Se aktiv status,
+DEC-0266 og forskningsnotatet WEATHER-CHAIN-AUDIT-2026-09-30 for åbne
+leverandør-/historik-/kvoteproblemer, afviste hypoteser og officielle kilder.
+
+Ejerens efterfølgende ordre udvider reviewet til alternative fejlveje.
+Den faktiske offentlige PART-projektion, source-CI-reachability, gammel
+paired-restore, OM-bankens fysiske brugbarhed efter afrunding, R2-cleanup-
+signal, artifactlevetid og watchdog-rerunidentitet er derfor kontrolleret.
+Lokal rettelse dækker de afgrænsede datagenbrugs-/observabilityfund;
+generisk præ-CAS-recovery, gammel R2-oprydning og scheduler-attempts er
+fortsat åbne. En målt writer-tidsregression skal fjernes eller afklares
+før levering; der foretages ingen risikabel scoring/cacheoptimering.
+Intet nyt weather-, cachebuild- eller deployrun er startet i dette review.
+
+# Historisk – 2026-09-30 – 4.0.517 stoppede i havstrøm; 4.0.518 måler uden private værdier
 
 PR #485/4.0.517 bestod exact-head CI `36676610928`
 og blev merged som main `31d7ce8b`. Normalrun

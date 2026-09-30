@@ -9,6 +9,9 @@ import {
 import { produceOpenMeteoPartComponents } from './produce-open-meteo-part-components.mjs';
 import { mergeVerifiedOpenMeteoGenerations } from './lib/verified-open-meteo-generation-union.mjs';
 import { responseBoundModelRun, selectQualifiedWeatherComponent } from './lib/weather-component-selection.mjs';
+import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
+import { buildWeatherComponentNeeds, hasValue } from './lib/weather-component-needs.mjs';
+import { pruneUnusableOpenMeteoPartBank } from './lib/open-meteo-usable-part-bank.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = hour => new Date(Date.parse(reference) + hour * 3_600_000).toISOString();
@@ -40,6 +43,167 @@ const marineAdmissions = (document = response('wave'), acquiredAt = reference) =
   ['wave', 'waterTemperature'].map(component => admit(component, document, acquiredAt));
 const selected = (bank, component, validTime = reference, target = part) => selectedOpenMeteoPartRecord(
   validateOpenMeteoPartBank(bank, options), { part: target, component, validTime });
+
+// Reproduce the prior serializer exactly, including response/source/record
+// hashes. This is a real response-bound legacy fixture, not mocked authority.
+function bankWithLegacyRoundedInvalidWave() {
+  const wave = admit('wave', response('wave', [reference]));
+  const bank = mergeOpenMeteoPartBank(null, [wave, admit('wave', response('wave', [at(3)])),
+    admit('wind', response('wind', [reference])),
+    admit('waterTemperature', response('waterTemperature', [reference]))], options);
+  const document = response('wave', [reference]);
+  document.hourly.wave_peak_period = [0.04];
+  const evidence = { ...wave.evidence, responseText: JSON.stringify(document) };
+  const evidenceId = openMeteoPartSha256(evidence);
+  const { recordId: _oldId, ...record } = structuredClone(wave.records[0]);
+  record.values.wavePeriodS = 0;
+  record.source.evidenceId = evidenceId;
+  record.source.sourceResponseSha256 = openMeteoPartSha256(evidence.responseText);
+  const recordId = openMeteoPartSha256(record);
+  delete bank.responses[wave.evidenceId];
+  bank.responses[evidenceId] = evidence;
+  const stored = bank.records.find(row => row.recordId === wave.records[0].recordId);
+  Object.assign(stored, { recordId, evidenceId, values: record.values });
+  const { bankSha256: _oldHash, ...content } = bank;
+  bank.bankSha256 = openMeteoPartSha256(content);
+  return bank;
+}
+
+test('post-rounding unusable wave cannot create a bank-full/runtime-empty slot', async () => {
+  const document = response('wave', [reference]);
+  document.hourly.wave_peak_period = [0.04];
+  const admission = readOpenMeteoPartResponse({ request: request('wave'),
+    responseText: JSON.stringify(document), acquiredAt: reference },
+  { part, spatialPolicies });
+  assert.equal(admission.records.length, 1, 'the locked original-byte parser remains unchanged');
+  const { bank: empty } = pruneUnusableOpenMeteoPartBank(mergeOpenMeteoPartBank(null, [admission], options), options);
+  assert.equal(selected(empty, 'wave'), null);
+
+  const legacy = bankWithLegacyRoundedInvalidWave();
+  const untouched = structuredClone(legacy);
+  assert.equal(legacy.records.length, 4);
+  const project = index => verifiedIntegratedPartHourly({ hourly: [{ time: reference }] }, null,
+    'PART::TEST', part, { productionReferenceAt: reference, openMeteoComponentIndex: index });
+  const originalIndex = validateOpenMeteoPartBank(legacy, options);
+  const originalProjection = project(originalIndex);
+  assert.equal(originalIndex.recordCount, 4);
+  assert.equal(originalProjection[0].waveProvenance.status, 'verified', 'reproduce the pre-boundary false fill');
+  assert.equal(hasValue(originalProjection[0], 'wave'), false);
+  const prepared = pruneUnusableOpenMeteoPartBank(legacy, options);
+  const oldIndex = validateOpenMeteoPartBank(prepared.bank, options);
+  assert.equal(oldIndex.recordCount, 3, 'only the proved unusable tuple loses admission');
+  assert.equal(selectedOpenMeteoPartRecord(oldIndex, { part, component: 'wave', validTime: reference }), null);
+  const before = project(oldIndex);
+  assert.equal(hasValue(before[0], 'wave'), false);
+  assert.equal(hasValue(before[0], 'wind'), true);
+  assert.equal(hasValue(before[0], 'waterTemperature'), true);
+  const plan = buildWeatherComponentNeeds({ parts: [part], productionReferenceAt: reference,
+    readVerifiedHourly: () => before });
+  assert.ok(plan.needs.some(row => row.validTime === reference && row.component === 'wave' && row.purpose === 'GAP'));
+  let requests = 0;
+  const checkpoints = [];
+  const result = await produceOpenMeteoPartComponents({ ...options, previousBank: legacy,
+    productionReferenceAt: reference,
+    requiredPairs: [{ partId: part.partId, validTime: reference, component: 'wave' }],
+    checkpoint: bank => { checkpoints.push(structuredClone(bank)); },
+    fetchResponse: async req => {
+      requests += 1;
+      assert.equal(req.component, 'wave');
+      return { responseText: JSON.stringify(response('wave', [reference, at(3)])), acquiredAt: at(1) };
+    },
+  });
+  assert.equal(requests, 1, 'a real gap is not skipped merely because the old bank had a record');
+  assert.equal(result.summary.retired.unusableComponent, 1);
+  assert.equal(checkpoints[0].records.length, 3, 'the ordinary durable checkpoint removes only the unusable slot');
+  const after = project(validateOpenMeteoPartBank(result.bank, options));
+  assert.equal(hasValue(after[0], 'wave'), true);
+  assert.equal(after[0].waveProvenance.status, 'verified');
+  for (const old of legacy.records.filter(row => !(row.component === 'wave' && row.validTime === reference))) {
+    assert.deepEqual(result.bank.records.find(row => row.recordId === old.recordId), old,
+      'all still-valid unknown-age siblings keep their exact first selected record');
+  }
+  assert.deepEqual(legacy, untouched, 'validation and repair cannot mutate the protected input bank');
+
+  const mixed = response('wave', [reference, at(3)]);
+  mixed.hourly.wave_peak_period = [0.04, 6];
+  const invalidFresh = await produceOpenMeteoPartComponents({ ...options,
+    productionReferenceAt: reference,
+    requiredPairs: [{ partId: part.partId, validTime: reference, component: 'wave' }],
+    fetchResponse: async () => ({ responseText: JSON.stringify(mixed), acquiredAt: at(1) }),
+  });
+  assert.equal(invalidFresh.bank.records.length, 1, 'only the invalid canonical tuple is removed, not its valid response sibling');
+  assert.equal(selected(invalidFresh.bank, 'wave'), null);
+  assert.equal(selected(invalidFresh.bank, 'wave', at(3)).values.wavePeriodS, 6);
+  assert.equal(invalidFresh.summary.componentWarnings.OPEN_METEO_PART_CANONICAL_COMPONENT_INVALID, 1);
+  assert.equal(invalidFresh.summary.retired.unusableComponent, 1);
+});
+
+test('unusable legacy migration never conceals corrupt bytes, records or duplicates', () => {
+  const reseal = bank => {
+    const { bankSha256: _old, ...content } = bank;
+    bank.bankSha256 = openMeteoPartSha256(content);
+    return bank;
+  };
+  const legacy = bankWithLegacyRoundedInvalidWave();
+  const invalid = legacy.records.find(row => row.component === 'wave' && row.validTime === reference);
+  const wrongValue = structuredClone(legacy);
+  wrongValue.records.find(row => row.recordId === invalid.recordId).values.waveHeightM += 1;
+  assert.throws(() => pruneUnusableOpenMeteoPartBank(reseal(wrongValue), options), /BANK_RECORD_INVALID/);
+  const wrongBytes = structuredClone(legacy);
+  wrongBytes.responses[invalid.evidenceId].responseText = JSON.stringify(response('wave', [reference]));
+  assert.throws(() => pruneUnusableOpenMeteoPartBank(reseal(wrongBytes), options), /BANK_EVIDENCE_INVALID/);
+  const duplicate = structuredClone(legacy);
+  duplicate.records.push(structuredClone(invalid));
+  assert.throws(() => pruneUnusableOpenMeteoPartBank(reseal(duplicate), options), /BANK_DUPLICATE/);
+  const corruptRecordId = structuredClone(legacy);
+  corruptRecordId.records.find(row => row.recordId === invalid.recordId).recordId = '0'.repeat(64);
+  assert.throws(() => pruneUnusableOpenMeteoPartBank(reseal(corruptRecordId), options), /BANK_RECORD_INVALID/);
+});
+
+test('canonical boundary keeps valid calm waves and first valid unknown-age siblings', () => {
+  for (const [height, period, direction, valid] of [
+    [1, 0.04, 180, false], [1, 0.06, 180, true],
+    [0, 0, null, true], [0.001, 0.04, 180, true], [1, 6, 360, true],
+    [1, 0, 180, false], [1, -1, 180, false], [1, 6, null, false],
+  ]) {
+    const document = response('wave', [reference]);
+    document.hourly.wave_height = [height];
+    document.hourly.wave_peak_period = [period];
+    document.hourly.wave_direction = [direction];
+    const parsed = admit('wave', document);
+    const prepared = pruneUnusableOpenMeteoPartBank(mergeOpenMeteoPartBank(null, [parsed], options), options);
+    assert.equal(prepared.bank.records.length, valid ? 1 : 0);
+    if (valid) assert.equal(hasValue(parsed.records[0].values, 'wave'), true);
+  }
+  const first = mergeOpenMeteoPartBank(null, [admit('wave')], options);
+  assert.equal(pruneUnusableOpenMeteoPartBank(first, options).bank, first,
+    'the valid fast path returns the original bank without any rewrite or renewed admission claim');
+  const changed = response('wave');
+  changed.hourly.wave_height = changed.hourly.wave_height.map(() => 2);
+  const later = mergeOpenMeteoPartBank(first, [admit('wave', changed, at(1))], options);
+  assert.deepEqual(later.records, first.records, 'download age alone grants no replacement right');
+});
+
+test('generation recovery never resurrects unusable legacy slots or counts their retirement as data loss', () => {
+  const legacy = bankWithLegacyRoundedInvalidWave();
+  const empty = mergeOpenMeteoPartBank(null, [], options);
+  for (const recover of [mergeVerifiedOpenMeteoGenerations]) {
+    for (const [latest, complete] of [[legacy, empty], [empty, legacy], [legacy, legacy]]) {
+      const result = recover(latest, complete, options);
+      assert.equal(result.records.length, 3);
+      assert.equal(selected(result, 'wave'), null);
+      assert.equal(selected(result, 'wave', at(3)).values.wavePeriodS, 6);
+    }
+    const validOlder = mergeOpenMeteoPartBank(null, [admit('wave', response('wave', [reference]))], options);
+    const filled = recover(legacy, validOlder, options);
+    assert.equal(filled.records.length, 4);
+    assert.equal(selected(filled, 'wave').values.wavePeriodS, 6,
+      'an independently valid older generation can fill the exact unusable slot');
+    const retained = recover(validOlder, legacy, options);
+    assert.equal(selected(retained, 'wave').values.wavePeriodS, 6,
+      'an unusable legacy donor cannot replace a valid protected tuple');
+  }
+});
 
 test('one explicit product per atomic component prevents mixed-model/grid response relabeling', () => {
   assert.deepEqual(OPEN_METEO_COMPONENT_MODELS, { wind: 'ecmwf_ifs025', wave: 'ecmwf_wam025',

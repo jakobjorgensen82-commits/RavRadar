@@ -1,3 +1,28 @@
+# Aktuel sammenhængende kontinuitet og kapacitet – 2026-09-30
+
+- **REQ-WEATHER-CONTINUITY-CAPACITY-0519 – BINDENDE:** Følg DEC-0266.
+  Prognose og historik skal genbruge samme relevante gyldige DMI-donorer.
+  Ubeviste same-run-skift af grid/collection/lag må ikke kassere en
+  autentificeret, stadig gyldig tidligere komponent. Begge komponenter
+  skal valideres før fravalg; dokumenteret nyere prognose kan overtage.
+  Bølgeretningen skal have matchende kildebevis før erstatning. Alle fem
+  familier skal bevares ved nye huller, også over mange generationer.
+- Den tilladte private forecastfil skal kunne gendannes og skrives uden
+  en national JSON-streng. Et ydre `RESTORED` er ikke bevis for DMI-
+  forecastgenbrug. Rapportér og kontroller komponentresultatet før ny
+  hentning; bevar særskilte samlede pakke-/hukommelsesgrænser.
+- Copernicus/Open-Meteo-vind og den tidligere aftalte MET Norway-
+  nødkilde skal indgå i dækningsanalysen. MET aktiveres ikke alene på
+  baggrund af aftalen: målpunkt, højde/dybde, retning, tidsopløsning,
+  proveniens, kildeprioritet og kvoter skal bevises i den aktuelle model.
+  Ingen risikabel cacheoptimering eller scoreændring som sideeffekt.
+- Ejerens ekstra helhedskontrol omfatter også alternative restoreveje,
+  bankens brugbarhed mod faktisk runtime, CI-testernes reachability,
+  færdigpakkers levetid/genoptagelse og sikre R2-oprydningssignaler.
+  Kapacitetsrettelser skal prøves for tidsregression i de faktiske
+  checkpointforløb. Åbne risici må ikke fremstilles som implementerede
+  løsninger eller bruges til en udokumenteret provider-/schedulerændring.
+
 # Aktuel havstrømskonfliktdiagnose – 2026-09-30
 
 - **REQ-RAVSCORE-CURRENT-ISOLATED-PROOF-0518 – BINDENDE:**
@@ -30,6 +55,8 @@
   Se DEC-0264. Det supersederer
   kun DEC-0192/DEC-0229's absolutte same-run-stop på denne
   snævre grænse, ikke deres øvrige integritetskrav.
+  Kravet om identisk collection/gitter/lag er senere snævert erstattet
+  af DEC-0266; samme målsted/time og selvstændig gyldighed består.
 
 # Aktuel replay-fejldiagnose – 2026-09-30
 

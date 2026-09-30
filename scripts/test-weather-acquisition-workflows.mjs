@@ -66,11 +66,15 @@ assert.match(weather, /RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: \$\{\{ inputs\.q
 assert.match(coverage, /if: steps\.weather\.outcome == 'success'/);
 assert.match(coverage, /continue-on-error: true/);
 assert.match(coverage, /\.weatherEngine\.componentFallback/);
-for (const field of ['before', 'afterCopernicus', 'after', 'failureCodes',
+assert.match(coverage, /data\/live\/conditions\.json > "\$WEATHER_COMPONENT_SUMMARY_PATH"/);
+assert.match(coverage, /import \{ safeWeatherComponentSummary \} from '\.\/scripts\/lib\/weather-component-safe-summary\.mjs'/);
+assert.match(coverage, /console\.log\(JSON\.stringify\(safeWeatherComponentSummary\(summary\)\)\)/);
+const safeProjection = read('scripts/lib/weather-component-safe-summary.mjs');
+for (const field of ['before', 'afterCopernicus', 'after',
   'admittedCandidates', 'remainingNeeds', 'retryableAttempts', 'retryableReasons', 'transportFailure',
   'attemptCountsComplete', 'remainingUpgradeNeeds', 'passes', 'requestedNeeds', 'budgetMs',
   'deferred', 'failureCount', 'componentsNotAdmitted']) {
-  assert.match(coverage, new RegExp(field));
+  assert.match(safeProjection, new RegExp(field));
 }
 assert.doesNotMatch(coverage, /lastAttemptedPartId|\$coverage\.openMeteo\.failures(?!\s*\|\s*length)/,
   'The safe component report must not print per-part cursor or raw failure rows');

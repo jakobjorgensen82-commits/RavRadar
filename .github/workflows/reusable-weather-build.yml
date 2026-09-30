@@ -445,7 +445,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.518 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.519 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -945,10 +945,11 @@ jobs:
           set -euo pipefail
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const store = JSON.parse(fs.readFileSync('data/live/dmi-forecast-cache.json', 'utf8'));
+          import { inspectDmiForecastFile } from './scripts/lib/dmi-forecast-file.mjs';
+          const store = await inspectDmiForecastFile('data/live/dmi-forecast-cache.json');
           const manifest = JSON.parse(fs.readFileSync(
             process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE + '/manifest.json', 'utf8'));
-          if (store.partContinuity) {
+          if (store.hasPartContinuity) {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=false\n');
           } else if (manifest.productionReferenceAt === '2026-09-27T02:00:00.000Z') {
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=true\n');
@@ -1077,6 +1078,23 @@ jobs:
             node scripts/weather-component-progress-cache.mjs restore \
               --root "$GITHUB_WORKSPACE" --base "$RUNNER_TEMP/weather-progress-base.json" \
               --report "$RUNNER_TEMP/weather-progress-restore-report.json"
+            # A successful outer restore must also have usable DMI input.
+            # Ordinary non-mutating misses keep the protected baseline.
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { assertUsableDmiProgressRecovery } from './scripts/lib/verified-dmi-progress-inputs.mjs';
+          try {
+            const report = JSON.parse(await fs.readFile(
+              path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
+            if (report.status === 'RESTORED' && report.restored === true) {
+              assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: true });
+            }
+          } catch {
+            console.error('DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED');
+            process.exitCode = 1;
+          }
+          NODE
           fi
           # Ordinary misses return success without touching the baseline.
           # Failed filesystem rollback stops this runner before weather use;
@@ -1098,6 +1116,18 @@ jobs:
           test "${{ steps.component-progress-restore.outcome }}" = success
           test -s "$report"
           jq -e '.status == "RESTORED" and .restored == true and .fileCount > 0' "$report" >/dev/null
+          # Authentication of the outer snapshot is not proof that every
+          # contained DMI forecast was accepted. Legacy snapshots may omit
+          # that optional file, but a present rejected forecast must stop
+          # this explicit progress confirmation before provider work.
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { assertUsableDmiProgressRecovery } from './scripts/lib/verified-dmi-progress-inputs.mjs';
+          const report = JSON.parse(await fs.readFile(
+            path.join(process.env.RUNNER_TEMP, 'weather-progress-restore-report.json'), 'utf8'));
+          assertUsableDmiProgressRecovery(report.dmiProgress, { allowAbsent: true });
+          NODE
           test -s .cache/dmi-candidate-progress.json
 
       - name: Reapply exact verified weather sources after private runtime installation
@@ -1166,7 +1196,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.518 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.519 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -1191,7 +1221,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.518 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.519 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -1478,7 +1508,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.518 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.519 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1839,7 +1869,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '90000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.518 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.519 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -1848,34 +1878,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export WEATHER_COMPONENT_SUMMARY_PATH="$RUNNER_TEMP/weather-component-summary-for-safe-log.json"
           jq -ec '
             .weatherEngine.componentFallback as $coverage
             | if ($coverage | type) != "object" then error("component summary unavailable") else
-                {kind:"weather-component-coverage", before:$coverage.before,
-                 afterCopernicus:$coverage.afterCopernicus, after:$coverage.after,
-                 failureCodes:$coverage.failures,
-                 copernicus:{status:$coverage.copernicus.status,
-                   admittedCandidates:$coverage.copernicus.admittedCandidates,
-                   remainingNeeds:$coverage.copernicus.remainingNeeds,
-                   recordFailures:$coverage.copernicus.recordFailures,
-                   attempts:$coverage.copernicus.attempts,
-                   retryableAttempts:$coverage.copernicus.retryableAttempts,
-                   retryableReasons:$coverage.copernicus.retryableReasons,
-                   transportFailure:$coverage.copernicus.transportFailure,
-                   attemptCountsComplete:$coverage.copernicus.attemptCountsComplete,
-                   remainingUpgradeNeeds:$coverage.copernicus.remainingUpgradeNeeds,
-                   passes:($coverage.copernicus.passes | if type == "object" then
-                     with_entries(.value |= if type == "object" then
-                       {requestedNeeds,budgetMs,outcome,status,attempts,retryableAttempts,
-                        retryableReasons,remainingNeeds,transportFailure,attemptCountsComplete}
-                       else null end) else null end)},
-                 openMeteo:{requests:$coverage.openMeteo.requests,
-                   deferred:$coverage.openMeteo.deferred,
-                   failureCount:($coverage.openMeteo.failures | length),
-                   componentsNotAdmitted:$coverage.openMeteo.componentsNotAdmitted,
-                   transport:$coverage.openMeteo.transport}}
+                $coverage
               end
-          ' data/live/conditions.json
+          ' data/live/conditions.json > "$WEATHER_COMPONENT_SUMMARY_PATH"
+          # Only this small private intermediate reaches Node. Never parse
+          # the large conditions package or emit the unfiltered summary.
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import { safeWeatherComponentSummary } from './scripts/lib/weather-component-safe-summary.mjs';
+          try {
+            const file = process.env.WEATHER_COMPONENT_SUMMARY_PATH;
+            const stat = await fs.lstat(file);
+            if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 16 * 1024 * 1024) {
+              throw new Error('SUMMARY_FILE_INVALID');
+            }
+            const summary = JSON.parse(await fs.readFile(file, 'utf8'));
+            console.log(JSON.stringify(safeWeatherComponentSummary(summary)));
+          } catch {
+            console.error('WEATHER_COMPONENT_SAFE_SUMMARY_FAILED');
+            process.exitCode = 1;
+          }
+          NODE
 
       - name: Reclaim a bounded Copernicus quality slice for the next normal run
         if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.weather.outcome == 'success' && inputs.quick_confirmation != true

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { buildDmiForecastHourly, DMI_FORECAST_HOURS } from './lib/dmi-forecast-store.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
+import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 
 const source = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 const productionAdapter = fs.readFileSync('scripts/lib/ravscore-production-adapters.mjs', 'utf8');
@@ -16,11 +17,14 @@ const protectedRetentionSource = source.slice(
 );
 const protectedRetentionCalls = [];
 const buildWithProtectedRetention = Function('bulkZoneToForecastRecord',
+  'mergeHourlyPreferDmi', 'createDmiForecastRecord',
   `${protectedRetentionSource}; return buildPartDmiForecastWithProtectedRetention;`)(
   (feature, cache, generatedAt, previous, options) => {
     protectedRetentionCalls.push({ cache, previous, options });
     return { point: feature.geometry.coordinates, hourly: [], cache };
   },
+  (primary, fallback) => [...primary, ...fallback],
+  value => value,
 );
 const protectedFeature = { geometry: { coordinates: [10, 56] } };
 const protectedCache = { generation: 'protected' };
@@ -72,6 +76,7 @@ const {
   'ravScoreNumber',
   'normalizeForecastHourly',
   'verifiedDmiForecastComponentSource',
+  'dmiWaveDirectionMatchesSource',
   'repairWaterLevelContinuity',
   'SHORT_DMI_WATER_GAP_HOURS',
   'WATER_LEVEL_JUMP_WARN_CM',
@@ -90,6 +95,7 @@ const {
     .sort((left, right) => Date.parse(left.time) - Date.parse(right.time))
     .slice(0, limit),
   sourceValue => sourceValue ?? null,
+  dmiWaveDirectionMatchesSource,
   () => ({ status: 'not-relevant-to-atomic-tuple-test' }),
   2,
   25,
@@ -120,6 +126,7 @@ assert.equal(selectAtomicComponentTuple(
 const atomicTestTime = '2026-09-08T12:00:00.000Z';
 const retainedSource = (component, modelRun) => ({
   provider: 'dmi', component, modelRun, entityId: 'PART::TEST',
+  optionalFieldSet: component === 'wave' ? ['mean-wave-dir'] : [],
   parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
   samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
 });
@@ -158,6 +165,80 @@ assert.equal(freshTemperatureOnly.waterTemperatureC, 15,
   'newer qualified DMI temperature must replace the retained DMI temperature');
 assert.equal(freshTemperatureOnly.waterLevelCm, 12,
   'one newer weather component must not clear the other four components');
+
+// A selected exact-hour tuple is not the same thing as a newly reconstructed
+// native candidate. Same-run spatial alternatives must not win by array order;
+// a genuinely newer qualified DMI run must still replace all five components.
+const protectedComponents = ['wind', 'wave', 'current', 'waterLevel', 'waterTemperature'];
+const sourceOnGrid = (component, modelRun, gridPoint) => ({
+  ...retainedSource(component, modelRun),
+  collection: component === 'wind' ? 'harmonie_dini_sf' : 'dkss_idw',
+  gridDefinitionSha256: 'a'.repeat(64), gridPoint,
+  verticalLayer: component === 'current' ? 'depth:10' : 'surface:0',
+  verticalLayerRankM: component === 'current' ? 10 : 0,
+  distanceKm: gridPoint[0] === 10.01 ? 1 : 2,
+});
+const previousRun = '2026-09-08T06:00:00.000Z';
+const protectedHour = {
+  ...fiveWeatherFields,
+  sources: Object.fromEntries(protectedComponents.map(component =>
+    [component, sourceOnGrid(component, previousRun, [10.02, 56])])),
+};
+const alternateHour = {
+  ...fiveWeatherFields,
+  windSpeedMps: 7, windDirectionDeg: 90,
+  waveHeightM: 2, wavePeriodS: 7, waveDirectionDeg: 240,
+  currentUMps: 0.2, currentVMps: 0.3,
+  waterLevelCm: 20, waterTemperatureC: 16,
+  sources: Object.fromEntries(protectedComponents.map(component =>
+    [component, sourceOnGrid(component, previousRun, [10.01, 56])])),
+};
+const protectedMergeOptions = {
+  generatedAt: atomicTestTime, startAt: atomicTestTime,
+  expectedIdentity: { entityId: 'PART::TEST' }, protectPreviousDmi: true,
+};
+const physicalValues = row => [row.windSpeedMps, row.windDirectionDeg,
+  row.waveHeightM, row.wavePeriodS, row.waveDirectionDeg, row.currentUMps,
+  row.currentVMps, row.waterLevelCm, row.waterTemperatureC];
+const originalProtected = structuredClone(protectedHour);
+let repeatedProtected = [protectedHour];
+for (let generation = 0; generation < 10; generation += 1) {
+  repeatedProtected = mergeHourlyPreferDmiForTest(
+    generation % 2 ? [] : [alternateHour], repeatedProtected, protectedMergeOptions,
+  );
+  assert.deepEqual(physicalValues(repeatedProtected[0]), physicalValues(protectedHour),
+    `same-run alternative or empty run ${generation + 1} retains every old complete tuple`);
+}
+assert.deepEqual(protectedHour, originalProtected, 'retention does not mutate its donor');
+const genuinelyNewer = structuredClone(alternateHour);
+for (const component of protectedComponents) genuinelyNewer.sources[component].modelRun = atomicTestTime;
+const replacedProtected = mergeHourlyPreferDmiForTest(
+  [genuinelyNewer], repeatedProtected, protectedMergeOptions,
+)[0];
+assert.deepEqual(physicalValues(replacedProtected), physicalValues(genuinelyNewer),
+  'a newer valid model run replaces the protected old tuple across independent grids');
+
+const protectedAssembly = Function('bulkZoneToForecastRecord',
+  'mergeHourlyPreferDmi', 'createDmiForecastRecord',
+  `${protectedRetentionSource}; return buildPartDmiForecastWithProtectedRetention;`)(
+  (_feature, cache, _generatedAt, _previous, options) => ({
+    zoneId: 'PART::TEST', point: [10, 56],
+    hourly: cache?.hourly ?? [], model: {},
+    requestedStart: options.startAt,
+  }), mergeHourlyPreferDmiForTest, value => value,
+);
+const replayFromSavedHourly = protectedAssembly(protectedFeature,
+  { hourly: [] }, null, atomicTestTime, {
+    startAt: atomicTestTime, expectedIdentity: { entityId: 'PART::TEST' },
+    persistedHourly: [protectedHour], historicalBulkCache: { hourly: [alternateHour] },
+  });
+assert.deepEqual(physicalValues(replayFromSavedHourly.hourly[0]), physicalValues(protectedHour),
+  'history reconstruction preserves actual saved hourly tuples absent from the native baseline');
+assert.match(integratedRuntime,
+  /const deployedDmiRecord = buildPartDmiForecastWithProtectedRetention\([\s\S]*?persistedHourly: persistedDmiPartRows\.get\(part\.partId\)/,
+  'replay and forecast must use the same protected persisted continuity chain');
+assert.match(integratedRuntime, /protectedPreviousSource: deployedRecoverySource/,
+  'only the authenticated protected assembly explicitly owns previous-winner precedence');
 const hourlyDomainValidated = mergeHourlyPreferDmiForTest([
   {
     time: atomicTestTime,

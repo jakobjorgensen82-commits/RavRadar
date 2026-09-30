@@ -1,4 +1,49 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.518, lokal 4.0.519
+
+- **PUBLICERING BLOKERET:** `36698472505` fejlede ved same-run-DMI-
+  havstrømsreplay; ingen slutpakke. DEC-0266 er en lokal årsagsrettelse,
+  ikke endnu en grøn produktion. Nyeste krypterede fremdrift findes.
+- **FORKERT FORECAST-RESTOREGRÆNSE:** 256/768-MiB-uoverensstemmelsen er
+  bevist på begge donorsider. Postvis I/O og komponentgate er lokalt
+  rettet. Eksakte private fil-/samlede pakkestørrelser og producent-RAM
+  mangler; 566-MB syntetisk test beviser ikke hele kædens kapacitet.
+  Slutarkivets envelope samles fortsat som én streng: dens nominelle
+  loft må ikke forveksles med V8's strenggrænse. Ingen blind forhøjelse.
+- **BØLGERETNING KUNNE TABES:** Reproduceret nyere række med gyldig
+  height/period-kilde, men uattesteret retning kunne fortrænge en komplet
+  gammel bølge. Lokal pre-selection-kontrol retter det; produktionsandel
+  af dette mønster er ukendt. Scorebundle er uændret.
+- **RESTDÆKNING:** Tre tidligere tomme zoner har nu 96/96/116 scoretimer;
+  der mangler 424/2.596 direkte havstrømspar i deres fulde målrum. Sent
+  i resten af prognosen er vind den største først rapporterede score-
+  mangel. Copernicus-current virker, men wave/temperatur havde nul nye
+  admissioner i fire målte runs. Limfjords vandstand er delvis. Mere tid
+  eller AMM15-udvidelse er endnu ikke dokumenteret løsning.
+- **HISTORIK OG DRIFT:** Fire succeser viste 673 fortsatte scorestates,
+  ikke generel nulstilling. 48/48 strømhistorik er ikke komplet 288h
+  bølgehistorik. Årsagen til sidste ukendte bølgeinterval kræver privat
+  aggregeret audit. UI 4.0.511 er ikke live. R2/Supabase-Free og stabil
+  firetimersdrift er ikke nyverificeret; cron er pauset.
+- **EKSTRA HELHEDSKONTROL:** Offentlig PART-projektion skal genbruge
+  oprindelig gyldig historisk kontekst, ikke kun aktiv cacheheader.
+  Den lokale regression tester nu den faktiske scorersti. Sourceplanens
+  nye tests er koblet ind og kontrolleres for præcis én kørsel hver.
+- **FALSK UDFYLDT OM-BANK:** Syntetisk afrunding kan efterlade en
+  ubrugelig bølgetuple, som alligevel blokerer ny request. Produktionsandel
+  ukendt; ret admission/genbrug efter eksisterende fysisk kontrakt,
+  uden ændret model eller prioritet. CP har ikke vist samme fejlvej.
+- **PAKKENS LEVETID OG R2-OPRYDNING:** Færdig krypteret pakke gemmes
+  kun ét døgn; generisk recovery før central CAS mangler. En tidligere
+  succesfuld krypteret pakke er sikret lokalt, men er ikke den nyeste
+  fejlede fremdrift. R2-cleanupfejl får nu sikre CLI-tællere; automatisk
+  genoprydning af allerede efterladte generationer er fortsat åben.
+- **TIDSMARGEN OG GENKØRSEL:** Generisk bounded writer havde målt
+  overhead og får afgrænset postskrivning med uændret stagekontrol før
+  levering. Watchdoggens brug af oprindelig created_at kan overse en
+  senere attempt som samme-slot-forsøg. Global overlaplås består;
+  scheduler ændres ikke som sideeffekt. Se den samlede audit.
+
+# Historiske issues – 2026-09-30, offentlig 4.0.510, main 4.0.517, lokal 4.0.518
 
 - **HAVSTRØMSREPLAY STOPPER PUBLICERING:** Run `36677551077`
   kom gennem DMI, Copernicus, Open-Meteo og den tidligere

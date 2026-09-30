@@ -41,6 +41,9 @@ import {
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';
+import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
+import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
@@ -73,6 +76,7 @@ import { buildOpenMeteoIndependentHourlyComponents, fetchOpenMeteoComponentRespo
 import { OPEN_METEO_PART_COMPONENTS, OPEN_METEO_NATIVE_NEAREST_POLICIES, openMeteoComponentRequestParts, openMeteoComponentGridMatches } from './lib/open-meteo-part-bank.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
 import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
+import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { recordSelectedWeatherComponents } from './lib/weather-component-selection-history.mjs';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
@@ -1313,16 +1317,22 @@ function buildPartDmiForecastWithProtectedRetention(
       startAt, expectedIdentity, materializeMissingHorizon: true,
     })
     : null;
-  const previousHourly = historical
-    ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {
-      generatedAt, startAt, expectedIdentity,
-    })
-    : persistedHourly;
+  // Persisted rows are the authenticated generation's actual previous hourly
+  // selections. Native protected/historical reconstructions may fill holes or
+  // supply a proved newer run/revision, but an unproved same-run alternative
+  // must not silently replace that winner merely by being visited first.
+  let previousHourly = persistedHourly;
+  for (const donor of [historical, retained]) {
+    if (!donor) continue;
+    previousHourly = mergeHourlyPreferDmi(donor.hourly, previousHourly, {
+      generatedAt, startAt, expectedIdentity, protectPreviousDmi: true,
+    });
+  }
   if (!previousHourly.length) return current;
   return createDmiForecastRecord({
     zoneId: current.zoneId, point: current.point, generatedAt,
     hourly: mergeHourlyPreferDmi(current.hourly, previousHourly, {
-      generatedAt, startAt, expectedIdentity,
+      generatedAt, startAt, expectedIdentity, protectPreviousDmi: true,
     }),
     waterLevelInterpolation: current.waterLevelInterpolation,
     model: current.model,
@@ -2361,18 +2371,22 @@ function scoreCoastalPartsRuntime(
         { ...part, zoneId },
         feggesundSourcesByTime,
       );
+      // Retained rows need their original authenticated sampling context on
+      // the public path as well as in replay. A missing active PART header is
+      // not evidence that a valid protected/historical current became invalid.
+      // A newly activated point must never inherit an older point's context.
+      const forecastCurrentContexts = initialSelection.source === 'POINT_ACTIVATION'
+        ? [bulkCache] : [bulkCache, deployedBulkCache, historicalDmiBulkCache];
       const record = mergeLiveCurrentPilotIntoRecord(operationalDmiRecord, { ...part, zoneId }, liveCurrentPilot, {
-        primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
-          bulkCache,
-          bulkCache?.zones?.[bulkId],
-          part.waterPoint,
-          hour?.sources?.current,
-          hour?.time,
-          partDmiIdentity,
+        primaryCurrentVerified: hour => Boolean(originalContextForProtectedDmiCurrent(
+          hour,
+          forecastCurrentContexts,
+          bulkId,
+          { ...part, zoneId },
         )),
       });
-      const verifiedHourly = verifiedIntegratedPartHourly(
-        record, bulkCache, bulkId, { ...part, zoneId }, componentInputs,
+      const verifiedHourly = verifiedProtectedDmiPartHourly(
+        record, forecastCurrentContexts, bulkId, { ...part, zoneId }, componentInputs,
       );
       const hourly = waterSourceRoutingContext
         ? applyVerifiedWaterSourceRoutingToPartHourly({
@@ -2458,16 +2472,23 @@ function scoreCoastalPartsRuntime(
         generatedAt,
       );
       let deployedRecoverySource = null;
+      const protectedCurrentContexts = [deployedBulkCache, historicalDmiBulkCache];
       // A promoted point has a deliberately new sampling context; old deployed
       // rows for the prior point must not enter its replay. Its private staged
       // DMI history has already been promoted into the progressive cache.
-      if (initialSelection.source !== 'POINT_ACTIVATION' && deployedBulkCache) {
-        const deployedDmiRecord = bulkZoneToForecastRecord(
+      if (initialSelection.source !== 'POINT_ACTIVATION'
+        && (deployedBulkCache || historicalDmiBulkCache
+          || persistedDmiPartRows.has(part.partId))) {
+        const deployedDmiRecord = buildPartDmiForecastWithProtectedRetention(
           feature,
           deployedBulkCache,
-          generatedAt,
           null,
-          { startAt: replayStartAt, expectedIdentity: partDmiIdentity },
+          generatedAt,
+          {
+            startAt: replayStartAt, expectedIdentity: partDmiIdentity,
+            persistedHourly: persistedDmiPartRows.get(part.partId)?.hourly ?? [],
+            historicalBulkCache: historicalDmiBulkCache,
+          },
         );
         if (deployedDmiRecord) {
           const deployedRecord = mergeLiveCurrentPilotIntoRecord(
@@ -2476,13 +2497,11 @@ function scoreCoastalPartsRuntime(
             liveCurrentPilot,
             {
               includePrivateNativeCadenceReferences: true,
-              primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
-                deployedBulkCache,
-                deployedBulkCache?.zones?.[bulkId],
-                part.waterPoint,
-                hour?.sources?.current,
-                hour?.time,
-                partDmiIdentity,
+              primaryCurrentVerified: hour => Boolean(originalContextForProtectedDmiCurrent(
+                hour,
+                protectedCurrentContexts,
+                bulkId,
+                { ...part, zoneId },
               )),
             },
           );
@@ -2490,9 +2509,9 @@ function scoreCoastalPartsRuntime(
             source: 'deployed-private-runtime',
             record: {
               ...deployedRecord,
-              hourly: verifiedIntegratedPartHourly(
+              hourly: verifiedProtectedDmiPartHourly(
                 deployedRecord,
-                deployedBulkCache,
+                protectedCurrentContexts,
                 bulkId,
                 { ...part, zoneId },
                 componentInputs,
@@ -2543,6 +2562,9 @@ function scoreCoastalPartsRuntime(
       const recoverySources = buildNewestValidRavScoreRecoverySources({
         fallbackSource: deployedRecoverySource,
         preferredSource: progressiveRecoverySource,
+        // The source above uses only the installed authenticated production
+        // generation and its admitted continuity donors, never the new run.
+        protectedPreviousSource: deployedRecoverySource,
         productionReferenceAt: generatedAt,
         part: { ...part, zoneId },
         onProtectedSameRunDmiRetention: (component, valueClass) => {
@@ -3191,13 +3213,15 @@ function selectAtomicComponentTuple(
   primary,
   fallback,
   component,
-  { attest = () => true } = {},
+  { attest = () => true, protectPreviousDmi = false } = {},
 ) {
   let selected = null;
-  for (const candidate of [
+  const candidates = [
     { row: primary, retained: false },
     { row: fallback, retained: true },
-  ]) {
+  ];
+  if (protectPreviousDmi) candidates.reverse();
+  for (const candidate of candidates) {
     const values = atomicComponentTupleValues(candidate.row, component);
     if (!values) continue;
     const attestation = attest(candidate.row, {
@@ -3206,9 +3230,29 @@ function selectAtomicComponentTuple(
     });
     if (!attestation) continue;
     const admitted = { ...candidate, values, attestation };
-    if (!selected || preferQualifiedDmiComponentSource(
-      selected.attestation, attestation, component,
-    )) selected = admitted;
+    if (!selected) { selected = admitted; continue; }
+    const previousSource = selected.attestation;
+    const oldRun = Date.parse(previousSource?.modelRun ?? '');
+    const newRun = Date.parse(attestation?.modelRun ?? '');
+    if (protectPreviousDmi && selected.retained
+      && previousSource?.provider === 'dmi' && attestation?.provider === 'dmi'
+      && Number.isFinite(oldRun) && oldRun === newRun) {
+      // Native acquisition still chooses the nearest column/deepest shared
+      // layer independently. Here we protect an already selected exact hour:
+      // a different grid/layer is not proof of a newer official revision.
+      const comparable = ['collection', 'component', 'gridDefinitionSha256',
+        'verticalLayer', 'verticalLayerRankM'].every(key =>
+        previousSource[key] === attestation[key])
+        && ['gridPoint', 'samplingPoint'].every(key =>
+          Array.isArray(previousSource[key]) && previousSource[key].length === 2
+          && Array.isArray(attestation[key]) && attestation[key].length === 2
+          && previousSource[key].every((value, index) =>
+            Number.isFinite(value) && value === attestation[key][index]));
+      if (!comparable) continue;
+    }
+    if (preferQualifiedDmiComponentSource(previousSource, attestation, component)) {
+      selected = admitted;
+    }
   }
   return selected;
 }
@@ -3259,7 +3303,8 @@ function materializeExactPublicWeatherHorizon(hourly = [], referenceAt) {
 function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
-  { generatedAt = null, startAt = generatedAt, expectedIdentity = null } = {},
+  { generatedAt = null, startAt = generatedAt, expectedIdentity = null,
+    protectPreviousDmi = false } = {},
 ) {
   // Public records keep the exact production +0..+117 axis. Private replay
   // callers deliberately supply an earlier startAt; using generatedAt here
@@ -3284,6 +3329,8 @@ function mergeHourlyPreferDmi(
     const item = dmiByTime.get(time) ?? {};
     const fallback = fallbackByTime.get(time) ?? {};
     const tupleSource = (row, component, retained) => {
+      if (expectedIdentity && component === 'wave'
+        && !dmiWaveDirectionMatchesSource(row, row?.sources?.wave)) return null;
       if (expectedIdentity && component === 'current'
         && (ravScoreNumber(row?.currentUMps) === null
           || ravScoreNumber(row?.currentVMps) === null)) {
@@ -3309,6 +3356,9 @@ function mergeHourlyPreferDmi(
       fallback,
       component,
       {
+        // Only the strictly admitted DMI-to-DMI PART path can protect an old
+        // winner. Legacy parent display fallback keeps its DMI-first order.
+        protectPreviousDmi: Boolean(expectedIdentity && protectPreviousDmi),
         attest: (row, candidate) => tupleSource(
           row,
           component,
@@ -3811,7 +3861,8 @@ function newerDmiRecord(a, b, expectedIdentity = null) {
   if (!Number.isFinite(startMs)) return { ...primary, hourly: [] };
   const identity = expectedIdentity ?? { entityId: primary.zoneId, parentZoneId: primary.zoneId,
     entityType: 'parent-zone', samplingContext: 'parent-zone-water-point', samplingPoint: primary.point };
-  const sourceAt = (row, component) => verifiedDmiForecastComponentSource(
+  const sourceAt = (row, component) => component === 'wave'
+    && !dmiWaveDirectionMatchesSource(row, row?.sources?.wave) ? null : verifiedDmiForecastComponentSource(
     row?.sources?.[component], row.time,
     component === 'wind' && row?.sources?.wind?.component === 'windTail' ? 'windTail' : component,
     identity,
@@ -3851,7 +3902,7 @@ function mergeDmiStores(...stores) {
 async function readDmiForecastStore() {
   let local = { schemaVersion: 1, zones: {} };
   try {
-    const parsed = JSON.parse(await fs.readFile(DMI_FORECAST_STORE_PATH, 'utf8'));
+    const parsed = await readDmiForecastFile(DMI_FORECAST_STORE_PATH);
     if (parsed?.zones && typeof parsed.zones === 'object'
       && !Array.isArray(parsed.zones)) local = parsed;
     else if (process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE === 'true') {
@@ -4186,13 +4237,10 @@ else dmiPersistentRuntime.rateLimits.forecastEdr.rateLimitedUntil = null;
 delete dmiPersistentRuntime.rateLimitedUntil;
 let dmiStoreWriteChain = Promise.resolve();
 async function writeDmiForecastStoreCheckpoint() {
-  const payload = `${JSON.stringify(nextDmiForecastStore, null, 2)}\n`;
-  dmiStoreWriteChain = dmiStoreWriteChain.then(async () => {
-    await fs.mkdir('data/live', { recursive: true });
-    const temporaryPath = `${DMI_FORECAST_STORE_PATH}.tmp`;
-    await fs.writeFile(temporaryPath, payload);
-    await fs.rename(temporaryPath, DMI_FORECAST_STORE_PATH);
-  });
+  // Every caller awaits this checkpoint before mutating the store again.
+  // Serialize bounded chunks, not a pretty-printed national JSON string.
+  dmiStoreWriteChain = dmiStoreWriteChain.then(() =>
+    writeDmiForecastFileAtomic(DMI_FORECAST_STORE_PATH, nextDmiForecastStore));
   return dmiStoreWriteChain;
 }
 const output = {
@@ -4647,6 +4695,9 @@ if (coastalPartsContract.enabled) {
   });
   planningRecords.clear();
   output.weatherEngine.componentFallback = weatherComponents.summary;
+  // Acquisition evidence must survive a later score/replay failure. This
+  // projection contains fixed counters/codes, never private weather payloads.
+  console.log(JSON.stringify(safeWeatherComponentSummary(weatherComponents.summary)));
   reportWeatherBuildStage('component-runtime-ready', {
     remainingNeedCount: weatherComponents.summary?.remainingNeedCount ?? null,
   });

@@ -1,4 +1,33 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal 4.0.519, cron pauset
+
+- [x] 4.0.518 exact-head CI og merge verificeret. Run `36698472505`
+  afsluttet med replayfejl; krypteret fremskridt er gemt, ikke deployet.
+- [x] Dokumenteret forkert forecastgrænse på både baseline og fremskridt.
+  Lokal postvis læser/fletter/skriver bruger eksisterende 768-MiB-grænse;
+  reel syntetisk >V8-fil og atomisk rollback er testet.
+- [x] Lokal beskyttet DMI-retention på tværs af samme modelkørsels
+  forskellige grid/collection/lag; begge konkurrenter prøves af uændret
+  replay. Ti generationer, nyere kilder og adversarial input er testet.
+- [x] Prognose/historikdonorer samlet; matchende bølgeretningsbevis kræves
+  før erstatning. Komponenttal logges sikkert før senere scorefejl.
+- [x] Ekstra review: original kontekst i offentlig PART-projektion,
+  paired-restoregate før installation, OM-usability ved operational boundary,
+  synlige R2-cleanupfejl og source-CI-reachability er lokalt testet. Låst
+  modelbundle er uændret. Native postwriter bevarer checks og reducerer
+  den første bounded writers målte overhead.
+- [ ] Afslut uafhængigt review, version/RDKS, kildekontrol på eksakt head.
+- [ ] Mål autentificerede eksisterende input, fil-/pakke-/RAM-kapacitet og
+  replay uden ny leverandørhentning, før normal bekræftelse overvejes.
+- [ ] Fuld artifactgate, samme-sted/time-no-loss, CAS, R2, Pages og synlig
+  prognose; derefter gentagne autonome succeser og kvotebevis før stabil.
+- [ ] Dækningsrester og MET Norway-nødkilde undersøges særskilt; ingen
+  tidsbudget-/native-selection-/modelændring på antagelser. Se DEC-0266
+  og forskningsnotatet WEATHER-CHAIN-AUDIT-2026-09-30.
+- [ ] Generisk genoptagelse før central CAS, passende færdigpakkelivstid,
+  tidligere R2-oprydningsrester og watchdoggens gamle run-attempts er åbne
+  driftsopgaver; intet blindt automatisk retry eller ny sletning indført.
+
+# Historisk status – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
 
 - [x] PR #485 bestod exact-head source-CI og blev merged som
   main `31d7ce8b`. Kort run `36677551077` genbrugte den
