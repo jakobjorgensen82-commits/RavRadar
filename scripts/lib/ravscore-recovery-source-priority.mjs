@@ -111,6 +111,18 @@ function componentRevisionSource(row, component) {
     : row?.sources?.wave;
 }
 
+function verifiedProtectedDmiComponent(row, component, part) {
+  const expectedIdentity = dmiExpectedIdentityForPart(part);
+  const source = componentRevisionSource(row, component);
+  return expectedIdentity !== null
+    && source?.provider === 'dmi'
+    && Boolean(verifiedDmiForecastComponentSource(
+      source, row?.time, component, expectedIdentity,
+    ))
+    && (component === 'current' ? hasVerifiedCurrent(row)
+      : verifiedWaveForPriority(row, part));
+}
+
 function componentProvider(row, component) {
   return componentRevisionSource(row, component)?.provider ?? null;
 }
@@ -191,7 +203,12 @@ function componentPreference(
   fallbackRow,
   preferredRow,
   component,
-  { allowPreferredEqualModelRun = false, productionReferenceAt = null, part = null } = {},
+  {
+    allowPreferredEqualModelRun = false,
+    productionReferenceAt = null,
+    part = null,
+    onProtectedSameRunDmiRetention = null,
+  } = {},
 ) {
   const hasFallback = component === 'current'
     ? hasVerifiedCurrent(fallbackRow)
@@ -275,7 +292,23 @@ function componentPreference(
     if (!comparableDmiRevision(fallbackRevision, preferredRevision)) return null;
     if (preferQualifiedDmiComponentSource(fallbackRevision, preferredRevision, component)) return 'preferred';
     if (preferQualifiedDmiComponentSource(preferredRevision, fallbackRevision, component)) return 'fallback';
-    return null;
+    if (!part || !verifiedProtectedDmiComponent(fallbackRow, component, part)
+      || !verifiedProtectedDmiComponent(preferredRow, component, part)) return null;
+    // Both independently verified DMI components describe the same model run,
+    // place and grid, but their native time support does not prove a later
+    // official revision. The deployed value is the protected previous winner:
+    // keep it rather than making a different interpolation (or provenance-only
+    // change) an unresolvable peer in the strict replay. This does not admit an
+    // invalid candidate or weaken replay for unrelated sources.
+    if (typeof onProtectedSameRunDmiRetention === 'function') {
+      const physicalKeys = component === 'current'
+        ? ['currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg']
+        : ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg'];
+      const valueClass = physicalKeys.every(key => fallbackRow[key] === preferredRow[key])
+        ? 'SAME_VALUES' : 'DIFFERENT_VALUES';
+      onProtectedSameRunDmiRetention(component, valueClass);
+    }
+    return 'fallback';
   }
   return preferredModelRun > fallbackModelRun ? 'preferred' : 'fallback';
 }
@@ -296,15 +329,17 @@ function withoutComponent(row, component) {
  * maintenance is different: two valid values can be revisions from different
  * DMI model runs. For each component and exact time, retain the value from the
  * newest proved model run. If the newer run lacks that component, the older
- * valid value remains. An equal modelRun is accepted only for the explicit
- * progressive-DMI revision pair when its official update time is newer;
- * otherwise it is left to the downstream fail-closed conflict gate.
+ * valid value remains. An equal modelRun may refresh the explicit protected
+ * deployed/progressive DMI pair only with a proved newer official revision;
+ * otherwise its previously selected, independently verified value survives.
+ * Unrelated or non-comparable sources still reach the strict replay gate.
  */
 export function buildNewestValidRavScoreRecoverySources({
   fallbackSource = null,
   preferredSource = null,
   productionReferenceAt = null,
   part = null,
+  onProtectedSameRunDmiRetention = null,
 } = {}) {
   if (!fallbackSource && !preferredSource) return [];
   if (!fallbackSource) return [preferredSource];
@@ -325,11 +360,13 @@ export function buildNewestValidRavScoreRecoverySources({
         allowPreferredEqualModelRun,
         productionReferenceAt,
         part,
+        onProtectedSameRunDmiRetention,
       }),
       wave: componentPreference(fallbackRow, preferredRow, 'wave', {
         allowPreferredEqualModelRun,
         productionReferenceAt,
         part,
+        onProtectedSameRunDmiRetention,
       }),
     });
   }

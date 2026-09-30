@@ -1,4 +1,25 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+
+- **BESKYTTET BØLGEREPLAY – LOKAL ÅRSAGSRETTELSE, IKKE
+  PRODUKTIONSBEVIST:** Run `36667807638` gennemførte de tre
+  leverandører og fejlede i central cache. To mulige DMI/DMI-
+  same-run-par blev faktisk afvist i isolation af uændret
+  replay: forskelligt antal native trin og forskellige native
+  tider. Ni same-value-par blev ikke afvist isoleret. Det
+  præcise første fulde replaypar kendes ikke, og der er intet
+  bevis for forkerte rå DMI-filer. 4.0.517/DEC-0264 bevarer
+  kun den tidligere validerede DMI-komponent for samme
+  identitet, hvis nyere revision ikke er bevist. Måltests er
+  lokale; source-CI, fuld artifactgate, CAS, R2, Pages og
+  offentlig no-loss mangler. Krypteret `36667807638-1`
+  findes; cron-job.org er pauset.
+- **FEMFELTSREST OG DRIFT – STADIG ÅBEN:** Sidste verificerede
+  offentlige pakke er 4.0.510 med 370.007/397.070 par. Sene
+  huller, tre delvise zoner, DMI-/Copernicus-andel, Limfjords-
+  vandstand, historik og Free-kvoter er ikke løst af denne
+  replayrettelse. Sammenlign næste pakke på samme sted/time.
+
+# Historiske issues – 2026-09-30, main 4.0.515, lokal 4.0.516
 
 - **BØLGEREPLAY BLOKERER STADIG PUBLICERING:** Run `36659094103`
   på 4.0.515 passerede DMI, Copernicus og Open-Meteo, men stoppede

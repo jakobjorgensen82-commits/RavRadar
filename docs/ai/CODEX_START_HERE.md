@@ -1,4 +1,40 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.517-protected-same-run-retention`, ikke `cb79`.
+`.cache/` er privat og må ikke stages. Ekstern cron-job.org
+`8348098` er pauset. PR #484/4.0.516 bestod exact-head
+source-CI `36667111156` og blev merged som main `f7c1dcc0`.
+Kort normalrun `36667807638` gendannede eksakt
+`36659094103-1`, passerede DMI, Copernicus og Open-Meteo,
+men stoppede i central cache før fuld artifactgate, CAS, R2
+og Pages. Krypteret fremdrift `36667807638-1` er verificeret
+i Actions-cache (104.951.816 byte). Offentlig 4.0.510 med
+370.007/397.070 femfeltspar er uændret.
+
+4.0.516's live-isolation beviste **to** faktiske same-run-
+DMI-bølgekonflikter mod uændret replay: én med forskelligt
+antal native tidstrin og én med andre native tidspunkter.
+Ni mulige par med samme værdi blev ikke afvist isoleret.
+Dette udpeger ikke det første par i fuld replay. Der er intet
+bevis for forkerte rå DMI-filer. RavRadar danner timeværdier
+fra native DMI-tider; URL-hashen `assetIdentitySha256` er ikke
+filindholdets særskilte `contentSha256`.
+
+Lokal 4.0.517/DEC-0264 bevarer kun den eksakte gamle,
+selvstændigt validerede DMI-strøm- eller bølgekomponent ved
+samme modelkørsel, sted, time, collection, gitter og lag,
+når en nyere officiel revision ikke er bevist. Beviste nyere
+revisioner og modelkørsler kan stadig overtage; øvrige
+konflikter forbliver strenge. Kun aggregerede tællere logges.
+Målrettet replay, DMI-forecast-store, kildeprioritet og
+modelbundle består lokalt. Dokumentation/version, RDKS,
+exact-head CI, sikker merge og én kort normal bekræftelse
+fra præcis `36667807638-1` afventer. Ingen lang/overlappende
+kørsel, oneoff eller cron-genåbning. Anbefalet model/Indsats:
+GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
 
 Arbejd i `feggesund-preflight-recovery`, ikke `cb79`. Ekstern
 cron-job.org `8348098` er pauset. PR #483/4.0.515 blev merged

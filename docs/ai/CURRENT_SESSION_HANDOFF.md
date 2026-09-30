@@ -1,4 +1,37 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.517-protected-same-run-retention`. `.cache/` er
+privat og må ikke stages. Ekstern cron-job.org `8348098` er
+pauset. PR #484/4.0.516 bestod exact-head source-CI
+`36667111156` og blev merged som main `f7c1dcc0`. Kort
+normalrun `36667807638` gendannede præcis `36659094103-1`,
+passerede DMI, Copernicus og Open-Meteo og stoppede i central
+cache. De næste artifact-/CAS-/R2-/Pages-trin blev ikke kørt.
+Ny krypteret progress-cache `36667807638-1` er verificeret,
+104.951.816 byte. Offentlig 4.0.510/370.007 af 397.070
+femfeltspar står fast.
+
+Den uændrede replayvalidator afviste to same-run-DMI-bølgepar
+i isolation: forskellige værdier med forskelligt native-antal
+og med forskellige native tidspunkter. Ni andre mulige par
+med samme fysiske værdi blev ikke afvist isoleret. Det er ikke
+bevis for første fulde replaypar eller forkerte rå DMI-data.
+`assetIdentitySha256` er URL-hash; rå `contentSha256` er separat
+og native timeproveniens bærer den ikke pr. trin. Lokal
+4.0.517/DEC-0264 indfører snæver, fuldt valideret bevarelse af
+den gamle DMI-komponent ved ubevist same-run-opdatering;
+andre konflikter stopper stadig. Målrettede replay-/kilde-/
+DMI-/modelbundle-tests er grønne lokalt. Ucommittede ændringer:
+kildeprioritet, aggregatlog, regressioner, version og RDKS/
+håndbog. Afslut RDKS og versions-/sourcekontrol, commit/PR,
+exact-head grøn CI, merge kun uden aktiv vejrkørsel. Derefter
+højst én kort normal bekræftelse fra eksakt `36667807638-1`;
+kontrollér fuld gate, no-loss, CAS, R2, Pages og offentlig
+prognose. Ingen blind lang kørsel eller cron-genåbning.
+Anbefalet model/Indsats: GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.516-verified-history-retention`. `.cache/` er privat

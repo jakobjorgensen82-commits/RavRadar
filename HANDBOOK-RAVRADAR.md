@@ -1,16 +1,48 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.516
+**Håndbogsversion:** 4.0.517
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.516 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.517 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.113 4.0.516 – En ekstra sikker kontrol af bølgehistorikken
+## 89.114 4.0.517 – Når nye DMI-timer beregnes anderledes
+
+Den seneste korte kørsel hentede nyt vejr fra alle tre
+leverandører, men blev endnu ikke udgivet. En særskilt kontrol
+viste, at RavRadar i to tilfælde havde to gyldige bølgetal
+fra **samme DMI-prognose** for samme sted og time. Forskellen
+var de DMI-tidspunkter, RavRadar havde brugt til at beregne
+timeværdien: det ene par havde et andet antal, det andet par
+andre tidspunkter. Det betyder ikke, at DMI's rå filer er
+forkerte. Ni andre mulige par med ens bølgetal stoppede ikke
+denne særskilte kontrol.
+
+Den nye regel gælder kun, når både gammel og ny oplysning er
+grundigt kontrollerede DMI-data for præcis samme sted, time,
+modelkørsel og kildeområde. Kan RavRadar ikke bevise, at den
+nye oplysning er en nyere officiel revision, bliver den gamle,
+stadig gyldige værdi stående. Det gælder bølger og havstrøm
+hver for sig. En dokumenteret nyere prognose kan fortsat
+erstatte den gamle; et hul må ikke slette noget gyldigt.
+Ugyldige eller ikke-sammenlignelige kilder stopper fortsat
+sikkert. Kørslens rapport tæller kun, hvor mange værdier der
+blev bevaret – den viser ingen private steder eller målinger.
+
+Fremdriften fra den fejlede kørsel er gemt krypteret, så den
+næste korte kontrol kan fortsætte fra den. Ændringen er endnu
+ikke bevist på hjemmesiden; den sidste godkendte prognose
+vises stadig, og automatisk start er pauset. Scoreformel,
+DMI-prioritet og de øvrige vejrfelter er ikke ændret.
+Tidligere beskrivelser herunder af et absolut stop ved enhver
+forskel fra samme modelkørsel er på denne snævre grænse
+erstattet af DEC-0264.
+
+## 89.113 4.0.516 – En ekstra sikker kontrol af bølgehistorikken (historisk)
 
 Den seneste korte vejrhentning kom gennem DMI, Copernicus og
 Open-Meteo, men den nye prognose blev ikke udgivet. Gamle og nye

@@ -1,4 +1,33 @@
-# 2026-09-30 – 4.0.515 stoppede igen; lokal 4.0.516 bevarer modelgrænsen
+# 2026-09-30 – 4.0.516 beviste to isolerede same-run-konflikter; 4.0.517 bevarer gyldig historik
+
+PR #484/4.0.516 bestod exact-head kildekontrol
+`36667111156` og blev merged som main `f7c1dcc0`.
+Kort normalrun `36667807638` gendannede præcis fremdrift
+`36659094103-1`, kom gennem DMI, Copernicus og Open-Meteo
+og stoppede igen ved central bølgereplay. Den uændrede
+replayvalidator afviste to mulige DMI/DMI-same-run-par i
+isolation: begge forskellige værdier, med forskelligt antal
+native tidstrin henholdsvis andre native tidspunkter. Ni
+par med samme værdier blev ikke afvist isoleret. Det er
+ikke første-par-bevis i fuld replay, og der er intet bevis
+for forkerte rå DMI-filer. `assetIdentitySha256` hasher
+URL-identitet, ikke filindhold; rå `contentSha256` er separat.
+
+Den nye krypterede Actions-cache `36667807638-1` blev
+verificeret gemt (104.951.816 byte); ingen slutpakke,
+fuld artifactgate, CAS, R2 eller Pages. Sidste offentlige
+4.0.510 er uændret. Lokal DEC-0264/4.0.517 vælger ikke
+en ny værdi på gæt: ved det snævre selvstændigt validerede
+deployed/progressive-par og ubevist same-run-revision bevarer
+den gammel gyldig DMI-komponent. Beviste nyere officielle
+revisioner/modelkørsler vinder fortsat. Andre konflikter
+bliver synlige for replay. Syntetiske regressioner for begge
+liveklasser, havstrøm, kildebevis, officielle revisioner,
+source-prioritet og uændret modelbundle består lokalt.
+RDKS/version, exact-head CI og en kort genbrugt bekræftelse
+afventer. Ekstern cron er pauset.
+
+# Historisk – 2026-09-30 – 4.0.515 stoppede igen; lokal 4.0.516 bevarer modelgrænsen
 
 PR #483/4.0.515 blev merged som main `ee44015d` efter grøn
 exact-head source-CI. Kort normalrun `36659094103` gendannede
