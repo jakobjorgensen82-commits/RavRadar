@@ -1,14 +1,28 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.513
+**Håndbogsversion:** 4.0.514
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.513 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.514 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.111 4.0.514 – Tid til DMI i en kort bekræftelse
+
+En kort bekræftelse genbrugte præcis den gemte vejrpakke, men nåede
+ikke at opdatere DMI's oversigt for den nye prognosestart. DMI's
+samlede tid var sat til seks minutter, mens systemet på forhånd
+reserverede syv minutter til at afslutte sikkert. Derfor sprang det
+selve hentningen over. Copernicus fik korrekt ikke lov at fortsætte
+med en oversigt fra et andet tidspunkt, og den offentlige prognose
+blev stående. Den nye tidsindstilling giver kort DMI en reel tur og
+plads til sikker afslutning. Et modstridende budget bliver nu afvist
+med det samme. Det er ikke bevis for, at den tidligere bølgekonflikt
+er væk; næste kontrollerede kørsel skal vise resultatet. Almindelige
+vejrkørsler og RavScore-reglerne er uændrede.
 
 ## 89.110 4.0.513 – Hvorfor en hentet prognose endnu ikke blev vist
 

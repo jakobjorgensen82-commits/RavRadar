@@ -1,3 +1,21 @@
+## 4.0.514 – ret modstridende DMI-tidsbudget i kort bekræftelse
+
+- Run `36645991041` gendannede eksakt krypteret fremdrift og
+  beskyttet produktion, men gav DMI nul reel producenttid: 360
+  sekunders quick-total var kortere end supervisorens 420 sekunders
+  afslutningsreserve. Copernicus' strenge ledger-kontrol stoppede
+  korrekt den videre bygning. Den nye fremdrift `36645991041-1`
+  blev sikret; der blev ikke udgivet nyt vejr.
+- Quick DMI får 900 sekunders samlet supervisorbudget, heraf
+  420 sekunders afslutningsreserve og højst 480 sekunders
+  producentarbejde, samt 24 minutters ydre timeout. En modstridende
+  konfiguration afvises nu med en fast sikker kode før arbejdet,
+  og test kontrollerer både fail-fast og workflowets tidsmargin.
+- Normal leverandørtid, kildeprioritet, gamle gyldige data,
+  vandstandsinterpolation og score er uændrede. Den oprindelige
+  bølgekonflikt blev ikke nået i den fejlede test og er fortsat åben.
+  Ændringen er kandidat, ikke produktionsverificeret.
+
 ## 4.0.513 – sikker afgrænsning af bølgekonflikt i gemt historik
 
 - Ved den strenge stopkode for modstridende bølger opgøres nu kun faste,

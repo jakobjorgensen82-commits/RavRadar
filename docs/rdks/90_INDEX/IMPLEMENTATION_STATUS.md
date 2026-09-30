@@ -1,4 +1,26 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.513, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.513, kandidat 4.0.514, cron pauset
+
+- [x] Docs-PR #481 bestod exact-head source-CI `36645545073`
+  og blev merged som main `6d24ad1c` uden vejradfærdsændring.
+- [x] Kort run `36645991041` gendannede eksakt beskyttet baseline
+  og krypteret fremdrift `36625547109-1`; ny fremdrift
+  `36645991041-1` er gemt. Ingen slutpakke/CAS/R2/Pages.
+- [x] Den konkrete DMI-stopårsag er budgetkonflikten 360 sekunders
+  quick-total mod 420 sekunders supervisorreserve. Den direkte
+  afslutning skabte ikke et target-bundet ledger; Copernicus-
+  forhåndskontrollen afviste det korrekt. Bølgereplay blev ikke nået.
+- [x] Kandidat 4.0.514 giver quick DMI 900 sekunders samlet
+  supervisorbudget (op til 480 til producenten), 420 sekunders
+  afslutningsreserve og 24 minutters ydre timeout; supervisoren
+  afviser fremtidige modstridende budgetter før arbejde. Normal
+  kørsels budgetter, kildeprioritet, vejrdata og score er uændrede.
+- [ ] Kør måltests, RDKS/versionskontrol, exact-head source-CI og
+  sikker merge. Bekræft derefter nyeste præcise fremdrift i én kort
+  normal kørsel; ingen blind ny fuld vejrhentning eller cron-genstart.
+- [ ] Undersøg stadig den faktiske bølgekonflikt og DMI's tre
+  `DKSS_STAGE_NO_TOUCHED_ZONES`. 4.0.514 beviser ikke deres årsag.
+
+# Historisk status – 2026-09-30 – offentlig 4.0.510, main 4.0.513
 
 - [x] PR #480/4.0.513 bestod 47 source-kontroller på eksakt
   head `5f0cc08d` i CI `36644336295` og blev merged som

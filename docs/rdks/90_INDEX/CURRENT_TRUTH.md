@@ -1,10 +1,39 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.513, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.513, kandidat 4.0.514, cron pauset
+
+Docs-PR #481 bestod exact-head CI `36645545073` og blev merged
+som main `6d24ad1c`. Den ændrede kun statusdokumentation.
+Kort normalt bekræftelsesrun `36645991041` på samme main gendannede
+præcis den beskyttede baseline og krypteret fremdrift fra
+`36625547109-1`. DMI-trinnet gennemførte imidlertid ingen reel
+producentfase: quick-budgettet var 360 sekunder, mens supervisoren
+reserverede 420 sekunder til afslutning. Den gik derfor straks i
+`FINALIZE_ONLY`, brugte afslutningsreserven og stoppede uden et nyt
+target-bundet operationelt DMI-ledger. Den efterfølgende Copernicus-
+forhåndskontrol afviste korrekt `DMI current operational ledger start
+mismatch`. Et nyt krypteret fremdriftscheckpoint
+`weather-private-progress-encrypted-v2-Linux-main-36645991041-1`
+blev gemt. Ingen ny slutpakke, CAS, R2 eller Pages blev udgivet.
+Replay af bølgehistorik blev ikke nået, så 4.0.513's diagnose er
+fortsat ikke liveverificeret.
+
+Kandidat 4.0.514 ændrer kun den korte DMI-bekræftelses tidskontrakt:
+15 minutters samlet supervisorbudget, heraf 7 minutter reserveret
+til afslutning (op til 8 minutter til producentarbejde), og
+24 minutters ydre workflow-timeout. Normal kørsel er uændret.
+Supervisoren afviser nu et internt modstridende budget med fast,
+indholdsfri kode, før leverandørarbejde starter; måltests låser
+kontrakten. Dette er endnu ikke kilde-CI- eller produktionsbevis.
+Ekstern cron forbliver pauset, og næste forsøg skal gendanne det
+nyeste gyldige checkpoint på den beskyttede produktionsbaseline.
+Offentlig 4.0.510 og 370.007/397.070 femfeltspar er uændret.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – offentlig 4.0.510, main 4.0.513
 
 PR #480 bestod exact-head source-CI `36644336295` på
 `5f0cc08d` og blev merged som main `75c01656`. 4.0.513's
 diagnose er kildevalideret, men endnu ikke vejr- eller
-deployverificeret. Der er ingen ny normal vejrkørsel efter
-`36625547109`; automatisk start forbliver pauset.
+deployverificeret. På dette tidspunkt var der ingen ny normal
+vejrkørsel efter `36625547109`; automatisk start forblev pauset.
 
 Ekstern cron-job.org-plan `8348098` er midlertidigt pauset efter
 normalrun `36625547109` på eksakt main `03c9fe22`/4.0.512.

@@ -43,6 +43,26 @@ def marker(name: str, asset: dict[str, str]) -> str:
 
 
 class SupervisorTests(unittest.TestCase):
+    def test_invalid_short_budget_fails_before_finalize_or_producer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "github-output.txt"
+            environment = {
+                "DMI_BULK_MAX_RUNTIME_SECONDS": "360",
+                "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS": "420",
+                "GITHUB_OUTPUT": str(output_path),
+            }
+            with (
+                patch.dict(supervisor.os.environ, environment, clear=True),
+                patch.object(supervisor, "run_supervised") as run,
+                patch.object(supervisor, "finalize_checkpoint") as finalize,
+            ):
+                self.assertEqual(supervisor.main(), 2)
+            run.assert_not_called()
+            finalize.assert_not_called()
+            written = output_path.read_text(encoding="utf-8")
+            self.assertIn("terminal_code=DMI_SUPERVISOR_BUDGET_CONFLICT\n", written)
+            self.assertIn("strict_current_anchor_ready=false\n", written)
+
     def test_producer_has_fail_closed_finalize_only_contract(self):
         source = supervisor.PRODUCER.read_text(encoding="utf-8")
         self.assertIn('FINALIZE_ONLY = os.getenv("DMI_BULK_FINALIZE_ONLY"', source)
