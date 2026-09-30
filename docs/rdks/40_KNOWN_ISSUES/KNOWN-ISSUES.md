@@ -1,4 +1,17 @@
-# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+# Aktuelle issues – 2026-09-30, offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+
+- **BØLGEREPLAY BLOKERER STADIG PUBLICERING:** Run `36659094103`
+  på 4.0.515 passerede DMI, Copernicus og Open-Meteo, men stoppede
+  i central cache. Ni mulige same-run-DMI-par inkluderede to med
+  forskellige bølgeværdier og ikke-sammenlignelige native trin/tider.
+  Dette er endnu ikke bevis for, hvilket par replayet først afviste.
+  Fremdrift `36659094103-1` er krypteret gemt, mens slutpakke,
+  artifactgate, CAS, R2 og Pages mangler. Ekstern cron er pauset.
+  Lokal 4.0.516/DEC-0263 kan tælle isoleret replay-afviste par
+  uden at ændre model eller offentliggøre data; faktisk liveårsag
+  og sikker årsagsrettelse afventer.
+
+# Historiske issues – 2026-09-30, main 4.0.514, lokal 4.0.515
 
 - **KORT DMI-BEKRÆFTELSE STOPPEDE FØR REEL HENTNING –
   DOKUMENTERET RODÅRSAG:** `36645991041` gendannede præcis

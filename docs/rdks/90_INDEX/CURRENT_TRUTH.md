@@ -1,4 +1,29 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516, cron pauset
+
+PR #483/4.0.515 blev merged som main `ee44015d` efter grøn
+exact-head source-CI. Kort normalrun `36659094103` gendannede
+præcis krypteret fremdrift `36650098594-1` og den beskyttede
+baseline. DMI, Copernicus og Open-Meteo bestod, men central cache
+stoppede igen på streng bølge-replaykonflikt. Ni **mulige**
+DMI/DMI-par fra samme modelkørsel blev klassificeret: to med
+forskellige bølgeværdier og henholdsvis forskelligt antal native
+trin og forskellige native tidspunkter; syv havde samme værdier
+og samme officielle assetbevis. Det præcise oprindelige fejlpar
+er endnu ikke bevist.
+
+Krypteret fremdrift `36659094103-1` er gemt. Intet færdigt
+produkt, fuld artifactgate, CAS, R2 eller Pages blev udgivet.
+Offentlig 4.0.510/370.007 af 397.070 femfeltspar er uændret.
+Cron-job.org `8348098` er pauset. Lokal 4.0.516/DEC-0263 prøver
+kun op til 16 allerede mulige par med den **uændrede** replay-
+validator og tæller sikre årsagsklasser for par, den også afviser
+i isolation. Det vælger ingen værdi, påstår ikke fuld replayorden,
+ændrer ikke modelbundle og er endnu ikke CI- eller livebevist.
+Næste trin er dokumentations-/versionstest, exact-head CI og
+højst én kort bekræftelse fra den eksakte gemte fremdrift; ingen
+lang kørsel eller cron-genåbning.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – main 4.0.514, lokal 4.0.515
 
 Kort normalrun `36650098594` på præcis main `c57ea1d4` gendannede
 `36645991041-1`, gennemførte DMI's reelle producent og den

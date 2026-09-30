@@ -1,4 +1,23 @@
-# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+# Aktivt roadmap – 2026-09-30, offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+
+1. [x] PR #483 blev exact-head-CI-godkendt og merged. Kort run
+   `36659094103` genbrugte eksakt fremdrift, passerede alle tre
+   leverandører, gemte `36659094103-1` og stoppede ved den
+   uændrede bølge-replaykonflikt. Ingen ny offentlig pakke.
+2. [ ] Afslut DEC-0263's isolerede, modeluændrede diagnose med
+   RDKS/version/begge håndbøger, måltests, exact-head source-CI
+   og sikker merge. Cron forbliver pauset.
+3. [ ] Kør højst én kort normal bekræftelse fra præcis
+   `36659094103-1`, og skeln mellem mulige par, par som replay
+   afviser i isolation, og første fejlpar i fuld replay. En
+   afvisning er ikke en godkendt kildeprioritering.
+4. [ ] Når en særskilt årsagsrettelse er dokumenteret og sikker,
+   kræv fuld artifactgate, femvejrstype-no-loss, CAS, privat R2,
+   Pages og offentlig visning. Mål leverandørandele, LF-vandstand,
+   delvise zoner og kvoter; genåbn først cron efter flere sikre
+   normale resultater.
+
+# Historisk roadmap – 2026-09-30, main 4.0.514, lokal 4.0.515
 
 1. [x] Kort `36650098594` gendannede eksakt fremdrift,
    passerede reelt DMI-ledger, Copernicus og Open-Meteo og

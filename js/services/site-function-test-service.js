@@ -1,14 +1,14 @@
-import { currentSession, requireFreshSession, testConnection } from './auth-service.js?v=4.0.515';
-import { adminStorageHealth } from './admin-document-store.js?v=4.0.515';
-import { runFullPersistenceTest } from './persistence-test-service.js?v=4.0.515';
-import { askRavRadar, classifyRavQuestion } from './rav-assistant.js?v=4.0.515';
+import { currentSession, requireFreshSession, testConnection } from './auth-service.js?v=4.0.516';
+import { adminStorageHealth } from './admin-document-store.js?v=4.0.516';
+import { runFullPersistenceTest } from './persistence-test-service.js?v=4.0.516';
+import { askRavRadar, classifyRavQuestion } from './rav-assistant.js?v=4.0.516';
 import {
  loadConditionDetails,
  loadConditions,
  loadDataManifest,
  loadZones,
  mergeConditionDetails,
-} from './data-service.js?v=4.0.515';
+} from './data-service.js?v=4.0.516';
 
 const TIMEOUT_MS=20000;
 const now=()=>performance.now();

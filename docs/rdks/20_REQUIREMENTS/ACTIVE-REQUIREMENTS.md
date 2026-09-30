@@ -1,5 +1,16 @@
 # Aktuel replay-fejldiagnose – 2026-09-30
 
+- **REQ-RAVSCORE-WAVE-ISOLATED-PROOF-0516 – BINDENDE:** Efter en
+  faktisk bølgekonflikt må de allerede kendte kandidatpar prøves
+  enkeltvis med den uændrede replayvalidator, højst 16 par. Kun
+  antal og faste, indholdsfri årsagsklasser må logges. Et par,
+  som validatoren afviser i isolation, er ikke nødvendigvis det
+  første par i den fulde replay. Diagnosen må hverken vælge en
+  kilde, undertrykke den oprindelige fejl, ændre modelbundle
+  eller udskrive privat data. Dette udvider alene DEC-0262's
+  kandidatdiagnose; dens forbud mod at udlede en vinder af
+  tællingerne består. Se DEC-0263.
+
 - **REQ-RAVSCORE-WAVE-CONFLICT-DIAG-0513 – BINDENDE:** En faktisk
   bølgekonflikt i gemt historik må fortsat stoppe produktionen.
   Fejldiagnosen uden for den låste scorebundle må alene tælle

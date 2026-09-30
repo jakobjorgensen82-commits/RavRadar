@@ -523,3 +523,104 @@ export function summarizeRavScoreWaveRecoveryConflictCandidates({
       [...sameRunDmiIdentityMismatchFields].sort(([left], [right]) => left.localeCompare(right))),
   };
 }
+
+/**
+ * Failure-only shadow proof. Replay remains untouched and fail-closed: for
+ * each bounded overlap, call the real validator with only that pair's waves.
+ * The callback's private inputs and errors never leave this function. A
+ * confirmed pair means the same validator rejects it in isolation; it does
+ * not identify which conflict was first in the full production replay.
+ */
+export function summarizeIsolatedRavScoreWaveReplayConflicts({
+  sourceRecords = [], startAt = null, targetAt = null,
+  replayCandidate = null, maxPairs = 16,
+} = {}) {
+  const startMs = Date.parse(startAt ?? '');
+  const targetMs = Date.parse(targetAt ?? '');
+  if (!Number.isFinite(startMs) || !Number.isFinite(targetMs) || startMs >= targetMs
+    || !Array.isArray(sourceRecords) || typeof replayCandidate !== 'function'
+    || !Number.isSafeInteger(maxPairs) || maxPairs < 1 || maxPairs > 32) {
+    return { status: 'INVALID_DIAGNOSTIC_INPUT' };
+  }
+  const byTime = new Map();
+  for (const [sourceIndex, source] of sourceRecords.entries()) {
+    for (const [rowIndex, row] of (source?.record?.hourly ?? []).entries()) {
+      const time = canonicalTime(row?.time);
+      const timeMs = Date.parse(time ?? '');
+      if (!Number.isFinite(timeMs) || timeMs < startMs || timeMs >= targetMs
+        || !finite(row?.waveHeightM) || !finite(row?.wavePeriodS)
+        || !row?.sources?.wave || typeof row.sources.wave !== 'object') continue;
+      const entries = byTime.get(time) ?? [];
+      entries.push({ sourceIndex, rowIndex, row });
+      byTime.set(time, entries);
+    }
+  }
+  const pairs = [];
+  for (const entries of byTime.values()) {
+    for (let leftIndex = 0; leftIndex < entries.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < entries.length; rightIndex += 1) {
+        pairs.push([entries[leftIndex], entries[rightIndex]]);
+        if (pairs.length > maxPairs) {
+          return { status: 'PAIR_LIMIT_EXCEEDED', candidatePairCountAtLeast: pairs.length };
+        }
+      }
+    }
+  }
+  const confirmedClasses = new Map();
+  const confirmedSameRunDmiReasons = new Map();
+  let confirmedPairCount = 0;
+  let otherOutcomeCount = 0;
+  for (const [left, right] of pairs) {
+    const isolated = sourceRecords.map((source, sourceIndex) => ({
+      ...source,
+      record: {
+        ...source.record,
+        hourly: (source.record?.hourly ?? []).map((row, rowIndex) => {
+          const selected = (sourceIndex === left.sourceIndex && rowIndex === left.rowIndex)
+            || (sourceIndex === right.sourceIndex && rowIndex === right.rowIndex);
+          return withoutCurrent(selected ? row : withoutWave(row));
+        }),
+      },
+    }));
+    let confirmed = false;
+    try {
+      replayCandidate(isolated);
+    } catch (error) {
+      confirmed = error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'
+        && error?.message === 'RavScore recovery replay has a conflicting wave component';
+    }
+    if (!confirmed) {
+      otherOutcomeCount += 1;
+      continue;
+    }
+    confirmedPairCount += 1;
+    const leftProvider = componentProvider(left.row, 'wave');
+    const rightProvider = componentProvider(right.row, 'wave');
+    const providerClass = leftProvider === 'dmi' && rightProvider === 'dmi'
+      ? 'DMI_DMI' : 'OTHER';
+    const leftRun = componentModelRun(left.row, 'wave');
+    const rightRun = componentModelRun(right.row, 'wave');
+    const runClass = leftRun !== null && leftRun === rightRun
+      ? 'SAME_RUN' : 'OTHER_RUN';
+    const valueClass = ['waveHeightM', 'wavePeriodS', 'waveDirectionDeg']
+      .every(key => left.row[key] === right.row[key])
+      ? 'SAME_VALUES' : 'DIFFERENT_VALUES';
+    const category = `${providerClass}_${runClass}_${valueClass}`;
+    confirmedClasses.set(category, (confirmedClasses.get(category) ?? 0) + 1);
+    if (providerClass === 'DMI_DMI' && runClass === 'SAME_RUN') {
+      const reason = sameRunDmiWaveRevisionEvidence(left.row, right.row).code;
+      const key = `${valueClass}_${reason}`;
+      confirmedSameRunDmiReasons.set(key, (confirmedSameRunDmiReasons.get(key) ?? 0) + 1);
+    }
+  }
+  return {
+    status: 'ISOLATED_REPLAY_PROOFS_NOT_FULL_REPLAY_ORDER',
+    candidatePairCount: pairs.length,
+    confirmedPairCount,
+    otherOutcomeCount,
+    confirmedClasses: Object.fromEntries([...confirmedClasses]
+      .sort(([left], [right]) => left.localeCompare(right))),
+    confirmedSameRunDmiReasons: Object.fromEntries([...confirmedSameRunDmiReasons]
+      .sort(([left], [right]) => left.localeCompare(right))),
+  };
+}

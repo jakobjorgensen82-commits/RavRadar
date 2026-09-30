@@ -1,4 +1,31 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+
+Arbejd i `feggesund-preflight-recovery`, ikke `cb79`. Ekstern
+cron-job.org `8348098` er pauset. PR #483/4.0.515 blev merged
+som main `ee44015d` efter grøn exact-head source-CI. Kort run
+`36659094103` gendannede præcis `36650098594-1` og den
+beskyttede baseline, kom gennem DMI, Copernicus og Open-Meteo,
+men stoppede på den strenge bølge-replaykonflikt i central cache.
+Ni mulige DMI/DMI-par fra samme modelkørsel: to forskellige
+værdier med forskelligt native-antal/tidspunkter, syv samme
+værdier/samme assetbevis. Ingen af kategorierne identificerer
+den fulde replays første afviste par. Ny krypteret fremdrift
+`36659094103-1` er gemt; ingen slutpakke, fuld artifactgate,
+CAS, R2 eller Pages. Offentlig 4.0.510/370.007 af 397.070
+femfeltspar er uændret.
+
+Lokal 4.0.516/DEC-0263 er kun fejlstisdiagnose uden for den
+låste modelbundle: højst 16 isolerede par prøves med den
+uændrede replayvalidator og rapporteres kun som antal/faste
+klasser. Den oprindelige fejl kastes stadig; ingen værdi,
+prioritet eller score ændres. Syntetisk replay- og modelbundle-
+test består. Afslut dokumentation/version og exact-head CI,
+merge kun uden aktiv vejrkørsel, og kør højst én kort normal
+bekræftelse fra præcis `36659094103-1`. Før en adfærdsrettelse
+kræves konkret årsagsbevis. Ingen lang/overlappende kørsel,
+oneoff eller cron-genåbning. Anbefalet Indsats: Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – main 4.0.514, lokal 4.0.515
 
 Arbejd i `feggesund-preflight-recovery`; `cb79` er ikke
 arbejdscheckouten. Ekstern cron-job.org `8348098` er pauset.

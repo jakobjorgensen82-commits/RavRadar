@@ -1,4 +1,21 @@
-## 4.0.515 – sikker DMI-bølgerevisionsdiagnose (lokal kandidat)
+## 4.0.516 – isoleret bølgekonfliktbevis uden modelændring (lokal kandidat)
+
+- Main 4.0.515 bestod kildekontrol, men kort run `36659094103`
+  stoppede igen i bølgereplay efter de tre leverandører. Ni
+  mulige same-run-DMI-par blev set; to med forskellige værdier
+  og forskelligt native-antal/tid, syv med ens værdier/samme
+  officielle assetbevis. Ny krypteret fremdrift `36659094103-1`
+  er gemt; ingen slutpakke eller deploy.
+- På den eksisterende fejlsti prøves højst 16 mulige par enkeltvis
+  med den uændrede, strenge replayvalidator. Kun faste kategorier
+  og antal logges. Et isoleret afvist par er ikke automatisk den
+  fulde replays første fejlpar og vælger ingen vejrkilde.
+- RavScore-modelbundle, score, vejrdata, prioritet, cache og
+  scheduler ændres ikke. Syntetisk måltest og uændret bundle
+  består lokalt; source-CI og produktionsbevis afventer. Se
+  DEC-0263. Ekstern cron forbliver pauset.
+
+## 4.0.515 – sikker DMI-bølgerevisionsdiagnose
 
 - Kort normalrun `36650098594` passerede DMI, Copernicus og
   Open-Meteo på 4.0.514, men stoppede igen ved streng bølgekonflikt

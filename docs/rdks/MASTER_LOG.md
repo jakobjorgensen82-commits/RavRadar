@@ -1,4 +1,27 @@
-# 2026-09-30 – 4.0.514 gennemført til bølgekonflikt; lokal 4.0.515
+# 2026-09-30 – 4.0.515 stoppede igen; lokal 4.0.516 bevarer modelgrænsen
+
+PR #483/4.0.515 blev merged som main `ee44015d` efter grøn
+exact-head source-CI. Kort normalrun `36659094103` gendannede
+præcis `36650098594-1`, gennemførte DMI, Copernicus og
+Open-Meteo og stoppede i central cache på den strenge
+bølge-replaykonflikt. Ni mulige DMI/DMI-par fra samme modelkørsel:
+to med forskellige fysiske værdier og henholdsvis andet native-
+antal/andre native-tider; syv med ens værdier/samme assetbevis.
+De er ikke bevis for første konflikt i fuld replay. Krypteret
+fremdrift `36659094103-1` blev gemt, intet produkt publiceret.
+
+Et forsøg på at knytte rå rækker til replayfejlen blev afvist
+af privatlivskontrollen og ikke gennemført. En kun-indeks-variant
+blev lokalt prøvet, men taget helt ud igen, fordi replaymodulet
+er del af den låste modelbundle. Den aktuelle 4.0.516-kandidat
+holder bundlen uændret og prøver i stedet op til 16 mulige par
+enkeltvis med replayvalidatorens eksisterende API på fejlstien.
+Syntetiske tests viser isolerede konflikter ved begge native-
+hindringer uden ændret input eller log af private værdier.
+DEC-0192/DEC-0229's hard-stop består; DEC-0263 er diagnostik,
+ikke årsagsrettelse. Cron er pauset, offentlig 4.0.510 uændret.
+
+# Historisk – 2026-09-30 – 4.0.514 gennemført til bølgekonflikt; lokal 4.0.515
 
 Run `36650098594` på main `c57ea1d4` gendannede eksakt
 `36645991041-1` og kom gennem DMI, Copernicus og Open-Meteo.

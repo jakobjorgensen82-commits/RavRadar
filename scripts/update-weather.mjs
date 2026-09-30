@@ -115,6 +115,7 @@ import {
 } from './lib/ravscore-production-part-pipeline.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
+  summarizeIsolatedRavScoreWaveReplayConflicts,
   summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import {
@@ -122,6 +123,7 @@ import {
 } from './lib/ravscore-operational-state-readiness.mjs';
 import {
   RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
+  buildRavScoreRecoveryReplay,
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
 import {
@@ -2583,6 +2585,21 @@ function scoreCoastalPartsRuntime(
               targetAt: generatedAt,
             });
             console.error(`RAVSCORE_RECOVERY_WAVE_CONFLICT_CANDIDATES ${JSON.stringify(diagnosis)}`);
+            const isolatedProof = summarizeIsolatedRavScoreWaveReplayConflicts({
+              sourceRecords: recoverySources,
+              startAt: replayStartAt,
+              targetAt: generatedAt,
+              replayCandidate: isolatedSources => buildRavScoreRecoveryReplay({
+                part: { ...part, zoneId },
+                initialState: initialSelection.state,
+                targetReferenceAt: generatedAt,
+                sourceRecords: isolatedSources,
+                publicHourly: hourly.filter(hour => Date.parse(hour.time) >= targetMs
+                  && Date.parse(hour.time) < targetMs + RAVSCORE_PUBLIC_FORECAST_HOURS * 3_600_000),
+                nativeCadenceHoldHours,
+              }),
+            });
+            console.error(`RAVSCORE_RECOVERY_WAVE_ISOLATED_PROOFS ${JSON.stringify(isolatedProof)}`);
           } catch {
             console.error('RAVSCORE_RECOVERY_WAVE_CONFLICT_CANDIDATES_UNAVAILABLE');
           }

@@ -1,4 +1,30 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.516-verified-history-retention`. `.cache/` er privat
+og må ikke stages. Cron-job.org `8348098` er pauset. Main
+`ee44015d`/4.0.515 er exact-head-CI-valideret. Kort normalrun
+`36659094103` gendannede præcis `36650098594-1`, passerede
+DMI, Copernicus og Open-Meteo og stoppede på bølge-replaykonflikt.
+Krypteret fremdrift `36659094103-1` er gemt. Intet nyt
+artifact, fuld artifactgate, CAS, R2 eller Pages blev udgivet;
+offentlig 4.0.510/370.007 af 397.070 femfeltspar står fast.
+
+Sikker 4.0.515-log så ni mulige DMI/DMI-par fra samme modelkørsel:
+to med forskellig fysisk værdi og ikke-sammenligneligt native-
+antal/tid, syv med samme værdi/samme officielle assetbevis.
+Det er ikke fuld replays beviste første konflikt. Lokal
+4.0.516/DEC-0263 isolerer højst 16 par og kalder den eksisterende
+replayvalidator på hvert; kun faste klasser/antal logges, ingen
+privat payload. Replay/modelbundle, sourcevalg og score er uændret.
+Syntetiske måltests er grønne; dokumentation/version, exact-head
+CI, merge og livebevis mangler. Næste sikre trin: slutkontrol,
+PR/CI og højst én kort normal bekræftelse fra eksakt
+`36659094103-1`, derefter årsagsvurdering. En ubevist same-run-
+revision skal fortsat stoppe. Anbefalet model/Indsats:
+GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – main 4.0.514, lokal 4.0.515
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.515-wave-revision-evidence`; den gamle `cb79`-checkout
