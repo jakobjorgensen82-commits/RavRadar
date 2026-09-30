@@ -1,10 +1,35 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.514, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515, cron pauset
+
+Kort normalrun `36650098594` på præcis main `c57ea1d4` gendannede
+`36645991041-1`, gennemførte DMI's reelle producent og den
+tidligere fejlede target-ledgerkontrol, derpå Copernicus og
+Open-Meteo. Central cache stoppede kl. 01:11 UTC ved samme strenge
+`RAVSCORE_RECOVERY_REPLAY_CONFLICT` for bølger. Den sikre
+kandidatdiagnose talte syv DMI/DMI-overlap fra samme modelkørsel:
+to med forskellige bølgeværdier, fem med samme værdier. Det er
+ikke bevis for replayets præcise konfliktpar eller hvorfor en
+officiel revision ikke kunne rangordnes. Ny krypteret fremdrift
+`weather-private-progress-encrypted-v2-Linux-main-36650098594-1`
+blev gemt (105.600.580 krypterede byte), men ingen færdig pakke,
+fuld artifactgate, CAS, R2 eller Pages blev udgivet. Offentlig
+4.0.510 og 370.007/397.070 femfeltspar er fortsat sidste
+verificerede produktion.
+
+Lokal 4.0.515-kandidat (DEC-0262) udvider kun de indholdsfri
+**mulige** DMI-overlap med faste klasser for identitetsmatch,
+native trin og officiel revisionsorden. DEC-0192/DEC-0229's
+fail-closed-konflikt og alle kilde-/scorevalg er uændrede. Måltest
+består lokalt; versions-, dokumentations- og exact-head CI samt
+live årsagsbevis afventer. Den eksterne cron er stadig pauset;
+start ikke en ny lang eller overlappende vejrhentning.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – main 4.0.514 før cachefejlen
 
 PR #482 bestod fuld exact-head source-CI `36649441478` på
 `da8a34c1` og blev merged som main `c57ea1d4` med identisk
-kildetræ. Én kort normal bekræftelse `36650098594` er aktiv på
-denne main fra eksakt fremdrift `36645991041-1`; den nåede DMI's
-reelle producenttrin. Ingen ny offentlig pakke er endnu bevist.
+kildetræ. Én kort normal bekræftelse `36650098594` var på dette
+tidspunkt aktiv fra eksakt fremdrift `36645991041-1` og havde
+nået DMI's reelle producenttrin. Dens afsluttede resultat står øverst.
 
 Docs-PR #481 bestod exact-head CI `36645545073` og blev merged
 som main `6d24ad1c`. Den ændrede kun statusdokumentation.

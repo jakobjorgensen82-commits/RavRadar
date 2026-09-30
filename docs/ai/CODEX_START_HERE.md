@@ -1,4 +1,28 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – main 4.0.513, cron pauset
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515
+
+Arbejd i `feggesund-preflight-recovery`; `cb79` er ikke
+arbejdscheckouten. Ekstern cron-job.org `8348098` er pauset.
+PR #482/4.0.514 bestod exact-head CI `36649441478` og blev
+merged som main `c57ea1d4`. Kort normalrun `36650098594`
+gendannede præcis `36645991041-1`, gennemførte DMI, Copernicus
+og Open-Meteo og nåede central cache. Det gamle DMI-
+budget-/ledgerstop er dermed passeret live. Cachebygningen
+stoppede derpå igen på `RAVSCORE_RECOVERY_REPLAY_CONFLICT`
+for bølger. Sikker diagnose fandt syv mulige DMI/DMI-
+same-run-overlap, to med forskellige fysiske bølgeværdier og
+fem med samme. Det er kandidater, ikke det eksakte fejlpar.
+Krypteret fremdrift `36650098594-1` er gemt; ingen fuld gate,
+slutpakke, CAS, R2 eller Pages er gennemført.
+
+Lokal 4.0.515 (DEC-0262) udvider kun de sikre kandidatklasser
+til officiel revisions-/kildeidentitetsårsag. Måltest er grøn;
+versions-/RDKS-/håndbogskontrol, exact-head CI, merge og live
+årsagsbevis mangler. Bevar DEC-0192/DEC-0229's hårde stop for
+uafklaret same-run-revision. Start ikke ny lang, overlappende
+eller blind oneoff-vejrkørsel og genåbn ikke cron. Anbefalet
+indsats: Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – main 4.0.513, cron pauset
 
 PR #480 blev merged som main `75c01656` efter grøn exact-head
 source-CI `36644336295` (head `5f0cc08d`). Det var kun

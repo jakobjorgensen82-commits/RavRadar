@@ -1,3 +1,20 @@
+## 4.0.515 – sikker DMI-bølgerevisionsdiagnose (lokal kandidat)
+
+- Kort normalrun `36650098594` passerede DMI, Copernicus og
+  Open-Meteo på 4.0.514, men stoppede igen ved streng bølgekonflikt
+  i historisk cache. Syv mulige DMI/DMI-overlap havde samme
+  modelkørsel; to havde forskellige fysiske bølgeværdier, fem
+  havde samme værdier. Diagnosen beviser ikke det præcise
+  afviste par. Krypteret fremdrift `36650098594-1` blev gemt;
+  ingen færdig pakke, CAS, R2 eller Pages blev udgivet.
+- Fejlstien opdeler nu disse **mulige** overlap efter, om DMI's
+  kilde-/gitteridentitet kan sammenlignes, om de native trin
+  passer, og om en nyere officiel revision er bevist. Kun faste
+  klasser, feltnavne og antal logges. Intet vejr-, score- eller
+  prioriteringsvalg ændres; uafklaret same-run-bølge stopper
+  fortsat fail-closed. Se DEC-0262. Måltest er lokalgrøn;
+  exact-head CI og live resultat afventer.
+
 ## 4.0.514 – ret modstridende DMI-tidsbudget i kort bekræftelse
 
 - Run `36645991041` gendannede eksakt krypteret fremdrift og

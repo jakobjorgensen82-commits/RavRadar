@@ -1,4 +1,19 @@
-## 2026-09-30 – 4.0.514 source-grøn, merged og kort run i DMI
+## 2026-09-30 – 4.0.514 live-DMI bestod, men bølgereplay stoppede; lokal 4.0.515
+
+Run `36650098594` på main `c57ea1d4` gendannede eksakt
+`36645991041-1`, passerede DMI's reelle producent,
+target-ledger, Copernicus og Open-Meteo. Central cache
+stoppede kl. 01:11 UTC ved bølge-replaykonflikt. Den sikre
+diagnose talte syv mulige DMI/DMI-same-run-overlap: to med
+forskellige bølgeværdier, fem med samme. De er ikke et bevis
+for replayets konkrete fejlpar. Krypteret fremdrift
+`36650098594-1` blev gemt; ingen slutpakke/CAS/R2/Pages.
+Lokal 4.0.515/DEC-0262 opdeler alene sikre revisions-
+hindringer uden at ændre data eller konfliktgaten. Måltest
+består; exact-head CI, merge og live årsagsbevis mangler.
+Cron-job.org forbliver pauset. Offentlig 4.0.510 står.
+
+## 2026-09-30 – 4.0.514 source-grøn, merged og kort run i DMI (historisk status)
 
 PR #482 bestod full exact-head source-CI `36649441478` og
 blev merged som main `c57ea1d4`. Kort normalrun `36650098594`

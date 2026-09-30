@@ -1,4 +1,24 @@
-# 2026-09-30 – 4.0.514 merged, kort bekræftelse aktiv
+# 2026-09-30 – 4.0.514 gennemført til bølgekonflikt; lokal 4.0.515
+
+Run `36650098594` på main `c57ea1d4` gendannede eksakt
+`36645991041-1` og kom gennem DMI, Copernicus og Open-Meteo.
+4.0.514's tidsrettelse passerede sin tidligere ledgerbarriere.
+Central cache stoppede derefter igen på streng bølgekonflikt.
+4.0.513's sikre tæller fandt syv mulige DMI/DMI-overlap med samme
+modelkørsel: to med forskellige fysiske bølgeværdier, fem med
+samme. Hvilket par der konkret stoppede replay, vides ikke.
+Krypteret fremdrift `36650098594-1` er gemt; ingen færdig
+pakke, CAS, R2 eller Pages findes fra dette run. Offentlig
+4.0.510 består, og ekstern cron er pauset.
+
+Lokal 4.0.515/DEC-0262 tilføjer kun faste, payloadfri
+revisions-/identitetsklasser til de mulige DMI-par.
+DEC-0192/DEC-0229's fail-closed-regel og værdier er uændrede.
+Måltest består; versions-/RDKS-/håndbogskontrol, exact-head
+CI, merge og et eneste kort eksakt fremdriftsbundet livebevis
+afventer. Ingen ny lang, overlappende eller blind kørsel.
+
+# Historisk – 2026-09-30 – 4.0.514 merged, kort bekræftelse aktiv
 
 PR #482 bestod exact-head CI `36649441478` og blev merged
 som main `c57ea1d4`. Kort normalrun `36650098594` fra

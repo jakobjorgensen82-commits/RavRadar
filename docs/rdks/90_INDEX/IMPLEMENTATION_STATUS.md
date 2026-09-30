@@ -1,11 +1,35 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.514, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515, cron pauset
+
+- [x] Kort run `36650098594` passerede eksakt progress-restore,
+  reelt DMI-producentarbejde, target-bundet DMI-ledger,
+  Copernicus og Open-Meteo. Det stoppede i bølge-replay under
+  central cache; senere artifact-/CAS-/R2-/Pages-trin blev
+  sprunget over. Ingen ny offentlig vejrpakke.
+- [x] 4.0.513's sikre kandidatdiagnose blev nået: syv
+  DMI/DMI-overlap fra samme modelkørsel, to med forskellige
+  fysiske bølgeværdier og fem med samme. De er ikke det
+  verificerede, eksakte konfliktpar.
+- [x] Ny krypteret fremdrift `36650098594-1` blev gemt under
+  eksakt run-/attemptnøgle. Ekstern cron forbliver pauset.
+- [x] Lokal 4.0.515-diagnose (DEC-0262) opdeler mulige
+  same-run-DMI-overlap efter officiel revisionsorden,
+  native-trin- og identitetshindring, uden vejradfærdsændring.
+  Målrettet replay-test er grøn.
+- [ ] Færdiggør versions-/RDKS-/håndbogskontrol, exact-head
+  source-CI og sikker merge uden aktiv vejrkørsel. Kun derefter
+  én kort, eksakt fremdriftsbundet bekræftelse; ingen blind
+  fuld kørsel eller cron-genåbning.
+- [ ] Brug de nye sikre klasser til at dokumentere faktisk
+  revisionshindring, før kildeprioritet eller replay ændres.
+
+# Historisk status – 2026-09-30 – main 4.0.514 før cachefejlen
 
 - [x] PR #482 bestod fuld exact-head source-CI `36649441478`
   på `da8a34c1` og blev merged som main `c57ea1d4` med
   identisk kildetræ, uden aktiv vejrkørsel ved merge.
 - [x] Kort normalrun `36650098594` blev startet alene på den
   nye main fra eksakt krypteret fremdrift `36645991041-1` og
-  nåede DMI's reelle producenttrin. Ingen slutpakke er bevist.
+  nåede DMI's reelle producenttrin. Det senere stop står øverst.
 
 - [x] Docs-PR #481 bestod exact-head source-CI `36645545073`
   og blev merged som main `6d24ad1c` uden vejradfærdsændring.

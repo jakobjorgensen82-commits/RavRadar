@@ -666,12 +666,69 @@ assert.deepEqual(safeWaveDiagnosis, {
   classes: {
     ACROSS_RECORDS_DMI_DMI_SAME_RUN_BOTH_PRIORITY_ADMITTED_DIFFERENT_VALUES: 1,
   },
+  sameRunDmiRevisionClasses: { SAME_OFFICIAL_ASSET_PROOF: 1 },
+  sameRunDmiValueRevisionClasses: {
+    DIFFERENT_VALUES_SAME_OFFICIAL_ASSET_PROOF: 1,
+  },
+  sameRunDmiIdentityMismatchFields: {},
 }, 'a same-run DMI wave overlap is classified without relaxing replay');
 assert.equal(JSON.stringify(unresolvedWaveSources), unresolvedWaveSnapshot,
   'failure-only classification must not mutate recovery inputs');
 assert.equal(JSON.stringify(safeWaveDiagnosis).includes(part.partId), false);
 assert.equal(JSON.stringify(safeWaveDiagnosis).includes(time(2)), false);
 assert.equal(JSON.stringify(safeWaveDiagnosis).includes('1.3'), false);
+const changedWaveAsset = withVerifiedWave(weather(2, { waveHeight: 1.3 }));
+changedWaveAsset.sources.wave.assetIdentitySha256 = sha('distinct-wave-asset');
+changedWaveAsset.sources.wave.nativeSteps[0].assetIdentitySha256 = sha('distinct-wave-asset');
+const missingRevisionProof = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: [unresolvedWaveSources[0], {
+    source: 'progressive-private-dmi', record: record([changedWaveAsset]),
+  }],
+  part, startAt: time(1), targetAt: time(4),
+});
+assert.deepEqual(missingRevisionProof.sameRunDmiRevisionClasses,
+  { CREATED_AT_MISSING: 1 },
+  'a changed same-run asset without comparable official times stays diagnostic-only');
+const differentGridWave = withVerifiedWave(weather(2, { waveHeight: 1.3 }));
+differentGridWave.sources.wave.gridDefinitionSha256 = sha('different-wave-grid');
+const nonComparableWave = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: [unresolvedWaveSources[0], {
+    source: 'progressive-private-dmi', record: record([differentGridWave]),
+  }],
+  part, startAt: time(1), targetAt: time(4),
+});
+assert.deepEqual(nonComparableWave.sameRunDmiRevisionClasses,
+  { SOURCE_IDENTITY_NOT_COMPARABLE: 1 });
+assert.deepEqual(nonComparableWave.sameRunDmiIdentityMismatchFields,
+  { gridDefinitionSha256: 1 },
+  'a changed grid must be classified without exposing either grid hash');
+assert.deepEqual(nonComparableWave.sameRunDmiValueRevisionClasses,
+  { DIFFERENT_VALUES_SOURCE_IDENTITY_NOT_COMPARABLE: 1 });
+const oldTimedWave = withVerifiedWave(weather(2));
+oldTimedWave.sources.wave.itemUpdatedAt = time(-2);
+oldTimedWave.sources.wave.nativeSteps[0].itemUpdatedAt = time(-2);
+const newTimedWave = withVerifiedWave(weather(2, { waveHeight: 1.3 }));
+newTimedWave.sources.wave.assetIdentitySha256 = sha('newer-wave-asset');
+newTimedWave.sources.wave.nativeSteps[0].assetIdentitySha256 = sha('newer-wave-asset');
+newTimedWave.sources.wave.itemUpdatedAt = time(-1);
+newTimedWave.sources.wave.nativeSteps[0].itemUpdatedAt = time(-1);
+const provedRevisionCandidates = summarizeRavScoreWaveRecoveryConflictCandidates({
+  sourceRecords: [
+    { source: 'deployed-private-runtime', record: record([oldTimedWave]) },
+    { source: 'progressive-private-dmi', record: record([newTimedWave]) },
+  ],
+  part, startAt: time(1), targetAt: time(4),
+});
+assert.deepEqual(provedRevisionCandidates.sameRunDmiRevisionClasses,
+  { RIGHT_OFFICIAL_REVISION_PROVED: 1 },
+  'the safe classifier can distinguish a proved official revision from an unresolved peer');
+for (const diagnosis of [missingRevisionProof, nonComparableWave,
+  provedRevisionCandidates]) {
+  const serialized = JSON.stringify(diagnosis);
+  assert.equal(serialized.includes(part.partId), false);
+  assert.equal(serialized.includes(time(2)), false);
+  assert.equal(serialized.includes('1.3'), false);
+}
 assert.throws(() => replayForAge(4, unresolvedWaveSources),
   error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
   'classification never authorizes a conflicting wave');
