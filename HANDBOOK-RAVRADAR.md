@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.515
+**Håndbogsversion:** 4.0.516
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.515 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.516 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.113 4.0.516 – En ekstra sikker kontrol af bølgehistorikken
+
+Den seneste korte vejrhentning kom gennem DMI, Copernicus og
+Open-Meteo, men den nye prognose blev ikke udgivet. Gamle og nye
+oplysninger om bølger kunne stadig ikke samles uden tvivl.
+Hjemmesiden viser derfor fortsat den sidste godkendte prognose.
+
+Fejlrapporten viste ni mulige par af DMI-bølgeoplysninger fra
+samme prognosekørsel. I to par var bølgetallene forskellige,
+og den bagvedliggende tidsstøtte kunne ikke sammenlignes
+direkte. Det er stadig ikke bevist, hvilket par der først fik
+den fulde kontrol til at stoppe. En ny, afgrænset kontrol vil
+prøve hvert muligt par for sig med den samme strenge regel, som
+bruges ved udgivelse. Den viser kun antal og faste årsagsord;
+aldrig sted, tidspunkt, bølgetal eller private data. Den ændrer
+ikke scoren og vælger ikke mellem modstridende værdier.
+
+Den hentede fremdrift er gemt krypteret, så et kort kontrolleret
+forsøg kan fortsætte derfra. Automatisk vejrhentning er stadig
+pauset. Først når den konkrete årsag er dokumenteret, kan en
+særskilt sikker rettelse vurderes. Se DEC-0263.
 
 ## 89.112 4.0.515 – Hvorfor bølgeoplysningerne stadig ikke kan samles
 

@@ -1,4 +1,22 @@
-# 2026-09-30 – offentlig 4.0.510, main 4.0.514, lokal 4.0.515, cron pauset
+# 2026-09-30 – offentlig 4.0.510, main 4.0.515, lokal 4.0.516, cron pauset
+
+- [x] PR #483 bestod exact-head kildekontrol og blev merged som
+  main `ee44015d`. Kort run `36659094103` gendannede præcis
+  `36650098594-1`, gennemførte de tre leverandører og gemte ny
+  krypteret fremdrift `36659094103-1`, men stoppede ved bølgereplay.
+- [x] Fejlstiens ni mulige DMI/DMI-par omfattede to forskellige
+  fysiske værdier med henholdsvis forskelligt antal native trin og
+  forskellige native tider; syv havde ens værdier/samme assetbevis.
+  Oprindeligt første afviste par er ikke identificeret.
+- [x] Lokal 4.0.516/DEC-0263 prøver par enkeltvis mod uændret
+  replay; syntetiske måltests for begge native-hindringer og
+  uændret modelbundle består. Ingen værdi eller score ændres.
+- [ ] Afslut RDKS/version/håndbog, exact-head source-CI og sikker
+  merge. Dernæst højst én kort bekræftelse fra præcis
+  `36659094103-1`; undersøg bekræftede konfliktklasser før en
+  særskilt adfærdsbeslutning. Cron forbliver pauset.
+
+# Historisk status – 2026-09-30 – main 4.0.514, lokal 4.0.515
 
 - [x] Kort run `36650098594` passerede eksakt progress-restore,
   reelt DMI-producentarbejde, target-bundet DMI-ledger,

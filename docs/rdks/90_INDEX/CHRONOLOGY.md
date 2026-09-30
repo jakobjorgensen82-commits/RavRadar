@@ -1,3 +1,18 @@
+## 2026-09-30 – 4.0.515 stoppede i bølgereplay; lokal 4.0.516 diagnose
+
+PR #483 bestod exact-head source-CI og blev merged som main
+`ee44015d`. Kort run `36659094103` gendannede eksakt
+`36650098594-1`, passerede DMI, Copernicus og Open-Meteo og
+stoppede igen ved streng bølgekonflikt. Ni mulige same-run-
+DMI-par blev set: to med forskellige værdier og usammenlignelige
+native trin/tid, syv med ens værdier/samme assetbevis. Ny
+krypteret fremdrift `36659094103-1` blev gemt. Ingen ny
+pakke/CAS/R2/Pages; offentlig 4.0.510 består og cron er pauset.
+Lokal DEC-0263/4.0.516 prøver op til 16 mulige par med den
+uændrede replayvalidator uden at ændre model eller kildevalg.
+Kun faste aggregerede klasser må logges. Syntetiske tests består;
+exact-head og livebevis afventer.
+
 ## 2026-09-30 – 4.0.514 live-DMI bestod, men bølgereplay stoppede; lokal 4.0.515
 
 Run `36650098594` på main `c57ea1d4` gendannede eksakt

@@ -33,6 +33,7 @@ import {
 } from './lib/ravscore-recovery-replay.mjs';
 import {
   buildNewestValidRavScoreRecoverySources,
+  summarizeIsolatedRavScoreWaveReplayConflicts,
   summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
@@ -732,6 +733,79 @@ for (const diagnosis of [missingRevisionProof, nonComparableWave,
 assert.throws(() => replayForAge(4, unresolvedWaveSources),
   error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
   'classification never authorizes a conflicting wave');
+const isolatedWaveProof = summarizeIsolatedRavScoreWaveReplayConflicts({
+  sourceRecords: unresolvedWaveSources,
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.deepEqual(isolatedWaveProof, {
+  status: 'ISOLATED_REPLAY_PROOFS_NOT_FULL_REPLAY_ORDER',
+  candidatePairCount: 1,
+  confirmedPairCount: 1,
+  otherOutcomeCount: 0,
+  confirmedClasses: { DMI_DMI_SAME_RUN_DIFFERENT_VALUES: 1 },
+  confirmedSameRunDmiReasons: { DIFFERENT_VALUES_SAME_OFFICIAL_ASSET_PROOF: 1 },
+}, 'the unchanged replay validator rejects the isolated verified pair');
+assert.equal(JSON.stringify(unresolvedWaveSources), unresolvedWaveSnapshot,
+  'isolated replay diagnosis must not mutate the original private rows');
+for (const privateValue of [part.partId, time(2), '1.3']) {
+  assert.equal(JSON.stringify(isolatedWaveProof).includes(privateValue), false);
+}
+const equalWaveProof = summarizeIsolatedRavScoreWaveReplayConflicts({
+  sourceRecords: [unresolvedWaveSources[0], unresolvedWaveSources[0]],
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.equal(equalWaveProof.confirmedPairCount, 0,
+  'an identical replay signature is not reported as a proven conflict');
+const interpolatedWaveAt2 = (beforeHour, afterHour, waveHeight) => {
+  const before = dmiForecastSource('wave', time(beforeHour), time(-54));
+  const after = dmiForecastSource('wave', time(afterHour), time(-54));
+  return withVerifiedWave({
+    ...weather(2, { waveHeight }),
+    sources: {
+      wave: {
+        ...before,
+        leadTimeHours: (Date.parse(time(2)) - Date.parse(time(-54))) / HOUR_MS,
+        temporalResolution: 'interpolated',
+        nativeValidTimes: [time(beforeHour), time(afterHour)],
+        nativeSteps: [before.nativeSteps[0], after.nativeSteps[0]],
+      },
+    },
+  });
+};
+for (const [leftWave, rightWave, expectedReason] of [
+  [withVerifiedWave(weather(2)), interpolatedWaveAt2(1, 3, 1.3),
+    'DIFFERENT_VALUES_NATIVE_STEP_COUNT_NOT_COMPARABLE'],
+  [interpolatedWaveAt2(0, 3, 1.2), interpolatedWaveAt2(1, 3, 1.3),
+    'DIFFERENT_VALUES_NATIVE_STEP_TIME_NOT_COMPARABLE'],
+]) {
+  const sources = [
+    { source: 'deployed-private-runtime', record: record([leftWave]) },
+    { source: 'progressive-private-dmi', record: record([rightWave]) },
+  ];
+  const proof = summarizeIsolatedRavScoreWaveReplayConflicts({
+    sourceRecords: sources, startAt: time(1), targetAt: time(4),
+    replayCandidate: isolated => replayForAge(4, isolated),
+  });
+  assert.equal(proof.confirmedPairCount, 1,
+    'different valid DMI native support must still fail through the unchanged replay');
+  assert.deepEqual(proof.confirmedSameRunDmiReasons, { [expectedReason]: 1 });
+}
+assert.deepEqual(summarizeIsolatedRavScoreWaveReplayConflicts({
+  sourceRecords: unresolvedWaveSources,
+  startAt: time(1), targetAt: time(4), maxPairs: 1,
+  replayCandidate: sources => replayForAge(4, sources),
+}).candidatePairCount, 1);
+const opaqueFailureProof = summarizeIsolatedRavScoreWaveReplayConflicts({
+  sourceRecords: unresolvedWaveSources,
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: () => { throw new Error('PRIVATE_SYNTHETIC_FAILURE_TEXT'); },
+});
+assert.equal(opaqueFailureProof.confirmedPairCount, 0);
+assert.equal(opaqueFailureProof.otherOutcomeCount, 1);
+assert.equal(JSON.stringify(opaqueFailureProof).includes('PRIVATE_SYNTHETIC'), false,
+  'unrelated exception text must not leave the private diagnostic callback');
 const withinRecordWaveDiagnosis = summarizeRavScoreWaveRecoveryConflictCandidates({
   sourceRecords: [{ source: 'deployed-private-runtime', record: record([
     withVerifiedWave(weather(2)), withVerifiedWave(weather(2, { waveHeight: 1.3 })),
