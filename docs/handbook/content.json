@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.517",
+  "handbookVersion": "4.0.518",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-09-30",
   "sections": [
+    {
+      "id": "isolated-current-replay-cause-proof-4-0-518",
+      "chapter": "89.115",
+      "title": "Hvorfor havstrømshistorikken stoppede",
+      "summary": "En sikker kontrol skal skelne mellem ændret strømværdi og ændret tids- eller kildebevis uden at vise private data.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den nye vejrpakke er ikke udgivet. DMI, Copernicus og Open-Meteo blev færdige, men gammel og ny havstrømshistorik kunne ikke samles sikkert.</div><p>Det er ikke vist, at DMI's rå data er forkerte. RavRadar beregner timeværdier fra DMI's modeltidspunkter og kontrollerer både strømværdien og beviset for, hvor den kom fra. Det virkelige konfliktpar er endnu ikke kendt. En ny kontrol tæller kun faste årsagsgrupper og prøver højst 96 mulige par med den uændrede sikkerhedsregel. Den viser aldrig sted, tid, strømværdier, koordinater eller private data og vælger ingen vinder. Et par, der stoppes i en enkeltprøve, er ikke nødvendigvis den første fejl i hele kørslen. Fremdriften er gemt krypteret, den offentlige prognose er uændret, og automatisk vejrstart er pauset. Se DEC-0265.</p>"
+    },
     {
       "id": "protected-same-run-dmi-retention-4-0-517",
       "chapter": "89.114",

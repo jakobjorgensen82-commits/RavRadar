@@ -1,3 +1,19 @@
+# Aktuel havstrømskonfliktdiagnose – 2026-09-30
+
+- **REQ-RAVSCORE-CURRENT-ISOLATED-PROOF-0518 – BINDENDE:**
+  Efter en faktisk havstrømskonflikt må den private,
+  allerede projicerede historik kun klassificeres med
+  faste leverandør-, modelkørsels-, identitets- og
+  ens-/forskellige-værdier-klasser. Højst 96 kandidatpar
+  prøves enkeltvis mod uændret replay, og det første
+  isoleret bekræftede par rapporteres kun som en fast
+  klasse. Ingen U/V, sted, time, koordinat, id, hash,
+  private rækker eller rå undtagelser må logges. Et
+  kandidat- eller isolationsfund vælger ingen vinder
+  og udpeger ikke nødvendigvis den fulde replays første
+  par. Diagnosen må ikke ændre modelbundle, score,
+  kildeprioritet eller det hårde stop. Se DEC-0265.
+
 # Aktuel beskyttet DMI-historik – 2026-09-30
 
 - **REQ-RAVSCORE-PROTECTED-SAME-RUN-DMI-0517 – BINDENDE:** Den

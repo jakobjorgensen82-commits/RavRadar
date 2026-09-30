@@ -34,6 +34,7 @@ import {
 import {
   buildNewestValidRavScoreRecoverySources,
   summarizeIsolatedRavScoreWaveReplayConflicts,
+  summarizeRavScoreCurrentRecoveryConflicts,
   summarizeRavScoreWaveRecoveryConflictCandidates,
 } from './lib/ravscore-recovery-source-priority.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
@@ -646,6 +647,95 @@ assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2, { rawU: 0.09, rawV: 0 }), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { rawU: 0.091, rawV: 0 })]) },
 ]), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+const currentConflictSources = [
+  { source: 'deployed-private-runtime', record: record([weather(2)]) },
+  { source: 'progressive-private-dmi', record: record([
+    weather(2, { speed: 0.11, rawU: 0.11 }),
+  ]) },
+];
+const currentConflictSnapshot = JSON.stringify(currentConflictSources);
+const currentConflictProof = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: currentConflictSources,
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.equal(currentConflictProof.candidatePairCount, 1);
+assert.equal(currentConflictProof.confirmedClass, 'DMI_DMI_SAME_RUN_DIFFERENT_VALUES');
+assert.equal(currentConflictProof.confirmedSameRunDmiReason, 'SAME_OFFICIAL_ASSET_PROOF');
+assert.deepEqual(currentConflictProof.sameRunDmiReasons,
+  { DIFFERENT_VALUES_SAME_OFFICIAL_ASSET_PROOF: 1 });
+assert.equal(JSON.stringify(currentConflictSources), currentConflictSnapshot,
+  'current diagnosis must not change either private source');
+for (const privateValue of [part.partId, time(2), '0.11']) {
+  assert.equal(JSON.stringify(currentConflictProof).includes(privateValue), false,
+    'current diagnosis must contain fixed classes and counts only');
+}
+const provenanceOnlyCurrent = weather(2);
+const currentBefore = dmiForecastSource('current', time(1), time(-54));
+const currentAfter = dmiForecastSource('current', time(3), time(-54));
+provenanceOnlyCurrent.currentProvenance = {
+  status: 'verified',
+  ...currentBefore,
+  leadTimeHours: (Date.parse(time(2)) - Date.parse(time(-54))) / HOUR_MS,
+  temporalResolution: 'interpolated',
+  nativeValidTimes: [time(1), time(3)],
+  nativeSteps: [currentBefore.nativeSteps[0], currentAfter.nativeSteps[0]],
+};
+const provenanceOnlySources = [currentConflictSources[0], {
+  source: 'progressive-private-dmi', record: record([provenanceOnlyCurrent]),
+}];
+const provenanceOnlyProof = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: provenanceOnlySources,
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.equal(provenanceOnlyProof.confirmedClass, 'DMI_DMI_SAME_RUN_SAME_VALUES',
+  'same U/V can conflict if RavRadar used different native DMI time support');
+assert.equal(provenanceOnlyProof.confirmedSameRunDmiReason,
+  'NATIVE_STEP_COUNT_NOT_COMPARABLE');
+const currentProviderProof = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: [currentConflictSources[0], {
+    source: 'progressive-private-dmi', record: record([controlledLiveWeather(2)]),
+  }],
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.equal(currentProviderProof.candidatePairCount, 1);
+assert.deepEqual(currentProviderProof.classes,
+  { ACROSS_RECORDS_DMI_OTHER_UNBOUND_RUN_SAME_VALUES: 1 },
+  'a cross-provider overlap must not be misreported as a DMI revision');
+const changedGridCurrent = weather(2, { speed: 0.11, rawU: 0.11 });
+changedGridCurrent.currentProvenance.gridDefinitionSha256 = sha('changed-grid');
+const changedGridProof = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: [currentConflictSources[0], {
+    source: 'progressive-private-dmi', record: record([changedGridCurrent]),
+  }],
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.deepEqual(changedGridProof.sameRunDmiIdentityMismatchFields,
+  { gridDefinitionSha256: 1 });
+assert.equal(changedGridProof.confirmedSameRunDmiReason,
+  'SOURCE_IDENTITY_NOT_COMPARABLE');
+const withinRecordCurrent = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: [{ source: 'deployed-private-runtime', record: record([
+    weather(2), weather(2, { speed: 0.11, rawU: 0.11 }),
+  ]) }],
+  startAt: time(1), targetAt: time(4),
+  replayCandidate: sources => replayForAge(4, sources),
+});
+assert.deepEqual(withinRecordCurrent.classes,
+  { WITHIN_RECORD_DMI_DMI_SAME_RUN_DIFFERENT_VALUES: 1 });
+assert.equal(summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: currentConflictSources, startAt: time(4), targetAt: time(1),
+  replayCandidate: sources => replayForAge(4, sources),
+}).status, 'INVALID_DIAGNOSTIC_INPUT');
+const opaqueCurrentFailure = summarizeRavScoreCurrentRecoveryConflicts({
+  sourceRecords: currentConflictSources, startAt: time(1), targetAt: time(4),
+  replayCandidate: () => { throw new Error('PRIVATE_SYNTHETIC_CURRENT_FAILURE'); },
+});
+assert.equal(opaqueCurrentFailure.confirmedClass, 'NONE');
+assert.equal(JSON.stringify(opaqueCurrentFailure).includes('PRIVATE_SYNTHETIC'), false);
 assert.throws(() => replayForAge(4, [
   { source: 'deployed', record: record([weather(1), weather(2), weather(3)]) },
   { source: 'progressive', record: record([weather(2, { waveHeight: 1.3 })]) },

@@ -24,6 +24,7 @@ test('normal PART production plans on current central identity and passes the pr
   const context = vm.createContext({ path, output, generatedAt: reference,
     coastalPartsContract: { enabled: true, zones: { CURRENT: [part] } },
     features: [{ properties: { id: 'CURRENT' } }], nextDmiForecastStore: {}, dmiBulkCache: {},
+    persistedDmiPartRows: new Map(), historicalDmiBulkCache: {}, activeParts: [part],
     deployedDmiBulkCache: {}, liveCurrentPilot: {}, previous: {}, previousPrivateCandidateGRuntime: null,
     coastalPointStateInjections: {}, ravScoreCheckpoint: { loaded: false },
     historicalWaveInputTransition: null,
@@ -62,7 +63,14 @@ test('normal PART production plans on current central identity and passes the pr
     scoreCoastalPartsRuntime: (...args) => {
       assert.equal(planned, true); assert.equal(args[12], verifiedInputs);
       assert.equal(args[14], waterSourceRoutingContext);
+      assert.equal(args[15], context.persistedDmiPartRows);
+      assert.equal(args[16], context.historicalDmiBulkCache);
       scored = true; return { completeLocalBuild: true };
+    },
+    packDmiPartContinuity: async (_selected, selectedParts, at) => {
+      assert.equal(selectedParts, context.activeParts);
+      assert.equal(at, reference);
+      return { synthetic: true };
     },
   });
   await vm.runInContext(`(async () => { ${source.slice(start, end)} })()`, context);

@@ -1,3 +1,19 @@
+## 2026-09-30 – 4.0.517 passerede bølgekonflikten, men stoppede ved havstrøm
+
+PR #485 bestod exact-head source-CI `36676610928` og blev
+merged som main `31d7ce8b`. Kort normalrun `36677551077`
+gendannede præcis `36667807638-1` og beskyttet baseline.
+DMI, Copernicus og Open-Meteo gennemførte; central cache
+kom forbi den tidligere bølgekonflikt, men stoppede på
+havstrømsreplay. Krypteret `36677551077-1` er gemt;
+ingen slutpakke, artifactgate, CAS, R2 eller Pages. Offentlig
+4.0.510/370.007 af 397.070 femfeltspar består; cron er pauset.
+
+Lokal DEC-0265/4.0.518 klassificerer kun indholdsfri
+strømkandidatpar og prøver højst 96 par med uændret replay.
+Den ændrer ikke vejr, score eller kildevalg. Det faktiske
+live-kildepar, rå DMI-data og årsagsrettelsen er uafklaret.
+
 ## 2026-09-30 – 4.0.516 isolerede to bølgekonflikter; lokal 4.0.517 årsagsrettelse
 
 PR #484/4.0.516 bestod exact-head CI `36667111156` og blev

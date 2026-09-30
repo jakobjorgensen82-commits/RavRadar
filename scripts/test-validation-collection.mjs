@@ -100,8 +100,8 @@ assert.ok(projectPlan.includes('python scripts/test-dmi-oneoff-fill.py'));
 assert.ok(projectPlan.includes('python scripts/test-dmi-contiguous-component-horizon-4.0.210.py'));
 
 const productionPlan = expandValidationCommands(projectScripts, 'validate:production-artifact');
-assert.equal(productionPlan.length, 52,
-  'the production artifact gate must remain the owner-approved 52-leaf critical plan');
+assert.equal(productionPlan.length, 54,
+  'the production artifact gate must retain the 52 original checks plus both public-hour delivery checks');
 for (const command of [
   'node scripts/validate-weather-health.mjs',
   'node scripts/test-forecast-integrity-4.0.17.mjs',
@@ -111,6 +111,8 @@ for (const command of [
   'node scripts/test-current-provenance-null-safety-4.0.78.mjs',
   'node scripts/test-missing-weather-null-safety-4.0.116.mjs',
   'node scripts/test-water-source-production-chain-4.0.103.mjs',
+  'node --test scripts/test-public-hour-delivery-pack.mjs',
+  'node --test scripts/test-current-provenance-sealing.mjs',
 ]) assert.ok(productionPlan.includes(command), `critical production plan is missing ${command}`);
 for (const command of [
   'node scripts/test-dmi-bulk-model-download.mjs',

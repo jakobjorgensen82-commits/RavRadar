@@ -1,4 +1,40 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
+# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518, cron pauset
+
+PR #485/4.0.517 bestod exact-head source-CI `36676610928`
+og blev merged som main `31d7ce8b`. Kort normalrun
+`36677551077` gendannede eksakt `36667807638-1` og den
+beskyttede baseline, gennemførte DMI, Copernicus og Open-Meteo
+og passerede den tidligere bølgekonflikt. Central cache
+stoppede i stedet på `RAVSCORE_RECOVERY_REPLAY_CONFLICT`
+for havstrøm. Krypteret fremdrift `36677551077-1` er gemt;
+slutpakke, fuld artifactgate, Supabase-CAS, R2 og Pages blev
+ikke nået. Offentlig 4.0.510/370.007 af 397.070 femfeltspar
+er fortsat sidste bevis. Det er ikke bevis for fejl i DMI's
+rådata eller for fuld løsning af bølgereplay. Ekstern cron
+`8348098` forbliver pauset.
+
+Lokal 4.0.518/DEC-0265 tilføjer kun en indholdsfri
+fejlstisdiagnose for havstrøm: mulige par klassificeres efter
+fast kilde-/tids-/værdiklasse, og højst 96 par prøves mod den
+uændrede replayvalidator. Den ændrer ikke score, DMI-data,
+prioritet eller publicering. En isoleret afvisning beviser
+ikke den fulde replays første par. Måltests for forskellig
+U/V, ens U/V med andet gyldigt native tidsgrundlag, andet
+gitter, andet leverandørpar, dublet og uændret modelbundle
+er lokalt grønne. Exact-head CI og faktisk liveårsag afventer.
+
+Den eksisterende PART-integrationstest manglede syntetiske input til
+`persistedDmiPartRows`, `historicalDmiBulkCache` og den efterfølgende
+continuity-pakning. Den passer nu igen uden ændring af producentens
+adfærd. Den statiske gate-test forventede fortsat den oprindelige
+52-bladplan fra DEC-0184, mens DEC-0217 siden 4.0.438 har føjet
+to offentlige timepakke-/strømprovenienskontroller til samme
+`test:public-runtime`: den faktisk kørte artifactplan har 54.
+Testforventningen følger nu denne plan; ingen produktionskontrol
+er tilføjet eller fjernet i 4.0.518. Live current-konflikt er
+fortsat uafklaret.
+
+# HISTORISK SNAPSHOT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517, cron pauset
 
 PR #484/4.0.516 bestod exact-head source-CI `36667111156`
 og blev merged som main `f7c1dcc0`. Kort normalrun

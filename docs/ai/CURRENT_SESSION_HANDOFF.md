@@ -1,4 +1,31 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
+# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+
+Arbejd i `feggesund-preflight-recovery`, branch
+`codex/4.0.518-current-conflict-proof`. `.cache/` er privat
+og må ikke stages. Ekstern cron-job.org `8348098` er pauset.
+PR #485/4.0.517 bestod exact-head CI `36676610928`,
+merged som main `31d7ce8b`. Kort run `36677551077`
+gendannede præcis `36667807638-1` og beskyttet baseline,
+passerede DMI, Copernicus, Open-Meteo og bølgereplay, men
+stoppede i central cache ved havstrømskonflikt. Ny krypteret
+fremdrift `36677551077-1` er gemt. Ingen slutpakke,
+artifactgate, CAS, R2 eller Pages; offentlig 4.0.510/
+370.007 af 397.070 femfeltspar er uændret.
+
+Lokal 4.0.518/DEC-0265 ændrer alene den indholdsfri
+fejlstisdiagnose: faste kandidatklasser og højst 96
+isolerede prøver mod den uændrede replayvalidator.
+Syntetisk test beviser både forskellig U/V og ens U/V
+med andet gyldigt DMI-tidsgrundlag som mulige konflikter,
+ikke at dette er liveårsagen. Ingen rå DMI-fejl er påvist.
+Replay, kildevalg og modelbundle består lokalt; afslut
+RDKS/version/begge håndbøger, exact-head CI, sikker merge
+og højst én kort normal bekræftelse fra præcis
+`36677551077-1`. Diagnostisk fund er ikke en udgivelse.
+Ingen blind ny hentning eller cron-genåbning. Anbefalet
+model/Indsats: GPT-5.6 Sol/Ekstra høj.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.516, lokal 4.0.517
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.517-protected-same-run-retention`. `.cache/` er
