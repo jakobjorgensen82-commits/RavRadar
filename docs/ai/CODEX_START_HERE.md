@@ -1,4 +1,35 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – main526/offentlig525; lokal4.0.527
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig526; smal lokal4.0.528
+
+528 er afgrænset til kortcontainerens ResizeObserver/rAF og normal
+Leaflet invalidateSize med pan:true/animate:false. Ingen nyt udsnit, zoom,
+animation, geometri, vejrdata eller score. Unload afkobler observer/frame.
+Top20-producent, browserlimit, overskrift og layout er tilbageholdt i en
+separat lokal patch; både normal producent og browserfallback er igen top5.
+Top20-ønsket består, men den frosne binding skal afklares separat. Intet
+modelhash er regenereret, ingen gate fjernet eller lempet.
+
+Skrivebeskyttet modelkontrol består medc557f91a…/67filer. Tre målkommandoer
+består (3/3,374.3671ms,ingen skips), ikke en ny fuld lokal sourcegate.
+Ejeren har bestilt autonom, kontinuerlig revision, vejrhentning og konkrete
+rettelser samt faktisk opsætning af ravradar.dk via browser. Eksisterende
+GitHub Pages bruges; al kode og vedligehold bliver i GitHub. Intet Simply-
+webhotel, tilkøb, plan-/nøgleændring eller ændring af scoremodellen. Domænet
+er faktisk Verified hos GitHub efter én offentlig TXT-record hos Simply.
+Webrouting og HTTPS er endnu ikke skiftet. Supabase Site URL/redirectliste
+står stadig på den gamle GitHub-adresse; skal håndteres kontrolleret.
+Den eksisterende 15-minutters opgave er opdateret uden ny scheduler.
+
+Offentlig526/rr-20261001184358-210/210/673 er senest verificeret.
+527/PR495/head276eb2b7 og exact-head36920238752 er grønne og urørte.
+Ordinary36920739569/main3b9f3212 fortsætter beregningen uden fejlede trin;
+ingen mainændring, ekstra vejrhentning eller cancellation. Cron8348098
+forbliver aktiv/uændret. Lever527 først efter faktisk afslutning og relevante
+efterdatagates;528 skal have egen exact-head CI og målrettet offentlig
+kortkontrol. Sol6.1/Ekstra høj og alle særskilte sikkerhedsafvisninger består.
+
+.cache/deferred patch må ikke stages. Stor519-optins forbliver OFF.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – main526/offentlig525; lokal4.0.527
 
 Fortsæt små leverbare fixes med eksisterende måltests. Ordinary36896697919
 afsluttede21.58 med faktisk cache og deploy af ny524-prognose.525/493 er

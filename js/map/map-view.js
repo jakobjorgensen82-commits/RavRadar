@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.527";
+import { t } from "../i18n.js?v=4.0.528";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
@@ -120,6 +120,29 @@ export function createMap(elementId) {
   const toggle = control.getContainer()?.querySelector(".leaflet-control-layers-toggle");
   if (toggle) { toggle.title = t('map.switch'); toggle.setAttribute("aria-label", t('map.switch')); }
   map.on("baselayerchange", event => { localStorage.setItem("ravradar-basemap", event.layer === satelliteMap ? "satellite" : "street"); control.collapse(); });
+  // Ranglisten kan ændre kortfeltets højde uden at ændre browservinduet.
+  // Leaflet skal kende den nye størrelse, men må ikke flytte centrum eller zoom.
+  if (typeof ResizeObserver === "function") {
+    const container = map.getContainer();
+    let resizeFrame = null;
+    let disposed = false;
+    const observer = new ResizeObserver(() => {
+      if (disposed || resizeFrame !== null) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        if (!disposed && container.clientWidth > 0 && container.clientHeight > 0) {
+          map.invalidateSize({ pan: true, animate: false });
+        }
+      });
+    });
+    observer.observe(container);
+    map.once("unload", () => {
+      disposed = true;
+      observer.disconnect();
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      resizeFrame = null;
+    });
+  }
   return map;
 }
 

@@ -1,14 +1,38 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.527
+**Håndbogsversion:** 4.0.528
+
+**Kandidatstatus:**528 er afgrænset til kortfeltets størrelse. Den uændrede
+scoremodel og tekniske binding består lokal kontrol; exact-head og offentlig
+kortkontrol afventer. Top20-ønsket er bevaret separat, ikke med denne pakke.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.527 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.528 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.125 4.0.528 – Kortet følger hele sit felt
+
+Kortbiblioteket får nu besked, når indlæsning eller layout ændrer kortfeltets
+faktiske størrelse. Det skal fjerne den tomme bund uden ny zoom, animation
+eller valg af et andet udsnit. Zoner, pile, geometri og prognosetal bevares.
+
+Den bestilte top20-liste er udskilt, ikke aflyst. Den er måltestet, men dens
+producentfil indgår også i den tekniske modelbinding. Denne afgrænsning skal
+løses separat; den bliver ikke omgået.528 bevarer de eksisterende fem rækker,
+fem datoer, layout, scorer, sortering og historikadvarsler i begge søgemåder.
+
+Tre målkommandoer og den uændrede67-filers modelkontrol består. Tidligere
+faktisk lokal Leaflet-prøve dækkede vækst,krympning og zoom. Exact-head CI
+og offentlig kortkontrol efter levering mangler. Se DEC-0275.
+
+Ejeren har bestilt ravradar.dk med fortsat GitHub-vedligehold. Domænet er nu
+Verified hos GitHub via en DNS-ejerskabsrecord; selve routing/HTTPS/login
+mangler stadig. Intet Simply-webhotel eller tilkøb. Søgetekster skal være
+naturlige,læsbare og på dansk,tysk og engelsk, uden løfte om søgerangering.
 
 ## 89.124 4.0.527 – Vent med oprydning, til hjælpeprocessen er lukket
 

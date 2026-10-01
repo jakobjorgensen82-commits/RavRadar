@@ -1,4 +1,20 @@
-# Aktuelle issues – 2026-10-01, main526/offentlig525 og lokal527
+# Aktuelle issues – 2026-10-02, offentlig526 og smal lokal528
+
+- **KORTBUND LOKALT RETTET:** Kortfeltets ændrede højde registreres nu af den
+  faktiske mapfactory. Tre målkommandoer består; exact-head/livefix afventer.
+- **TOP20 TILBAGEHOLDT, IKKE AFLYST:** Producentændringen er bevaret separat,
+  ikke med528. Runtime/modelbundle er igen uændret og modelcheck består.
+  Afklar den tekniske binding separat, uden model-/gate-genveje.
+- **DOMÆNE UNDER OPSÆTNING:** Ejerautoriseret; GitHub Verified via én Simply
+  TXT. Ingen A/CNAME eller Pages-cutover endnu. Supabase Site URL/allowlist
+  er faktisk stadig GitHub-adressen, ikke klargjort til det nye domæne.
+- **SEO ÅBENT:** Alle ni ejerord skal dækkes naturligt på DA/DE/EN. Ingen
+  målt indeksering/rangering eller garanti; ingen keywordstuffing/metakeywords.
+- **LEVERING:**527 er CI-grøn/urørt. Aktiv526-weather kører; ingen mainændring.
+- **FORTSAT ÅBENT:** Stor519-driver, eksklusivitet/runner-tab/nationalkapacitet.
+  Historikregler og alle særskilte sikkerhedsafvisninger består.
+
+# Historiske issues – 2026-10-01, main526/offentlig525 og lokal527
 
 - **DIREKTE CHILD-CLOSE LOKALT RETTET:** Tre faste offlinekald frigiver ikke
   ydre cleanup før deres egen child lukker; første fejl består. Kill er ikke

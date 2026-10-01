@@ -1,3 +1,25 @@
+# Aktuel UI-, domæne- og SEO-ordre – 2026-10-02
+
+- **REQ-NATIONAL-TOP20-0528 – BINDENDE / SEPARAT TILBAGEHOLDT:** Fem dage,
+  begge søgemåder og op til20gyldige zoner med uændret model/comparator/
+  handicap/tidsvalg. Pc/mobil og lange navne skal fungere. Producentens
+  frosne binding skal afklares;528 kortfix må ikke vente på dette spor.
+  Gamle forseglede femrækkers data bevares og ommærkes ikke.
+- **REQ-RAVRADAR-DOMAIN-001 – BINDENDE / FAKTISK OPSÆTNING GODKENDT:**
+  GitHub vedligehold/deploy består. ravradar.dk skal blive i adressefeltet,
+  også internt. Eksisterende Simply-domain/DNS+Pages; intet webhotel/tilkøb.
+  Verificér ejerskab før Pages-tilknytning før DNS-routing, bevar mail/DNSSEC,
+  og kontrollér HTTPS, login, relative/PWA-stier, data og deploy efter skift.
+- **REQ-RAVRADAR-SEO-001 – BINDENDE:** rav,ravkort,ravudsigten,ravprognose,
+  ravjagt,ravjæger,kese,ravkese,ravlygte og naturlige DE/EN-termer. Diskret,
+  læsbar hjælpetekst lige over Kilder,kortoglicenser; ikke skjult ordliste.
+  Reelle crawlbare sprogversioner/canonical/sitemap planlægges kontrolleret;
+  ingen kopieret scoremodel, betalt plan eller indeks-/ranggaranti.
+- **REQ-MAP-CONTAINER-RESIZE-0528 – BINDENDE / LOKALT IMPLEMENTERET:**
+  Leaflet følger faktiske positive containermål uden nyt udsnit/zoom eller
+  animation. Unload rydder observer/frame. Ingen score/geometriændring.
+  Se [DEC-0275](../10_DECISIONS/DEC-0275-MAP-RESIZE-AND-NATIONAL-TOP20.md).
+
 # Aktuel udpaknings- og offlinemiljøbeskyttelse – 2026-10-01
 
 - **REQ-PRIVATE-UNPACK-RESOURCE-0526 – BINDENDE / LOKALT RETTET:**
