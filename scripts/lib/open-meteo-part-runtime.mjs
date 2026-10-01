@@ -7,6 +7,7 @@ import {
   validateOpenMeteoPartBank,
 } from './open-meteo-part-bank.mjs';
 import { produceOpenMeteoPartComponents } from '../produce-open-meteo-part-components.mjs';
+import { pruneUnusableOpenMeteoPartBank } from './open-meteo-usable-part-bank.mjs';
 
 const failure = (code, retryable = false, retryAfterMs = 0) =>
   Object.assign(new Error(code), { code, retryable, retryAfterMs });
@@ -104,7 +105,7 @@ async function saveBankFile(paths, bank) {
 export async function loadOpenMeteoPartRuntime(options = {}) {
   const paths = privatePaths(options);
   const previous = await readBankFile(paths);
-  const bank = mergeOpenMeteoPartBank(previous, [], options);
+  const { bank } = pruneUnusableOpenMeteoPartBank(mergeOpenMeteoPartBank(previous, [], options), options);
   return { bank, index: validateOpenMeteoPartBank(bank, options) };
 }
 

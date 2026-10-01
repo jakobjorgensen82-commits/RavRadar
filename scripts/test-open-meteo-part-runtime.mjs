@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
-import { OPEN_METEO_PART_RESPONSE_MAX_BYTES, selectedOpenMeteoPartRecord } from './lib/open-meteo-part-bank.mjs';
+import { OPEN_METEO_PART_RESPONSE_MAX_BYTES, selectedOpenMeteoPartRecord,
+  buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank } from './lib/open-meteo-part-bank.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = hour => new Date(Date.parse(reference) + hour * 3_600_000).toISOString();
@@ -32,6 +33,39 @@ async function fixture(t) {
     requestTimeoutMs: 500, maxRetries: 2, now: () => Date.parse(reference) };
 }
 const selected = index => selectedOpenMeteoPartRecord(index, { part, component: 'wind', validTime: reference });
+
+test('read-only runtime rejects a legacy false fill without disk mutation; ordinary retry repairs only that slot', async t => {
+  const input = await fixture(t);
+  const waveResponse = period => JSON.stringify({ longitude: 10, latitude: 56, utc_offset_seconds: 0,
+    hourly: { time: [reference], wave_height: [1], wave_peak_period: [period], wave_direction: [180] },
+    hourly_units: { wave_height: 'm', wave_peak_period: 's', wave_direction: '°' } });
+  const admissions = [['wave', waveResponse(0.04)], ['wind', responseText]].map(([component, text]) =>
+    readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, { component, productionReferenceAt: reference }),
+      responseText: text, acquiredAt: reference }, { part, spatialPolicies }));
+  const legacy = mergeOpenMeteoPartBank(null, admissions, input);
+  assert.equal(legacy.records.length, 2, 'the unchanged parser reproduces the original boundary mismatch');
+  const originalText = JSON.stringify(legacy);
+  await fs.mkdir(input.privateCacheRoot, { recursive: true });
+  await fs.writeFile(input.bankPath, originalText);
+  const loaded = await loadOpenMeteoPartRuntime(input);
+  assert.equal(selectedOpenMeteoPartRecord(loaded.index, { part, component: 'wave', validTime: reference }), null);
+  assert.equal(selected(loaded.index).values.windSpeedMps, 4);
+  assert.equal(await fs.readFile(input.bankPath, 'utf8'), originalText, 'read-only verification never overwrites production evidence');
+  let requests = 0;
+  const repaired = await runOpenMeteoPartRuntime({ ...input,
+    requiredPairs: [{ partId: part.partId, component: 'wave', validTime: reference }],
+    fetchImpl: async rawUrl => {
+      requests += 1;
+      assert.equal(new URL(rawUrl).searchParams.get('hourly'), 'wave_height,wave_peak_period,wave_direction');
+      return new Response(waveResponse(6));
+    },
+  });
+  assert.equal(requests, 1);
+  assert.equal(repaired.summary.retired.unusableComponent, 1);
+  assert.equal(selectedOpenMeteoPartRecord(repaired.index, { part, component: 'wave', validTime: reference }).values.wavePeriodS, 6);
+  assert.equal(selected(repaired.index).recordId, selected(loaded.index).recordId);
+  assert.equal(JSON.parse(await fs.readFile(input.bankPath, 'utf8')).bankSha256, repaired.bank.bankSha256);
+});
 
 test('runtime persists original bytes atomically, returns checked index and reuses a full residual', async t => {
   const input = await fixture(t);

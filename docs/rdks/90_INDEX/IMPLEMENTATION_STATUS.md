@@ -1,4 +1,36 @@
-# 2026-09-30 – isoleret læsekandidat 4.0.520; funktionel rettelse tilbageholdt
+# 2026-10-01 – 4.0.521 lokal replay-først-kandidat; ikke releaseklar
+
+- [x] Audit-main 4.0.520/`590f01c6` og én godkendt læseaudit
+  `36749250698` er bekræftet. Ingen ny prognose blev publiceret.
+- [x] Afgrænset kandidat oprettes fra denne main i
+  `weather-restart-release`; større feggesund-arbejde bevares separat.
+- [x] Historisk replay bruger streng originalkontekst og faktisk gemt
+  previous-identitet. PUBLIC-admission/builderdefault forbliver main.
+- [x] Recordvis forecast-I/O under eksisterende 768-MiB-filgrænse,
+  særskilt no-change/afvisning og stop ved afvist forecast-genbrug.
+- [x] Bølgeattest og OM-postafrunding repareres under uændrede
+  validators/prioriteter; sikre CP-K/U- og R2-cleanup-tællere indgår.
+- [x] Replaymåltest PASS, root 57/57 og forecast/progress 20 PASS;
+  to eksplicitte >V8-storfilprøver er ikke kørt. Dette er delbeviser.
+- [x] Root: separat progress/private-pack/workflow 32/32, updater/
+  normal-wireup/workflow/private-runtime 7/7 og OM-normalchain/
+  komposition/marine-seam 26/26 består uden skips. Særskilte kommandoer,
+  ikke én samlet matrix. Uafhængige afgrænsede reviews fandt ingen blocker.
+- [x] Version 4.0.521, RDKS/begge håndbøger, sourceplan47, security,
+  model67/otte bindinger, browserversioner og code-only/private-workflow
+  består. Geodata ændrer kun topversion; lokal SQL ændrer kun håndbog.
+- [ ] Fuld source-CI på kandidatens eksakte head før sikker release.
+- [ ] Kontroller faktisk kapacitet og bevarelse før ny hentning;
+  mål restore/save, femfelts-no-loss, artifactgate, CAS/R2/Pages og UI.
+- [ ] Større PUBLIC-originalbevispersistens/sessiondriver er fortsat
+  separat arbejde, ikke en leveret eller aktiveret del af 4.0.521.
+- [ ] Stabil drift og komplet cache er ikke bevist; offentlig 4.0.510
+  består, cron er pauset. Ingen automatisk genstart følger lokale tests.
+
+Fasevalget i DEC-0268 udskyder ny, ikke-frigivet PUBLIC-adfærd;
+det svækker ingen eksisterende gate og kasserer ingen gyldige data.
+
+# Historisk status 2026-09-30 – isoleret læsekandidat 4.0.520; funktionel rettelse tilbageholdt
 
 - [x] Main 4.0.518 er merged som `b076968e`; seneste normalrun
   `36698472505` fejlede efter providers og gemte krypteret fremdrift.

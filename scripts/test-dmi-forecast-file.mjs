@@ -9,6 +9,7 @@ import { inspectDmiForecastFile, readDmiForecastFile, readDmiForecastRecord,
   writeDmiForecastFileAtomic, writeDmiForecastRecords, DMI_FORECAST_FILE_MAX_BYTES, hashDmiForecastDocument,
 } from './lib/dmi-forecast-file.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { assertUsableDmiProgressRecovery } from './lib/verified-dmi-progress-inputs.mjs';
 
 async function fixture(t) {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-dmi-forecast-file-'));
@@ -138,6 +139,15 @@ test('recordwise producer writer preserves JSON order and all stage limits befor
     assert.deepEqual(await fs.readFile(file), before);
     assert.deepEqual(await fs.readdir(folder), ['forecast.json']);
   }
+});
+
+test('exact recovery accepts verified no-change but rejects missing or rejected recovery summaries', () => {
+  const summary = status => ({ forecast: { status, recoveredComponents: 0, rejectedRecords: 0, runtimeRecovered: false } });
+  for (const status of ['MERGED', 'ACCEPTED_NO_CHANGE', 'NOT_PRESENT']) assert.equal(assertUsableDmiProgressRecovery(summary(status)), true);
+  for (const value of [null, {}, summary('REJECTED'), summary('RETAINED')]) {
+    assert.throws(() => assertUsableDmiProgressRecovery(value), /DMI_FORECAST_PROGRESS_RECOVERY_REQUIRED/);
+  }
+  assert.throws(() => assertUsableDmiProgressRecovery(summary('NOT_PRESENT'), { allowAbsent: false }), /REQUIRED/);
 });
 
 // Opt-in because this exercises actual >256 MiB and >V8-string byte volumes,

@@ -1,4 +1,29 @@
-## 4.0.520 – isoleret læseaudit af allerede gemt vejr (lokal kandidat)
+## 4.0.521 – replay-først genstart (lokal kandidat, ikke releaseklar)
+
+- Afgrænset genstartskandidat fra audit-main 4.0.520/`590f01c6`:
+  historisk DMI-replay bruger den faktisk gemte tidligere komponent og
+  oprindelig godkendt kontekst. Nyere beviste kilder kan stadig overtage;
+  strenge replay-, prioriterings- og artifactkrav bevares.
+- Parent-forecast læses/flettes/skrives recordvist under det eksisterende
+  768-MiB-loft. Afvist forecastrestore stopper ny hentning; gyldigt
+  no-change og ældre pakker uden den valgfrie fil er særskilte tilstande.
+  Beskyttet PART-kontinuitet bevares fra baseline.
+- Bølgeretning skal passe til kildeattesten. Autentificerede OM-poster,
+  som er ubrugelige efter kanonisk afrunding, må ikke blokere genhentning;
+  gyldige naboposter og den uændrede bankvalidator bevares. CP-logning
+  afstemmer kendte årsagstal/rest uden private koder, og R2-logning viser
+  eksisterende sikre cleanup-tællere uden ny sletteadfærd.
+- Offentlig DMI-admission og builderens standardsti forbliver main's
+  active-context-only-kontrakt. Ingen ny PUBLIC-bevisbank, session eller
+  normal opt-in aktiveres. Det større arbejde bevares separat i feggesund.
+  Dette udskyder ikke-frigivet adfærd, ikke en eksisterende gate eller data.
+- Replaymåltesten og rootens 57/57 målprøver består; forecast/progress
+  har 20 beståede og to eksplicitte storfil-skips. Det er lokale,
+  syntetiske delbeviser, ikke fuld source-CI eller produktionskapacitet.
+  Yderligere kontrol, release, faktisk gemning og artifact/deploy afventer.
+  Offentlig 4.0.510 og pauset cron er uændret. Se DEC-0266 og DEC-0268.
+
+## 4.0.520 – isoleret læseaudit af allerede gemt vejr (historisk kandidat; merged)
 
 - Manuelt exact-main/source-CI-bundet læseværktøj til beskyttet R2-pakke
   og præcis krypteret fremdrift. Ingen providerkald, cachebygning,
@@ -7,7 +32,9 @@
   originale kildebeviser. Eksisterende normal save/restore bevares.
 - Funktionel 4.0.519-kandidat i PR #487 holdes tilbage; denne analyse
   aktiverer ingen af dens rettelser. Se DEC-0267. Syntetiske tests er
-  ikke produktionsbevis; exact-head CI og faktisk måling afventer.
+  ikke produktionsbevis. Efter dette kandidatafsnit blev PR #488 merged
+  som `590f01c6`, og den ene godkendte læseaudit `36749250698` bestod;
+  den hentede ikke nyt vejr og byggede/deployede ingen prognose.
 
 ## 4.0.518 – indholdsfrit bevis for havstrømskonflikt (lokal kandidat)
 

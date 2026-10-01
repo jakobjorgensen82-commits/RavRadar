@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
+import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = offset => new Date(Date.parse(reference) + offset * 3_600_000).toISOString();
@@ -188,6 +189,14 @@ test('Copernicus reports critical and upgrade attempts separately and totals bot
   assert.equal(summary.remainingNeeds, 0);
   assert.equal(summary.remainingUpgradeNeeds, 0);
   assert.equal(result.sourceMarker.copernicusBankSha256, `sha256:${sha('e')}`);
+  const logged = safeWeatherComponentSummary(result.summary).copernicus;
+  for (const [scope, unaccounted] of [[logged, 3], [logged.passes.critical, 1], [logged.passes.upgrade, 2]]) {
+    assert.deepEqual(scope.retryableReasonAccounting, { knownReasonReportedAttempts: 0,
+      unaccountedReasonReportedAttempts: unaccounted, reportedCountsConsistent: true });
+    assert.equal(scope.attemptCountsComplete, true);
+  }
+  assert.ok(!JSON.stringify(logged).includes('CP_COMPONENT_REQUEST_TIMEOUT'),
+    'real combined/pass output exposes only the reported remainder, not an unlisted reason');
 });
 
 test('an interrupted critical pass cannot be hidden by a later successful upgrade or offline reread', async t => {
@@ -222,6 +231,12 @@ test('an interrupted critical pass cannot be hidden by a later successful upgrad
   assert.equal(summary.remainingNeeds, 1, 'current critical gap, not last upgrade stage remainingNeeds=0');
   assert.equal(summary.remainingUpgradeNeeds, 0);
   assert.ok(!JSON.stringify(summary).includes('private provider detail'));
+  const logged = safeWeatherComponentSummary(result.summary).copernicus;
+  assert.deepEqual(logged.retryableReasonAccounting, { knownReasonReportedAttempts: 0,
+    unaccountedReasonReportedAttempts: 0, reportedCountsConsistent: true });
+  assert.equal(logged.attemptCountsComplete, false, 'reconciled reported totals are not full history');
+  assert.deepEqual(logged.passes.critical.retryableReasonAccounting, { knownReasonReportedAttempts: 0,
+    unaccountedReasonReportedAttempts: null, reportedCountsConsistent: null });
 });
 
 test('offline recovery preserves explicit unknown attempt counts for its interrupted invocation', async t => {
@@ -237,6 +252,12 @@ test('offline recovery preserves explicit unknown attempt counts for its interru
   assert.equal(result.summary.copernicus.passes.critical.outcome, 'RECOVERED_AFTER_TRANSPORT_FAILURE');
   assert.equal(result.summary.copernicus.passes.upgrade, null);
   assert.equal(result.summary.copernicus.transportFailure, 'CP_COMPONENT_PRODUCER_FAILED_OR_TIMED_OUT');
+  const logged = safeWeatherComponentSummary(result.summary).copernicus;
+  for (const scope of [logged, logged.passes.critical]) {
+    assert.deepEqual(scope.retryableReasonAccounting, { knownReasonReportedAttempts: 0,
+      unaccountedReasonReportedAttempts: 0, reportedCountsConsistent: true });
+    assert.equal(scope.attemptCountsComplete, false, 'recovered zero is not evidence of zero actual work');
+  }
 });
 
 test('later Open-Meteo gains must not be attributed to the Copernicus boundary', async t => {

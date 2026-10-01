@@ -30,6 +30,16 @@ for (const file of [
   'scripts/test-dmi-forecast-file.mjs',
   'scripts/test-weather-component-safe-summary.mjs',
   'scripts/test-weather-component-progress-cache.mjs',
+  'scripts/test-weather-component-progress-workflow.mjs',
+  'scripts/test-dmi-progress-inputs.mjs',
+  'scripts/test-ravscore-recovery-replay.mjs',
+  'scripts/test-dmi-bulk-forecast-integration.mjs',
+  'scripts/test-weather-component-normal-wireup.mjs',
+  'scripts/test-dmi-protected-tuple-continuity.mjs',
+  'scripts/test-current-provenance-sealing.mjs',
+  'scripts/test-open-meteo-part-bank.mjs',
+  'scripts/test-open-meteo-part-runtime.mjs',
+  'scripts/test-open-meteo-normal-component-chain.mjs',
 ]) {
   assert.equal(invokedFiles.filter(candidate => candidate === file).length, 1,
     `Source plan must run ${file} exactly once.`);

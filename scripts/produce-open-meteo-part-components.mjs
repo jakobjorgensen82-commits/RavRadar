@@ -2,6 +2,8 @@ import {
   OPEN_METEO_PART_COMPONENTS, buildOpenMeteoPartRequest, createOpenMeteoPartBankBuilder,
   readOpenMeteoPartResponse,
 } from './lib/open-meteo-part-bank.mjs';
+import { pruneUnusableOpenMeteoPartBank } from './lib/open-meteo-usable-part-bank.mjs';
+import { hasValue } from './lib/weather-component-needs.mjs';
 
 // No top-level provider calls or filesystem writes. The normal producer owns
 // transport deadlines/retries, the private cache path and durable checkpoint.
@@ -16,12 +18,17 @@ export async function produceOpenMeteoPartComponents({
   if (!Number.isInteger(checkpointEveryParts) || checkpointEveryParts < 1 || checkpointEveryParts > 50) {
     throw new Error('OPEN_METEO_PART_CHECKPOINT_BATCH_INVALID');
   }
-  const builder = createOpenMeteoPartBankBuilder(previousBank, { parts, spatialPolicies, retentionStartAt, retentionEndAt });
+  const bankOptions = { parts, spatialPolicies, retentionStartAt, retentionEndAt };
+  let builder = createOpenMeteoPartBankBuilder(previousBank, bankOptions);
+  const retired = { ...builder.retired, unusableComponent: 0 };
+  const initial = pruneUnusableOpenMeteoPartBank(builder.snapshot(), bankOptions);
+  if (initial.removedRecords) builder = createOpenMeteoPartBankBuilder(initial.bank, bankOptions);
+  retired.unusableComponent += initial.removedRecords;
   const firstRequest = buildOpenMeteoPartRequest(parts[0], { component: 'wind', productionReferenceAt });
   if (retentionStartAt > productionReferenceAt || retentionEndAt < firstRequest.endAt) {
     throw new Error('OPEN_METEO_PART_RETENTION_DOES_NOT_COVER_PRODUCTION');
   }
-  let bank = builder.snapshot();
+  let bank = initial.bank;
   const failures = [];
   const componentWarnings = {};
   let requests = 0;
@@ -86,7 +93,19 @@ export async function produceOpenMeteoPartComponents({
           code: 'OPEN_METEO_PART_COMPONENT_UNAVAILABLE' });
       }
     }
-    for (const admission of admissions) builder.add(admission);
+    for (const admission of admissions) {
+      builder.add(admission);
+      if (admission.records.some(record => !hasValue(record.values, record.component))) {
+        // The unchanged parser binds original bytes; operational usability is
+        // checked after canonical rounding before the next durable checkpoint.
+        const pruned = pruneUnusableOpenMeteoPartBank(builder.snapshot(), bankOptions);
+        if (pruned.removedRecords) builder = createOpenMeteoPartBankBuilder(pruned.bank, bankOptions);
+        retired.unusableComponent += pruned.removedRecords;
+        componentWarnings.OPEN_METEO_PART_CANONICAL_COMPONENT_INVALID =
+          (componentWarnings.OPEN_METEO_PART_CANONICAL_COMPONENT_INVALID ?? 0)
+          + admission.records.filter(record => !hasValue(record.values, record.component)).length;
+      }
+    }
     if (admissions.some(admission => admission.records.length > 0)) pendingCheckpointParts += 1;
     if (pendingCheckpointParts >= checkpointEveryParts) {
       bank = builder.snapshot();
@@ -100,5 +119,5 @@ export async function produceOpenMeteoPartComponents({
     await checkpoint(bank);
   }
   return { bank, summary: { requests, deferred, failures, componentWarnings, records: bank.records.length,
-    lastAttemptedPartId, componentsNotAdmitted, retired: builder.retired } };
+    lastAttemptedPartId, componentsNotAdmitted, retired } };
 }

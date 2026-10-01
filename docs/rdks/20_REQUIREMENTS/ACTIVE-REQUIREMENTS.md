@@ -1,3 +1,30 @@
+# Aktuel replay-først-genstart – 2026-10-01
+
+- **REQ-WEATHER-REPLAY-FIRST-0521 – BINDENDE / LOKAL KANDIDAT:**
+  4.0.521 afgrænses til strengt originalhistorisk DMI-replay med den
+  faktisk gemte tidligere komponent, bounded parent-forecast-I/O og
+  genbrugsgates samt bølgeattest-/OM-postafrundings- og sikre
+  logrettelser. En kildebetegnelse eller rekonstruktion alene må ikke
+  udpege beskyttet previous. Gyldige nyere modelkørsler/beviste
+  revisioner og den eksisterende 96h-prioritet skal fortsat respekteres.
+  Se [DEC-0266](../10_DECISIONS/DEC-0266-WEATHER-CONTINUITY-AND-CAPACITY.md)
+  og [DEC-0268](../10_DECISIONS/DEC-0268-REPLAY-FIRST-WEATHER-RESTART.md).
+- **REQ-WEATHER-RESTART-PUBLIC-BOUNDARY-0521 – BINDENDE:**
+  PUBLIC-admission/builderdefault beholder main's active-context-only-
+  kontrakt. Nye originalbevisbanker, sessions-/native-PUBLIC-opt-ins
+  aktiveres ikke i denne fase. Udskydelse af ikke-frigivet adfærd må
+  ikke bruges til gatelempelse, datakassation, fabrikeret provenance
+  eller et løfte om, at næste target består eksisterende artifactgate.
+- **REQ-WEATHER-RESTART-PRESERVATION-0521 – BINDENDE:**
+  Eksakt krypteret progress og oprindelig beskyttet baseline skal
+  bevares; en faktisk afvist forecastrestore må ikke føre til ny dyr
+  hentning. Gyldigt no-change og lovligt fravær i ældre pakker er
+  særskilt fra afvisning. Fil 768 MiB, samlet progress 768 MiB, cipher 384 MiB
+  og slutarkivets øvrige grænser består. Lokal læsbarhed/CI er ikke
+  fremtidigt kapacitets-, no-loss-, gemnings- eller deploybevis.
+  Ingen blind genhentning, normalaktivering eller cron-genåbning
+  følger alene af lokale måltests. Stabilitet har forrang for kadence.
+
 # Aktuel havstrømskonfliktdiagnose – 2026-09-30
 
 - **REQ-RAVSCORE-CURRENT-ISOLATED-PROOF-0518 – BINDENDE:**

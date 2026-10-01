@@ -8,6 +8,7 @@ import {
   verifiedDmiForecastComponentSource,
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
+import { buildRavScoreRecoveryReplay } from './ravscore-recovery-replay.mjs';
 
 function finite(value) {
   return typeof value === 'number' && Number.isFinite(value);
@@ -101,6 +102,37 @@ function verifiedWaveForPriority(row, part) {
     && samePoint(source.samplingPoint, part.waterPoint)
     && canonicalTime(source.validTime) === canonicalTime(row.time)
     && (validDirection || !physical.active);
+}
+
+// The locked replay does not export its component reducers. Run that same
+// validator on one isolated, real hour instead of maintaining a weaker copy
+// of its U/V, direction, distance and native-evidence admission rules here.
+// This is validation only: no values, native times or interpolation are changed.
+// A failed probe leaves the original row visible to the eventual strict replay.
+function verifiedReplayComponentForPriority(row, component, part) {
+  if (!part || (component === 'current' ? !hasVerifiedCurrent(row)
+    : !verifiedWaveForPriority(row, part))) return false;
+  try {
+    const at = canonicalTime(row.time);
+    if (at === null) return false;
+    const target = new Date(Date.parse(at) + 3_600_000).toISOString();
+    const replay = buildRavScoreRecoveryReplay({
+      part,
+      initialState: null,
+      targetReferenceAt: target,
+      sourceRecords: [{ record: {
+        point: part.waterPoint,
+        hourly: [component === 'current' ? withoutWave(row) : withoutCurrent(row)],
+      } }],
+      publicHourly: [{ time: target }],
+    });
+    const admitted = replay.hourly.find(item => item.time === at);
+    return replay.replayedHourCount === 1 && (component === 'current'
+      ? finite(admitted?.currentSpeedMps) && finite(admitted?.currentDirectionDeg)
+      : finite(admitted?.waveHeightM) && finite(admitted?.wavePeriodS));
+  } catch {
+    return false;
+  }
 }
 
 function componentRevisionSource(row, component) {
@@ -208,6 +240,7 @@ function componentPreference(
     productionReferenceAt = null,
     part = null,
     onProtectedSameRunDmiRetention = null,
+    admit = () => false,
   } = {},
 ) {
   const hasFallback = component === 'current'
@@ -217,6 +250,10 @@ function componentPreference(
     ? hasVerifiedCurrent(preferredRow)
     : hasVerifiedWave(preferredRow);
   if (!hasFallback || !hasPreferred) return null;
+
+  // No priority rule may erase an invalid loser (or an invalid winner).
+  // This includes newer model runs and official revisions, not only ties.
+  if (!admit(fallbackRow, component) || !admit(preferredRow, component)) return null;
 
   const fallbackModelRun = componentModelRun(fallbackRow, component);
   const preferredModelRun = componentModelRun(preferredRow, component);
@@ -289,14 +326,19 @@ function componentPreference(
     if (!allowPreferredEqualModelRun) return null;
     const fallbackRevision = componentRevisionSource(fallbackRow, component);
     const preferredRevision = componentRevisionSource(preferredRow, component);
-    if (!comparableDmiRevision(fallbackRevision, preferredRevision)) return null;
-    if (preferQualifiedDmiComponentSource(fallbackRevision, preferredRevision, component)) return 'preferred';
-    if (preferQualifiedDmiComponentSource(preferredRevision, fallbackRevision, component)) return 'fallback';
+    // Official revision clocks order only comparable source identities. A
+    // timestamp on a different collection/grid/layer cannot prove that it
+    // revises the protected component, even when its modelRun is identical.
+    if (comparableDmiRevision(fallbackRevision, preferredRevision)) {
+      if (preferQualifiedDmiComponentSource(fallbackRevision, preferredRevision, component)) return 'preferred';
+      if (preferQualifiedDmiComponentSource(preferredRevision, fallbackRevision, component)) return 'fallback';
+    }
     if (!part || !verifiedProtectedDmiComponent(fallbackRow, component, part)
       || !verifiedProtectedDmiComponent(preferredRow, component, part)) return null;
     // Both independently verified DMI components describe the same model run,
-    // place and grid, but their native time support does not prove a later
-    // official revision. The deployed value is the protected previous winner:
+    // target part/hour, but their native time support or source identity does
+    // not prove a later official revision. The authenticated prior component
+    // is the protected previous winner, including a different valid grid:
     // keep it rather than making a different interpolation (or provenance-only
     // change) an unresolvable peer in the strict replay. This does not admit an
     // invalid candidate or weaken replay for unrelated sources.
@@ -313,8 +355,9 @@ function componentPreference(
   return preferredModelRun > fallbackModelRun ? 'preferred' : 'fallback';
 }
 
-function isAcceptedProgressiveDmiRevision(fallbackSource, preferredSource) {
-  return fallbackSource?.source === 'deployed-private-runtime'
+function isAcceptedProgressiveDmiRevision(fallbackSource, preferredSource, protectedPreviousSource) {
+  return protectedPreviousSource === fallbackSource
+    && fallbackSource?.source === 'deployed-private-runtime'
     && preferredSource?.source === 'progressive-private-dmi';
 }
 
@@ -332,11 +375,16 @@ function withoutComponent(row, component) {
  * valid value remains. An equal modelRun may refresh the explicit protected
  * deployed/progressive DMI pair only with a proved newer official revision;
  * otherwise its previously selected, independently verified value survives.
- * Unrelated or non-comparable sources still reach the strict replay gate.
+ * A same-run collection/grid/layer change is not proof of a newer revision.
+ * Only the caller's authenticated previous source may win that ambiguity;
+ * unrelated sources still reach the strict replay gate.
  */
 export function buildNewestValidRavScoreRecoverySources({
   fallbackSource = null,
   preferredSource = null,
+  // Pass the identical fallbackSource object only after authenticating its
+  // protected baseline/history and sampling context. Labels are not proof.
+  protectedPreviousSource = null,
   productionReferenceAt = null,
   part = null,
   onProtectedSameRunDmiRetention = null,
@@ -348,9 +396,27 @@ export function buildNewestValidRavScoreRecoverySources({
   const fallbackByTime = uniqueRowsByTime(fallbackSource);
   const preferredByTime = uniqueRowsByTime(preferredSource);
   const decisions = new Map();
+  const correctSamplingPoints = samePoint(fallbackSource?.record?.point, part?.waterPoint)
+    && samePoint(preferredSource?.record?.point, part?.waterPoint);
+  // Invocation-local cache: rows can be mutable outside this function, so a
+  // module-global cache could accept changed/tampered evidence on a later call.
+  const admissions = new WeakMap();
+  const admit = (row, component) => {
+    if (!correctSamplingPoints || !row || typeof row !== 'object') return false;
+    let components = admissions.get(row);
+    if (!components) {
+      components = new Map();
+      admissions.set(row, components);
+    }
+    if (!components.has(component)) {
+      components.set(component, verifiedReplayComponentForPriority(row, component, part));
+    }
+    return components.get(component);
+  };
   const allowPreferredEqualModelRun = isAcceptedProgressiveDmiRevision(
     fallbackSource,
     preferredSource,
+    protectedPreviousSource,
   );
   for (const [time, fallbackRow] of fallbackByTime) {
     const preferredRow = preferredByTime.get(time);
@@ -361,12 +427,14 @@ export function buildNewestValidRavScoreRecoverySources({
         productionReferenceAt,
         part,
         onProtectedSameRunDmiRetention,
+        admit,
       }),
       wave: componentPreference(fallbackRow, preferredRow, 'wave', {
         allowPreferredEqualModelRun,
         productionReferenceAt,
         part,
         onProtectedSameRunDmiRetention,
+        admit,
       }),
     });
   }

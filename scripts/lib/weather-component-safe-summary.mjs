@@ -37,20 +37,54 @@ const boolean = value => typeof value === 'boolean' ? value : null;
 const length = value => Array.isArray(value) ? value.length : null;
 const coverage = value => Object.fromEntries(FAMILIES.map(family =>
   [family, counts(field(value, family), COVERAGE_COUNTS)]));
-const retryReasons = value => counts(value, CP_RETRY_CODES);
+
+function copernicusRetryEvidence(value, { attempts, retryableAttempts }) {
+  const reasons = field(value, 'retryableReasons');
+  const hasReasons = record(reasons);
+  const retryableReasons = {};
+  // Runtime reasons are a sparse histogram. Only an existing reason map can
+  // establish zero known entries; missing/invalid evidence remains unknown.
+  let knownReasonReportedAttempts = hasReasons ? 0 : null;
+  for (const code of CP_RETRY_CODES) {
+    const descriptor = hasReasons ? Object.getOwnPropertyDescriptor(reasons, code) : undefined;
+    const amount = count(descriptor?.value);
+    retryableReasons[code] = amount;
+    if (!descriptor || knownReasonReportedAttempts === null) continue;
+    if (amount === null || amount > Number.MAX_SAFE_INTEGER - knownReasonReportedAttempts) {
+      knownReasonReportedAttempts = null;
+    } else knownReasonReportedAttempts += amount;
+  }
+  const exceeds = (left, right) => left !== null && right !== null && left > right;
+  const inconsistent = exceeds(knownReasonReportedAttempts, retryableAttempts)
+    || exceeds(retryableAttempts, attempts) || exceeds(knownReasonReportedAttempts, attempts);
+  const available = [knownReasonReportedAttempts, retryableAttempts, attempts]
+    .every(value => value !== null);
+  const reportedCountsConsistent = inconsistent ? false : available ? true : null;
+  // No arbitrary reason keys/values are inspected. The remainder is arithmetic
+  // over REPORTED attempts, not an attribution or a complete transport history.
+  // attemptCountsComplete remains a separate statement from the producer.
+  return { retryableReasons, retryableReasonAccounting: {
+    knownReasonReportedAttempts,
+    unaccountedReasonReportedAttempts: reportedCountsConsistent === true
+      ? retryableAttempts - knownReasonReportedAttempts : null,
+    reportedCountsConsistent,
+  } };
+}
 
 function copernicusPass(value) {
   if (!record(value)) return null;
-  return { ...counts(value, ['requestedNeeds', 'budgetMs', 'attempts', 'retryableAttempts', 'remainingNeeds', 'deferred']),
+  const totals = counts(value, ['requestedNeeds', 'budgetMs', 'attempts', 'retryableAttempts', 'remainingNeeds', 'deferred']);
+  return { ...totals,
     status: choice(field(value, 'status'), CP_STATUSES),
     outcome: choice(field(value, 'outcome'), CP_OUTCOMES),
-    retryableReasons: retryReasons(field(value, 'retryableReasons')),
+    ...copernicusRetryEvidence(value, totals),
     transportFailure: choice(field(value, 'transportFailure'), CP_TRANSPORT_FAILURES),
     attemptCountsComplete: boolean(field(value, 'attemptCountsComplete')) };
 }
 
 export function safeWeatherComponentSummary(summary) {
   const cp = field(summary, 'copernicus');
+  const cpTotals = counts(cp, CP_COUNTS);
   const passes = field(cp, 'passes');
   const om = field(summary, 'openMeteo');
   return { kind: 'weather-component-coverage',
@@ -59,9 +93,9 @@ export function safeWeatherComponentSummary(summary) {
     after: coverage(field(summary, 'after')),
     failureCount: length(field(summary, 'failures')),
     pendingCopernicusUpgrades: count(field(summary, 'pendingCopernicusUpgrades')),
-    copernicus: { ...counts(cp, CP_COUNTS),
+    copernicus: { ...cpTotals,
       status: choice(field(cp, 'status'), CP_STATUSES),
-      retryableReasons: retryReasons(field(cp, 'retryableReasons')),
+      ...copernicusRetryEvidence(cp, cpTotals),
       transportFailure: choice(field(cp, 'transportFailure'), CP_TRANSPORT_FAILURES),
       attemptCountsComplete: boolean(field(cp, 'attemptCountsComplete')),
       // Existing summaries do not report deferred counts in every CP pass.

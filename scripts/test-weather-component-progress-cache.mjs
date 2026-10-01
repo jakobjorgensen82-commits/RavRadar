@@ -16,6 +16,7 @@ import { pairedSourceDiagnostic,
   reconcileProtectedWeatherSources } from './reconcile-protected-weather-sources.mjs';
 import { mergeOpenMeteoPartBank, buildOpenMeteoPartRequest, readOpenMeteoPartResponse,
   openMeteoMfNearestGridPoint, OPEN_METEO_NATIVE_NEAREST_POLICIES } from './lib/open-meteo-part-bank.mjs';
+import { openMeteoO1280NearestGridPoint } from './lib/open-meteo-o1280-grid.mjs';
 
 const execFileAsync = promisify(execFile);
 const repository = 'owner/fixture';
@@ -349,6 +350,51 @@ test('paired newer protected generation wins an exact verified Open-Meteo collis
   assert.equal(merged.openMeteoAdded, 0, 'a same-slot update is not a newly filled hole');
 });
 
+test('progress recovery counts newly usable slots separately from unusable tuple retirement', async t => {
+  const f = await fixture(t);
+  await write(f.source, 'data/live/coastal-parts-v2.json', { partCount: 1, zones: { ZONE: [part] } });
+  const nextHour = new Date(Date.parse(reference) + 3600000).toISOString();
+  const options = { parts: [part], spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
+    retentionStartAt: reference, retentionEndAt: nextHour };
+  const wave = period => {
+    const grid = openMeteoO1280NearestGridPoint(part.waterPoint);
+    return readOpenMeteoPartResponse({ request: buildOpenMeteoPartRequest(part, {
+      component: 'wave', productionReferenceAt: reference,
+      spatialPolicy: OPEN_METEO_NATIVE_NEAREST_POLICIES.wave,
+    }), responseText: JSON.stringify({ longitude: grid[0], latitude: grid[1], utc_offset_seconds: 0,
+      hourly: { time: [reference], wave_height: [1], wave_peak_period: [period], wave_direction: [180] },
+      hourly_units: { wave_height: 'm', wave_peak_period: 's', wave_direction: '°' },
+    }), acquiredAt: reference }, { part, spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
+  };
+  // The locked parser still authenticates the original 0.04 s response, whose
+  // stored canonical period rounds to zero and is therefore not usable weather.
+  const previous = mergeOpenMeteoPartBank(nativeTemperatureBank(reference, 14), [wave(0.04)], options);
+  assert.equal(previous.records.length, 2);
+  await write(f.source, files.openMeteoBank, previous);
+  const sourceText = await fs.readFile(path.join(f.source, files.openMeteoBank), 'utf8');
+  const cases = [
+    { name: 'retirement-only', complete: mergeOpenMeteoPartBank(null, [], options), added: 0, records: 1 },
+    { name: 'repair-unusable-slot', complete: mergeOpenMeteoPartBank(null, [wave(6)], options), added: 1, records: 2 },
+    { name: 'retire-and-add-other-hour', complete: nativeTemperatureBank(nextHour, 15), added: 1, records: 2 },
+  ];
+  for (const item of cases) {
+    const stage = path.join(f.folder, item.name);
+    await fs.mkdir(stage);
+    await write(f.target, files.openMeteoBank, item.complete);
+    const merged = await mergeVerifiedProtectedProgressComponents({ root: f.source,
+      progressFiles: [{ relativePath: files.openMeteoBank, sourcePath: path.join(f.source, files.openMeteoBank) }],
+      progressVerifiedRoot: f.source, temporaryDirectory: stage, productionReferenceAt: reference,
+      completeFiles: [{ relativePath: files.openMeteoBank, sourcePath: path.join(f.target, files.openMeteoBank) }],
+    });
+    assert.equal(merged.openMeteoAdded, item.added, item.name);
+    const result = JSON.parse(await fs.readFile(merged.files[0].sourcePath, 'utf8'));
+    assert.equal(result.records.length, item.records, item.name);
+    const oldTemperature = previous.records.find(row => row.component === 'waterTemperature');
+    assert.deepEqual(result.records.find(row => row.recordId === oldTemperature.recordId), oldTemperature);
+    assert.equal(await fs.readFile(path.join(f.source, files.openMeteoBank), 'utf8'), sourceText);
+  }
+});
+
 test('the paired 11Z/15Z source restore admits the newer original without copying public values', async t => {
   const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-source-test-'));
   t.after(async () => {
@@ -381,8 +427,26 @@ test('the paired 11Z/15Z source restore admits the newer original without copyin
   await write(donor, files.openMeteoBank, newer);
   await write(donor, files.selectedComponents, selection);
   await buildPrivateWeatherComponentPack({ repositoryRoot: donor, conditions: donorConditions });
+  const forecastPath = 'data/live/dmi-forecast-cache.json';
+  const protectedForecast = { schemaVersion: 2, zones: {
+    ZONE: { zoneId: 'ZONE', point: [10, 56], hourly: [] },
+  } };
+  await write(working, forecastPath, protectedForecast);
+  await write(donor, forecastPath, '{malformed authenticated donor');
+  const protectedBank = await fs.readFile(path.join(working, files.openMeteoBank));
+  const protectedConditions = await fs.readFile(path.join(working, 'data/live/conditions.json'));
+  await assert.rejects(reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
+    productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() }),
+  /PAIRED_SOURCE_MERGE_DMI_REJECTED/);
+  assert.deepEqual(await fs.readFile(path.join(working, files.openMeteoBank)), protectedBank,
+    'a rejected DMI donor must stop installation of the already staged provider bank');
+  assert.deepEqual(await fs.readFile(path.join(working, 'data/live/conditions.json')), protectedConditions);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(working, forecastPath), 'utf8')), protectedForecast);
+  await fs.unlink(path.join(donor, forecastPath));
+  await fs.unlink(path.join(working, forecastPath));
   const report = await reconcileProtectedWeatherSources({ root: working, donorRoot: donor,
     productionReferenceAt: new Date(Date.parse(reference) + 3600000).toISOString() });
+  assert.equal(report.dmiForecast.status, 'NOT_PRESENT', 'legacy optional DMI absence remains compatible');
   assert.equal(report.publicValuesCopied, false);
   assert.equal(report.runtimeCursorCopied, false);
   assert.equal(JSON.parse(await fs.readFile(path.join(working, files.openMeteoBank), 'utf8'))
