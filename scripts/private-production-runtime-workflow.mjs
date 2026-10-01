@@ -209,7 +209,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.524',
+  releaseVersion: '4.0.525',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -225,7 +225,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.524',
+  releaseVersion: '4.0.525',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
@@ -1545,12 +1545,17 @@ export async function installRestoredPrivateRuntime({
   let componentFiles = [];
   if (hasExtension) {
     try { componentFiles = await unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions }); }
-    catch (error) { await fs.rm(componentStage, { recursive: true, force: true }); throw error; }
+    catch (error) {
+      // Cleanup must not replace the original unpack/integrity failure.
+      await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
   }
 
   const transactionId = `${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   const staged = [];
   let mutationStarted = false;
+  let installFailed = false;
   try {
     for (const descriptor of [...descriptors, ...componentFiles]) {
       const source = descriptor.sourcePath ?? path.resolve(sourceRoot, descriptor.relativePath);
@@ -1590,6 +1595,7 @@ export async function installRestoredPrivateRuntime({
     }
     await Promise.all(staged.map(row => removeImpl(row.previous, { force: true }).catch(() => {})));
   } catch (error) {
+    installFailed = true;
     let rollbackError = null;
     if (mutationStarted) {
       for (const row of [...staged].reverse()) {
@@ -1601,7 +1607,9 @@ export async function installRestoredPrivateRuntime({
         }
       }
     }
-    await Promise.all(staged.flatMap(row => [row.temporary, row.previous]
+    // A failed rollback can leave the only original in row.previous. Keep it
+    // for explicit repair; this hard failure must never destroy that backup.
+    await Promise.all(staged.flatMap(row => (rollbackError ? [row.temporary] : [row.temporary, row.previous])
       .map(file => removeImpl(file, { force: true }).catch(() => {}))));
     if (rollbackError) {
       const wrapped = new Error('Private runtime install failed and rollback could not restore every file');
@@ -1610,7 +1618,13 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage) await fs.rm(componentStage, { recursive: true, force: true });
+    if (componentStage) {
+      try { await fs.rm(componentStage, { recursive: true, force: true }); }
+      catch (error) {
+        // A failed install/rollback is primary. Cleanup alone stays fatal.
+        if (!installFailed) throw error;
+      }
+    }
   }
   return {
     installed: true,

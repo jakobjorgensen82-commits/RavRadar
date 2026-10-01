@@ -1,4 +1,16 @@
-# Aktuel regional nulrettelse – 2026-10-01
+# Aktuel rollbackbeskyttelse – 2026-10-01
+
+- **REQ-PRIVATE-INSTALL-BACKUP-0525 – BINDENDE / LOKALT RETTET:**
+  Hvis privat installation og rollback fejler, må efterfølgende oprydning
+  ikke slette de originale transaktionsbackups. Den hårde fejl og primære
+  årsag bevares; ingen succes, automatisk reparation eller konsistens må
+  udledes af filernes bevarelse. Vellykkede stier og gates er uændrede.
+  En samtidig fejl ved oprydning af component-stage må ikke erstatte
+  den oprindelige unpack-, installations- eller rollbackfejl. En isoleret
+  oprydningsfejl efter ellers succesfuld installation skal fortsat afvises.
+  Se [DEC-0272](../10_DECISIONS/DEC-0272-PRIVATE-INSTALL-ROLLBACK-BACKUP.md).
+
+# Historisk kandidattekst for leveret regional nulrettelse – 2026-10-01
 
 - **REQ-REGIONAL-ZERO-COMMITMENT-0522 – BINDENDE / LOKAL KANDIDAT:**
   Kun eksakt numerisk nul normaliseres i de tre afledte regionale

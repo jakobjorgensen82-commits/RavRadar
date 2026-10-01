@@ -1,4 +1,26 @@
-# 2026-10-01 – 4.0.524 binder PUBLIC-prioritet til faktisk aktiv rå række
+# 2026-10-01 – 4.0.525 bevarer sidste original ved fejlet rollback
+
+**Samlet kandidat efter ejerens fortsætordre:** Første head02ed3c4 bestod
+CI36897750089. Under fortsat almindelig vejrhentning blev en nært beslægtet
+component-stage-fejl reproduceret: cleanup overskrev primær unpack/install/
+rollbackfejl. Minimal rettelse og eksisterende kunstige fixtures bevarer nu
+årsagen og backup; cleanup-only er fortsat hård.16/16 release-målprøver består,
+8332,7965ms,ingen skips. Ny exact-head CI kræves før samme525 kan leveres.
+Ingen ny generisk testinfrastruktur eller større519-optins blev kopieret.
+
+DEC-0272 afgrænser en normal restorefejl: den eksisterende oprydning kunne
+slette originalbackup efter mislykket tilbagerulning. Kunstig fejl er
+reproduceret; minimal runtimepatch og eksisterende måltest består. Ingen
+ny gate/helper/model/format/cap eller større519-optin indgår. CI og levering
+afventer. Bevarede originaler er reparationsmateriale, ikke fuldført rollback.
+
+524 er allerede leveret, cron er aktiv efter ejerlogin. Stopordren for
+36895117738 blev tilbagekaldt, men annulleringen nåede igennem; ingen ny
+save/deploy. Ejeren ønsker fortsat vejrhentning imens: én erstatningskørsel
+36896697919 startede19.04 på524. Lokal rettelse og CI fortsætter parallelt,
+main må først ændres efter afslutning. Astra Ekstra høj består.
+
+# HISTORISK – 4.0.524 binder PUBLIC-prioritet til faktisk aktiv rå række
 
 523 er publiceret via PR491/main d7e58f99/code-only36883934945 og
 UI-effekten kontrolleret på uændrede data. Ordinary36865862773 bestod

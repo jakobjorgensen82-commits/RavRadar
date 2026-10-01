@@ -1,4 +1,21 @@
-# Aktuelle issues – 2026-10-01, offentlig523 og lokal524
+# Aktuelle issues – 2026-10-01, offentlig524 og lokal525
+
+- **ROLLBACKBACKUP LOKALT RETTET:** DEC-0272 bevarer originalen ved dobbelt
+  install/rollbackfejl. Syntetisk1/1 PASS, CI og levering afventer; ingen
+  produktionsforekomst er konstateret. Arbejdsområdet er ikke automatisk helet.
+- **CRONLOGIN LØST:** Cron8348098 er aktiv med uændret plan. Ordinary36896697919
+  er startet på524 efter ejerens korrigerede ordre; ingen mainændring imens.
+- **DRIFTSEFFEKT ÅBEN:** 524 er leveret, ikke endnu bevist gennem en afsluttet
+  frisk vejrgeneration. Komplet cache og den store519-revision er ikke færdige.
+- **COMPONENT-STAGE LOKALT RETTET:** Tre primære unpack/install/rollback-
+  fejl blev maskeret af efterfølgende cleanupfejl. Alle tre bevares nu;
+  cleanup-only fejler fortsat hårdt. Release-målkommando16/16 består.
+  Første heads grønne CI er historisk; samlet kandidat kræver ny exact-head CI.
+- **AFGRÆNSNING:** Denne patch løser ikke generel bundle-prior-levetid,
+  samtidige writers eller automatisk reparation af et delvist installeret træ. Den
+  tidligere afviste admissiongate og historiske donoromvej er ikke åbnet.
+
+# Historiske issues – 2026-10-01, offentlig523 og lokal524
 
 - **CRONLOGIN:** 523 er leveret og UI-kontrolleret. Cron8348098 skal
   aktiveres efter ejerlogin uden flere release-/helrevisionkrav. Ejeren er

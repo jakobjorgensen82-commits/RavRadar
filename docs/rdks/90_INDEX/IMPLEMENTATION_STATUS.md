@@ -1,4 +1,21 @@
-# 2026-10-01 – offentlig 4.0.523; afgrænset lokal 4.0.524
+# 2026-10-01 – offentlig 4.0.524; afgrænset lokal 4.0.525
+
+- [x] 524 exact-head CI, merge, code-only og offentlig identitet verificeret.
+- [x] Cron8348098 aktiveret og genlæst; uændret plan, næste22:19DK.
+- [x] DEC-0272: tab af lokal originalbackup efter fejlet rollback reproduceret
+  og rettet med minimal ændring. Eksisterende måltest1/1 PASS, ingen skips.
+- [x] 525 dokumentation/version/RDKS, uændret model67/otte bindinger,
+  tre persistente kontrakthashes, sourceplan47 og versions-only-geodata.
+  Særskilt7/7 berørt runtime/docs/security og1/1 browserlukning består.
+- [x] Første525-head02ed3c4: exact-head CI36897750089 bestået.
+- [x] Samtidig component-stage-cleanupfejl: tre primære fejl blev maskeret
+  i kunstig RED; minimal rettelse bevarer dem. Cleanup-only forbliver hård.
+  Den samlede isolerede release-målkommando16/16 PASS,8332,7965ms,0skip.
+- [ ] NY525 exact-head CI for tilføjelsen og sikker levering efter aktiv vejrkørsel.
+- [ ] Ordinary36896697919 på524 følges; ingen mainændring under aktivt run.
+- [ ] Stor519-integration, kapacitet, session/SOURCE og fuld cache består.
+
+# HISTORISK – 2026-10-01 – offentlig 4.0.523; afgrænset lokal 4.0.524
 
 - [x] 523 exact-head CI, merge og code-only36883934945 bestået;
   redundant UI-spænd faktisk væk på samme dataset, andre UI-felter bevaret.

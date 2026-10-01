@@ -185,6 +185,77 @@ test('real restored-runtime installer handles nine-file legacy and transactional
   assert.deepEqual(await fs.readFile(path.join(repository, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank)), before);
 });
 
+test('component-stage cleanup preserves primary failures and stays hard after success', async t => {
+  for (const failure of ['unpack', 'install', 'rollback', 'cleanup-only']) await t.test(failure, async t => {
+    const { folder, source } = await fixture(t);
+    const repository = path.join(folder, 'repository');
+    await fs.mkdir(repository);
+    for (const descriptor of PRIVATE_RUNTIME_BASE_FILES) await write(source, descriptor.relativePath,
+      descriptor.id === 'full-conditions' ? conditions : { synthetic: descriptor.id });
+    await seed(source);
+    const packed = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+    const basePaths = new Set(PRIVATE_RUNTIME_BASE_FILES.map(item => item.relativePath));
+    for (const relative of Object.values(PRIVATE_WEATHER_COMPONENT_FILES).filter(item => !basePaths.has(item))) {
+      await fs.unlink(path.join(source, relative)).catch(error => { if (error.code !== 'ENOENT') throw error; });
+    }
+    const original = Buffer.from('synthetic original kept for repair\n');
+    const paths = [...basePaths, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath,
+      PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents,
+      PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor];
+    for (const relative of paths) await write(repository, relative, original);
+    if (failure === 'unpack') {
+      const bytes = await fs.readFile(packed.sourcePath);
+      bytes[0] ^= 1;
+      await fs.writeFile(packed.sourcePath, bytes);
+    }
+    const sourceBytes = await fs.readFile(packed.sourcePath);
+    const primary = new Error('synthetic primary install failure');
+    const cleanup = new Error('synthetic component-stage cleanup failure');
+    const remove = fs.rm;
+    let cleanupCalls = 0, renames = 0, blockedDestination, preservedOriginal;
+    const realSource = await fs.realpath(source);
+    t.mock.method(fs, 'rm', async (file, options) => {
+      if (String(file).startsWith(`${realSource}.weather-components-`)) {
+        cleanupCalls++;
+        throw cleanup;
+      }
+      return remove(file, options);
+    });
+    await assert.rejects(installRestoredPrivateRuntime({
+      restoredRoot: source, repositoryRoot: repository,
+      renameImpl: async (from, to) => {
+        renames++;
+        if (failure === 'install') throw primary;
+        if (failure === 'rollback') {
+          if (renames === 1) { blockedDestination = from; preservedOriginal = to; }
+          if (renames === 4) throw primary;
+        }
+        return fs.rename(from, to);
+      },
+      removeImpl: async (file, options) => {
+        if (file === blockedDestination) throw new Error('synthetic rollback failure');
+        return remove(file, options);
+      },
+    }), error => {
+      if (failure === 'unpack') assert.match(error.message, /WEATHER_PACK_FORMAT_INVALID/);
+      else if (failure === 'install') assert.equal(error, primary);
+      else if (failure === 'rollback') {
+        assert.match(error.message, /rollback could not restore every file/);
+        assert.equal(error.cause, primary);
+      } else assert.equal(error, cleanup, 'cleanup failure alone must still reject the installation');
+      return true;
+    });
+    assert.equal(cleanupCalls, 1, 'the owned component stage must actually attempt cleanup');
+    assert.deepEqual(await fs.readFile(packed.sourcePath), sourceBytes, 'original pack is untouched');
+    if (failure === 'rollback') assert.deepEqual(await fs.readFile(preservedOriginal), original);
+    if (failure === 'unpack' || failure === 'install') {
+      for (const relative of paths) assert.deepEqual(await fs.readFile(path.join(repository, relative)), original);
+    }
+    if (failure === 'cleanup-only') assert.equal(
+      await fs.readFile(path.join(repository, PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents), 'utf8'), ledger);
+  });
+});
+
 test('conditions input marker cannot be restored with only nine legacy files', async t => {
   const { folder, source } = await fixture(t);
   const repository = path.join(folder, 'repository');

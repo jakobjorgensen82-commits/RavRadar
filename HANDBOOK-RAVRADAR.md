@@ -1,14 +1,36 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.524
+**Håndbogsversion:** 4.0.525
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.524 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.525 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.122 4.0.525 – Bevar sikkerhedskopien, når gendannelse fejler
+
+Når en privat vejrpakke installeres, flyttes de gamle filer først til
+midlertidige sikkerhedskopier. Hvis installationen fejler, forsøger systemet
+at lægge de gamle filer tilbage. Fejler også dette forsøg, skal kopierne
+bevares til reparation. Oprydningen må ikke fjerne den sidste original.
+
+Fejl under den efterfølgende oprydning må heller ikke skjule den oprindelige
+fejl ved udpakning, installation eller tilbagerulning. Hvis kun oprydningen
+fejler efter en ellers vellykket installation, meldes den fejl fortsat.
+
+De afgrænsede rettelser ændrer kun disse fejlgrene. Fejlen bliver stadig
+rapporteret, og bevarede kopier betyder ikke, at installationen er i orden.
+Normale vellykkede installationer, prognosen, datakilder og sikkerhedskontroller
+er uændrede. Kunstige prøver har påvist og kontrolleret rettelserne; deres
+forekomst i produktionen er ikke målt. Den samlede udgivelseskontrol afventer.
+
+4.0.524 er offentlig. Automatisk vejrhentning er genaktiveret med uændret
+firetimersplan. Efter ejerens seneste ordre fortsætter en almindelig kørsel,
+mens denne lille rettelse klargøres lokalt. Det ændrer ikke kravet om, at
+aktiv vejrproduktion og ændring af hovedkoden skal holdes adskilt.
 
 ## 89.121 4.0.524 – Bevar DMI, når de oprindelige data beviser valget
 
