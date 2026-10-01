@@ -1,4 +1,33 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – afgrænset 4.0.522-nulrettelse
+# AKTUELT CHECKPOINT – 2026-10-01 – lokal samlepakke 4.0.523
+
+Arbejd i det isolerede `weather-restart-release`, branch
+`codex/4.0.523-cache-followup`, fra main `1d5a64d1`/4.0.522.
+Ordinary `36843972587` bestod alle produktionsgates og publicerede
+4.0.522; ny ordinary `36865862773` er aktiv på samme main. Main må
+ikke ændres, og ingen ekstra run/cron må startes under den aktive kørsel.
+Nyere ejerordre: aktivér cron 8348098, når denne rettelsespakke er sikkert
+publiceret og kontrolleret. Pause igen ved konkret fejl/releasebehov;
+ingen overlap eller krav om at vente på hele den store revision.
+
+Ejerens rækkefølge: analyser → ret → måltest → sikker produktion →
+verificér effekt. Saml flere færdige rettelser, genbrug eksisterende
+arbejde og fortsæt udvikling; byg ikke et selvstændigt testprojekt.
+DEC-0270 afgrænser normale replay-, arkivkapacitets- og restorefejlrettelser.
+Desuden UI's redundante spænd og DMI-først før prioritering i to replay-
+callers. PUBLIC-merger/sanitizer bevares byte-identisk; bank/session,
+bred PUBLIC-retention og femfamilie-builderdefault udelades.
+Fuld source-CI skal bestå på det eksakte PR-head. Hvert nyt vejrartifact
+skal fortsat igennem alle efterdatagates. Måltests er ikke produktionseffekt.
+
+Prioritér de vanskeligste dataintegritets-/integrationsbeslutninger med
+ejerens Astra/Ultra nu. Anbefal derefter Astra Ekstra høj og siden Sol
+Ekstra høj til passende resterende arbejde; ingen modelændring udføres
+automatisk. Stor feggesund-revision bevares, men dens bredere PUBLIC-
+ændring og proof/session/SOURCE-opt-ins må ikke kopieres ind som en klump.
+Den særskilt afviste admissiongate afventer sit konkrete svar. Ingen
+ny audit eller SQL-installation. `.cache/` må aldrig stages.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – afgrænset 4.0.522-nulrettelse
 
 4.0.521 er merged som `aeac44b4`. Run `36826445588` gennemførte
 updateren og gemte krypteret `36826445588-1` (cache `8353412294`),

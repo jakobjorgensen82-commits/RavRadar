@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
+import { constants as bufferConstants } from 'node:buffer';
 import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -335,6 +336,7 @@ function assertObjectSetPolicy(policy) {
     'maximumArchivePartBytes',
     'maximumArchiveAggregateBytes',
     'maximumArchiveObjectCount',
+    'maximumEnvelopeBytes',
   ]) {
     if (!Number.isSafeInteger(policy?.[field]) || policy[field] < 1) {
       throw new Error('Private runtime object-set policy is invalid');
@@ -345,6 +347,26 @@ function assertObjectSetPolicy(policy) {
       < BigInt(policy.maximumArchiveAggregateBytes)) {
     throw new Error('Private runtime object-set policy is inconsistent');
   }
+}
+
+function effectiveEnvelopeByteLimit(policy) {
+  // UTF-8 bytes are a conservative upper bound for the resulting JS string's
+  // UTF-16 code units, including non-ASCII metadata and JSON escapes. A caller
+  // may tighten the policy, never expand the declared or runtime boundary.
+  return Math.min(policy.maximumEnvelopeBytes,
+    PROTECTED_PRIVATE_RUNTIME_POLICY.maximumEnvelopeBytes,
+    bufferConstants.MAX_STRING_LENGTH);
+}
+
+function archiveEnvelopeByteLength(envelope) {
+  // Base64 is ASCII and needs no JSON escaping. Measure only the small metadata
+  // envelope with empty content strings using the EXACT canonical serializer;
+  // never concatenate/stringify the complete file contents just to measure it.
+  const metadata = { ...envelope, files: envelope.files.map(file => ({
+    ...file, contentBase64: '',
+  })) };
+  const metadataBytes = Buffer.byteLength(canonicalPrivateRuntimeJson(metadata), 'utf8');
+  return metadataBytes + envelope.files.reduce((sum, file) => sum + file.contentBase64.length, 0);
 }
 
 function exactKeys(value, expected, label) {
@@ -541,6 +563,7 @@ export async function buildProtectedPrivateRuntimeArchive({
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
 } = {}) {
   assertObjectSetPolicy(policy);
+  const maximumEnvelopeBytes = effectiveEnvelopeByteLimit(policy);
   if (!SOURCE_HEAD_PATTERN.test(String(sourceHead ?? ''))) {
     throw new Error('Private runtime archive requires an exact source head');
   }
@@ -562,6 +585,7 @@ export async function buildProtectedPrivateRuntimeArchive({
     throw new Error('Private runtime archive file count exceeds its bound');
   }
   let rawPayloadBytes = 0;
+  let base64PayloadBytes = 0;
   const files = [];
   for (const entry of entries) {
     const bytes = await readBundleEntry(
@@ -578,6 +602,14 @@ export async function buildProtectedPrivateRuntimeArchive({
       throw new Error('Private runtime archive source contradicts its verified manifest');
     }
     const compressed = await gzipAsync(bytes, { level: 9, mtime: 0 });
+    // Check before Buffer.toString allocates its fixed-size base64 string.
+    const base64Bytes = 4 * Math.ceil(compressed.length / 3);
+    // Metadata can only add bytes, so this cumulative lower bound may reject
+    // safely before retaining another individually valid but excessive string.
+    if (base64Bytes > maximumEnvelopeBytes - base64PayloadBytes) {
+      throw new Error('Private runtime archive base64 content exceeds its string bound');
+    }
+    base64PayloadBytes += base64Bytes;
     files.push({
       path: entry.path,
       bytes: bytes.length,
@@ -598,8 +630,11 @@ export async function buildProtectedPrivateRuntimeArchive({
     contentEncoding: ARCHIVE_CONTENT_ENCODING,
     files,
   };
+  if (archiveEnvelopeByteLength(envelope) > maximumEnvelopeBytes) {
+    throw new Error('Private runtime archive envelope exceeds its string bound');
+  }
   const envelopeBytes = Buffer.from(canonicalPrivateRuntimeJson(envelope), 'utf8');
-  if (envelopeBytes.length > policy.maximumEnvelopeBytes) {
+  if (envelopeBytes.length > maximumEnvelopeBytes) {
     throw new Error('Private runtime archive envelope exceeds its bound');
   }
   const archive = await gzipAsync(envelopeBytes, { level: 9, mtime: 0 });
@@ -894,7 +929,8 @@ async function decodeArchive(archive, descriptor, policy) {
   }
   let envelopeBytes;
   try {
-    envelopeBytes = await gunzipAsync(archive, { maxOutputLength: policy.maximumEnvelopeBytes });
+    // Enforce the string-safe boundary during expansion, before toString/parse.
+    envelopeBytes = await gunzipAsync(archive, { maxOutputLength: effectiveEnvelopeByteLimit(policy) });
   } catch {
     throw new Error('Protected private runtime archive cannot be decompressed within its bound');
   }

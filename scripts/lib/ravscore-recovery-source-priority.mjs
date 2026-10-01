@@ -1,10 +1,12 @@
 import {
   preferQualifiedDmiComponentSource,
+  responseBoundModelRun,
   selectQualifiedWeatherComponent,
 } from './weather-component-selection.mjs';
 import { classifyWavePhysicalTuple } from '../../js/core/ravscore-mobilisation-memory.js';
 import {
   dmiExpectedIdentityForPart,
+  verifiedControlledLiveCurrentSource,
   verifiedDmiForecastComponentSource,
 } from './ravscore-production-adapters.mjs';
 import { verifyCompactFeggesundWaveProxy } from './feggesund-wave-proxy.mjs';
@@ -159,12 +161,24 @@ function componentProvider(row, component) {
   return componentRevisionSource(row, component)?.provider ?? null;
 }
 
-function isControlledLiveReserve(row, component) {
+function isControlledLiveReserve(row, component, part) {
   const source = componentRevisionSource(row, component);
-  return source?.provider !== 'dmi'
+  return component === 'current'
+    && ['copernicus', 'open-meteo'].includes(source?.provider)
     && source?.controlledLivePilot === true
     && source?.vectorSemanticsVersion === 4
-    && source?.sourceClass === 'supplemental-local-current';
+    && Boolean(verifiedControlledLiveCurrentSource(
+      source, row.time, part, row.currentUMps, row.currentVMps,
+    ));
+}
+
+function isVerifiedRegionalCurrent(row, part) {
+  const source = componentRevisionSource(row, 'current');
+  return source?.provider === 'dmi'
+    && source?.sourceClass === 'owner-approved-regional-proxy'
+    && Boolean(verifiedControlledLiveCurrentSource(
+      source, row.time, part, row.currentUMps, row.currentVMps,
+    ));
 }
 
 function comparableDmiRevision(left, right) {
@@ -265,6 +279,26 @@ function componentPreference(
   // is at least the established four-day challenge age.
   const fallbackProvider = componentProvider(fallbackRow, component);
   const preferredProvider = componentProvider(preferredRow, component);
+  if (component === 'current' && fallbackProvider === 'dmi' && preferredProvider === 'dmi') {
+    // Regional continuity is a separate reserve, not a revision of the local
+    // DMI column. Its newer model clock cannot displace direct local DMI.
+    if (verifiedProtectedDmiComponent(fallbackRow, component, part)
+      && isVerifiedRegionalCurrent(preferredRow, part)) return 'fallback';
+    if (verifiedProtectedDmiComponent(preferredRow, component, part)
+      && isVerifiedRegionalCurrent(fallbackRow, part)) return 'preferred';
+  }
+  if (component === 'current' && fallbackProvider !== preferredProvider) {
+    const fallbackRegional = isVerifiedRegionalCurrent(fallbackRow, part);
+    const preferredRegional = isVerifiedRegionalCurrent(preferredRow, part);
+    if (fallbackRegional || preferredRegional) {
+      const reserve = fallbackRegional ? preferredRow : fallbackRow;
+      if (!isControlledLiveReserve(reserve, component, part)) return null;
+      // Existing order: local DMI, CP, regional DMI, OM. The 96-hour
+      // response-bound challenge applies to direct DMI, not this reserve.
+      const reserveWins = componentProvider(reserve, component) === 'copernicus';
+      return fallbackRegional === reserveWins ? 'preferred' : 'fallback';
+    }
+  }
   if (component === 'wave' && (fallbackProvider !== 'dmi' || preferredProvider !== 'dmi')) {
     // Both rows were already sanitized by the production adapter. Re-check
     // the exact replay admission before allowing a source to suppress its
@@ -292,6 +326,19 @@ function componentPreference(
         || fallbackRun === preferredRun) return null;
       return preferredRun > fallbackRun ? 'preferred' : 'fallback';
     }
+    if (fallbackProvider === preferredProvider && !allowPreferredEqualModelRun) {
+      // Array order is not previous ownership. Unauthenticated reserve peers
+      // need a comparable response-bound chronology; ties stay in replay.
+      const referenceAt = canonicalTime(productionReferenceAt);
+      const previousRun = responseBoundModelRun(fallbackSource);
+      const nextRun = responseBoundModelRun(preferredSource);
+      if (referenceAt === null || previousRun === null || nextRun === null
+        || previousRun === nextRun || previousRun > Date.parse(referenceAt)
+        || nextRun > Date.parse(referenceAt)
+        || !['model', 'productId', 'datasetId'].every(key =>
+          fallbackSource[key] === preferredSource[key])) return null;
+      return nextRun > previousRun ? 'preferred' : 'fallback';
+    }
     const candidates = [
       { side: 'fallback', source: fallbackSource, previouslySelected: true },
       { side: 'preferred', source: preferredSource },
@@ -302,24 +349,36 @@ function componentPreference(
       admit: candidate => admitted.get(candidate) ?? null,
     })?.candidate?.side ?? null;
   }
-  if (fallbackProvider !== preferredProvider
-    && (fallbackProvider === 'dmi' || preferredProvider === 'dmi')
-    && (isControlledLiveReserve(fallbackRow, component)
-      || isControlledLiveReserve(preferredRow, component))) {
-    const dmiIsPreferred = preferredProvider === 'dmi';
-    const dmiModelRun = dmiIsPreferred ? preferredModelRun : fallbackModelRun;
-    const otherModelRun = dmiIsPreferred ? fallbackModelRun : preferredModelRun;
-    const referenceMs = Date.parse(productionReferenceAt ?? '');
-    const dmiAgeHours = Number.isFinite(referenceMs) && Number.isFinite(dmiModelRun)
-      ? (referenceMs - dmiModelRun) / 3_600_000
-      : null;
-    const staleDmiMayYield = Number.isFinite(dmiAgeHours)
-      && dmiAgeHours >= 96
-      && Number.isFinite(otherModelRun)
-      && otherModelRun > dmiModelRun
-      && otherModelRun <= referenceMs;
-    if (staleDmiMayYield) return dmiIsPreferred ? 'fallback' : 'preferred';
-    return dmiIsPreferred ? 'preferred' : 'fallback';
+  if (component === 'current' && fallbackProvider === preferredProvider
+    && isControlledLiveReserve(fallbackRow, component, part)
+    && isControlledLiveReserve(preferredRow, component, part)) {
+    // A real previous winner is required for same-provider reserve retention;
+    // arbitrary peer order must not acquire that permission.
+    if (!allowPreferredEqualModelRun || canonicalTime(productionReferenceAt) === null) return null;
+    const candidates = [
+      { side: 'fallback', source: componentRevisionSource(fallbackRow, component), previouslySelected: true },
+      { side: 'preferred', source: componentRevisionSource(preferredRow, component) },
+    ];
+    const admitted = new Map(candidates.map(candidate => [candidate, candidate.source]));
+    return selectQualifiedWeatherComponent(candidates, {
+      component, productionReferenceAt,
+      admit: candidate => admitted.get(candidate) ?? null,
+    })?.candidate?.side ?? null;
+  }
+  if (component === 'current' && fallbackProvider !== preferredProvider) {
+    const eligible = row => verifiedProtectedDmiComponent(row, component, part)
+      || isControlledLiveReserve(row, component, part);
+    if (!eligible(fallbackRow) || !eligible(preferredRow)
+      || canonicalTime(productionReferenceAt) === null) return null;
+    const candidates = [
+      { side: 'fallback', source: componentRevisionSource(fallbackRow, component), previouslySelected: true },
+      { side: 'preferred', source: componentRevisionSource(preferredRow, component) },
+    ];
+    const admitted = new Map(candidates.map(candidate => [candidate, candidate.source]));
+    return selectQualifiedWeatherComponent(candidates, {
+      component, productionReferenceAt,
+      admit: candidate => admitted.get(candidate) ?? null,
+    })?.candidate?.side ?? null;
   }
   if (!Number.isFinite(fallbackModelRun) || !Number.isFinite(preferredModelRun)) return null;
   if (fallbackModelRun === preferredModelRun) {

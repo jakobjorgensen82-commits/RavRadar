@@ -1,16 +1,52 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.522
+**Håndbogsversion:** 4.0.523
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.522 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.523 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.119 4.0.522 – Samme nul skal give samme kontrolbevis
+## 89.120 4.0.523 – Færdige rettelser skal bruges i den rigtige drift
+
+Vejrhentningen er genoptaget. En almindelig kørsel har publiceret
+4.0.522 efter alle kontroller, og næste almindelige kørsel bygger videre.
+Det betyder ikke, at hele cachen eller al historik er komplet.
+
+Den næste pakke samler rettelser til valg mellem gyldige historiske
+vejroplysninger, håndtering af store private vejrpakker og fejl under
+gendannelse. Et tidligere valg må ikke forveksles med den første række
+i en liste. Direkte DMI-data og regionale reservedata har forskellige
+roller. For store tekstpakker skal afvises kontrolleret, før de kræver
+en umulig allokering. Hvis filer allerede er installeret, må en sen
+fejl ikke ligne en uskyldig manglende cache.
+
+Derudover bevares gyldig DMI, før strømoplysninger vælges til genopbygning
+af historikken. Ellers kan et tidligere reservevalg have fjernet DMI,
+før prioriteringen overhovedet begynder. Den eksisterende 96-timersundtagelse
+og datakontrol bevares. Den offentlige prognoses direkte kildevalg ændres
+ikke af denne rettelse; det kræver en særskilt afklaring af kildebeviset.
+
+Visningen rettes også: et interval som »muligt spænd 92–92« skal
+ikke fylde i ranglisten eller landsprognosen. Et reelt interval som
+71–78 og det farvede flag bevares. Det ændrer ikke selve prognosen.
+
+Arbejdsrækkefølgen er analyse, rettelse, målrettet test, sikker udgivelse
+og derefter kontrol på en virkelig vejrkørsel. Eksisterende undersøgelser
+genbruges, og flere færdige rettelser må følges ad. De almindelige
+kontroller for datatab, sikkerhed og publicering består. 4.0.523 er endnu
+en lokal kandidat; ingen større cachekapacitet eller produktionseffekt
+loves på baggrund af lokale tests. Ufærdige SOURCE-/sessionfunktioner
+følger ikke med. Se DEC-0270. Status i ældre kapitler er historisk.
+
+Efter sikker publicering og kontrol af denne pakke skal de automatiske
+vejrhentninger aktiveres igen efter ejerens ordre. De kan pauses ved fejl
+eller nødvendigt releasearbejde; to kørsler må ikke skrive samtidig.
+
+## 89.119 4.0.522 – Samme nul skal give samme kontrolbevis (historisk kandidatstatus)
 
 Et tal kan internt være skrevet som både `0` og `-0`, selv om
 værdien er den samme. To dele af RavRadars strømbehandling brugte

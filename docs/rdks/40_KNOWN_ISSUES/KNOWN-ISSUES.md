@@ -1,4 +1,37 @@
-# Aktuelle issues – 2026-10-01, lokal nulrettelse 4.0.522
+# Aktuelle issues – 2026-10-01, lokal samlepakke 4.0.523
+
+- **NORMAL DRIFT ER GENOPTAGET, KOMPLETHED IKKE BEVIST:** Ordinary
+  `36843972587` publicerede 4.0.522 efter alle gates. Ny ordinary
+  `36865862773` er aktiv; main holdes fast og cron er pauset. H0 er
+  dækket, men 420 aktuelle zone/mode-kombinationer har incomplete historik.
+  Ny ejerordre er genaktivering af cron efter denne pakkes sikre publicering
+  og kontrol; samlet komplet cache er ikke en ekstra forudsætning.
+- **AFGRÆNSEDE RETTELSER SAMLES:** Replay kunne behandle gyldige
+  reserve-/regionalkilder inkonsistent og forveksle tilfældig peerorden
+  med faktisk tidligere valg. Store arkivstrenge mangler tidlige
+  allokeringskontroller. Sen fejl efter progressinstallation må ikke
+  kaldes cache-miss. 4.0.523/DEC-0270 afgrænser disse normale stier;
+  måltests/exact-head CI/produktionseffekt registreres hver for sig.
+- **INGEN BLIND HELKOPI:** Helperrefaktor fra den store lokale revision
+  kan ved kombineret rollback- og cleanupfejl overskrive primær fejl.
+  Den indgår ikke; normal 4.0.522-transport beholdes med en smal rettelse.
+  SOURCE/session/bredere PUBLIC, kapacitet og vedvarende kill-sikkerhed
+  er ikke automatisk løst af denne pakke.
+- **SENERE DMI KAN BLIVE OVERSKREVET:** Operationel closure-merger
+  bruger ikke primary-callbacken som værn mod en tidligere reservebeslutning.
+  Den femte 523-kandidat genvaliderer begge kilder i kun de to replay-callers
+  før selektoren. PUBLIC-merger/sanitizer bevares byte-identisk: gyldig aktiv
+  header beviser ikke en matchende native-række i artifactet. Bred PUBLIC-
+  retention og femfamilie-builderdelta kræver separat afklaring.
+- **UI-SPÆND VAR KUN DELVIST RETTET:** Detaljevisningen havde korrekt
+  upper>lower-kontrol, men app.js' særskilte rangliste-/landsprognose-
+  renderer viste stadig nulbrede spænd. 4.0.523 retter denne kodevej,
+  ikke scoremodellen. Reelle intervaller og flagfarve bevares.
+- **FORTSAT AFGRÆNSNING:** Ingen ny privat audit, model-/96h-/geometri-
+  ændring, no-loss-lempelse eller SQL-installation. Den separate tidlige
+  admissiongate og historiske donorafvisninger må ikke omgås.
+
+# Historiske issues – 2026-10-01, lokal nulrettelse 4.0.522 før produktion
 
 - **HAVSTRØMSTAB STOPPEDE 4.0.521:** Run `36826445588` fejlede
   no-loss med 11.616 current-tab over 53.840 fælles PART-timer;

@@ -289,6 +289,7 @@ export async function weatherComponentProgressCache({
 } = {}) {
   let temporary = null;
   let cipherTemporary = null;
+  let restoreInstalled = false;
   try {
     if (!['capture-base', 'save', 'restore'].includes(mode)) fail('MODE_INVALID');
     repoIdentity(repository);
@@ -403,6 +404,14 @@ export async function weatherComponentProgressCache({
     }
     if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
     await installComponents(root, reconciled.files, { renameImpl, rollbackRenameImpl });
+    restoreInstalled = true;
+    // Installation has changed working inputs. Finish baseline verification
+    // and cleanup before success; a late failure is no untouched cache miss.
+    if (await conditionsDigest(root) !== base.baselineSha256) fail('BASELINE_MISMATCH');
+    const installedTemporary = temporary;
+    temporary = null; // One cleanup attempt; failure is reported below.
+    try { await installedTemporary.cleanup(); }
+    catch { fail('TEMPORARY_CLEANUP_FAILED'); }
     return status('RESTORED', 'ENCRYPTED_PROGRESS_RESTORED', {
       restored: true, fileCount: reconciled.files.length,
       protectedOpenMeteoRecordsRecovered: reconciled.openMeteoAdded,
@@ -414,11 +423,13 @@ export async function weatherComponentProgressCache({
     const code = error?.progressCode
       ?? (mode === 'save' && SAFE_PACK_ERROR_CODES.has(error?.message) ? error.message : null)
       ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
-    return ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
+    return restoreInstalled || ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
       ? status('RESTORE_REPAIR_REQUIRED', code, { requiresProtectedRestore: true })
       : status('CACHE_MISS', code);
   } finally {
     if (cipherTemporary) await fs.unlink(cipherTemporary).catch(() => {});
+    // Preserve earlier primary errors, especially failed rollback/union,
+    // even when their best-effort temporary cleanup also fails.
     if (temporary) await temporary.cleanup().catch(() => {});
   }
 }

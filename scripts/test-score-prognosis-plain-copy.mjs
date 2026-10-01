@@ -1,13 +1,19 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
-import '../js/ui/score-prognosis-copy.js?v=4.0.511';
-import { setLanguage, t } from '../js/i18n.js?v=4.0.511';
-import { historyQualityWarning, showZoneInfo } from '../js/ui/info-panel.js?v=4.0.511';
+const releaseVersion=JSON.parse(fs.readFileSync('package.json','utf8')).version;
+await import(`../js/ui/score-prognosis-copy.js?v=${releaseVersion}`);
+const {setLanguage,t}=await import(`../js/i18n.js?v=${releaseVersion}`);
+const {historyQualityWarning,showZoneInfo}=await import(`../js/ui/info-panel.js?v=${releaseVersion}`);
 
 const bootstrap=fs.readFileSync('bootstrap.js','utf8');
 const panel=fs.readFileSync('js/ui/info-panel.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
+const app=fs.readFileSync('app.js','utf8');
+const markerSource=app.match(/^function scoreQualityMarker\(result\) \{[\s\S]*?^\}/m)?.[0];
+assert.ok(markerSource,'ranglistens faktiske historikmarkør skal findes');
+const scoreQualityMarker=runInNewContext(`(${markerSource})`,{t});
 assert.ok(bootstrap.indexOf('score-prognosis-copy.js')<bootstrap.indexOf('initialiseI18n();'),
   'offentlig tekst skal registreres før første oversættelse');
 assert.match(index,/data-i18n="score\.readBody"/);
@@ -88,6 +94,11 @@ for (const language of ['da','de','en']) {
     `${language}: historikadvarslen skal stadig vises i ranglisten`);
   assert.doesNotMatch(compact,/92[–-]92/,
     `${language}: et sammenfaldende vist interval må ikke fylde i ranglisten`);
+  const rankingMarker=scoreQualityMarker(waveHistoryOnly);
+  assert.ok(rankingMarker.includes(t('score.historyIncomplete.short',{},language)),
+    `${language}: forsidens faktiske markør skal bevare historikadvarslen`);
+  assert.doesNotMatch(rankingMarker,/92[–-]92/,
+    `${language}: rangliste og landsprognose må ikke vise et sammenfaldende interval`);
   const detailed=historyQualityWarning(waveHistoryOnly);
   assert.ok(detailed.includes(t('score.historyIncomplete.waveBody',{},language)),
     `${language}: bølgehistorik skal forklares særskilt ved 48/48 strøm-timer`);
@@ -100,6 +111,21 @@ for (const language of ['da','de','en']) {
       rawLower:70.6,rawUpper:78.1}};
   assert.ok(historyQualityWarning(meaningfulRange,{compact:true}).includes('71–78'),
     `${language}: et reelt scoreinterval skal fortsat vises`);
+  assert.ok(scoreQualityMarker(meaningfulRange).includes('71–78'),
+    `${language}: rangliste og landsprognose skal stadig vise et reelt interval`);
+  for(const invalidBounds of [
+    {lower:78,upper:71,modelUncertaintyPoints:7},
+    {lower:null,upper:78,modelUncertaintyPoints:7},
+    {lower:71,upper:NaN,modelUncertaintyPoints:7},
+    {lower:71,upper:Infinity,modelUncertaintyPoints:7},
+    {lower:71,upper:78,modelUncertaintyPoints:null},
+  ]){
+    const marker=scoreQualityMarker({...waveHistoryOnly,scoreBounds:invalidBounds});
+    assert.ok(marker.includes(t('score.historyIncomplete.short',{},language)),
+      `${language}: ugyldige grænser må ikke fjerne historikadvarslen`);
+    assert.ok(!marker.includes(' · '),
+      `${language}: ugyldige eller omvendte grænser må ikke vises som et interval`);
+  }
 }
 const flagBackgrounds=['style.css','about.css','learn.css'].map(path => {
   const css=fs.readFileSync(path,'utf8');

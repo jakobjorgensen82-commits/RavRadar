@@ -10,6 +10,7 @@ import {
 import { buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours }
   from './lib/dmi-marine-run-seam-recovery.mjs';
 import { mergeLiveCurrentPilotIntoRecord } from './lib/live-current-pilot.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
   buildFeggesundWaveProxy } from './lib/feggesund-wave-proxy.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
@@ -287,7 +288,8 @@ const runPublicPartProjection = Function(
   'createDmiForecastRecord', 'DMI_FORECAST_HOURS', 'verifiedDmiNativeComponentSource',
   'verifiedDmiForecastComponentSource', 'verifiedBulkCurrent',
   'buildDmiMarineComponentwiseHourly', 'recoverDmiMarineRunSeamHours',
-  'mergeHourlyPreferDmi', 'mergeLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
+  'mergeHourlyPreferDmi', 'mergeLiveCurrentPilotIntoRecord',
+  'mergeProtectedLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
   'originalContextForProtectedDmiCurrent', 'verifiedProtectedDmiPartHourly',
   'buildNewestValidRavScoreRecoverySources',
   'FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID', 'FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS',
@@ -300,7 +302,7 @@ const runPublicPartProjection = Function(
    ${extract('function dmiCollections(', 'async function dmiPosition(')}
    ${extract('function bulkZoneToForecastRecord(', 'function verifiedFeggesundNeighborSource(')}
    ${extract('function applyFeggesundOperationalWaveProxy(', 'function missingFeggesundWaveHour(')}
-   return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false}) {
+   return function ({active, deployed = null, historical = null, persisted = [], pointActivated = false, replay = false, pilot = null}) {
      const part = fixturePart;
      const zoneId = part.parentZoneId;
      const bulkId = fixtureIdentity.entityId;
@@ -313,7 +315,7 @@ const runPublicPartProjection = Function(
      const persistedDmiPartRows = new Map([[part.partId, {hourly: persisted}]]);
      const selectedDmiPartRecords = new Map();
      const feggesundSourcesByTime = new Map();
-     const liveCurrentPilot = null;
+     const liveCurrentPilot = pilot;
      const componentInputs = {};
      if (replay) {
        const replayStartAt = productionAt;
@@ -328,7 +330,8 @@ const runPublicPartProjection = Function(
 )(createDmiForecastRecord, DMI_FORECAST_HOURS, verifiedDmiNativeComponentSource,
   verifiedDmiForecastComponentSource, verifiedBulkCurrent,
   buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours,
-  mergeHourlyPreferDmi, mergeLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
+  mergeHourlyPreferDmi, mergeLiveCurrentPilotIntoRecord,
+  mergeProtectedLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
   originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly,
   buildNewestValidRavScoreRecoverySources,
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
