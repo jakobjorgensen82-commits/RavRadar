@@ -1,4 +1,18 @@
-# Aktuelle issues – 2026-10-01, offentlig524 og lokal526
+# Aktuelle issues – 2026-10-01, main526/offentlig525 og lokal527
+
+- **DIREKTE CHILD-CLOSE LOKALT RETTET:** Tre faste offlinekald frigiver ikke
+  ydre cleanup før deres egen child lukker; første fejl består. Kill er ikke
+  stopbevis. Uden close ingen in-process-returfrist, ydre jobdeadline uændret.
+- **INVENTORY-PRIMÆRFEJL BEVARET:** Sen cleanup må ikke skjule første fejl;
+  cleanup-only er stadig hård.60/60 isolerede måltests, ikke produktionsmåling.
+- **LEVERINGSKÆDE:**525 publiceret22.09,526 merged/leveres,527 lokal/CI-afventer.
+  Ingen mainændring under aktiv kørsel eller forsinkelse af klar pakke.
+- **FORTSAT ÅBENT:** Descendants, eksklusivitet, failureworker/runner-tab,
+  fuldCP/S/T og nationalkapacitet. Historik er ikke komplet; ingen skjult cap.
+- **BROWSER:** Request-header-policyfejl; tidligere fresh-tab/genstart hjalp
+  ikke. Ingen alternative kontrolveje eller ny testchat uden ejerautorisation.
+
+# Historiske issues – 2026-10-01, offentlig524 og lokal526
 
 - **525 CI-VALIDERET, IKKE LEVERET:** PR493/5e08d5c5 er grøn; den aktive
   ordinary36896697919 på524 skal afslutte før main ændres. Cron er aktiv.
