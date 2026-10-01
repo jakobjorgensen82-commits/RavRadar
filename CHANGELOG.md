@@ -1,4 +1,16 @@
-## 4.0.527 – Afvent hjælpeprocessen før oprydning (lokal kandidat)
+## 4.0.528 – Kortet følger hele sit felt (lokal kandidat)
+
+- Kortet følger ændringer af eget felt efter indlæsning og layoutskift,
+  ikke kun browservinduets resize. Ingen animation, nyt udsnit eller scoreændring.
+- Top20 er udskilt og bevaret separat; begge rækkelofter er igen5. Den
+  frosne67-filers model/hash består skrivebeskyttet, uden regenerering.
+- Tre målkommandoer består; alle tidligere gates er bevaret. Exact-head CI
+  og faktisk offentlig kortkontrol afventer.527 leveres først. Se DEC-0275.
+- Ny ejerordre om ravradar.dk og SEO er dokumenteret. Domæne Verified hos
+  GitHub; kun DNS-ejerskabs-TXT tilføjet, endnu ingen webrouting/HTTPS-cutover.
+  Intet webhotel/tilkøb; GitHub vedligehold og uændret scoremodel består.
+
+## 4.0.527 – Afvent hjælpeprocessen før oprydning (historisk kandidattekst)
 
 - Tre faste offlinekald afventer close på deres egen proces før fejl og
   oprydning. Første fejl bevares; et kill-forsøg er ikke bevis for stop.

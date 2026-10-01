@@ -1,4 +1,20 @@
-# 2026-10-01 – næste afgrænsede kandidat4.0.527
+# 2026-10-02 – selvstændig kortkandidat4.0.528 og domænearbejde
+
+- [x] Kortfejl faktisk reproduceret; lille container-observer/factoryfix bevaret.
+- [x] Top20-delta bevaret separat i egen.cache; runtime igen top5 i begge stier.
+- [x] Modelcheck uændret67filer/c557f91a…; tre målkommandoer3/3,ingen skips.
+- [ ]528 exact-head CI, retarget efter527 og faktisk offentlig kortkontrol.
+- [ ] Top20-producentens tekniske binding afklares særskilt; ønsket er ikke aflyst.
+- [x] Ejer har bestilt faktisk domæneopsætning og fortsat autonom revision/drift.
+- [x] Eksisterende heartbeat opdateret, cadence/status uændret.
+- [x] ravradar.dk Verified hos GitHub med én Simply TXT-record; DNSSEC urørt.
+- [ ] Pages-customdomain, A/wwwCNAME, HTTPS og faktisk offentlig/login/deploykontrol.
+- [ ] Naturlig SEO for alle ni ord på DA/DE/EN, crawlbare URL'er og effektmåling.
+- [x]527/PR495/head/CI er urørte og grønne;526 er faktisk offentlig.
+- [ ] Aktiv ordinary36920739569 afslutter save+upload/no-loss/artifact/deploy.
+- [ ] Stor519-driver/descendants/runner-tab/nationalkapacitet er fortsat åbne.
+
+# HISTORISK – 2026-10-01 – næste afgrænsede kandidat4.0.527
 
 - [x] Ordinary524/36896697919 afsluttet med cache, alle efterdatagates og deploy.
 - [x] 525/493 merged3283af62; code-only36918367977 SUCCESS22.09/offentlig525.

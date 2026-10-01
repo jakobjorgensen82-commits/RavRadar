@@ -1,4 +1,5 @@
-import { buildPublicConditions, buildPublicConditionDetails, compactJson, buildPublicManifest } from './public-conditions-lib.mjs';
+import { buildPublicConditions, buildPublicConditionDetails, buildPublicNationalForecast, compactJson, buildPublicManifest } from './public-conditions-lib.mjs';
+import assert from 'node:assert/strict';
 import { mergeConditionDetails } from '../js/services/data-service.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
@@ -49,3 +50,30 @@ let incompleteManifestRejected=false;
 try{buildPublicManifest(full,startText,detailsText,'{}\n',zoneRegistryText);}catch(error){incompleteManifestRejected=/complete 210\/673 package/.test(String(error?.message));}
 if(!incompleteManifestRejected)throw new Error('En progressiv, lokalt ufuldstændig fixture blev fejlagtigt accepteret som et komplet offentligt manifest.');
 console.log(`OK: progressiv offentlig runtime bevarer funktioner og reducerer syntetisk startpayload fra ${Buffer.byteLength(detailsText)} til ${Buffer.byteLength(startText)} bytes.`);
+
+// Baseline remains unchanged while top20 is deferred. Six source dates
+// still produce only five days; both modes retain their original top five.
+const expanded=structuredClone(full);
+expanded.zones={};expanded.coastalParts.zones={};expanded.coastalParts.parts={};
+for(let index=1;index<=25;index++){
+  const zoneId=`z${String(index).padStart(2,'0')}`,partId=`p${index}`;
+  const hourly=Array.from({length:6},(_,day)=>({
+    time:`2026-08-${15+day}T10:00:00.000Z`,
+    waders:score(partId,70+index),beach:score(partId,60+index),
+  }));
+  expanded.zones[zoneId]={forecast:{hourly:hourly.map(row=>({time:row.time}))}};
+  expanded.coastalParts.zones[zoneId]={expectedPartCount:1,scoredPartCount:1,hourly};
+  expanded.coastalParts.parts[partId]={...part(partId),zoneId};
+}
+const before=JSON.stringify(expanded);
+const top5=buildPublicNationalForecast(expanded);
+assert.equal(JSON.stringify(expanded),before,'Visningsudvidelsen må ikke omskrive inputscorer.');
+assert.equal(top5.dates.length,5);
+for(const mode of ['waders','beach'])for(const day of top5.modes[mode]){
+  assert.equal(day.rows.length,5);
+  assert.equal(new Set(day.rows.map(row=>row.zoneId)).size,5);
+  assert.deepEqual(day.rows.map(row=>row.zoneId),Array.from({length:5},(_,i)=>`z${String(25-i).padStart(2,'0')}`));
+  assert.deepEqual(day.rows.slice(0,5).map(row=>[row.zoneId,row.score,row.rankingDisplayScore]),
+    Array.from({length:5},(_,i)=>[`z${25-i}`, (mode==='waders'?95:85)-i,(mode==='waders'?95:85)-i]));
+}
+console.log('OK: Uændret offentlig producent bevarer top5 på fem dage i begge modes, scorer og input.');

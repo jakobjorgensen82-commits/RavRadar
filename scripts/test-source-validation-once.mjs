@@ -23,6 +23,9 @@ assert.ok(declared.length <= 47, `Kildegaten er igen blevet for bred: ${declared
 const invokedFiles = declared.flatMap(command => command.split(' ').filter(argument =>
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [
+  'scripts/test-progressive-public-conditions-4.0.216.mjs',
+  'scripts/test-public-nonblocking-forecast-4.0.83.mjs',
+  'scripts/test-map-zoom-refresh-4.0.88.mjs',
   'scripts/test-source-validation-once.mjs',
   'scripts/test-current-operational-python-contracts.mjs',
   'scripts/test-saved-weather-audit-workflow.mjs',
