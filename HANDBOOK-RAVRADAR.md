@@ -1,14 +1,42 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.521
+**Håndbogsversion:** 4.0.522
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.521 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.522 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.119 4.0.522 – Samme nul skal give samme kontrolbevis
+
+Et tal kan internt være skrevet som både `0` og `-0`, selv om
+værdien er den samme. To dele af RavRadars strømbehandling brugte
+forskellig skrivemåde, når de lavede et digitalt kontrolbevis. Det
+kan få kontrollen til at afvise ellers sammenhørende oplysninger.
+4.0.522 giver præcis nul samme skrivemåde de tre steder, hvor de
+afledte regionale beviser dannes. Ingen måling, ikke-nulværdi,
+scoreformel, kildeprioritet eller geografisk placering ændres.
+
+De oprindelige data og kildebeviser bevares. De afledte beviser
+skal bygges på ny som et samlet sæt; vi retter ikke bare i et
+gammelt forseglet bevis eller lærer kontrollen at acceptere fejl.
+En kunstig prøve har vist fejlen før og den korrekte virkning efter.
+En større prøve gennem de faktiske programmer består også, men
+bruger få repræsentative vejrrækker i et kunstigt landsdækkende
+tildelingsskema. Det er ikke en fuld national prognose eller
+bevis fra produktion. GitHub-kildekontrollen afventer stadig.
+
+Den seneste virkelige kørsel gemte sin fremdrift, men blev ikke
+publiceret: kandidaten manglede 11.616 strømpar, som den beskyttede
+prognose havde for samme steder og timer. Der var intet tab i de
+fire øvrige vejrfamilier. Det er endnu ikke målt, om nulfejlen
+forklarer dette tab. Hjemmesiden beholder derfor 4.0.510, og den
+automatiske vejrstart er pauset. Næste sikre almindelige kørsel
+skal bevise virkningen; der loves ikke fuld dækning på forhånd.
+Se DEC-0269. Det tidligere 4.0.521-kandidatafsnit nedenfor er historisk.
 
 ## 89.118 4.0.521 – Genstart vejret med en afgrænset rettelse
 

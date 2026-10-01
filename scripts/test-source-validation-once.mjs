@@ -24,6 +24,7 @@ const invokedFiles = declared.flatMap(command => command.split(' ').filter(argum
   /^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(argument)));
 for (const file of [
   'scripts/test-source-validation-once.mjs',
+  'scripts/test-current-operational-python-contracts.mjs',
   'scripts/test-saved-weather-audit-workflow.mjs',
   'scripts/test-audit-saved-weather-inputs.mjs',
   'scripts/test-protected-dmi-native-current-proofs.mjs',

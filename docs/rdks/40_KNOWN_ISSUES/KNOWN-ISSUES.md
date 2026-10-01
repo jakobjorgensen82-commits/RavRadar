@@ -1,4 +1,31 @@
-# Aktuelle issues – 2026-10-01, lokal genstartskandidat 4.0.521
+# Aktuelle issues – 2026-10-01, lokal nulrettelse 4.0.522
+
+- **HAVSTRØMSTAB STOPPEDE 4.0.521:** Run `36826445588` fejlede
+  no-loss med 11.616 current-tab over 53.840 fælles PART-timer;
+  de fire øvrige familier og identiteter havde nul tab. Krypteret
+  fremdrift `36826445588-1`/cache `8353412294` blev gemt, men ingen
+  ny prognose blev publiceret. Gemt cache er ikke et gennemført deploy.
+- **NULFORMAT RETTET LOKALT; PRODUKTIONSÅRSAG IKKE MÅLT:** Python
+  og JavaScript kunne danne forskellige regionale commitments for
+  eksakt negativt nul. Tre afledte steder er rettet med syntetisk
+  RED → GREEN-bevis. Det beviser ikke, at netop denne fejl forekom i
+  det fejlede runs private input eller forklarer hele current-tabet.
+  Faktiske producenter består lokalt på et kunstigt 673 × 118-
+  tildelingsdomæne med få repræsentative rækker, ikke en fuld national
+  prognose. Exact-head source-CI og næste normale kædes resultat
+  afventer. Se DEC-0269.
+- **BEVISER SKAL GENBYGGES SAMLET:** Gamle afledte sidecars må ikke
+  få omskrevet bevisfelter eller godkendt et alternativt hash-alias.
+  Rå shadow/kildebeviser, værdier og eksisterende JS-kontrol bevares.
+  PUBLIC er stadig active-context-only; bredere bevispersistens og
+  SOURCE-/sessionarbejde er ikke leveret i denne afgrænsede release.
+- **DÆKNING OG DRIFT ER ÅBNE:** Offentlig 4.0.510 bevares, cron
+  `8348098` er pauset. Sene felthuller, historik, leverandørbidrag,
+  kapacitet og gentagen sikker drift er ikke løst af en nulrettelse.
+  Ny ekstra tidlig workflowgate er særskilt sikkerhedsafvist med
+  afventende konkret ejersvar; den indgår ikke som 4.0.522-krav.
+
+# Historiske issues – 2026-10-01, lokal genstartskandidat 4.0.521
 
 - **IKKE RELEASEKLAR:** Strengt historisk replay og afgrænsede
   forecast-/bølge-/OM-/logrettelser er lokale. Måltests er ikke fuld

@@ -5,7 +5,7 @@ import {
   createTripStartRecord,
   migrateLegacyUnattestedTripEvidence,
   migrateLegacyUnattestedTripStart
-} from './trip-evidence-contract.js?v=4.0.521';
+} from './trip-evidence-contract.js?v=4.0.522';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';

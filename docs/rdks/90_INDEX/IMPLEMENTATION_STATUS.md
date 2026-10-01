@@ -1,4 +1,35 @@
-# 2026-10-01 – 4.0.521 lokal replay-først-kandidat; ikke releaseklar
+# 2026-10-01 – lokal 4.0.522; nulrettelse er ikke endnu produktionsbevist
+
+- [x] 4.0.521 er merged som `aeac44b4`. Run `36826445588` gemte
+  krypteret fremdrift `36826445588-1`, cache-id `8353412294`.
+- [x] Faktisk no-loss-resultat er registreret: 11.616 current-tab,
+  nul tab i fire øvrige familier, nul identitetsbrud over 53.840 fælles
+  PART-timer. Run fejlede; ingen ny artifact/CAS/R2/Pages-publicering.
+- [x] Præcis negativt nul normaliseres i tre afledte regionale
+  commitmentsteder. Konkrete syntetiske RED → GREEN-prøver består.
+  Rå shadow/kildebeviser, værdier, ikke-nulformat og JS-validator bevares.
+- [x] Samlet genbygning af afledte beviser, ingen hash-alias og uændret
+  model/inventar/PUBLIC-afgrænsning er fastholdt i DEC-0269.
+- [x] Rootens faktiske producentkæde på kunstigt 673 × 118-domæne:
+  PASS 59,640 sekunder, alle tre JS-beviser gyldige, ændret indhold
+  afvist og originalbytes bevaret. 9 direkte rækker, 1 state-only-hold,
+  1 advisory og 1 reference; ikke en fuld national prognose.
+- [x] Tre separate Python-scripts og separat Node-kørsel 3/3 PASS,
+  ingen skips. Tidligere forkert U/V-hold-testforventning er rettet;
+  runtimekontrakten er ikke ændret af denne testrettelse.
+- [ ] Afslut versions-/RDKS-/håndbogskontrol og fuld source-CI på eksakt head.
+- [ ] Bevis faktisk restore/save/no-loss/artifact/CAS/R2/Pages og UI
+  i næste sikre almindelige kørsel. Signed zero er ikke målt som årsag
+  i det fejlede runs private input; lokale prøver lukker ikke dette hul.
+- [ ] Komplet cache og stabil drift er fortsat åbne. Offentlig 4.0.510
+  bevares, cron `8348098` forbliver pauset.
+
+Ny tidlig workflowgate er et særskilt sikkerhedsafvist forslag med
+afventende konkret ejersvar, ikke leveret funktion eller 4.0.522-krav.
+SOURCE-/session-opt-ins, SQL-installation, ny audit og gatelempelser
+indgår ikke. Større feggesund-arbejde forbliver separat.
+
+# Historisk status 2026-10-01 – 4.0.521 lokal replay-først-kandidat; ikke releaseklar
 
 - [x] Audit-main 4.0.520/`590f01c6` og én godkendt læseaudit
   `36749250698` er bekræftet. Ingen ny prognose blev publiceret.
