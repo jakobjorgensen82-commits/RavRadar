@@ -1,4 +1,19 @@
-# 2026-10-01 – 4.0.523 samler normale cache- og replayrettelser
+# 2026-10-01 – 4.0.524 binder PUBLIC-prioritet til faktisk aktiv rå række
+
+523 er publiceret via PR491/main d7e58f99/code-only36883934945 og
+UI-effekten kontrolleret på uændrede data. Ordinary36865862773 bestod
+og gemte cache8371830366. Cronaktivering afventer alene ejerlogin.
+Ejeren har valgt Astra Ekstra høj; fortsat revision skal give små sikre
+leverancer efter analyse → rettelse → måltest → produktion → effekt.
+
+DEC-0271 genbruger den eksisterende native-artifactmatcher i den normale
+PUBLIC-konfliktselektion. Aktiv header alene er ikke bevis. Eksakt native-
+tid, vektor og fuld kildeidentitet kræves, før gyldig reserve fortrænges;
+96h og alle øvrige kontroller bevares. Tomme native-værdier må heller ikke
+coerces til nul. Faktisk syntetisk RED→3/3 måltestfiler PASS; model uændret.
+CI og driftseffekt afventer. Ingen bred 519-optin eller afvist gate udtages.
+
+# HISTORISK – 4.0.523 samler normale cache- og replayrettelser
 
 Ejerens samtaledelta er nu eksplicit: fortsæt udvikling, men lever via
 analyse, rettelse, målrettet test, sikker produktion og målt effekt.

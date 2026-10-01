@@ -804,7 +804,7 @@ const [buildWorkflow, updateWeather, packageRelease] = await Promise.all([
 const buildPosition = buildWorkflow.indexOf('name: Build public seven-day current history and controlled live selection');
 const weatherPosition = buildWorkflow.indexOf('name: Update central weather cache');
 assert.ok(buildPosition >= 0 && buildPosition < weatherPosition, 'Livehistorikken skal bygges før score og pile.');
-assert.match(updateWeather, /mergeLiveCurrentPilotIntoRecord/);
+assert.match(updateWeather, /mergeActiveNativeLiveCurrentPilotIntoRecord/);
 assert.match(updateWeather, /current-pilot-history\.json/);
 assert.match(updateWeather, /latestVerifiedNativeCadenceSampleForPart/,
   'weather build must fetch the last exact native-cadence row before the public window');
