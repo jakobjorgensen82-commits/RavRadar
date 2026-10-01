@@ -1,3 +1,15 @@
+## 2026-10-01 – 4.0.522 faktisk offentlig; fire afgrænsede rettelser samles i 4.0.523
+
+Ordinary `36843972587` bestod kl. 14.39 dansk efter source-CI og
+publicerede 4.0.522 med fulde no-loss/artifact/release/private/CAS/R2/Pages-
+gates. Ny ordinary `36865862773` kører på samme uændrede main `1d5a64d1`.
+Ejeren ønsker flere færdige rettelser samlet under kørslen og arbejdsformen
+analyse → rettelse → måltest → produktion → effektkontrol. Udvikling fortsætter.
+4.0.523 udtager replayprioritet, arkivallokeringsgrænser og sen restorefejl
+samt retter redundant prognosespænd i den faktiske rangliste-/landsrenderer.
+Måltests består særskilt; exact-head CI og produktionseffekt afventer.
+Ingen merge/mainændring under aktivt run. Se DEC-0270.
+
 ## 2026-09-30 – 4.0.517 passerede bølgekonflikten, men stoppede ved havstrøm
 
 PR #485 bestod exact-head source-CI `36676610928` og blev

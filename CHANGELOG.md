@@ -1,4 +1,26 @@
-## 4.0.522 – samme kontrolbevis for positivt og negativt nul (lokal kandidat)
+## 4.0.523 – samlede replay- og cachebeskyttelser (lokal kandidat)
+
+- Historisk replay bruger eksisterende kildeprioritet på selvstændigt
+  gyldige strøm-/bølgekomponenter og skelner faktisk tidligere valg fra
+  tilfældig peerorden. Native DMI, regional reserve, CP/OM og responsbundet
+  modelalder håndteres uden ændring af model, 96h-regel eller PUBLIC-admission.
+- Private arkiver kontrolleres før store JSON-/base64-/UTF-8-allokeringer
+  mod eksisterende bytepolitik og Nodes reelle strenggrænse. Ingen
+  formatændring, loftsforhøjelse eller beskæring af gyldige data.
+- Fejl efter installeret progress kræver beskyttet reparation i stedet
+  for at ligne cache-miss; primære rollbackfejl må ikke skjules af cleanup.
+  Eksisterende kryptografi/transport beholdes uden session/helperrefaktor.
+- Rangliste og landsprognose skal, ligesom detaljevisningen, udelade
+  redundant »muligt spænd 92–92«. Reelle intervaller og det farvede flag
+  bevares; den separate app-renderer var ikke rettet i 4.0.511.
+- Måltests og exact-head CI skal afsluttes før sikker release. Faktisk
+  effekt kontrolleres i almindelig vejrkørsel med uændrede efterdatagates.
+  Flere færdige rettelser samles efter ejerens arbejdsrækkefølge, DEC-0270.
+- 4.0.522 er nu faktisk offentlig efter ordinary `36843972587`; næste
+  ordinary `36865862773` kører på uændret main. Ingen merge under aktivt
+  run. Stor SOURCE/proof/session/PUBLIC-revision følger ikke med.
+
+## 4.0.522 – samme kontrolbevis for positivt og negativt nul (historisk kandidat; senere produktionsverificeret)
 
 - Regional strøm skrev præcis negativt nul forskelligt i Python og
   JavaScripts kontrolbevis. Tre afledte commitmentsteder bruger nu samme

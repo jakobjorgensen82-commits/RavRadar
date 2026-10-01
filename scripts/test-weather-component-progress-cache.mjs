@@ -590,6 +590,103 @@ test('a mid-install failure rolls every changed original back; unrecoverable rol
   assert.equal(JSON.stringify(severe).includes('private details'), false);
 });
 
+test('normal restore requires protected recovery when the baseline changes after installation', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const cipher = await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  let installed = 0;
+  const result = await f.call('restore', f.target, { renameImpl: async (...args) => {
+    await fs.rename(...args);
+    if (++installed === 3) await write(f.target, 'data/live/conditions.json', `${baseline} `);
+  } });
+  assert.equal(installed, 3);
+  assert.equal(result.status, 'RESTORE_REPAIR_REQUIRED');
+  assert.equal(result.code, 'BASELINE_MISMATCH');
+  assert.equal(result.requiresProtectedRestore, true);
+  assert.equal(result.restored, false);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+});
+
+test('normal restore reports post-install cleanup failure once without private exception details', async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  const cipher = await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const actualRm = fs.rm, attempts = [];
+  const mock = t.mock.method(fs, 'rm', async (target, options) => {
+    if (path.basename(target).startsWith('rr-encrypted-progress-')) {
+      attempts.push(target);
+      throw new Error('SYNTHETIC_PRIVATE_CLEANUP_DETAILS');
+    }
+    return actualRm(target, options);
+  });
+  let result;
+  try { result = await f.call('restore', f.target); }
+  finally {
+    mock.mock.restore();
+    for (const folder of new Set(attempts)) {
+      assert.equal(path.dirname(path.resolve(folder)), await fs.realpath(os.tmpdir()));
+      assert.ok(path.basename(folder).startsWith('rr-encrypted-progress-'));
+      await actualRm(folder, { recursive: true, force: true });
+    }
+  }
+  assert.equal(attempts.length, 1);
+  assert.equal(result.status, 'RESTORE_REPAIR_REQUIRED');
+  assert.equal(result.code, 'TEMPORARY_CLEANUP_FAILED');
+  assert.equal(result.requiresProtectedRestore, true);
+  assert.equal(result.restored, false);
+  assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE'), false);
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), progressedBank);
+  assert.equal(await fs.readFile(path.join(f.target, 'data/live/conditions.json'), 'utf8'), baseline);
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+});
+
+for (const primary of ['rollback', 'union']) test(`normal restore preserves ${primary} failure when temporary cleanup also fails`, async t => {
+  const f = await fixture(t);
+  await f.saveAndTransfer();
+  if (primary === 'union') await write(f.target, '.cache/weather-component-inputs.pack', 'synthetic-invalid-protected-pack');
+  const cipher = await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH));
+  const actualRm = fs.rm, attempts = [];
+  let installs = 0;
+  const mock = t.mock.method(fs, 'rm', async (target, options) => {
+    if (path.basename(target).startsWith('rr-encrypted-progress-')) {
+      attempts.push(target);
+      throw new Error('SYNTHETIC_PRIVATE_SECONDARY_CLEANUP');
+    }
+    return actualRm(target, options);
+  });
+  let result;
+  try {
+    result = await f.call('restore', f.target, { productionReferenceAt: reference,
+      renameImpl: async (...args) => {
+        if (++installs === 2) throw new Error('SYNTHETIC_PRIVATE_INSTALL');
+        return fs.rename(...args);
+      }, rollbackRenameImpl: async () => { throw new Error('SYNTHETIC_PRIVATE_ROLLBACK'); } });
+  } finally {
+    mock.mock.restore();
+    for (const folder of new Set(attempts)) {
+      assert.equal(path.dirname(path.resolve(folder)), await fs.realpath(os.tmpdir()));
+      assert.ok(path.basename(folder).startsWith('rr-encrypted-progress-'));
+      await actualRm(folder, { recursive: true, force: true });
+    }
+  }
+  assert.equal(attempts.length, 1);
+  assert.equal(result.status, 'RESTORE_REPAIR_REQUIRED');
+  assert.equal(result.requiresProtectedRestore, true);
+  assert.equal(result.restored, false);
+  assert.equal(result.code, primary === 'rollback' ? 'ROLLBACK_FAILED' : 'PROTECTED_PROGRESS_UNION_FAILED');
+  if (primary === 'rollback') {
+    assert.equal(installs, 2);
+    assert.ok((await fs.readdir(path.join(f.target, '.cache'))).some(name => name.includes('.progress-previous-')));
+  } else {
+    assert.equal(installs, 0);
+    assert.equal(result.unionFailureCode, 'PROTECTED_PROGRESS_BASE_UNPACK_FAILED');
+    await f.assertTargetOriginal();
+  }
+  assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE'), false);
+  assert.deepEqual(await fs.readFile(path.join(f.target, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+});
+
 test('missing key, absent snapshot, invalid original pack and unsafe destination remain bounded misses', async t => {
   const f = await fixture(t);
   assert.equal((await f.call('restore', f.target)).code, 'SNAPSHOT_ABSENT');

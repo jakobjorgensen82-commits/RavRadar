@@ -1,4 +1,30 @@
-# 2026-10-01 – 4.0.522 retter nulformat i afledte strømbeviser
+# 2026-10-01 – 4.0.523 samler normale cache- og replayrettelser
+
+Ejerens samtaledelta er nu eksplicit: fortsæt udvikling, men lever via
+analyse, rettelse, målrettet test, sikker produktion og målt effekt.
+Saml flere færdige rettelser under den aktive kørsel; undgå gentagen
+næsten ens testning og nye generelle kontrolrammer. Brug Astra/Ultra
+først til de vanskelige afklaringer, derefter anbefalet Astra Ekstra høj
+og Sol Ekstra høj til passende opgaver. Se DEC-0270.
+
+4.0.522/PR490 er merged efter source-CI `36842745760`; ordinary
+`36843972587` bestod kl. 14.39 dansk inklusive no-loss, 54/54 artifact,
+3/3 release, private/CAS/R2/Pages. Dataset `rr-20261001112708-210`,
+target 09 UTC er offentlig. H0 har 673 direkte verificerede strømvalg;
+673 continued/0 cold er ikke fuld historik, da 420 zone/modes er incomplete.
+Ny ordinary `36865862773` er aktiv på uændret main `1d5a64d1`.
+
+Den isolerede 4.0.523-gren samler normal replayprioritet, tidlige
+arkiv-strenggrænser og hård fejl ved sen progressrestore. Ejerens nye
+UI-fejl tilføjes: redundant »muligt spænd« er kun fjernet fra detaljerne,
+ikke app.js' separate renderer. Den rettes med bevaret reelt interval
+og flagfarve, uden ændring af scoremodel. Eksisterende
+tests genbruges; helperrefaktor og nye opt-ins medtages ikke. Lokale
+resultater, exact-head CI og faktisk driftseffekt skal fortsat angives
+særskilt. Ingen mainændring/merge under aktivt run, ekstra dispatch,
+ny audit eller SQL-installation. Større revision bevares separat.
+
+# Historisk log 2026-10-01 – 4.0.522 retter nulformat før production
 
 4.0.521 er merged som `aeac44b4`. Normalrun `36826445588` kom
 gennem vejrbygningen og gemte krypteret fremdrift `36826445588-1`

@@ -863,6 +863,93 @@ try {
     'protected archive object-set descriptors must be deterministic',
   );
   const encodedEnvelope = JSON.parse(gunzipSync(archiveOne.archive).toString('utf8'));
+  const priorEncoderEnvelope = { ...encodedEnvelope, files: await Promise.all(encodedEnvelope.files.map(async file => ({
+    path: file.path,
+    bytes: file.bytes,
+    sha256: file.sha256,
+    contentBase64: gzipSync(await fs.readFile(path.join(first.bundlePath, file.path)),
+      { level: 9, mtime: 0 }).toString('base64'),
+  }))) };
+  assert.deepEqual(archiveOne.archive,
+    gzipSync(Buffer.from(canonicalPrivateRuntimeJson(priorEncoderEnvelope), 'utf8'), { level: 9, mtime: 0 }),
+    'pre-allocation guards must not change any bytes from the prior file-compressed encoder');
+  const exactEnvelopeBytes = gunzipSync(archiveOne.archive).length;
+  const buildFirstArchive = policy => buildProtectedPrivateRuntimeArchive({
+    privateRoot, bundlePath: first.bundlePath, repositoryRoot: repository,
+    expected: first.expected, now: '2026-08-29T11:05:00.000Z', sourceHead: SOURCE_HEADS[0], policy,
+  });
+  assert.deepEqual((await buildFirstArchive({
+    ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumEnvelopeBytes: exactEnvelopeBytes,
+  })).archive, archiveOne.archive,
+  'an exact envelope byte boundary must preserve the existing canonical archive bytes');
+
+  // These tiny policy limits exercise the real guard without allocating a huge
+  // fixture. Observe the dangerous operations, not just the eventual rejection.
+  const originalBufferToString = Buffer.prototype.toString;
+  let guardedBase64Allocations = 0;
+  try {
+    Buffer.prototype.toString = function (encoding, ...arguments_) {
+      if (encoding === 'base64') guardedBase64Allocations += 1;
+      return originalBufferToString.call(this, encoding, ...arguments_);
+    };
+    await assert.rejects(buildFirstArchive({
+      ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumEnvelopeBytes: 1,
+    }), /base64 content exceeds its string bound/);
+  } finally { Buffer.prototype.toString = originalBufferToString; }
+  assert.equal(guardedBase64Allocations, 0,
+    'oversized base64 must be rejected before Buffer.toString allocates it');
+
+  const firstTwoBase64Lengths = encodedEnvelope.files.slice(0, 2).map(file => file.contentBase64.length);
+  const cumulativeBase64Bound = firstTwoBase64Lengths.reduce((sum, length) => sum + length, 0) - 1;
+  assert.ok(firstTwoBase64Lengths.every(length => length <= cumulativeBase64Bound),
+    'each fixture string fits alone, while the second exceeds their cumulative bound');
+  guardedBase64Allocations = 0;
+  try {
+    Buffer.prototype.toString = function (encoding, ...arguments_) {
+      if (encoding === 'base64') guardedBase64Allocations += 1;
+      return originalBufferToString.call(this, encoding, ...arguments_);
+    };
+    await assert.rejects(buildFirstArchive({
+      ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumEnvelopeBytes: cumulativeBase64Bound,
+    }), /base64 content exceeds its string bound/);
+  } finally { Buffer.prototype.toString = originalBufferToString; }
+  assert.equal(guardedBase64Allocations, 1,
+    'cumulative overflow must reject before allocating the second individually valid base64 string');
+
+  assert.ok(encodedEnvelope.files.every(file => file.contentBase64.length < exactEnvelopeBytes - 1));
+  const originalJsonStringify = JSON.stringify;
+  let guardedEnvelopeAllocations = 0;
+  try {
+    JSON.stringify = function (value, ...arguments_) {
+      if (value?.kind === PROTECTED_PRIVATE_RUNTIME_POLICY.archiveKind
+        && value.files?.some(file => file.contentBase64.length > 0)) guardedEnvelopeAllocations += 1;
+      return originalJsonStringify.call(this, value, ...arguments_);
+    };
+    await assert.rejects(buildFirstArchive({
+      ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumEnvelopeBytes: exactEnvelopeBytes - 1,
+    }), /envelope exceeds its string bound/);
+  } finally { JSON.stringify = originalJsonStringify; }
+  assert.equal(guardedEnvelopeAllocations, 0,
+    'combined envelope overflow must be rejected before canonical payload stringify');
+
+  const escapedMetadataPolicy = {
+    ...PROTECTED_PRIVATE_RUNTIME_POLICY,
+    archiveKind: `${PROTECTED_PRIVATE_RUNTIME_POLICY.archiveKind}\u0000\n\"\\æ🦀\ud800`,
+  };
+  const escapedMetadataArchive = await buildFirstArchive(escapedMetadataPolicy);
+  const escapedEnvelopeBytes = gunzipSync(escapedMetadataArchive.archive).length;
+  assert.deepEqual((await buildFirstArchive({
+    ...escapedMetadataPolicy, maximumEnvelopeBytes: escapedEnvelopeBytes,
+  })).archive, escapedMetadataArchive.archive,
+  'metadata escaping, multibyte UTF-8 and lone surrogates must be measured exactly');
+  await assert.rejects(buildFirstArchive({
+    ...escapedMetadataPolicy, maximumEnvelopeBytes: escapedEnvelopeBytes - 1,
+  }), /envelope exceeds its string bound/);
+  for (const invalidBound of [0, -1, NaN, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    await assert.rejects(buildFirstArchive({
+      ...PROTECTED_PRIVATE_RUNTIME_POLICY, maximumEnvelopeBytes: invalidBound,
+    }), /object-set policy is invalid/);
+  }
   assert.equal(encodedEnvelope.contentEncoding, 'GZIP_BASE64');
   assert.equal(
     encodedEnvelope.files.every(file => {
@@ -1077,6 +1164,45 @@ try {
     expected: first.expected,
     now: '2026-08-29T11:05:00.000Z',
   });
+  for (const [label, boundedDocuments, boundedStorage, envelope] of [
+    ['current', splitDocuments, splitStorage, encodedEnvelope],
+    ['legacy', legacyDocuments, legacyStorage, legacyEnvelope],
+  ]) {
+    const envelopeLength = Buffer.byteLength(canonicalPrivateRuntimeJson(envelope), 'utf8');
+    const boundedBundle = path.join(restoreRoot, `bundle-${label}-envelope-exact`);
+    await restoreProtectedPrivateProductionRuntime({
+      privateRoot: restoreRoot, bundlePath: boundedBundle, repositoryRoot: repository,
+      expected: first.expected, now: '2026-08-29T11:05:00.000Z',
+      request: boundedDocuments.request, storage: boundedStorage.client,
+      policy: { ...splitPolicy, maximumEnvelopeBytes: envelopeLength },
+    });
+    for (const entry of envelope.files) {
+      assert.deepEqual(await fs.readFile(path.join(boundedBundle, entry.path)),
+        await fs.readFile(path.join(first.bundlePath, entry.path)),
+        `${label} exact-bound restore must reproduce each original file byte-for-byte`);
+    }
+    const failedBundle = path.join(restoreRoot, `bundle-${label}-envelope-over-bound`);
+    let unsafeDecodedStrings = 0;
+    try {
+      Buffer.prototype.toString = function (encoding, ...arguments_) {
+        if (encoding === 'utf8' && this.length === envelopeLength) unsafeDecodedStrings += 1;
+        return originalBufferToString.call(this, encoding, ...arguments_);
+      };
+      await assert.rejects(restoreProtectedPrivateProductionRuntime({
+        privateRoot: restoreRoot, bundlePath: failedBundle, repositoryRoot: repository,
+        expected: first.expected, now: '2026-08-29T11:05:00.000Z',
+        request: boundedDocuments.request, storage: boundedStorage.client,
+        policy: { ...splitPolicy, maximumEnvelopeBytes: envelopeLength - 1 },
+      }), error => {
+        assert.match(error.message, /No compatible protected private runtime generation/);
+        assert.deepEqual(error.rejectionCodes, ['ARCHIVE_ENVELOPE_DECODE']);
+        return true;
+      });
+    } finally { Buffer.prototype.toString = originalBufferToString; }
+    assert.equal(unsafeDecodedStrings, 0, `${label} decoder must reject before UTF-8 string allocation`);
+    assert.equal(await fs.lstat(failedBundle).catch(() => null), null,
+      `${label} decoder overflow must not install a partial bundle`);
+  }
   const rejectedLegacyBundle = path.join(restoreRoot, 'bundle-legacy-over-aggregate-bound');
   await assert.rejects(
     restoreProtectedPrivateProductionRuntime({
@@ -1787,6 +1913,21 @@ try {
     'scripts/protected-private-production-runtime.mjs',
     'utf8',
   )).replace(/\r\n/g, '\n');
+  const limitStart = implementation.indexOf('function effectiveEnvelopeByteLimit(policy) {');
+  const limitEnd = implementation.indexOf('\nfunction archiveEnvelopeByteLength(', limitStart);
+  assert.ok(limitStart >= 0 && limitEnd > limitStart);
+  const effectiveLimit = (declared, runtime) => runInNewContext(
+    `${implementation.slice(limitStart, limitEnd)}\neffectiveEnvelopeByteLimit(policy)`, {
+      policy: { maximumEnvelopeBytes: declared },
+      PROTECTED_PRIVATE_RUNTIME_POLICY,
+      bufferConstants: { MAX_STRING_LENGTH: runtime },
+    });
+  assert.equal(effectiveLimit(100, 64), 64, 'runtime string cap must dominate a larger declared cap');
+  assert.equal(effectiveLimit(32, 64), 32, 'a tightened caller cap must remain effective');
+  assert.equal(effectiveLimit(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER),
+    PROTECTED_PRIVATE_RUNTIME_POLICY.maximumEnvelopeBytes, 'caller policy must not expand the default cap');
+  assert.equal(implementation.includes("import { constants as bufferConstants } from 'node:buffer'"), true,
+    'the production cap must come from this Node runtime, not a guessed V8 constant');
   // Execute the actual CLI projection without invoking providers or storage.
   // The output must expose the existing fixed counters, not the failed path,
   // raw exception or private descriptor from the publication result.

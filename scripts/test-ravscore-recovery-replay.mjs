@@ -43,7 +43,10 @@ import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_RECOVERY_POLICY,
 } from '../js/core/ravscore-model-contract.js';
-import { copernicusLiveRecordProjectionSha256 } from './lib/live-current-pilot.mjs';
+import {
+  copernicusLiveRecordProjectionSha256,
+  openMeteoLiveRecordProjectionSha256,
+} from './lib/live-current-pilot.mjs';
 
 const HOUR_MS = 3_600_000;
 const baseMs = Date.parse('2026-08-29T00:00:00.000Z');
@@ -262,6 +265,55 @@ function controlledLiveWeather(hour, overrides = {}) {
     ...row,
     currentProvenance,
   };
+}
+
+// These are projected recovery rows, not a manufactured operational closure.
+// Real projection hashes and the unchanged replay admission validate each row.
+function replayReserveCurrent(provider, { speed = 0.14, modelRun = null } = {}) {
+  const row = withoutWave(weather(2, { speed }));
+  const at = row.time;
+  const capturedAt = new Date(Date.parse(at) + 20 * 60_000).toISOString();
+  const source = provider === 'copernicus'
+    ? { ...controlledLiveWeather(2).currentProvenance, uMps: speed }
+    : {
+      status: 'verified', provider: 'open-meteo', fallback: true,
+      recordProjectionContractId: 'open-meteo-live-current-record-fixed-decimal-v1',
+      recordId: `sha256:${sha(`open-meteo-current-${speed}`)}`,
+      collectionId: `sha256:${sha('open-meteo-collection')}`,
+      productionReferenceAt: time(0),
+      partId: part.partId, parentZoneId: part.parentZoneId,
+      targetIdentityFingerprint: liveIdentityFingerprint,
+      validTime: at, capturedAt, acquisitionAt: capturedAt,
+      requestContractId: 'open-meteo-marine-exact-residual-multilocation-v1',
+      selectionPolicyId: 'explicit-meteofrance-currents-sea-cell-v1',
+      sourceClass: 'external-combined-surface-current',
+      source: 'open-meteo-meteofrance-currents', model: 'meteofrance_currents',
+      physicalScope: 'eulerian-waves-and-tides-combined-surface-current',
+      scoreInputPolicyId: 'combined-current-single-channel-no-wave-or-tide-reprojection-v1',
+      calibrationEligible: false,
+      samplingPoint: [...part.waterPoint], gridPoint: [...part.waterPoint], distanceKm: 0,
+      verticalLayer: 'surface', layerQuality: 'combined-surface-current',
+      componentPair: 'derived-speed-toward-direction-same-hour',
+      temporalResolution: 'native', nativeValidTimes: [at],
+      interpolation: false, vectorSemanticsVersion: 4, controlledLivePilot: true,
+      uMps: speed, vMps: 0,
+    };
+  if (modelRun !== null) {
+    assert.equal(provider, 'copernicus', 'OM current does not have an admitted model-reference format');
+    source.recordProjectionContractId = 'copernicus-live-current-record-fixed-decimal-model-reference-v2';
+    source.modelRun = modelRun;
+    source.subsetSha256 = `sha256:${sha(`copernicus-subset-${modelRun}-${speed}`)}`;
+    source.modelReference = {
+      kind: 'subset-forecast-reference-time', payloadSha256: source.subsetSha256,
+      modelRun, validTime: at, referenceVariable: 'forecast_reference_time',
+      referenceIndex: null, forecastPeriodVariable: null, forecastPeriodChecked: false,
+      leadSeconds: (Date.parse(at) - Date.parse(modelRun)) / 1000,
+    };
+  }
+  source.recordProjectionSha256 = provider === 'copernicus'
+    ? copernicusLiveRecordProjectionSha256(source) : openMeteoLiveRecordProjectionSha256(source);
+  assert.match(source.recordProjectionSha256, /^sha256:[0-9a-f]{64}$/);
+  return { ...row, currentProvenance: source };
 }
 
 function withoutWaveDirectionAttestation(row) {
@@ -1104,14 +1156,132 @@ assert.equal(
   0.12,
   'a verified DMI current must replace an overlapping controlled-live reserve current',
 );
+const priorityCurrentRows = (oldRow, newRow, {
+  authenticated = true, at = time(4),
+} = {}) => {
+  const fallbackSource = { source: 'deployed-private-runtime', record: record([oldRow]) };
+  const preferredSource = { source: 'progressive-private-dmi', record: record([newRow]) };
+  return buildNewestValidRavScoreRecoverySources({
+    fallbackSource, preferredSource, part, productionReferenceAt: at,
+    protectedPreviousSource: authenticated ? fallbackSource : null,
+  });
+};
+const assertCurrentPriority = (first, second, expected, at = time(4)) => {
+  for (const row of [first, second]) {
+    const admitted = replayForAge(4, [{ record: record([row]) }]);
+    assert.equal(admitted.hourly.find(item => item.time === time(2)).currentSpeedMps,
+      row.currentSpeedMps, 'each priority candidate must pass actual replay independently');
+  }
+  for (const rows of [[first, second], [second, first]]) {
+    const before = structuredClone(rows);
+    const sources = priorityCurrentRows(...rows, { at });
+    const selected = sources.flatMap(source => source.record.hourly)
+      .filter(row => Number.isFinite(row.currentUMps));
+    assert.equal(selected.length, 1, 'provider priority must resolve one admitted current');
+    assert.deepEqual(selected[0].currentProvenance, expected.currentProvenance);
+    assert.equal(replayForAge(4, sources).hourly.find(row => row.time === time(2)).currentSpeedMps,
+      expected.currentSpeedMps);
+    assert.deepEqual(rows, before, 'priority selection must not mutate its input rows');
+  }
+};
+const cpUnknownCurrent = replayReserveCurrent('copernicus');
+const omUnknownCurrent = replayReserveCurrent('open-meteo', { speed: 0.16 });
+const cpNewerCurrent = replayReserveCurrent('copernicus', { modelRun: time(-2) });
+const freshNativeCurrent = withoutWave(weather(2, { modelRun: time(-8), speed: 0.12 }));
+const agedNativeCurrent = withoutWave(weather(2, { modelRun: time(-100), speed: 0.12 }));
+const regionalCurrent = withoutWave(regionalWeather(2, { rawU: 0.18 }));
+for (const native of [freshNativeCurrent, agedNativeCurrent]) {
+  assertCurrentPriority(native, omUnknownCurrent, native);
+  assertCurrentPriority(native, cpUnknownCurrent, native);
+  assertCurrentPriority(native, regionalCurrent, native);
+}
+assertCurrentPriority(cpUnknownCurrent, omUnknownCurrent, cpUnknownCurrent);
+assertCurrentPriority(cpUnknownCurrent, regionalCurrent, cpUnknownCurrent);
+assertCurrentPriority(regionalCurrent, omUnknownCurrent, regionalCurrent);
+// Exactly the established production-reference 96h boundary, not validTime,
+// acquiredAt or a bare appended modelRun, allows newer bound CP to take over.
+for (const age of [95.5, 96, 120]) {
+  const native = withoutWave(weather(2, { modelRun: time(4 - age), speed: 0.12 }));
+  assertCurrentPriority(native, cpNewerCurrent, age < 96 ? native : cpNewerCurrent);
+}
+const futureCpCurrent = replayReserveCurrent('copernicus', { modelRun: time(2) });
+assertCurrentPriority(agedNativeCurrent, futureCpCurrent, agedNativeCurrent, time(1));
+for (const at of [null, 'invalid-time']) {
+  assert.throws(() => replayForAge(4, priorityCurrentRows(freshNativeCurrent, omUnknownCurrent, { at })),
+    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+    'an absent locked production time must not hide independently valid current peers');
+}
+const cpOlderCurrent = replayReserveCurrent('copernicus', { modelRun: time(-6), speed: 0.17 });
+for (const [previous, candidate, expected] of [
+  [cpUnknownCurrent, replayReserveCurrent('copernicus', { speed: 0.17 }), cpUnknownCurrent],
+  [cpUnknownCurrent, cpNewerCurrent, cpUnknownCurrent],
+  [cpOlderCurrent, cpUnknownCurrent, cpOlderCurrent],
+  [cpOlderCurrent, replayReserveCurrent('copernicus', { modelRun: time(-6) }), cpOlderCurrent],
+  [cpOlderCurrent, cpNewerCurrent, cpNewerCurrent],
+  [cpNewerCurrent, cpOlderCurrent, cpNewerCurrent],
+  [omUnknownCurrent, replayReserveCurrent('open-meteo', { speed: 0.17 }), omUnknownCurrent],
+]) {
+  for (const row of [previous, candidate]) replayForAge(4, [{ record: record([row]) }]);
+  const selected = priorityCurrentRows(previous, candidate);
+  assert.equal(replayForAge(4, selected).hourly.find(row => row.time === time(2)).currentSpeedMps,
+    expected.currentSpeedMps, 'same-provider retention requires real previous ownership and proved chronology');
+  assert.throws(() => replayForAge(4, priorityCurrentRows(previous, candidate, { authenticated: false })),
+    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+    'current source labels alone cannot grant previous ownership');
+}
+for (const invalid of [
+  { ...omUnknownCurrent, currentProvenance: { ...omUnknownCurrent.currentProvenance,
+    sourceClass: 'supplemental-local-current' } },
+  { ...omUnknownCurrent, currentProvenance: { ...omUnknownCurrent.currentProvenance,
+    modelRun: time(-2) } },
+  { ...cpNewerCurrent, currentProvenance: { ...cpNewerCurrent.currentProvenance,
+    modelReference: { ...cpNewerCurrent.currentProvenance.modelReference,
+      payloadSha256: `sha256:${'0'.repeat(64)}` } } },
+  { ...regionalCurrent, currentUMps: 0.2 },
+]) {
+  for (const rows of [[freshNativeCurrent, invalid], [invalid, freshNativeCurrent]]) {
+    const sources = priorityCurrentRows(...rows);
+    assert.equal(sources.flatMap(source => source.record.hourly)
+      .filter(row => Number.isFinite(row.currentUMps)).length, 2,
+    'invalid reserve evidence must remain visible, even when the good DMI row would win');
+    assert.throws(() => replayForAge(4, sources),
+      error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED');
+  }
+}
 const priorityWaveRows = (oldRow, newRow, at = time(4)) =>
-  buildNewestValidRavScoreRecoverySources({
+  authenticatedPrioritySources({
     fallbackSource: { source: 'deployed-private-runtime', record: record([oldRow]) },
     preferredSource: { source: 'progressive-private-dmi', record: record([newRow]) },
     productionReferenceAt: at,
     part,
   });
 const oldReserveWave = openMeteoWaveReserve(weather(2, { waveHeight: 1.2 }));
+// Same-provider reserve peers do not acquire prior-selection authority from
+// their order or labels. Each tuple is valid, but their tie is ambiguous.
+for (const provider of ['open-meteo', 'copernicus']) {
+  const asProvider = row => ({ ...row,
+    sources: { ...row.sources, wave: { ...row.sources.wave, provider } },
+    waveProvenance: { ...row.waveProvenance, provider },
+  });
+  const previous = asProvider(withoutCurrent(openMeteoWaveReserve(weather(2, { waveHeight: 1.2 }))));
+  const candidate = asProvider(withoutCurrent(openMeteoWaveReserve(weather(2, { waveHeight: 1.4 }))));
+  for (const labels of [['deployed-private-runtime', 'progressive-private-dmi'], ['peer-a', 'peer-b']]) {
+    const fallbackSource = { source: labels[0], record: record([previous]) };
+    const preferredSource = { source: labels[1], record: record([candidate]) };
+    for (const source of [fallbackSource, preferredSource]) replayForAge(4, [source]);
+    assert.throws(() => replayForAge(4, [fallbackSource, preferredSource]),
+      error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT');
+    for (const protectedPreviousSource of [null, structuredClone(fallbackSource), preferredSource]) {
+      const selected = buildNewestValidRavScoreRecoverySources({
+        fallbackSource, preferredSource, protectedPreviousSource, part,
+        productionReferenceAt: time(4),
+      });
+      assert.throws(() => replayForAge(4, selected),
+        error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+        `${provider}: labels, clones and reversed ownership cannot resolve unknown-age wave peers`);
+    }
+  }
+}
 const freshDirectWave = withVerifiedWave(withoutCurrent(weather(2, {
   modelRun: time(-48), waveHeight: 1.3,
 })));
@@ -1171,7 +1341,76 @@ const reserveRevised = replayForAge(4, priorityWaveRows(
 ));
 assert.equal(reserveRevised.hourly.find(row => row.time === time(2)).waveHeightM, 1.4,
   'a response-bound newer revision of the same reserve may replace its old wave');
+for (const [first, second] of [
+  [olderBoundReserveWave, newerBoundReserveWave],
+  [newerBoundReserveWave, olderBoundReserveWave],
+]) {
+  const independentlyOrdered = buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'peer-a', record: record([first]) },
+    preferredSource: { source: 'peer-b', record: record([second]) },
+    productionReferenceAt: time(4), part,
+  });
+  assert.equal(replayForAge(4, independentlyOrdered).hourly.find(row => row.time === time(2)).waveHeightM,
+    1.4, 'proved newer comparable model chronology needs no invented prior ownership');
+}
+for (const ambiguous of [
+  withBoundWaveModelRun(openMeteoWaveReserve(weather(2, { waveHeight: 1.4 })), time(-6), 'same-run-wave'),
+  withBoundWaveModelRun(openMeteoWaveReserve(weather(2, { waveHeight: 1.4 })), time(5), 'future-run-wave'),
+  { ...newerBoundReserveWave, sources: { ...newerBoundReserveWave.sources,
+    wave: { ...newerBoundReserveWave.sources.wave, datasetId: 'another-dataset' } } },
+]) {
+  const unresolved = buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'deployed-private-runtime', record: record([olderBoundReserveWave]) },
+    preferredSource: { source: 'progressive-private-dmi', record: record([ambiguous]) },
+    productionReferenceAt: time(4), part,
+  });
+  assert.throws(() => replayForAge(4, unresolved),
+    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+    'equal/future model clocks or a different model identity cannot silently resolve reserve-wave peers');
+}
 const crossProviderReserve = openMeteoWaveReserve(weather(2, { waveHeight: 1.4 }));
+// Both response- and subset-bound wave clocks must resolve genuine chronology
+// without giving missing/mismatched clock metadata authority over valid peers.
+for (const provider of ['open-meteo', 'copernicus']) {
+  const bound = (modelRun, waveHeight, payload) => {
+    const row = withBoundWaveModelRun(withoutCurrent(openMeteoWaveReserve(
+      weather(2, { waveHeight }),
+    )), modelRun, payload);
+    const source = { ...row.sources.wave, provider };
+    if (provider === 'copernicus') {
+      source.subsetSha256 = source.sourceResponseSha256;
+      delete source.sourceResponseSha256;
+      source.modelReference = { ...source.modelReference, kind: 'subset-forecast-reference-time' };
+    }
+    return { ...row, sources: { ...row.sources, wave: source },
+      waveProvenance: { ...source, status: 'verified' } };
+  };
+  const old = bound(time(-6), 1.2, `${provider}-old`);
+  const atReference = bound(time(4), 1.4, `${provider}-at-reference`);
+  const peerSources = rows => buildNewestValidRavScoreRecoverySources({
+    fallbackSource: { source: 'peer-a', record: record([rows[0]]) },
+    preferredSource: { source: 'peer-b', record: record([rows[1]]) },
+    productionReferenceAt: time(4), part,
+  });
+  for (const rows of [[old, atReference], [atReference, old]]) {
+    for (const row of rows) replayForAge(4, [{ record: record([row]) }]);
+    assert.equal(replayForAge(4, peerSources(rows)).hourly[0].waveHeightM, 1.4,
+      `${provider}: model time exactly at locked target is not future and wins in either order`);
+  }
+  for (const modelReference of [undefined,
+    { ...atReference.sources.wave.modelReference, payloadSha256: `sha256:${'0'.repeat(64)}` },
+  ]) {
+    const source = { ...atReference.sources.wave, modelReference };
+    const unbound = { ...atReference, sources: { ...atReference.sources, wave: source },
+      waveProvenance: { ...source, status: 'verified' } };
+    for (const rows of [[old, unbound], [unbound, old]]) {
+      for (const row of rows) replayForAge(4, [{ record: record([row]) }]);
+      assert.throws(() => replayForAge(4, peerSources(rows)),
+        error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT',
+        `${provider}: missing or mismatched payload-bound clock grants no peer precedence`);
+    }
+  }
+}
 crossProviderReserve.sources.wave.provider = 'copernicus';
 crossProviderReserve.waveProvenance.provider = 'copernicus';
 const copernicusReplacesOpenMeteoWave = replayForAge(4, priorityWaveRows(

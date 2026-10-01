@@ -1,4 +1,35 @@
-# NYESTE SANDHED – 2026-10-01 – main 4.0.521, lokal 4.0.522, offentlig 4.0.510
+# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.522; lokal samlepakke 4.0.523
+
+PR490/main `1d5a64d1` bestod exact-head CI `36842745760`. Ordinary
+`36843972587` blev afsluttet SUCCESS kl. 14.39 dansk med no-loss,
+54/54 artifact- og 3/3 releasekontroller, privat pakke, CAS, R2 og Pages.
+Offentlig 4.0.522/dataset `rr-20261001112708-210`/target 09 UTC er målt.
+673 dele havde verificeret direkte strøm ved H0; 673 continued/0 cold
+er historikresultatet, men 420 aktuelle zone/mode-kombinationer er stadig
+incomplete. Ingen påstand om komplet cache eller langtidsstabilitet.
+
+Ordinary `36865862773` kører på samme uændrede main. Ingen mainændring,
+merge, konkurrerende dispatch eller cronstart under dette run. Cron
+8348098 er pauset. Senest gemte cache `8363800876` er 93.777.865
+komprimerede Actions-byte, ikke rå packstørrelse eller nyt kapacitetsbevis.
+Original progress/baseline-binding må ikke ommærkes til det nye target.
+
+Ejerens arbejdsrækkefølge er analyse → rettelse → målrettet test →
+produktion → faktisk effektkontrol. Flere færdige rettelser samles,
+og fremtidig udvikling fortsætter. 4.0.523/DEC-0270 udtager eksisterende
+normalsti-rettelser til replayprioritet, arkivets strengkapacitet og
+alvorlige fejl efter progressinstallation samt UI's redundante spænd.
+Ejerens konkrete UI-fejl skyldes en separat app-renderer, ikke en bevist
+cachefejl: 92–92 skal skjules, reelt 71–78 og flagfarve bevares.
+Kandidaten er endnu lokal. Separate måltests består: replay PASS,
+arkiv 1/1, progress/workflow 26/26, UI 1/1 og versions-/kontraktkontrol
+7/7, ingen skips. Uændret model67/otte bindinger og sourceplan47 består.
+Exact-head CI og faktisk effekt afventer; se DEC-0270 for begrænsninger.
+Stor proof/session/SOURCE/PUBLIC-integration følger ikke automatisk med.
+Astra/Ultra bruges først til de svære afklaringer; derefter anbefales
+Astra Ekstra høj og Sol Ekstra høj, når opgavens risiko tillader det.
+
+# HISTORISK SANDHED – 2026-10-01 – main 4.0.521, lokal 4.0.522, offentlig 4.0.510
 
 Main er `aeac44b4`. Run `36826445588` byggede vejret og gemte
 krypteret `36826445588-1`, cache-id `8353412294`, men fejlede

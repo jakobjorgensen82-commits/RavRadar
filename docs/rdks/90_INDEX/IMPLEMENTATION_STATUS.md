@@ -1,4 +1,32 @@
-# 2026-10-01 – lokal 4.0.522; nulrettelse er ikke endnu produktionsbevist
+# 2026-10-01 – offentlig 4.0.522; 4.0.523 samles særskilt
+
+- [x] 4.0.522 er merged; exact-head CI `36842745760` og ordinary
+  `36843972587` bestod. Publicering, no-loss, 54/54 artifact og 3/3
+  releasekontroller samt private/CAS/R2/Pages er faktisk gennemført.
+- [x] Offentlig dataset `rr-20261001112708-210`, target 09 UTC,
+  210 zoner/673 dele er målt. Dette er ikke fuld cache eller stabil drift.
+- [x] Én ny ordinary `36865862773` er aktiv på uændret main `1d5a64d1`.
+  Ingen overlap, mainændring eller cronstart under dens afvikling.
+- [x] Afslut afgrænset 4.0.523-pakke med eksisterende replayprioritet,
+  arkiv-allokeringsgrænser, sen progressrestore-fejlklassifikation og
+  redundant prognosespænd i rangliste/landsprognose; flagfarve bevares.
+- [x] Måltests består i særskilte kommandoer: replay PASS, arkiv 1/1,
+  progress/workflow 26/26, UI 1/1 og versions-/kontraktkontrol 7/7.
+  Ingen skips. UI's første testharness-fejl blev rettet uden runtimelempelse.
+  Uændret model67/otte bindinger, sourceplan47, version og RDKS består.
+- [ ] Fuld source-CI på eksakt PR-head, ikke gentagne fulde lokale gates.
+- [ ] Efter sikker release: almindelig kørsel og faktisk effektkontrol,
+  inklusive saved:true + upload og alle uændrede efterdatagates.
+- [ ] Samlet cachekomplethed, langtidshistorik, SOURCE og den større
+  proof/session/PUBLIC-integration er fortsat udviklingsarbejde, ikke
+  automatisk krav for at frigive en uafhængig færdig rettelse.
+
+Ejerens krav og modelrækkefølge er fastholdt i DEC-0270: brug eksisterende
+arbejde til produktion; svære beslutninger først på Astra/Ultra, derefter
+Astra Ekstra høj og Sol Ekstra høj ved passende risiko. Ingen skjult
+model-/policyændring, ny audit eller SQL-installation.
+
+# Historisk status 2026-10-01 – lokal 4.0.522 før merge og faktisk ordinary
 
 - [x] 4.0.521 er merged som `aeac44b4`. Run `36826445588` gemte
   krypteret fremdrift `36826445588-1`, cache-id `8353412294`.
