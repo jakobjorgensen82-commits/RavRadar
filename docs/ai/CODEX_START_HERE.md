@@ -1,4 +1,19 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.523; lokal 4.0.524
+# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.525
+
+Arbejd i weather-restart-release på codex/private-restore-backup-retention,
+fra leveret main07e4ef4c. DEC-0272 bevarer kun originale transaktionsbackups
+ved fejlet rollback. Måltest består; CI og levering afventer. Ingen ny
+generisk hjælper eller ændring af model, inventar, formater eller gates.
+
+524/PR492 og code-only36890317748 er leveret; offentlig dataset er uændret
+rr-20261001143611-210/target13Z. Cron8348098 er AKTIV på uændret plan,
+næste22:19DK. Ingen loginblokering. Efter tilbagekaldt stopordre sluttede
+36895117738 cancelled uden save/upload/deploy. Ejerens nye ordinary36896697919
+er startet19.04DK på524. Bevar main under aktivt run; ingen ekstra dispatch.
+Fortsæt lokal rettelse og exact-head CI parallelt. Astra Ekstra høj er valgt.
+Stor dirty519 og alle særskilte afvisninger bevares. .cache må ikke stages.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – offentlig 4.0.523; lokal 4.0.524
 
 Arbejd i weather-restart-release på codex/current-public-native-binding,
 fra main d7e58f99. DEC-0271 lukker den snævre PUBLIC/native-binding med

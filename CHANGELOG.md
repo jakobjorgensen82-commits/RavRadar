@@ -1,4 +1,17 @@
-## 4.0.524 – DMI-prioritet med præcis aktiv native-binding (lokal kandidat)
+## 4.0.525 – Bevar backup ved mislykket tilbagerulning (lokal kandidat)
+
+- Den private runtimeinstallation må ikke slette originalens lokale backup,
+  hvis både installation og tilbagerulning fejler. Egne midlertidige filer
+  ryddes stadig op; den hårde fejl og primære årsag bevares. Ingen automatisk
+  reparation eller påstand om et konsistent arbejdsområde.
+- Eksisterende kunstig restoretest reproducerede fejlen og består efter
+  den minimale rettelse. Format, model, lofter og workflowgates er uændrede.
+  Exact-head CI og levering afventer; ingen målt produktionsforekomst.
+- 524 er publiceret; cron er genaktiveret med uændret plan. Efter ejerens
+  korrigerede ordre kører én ordinary36896697919 på524 sideløbende med den
+  lokale klargøring. Ingen merge/mainændring under den aktive kørsel.
+
+## 4.0.524 – DMI-prioritet med præcis aktiv native-binding (historisk kandidattekst; senere leveret)
 
 - PUBLIC kan bevare gyldig DMI over tidligere valgt reserve, når præcis
   én aktiv native-række beviser samme vektor og fulde kildeidentitet.

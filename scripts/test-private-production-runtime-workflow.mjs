@@ -975,6 +975,61 @@ try {
     );
   }
 
+  // A failed rollback must leave the last original available for explicit repair.
+  const failedRollbackRepository = path.join(temp, 'failed-rollback-repository');
+  for (const descriptor of PRIVATE_RUNTIME_FILES) {
+    const destination = path.join(failedRollbackRepository, descriptor.relativePath);
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    await fs.writeFile(destination, beforeFailedInstall.get(descriptor.relativePath));
+  }
+  const installFailure = new Error('synthetic install failure before rollback failure');
+  const rollbackFailure = new Error('synthetic rollback cannot remove installed file');
+  let failedRollbackRenames = 0;
+  let preservedOriginalPath;
+  let blockedDestination;
+  const cleanupAttempts = [];
+  await assert.rejects(installRestoredPrivateRuntime({
+    restoredRoot: rollbackSource,
+    repositoryRoot: failedRollbackRepository,
+    renameImpl: async (source, destination) => {
+      failedRollbackRenames += 1;
+      if (failedRollbackRenames === 1) {
+        blockedDestination = source;
+        preservedOriginalPath = destination;
+      }
+      if (failedRollbackRenames === 4) throw installFailure;
+      return fs.rename(source, destination);
+    },
+    removeImpl: async (file, options) => {
+      cleanupAttempts.push(file);
+      if (file === blockedDestination) throw rollbackFailure;
+      return fs.rm(file, options);
+    },
+  }), error => {
+    assert.match(error.message, /rollback could not restore every file/);
+    assert.equal(error.cause, installFailure, 'hard rollback error keeps its primary install cause');
+    return true;
+  });
+  assert.equal(cleanupAttempts.includes(preservedOriginalPath), false,
+    'cleanup must not attempt to delete the unrecovered original');
+  const realFailedRollbackRepository = await fs.realpath(failedRollbackRepository);
+  const blockedRelativePath = PRIVATE_RUNTIME_FILES.find(descriptor =>
+    path.resolve(realFailedRollbackRepository, descriptor.relativePath) === blockedDestination).relativePath;
+  assert.deepEqual(await fs.readFile(preservedOriginalPath), beforeFailedInstall.get(blockedRelativePath),
+    'failed rollback preserves exact original bytes for repair');
+  assert.deepEqual(await fs.readFile(blockedDestination), await fs.readFile(path.join(rollbackSource, blockedRelativePath)),
+    'unrecovered installed bytes are not reported as restored');
+  for (const descriptor of PRIVATE_RUNTIME_FILES) {
+    if (descriptor.relativePath === blockedRelativePath) continue;
+    assert.deepEqual(await fs.readFile(path.join(failedRollbackRepository, descriptor.relativePath)),
+      beforeFailedInstall.get(descriptor.relativePath), 'other originals still roll back');
+  }
+  const rollbackRemainder = await fs.readdir(failedRollbackRepository, { recursive: true });
+  assert.equal(rollbackRemainder.some(file => file.includes('.private-restore-')), false,
+    'owned temporary install files are still cleaned');
+  assert.equal(rollbackRemainder.filter(file => file.includes('.private-previous-')).length, 1,
+    'only the original that could not be restored remains for repair');
+
   await fs.writeFile(path.join(restored, 'unexpected-private.bin'), 'synthetic');
   await assert.rejects(
     installRestoredPrivateRuntime({ restoredRoot: restored, repositoryRoot: repository }),
