@@ -14,8 +14,19 @@ budgetter. Ingen mainændring/merge eller konkurrerende manuel kørsel.
 DEC-0272 retter lokalt den normale private installers backupoprydning ved
 fejlet rollback. En kunstig RED→GREEN-test beviser bevarede originalbytes
 og fortsat hård fejl, ikke en hel eller repareret installation. Måltest
-1/1 består; exact-head CI og levering afventer. Model, kryptering, lofter,
+1/1 bestod og første head02ed3c4 fik grøn CI36897750089. Den endnu ikke
+leverede kandidat samler nu også bevaring af primær unpack/install/rollback-
+fejl ved samtidig component-stage-cleanupfejl. Cleanup alene fejler hårdt.
+Release-målkommando16/16 PASS,8332,7965ms,0skip. NY exact-head CI og levering
+afventer; den gamle grønne head dækker ikke tilføjelsen. Model, kryptering, lofter,
 source-/public-admission og gates er uændrede. Stor519 forbliver separat.
+
+Ejerens historik- og top5-spørgsmål er analyseret read-only mod offentlig524:
+alle210zoner har bølgemobiliseringshistorikadvarsel,195 har48timers current-
+historik og15 mangler også current.420 betyder210×2modes, ikke420huller.
+288timers bølgeusikkerhed er eksisterende modelregel, ikke råarkivkrav.
+Faktisk årsag/alder af den nationale usikkerhed er ikke privatmålt. Ingen
+model-/handicapændring følger alene af gentagne top5 eller denne måling.
 
 # HISTORISK SANDHED – 2026-10-01 – offentlig/main 4.0.523; lokal 4.0.524
 

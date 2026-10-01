@@ -7,7 +7,11 @@
 - [x] 525 dokumentation/version/RDKS, uændret model67/otte bindinger,
   tre persistente kontrakthashes, sourceplan47 og versions-only-geodata.
   Særskilt7/7 berørt runtime/docs/security og1/1 browserlukning består.
-- [ ] 525 exact-head CI og sikker levering efter aktiv vejrkørsel.
+- [x] Første525-head02ed3c4: exact-head CI36897750089 bestået.
+- [x] Samtidig component-stage-cleanupfejl: tre primære fejl blev maskeret
+  i kunstig RED; minimal rettelse bevarer dem. Cleanup-only forbliver hård.
+  Den samlede isolerede release-målkommando16/16 PASS,8332,7965ms,0skip.
+- [ ] NY525 exact-head CI for tilføjelsen og sikker levering efter aktiv vejrkørsel.
 - [ ] Ordinary36896697919 på524 følges; ingen mainændring under aktivt run.
 - [ ] Stor519-integration, kapacitet, session/SOURCE og fuld cache består.
 

@@ -1,8 +1,11 @@
 # AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.525
 
 Arbejd i weather-restart-release på codex/private-restore-backup-retention,
-fra leveret main07e4ef4c. DEC-0272 bevarer kun originale transaktionsbackups
-ved fejlet rollback. Måltest består; CI og levering afventer. Ingen ny
+fra leveret main07e4ef4c. DEC-0272 bevarer originale transaktionsbackups
+ved fejlet rollback og primære fejl trods samtidig component-stage-cleanupfejl.
+Oprydningsfejl alene er fortsat hård. Første head02ed3c4 bestod CI36897750089;
+den samlede kandidat kræver NY exact-head CI. Release-måltest16/16 består.
+Ingen ny
 generisk hjælper eller ændring af model, inventar, formater eller gates.
 
 524/PR492 og code-only36890317748 er leveret; offentlig dataset er uændret

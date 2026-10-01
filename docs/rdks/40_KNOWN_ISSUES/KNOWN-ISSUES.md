@@ -7,8 +7,12 @@
   er startet på524 efter ejerens korrigerede ordre; ingen mainændring imens.
 - **DRIFTSEFFEKT ÅBEN:** 524 er leveret, ikke endnu bevist gennem en afsluttet
   frisk vejrgeneration. Komplet cache og den store519-revision er ikke færdige.
+- **COMPONENT-STAGE LOKALT RETTET:** Tre primære unpack/install/rollback-
+  fejl blev maskeret af efterfølgende cleanupfejl. Alle tre bevares nu;
+  cleanup-only fejler fortsat hårdt. Release-målkommando16/16 består.
+  Første heads grønne CI er historisk; samlet kandidat kræver ny exact-head CI.
 - **AFGRÆNSNING:** Denne patch løser ikke generel bundle-prior-levetid,
-  samtidige writers eller særskilte component-stage-oprydningsfejl. Den
+  samtidige writers eller automatisk reparation af et delvist installeret træ. Den
   tidligere afviste admissiongate og historiske donoromvej er ikke åbnet.
 
 # Historiske issues – 2026-10-01, offentlig523 og lokal524

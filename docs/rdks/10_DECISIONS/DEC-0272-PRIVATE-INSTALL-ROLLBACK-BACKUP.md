@@ -1,6 +1,6 @@
 # DEC-0272 – Bevar original backup, hvis privat installation ikke kan rulles tilbage
 
-**Status:** Lokal 4.0.525-kandidat; måltest bestået, exact-head CI og levering afventer.
+**Status:** Samlet lokal 4.0.525-kandidat; måltests bestået, ny exact-head CI og levering afventer.
 **Dato:** 2026-10-01.
 
 ## Fejl og minimal rettelse
@@ -11,12 +11,20 @@ forsøger den tilbagerulning og rejser en særskilt fejl, hvis ikke alle filer
 kan gendannes. Men den efterfølgende oprydning slettede også de originale
 backupfiler, når tilbagerulningen var mislykkedes.
 
-Kun denne fejlgren ændres: ved `rollbackError` må oprydning fjerne egne
+Ved `rollbackError` må oprydning fjerne egne
 midlertidige installationsfiler, men ikke `.private-previous-*`. Den hidtidige
 fejl og dens primære installationsårsag bevares. Bevarede filer giver mulighed
 for eksplicit reparation; de betyder IKKE, at arbejdsområdet er konsistent,
 at tilbagerulning er fuldført, eller at installation må rapporteres som succes.
 Der indføres ingen automatisk geninstallation eller ny reparationsautoritet.
+
+Den nært beslægtede component-stage-fejl samles i samme endnu ikke leverede
+kandidat: ved primær unpack-, install- eller rollbackfejl må en efterfølgende
+fejlet stageoprydning ikke erstatte den oprindelige exception/cause. Oprydning
+forsøges stadig præcis som før. Hvis kun oprydningen fejler efter ellers
+vellykket installation, skal denne fejl fortsat afvise installationen. Der
+indføres ikke ny API, executor, retry, logpayload eller automatisk repair.
+Rester efter mislykket oprydning er ikke renset eller repareret ved denne ændring.
 
 Vellykket installation, vellykket tilbagerulning, filinventar, formater,
 kryptografi, producentbindinger, lofter og model ændres ikke. Ingen workflow-
@@ -52,6 +60,22 @@ kontrakthashes er uændrede; byteidentitet før normalisering gælder ikke
 browser-cacheparametre. Ingen SQL-installation eller lokal fuld source-CI.
 
 ## Samtaledelta og leveringsrækkefølge
+
+Første525-head02ed3c4 fik grøn exact-head CI36897750089/sourceproof11181171189.
+Den grønne status dækker IKKE den senere tilføjelse. I stor519 blev tre nye
+kunstige fejlgrene først røde, fordi cleanupfejlen erstattede primary; den
+negative cleanup-only-kontrol bestod allerede. Efter minimal rettelse bestod
+begge berørte eksisterende filer samlet28/28 på9732,7725ms. Første samlede
+forsøg havde27PASS/1FAIL alene pga. Windows' Python Store-alias; den eksisterende
+bundled Python blev valgt uden installation, gates eller runtimeændring.
+Kun den nye regression og den lille runtime-delta blev derefter overført
+til releasecheckout:16/16 PASS på8332,7965ms,0skip, inklusive faktisk kunstig
+CP-originalpack. Forskellen i antal skyldes større519s øvrige lokale opt-ins;
+de blev ikke kopieret eller aktiveret. En ny exact-head CI kræves efter push.
+Efter dokumentation: fire eksisterende RDKS/security/håndbogsfiler4/4 PASS,
+270,8361ms,0skip; RDKS525/14kilder,source47,model67/otte bindinger og diffcheck
+består. SQL uden for eksakt håndbogspayload er LF-identisk; CRLF/LF er ikke
+en SQL-ændring. Der blev ikke kørt SQL eller ændret geodata i denne tilføjelse.
 
 523 og524 er allerede leveret og offentligt verificeret;524 beholdt dataset
 rr-20261001143611-210. Cron8348098 blev genaktiveret på uændret firetimersplan,

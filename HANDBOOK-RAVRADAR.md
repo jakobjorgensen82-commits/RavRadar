@@ -17,11 +17,15 @@ midlertidige sikkerhedskopier. Hvis installationen fejler, forsøger systemet
 at lægge de gamle filer tilbage. Fejler også dette forsøg, skal kopierne
 bevares til reparation. Oprydningen må ikke fjerne den sidste original.
 
-Den afgrænsede rettelse ændrer kun denne fejlgren. Fejlen bliver stadig
+Fejl under den efterfølgende oprydning må heller ikke skjule den oprindelige
+fejl ved udpakning, installation eller tilbagerulning. Hvis kun oprydningen
+fejler efter en ellers vellykket installation, meldes den fejl fortsat.
+
+De afgrænsede rettelser ændrer kun disse fejlgrene. Fejlen bliver stadig
 rapporteret, og bevarede kopier betyder ikke, at installationen er i orden.
 Normale vellykkede installationer, prognosen, datakilder og sikkerhedskontroller
-er uændrede. En kunstig prøve har påvist og kontrolleret rettelsen; dens
-forekomst i produktionen er ikke målt. Udgivelseskontrollen afventer.
+er uændrede. Kunstige prøver har påvist og kontrolleret rettelserne; deres
+forekomst i produktionen er ikke målt. Den samlede udgivelseskontrol afventer.
 
 4.0.524 er offentlig. Automatisk vejrhentning er genaktiveret med uændret
 firetimersplan. Efter ejerens seneste ordre fortsætter en almindelig kørsel,

@@ -1545,12 +1545,17 @@ export async function installRestoredPrivateRuntime({
   let componentFiles = [];
   if (hasExtension) {
     try { componentFiles = await unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions }); }
-    catch (error) { await fs.rm(componentStage, { recursive: true, force: true }); throw error; }
+    catch (error) {
+      // Cleanup must not replace the original unpack/integrity failure.
+      await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
+      throw error;
+    }
   }
 
   const transactionId = `${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   const staged = [];
   let mutationStarted = false;
+  let installFailed = false;
   try {
     for (const descriptor of [...descriptors, ...componentFiles]) {
       const source = descriptor.sourcePath ?? path.resolve(sourceRoot, descriptor.relativePath);
@@ -1590,6 +1595,7 @@ export async function installRestoredPrivateRuntime({
     }
     await Promise.all(staged.map(row => removeImpl(row.previous, { force: true }).catch(() => {})));
   } catch (error) {
+    installFailed = true;
     let rollbackError = null;
     if (mutationStarted) {
       for (const row of [...staged].reverse()) {
@@ -1612,7 +1618,13 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage) await fs.rm(componentStage, { recursive: true, force: true });
+    if (componentStage) {
+      try { await fs.rm(componentStage, { recursive: true, force: true }); }
+      catch (error) {
+        // A failed install/rollback is primary. Cleanup alone stays fatal.
+        if (!installFailed) throw error;
+      }
+    }
   }
   return {
     installed: true,

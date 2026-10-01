@@ -4,6 +4,9 @@
   hvis både installation og tilbagerulning fejler. Egne midlertidige filer
   ryddes stadig op; den hårde fejl og primære årsag bevares. Ingen automatisk
   reparation eller påstand om et konsistent arbejdsområde.
+- Samtidig fejl under oprydning af komponenternes midlertidige mappe må
+  heller ikke skjule den oprindelige unpack-, install- eller rollbackfejl.
+  Oprydningsfejl efter ellers vellykket installation fejler fortsat hårdt.
 - Eksisterende kunstig restoretest reproducerede fejlen og består efter
   den minimale rettelse. Format, model, lofter og workflowgates er uændrede.
   Exact-head CI og levering afventer; ingen målt produktionsforekomst.
