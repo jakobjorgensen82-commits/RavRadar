@@ -1,4 +1,30 @@
-## 4.0.521 – replay-først genstart (lokal kandidat, ikke releaseklar)
+## 4.0.522 – samme kontrolbevis for positivt og negativt nul (lokal kandidat)
+
+- Regional strøm skrev præcis negativt nul forskelligt i Python og
+  JavaScripts kontrolbevis. Tre afledte commitmentsteder bruger nu samme
+  nulformat: regional evidens samt live- og referencebygning. Alle tal,
+  rå shadow-/kildebeviser og ikke-nulværdier er uændrede; ingen ny
+  tolerance, hash-alias eller lempelse af JavaScript-validatoren indføres.
+- Ældre afledte beviser skal genbygges samlet fra de godkendte input;
+  eksisterende forseglede bevisfelter må ikke blot omskrives. Scoremodel,
+  geometri, kildeprioritet og privat filinventar ændres ikke.
+- En konkret syntetisk kæde fejlede før rettelsen og består efter.
+  Rootens prøve gennem de faktiske producenter på et kunstigt
+  673 × 118-tildelingsdomæne består på 59,640 sekunder; alle tre
+  JS-beviser accepteres, ændret indhold afvises, originalbytes bevares.
+  Det er ikke en national prognose eller produktionsbevis. Fuld
+  source-CI på eksakt head afventer.
+- 4.0.521 er merged som `aeac44b4`, men run `36826445588` stoppede
+  i no-loss-kontrollen: 11.616 tabte current-par, nul i de fire øvrige
+  familier og nul identitetsbrud over 53.840 fælles PART-timer.
+  Fremdrift `36826445588-1` blev krypteret gemt, cache-id `8353412294`.
+  Negativt nul er ikke målt som årsagen i dette runs private input.
+- Offentlig 4.0.510 bevares, cron forbliver pauset, og næste driftsbevis
+  skal komme fra en sikker almindelig kørsel. Ingen ny audit, SOURCE-
+  eller session-opt-in, SQL-installation eller ekstra tidlig workflowgate
+  leveres her. Eksisterende no-loss- og artifactkrav består. Se DEC-0269.
+
+## 4.0.521 – replay-først genstart (historisk kandidat; merged, normalrun fejlede senere)
 
 - Afgrænset genstartskandidat fra audit-main 4.0.520/`590f01c6`:
   historisk DMI-replay bruger den faktisk gemte tidligere komponent og

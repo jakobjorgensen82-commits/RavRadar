@@ -1,4 +1,40 @@
-# 2026-10-01 – 4.0.521 afgrænses til sikker replay-først-genstart
+# 2026-10-01 – 4.0.522 retter nulformat i afledte strømbeviser
+
+4.0.521 er merged som `aeac44b4`. Normalrun `36826445588` kom
+gennem vejrbygningen og gemte krypteret fremdrift `36826445588-1`
+(cache-id `8353412294`), men stoppede ved no-loss før publicering.
+Over 80 fælles timer/53.840 PART-timer manglede kandidaten 11.616
+tidligere gyldige current-par; de fire øvrige vejrfamilier og
+identiteter havde nul tab. Offentlig 4.0.510 er uændret.
+
+Den afgrænsede kodeanalyse fandt forskellig Python-/JavaScript-
+skrivemåde for præcis negativt nul i regionale vector commitments.
+En syntetisk producent-/forbrugerkæde beviste fejlen før og rettelsen
+efter. Det er ikke målt, om negativt nul forekom i det fejlede runs
+private input, eller om det forklarer alle 11.616 tab.
+
+DEC-0269/4.0.522 normaliserer kun eksakt nul i tre afledte
+commitmentsteder. Rå shadow, kildebevis, talværdier, ikke-nulformat,
+JavaScript-validator, model og inventar er uændrede. Gamle afledte
+regional-/OM-/closure-/live-bindinger genbygges sammen fra de
+godkendte input; ingen hash-alias eller omskrivning af forseglede
+bevisfelter. Rootens faktiske producentkæde på et kunstigt
+673 × 118-tildelingsdomæne består på 59,640 sekunder: alle tre
+JS-beviser accepteres, ændret indhold afvises, originalbytes bevares.
+Prøven har 9 direkte rækker, 1 state-only-hold, 1 advisory og
+1 regional reference; den er ikke en fuld national prognose.
+En tidligere testforventning om U/V på hold blev rettet, ikke runtime.
+Tre separate Python-scripts består; separat Node-kørsel har 3/3 PASS,
+0 skips. Fuld exact-head source-CI og produktionsbevis afventer.
+
+Den foreslåede ekstra tidlige workflowgate blev særskilt afvist af
+sikkerhedskontrollen; konkret ejersvar afventer. Den er hverken en
+4.0.522-ændring eller et nyt krav for denne release. Ingen SOURCE-/
+session-opt-ins, ny privat audit, SQL-installation eller gatelempelse
+indgår. Næste driftsbevis er en sikker almindelig kørsel med bevaret
+progress/baseline og uændrede no-loss-/artifactkrav. Cron er pauset.
+
+# Historisk log 2026-10-01 – 4.0.521 afgrænses til sikker replay-først-genstart
 
 Root-slutkontrol kl. 08.28 dansk: særskilte syntetiske kommandoer
 32/32 progress/pack, 7/7 updater/workflow og 26/26 OM/komposition;

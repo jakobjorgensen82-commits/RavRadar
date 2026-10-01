@@ -47,7 +47,9 @@ from lib.dmi_native_provenance import (
     current_attestation_authorization_from_operational_ledger,
 )
 from lib.dmi_bulk_storage import read_dmi_bulk_document
-from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
+from lib.regional_current_operational import (
+    VECTOR_COMMITMENT_CONTRACT_ID, regional_vector_commitment_decimal,
+)
 from lib.open_meteo_current_fallback import (
     LIVE_RECORD_PROJECTION_CONTRACT_ID as OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID,
     REQUEST_CONTRACT_ID as OPEN_METEO_REQUEST_CONTRACT_ID,
@@ -497,9 +499,9 @@ def regional_entries(
             "validTime": assignment["sourceValidTime"],
             "sourceAssetSha256": assignment["sourceAssetSha256"],
             "verticalLayer": bottom["verticalLayer"],
-            "verticalLayerRankM": f"{layer_rank:.3f}",
-            "uMps": f"{u_value:.5f}",
-            "vMps": f"{v_value:.5f}",
+            "verticalLayerRankM": regional_vector_commitment_decimal(layer_rank, 3),
+            "uMps": regional_vector_commitment_decimal(u_value, 5),
+            "vMps": regional_vector_commitment_decimal(v_value, 5),
         })
         if vector_commitment != assignment.get("vectorCommitmentSha256"):
             raise RuntimeError("REGIONAL_CLOSURE_VECTOR_INVALID")
@@ -632,9 +634,9 @@ def regional_reference_entries(
             "validTime": source_valid_time,
             "sourceAssetSha256": source_asset_sha256,
             "verticalLayer": bottom["verticalLayer"],
-            "verticalLayerRankM": f"{layer_rank:.3f}",
-            "uMps": f"{u_value:.5f}",
-            "vMps": f"{v_value:.5f}",
+            "verticalLayerRankM": regional_vector_commitment_decimal(layer_rank, 3),
+            "uMps": regional_vector_commitment_decimal(u_value, 5),
+            "vMps": regional_vector_commitment_decimal(v_value, 5),
         })
         if computed_commitment != vector_commitment_sha256:
             raise RuntimeError("REGIONAL_CLOSURE_VECTOR_INVALID")

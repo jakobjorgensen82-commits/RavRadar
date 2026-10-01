@@ -1,6 +1,23 @@
-# Aktuel replay-først-genstart – 2026-10-01
+# Aktuel regional nulrettelse – 2026-10-01
 
-- **REQ-WEATHER-REPLAY-FIRST-0521 – BINDENDE / LOKAL KANDIDAT:**
+- **REQ-REGIONAL-ZERO-COMMITMENT-0522 – BINDENDE / LOKAL KANDIDAT:**
+  Kun eksakt numerisk nul normaliseres i de tre afledte regionale
+  commitments, så Python og uændret JavaScript er enige. Rå sample-
+  og shadowbytes, originalbeviser, ikke-nulformatering, model,
+  PUBLIC-admission og kildeprioritet bevares. Gamle afledte bindinger
+  genbygges gennem de eksisterende producenter, aldrig med hash-alias.
+  Se [DEC-0269](../10_DECISIONS/DEC-0269-REGIONAL-CURRENT-ZERO-COMMITMENT.md).
+- **REQ-WEATHER-RESTART-EVIDENCE-0522 – BINDENDE:**
+  4.0.521 er merged; run `36826445588` gemte progress, men fejlede
+  no-loss. Den lokale nulfejl er ikke målt som årsag til hele tabet.
+  Ingen gatelempelse eller blind genstart. Næste sikre run skal være
+  almindeligt med korrekt bundet gemt progress/baseline og fulde
+  post-data-gates. Den ekstra foreslåede workflowgate afventer særskilt
+  ejersvar og er ikke del af denne kandidat eller et ekstra releasekrav.
+
+# Bevarede replay-først-krav – 2026-10-01
+
+- **REQ-WEATHER-REPLAY-FIRST-0521 – BINDENDE / FRIGIVET:**
   4.0.521 afgrænses til strengt originalhistorisk DMI-replay med den
   faktisk gemte tidligere komponent, bounded parent-forecast-I/O og
   genbrugsgates samt bølgeattest-/OM-postafrundings- og sikre

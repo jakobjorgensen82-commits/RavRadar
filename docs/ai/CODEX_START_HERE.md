@@ -1,4 +1,27 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – lokal 4.0.521-genstartskandidat, ikke releaseklar
+# AKTUELT CHECKPOINT – 2026-10-01 – afgrænset 4.0.522-nulrettelse
+
+4.0.521 er merged som `aeac44b4`. Run `36826445588` gennemførte
+updateren og gemte krypteret `36826445588-1` (cache `8353412294`),
+men no-loss afviste 11.616 havstrømspar over 80 fælles timer. Ingen
+nyt artifact/CAS/R2/Pages; offentlig 4.0.510 og pauset cron er bevaret.
+
+Arbejd på minimumsrettelsen i `weather-restart-release`, branch
+`codex/4.0.522-current-commitment`, fra den mergede 4.0.521.
+DEC-0269 normaliserer alene præcis numerisk nul i tre afledte
+regionale commitments. Rå originaler, JS-validator, model,
+PUBLIC-admission, prioriteter og no-loss er uændrede. Fejlen er
+reproduceret gennem faktiske producenter på kunstige inputs; dens
+forekomst og andel i den private produktionsfejl er ikke målt.
+
+Den særskilt foreslåede tidlige workflowgate afventer konkret svar,
+er ikke skrevet og er ikke et releasekrav. Den store revision
+forbliver separat og OFF. Ingen ny privat audit eller blind retry.
+Før release kræves relevant lokal kontrol og grøn exact-head source-CI.
+Næste sikre vejrkørsel skal være almindelig, ikke quick, med faktisk
+korrekt bundet gemt progress/baseline og alle eksisterende gates.
+Indsats: ejerens Astra/Ultra. `.cache/` må aldrig stages.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – lokal 4.0.521-genstartskandidat
 
 Arbejd med denne afgrænsede kandidat i `weather-restart-release`, fra
 audit-main 4.0.520/`590f01c6`. Det store lokale arbejde i

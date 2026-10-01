@@ -1,4 +1,38 @@
-# NYESTE SANDHED – 2026-10-01 – audit-main 4.0.520, lokal 4.0.521, offentlig 4.0.510
+# NYESTE SANDHED – 2026-10-01 – main 4.0.521, lokal 4.0.522, offentlig 4.0.510
+
+Main er `aeac44b4`. Run `36826445588` byggede vejret og gemte
+krypteret `36826445588-1`, cache-id `8353412294`, men fejlede
+no-loss før artifact/CAS/R2/Pages. Der var 11.616 tabte current-par
+over 53.840 fælles PART-timer (80 timer), nul tab i de fire øvrige
+vejrfamilier og nul identitetsbrud. Offentlig 4.0.510 er uændret;
+cron `8348098` er fortsat pauset. Gemt fremdrift er ikke publicering.
+
+Lokal 4.0.522/DEC-0269 retter en konkret Python-/JavaScript-forskel
+i skrivemåden for præcis negativt nul i tre afledte regionale
+vector commitments. Den syntetiske kæde er bevist rød før/grøn efter.
+Det er IKKE målt, om fejlen forekom i det faktiske runs private input,
+og den må ikke kaldes bevist årsag til de 11.616 tab.
+
+Rå shadow, kildebeviser, talværdier, ikke-nulformat, JavaScript-
+validator, scoremodel, geometri, kildeprioritet og inventar er
+uændrede. Gamle afledte beviser genbygges samlet fra godkendte input;
+forseglede bevisfelter omskrives ikke, og gamle/nye hashes får intet
+alias. PUBLIC forbliver active-context-only som i DEC-0268.
+
+Rootens faktiske producentkæde består på et kunstigt 673 × 118-
+tildelingsdomæne på 59,640 sekunder med alle tre JS-beviser gyldige,
+ændret indhold afvist og originalbytes bevaret. Prøvens 9 direkte
+rækker og 1 state-only-hold er ikke en fuld national prognose.
+Tre separate Python-scripts og separat Node 3/3 består uden skips.
+Fuld source-CI på eksakt head og faktisk produktionseffekt afventer.
+Næste sikre almindelige kørsel skal bevise bevarelse, save, no-loss,
+artifact, CAS/R2/Pages og synlig prognose. Ingen komplethed loves.
+Ingen ny privat audit, SOURCE-/session-opt-in eller SQL-installation
+indgår. Forslaget om en ekstra tidlig workflowgate blev særskilt
+sikkerhedsafvist og afventer konkret ejersvar; det er hverken leveret
+eller et krav for 4.0.522. Ingen eksisterende gate lempes.
+
+# HISTORISK SANDHED – 2026-10-01 – audit-main 4.0.520, lokal 4.0.521, offentlig 4.0.510
 
 PR #488 er merged som `590f01c6`. Den ene godkendte læseaudit
 `36749250698` bestod på eksisterende `36698472505-1` og original

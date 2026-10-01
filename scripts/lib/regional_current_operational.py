@@ -200,6 +200,19 @@ def _finite_number(value: Any) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def regional_vector_commitment_decimal(value: float, places: int) -> str:
+    """Format an already validated component, canonicalizing exact zero only.
+
+    JS commitments do not distinguish -0 from +0. Keep the original shadow and
+    sample bindings unchanged: only newly derived commitments use this spelling.
+    Nonzero values retain their previous formatting, including extra precision;
+    this is not a new admission rule or permission to rewrite sealed sidecars.
+    Regional evidence, closure and live projections must be rebuilt together.
+    """
+    number = float(value)
+    return f"{0.0 if number == 0.0 else number:.{places}f}"
+
+
 def _point(value: Any) -> tuple[float, float] | None:
     if not isinstance(value, (list, tuple)) or len(value) != 2:
         return None
@@ -624,9 +637,9 @@ def _validated_sample(
         "validTime": valid_time,
         "sourceAssetSha256": source_asset_sha256,
         "verticalLayer": bottom["verticalLayer"],
-        "verticalLayerRankM": f"{float(bottom['verticalLayerRankM']):.3f}",
-        "uMps": f"{float(bottom['uMps']):.5f}",
-        "vMps": f"{float(bottom['vMps']):.5f}",
+        "verticalLayerRankM": regional_vector_commitment_decimal(bottom["verticalLayerRankM"], 3),
+        "uMps": regional_vector_commitment_decimal(bottom["uMps"], 5),
+        "vMps": regional_vector_commitment_decimal(bottom["vMps"], 5),
     })
     source_proof_sha256 = _sha256({
         "schemaVersion": 1,
@@ -1239,5 +1252,6 @@ __all__ = [
     "RegionalCurrentOperationalError",
     "SAFE_PROJECTION_FIELDS",
     "build_regional_current_operational_evidence",
+    "regional_vector_commitment_decimal",
     "safe_regional_current_operational_projection",
 ]

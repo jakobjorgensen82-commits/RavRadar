@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,6 +15,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lib.copernicus_current import canonical_sha256, file_sha256
+from lib import current_operational_closure as closure_module
+from lib import regional_current_operational as regional_module
+from lib.regional_source_proofs import _sample_sha
+from lib.current_field_shadow import representative_profile
 from lib.current_operational_closure import (
     ADVISORY_RECORD_REF_CONTRACT_ID,
     CONTRACT_ID,
@@ -627,5 +634,230 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-closure-rollback-") as
     assert output["entries"] == [] and output["advisoryEntries"] == []
     assert output["operationalClosure"] is None and output["copernicusRangeSeal"] is None
     assert "missingPartIds" not in report
+
+# Cross-language regression: exercise the actual shadow rounding, regional
+# validation/commitment, closure assignment and live-entry producers. The safe
+# national ledger below is explicit aggregate fixture metadata, not 673 raw
+# weather records or a claim of a full provider/closure integration. No vector
+# commitment or assignment hash is manufactured in this test.
+def regional_signed_zero_document(
+    raw_u: float, raw_v: float = -0.23456, *, layer_rank: float = 5.0,
+    held_reference: bool = False, extra_precision: bool = False,
+) -> dict:
+    targets = []
+    pair_refs = []
+    anchors = {}
+    for index in range(2):
+        part_id = f"SYNTHETIC-SIGNED-ZERO-{index}"
+        target = {**TARGET, "partId": part_id}
+        targets.append(target)
+        profile = representative_profile([{
+            "first": {"longitude": 0.1, "latitude": 0.0, "value": raw_u if index == 0 else 0.12345},
+            "second": {"longitude": 0.1, "latitude": 0.0, "value": raw_v if index == 0 else -0.23456},
+            "pointKey": (0.0, 0.1), "distanceKm": 11.11949,
+            "layerKey": "depthbelowsea:5", "layerRank": layer_rank,
+        }], maximum_distance_km=15.0)
+        assert profile is not None
+        if index == 0 and abs(raw_u) < 0.000001:
+            rounded_u = profile["layers"]["bottom"]["uMps"]
+            assert rounded_u == 0.0
+            assert math.copysign(1.0, rounded_u) == math.copysign(1.0, raw_u)
+            if abs(raw_v) < 0.000001:
+                rounded_v = profile["layers"]["bottom"]["vMps"]
+                assert rounded_v == 0.0
+                assert math.copysign(1.0, rounded_v) == math.copysign(1.0, raw_v)
+        if index == 0 and extra_precision:
+            # A malformed unrounded sample is not repaired by the exact-zero
+            # spelling fix. The unchanged JS precision check must reject it.
+            profile["layers"]["bottom"]["uMps"] = raw_u
+        native_sample = {
+            **profile, "collection": "dkss_lf", "modelRun": MODEL_RUN,
+            "validTime": REFERENCE_TEXT, "capturedAt": REFERENCE_TEXT,
+            "sourceAssetSha256": HASH_A,
+            "sampleKey": f"dkss_lf|{MODEL_RUN}|{REFERENCE_TEXT}|{HASH_A}",
+        }
+        # The source authorization and owner policy are artificial trusted
+        # boundaries; exact sample, cadence, spatial and vector checks are real.
+        original_sample_bytes = json.dumps(native_sample, sort_keys=True).encode("utf-8")
+        original_sample_binding = _sample_sha(native_sample)
+        evidence = regional_module._validated_sample(
+            native_sample, part_id=part_id,
+            part={"parentZoneId": target["parentZoneId"], "targetPoint": (0.0, 0.0),
+                  "targetPointIdentity": ("0.0000000", "0.0000000")},
+            policy_sha256=HASH_A, target_registry_sha256=HASH_B,
+            ledger_sources={(MODEL_RUN, REFERENCE_TEXT, HASH_A): {"synthetic": True}},
+            retained_sources={},
+        )
+        assert evidence is not None
+        assert json.dumps(native_sample, sort_keys=True).encode("utf-8") == original_sample_bytes
+        assert _sample_sha(native_sample) == original_sample_binding
+        pair_refs.append({
+            "partId": part_id, "validTime": REFERENCE_TEXT,
+            "classification": "REGIONAL_DMI_NATIVE",
+            "sourceValidTime": evidence["validTime"],
+            "sourceModelRun": evidence["modelRun"],
+            "sourceAssetSha256": evidence["sourceAssetSha256"],
+            "sourceProofSha256": evidence["sourceProofSha256"],
+            "vectorCommitmentSha256": evidence["vectorCommitmentSha256"],
+        })
+        anchors[f"REGIONAL_PROXY::{part_id}"] = {"samples": [native_sample]}
+    reference = REFERENCE + timedelta(hours=1) if held_reference else REFERENCE
+    reference_text = reference.strftime("%Y-%m-%dT%H:00:00Z")
+    if held_reference:
+        for row in pair_refs:
+            row.update(validTime=reference_text, classification=REGIONAL_DMI_DERIVED_HOLD,
+                       holdAgeHours=1)
+    assignments = closure_module._regional_assignments({"pairRefs": pair_refs})
+    shadow = {"scoreImpact": False, "publicRuntime": False, "anchors": anchors}
+    original_shadow_bytes = json.dumps(shadow, sort_keys=True).encode("utf-8")
+    original_bindings = [_sample_sha(row["samples"][0]) for row in anchors.values()]
+    targets_by_id = {row["partId"]: row for row in targets}
+    closure = {"closureId": HASH_B, "productionReferenceAt": reference_text}
+    entries = builder.regional_entries(
+        shadow, targets_by_id, assignments, closure,
+    )
+    references = builder.regional_reference_entries(shadow, targets_by_id, assignments, closure)
+    assert len(references) == (2 if held_reference else 0)
+    first_sample = anchors[f"REGIONAL_PROXY::{targets[0]['partId']}"]["samples"][0]
+    first_bottom = first_sample["layers"]["bottom"]
+    if any(first_bottom[field] == 0.0 and math.copysign(1.0, first_bottom[field]) < 0
+           for field in ("uMps", "vMps", "verticalLayerRankM")):
+        # Negative compatibility control only: reproduce the old decimal
+        # spelling, not a new authorization. Old sealed derived hashes must be
+        # rejected, never silently rewritten; regenerate evidence from originals.
+        old_assignment = dict(assignments[0])
+        old_assignment["vectorCommitmentSha256"] = canonical_sha256({
+            "schemaVersion": 1, "contractId": VECTOR_COMMITMENT_CONTRACT_ID,
+            "partId": targets[0]["partId"], "collection": "dkss_lf",
+            "modelRun": MODEL_RUN, "validTime": REFERENCE_TEXT,
+            "sourceAssetSha256": HASH_A, "verticalLayer": first_bottom["verticalLayer"],
+            "verticalLayerRankM": f"{float(first_bottom['verticalLayerRankM']):.3f}",
+            "uMps": f"{float(first_bottom['uMps']):.5f}",
+            "vMps": f"{float(first_bottom['vMps']):.5f}",
+        })
+        assert old_assignment["vectorCommitmentSha256"] != assignments[0]["vectorCommitmentSha256"]
+        old_assignments = [old_assignment, *assignments[1:]]
+        adapters = [builder.regional_entries]
+        if held_reference:
+            adapters.append(builder.regional_reference_entries)
+        for adapter in adapters:
+            try:
+                adapter(shadow, targets_by_id, old_assignments, closure)
+            except RuntimeError as error:
+                assert str(error) == "REGIONAL_CLOSURE_VECTOR_INVALID"
+            else:
+                raise AssertionError("Legacy signed-zero commitment must require a derived-proof rebuild")
+    assert json.dumps(shadow, sort_keys=True).encode("utf-8") == original_shadow_bytes
+    assert [_sample_sha(row["samples"][0]) for row in anchors.values()] == original_bindings
+    assert len(entries) == 2
+    total = 673 * 118
+    safe = {field: HASH_B for field in closure_module.SAFE_FIELDS if field.endswith("Sha256")}
+    safe.update({
+        "schemaVersion": 3, "contractId": "current-operational-673x118-closure-safe-v3",
+        "closureId": HASH_B, "status": "READY_WITH_MISSING",
+        "productionReferenceAt": reference_text,
+        "operationalRangeEndAt": (reference + timedelta(hours=117)).strftime("%Y-%m-%dT%H:00:00Z"),
+        "targetCount": 673, "operationalHourCount": 118, "totalPairCount": total,
+        "sourceOrderContractId": "dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2",
+        "dmiVerifiedPairCount": total - 3, "copernicusBalticPairCount": 0,
+        "copernicusAmm15PairCount": 0, "regionalNativePairCount": 0 if held_reference else 2,
+        "regionalDerivedHoldPairCount": 2 if held_reference else 0, "regionalResidualPairCount": 2,
+        "openMeteoRequiredPairCount": 1, "openMeteoPairCount": 0,
+        "assignedPairCount": total - 1, "supplementalAssignmentCount": 2,
+        "missingPairCount": 1, "copernicusCompleteWithoutSourceStage": False,
+        "copernicusSourceStageStatus": "READY", "copernicusBoundedProgressAccepted": False,
+        "openMeteoPhysicalScope": "eulerian-waves-and-tides-combined-surface-current",
+        "openMeteoScoreInputPolicyId": "combined-current-single-channel-no-wave-or-tide-reprojection-v1",
+        "openMeteoCalibrationEligible": False,
+        "advisoryHistoryRequiredPairCount": 0, "advisoryHistoryAvailablePairCount": 0,
+        "advisoryHistoryMissingPairCount": 0, "advisoryHistoryAssignmentCount": 0,
+        "supplementalAssignmentsSha256": canonical_sha256([row["assignmentSha256"] for row in assignments]),
+        "coordinatesIncluded": False, "rawVectorsIncluded": False,
+        "partIdsIncluded": False, "pairRefsIncluded": False,
+    })
+    safe["safeProjectionSha256"] = canonical_sha256({
+        key: value for key, value in safe.items() if key != "safeProjectionSha256"
+    })
+    assert set(safe) == closure_module.SAFE_FIELDS
+    return {"parts": targets, "document": {
+        "schemaVersion": 1, "controlledLivePilot": True, "mode": "controlled-live",
+        "enabled": True, "credentialsIncluded": False, "targetFingerprint": HASH_B,
+        "operationalClosure": safe, "entries": entries, "advisoryEntries": [],
+        **({"regionalReferenceEntries": references} if held_reference else {}),
+    }}
+
+
+positive_zero = regional_signed_zero_document(0.0)
+negative_zero = regional_signed_zero_document(-0.0000001)
+negative_zero_v = regional_signed_zero_document(0.0, -0.0000001)
+ordinary_nonzero = regional_signed_zero_document(0.12345)
+negative_zero_rank = regional_signed_zero_document(0.0, layer_rank=-0.0)
+unrounded_nonzero = regional_signed_zero_document(-0.0000001, extra_precision=True)
+positive_references = regional_signed_zero_document(0.0, 0.0, held_reference=True)
+negative_references = regional_signed_zero_document(-0.0000001, -0.0000001,
+                                                   layer_rank=-0.0, held_reference=True)
+# Formatting changes exact zero only; even tiny nonzero and halfway values keep
+# their existing decimal strings, so this helper grants no precision admission.
+for precision in (3, 5):
+    assert regional_module.regional_vector_commitment_decimal(-0.0, precision) == f"{0.0:.{precision}f}"
+    for value in (0.0, 0.12345, -0.23456, -0.0000001, 0.0000001, 1.234565):
+        assert regional_module.regional_vector_commitment_decimal(value, precision) == f"{value:.{precision}f}"
+tampered_zero = json.loads(json.dumps(positive_zero))
+tampered_zero["document"]["entries"][0]["vectorCommitmentSha256"] = HASH_B
+node = shutil.which("node")
+assert node is not None, "Synthetic cross-language test requires Node"
+probe = subprocess.run([
+    node, "--input-type=module", "-e", """
+import {controlledLiveCurrentProofStatus, mergeLiveCurrentPilotIntoRecord,
+  verifiedNativeCadenceReferenceForPart}
+  from './scripts/lib/live-current-pilot.mjs';
+let input = ''; for await (const chunk of process.stdin) input += chunk;
+const cases = JSON.parse(input);
+if (!Object.is(cases[1].document.entries[0].uMps, -0)
+  || !Object.is(cases[2].document.entries[0].vMps, -0)) {
+  throw new Error('SYNTHETIC_JSON_SIGNED_ZERO_LOST');
+}
+const results = cases.map(({document, parts}) => {
+  const status = controlledLiveCurrentProofStatus(document);
+  const operational = status.operationalClosureValid;
+  const accepted = parts.map(part => {
+    const source = {hourly: [{time: document.operationalClosure.productionReferenceAt}]};
+    const result = mergeLiveCurrentPilotIntoRecord(source, part, document);
+    if (Object.hasOwn(source.hourly[0], 'currentUMps')) throw new Error('SYNTHETIC_INPUT_MUTATED');
+    return result !== source && Number.isFinite(result.hourly[0].currentUMps)
+      && Number.isFinite(result.hourly[0].currentVMps);
+  });
+  return {operational, accepted, ...(document.regionalReferenceEntries ? {
+    regionalReferenceValid: status.regionalReferenceValid,
+    nativeReferences: parts.map(part => verifiedNativeCadenceReferenceForPart(
+      part, document, document.regionalReferenceEntries[0].sourceValidTime)),
+  } : {})};
+});
+process.stdout.write(JSON.stringify(results));
+""",
+], input=json.dumps([positive_zero, negative_zero, negative_zero_v, tampered_zero,
+                    ordinary_nonzero, negative_zero_rank, unrounded_nonzero,
+                    positive_references, negative_references]),
+    # Windows Node requires this OS bootstrap field for its CSPRNG. No provider,
+    # application, credential, NODE_OPTIONS or proxy environment is inherited.
+    cwd=ROOT, env={"SystemRoot": os.environ["SystemRoot"]} if sys.platform == "win32" else {},
+    text=True, capture_output=True, check=False, timeout=30)
+assert probe.returncode == 0, "Synthetic regional JS probe failed: " + probe.stderr
+zero_results = json.loads(probe.stdout)
+assert zero_results[0] == {"operational": True, "accepted": [True, True]}, "Positive-zero control must prove the real closure/merge path"
+assert zero_results[3] == {"operational": False, "accepted": [False, False]}, "One tampered regional entry must reject the whole closure"
+print("Synthetic regional signed-zero controls: positive=accepted; tamper=rejected; tiny-negative="
+      + ("accepted" if zero_results[1]["operational"] else "rejected")
+      + "; tiny-negative-v=" + ("accepted" if zero_results[2]["operational"] else "rejected"))
+assert all(result == {"operational": True, "accepted": [True, True]}
+           for result in zero_results[1:3]), (
+    "REGIONAL_SIGNED_ZERO_CROSS_LANGUAGE_REGRESSION: actual Python-rounded tiny-negative "
+    "must retain both valid regional entries in the JS closure"
+)
+assert all(result == {"operational": True, "accepted": [True, True]} for result in zero_results[4:6])
+assert zero_results[6] == {"operational": False, "accepted": [False, False]}, "Nonzero precision-invalid input must remain rejected"
+assert all(result == {"operational": True, "accepted": [False, False],
+                      "regionalReferenceValid": True, "nativeReferences": [True, True]}
+           for result in zero_results[7:9]), "Private native references must share the exact zero commitment contract"
 
 print("Current operational live builder targeted tests passed")
