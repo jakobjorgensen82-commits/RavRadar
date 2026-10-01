@@ -1,4 +1,44 @@
-# NYESTE SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
+# NYESTE SANDHED – 2026-10-01 – audit-main 4.0.520, lokal 4.0.521, offentlig 4.0.510
+
+PR #488 er merged som `590f01c6`. Den ene godkendte læseaudit
+`36749250698` bestod på eksisterende `36698472505-1` og original
+beskyttet baseline, uden nyt vejr, union/replay, bygning eller deploy.
+Rå progress måltes til 684.633.367 af 805.306.368 byte (768 MiB), med
+cirka 115,08 MiB tilbage. Dette er ikke næste generations kapacitetsbevis.
+Native-bevismålingen gælder gemte valg, ikke næste targets forbrug;
+manglende endpointbevis er ikke i sig selv konstateret datatab.
+
+Ejeren prioriterer sikker vejropbygning og ønsker nye hentninger
+sideløbende med færdiggørelsen, hvis det kan ske forsvarligt. Derfor
+samles 4.0.521 særskilt i `weather-restart-release`: originalhistorisk
+DMI-replay med faktisk gemt previous, recordvis forecastrestore/-skrivning,
+hårdt forecast-genbrugsstop, bølgeattest, OM-postafrundingsreparation
+og sikre CP-/R2-tællere. Se DEC-0266 og DEC-0268.
+
+PUBLIC-admission og builderdefault forbliver active-context-only som
+main. Ikke-frigivet bredere PUBLIC-adfærd og nye bank/session/native-
+PUBLIC-opt-ins leveres ikke her. Nattens større arbejde bevares i
+feggesund og kan fortsætte parallelt. Ingen gate lempes eller gyldige
+data kasseres som følge af fasevalget; næste artifact kan stadig afvise
+et reelt bevis-/dækningsproblem. Ingen lovning om komplet næste target.
+
+Kandidaten er LOKAL, ikke releaseklar: replaymåltest PASS, root 57/57
+og forecast/progress 20 PASS + 2 eksplicitte storfil-skips. Fuld exact-head
+source-CI, endelig releasekontrol, national kapacitet og faktisk
+restore/save/no-loss/artifact/CAS/R2/Pages er endnu åbne. Ingen ny
+produktionslæsning, vejrhentning, merge eller deploy i kandidatfasen.
+Offentlig 4.0.510, target 29/9 kl. 16 UTC, 370.007/397.070 femfeltspar og
+pauset cron 8348098 er fortsat senest verificerede driftsstatus.
+
+Senere lokal slutkontrol 1/10 kl. 08.28 dansk: særskilte rootkommandoer
+32/32 progress/pack, 7/7 updater/workflow og 26/26 OM/komposition består.
+Model67, otte bindinger, version 4.0.521, RDKS/håndbøger, sikkerhed og
+sourceplan47 består. Geodata er version-only, SQL uden for lokal
+håndbogspayload er uændret. Eksakt gemt progresscache er metadata-
+bekræftet som id8308019918, 103.497.964 komprimerede cachebytes;
+det er ikke den rå udpakkede størrelse og ingen ny indholdsaudit.
+
+# HISTORISK SANDHED – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
 
 Main er `b076968e`. Run `36698472505` fejlede efter leverandørerne i
 havstrømsreplay; krypteret `36698472505-1` er gemt. Ingen ny slutpakke,

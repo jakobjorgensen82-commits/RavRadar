@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { buildDmiForecastHourly, verifiedDmiForecastSource } from './lib/dmi-forecast-store.mjs';
 import { verifiedDmiForecastComponentSource } from './lib/ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
+import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import {
   buildDmiMarineComponentwiseHourly,
@@ -74,12 +75,12 @@ const mergeVerifiedHourly = Function('ravScoreNumber', 'normalizeForecastHourly'
   'verifiedDmiForecastComponentSource', 'repairWaterLevelContinuity',
   'SHORT_DMI_WATER_GAP_HOURS', 'WATER_LEVEL_JUMP_WARN_CM',
   'ACCEPTED_FORECAST_HOURS', 'DMI_FORECAST_HOURS',
-  'preferQualifiedDmiComponentSource',
+  'preferQualifiedDmiComponentSource', 'dmiWaveDirectionMatchesSource',
   `${hourlyMergeSource}; return mergeHourlyPreferDmi;`)(
   value => typeof value === 'number' && Number.isFinite(value) ? value : null,
   rows => [...rows].sort((left, right) => left.time.localeCompare(right.time)),
   verifiedDmiForecastComponentSource, () => ({ status: 'not-needed' }),
-  2, 25, 118, 121, preferQualifiedDmiComponentSource,
+  2, 25, 118, 121, preferQualifiedDmiComponentSource, dmiWaveDirectionMatchesSource,
 );
 const protectedOld = [
   native(0, -6, 0.06, 0.04, 0.01, 13.8),

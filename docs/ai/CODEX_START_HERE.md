@@ -1,4 +1,44 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
+# AKTUELT CHECKPOINT – 2026-10-01 – lokal 4.0.521-genstartskandidat, ikke releaseklar
+
+Arbejd med denne afgrænsede kandidat i `weather-restart-release`, fra
+audit-main 4.0.520/`590f01c6`. Det store lokale arbejde i
+`feggesund-preflight-recovery` bevares urørt og kan fortsætte parallelt.
+Ejeren ønsker nye vejrhentninger sideløbende med færdiggørelsen, HVIS
+det er sikkert; stabilitet og mest mulig komplet cache har forrang.
+Det er ikke tilladelse til blind genhentning eller til at omgå gates.
+
+DEC-0268 afgrænser leveringen: streng historisk DMI-replay med faktisk
+gemt previous-identitet, bounded forecast-I/O/genbrug, bølgeattest,
+OM-postafrundingsreparation og sikre logtællere. Offentlig DMI-admission
+og builderens standardsti forbliver main's active-context-only-kontrakt.
+Ingen nye PUBLIC-bank-/sessionopt-ins eller normal aktivering indgår.
+Den ikke-frigivne bredere PUBLIC-adfærd udskydes, ikke eksisterende
+gyldige data eller gates. Se DEC-0266 og DEC-0268.
+
+Den ene godkendte læseaudit `36749250698` bestod på `590f01c6` og målte
+eksakt krypteret `36698472505-1` med original baseline. Ingen providers,
+union, replay, cachebygning eller deploy i auditen. Rå progress var
+684.633.367/805.306.368 byte; læsbarhed beviser ikke plads til næste
+generation eller samlet RAM-/gemningstid. Ingen ny privat læsning er
+foretaget som del af denne lokale kandidat.
+
+Aktuelt lokalt bevis: replaymåltest PASS, root 57/57 samt forecast/progress
+20 PASS og to eksplicitte >V8-storfil-skips. Yderligere prøver kører;
+det er ikke fuld exact-head source-CI. Versions-/RDKS-/modelkontrol,
+samlet kapacitet, sikker release og faktisk restore/save/artifact/CAS/
+R2/Pages er åbne. Ingen garanti for at næste target passerer artifactgaten.
+Offentlig 4.0.510 / 370.007 af 397.070 femfeltspar er sidste offentlige
+bevis; cron 8348098 er fortsat pauset. Ingen providers, merge eller deploy
+er udført i denne kandidatfase. Indsats: Ultra til kritisk slutkontrol.
+`.cache/` er privat og må aldrig stages; ingen private payloads i logs.
+
+Efterfølgende root-slutkontrol kl. 08.28 dansk: særskilte 32/32,
+7/7 og 26/26 målkommandoer består; version 4.0.521, RDKS/håndbøger,
+security, source47, model67 og otte bindinger består. Geodata
+version-only og SQL kun håndbog er verificeret. Næste trin er
+PR med fuld exact-head source-CI; ingen lokal test er produktionsbevis.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.518, lokal læseaudit 4.0.520
 
 Analyse: `ravradar-readonly-evidence`, branch
 `codex/4.0.520-saved-weather-readonly-audit`, fra main `b076968e`.

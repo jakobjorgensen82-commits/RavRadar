@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
+import { hashDmiForecastDocument, readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';
 import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 
@@ -181,25 +183,42 @@ export function enrichCurrentProvenanceDocuments({conditions,bulk,forecast=null}
 
 async function read(file){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch{return null;}}
 
+// Preserve the exact JSON equality check without creating one national
+// string for the hydrated zones. Each zone is serialized independently.
+export function hashProvenanceZones(zones){
+  const hash=crypto.createHash('sha256');
+  hash.update('{');
+  let separator='';
+  for(const [id,zone] of Object.entries(zones)){
+    hash.update(`${separator}${JSON.stringify(id)}:`);
+    hash.update(JSON.stringify(zone));
+    separator=',';
+  }
+  return hash.update('}').digest('hex');
+}
+
 async function main(){
   const savedConditions=await read(CONDITIONS);
   const conditions=savedConditions?hydratePrivateConditionsHourly(savedConditions):null;
   const bulk=await readDmiBulkDocument(BULK,{optional:true});
-  const forecast=await read(FORECAST);
+  let forecast=null;
+  try{forecast=await readDmiForecastFile(FORECAST);}
+  catch(error){if(error?.message!=='DMI_FORECAST_FILE_MISSING')throw error;}
   if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');return;}
   const sealed=conditions?.publicHourDelivery?.kind==='PRIVATE_PUBLIC_HOUR_DELIVERY_PACK';
-  const beforeZones=sealed?JSON.stringify(conditions.zones):null;
-  const beforeForecast=sealed?JSON.stringify(forecast):null;
+  const beforeZones=sealed?hashProvenanceZones(conditions.zones):null;
+  const beforeForecast=sealed&&forecast?hashDmiForecastDocument(forecast):null;
   const result=enrichCurrentProvenanceDocuments({conditions,bulk,forecast});
   if(sealed){
-    if(beforeZones!==JSON.stringify(conditions.zones)||beforeForecast!==JSON.stringify(forecast)){
+    if(beforeZones!==hashProvenanceZones(conditions.zones)
+      ||beforeForecast!==(forecast?hashDmiForecastDocument(forecast):null)){
       throw new Error('SEALED_PUBLIC_HOUR_PROVENANCE_NOT_FINAL');
     }
     console.log(`Kontrollerede ${result.zones} allerede berigede zoner uden at ændre den forseglede runtime.`);
     return;
   }
   await fs.writeFile(CONDITIONS,`${JSON.stringify(conditions,null,2)}\n`);
-  if(forecast)await fs.writeFile(FORECAST,`${JSON.stringify(forecast,null,2)}\n`);
+  if(forecast)await writeDmiForecastFileAtomic(FORECAST,forecast);
   console.log(`Berigede ${result.zones} zoner: ${result.verifiedHours} verificerede og ${result.unverifiedHours} ikke-verificerbare prognosetimer.`);
 }
 

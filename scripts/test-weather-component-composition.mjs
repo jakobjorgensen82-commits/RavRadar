@@ -9,6 +9,7 @@ import {
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
+import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import {
   buildOpenMeteoHourlyComponents, fetchIndependentOpenMeteoComponents,
   openMeteoUtcTime, buildOpenMeteoIndependentHourlyComponents, fetchOpenMeteoComponentResponses,
@@ -226,7 +227,7 @@ assert.ok(mergeSource.startsWith('const ATOMIC_COMPONENT_TUPLE_KEYS ='));
 const mergeContext = vm.createContext({
   Date, DMI_FORECAST_HOURS, ACCEPTED_FORECAST_HOURS: 118, normalizeForecastHourly,
   repairWaterLevelContinuity, SHORT_DMI_WATER_GAP_HOURS: 6, WATER_LEVEL_JUMP_WARN_CM: 35,
-  preferQualifiedDmiComponentSource,
+  preferQualifiedDmiComponentSource, dmiWaveDirectionMatchesSource,
   ravScoreNumber: value => typeof value === 'number' && Number.isFinite(value) ? value : null,
   verifiedDmiForecastComponentSource: (source, time, component, identity) =>
     verifiedDmiForecastSource(source, component, time, identity),

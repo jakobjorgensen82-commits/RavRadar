@@ -60,9 +60,18 @@ function assertExactKeys(actual, expected, label) {
 }
 
 function referencedNames(sourceText, namespace) {
-  const expression = new RegExp(namespace + '\\.([A-Za-z0-9_-]+)', 'g');
+  // The namespace is an expression token, never the suffix of a filename
+  // such as ./scripts/lib/verified-dmi-progress-inputs.mjs in a Node step.
+  const expression = new RegExp('(?<![A-Za-z0-9_./-])' + namespace + '\\.([A-Za-z0-9_-]+)', 'g');
   return [...new Set([...sourceText.matchAll(expression)].map(match => match[1]))].sort();
 }
+assert.deepEqual(referencedNames([
+  "import helper from './scripts/lib/verified-dmi-progress-inputs.mjs';",
+  'if: inputs.quick_confirmation == true',
+  'value: ' + gh('inputs.quick_progress_source'),
+].join('\n'), 'inputs'), ['quick_confirmation', 'quick_progress_source']);
+assert.deepEqual(referencedNames('value: ' + gh('secrets.SUPABASE_SERVICE_ROLE_KEY'), 'secrets'),
+  ['SUPABASE_SERVICE_ROLE_KEY']);
 
 assert.deepEqual(PRODUCTION_WORKFLOW_SOURCES, {
   orchestrator: '.github/workflows/update-and-deploy.yml',

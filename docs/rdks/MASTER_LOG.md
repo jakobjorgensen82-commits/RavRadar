@@ -1,4 +1,41 @@
-# 2026-09-30 – 4.0.520 adskiller læsebevis fra funktionel vejrrettelse
+# 2026-10-01 – 4.0.521 afgrænses til sikker replay-først-genstart
+
+Root-slutkontrol kl. 08.28 dansk: særskilte syntetiske kommandoer
+32/32 progress/pack, 7/7 updater/workflow og 26/26 OM/komposition;
+version, RDKS/håndbøger, security, sourceplan47, model67/otte bindinger,
+browser- og code-only/private-workflow består. Geodata kun topversion,
+SQL kun håndbog. Uafhængige reviews uden konkret blocker. Næste gate
+er fuld source-CI på præcis ny PR-head, ikke endnu et privat auditrun.
+
+Ejeren ønsker nye vejrhentninger parallelt med færdiggørelsen, HVIS
+det er sikkert; stabilitet og mest mulig komplet cache er vigtigst.
+Det større arbejde fra natten bevares i feggesund. En ren kandidat
+i `weather-restart-release` tager kun de afgrænsede nødvendige rettelser
+fra audit-main 4.0.520/`590f01c6`; ingen normal opt-in-bank/session aktiveres.
+
+Den tidligere afventede audit er afsluttet: én ejerautoriseret
+`36749250698` læste eksakt `36698472505-1` og original baseline uden
+nyt vejr, union/replay, cachebygning eller deploy. Rå progress måltes
+til 684.633.367/805.306.368 byte. Målingen er ikke bevis for næste
+targets dækning, nødvendig nativehistorik eller fremtidig kapacitet.
+
+DEC-0268 fastholder streng originalhistorisk DMI-replay og konkret
+gemt previous-identitet, recordvis forecast-I/O/genbrugsgates,
+bølgeattest, OM-postafrundingsreparation og sikre CP-/R2-logtællere.
+PUBLIC-admission og builderdefault forbliver main's aktive kontekst.
+Udskydelsen gælder alene ikke-frigivet ny PUBLIC-adfærd; ingen gate
+lempes og ingen gyldige data kasseres. DEC-0266's brede mål bevares
+som særskilt viderearbejde med denne præcise leveringsafgrænsning.
+
+Lokalt er replaymåltest, root 57/57 og forecast/progress 20 prøver
+bestået; to eksplicitte storfil-opt-ins er ikke kørt. Yderligere
+kontrol pågår. Dette er ikke fuld source-CI, sikker release eller
+produktionsbevis. Kapacitet, faktisk restore/save og samtlige
+no-loss/artifact/CAS/R2/Pages-resultater skal fortsat dokumenteres.
+Ingen privat læsning, providers, merge eller deploy i denne fase.
+Offentlig 4.0.510 og pauset cron 8348098 forbliver driftsstatus.
+
+# Historisk log 2026-09-30 – 4.0.520 adskiller læsebevis fra funktionel vejrrettelse
 
 Ejeren krævede en ekstra omfattende helhedsgennemgang, også af endnu
 uovervejede ruter. Main 4.0.518/run `36698472505` stoppede efter

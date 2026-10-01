@@ -1,4 +1,28 @@
-# Aktuelle issues – 2026-09-30, main 4.0.518, isoleret læsekandidat 4.0.520
+# Aktuelle issues – 2026-10-01, lokal genstartskandidat 4.0.521
+
+- **IKKE RELEASEKLAR:** Strengt historisk replay og afgrænsede
+  forecast-/bølge-/OM-/logrettelser er lokale. Måltests er ikke fuld
+  exact-head source-CI, faktisk gemning eller produktionsbevis.
+- **KAPACITET OG NY GENERATION:** Audit 36749250698 på main 4.0.520
+  bestod uden providers/bygning. Den målte rå progress 684.633.367 af
+  805.306.368 byte; cirka 115,08 MiB margin er ikke garanti for næste
+  union, producer-RAM, gemningstid eller færdigt arkiv. Ingen loftshævning.
+- **PUBLIC-BEVISER ER STADIG EN GRÆNSE:** Denne kandidat bevarer main's
+  active-context-only-admission og uændrede artifactkrav. Ny bredere
+  PUBLIC-adfærd og bevisbank/sessionopt-ins er udskudt til separat
+  feggesund-arbejde. Næste target kan fortsat stoppe på et reelt problem;
+  auditens manglende donorendpoints må ikke kaldes faktisk datatab.
+- **DÆKNING OG DRIFT ER ÅBNE:** Offentlig 4.0.510 havde 370.007 af
+  397.070 femfeltspar. Sene vind-/scalarhuller, havstrømsrest,
+  historik, CP-bidrag og Free-kvoter kræver faktiske målinger.
+  R2-cleanup-tællere rydder ikke gamle efterladte objekter.
+  Cron 8348098 forbliver pauset; ingen ny hentning/deploy er udført her.
+
+Ejeren ønsker parallel genopfyldning, hvis sikker, men prioriterer
+stabilitet og bevarelse. DEC-0268 er en faseafgrænsning, ikke gatebypass
+eller tilladelse til blind genhentning. DEC-0266's øvrige krav består.
+
+# Historiske issues – 2026-09-30, main 4.0.518, isoleret læsekandidat 4.0.520
 
 - **FUNKTIONEL RELEASE HOLDES TILBAGE:** PR #487 har nyere lokale
   ændringer efter første grønne head. Bevarede DMI-værdier skal også

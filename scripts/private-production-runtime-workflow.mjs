@@ -67,8 +67,12 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/weather-component-progress-cache.mjs',
     'scripts/lib/verified-protected-progress-components.mjs',
     'scripts/lib/verified-dmi-progress-inputs.mjs',
+    'scripts/lib/dmi-forecast-file.mjs',
+    'scripts/lib/dmi-wave-tuple-proof.mjs',
+    'scripts/lib/protected-dmi-current-context.mjs',
     'scripts/lib/private-weather-progress-files.mjs',
     'scripts/lib/verified-open-meteo-generation-union.mjs',
+    'scripts/lib/open-meteo-usable-part-bank.mjs',
     'scripts/lib/coastal_point_staging.py',
     'scripts/lib/copernicus_current.py',
     'scripts/lib/copernicus_current_donor_bank.py',
@@ -103,6 +107,7 @@ const PRIVATE_RUNTIME_SOURCE_FILES = Object.freeze({
     'scripts/lib/dmi-marine-run-seam-recovery.mjs',
     'scripts/lib/weather-component-selection.mjs',
     'scripts/lib/weather-component-runtime.mjs',
+    'scripts/lib/weather-component-safe-summary.mjs',
     'scripts/lib/weather-component-needs.mjs',
     'scripts/lib/weather-component-selection-history.mjs',
     'scripts/lib/weather-reserve-admission.mjs',
@@ -204,7 +209,7 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
 
 export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
   decisionId: 'DEC-0122-OWNER-APPROVAL-2026-09-09',
-  releaseVersion: '4.0.520',
+  releaseVersion: '4.0.521',
   // The first cutover is over. A release-version bump cannot renew this authority.
   retired: true,
   invocationMarker: 'APPLY-DEC-0122-FIRST-CUTOVER-EXCEPTION',
@@ -220,7 +225,7 @@ export const PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY = Object.freeze({
 export const PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY = Object.freeze({
   schemaVersion: '1.0.0',
   kind: 'RAVRADAR_PRIVATE_RUNTIME_CAPACITY_RESUME_EVIDENCE',
-  releaseVersion: '4.0.520',
+  releaseVersion: '4.0.521',
   priorRunId: '34738698219',
   priorRunAttempt: 1,
   priorSourceHead: '099b70a8314864ba85f0fb7ea3858b3f3816d9ed',
