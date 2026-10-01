@@ -1,4 +1,19 @@
-# 2026-10-01 – offentlig 4.0.524; næste afgrænsede kandidat4.0.526
+# 2026-10-01 – næste afgrænsede kandidat4.0.527
+
+- [x] Ordinary524/36896697919 afsluttet med cache, alle efterdatagates og deploy.
+- [x] 525/493 merged3283af62; code-only36918367977 SUCCESS22.09/offentlig525.
+- [x] 526/494/d3200eb2 CI-grøn; retarget/main, merged3b9f3212, indholdsdiff tom.
+- [ ] 526 code-only36919772809 fra22.11 skal afslutte og kontrolleres offentligt.
+- [x] 527: kun tre fixed-callers og målregressioner udtaget fra519;60/60 PASS,
+  24676.2432ms,ingen skips. Primærfejl og direkte child-close før cleanup.
+- [x] 527 version/RDKS14/source47/model67/otte bindinger; særskilt docs/security/
+  browser7/7 PASS1097.5931ms. Geodata-only-version, SQL-only-håndbog og61
+  version-only browserfiler verificeret. Ingen SQLinstallation eller modelregen.
+- [ ] 527 exact-head CI og senere sikker levering, aldrig under aktiv writer.
+- [ ] Descendant-stop, writer-eksklusivitet, fuldCP/S/T-driver, failureworker,
+  runner-tab og nationalkapacitet er fortsat åbne. Ingen hel519-stack aktiveret.
+
+# HISTORISK – 2026-10-01 – offentlig 4.0.524; næste afgrænsede kandidat4.0.526
 
 - [x] 525/PR493: samlet head5e08d5c5 exact-headCI36902939580 bestået.
 - [x] 526: unpack-handlefejl og primærfejl er reproduceret i eksisterende

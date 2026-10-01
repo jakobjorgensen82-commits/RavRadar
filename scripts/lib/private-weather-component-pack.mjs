@@ -74,15 +74,34 @@ async function readSmallJson(file, maximumBytes = MAX_JSON_BYTES) {
 }
 async function cpStorageInventory(root, bank, pythonExecutable) {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-storage-inventory-'));
+  let inventoryFailed = false;
   try {
     const output = path.join(temporary, 'inventory.json');
     await new Promise((resolve, reject) => {
       const child = spawn(pythonExecutable, [RUNNER, '--bank', path.join(root, PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank),
         '--cache-directory', path.join(root, CP_PREFIX), '--storage-inventory', output],
       { windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment() });
-      const timer = setTimeout(() => { child.kill(); reject(new Error('WEATHER_PACK_CP_INVENTORY_TIMEOUT')); }, 120_000);
-      child.once('error', () => { clearTimeout(timer); reject(new Error('WEATHER_PACK_CP_INVENTORY_UNAVAILABLE')); });
-      child.once('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('WEATHER_PACK_CP_ORIGINALS_INVALID')); });
+      let fault = null, stopRequested = false, closed = false;
+      const stop = code => {
+        if (closed) return;
+        fault ??= new Error(code);
+        clearTimeout(timer);
+        if (stopRequested) return;
+        stopRequested = true;
+        // Only signal this retained child, never a PID/group. kill returning
+        // or throwing does not release the directories it may still access.
+        try { if (child.pid) child.kill('SIGKILL'); } catch { /* Await close. */ }
+      };
+      const timer = setTimeout(() => stop('WEATHER_PACK_CP_INVENTORY_TIMEOUT'), 120_000);
+      child.on('error', () => stop('WEATHER_PACK_CP_INVENTORY_UNAVAILABLE'));
+      child.once('close', code => {
+        closed = true;
+        clearTimeout(timer);
+        // No close => no settlement/outer cleanup. The existing caller/job
+        // deadline remains the outer bound; this is not descendant isolation.
+        if (fault) reject(fault);
+        else code === 0 ? resolve() : reject(new Error('WEATHER_PACK_CP_ORIGINALS_INVALID'));
+      });
     });
     const inventory = await readSmallJson(output, MAX_MANIFEST_BYTES);
     if (inventory.kind !== 'CP_COMPONENT_STORAGE_INVENTORY' || inventory.schemaVersion !== 1
@@ -90,9 +109,15 @@ async function cpStorageInventory(root, bank, pythonExecutable) {
       fail('WEATHER_PACK_CP_INVENTORY_INVALID');
     }
     return inventory.files;
+  } catch (error) {
+    inventoryFailed = true;
+    throw error;
   } finally {
     // Only this exact newly created private temporary directory is removed.
-    await fs.rm(temporary, { recursive: true, force: true });
+    // Cleanup must not replace the primary inventory/launch failure. Cleanup
+    // alone still fails the pack, before its previous generation is replaced.
+    try { await fs.rm(temporary, { recursive: true, force: true }); }
+    catch (error) { if (!inventoryFailed) throw error; }
   }
 }
 

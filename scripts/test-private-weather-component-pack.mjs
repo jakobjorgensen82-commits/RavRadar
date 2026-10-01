@@ -4,9 +4,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { execFile } from 'node:child_process';
+import childProcess, { execFile } from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import { syncBuiltinESMExports } from 'node:module';
 import { promisify } from 'node:util';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   assertPrivateRuntimeInventory } from './lib/private-weather-component-inventory.mjs';
@@ -54,6 +57,128 @@ async function seed(root) {
   await write(root, PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor,
     { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
 }
+
+test('fixed offline callers do not settle or clean inventory before the retained child closes', async t => {
+  for (const caller of ['inventory', 'cp-union', 'current-union']) {
+    for (const fault of ['timeout', 'kill-throws', 'process-error']) await t.test(`${caller}: ${fault}`, async t => {
+      const f = await fixture(t);
+      const bankPath = caller === 'current-union'
+        ? PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentDonorBank
+        : PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank;
+      // Artificial dispatch fixture only. No child admits these placeholder
+      // bank bytes, no provider/process is launched, and no result is installed.
+      await write(f.source, bankPath, { bankSha256: 'synthetic-dispatch-only' });
+      await write(f.source, 'data/live/coastal-parts-v2.json', {
+        partCount: 1, zones: { ZONE: [{ partId: 'TEST', waterPoint: [10, 56] }] },
+      });
+      const child = new EventEmitter();
+      child.pid = 12345; // Never passed to the OS; retained synthetic object only.
+      const signals = [];
+      child.kill = signal => {
+        signals.push(signal);
+        if (fault === 'kill-throws') throw new Error('synthetic kill failure');
+        return true;
+      };
+      const setTimer = globalThis.setTimeout, remove = fs.rm;
+      let expire, timer, launched = false, settled = false, observed, cleanupCalls = 0;
+      let operation;
+      const expectedMs = caller === 'inventory' ? 120_000 : 180_000;
+      t.mock.method(globalThis, 'setTimeout', (callback, milliseconds, ...args) => {
+        if (milliseconds === expectedMs) {
+          expire = callback;
+          timer = setTimer(() => {}, 2_000_000_000);
+          return timer;
+        }
+        return setTimer(callback, milliseconds, ...args);
+      });
+      t.mock.method(childProcess, 'spawn', (_executable, args) => {
+        assert.ok(args.includes(caller === 'inventory' ? '--storage-inventory'
+          : caller === 'cp-union' ? '--merge-generations' : '--kind'));
+        launched = true;
+        return child;
+      });
+      t.mock.method(fs, 'rm', async (file, options) => {
+        if (path.basename(String(file)).startsWith('rr-cp-storage-inventory-')) cleanupCalls++;
+        return remove(file, options);
+      });
+      syncBuiltinESMExports();
+      try {
+        operation = caller === 'inventory'
+          ? buildPrivateWeatherComponentPack({ repositoryRoot: f.source, conditions: {} })
+          : mergeVerifiedProtectedProgressComponents({ root: f.source,
+            progressFiles: [{ relativePath: bankPath, sourcePath: path.join(f.source, bankPath) }],
+            completeFiles: [{ relativePath: bankPath, sourcePath: path.join(f.source, bankPath) }],
+            progressVerifiedRoot: f.source, temporaryDirectory: f.folder, productionReferenceAt: reference });
+        operation.then(value => { settled = true; observed = value; }, error => { settled = true; observed = error; });
+        for (let i = 0; i < 500 && !launched && !settled; i++) {
+          await new Promise(resolve => setTimer(resolve, 2));
+        }
+        assert.equal(launched, true, observed?.message);
+        assert.equal(typeof expire, 'function');
+        if (fault === 'process-error') child.emit('error', new Error('synthetic child error'));
+        else assert.doesNotThrow(() => expire(), 'kill failure must not escape the timeout callback');
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(settled, false, 'failure must not release an outer finally before child close');
+        assert.equal(cleanupCalls, 0, 'inventory still belongs to the unclosed child');
+        assert.deepEqual(signals, ['SIGKILL']);
+      } finally {
+        // Test teardown proves the artificial child closed before allowing any
+        // fixture cleanup, including on RED. There is no actual OS process.
+        child.emit('close', 0, null);
+        if (operation) await operation.catch(() => {});
+        clearTimeout(timer);
+        t.mock.restoreAll();
+        syncBuiltinESMExports();
+      }
+      const prefix = caller === 'inventory' ? 'WEATHER_PACK_CP_INVENTORY'
+        : caller === 'cp-union' ? 'PROTECTED_PROGRESS_CP_MERGE'
+          : 'PROTECTED_PROGRESS_CURRENT_DONOR_MERGE';
+      assert.equal(observed?.message, `${prefix}_${fault === 'process-error' ? 'UNAVAILABLE' : 'TIMEOUT'}`,
+        'zero exit after cancellation/error must never become successful data');
+      assert.equal(cleanupCalls, caller === 'inventory' ? 1 : 0);
+    });
+  }
+});
+
+test('inventory cancellation observes actual owned process close before temporary cleanup', async t => {
+  const f = await fixture(t);
+  await write(f.source, PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank,
+    { bankSha256: 'synthetic-dispatch-only' });
+  const spawn = childProcess.spawn, setTimer = globalThis.setTimeout, remove = fs.rm;
+  let child, childClosed = false, cleanupCalls = 0;
+  let closed;
+  t.mock.method(childProcess, 'spawn', (_executable, args, options) => {
+    assert.ok(args.includes('--storage-inventory'));
+    // Actual disposable Node child, not the Python provider/model closure.
+    // It has no I/O work and cannot write source, data or diagnostic payloads.
+    child = spawn(process.execPath, ['--input-type=module', '--eval', 'setInterval(() => {}, 1000);'], options);
+    closed = new Promise(resolve => child.once('close', () => { childClosed = true; resolve(); }));
+    return child;
+  });
+  t.mock.method(globalThis, 'setTimeout', (callback, milliseconds, ...args) =>
+    setTimer(callback, milliseconds === 120_000 ? 50 : milliseconds, ...args));
+  t.mock.method(fs, 'rm', async (file, options) => {
+    if (path.basename(String(file)).startsWith('rr-cp-storage-inventory-')) {
+      cleanupCalls++;
+      assert.equal(childClosed, true, 'actual child must close before the inventory directory is removed');
+    }
+    return remove(file, options);
+  });
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(buildPrivateWeatherComponentPack({ repositoryRoot: f.source, conditions: {} }),
+      { message: 'WEATHER_PACK_CP_INVENTORY_TIMEOUT' });
+    assert.equal(childClosed, true);
+    assert.equal(cleanupCalls, 1);
+  } finally {
+    if (child && !childClosed) {
+      child.kill('SIGKILL');
+      await closed;
+    }
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+  }
+});
 
 test('fixed inventory accepts the two independent sealed extensions, never arbitrary files', () => {
   assert.equal(assertPrivateRuntimeInventory(PRIVATE_RUNTIME_BASE_FILES), false);
@@ -348,6 +473,43 @@ test('real CP original static/dynamic NetCDF, receipts and cursor survive exact 
   assert.equal(originals.filter(file => file.relativePath.includes('/static/')).length, 1);
   for (const file of files) assert.deepEqual(await fs.readFile(path.join(output, file.relativePath)),
     await fs.readFile(path.join(source, file.relativePath)));
+  const originalPack = await fs.readFile(path.join(source, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath));
+  for (const failure of ['inventory-read', 'cleanup-only']) await t.test(`CP inventory ${failure} with cleanup failure`, async t => {
+    const readFile = fs.readFile, rm = fs.rm;
+    const cleanupError = new Error('synthetic inventory cleanup error');
+    const ownedInventory = value => path.dirname(path.resolve(String(value))) === path.resolve(os.tmpdir())
+      && path.basename(String(value)).startsWith('rr-cp-storage-inventory-');
+    const retained = [];
+    t.mock.method(fs, 'readFile', async (file, ...args) => {
+      if (failure === 'inventory-read' && path.basename(String(file)) === 'inventory.json'
+        && ownedInventory(path.dirname(String(file)))) throw new Error('synthetic inventory read error');
+      return readFile(file, ...args);
+    });
+    t.mock.method(fs, 'rm', async (directory, ...args) => {
+      if (ownedInventory(directory)) {
+        retained.push(path.resolve(String(directory)));
+        throw cleanupError;
+      }
+      return rm(directory, ...args);
+    });
+    let observed;
+    try {
+      await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions: cpConditions, pythonExecutable });
+    } catch (error) { observed = error; }
+    finally {
+      t.mock.restoreAll();
+      for (const directory of retained) {
+        assert.ok(ownedInventory(directory), 'only this test\'s captured inventory stage may be removed');
+        await rm(directory, { recursive: true, force: true });
+      }
+    }
+    assert.equal(retained.length, 1, 'cleanup is attempted on both paths');
+    if (failure === 'inventory-read') assert.equal(observed?.message, 'WEATHER_PACK_JSON_INVALID');
+    else assert.equal(observed, cleanupError, 'cleanup-only must still fail before replacing the pack');
+    assert.deepEqual(await fs.readFile(path.join(source, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath)), originalPack);
+    for (const file of originals) assert.deepEqual(await fs.readFile(path.join(output, file.relativePath)),
+      await fs.readFile(path.join(source, file.relativePath)));
+  });
   const staticPointer = originals.find(file => file.relativePath.includes('/static/'));
   await fs.unlink(path.join(source, staticPointer.relativePath));
   // The pointer is an optional acquisition hint. The exact immutable static

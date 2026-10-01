@@ -1,4 +1,15 @@
-# 2026-10-01 – 4.0.526, fortsat revision med to afgrænsede rettelser
+# 2026-10-01 – 4.0.527, fortsat revision mens færdige fixes leveres
+
+Ejeren kræver kontinuerlig konkret revision og kendte statusord. Ordinary524
+er nu afsluttet og publiceret.525 er publiceret22.09;526 merged/leveres22.11.
+DEC-0274 udtager direkte child-close og primær inventoryfejl fra519 uden
+optin-stack eller generisk executor. Isoleret60/60 PASS24676.2432ms,0skip.
+527 versions-/model-/RDKS-kontrol og7/7 docs/security/browser består; exact-head
+kildekontrol og senere sikker levering afventer. Ekstra
+Copernicus efter beregning er eksisterende næste-runs-arbejde, ikke ændret
+leverandørrækkefølge; spørgsmålet ændrer ikke workflow. Astra Ekstra høj består.
+
+# HISTORISK – 2026-10-01 – 4.0.526, fortsat revision med to afgrænsede rettelser
 
 Ejeren gentog, at selve revisionens rettelser skal fortsætte kontinuerligt,
 mens vejrhentning kører. Der genbruges to færdige små519-deltaer: handle-

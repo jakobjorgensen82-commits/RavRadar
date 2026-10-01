@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.526
+# AKTUELT CHECKPOINT – 2026-10-01 – main526/offentlig525; lokal4.0.527
+
+Fortsæt små leverbare fixes med eksisterende måltests. Ordinary36896697919
+afsluttede21.58 med faktisk cache og deploy af ny524-prognose.525/493 er
+merged3283af62; code-only36918367977 SUCCESS22.09/offentlig525 med samme data.
+526/494 er CI-grøn, retargetet/main og merged3b9f3212; code-only36919772809
+leverer526 fra22.11. Verificér afslutning/offentlig identitet. Main må ikke ændres
+under aktiv kørsel. Cron er aktiv; kontrollér faktisk overlap før merge.
+
+Denne lokale gren udtager kun DEC-0274: tre faste child-close-grænser og
+inventoryens primærfejl.60/60 måltests og version/RDKS/modelkontrol består;
+exact-head/levering afventer. Ingen brede519-optins, descendants-/runner-tab-
+eller tidsløfte.
+.cache må ikke stages. Browserpolicyfejl må ikke omgås; testchat er ubesvaret.
+Brug vejrhentning, beregning, cache, kontrol og deploy i beskeder. Astra Ekstra
+høj valgt; ingen model-/planændring. Alle særskilte afvisninger består.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.526
 
 Fortsæt ejerens store revision med små leverbare rettelser og eksisterende
 måltests. Astra Ekstra høj er valgt. 525/PR493 er uændret på5e08d5c5 med

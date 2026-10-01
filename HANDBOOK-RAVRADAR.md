@@ -1,14 +1,35 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.526
+**Håndbogsversion:** 4.0.527
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.526 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.527 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.124 4.0.527 – Vent med oprydning, til hjælpeprocessen er lukket
+
+Tre lokale hjælpeprogrammer kontrollerer og samler allerede gemte vejrdata.
+Hvis et kald tager for lang tid eller fejler, må oprydning ikke begynde,
+mens det samme program stadig kan bruge arbejdsfilerne. Systemet forsøger
+nu at stoppe sin egen hjælpeproces og venter på dens faktiske lukning.
+Den første fejl bliver stående; et stopforsøg er ikke i sig selv bevis.
+
+Kommer der intet lukningssignal, fortsætter kaldet med at vente. Den ydre
+jobtidsgrænse er uændret; dette er ikke et løfte om hurtig lokal afslutning,
+fuld kontrol over underprocesser eller redning ved tab af hele serverjobbet.
+En senere oprydningsfejl må heller ikke skjule den første kontrolfejl.
+Fejler kun oprydningen, rapporteres det stadig som en fejl.
+
+60 målprøver består i den isolerede kandidat. Score, kilder, datakrav og
+sikkerhedskontroller ændres ikke. GitHub-kildekontrol og levering afventer;
+der påstås ikke målt produktionseffekt. Den store ufærdige revision følger
+ikke med. Vejrhentning, beregning, cache, kontrol og deploy er stadig de
+samme faser. Den eksisterende ekstra Copernicus-hentning efter beregningen
+forbedrer cachen til næste kørsel, ikke den netop beregnede prognose.
 
 ## 89.123 4.0.526 – Sikker lukning og færre unødige adgangsoplysninger
 

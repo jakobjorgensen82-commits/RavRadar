@@ -1,4 +1,17 @@
-## 4.0.526 – Sikker udpakning og afgrænset offlinemiljø (lokal kandidat)
+## 4.0.527 – Afvent hjælpeprocessen før oprydning (lokal kandidat)
+
+- Tre faste offlinekald afventer close på deres egen proces før fejl og
+  oprydning. Første fejl bevares; et kill-forsøg er ikke bevis for stop.
+- En senere inventory-oprydningsfejl skjuler ikke den første fejl.
+  Oprydningsfejl alene forbliver hård, og gammel pack/originaler bevares.
+- Isolerede måltests60/60 består. Ingen model-, format-, loft- eller gateændring.
+  Uden close ingen garanteret lokal returfrist; ydre jobgrænse er uændret.
+  Descendants/runner-tab/4minutters-save er ikke løst eller produktionsmålt.
+- Ordinary524 er deployet21.58;525 publiceret22.09,526 merged/leveres.527 følger separat.
+  Velkendte driftsord og ekstra Copernicus-hentnings eksisterende rolle er
+  præciseret uden workflowændring. Se DEC-0274.
+
+## 4.0.526 – Sikker udpakning og afgrænset offlinemiljø (historisk kandidattekst)
 
 - Komponentudpakning forsøger også at lukke inputfilen, når oprettelse af
   modtagermappen fejler. En senere lukningsfejl skjuler ikke længere den

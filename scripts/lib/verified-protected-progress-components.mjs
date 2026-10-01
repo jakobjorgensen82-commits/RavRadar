@@ -46,11 +46,24 @@ async function runPython(pythonExecutable, args) {
     const child = spawn(pythonExecutable, [CP_RUNNER, ...args], {
       windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment(),
     });
-    const timer = setTimeout(() => { child.kill(); reject(new Error('PROTECTED_PROGRESS_CP_MERGE_TIMEOUT')); }, 180_000);
-    child.once('error', () => { clearTimeout(timer); reject(new Error('PROTECTED_PROGRESS_CP_MERGE_UNAVAILABLE')); });
-    child.once('close', code => {
+    let fault = null, stopRequested = false, closed = false;
+    const stop = code => {
+      if (closed) return;
+      fault ??= new Error(code);
       clearTimeout(timer);
-      code === 0 ? resolve() : reject(new Error('PROTECTED_PROGRESS_CP_MERGE_REJECTED'));
+      if (stopRequested) return;
+      stopRequested = true;
+      try { if (child.pid) child.kill('SIGKILL'); } catch { /* Await close. */ }
+    };
+    const timer = setTimeout(() => stop('PROTECTED_PROGRESS_CP_MERGE_TIMEOUT'), 180_000);
+    child.on('error', () => stop('PROTECTED_PROGRESS_CP_MERGE_UNAVAILABLE'));
+    child.once('close', code => {
+      closed = true;
+      clearTimeout(timer);
+      // Keep enclosing authenticated stages alive until this child closes.
+      // If close is unproved, the outer caller/job deadline must stop the run.
+      if (fault) reject(fault);
+      else code === 0 ? resolve() : reject(new Error('PROTECTED_PROGRESS_CP_MERGE_REJECTED'));
     });
   });
 }
@@ -213,11 +226,22 @@ async function runCurrentDonorPython(pythonExecutable, args) {
     const child = spawn(pythonExecutable, [CURRENT_DONOR_RUNNER, ...args], {
       windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment(),
     });
-    const timer = setTimeout(() => { child.kill(); reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_TIMEOUT')); }, 180_000);
-    child.once('error', () => { clearTimeout(timer); reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_UNAVAILABLE')); });
-    child.once('close', code => {
+    let fault = null, stopRequested = false, closed = false;
+    const stop = code => {
+      if (closed) return;
+      fault ??= new Error(code);
       clearTimeout(timer);
-      code === 0 ? resolve() : reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_REJECTED'));
+      if (stopRequested) return;
+      stopRequested = true;
+      try { if (child.pid) child.kill('SIGKILL'); } catch { /* Await close. */ }
+    };
+    const timer = setTimeout(() => stop('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_TIMEOUT'), 180_000);
+    child.on('error', () => stop('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_UNAVAILABLE'));
+    child.once('close', code => {
+      closed = true;
+      clearTimeout(timer);
+      if (fault) reject(fault);
+      else code === 0 ? resolve() : reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_REJECTED'));
     });
   });
 }

@@ -1,5 +1,5 @@
-import './about-i18n.js?v=4.0.526';
-import { installAboutHomeReturn } from '../core/about-home-return.js?v=4.0.526';
+import './about-i18n.js?v=4.0.527';
+import { installAboutHomeReturn } from '../core/about-home-return.js?v=4.0.527';
 
 installAboutHomeReturn({
   link:document.querySelector('.back-link'),

@@ -1,4 +1,23 @@
-# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.524; lokal 4.0.526
+# NYESTE SANDHED – 2026-10-01 – main526, offentlig525, lokal4.0.527
+
+Ordinary36896697919 afsluttede21.58 med faktisk cache8384171884, no-loss,
+54/54artifact+3/3release,private/CAS/R2/Pages og offentlig210/673-verifikation.
+Ny prognose rr-20261001184358-210,target17Z. Ingen ny dækningsprocent antages.
+525/493 merged3283af62 efter exact-headCI36902939580; code-only36918367977
+afsluttede22.09 med samme data og faktisk offentlig525.526/494/d3200eb2 har
+grøn36908981007, blev retargetet/main og merged3b9f3212 kl22.11 efter identisk
+indholdskontrol. Code-only36919772809 leverer nu526. Main uændret imens.
+Cron er aktiv. Senere527-merge kræver afsluttet deploy og ingen aktiv writer.
+
+DEC-0274 udtager kun direkte child-close før oprydning og primær inventoryfejl
+fra519.60/60 isolerede måltests består, ingen skips. Uden close ingen lokal
+returfrist; ydre jobdeadline består. Ikke descendant-/runner-tab-bevis.
+Versions-/RDKS-/modelkontrol består;527 er ikke exact-head-testet eller leveret.
+Ingen brede519-optins.
+Browserpolicyfejl er separat; ingen bypass eller ny chat uden tilladelse.
+Alle gamle særskilte sikkerhedsgrænser består. Brug kendte ord i status.
+
+# HISTORISK SANDHED – 2026-10-01 – offentlig/main 4.0.524; lokal 4.0.526
 
 525/PR493 er klar på5e08d5c5 efter grøn exact-headCI36902939580 med
 sourceproof11182851853. Den står urørt, mens ordinary36896697919 afslutter
