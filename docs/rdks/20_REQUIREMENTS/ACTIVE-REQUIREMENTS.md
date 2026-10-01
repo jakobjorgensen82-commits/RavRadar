@@ -1,4 +1,17 @@
-# Aktuel rollbackbeskyttelse – 2026-10-01
+# Aktuel udpaknings- og offlinemiljøbeskyttelse – 2026-10-01
+
+- **REQ-PRIVATE-UNPACK-RESOURCE-0526 – BINDENDE / LOKALT RETTET:**
+  Alle ejede filhandles skal forsøges lukket også ved stage-mkdir-fejl.
+  Sen close-fejl må ikke skjule den første fejl. Close-only afvises stadig.
+  Ingen implicit reparation, succes eller påstand om lukket OS-handle ved fejl.
+- **REQ-CP-OFFLINE-ENV-0526 – BINDENDE / LOKALT RETTET:**
+  Packinventory og de to faste offline progressmerge-kald må kun modtage
+  nødvendig runtime-/temp-/locale-/biblioteksmiljø. Valgt eksisterende Python
+  og invocation bevares. Onlineprovider og modelbundet authority er urørte.
+  Dette er ikke filesystem/netværks-/descendant-isolation eller child-stop-bevis.
+  Se [DEC-0273](../10_DECISIONS/DEC-0273-PRIVATE-UNPACK-AND-OFFLINE-ENVIRONMENT.md).
+
+# Bevarede rollbackkrav – 2026-10-01
 
 - **REQ-PRIVATE-INSTALL-BACKUP-0525 – BINDENDE / LOKALT RETTET:**
   Hvis privat installation og rollback fejler, må efterfølgende oprydning

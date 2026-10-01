@@ -1,4 +1,24 @@
-# Aktuelle issues – 2026-10-01, offentlig524 og lokal525
+# Aktuelle issues – 2026-10-01, offentlig524 og lokal526
+
+- **525 CI-VALIDERET, IKKE LEVERET:** PR493/5e08d5c5 er grøn; den aktive
+  ordinary36896697919 på524 skal afslutte før main ændres. Cron er aktiv.
+- **UNPACK LOKALT RETTET:** mkdir-fejl kunne lække inputhandle; close kunne
+  maskere format/read/write-fejl. Ejede handles lukkes forsøgsvis og første
+  fejl bevares. Close-only afvises. En reel fejlet close er ikke bevist lukket.
+- **TRE OFFLINE MILJØER AFGRÆNSET:** Packinventory og CP/current-donor-union
+  arver ikke længere hele process.env. Ingen observeret produktionslækage
+  påstås. Det er ikke isolation fra filer, netværk eller child-processer.
+- **FROZEN AUTHORITY FORBLIVER ÅBEN:** Miljøændringen i modelbundet CP-index
+  blev trukket tilbage; ingen modelregen/ny hash. Onlineprovider er uændret.
+- **LEVERING AFVENTER:**49/49 release-målprøver består. 526 har ikke exact-head
+  CI eller produktionseffekt endnu. Se DEC-0273 for grænser og rækkefølge.
+- **REVISIONEN FORTSÆTTER:** Fuldfactory/CP/S/T, key/sourcehandoff,
+  writer-eksklusivitet, timeout/kill/failureworker og nationalkapacitet er åbne.
+  En source-review beviser ikke ny normal bundle-prior-fejl: normal progress
+  gemmes før create; fremtidig S/T-consumerlevetid er et særskilt åbent krav.
+  Ingen afvist admissiongate, donoromvej eller skjult modelændring.
+
+# Historiske issues – 2026-10-01, offentlig524 og lokal525
 
 - **ROLLBACKBACKUP LOKALT RETTET:** DEC-0272 bevarer originalen ved dobbelt
   install/rollbackfejl. Syntetisk1/1 PASS, CI og levering afventer; ingen

@@ -11,6 +11,7 @@ import { sealCopernicusComponentProjection } from './lib/copernicus-component-pr
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildFeggesundWaveInputProofEntry } from './lib/feggesund-wave-proxy.mjs';
+import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 
 const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cp-index-test-'));
 try {
@@ -21,6 +22,24 @@ try {
     { status: 'PARSED', reason: 'CP_COMPONENT_SUBSET_FAILED' },
   ]), { CP_COMPONENT_REQUEST_RETRYABLE_ERROR: 1, CP_COMPONENT_SUBSET_FAILED: 2 });
   const python = process.env.PYTHON ?? 'python';
+  const runtimeEnvironment = { PATH: 'synthetic interpreter path', TEMP: 'synthetic temp',
+    LD_LIBRARY_PATH: 'synthetic library path', LANG: 'C.UTF-8', PYTHONUTF8: '0',
+    COPERNICUSMARINE_SERVICE_PASSWORD: 'synthetic-not-a-credential',
+    SUPABASE_SERVICE_ROLE_KEY: 'synthetic-not-a-key', GITHUB_TOKEN: 'synthetic-not-a-token',
+    PYTHONPATH: 'synthetic-unrequested-import-path', HOME: 'synthetic-user-config' };
+  Object.defineProperty(runtimeEnvironment, 'WEATHER_PROGRESS_MASTER_SECRET', {
+    enumerable: true, get() { throw new Error('offline profile must not even read a master secret'); },
+  });
+  const offlineEnvironment = copernicusOfflineEnvironment(runtimeEnvironment);
+  assert.deepEqual(offlineEnvironment, { PATH: runtimeEnvironment.PATH, TEMP: runtimeEnvironment.TEMP,
+    LANG: runtimeEnvironment.LANG, LD_LIBRARY_PATH: runtimeEnvironment.LD_LIBRARY_PATH, PYTHONUTF8: '1' });
+  runtimeEnvironment.PATH = 'later caller change';
+  assert.equal(offlineEnvironment.PATH, 'synthetic interpreter path');
+  const liveOfflineEnvironment = copernicusOfflineEnvironment();
+  const environmentCheck = JSON.parse(execFileSync(python, ['-c',
+    'import json,os; print(json.dumps({"utf8":os.environ.get("PYTHONUTF8"),"secretPresent":any(k in os.environ for k in ["WEATHER_PROGRESS_MASTER_SECRET","SUPABASE_SERVICE_ROLE_KEY","GITHUB_TOKEN","COPERNICUSMARINE_SERVICE_PASSWORD"])}))'],
+  { windowsHide: true, stdio: 'pipe', env: liveOfflineEnvironment }).toString());
+  assert.deepEqual(environmentCheck, { utf8: '1', secretPresent: false });
   execFileSync(python, [fileURLToPath(new URL('./test-copernicus-component-production.py', import.meta.url)), '--prepare-fixture', folder],
     { stdio: 'pipe', env: { ...process.env, PYTHONUTF8: '1' } });
   const input = JSON.parse(await fs.readFile(path.join(folder, 'input.json'), 'utf8'));

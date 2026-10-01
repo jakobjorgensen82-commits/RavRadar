@@ -1,4 +1,16 @@
-# 2026-10-01 – 4.0.525 bevarer sidste original ved fejlet rollback
+# 2026-10-01 – 4.0.526, fortsat revision med to afgrænsede rettelser
+
+Ejeren gentog, at selve revisionens rettelser skal fortsætte kontinuerligt,
+mens vejrhentning kører. Der genbruges to færdige små519-deltaer: handle-
+ejerskab/primærfejl ved komponentudpakning og mindste nødvendige miljø til
+tre faste offline Python-kald. DEC-0273 dokumenterer både afgrænsning og
+den forkastede modelbundne prototype. Ingen bred519-stack/normaloptin kopieres.
+Release-målkommando49/49 PASS25935,997ms,0skip; exact-headCI og levering åbne.
+525/PR493/5e08d5c5 har nu grøn36902939580/sourceproof11182851853 og står urørt.
+Ordinary36896697919 fortsætter på524; ingen mainændring før afslutning.
+Astra Ekstra høj er tilstrækkelig; ingen model-/planændring.
+
+# HISTORISK – 2026-10-01 – 4.0.525 bevarer sidste original ved fejlet rollback
 
 **Samlet kandidat efter ejerens fortsætordre:** Første head02ed3c4 bestod
 CI36897750089. Under fortsat almindelig vejrhentning blev en nært beslægtet

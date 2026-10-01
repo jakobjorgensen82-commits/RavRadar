@@ -1,4 +1,21 @@
-# 2026-10-01 – offentlig 4.0.524; afgrænset lokal 4.0.525
+# 2026-10-01 – offentlig 4.0.524; næste afgrænsede kandidat4.0.526
+
+- [x] 525/PR493: samlet head5e08d5c5 exact-headCI36902939580 bestået.
+- [x] 526: unpack-handlefejl og primærfejl er reproduceret i eksisterende
+  kunstige fixtures og minimalt rettet; close-only forbliver hård fejl.
+- [x] Tre offline Python-kald modtager afgrænset runtime-miljø; valgt Python,
+  invocation og timeouts bevares. Online/model-bound authority er urørt.
+- [x] Isoleret release-målkommando49/49 PASS25935,997ms,0skip.
+- [x] 526 version/RDKS14, model67/otte bindinger, geodata-only-version,
+  SQL-only-håndbog og61 version-only browserfiler verificeret. Særskilte
+  docs/security5/5 og browser/releasekontrakt3/3 bestået uden skips.
+- [ ] Én526 exact-head source-CI og sikker levering.
+- [ ] Lad ordinary36896697919 afslutte; vurder save/upload og efterdatagates,
+  lever klar525 og derefter sikkert526. Ingen mainændring mens run er aktivt.
+- [ ] Stor519s fulde driver, child-stop, originalbinding/kapacitet og komplette
+  historik/femfamiliecache er fortsat åbne, ikke løst af disse små rettelser.
+
+# HISTORISK – 2026-10-01 – offentlig 4.0.524; afgrænset lokal 4.0.525
 
 - [x] 524 exact-head CI, merge, code-only og offentlig identitet verificeret.
 - [x] Cron8348098 aktiveret og genlæst; uændret plan, næste22:19DK.

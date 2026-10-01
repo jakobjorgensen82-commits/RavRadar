@@ -10,6 +10,7 @@ import {
   PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE, privateWeatherComponentMarker,
 } from './private-weather-component-inventory.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES } from './private-weather-progress-files.mjs';
+import { copernicusOfflineEnvironment } from './copernicus-offline-environment.mjs';
 
 const MAGIC = Buffer.from('RR-WEATHER-COMPONENT-PACK-1\n');
 const MAX_PACK_BYTES = 768 * 1024 * 1024; // existing private-runtime per-file bound
@@ -78,7 +79,7 @@ async function cpStorageInventory(root, bank, pythonExecutable) {
     await new Promise((resolve, reject) => {
       const child = spawn(pythonExecutable, [RUNNER, '--bank', path.join(root, PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank),
         '--cache-directory', path.join(root, CP_PREFIX), '--storage-inventory', output],
-      { windowsHide: true, stdio: 'ignore', env: { ...process.env, PYTHONUTF8: '1' } });
+      { windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment() });
       const timer = setTimeout(() => { child.kill(); reject(new Error('WEATHER_PACK_CP_INVENTORY_TIMEOUT')); }, 120_000);
       child.once('error', () => { clearTimeout(timer); reject(new Error('WEATHER_PACK_CP_INVENTORY_UNAVAILABLE')); });
       child.once('close', code => { clearTimeout(timer); code === 0 ? resolve() : reject(new Error('WEATHER_PACK_CP_ORIGINALS_INVALID')); });
@@ -232,9 +233,9 @@ export async function unpackPrivateWeatherComponentPack({
   includeOperationalProgress = null,
 } = {}) {
   const source = await checkedFile(restoredRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
-  const handle = await fs.open(source.absolute, 'r');
   const output = path.resolve(outputRoot);
-  await fs.mkdir(output, { mode: 0o700 }); // caller passes a new private stage
+  const handle = await fs.open(source.absolute, 'r');
+  let unpackFailed = false;
   let position = 0;
   const read = async bytes => {
     const buffer = Buffer.alloc(bytes);
@@ -248,6 +249,7 @@ export async function unpackPrivateWeatherComponentPack({
     return buffer;
   };
   try {
+    await fs.mkdir(output, { mode: 0o700 }); // caller passes a new private stage
     if (!(await read(MAGIC.length)).equals(MAGIC)) fail('WEATHER_PACK_FORMAT_INVALID');
     const length = (await read(4)).readUInt32BE();
     if (length < 2 || length > MAX_MANIFEST_BYTES) fail('WEATHER_PACK_MANIFEST_SIZE_INVALID');
@@ -269,8 +271,9 @@ export async function unpackPrivateWeatherComponentPack({
     for (const file of manifest.files) {
       const destination = path.join(output, file.relativePath);
       await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
-      const destinationHandle = await fs.open(destination, 'wx', 0o600);
       const hash = crypto.createHash('sha256');
+      const destinationHandle = await fs.open(destination, 'wx', 0o600);
+      let copyFailed = false;
       try {
         for (let remaining = file.bytes; remaining > 0;) {
           const chunk = await read(Math.min(64 * 1024, remaining));
@@ -278,7 +281,13 @@ export async function unpackPrivateWeatherComponentPack({
           hash.update(chunk);
           await destinationHandle.writeFile(chunk);
         }
-      } finally { await destinationHandle.close(); }
+      } catch (error) {
+        copyFailed = true;
+        throw error;
+      } finally {
+        try { await destinationHandle.close(); }
+        catch (error) { if (!copyFailed) throw error; }
+      }
       if (hash.digest('hex') !== file.sha256) fail('WEATHER_PACK_ENTRY_HASH_INVALID');
     }
     const actual = await sourceInventory(output, conditions, {
@@ -287,5 +296,13 @@ export async function unpackPrivateWeatherComponentPack({
     });
     if (!same(actual, manifest)) fail('WEATHER_PACK_REFERENCE_INVENTORY_MISMATCH');
     return manifest.files.map(file => ({ ...file, sourcePath: path.join(output, file.relativePath) }));
-  } finally { await handle.close(); }
+  } catch (error) {
+    unpackFailed = true;
+    throw error;
+  } finally {
+    // Always attempt the owned input close, including a failed stage mkdir.
+    // A close failure alone stays fatal, but must not mask the first error.
+    try { await handle.close(); }
+    catch (error) { if (!unpackFailed) throw error; }
+  }
 }

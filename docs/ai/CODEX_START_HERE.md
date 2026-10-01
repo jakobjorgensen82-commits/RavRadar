@@ -1,4 +1,20 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.525
+# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.526
+
+Fortsæt ejerens store revision med små leverbare rettelser og eksisterende
+måltests. Astra Ekstra høj er valgt. 525/PR493 er uændret på5e08d5c5 med
+grøn exact-headCI36902939580/sourceproof11182851853; levering afventer den
+aktive ordinary36896697919. Main07e4ef4c må ikke ændres imens. Cron8348098
+er aktiv på uændret plan, næste22:19DK; ingen konkurrerende manuel kørsel.
+
+526 bygges separat på525 i codex/private-unpack-resource-safety. DEC-0273
+samler sikker handlelukning/primærfejl ved unpack og begrænset miljø til TRE
+faste offline Python-kald. Ingen provider-/modelændring, nye opt-ins eller
+stor519-helkopi. Release-målkommando49/49 PASS,0skip; exact-headCI afventer.
+525 må ikke forsinkes af526. Stacket kilde-PR må ikke merges til525-grenen;
+lever525 først, retarget526 til main og kontrollér derefter præcis commit.
+.cache må ikke stages. Alle særskilte afvisninger består.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – offentlig 4.0.524; lokal 4.0.525
 
 Arbejd i weather-restart-release på codex/private-restore-backup-retention,
 fra leveret main07e4ef4c. DEC-0272 bevarer originale transaktionsbackups

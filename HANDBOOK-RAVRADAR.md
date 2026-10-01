@@ -1,14 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.525
+**Håndbogsversion:** 4.0.526
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.525 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.526 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.123 4.0.526 – Sikker lukning og færre unødige adgangsoplysninger
+
+Ved udpakning af en gemt vejrpakke skal åbne filer forsøges lukket, også
+når oprettelsen af modtagermappen fejler. En efterfølgende lukningsfejl
+må ikke skjule den oprindelige fejl. Hvis kun lukningen fejler, afvises
+operationen stadig. Det betyder ikke automatisk, at filen er lukket eller
+et delvist arbejdsområde er repareret.
+
+Tre lokale Python-kald til kontrol og sammenlægning af allerede gemte data
+får desuden kun nødvendige oplysninger til at køre. De arver ikke hele
+forælderprogrammets miljø med uvedkommende adgangsnøgler. Den valgte Python
+og dens biblioteker bevares. Dette er ikke fuld isolation fra filer eller
+netværk, og de almindelige onlineleverandører og scoremodellen ændres ikke.
+
+Rettelserne er prøvet med kunstige data gennem de faktiske programmer.
+49 målprøver består; GitHub-kildekontrol og levering afventer. Der påstås
+ikke observeret nøglelækage eller øget prognosedækning. Den færdigtestede
+4.0.525 leveres først, når den igangværende vejrhentning er afsluttet.
+Revisionen fortsætter sideløbende; sikkerhedskontrollerne bevares.
 
 ## 89.122 4.0.525 – Bevar sikkerhedskopien, når gendannelse fejler
 

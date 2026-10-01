@@ -256,6 +256,65 @@ test('component-stage cleanup preserves primary failures and stays hard after su
   });
 });
 
+test('unpack closes owned handles and preserves the first failure', async t => {
+  for (const failure of ['mkdir', 'format', 'read', 'write', 'destination-close', 'source-close']) {
+    await t.test(failure, async t => {
+      const { source, output } = await fixture(t);
+      await seed(source);
+      const packed = await buildPrivateWeatherComponentPack({ repositoryRoot: source, conditions });
+      if (failure === 'mkdir') {
+        await fs.mkdir(output);
+        await write(output, 'sentinel', 'existing destination');
+      }
+      if (failure === 'format') {
+        const bytes = await fs.readFile(packed.sourcePath);
+        bytes[0] ^= 1;
+        await fs.writeFile(packed.sourcePath, bytes);
+      }
+      const originalPack = await fs.readFile(packed.sourcePath);
+      const packPath = (await fs.realpath(packed.sourcePath)).toLowerCase();
+      const primary = new Error('synthetic pack I/O failure');
+      const sourceClose = new Error('synthetic pack source close failure');
+      const destinationClose = new Error('synthetic pack destination close failure');
+      const open = fs.open;
+      const handles = [];
+      t.mock.method(fs, 'open', async (file, ...args) => {
+        const handle = await open(file, ...args);
+        const isSource = (await fs.realpath(file)).toLowerCase() === packPath;
+        const close = handle.close.bind(handle);
+        const tracked = { handle, close, calls: 0, isSource };
+        handles.push(tracked);
+        if (isSource && failure === 'read') t.mock.method(handle, 'read', async () => { throw primary; });
+        if (!isSource && failure === 'write') t.mock.method(handle, 'writeFile', async () => { throw primary; });
+        t.mock.method(handle, 'close', async () => {
+          tracked.calls++;
+          await close();
+          if (isSource && failure !== 'mkdir') throw sourceClose;
+          if (!isSource && ['write', 'destination-close'].includes(failure)) throw destinationClose;
+        });
+        return handle;
+      });
+      let observed;
+      try {
+        await unpackPrivateWeatherComponentPack({ restoredRoot: source, outputRoot: output, conditions });
+      } catch (error) { observed = error; }
+      const closureCounts = handles.map(item => item.calls);
+      // Even the RED reproduction releases only its own leaked test handle.
+      for (const item of handles) if (item.handle.fd !== -1) await item.close();
+      assert.equal(handles.filter(item => item.isSource).length, 1);
+      assert.ok(closureCounts.every(count => count === 1), 'every opened handle must close exactly once');
+      if (failure === 'mkdir') {
+        assert.equal(observed?.code, 'EEXIST');
+        assert.equal(await fs.readFile(path.join(output, 'sentinel'), 'utf8'), 'existing destination');
+      } else if (failure === 'format') assert.match(observed?.message ?? '', /WEATHER_PACK_FORMAT_INVALID/);
+      else if (failure === 'read' || failure === 'write') assert.equal(observed, primary);
+      else if (failure === 'destination-close') assert.equal(observed, destinationClose);
+      else assert.equal(observed, sourceClose, 'close-only failure must still reject');
+      assert.deepEqual(await fs.readFile(packed.sourcePath), originalPack);
+    });
+  }
+});
+
 test('conditions input marker cannot be restored with only nine legacy files', async t => {
   const { folder, source } = await fixture(t);
   const repository = path.join(folder, 'repository');
