@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import {
   mergeLiveCurrentPilotIntoRecord,
   verifiedStateOnlyCurrentHold,
@@ -5,9 +6,14 @@ import {
 import {
   verifiedControlledLiveCurrentSource,
   verifiedIntegratedPartHourly,
+  verifiedBulkCurrent,
+  dmiExpectedIdentityForPart,
 } from './ravscore-production-adapters.mjs';
 import { originalContextForProtectedDmiCurrent } from './protected-dmi-current-context.mjs';
 import { selectQualifiedWeatherComponent } from './weather-component-selection.mjs';
+import { exactDmiCurrentProjection, displayedCurrentProvenance }
+  from './current-spatial-runtime-proof.mjs';
+import { projectExactDmiNativeCurrentToForecast } from './dmi-native-current-runtime-projection.mjs';
 
 const CURRENT_FIELDS = Object.freeze([
   'currentUMps', 'currentVMps', 'currentSpeedMps', 'currentDirectionDeg',
@@ -19,13 +25,31 @@ const canonicalTime = value => typeof value === 'string'
 /**
  * Reconcile an independently admitted historical DMI current with the unchanged
  * closure choice before replay selection. Both replay callers supply only
- * contexts already allowed on their own path. PUBLIC does not use this helper:
- * context admission alone does not prove its separate active-native artifact.
+ * contexts already allowed on their own path. PUBLIC uses the separate entry
+ * below, which additionally requires its exact active-native artifact row.
  * No closure assignment, native evidence or other weather family is rewritten.
  */
 export function mergeProtectedLiveCurrentPilotIntoRecord(
   record, part, document,
-  { currentContexts = [], bulkId, productionReferenceAt, ...pilotOptions } = {},
+  options = {},
+) {
+  return mergeAdmittedCurrent(record, part, document, options, null);
+}
+
+// No caller-supplied donor bank or proof callback can widen PUBLIC authority.
+export function mergeActiveNativeLiveCurrentPilotIntoRecord(
+  record, part, document,
+  { activeBulk = null, bulkId, productionReferenceAt, ...pilotOptions } = {},
+) {
+  return mergeAdmittedCurrent(record, part, document, {
+    ...pilotOptions, currentContexts: [activeBulk], bulkId, productionReferenceAt,
+  }, { bulk: activeBulk });
+}
+
+function mergeAdmittedCurrent(
+  record, part, document,
+  { currentContexts = [], bulkId, productionReferenceAt, ...pilotOptions },
+  activeNative,
 ) {
   const merged = mergeLiveCurrentPilotIntoRecord(record, part, document, pilotOptions);
   if (merged === record || !Array.isArray(record?.hourly)
@@ -55,6 +79,22 @@ export function mergeProtectedLiveCurrentPilotIntoRecord(
     if (primary?.currentProvenance?.status !== 'verified'
       || primary.currentProvenance.provider !== 'dmi'
       || primary.currentProvenance.vectorSemanticsVersion !== 3) return candidate;
+    if (activeNative) {
+      const exact = exactDmiCurrentProjection({
+        bulkZone: activeNative.bulk?.zones?.[bulkId], part,
+        selectedTime: original.time,
+        currentProof: displayedCurrentProvenance(primary.currentProvenance),
+        verifyBulkRow: (zone, point, row) => verifiedBulkCurrent(
+          activeNative.bulk, zone, point, row?.sources?.current, row?.time,
+          dmiExpectedIdentityForPart(part),
+        ) ? projectExactDmiNativeCurrentToForecast(row, productionReferenceAt) : null,
+      });
+      // Exact producer precision and complete source identity (including grid
+      // point/native lineage), not merely equal rounded display speed/heading.
+      if (!exact || primary.currentUMps !== exact.row.currentUMps
+        || primary.currentVMps !== exact.row.currentVMps
+        || !isDeepStrictEqual(primary.currentProvenance, exact.source)) return candidate;
+    }
     const source = candidate?.currentProvenance;
     const hold = verifiedStateOnlyCurrentHold(source, candidate?.time, part);
     const vectorProof = verifiedControlledLiveCurrentSource(

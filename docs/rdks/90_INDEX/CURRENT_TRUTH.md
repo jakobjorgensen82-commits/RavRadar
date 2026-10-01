@@ -1,4 +1,23 @@
-# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.522; lokal samlepakke 4.0.523
+# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.523; lokal 4.0.524
+
+PR491/main d7e58f99 er merged efter exact-head CI36877772594;
+code-only36883934945 bestod17.33.51 dansk. Faktisk offentlig523 bevarer
+rr-20261001143611-210/target13Z. Ti samme-data UI-rækker mistede kun
+redundante spænd; scorer/historikadvarsel og farver består. Ordinary
+36865862773 bestod17.18.29 med no-loss,54 artifact,3 release/private/CAS/
+R2/Pages. Cache8371830366 har104663534 komprimerede Actions-byte, ikke rå
+kapacitet. H0:665 verificerede vektorer+8 state-only holds;673continued,
+0cold,420current zone-modes incomplete. Ingen påstand om komplet cache.
+
+Cron8348098 er kun blokeret af ejerlogin; anmodningen gentages ikke.
+Den skal aktiveres uden plan/payloadændring efter login, ikke afvente524.
+Lokal524/DEC-0271 bevarer DMI over reserve KUN med eksakt aktiv native-
+række, hele kildeidentiteten og uændret96h-prioritet. Artifactets eksisterende
+matcher genbruges; tom native-værdi må ikke blive nul. Tre måltestfiler
+består3/3; model67 uændret. CI/produktionseffekt afventer, og den brede
+519-revision, SOURCE/session og særskilt afvist workflowgate følger ikke med.
+
+# HISTORISK SANDHED – offentlig522 og lokal523 før levering
 
 PR490/main `1d5a64d1` bestod exact-head CI `36842745760`. Ordinary
 `36843972587` blev afsluttet SUCCESS kl. 14.39 dansk med no-loss,

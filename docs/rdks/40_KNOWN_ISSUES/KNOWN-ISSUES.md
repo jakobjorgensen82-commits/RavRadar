@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-10-01, lokal samlepakke 4.0.523
+# Aktuelle issues – 2026-10-01, offentlig523 og lokal524
+
+- **CRONLOGIN:** 523 er leveret og UI-kontrolleret. Cron8348098 skal
+  aktiveres efter ejerlogin uden flere release-/helrevisionkrav. Ejeren er
+  allerede spurgt, ingen credential-søgning eller konkurrerende manuel start.
+- **PUBLIC-PRIORITET LOKALT RETTET:** DEC-0271 genbruger præcis én
+  verificeret aktiv native-række og fuld kilde/vektorlighed før DMI-retention.
+  Header/historisk-only/dublet/afvigende råværdi kan ikke fortrænge reserve.
+  96h består. Måltest3/3; exact-head CI og faktisk driftseffekt afventer.
+- **TOM NATIVE ER IKKE NUL:** Den eksisterende projektors Number(null/
+  tom/false)-vej er syntetisk reproduceret og afvist; faktisk nul bevares.
+- **HELE REVISIONEN IKKE FÆRDIG:** Bred donoradgang, session/SOURCE,
+  kapacitet/kill-sikkerhed og420incomplete zone-modes er ikke løst her.
+  523's almindelige vejreffekt er endnu ikke målt efter kode-only levering.
+
+# Historiske issues – lokal samlepakke4.0.523 før levering
 
 - **NORMAL DRIFT ER GENOPTAGET, KOMPLETHED IKKE BEVIST:** Ordinary
   `36843972587` publicerede 4.0.522 efter alle gates. Ny ordinary

@@ -1,4 +1,17 @@
-## 4.0.523 – samlede replay- og cachebeskyttelser (lokal kandidat)
+## 4.0.524 – DMI-prioritet med præcis aktiv native-binding (lokal kandidat)
+
+- PUBLIC kan bevare gyldig DMI over tidligere valgt reserve, når præcis
+  én aktiv native-række beviser samme vektor og fulde kildeidentitet.
+  Eksisterende artifactmatcher og96h-prioritet genbruges; ingen bredere
+  historisk donoradgang, ny validator eller ændring af de fire øvrige familier.
+- Null, tom tekst og boolean må ikke blive gyldig nulstrøm i den fælles
+  native-projektor. Faktisk numerisk nul bevares.
+- Faktisk syntetisk producent/score/pil/native-artifact, negative cases
+  og eksisterende replay/96h består i3/3 måltestfiler. CI/drift afventer.
+- 523 er nu leveret og redundant UI-spænd faktisk fjernet på samme data.
+  Cronaktivering afventer kun ejerlogin; den resterende revision fortsætter.
+
+## 4.0.523 – samlede replay- og cachebeskyttelser (historisk kandidattekst)
 
 - Historisk replay bruger eksisterende kildeprioritet på selvstændigt
   gyldige strøm-/bølgekomponenter og skelner faktisk tidligere valg fra

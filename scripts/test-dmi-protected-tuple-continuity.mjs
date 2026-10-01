@@ -10,7 +10,8 @@ import {
 import { buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours }
   from './lib/dmi-marine-run-seam-recovery.mjs';
 import { mergeLiveCurrentPilotIntoRecord } from './lib/live-current-pilot.mjs';
-import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord,
+  mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
   buildFeggesundWaveProxy } from './lib/feggesund-wave-proxy.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
@@ -289,7 +290,7 @@ const runPublicPartProjection = Function(
   'verifiedDmiForecastComponentSource', 'verifiedBulkCurrent',
   'buildDmiMarineComponentwiseHourly', 'recoverDmiMarineRunSeamHours',
   'mergeHourlyPreferDmi', 'mergeLiveCurrentPilotIntoRecord',
-  'mergeProtectedLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
+  'mergeProtectedLiveCurrentPilotIntoRecord', 'mergeActiveNativeLiveCurrentPilotIntoRecord', 'verifiedIntegratedPartHourly',
   'originalContextForProtectedDmiCurrent', 'verifiedProtectedDmiPartHourly',
   'buildNewestValidRavScoreRecoverySources',
   'FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID', 'FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS',
@@ -331,7 +332,7 @@ const runPublicPartProjection = Function(
   verifiedDmiForecastComponentSource, verifiedBulkCurrent,
   buildDmiMarineComponentwiseHourly, recoverDmiMarineRunSeamHours,
   mergeHourlyPreferDmi, mergeLiveCurrentPilotIntoRecord,
-  mergeProtectedLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
+  mergeProtectedLiveCurrentPilotIntoRecord, mergeActiveNativeLiveCurrentPilotIntoRecord, verifiedIntegratedPartHourly,
   originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly,
   buildNewestValidRavScoreRecoverySources,
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID, FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,

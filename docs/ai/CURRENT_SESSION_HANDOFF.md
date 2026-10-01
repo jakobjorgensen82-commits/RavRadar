@@ -1,4 +1,15 @@
-# AKTUELT CHECKPOINT – 2026-09-30 – offentlig 4.0.510, main 4.0.517, lokal 4.0.518
+# AKTUELT CHECKPOINT – 2026-10-01 – offentlig523, lokal524
+
+weather-restart-release/codex/current-public-native-binding er fra
+leveret main d7e58f99. DEC-0271 er en lille faktisk PUBLIC-native-rettelse,
+ikke den store dirty feggesund519-pakke. Se CURRENT_TRUTH og checkpointets
+allerøverste afsnit for frisk status. Måltests3/3; CI/levering afventer.
+Cron8348098 skal aktiveres efter ejerlogin; anmodning er allerede stillet.
+523/code-only36883934945 er leveret og UI-effekten målt. Ingen ny audit,
+ekstra scheduler, credentials eller ubekræftet helkapacitets-/cachepåstand.
+Astra Ekstra høj er valgt. Ingen bred SOURCE/session/gateaktivering.
+
+# HISTORISK CHECKPOINT – 2026-09-30 – offentlig510, main517, lokal518
 
 Arbejd i `feggesund-preflight-recovery`, branch
 `codex/4.0.518-current-conflict-proof`. `.cache/` er privat

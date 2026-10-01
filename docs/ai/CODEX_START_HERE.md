@@ -1,4 +1,21 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – lokal samlepakke 4.0.523
+# AKTUELT CHECKPOINT – 2026-10-01 – offentlig 4.0.523; lokal 4.0.524
+
+Arbejd i weather-restart-release på codex/current-public-native-binding,
+fra main d7e58f99. DEC-0271 lukker den snævre PUBLIC/native-binding med
+eksisterende artifactudvælgelse og prioritet, ikke den brede dirty revision.
+Måltests består; exact-head CI og produktion afventer. Ingen ny audit,
+modelændring, SOURCE/sessionaktivering eller afvist admission-workflowgate.
+
+PR491/523 og code-only36883934945 er faktisk leveret; offentligt dataset
+rr-20261001143611-210/target13Z blev bevaret, redundant UI-spænd er væk.
+Ordinary36865862773 bestod alle gates og gemte cache8371830366.
+Cron8348098 skal aktiveres NU efter ejerlogin; der er allerede spurgt én
+gang. Loginfanen er handoff, ingen nye credentials eller konkurrerende run.
+523-vejreffekt og 524-effekt er endnu ikke målt. Astra Ekstra høj er valgt
+og tilstrækkelig. Følg analyse → rettelse → måltest → produktion → effekt.
+Den store feggesund519-revision bevares; .cache må aldrig stages.
+
+# HISTORISK CHECKPOINT – lokal samlepakke 4.0.523 før levering
 
 Arbejd i det isolerede `weather-restart-release`, branch
 `codex/4.0.523-cache-followup`, fra main `1d5a64d1`/4.0.522.

@@ -12,7 +12,9 @@ import * as waveProof from './lib/dmi-wave-tuple-proof.mjs';
 import * as recovery from './lib/ravscore-recovery-replay.mjs';
 import * as contexts from './lib/protected-dmi-current-context.mjs';
 import { buildNewestValidRavScoreRecoverySources } from './lib/ravscore-recovery-source-priority.mjs';
-import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord,
+  mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { projectExactDmiNativeCurrentToForecast } from './lib/dmi-native-current-runtime-projection.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildOperationalCurrentEntryIndex, verifyCoastalPartCurrentProjection }
@@ -22,7 +24,8 @@ import { buildOperationalCurrentEntryIndex, verifyCoastalPartCurrentProjection }
 // closure, admission, score or spatial-proof implementation is stubbed here.
 const environment = { assert, fs, crypto, ...store, ...adapters, ...seams,
   ...pilot, ...waveProxy, ...selection, ...level, ...waveProof, ...recovery,
-  ...contexts, mergeProtectedLiveCurrentPilotIntoRecord, buildNewestValidRavScoreRecoverySources };
+  ...contexts, mergeProtectedLiveCurrentPilotIntoRecord,
+  mergeActiveNativeLiveCurrentPilotIntoRecord, buildNewestValidRavScoreRecoverySources };
 const evaluate = (script, result) => Function(...Object.keys(environment),
   `${script}; return ${result};`)(...Object.values(environment));
 const prefix = (file, start, end) => {
@@ -102,17 +105,17 @@ assert.equal(adapters.verifiedIntegratedPartHourly(oldPath, primary.bulk,
   primary.identity.entityId, cpPart)[0].currentProvenance.provider, 'copernicus',
 'the unchanged old merger reproduces reserve displacement even with primaryCurrentVerified=true');
 
-// Actual producer calls: replay now preserves admitted DMI before selection,
-// but PUBLIC stays byte-unchanged and still takes its existing closure choice.
+// Actual producer calls: PUBLIC requires an exact active native row while
+// replay retains its existing original-context admission.
 const active = fixture.asNative([fixture.row(0)]);
 const activeBefore = structuredClone(active);
 const publicLive = cp.buildOperationalLive([cp.copernicusEntry]);
 const liveBefore = structuredClone(publicLive);
 const fullPublic = fixture.runPublicPartProjection({ active, pilot: publicLive });
-assert.equal(fullPublic.verifiedHourly[0].currentProvenance.provider, 'copernicus',
-  'PUBLIC priority reconciliation is explicitly deferred, not fixed by this replay-only release');
-assert.equal(fullPublic.record.model.completeness.supplementalCurrentHours, 1);
-assert.equal(fullPublic.record.model.completeness.protectedDmiCurrentRetentionHours, undefined);
+assert.equal(fullPublic.verifiedHourly[0].currentProvenance.provider, 'dmi',
+  'PUBLIC must preserve independently verified DMI backed by its exact active native row');
+assert.equal(fullPublic.record.model.completeness.supplementalCurrentHours, 0);
+assert.equal(fullPublic.record.model.completeness.protectedDmiCurrentRetentionHours, 1);
 assert.deepEqual(fullPublic.verifiedHourly, adapters.verifiedIntegratedPartHourly(
   fullPublic.record, active, fixture.identity.entityId, fixture.part),
 'PUBLIC retains precisely its existing active-context sanitizer');
@@ -154,14 +157,16 @@ const publicPart = { flowPoints: structuredClone(flowPoints), current: {
 const spatialProof = bulkZone => verifyCoastalPartCurrentProjection({
   part: fixture.part, runtimePart, publicPart, bulkZone,
   operationalEntryIndex: buildOperationalCurrentEntryIndex(publicLive),
-  verifyBulkRow: () => { throw new Error('Unchanged PUBLIC reserve must use its sealed closure proof'); },
+  verifyBulkRow: (zone, point, row) => adapters.verifiedBulkCurrent(active, zone,
+    point, row.sources.current, row.time, fixture.identity)
+    ? projectExactDmiNativeCurrentToForecast(row, cp.REFERENCE_AT) : null,
 });
 const activeZone = active.zones[fixture.identity.entityId];
 assert.equal(spatialProof(activeZone).ok, true,
-  'unchanged PUBLIC producer, adapter, score/arrow and spatial proof remain consistent');
-assert.equal(spatialProof(activeZone).sourceClass, 'copernicus-local');
-assert.equal(spatialProof({ ...activeZone, hourly: {} }).ok, true,
-  'unchanged PUBLIC reserve does not borrow DMI-header authority for a missing raw row');
+  'PUBLIC producer, adapter, score/arrow and exact native artifact proof agree');
+assert.equal(spatialProof(activeZone).sourceClass, 'dmi-local');
+assert.equal(spatialProof({ ...activeZone, hourly: {} }).ok, false,
+  'the artifact still rejects a retained DMI row if its raw evidence disappears');
 const historicalOnly = fixture.runPublicPartProjection({
   active: { ...active, zones: {} }, historical: active, pilot: publicLive,
 });
@@ -172,7 +177,7 @@ const headerOnly = fixture.runPublicPartProjection({
   historical: active, pilot: publicLive,
 });
 assert.equal(headerOnly.verifiedHourly[0].currentProvenance.provider, 'copernicus',
-  'an active header plus historical donor cannot activate the deferred PUBLIC retention path');
+  'an active header plus historical donor cannot activate exact-native PUBLIC retention');
 
 const boundCp = (modelRun, { futureOnly = false, acquisitionAt = null } = {}) => {
   const live = cp.buildOperationalLive(futureOnly ? [cp.futureCopernicusEntry] : [cp.copernicusEntry]);
@@ -192,6 +197,59 @@ const boundCp = (modelRun, { futureOnly = false, acquisitionAt = null } = {}) =>
   return live;
 };
 const newerCp = boundCp(Date.parse(cp.REFERENCE_AT) - 6 * hour);
+// Exercise the normal PUBLIC wrapper with the same actual projection and
+// sealed reserves. The raw source is never repaired to make an assertion pass.
+const runActive = (input, live = cp.live, change = () => {}) => {
+  const native = fixture.asNative([input.row]);
+  const raw = Object.values(native.zones[fixture.identity.entityId].hourly)[0];
+  const activeBulk = { ...input.bulk, zones: {
+    [input.identity.entityId]: { ...input.identity, hourly: { [raw.time]: raw } },
+  } };
+  const projected = projectExactDmiNativeCurrentToForecast(raw, cp.REFERENCE_AT);
+  assert.ok(projected);
+  const original = { ...input.row, currentUMps: projected.currentUMps,
+    currentVMps: projected.currentVMps,
+    sources: { ...input.row.sources, current: projected.source } };
+  const record = { point: cpPart.waterPoint, hourly: [original] };
+  change({ record, activeBulk, raw });
+  const before = structuredClone({ record, activeBulk, live });
+  const options = { activeBulk, bulkId: input.identity.entityId,
+    productionReferenceAt: cp.REFERENCE_AT };
+  const ordinary = pilot.mergeLiveCurrentPilotIntoRecord(record, cpPart, live);
+  const actual = mergeActiveNativeLiveCurrentPilotIntoRecord(record, cpPart, live, options);
+  assert.deepEqual(otherFields(actual.hourly[0]), otherFields(ordinary.hourly[0]));
+  assert.deepEqual({ record, activeBulk, live }, before);
+  return adapters.verifiedIntegratedPartHourly(actual, activeBulk,
+    input.identity.entityId, cpPart)[0];
+};
+for (const [age, expected] of [[12, 'dmi'], [96 - 1 / hour, 'dmi'], [96, 'copernicus'], [120, 'copernicus']]) {
+  assert.equal(runActive(direct(cpPart, cp.REFERENCE_AT, age), newerCp)
+    .currentProvenance.provider, expected, 'PUBLIC uses the same inclusive 96h rule');
+}
+for (const change of [
+  ({ activeBulk }) => { activeBulk.zones = {}; },
+  ({ activeBulk }) => { activeBulk.zones[primary.identity.entityId].hourly = {}; },
+  ({ activeBulk, raw }) => { activeBulk.zones[primary.identity.entityId].hourly.duplicate = structuredClone(raw); },
+  ({ raw }) => { raw.time = cp.FUTURE_AT; },
+  ({ raw }) => { raw['current-u'] += 0.001; },
+  ({ raw }) => { raw.sources.current.parentZoneId = 'WRONG'; },
+  ({ record }) => { record.hourly[0].sources.current.gridPoint = [10.001, 55]; },
+  ({ record }) => { record.hourly[0].sources.current.nativeSteps[0].assetId = 'OTHER'; },
+  ({ record }) => { record.hourly[0].currentUMps += 0.001; },
+]) {
+  assert.equal(runActive(direct(cpPart, cp.REFERENCE_AT), cp.live, change)
+    .currentProvenance.provider, 'copernicus',
+  'missing, ambiguous or mismatched exact active raw evidence never displaces a valid reserve');
+}
+for (const missing of [null, undefined, '', false]) {
+  const zero = direct(cpPart, cp.REFERENCE_AT);
+  zero.row.currentVMps = 0;
+  assert.equal(runActive(zero, cp.live, ({ raw }) => { raw['current-v'] = missing; })
+    .currentProvenance.provider, 'copernicus', 'missing native values must not coerce into real zero');
+}
+const zero = direct(cpPart, cp.REFERENCE_AT);
+zero.row.currentVMps = 0;
+assert.equal(runActive(zero).currentProvenance.provider, 'dmi', 'real numeric zero remains valid');
 for (const [age, expected] of [[12, 'dmi'], [96 - 1 / hour, 'dmi'], [96, 'copernicus'], [120, 'copernicus']]) {
   assert.equal(run(direct(cpPart, cp.REFERENCE_AT, age), cpPart, newerCp,
     cp.REFERENCE_AT).canonical.currentProvenance.provider, expected);
@@ -269,6 +327,7 @@ const producer = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 assert.equal((producer.match(/= mergeProtectedLiveCurrentPilotIntoRecord\(/g) ?? []).length, 2);
 assert.equal((producer.match(/currentContexts: \[bulkCache\], bulkId, productionReferenceAt: generatedAt/g) ?? []).length, 1);
 assert.match(producer, /currentContexts: protectedCurrentContexts, bulkId, productionReferenceAt: generatedAt/);
-assert.match(producer, /const record = mergeLiveCurrentPilotIntoRecord\(operationalDmiRecord,/);
+assert.match(producer, /const record = mergeActiveNativeLiveCurrentPilotIntoRecord\(operationalDmiRecord,/);
+assert.match(producer, /activeBulk: bulkCache, bulkId, productionReferenceAt: generatedAt/);
 assert.match(producer, /const verifiedHourly = verifiedIntegratedPartHourly\(\s*record, bulkCache, bulkId,/);
-console.log('Replay-only current assembly passed: actual two callers, unchanged PUBLIC spatial proof, 96h, OM and regional holds.');
+console.log('Current assembly passed: actual PUBLIC/native artifact, two replay callers, exact-row negatives, 96h, OM and regional holds.');

@@ -1,4 +1,23 @@
-# 2026-10-01 – offentlig 4.0.522; 4.0.523 samles særskilt
+# 2026-10-01 – offentlig 4.0.523; afgrænset lokal 4.0.524
+
+- [x] 523 exact-head CI, merge og code-only36883934945 bestået;
+  redundant UI-spænd faktisk væk på samme dataset, andre UI-felter bevaret.
+- [x] Ordinary36865862773 bestod alle gates og gemte cache8371830366.
+- [ ] Cron8348098 genaktiveres efter ejerlogin. Leveringskrav er opfyldt;
+  login er eneste kendte blocker. Ingen gentagen anmodning eller ny scheduler.
+- [x] DEC-0271: faktisk PUBLIC-fejl RED, minimal aktiv native-binding
+  gennem fælles artifactmatcher, uændret prioritet/sanitizer og frosset model.
+- [x] Null/tom/bool-til-nul i native-projektor RED→afvisning; reelt nul består.
+- [x] Berørte tre eksisterende måltestfiler3/3 PASS,0skip,0,766373s.
+- [x] 524 versions-/dokumentationsgate, sourceplan47, model67/otte bindinger,
+  geodata-only-version og SQL-only-håndbogskopi. Særskilt7/7 runtime/docs,
+  3/3 browser/håndbog og3/3 wireup; ingen skips, ikke én samlet matrix.
+- [ ] 524 exact-head CI, sikker levering
+  og faktisk effekt i næste almindelige vejrkørsel. Ingen ny privat audit.
+- [ ] Bred donor/native-persistens, SOURCE/session, kapacitet og kill-
+  sikkerhed forbliver separate opgaver. Astra Ekstra høj er tilstrækkelig nu.
+
+# HISTORISK – 4.0.523 samles særskilt før levering
 
 - [x] 4.0.522 er merged; exact-head CI `36842745760` og ordinary
   `36843972587` bestod. Publicering, no-loss, 54/54 artifact og 3/3

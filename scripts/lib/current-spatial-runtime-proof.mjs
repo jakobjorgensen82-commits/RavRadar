@@ -258,7 +258,7 @@ function enrichedOperationalSource(entry, pilotHistory) {
   };
 }
 
-function displayedCurrentProvenance(source) {
+export function displayedCurrentProvenance(source) {
   if (source?.provider === 'dmi'
     && source?.sourceClass === 'owner-approved-regional-proxy'
     && source?.classification === 'REGIONAL_DMI_NATIVE') {
@@ -283,6 +283,29 @@ function flowProjectionFailures(flowPoints, expected) {
   if (!finite(metadata?.distanceKm)
     || Number(metadata.distanceKm) !== Number(expected.distanceKm)) failures.push('metadata.distanceKm');
   return failures;
+}
+
+// Shared exact-row selection for producer retention and the existing artifact
+// proof. No bracket, edge, historical donor or header-only match is admitted.
+export function exactDmiCurrentProjection({ bulkZone, part, selectedTime,
+  currentProof, verifyBulkRow } = {}) {
+  const target = canonicalTime(selectedTime);
+  if (!target || !bulkZone || typeof verifyBulkRow !== 'function') return null;
+  const matches = Object.values(bulkZone.hourly ?? {}).flatMap(row => {
+    if (canonicalTime(row?.time) !== target) return [];
+    const projected = verifyBulkRow(bulkZone, part?.waterPoint, row);
+    const verifiedSource = projected?.source;
+    if (!verifiedSource || !finite(projected?.currentUMps)
+      || !finite(projected?.currentVMps)) return [];
+    const source = {
+      ...verifiedSource,
+      status: 'verified',
+      sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
+    };
+    return sameValue(currentProof, internalCurrentProvenance(source))
+      ? [{ row: projected, source }] : [];
+  });
+  return matches.length === 1 ? matches[0] : null;
 }
 
 /**
@@ -334,30 +357,12 @@ export function verifyCoastalPartCurrentProjection({
     if (!bulkZone || typeof verifyBulkRow !== 'function') {
       return fail('den viste DMI-strøm mangler sin bundne bulkpost');
     }
-    const matches = Object.values(bulkZone.hourly ?? {}).flatMap(row => {
-      if (canonicalTime(row?.time) !== selectedTime) return [];
-      const projected = verifyBulkRow(bulkZone, part?.waterPoint, row);
-      const verifiedSource = projected?.source;
-      if (!verifiedSource || !finite(projected?.currentUMps)
-        || !finite(projected?.currentVMps)) return [];
-      const expected = internalCurrentProvenance({
-        ...verifiedSource,
-        status: 'verified',
-        sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
-      });
-      return sameValue(currentProof, expected) ? [{
-        row: projected,
-        source: {
-          ...verifiedSource,
-          status: 'verified',
-          sourceClass: verifiedSource.sourceClass ?? 'local-model-grid',
-        },
-      }] : [];
-    });
-    if (matches.length !== 1) {
+    const exact = exactDmiCurrentProjection({ bulkZone, part, selectedTime,
+      currentProof, verifyBulkRow });
+    if (!exact) {
       return fail('den viste DMI-strøm matcher ikke præcis én verificeret privat bulk-række');
     }
-    ({ row: rawRow, source } = matches[0]);
+    ({ row: rawRow, source } = exact);
     sourceClass = 'dmi-local';
     arrowSource = 'dmi-marine-grid';
     flowSourceClass = 'local-model-grid';

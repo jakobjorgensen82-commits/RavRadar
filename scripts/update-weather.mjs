@@ -44,7 +44,8 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
-import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord,
+  mergeActiveNativeLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
@@ -68,7 +69,6 @@ import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import {
   controlledLiveCurrentProofStatus,
   latestVerifiedNativeCadenceSampleForPart,
-  mergeLiveCurrentPilotIntoRecord,
   nativeCadenceHoldHoursForPart,
 } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
@@ -2380,7 +2380,8 @@ function scoreCoastalPartsRuntime(
         { ...part, zoneId },
         feggesundSourcesByTime,
       );
-      const record = mergeLiveCurrentPilotIntoRecord(operationalDmiRecord, { ...part, zoneId }, liveCurrentPilot, {
+      const record = mergeActiveNativeLiveCurrentPilotIntoRecord(operationalDmiRecord, { ...part, zoneId }, liveCurrentPilot, {
+        activeBulk: bulkCache, bulkId, productionReferenceAt: generatedAt,
         primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
           bulkCache,
           bulkCache?.zones?.[bulkId],

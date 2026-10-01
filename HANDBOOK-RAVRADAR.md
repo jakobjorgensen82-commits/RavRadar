@@ -1,14 +1,34 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.523
+**Håndbogsversion:** 4.0.524
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.523 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.524 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.121 4.0.524 – Bevar DMI, når de oprindelige data beviser valget
+
+En tidligere valgt reserve må ikke skubbe en gyldig DMI-strøm væk alene
+på grund af rækkefølgen i behandlingen. Den nye afgrænsede rettelse kræver,
+at den aktive private pakke har præcis den oprindelige modelrække med
+samme strømværdi og fulde kildeoplysninger. En overskrift, en gammel
+donor eller to modstridende rækker er ikke nok. Den hidtidige regel om
+nyere reservedata, når DMI-modellen er mindst96timer gammel, består.
+
+Den eksisterende kontrol af oprindelsen genbruges. Tomme værdier må
+ikke omregnes til virkelig nulstrøm; et ægte nul er fortsat gyldigt.
+De fire øvrige vejrtyper, scoremodellen og sikkerhedskontroller ændres ikke.
+Målrettede kunstige prøver består; virkning i en rigtig vejrkørsel afventer.
+Dette er ikke en påstand om fuld cache eller større kapacitet.
+
+4.0.523 er nu offentlig, og de overflødige ens prognosespænd er faktisk
+fjernet uden at ændre scorerne. Automatisk vejrhentning skal aktiveres,
+så snart ejeren er logget ind i den eksisterende scheduler. Den skal ikke
+vente på hele revisionen. Ældre statusafsnit nedenfor er historiske.
 
 ## 89.120 4.0.523 – Færdige rettelser skal bruges i den rigtige drift
 
