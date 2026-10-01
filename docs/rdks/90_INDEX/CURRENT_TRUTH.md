@@ -1,4 +1,24 @@
-# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.524; lokal 4.0.525
+# NYESTE SANDHED – 2026-10-01 – offentlig/main 4.0.524; lokal 4.0.526
+
+525/PR493 er klar på5e08d5c5 efter grøn exact-headCI36902939580 med
+sourceproof11182851853. Den står urørt, mens ordinary36896697919 afslutter
+på524/main07e4ef4c. Cron8348098 er aktiv. Ingen merge/mainændring under run.
+
+DEC-0273 samler to næste små fejlgrænser fra519 i en isoleret526-kandidat.
+Unpack forsøger altid at lukke egne input-/outputhandles og bevarer den
+første fejl; close-only er stadig hård. Tre faste offline Python-kald får
+kun runtime-/biblioteks-/locale-/tempfelter, ikke hele forælderens miljø.
+Det er ikke filsystem-/netværksisolering eller et bevis om sikkert child-stop.
+Modelbundet CP-authority og onlineproviders forbliver uændrede; en bredere
+prototype blev forkastet, fordi den ændrede den frosne modelclosure.
+
+49/49 berørte releaseprøver består,0skip,25935,997ms. De omfatter faktisk
+kunstig CP-originalpack og krypteret save/restore; ingen produktionspayload,
+national bygning eller målt kapacitetsgevinst. GitHub exact-head og levering
+afventer. 525 skal leveres først; hele519-revisionen følger ikke med.
+Alle tidligere særskilte afvisninger, datakontrakter og efterdatagates består.
+
+# HISTORISK SANDHED – 2026-10-01 – offentlig/main 4.0.524; lokal 4.0.525
 
 524/PR492 er merged som07e4ef4c efter exact-headCI36889030220;
 code-only36890317748 og offentlig version/model/210/673 er kontrolleret.

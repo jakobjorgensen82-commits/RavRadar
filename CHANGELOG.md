@@ -1,4 +1,18 @@
-## 4.0.525 – Bevar backup ved mislykket tilbagerulning (lokal kandidat)
+## 4.0.526 – Sikker udpakning og afgrænset offlinemiljø (lokal kandidat)
+
+- Komponentudpakning forsøger også at lukke inputfilen, når oprettelse af
+  modtagermappen fejler. En senere lukningsfejl skjuler ikke længere den
+  oprindelige læse-, skrive- eller formatfejl. Lukningsfejl alene er stadig hård.
+- Tre faste offline Python-kald får kun nødvendige runtimefelter i miljøet,
+  ikke forælderens provider-, GitHub- og progressnøgler. Valgt Python og
+  bibliotekssøgning bevares. Det er ikke filsystem- eller netværksisolering.
+- Scoremodel, onlineleverandører, frosset CP-authority, formater, lofter og
+  gates er uændrede. Måltests49/49 består; exact-headCI og levering afventer.
+  Ingen målt produktionslækage, kapacitetsgevinst eller prognosedækning påstås.
+- 525 er exact-head-grøn og afventer afslutning af den aktive vejrkørsel.
+  Denne næste kandidat må ikke forsinke525 eller ændre main under kørsel.
+
+## 4.0.525 – Bevar backup ved mislykket tilbagerulning (historisk kandidattekst)
 
 - Den private runtimeinstallation må ikke slette originalens lokale backup,
   hvis både installation og tilbagerulning fejler. Egne midlertidige filer

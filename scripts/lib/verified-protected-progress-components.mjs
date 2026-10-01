@@ -13,6 +13,7 @@ import { hasValue } from './weather-component-needs.mjs';
 import { reconcileDmiProgressFiles } from './verified-dmi-progress-inputs.mjs';
 import { RESEARCH_HISTORY_HOURS } from './weather-history-retention.mjs';
 import { OPEN_METEO_FUTURE_HOURS } from './open-meteo-forecast-window.mjs';
+import { copernicusOfflineEnvironment } from './copernicus-offline-environment.mjs';
 
 const CP_RUNNER = fileURLToPath(new URL('../run-copernicus-weather-components.py', import.meta.url));
 const CURRENT_DONOR_RUNNER = fileURLToPath(new URL('../merge-verified-current-donor-banks.py', import.meta.url));
@@ -43,7 +44,7 @@ const fileOf = (files, relativePath) => files.find(file => file.relativePath ===
 async function runPython(pythonExecutable, args) {
   await new Promise((resolve, reject) => {
     const child = spawn(pythonExecutable, [CP_RUNNER, ...args], {
-      windowsHide: true, stdio: 'ignore', env: { ...process.env, PYTHONUTF8: '1' },
+      windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment(),
     });
     const timer = setTimeout(() => { child.kill(); reject(new Error('PROTECTED_PROGRESS_CP_MERGE_TIMEOUT')); }, 180_000);
     child.once('error', () => { clearTimeout(timer); reject(new Error('PROTECTED_PROGRESS_CP_MERGE_UNAVAILABLE')); });
@@ -210,7 +211,7 @@ export async function mergeVerifiedProtectedProgressComponents({
 async function runCurrentDonorPython(pythonExecutable, args) {
   await new Promise((resolve, reject) => {
     const child = spawn(pythonExecutable, [CURRENT_DONOR_RUNNER, ...args], {
-      windowsHide: true, stdio: 'ignore', env: { ...process.env, PYTHONUTF8: '1' },
+      windowsHide: true, stdio: 'ignore', env: copernicusOfflineEnvironment(),
     });
     const timer = setTimeout(() => { child.kill(); reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_TIMEOUT')); }, 180_000);
     child.once('error', () => { clearTimeout(timer); reject(new Error('PROTECTED_PROGRESS_CURRENT_DONOR_MERGE_UNAVAILABLE')); });
