@@ -19,12 +19,22 @@ produktion → faktisk effektkontrol. Flere færdige rettelser samles,
 og fremtidig udvikling fortsætter. 4.0.523/DEC-0270 udtager eksisterende
 normalsti-rettelser til replayprioritet, arkivets strengkapacitet og
 alvorlige fejl efter progressinstallation samt UI's redundante spænd.
+Den femte rettelse bevarer gyldig DMI i de to replay-callers før historisk
+prioritering, hvor den ellers allerede kan være overskrevet af closure-reserve.
+PUBLIC-merger/sanitizer forbliver byte-identisk. En første bredere prototype
+havde et konkret native-artifact-bevisgab og blev afgrænset til replay;
+ingen ny validator, bank eller session skjuler dette udestående.
 Ejerens konkrete UI-fejl skyldes en separat app-renderer, ikke en bevist
 cachefejl: 92–92 skal skjules, reelt 71–78 og flagfarve bevares.
 Kandidaten er endnu lokal. Separate måltests består: replay PASS,
 arkiv 1/1, progress/workflow 26/26, UI 1/1 og versions-/kontraktkontrol
 7/7, ingen skips. Uændret model67/otte bindinger og sourceplan47 består.
 Exact-head CI og faktisk effekt afventer; se DEC-0270 for begrænsninger.
+Femte replay-only-måltest er også bestået (0,947 s) med actual to-callers
+og streng replay; uafhængigt review fandt ingen konkret blocker.
+Ejeren har siden bedt om cron 8348098 aktiveret efter sikker publicering
+og kontrol af denne pakke. Codex må pause igen ved konkret behov. Ingen
+overlap; komplet cache er ikke et yderligere krav for genaktivering.
 Stor proof/session/SOURCE/PUBLIC-integration følger ikke automatisk med.
 Astra/Ultra bruges først til de svære afklaringer; derefter anbefales
 Astra Ekstra høj og Sol Ekstra høj, når opgavens risiko tillader det.

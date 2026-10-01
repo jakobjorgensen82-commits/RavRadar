@@ -4,6 +4,8 @@
   `36843972587` publicerede 4.0.522 efter alle gates. Ny ordinary
   `36865862773` er aktiv; main holdes fast og cron er pauset. H0 er
   dækket, men 420 aktuelle zone/mode-kombinationer har incomplete historik.
+  Ny ejerordre er genaktivering af cron efter denne pakkes sikre publicering
+  og kontrol; samlet komplet cache er ikke en ekstra forudsætning.
 - **AFGRÆNSEDE RETTELSER SAMLES:** Replay kunne behandle gyldige
   reserve-/regionalkilder inkonsistent og forveksle tilfældig peerorden
   med faktisk tidligere valg. Store arkivstrenge mangler tidlige
@@ -15,6 +17,12 @@
   Den indgår ikke; normal 4.0.522-transport beholdes med en smal rettelse.
   SOURCE/session/bredere PUBLIC, kapacitet og vedvarende kill-sikkerhed
   er ikke automatisk løst af denne pakke.
+- **SENERE DMI KAN BLIVE OVERSKREVET:** Operationel closure-merger
+  bruger ikke primary-callbacken som værn mod en tidligere reservebeslutning.
+  Den femte 523-kandidat genvaliderer begge kilder i kun de to replay-callers
+  før selektoren. PUBLIC-merger/sanitizer bevares byte-identisk: gyldig aktiv
+  header beviser ikke en matchende native-række i artifactet. Bred PUBLIC-
+  retention og femfamilie-builderdelta kræver separat afklaring.
 - **UI-SPÆND VAR KUN DELVIST RETTET:** Detaljevisningen havde korrekt
   upper>lower-kontrol, men app.js' særskilte rangliste-/landsprognose-
   renderer viste stadig nulbrede spænd. 4.0.523 retter denne kodevej,

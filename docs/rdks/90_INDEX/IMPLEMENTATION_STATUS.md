@@ -10,6 +10,10 @@
 - [x] Afslut afgrænset 4.0.523-pakke med eksisterende replayprioritet,
   arkiv-allokeringsgrænser, sen progressrestore-fejlklassifikation og
   redundant prognosespænd i rangliste/landsprognose; flagfarve bevares.
+- [x] Afslut femte replay-assemblyrettelse med faktisk producentseam og
+  gyldig reserveclosure. PUBLIC-merger/sanitizer skal være byte-identisk;
+  den bredere prototypes native-artifact-bevisgab er særskilt udestående.
+- [x] Femte måltest PASS 0,947 s og uafhængigt review uden konkret blocker.
 - [x] Måltests består i særskilte kommandoer: replay PASS, arkiv 1/1,
   progress/workflow 26/26, UI 1/1 og versions-/kontraktkontrol 7/7.
   Ingen skips. UI's første testharness-fejl blev rettet uden runtimelempelse.
@@ -17,6 +21,8 @@
 - [ ] Fuld source-CI på eksakt PR-head, ikke gentagne fulde lokale gates.
 - [ ] Efter sikker release: almindelig kørsel og faktisk effektkontrol,
   inklusive saved:true + upload og alle uændrede efterdatagates.
+- [ ] Aktivér derefter cron 8348098 efter ejerens nye ordre. Pause igen
+  ved konkret fejl eller nødvendigt releasearbejde; ingen overlap.
 - [ ] Samlet cachekomplethed, langtidshistorik, SOURCE og den større
   proof/session/PUBLIC-integration er fortsat udviklingsarbejde, ikke
   automatisk krav for at frigive en uafhængig færdig rettelse.

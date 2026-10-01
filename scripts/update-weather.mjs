@@ -44,6 +44,7 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { readDmiForecastFile, writeDmiForecastFileAtomic } from './lib/dmi-forecast-file.mjs';
 import { dmiWaveDirectionMatchesSource } from './lib/dmi-wave-tuple-proof.mjs';
 import { originalContextForProtectedDmiCurrent, verifiedProtectedDmiPartHourly } from './lib/protected-dmi-current-context.mjs';
+import { mergeProtectedLiveCurrentPilotIntoRecord } from './lib/protected-live-current-assembly.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly } from './lib/water-source-forecast-routing.mjs';
@@ -2496,11 +2497,12 @@ function scoreCoastalPartsRuntime(
           },
         );
         if (deployedDmiRecord) {
-          const deployedRecord = mergeLiveCurrentPilotIntoRecord(
+          const deployedRecord = mergeProtectedLiveCurrentPilotIntoRecord(
             deployedDmiRecord,
             { ...part, zoneId },
             liveCurrentPilot,
             {
+              currentContexts: protectedCurrentContexts, bulkId, productionReferenceAt: generatedAt,
               includePrivateNativeCadenceReferences: true,
               primaryCurrentVerified: hour => Boolean(originalContextForProtectedDmiCurrent(
                 hour,
@@ -2534,11 +2536,12 @@ function scoreCoastalPartsRuntime(
       );
       let progressiveRecoverySource = null;
       if (progressiveDmiRecord) {
-        const progressiveRecord = mergeLiveCurrentPilotIntoRecord(
+        const progressiveRecord = mergeProtectedLiveCurrentPilotIntoRecord(
           progressiveDmiRecord,
           { ...part, zoneId },
           liveCurrentPilot,
           {
+            currentContexts: [bulkCache], bulkId, productionReferenceAt: generatedAt,
             includePrivateNativeCadenceReferences: true,
             primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
               bulkCache,

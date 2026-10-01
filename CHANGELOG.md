@@ -13,12 +13,18 @@
 - Rangliste og landsprognose skal, ligesom detaljevisningen, udelade
   redundant »muligt spænd 92–92«. Reelle intervaller og det farvede flag
   bevares; den separate app-renderer var ikke rettet i 4.0.511.
+- Før historisk strømprioritering genanvender de to replay-callers
+  DMI-først/96h på selvstændigt verificerede kandidater, så DMI ikke er
+  overskrevet, før selektoren kan vælge. PUBLIC-merger/sanitizer bevares
+  byte-identisk; closurebevis og de fire øvrige felter ændres ikke.
 - Måltests og exact-head CI skal afsluttes før sikker release. Faktisk
   effekt kontrolleres i almindelig vejrkørsel med uændrede efterdatagates.
   Flere færdige rettelser samles efter ejerens arbejdsrækkefølge, DEC-0270.
 - 4.0.522 er nu faktisk offentlig efter ordinary `36843972587`; næste
   ordinary `36865862773` kører på uændret main. Ingen merge under aktivt
   run. Stor SOURCE/proof/session/PUBLIC-revision følger ikke med.
+- Efter pakkens sikre publicering og kontrol genaktiveres cron efter
+  ejerens nye ordre; den må pauses igen ved konkret fejl eller releasebehov.
 
 ## 4.0.522 – samme kontrolbevis for positivt og negativt nul (historisk kandidat; senere produktionsverificeret)
 

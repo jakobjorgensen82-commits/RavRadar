@@ -5,11 +5,17 @@ Arbejd i det isolerede `weather-restart-release`, branch
 Ordinary `36843972587` bestod alle produktionsgates og publicerede
 4.0.522; ny ordinary `36865862773` er aktiv på samme main. Main må
 ikke ændres, og ingen ekstra run/cron må startes under den aktive kørsel.
+Nyere ejerordre: aktivér cron 8348098, når denne rettelsespakke er sikkert
+publiceret og kontrolleret. Pause igen ved konkret fejl/releasebehov;
+ingen overlap eller krav om at vente på hele den store revision.
 
 Ejerens rækkefølge: analyser → ret → måltest → sikker produktion →
 verificér effekt. Saml flere færdige rettelser, genbrug eksisterende
 arbejde og fortsæt udvikling; byg ikke et selvstændigt testprojekt.
 DEC-0270 afgrænser normale replay-, arkivkapacitets- og restorefejlrettelser.
+Desuden UI's redundante spænd og DMI-først før prioritering i to replay-
+callers. PUBLIC-merger/sanitizer bevares byte-identisk; bank/session,
+bred PUBLIC-retention og femfamilie-builderdefault udelades.
 Fuld source-CI skal bestå på det eksakte PR-head. Hvert nyt vejrartifact
 skal fortsat igennem alle efterdatagates. Måltests er ikke produktionseffekt.
 

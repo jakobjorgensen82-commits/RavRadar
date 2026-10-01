@@ -24,6 +24,12 @@ roller. For store tekstpakker skal afvises kontrolleret, før de kræver
 en umulig allokering. Hvis filer allerede er installeret, må en sen
 fejl ikke ligne en uskyldig manglende cache.
 
+Derudover bevares gyldig DMI, før strømoplysninger vælges til genopbygning
+af historikken. Ellers kan et tidligere reservevalg have fjernet DMI,
+før prioriteringen overhovedet begynder. Den eksisterende 96-timersundtagelse
+og datakontrol bevares. Den offentlige prognoses direkte kildevalg ændres
+ikke af denne rettelse; det kræver en særskilt afklaring af kildebeviset.
+
 Visningen rettes også: et interval som »muligt spænd 92–92« skal
 ikke fylde i ranglisten eller landsprognosen. Et reelt interval som
 71–78 og det farvede flag bevares. Det ændrer ikke selve prognosen.
@@ -35,6 +41,10 @@ kontroller for datatab, sikkerhed og publicering består. 4.0.523 er endnu
 en lokal kandidat; ingen større cachekapacitet eller produktionseffekt
 loves på baggrund af lokale tests. Ufærdige SOURCE-/sessionfunktioner
 følger ikke med. Se DEC-0270. Status i ældre kapitler er historisk.
+
+Efter sikker publicering og kontrol af denne pakke skal de automatiske
+vejrhentninger aktiveres igen efter ejerens ordre. De kan pauses ved fejl
+eller nødvendigt releasearbejde; to kørsler må ikke skrive samtidig.
 
 ## 89.119 4.0.522 – Samme nul skal give samme kontrolbevis (historisk kandidatstatus)
 

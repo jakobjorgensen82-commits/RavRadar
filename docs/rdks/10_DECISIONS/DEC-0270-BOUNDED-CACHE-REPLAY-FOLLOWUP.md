@@ -34,7 +34,14 @@ mainændring, ekstra dispatch eller cronstart må overlappe denne kørsel.
 Cron 8348098 er pauset. 4.0.523 samles alene i `weather-restart-release`;
 den store lokale 4.0.519-revision bevares særskilt.
 
-## Fire afgrænsede rettelsesgrænser
+**Ny ejerinstruktion under færdiggørelsen:** Når denne rettelsespakke er
+sikkert publiceret og kontrolleret, skal cron 8348098 aktiveres, så normal
+cacheopbygning fortsætter automatisk. Codex må pause den igen ved konkret
+fejl eller nødvendigt releasearbejde. Dette erstatter ubestemt pause som
+standard, men tillader ikke overlap, blind start før pakken eller gateomgåelse.
+Komplet cache/langtidsstabilitet er ikke et ekstra krav for genaktivering.
+
+## Fem afgrænsede rettelsesgrænser
 
 1. **Historisk kildeprioritet.** Den eksisterende normale replayselektor
    skal bruge den allerede godkendte prioritet på selvstændigt gyldige
@@ -64,6 +71,31 @@ den store lokale 4.0.519-revision bevares særskilt.
    fx »muligt spænd 92–92«. Det eksisterende krav om at bevare reelt
    71–78 og flagfarven består. Ingen score-, interval- eller modelberegning
    ændres; den faktiske renderer dækkes af den eksisterende UI-måltest.
+5. **DMI-først før historisk strømprioritering.** Den eksisterende live-merger
+   kan lade en tidligere beregnet operationel reserve overskrive en senere
+   selvstændigt verificeret DMI-række, selv med gyldig primary-callback.
+   En lille wrapper genbruger de eksisterende validatorer og den centrale
+   96h-regel på begge kandidater før historisk replayselektion. Rettelsen
+   gælder kun de to eksisterende replay-callers; ellers har den senere
+   prioritering mistet DMI-kandidaten allerede før sit valg. Den ændrer kun
+   strøm, ikke closure-rækker, hashes eller de øvrige fire vejrtyper.
+   PUBLICs oprindelige merger og sanitizer bevares byte-identisk.
+   Replay får kun sine allerede tilladte originale/aktive kontekster.
+   Ingen bank, capture, session,
+   resolver-capability eller bredere PUBLIC-admission indføres.
+
+Konkret review af en første bredere prototype fandt, at gyldig aktiv header
+ikke beviser en matchende native-række i det aktive artifact. PUBLIC-retention
+kunne derfor fortrænge gyldig reserve med en donor, som senere afvises af
+artifactkontrollen. PUBLIC-delen blev taget ud før release; der indføres ikke
+en ny parallel native-validator for at få den med. Native-bindingen er fortsat
+et særskilt arbejde, ikke løst af de to replay-callers.
+
+Den bredere lokale builderdefault er udtrykkeligt ikke udtaget: den påvirker
+alle fem familier og kan beskytte en strømkandidat før strengere aktiv
+PUBLIC-admission. Denne afhængighed kræver separat afklaring; den skjules
+ikke ved at kopiere hele hunken eller lempe en validator. Øvrige opt-ins
+uden normalcaller bliver i den store revision.
 
 Kun implementerede og måltestede dele må indgå i det endelige PR-head.
 En fundet kombinationsregression i den store lokale helpersamling er ikke
@@ -107,3 +139,17 @@ Modelbundle er uændret, 67 filer og otte bindinger. Den lokale Node24-
 evidens er ikke Linux/Node22-CI, national kapacitet eller produktionsmåling.
 Ingen bred lokal validate:source-genkørsel er udført; PR-head skal gennem
 den fulde eksisterende GitHub-kildegate før merge.
+
+Femte replay-only-målkommando `node scripts/test-protected-live-current-assembly.mjs`
+bestod på 0,947 s. Den bruger de faktiske to producentcallers, prioritering og
+streng replay med kunstige forseglede kilder. Eksisterende negatives bevares;
+96h, ugyldige kilder, OM/regional/hold samt uændret PUBLIC/spatial-kontrol dækkes.
+Første forsøg stoppede på en testfixture med en ekstra legitim fremtidstime,
+som gjorde forventet supplementantal forkert. Fixturen blev afgrænset til H0;
+runtime blev ikke lempet. Et uafhængigt review af de frosne fire filer fandt
+ingen konkret blocker. Den bredere PUBLIC-idé er udtrykkeligt udeladt.
+
+En utilsigtet udeladelse af den eksisterende bounded-conditions-predecessor-
+gate i et forslag til testlisten blev sikkerhedsafvist før skrivning. Root
+bekræftede uændrede bytes og tilføjede derefter kun den nye test; samtlige
+gamle gates er bevaret. Ingen test fjernes eller svækkes.

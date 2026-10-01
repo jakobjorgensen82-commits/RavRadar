@@ -6,6 +6,9 @@ Saml flere færdige rettelser under den aktive kørsel; undgå gentagen
 næsten ens testning og nye generelle kontrolrammer. Brug Astra/Ultra
 først til de vanskelige afklaringer, derefter anbefalet Astra Ekstra høj
 og Sol Ekstra høj til passende opgaver. Se DEC-0270.
+Ejeren bestilte derefter cron 8348098 genaktiveret efter sikker publicering
+og kontrol af denne rettelsespakke, med mulighed for ny pause ved behov.
+Ingen overlap; genaktivering afventer ikke hele den store revision.
 
 4.0.522/PR490 er merged efter source-CI `36842745760`; ordinary
 `36843972587` bestod kl. 14.39 dansk inklusive no-loss, 54/54 artifact,
@@ -19,7 +22,12 @@ arkiv-strenggrænser og hård fejl ved sen progressrestore. Ejerens nye
 UI-fejl tilføjes: redundant »muligt spænd« er kun fjernet fra detaljerne,
 ikke app.js' separate renderer. Den rettes med bevaret reelt interval
 og flagfarve, uden ændring af scoremodel. Eksisterende
-tests genbruges; helperrefaktor og nye opt-ins medtages ikke. Lokale
+tests genbruges; helperrefaktor og nye opt-ins medtages ikke. De to
+replay-callers bevarer gyldig DMI før prioriteringen med eksisterende
+DMI-først/96h og verificering af begge kandidater. PUBLIC-merger/sanitizer
+bevares byte-identisk efter et konkret native-artifact-bevisgab i den
+første bredere prototype; ingen ny validator tilføjes. Bred femfamilie-
+builderændring udtages heller ikke. Lokale
 resultater, exact-head CI og faktisk driftseffekt skal fortsat angives
 særskilt. Ingen mainændring/merge under aktivt run, ekstra dispatch,
 ny audit eller SQL-installation. Større revision bevares separat.
