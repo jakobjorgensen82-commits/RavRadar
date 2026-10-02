@@ -1,4 +1,26 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig537 og separat opfordring538
+# NYESTE SANDHED – 2026-10-02 – offentlig537, grøn538 og writer539
+
+Offentlig537/main1b3e172d/sammegyldige12Z/210/673/3a14data, cron8348098
+aktiv/uændret22:19DK. Ejerens ONEordinary37036350223 fra18:47:48DK kører;
+ingen main/merge/code-only/binding/audit/oneoff/extraweather/cancel mensaktiv.
+538/PR506/head74805d6d/exactCI37038700918SUCCESS19:17:11DK/ROOTmatched
+proof11242055418/416bytes/unexpired/privatePayloadIncludedfalse/14ce88e9…
+er URØRT og leveres FØRST efteractualweathercompletion/renewedgates.
+
+539 STACKED på538 isolerer kun NORMALpersistWeatherComponentSelections
+primærwrite/sync/rename-fejl vsownclose/tempcleanup, close-/cleanup-onlyHARD.
+13gamle+2genbrugteparents/5subcases,20unitsPASS443.2039ms/0skip; oldtests/
+otherfunctions/caller/historykontrakt/538 byteuændret. Existingawaitedsource-
+wiring1/1PASS107.5073ms, ikke fuld673execution. EgenexactCI/publiceffekt åbne.
+Ingen score/Top20/model67/3a14/8bindinger/SQL/priority/OFF/capændring; DEC-0286.
+
+PUBLIC12ZFIELD19:10DK366017/397070=92.1794645780%, før09Z92.0444757851%,
++0.1349887929procentpoint. SammehasValue/673×118×5/118hashes/bytes/manifest.
+IKKEstationsobservationer/privatehistorik/nativeprovider/score/retentionbevis;
+forskelligerollingvinduer/ingenhistorikETA. Full519/CP-SførT/writer/kill/
+failure4min/runner/kapacitet og alle særskilte afvisninger stadigåbne/OFF.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig537 og separat opfordring538
 
 537/PR505/exactd00079e3/CI37033140847/proof11238757795 er færdigleveret efter
 fornyede writers/head/base/proof/tomcontentdiff:main1b3e172d og kode-only

@@ -1,4 +1,18 @@
-## 4.0.538 – Følg Rav Jagt og lær om rav (kandidat)
+## 4.0.539 – Bevar normal selection-writers første gemmefejl (separat kandidat)
+
+- Kun eksisterende persistWeatherComponentSelections primærfejl vs egetclose/
+  tempcleanup; close-/cleanup-onlyHARD, korrektledgerbevarelse/ingenfalsksaved.
+- GenbrugtBIGRED/2testparents5subcases,13gamleparentsuændrede:20unitsPASS
+  443.2039ms +existingawaitedsourcewiring1/1PASS107.5073ms. Ikke fuld673execution.
+- STACKED på538branch/head74805d6d;538/PR506CI37038700918SUCCESS19:17:11DK/
+  proof11242055418ROOTmatched URØRT. Lever538FØRST efteraktivordinaryresultatkontrol.
+-539 egenexactCI/retargetmain/gates/DEC0148false/publiceffekt åbne. Ingen score/
+  Top20/model67/3a14/8binding/SQL/priority/budget/geodata/OFFændring. DEC-0286.
+- NyfastPUBLIC12ZFIELD19:10DK92.1794645780%/397070 mod09Z92.0444757851%,
+  +0.1349887929procentpoint; ikke historik/score/retentionårsag. Aktivownerordinary
+  37036350223 på537 endnuikkemed. Cron8348098aktiv/uændret22:19DK.
+
+## 4.0.538 – Følg Rav Jagt og lær om rav (exact-head CI bestået; ikke offentlig endnu)
 
 - Ejerens ønskede sætning står direkte under takken og over uændrede links.
 - DA/DE/EN følger eksisterende sprogvalg; CSS, fagligt indhold og links bevares.

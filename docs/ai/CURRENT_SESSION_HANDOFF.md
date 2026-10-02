@@ -1,4 +1,31 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – offentlig537, aktivordinary og538
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig537/grøn538/normalwriter539
+
+ALDRIGcb79/dirty519separat. ONEownerordinary37036350223 påpublic537/main
+1b3e172d fra18:47:48DK/normalbudgetter kører; cron8348098aktiv/uændret22:19DK.
+Ingenmain/merge/codeonly/binding/audit/oneoff/extraweather/cancel mensaktiv.
+538/PR506/head74805d6d65e8826871358c39e39b16a1520de7f6 exactCI37038700918/
+job110943189843SUCCESS19:17:11/proof11242055418/416bytes/unexpired/ROOTmatched
+14ce88e9… er URØRT, ingenstatuscommit/gentagenCI. Ikkeleveret. Lever538FØRST
+efteractualordinaryresultatkontrol/renewedwriters/main/head/base/CI/proof/
+content viaDEC0148false ogactualpublictekst/sprog/links/pc-mobil.
+
+539branchcodex/weather-selection-primary-error-retention STACKED på538,
+ikke main. Kun alleredeBIGRED/måltestet NORMALpersistselectionwriterfunktion
+og2testparents/5subcases; alle13gamleparents byteuændrede.20unitsPASS443.2039ms,
+existingawaitedcaller-sourcewiring1/1PASS107.5073ms, ikkefuld673execution.
+Ownclose/tempcleanup forsøges, primarybevares/close-cleanup-onlyHARD/ledger
+bevares korrekt/ingensuccessmarker vedfejl. Version/RDKS539-14/sourcecritical102/
+model67-3a14-8bindinger/strictscope og docs/privacy/modelversion/codeonly4/4
+PASS291.9898ms består. EgenexactCI/produktion åbne; retargetmain EFTER538,
+aldrigmerge til538branch/forsinkeklarkandidat.
+
+NyFIELDmåling19:10PUBLIC12Z366017/397070=92.1794645780%, før09Z92.0444757851%,
++0.1349887929procentpoint. SammehasValue/673×118×5/118hashes/bytes/manifest;
+ikkeprivatehistory/nativeprovider/score/retentionårsag. Ny-12z.json bevaret,
+genhentikkeuændret1.3GB/ingenhistorikETA. Full519/OFF/alloutercleanup/unknownstop/
+CP-SførT/writer/kill/failure4min/runner/kapacitet/alleafvisninger består.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – offentlig537, aktivordinary og538
 
 Arbejd aldrig cb79; releaseweather-restart-release, dirty519 separat.537 er
 faktisk leveret:PR505/d00079e3/exactCI37033140847/ROOTproof11238757795/merge

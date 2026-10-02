@@ -1,4 +1,17 @@
-# Aktivt roadmap – 2026-10-02 – offentlig537 og separat tekst538
+# Aktivt roadmap – 2026-10-02 – grøn538 og separat writer539
+
+1. Følg kunownerordinary37036350223 på537/main1b3; ingenmainændring mensaktiv.
+2. Actualsaved/nyupload/cache/no-loss/private/CAS/R2/privacy/Pages/reseal/terminal.
+3. Levergrøn538/PR506FØRST medrenewedwriters/main/head/base/exactCI/ROOTproof/
+   content/resultatkontrol/DEC0148false og faktiskpublictekst/sprog/links.
+4.539 normalwriterSTACKED: egenexactCI, derefterretargetmainEFTER538/fornygates/
+   egenDEC0148false/actualeffekt. Aldrigmerge til538branch/forsinkeklarkandidat.
+5. Senereboundscan/receipt hverforsig modapproved3a14; ingenwhole519copy/OFF.
+6. Fortsætactualfactory/CP-SførT/alloutercleanup/unknownstop/writer/kill/runner/
+   failure4min/nationalkapacitet. SammeFIELDmetode nu12Z92.1794645780%/397070.
+Historyclock/Nibeupstream/alleafvisninger består; cron8348098aktiv/uændret.
+
+# Historisk roadmap – 2026-10-02 – offentlig537 og separat tekst538
 
 1. Følg kun NYejerordinary37036350223 på537/1b3e172d, ingen mainændring mens aktiv.
 2. Kontrollér actualsaved/nyupload/cache/no-loss/private/Pages/reseal/terminal.

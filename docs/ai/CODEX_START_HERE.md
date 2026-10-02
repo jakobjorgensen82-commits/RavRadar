@@ -1,4 +1,20 @@
-# NYESTE TILLÆG – 2026-10-02 – offentlig537, aktiv ordinary og opfordring538
+# NYESTE TILLÆG – 2026-10-02 – offentlig537, grøn538 og separat writer539
+
+Læs ALLERØVERSTE privatecheckpoint/AGENTS/RDKS; aldrig cb79. Følg kun ejerens
+ONEordinary37036350223 på537/main1b3e172d, ingen main/merge/kode-only mensaktiv.
+Cron8348098 aktiv/uændret22:19DK.538/PR506/head74805d6d/exactCI37038700918
+SUCCESS19:17:11DK/proof11242055418/ROOT14ce88e9… er URØRT, ikke leveret.
+Lever538FØRST efteractualweathercompletion/resultatkontrol/renewedgates.
+539 STACKED på538, kun NORMALselectionwriters første write/sync/rename-fejl
+bevares gennemclose/tempcleanup; close-/cleanup-onlyHARD. Genbrugte2parents/
+5subcases +alle13gamleparents:20unitsPASS443.2039ms; existingawaitedsource-
+wiring1/1PASS107.5073ms, IKKEfuld673execution. Ingen hel519copy/OFF/model/
+Top20/SQL/priority/capændring.539 egenexactCI/offentlig effekt afventer;
+retargettilmain EFTER538, ALDRIG merge til538branch/forsinkeklarkandidat.
+NyfastFIELD19:10PUBLIC12Z92.1794645780%/397070, ikke privatehistorik/score.
+Alle særskilte afvisninger og fullCP-SførT/writer/kill/runner/kapacitet består.
+
+# HISTORISK TILLÆG – 2026-10-02 – offentlig537, aktiv ordinary og opfordring538
 
 Læs AGENTS/RDKS og ALLERØVERSTE privatecheckpoint; aldrig cb79.537/PR505 er
 leveret/main1b3e172d/code-only37034344180SUCCESS18:39DK/public537/samme12Zdata.

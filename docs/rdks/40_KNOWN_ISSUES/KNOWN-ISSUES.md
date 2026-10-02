@@ -1,4 +1,16 @@
-# Aktuelle issues – 2026-10-02 – offentlig537 og opfordring538
+# Aktuelle issues – 2026-10-02 – offentlig537/grøn538/normalwriter539
+
+- Grøn538/PR506 exactCI/proof er klar/URØRT; publiclevering afventeraktivweather.
+-539 normalwriters sekundærefejl kunne maskere primær; isoleretmål20unitsPASS,
+  close-/cleanup-onlyHARD og ledgers bevaret, IKKEcompletedcleanup/killproof.
+-539STACKED mod538, exactCI/retarget/produktion åbne; lever538FØRST.
+- Ejerordinary37036350223 på537 aktiv; ingenmainændring/ekstradispatch/cancel.
+- Cron8348098aktiv/uændret22:19DK. FIELDgenmåling19:10PUBLIC12Z92.1794645780%,
+  ikke privatehistorik/score; historyclock/Nibeupstream/retentionårsag åbne.
+- Full519/CP-SførT/writer-eksklusivitet/kill/failure4min/runner/kapacitet/OFF
+  og alle særskilte afvisninger består, ingen wholecopy/gatelempelse.
+
+# Historiske issues – 2026-10-02 – offentlig537 og opfordring538
 
 -537 er leveret/publicpc-mobil-kontrolleret; cron8348098 genaktiveret/uændret.
 -538 opfordring under takken er lokalt implementeret/måltestet, ikke offentlig.

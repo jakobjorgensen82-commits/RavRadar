@@ -1,8 +1,19 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.538
+**Håndbogsversion:** 4.0.539
 
-**Kandidatstatus:**538 tilføjer under den allerede offentlige tak: “Følg ham
+**Kandidatstatus:**539 bevarer den normale komponentgemmers første fejl,
+selvom eget close/tempcleanup også fejler. Egen oprydning forsøges fortsat;
+close-/cleanup-only er hårde stop, ingen saved-markør ved fejl.20unitsPASS og
+én existingawaitedsourcewiringPASS, ikke fuld673updater/stop/kapacitetsbevis.
+539 er STACKED separat på grøn538/PR506/head74805d6d/CI37038700918/proof
+11242055418ROOTmatch.538 leveres FØRST efteraktivordinary37036350223 på537/
+main1b3 faktiskafslutning/resultatkontrol, derefter539retargetmain/egenCI/
+gates/DEC0148/publiceffekt. Cron8348098aktiv/uændret22:19DK. Model67/3a14/
+8bindings/Top20/SQL/priority/OFF urørt; fullrevision/afvisninger består.
+NyfastPUBLIC12ZFIELD19:10DK92.1794645780%/397070 er ikke privathistorik. DEC-0286.
+
+**Historisk kandidatstatus:**538 tilføjer under den allerede offentlige tak: “Følg ham
 på Facebook og YouTube, og lær en masse spændende om rav.” Samme links,
 CSS, illustrationer og fagligt indhold; DA/DE/EN. GrundbogsmåltestPASS,
 exactCI/DEC0148/publiceffekt åbne.537 er leveret18:39DK/main1b3e172d/samme
@@ -42,14 +53,51 @@ Score, handicap, sortering og historik er urørte; stor519 er separat/OFF.
 Ældre kandidat-/pausestatus længere nede er historisk og erstattes af dette.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.538 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+offentlige model, og scoreformlen er uændret. 4.0.539 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
 og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
 
-## 89.142 4.0.538 – Følg Rav Jagt og lær om rav
+## 89.143 4.0.539 – Bevar den første gemmefejl
+
+Den normale komponentgemmer forsøger stadig at lukke sit eget filhåndtag og
+fjerne sin egen midlertidige fil. Hvis skrivning, disk-synkronisering eller
+atomisk udskiftning allerede fejler, må lukning eller oprydning ikke skjule
+den oprindelige fejl. Hvis lukning eller oprydning er den eneste fejl, er
+det fortsat et hårdt stop. Der returneres aldrig en succesmarkør ved fejl.
+
+Tidligere gemt historik bevares før vellykket atomisk udskiftning. Er den
+komplette nye historik allerede installeret, men efterfølgende oprydning
+fejler, må den ikke fjernes eller tilbagerulles. Bevaring af fejlen er ikke
+bevis for vellykket oprydning, samtidige skrivere, sikkert stop eller kapacitet.
+Samme API, historikformat, hash, kildevalg, budgetter og scoremodel bevares.
+
+13 gamle testparents og2 genbrugte nye parents med5 undercases består i
+den eksisterende20units-matrix443.2039ms. En eksisterende caller-test beviser
+den uændrede awaited/source-rækkefølge før offentlig forsegling, ikke fuld
+673dels updaterexecution.539 er separat kandidat oven på grøn538 og kræver
+egen exact-head CI/fornyede gates/produktion.538 leveres først efter den
+aktive ejerbestilte vejrhentning37036350223. Ingen mainændring mens aktiv.
+Cron-jobbet forbliver aktivt på samme plan. Se DEC-0286.
+
+Målrettet dokumentation, privacy, modelversion og kode-only-kontrol består
+4/4. Versions-/RDKS-kontrol,102kildekontroller og den uændrede67filsmodel med
+otte bindinger består. Kun versionsfelter ændres i øvrige produktfiler og
+geodata; installationsfilens runtime er identisk udenfor håndbogskopien.
+Det erstatter ikke egen exact-head CI eller faktisk kontrol efter deploy.
+
+Den nye sammenlignelige vejrFIELD-måling19:10 på offentlig12Zprognose er
+366017/397070=92.1794645780%, før09Z365481/397070=92.0444757851%, fremgang
+0.1349887929procentpoint. Samme673×118×5/hasValue og118hash-/bytebundne timer.
+Vind89.7852%, bølger100%, strøm98.3895%, vandstand86.1221%, temperatur86.6006%.
+Det er numeriske prognosefelter, ikke stationsmålinger, komplet privat historik,
+nativeproviderdækning eller bevis for retentiongevinst. Vinduerne ruller, og
+den stadig aktive18:47kørsel er ikke med. Ingen kalenderdato for komplet
+historik. Fuld revision/OFF og særskilte sikkerhedsafvisninger består.
+
+## 89.142 4.0.538 – Følg Rav Jagt og lær om rav (historisk kandidatstatus; source-CI nu bestået)
 
 Direkte under takken og over de eksisterende kontolinks står: “Følg ham på
 Facebook og YouTube, og lær en masse spændende om rav.” Teksten følger

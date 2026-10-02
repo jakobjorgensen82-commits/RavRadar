@@ -1,4 +1,19 @@
-# Aktive krav – 2026-10-02 – Følg Rav Jagt538
+# Aktive krav – 2026-10-02 – normalwriter539 og prioriteret538
+
+Den normale komponentgemmer skal bevare første write/sync/rename-fejl trods
+sekundær ownclose/tempcleanup. Egen oprydning forsøges stadig; close-/cleanup-
+only er hårde fejl. Tidligere ledger bevares før validrename, nykompletledger
+bevares efter validrename selvomcleanupfejler; ingen saved-marker-succes.
+Alle API/hash/format/admission/priority/budget/model/Top20/SQL/admin/gates
+bevares.539 er kun STACKED separatdelta, ikke whole519copy/OFF. DEC-0286.
+
+Lever grøn538/PR506FØRST efteraktiveownerordinary37036350223 completion/
+resultatkontrol/renewedgates, derefter539retarget/exactCI/egenDEC0148false.
+Ingen merge til538branch/mainændring mensweatheraktiv. Cron8348098 forbliver
+aktiv/uændret22:19DK. Samme FIELDmetode nuPUBLIC12Z92.1794645780%/397070;
+ikke historik-/nativeprovider-/scoremåling eller årsag. Alle afvisninger består.
+
+# Historiske krav – 2026-10-02 – Følg Rav Jagt538
 
 Under den allerede leverede tak ønskes: “Følg ham på Facebook og YouTube,
 og lær en masse spændende om rav.” DA/DE/EN, samme kontolinks/sikker ny fane

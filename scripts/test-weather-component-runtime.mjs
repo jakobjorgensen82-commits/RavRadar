@@ -6,6 +6,8 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
+import { recordSelectedWeatherComponents, snapshotWeatherComponentSelectionHistory }
+  from './lib/weather-component-selection-history.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = offset => new Date(Date.parse(reference) + offset * 3_600_000).toISOString();
@@ -273,4 +275,113 @@ test('later Open-Meteo gains must not be attributed to the Copernicus boundary',
   assert.equal(result.summary.copernicus.remainingNeeds, 1);
   assert.equal(result.summary.after.wave.missing, 0);
   assert.equal(result.remainingNeeds.length, 0);
+});
+
+test('selection persistence preserves primary write/sync/rename error through own close and cleanup failures', async t => {
+  for (const stage of ['writeFile', 'sync', 'rename']) {
+    await t.test(stage, async st => {
+      const prepared = await prepareWeatherComponentRuntime(await fixture(st, {
+        copernicusBudgetMs: 0, openMeteoBudgetMs: 0,
+      }));
+      await persistWeatherComponentSelections(prepared);
+      const baseline = await fs.readFile(prepared.historyPath);
+      recordSelectedWeatherComponents(prepared.inputs.componentSelectionHistory, parts[0], [{ time: at(0),
+        windProvenance: { status: 'verified', provider: 'open-meteo', componentRecordId: sha('f'),
+          sourceClass: 'response-bound-official-component', entityId: 'PART::P1', parentZoneId: 'Z1',
+          samplingPoint: parts[0].waterPoint } }]);
+      const originalOpen = fs.open.bind(fs), originalRename = fs.rename.bind(fs);
+      const originalRm = fs.rm.bind(fs);
+      const primary = new Error(`SYNTHETIC_SELECTION_${stage.toUpperCase()}`);
+      const closeFailure = new Error('SYNTHETIC_SELECTION_CLOSE');
+      const cleanupFailure = new Error('SYNTHETIC_SELECTION_CLEANUP');
+      let temporary, closes = 0, cleanups = 0;
+      st.mock.method(fs, 'open', async (file, ...args) => {
+        const handle = await originalOpen(file, ...args);
+        if (!String(file).startsWith(`${prepared.historyPath}.`)) return handle;
+        temporary = file;
+        return {
+          writeFile: async (...values) => {
+            await handle.writeFile(...values);
+            if (stage === 'writeFile') throw primary;
+          },
+          sync: async () => {
+            await handle.sync();
+            if (stage === 'sync') throw primary;
+          },
+          close: async () => {
+            closes += 1;
+            await handle.close();
+            if (stage !== 'rename') throw closeFailure;
+          },
+        };
+      });
+      st.mock.method(fs, 'rename', async (from, to) => {
+        if (from === temporary && stage === 'rename') throw primary;
+        return originalRename(from, to);
+      });
+      st.mock.method(fs, 'rm', async (file, ...args) => {
+        if (file === temporary) { cleanups += 1; throw cleanupFailure; }
+        return originalRm(file, ...args);
+      });
+      await assert.rejects(persistWeatherComponentSelections(prepared), error => error === primary);
+      assert.equal(closes, 1, 'attempt only the owned handle close');
+      assert.equal(cleanups, 1, 'attempt only this write temporary cleanup');
+      assert.deepEqual(await fs.readFile(prepared.historyPath), baseline,
+        'the previous committed selection history is not replaced after failure');
+      assert.ok((await fs.stat(temporary)).isFile(), 'failed cleanup is not repaired persistence');
+    });
+  }
+});
+
+test('selection persistence keeps close-only and cleanup-only failures hard', async t => {
+  for (const stage of ['close', 'cleanup']) {
+    await t.test(stage, async st => {
+      const prepared = await prepareWeatherComponentRuntime(await fixture(st, {
+        copernicusBudgetMs: 0, openMeteoBudgetMs: 0,
+      }));
+      await persistWeatherComponentSelections(prepared);
+      const baseline = await fs.readFile(prepared.historyPath);
+      recordSelectedWeatherComponents(prepared.inputs.componentSelectionHistory, parts[0], [{ time: at(0),
+        windProvenance: { status: 'verified', provider: 'open-meteo', componentRecordId: sha('f'),
+          sourceClass: 'response-bound-official-component', entityId: 'PART::P1', parentZoneId: 'Z1',
+          samplingPoint: parts[0].waterPoint } }]);
+      const originalOpen = fs.open.bind(fs), originalRm = fs.rm.bind(fs);
+      const failure = new Error(`SYNTHETIC_SELECTION_${stage.toUpperCase()}`);
+      let temporary, closes = 0, cleanups = 0;
+      st.mock.method(fs, 'open', async (file, ...args) => {
+        const handle = await originalOpen(file, ...args);
+        if (!String(file).startsWith(`${prepared.historyPath}.`)) return handle;
+        temporary = file;
+        return {
+          writeFile: (...values) => handle.writeFile(...values),
+          sync: () => handle.sync(),
+          close: async () => {
+            closes += 1;
+            await handle.close();
+            if (stage === 'close') throw failure;
+          },
+        };
+      });
+      st.mock.method(fs, 'rm', async (file, ...args) => {
+        if (file === temporary) {
+          cleanups += 1;
+          if (stage === 'cleanup') throw failure;
+        }
+        return originalRm(file, ...args);
+      });
+      await assert.rejects(persistWeatherComponentSelections(prepared), error => error === failure);
+      assert.equal(closes, 1);
+      assert.equal(cleanups, 1);
+      const committed = await fs.readFile(prepared.historyPath);
+      if (stage === 'close') assert.deepEqual(committed, baseline);
+      else {
+        assert.notDeepEqual(committed, baseline, 'the complete new ledger was atomically installed');
+        assert.deepEqual(JSON.parse(committed), snapshotWeatherComponentSelectionHistory(
+          prepared.inputs.componentSelectionHistory));
+      }
+      // Cleanup-only follows a successful atomic rename; it must not claim
+      // a successful return or roll back/remove the valid committed history.
+      await assert.rejects(fs.stat(temporary), { code: 'ENOENT' });
+    });
+  }
 });
