@@ -16,6 +16,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import xarray as xr
+import dask
 
 from lib.copernicus_current import DMI_VERIFIER_CONTRACT_ID, OPERATIONAL_MATRIX_CONTRACT_ID, file_sha256, required_pairs_sha256
 from lib.copernicus_current_source_stage import validate_reusable_source_stage
@@ -68,6 +69,44 @@ def registry(dmi_sha):
 class DatasetUpdatingTests(unittest.TestCase):
     def download(self, folder):
         return PILOT["download_subset"](PRODUCT, [TARGET], REFERENCE, REFERENCE, folder, 0)
+
+    def test_actual_subset_dask_stays_in_owned_pilot_process(self):
+        # Real Dask compute, no provider. The RED worker pool joins its worker.
+        with tempfile.TemporaryDirectory() as raw:
+            folder = Path(raw)
+            path = folder / "synthetic.nc"
+            path.write_bytes(b"synthetic-subset")
+            observed = []
+
+            def subset(**kwargs):
+                observed.append(dask.delayed(os.getpid)().compute())
+                return types.SimpleNamespace(file_path=path)
+
+            module = types.SimpleNamespace(subset=subset, DatasetUpdating=DatasetUpdating)
+            with patch.dict(sys.modules, {"copernicusmarine": module}), \
+                 patch.dict(os.environ, {PILOT["SOFT_DEADLINE_EPOCH_ENV"]: ""}), \
+                 dask.config.set(scheduler="processes", pool=None, num_workers=1):
+                self.assertEqual(self.download(folder), path)
+                self.assertEqual(dask.config.get("scheduler"), "processes")
+            self.assertEqual(observed, [os.getpid()],
+                             "subset compute escaped the owned direct pilot process")
+
+    def test_subset_ignores_ambient_pool_and_restores_it_on_error(self):
+        ambient_pool = object()
+
+        def subset(**kwargs):
+            self.assertEqual(dask.config.get("scheduler"), "threads")
+            self.assertIsNone(dask.config.get("pool"))
+            raise ValueError("synthetic subset failure")
+
+        module = types.SimpleNamespace(subset=subset, DatasetUpdating=DatasetUpdating)
+        with patch.dict(sys.modules, {"copernicusmarine": module}), \
+             patch.dict(os.environ, {PILOT["SOFT_DEADLINE_EPOCH_ENV"]: ""}), \
+             dask.config.set(scheduler="processes", pool=ambient_pool):
+            with self.assertRaisesRegex(ValueError, "synthetic subset failure"):
+                self.download(Path("unused"))
+            self.assertEqual(dask.config.get("scheduler"), "processes")
+            self.assertIs(dask.config.get("pool"), ambient_pool)
 
     def test_flag_and_only_one_retry_then_success(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -146,7 +185,8 @@ class DatasetUpdatingTests(unittest.TestCase):
                 shadow=folder / "shadow.json", source_stage=folder / "stage.json", donor_bank=folder / "bank.json",
                 segment_journal=folder / "journal.json", acquisition_plan=folder / "plan.json",
                 report=folder / "report.json", summary=folder / "summary.txt", at=iso(REFERENCE),
-                acquisition_at=iso(REFERENCE + timedelta(minutes=10)), fixture_directory=None, refresh_only=False)
+                acquisition_at=iso(REFERENCE + timedelta(minutes=10)), fixture_directory=None, refresh_only=False,
+                checkpoint_only=False, reuse_baseline_on_checkpoint=False)
             updating = True
             calls = []
 

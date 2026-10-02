@@ -1,4 +1,17 @@
-# 2026-10-02 – Top20-reparation4.0.532, offentlig530
+# 2026-10-02 – offentlig532, afgrænset normalCP533
+
+- [x]532 PR500/exactCI36982260948/mergeccc5a7c1/kode-only36983293056 leveret.
+- [x] Actual55s-readback/checkpoint52s/private/R2/privacy/Pages/exact210/673.
+- [x]008/00945 anvendt/immutabel; cron8348098 genaktiveret/uændret.
+- [x] Ejerbestilt én ordinary36988295501 på53211:10:54DK; lad den køre.
+- [ ] Actual completion/save/upload/no-loss/deploy og20/day/to modes/pc/mobil.
+- [x] NormalCP Daskthreads/poolNone isoleret i533, ambient config genoprettes.
+- [x] Eksisterende8-case suite/sourcekobling;47grupper/gamle checks bevaret.
+- [ ]533 exact-headCI/sikker DEC0148-levering efter aktiv vejr/resultatkontrol.
+- [ ] Faktisk533CPeffekt; PID-fixture er ikke nationalt stop-/kapacitetsbevis.
+- [ ] Stor519 fuldCP/S/T/writer/kill/failure4min/runner/nationalkapacitet/OFF separat.
+
+# HISTORISK – 2026-10-02 – Top20-reparation4.0.532, offentlig530
 
 - [x] PR499/d70a91c3 exactCI36975932551, mergeefd3f45d, contentdiff tom.
 - [x]531 binding/readback anvendt;008-migration immutabel.

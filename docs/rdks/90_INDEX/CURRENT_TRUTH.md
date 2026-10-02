@@ -1,4 +1,26 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig530, merged531, lokal532
+# NYESTE SANDHED – 2026-10-02 – offentlig532, lokal533, aktiv ejerbestilt vejrhentning
+
+532/PR500 er leveret: exactCI36982260948/headfb5a3352, mainccc5a7c1,
+kode-only36983293056SUCCESS10:28:57DK, actual checkpoint54 52s/Pages/exact
+210/673/terminal.008/00945 er anvendt/immutabel. Public532 bevarer
+rr-20261002055102-210/reference04Z/generated05:51:02.73Z/complete:true.
+Top20-koden er leveret, faktisk20/day/to modes er endnu ikke bevist;
+gamle autentificerede5 bevares. Model67/3a14/8bindinger og fysisk kontrakt
+a226e7d1… er uændrede. Cron8348098 aktiv/uændret14:19DK.
+
+Ejeren bestilte én ordinary nu:36988295501 oprettet11:10:54DK på532/
+ccc5a7c1/quickfalse/defaulttom source/normalbudgetter efter friske writerchecks.
+Reentry/terminal/mainUTC bestod, build110778420161 aktiv; endnu ikke gemme-
+eller deploybevis. Ingen merge/mainændring/kode-only mens aktiv.
+
+533 lokal kandidat er KUN scoped Daskthreads/poolNone omkring actualnormalCP
+subset.8/8offline målprøver består, sourcegruppekobling/47plan består;
+exact-headCI/levering/productioneffekt åbne. Ingen score/binding/SQL/cap-
+ændring, hel519copy eller OFF-aktivering. DEC-0280 beskriver præcis grænse.
+FullCP/S-før-T/writer/kill/failure4min/runner/nationalkapacitet er stadig åbne.
+Alle særskilte afvisninger består; checkpoint øverst har nyere driftevidens.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig530, merged531, lokal532
 
 PR499/d70a91c3 exactCI36975932551/proof11213148423 er grøn, mergedefd3f45d.
 Kode-only36976884378 fejlede54 før Pages;20261002080000 blev faktisk anvendt

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import runpy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -460,3 +461,7 @@ assert [row["acquisitionAt"] for row in rolled] == [
 ]
 
 print("OK: Copernicus selection is native-time exact and spatial shards are deterministic and bounded.")
+
+if __name__ == "__main__":
+    # Reuse this existing source group; keep all selection assertions above.
+    runpy.run_path(str(ROOT / "scripts/test-copernicus-dataset-updating.py"), run_name="__main__")

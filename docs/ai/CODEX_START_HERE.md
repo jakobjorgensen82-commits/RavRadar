@@ -1,4 +1,16 @@
-# AKTUELT CHECKPOINT – 2026-10-02 – lokal532 Top20-reparation, offentlig530
+# NYESTE TILLÆG – 2026-10-02 – offentlig532, lokal533
+
+532 er faktisk leveret/mainccc5a7c1, cron8348098 genaktiveret/uændret.
+ONEny ejerbestilt ordinary36988295501 kører fra11:10:54DK på532; lad den køre,
+ingen merge/mainændring/code-only under aktiv hentning. FreshTop20 åbent.
+533 isolerer kun normalCPsubset scoped Daskthreads/poolNone fra519, ikke
+helcopy/OFF-stack. Målprøver/sourcekobling47/model67/3a14/8bindinger består;
+exactheadCI/sikker levering og actualCPeffekt kræves. Læs DEC-0280 og nyeste
+CURRENT_TRUTH/checkpoint før gamle statusafsnit. 6.1Sol/Ekstra høj bevares.
+FullCP/S-før-T/writer/kill/runner/nationalkapacitet og alle særskilte
+admission/donor/private-log/SOURCEallassets-afvisninger består.
+
+# HISTORISK CHECKPOINT – 2026-10-02 – lokal532 Top20-reparation, offentlig530
 
 531/PR499 mergedefd3f45d efter exactheadCI36975932551/d70a91c3/proof11213148423.
 Kode-only36976884378 fejlede54 før Pages;008 er faktisk anvendt og IMMUTABEL.

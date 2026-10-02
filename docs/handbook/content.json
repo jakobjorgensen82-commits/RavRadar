@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.532",
+  "handbookVersion": "4.0.533",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-10-02",
   "sections": [
+    {
+      "id": "normal-copernicus-scoped-dask-4-0-533",
+      "chapter": "89.136",
+      "title": "Copernicus beregner i sin egen proces",
+      "summary": "Et kortvarigt lokalt trådvalg i den normale hentning uden ændrede prognoser, Top20, budgetter eller vejrplan.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den normale faste Copernicus-hentning vælger Dasks lokale tråde og ingen arvet pool omkring sit NetCDF/geoseries-kald. Det tidligere valg gendannes ved både succes og fejl.</div><p>Samme punkter, tider, workers, retries og budgetter bevares. DMI kommer før Copernicus, og Open-Meteo er stadig reserve. Scoremodel, Top20-binding, historik, migrationer og vejrplan er urørte; ingen ny installation eller provider er tilføjet.</p><p>Den eksisterende offlineprøve bruger rigtig Dask-beregning og kontrollerer procesidentitet og genoprettelse ved fejl. Prøven af delvis cache, Open-Meteo-rest og genoptagelse bevares.8/8 måltests består; det er ikke bevis for alle trådes/underprocessers stop, writer-eksklusivitet, runner-loss eller færdig storrevision.533 exact-head-kildekontrol, sikker levering og faktisk virkning afventer.</p><p>532 er faktisk leveret med samme gyldige prognose og bestået52-sekunders gemmetrin. Cron er genaktiveret. Ejerbestilt ordinary36988295501 kører på532; ingen mainændring mens den er aktiv. Gamle fem autentificerede resultater bevares, indtil frisk beregning skaber de ekstra; faktisk20/day/to modes/pc/mobil er stadig åbent. Ældre kandidat-/pausestatus i tidligere afsnit er historisk. Se DEC-0280; stor519/OFF og særskilte sikkerhedsafvisninger består.</p>"
+    },
     {
       "id": "top20-checkpoint-timeout-preservation-4-0-532",
       "chapter": "89.135",
@@ -1470,7 +1477,7 @@
     {
       "id": "ravscore-final-bindings-4-0-320",
       "chapter": "88.14",
-      "title": "RavScore 4.0.532 er samlet og kryptografisk bundet",
+      "title": "RavScore 4.0.533 er samlet og kryptografisk bundet",
       "summary": "Top20-kandidaten har en ny teknisk kildebinding; fysisk scorekontrakt og Candidate G er uændrede. Gamle anvendte migrationer bevares.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den integrerede model er offentlig. RavScore 4.0.531 er en endnu ikke leveret Top20-kandidat og ændrer ikke scoreformler, vægte, handicap, sortering eller historikregler. Fem dages ravradar får op til20 resultater; Bedste områder her og nu forbliver Top5.</div><div class=\"handbook-stack\"><p><strong>Databevaring:</strong> Ny gyldig data erstatter gammel pr. sted, time og vejrdel. Et hul bevarer en stadig gyldig gammel værdi. DMI er førstevalg, Copernicus og Open-Meteo udfylder resterende huller, og vandstand forbliver DMI-only. Privat providerfremgang gemmes autentificeret og krypteret. Et gammelt autentificeret femrækkers prognoseindeks bevares; tyve resultater kræver en ny almindelig beregning og faktisk offentlig kontrol.</p><p><strong>Driftsgenopretning:</strong> En uafsluttet central overgang kan genoptages fra en holdbar privat terminalkvittering, også efter GitHubs midlertidige artifact er udløbet. Den historiske leveringsbarriere fra normalrun35463989289 er løst i normaldrift. Offentlige timefiler og startsidens ranking bevares hashbundet og installeres atomisk sammen med den kompakte hovedfil.</p><p><strong>Integreret binding:</strong> Kandidat4.0.531 er låst med <code>modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b</code> og <code>modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852</code> over67 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Præcis inverse20→5 genskaber hele den tidligere kildebinding; fysisk kontrakt og continuation er uændrede. Append-only <code>20261002080000_top20_display_binding.sql</code> er kandidatens bindingssuccessor. Anvendte2515/2617-migrationer er uændrede. Den nye overgang kræver den præcise gamle binding, fuld payloadvalidering og bevarede states; den er ikke særskilt SQLinstalleret eller live-verificeret her.</p><p><strong>Historisk kompatibilitet:</strong> Candidate G's inaktive binding er <code>modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8</code> og <code>modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021</code> over65 transitive filer. Candidate G kan ikke vælges i produktionsdispatch og er ikke en reserve, vi vil bruge igen. Den maskinlæsbare autoritet er <code>version.json.releaseContract.modelBindings</code>.</p><div class=\"callout\"><strong>Driftsregel:</strong> En samlet diagnostisk rapport kan markere berørte scorer som utilgængelige, men må ikke alene stoppe udgivelsen af ellers gyldige og friske vejrdata. Datatab, forkert binding, privat læk eller et artifact, der ikke kan bygges eller forsegles, er fortsat hårde stop. Backup til Top5 er et kontrolleret nyt UI-deploy på seneste main, ikke tilbageførsel af nyere vejrdata eller cache.</div></div>"
     },

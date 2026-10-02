@@ -1,4 +1,24 @@
-# 2026-10-02 – 4.0.532 konkret Top20-timeoutregression
+# 2026-10-02 – 4.0.533 normal Copernicus-delta og aktuel samtale
+
+Ejeren ønsker fortsat Top20 OG hele vejrhentningsrevisionen færdiggjort.
+532/PR500 er nu faktisk merged/mainccc5a7c1 efter exactCI36982260948 og
+leveret via36983293056SUCCESS10:28:57DK. Checkpoint54 bestod52s;008/00945
+anvendt/immutabel. Public532 bevarer rr-20261002055102-210/reference04Z/
+210/673/complete:true og gamle5. Cron8348098 genaktiveret/uændret14:19DK.
+Nyeste ejerordre: start én vejrhentning.36988295501 oprettet11:10:54DK på
+532/exaktmain efter writers0/trelegacyqueued/jobs0, quickfalse/defaulttom
+source/normalbudgetter. Main må ikke ændres mens den er aktiv.
+
+533 isolerer alene allerede RED/testet normalCP Daskthreads/poolNone fra519.
+Eksisterende8-case offline suite består0.538s; sourcegruppe8/8 0.432s er
+samme prøver, ikke16.47sourcegrupper/gamle selectionchecks bevares.
+DEC-0280/begge håndbøger/krav/status/issues ajour. Ingen model-/Top20-/SQL-
+eller cronadfærd ændret. Exact-headCI/deploy og faktisk effekt er endnu åbne.
+Resterende stor519/OFF/CP-S-T/writer/runner/kapacitet og alle særskilte
+sikkerhedsafvisninger består. Admin: anonym guard returnerer korrekt root;
+ægte ownerlogin/private-save er ikke verificeret, spørgsmålet gentages ikke.
+
+# HISTORISK – 2026-10-02 – 4.0.532 konkret Top20-timeoutregression
 
 Samtaledelta: Ejeren bad fortsat om Top20 og godkendte kun faste sikre
 fejlkoder, ikke private logdata. Retrieval blev fortsat afvist; ingen omvej.

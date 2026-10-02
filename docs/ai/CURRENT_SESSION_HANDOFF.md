@@ -1,4 +1,19 @@
-# AKTUELT CHECKPOINT – 2026-10-01 – offentlig523, lokal524
+# AKTUELT CHECKPOINT – 2026-10-02 – offentlig532, lokal533, aktiv vejrhentning
+
+Release codex/normal-copernicus-dask-scheduler fra currentmainccc5a7c1.
+532/PR500 og36983293056 er faktisk leveret, checkpoint52s/Pages/exact210/673.
+Cron8348098 aktiv/uændret14:19DK; nye ejerordre bestilte ONEordinary36988295501
+11:10:54DK på532 quickfalse/defaulttom/normalbudgetter. Lad den køre; ingen
+merge/mainændring/code-only mens aktiv. Fresh20/day/to modes/pc/mobil åbne.
+533 er kun actualnormalCPsubset scoped Daskthreads/poolNone og genbrugte
+8-case regressions/sourcegruppe47. Model67/3a14/8bindinger/appliedSQL urørte.
+ExactheadCI/sikker levering/faktiskCPeffekt åbne. Se DEC-0280/CURRENT_TRUTH
+og allerøverste BIGcheckpoint. Stor519 separat/OFF/ikke fuldCP/S/T/writer/
+kill/failure4min/runner/nationalkapacitet. GPT-6.1 Sol/Ekstra høj bevares.
+Browser virker sammeChrome3; ingen gammel login/restartblocker at gentage.
+Alle særskilte afvisninger/private-logforbud består. Ældre status er historik.
+
+# HISTORISK CHECKPOINT – 2026-10-01 – offentlig523, lokal524
 
 weather-restart-release/codex/current-public-native-binding er fra
 leveret main d7e58f99. DEC-0271 er en lille faktisk PUBLIC-native-rettelse,

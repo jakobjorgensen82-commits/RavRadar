@@ -1,4 +1,17 @@
-## 4.0.532 – Bevar checkpointets godkendte tidsgrænse (lokal kandidat)
+## 4.0.533 – Afgrænset Copernicus-beregning i egen proces (lokal kandidat)
+
+- Den normale faste Copernicus-geoseries/NetCDF-hentning bruger kortvarigt
+  Dasks lokale threads og ingen arvet pool. Tidligere konfiguration genoprettes.
+- Samme argumenter, workers, tidsbudgetter, retries, DMI→CP→OM og datakontroller.
+  Ingen fysisk score-, Top20-, binding-, SQL- eller cronplanændring.
+- Eksisterende offline8-case subset/checkpoint-suite genbruges i samme
+  pilot-sourcegruppe; alle tidligere selectionchecks og47grupper bevares.
+-532 er leveret/exact-deploy-kontrolleret, cron genaktiveret. Ejerbestilt
+  ordinary36988295501 kører på532; freshTop20-effekt og533levering afventer.
+- Ikke fuldt descendant-/writer-/runner-stop eller afsluttet storrevision.
+  Se DEC-0280; ældre kandidat-/pausestatus nedenfor er historisk.
+
+## 4.0.532 – Bevar checkpointets godkendte tidsgrænse (historisk kandidattekst; nu leveret)
 
 - Top20-overgangen havde nulstillet checkpoint-kaldet fra den allerede
   godkendte55s til30s. En ny append-only migration genopretter kun55s.
