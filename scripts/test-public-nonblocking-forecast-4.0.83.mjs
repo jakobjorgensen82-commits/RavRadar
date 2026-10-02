@@ -42,7 +42,7 @@ const env={state,nationalForecast:node,conditionDetailsReady:true,document:{quer
 const render=new Function('env',`const {${Object.keys(env).join(',')}}=env;${renderer};return renderNationalForecast;`)(env);
 assert.equal(await render(),true);
 assert.equal((node.innerHTML.match(/data-day-index=/g)||[]).length,5,'Seks inputdatoer skal stadig afgrænses til fem dage.');
-assert.equal((list.innerHTML.match(/data-zone-id=/g)||[]).length,5,'Kortfixet må ikke ændre kompatibilitetsberegningens top5.');
-assert.deepEqual([...list.innerHTML.matchAll(/data-zone-id="([^"]+)"/g)].map(match=>match[1]),Array.from({length:5},(_,i)=>`z${25-i}`));
-assert.ok(list.innerHTML.includes('<span class="rank">5</span>'));
-console.log('OK: Faktisk browserfallback bevarer fem dage, top5 og eksisterende sortering.');
+assert.equal((list.innerHTML.match(/data-zone-id=/g)||[]).length,20,'Top20-fallback skal vise op til tyve gyldige zoner.');
+assert.deepEqual([...list.innerHTML.matchAll(/data-zone-id="([^"]+)"/g)].map(match=>match[1]),Array.from({length:20},(_,i)=>`z${25-i}`));
+assert.ok(list.innerHTML.includes('<span class="rank">20</span>'));
+console.log('OK: Faktisk browserfallback bevarer fem dage, første fem og eksisterende sortering i Top20.');

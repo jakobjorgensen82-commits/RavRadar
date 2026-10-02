@@ -1,19 +1,40 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.530
+**Håndbogsversion:** 4.0.531
 
-**Kandidatstatus:**530 retter kun, hvilket startslot et genkørt vejrforsøg
-tæller i.529s søgehjælp og tre sprogguides er CI-grønne og leveres først.
-527/528 og ravradar.dk HTTPS er leveret; kortbunden er kontrolleret på pc
-og mobil.530 exact-head CI og levering afventer. Top20 er tilbageholdt.
+**Kandidatstatus:**531 udvider kun fem-dageslisten til Top20 med samme
+fysiske score, sortering, handicap og historik. Backup og ejerens specifikke
+tekniske overgangsgodkendelse er dokumenteret. Måltests og smal kunstig
+pc-/375CSS-visning består; exact-headCI/deploy og ny20rækkeproduktion mangler.
+529SEO og530kadence er leveret; stor519-revisionen er separat/OFF.
 
 **Aktuel modelbinding:** Den integrerede scoremodel er fortsat den eneste
-offentlige model, og scoreformlen er uændret. 4.0.530 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
-og `modelBundleSha256=c557f91a520ae64211f9441f25fc72a9c230691cdb7b48551ecb7286463420eb` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
+offentlige model, og scoreformlen er uændret. 4.0.531 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`
+og `modelBundleSha256=3a14f458122f5bc0ea8a60c07abbcbd68d022c0322a87e77242891f21631c852` over 67 kanonisk normaliserede transitive implementeringsfiler og otte
 deklarerede forbrugere. Den inaktive Candidate G-kompatibilitet er bundet med
 `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
 og `modelBundleSha256=a2494810db3a335376795e308d149f5856885c05665d9f155fc6b0632344c021`
 over 65 transitive filer. Ældre hashværdier længere nede er historiske.
+
+## 89.133 4.0.531 – Tyve zoner på hver af fem dage
+
+Fem-dageslisten kan vise op til tyve zoner med samme score, handicap,
+sortering og tidsvalg. Bedste områder her og nu beholder fem. Pc har to
+kolonner og mobil én med navneombrydning. Dage, søgemåde, farver og
+historikadvarsler bevares, uden stor detaljehentning ved opstart.
+
+En allerede gemt femrækkeprognose beholder sine fem; kodelevering alene
+skaber ikke ekstra resultater. Den første nye almindelige vejrhentning skal
+bevise Top20 offentligt. Kun producentens slutgrænse5→20 ændrer den67filers
+kildeidentitet. Fysisk model og kontrakt er uændrede. Append-only teknisk
+overgang afviser ukendt binding og ændrede målinger; ingen særskilt
+SQLinstallation er kørt. Se DEC-0278 og ejerens specifikke godkendelse.
+
+Fast remote GitHub-sourcebackup og lokal hashkontrolleret ZIP er gemt.
+Tilbagevejen er ny Top5-visningskode på nyeste main med bevarede gyldige
+vejrdata, ikke gitreset eller gammel prognose. Måltests og kunstigpc/375CSS
+består; exact-headCI, sikker deploy og offentlig effekt mangler. Stor519
+fortsætter separat. Historiske kandidatstatusser nedenfor er ikke aktuelle.
 
 ## 89.127 4.0.530 – Et genkørt vejrforsøg tæller også
 

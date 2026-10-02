@@ -1,3 +1,14 @@
+## 4.0.531 – Top20 med urørt fysisk scoremodel (lokal kandidat)
+
+- Fem-dageslisten udvides fra højst5 til højst20 zoner med samme scorer,
+  handicap, sortering og tidsvalg. Bedsteområder nu er fortsatTop5.
+- Pc får to kolonner, mobil én med navneombrydning; ingen stor detaljehentning
+  indføres. Gamle forseglede femrækkers indeks bevares uden opdigtning.
+- Fast Top5-sourcebackup/ZIP og kontrolleret teknisk bindingsovergang efter
+  ejerens særskilte godkendelse. Ingen scoreformel-, målings- eller historikændring.
+- Exact-headCI/deploy og faktisk ny20rækkeproduktion afventer. Stor519 er separat.
+-529SEO og530kadence er leveret; tidligere kandidattekster er historiske.
+
 ## 4.0.530 – Et genkørt vejrforsøg tæller i sit startslot (lokal kandidat)
 
 - Den eksisterende firetimerskontrol bruger seneste forsøgs faktiske start

@@ -74,7 +74,10 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
       schemaVersion: 2,
       modelBinding,
       dates: ['2026-09-19'],
-      modes: { waders: [{ date: '2026-09-19', rows: [] }], beach: [] },
+      modes: { waders: [{ date: '2026-09-19', rows: Array.from({ length: 5 }, (_, index) => ({
+        zoneId: `saved-zone-${index + 1}`, name: `Saved zone ${index + 1}`,
+        score: 85 - index, bestTime: '2026-09-19T12:00:00.000Z',
+      })) }], beach: [] },
     };
     const built = await buildPrivatePublicHourDeliveryPack({
       liveDirectory: live,
@@ -167,6 +170,10 @@ test('public hour delivery is compacted, authenticated and restored byte-for-byt
     });
     assert.equal(reboundInspection.manifest.sourceDetailsSha256, 'b'.repeat(64));
     assert.deepEqual(reboundInspection.manifest.modelBinding, targetBinding);
+    assert.deepEqual(resolvePublicNationalForecast(targetConditions), targetStartupNationalForecast,
+      'metadata-only rebind must preserve all five authenticated saved rows, not fabricate Top20');
+    assert.deepEqual(targetStartupNationalForecast.modes, startupNationalForecast.modes,
+      'the technical successor must preserve old ranking values and order exactly');
     const reboundRoot = path.join(root, 'rebound-restored');
     const reboundRestored = await materializePrivatePublicHourDeliveryPack({
       packPath: reboundPath,

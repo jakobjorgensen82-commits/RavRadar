@@ -9,7 +9,7 @@ import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trus
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 
 const dates = ['2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31', '2026-09-01'];
-const zoneCount = 6;
+const zoneCount = 25;
 const zones = {};
 const coastalZones = {};
 const parts = {};
@@ -39,7 +39,7 @@ for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
   const hourly = dates.flatMap((date, dayIndex) => [0, 1, 2].map(hourIndex => {
     const time = `${date}T${String(8 + hourIndex).padStart(2, '0')}:00:00.000Z`;
     const value = (modeIndex) => {
-      const score = 30 + zoneIndex * 5 + dayIndex + hourIndex * 4 + modeIndex;
+      const score = 30 + zoneIndex * 2 + dayIndex + hourIndex * 4 + modeIndex;
       const quality = fullHistoryQuality(score);
       return {
         available:true,status:'only-part',score,...quality,
@@ -91,7 +91,7 @@ for (const mode of ['waders', 'beach']) {
     const expected = Object.keys(zones).flatMap(zoneId => {
       const best = selectLocalBestForDay({coastalParts:full.coastalParts,zoneId,mode,date:day.date,now:0});
       return best ? [addNationalRanking({zoneId,time:best.hour.time,result:best.result}, Object.values(parts).filter(part=>part.zoneId===zoneId))] : [];
-    }).sort(compareNationalRankingRows).slice(0,5).map(row => ({
+    }).sort(compareNationalRankingRows).slice(0,20).map(row => ({
       zoneId:row.zoneId,
       time:row.time,
       score:row.result.score,
@@ -112,9 +112,11 @@ for (const mode of ['waders', 'beach']) {
 const nationalText = JSON.stringify(startup.nationalForecast);
 const nationalBytes = Buffer.byteLength(nationalText);
 const nationalGzipBytes = gzipSync(nationalText, { level: 9 }).byteLength;
-assert.ok(nationalBytes < 24_000,
+// Four times as many compact rows, not four times as much detail/weather data.
+// This is the existing 24 kB Top5 budget scaled only by the requested row count.
+assert.ok(nationalBytes < 4 * 24_000,
   `Det schema-6-kvalitetsbundne nationale femdøgnsindeks er ikke længere kompakt (${nationalBytes} bytes).`);
-assert.ok(nationalGzipBytes < 2_000,
+assert.ok(nationalGzipBytes < 4 * 2_000,
   `Det komprimerede nationale femdøgnsindeks er ikke længere kompakt (${nationalGzipBytes} bytes).`);
 assert.ok(nationalBytes < Buffer.byteLength(compactJson(details)), 'Indekset reducerer ikke opstartspayloaden.');
 for (const forbidden of ['"waterPoint"','"landPoint"','"componentReasons"','"explanation"','"onshoreDirectionDeg"']) {
@@ -138,4 +140,4 @@ assert.match(serviceWorker,/no-store/);
 assert.match(dataService,/params\.set\('sha'/);
 assert.match(dataService,/contentAddressedCache/);
 
-console.log('Public load performance 4.0.295: kompakt top-5-paritet, behovsstyrede detaljer og SHA-cache består.');
+console.log(`Public load performance: Top20-paritet, behovsstyrede detaljer og SHA-cache består; indeks ${nationalBytes} bytes/${nationalGzipBytes} gzipbytes.`);

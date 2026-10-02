@@ -26,7 +26,7 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
+  'supabase/migrations/20261002080000_top20_display_binding.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(
@@ -34,7 +34,7 @@ const stableTripMigration = await fs.readFile(
   'utf8',
 );
 const currentTripMigration = await fs.readFile(
-  'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
+  'supabase/migrations/20261002080000_top20_display_binding.sql',
   'utf8',
 );
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
@@ -53,6 +53,7 @@ const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
   'public.ravradar_ravscore_checkpoint_candidate_state_valid',
   'public.ravradar_ravscore_checkpoint_payload_valid',
   'public.ravradar_ravscore_checkpoint_predecessor_payload_valid',
+  'public.ravradar_ravscore_checkpoint_top20_predecessor_projection',
   'public.ravradar_ravscore_checkpoint_cas',
   'public.ravradar_ravscore_checkpoint_contract',
 ]);
@@ -121,6 +122,29 @@ for (const [label, source] of Object.entries({
     'public.ravradar_ravscore_checkpoint_contract',
   ), /\bfrom\s+public\.admin_documents\b/i,
   `${label} checkpoint metadata readback must not read checkpoint payload rows`);
+  const top20Projection = functionDefinition(source, label,
+    'public.ravradar_ravscore_checkpoint_top20_predecessor_projection');
+  assert.match(normalize(top20Projection), /language plpgsql stable set search_path/,
+    `${label} Top20 projection must remain a stable security-invoker helper`);
+  assert.doesNotMatch(top20Projection, /\bsecurity definer\b|\b(?:insert|update|delete)\s+|\bexecute\s+/i,
+    `${label} Top20 projection must not write or execute dynamic SQL`);
+  assert.match(top20Projection,
+    /modelBundleSha256}' is distinct from 'c557f91a[0-9a-f]+'[\s\S]*count\(\*\)[\s\S]*<> 673[\s\S]*state\.value ->> 'modelBundleSha256' is distinct from 'c557f91a[0-9a-f]+'/,
+    `${label} Top20 projection must reject unknown and mixed predecessor bindings`);
+  assert.match(top20Projection,
+    /if public\.ravradar_ravscore_checkpoint_payload_valid\(v_projected, p_target_reference\)\s+then return v_projected; end if;\s+return null;/,
+    `${label} Top20 projection must retain the full current payload validator`);
+  assert.match(source,
+    /revoke all on function public\.ravradar_ravscore_checkpoint_top20_predecessor_projection\(jsonb,timestamptz\)\s+from public, anon, authenticated;/,
+    `${label} must not expose predecessor projection to public clients`);
+  const casDefinition = functionDefinition(source, label, 'public.ravradar_ravscore_checkpoint_cas');
+  const projectedComparison = casDefinition.slice(casDefinition.indexOf('if v_central_is_compatible_predecessor and v_top20_predecessor_payload'));
+  const projectedBranch = projectedComparison.slice(0, projectedComparison.indexOf('    else'));
+  assert.match(projectedBranch, /v_central_reference = p_target_reference/);
+  assert.deepEqual([...projectedBranch.matchAll(/#- '\{([^}]+)\}'/g)].map(match => match[1]), [
+    'generationSha256', 'stateSha256', 'candidateGRollbackCompanion,generationSha256',
+    'generationSha256', 'stateSha256', 'candidateGRollbackCompanion,generationSha256',
+  ], `${label} same-target bridge must compare all state/history/roles, ignoring only derived digests`);
 }
 assert.match(checkpointMigration, /begin;[\s\S]*set local lock_timeout = '5s';/i,
   'checkpoint migration must install transactionally with a bounded DDL lock wait');

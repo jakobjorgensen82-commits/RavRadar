@@ -1,3 +1,23 @@
+# NYESTE SANDHED – 2026-10-02 – offentlig4.0.530, afgrænset lokal4.0.531
+
+529/SEO og530/kadence er merged og faktisk deployet; currentmaina14f6aa4.
+Tidligere ventende/stakkede status er historisk. ravradar.dk HTTPS/GitHub-only
+og cron er uændrede. Aktiv ordinary36964052139 følger normal pipeline på530.
+
+Top20 er ejerbestilt og særskilt teknisk godkendt efter sikkerhedsreview.
+Verificeret remote backupcodex/backup-top5-4.0.530-2026-10-02 peeler tila14f6aa4;
+localZIP er hashkontrolleret. Lokal531 ændrer kun slutgrænsen5→20 i den67filers
+beskyttede closure. Kontrakthash, scoreformler, rangering, handicap, målinger,
+historik, Candidate G og continuation er urørte. Ny technicalbundle3a14f458…
+via normal generator/otte bindinger, ingen alias eller frosset modelkopi.
+
+Streng append-only overgang og faktisk definitionsreadback omfatter den nye
+private projektor; ukendt/modstridende data afvises. Måltests består, ingen
+SQLinstallation er udført. Ny Top20 er lokalt pc/375CSS-kontrolleret, ikke
+fysisk telefon/fuldapp eller offentlig effekt. Gamle femrækkers forseglede
+indeks bevares. Exact-headCI/deploy og ny almindelig20rækkeprognose mangler.
+Stor519 fortsætter separat/OFF; dens fuldeCP/S/T og writer/runner/kapacitet er åbne.
+
 # NYESTE SANDHED – 2026-10-02 02:55 dansk – offentlig528; klar529 og separat530
 
 529/497/head554a82f4 er exact-head-CI-grøn, ikke deployet. Ordinary36945405432

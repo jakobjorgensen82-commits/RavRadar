@@ -65,6 +65,8 @@ const MISSING_STATE_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-checkpoint-missing-state-successor.mjs --check';
 const WEATHER_SELECTION_BINDING_SUCCESSOR_CHECK =
   'node scripts/build-weather-selection-model-binding-successor.mjs --check';
+const TOP20_DISPLAY_BINDING_SUCCESSOR_CHECK =
+  'node scripts/build-top20-display-binding-successor.mjs --check';
 const RELEASE_METADATA_TEST_COMMAND = [
   'node scripts/test-release-contract-metadata.mjs',
   'node scripts/test-harmonie-binding-migration.mjs',
@@ -90,9 +92,10 @@ const RELEASE_METADATA_TEST_COMMAND = [
   WARMUP_STATUS_BINDING_SUCCESSOR_CHECK,
   MISSING_STATE_BINDING_SUCCESSOR_CHECK,
   WEATHER_SELECTION_BINDING_SUCCESSOR_CHECK,
+  TOP20_DISPLAY_BINDING_SUCCESSOR_CHECK,
 ].join(' && ');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260925150000_weather_selection_model_binding.sql';
+  'supabase/migrations/20261002080000_top20_display_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -128,6 +131,8 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20260919010000_current_input_foundation_binding.sql',
   'supabase/migrations/20260919020000_measured_warmup_checkpoint.sql',
   CHECKPOINT_MIGRATION_PATH,
+  'supabase/migrations/20260925150000_weather_selection_model_binding.sql',
+  'supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql',
   'supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql',
 ]);
 

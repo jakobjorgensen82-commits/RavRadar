@@ -38,6 +38,7 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-pages-artifact-privacy.mjs',
   'scripts/test-production-workflow-outcome.mjs',
   'scripts/test-release-contract-metadata.mjs',
+  'scripts/build-top20-display-binding-successor.mjs',
   'scripts/build-checkpoint-warmup-status-successor.mjs',
   'scripts/build-checkpoint-missing-state-successor.mjs',
   'scripts/test-harmonie-binding-migration.mjs',

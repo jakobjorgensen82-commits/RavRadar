@@ -1,3 +1,18 @@
+# 2026-10-02 – 4.0.531 Top20 med verificeret backup og særskilt teknisk godkendelse
+
+Ejeren bestilte Top20 efter backup og samtidig fortsat stor vejrrevision.
+Efter scoped sikkerhedsreview blev ekstra bindings-/migrationsvalg og deploy-
+kontrol godkendt eksplicit: "Ja, godkend det afgrænsede tekniske omfang".
+Ingen genåbning af11.08admissiongate eller andre særskilte afvisninger.
+DEC-0278 dokumenterer faktisk remote tag/localZIP, urørte scoreformler/handicap/
+rankings/historik og normal teknisk67filers hash med kun én countændring.
+Append-only overgang/readback og8consumerbindinger er lokalt implementeret;
+gamle autentificerede5rækker bevares. Tre bindings/readback-målscripts består,
+særskilt4/4 pack/migration/generator, kunstigpc/375CSSlayout med20 og5dage.
+Ingen SQLinstallation eller offentligTop20effekt. Exact-head/deploy og fresh
+ordinary er åbne.529/530 er faktisk leveret, gammel kandidatstatus er historisk.
+Stor519 er separat/OFF; næste arbejde følger faktiske CPwriters før S/T.
+
 # 2026-10-02 02:55 dansk – samtaledelta og konkret4.0.530
 
 Ejeren har bestilt kontinuerlig revision, små færdige leverancer og almindelig
