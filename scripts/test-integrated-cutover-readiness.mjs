@@ -45,10 +45,10 @@ const CHECKPOINT_CONTINUATION_HASH =
   await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
-assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 40,
+assert.equal(REQUIRED_CUTOVER_MIGRATIONS.length, 41,
   'The active backend must preserve every predecessor, storage security and the exact checkpoint bridge');
 assert.equal(LATEST_RAVSCORE_BINDING_MIGRATION.version, '20260920220000');
-assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261002080000');
+assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version, '20261002094500');
 
 const integratedMigration = await fs.readFile(
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
@@ -348,6 +348,7 @@ const unicodeList = `
  20260925150000    │                  │ 2026-09-25 15:00:00
  20260926170000    │                  │ 2026-09-26 17:00:00
  20261002080000    │                  │ 2026-10-02 08:00:00
+ 20261002094500    │                  │ 2026-10-02 09:45:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -391,6 +392,7 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260925150000', remote: null },
   { local: '20260926170000', remote: null },
   { local: '20261002080000', remote: null },
+  { local: '20261002094500', remote: null },
 ]);
 
 // Captured verbatim from backend readiness run 34333553305 with Supabase CLI 2.117.0.
@@ -443,6 +445,7 @@ const currentFirstInstallList = `${capturedFirstEightInstallList}
    \`20260925150000\` | \` \`    | \`2026-09-25 15:00:00\`
    \`20260926170000\` | \` \`    | \`2026-09-26 17:00:00\`
    \`20261002080000\` | \` \`    | \`2026-10-02 08:00:00\`
+   \`20261002094500\` | \` \`    | \`2026-10-02 09:45:00\`
 `;
 assert.deepEqual(parseSupabaseMigrationList(currentFirstInstallList),
   REQUIRED_CUTOVER_MIGRATIONS.map(item => ({ local: item.version, remote: null })));
@@ -571,6 +574,7 @@ await assert.rejects(
        20260925150000 | | pending
        20260926170000 | | pending
        20261002080000 | | pending
+       20261002094500 | | pending
     `,
     dryRunText: currentFirstInstallDryRun,
   }),
@@ -620,6 +624,7 @@ const appliedList = `
  20260925150000 | 20260925150000 | now
  20260926170000 | 20260926170000 | now
  20261002080000 | 20261002080000 | now
+ 20261002094500 | 20261002094500 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -685,7 +690,7 @@ try {
     helperRun.stderr || helperRun.stdout || helperRun.error?.message);
   assert.match(
     helperRun.stdout,
-    /exactly 20261002080000_top20_display_binding.sql/,
+    /exactly 20261002094500_restore_checkpoint_cas_timeout.sql/,
     'the live code-only helper must admit exactly the current checkpoint bridge',
   );
 } finally {
@@ -770,6 +775,7 @@ try {
  20260925150000 │ │ pending
  20260926170000 │ │ pending
  20261002080000 │ │ pending
+ 20261002094500 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -823,6 +829,7 @@ try {
  20260925150000 │ │ pending
  20260926170000 │ │ pending
  20261002080000 │ │ pending
+ 20261002094500 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -938,6 +945,7 @@ const checkpointDatabaseReadback = {
     checkpointHistoryExclusionInstalled: true,
     checkpointDirectPayloadReadRestricted: true,
     checkpointCasSecurityDefiner: true,
+    checkpointCasStatementTimeout55Seconds: true,
     checkpointCasServiceRoleExecutable: true,
     checkpointCasAnonymousExecutionRejected: true,
     checkpointValidatorExecutionRestricted: true,
@@ -965,6 +973,22 @@ await verifyIntegratedDatabaseReadback({
   },
 });
 assert.equal(checkpointRpcCalls, 1);
+for (const invalidTimeoutCheck of [false, null, undefined]) {
+  const invalidReadback = structuredClone(checkpointDatabaseReadback);
+  if (invalidTimeoutCheck === undefined) {
+    delete invalidReadback.checks.checkpointCasStatementTimeout55Seconds;
+  } else {
+    invalidReadback.checks.checkpointCasStatementTimeout55Seconds = invalidTimeoutCheck;
+  }
+  await assert.rejects(verifyIntegratedDatabaseReadback({
+    url: URL,
+    serviceRoleKey: SERVICE_KEY,
+    fetchImpl: async requestUrl => new Response(JSON.stringify(
+      requestUrl.endsWith('/ravradar_integrated_cutover_contract')
+        ? databaseReadback : invalidReadback,
+    ), { status: 200 }),
+  }), /checkpointCasStatementTimeout55Seconds|incompatible exact key set/);
+}
 assert.deepEqual(Object.keys(rpcRequestBody).sort(), [
   'p_best_time_policy_id',
   'p_candidate_best_time_policy_id',

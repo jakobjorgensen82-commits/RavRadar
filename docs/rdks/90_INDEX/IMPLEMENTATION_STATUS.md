@@ -1,4 +1,16 @@
-# 2026-10-02 – offentlig4.0.530 og lokal Top20/4.0.531
+# 2026-10-02 – Top20-reparation4.0.532, offentlig530
+
+- [x] PR499/d70a91c3 exactCI36975932551, mergeefd3f45d, contentdiff tom.
+- [x]531 binding/readback anvendt;008-migration immutabel.
+- [ ]531 kode-only36976884378 fejlede54 før Pages, ingen public20.
+- [x] Cron8348098 pauset efter konkret fejl, plan/payload uændret.
+- [x]30s-reset af tidligere55s reproduceret og append-only532-fix implementeret.
+- [x] Existing workflow/readiness2/2PASS499.8705ms, negative55s-checks bevares.
+- [ ]532 exact-headCI/migration/readback/checkpoint/private/R2/Pages/publickode.
+- [ ] Cron-genaktivering efter sikker levering og naturlig actualTop20-kontrol.
+- [ ] Stor519 fuldCP/S/T/writer/kill/failure4min/runner/nationalkapacitet separat.
+
+# HISTORISK – 2026-10-02 – offentlig4.0.530 og lokal Top20/4.0.531
 
 - [x]529/497 og530/498 faktisk merged/deployet med exact-head og efterdatagates.
 - [x] Ejerens nye specifikke Top20-binding/migrations-/deploykontrolgodkendelse.

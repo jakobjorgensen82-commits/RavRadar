@@ -1,4 +1,13 @@
-# Aktuelt fokus – 2026-09-26, lokal 4.0.497
+# Aktuelt fokus – 2026-10-02, lokal4.0.532
+
+Reparer reproduceret Top20-overgangsregression append-only, exactheadCI og
+sikker providerfri levering med actual55s/checkpoint/private/R2/Pages. Offentlig
+530 bevaret, cron8348098 midlertidigtpauset. Ingen blindretry/private-logomvej.
+Genoptag sammecron efter konsistent levering og observer naturlig freshTop20.
+Fortsæt dirty519 actualCP/S-før-T/writer/runner/kapacitet separat/OFF; ingen
+helkopi eller ændring af fysisk scoremodel. Se DEC-0279 og nyeste checkpoint.
+
+# Historisk fokus – 2026-09-26, lokal 4.0.497
 
 4.0.496 er merged. Code-only `36250874394` stoppede korrekt før
 eksterne ændringer på 11Z/15Z-cacheværnet; den tidligere plan

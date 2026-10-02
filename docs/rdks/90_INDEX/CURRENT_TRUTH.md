@@ -1,4 +1,18 @@
-# NYESTE SANDHED – 2026-10-02 – offentlig4.0.530, afgrænset lokal4.0.531
+# NYESTE SANDHED – 2026-10-02 – offentlig530, merged531, lokal532
+
+PR499/d70a91c3 exactCI36975932551/proof11213148423 er grøn, mergedefd3f45d.
+Kode-only36976884378 fejlede54 før Pages;20261002080000 blev faktisk anvendt
+ved25–30 og er IMMUTABEL. Offentlig530/rr-20261002055102-210/reference04Z/
+210/673/seneste ordinary36964052139-data bevares. Cron8348098 PAUSET,
+servergenlæst; schedule/payload uændret. Ingen ny weather/cancel/blindretry.
+532 genopretter den eksisterende55s som append-only20261002094500 og kræver
+actual metadata-readback55s. Kilde-RED beviser Top20s30s-reset af DEC-0249,
+ikke actualrun54-fejlkode. Raw privatlog afvist trods kun-kode-godkendelse;
+ingen omvej. Måltests2/2PASS499.8705ms; exact-head/deploy/Top20-effekt åbne.
+Model67/3a14/8bindinger, fysisk score/historik og dirty519/OFF uændret.
+Se DEC-0279 og ALLERØVERSTE private checkpoint.
+
+# HISTORISK SANDHED – 2026-10-02 – offentlig4.0.530, afgrænset lokal4.0.531
 
 529/SEO og530/kadence er merged og faktisk deployet; currentmaina14f6aa4.
 Tidligere ventende/stakkede status er historisk. ravradar.dk HTTPS/GitHub-only

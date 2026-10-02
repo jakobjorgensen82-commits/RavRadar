@@ -1,4 +1,19 @@
-# Aktuelle issues – 2026-10-02 – lokal531, offentlig530
+# Aktuelle issues – 2026-10-02 – lokal532, offentlig530
+
+- **TOP20 DEPLOY STOPPET:** PR499 merged; code-only36976884378 fejlede54 før
+  Pages. Binding/readback25–30 bestod, anvendt008 er immutabel. Offentlig530
+  og seneste vejrdata bevaret; cron8348098 midlertidigtpauset/plan uændret.
+- **KONKRET REGRESSION:**008 reassertede30s efter den allerede godkendte55s.
+  RED i eksisterende test.532 genopretter55s append-only og tilføjer hård
+  actual pg_proc readbackcheck.2/2måltests består; CI/deploy afventer.
+- **AFGRÆNSET DIAGNOSE:** Kun-kode-godkendelse gav ikke adgang til hele den
+  private joblog; sikkerhedsreview afviste retrieval. Ingen omvej. Actual54
+  fejlkode er ikke læst; trinets78s beviser ikke alene timeout.
+- **EFFEKTER:** Gamle5 bevares ved kode-only. Fresh20/pc/mobil og cron-genoptagelse
+  kræver faktisk sikker levering. Ingen komplet historik/kapacitetsgaranti.
+- **STOR519:** Separat/OFF; fuldCP/S/T/writer/runner/kapacitet fortsat åbne.
+
+# HISTORISKE issues – 2026-10-02 – lokal531, offentlig530
 
 - **TOP20 IKKE LEVERET:** Lokal implementering og smalle måltests består.
   Frosset producentbinding håndteres åbent via normal ny hash og append-only

@@ -1,4 +1,13 @@
-# Aktuel Top20-autoritet – 2026-10-02
+# Aktuel Top20-reparation – 2026-10-02,4.0.532
+
+REQ-NATIONAL-TOP20-0528 og DEC-0278s specifikke ejerautoritet består.
+DEC-0249s alleredegodkendte funktionslokale55s skal bevares også efter en
+ny bindingsmigration.532 retter konkret30s-reset append-only; faktisk metadata-
+readback skal afvise forkert/manglende55s, med alle gamle kontrolkrav bevaret.
+Anvendt531-migration må ikke omskrives. Cron-genoptagelse efter sikker levering;
+gamle5 bevares til frisk ordinary20. Ingen privat-logomvej/modelændring/SQLinstall.
+
+# Historisk Top20-autoritet – 2026-10-02
 
 REQ-NATIONAL-TOP20-0528 fortsætter i separat531 med fast sourcebackup.
 Ejeren godkendte specifikt nødvendige bindings-/migrationsvalg og deploykontrol.
